@@ -17,6 +17,7 @@ const nextConfig: NextConfig = {
   // SEGUIMIENTO.md es el único .md del proyecto (2026-10-06): `next dev` no genera AGENTS.md ni CLAUDE.md.
   agentRules: false,
   experimental: {
+    authInterrupts: true,
     // `src/proxy.ts` matches every API route, so Next buffers each request body
     // up to this size and delivers a larger one truncated (no 413). Explicit
     // instead of the implicit default so the photo analysis route can reject a

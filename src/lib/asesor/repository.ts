@@ -8,6 +8,7 @@ export type StoredAttachment = { id: string; mimeType: string; byteSize: number;
 export type StoredMessage = { id: string; role: MessageRole; content: string; attachments: StoredAttachment[] };
 export type StoredBrief = { conversationId: string; version: number; state: unknown };
 export type StoredConversation = { id: string; accountId: string | null; title: string | null; updatedAt: string };
+export type AdminConversationRow = StoredConversation & { lastAssistantMessage: string | null; latestBrief: StoredBrief | null };
 
 /**
  * Every method rejects when the database fails; nothing here swallows an error or returns a success
@@ -47,6 +48,87 @@ export function createAsesorRepository(db: AsesorDb = getAsesorPool()) {
         `SELECT id, account_id, title, updated_at FROM conversations WHERE account_id = $1 ORDER BY updated_at DESC`, [accountId],
       );
       return rows.map((row) => ({ id: row.id, accountId: row.account_id, title: row.title, updatedAt: String(row.updated_at) }));
+    },
+
+    /** Reads customer conversations and their latest persisted advisor response/state for the admin monitor. */
+    async listAdminConversations(): Promise<AdminConversationRow[]> {
+      const { rows } = await db.query<{
+        id: string;
+        account_id: string | null;
+        title: string | null;
+        updated_at: Date | string;
+        last_assistant_message: string | null;
+        brief_version: number | null;
+        brief_state: unknown;
+      }>(
+        `SELECT c.id, c.account_id, c.title, c.updated_at,
+                assistant.content AS last_assistant_message,
+                brief.version AS brief_version, brief.state AS brief_state
+           FROM conversations c
+           JOIN accounts a ON a.id = c.account_id AND a.external_id = 'advisor:user'
+           LEFT JOIN LATERAL (
+             SELECT content FROM messages WHERE conversation_id = c.id AND role = 'assistant'
+             ORDER BY seq DESC LIMIT 1
+           ) assistant ON true
+           LEFT JOIN LATERAL (
+             SELECT version, state FROM briefs WHERE conversation_id = c.id
+             ORDER BY version DESC LIMIT 1
+           ) brief ON true
+          ORDER BY c.updated_at DESC`,
+      );
+      return rows.map((row) => ({
+        id: row.id,
+        accountId: row.account_id,
+        title: row.title,
+        updatedAt: String(row.updated_at),
+        lastAssistantMessage: row.last_assistant_message,
+        latestBrief: row.brief_version === null ? null : {
+          conversationId: row.id,
+          version: row.brief_version,
+          state: row.brief_state,
+        },
+      }));
+    },
+
+    async getAdminConversation(id: string): Promise<AdminConversationRow | null> {
+      const { rows } = await db.query<{
+        id: string;
+        account_id: string | null;
+        title: string | null;
+        updated_at: Date | string;
+        last_assistant_message: string | null;
+        brief_version: number | null;
+        brief_state: unknown;
+      }>(
+        `SELECT c.id, c.account_id, c.title, c.updated_at,
+                assistant.content AS last_assistant_message,
+                brief.version AS brief_version, brief.state AS brief_state
+           FROM conversations c
+           JOIN accounts a ON a.id = c.account_id AND a.external_id = 'advisor:user'
+           LEFT JOIN LATERAL (
+             SELECT content FROM messages WHERE conversation_id = c.id AND role = 'assistant'
+             ORDER BY seq DESC LIMIT 1
+           ) assistant ON true
+           LEFT JOIN LATERAL (
+             SELECT version, state FROM briefs WHERE conversation_id = c.id
+             ORDER BY version DESC LIMIT 1
+           ) brief ON true
+          WHERE c.id = $1`,
+        [id],
+      );
+      const row = rows[0];
+      return row ? {
+        id: row.id,
+        accountId: row.account_id,
+        title: row.title,
+        updatedAt: String(row.updated_at),
+        lastAssistantMessage: row.last_assistant_message,
+        latestBrief: row.brief_version === null ? null : {
+          conversationId: row.id,
+          version: row.brief_version,
+          state: row.brief_state,
+        },
+      } : null;
     },
 
     /** Atomic message + attachments insert. A repeated message id inserts nothing and returns false. */
