@@ -23,9 +23,14 @@ export const EventBriefSchema = z.object({
   schoolName: z.string().trim().min(1).max(200).nullable().default(null),
   grade: z.string().trim().min(1).max(80).nullable().default(null),
   audience: z.string().trim().min(1).max(300).nullable().default(null),
+  organiserPriority: z.enum(["impress", "personalise", "simple", "best_price"]).nullable().default(null),
   theme: z.string().trim().min(1).max(200).nullable().default(null),
   colors: z.array(z.string().trim().min(1).max(60)).max(12).default([]),
   style: z.string().trim().min(1).max(200).nullable().default(null),
+  likes: z.string().trim().max(2000).nullable().default(null),
+  dislikes: z.string().trim().max(2000).nullable().default(null),
+  brandRequests: z.string().trim().max(2000).nullable().default(null),
+  proposedPackage: z.string().trim().max(500).nullable().default(null),
   contactName: z.string().trim().min(1).max(160).nullable().default(null),
   contactPhone: z.string().trim().min(1).max(40).nullable().default(null),
   contactEmail: z.string().trim().email().max(254).nullable().default(null),
@@ -43,6 +48,8 @@ export const emptyEventBrief = (): EventBrief => EventBriefSchema.parse({});
 export type EventBriefState = {
   brief: EventBrief;
   summary: { version: number; text: string; briefVersion: number } | null;
+  /** Monotonic counter retained when a field correction invalidates the current summary. */
+  summarySequence: number;
   approval: { summaryVersion: number; confirmedAt: string } | null;
   refused: { contact: boolean; address: boolean };
   toolReceipts: Record<string, { name: string; argsHash: string; message: string }>;
@@ -50,11 +57,15 @@ export type EventBriefState = {
 
 export function parseEventBriefState(input: unknown): EventBriefState {
   if (typeof input !== "object" || input === null || Array.isArray(input)) {
-    return { brief: emptyEventBrief(), summary: null, approval: null, refused: { contact: false, address: false }, toolReceipts: {} };
+    return { brief: emptyEventBrief(), summary: null, summarySequence: 0, approval: null, refused: { contact: false, address: false }, toolReceipts: {} };
   }
   const value = input as Record<string, unknown>;
   const parsed = EventBriefSchema.safeParse(value.brief ?? {});
   const summaryRaw = value.summary;
+  const summarySequence = Number.isSafeInteger(value.summarySequence) && (value.summarySequence as number) >= 0
+    ? value.summarySequence as number
+    : typeof summaryRaw === "object" && summaryRaw !== null && Number.isSafeInteger(Reflect.get(summaryRaw, "version"))
+      ? Reflect.get(summaryRaw, "version") as number : 0;
   const approvalRaw = value.approval;
   const refusedRaw = value.refused;
   return {
@@ -64,6 +75,7 @@ export function parseEventBriefState(input: unknown): EventBriefState {
       && Number.isSafeInteger(Reflect.get(summaryRaw, "briefVersion"))
       ? { version: Reflect.get(summaryRaw, "version"), text: Reflect.get(summaryRaw, "text"), briefVersion: Reflect.get(summaryRaw, "briefVersion") }
       : null,
+    summarySequence,
     approval: typeof approvalRaw === "object" && approvalRaw !== null && !Array.isArray(approvalRaw)
       && Number.isSafeInteger(Reflect.get(approvalRaw, "summaryVersion")) && typeof Reflect.get(approvalRaw, "confirmedAt") === "string"
       ? { summaryVersion: Reflect.get(approvalRaw, "summaryVersion"), confirmedAt: Reflect.get(approvalRaw, "confirmedAt") }
