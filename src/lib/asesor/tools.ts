@@ -10,6 +10,7 @@ const summaryArgsSchema = z.object({}).strict();
 const approvalArgsSchema = z.object({ summaryVersion: z.number().int().positive() }).strict();
 const fieldPropertySchema = (field: string): Record<string, unknown> => {
   if (field === "eventKind") return { type: "string", enum: ["birthday", "corporate", "school", "wedding", "social", "other"] };
+  if (field === "organiserPriority") return { type: "string", enum: ["impress", "personalise", "simple", "best_price"] };
   if (["guestCount", "honoreeAge"].includes(field)) return { type: "integer", minimum: field === "guestCount" ? 1 : 0 };
   if (field === "budget") return { type: "number", minimum: 0 };
   if (field === "colors") return { type: "array", items: { type: "string" } };
@@ -67,6 +68,7 @@ export async function applyAdvisorTool(input: {
   const { call, currentCustomerText } = input;
   const argsHash = createHash("sha256").update(JSON.stringify(call.args)).digest("hex");
   let message = "";
+  let recordReceipt = true;
   const result = await input.mutateBrief((raw, version) => {
     const state = parseEventBriefState(raw);
     const receipt = state.toolReceipts[input.operationId];
@@ -86,7 +88,9 @@ export async function applyAdvisorTool(input: {
     if (call.nombre === "save_event_fields") {
       const patch = fieldsSchema.safeParse(call.args);
       if (!patch.success) { message = "Los campos recibidos no son válidos; pide al cliente que aclare el dato."; return state; }
-      const updated = EventBriefSchema.safeParse({ ...state.brief, ...patch.data });
+      // Zod defaults on omitted properties must not overwrite existing values in a partial update.
+      const suppliedFields = Object.fromEntries(Object.keys(call.args).map((field) => [field, Reflect.get(patch.data, field)]));
+      const updated = EventBriefSchema.safeParse({ ...state.brief, ...suppliedFields });
       if (!updated.success) { message = "No fue posible guardar esos campos; solicita una aclaración."; return state; }
       state.brief = updated.data;
       state.summary = null;
@@ -95,7 +99,7 @@ export async function applyAdvisorTool(input: {
     } else if (call.nombre === "propose_summary") {
       const progress = calculateBriefProgress(state.brief);
       if (!progress.complete) { message = `Faltan campos obligatorios: ${progress.missing.join(", ")}.`; return state; }
-      const summaryVersion = (state.summary?.version ?? 0) + 1;
+      const summaryVersion = state.summarySequence + 1;
       const safeBrief = { ...state.brief,
         address: state.brief.addressPermission && !state.refused.address ? state.brief.address : null,
         contactName: state.brief.contactPermission && !state.refused.contact ? state.brief.contactName : null,
@@ -106,20 +110,29 @@ export async function applyAdvisorTool(input: {
         `Evento: ${safeBrief.eventName ?? safeBrief.eventKind ?? "sin especificar"}`,
         safeBrief.honoreeName ? `Homenajeado/a: ${safeBrief.honoreeName}` : null,
         `Fecha: ${safeBrief.date ?? "sin especificar"}`,
-        `Hora: ${safeBrief.startTime ?? "sin especificar"}`,
+        safeBrief.startTime || safeBrief.endTime ? `Horario: ${[safeBrief.startTime, safeBrief.endTime].filter(Boolean).join("–")}` : null,
         `Invitados: ${safeBrief.guestCount ?? "sin especificar"}`,
         `Lugar: ${[safeBrief.venueName, safeBrief.venueType, safeBrief.city].filter(Boolean).join(", ") || "sin especificar"}`,
+        safeBrief.department ? `Departamento: ${safeBrief.department}` : null,
         `Presupuesto: ${safeBrief.budget === null ? "sin especificar" : `${safeBrief.currency} ${safeBrief.budget}`}`,
         safeBrief.companyName ? `Empresa: ${safeBrief.companyName}` : null,
         safeBrief.schoolName ? `Institución educativa: ${safeBrief.schoolName}${safeBrief.grade ? `, ${safeBrief.grade}` : ""}` : null,
         safeBrief.theme ? `Tema: ${safeBrief.theme}` : null,
         safeBrief.colors.length ? `Colores: ${safeBrief.colors.join(", ")}` : null,
+        safeBrief.style ? `Estilo: ${safeBrief.style}` : null,
+        safeBrief.organiserPriority ? `Prioridad: ${safeBrief.organiserPriority}` : null,
+        safeBrief.likes ? `Le gusta: ${safeBrief.likes}` : null,
+        safeBrief.dislikes ? `No le gusta: ${safeBrief.dislikes}` : null,
+        safeBrief.brandRequests ? `Solicitudes: ${safeBrief.brandRequests}` : null,
+        safeBrief.proposedPackage ? `Paquete propuesto: ${safeBrief.proposedPackage}` : null,
+        safeBrief.notes ? `Notas: ${safeBrief.notes}` : null,
         safeBrief.address ? `Dirección autorizada: ${safeBrief.address}` : null,
         safeBrief.contactName ? `Contacto autorizado: ${safeBrief.contactName}` : null,
         safeBrief.contactPhone ? `Teléfono autorizado: ${safeBrief.contactPhone}` : null,
         safeBrief.contactEmail ? `Correo autorizado: ${safeBrief.contactEmail}` : null,
       ].filter((line): line is string => line !== null);
       state.summary = { version: summaryVersion, briefVersion: version + 1, text: summaryLines.join("\n") };
+      state.summarySequence = summaryVersion;
       state.approval = null;
       message = `Resumen ${summaryVersion} propuesto. Muéstralo al cliente y espera su confirmación explícita.`;
     } else if (call.nombre === "approve_summary") {
@@ -130,6 +143,9 @@ export async function applyAdvisorTool(input: {
         message = "No se puede aprobar sin confirmación explícita del cliente al resumen vigente.";
       } else if (state.refused.contact || state.refused.address || !state.brief.contactPermission || !state.brief.addressPermission) {
         message = "La aprobación no está disponible hasta contar con autorización explícita para contacto y dirección.";
+      } else if (state.approval?.summaryVersion === summaryVersion) {
+        message = "Este resumen ya estaba aprobado por el cliente.";
+        recordReceipt = false;
       } else {
         state.approval = { summaryVersion: summaryVersion as number, confirmedAt: (input.now ?? (() => new Date()))().toISOString() };
         message = "Resumen aprobado por confirmación explícita del cliente.";
@@ -137,7 +153,7 @@ export async function applyAdvisorTool(input: {
     } else {
       message = "Herramienta desconocida; no se aplicaron cambios.";
     }
-    state.toolReceipts[input.operationId] = { name: call.nombre, argsHash, message };
+    if (recordReceipt) state.toolReceipts[input.operationId] = { name: call.nombre, argsHash, message };
     return state;
   });
   const state = parseEventBriefState(result.state);

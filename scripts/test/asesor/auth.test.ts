@@ -12,7 +12,7 @@ import {
 } from "@/lib/asesor/auth";
 import { POST as login } from "@/app/api/asesor/login/route";
 import { GET as voiceStatus } from "@/app/api/voz/transcribir/route";
-import { config as proxyConfig } from "@/proxy";
+import { config as proxyConfig, proxy } from "@/proxy";
 
 const envKeys = ["ASESOR_USER_PASSWORD_HASH", "ASESOR_ADMIN_PASSWORD_HASH", "ASESOR_SESSION_SECRET", "APP_PASSWORD", "VOZ_ENABLED", "NODE_ENV"] as const;
 const previousEnv = new Map(envKeys.map((key) => [key, process.env[key]]));
@@ -110,15 +110,26 @@ test("proxy exclusions are boundary-exact and voice reaches its existing guard w
   for (const [path, expected] of [
     ["/asesor", false],
     ["/asesor/login", false],
+    ["/asesor/admin", true],
+    ["/asesor/admin/conversation-1", true],
     ["/asesor-extra", true],
     ["/api/asesor", false],
     ["/api/asesor/login", false],
+    ["/api/asesor/admin/conversations", true],
     ["/api/asesor-extra", true],
     ["/api/voz/transcribir", false],
     ["/api/voz/transcribir-extra", true],
   ] as const) {
     assert.equal(matcher.test(path), expected, `unexpected proxy matcher result for ${path}`);
   }
+
+  process.env.ASESOR_SESSION_SECRET = "test-session-secret-that-is-at-least-32-bytes";
+  const userToken = createAdvisorSessionToken("user");
+  assert.ok(userToken);
+  const forbiddenPage = proxy(new NextRequest("https://example.test/asesor/admin", {
+    headers: { cookie: `${ASESOR_SESSION_COOKIE}=${userToken}` },
+  }));
+  assert.equal(forbiddenPage.status, 403);
 
   Reflect.set(process.env, "NODE_ENV", "production");
   delete process.env.APP_PASSWORD;
