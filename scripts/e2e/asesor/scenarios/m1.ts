@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { runDirectionsScenario } from "./directions";
 
 type ScenarioOptions = {
   origin: string;
@@ -113,6 +114,7 @@ export async function runM1Scenario(options: ScenarioOptions): Promise<{ checks:
   assert.ok(persisted.summary, "initial summary was not proposed");
   assert.ok(firstTurn.summary, "initial turn omitted summary state");
   checks.push(options.live ? "real Gemini text conversation and proposed summary" : "offline model conversation and proposed summary");
+  checks.push(...await runDirectionsScenario({ origin: options.origin, cookie: userCookie, conversationId }));
 
   const reloaded = await fetch(`${options.origin}/asesor`, { headers: { cookie: userCookie } });
   assert.equal(reloaded.status, 200, "same-device page reload failed");

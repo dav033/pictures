@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { isOfferedDirection, parseStoredDirectionOffers } from "./directions";
+import type { DirectionOffer } from "./directions-contract";
 
 export const EventKindSchema = z.enum(["birthday", "corporate", "school", "wedding", "social", "other"]);
 
@@ -47,6 +49,8 @@ export const emptyEventBrief = (): EventBrief => EventBriefSchema.parse({});
 
 export type EventBriefState = {
   brief: EventBrief;
+  directionOffers: DirectionOffer[];
+  selectedDirectionId: string | null;
   summary: { version: number; text: string; briefVersion: number } | null;
   /** Monotonic counter retained when a field correction invalidates the current summary. */
   summarySequence: number;
@@ -57,7 +61,7 @@ export type EventBriefState = {
 
 export function parseEventBriefState(input: unknown): EventBriefState {
   if (typeof input !== "object" || input === null || Array.isArray(input)) {
-    return { brief: emptyEventBrief(), summary: null, summarySequence: 0, approval: null, refused: { contact: false, address: false }, toolReceipts: {} };
+    return { brief: emptyEventBrief(), directionOffers: [], selectedDirectionId: null, summary: null, summarySequence: 0, approval: null, refused: { contact: false, address: false }, toolReceipts: {} };
   }
   const value = input as Record<string, unknown>;
   const parsed = EventBriefSchema.safeParse(value.brief ?? {});
@@ -68,8 +72,12 @@ export function parseEventBriefState(input: unknown): EventBriefState {
       ? Reflect.get(summaryRaw, "version") as number : 0;
   const approvalRaw = value.approval;
   const refusedRaw = value.refused;
+  const directionOffers = parseStoredDirectionOffers(value.directionOffers) ?? [];
   return {
     brief: parsed.success ? parsed.data : emptyEventBrief(),
+    directionOffers,
+    selectedDirectionId: isOfferedDirection(value.selectedDirectionId)
+      && directionOffers.some(({ id }) => id === value.selectedDirectionId) ? value.selectedDirectionId : null,
     summary: typeof summaryRaw === "object" && summaryRaw !== null && !Array.isArray(summaryRaw)
       && Number.isSafeInteger(Reflect.get(summaryRaw, "version")) && typeof Reflect.get(summaryRaw, "text") === "string"
       && Number.isSafeInteger(Reflect.get(summaryRaw, "briefVersion"))
