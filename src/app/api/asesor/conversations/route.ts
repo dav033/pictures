@@ -3,6 +3,7 @@ import { requireAdvisorRole } from "@/lib/asesor/auth";
 import { createAsesorRepository } from "@/lib/asesor/repository";
 import { isSameOriginRequest } from "@/lib/auth/request";
 import { parseEventBriefState } from "@/lib/asesor/contracts";
+import { calculateBriefProgress } from "@/lib/asesor/progress";
 
 const CreateSchema = z.object({ id: z.string().uuid().optional(), title: z.string().trim().max(160).optional() }).strict();
 const accountKey = (role: "user" | "admin") => `advisor:${role}`;
@@ -33,8 +34,9 @@ export async function POST(request: Request) {
     const created = await repo.createConversation(id, accountId, input.title);
     const conversation = await repo.getConversation(id);
     if (!created.inserted || !conversation || conversation.accountId !== accountId) return Response.json({ code: "CONVERSATION_CONFLICT" }, { status: 409 });
-    await repo.mutateBrief(id, () => parseEventBriefState(null));
-    return Response.json({ conversation, state: parseEventBriefState(null) }, { status: 201 });
+    const brief = await repo.mutateBrief(id, () => parseEventBriefState(null));
+    const state = parseEventBriefState(null);
+    return Response.json({ conversation, state, progress: calculateBriefProgress(state.brief), briefVersion: brief.version }, { status: 201 });
   } catch {
     return Response.json({ code: "ADVISOR_STORAGE_UNAVAILABLE" }, { status: 503 });
   }
