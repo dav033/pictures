@@ -260,8 +260,9 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   if (checkIndex >= 0) {
     const file = args[checkIndex + 1];
     if (!file || file.startsWith("--")) throw new Error("--check-results requires a report path.");
+    const strict = args.includes("--strict");
     readFile(path.resolve(file), "utf8")
-      .then((text) => validateIntegrationReport(JSON.parse(text) as unknown))
+      .then((text) => validateIntegrationReport(JSON.parse(text) as unknown, strict))
       .then(() => console.log(`Integration report is valid: ${file}`))
       .catch((error: unknown) => {
         console.error(`[FAIL] asesor results: ${error instanceof Error ? error.message : "unknown error"}`);

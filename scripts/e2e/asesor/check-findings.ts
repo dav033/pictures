@@ -10,7 +10,7 @@ type IntegrationResults = {
   schema: "integration-results/1"; revision: string; task: string; milestone: string; mode: string;
   invocation: string; commands: string[]; outcome: string;
   checks: string[];
-  runs: Array<{ revision: string; task: string; command: string; outcome: string }>;
+  runs: Array<{ revision: string; task: string; command: string; outcome: string; failedOwningTask?: string }>;
 };
 
 const SHA = /^[a-f0-9]{40}$/i;
@@ -36,32 +36,61 @@ function parseFindings(value: unknown): AuditFindings {
 
 function parseIntegrationResults(value: unknown): IntegrationResults {
   if (!isRecord(value) || value.schema !== "integration-results/1" || !SHA.test(String(value.revision ?? ""))
-    || typeof value.task !== "string" || !/^T\d+$/i.test(value.task)
-    || typeof value.milestone !== "string" || !/^M\d+$/i.test(value.milestone)
-    || !["fake-model", "live"].includes(String(value.mode))
+    || typeof value.task !== "string" || !/^T\d+[a-z]?$/i.test(value.task)
+    || typeof value.milestone !== "string" || !/^M\d+(?:\+M\d+)*$/i.test(value.milestone)
+    || !["fake-model", "live", "mixed"].includes(String(value.mode))
     || typeof value.invocation !== "string" || !isStringArray(value.commands)
-    || typeof value.outcome !== "string" || !isStringArray(value.checks) || !Array.isArray(value.runs)) {
+    || !["passed", "failed", "coordinator-pending"].includes(String(value.outcome))
+    || !isStringArray(value.checks) || !Array.isArray(value.runs)) {
     throw new Error("Malformed integration-results/1 report.");
   }
   for (const [index, run] of value.runs.entries()) {
     if (!isRecord(run) || !SHA.test(String(run.revision ?? "")) || typeof run.task !== "string"
-      || typeof run.command !== "string" || run.command.length === 0 || !["passed", "failed"].includes(String(run.outcome))) {
+      || typeof run.command !== "string" || run.command.length === 0
+      || !["passed", "failed", "coordinator-pending"].includes(String(run.outcome))) {
       throw new Error(`Malformed integration command result at index ${index}.`);
     }
   }
   return value as IntegrationResults;
 }
 
-/** Validates a stored integration report on its own: well-formed, every command linked and passed. */
-export function validateIntegrationReport(report: unknown): void {
+/** Validates integration evidence integrity; strict mode additionally requires every check to pass. */
+export function validateIntegrationReport(report: unknown, strict = false): void {
   if (isRecord(report) && report.schema === "deployed-integration-results/1") {
     validateDeployedReport(report);
     return;
   }
   const integration = parseIntegrationResults(report);
-  if (integration.outcome !== "passed") throw new Error("Integration outcome must be passed.");
-  if (integration.runs.length === 0 || integration.runs.some((run) => run.outcome !== "passed")) {
-    throw new Error("Every integration command must have passed.");
+  const coverageGaps = (report as Record<string, unknown>).coverageGaps;
+  if (!isStringArray(coverageGaps) || coverageGaps.length === 0) {
+    throw new Error("Integration report must list coverageGaps.");
+  }
+  if (integration.runs.length === 0) throw new Error("Integration report must contain recorded runs.");
+  for (const [index, run] of integration.runs.entries()) {
+    if (/--check-results(?:\s|=)/.test(run.command)) {
+      throw new Error(`Integration report must not record its own --check-results invocation (run ${index}).`);
+    }
+    if (run.outcome === "failed" && (typeof run.failedOwningTask !== "string" || run.failedOwningTask.length === 0)) {
+      throw new Error(`Failed integration run ${index} must name failedOwningTask.`);
+    }
+  }
+  for (const field of ["liveEntryPoint", "deployedEntryPoint"] as const) {
+    const evidence = (report as Record<string, unknown>)[field];
+    if (!isRecord(evidence) || !["passed", "failed", "coordinator-pending"].includes(String(evidence.outcome))) {
+      throw new Error(`Integration report must record ${field} evidence with an outcome.`);
+    }
+    if (evidence.outcome === "failed" && (typeof evidence.failedOwningTask !== "string" || evidence.failedOwningTask.length === 0)) {
+      throw new Error(`Failed ${field} evidence must name failedOwningTask.`);
+    }
+  }
+  if (strict) {
+    if (integration.outcome !== "passed" || integration.runs.some((run) => run.outcome !== "passed")) {
+      throw new Error("Strict integration results require every outcome to be passed.");
+    }
+    for (const field of ["liveEntryPoint", "deployedEntryPoint"] as const) {
+      const evidence = (report as Record<string, unknown>)[field] as Record<string, unknown>;
+      if (evidence.outcome !== "passed") throw new Error(`Strict integration results require ${field} evidence to be passed.`);
+    }
   }
   const runCommands = new Set(integration.runs.map((run) => run.command));
   if (integration.commands.some((item) => !runCommands.has(item)) || integration.runs.some((run) => !integration.commands.includes(run.command))) {

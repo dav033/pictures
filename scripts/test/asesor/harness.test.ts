@@ -16,8 +16,11 @@ const integrationResults = {
   milestone: "M1",
   mode: "live",
   invocation: "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --live --milestone M1 --task T7",
-  commands: ["npm run build", "npm run start", "scripts/e2e/asesor/run.ts --start --live --milestone M1 --task T7"],
-  runs: ["npm run build", "npm run start", "scripts/e2e/asesor/run.ts --start --live --milestone M1 --task T7"].map((command) => ({ revision, task: "T7", command, outcome: "passed" })),
+  commands: ["npm run build", "npm run start", "scripts/e2e/asesor/run.ts --start --live --milestone M1 --task T7", "liveEntryPoint", "deployedEntryPoint"],
+  runs: ["npm run build", "npm run start", "scripts/e2e/asesor/run.ts --start --live --milestone M1 --task T7", "liveEntryPoint", "deployedEntryPoint"].map((command) => ({ revision, task: "T7", command, outcome: "passed" })),
+  liveEntryPoint: { outcome: "passed" },
+  deployedEntryPoint: { outcome: "passed" },
+  coverageGaps: ["photo scenario not run"],
   outcome: "passed",
   checks: [
     "user login and persisted conversation creation",
@@ -96,14 +99,54 @@ test("findings revision falls back to the ledger only when Git is unavailable", 
   assert.throws(() => resolveExpectedRevision({ explicitRevision: "", gitRevision: undefined, findingsRevision: "invalid" }), /full git SHA/);
 });
 
-test("stored integration report is validated on its own, without a revision match", () => {
+test("stored integration report validates evidence integrity without requiring product success", () => {
   assert.doesNotThrow(() => validateIntegrationReport(integrationResults));
-  assert.throws(() => validateIntegrationReport({ ...integrationResults, outcome: "failed" }), /must be passed/);
-  assert.throws(() => validateIntegrationReport({ ...integrationResults, runs: integrationResults.runs.map((run, index) => index ? run : { ...run, outcome: "failed" }) }), /must have passed/);
+  const reportedFailure = {
+    ...integrationResults,
+    outcome: "failed",
+    runs: integrationResults.runs.map((run, index) => index === 0 ? { ...run, outcome: "failed", failedOwningTask: "T14.4a" } : run),
+  };
+  assert.doesNotThrow(() => validateIntegrationReport(reportedFailure));
+  assert.throws(() => validateIntegrationReport(reportedFailure, true), /Strict integration results require every outcome to be passed/);
+  assert.throws(() => validateIntegrationReport({ ...reportedFailure, runs: reportedFailure.runs.map((run, index) => index === 0 ? { ...run, failedOwningTask: undefined } : run) }), /must name failedOwningTask/);
+  const coordinatorPending = {
+    ...integrationResults,
+    liveEntryPoint: { outcome: "coordinator-pending" },
+    deployedEntryPoint: { outcome: "coordinator-pending" },
+    runs: integrationResults.runs.map((run) => run.command === "liveEntryPoint" || run.command === "deployedEntryPoint" ? { ...run, outcome: "coordinator-pending" } : run),
+  };
+  assert.doesNotThrow(() => validateIntegrationReport(coordinatorPending));
+  assert.throws(() => validateIntegrationReport(coordinatorPending, true), /Strict integration results require every outcome to be passed/);
+  assert.throws(() => validateIntegrationReport({ ...integrationResults, coverageGaps: undefined }), /must list coverageGaps/);
+  assert.throws(() => validateIntegrationReport({ ...integrationResults, runs: [...integrationResults.runs, { revision, task: "T14a", command: "run.ts --check-results report.json", outcome: "failed", failedOwningTask: "T14a" }] }), /must not record its own --check-results invocation/);
 });
 
 test("run.ts --check-results exits non-zero for a missing report", async () => {
   const { spawnSync } = await import("node:child_process");
   const result = spawnSync("npx", ["tsx", "--conditions=react-server", "scripts/e2e/asesor/run.ts", "--check-results", "does-not-exist.json"], { encoding: "utf8" });
   assert.notEqual(result.status, 0);
+});
+
+test("run.ts --check-results accepts attributed failures unless --strict is requested", async () => {
+  const { spawnSync } = await import("node:child_process");
+  const { mkdtempSync, rmSync, writeFileSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const directory = mkdtempSync(join(tmpdir(), "asesor-results-"));
+  const reportPath = join(directory, "integration-results.json");
+  const failed = {
+    ...integrationResults,
+    outcome: "failed",
+    runs: integrationResults.runs.map((run, index) => index === 0 ? { ...run, outcome: "failed", failedOwningTask: "T14.4a" } : run),
+  };
+  writeFileSync(reportPath, JSON.stringify(failed));
+  try {
+    const accepted = spawnSync("npx", ["tsx", "--conditions=react-server", "scripts/e2e/asesor/run.ts", "--check-results", reportPath], { encoding: "utf8" });
+    assert.equal(accepted.status, 0, accepted.stderr || accepted.stdout);
+    const strict = spawnSync("npx", ["tsx", "--conditions=react-server", "scripts/e2e/asesor/run.ts", "--check-results", reportPath, "--strict"], { encoding: "utf8" });
+    assert.notEqual(strict.status, 0);
+    assert.match(`${strict.stderr}${strict.stdout}`, /Strict integration results require every outcome to be passed/);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });
