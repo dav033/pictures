@@ -11,12 +11,14 @@ export const MENSAJES_ERROR_DICTADO: Record<CodigoErrorDictado, string> = {
   sesion: "Tu sesión venció. Vuelve a entrar para dictar.",
   no_disponible: "El dictado por voz no está disponible ahora.",
   no_se_entendio: "No se escuchó nada. Inténtalo de nuevo, un poco más cerca del micrófono.",
+  tiempo_agotado: "La transcripción tardó demasiado. Inténtalo de nuevo.",
   fallo: "No se pudo transcribir el dictado. Inténtalo de nuevo.",
 };
 
 /** Del estado HTTP de `/api/voz/transcribir` (y el `codigo` que a veces trae) al error que se le muestra a la persona. */
 export function codigoDeEstadoHttp(status: number, codigoServidor?: string): CodigoErrorDictado {
   if (codigoServidor === "no_configurada") return "no_disponible";
+  if (codigoServidor === "tiempo_agotado" || status === 504) return "tiempo_agotado";
   if (status === 401) return "sesion";
   if (status === 404) return "no_disponible";
   if (status === 413) return "demasiado_largo";

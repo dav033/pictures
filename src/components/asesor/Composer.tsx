@@ -1,7 +1,8 @@
 "use client";
 
-import { Camera, Mic, Send } from "lucide-react";
+import { Camera, Send } from "lucide-react";
 import type { AdvisorComposerCard } from "./conversation-contract";
+import { BotonVoz } from "@/components/voz/BotonVoz";
 
 export type ComposerCapabilities = { photo: boolean; voice: boolean };
 type Props = {
@@ -12,14 +13,14 @@ type Props = {
   cards?: readonly AdvisorComposerCard[];
   capabilities?: ComposerCapabilities;
   onPhoto?: () => void;
-  onVoice?: () => void;
+  onVoiceText?: (text: string) => void;
   onRetry?: () => void;
   error?: string | null;
 };
 
-export function Composer({ value, onChange, onSubmit, busy, cards = [], capabilities = { photo: false, voice: false }, onPhoto, onVoice, onRetry, error }: Props) {
+export function Composer({ value, onChange, onSubmit, busy, cards = [], capabilities = { photo: false, voice: false }, onPhoto, onVoiceText, onRetry, error }: Props) {
   const canPhoto = capabilities.photo && onPhoto !== undefined;
-  const canVoice = capabilities.voice && onVoice !== undefined;
+  const canVoice = capabilities.voice && onVoiceText !== undefined;
   return (
     <div className="mx-auto w-full max-w-3xl">
       {cards.length > 0 && (
@@ -45,7 +46,7 @@ export function Composer({ value, onChange, onSubmit, busy, cards = [], capabili
         <div className="flex items-center justify-between gap-2 px-1 pb-1">
           <div className="flex items-center gap-1">
             <button type="button" aria-label={canPhoto ? "Agregar una foto" : "Fotos no disponibles todavía"} title={canPhoto ? "Agregar una foto" : "Fotos no disponibles todavía"} disabled={!canPhoto || busy} onClick={onPhoto} className="flex size-11 items-center justify-center rounded-full text-texto-suave transition hover:bg-superficie-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento disabled:opacity-40"><Camera aria-hidden="true" className="size-5" /></button>
-            <button type="button" aria-label={canVoice ? "Dictar mensaje" : "Dictado no disponible todavía"} title={canVoice ? "Dictar mensaje" : "Dictado no disponible todavía"} disabled={!canVoice || busy} onClick={onVoice} className="flex size-11 items-center justify-center rounded-full text-texto-suave transition hover:bg-superficie-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento disabled:opacity-40"><Mic aria-hidden="true" className="size-5" /></button>
+            {canVoice && <BotonVoz campoId="advisor-message" alTexto={onVoiceText} deshabilitado={busy} variante="cliente" clase="grid size-11 place-items-center rounded-full text-texto-suave transition hover:bg-superficie-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento disabled:opacity-40" />}
           </div>
           <button type="submit" disabled={busy || !value.trim()} className="flex min-h-11 items-center gap-2 rounded-full bg-acento px-5 font-semibold text-sobre-acento transition hover:bg-acento-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-acento focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-45">
             <span>{busy ? "Enviando" : "Enviar"}</span><Send aria-hidden="true" className="size-4" />

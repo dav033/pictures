@@ -60,9 +60,9 @@ export function atenderEstadoVoz(request: Request, deps: Pick<DependenciasTransc
 }
 
 export async function atenderTranscripcion(request: Request, deps: DependenciasTranscripcion): Promise<Response> {
+  if (!deps.autenticado(request) || !deps.mismoOrigen(request)) return json({ error: "Sesión requerida." }, 401);
   const config = deps.config();
   if (!config.habilitada) return json({ error: "El dictado por voz no está habilitado." }, 404);
-  if (!deps.autenticado(request) || !deps.mismoOrigen(request)) return json({ error: "Sesión requerida." }, 401);
 
   const contentType = tipoAudioAceptado(request.headers.get("content-type"));
   if (!contentType) return json({ error: "El dictado debe ser un audio (webm, ogg, mp4 o wav)." }, 415);
