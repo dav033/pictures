@@ -139,6 +139,47 @@ test("clean snapshot findings revision falls back to the ledger and validates li
   assert.throws(() => resolveExpectedRevision({ explicitRevision: "", gitRevision: undefined, findingsRevision: "invalid" }), /full git SHA/);
 });
 
+test("findings CLI reports open blockers and producer tasks before stale integration revisions", async () => {
+  const { spawnSync } = await import("node:child_process");
+  const { mkdtempSync, rmSync, writeFileSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const currentRevision = "a".repeat(40);
+  const directory = mkdtempSync(join(tmpdir(), "asesor-findings-cli-"));
+  const findingsPath = join(directory, "findings.json");
+  const integrationPath = join(directory, "integration-results.json");
+  writeFileSync(findingsPath, JSON.stringify({
+    schema: "audit-findings/1",
+    revision: currentRevision,
+    taskReferences: ["T14a", "T14.4a"],
+    findings: [{ id: "H1", severity: "high", status: "open", taskReferences: ["T14.4a"] }],
+  }));
+  writeFileSync(integrationPath, JSON.stringify({
+    schema: "integration-results/1",
+    revision: "34a3abc1108e2337185a3c2d5721b64cce403aa2",
+    task: "T14a",
+    milestone: "M1+M2",
+    mode: "mixed",
+    invocation: "historical integration run",
+    commands: [],
+    outcome: "failed",
+    checks: [],
+    runs: [],
+  }));
+  try {
+    const result = spawnSync("npx", [
+      "tsx", "--conditions=react-server", "scripts/e2e/asesor/check-findings.ts",
+      "--findings", findingsPath, "--integration-results", integrationPath,
+      "--revision", currentRevision,
+    ], { encoding: "utf8" });
+    assert.notEqual(result.status, 0);
+    assert.match(`${result.stdout}${result.stderr}`, /Open high finding: H1 \(producer tasks: T14\.4a\)/);
+    assert.doesNotMatch(`${result.stdout}${result.stderr}`, /revision .* does not match/);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test("findings checker accepts deployed integration evidence", () => {
   const deployed = deployedReport({
     revision, verifiedRevision: revision, origin: "https://advisor.example.com", milestone: "M1",
