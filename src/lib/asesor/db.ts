@@ -12,18 +12,21 @@ export type AsesorDb = AsesorClient & {
 };
 
 /**
- * Builds the pool config from the Supabase DSN. The DSN's own sslmode/ssl* parameters are removed so
- * the explicit `ssl` option decides: TLS is always on. Supabase poolers present a certificate from a
- * private CA that Node does not trust by default, so the chain is encrypted but not verified.
+ * Builds the pool config from the advisor DSN. Remote Supabase connections always use TLS;
+ * loopback-only test databases may use plaintext because they never leave the local machine.
+ * Supabase poolers present a certificate from a private CA that Node does not trust by default,
+ * so the remote chain is encrypted but not verified.
  */
 export function poolConfigFromDsn(dsn: string): PoolConfig {
   const url = new URL(dsn);
+  const hostname = url.hostname.replace(/^\[|\]$/g, "").toLowerCase();
+  const isLoopback = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
   for (const key of [...url.searchParams.keys()]) {
     if (key.toLowerCase().startsWith("ssl") || key === "uselibpqcompat") url.searchParams.delete(key);
   }
   return {
     connectionString: url.toString(),
-    ssl: { rejectUnauthorized: false },
+    ssl: isLoopback ? false : { rejectUnauthorized: false },
     // Set the default schema during startup, before a client can run a query. A `connect` event
     // handler issuing SET asynchronously can race with the first query and is unreliable through
     // transaction poolers, which may assign a backend per transaction.

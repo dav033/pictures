@@ -179,6 +179,13 @@ const RUTAS_FLUJO: Readonly<Record<string, string>> = {
 
 /** Rutas /api fuera del flujo de decisiones, con el motivo. Una ruta nueva debe clasificarse aquí o arriba. */
 const RUTAS_EXCLUIDAS: Readonly<Record<string, string>> = {
+  "src/app/api/asesor/admin/conversations/[id]/route.ts": "monitor de admin del asesor; datos personales y transcripción con control de rol, no duplicar en registros genéricos",
+  "src/app/api/asesor/admin/conversations/route.ts": "monitor de admin del asesor; estado de conversaciones con control de rol, no decisiones de proveedor",
+  "src/app/api/asesor/briefs/[id]/route.ts": "lectura del brief aprobado con proyección consentida y control de rol, no duplicar datos personales en registros genéricos",
+  "src/app/api/asesor/conversar/route.ts": "chat del asesor: texto y PII permanecen en el almacenamiento del asesor; no auditar prompt ni transcripción en registros genéricos",
+  "src/app/api/asesor/conversations/[id]/route.ts": "lectura de conversación y brief propios con control de cuenta, sin llamada a proveedor",
+  "src/app/api/asesor/conversations/route.ts": "creación/listado de conversaciones propias con control de cuenta, sin llamada a proveedor",
+  "src/app/api/asesor/login/route.ts": "autenticación del asesor (no registrar credenciales)",
   "src/app/api/cotizacion-compartida/[token]/route.ts": "cotización compartida pública por token, sin registro de la app todavía (pendiente: envolver con conRegistro)",
   "src/app/api/cotizacion-compartida/[token]/imagen/route.ts": "imagen de la cotización compartida pública por token, sin registro todavía (pendiente)",
   "src/app/api/cotizacion-compartida/[token]/decision/route.ts": "decisión del cliente sobre la cotización compartida por token, sin registro todavía (pendiente)",

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { BriefView } from "@/components/asesor/BriefView";
 import { ASESOR_SESSION_COOKIE, readAdvisorSessionToken } from "@/lib/asesor/auth";
 import { loadApprovedBrief, type BriefLoadResult, type BriefProjection } from "@/lib/asesor/brief";
@@ -41,6 +42,7 @@ async function BriefContent({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ projection?: string | string[] }>;
 }) {
+  await connection();
   const jar = await cookies();
   const session = readAdvisorSessionToken(jar.get(ASESOR_SESSION_COOKIE)?.value);
   if (!session) redirect("/asesor/login");

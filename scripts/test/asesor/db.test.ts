@@ -19,7 +19,7 @@ function fakeDb(handler: (text: string, values?: unknown[]) => { rows?: unknown[
   return { db, calls, released: () => released };
 }
 
-test("pool reads only SUPABASE_DB_URL and forces TLS", async () => {
+test("pool reads only SUPABASE_DB_URL, permits loopback test Postgres and keeps TLS for remote DSNs", async () => {
   const saved = { s: process.env.SUPABASE_DB_URL, d: process.env.DATABASE_URL };
   try {
     delete process.env.SUPABASE_DB_URL;
@@ -27,6 +27,8 @@ test("pool reads only SUPABASE_DB_URL and forces TLS", async () => {
     assert.throws(() => getAsesorPool(), /SUPABASE_DB_URL/);
     const config = poolConfigFromDsn("postgresql://u:p@pooler.example:6543/postgres?sslmode=disable&x=1");
     assert.ok(config.ssl, "ssl must be enabled");
+    assert.equal(poolConfigFromDsn("postgresql://u:p@127.0.0.1:5432/rag").ssl, false);
+    assert.equal(poolConfigFromDsn("postgresql://u:p@localhost:5432/rag").ssl, false);
     assert.ok(!config.connectionString!.includes("sslmode"));
     assert.ok(config.connectionString!.includes("x=1"));
     assert.equal(config.options, "-c search_path=asesor");
