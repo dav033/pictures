@@ -1,63 +1,211 @@
 {
   "schema": "integration-results/1",
-  "milestone": "M1",
-  "task": "T7",
-  "revision": "71a8f78400d437f09423cac1b51ca38120b8f6c7",
-  "mode": "fake-model",
-  "invocation": "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --fake-model --milestone M1 --task T7",
-  "startedAt": "2026-10-22T19:29:43.025Z",
-  "completedAt": "2026-10-22T19:31:21.266Z",
+  "milestone": "M1+M2",
+  "task": "T14a",
+  "revision": "34a3abc1108e2337185a3c2d5721b64cce403aa2",
+  "mode": "mixed",
+  "invocation": "T14a local verification with fake-model M1/M2; live and deployed coordinator evidence tracked separately",
   "commands": [
+    "npx tsx --conditions=react-server --test scripts/test/asesor/harness.test.ts",
+    "npm run gate",
+    "npm run happie:test-webhook",
+    "npm run lint",
     "npm run build --workspaces --if-present",
+    "npx tsc --noEmit",
     "npm run build",
+    "git diff --exit-code 915a75af HEAD -- packages/happie-package-ia src/app/api/happie/webhook src/lib/happie scripts/test/test-happie-webhook.ts scripts/test/test-happie-controls.ts scripts/test/test-happie-paquete-v1.ts docs/happie-external-integration.md contracts",
     "npx tsx --conditions=react-server scripts/migrate-asesor.ts --test-target",
     "npm run start",
-    "scripts/e2e/asesor/run.ts --start --fake-model --milestone M1 --task T7"
+    "scripts/e2e/asesor/run.ts --start --fake-model --milestone M1 --task T7",
+    "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --fake-model --milestone M1 --task T7",
+    "scripts/e2e/asesor/run.ts --start --fake-model --milestone M2 --task T7",
+    "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --fake-model --milestone M2 --task T7",
+    "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --live --milestone M2",
+    "liveEntryPoint",
+    "deployedEntryPoint"
   ],
   "runs": [
     {
-      "revision": "71a8f78400d437f09423cac1b51ca38120b8f6c7",
+      "revision": "34a3abc1108e2337185a3c2d5721b64cce403aa2",
+      "task": "T14a",
+      "command": "npx tsx --conditions=react-server --test scripts/test/asesor/harness.test.ts",
+      "outcome": "passed",
+      "detail": "11 harness tests passed"
+    },
+    {
+      "revision": "34a3abc1108e2337185a3c2d5721b64cce403aa2",
+      "task": "T14a",
+      "command": "npm run gate",
+      "outcome": "passed",
+      "detail": "GATE OK; two optional PostgreSQL counter cases skipped because their test environment variables were absent"
+    },
+    {
+      "revision": "34a3abc1108e2337185a3c2d5721b64cce403aa2",
+      "task": "T14a",
+      "command": "npm run happie:test-webhook",
+      "outcome": "passed",
+      "detail": "Webhook, controls, panel, v1 and v2 regression tests passed"
+    },
+    {
+      "revision": "34a3abc1108e2337185a3c2d5721b64cce403aa2",
+      "task": "T14a",
+      "command": "npm run lint",
+      "outcome": "passed",
+      "detail": "Exit 0; 52 warnings and 0 errors"
+    },
+    {
+      "revision": "34a3abc1108e2337185a3c2d5721b64cce403aa2",
+      "task": "T14a",
+      "command": "npm run build --workspaces --if-present",
+      "outcome": "passed",
+      "detail": "Both workspace package builds passed"
+    },
+    {
+      "revision": "34a3abc1108e2337185a3c2d5721b64cce403aa2",
+      "task": "T14a",
+      "command": "npx tsc --noEmit",
+      "outcome": "passed",
+      "detail": "Application type check passed"
+    },
+    {
+      "revision": "34a3abc1108e2337185a3c2d5721b64cce403aa2",
+      "task": "T14a",
+      "command": "npm run build",
+      "outcome": "passed",
+      "detail": "Production build passed"
+    },
+    {
+      "revision": "34a3abc1108e2337185a3c2d5721b64cce403aa2",
+      "task": "T14a",
+      "command": "git diff --exit-code 915a75af HEAD -- packages/happie-package-ia src/app/api/happie/webhook src/lib/happie scripts/test/test-happie-webhook.ts scripts/test/test-happie-controls.ts scripts/test/test-happie-paquete-v1.ts docs/happie-external-integration.md contracts",
+      "outcome": "passed",
+      "detail": "Protected Happie paths and contracts unchanged from implementation base 915a75af"
+    },
+    {
+      "revision": "34a3abc1108e2337185a3c2d5721b64cce403aa2",
       "task": "T7",
       "command": "npm run build --workspaces --if-present",
       "outcome": "passed"
     },
     {
-      "revision": "71a8f78400d437f09423cac1b51ca38120b8f6c7",
+      "revision": "34a3abc1108e2337185a3c2d5721b64cce403aa2",
       "task": "T7",
       "command": "npm run build",
       "outcome": "passed"
     },
     {
-      "revision": "71a8f78400d437f09423cac1b51ca38120b8f6c7",
+      "revision": "34a3abc1108e2337185a3c2d5721b64cce403aa2",
       "task": "T7",
       "command": "npx tsx --conditions=react-server scripts/migrate-asesor.ts --test-target",
       "outcome": "passed"
     },
     {
-      "revision": "71a8f78400d437f09423cac1b51ca38120b8f6c7",
+      "revision": "34a3abc1108e2337185a3c2d5721b64cce403aa2",
       "task": "T7",
       "command": "npm run start",
       "outcome": "passed"
     },
     {
-      "revision": "71a8f78400d437f09423cac1b51ca38120b8f6c7",
+      "revision": "34a3abc1108e2337185a3c2d5721b64cce403aa2",
       "task": "T7",
       "command": "scripts/e2e/asesor/run.ts --start --fake-model --milestone M1 --task T7",
       "outcome": "passed"
+    },
+    {
+      "revision": "34a3abc1108e2337185a3c2d5721b64cce403aa2",
+      "task": "T7",
+      "command": "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --fake-model --milestone M1 --task T7",
+      "outcome": "passed",
+      "detail": "M1 fake-model assertions passed (11 checks)"
+    },
+    {
+      "revision": "34a3abc1108e2337185a3c2d5721b64cce403aa2",
+      "task": "T7",
+      "command": "npm run build --workspaces --if-present",
+      "outcome": "passed"
+    },
+    {
+      "revision": "34a3abc1108e2337185a3c2d5721b64cce403aa2",
+      "task": "T7",
+      "command": "npm run build",
+      "outcome": "passed"
+    },
+    {
+      "revision": "34a3abc1108e2337185a3c2d5721b64cce403aa2",
+      "task": "T7",
+      "command": "npx tsx --conditions=react-server scripts/migrate-asesor.ts --test-target",
+      "outcome": "passed"
+    },
+    {
+      "revision": "34a3abc1108e2337185a3c2d5721b64cce403aa2",
+      "task": "T7",
+      "command": "npm run start",
+      "outcome": "passed"
+    },
+    {
+      "revision": "34a3abc1108e2337185a3c2d5721b64cce403aa2",
+      "task": "T7",
+      "command": "scripts/e2e/asesor/run.ts --start --fake-model --milestone M2 --task T7",
+      "outcome": "passed"
+    },
+    {
+      "revision": "34a3abc1108e2337185a3c2d5721b64cce403aa2",
+      "task": "T7",
+      "command": "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --fake-model --milestone M2 --task T7",
+      "outcome": "passed",
+      "detail": "M2 fake-model assertions passed (4 checks)"
+    },
+    {
+      "revision": "fc941062238eb28facfaf099834f59461404f729",
+      "task": "T14a",
+      "command": "npx tsx --conditions=react-server scripts/e2e/asesor/run.ts --start --live --milestone M2",
+      "outcome": "failed",
+      "failedOwningTask": "T14.4a",
+      "detail": "[FAIL] asesor M2: correction did not regenerate the summary",
+      "evidence": "Coordinator redacted artifact: run-36qad8d1/tree/reports/e2e/asesor/integration-results.json"
+    },
+    {
+      "revision": "34a3abc1108e2337185a3c2d5721b64cce403aa2",
+      "task": "T14a",
+      "command": "liveEntryPoint",
+      "outcome": "coordinator-pending",
+      "detail": "Coordinator live entry-point evidence for M1 remains pending."
+    },
+    {
+      "revision": "34a3abc1108e2337185a3c2d5721b64cce403aa2",
+      "task": "T14a",
+      "command": "deployedEntryPoint",
+      "outcome": "coordinator-pending",
+      "detail": "Coordinator deployed M1/M2 entry-point evidence remains pending."
     }
   ],
-  "outcome": "passed",
+  "outcome": "failed",
+  "failedOwningTask": "T14.4a",
+  "liveEntryPoint": {
+    "outcome": "coordinator-pending",
+    "detail": "Live M1/M2 evidence to be completed and recorded by the coordinator."
+  },
+  "deployedEntryPoint": {
+    "outcome": "coordinator-pending",
+    "detail": "Deployed M1/M2 evidence to be completed and recorded by the coordinator."
+  },
   "checks": [
-    "user login and persisted conversation creation",
-    "offline model conversation and proposed summary",
-    "twelve configured direction cards shown",
-    "selected direction persisted while event fields remained unchanged",
-    "same-device reload restores persisted conversation",
-    "correction persisted and invalidated stale summary",
-    "corrected summary has a new version",
-    "approved brief is persisted and visible to the user",
-    "admin API and page deny advisor role",
-    "admin login sees approved brief",
-    "provider failure is reported and the customer message remains persisted"
+    "Focused advisor harness: 11/11 passed",
+    "npm run gate: GATE OK",
+    "Happie webhook regressions: passed",
+    "Lint: exit 0 with 52 warnings and 0 errors",
+    "Workspace package builds: passed",
+    "Application TypeScript check: passed",
+    "Production build: passed",
+    "Offline fake-model M1 production entry-point and Postgres scenario: passed (11 assertions)",
+    "Offline fake-model M2 production entry-point, Postgres, fixture photo and local transcription stub: passed (4 grouped checks)",
+    "Protected Happie paths/contracts match implementation base 915a75af"
+  ],
+  "coverageGaps": [
+    "Real Gemini/Supabase live M1 was not executed by this isolated executor; coordinator evidence is pending.",
+    "Real photo/vision integration was not exercised; offline M2 used its fixture photo.",
+    "Real Whisper was not exercised by this executor; offline M2 used the local transcription stub.",
+    "Coordinator live M2 reached Whisper and received HTTP 200 but failed the correction-summary assertion, so the full live M2 assertion set did not complete.",
+    "Deployed M1/M2 scenarios were not executed in this isolated executor; coordinator evidence is pending."
   ]
 }

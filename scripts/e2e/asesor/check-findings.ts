@@ -10,58 +10,118 @@ type IntegrationResults = {
   schema: "integration-results/1"; revision: string; task: string; milestone: string; mode: string;
   invocation: string; commands: string[]; outcome: string;
   checks: string[];
-  runs: Array<{ revision: string; task: string; command: string; outcome: string }>;
+  runs: Array<{ revision: string; task: string; command: string; outcome: string; failedOwningTask?: string }>;
 };
 
 const SHA = /^[a-f0-9]{40}$/i;
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === "object" && value !== null && !Array.isArray(value);
 const isStringArray = (value: unknown): value is string[] => Array.isArray(value) && value.every((item) => typeof item === "string" && item.length > 0);
+const isTaskReferenceArray = (value: unknown): value is string[] => isStringArray(value) && value.every((task) => /^T\d+(?:\.\d+[a-z]?)*[a-z]?$/i.test(task));
+
+function taskReferences(value: Record<string, unknown>): string[] | undefined {
+  const primary = value.taskReferences;
+  const alias = value.tasks;
+  const references = primary ?? alias;
+  if (!isTaskReferenceArray(references) || references.length === 0) return undefined;
+  if (primary !== undefined && alias !== undefined
+    && (!isTaskReferenceArray(primary) || !isTaskReferenceArray(alias) || primary.length !== alias.length
+      || primary.some((reference, index) => reference !== alias[index]))) return undefined;
+  return references;
+}
 
 function parseFindings(value: unknown): AuditFindings {
+  const references = isRecord(value) ? taskReferences(value) : undefined;
   if (!isRecord(value) || value.schema !== "audit-findings/1" || !SHA.test(String(value.revision ?? ""))
-    || !isStringArray(value.taskReferences) || value.taskReferences.length === 0 || !Array.isArray(value.findings)) {
+    || !references || !Array.isArray(value.findings)) {
     throw new Error("Malformed audit-findings/1 header or findings list.");
   }
   const findings: Finding[] = value.findings.map((item, index) => {
+    const references = isRecord(item) ? taskReferences(item) : undefined;
     if (!isRecord(item) || typeof item.id !== "string" || item.id.length === 0
       || typeof item.severity !== "string" || !["critical", "high", "medium", "low", "info"].includes(item.severity.toLowerCase())
-      || typeof item.status !== "string" || !["open", "closed", "accepted"].includes(item.status.toLowerCase())
-      || !isStringArray(item.taskReferences) || item.taskReferences.length === 0) {
+      || typeof item.status !== "string" || !["open", "closed", "fixed", "accepted"].includes(item.status.toLowerCase())
+      || !references) {
       throw new Error(`Malformed audit finding at index ${index}; id, severity, status and taskReferences are required.`);
     }
-    return { id: item.id, severity: item.severity.toLowerCase(), status: item.status.toLowerCase(), taskReferences: item.taskReferences };
+    return { id: item.id, severity: item.severity.toLowerCase(), status: item.status.toLowerCase() === "fixed" ? "closed" : item.status.toLowerCase(), taskReferences: references };
   });
-  return { schema: "audit-findings/1", revision: String(value.revision), taskReferences: value.taskReferences, findings };
+  return { schema: "audit-findings/1", revision: String(value.revision), taskReferences: references, findings };
+}
+
+function parseIntegrationEvidence(value: unknown): { integration: IntegrationResults; deployed: boolean } {
+  if (isRecord(value) && value.schema === "deployed-integration-results/1") {
+    validateDeployedReport(value);
+    const runs = value.runs as Array<{ revision: string; task: string; command: string; outcome: string }>;
+    return {
+      integration: {
+        schema: "integration-results/1", revision: value.revision as string, task: value.task as string,
+        milestone: value.milestone as string, mode: value.mode as string,
+        invocation: value.invocation as string, commands: value.commands as string[], outcome: value.outcome as string,
+        checks: value.checks as string[], runs,
+      },
+      deployed: true,
+    };
+  }
+  return { integration: parseIntegrationResults(value), deployed: false };
 }
 
 function parseIntegrationResults(value: unknown): IntegrationResults {
   if (!isRecord(value) || value.schema !== "integration-results/1" || !SHA.test(String(value.revision ?? ""))
-    || typeof value.task !== "string" || !/^T\d+$/i.test(value.task)
-    || typeof value.milestone !== "string" || !/^M\d+$/i.test(value.milestone)
-    || !["fake-model", "live"].includes(String(value.mode))
+    || typeof value.task !== "string" || !/^T\d+[a-z]?$/i.test(value.task)
+    || typeof value.milestone !== "string" || !/^M\d+(?:\+M\d+)*$/i.test(value.milestone)
+    || !["fake-model", "live", "mixed"].includes(String(value.mode))
     || typeof value.invocation !== "string" || !isStringArray(value.commands)
-    || typeof value.outcome !== "string" || !isStringArray(value.checks) || !Array.isArray(value.runs)) {
+    || !["passed", "failed", "coordinator-pending"].includes(String(value.outcome))
+    || !isStringArray(value.checks) || !Array.isArray(value.runs)) {
     throw new Error("Malformed integration-results/1 report.");
   }
   for (const [index, run] of value.runs.entries()) {
     if (!isRecord(run) || !SHA.test(String(run.revision ?? "")) || typeof run.task !== "string"
-      || typeof run.command !== "string" || run.command.length === 0 || !["passed", "failed"].includes(String(run.outcome))) {
+      || typeof run.command !== "string" || run.command.length === 0
+      || !["passed", "failed", "coordinator-pending"].includes(String(run.outcome))) {
       throw new Error(`Malformed integration command result at index ${index}.`);
     }
   }
   return value as IntegrationResults;
 }
 
-/** Validates a stored integration report on its own: well-formed, every command linked and passed. */
-export function validateIntegrationReport(report: unknown): void {
+/** Validates integration evidence integrity; strict mode additionally requires every check to pass. */
+export function validateIntegrationReport(report: unknown, strict = false): void {
   if (isRecord(report) && report.schema === "deployed-integration-results/1") {
     validateDeployedReport(report);
     return;
   }
   const integration = parseIntegrationResults(report);
-  if (integration.outcome !== "passed") throw new Error("Integration outcome must be passed.");
-  if (integration.runs.length === 0 || integration.runs.some((run) => run.outcome !== "passed")) {
-    throw new Error("Every integration command must have passed.");
+  const coverageGaps = (report as Record<string, unknown>).coverageGaps;
+  if (!isStringArray(coverageGaps) || coverageGaps.length === 0) {
+    throw new Error("Integration report must list coverageGaps.");
+  }
+  if (integration.runs.length === 0) throw new Error("Integration report must contain recorded runs.");
+  for (const [index, run] of integration.runs.entries()) {
+    if (/--check-results(?:\s|=)/.test(run.command)) {
+      throw new Error(`Integration report must not record its own --check-results invocation (run ${index}).`);
+    }
+    if (run.outcome === "failed" && (typeof run.failedOwningTask !== "string" || run.failedOwningTask.length === 0)) {
+      throw new Error(`Failed integration run ${index} must name failedOwningTask.`);
+    }
+  }
+  for (const field of ["liveEntryPoint", "deployedEntryPoint"] as const) {
+    const evidence = (report as Record<string, unknown>)[field];
+    if (!isRecord(evidence) || !["passed", "failed", "coordinator-pending"].includes(String(evidence.outcome))) {
+      throw new Error(`Integration report must record ${field} evidence with an outcome.`);
+    }
+    if (evidence.outcome === "failed" && (typeof evidence.failedOwningTask !== "string" || evidence.failedOwningTask.length === 0)) {
+      throw new Error(`Failed ${field} evidence must name failedOwningTask.`);
+    }
+  }
+  if (strict) {
+    if (integration.outcome !== "passed" || integration.runs.some((run) => run.outcome !== "passed")) {
+      throw new Error("Strict integration results require every outcome to be passed.");
+    }
+    for (const field of ["liveEntryPoint", "deployedEntryPoint"] as const) {
+      const evidence = (report as Record<string, unknown>)[field] as Record<string, unknown>;
+      if (evidence.outcome !== "passed") throw new Error(`Strict integration results require ${field} evidence to be passed.`);
+    }
   }
   const runCommands = new Set(integration.runs.map((run) => run.command));
   if (integration.commands.some((item) => !runCommands.has(item)) || integration.runs.some((run) => !integration.commands.includes(run.command))) {
@@ -80,16 +140,19 @@ export function validateFindingsEvidence(input: {
   expectedRevision: string;
 }): void {
   const findings = parseFindings(input.findings);
-  const integration = parseIntegrationResults(input.integrationResults);
+  const { integration, deployed } = parseIntegrationEvidence(input.integrationResults);
   if (!SHA.test(input.expectedRevision)) throw new Error("Expected revision must be a full git SHA.");
+  if (findings.revision !== integration.revision) {
+    throw new Error(`Audit ledger revision ${findings.revision} does not match integration evidence revision ${integration.revision}.`);
+  }
   if (findings.revision !== input.expectedRevision || integration.revision !== input.expectedRevision) {
-    throw new Error("Audit and integration evidence must match the expected revision.");
+    throw new Error(`Audit ledger revision ${findings.revision} and integration evidence revision ${integration.revision} must match expected revision ${input.expectedRevision}.`);
   }
   if (integration.task !== input.task || !findings.taskReferences.includes(input.task)) {
     throw new Error(`Task linkage is missing for ${input.task}.`);
   }
   if (integration.outcome !== "passed") throw new Error("Integration outcome must be passed.");
-  if (input.task === "T7" && integration.mode !== "live") throw new Error("T7 acceptance evidence requires the live Gemini and Supabase run.");
+  if (input.task === "T7" && (deployed || integration.mode !== "live")) throw new Error("T7 acceptance evidence requires the live Gemini and Supabase run.");
   if (input.task === "T7") {
     const requiredChecks = [
       "user login and persisted conversation creation",
@@ -109,12 +172,14 @@ export function validateFindingsEvidence(input: {
     || run.task !== input.task || run.outcome !== "passed")) {
     throw new Error("Every integration command must pass on the same revision and task.");
   }
-  const command = integration.invocation;
-  if (!command.includes("scripts/e2e/asesor/run.ts") || !command.includes("--start")
-    || !command.includes(integration.mode === "live" ? "--live" : "--fake-model")
-    || !command.includes(`--milestone ${integration.milestone}`) || !command.includes(`--task ${input.task}`)
-    || !integration.commands.includes("npm run build") || !integration.commands.includes("npm run start")) {
-    throw new Error("Integration command evidence is incomplete or not linked to the M1 real-entry-point run.");
+  if (!deployed) {
+    const command = integration.invocation;
+    if (!command.includes("scripts/e2e/asesor/run.ts") || !command.includes("--start")
+      || !command.includes(integration.mode === "live" ? "--live" : "--fake-model")
+      || !command.includes(`--milestone ${integration.milestone}`) || !command.includes(`--task ${input.task}`)
+      || !integration.commands.includes("npm run build") || !integration.commands.includes("npm run start")) {
+      throw new Error("Integration command evidence is incomplete or not linked to the M1 real-entry-point run.");
+    }
   }
   const runCommands = new Set(integration.runs.map((run) => run.command));
   if (integration.commands.some((item) => !runCommands.has(item))
@@ -161,13 +226,13 @@ export function parseArgs(args: string[]): CliOptions {
   }
   const get = (key: string, fallback?: string) => values.get(key) ?? fallback;
   return {
-    findings: path.resolve(get("--findings", positional[0] ?? "reports/audit/audit-findings.json")!),
-    results: path.resolve(get("--results", get("--integration-results", "reports/e2e/asesor/integration-results.json"))!),
-    task: get("--task", "T7")!,
-    knownTasks: (get("--known-tasks", "T7")!).split(",").filter(Boolean),
+    findings: path.resolve(get("--findings", positional[0] ?? "docs/req-020/T15.findings.json")!),
+    results: path.resolve(get("--results", get("--integration-results", "docs/req-020/integration-results.json"))!),
+    task: get("--task", "")!,
+    knownTasks: (get("--known-tasks", "")!).split(",").filter(Boolean),
     revision: get("--revision", "")!,
-    ledger: path.resolve(get("--ledger", "reports/audit/ledger.json")!),
-    auditRoot: path.resolve(get("--audit-root", "reports/audit")!),
+    ledger: path.resolve(get("--ledger", "docs/req-020/T15.md")!),
+    auditRoot: path.resolve(get("--audit-root", "docs/req-020")!),
     checkAuditDiff,
   };
 }
@@ -206,7 +271,11 @@ export async function main(args = process.argv.slice(2)): Promise<void> {
     findingsRevision,
   });
   if (expected.fromLedger) console.log("Git is unavailable; using the findings ledger revision.");
-  validateFindingsEvidence({ findings, integrationResults, task: options.task, knownTasks: options.knownTasks, expectedRevision: expected.revision });
+  const ledgerTasks = isRecord(findings) ? taskReferences(findings) ?? [] : [];
+  const task = options.task || (isRecord(integrationResults) && typeof integrationResults.task === "string" ? integrationResults.task : "");
+  const knownTasks = options.knownTasks.length ? options.knownTasks : ledgerTasks;
+  if (!task) throw new Error("Unable to resolve audit task; pass --task or provide a task in integration evidence.");
+  validateFindingsEvidence({ findings, integrationResults, task, knownTasks, expectedRevision: expected.revision });
   if (options.checkAuditDiff) {
     const worktree = spawnSync("git", ["rev-parse", "--is-inside-work-tree"], { encoding: "utf8" });
     if (worktree.status !== 0) {
