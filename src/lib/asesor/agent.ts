@@ -120,10 +120,13 @@ export async function* runAdvisorTurn(deps: AdvisorTurnDependencies): AsyncGener
   // The server owns summary regeneration: a complete brief without a summary (first completion or a correction that
   // invalidated it) gets one without depending on a further model round, which can fail or omit the tool call.
   const customerText = current.content;
+  // Each attempt needs its own operation id: a reused id replays the stored receipt and skips regeneration when the
+  // model edits the brief again after an earlier automatic summary in the same turn.
+  let summaryAttempts = 0;
   async function* ensureSummary(): AsyncGenerator<AdvisorEvent> {
     if (state.summary || !calculateBriefProgress(state.brief).complete) return;
     const effect = await applyAdvisorTool({
-      call: { nombre: "propose_summary", args: {} }, operationId: `${deps.turnId}:ready-summary`,
+      call: { nombre: "propose_summary", args: {} }, operationId: `${deps.turnId}:ready-summary:${summaryAttempts++}`,
       currentCustomerText: customerText, mutateBrief: deps.mutateBrief,
     });
     state = effect.state;

@@ -85,3 +85,28 @@ test("a correction regenerates the summary even when the follow-up model round f
   assert.match(state.summary.text, /Terraza azul/);
   assert.equal(state.approval, null);
 });
+
+test("a second correction in the same turn regenerates the summary again", async () => {
+  let state = parseEventBriefState({ brief: { ...complete, theme: "Jardín" } });
+  let version = 1;
+  let count = 0;
+  const rounds: LlamadaHerramienta[][] = [
+    [{ nombre: "save_event_fields", args: { theme: "Terraza" } }],
+    [{ nombre: "save_event_fields", args: { theme: "Terraza azul" } }],
+    [],
+  ];
+  const chat: ChatPort = {
+    id: "gemini", modelo: "summary-test",
+    async turno() { throw new Error("unused"); },
+    async *turnoStream(): AsyncIterable<FragmentoChat> {
+      yield { tipo: "fin", texto: "", llamadas: rounds[count++] ?? [], modelo: "summary-test", uso: { entrada: 1, salida: 1 } };
+    },
+  };
+  for await (const _ of runAdvisorTurn({ chat, turnId: "summary-turn",
+    messages: [{ id: "summary-turn", role: "user", content: "Corrige el tema a Terraza azul.", attachments: [] }],
+    mutateBrief: async (mutate) => { state = parseEventBriefState(mutate(structuredClone(state), version++)); return { state, version }; },
+    readBrief: async () => state, appendAssistant: async () => {},
+  })) { /* drain */ }
+  assert.ok(state.summary, "the second correction left no summary");
+  assert.match(state.summary.text, /Terraza azul/);
+});
