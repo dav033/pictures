@@ -1,36 +1,110 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Demo — Asistente de decoración
 
-## Getting Started
+Chatbot que conversa con el cliente, le recomienda piezas **reales del catálogo** y genera una
+visualización de cómo quedaría su evento decorado.
 
-First, run the development server:
+La conversación y la generación de imágenes usan Gemini (`gemini-3.6-flash` y
+`gemini-3.1-flash-image`).
+
+## Arrancar
 
 ```bash
+npm install
+cp .env.example .env.local   # y pon tu GEMINI_API_KEY
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abre http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Sin `GEMINI_API_KEY` la interfaz carga, pero chat y generación de imágenes responden con un error
+explicando que falta la llave.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Flujo del demo (cliente)
 
-## Learn More
+1. El cliente describe su evento en el chat.
+2. El asistente extrae los datos (evento, espacio, invitados, colores, estilo) y los va mostrando
+   en el panel derecho.
+3. Cuando tiene idea del estilo, llama a `buscar_catalogo` y muestra piezas dentro del chat.
+4. El cliente selecciona piezas y elige un espacio: sube su propia foto o toma uno de la galería.
+5. "Generar visualización" compone la imagen.
+6. El campo de ajuste permite iterar: *"más velas"*, *"de noche"*, *"quita las sillas"*.
 
-To learn more about Next.js, take a look at the following resources:
+## Panel de administración (`/admin`)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Todo el catálogo se administra desde la UI, sin tocar código:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Productos**: sube la foto real de cada pieza (se guarda en `public/uploads/productos/` y se
+  manda como referencia real a `gemini-3.1-flash-image`), con nombre, categoría, descripción visual, precio,
+  estilos y colores.
+- **Decoraciones**: paquetes curados a partir del catálogo (ej. "Boda boho jardín"), con una
+  imagen de portada y un checklist de productos que la componen. Todos los elementos son
+  opcionales: el cliente podrá quitar cualquiera al personalizar.
 
-## Deploy on Vercel
+## Cómo se genera la imagen
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Situación | API de Gemini | Qué hace |
+|---|---|---|
+| El cliente subió foto de su lugar | `interactions.create` | Decora **esa** foto conservando arquitectura y perspectiva |
+| El cliente eligió fondo de galería | `interactions.create` | Genera la escena completa desde la descripción del ambiente |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`gemini-3.1-flash-image` acepta hasta 14 imágenes de referencia. Si un producto del catálogo tiene el campo
+`foto` apuntando a un archivo en `public/`, esa foto se manda como referencia y el modelo respeta
+su forma y color reales. Sin `foto`, sólo se usa la descripción de texto.
+
+## Dónde vive cada dato
+
+| Qué | Dónde |
+|---|---|
+| Productos y decoraciones (datos) | `data/demo.sqlite` — SQLite, se crea y siembra solo al arrancar |
+| Fotos subidas | `public/uploads/productos/` y `public/uploads/decoraciones/` |
+| Fondos de stock | `src/lib/backgrounds.ts` (por ahora fijos, no editables desde la UI) |
+
+`data/demo.sqlite` tiene tres tablas: `productos`, `decoraciones` y `decoracion_elementos` (la
+relación muchos-a-muchos entre ambas, con `ON DELETE CASCADE`). Si borras un producto que forma
+parte de una decoración, la decoración se queda sin ese elemento automáticamente — no quedan ids
+huérfanos. Usa el módulo nativo `node:sqlite` de Node 24+, sin dependencias nuevas.
+
+Para reiniciar el catálogo desde cero: borra `data/demo.sqlite` (y opcionalmente
+`public/uploads/`) y reinicia el servidor — se vuelve a sembrar con el mock de 14 piezas.
+
+## Estructura
+
+```
+src/
+  app/
+    page.tsx                Interfaz del cliente (chat + panel)
+    admin/page.tsx           Panel de administración (server component)
+    api/chat/route.ts        Conversación con tool calling
+    api/generate/route.ts    Generación / edición de imagen
+    api/productos/           CRUD de productos (multipart, con imagen)
+    api/decoraciones/        CRUD de decoraciones (multipart, con imagen)
+  components/
+    ProductoCard.tsx         Ficha seleccionable de producto (chat)
+    PanelFondo.tsx           Galería de fondos y subida de foto (chat)
+    admin/
+      AdminTabs.tsx          Tabs + estado compartido productos/decoraciones
+      ProductosTab.tsx / ProductoForm.tsx
+      DecoracionesTab.tsx / DecoracionForm.tsx
+      ImageInput.tsx         Input de imagen con preview, reutilizable
+  lib/
+    db.ts                    Conexión sqlite + esquema + semilla
+    products.ts               CRUD de productos sobre sqlite
+    decoraciones.ts           CRUD de decoraciones sobre sqlite
+    catalog-data.ts           Datos/funciones puras (semilla, filtros) — sin fs, usable en cliente
+    store.ts                  Guardar/borrar imágenes subidas
+    backgrounds.ts            Fondos de stock
+    gemini.ts                 Cliente y nombres de modelo Gemini
+    types.ts
+```
+
+## Lo que este demo NO es
+
+- SQLite en archivo local: no sirve en plataformas serverless con filesystem efímero (ej. Vercel
+  borra `data/` entre despliegues). Para producción real, Postgres + un bucket de storage.
+- No hay persistencia de la *sesión de chat* del cliente. Al recargar `/` se pierde la
+  conversación (el catálogo y las decoraciones sí persisten, viven en sqlite).
+- No hay captura de lead ni cotización.
+- No hay límite de generaciones por sesión — en producción hace falta para controlar costo.
+- Los fondos de stock (`backgrounds.ts`) no son editables desde el panel todavía, solo productos
+  y decoraciones.
+# test
