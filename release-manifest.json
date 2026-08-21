@@ -1,0 +1,13 @@
+{
+  "release": "image-generation-v000",
+  "base_model": null,
+  "lora": null,
+  "dataset": null,
+  "image_api": null,
+  "backend": "existing-demo",
+  "frontend": "existing-demo",
+  "evaluation": "not_started",
+  "rollback_target": null,
+  "status": "development_only",
+  "approval": "none"
+}

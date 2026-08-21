@@ -1,0 +1,38 @@
+project: demo-decoracion
+state: dataset_preparation
+environment: dev
+provider: fal.ai
+base_model: FLUX.2 [dev]
+lora_version: null
+checkpoint: CP-07-preflight
+
+use_cases:
+  - event_decoration_visualization
+  - catalog_grounded_product_rendering
+  - localized_venue_editing
+
+visual:
+  trigger_token: eventdecor_style_v1
+  minimum_resolution: 1024
+  aspect_ratios: ["1:1", "3:2", "2:3", "16:9"]
+  preserve_catalog_colors: true
+  preserve_venue_outside_edit_regions: true
+
+pilot_assumptions:
+  daily_images: 20
+  p95_latency_seconds: 90
+  max_cost_usd_per_image: 0.75
+  max_daily_cost_usd: 15
+  max_automatic_retries: 1
+  max_training_cost_usd: 2
+  training_steps: 300
+
+privacy:
+  dataset_private: true
+  customer_images_for_training: false
+  target_retention_days: 30
+  allowed_regions: []
+
+approval:
+  human_required_before: [terms, billing, provider, base_model, dataset, lora, permissions, retention, security, production]
+  status: pending

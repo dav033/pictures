@@ -1,0 +1,20 @@
+dataset: dataset-decoration-v001
+provider: fal.ai
+trainer: fal-ai/flux-2-trainer-v2
+base_model: FLUX.2 [dev]
+trigger_token: eventdecor_style_v1
+resolution: 1024
+rank: 16
+alpha: 16
+learning_rate: 0.0001
+train_steps: 300
+batch_size: 1
+seed: 42
+precision: bf16
+validation_prompts: eval/prompts/fixed-suite-v001.jsonl
+negative_prompts: eval/prompts/negative-suite-v001.jsonl
+output: models/candidates/lora-decoration-v001
+max_training_cost_usd: 2
+estimated_training_cost_usd: 1.92
+status: preflight_blocked_missing_dev_key
+approval_required: true

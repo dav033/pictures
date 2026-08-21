@@ -1,0 +1,5 @@
+25X37 CM <- 25X37 CM, 25x37 CM
+FUTBOL <- FUTBOL, futbol
+
+Total grupos con duplicados por case: 2
+Total tags únicos normalizados (mayúsculas): 663

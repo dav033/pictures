@@ -1,0 +1,28 @@
+=== 1. Distribución de tamaños en el catálogo (Postgres, catalog_variants) ===
+  R-12               891  (40.0%)
+  R-9                252  (11.3%)
+  R-5                230  (10.3%)
+  PAQUETE X 1        209  (9.4%)
+  T260               170  (7.6%)
+  PAQUETE X 8        139  (6.2%)
+  R-24                97  (4.4%)
+  R-18                84  (3.8%)
+  LOL-12              77  (3.5%)
+  16 IN               76  (3.4%)
+
+=== 2. ¿El mensaje del cliente con tamaño explícito restringe las variantes candidatas? (ruta real: buscarCatalogoRag) ===
+  [SIN RESULTADOS] "quiero globos rojos de 5 pulgadas para un cumpleaños"
+  [SIN RESULTADOS] "necesito globos dorados R-9 para una boda"
+  "globos azules chiquitos, de los pequeñitos"
+    esperado=R-5 | tamaños distintos vistos por el LLM=1 (R-5) | incluye el esperado=true | SOLO el esperado=true
+  "globos verdes grandes, tipo gigante"
+    esperado=R-24 | tamaños distintos vistos por el LLM=1 (R-24) | incluye el esperado=true | SOLO el esperado=true
+  "globos blancos de 18 pulgadas para columna"
+    esperado=R-18 | tamaños distintos vistos por el LLM=2 (R-18, 18 IN) | incluye el esperado=true | SOLO el esperado=false
+
+  Casos donde el retrieval mezcla tamaños pese a pedido explícito: 1/5
+  Casos donde el retrieval devuelve EXCLUSIVAMENTE el tamaño pedido: 2/5
+
+=== 3. ¿Existe algún filtro duro de tamaño/forma en el schema del intérprete? ===
+  filtros_duros tiene 'tamanos'/'formas': true
+  filtros_duros real devuelto: {"categorias":[],"ocasiones":["cumpleanos"],"colores":["rojo"],"formas":[],"diametros_pulgadas":[5],"precio_max":null,"solo_disponibles":true}

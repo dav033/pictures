@@ -1,0 +1,29 @@
+environment: dev
+provider: fal.ai
+training_provider: fal.ai
+inference_provider: fal.ai
+base_model: FLUX.2 [dev]
+training_endpoint: fal-ai/flux-2-trainer-v2
+region: null
+
+limits:
+  max_concurrency: 1
+  max_training_cost_usd: 2
+  max_daily_inference_cost_usd: 15
+  max_input_images: 5
+
+storage:
+  bucket: null
+  public_access: false
+  encryption: required
+  signed_url_ttl_seconds: 900
+
+webhook:
+  enabled: false
+  secret_env: IMAGE_WEBHOOK_SECRET
+
+secrets:
+  api_key_env: IMAGE_PROVIDER_API_KEY_DEV
+  provider_native_key_env: FAL_KEY
+  model_id_env: IMAGE_MODEL_ID
+  lora_id_env: IMAGE_LORA_ID

@@ -1,0 +1,72 @@
+{
+  "phase": "lora_evaluation",
+  "status": "inference_configured",
+  "provider": "fal.ai",
+  "base_model": "FLUX.2 [dev]",
+  "lora_version": null,
+  "checkpoint": "CP-09-training-completed",
+  "blockers": [
+    "Provider terms, region and retention evidence still need review",
+    "No production account, payment or deployment is authorized"
+  ],
+  "approvals": [
+    "dataset_source_user_confirmed",
+    "caption_start_user_confirmed",
+    "dev_training_budget_usd_2",
+    "dev_account_setup_user_authorized"
+  ],
+  "last_updated": "2026-08-14",
+  "provider_job": {
+    "endpoint": "fal-ai/flux-2-trainer-v2",
+    "base_model": "FLUX.2 [dev]",
+    "submitted_via": "fal.ai browser UI",
+    "status": "completed",
+    "request_id": "019ffd2a-c56d-7d42-9748-54cdd629c770",
+    "steps": 300,
+    "learning_rate": 0.0001,
+    "trigger_token": "eventdecor_style_v1",
+    "estimated_cost_usd": 1.92,
+    "balance_observed_usd": 10.0,
+    "archive": "data/staging/dataset-decoration-v001-fal.zip",
+    "request_id_from_user_screenshot": "019ffd2a-c56d-7d42-9748-54cdd629c770",
+    "last_checked": "2026-08-14",
+    "last_observed_status": "completed",
+    "duration_seconds": 800.53,
+    "status_code": 200,
+    "output": {
+      "lora_file_name": "pytorch_lora_weights.safetensors",
+      "lora_file_size_bytes": 332548896,
+      "lora_url": "https://v3b.fal.media/files/b/0aa63a00/tQMbKOgeXklUsPPayZgZu_pytorch_lora_weights.safetensors",
+      "config_file_name": "config_2f4e7ee4-1461-44f2-bc0a-c768fbed5431.json",
+      "config_file_size_bytes": 389,
+      "config_url": "https://v3b.fal.media/files/b/0aa639ee/hTUNIXwOjB2pqoTujQ_vg_config_2f4e7ee4-1461-44f2-bc0a-c768fbed5431.json"
+    }
+  },
+  "dataset": {
+    "source": "Sempertex public catalog",
+    "approval": "explicit approval confirmed by user",
+    "source_folder": "data/raw/sempertex-v01",
+    "sanitized_folder": "data/sanitized/sempertex-v01",
+    "images_received": 25,
+    "png_converted": 25,
+    "active_images": 15,
+    "quarantined_images": 10,
+    "structurally_approved": 15,
+    "pending_human_review": 0,
+    "manifest": "data/manifests/dataset-v001.jsonl",
+    "captions": "data/captions/dataset-v001.jsonl",
+    "caption_status": "draft_visual_review",
+    "splits": { "train": 9, "validation": 2, "test": 4 },
+    "split_leakage": false,
+    "training_archive": "data/staging/dataset-decoration-v001-fal.zip"
+  },
+  "artifacts": {
+    "requirements": "docs/requirements/image-generation.md",
+    "provider_comparison": "docs/research/provider-comparison.md",
+    "adr": "docs/decisions/adr-001-provider-model.md",
+    "dataset_config": "configs/lora/project-v001.yaml",
+    "caption_audit": "reports/caption-audit-v001.md",
+    "training_config": "configs/lora/project-v001.yaml",
+    "inference_config": "configs/lora/inference-v001.yaml"
+  }
+}

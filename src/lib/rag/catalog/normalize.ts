@@ -1,0 +1,139 @@
+import {
+  decodificarTamano,
+  derivarCategoria,
+  derivarColores,
+  derivarOcasiones,
+  limpiarTitulo,
+  tipoExcluido,
+} from "@/lib/shopify/derivar";
+import type { ProductoInventarioCDN, ProductoPublico } from "@/lib/shopify/tipos";
+import { enriquecerDescripcion } from "@/lib/shopify/enriquecer-descripcion";
+import { construirSearchText, hashSearchText, sanitizeTexto, sanitizeTextoNullable } from "./sanitize";
+import { CatalogProductSchema, CatalogVariantSchema, type CatalogProduct, type CatalogRejection, type CatalogVariant } from "./schemas";
+
+export type ResultadoNormalizacion =
+  | { ok: true; producto: CatalogProduct; variantes: CatalogVariant[] }
+  | { ok: false; rechazo: CatalogRejection };
+
+/** sku (sin prefijo "B2B-") → cantidad de inventario, igual que el sync existente. */
+export function mapaInventarioCDN(productos: ProductoInventarioCDN[]): Map<string, number> {
+  const mapa = new Map<string, number>();
+  for (const producto of productos) {
+    for (const variante of producto.variants ?? []) {
+      if (!variante.sku) continue;
+      mapa.set(variante.sku.replace(/^B2B-/i, ""), variante.inventoryQuantity);
+    }
+  }
+  return mapa;
+}
+
+/**
+ * RAW Shopify → modelo canónico (plan Fase 2). Ningún campo factual sale de
+ * un LLM: todo viene de `raw` o de una derivación determinística y auditable
+ * (derivar.ts). Si algo esencial falta, se rechaza con motivo explícito en
+ * vez de inventarlo.
+ */
+export function normalizarProducto(
+  raw: ProductoPublico,
+  inventario: Map<string, number>,
+): ResultadoNormalizacion {
+  const sourceId = raw?.id != null ? String(raw.id) : null;
+
+  if (!raw.id) {
+    return { ok: false, rechazo: { source_id: null, reason: "sin product_id", raw_payload: raw } };
+  }
+  if (!raw.handle || sanitizeTexto(raw.handle).length === 0) {
+    return { ok: false, rechazo: { source_id: sourceId, reason: "sin handle", raw_payload: raw } };
+  }
+  if (!raw.title || sanitizeTexto(raw.title).length === 0) {
+    return { ok: false, rechazo: { source_id: sourceId, reason: "sin title", raw_payload: raw } };
+  }
+  if (tipoExcluido(raw.product_type)) {
+    return {
+      ok: false,
+      rechazo: { source_id: sourceId, reason: `product_type excluido (${raw.product_type})`, raw_payload: raw },
+    };
+  }
+
+  const tags = (raw.tags ?? []).map((t) => sanitizeTexto(t)).filter((t) => t.length > 0);
+  const tituloLimpio = limpiarTitulo(sanitizeTexto(raw.title.replace(/^B2B\s*/i, "")));
+  const descripcionTexto = sanitizeTextoNullable(enriquecerDescripcion(raw.body_html).textoCompleto);
+  const categoria = derivarCategoria(raw.product_type, tags);
+  const colores = derivarColores(tags, raw.title);
+  const ocasiones = derivarOcasiones(tags, raw.title);
+
+  const variantesRaw = raw.variants ?? [];
+  const variantesValidas = variantesRaw.filter((v) => Number(v.price) > 0);
+
+  if (variantesValidas.length === 0) {
+    return {
+      ok: false,
+      rechazo: { source_id: sourceId, reason: "ninguna variante con precio > 0", raw_payload: raw },
+    };
+  }
+
+  const variantes: CatalogVariant[] = variantesValidas.map((v) => {
+    const inv = v.sku ? inventario.get(v.sku) : undefined;
+    // option1 es donde Shopify guarda el código de tamaño real ("R-12", "16
+    // IN"…) — misma columna que decodifica el catálogo SQLite
+    // (sincronizar.ts), aquí replicado para que Postgres tenga el mismo dato.
+    const tamano = decodificarTamano(v.option1 ?? null);
+    return CatalogVariantSchema.parse({
+      variant_id: String(v.id),
+      product_id: String(raw.id),
+      sku: v.sku ?? null,
+      title: v.title ? sanitizeTexto(v.title) : null,
+      price: Number(v.price),
+      currency: "COP",
+      inventory_quantity: inv ?? null,
+      inventory_source: inv !== undefined ? "cdn" : null,
+      available: Boolean(v.available),
+      options: { option1: v.option1 ?? null, option2: v.option2 ?? null, option3: v.option3 ?? null },
+      image_url: null,
+      source_payload: v,
+      codigo_tamano: v.option1 ?? null,
+      forma: tamano?.forma ?? null,
+      diam_pulg: tamano?.diamPulg ?? null,
+      largo_pulg: tamano?.largoPulg ?? null,
+      ancho_cm: tamano?.anchoCm ?? null,
+      alto_cm: tamano?.altoCm ?? null,
+    });
+  });
+
+  const precios = variantes.map((v) => v.price);
+  const imageUrls = (raw.images ?? []).map((img) => img.src).filter(Boolean);
+
+  const skus = variantes.map((v) => v.sku).filter((s): s is string => Boolean(s));
+
+  const searchText = construirSearchText({
+    titulo: tituloLimpio,
+    categoria,
+    descripcion: descripcionTexto,
+    tags,
+    colores,
+    ocasiones,
+    skus,
+  });
+
+  const producto = CatalogProductSchema.parse({
+    product_id: String(raw.id),
+    handle: raw.handle,
+    title: tituloLimpio,
+    description_text: descripcionTexto,
+    vendor: null,
+    product_type: raw.product_type ?? null,
+    tags,
+    image_urls: imageUrls,
+    status: "ACTIVE",
+    available: variantes.some((v) => v.available),
+    price_min: precios.length ? Math.min(...precios) : null,
+    price_max: precios.length ? Math.max(...precios) : null,
+    derived: { category: categoria, colors: colores, occasions: ocasiones },
+    source_payload: raw,
+    search_text: searchText,
+    embedding_source_hash: hashSearchText(searchText),
+    source_updated_at: raw.updated_at ?? null,
+  });
+
+  return { ok: true, producto, variantes };
+}

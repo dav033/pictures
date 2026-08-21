@@ -36,6 +36,24 @@ yarn-error.log*
 # vercel
 .vercel
 
+# datos y subidas del demo — se generan en runtime, no se versionan
+/data/*
+!/data/raw/
+!/data/quarantine/
+!/data/sanitized/
+!/data/captions/
+!/data/manifests/
+/data/raw/*
+/data/quarantine/*
+/data/sanitized/*
+/data/captions/*
+!/data/**/.gitkeep
+!/data/**/DATASET_CARD.md
+/public/uploads
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# paquetes del workspace — build output
+packages/*/dist
