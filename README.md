@@ -108,3 +108,4 @@ src/
 - Los fondos de stock (`backgrounds.ts`) no son editables desde el panel todavía, solo productos
   y decoraciones.
 # test
+# pictures
