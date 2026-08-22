@@ -68,11 +68,65 @@ function compactSceneSpec(scene: SceneSpec): string {
   });
 }
 
+/**
+ * A short composition contract is deliberately kept near the beginning of the
+ * prompt.  The old prompt had all the right constraints, but they were spread
+ * across the scene spec and the creative section; image models consequently
+ * tended to satisfy the easiest visual prior (a generic balloon arch plus a
+ * banquet table) instead of building the selected products into one finished
+ * decoration.  This contract describes the *scene architecture* without
+ * inventing any catalog objects.
+ */
+function decorationCompositionContract(sceneSpec: SceneSpec, visualContext?: VisualContext): string[] {
+  const categories = new Set(sceneSpec.elements.map((element) => element.category));
+  const hasBackdrop = [...categories].some((category) => ["backdrop", "curtain", "drape", "panel"].includes(category));
+  const hasBalloonStructure = categories.has("balloon_structure");
+  const hasTableProduct = categories.has("tableware") || categories.has("furniture");
+  const hasVenuePhoto = Boolean(sceneSpec.venue.source_image_id);
+  const hasExplicitOutdoorVenue = visualContext?.venueKind === "outdoor";
+  const layers = [
+    "NON-NEGOTIABLE SCENE TYPE: render a complete, installed event decoration in a real venue, with one focal zone and a clear rear-to-foreground composition; this is not a catalog sample, product board, showroom display, or collection of loose objects.",
+    hasBackdrop
+      ? "Use the approved backdrop/curtain/panel as the rear anchor, spanning behind the complete installation."
+      : hasExplicitOutdoorVenue
+        ? "Use the named outdoor venue's real architecture, terrain, and open-air depth as the rear anchor; do not invent a backdrop product."
+      : "Use the real venue wall, doorway, or architectural feature as the rear anchor; do not invent a backdrop product.",
+    hasBalloonStructure
+      ? "Build the approved balloon materials into one intentional installation around a focal center (organic garland, arch, column, or clustered frame as appropriate to the named element), with visible attachment and floor contact."
+      : "Arrange the approved products as one intentional focal installation with a clear center, rear-to-foreground depth, and visible physical support.",
+    "The decoration itself must be the main subject and occupy a deliberate focal zone; it must read immediately as a finished event setup, not as separate samples placed in a venue.",
+    "Use a real 3-layer read: rear backdrop or support, middle decorative structure, and grounded floor-level details only when supplied by the catalog or preserved in the venue photo. Make the floor, attachment/support, scale, lighting, depth, and element relationships visible.",
+    "Do not turn a single catalog line into an isolated generic balloon arch, a loose garland, or unrelated furniture. Every selected line must contribute to the same coherent installation and be physically attached, hung, framed, or grounded.",
+    !hasTableProduct && !hasVenuePhoto
+      ? hasExplicitOutdoorVenue
+        ? "No generic table, empty table, chairs, dining setup, food, gifts, flowers, or event props: natural vegetation and terrain may appear only as context for the explicitly named outdoor venue, never as added decoration."
+        : "No generic table, empty table, chairs, dining setup, food, gifts, flowers, plants, or landscape scenery: none is an approved catalog element."
+      : !hasTableProduct
+        ? "Do not add a new table, empty table, chairs, or props; preserve only furniture already present in the supplied venue photo."
+        : "Use the approved table/furniture only as a supporting layer for the decoration, never as the main subject or an empty event-table cliché.",
+    !hasVenuePhoto
+      ? hasExplicitOutdoorVenue
+        ? "When an outdoor venue is explicitly requested, render that recognizable outdoor place with its real ground, open-air depth, architecture/terrain, and appropriate event lighting; do not substitute an indoor room or a generic unrelated landscape."
+        : "When no venue photo or named outdoor venue is supplied, use a neutral real indoor celebration corner with a visible wall, floor, depth, and event lighting; never default to a generic garden, forest, park, or empty landscape background."
+      : "Preserve the supplied venue camera and architecture; add the installation to the editable area without replacing the venue with a generic scene.",
+    "Treat selected catalog products as installed decoration and raw materials for this one event, never as catalog samples, retail packaging, isolated product cutouts, or evenly spaced inventory.",
+    "Only a selected catalog-backed signage product may contain a focal sign or legible printed message; if no signage product is selected, add no sign, banner, lettering, or invented event text.",
+    "Never add commercial/event objects absent from the selected catalog allowlist: no generic tables, chairs, centerpieces, gifts, food, flowers, plants, props, signs, lights, or extra balloons.",
+  ];
+  return layers;
+}
+
 export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, visualContext, sizeMixBlock }: ImagePromptInput): string {
   const inputMap = inputs.map((input) => `${input.image_id}: ${input.role}; allowed use: ${input.allowed_use}`).join("\n") || "None.";
   const sceneLock = visualContext ? buildVisualSceneLock(visualContext) : "No explicit scene context supplied.";
   const environmentCues = visualContext ? buildPositiveEnvironmentCues(visualContext) : [];
   const failureConditions = visualContext ? buildVisualFailureConditions(visualContext) : [];
+  const compositionContract = decorationCompositionContract(sceneSpec, visualContext);
+  const noVenueInstruction = !sceneSpec.venue.source_image_id
+    ? visualContext?.venueKind === "outdoor"
+      ? "If no VENUE_01 is supplied, first create the named outdoor venue with recognizable ground, open-air depth, architecture or terrain, and event lighting. Never substitute an indoor room or an unrelated generic landscape."
+      : "If no VENUE_01 is supplied, first create a believable neutral indoor party venue appropriate to the event: visible wall, floor, depth, ambient event light, and realistic installation context. Never output a generic garden/forest/park, white studio background, empty table, or isolated catalog product."
+    : "If VENUE_01 is supplied, preserve its real venue and add the installation only in the editable area.";
   const revision = revisionInstruction?.trim()
     ? `\nREVISION DELTA\n- Apply only this user delta to the existing result: ${revisionInstruction.trim().slice(0, 500)}\n- Preserve automatic element count, scene geometry, and venue identity.`
     : "";
@@ -91,6 +145,9 @@ ${task} Add only the automatically selected decorative elements in AUTOMATIC_SCE
 SCENE LOCK — HIGHEST PRIORITY
 ${sceneLock}
 The final image must visibly prove every populated SCENE LOCK field. Mentioning it in reasoning is not enough.
+
+DECORATION COMPOSITION CONTRACT — HIGHEST PRIORITY AFTER SCENE LOCK
+${list(compositionContract)}
 
 VISIBLE ENVIRONMENT REQUIREMENTS
 ${list(environmentCues)}
@@ -127,14 +184,14 @@ ${sceneSpec.elements.length ? sceneSpec.elements.map((element) => `- Place ${ele
 - Placement instructions above are invisible metadata. Never draw them.
 
 CREATIVE EVENT DESIGN
-- Design one finished party setup, not a row of product objects.
+- Design one finished party setup, not a row of product objects, a generic arch, or a furniture vignette.
 - Treat selected products as ingredients. Group compatible balloons into a cohesive arch, garland, columns, or organic clusters around the main focal point.
 - Respect package quantities exactly. If a quoted balloon package contains 12 units, use those 12 units in the installation; creative freedom is only arrangement, grouping, scale, and support.
 - Use backdrop and curtain products as the rear stage; use balloon structures and themed accents to frame it; use lighting behind or around the installation to create atmosphere.
 - Integrate every mandatory product physically. A kit or package image describes its contents; never render the box or package as the decoration.
 - Balance left and right without forcing perfect symmetry. ${sizeMixBlock ? "Vary overlap, depth, and height using only the balloon diameters in BALLOON SIZE MIX — never invent a smaller or larger balloon to fill a gap." : "Vary scale, overlap, depth, and height."} Ground floor pieces and give hanging pieces real strings, hooks, frames, or supports.
-- Do not make one isolated floating object per catalog line. Make the result look like a professional decorator made creative choices for a real celebration.
-- If no VENUE_01 is supplied, first create a believable party venue appropriate to the event: visible wall or garden structure, floor, depth, ambient light, and realistic installation context. Never output a white studio background or an isolated catalog product.
+- Do not make one isolated floating object per catalog line. Make the result look like a professional decorator made creative choices for a real celebration, with a focal zone, rear support, floor contact, lighting, hierarchy, scale, and visible relationships between elements.
+- ${noVenueInstruction}
 
 VENUE PRESERVATION
 ${list(sceneSpec.positive_prompt.venue_preservation)}

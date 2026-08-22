@@ -40,6 +40,15 @@ assert.match(scene.positive_prompt.photorealistic_integration.join(" "), /refere
 assert.doesNotMatch(prompt, /target_bbox|depth layer|Layer \d|"bbox"/i);
 assert.match(prompt, /Never draw placement guides/);
 assert.match(prompt, /green or yellow outlines/);
+assert.match(prompt, /complete, installed event decoration/);
+assert.match(prompt, /generic balloon arch/);
+assert.match(prompt, /empty table/);
+assert.match(prompt, /generic garden\/forest\/park/);
+assert.match(prompt, /focal zone, rear support, floor contact, lighting, hierarchy, scale/);
+assert.match(prompt, /selected catalog products as installed decoration/);
+assert.match(prompt, /Only a selected catalog-backed signage product may contain a focal sign/);
+assert.match(prompt, /commercial\/event objects absent from the selected catalog allowlist/);
+assert.doesNotMatch(prompt, /visible wall or garden structure/);
 assert.doesNotMatch(prompt, /references never provide objects/i);
 assert.match(buildImagePrompt({ sceneSpec: { ...scene, generation_mode: "revise_current_result" }, revisionInstruction: "make curtain ivory" }), /REVISION DELTA/);
 assert.equal(resolveAspectTransform("16:9", { exactAspectRatios: ["3:2", "1:1", "2:3"], totalInputImageLimit: 16, objectFidelityInputLimit: 5, highFidelityInputSupport: false, multiTurnSupport: false }).strategy, "pad");
@@ -83,5 +92,9 @@ assert.match(treePrompt, /balloon Christmas tree/);
 assert.match(treePrompt, /Globo Redondo Rojo/);
 assert.match(treePrompt, /Globo Redondo Verde/);
 assert.match(treePrompt, /Globo Metalizado Dorado/);
+assert.match(treeScene.positive_prompt.composition.join(" "), /complete installed event scene/);
+assert.match(treeScene.positive_prompt.photorealistic_integration.join(" "), /selected catalog allowlist/);
+assert.match(treeScene.negative_prompt.forbidden_elements.join(" "), /isolated balloon arches/);
+assert.match(treeScene.negative_prompt.forbidden_elements.join(" "), /generic garden\/forest\/park backgrounds/);
 
 console.log("image-fidelity tests: ok");
