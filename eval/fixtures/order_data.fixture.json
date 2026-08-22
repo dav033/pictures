@@ -1,0 +1,38 @@
+{
+  "data": {
+    "orders": {
+      "edges": [
+        {
+          "node": {
+            "id": "gid://shopify/Order/fixture-order-001",
+            "name": "FIXTURE-ORDER-001",
+            "createdAt": "2026-01-03T00:00:00Z",
+            "displayFinancialStatus": "PENDING",
+            "displayFulfillmentStatus": "UNFULFILLED",
+            "totalPriceSet": {
+              "shopMoney": { "amount": "1234.00", "currencyCode": "COP" }
+            },
+            "customer": null,
+            "lineItems": {
+              "edges": [
+                {
+                  "node": {
+                    "id": "gid://shopify/LineItem/fixture-line-001",
+                    "title": "FIXTURE GLOBO ROJO",
+                    "quantity": 2,
+                    "variant": {
+                      "id": "gid://shopify/ProductVariant/fixture-variant-001",
+                      "sku": "FIXTURE-SKU-001",
+                      "product": { "id": "gid://shopify/Product/fixture-product-001" }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  "extensions": { "cost": { "requestedQueryCost": 1 } }
+}
