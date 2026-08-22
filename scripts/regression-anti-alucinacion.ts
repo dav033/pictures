@@ -115,7 +115,7 @@ async function main() {
       const r = await validarSeleccion(
         pool,
         [{ productId: v.product_id, variantId: v.variant_id, cantidad: v.inventory_quantity + 1000 }],
-        new Set([v.product_id]),
+        new Map([[v.product_id, new Set([v.variant_id])]]),
       );
       reportar(
         r.validados.length === 0 && r.rechazados.some((x) => x.motivo.includes("excede el inventario")),
@@ -140,7 +140,7 @@ async function main() {
     const clavesFiltros = Object.keys(forma.filtros_duros).sort();
     reportar(
       JSON.stringify(clavesTop) === JSON.stringify(["filtros_duros", "intent", "semantic_query"]) &&
-        JSON.stringify(clavesFiltros) === JSON.stringify(["categorias", "colores", "ocasiones", "precio_max", "solo_disponibles"]),
+        JSON.stringify(clavesFiltros) === JSON.stringify(["categorias", "colores", "diametros_pulgadas", "formas", "ocasiones", "precio_max", "solo_disponibles"]),
       "el contrato del query interpreter no tiene forma de transportar un producto/precio inventado",
       `claves=${clavesTop.join(",")}`,
     );

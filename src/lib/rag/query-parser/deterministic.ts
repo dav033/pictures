@@ -20,7 +20,7 @@ export type DeterministicParse = {
   taxonomy: TaxonomyClassification;
 };
 
-const DIAMETERS = [5, 9, 12, 18, 24, 36] as const;
+const DIAMETERS = [5, 9, 12, 18, 24, 36, 40] as const;
 
 function parseAmount(raw: string): number | null {
   const cleaned = raw.replace(/\s/g, "").replace(/\.(?=\d{3}(?:\D|$))/g, "").replace(/,/g, ".");
@@ -41,33 +41,35 @@ function parsePrice(text: string): number | null {
 function parseDiameter(text: string): number[] {
   const normalized = plegarTexto(text);
   const found = new Set<number>();
-  const explicitCode = normalized.match(/\b(?:r)\s*-?\s*(5|9|12|18|24|36)\b/i);
+  const explicitCode = normalized.match(/\b(?:r)\s*-?\s*(5|9|12|18|24|36|40)\b/i);
   if (explicitCode) found.add(Number(explicitCode[1]));
 
-  for (const match of normalized.matchAll(/\b(?:tamano|talla|medida|de)\s*(5|9|12|18|24|36)\s*(?:pulgadas?|in)?\b/gi)) {
+  for (const match of normalized.matchAll(/\b(?:tamano|talla|medida|de)\s*(5|9|12|18|24|36|40)\s*(?:pulgadas?|in)?\b/gi)) {
     found.add(Number(match[1]));
   }
-  for (const match of normalized.matchAll(/\b(5|9|12|18|24|36)\s*(?:pulgadas?|in)\b/gi)) {
+  for (const match of normalized.matchAll(/\b(5|9|12|18|24|36|40)\s*(?:pulgadas?|in)\b/gi)) {
     found.add(Number(match[1]));
   }
 
-  const sizeWords: Array<[RegExp, number]> = [
-    [/\b(?:mini|chiquito|chiquita|pequeno|pequena|pequ\w*)\b/i, 5],
-    [/\b(?:median\w*|normal)\b/i, 12],
-    [/\b(?:grande|grandes)\b/i, 18],
-    [/\b(?:gigante|gigantes|jumbo)\b/i, 24],
-  ];
-  for (const [word, value] of sizeWords) if (word.test(normalized)) found.add(value);
   return [...found].filter((value): value is (typeof DIAMETERS)[number] => DIAMETERS.includes(value as (typeof DIAMETERS)[number]));
 }
 
 function parseCodeForma(text: string): "redondo" | "corazon" | "link" | "modelar" | null {
   const normalized = plegarTexto(text);
-  if (/\b(?:r)\s*-?\s*(?:5|9|12|18|24|36)\b/i.test(normalized)) return "redondo";
+  if (/\b(?:r)\s*-?\s*(?:5|9|12|18|24|36|40)\b/i.test(normalized)) return "redondo";
   if (/\b(?:c)\s*-?\s*\d+(?:\.\d+)?\b/i.test(normalized)) return "corazon";
   if (/\b(?:lol)\s*-?\s*\d+\b/i.test(normalized)) return "link";
   if (/\b(?:t)\s*-?\s*\d+\b/i.test(normalized)) return "modelar";
   return null;
+}
+
+function textualFormaHard(text: string, values: readonly string[]): string[] {
+  const normalized = plegarTexto(text);
+  const explicitForm = /\b(?:en\s+)?forma(?:\s+de)?\s+(?:redond\w*|corazon\w*|heart|link(?:\s+o\s+loon)?|modelar|figuras?|twisting)\b/.test(normalized);
+  const balloonContext = /\b(?:globo|globos|balloon|balloons)\b/.test(normalized);
+  // Keep the guard here as well as in taxonomy: hard filters must remain
+  // conservative even if an alias is later added to the taxonomy module.
+  return explicitForm || balloonContext ? [...values] : [];
 }
 
 function asksForUnavailable(text: string): boolean {
@@ -112,6 +114,7 @@ export function interpretarConsultaDeterminista(mensaje: string): DeterministicP
   // returning an arbitrary intersection.
   const diametros = taxonomy.tamanos.status === "known" ? parsedDiametros : [];
   const codeForma = parseCodeForma(source);
+  const textualFormas = textualFormaHard(source, taxonomy.formas.values);
   const precio = parsePrice(source);
   const unavailable = asksForUnavailable(source);
   const sku = mentionsSku(source);
@@ -120,7 +123,7 @@ export function interpretarConsultaDeterminista(mensaje: string): DeterministicP
     categorias: hard && taxonomy.categorias.status === "known" ? unique(taxonomy.categorias.values) : [],
     ocasiones: hard && taxonomy.ocasiones.status === "known" ? unique(taxonomy.ocasiones.values) : [],
     colores: hard && taxonomy.colores.status === "known" ? unique(taxonomy.colores.values) : [],
-    formas: codeForma ? [codeForma] : (hard && taxonomy.formas.status === "known" ? unique(taxonomy.formas.values) : []),
+    formas: codeForma ? [codeForma] : (hard && taxonomy.formas.status === "known" ? unique(textualFormas) : []),
     diametros_pulgadas: diametros,
     precio_max: precio,
     solo_disponibles: !unavailable,
@@ -135,13 +138,13 @@ export function interpretarConsultaDeterminista(mensaje: string): DeterministicP
 
   const hasSignal = sku || precio !== null || diametros.length > 0 || codeForma !== null || unavailable ||
     taxonomy.colores.values.length > 0 || taxonomy.categorias.values.length > 0 ||
-    taxonomy.ocasiones.values.length > 0 || taxonomy.formas.values.length > 0 || intentValue === "other";
+    taxonomy.ocasiones.values.length > 0 || textualFormas.length > 0 || intentValue === "other";
   const hasAmbiguousTaxonomy = Object.values(taxonomy).some((match) => match.status === "ambiguous");
   const confidence: DeterministicConfidence = hasSignal && !hasAmbiguousTaxonomy ? "certain" : "ambiguous";
   const lockedFields: LockedIntentField[] = ["solo_disponibles"];
   if (precio !== null) lockedFields.push("precio_max");
   if (diametros.length > 0) lockedFields.push("diametros_pulgadas");
-  if (codeForma !== null || (hard && taxonomy.formas.status === "known")) lockedFields.push("formas");
+  if (codeForma !== null || (hard && textualFormas.length > 0)) lockedFields.push("formas");
 
   return { intent, confidence, lockedFields, taxonomy };
 }

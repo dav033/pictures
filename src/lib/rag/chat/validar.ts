@@ -39,6 +39,8 @@ export type ResultadoValidacion = {
   total: number;
 };
 
+export type WhitelistRecuperada = ReadonlyMap<string, ReadonlySet<string>>;
+
 type FilaVariante = {
   product_id: string;
   variant_id: string;
@@ -65,7 +67,7 @@ type FilaVariante = {
 export async function validarSeleccion(
   pool: Pool,
   seleccion: SeleccionSolicitada[],
-  idsRecuperados: ReadonlySet<string>,
+  idsRecuperados: WhitelistRecuperada,
 ): Promise<ResultadoValidacion> {
   const rechazados: ItemRechazado[] = [];
   const candidatos = seleccion.filter((item) => {
@@ -74,6 +76,14 @@ export async function validarSeleccion(
         productId: item.productId,
         variantId: item.variantId,
         motivo: "product_id no estaba en los resultados recuperados de este turno",
+      });
+      return false;
+    }
+    if (!idsRecuperados.get(item.productId)?.has(item.variantId)) {
+      rechazados.push({
+        productId: item.productId,
+        variantId: item.variantId,
+        motivo: "variant_id no estaba en la whitelist de variantes recuperadas de este turno",
       });
       return false;
     }
@@ -122,7 +132,10 @@ export async function validarSeleccion(
     // número real (plan §4.7: "cantidad <= disponible"). Se rechaza en vez
     // de recortar en silencio: cambiarle la cantidad al cliente sin decirlo
     // sería tan malo como inventar disponibilidad.
-    if (fila.inventario != null && item.cantidad > fila.inventario) {
+    // Shopify's `available` flag is authoritative. A zero/negative inventory
+    // value is a known over-selling/unknown-stock signal in this source and
+    // must not be used to reinterpret an available variant as exhausted.
+    if (fila.inventario != null && fila.inventario > 0 && item.cantidad > fila.inventario) {
       rechazados.push({
         productId: item.productId,
         variantId: item.variantId,

@@ -1,6 +1,6 @@
 import type { Pool } from "pg";
 import { buscarHibrido } from "../retrieval/search";
-import type { ResultadoRetrieval } from "../retrieval/types";
+import type { EstadoSku, ResultadoRetrieval } from "../retrieval/types";
 import { interpretarConsulta } from "../query-parser/parse";
 import type { IntentQuery } from "../query-parser/schema";
 
@@ -15,6 +15,7 @@ export type VarianteCandidata = {
   /** Diámetro real en pulgadas (solo globo redondo) — la señal que le faltaba al LLM para no elegir por defecto. */
   diamPulg: number | null;
   forma: string | null;
+  colores: string[];
 };
 
 export type ProductoCandidato = {
@@ -29,7 +30,8 @@ export type ProductoCandidato = {
 };
 
 export type ResultadoBusquedaRag = {
-  status: "OK" | "NO_MATCH";
+  status: "OK" | "NO_MATCH" | "AMBIGUOUS_SKU";
+  skuStatus?: EstadoSku;
   candidatos: ProductoCandidato[];
   // Para trazabilidad (plan §6.1/§6.2) — no se usan para responderle al
   // cliente, solo para poder reconstruir después "por qué salió esto".
@@ -57,6 +59,7 @@ type FilaCandidato = {
   codigo_tamano: string | null;
   diam_pulg: string | null;
   forma: string | null;
+  colores: string[];
 };
 
 /**
@@ -71,7 +74,7 @@ export async function buscarCatalogoRag(pool: Pool, mensaje: string): Promise<Re
   const latencyParseMs = Date.now() - t0;
 
   if (intento.intent !== "product_search") {
-    return { status: "NO_MATCH", candidatos: [], intent: intento, scores: [], latencyParseMs, latencyRetrievalMs: 0, filtroRelajado: null };
+    return { status: "NO_MATCH", skuStatus: "not_sku", candidatos: [], intent: intento, scores: [], latencyParseMs, latencyRetrievalMs: 0, filtroRelajado: null };
   }
 
   const filtrosBase = {
@@ -87,6 +90,21 @@ export async function buscarCatalogoRag(pool: Pool, mensaje: string): Promise<Re
   const t1 = Date.now();
   let respuesta = await buscarHibrido(pool, { semanticQuery: intento.semantic_query, filtros: { ...filtrosBase, ocasiones, colores } });
   let filtroRelajado: ResultadoBusquedaRag["filtroRelajado"] = null;
+
+  // Never expose ambiguous exact SKU candidates to the model as a normal
+  // selectable pool. The client must clarify which exact variant it means.
+  if (respuesta.skuStatus === "ambiguous") {
+    return {
+      status: "AMBIGUOUS_SKU",
+      skuStatus: respuesta.skuStatus,
+      candidatos: [],
+      intent: intento,
+      scores: [],
+      latencyParseMs,
+      latencyRetrievalMs: Date.now() - t1,
+      filtroRelajado: null,
+    };
+  }
 
   // Escalera de relajación (plan de tamaños §6): un tamaño/forma pedido
   // explícito es un requisito FÍSICO (tiene que caber en la estructura) y
@@ -106,14 +124,14 @@ export async function buscarCatalogoRag(pool: Pool, mensaje: string): Promise<Re
   const latencyRetrievalMs = Date.now() - t1;
 
   if (respuesta.results.length === 0) {
-    return { status: "NO_MATCH", candidatos: [], intent: intento, scores: [], latencyParseMs, latencyRetrievalMs, filtroRelajado: null };
+    return { status: "NO_MATCH", skuStatus: respuesta.skuStatus, candidatos: [], intent: intento, scores: [], latencyParseMs, latencyRetrievalMs, filtroRelajado: null };
   }
 
   const ids = respuesta.results.map((r) => r.productId);
   const { rows } = await pool.query<FilaCandidato>(
     `SELECT p.product_id, p.title, p.derived, p.available, p.image_urls[1] AS imagen_principal,
             v.variant_id, v.sku, v.title AS variante_titulo, v.price, v.available AS variante_disponible,
-            v.codigo_tamano, v.diam_pulg, v.forma
+            v.codigo_tamano, v.diam_pulg, v.forma, v.derived_colors AS colores
      FROM catalog_products p
      JOIN catalog_variants v ON v.product_id = p.product_id
      WHERE p.product_id = ANY($1::text[])
@@ -158,6 +176,7 @@ export async function buscarCatalogoRag(pool: Pool, mensaje: string): Promise<Re
       codigoTamano: fila.codigo_tamano,
       diamPulg: fila.diam_pulg != null ? Number(fila.diam_pulg) : null,
       forma: fila.forma,
+      colores: fila.colores,
     });
   }
 
@@ -173,6 +192,7 @@ export async function buscarCatalogoRag(pool: Pool, mensaje: string): Promise<Re
 
   return {
     status: "OK",
+    skuStatus: respuesta.skuStatus,
     candidatos,
     intent: intento,
     scores: respuesta.results,

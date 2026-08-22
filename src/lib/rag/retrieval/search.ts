@@ -1,218 +1,499 @@
 import type { Pool } from "pg";
-import { fusionarRankings } from "@sempertex/agente-core/rag";
+import { getGeminiClient } from "@/lib/gemini";
 import { embeberTexto } from "../embeddings";
-import type { ConsultaRetrieval, FiltrosDuros, RespuestaRetrieval, ResultadoRetrieval } from "./types";
+import { canonicalizeSku } from "../catalog/canonicalize";
+import { fusionarRankingsLocal, type RrfBranch, type RrfContribution } from "./rrf";
+import type {
+  BranchStatus,
+  ConsultaRetrieval,
+  FiltrosDuros,
+  RespuestaRetrieval,
+  ResultadoRetrieval,
+} from "./types";
 
-const VECTOR_LIMIT = Number(process.env.RAG_VECTOR_LIMIT ?? 30);
+const BRANCH_LIMIT = Number(process.env.RAG_BRANCH_LIMIT ?? 40);
 const FINAL_LIMIT = Number(process.env.RAG_FINAL_LIMIT ?? 15);
-const MIN_SIMILARITY = Number(process.env.RAG_MIN_SIMILARITY ?? 0.56);
-const USE_VECTOR = (process.env.RAG_USE_VECTOR ?? "true") !== "false";
-const USE_FULLTEXT = (process.env.RAG_USE_FULLTEXT ?? "true") !== "false";
+const TRIGRAM_MIN_SIMILARITY = Math.max(0.3, Number(process.env.RAG_TRIGRAM_MIN_SIMILARITY ?? 0.3));
+const USE_VECTOR = process.env.RAG_USE_VECTOR === "true";
+const USE_FULLTEXT = process.env.RAG_USE_FULLTEXT !== "false";
+const USE_TRIGRAM = process.env.RAG_USE_TRIGRAM !== "false";
+const RRF_WEIGHTS = { fts: 0.55, trigram: 0.3, vector: 0.15 } as const;
 
-// Constante estándar de Reciprocal Rank Fusion (valor usual en la literatura,
-// ver Cormack et al. 2009). Pesos de rama, no de score — un match #1 en
-// full-text (ej. SKU exacto) nunca queda enterrado bajo ruido semántico de
-// la otra rama, que es justo lo que pasaba normalizando y sumando scores de
-// escalas distintas (ts_rank vs. cosine similarity no son comparables).
-const RRF_K = 60;
-const PESO_VECTOR = 0.6;
-const PESO_TEXTO = 0.4;
+type BranchRow = {
+  product_id: string;
+  variant_id: string;
+  score: number;
+};
+
+type ExactRow = {
+  product_id: string;
+  variant_id: string;
+  sku_ambiguous: boolean;
+};
+
+type FilterAliases = { product: string; variant: string };
+const DEFAULT_ALIASES: FilterAliases = { product: "p", variant: "v" };
+
+type FusedEntry = { productId: string; score: number; contributions: RrfContribution[] };
+
+function safeLimit(value: number, fallback: number): number {
+  return Number.isInteger(value) && value > 0 && value <= 500 ? value : fallback;
+}
 
 function pareceSku(value: string): boolean {
   const text = value.trim();
   return /^SKU[-_]/i.test(text) || (/^[A-Z0-9._/-]{8,}$/i.test(text) && /\d/.test(text));
 }
 
-/** WHERE reutilizable entre la rama vectorial y la de texto: los filtros duros
- * nunca deben depender de qué rama encontró el candidato. */
-function construirFiltroDuro(filtros: FiltrosDuros | undefined, params: unknown[]): string {
-  const condiciones: string[] = [];
-  const disponible = filtros?.disponible ?? true;
-  if (disponible) condiciones.push("p.available = true");
+/** Extracts a SKU from a natural-language request without treating a size such as R-12 as one. */
+function extraerSku(value: string): string | null {
+  const text = value.trim();
+  if (pareceSku(text)) return text;
+  // Unlabelled B2B references in the source always carry `-` or `:`. Do not
+  // mistake natural prose such as "B2b Bouquet" for a SKU; the spaced form
+  // is accepted only when the customer explicitly labels it as SKU/REF.
+  const b2b = text.match(/\bB2B[-:][A-Z0-9][A-Z0-9._/-]{4,}\b/i);
+  if (b2b) return b2b[0];
+  const labeledB2b = text.match(/\b(?:SKU|REF|COD(?:IGO|IGO)|CÓDIGO)\s*[:#-]?\s*B2B\s+([A-Z0-9][A-Z0-9._/-]{4,})\b/i);
+  if (labeledB2b?.[1]) return `B2B-${labeledB2b[1]}`;
+  const labeled = text.match(/\b(?:SKU|REF|COD(?:IGO|IGO)|CÓDIGO)\s*[:#-]?\s*([A-Z0-9][A-Z0-9._/-]{5,})\b/i);
+  if (labeled?.[1]) return labeled[1];
+  return /^\d{8,}$/.test(text) ? text : null;
+}
 
-  // Precio, forma y diámetro son restricciones DE VARIANTE (plan de tamaños
-  // F2), y deben cumplirse TODAS en la MISMA variante — nunca en un EXISTS
-  // separado por condición. Un EXISTS por condición dejaría pasar un
-  // producto por una variante barata Y aparte por una variante R-12,
-  // aunque ninguna variante individual cumpla precio+tamaño a la vez (el
-  // mismo bug de "fuga" ya documentado y corregido para precio solo).
-  const condicionesVariante: string[] = ["ev.available = true"];
-  if (filtros?.precioMax != null) {
-    // NO se filtra con p.price_min: es el mínimo entre TODAS las variantes
-    // (normalize.ts línea 96), incluidas las agotadas, así que un producto
-    // podía pasar este filtro por una variante que ni siquiera se puede
-    // comprar. Se exige que exista al menos una variante DISPONIBLE y
-    // dentro del tope — la misma variante que después se le puede proponer
-    // al cliente (bug real medido: 149 productos con variantes disponibles
-    // por encima del tope entraban igual con la condición anterior).
-    params.push(filtros.precioMax);
-    condicionesVariante.push(`ev.price <= $${params.length}`);
-  }
-  if (filtros?.formas?.length) {
-    params.push(filtros.formas);
-    condicionesVariante.push(`ev.forma = ANY($${params.length}::text[])`);
-  }
-  if (filtros?.diametrosPulgadas?.length) {
-    params.push(filtros.diametrosPulgadas);
-    condicionesVariante.push(`ev.diam_pulg = ANY($${params.length}::numeric[])`);
-  }
-  if (condicionesVariante.length > 1) {
-    condiciones.push(`EXISTS (SELECT 1 FROM catalog_variants ev WHERE ev.product_id = p.product_id AND ${condicionesVariante.join(" AND ")})`);
-  }
-  if (filtros?.categorias?.length) {
-    params.push(filtros.categorias);
-    condiciones.push(`p.derived->>'category' = ANY($${params.length}::text[])`);
-  }
-  if (filtros?.ocasiones?.length) {
-    params.push(filtros.ocasiones);
-    condiciones.push(`p.derived->'occasions' ?| $${params.length}::text[]`);
-  }
-  if (filtros?.colores?.length) {
-    params.push(filtros.colores);
-    condiciones.push(`p.derived->'colors' ?| $${params.length}::text[]`);
-  }
+function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values.map((value) => value.trim().toUpperCase()).filter(Boolean))];
+}
 
-  return condiciones.length ? `AND ${condiciones.join(" AND ")}` : "";
+function textoLexical(semanticQuery: string): string {
+  // `buscarPorRol` appends a role hint after an em dash. It is useful for a
+  // vector preference but its prose tokens are not catalog terms; requiring
+  // every one of them in plainto_tsquery would erase valid category matches.
+  return semanticQuery.split(/[—–]/, 1)[0]?.trim() || semanticQuery.trim();
+}
+
+function tieneFiltrosNavegables(filtros: FiltrosDuros | undefined): boolean {
+  return Boolean(
+    filtros && (
+      filtros.precioMax != null || filtros.categorias?.length || filtros.ocasiones?.length ||
+      filtros.colores?.length || filtros.formas?.length || filtros.diametrosPulgadas?.length
+    ),
+  );
 }
 
 /**
- * Retrieval híbrido (plan §3.8): vector + full-text, filtros duros aplicados
- * ANTES del ranking en ambas ramas, fusión por posición (RRF) en vez de por
- * score normalizado. No genera lenguaje para el usuario — solo productos
- * candidatos (plan §3.13).
+ * Builds hard predicates shared by every retrieval branch. A branch joins one
+ * variant as `v`, so price, availability, shape and diameter all describe
+ * that same row. Inventory is deliberately not used to reinterpret Shopify's
+ * `available` source flag.
  */
+function construirFiltroDuro(
+  filtros: FiltrosDuros | undefined,
+  params: unknown[],
+  aliases: FilterAliases = DEFAULT_ALIASES,
+): string {
+  const condiciones: string[] = [`${aliases.product}.status = 'ACTIVE'`];
+  const disponible = filtros?.disponible ?? true;
+  if (disponible) {
+    condiciones.push(`${aliases.product}.available = true`);
+    condiciones.push(`${aliases.variant}.available = true`);
+  }
+  if (filtros?.precioMax != null) {
+    params.push(filtros.precioMax);
+    condiciones.push(`${aliases.variant}.price <= $${params.length}`);
+  }
+  if (filtros?.formas?.length) {
+    params.push(filtros.formas);
+    condiciones.push(`${aliases.variant}.forma = ANY($${params.length}::text[])`);
+  }
+  if (filtros?.diametrosPulgadas?.length) {
+    params.push(filtros.diametrosPulgadas);
+    condiciones.push(`${aliases.variant}.diam_pulg = ANY($${params.length}::numeric[])`);
+    if (!filtros.formas?.length) condiciones.push(`${aliases.variant}.forma = 'redondo'`);
+  }
+  if (filtros?.categorias?.length) {
+    params.push(filtros.categorias);
+    condiciones.push(`${aliases.product}.derived->>'category' = ANY($${params.length}::text[])`);
+  }
+  if (filtros?.ocasiones?.length) {
+    params.push(filtros.ocasiones);
+    condiciones.push(`${aliases.product}.derived->'occasions' ?| $${params.length}::text[]`);
+  }
+  if (filtros?.colores?.length) {
+    params.push(filtros.colores);
+    // Prefer variant evidence. Unknown variants may inherit only a singleton
+    // product color; a multi-color product must not let an arbitrary sibling
+    // satisfy the requested color.
+    condiciones.push(`(
+      (cardinality(${aliases.variant}.derived_colors) > 0 AND ${aliases.variant}.derived_colors && $${params.length}::text[])
+      OR (cardinality(${aliases.variant}.derived_colors) = 0
+          AND jsonb_array_length(${aliases.product}.derived->'colors') = 1
+          AND ${aliases.product}.derived->'colors' ?| $${params.length}::text[])
+    )`);
+  }
+  return condiciones.length ? `AND ${condiciones.join(" AND ")}` : "";
+}
+
+function addBranchRows(
+  rows: BranchRow[],
+  scores: Map<string, number>,
+  variants: Map<string, Set<string>>,
+): string[] {
+  const ranked: string[] = [];
+  const seen = new Set<string>();
+  for (const row of rows) {
+    const score = Number(row.score);
+    if (!seen.has(row.product_id)) {
+      seen.add(row.product_id);
+      ranked.push(row.product_id);
+    }
+    scores.set(row.product_id, Math.max(scores.get(row.product_id) ?? 0, Number.isFinite(score) ? score : 0));
+    const productVariants = variants.get(row.product_id) ?? new Set<string>();
+    productVariants.add(row.variant_id);
+    variants.set(row.product_id, productVariants);
+  }
+  return ranked;
+}
+
+async function queryExact(
+  pool: Pool,
+  rawValues: string[],
+  canonicalValues: string[],
+  filtros: FiltrosDuros | undefined,
+): Promise<{ rows: ExactRow[]; anyRows: ExactRow[] }> {
+  // Prefer the original representation. A canonical match is a fallback for
+  // a query like `20008459`, and must never add sibling variants when the
+  // user supplied the unambiguous source value `B2B-20000723`.
+  const lookup = async (values: string[], columnSql: string, filter: FiltrosDuros | undefined) => {
+    const params: unknown[] = [values];
+    const hardFilter = construirFiltroDuro(filter, params);
+    const { rows } = await pool.query<ExactRow>(
+      `
+        SELECT v.product_id, v.variant_id, COALESCE(v.sku_ambiguous, false) AS sku_ambiguous
+        FROM catalog_variants v
+        JOIN catalog_products p ON p.product_id = v.product_id
+        WHERE ${columnSql} = ANY($1::text[]) ${hardFilter}
+        ORDER BY v.product_id, v.variant_id`,
+      params,
+    );
+    return rows;
+  };
+
+  let rows = await lookup(rawValues, "UPPER(v.sku_original)", filtros);
+  if (rows.length === 0 && canonicalValues.length) rows = await lookup(canonicalValues, "UPPER(v.sku_canonical)", filtros);
+
+  // Existence is checked against ACTIVE rows without availability, price or
+  // facet predicates so `filtered_out` is distinguishable from `not_found`.
+  const anyRaw = await lookup(rawValues, "UPPER(v.sku_original)", { disponible: false });
+  const anyRows = anyRaw.length > 0 || !canonicalValues.length
+    ? anyRaw
+    : await lookup(canonicalValues, "UPPER(v.sku_canonical)", { disponible: false });
+  return { rows, anyRows };
+}
+
+async function queryFullText(pool: Pool, consulta: ConsultaRetrieval): Promise<BranchRow[]> {
+  const params: unknown[] = [textoLexical(consulta.semanticQuery)];
+  const filtro = construirFiltroDuro(consulta.filtros, params);
+  params.push(safeLimit(BRANCH_LIMIT, 40));
+  const { rows } = await pool.query<BranchRow>(
+    `
+      WITH candidates AS (
+        SELECT DISTINCT ON (p.product_id) p.product_id, v.variant_id, ts_rank_cd(p.search_tsv, q) AS score
+        FROM catalog_products p
+        JOIN catalog_variants v ON v.product_id = p.product_id
+        CROSS JOIN plainto_tsquery('spanish_unaccent', $1) q
+        WHERE p.search_tsv @@ q ${filtro}
+        ORDER BY p.product_id, score DESC, v.variant_id
+      )
+      SELECT product_id, variant_id, score
+      FROM candidates
+      ORDER BY score DESC, product_id, variant_id
+      LIMIT $${params.length}`,
+    params,
+  );
+  return rows;
+}
+
+async function queryTrigram(pool: Pool, consulta: ConsultaRetrieval): Promise<BranchRow[]> {
+  const params: unknown[] = [textoLexical(consulta.semanticQuery), TRIGRAM_MIN_SIMILARITY];
+  const filtro = construirFiltroDuro(consulta.filtros, params);
+  const limit = safeLimit(BRANCH_LIMIT, 40);
+  const limitParam = params.length + 1;
+  params.push(limit);
+  const { rows } = await pool.query<BranchRow>(
+    `
+      WITH title_candidates AS (
+        SELECT p.product_id, v.variant_id, similarity(COALESCE(p.title, ''), $1) AS score
+        FROM catalog_products p
+        JOIN catalog_variants v ON v.product_id = p.product_id
+        WHERE p.title % $1
+          AND similarity(COALESCE(p.title, ''), $1) >= $2::real ${filtro}
+        ORDER BY p.title <-> $1, p.product_id, v.variant_id
+        LIMIT ${limit * 2}
+      ), handle_candidates AS (
+        SELECT p.product_id, v.variant_id, similarity(COALESCE(p.handle, ''), $1) AS score
+        FROM catalog_products p
+        JOIN catalog_variants v ON v.product_id = p.product_id
+        WHERE p.handle % $1
+          AND similarity(COALESCE(p.handle, ''), $1) >= $2::real ${filtro}
+        ORDER BY p.handle <-> $1, p.product_id, v.variant_id
+        LIMIT ${limit * 2}
+      ), candidates AS (
+        SELECT DISTINCT ON (product_id) product_id, variant_id, score
+        FROM (
+          SELECT product_id, variant_id, score FROM title_candidates
+          UNION ALL
+          SELECT product_id, variant_id, score FROM handle_candidates
+        ) lexical_candidates
+        ORDER BY product_id, score DESC, variant_id
+      )
+      SELECT product_id, variant_id, score
+      FROM candidates
+      ORDER BY score DESC, product_id, variant_id
+      LIMIT $${limitParam}`,
+    params,
+  );
+  return rows;
+}
+
+async function queryVector(pool: Pool, consulta: ConsultaRetrieval): Promise<BranchRow[]> {
+  const embedding = consulta.embeddingPrecalculado ?? (await embeberTexto(consulta.semanticQuery, "RETRIEVAL_QUERY"));
+  const params: unknown[] = [`[${embedding.join(",")}]`];
+  const filtro = construirFiltroDuro(consulta.filtros, params);
+  params.push(safeLimit(BRANCH_LIMIT, 40));
+  const { rows } = await pool.query<BranchRow>(
+    `
+      WITH candidates AS (
+        SELECT DISTINCT ON (p.product_id) e.product_id, v.variant_id, 1 - (e.embedding <=> $1::vector) AS score
+        FROM catalog_embeddings e
+        JOIN catalog_products p ON p.product_id = e.product_id
+        JOIN catalog_variants v ON v.product_id = p.product_id
+        WHERE true ${filtro}
+        ORDER BY p.product_id, e.embedding <=> $1::vector, v.variant_id
+      )
+      SELECT product_id, variant_id, score
+      FROM candidates
+      ORDER BY score DESC, product_id, variant_id
+      LIMIT $${params.length}`,
+    params,
+  );
+  return rows;
+}
+
+/** Controlled browse fallback for price/facet-only intents; never lists the catalog without a hard facet. */
+async function queryFilterBrowse(pool: Pool, filtros: FiltrosDuros): Promise<BranchRow[]> {
+  const params: unknown[] = [];
+  const filtro = construirFiltroDuro(filtros, params);
+  params.push(safeLimit(BRANCH_LIMIT, 40));
+  const { rows } = await pool.query<BranchRow>(
+    `
+      WITH candidates AS (
+        SELECT DISTINCT ON (p.product_id)
+          p.product_id, v.variant_id, (1.0 / (1.0 + v.price)) AS score
+        FROM catalog_products p
+        JOIN catalog_variants v ON v.product_id = p.product_id
+        WHERE true ${filtro}
+        ORDER BY p.product_id, v.price ASC, v.variant_id
+      )
+      SELECT product_id, variant_id, score
+      FROM candidates
+      ORDER BY score DESC, product_id, variant_id
+      LIMIT $${params.length}`,
+    params,
+  );
+  return rows;
+}
+
+export async function demandByProduct(pool: Pool, productIds: string[], eligibleVariantIds: string[]): Promise<Map<string, number>> {
+  if (!productIds.length || !eligibleVariantIds.length) return new Map();
+  try {
+    const { rows } = await pool.query<{ product_id: string; weighted_units: string }>(
+      `
+        WITH latest_order_snapshot AS (
+          SELECT source_snapshot_id
+          FROM rag_source_snapshots
+          WHERE source_kind = 'order_data' AND status = 'published'
+          ORDER BY published_at DESC NULLS LAST, fetched_at DESC, source_snapshot_id DESC
+          LIMIT 1
+        )
+        SELECT d.product_id, COALESCE(SUM(d.weighted_units), 0)::text AS weighted_units
+        FROM rag_order_demand_aggregates d
+        JOIN latest_order_snapshot latest ON latest.source_snapshot_id = d.source_snapshot_id
+        JOIN catalog_variants v ON v.variant_id = d.variant_id
+        WHERE d.product_id = ANY($1::text[])
+          AND d.variant_id = ANY($2::text[])
+          AND v.available = true
+          AND d.demand_class = 'observed_demand'
+        GROUP BY d.product_id`,
+      [productIds, eligibleVariantIds],
+    );
+    return new Map(rows.map((row) => [row.product_id, Number(row.weighted_units) || 0]));
+  } catch {
+    // Demand is optional during staged rollout; it is never a retrieval gate.
+    return new Map();
+  }
+}
+
+async function finalVariantWhitelist(
+  pool: Pool,
+  rankedProductIds: string[],
+  filtros: FiltrosDuros | undefined,
+): Promise<Map<string, string[]>> {
+  if (!rankedProductIds.length) return new Map();
+  const params: unknown[] = [rankedProductIds];
+  const filtro = construirFiltroDuro(filtros, params);
+  const { rows } = await pool.query<{ product_id: string; variant_id: string }>(
+    `
+      SELECT v.product_id, v.variant_id
+      FROM catalog_variants v
+      JOIN catalog_products p ON p.product_id = v.product_id
+      WHERE v.product_id = ANY($1::text[])
+        ${filtro}
+      ORDER BY v.product_id, v.variant_id`,
+    params,
+  );
+  const byProduct = new Map<string, string[]>();
+  for (const row of rows) byProduct.set(row.product_id, [...(byProduct.get(row.product_id) ?? []), row.variant_id]);
+  return byProduct;
+}
+
+function exactResults(rows: ExactRow[]): ResultadoRetrieval[] {
+  const byProduct = new Map<string, string[]>();
+  for (const row of rows) byProduct.set(row.product_id, [...(byProduct.get(row.product_id) ?? []), row.variant_id]);
+  return [...byProduct.entries()].map(([productId, variantIds]) => ({
+    productId,
+    variantIds,
+    vectorScore: 0,
+    textScore: 1,
+    trigramScore: 1,
+    demandScore: 0,
+    finalScore: Number.MAX_SAFE_INTEGER,
+    reasons: ["sku_exact"],
+  }));
+}
+
+/** Production retrieval façade used by chat and budget callers. */
 export async function buscarHibrido(pool: Pool, consulta: ConsultaRetrieval): Promise<RespuestaRetrieval> {
+  const queryText = consulta.semanticQuery.trim();
+  const branchStatus: Record<string, BranchStatus> = {};
+  const skuText = extraerSku(queryText);
+
+  if (skuText) {
+    const canonical = canonicalizeSku(skuText);
+    const rawValues = uniqueStrings([skuText]);
+    const canonicalValues = canonical ? uniqueStrings([canonical]) : [];
+    const exact = await queryExact(pool, rawValues, canonicalValues, consulta.filtros);
+    const identityAmbiguous = exact.anyRows.some((row) => row.sku_ambiguous)
+      || new Set(exact.anyRows.map((row) => row.variant_id)).size > 1;
+    if (exact.rows.length > 0) {
+      // Ambiguity is an identity property, not a side effect of availability
+      // or price filters. Use the unfiltered ACTIVE existence check as well,
+      // so one visible sibling can never make a duplicate SKU look unique.
+      const ambiguous = identityAmbiguous || exact.rows.some((row) => row.sku_ambiguous);
+      branchStatus.exact = "READY";
+      return {
+        query: consulta,
+        results: exactResults(exact.rows).slice(0, FINAL_LIMIT),
+        skuStatus: ambiguous ? "ambiguous" : "unique",
+        branchStatus,
+      };
+    }
+    branchStatus.exact = "EMPTY";
+    return {
+      query: consulta,
+      results: [],
+      skuStatus: identityAmbiguous ? "ambiguous" : exact.anyRows.length > 0 ? "filtered_out" : "not_found",
+      branchStatus,
+    };
+  }
+
+  if (!queryText && !tieneFiltrosNavegables(consulta.filtros)) {
+    return { query: consulta, results: [], skuStatus: "not_sku", branchStatus };
+  }
+
   const vectorScores = new Map<string, number>();
   const textScores = new Map<string, number>();
-  const vectorRanked: string[] = [];
-  const textRanked: string[] = [];
+  const trigramScores = new Map<string, number>();
+  const variantsByProduct = new Map<string, Set<string>>();
+  const branches: RrfBranch[] = [];
 
-  // Match exacto de SKU: NO es una búsqueda semántica, es un lookup
-  // determinístico (plan §3.7). No debe competir por ranking contra ruido
-  // vectorial — un cliente que pega un SKU quiere ESE producto, no "algo
-  // parecido". Se resuelve aparte y se antepone, sin pasar por RRF.
-  const exactosParams: unknown[] = [consulta.semanticQuery.trim()];
-  const exactosFiltro = construirFiltroDuro(consulta.filtros, exactosParams);
-  const { rows: exactos } = await pool.query<{ product_id: string }>(
-    `SELECT DISTINCT v.product_id FROM catalog_variants v
-     JOIN catalog_products p ON p.product_id = v.product_id
-     WHERE v.sku = $1 ${exactosFiltro}`,
-    exactosParams,
-  );
-  const idsExactos = exactos.map((r) => r.product_id);
-  const idsExactosSet = new Set(idsExactos);
+  // Independent lexical branches can share one round-trip window. They still
+  // apply exactly the same hard predicates before their own ranking.
+  const [ftsRows, trigramRows] = await Promise.all([
+    USE_FULLTEXT ? queryFullText(pool, consulta) : Promise.resolve(null),
+    USE_TRIGRAM ? queryTrigram(pool, consulta) : Promise.resolve(null),
+  ]);
 
-  // Un código con forma de SKU que no existe no debe convertirse en una
-  // consulta semántica: "SKU-INEXISTENTE" no significa "algo parecido".
-  if (idsExactos.length === 0 && pareceSku(consulta.semanticQuery)) {
-    return { query: consulta, results: [] };
+  if (ftsRows) {
+    const rows = ftsRows;
+    const ranked = addBranchRows(rows, textScores, variantsByProduct);
+    branches.push({ name: "fts", ids: ranked, weight: RRF_WEIGHTS.fts });
+    branchStatus.fts = ranked.length ? "READY" : "EMPTY";
+  } else branchStatus.fts = "SKIPPED_OPTIONAL";
+
+  if (trigramRows) {
+    const rows = trigramRows;
+    const ranked = addBranchRows(rows, trigramScores, variantsByProduct);
+    branches.push({ name: "trigram", ids: ranked, weight: RRF_WEIGHTS.trigram });
+    branchStatus.trigram = ranked.length ? "READY" : "EMPTY";
+  } else branchStatus.trigram = "SKIPPED_OPTIONAL";
+
+  const hasPrecalculatedVector = Array.isArray(consulta.embeddingPrecalculado) && consulta.embeddingPrecalculado.length > 0;
+  const vectorRequested = USE_VECTOR || hasPrecalculatedVector;
+  const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY?.trim()) || Boolean(getGeminiClient());
+  if (vectorRequested && (hasPrecalculatedVector || hasGeminiKey)) {
+    try {
+      const rows = await queryVector(pool, consulta);
+      const ranked = addBranchRows(rows, vectorScores, variantsByProduct);
+      branches.push({ name: "vector", ids: ranked, weight: RRF_WEIGHTS.vector });
+      branchStatus.vector = ranked.length ? "READY" : "EMPTY";
+    } catch {
+      branchStatus.vector = "ERROR";
+    }
+  } else branchStatus.vector = "SKIPPED_OPTIONAL";
+
+  let fused: FusedEntry[] = fusionarRankingsLocal(branches);
+  if (!fused.length && tieneFiltrosNavegables(consulta.filtros)) {
+    const browseRows = await queryFilterBrowse(pool, consulta.filtros!);
+    const browseScores = new Map<string, number>();
+    const browseVariants = new Map<string, Set<string>>();
+    const browseRanked = addBranchRows(browseRows, browseScores, browseVariants);
+    fused = browseRanked.map((productId) => ({ productId, score: browseScores.get(productId) ?? 0, contributions: [] }));
+    branchStatus.filter_browse = browseRanked.length ? "READY" : "EMPTY";
   }
+  if (!fused.length) return { query: consulta, results: [], skuStatus: "not_sku", branchStatus };
 
-  if (USE_VECTOR && consulta.semanticQuery.trim().length > 0) {
-    const embedding = consulta.embeddingPrecalculado ?? (await embeberTexto(consulta.semanticQuery, "RETRIEVAL_QUERY"));
-    const params: unknown[] = [`[${embedding.join(",")}]`];
-    const filtroDuro = construirFiltroDuro(consulta.filtros, params);
-    params.push(VECTOR_LIMIT);
+  const productIds = fused.map((entry) => entry.productId);
+  const whitelist = await finalVariantWhitelist(pool, productIds, consulta.filtros);
+  const validFused = fused.filter((entry) => (whitelist.get(entry.productId)?.length ?? 0) > 0);
+  if (!validFused.length) return { query: consulta, results: [], skuStatus: "not_sku", branchStatus };
 
-    const { rows } = await pool.query<{ product_id: string; vector_score: number }>(
-      `SELECT e.product_id, 1 - (e.embedding <=> $1::vector) AS vector_score
-       FROM catalog_embeddings e
-       JOIN catalog_products p ON p.product_id = e.product_id
-       WHERE true ${filtroDuro}
-       ORDER BY e.embedding <=> $1::vector
-       LIMIT $${params.length}`,
-      params,
-    );
-    for (const r of rows) {
-      vectorScores.set(r.product_id, Number(r.vector_score));
-      vectorRanked.push(r.product_id);
-    }
-  }
+  const eligibleProductIds = validFused.map((entry) => entry.productId);
+  const eligibleVariantIds = validFused.flatMap((entry) => whitelist.get(entry.productId) ?? []);
+  const demand = await demandByProduct(pool, eligibleProductIds, eligibleVariantIds);
 
-  if (USE_FULLTEXT && consulta.semanticQuery.trim().length > 0) {
-    const params: unknown[] = [consulta.semanticQuery];
-    const filtroDuro = construirFiltroDuro(consulta.filtros, params);
-    params.push(VECTOR_LIMIT);
+  const logDemand = new Map(validFused.map((entry) => [entry.productId, Math.log1p(demand.get(entry.productId) ?? 0)]));
+  const maximumDemand = Math.max(...logDemand.values(), 0);
+  const demandWeight = maximumDemand > 0 ? 0.0001 : 0;
+  const results = validFused
+    .map((entry): ResultadoRetrieval => {
+      const demandScore = maximumDemand > 0 ? ((logDemand.get(entry.productId) ?? 0) / maximumDemand) * demandWeight : 0;
+      return {
+        productId: entry.productId,
+        variantIds: whitelist.get(entry.productId) ?? [],
+        vectorScore: vectorScores.get(entry.productId) ?? 0,
+        textScore: textScores.get(entry.productId) ?? 0,
+        trigramScore: trigramScores.get(entry.productId) ?? 0,
+        demandScore,
+        finalScore: entry.score + demandScore,
+        reasons: entry.contributions.map((contribution) => contribution.branch),
+        rrfContributions: entry.contributions,
+      };
+    })
+    .sort((left, right) => right.finalScore - left.finalScore || right.demandScore! - left.demandScore! || left.productId.localeCompare(right.productId))
+    .slice(0, FINAL_LIMIT);
 
-    const { rows } = await pool.query<{ product_id: string; text_score: number }>(
-      `SELECT p.product_id, ts_rank(p.search_tsv, q) AS text_score
-       FROM catalog_products p, plainto_tsquery('spanish_unaccent', $1) q
-       WHERE p.search_tsv @@ q ${filtroDuro}
-       ORDER BY text_score DESC
-       LIMIT $${params.length}`,
-      params,
-    );
-    for (const r of rows) {
-      textScores.set(r.product_id, Number(r.text_score));
-      textRanked.push(r.product_id);
-    }
-  }
-
-  const rrf = fusionarRankings(
-    [
-      { ids: vectorRanked, peso: PESO_VECTOR },
-      { ids: textRanked, peso: PESO_TEXTO },
-    ],
-    { k: RRF_K },
-  );
-
-  let fusionados: ResultadoRetrieval[] = [...rrf.entries()]
-    .filter(([productId]) => !idsExactosSet.has(productId)) // no duplicar: van primero, aparte
-    .map(([productId, finalScore]) => ({
-      productId,
-      variantIds: [],
-      vectorScore: vectorScores.get(productId) ?? 0,
-      textScore: textScores.get(productId) ?? 0,
-      finalScore,
-    }));
-
-  // Piso de similitud calibrado con el dataset de evaluación — solo descarta ruido
-  // semántico puro; un match de texto exacto (SKU, nombre) nunca se descarta así.
-  fusionados = fusionados.filter((r) => r.textScore > 0 || r.vectorScore >= MIN_SIMILARITY);
-  fusionados.sort((a, b) => b.finalScore - a.finalScore);
-
-  const exactosResultado: ResultadoRetrieval[] = idsExactos.map((productId) => ({
-    productId,
-    variantIds: [],
-    vectorScore: vectorScores.get(productId) ?? 0,
-    textScore: textScores.get(productId) ?? 0,
-    finalScore: Number.POSITIVE_INFINITY,
-  }));
-
-  fusionados = [...exactosResultado, ...fusionados].slice(0, FINAL_LIMIT);
-
-  if (fusionados.length > 0) {
-    const ids = fusionados.map((r) => r.productId);
-    const params: unknown[] = [ids];
-    let filtroVariante = "v.product_id = ANY($1::text[])";
-    if (consulta.filtros?.disponible ?? true) filtroVariante += " AND v.available = true";
-    if (consulta.filtros?.precioMax != null) {
-      params.push(consulta.filtros.precioMax);
-      filtroVariante += ` AND v.price <= $${params.length}`;
-    }
-    // Mismo filtro de forma/diámetro que construirFiltroDuro, aplicado aquí
-    // a nivel de VARIANTE: sin esto, un producto podía pasar el filtro
-    // duro por tener alguna variante R-5 disponible, pero la whitelist que
-    // ve el LLM seguía incluyendo sus otras 8 variantes (R-9, R-12…) — el
-    // filtro entraba al ranking sin restringir lo que el modelo puede elegir.
-    if (consulta.filtros?.formas?.length) {
-      params.push(consulta.filtros.formas);
-      filtroVariante += ` AND v.forma = ANY($${params.length}::text[])`;
-    }
-    if (consulta.filtros?.diametrosPulgadas?.length) {
-      params.push(consulta.filtros.diametrosPulgadas);
-      filtroVariante += ` AND v.diam_pulg = ANY($${params.length}::numeric[])`;
-    }
-    const { rows: variantes } = await pool.query<{ product_id: string; variant_id: string }>(
-      `SELECT v.product_id, v.variant_id FROM catalog_variants v WHERE ${filtroVariante}`,
-      params,
-    );
-    const porProducto = new Map<string, string[]>();
-    for (const v of variantes) {
-      porProducto.set(v.product_id, [...(porProducto.get(v.product_id) ?? []), v.variant_id]);
-    }
-    for (const r of fusionados) r.variantIds = porProducto.get(r.productId) ?? [];
-  }
-
-  return { query: consulta, results: fusionados };
+  return { query: consulta, results, skuStatus: "not_sku", branchStatus };
 }
+
+export type { RrfContribution };

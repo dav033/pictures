@@ -10,6 +10,7 @@ for (const archivo of [".env.local", ".env"]) {
 
 const SECRETO = "secreto-de-prueba";
 const PRODUCT_ID = "999911000001"; // id claramente ficticio, no colisiona con catálogo real
+const PEER_PRODUCT_ID = "999911000002";
 
 function firmar(cuerpo: string, secreto: string): string {
   return createHmac("sha256", secreto).update(cuerpo, "utf8").digest("base64");
@@ -25,7 +26,7 @@ function payloadProducto(overrides: Record<string, unknown> = {}): Record<string
     tags: "TEST, WEBHOOK", // Admin API: string separado por comas, no array
     updated_at: "2026-01-01T10:00:00-05:00",
     variants: [
-      { id: 8888811, title: "Default", option1: "R-12", price: "10000", available: true, grams: 5, sku: "TEST-WEBHOOK-1" },
+      { id: 8888811, title: "R-12 Rojo", option1: "R-12", price: "10000", available: true, grams: 5, sku: "B2B-TEST-WEBHOOK-1" },
     ],
     images: [],
     ...overrides,
@@ -33,9 +34,9 @@ function payloadProducto(overrides: Record<string, unknown> = {}): Record<string
 }
 
 async function limpiar(pool: Pool) {
-  await pool.query("DELETE FROM catalog_products WHERE product_id = $1", [PRODUCT_ID]);
-  await pool.query("DELETE FROM catalog_webhook_log WHERE shopify_product_id = $1", [PRODUCT_ID]);
-  await pool.query("DELETE FROM catalog_rejections WHERE source_id = $1", [PRODUCT_ID]);
+  await pool.query("DELETE FROM catalog_products WHERE product_id = ANY($1::text[])", [[PRODUCT_ID, PEER_PRODUCT_ID]]);
+  await pool.query("DELETE FROM catalog_webhook_log WHERE shopify_product_id = ANY($1::text[])", [[PRODUCT_ID, PEER_PRODUCT_ID]]);
+  await pool.query("DELETE FROM catalog_rejections WHERE source_id = ANY($1::text[])", [[PRODUCT_ID, PEER_PRODUCT_ID]]);
 }
 
 async function main() {
@@ -68,6 +69,66 @@ async function main() {
     reportar(r1.status === "procesado", "products/create se procesa", JSON.stringify(r1));
     const { rows: creado } = await pool.query("SELECT title, source_updated_at FROM catalog_products WHERE product_id = $1", [PRODUCT_ID]);
     reportar(creado[0]?.title === "Producto De Prueba Webhook", "producto quedó persistido con el título correcto", JSON.stringify(creado[0]));
+    const { rows: varianteCreada } = await pool.query(
+      `SELECT sku_original, sku_canonical, sku_ambiguous, derived_colors, source_variant_id
+         FROM catalog_variants WHERE product_id = $1`,
+      [PRODUCT_ID],
+    );
+    reportar(
+      varianteCreada[0]?.sku_original === "B2B-TEST-WEBHOOK-1" &&
+        varianteCreada[0]?.sku_canonical === "TEST-WEBHOOK-1" &&
+        varianteCreada[0]?.sku_ambiguous === false &&
+        JSON.stringify(varianteCreada[0]?.derived_colors) === JSON.stringify(["rojo"]) &&
+        varianteCreada[0]?.source_variant_id === "8888811",
+      "legacy writer conserva SKU v2, color same-variant y provenance",
+      JSON.stringify(varianteCreada[0]),
+    );
+
+    // A second product with the same canonical SKU exercises global collision
+    // recomputation; removing the source SKU must clear only this side.
+    const peer = await procesarWebhookShopify(pool, {
+      webhookId: "wh-peer",
+      topic: "products/create",
+      shopifyProductId: PEER_PRODUCT_ID,
+      body: payloadProducto({
+        id: Number(PEER_PRODUCT_ID),
+        handle: "producto-de-prueba-webhook-peer-999911",
+        variants: [{ id: 8888812, title: "R-12 Rojo", option1: "R-12", price: "11000", available: true, grams: 5, sku: "TEST-WEBHOOK-1" }],
+      }),
+    });
+    reportar(peer.status === "procesado", "producto peer para colisión SKU se procesa", JSON.stringify(peer));
+    const collision = await pool.query<{ sku_ambiguous: boolean }>(
+      "SELECT sku_ambiguous FROM catalog_variants WHERE variant_id = ANY($1::text[]) ORDER BY variant_id",
+      [["8888811", "8888812"]],
+    );
+    reportar(collision.rows.length === 2 && collision.rows.every((row) => row.sku_ambiguous), "colisión SKU global marca ambos variants como ambiguous", JSON.stringify(collision.rows));
+
+    const skuRemoved = await procesarWebhookShopify(pool, {
+      webhookId: "wh-sku-clear",
+      topic: "products/update",
+      shopifyProductId: PRODUCT_ID,
+      body: payloadProducto({
+        updated_at: "2026-05-01T10:00:00-05:00",
+        variants: [{ id: 8888811, title: "R-12 Rojo", option1: "R-12", price: "10000", available: true, grams: 5, sku: null }],
+      }),
+    });
+    reportar(skuRemoved.status === "procesado", "update que elimina SKU se procesa", JSON.stringify(skuRemoved));
+    const afterSkuRemoval = await pool.query<{ sku_original: string | null; sku_canonical: string | null; sku_ambiguous: boolean }>(
+      `SELECT sku_original, sku_canonical, sku_ambiguous
+         FROM catalog_variants WHERE variant_id = ANY($1::text[])
+        ORDER BY variant_id`,
+      [["8888811", "8888812"]],
+    );
+    reportar(
+      afterSkuRemoval.rows.length === 2 &&
+        afterSkuRemoval.rows[0].sku_original == null &&
+        afterSkuRemoval.rows[0].sku_canonical == null &&
+        afterSkuRemoval.rows[0].sku_ambiguous === false &&
+        afterSkuRemoval.rows[1].sku_canonical === "TEST-WEBHOOK-1" &&
+        afterSkuRemoval.rows[1].sku_ambiguous === false,
+      "quitar SKU limpia su metadata y recalcula el peer sin falsa ambigüedad",
+      JSON.stringify(afterSkuRemoval.rows),
+    );
 
     // --- idempotencia: mismo webhook_id reenviado ---
     const r2 = await procesarWebhookShopify(pool, {

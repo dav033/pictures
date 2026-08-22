@@ -84,7 +84,7 @@ export const OCASIONES_CATALOGO_V2 = [
 ] as const;
 
 export const FORMAS_CATALOGO_V2 = ["redondo", "corazon", "link", "modelar"] as const;
-export const DIAMETROS_REDONDOS_CATALOGO_V2 = [5, 9, 12, 18, 24, 36] as const;
+export const DIAMETROS_REDONDOS_CATALOGO_V2 = [5, 9, 12, 18, 24, 36, 40] as const;
 
 export type TaxonomyStatus = "known" | "unknown" | "ambiguous";
 
@@ -126,7 +126,7 @@ const COLORS: readonly Alias<(typeof PALETA_COLORES_V2)[number]>[] = [
   { value: "multicolor", aliases: ["multicolor", "surtido", "rainbow", "arcoiris"] },
   { value: "lila", aliases: ["lila"] },
   { value: "turquesa", aliases: ["turquesa", "turquesa"] },
-  { value: "beige", aliases: ["beige"] },
+  { value: "beige", aliases: ["beige", "arena"] },
   { value: "cafe", aliases: ["cafe", "marron", "marrón", "chocolate", "brown"] },
   { value: "champagne", aliases: ["champagne", "champana", "champaña"] },
   { value: "violeta", aliases: ["violeta"] },
@@ -223,7 +223,12 @@ function matchAliases<T extends string>(text: string, aliases: readonly Alias<T>
 export const plegarTexto = fold;
 
 export function clasificarColores(text: string): TaxonomyMatch<(typeof PALETA_COLORES_V2)[number]> {
-  return matchAliases(text, COLORS);
+  const normalized = fold(text);
+  // In Spanish catalog copy, "vino" is an object/use context for bags and
+  // gift boxes, not a burgundy color. Keep the color alias for explicit
+  // requests such as "globos color vino".
+  const objectWine = /\b(?:bolsa|caja|empaque|porta\w*|estuche)\b.*\bvino\b/.test(normalized) || /\bpara\s+vino\b/.test(normalized);
+  return matchAliases(objectWine ? normalized.replace(/\bvino\b/g, " ") : text, COLORS);
 }
 
 export type ColorBreakdown = {
@@ -258,7 +263,13 @@ export function clasificarCategorias(text: string): TaxonomyMatch<(typeof CATEGO
 }
 
 export function clasificarFormas(text: string): TaxonomyMatch<(typeof FORMAS_CATALOGO_V2)[number]> {
-  return matchAliases(text, FORMS);
+  const normalized = fold(text);
+  const explicitForm = /\b(?:en\s+)?forma(?:\s+de)?\s+(?:redond\w*|corazon\w*|heart|link(?:\s+o\s+loon)?|modelar|figuras?|twisting)\b/.test(normalized);
+  const balloonContext = /\b(?:globo|globos|balloon|balloons)\b/.test(normalized);
+  // Textual forms are hard only with an explicit "forma ..." phrase or a
+  // balloon context. This prevents vessel/decorative copy and generic verbs
+  // such as "modelar" from imposing a physical variant filter.
+  return explicitForm || balloonContext ? matchAliases(text, FORMS) : matchAliases("", FORMS);
 }
 
 export function clasificarTamanos(text: string): TaxonomyMatch<number> {
@@ -266,13 +277,9 @@ export function clasificarTamanos(text: string): TaxonomyMatch<number> {
   const values = new Set<number>();
   // A bare quantity such as "12 globos" is not a size. Require either the
   // catalog R- code or an explicit inch unit, then handle human size words.
-  for (const match of normalized.matchAll(/\br\s*-?\s*(5|9|12|18|24|36)\b/gi)) values.add(Number(match[1]));
-  for (const match of normalized.matchAll(/\b(5|9|12|18|24|36)\s*(?:pulgadas?|in)\b/gi)) values.add(Number(match[1]));
-  for (const match of normalized.matchAll(/\b(?:tamano|talla|medida|de)\s*(5|9|12|18|24|36)\b/gi)) values.add(Number(match[1]));
-  if (/\b(?:mini|chiquit\w*|pequen\w*)\b/i.test(normalized)) values.add(5);
-  if (/\b(?:median\w*|normal)\b/i.test(normalized)) values.add(12);
-  if (/\bgrand\w*\b/i.test(normalized)) values.add(18);
-  if (/\b(?:gigant\w*|jumbo)\b/i.test(normalized)) values.add(24);
+  for (const match of normalized.matchAll(/\br\s*-?\s*(5|9|12|18|24|36|40)\b/gi)) values.add(Number(match[1]));
+  for (const match of normalized.matchAll(/\b(5|9|12|18|24|36|40)\s*(?:pulgadas?|in)\b/gi)) values.add(Number(match[1]));
+  for (const match of normalized.matchAll(/\b(?:tamano|talla|medida|de)\s*(5|9|12|18|24|36|40)\b/gi)) values.add(Number(match[1]));
   const result = [...values];
   const ambiguous = /(?:^|\s)(?:o|u|quizas|tal vez)(?:$|\s)/.test(normalized) && result.length > 1;
   return { status: result.length === 0 ? "unknown" : ambiguous ? "ambiguous" : "known", values: result, candidates: result.map(String) };

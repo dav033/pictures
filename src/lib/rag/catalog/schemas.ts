@@ -32,6 +32,8 @@ export const CatalogVariantSchema = z.object({
   largo_pulg: z.number().nullable(),
   ancho_cm: z.number().nullable(),
   alto_cm: z.number().nullable(),
+  /** Variant-level color evidence; empty means unknown, never a union guess. */
+  derived_colors: z.array(z.string()),
 });
 
 export type CatalogVariant = z.infer<typeof CatalogVariantSchema>;

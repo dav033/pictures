@@ -32,6 +32,7 @@ export type CanonicalVariant = CatalogVariant & {
   sku_original: string | null;
   sku_canonical: string | null;
   sku_ambiguous: boolean;
+  derived_colors: string[];
   attribute_states: Record<string, "source" | "derived" | "unknown">;
 };
 
@@ -94,17 +95,80 @@ function uniqueStrings(values: string[]): string[] {
   return [...new Set(values.map(sanitizeTexto).filter(Boolean))];
 }
 
+function normalizeColorValues(values: string[]): string[] {
+  const unique = uniqueStrings(values);
+  // `dorado rosa` is one semantic rose-gold color. Shopify often repeats it
+  // as separate DORADO/ROSADO tags; remove only those redundant aliases and
+  // preserve genuinely alternate colors such as azul or negro.
+  if (unique.includes("dorado rosa")) return unique.filter((value) => value !== "dorado" && value !== "rosado");
+  return unique;
+}
+
+function variantColors(product: CatalogProductSource, variant: CatalogVariantSource): string[] {
+  const variantText = variant.title.replace(/[-_/]+/g, " ");
+  const direct = normalizeColorValues(clasificarColores(variantText).values);
+  // This source label is a finish, not a color. Never inherit a product
+  // color onto the explicit ESCARCHADA sibling.
+  if (/\bESCARCHAD[AO]?\b/i.test(variant.title)) return [];
+  // Product-title colors are evidence applicable to every variant when the
+  // variant itself does not override them. Do not use the union of product
+  // tags: tags frequently describe sibling variants and would leak colors.
+  const titleColors = normalizeColorValues(clasificarColores(product.title.replace(/[-_/]+/g, " ")).values);
+  const titleSpecificColors = titleColors.filter((value) => value !== "multicolor");
+  // An assortment label is still useful evidence. When the public title also
+  // names concrete colors, keep both signals instead of letting generic
+  // `MULTICOLOR` replace `DORADO`/`NEGRO`.
+  if (direct.length === 1 && direct[0] === "multicolor") {
+    return normalizeColorValues(titleSpecificColors.length ? ["multicolor", ...titleSpecificColors] : direct);
+  }
+  if (direct.length) return direct;
+  return titleColors;
+}
+
 function findExplicitSize(product: CatalogProductSource, variant: CatalogVariantSource): {
   codigo: string | null;
   decoded: TamanoDecodificado | null;
 } {
   // Only decode an explicit code. A free-form title such as "Grande" is not
   // enough evidence to fabricate dimensions or shape.
-  const candidates = [variant.title, ...product.tags];
-  for (const candidate of candidates) {
+  // Variant evidence is most specific, followed by the public product title;
+  // tags can describe sibling variants and are only a final fallback.
+  const decodeCandidates = (candidate: string): Array<{ codigo: string; decoded: TamanoDecodificado }> => {
+    // Shopify titles often append packaging text (for example
+    // `C-12 / PAQUETE x 10`). The decoder intentionally accepts only the
+    // canonical token, so extract the safe C/LOL/T/R token first instead of
+    // passing an entire marketing title through it.
+    const codes = [
+      ...candidate.matchAll(/\b(?:C|LOL|T|R)\s*-?\s*\d{1,3}\b/gi),
+      ...candidate.matchAll(/\bCORAZ[ÓO]N\s*-?\s*\d{1,3}\b/gi),
+    ];
+    const hits = codes.map((match) => {
+      const raw = match[0];
+      const heart = raw.match(/CORAZ[ÓO]N\s*-?\s*(\d{1,3})/i);
+      const codigo = heart ? `C-${heart[1]}` : raw.replace(/\s+/g, "");
+      const decoded = decodificarTamano(codigo);
+      return decoded ? { codigo: sanitizeTexto(codigo), decoded } : null;
+    }).filter((value): value is { codigo: string; decoded: TamanoDecodificado } => value !== null);
+    if (hits.length) return hits;
     const decoded = decodificarTamano(candidate);
-    if (decoded) return { codigo: sanitizeTexto(candidate), decoded };
+    return decoded ? [{ codigo: sanitizeTexto(candidate), decoded }] : [];
+  };
+
+  // The concrete variant and public product title are deterministic evidence.
+  // Tags may describe sibling variants, so only use them when all tag hits
+  // agree on exactly one decoded size.
+  for (const candidate of [variant.title, product.title]) {
+    const hits = decodeCandidates(candidate);
+    if (hits.length === 1) return hits[0]!;
+    if (hits.length > 1) return { codigo: null, decoded: null };
   }
+  const tagHits = product.tags.flatMap(decodeCandidates);
+  const uniqueTagHits = new Map<string, { codigo: string; decoded: TamanoDecodificado }>();
+  for (const hit of tagHits) {
+    const key = JSON.stringify(hit.decoded);
+    uniqueTagHits.set(key, hit);
+  }
+  if (uniqueTagHits.size === 1) return [...uniqueTagHits.values()][0]!;
   return { codigo: null, decoded: null };
 }
 
@@ -152,6 +216,7 @@ function canonicalizeVariant(
   const title = sanitizeTextoNullable(variant.title);
   const imageUrl = product.images[0]?.url ? sanitizeTexto(product.images[0].url) : null;
   const size = findExplicitSize(product, variant);
+  const derivedColors = variantColors(product, variant);
 
   const value: CanonicalVariant = {
     variant_id: variantId,
@@ -167,11 +232,12 @@ function canonicalizeVariant(
     image_url: imageUrl,
     source_payload: variant,
     ...sizeFields(size),
+    derived_colors: derivedColors,
     source_variant_id: variant.id,
     sku_original: skuOriginal,
     sku_canonical: skuCanonical,
     sku_ambiguous: false,
-    attribute_states: attributeStates([], [], size.decoded),
+    attribute_states: attributeStates(derivedColors, [], size.decoded),
   };
   const parsed = CatalogVariantSchema.parse(value);
   return {
@@ -180,6 +246,7 @@ function canonicalizeVariant(
     sku_original: value.sku_original,
     sku_canonical: value.sku_canonical,
     sku_ambiguous: value.sku_ambiguous,
+    derived_colors: value.derived_colors,
     attribute_states: value.attribute_states,
   } as CanonicalVariant;
 }
@@ -254,14 +321,18 @@ function canonicalizeProduct(
   const rawTags = uniqueStrings(product.tags);
   const title = sanitizeTexto(limpiarTitulo(product.title));
   const taxonomyText = [...rawTags, title, productType ?? ""].join(" ");
+  const taxonomyMatchText = taxonomyText.replace(/[-_/]+/g, " ");
   // v2 is the source of truth for query filters. Keep the legacy derivation
   // as a compatibility fallback for old tags not yet represented by an alias,
   // but never merge its overlapping color aliases into a v2 match.
-  const v2Colors = clasificarColores(taxonomyText).values;
-  const colors = v2Colors.length > 0 ? [...v2Colors] : derivarColores(rawTags, title);
-  const v2Occasions = clasificarOcasiones(taxonomyText).values;
+  const v2Colors = normalizeColorValues(clasificarColores(taxonomyMatchText).values);
+  const colors = v2Colors.length > 0 ? v2Colors : normalizeColorValues(derivarColores(rawTags, title));
+  const v2Occasions = clasificarOcasiones(taxonomyMatchText).values;
   const occasions = uniqueStrings([...v2Occasions, ...derivarOcasiones(rawTags, title)]);
-  const category = derivarCategoria(productType, rawTags) ?? clasificarCategorias(taxonomyText).values[0] ?? null;
+  // A public title is stronger evidence than a legacy productType. This is
+  // important for names such as "Decor-Kit" whose old type may say LATEX.
+  const titleCategory = clasificarCategorias(title.replace(/[-_/]+/g, " ")).values[0] ?? null;
+  const category = titleCategory ?? derivarCategoria(productType, rawTags) ?? clasificarCategorias(taxonomyMatchText).values[0] ?? null;
   const variantTitles = variants.map((variant) => variant.title).filter((value): value is string => Boolean(value));
   const searchTags = uniqueStrings([...rawTags, ...(productType ? [productType] : []), ...variantTitles]);
   const skus = uniqueStrings(variants.flatMap((variant) => [variant.sku_original, variant.sku_canonical]).filter((value): value is string => Boolean(value)));

@@ -59,7 +59,7 @@ async function main() {
       cantidad: 1,
     };
     // Whitelist real de la conversación: solo contiene el producto legítimo, NUNCA el inventado.
-    const whitelist = new Set([real1[0]?.product_id ?? ""]);
+    const whitelist = new Map([[real1[0]?.product_id ?? "", new Set([real1[0]?.variant_id ?? ""])]])
     const r2 = await validarSeleccion(pool, [idInventado], whitelist);
     reportar(
       r2.validados.length === 0 && r2.rechazados.some((x) => x.motivo.includes("whitelist") || x.motivo.includes("recuperados")),
@@ -80,7 +80,7 @@ async function main() {
       cantidad: 1,
       precio: precioReal - 1, // campo que el schema de la herramienta ni siquiera admite
     } as SeleccionSolicitada & { precio: number };
-    const whitelist2 = new Set([real2[0].product_id]);
+    const whitelist2 = new Map([[real2[0].product_id, new Set([real2[0].variant_id])]]);
     const r3 = await validarSeleccion(pool, [intentoConPrecioFalso], whitelist2);
     reportar(
       r3.validados[0]?.precioUnitario === precioReal,
@@ -102,7 +102,7 @@ async function main() {
     if (agotado.length === 0) {
       console.log("[N/A] Test 5: no hay ninguna variante agotada en el catálogo actual para probar");
     } else {
-      const whitelist3 = new Set([agotado[0].product_id]);
+      const whitelist3 = new Map([[agotado[0].product_id, new Set([agotado[0].variant_id])]]);
       const r5 = await validarSeleccion(
         pool,
         [{ productId: agotado[0].product_id, variantId: agotado[0].variant_id, cantidad: 1 }],
@@ -115,12 +115,34 @@ async function main() {
       );
     }
 
+    // The CDN contains a small over-selling cohort where available=true but
+    // inventory_quantity is zero/negative. Availability remains authoritative
+    // for retrieval and confirmation; stock is only a positive upper bound.
+    const { rows: availableWithoutStock } = await pool.query<{ product_id: string; variant_id: string }>(
+      "SELECT product_id, variant_id FROM catalog_variants WHERE available = true AND inventory_quantity <= 0 ORDER BY variant_id LIMIT 1",
+    );
+    if (availableWithoutStock.length === 0) {
+      console.log("[N/A] available=true inventory<=0 — no source row in this catalog");
+    } else {
+      const row = availableWithoutStock[0];
+      const lowStock = await validarSeleccion(
+        pool,
+        [{ productId: row.product_id, variantId: row.variant_id, cantidad: 1 }],
+        new Map([[row.product_id, new Set([row.variant_id])]]),
+      );
+      reportar(
+        lowStock.validados.length === 1,
+        "available=true no se reinterpreta como agotado por inventory<=0",
+        JSON.stringify(lowStock.rechazados),
+      );
+    }
+
     // Extra: variant_id real pero que pertenece a OTRO producto (no al product_id declarado).
     const { rows: dosVariantes } = await pool.query<{ product_id: string; variant_id: string }>(
       "SELECT DISTINCT product_id, variant_id FROM catalog_variants WHERE available = true LIMIT 2",
     );
     if (dosVariantes.length === 2 && dosVariantes[0].product_id !== dosVariantes[1].product_id) {
-      const whitelist4 = new Set([dosVariantes[0].product_id]);
+      const whitelist4 = new Map([[dosVariantes[0].product_id, new Set([dosVariantes[0].variant_id])]]);
       const rCruzado = await validarSeleccion(
         pool,
         [{ productId: dosVariantes[0].product_id, variantId: dosVariantes[1].variant_id, cantidad: 1 }],
@@ -128,7 +150,7 @@ async function main() {
       );
       reportar(
         rCruzado.validados.length === 0 &&
-          rCruzado.rechazados.some((x) => x.motivo.includes("no pertenece")),
+          rCruzado.rechazados.some((x) => x.motivo.includes("no pertenece") || x.motivo.includes("whitelist")),
         "Extra: variant_id de otro producto rechazado",
         JSON.stringify(rCruzado.rechazados),
       );
@@ -138,7 +160,7 @@ async function main() {
     const rCant = await validarSeleccion(
       pool,
       [{ productId: real2[0].product_id, variantId: real2[0].variant_id, cantidad: 0 }],
-      new Set([real2[0].product_id]),
+      new Map([[real2[0].product_id, new Set([real2[0].variant_id])]]),
     );
     reportar(
       rCant.validados.length === 0 && rCant.rechazados.some((x) => x.motivo === "cantidad inválida"),

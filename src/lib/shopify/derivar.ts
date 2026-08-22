@@ -252,13 +252,13 @@ export function nombreForma(forma: string | null): string {
 export const FORMAS_CATALOGO = Object.keys(NOMBRES_FORMA);
 
 /**
- * Diámetros redondos estándar del catálogo (R-5/9/12/18/24/36) — el mismo
+ * Diámetros redondos estándar del catálogo (R-5/9/12/18/24/36/40) — el mismo
  * conjunto que ya usa el motor geométrico (`geometria.ts`) para sus mezclas.
  * Deja fuera diámetros raros/no-globo que aparecen sueltos en `option1` (ej.
  * "40", restos de empaque): el intérprete de consultas solo necesita
  * reconocer los tamaños que un cliente realmente pide por voz/texto.
  */
-export const DIAMETROS_REDONDOS_CATALOGO = [5, 9, 12, 18, 24, 36] as const;
+export const DIAMETROS_REDONDOS_CATALOGO = [5, 9, 12, 18, 24, 36, 40] as const;
 
 const NOMBRES_OCASION: Record<string, string> = {
   cumpleanos: "Cumpleaños",

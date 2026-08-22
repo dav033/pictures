@@ -38,8 +38,8 @@ type FilaVarianteRedonda = {
  * misma fuente que ya usa `mejorVarianteParaTamano`/`aProducto` para
  * resolver la cotización final — `unidades_paq` (paquete real) solo vive
  * ahí, Postgres nunca lo decodificó (plan F1 solo llevó forma/diámetro).
- * `product_id` es el mismo id de Shopify en ambas bases, así que el
- * `productId` que ya pasó la whitelist de Postgres es válido aquí tal cual.
+ * `product_id` es el mismo id de Shopify en ambas bases, y sólo se consideran
+ * los `variant_id` que el retrieval Postgres entregó en su whitelist interna.
  *
  * Fallback por cercanía (decisión de producto): si este producto no tiene el
  * diámetro exacto de una línea del despiece, se usa el disponible más
@@ -47,7 +47,11 @@ type FilaVarianteRedonda = {
  * cliente (nunca sustitución silenciosa). Mismo criterio de desempate que
  * `mejorVarianteParaTamano`: disponible primero, luego menor precio unitario.
  */
-export function resolverVariantesPorDespiece(productId: string, despiece: LineaDespiece[]): ResultadoResolverTamanos {
+export function resolverVariantesPorDespiece(
+  productId: string,
+  despiece: LineaDespiece[],
+  whitelistVariantIds: ReadonlySet<string>,
+): ResultadoResolverTamanos {
   const filas = getDb()
     .prepare(
       `SELECT id, diam_pulg, disponible, precio, unidades_paq
@@ -60,8 +64,11 @@ export function resolverVariantesPorDespiece(productId: string, despiece: LineaD
     return { lineas: [], sinCobertura: despiece };
   }
 
-  const disponibles = filas.filter((f) => f.disponible);
-  const candidatos = disponibles.length > 0 ? disponibles : filas;
+  const recuperadas = filas.filter((f) => whitelistVariantIds.has(f.id));
+  if (recuperadas.length === 0) return { lineas: [], sinCobertura: despiece };
+
+  const disponibles = recuperadas.filter((f) => f.disponible);
+  const candidatos = disponibles.length > 0 ? disponibles : recuperadas;
 
   const lineas: LineaResuelta[] = [];
 

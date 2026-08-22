@@ -7,6 +7,8 @@ import { parseProductsCatalog, createManifest } from "../src/lib/rag/sources/fet
 import type { ProductsCatalogSource } from "../src/lib/rag/sources/contracts";
 import { canonicalizeCatalog } from "../src/lib/rag/catalog/canonicalize";
 import { persistStagedCatalog } from "../src/lib/rag/catalog/persist-staged";
+import { normalizarProducto } from "../src/lib/rag/catalog/normalize";
+import type { ProductoPublico } from "../src/lib/shopify/tipos";
 
 const DEFAULT_FIXTURE = path.resolve(process.cwd(), "eval", "fixtures", "products_catalog.fixture.json");
 
@@ -46,11 +48,171 @@ function assertCanonicalInvariants(source: ProductsCatalogSource): void {
   assert.equal(variant.inventory_quantity, 12);
   assert.equal(variant.codigo_tamano, "R-12");
   assert.equal(variant.forma, "redondo");
+  assert.deepEqual(variant.derived_colors, ["rojo"]);
+  assert.equal(variant.attribute_states.color, "derived");
   assert.equal(first.products[0].image_urls[0], "https://example.invalid/fixture-product-001.jpg");
   assert.match(first.products[0].search_text, /FIXTURE-SKU-001/);
   assert.doesNotMatch(first.products[0].search_text, /1234(?:\.00)?/);
   assert.doesNotMatch(first.products[0].search_text, /inventory|stock|availableForSale/i);
   assert.ok(first.rejections.some((rejection) => rejection.reason.startsWith("source_status_draft")));
+
+  const heartSource: ProductsCatalogSource = [{
+    ...source[0],
+    id: "gid://shopify/Product/fixture-product-heart",
+    handle: "fixture-heart-pack",
+    tags: ["CORAZON 12"],
+    variants: [{
+      ...source[0].variants[0],
+      id: "gid://shopify/ProductVariant/fixture-variant-heart",
+      title: "CORAZON 12 / PAQUETE X 10",
+    }],
+  }];
+  const heart = canonicalizeCatalog(heartSource);
+  assert.equal(heart.products[0]?.variants[0]?.codigo_tamano, "C-12", "CORAZON 12 must normalize to explicit C-12");
+  assert.equal(heart.products[0]?.variants[0]?.forma, "corazon", "CORAZON 12 must derive heart shape");
+
+  const variantColorSource: ProductsCatalogSource = [{
+    ...source[0],
+    id: "gid://shopify/Product/fixture-product-variant-color",
+    handle: "fixture-product-variant-color",
+    title: "Cuchara Deluxe",
+    tags: [],
+    variants: [{
+      ...source[0].variants[0],
+      id: "gid://shopify/ProductVariant/fixture-variant-color",
+      title: "ROJO / R-12",
+    }],
+  }];
+  const variantColor = canonicalizeCatalog(variantColorSource).products[0]?.variants[0];
+  assert.deepEqual(variantColor?.derived_colors, ["rojo"], "variant color evidence must come from the variant title");
+
+  const roseGold = canonicalizeCatalog([{
+    ...source[0],
+    id: "gid://shopify/Product/fixture-product-rose-gold",
+    handle: "fixture-product-rose-gold",
+    title: "Globo dorado rosa",
+    tags: ["DORADO ROSA", "DORADO", "ROSADO"],
+    variants: [{
+      ...source[0].variants[0],
+      id: "gid://shopify/ProductVariant/fixture-variant-rose-gold",
+      title: "DORADO ROSA / PAQUETE X 12",
+    }],
+  }]).products[0]?.variants[0];
+  assert.deepEqual(roseGold?.derived_colors, ["dorado rosa"], "compound rose-gold must not be split into redundant colors");
+
+  const productTitleColors = canonicalizeCatalog([
+    {
+      ...source[0],
+      id: "gid://shopify/Product/fixture-product-title-colors",
+      handle: "fixture-product-title-colors",
+      title: "Velita Dorado-Plata-Negro",
+      tags: ["DORADO", "PLATA", "NEGRO", "color sibling leakage must not matter"],
+      variants: [
+        { ...source[0].variants[0], id: "gid://shopify/ProductVariant/fixture-variant-title-colors-a", title: "PAQUETE X 10" },
+        { ...source[0].variants[0], id: "gid://shopify/ProductVariant/fixture-variant-title-colors-b", title: "PAQUETE X 20" },
+      ],
+    },
+    {
+      ...source[0],
+      id: "gid://shopify/Product/fixture-product-variant-colors",
+      handle: "fixture-product-variant-colors",
+      title: "Kit Dorado/Negro",
+      tags: ["ROJO", "AZUL", "NEGRO"],
+      variants: [{ ...source[0].variants[0], id: "gid://shopify/ProductVariant/fixture-variant-title-colors-c", title: "SURTIDO" }],
+    },
+  ]);
+  assert.deepEqual(productTitleColors.products[0]?.variants[0]?.derived_colors, ["dorado", "plateado", "negro"], "all product-title colors must apply to a variant without direct color evidence");
+  assert.deepEqual(productTitleColors.products[0]?.variants[1]?.derived_colors, ["dorado", "plateado", "negro"], "each sibling must inherit product-title colors");
+  assert.deepEqual(productTitleColors.products[1]?.variants[0]?.derived_colors, ["multicolor", "dorado", "negro"], "assortment variants must retain generic and product-title colors, not sibling tags");
+
+  const multivariantNoProductColor = canonicalizeCatalog([{
+    ...source[0],
+    id: "gid://shopify/Product/fixture-product-no-title-color",
+    handle: "fixture-product-no-title-color",
+    title: "Cuchara Deluxe",
+    tags: ["ROJO", "AZUL", "NEGRO"],
+    variants: [{ ...source[0].variants[0], id: "gid://shopify/ProductVariant/fixture-variant-no-title-color", title: "ESCARCHADA / PAQUETE X 10" }],
+  }]).products[0]?.variants[0];
+  assert.deepEqual(multivariantNoProductColor?.derived_colors, [], "a product color union must not leak into an unknown finish variant");
+
+  const genericAssortment = canonicalizeCatalog([{
+    ...source[0],
+    id: "gid://shopify/Product/fixture-product-generic-assortment",
+    handle: "fixture-product-generic-assortment",
+    title: "Kit de globos",
+    tags: [],
+    variants: [{ ...source[0].variants[0], id: "gid://shopify/ProductVariant/fixture-variant-generic-assortment", title: "MULTICOLOR" }],
+  }]).products[0]?.variants[0];
+  assert.deepEqual(genericAssortment?.derived_colors, ["multicolor"], "generic MULTICOLOR evidence must not disappear");
+
+  const titleSizeAndCategory = canonicalizeCatalog([{
+    ...source[0],
+    id: "gid://shopify/Product/fixture-product-title-size-category",
+    handle: "fixture-product-title-size-category",
+    title: "Decor-Kit Bouquet Globo Latex R12",
+    productType: "LÁTEX",
+    tags: [],
+    variants: [{ ...source[0].variants[0], id: "gid://shopify/ProductVariant/fixture-variant-title-size-category", title: "PAQUETE X 12" }],
+  }]).products[0];
+  assert.equal(titleSizeAndCategory?.derived.category, "kit", "explicit Decor-Kit title must override legacy product type");
+  assert.equal(titleSizeAndCategory?.variants[0]?.codigo_tamano, "R12", "R12 in product title must remain explicit size evidence");
+  assert.equal(titleSizeAndCategory?.variants[0]?.forma, "redondo");
+  assert.equal(titleSizeAndCategory?.variants[0]?.diam_pulg, 12);
+
+  const titleWinsOverConflictingTags = canonicalizeCatalog([{
+    ...source[0],
+    id: "gid://shopify/Product/fixture-product-title-before-tags",
+    handle: "fixture-product-title-before-tags",
+    title: "Bouquet Globo Latex R12",
+    tags: ["R-5", "R-12"],
+    variants: [{ ...source[0].variants[0], id: "gid://shopify/ProductVariant/fixture-variant-title-before-tags", title: "PAQUETE X 12" }],
+  }]).products[0]?.variants[0];
+  assert.equal(titleWinsOverConflictingTags?.codigo_tamano, "R12", "product title size evidence must precede conflicting sibling tags");
+
+  const conflictingTagsOnly = canonicalizeCatalog([{
+    ...source[0],
+    id: "gid://shopify/Product/fixture-product-conflicting-tags-only",
+    handle: "fixture-product-conflicting-tags-only",
+    title: "Bouquet Globo Latex",
+    tags: ["R-5", "R-12"],
+    variants: [{ ...source[0].variants[0], id: "gid://shopify/ProductVariant/fixture-variant-conflicting-tags-only", title: "PAQUETE X 12" }],
+  }]).products[0]?.variants[0];
+  assert.equal(conflictingTagsOnly?.codigo_tamano, null, "conflicting sibling size tags must not choose an arbitrary first value");
+
+  const adjectiveSize = canonicalizeCatalog([{
+    ...source[0],
+    id: "gid://shopify/Product/fixture-product-adjective-size",
+    handle: "fixture-product-adjective-size",
+    title: "Servilleta Pequeña",
+    tags: [],
+    variants: [{ ...source[0].variants[0], id: "gid://shopify/ProductVariant/fixture-variant-adjective-size", title: "PAQUETE X 10" }],
+  }]).products[0]?.variants[0];
+  assert.equal(adjectiveSize?.diam_pulg, null, "adjectives must not fabricate hard inches");
+  assert.equal(adjectiveSize?.forma, null, "adjectives must not fabricate a shape");
+
+  const decorativeHearts = canonicalizeCatalog([{
+    ...source[0],
+    id: "gid://shopify/Product/fixture-product-decorative-hearts",
+    handle: "fixture-product-decorative-hearts",
+    title: "Vaso corazones pop",
+    tags: [],
+    variants: [{ ...source[0].variants[0], id: "gid://shopify/ProductVariant/fixture-variant-decorative-hearts", title: "PAQUETE X 10" }],
+  }]).products[0]?.variants[0];
+  assert.equal(decorativeHearts?.forma, null, "decorative hearts in a vessel title are not physical shape evidence");
+
+  const escarchada = canonicalizeCatalog([{
+    ...source[0],
+    id: "gid://shopify/Product/fixture-product-escarchada",
+    handle: "fixture-product-escarchada",
+    title: "Globo rojo",
+    tags: ["ROJO"],
+    variants: [{
+      ...source[0].variants[0],
+      id: "gid://shopify/ProductVariant/fixture-variant-escarchada",
+      title: "ESCARCHADA / PAQUETE X 12",
+    }],
+  }]).products[0]?.variants[0];
+  assert.deepEqual(escarchada?.derived_colors, [], "ESCARCHADA is a finish/unknown, not an inherited color");
 
   const activeWithoutSellableVariant: ProductsCatalogSource = [{
     ...source[0],
@@ -90,6 +252,42 @@ function assertCanonicalInvariants(source: ProductsCatalogSource): void {
   assert.equal(duplicate.products[0].product_id, "fixture-product-001");
   assert.equal(duplicate.products[0].variants[0].variant_id, "fixture-variant-001");
   console.log(`[PASS] canonicalize: ${first.products.length} publishable product, ${first.rejections.length} rejection(s), duplicate SKU marked ambiguous`);
+}
+
+function assertLegacyNormalizerInvariants(): void {
+  const raw: ProductoPublico = {
+    id: 700001,
+    title: "Decor-Kit Bouquet Globo Latex R12",
+    handle: "fixture-legacy-v2-equivalence",
+    body_html: "<p>Fixture</p>",
+    product_type: "LÁTEX",
+    tags: ["DORADO ROSA", "DORADO", "ROSADO"],
+    updated_at: "2026-01-01T00:00:00Z",
+    variants: [{
+      id: 700002,
+      title: "R-12 ROJO",
+      option1: "R-12",
+      option2: null,
+      option3: null,
+      sku: "B2B-FIXTURE-LEGACY",
+      price: "1234",
+      available: true,
+      grams: 5,
+    }],
+    images: [],
+  };
+  const result = normalizarProducto(raw, new Map([["B2B-FIXTURE-LEGACY", 12]]));
+  assert.equal(result.ok, true, "legacy normalizer should accept the v2 equivalence fixture");
+  if (!result.ok) return;
+  assert.equal(result.producto.derived.category, "kit", "title category precedence must match canonical v2");
+  assert.deepEqual(result.producto.derived.colors, ["dorado rosa"], "compound color must stay one v2 color");
+  assert.deepEqual(result.variantes[0]?.derived_colors, ["rojo"], "variant color must come from variant evidence");
+  assert.equal(result.variantes[0]?.forma, "redondo");
+  assert.equal(result.variantes[0]?.diam_pulg, 12);
+
+  const wine = normalizarProducto({ ...raw, id: 700003, title: "Bolsa para vino", handle: "fixture-legacy-wine", tags: [], product_type: "EMPAQUES" }, new Map());
+  assert.equal(wine.ok, true);
+  if (wine.ok) assert.deepEqual(wine.producto.derived.colors, [], "object/use context must not turn bolsa para vino into burdeos");
 }
 
 async function assertDbIdempotency(source: ProductsCatalogSource, body: string): Promise<void> {
@@ -179,6 +377,7 @@ async function main(): Promise<void> {
   if (!existsSync(options.fixture)) throw new Error(`fixture not found: ${options.fixture}`);
   const { source, body } = await loadFixture(options.fixture);
   assertCanonicalInvariants(source);
+  assertLegacyNormalizerInvariants();
   if (options.schema) await assertDbSchema();
   if (options.idempotency) await assertDbIdempotency(source, body);
 }

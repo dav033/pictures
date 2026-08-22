@@ -2,13 +2,14 @@ import type { Pool } from "pg";
 import type { CuotaPlan } from "../presupuesto/plan";
 import type { RolPresupuesto } from "../presupuesto/franjas";
 import { buscarHibrido } from "./search";
-import type { ResultadoRetrieval } from "./types";
+import type { EstadoSku, ResultadoRetrieval } from "./types";
 
 export type CandidatoRol = ResultadoRetrieval & { rol: RolPresupuesto };
 
 export type ResultadoPorRol = {
   rol: RolPresupuesto;
   candidatos: CandidatoRol[];
+  skuStatus?: EstadoSku;
   /** Cada relajación aplicada, en el orden en que se probó — nunca se
    * relaja en silencio (§3, "Escalera de relajación"). Vacío si el intento
    * base ya tuvo resultados. */
@@ -18,6 +19,8 @@ export type ResultadoPorRol = {
 export type FiltrosBaseRol = {
   colores?: string[];
   ocasiones?: string[];
+  formas?: string[];
+  diametrosPulgadas?: number[];
   disponible?: boolean;
 };
 
@@ -55,13 +58,31 @@ export async function buscarPorRol(
   const semanticQuery = `${mensajeBase} — ${PISTA_POR_ROL[cuota.rol]}`;
   const topeAmpliado = Math.round(cuota.topeCop * 1.15);
 
-  type Intento = { categorias: readonly string[]; colores?: string[]; ocasiones?: string[]; topeCop: number; etiqueta: string };
+  type Intento = {
+    categorias: readonly string[];
+    colores?: string[];
+    ocasiones?: string[];
+    formas?: string[];
+    diametrosPulgadas?: number[];
+    topeCop: number;
+    etiqueta: string;
+  };
   const intentos: Intento[] = [
-    { categorias: cuota.categorias, colores: filtrosBase.colores, ocasiones: filtrosBase.ocasiones, topeCop: cuota.topeCop, etiqueta: "" },
     {
       categorias: cuota.categorias,
       colores: filtrosBase.colores,
       ocasiones: filtrosBase.ocasiones,
+      formas: filtrosBase.formas,
+      diametrosPulgadas: filtrosBase.diametrosPulgadas,
+      topeCop: cuota.topeCop,
+      etiqueta: "",
+    },
+    {
+      categorias: cuota.categorias,
+      colores: filtrosBase.colores,
+      ocasiones: filtrosBase.ocasiones,
+      formas: filtrosBase.formas,
+      diametrosPulgadas: filtrosBase.diametrosPulgadas,
       topeCop: topeAmpliado,
       etiqueta: `tope ampliado 15% (hasta $${topeAmpliado.toLocaleString("es-CO")})`,
     },
@@ -71,6 +92,8 @@ export async function buscarPorRol(
       categorias: cuota.categorias,
       colores: undefined,
       ocasiones: filtrosBase.ocasiones,
+      formas: filtrosBase.formas,
+      diametrosPulgadas: filtrosBase.diametrosPulgadas,
       topeCop: topeAmpliado,
       etiqueta: "color pasó de filtro duro a señal de ranking",
     });
@@ -80,6 +103,8 @@ export async function buscarPorRol(
       categorias: cuota.categorias,
       colores: undefined,
       ocasiones: undefined,
+      formas: filtrosBase.formas,
+      diametrosPulgadas: filtrosBase.diametrosPulgadas,
       topeCop: topeAmpliado,
       etiqueta: "ocasión pasó de filtro duro a señal de ranking",
     });
@@ -89,6 +114,8 @@ export async function buscarPorRol(
       categorias: [...cuota.categorias, ...cuota.categoriasRelajacion],
       colores: undefined,
       ocasiones: undefined,
+      formas: filtrosBase.formas,
+      diametrosPulgadas: filtrosBase.diametrosPulgadas,
       topeCop: topeAmpliado,
       etiqueta: `categorías ampliadas (+${cuota.categoriasRelajacion.join(", ")})`,
     });
@@ -117,13 +144,19 @@ export async function buscarPorRol(
         categorias: [...intento.categorias],
         ocasiones: intento.ocasiones,
         colores: intento.colores,
+        formas: intento.formas,
+        diametrosPulgadas: intento.diametrosPulgadas,
       },
     });
+    if (respuesta.skuStatus === "ambiguous") {
+      return { rol: cuota.rol, candidatos: [], skuStatus: "ambiguous", relajaciones: [] };
+    }
     if (respuesta.results.length > 0) {
       if (intento.etiqueta) relajaciones.push(`${cuota.rol}: ${intento.etiqueta}`);
       return {
         rol: cuota.rol,
         candidatos: respuesta.results.map((r) => ({ ...r, rol: cuota.rol })),
+        skuStatus: respuesta.skuStatus,
         relajaciones,
       };
     }

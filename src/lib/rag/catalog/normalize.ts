@@ -10,6 +10,12 @@ import type { ProductoInventarioCDN, ProductoPublico } from "@/lib/shopify/tipos
 import { enriquecerDescripcion } from "@/lib/shopify/enriquecer-descripcion";
 import { construirSearchText, hashSearchText, sanitizeTexto, sanitizeTextoNullable } from "./sanitize";
 import { CatalogProductSchema, CatalogVariantSchema, type CatalogProduct, type CatalogRejection, type CatalogVariant } from "./schemas";
+import { clasificarCategorias, clasificarColores, clasificarOcasiones } from "../taxonomy/v2";
+
+function normalizarColoresV2(values: string[]): string[] {
+  const unique = [...new Set(values)];
+  return unique.includes("dorado rosa") ? unique.filter((value) => value !== "dorado" && value !== "rosado") : unique;
+}
 
 export type ResultadoNormalizacion =
   | { ok: true; producto: CatalogProduct; variantes: CatalogVariant[] }
@@ -58,9 +64,15 @@ export function normalizarProducto(
   const tags = (raw.tags ?? []).map((t) => sanitizeTexto(t)).filter((t) => t.length > 0);
   const tituloLimpio = limpiarTitulo(sanitizeTexto(raw.title.replace(/^B2B\s*/i, "")));
   const descripcionTexto = sanitizeTextoNullable(enriquecerDescripcion(raw.body_html).textoCompleto);
-  const categoria = derivarCategoria(raw.product_type, tags);
-  const colores = derivarColores(tags, raw.title);
-  const ocasiones = derivarOcasiones(tags, raw.title);
+  const taxonomyText = [...tags, tituloLimpio, raw.product_type ?? ""].join(" ").replace(/[-_/]+/g, " ");
+  const v2Colors = clasificarColores(taxonomyText).values;
+  const colores = v2Colors.length ? normalizarColoresV2(v2Colors) : derivarColores(tags, tituloLimpio);
+  const v2Occasions = clasificarOcasiones(taxonomyText).values;
+  const ocasiones = [...new Set([...v2Occasions, ...derivarOcasiones(tags, tituloLimpio)])];
+  // Match canonical CDN precedence: a title such as Decor-Kit wins over a
+  // stale Shopify product_type such as LATEX.
+  const titleCategory = clasificarCategorias(tituloLimpio.replace(/[-_/]+/g, " ")).values[0] ?? null;
+  const categoria = titleCategory ?? derivarCategoria(raw.product_type, tags) ?? clasificarCategorias(taxonomyText).values[0] ?? null;
 
   const variantesRaw = raw.variants ?? [];
   const variantesValidas = variantesRaw.filter((v) => Number(v.price) > 0);
@@ -78,6 +90,18 @@ export function normalizarProducto(
     // IN"…) — misma columna que decodifica el catálogo SQLite
     // (sincronizar.ts), aquí replicado para que Postgres tenga el mismo dato.
     const tamano = decodificarTamano(v.option1 ?? null);
+    const variantText = (v.title ?? "").replace(/[-_/]+/g, " ");
+    const productTitleColors = clasificarColores(raw.title.replace(/[-_/]+/g, " ")).values;
+    const explicitVariantColors = clasificarColores(variantText).values;
+    const titleSpecificColors = productTitleColors.filter((value) => value !== "multicolor");
+    const directColors = explicitVariantColors.length === 1 && explicitVariantColors[0] === "multicolor"
+      ? (titleSpecificColors.length ? ["multicolor", ...titleSpecificColors] : explicitVariantColors)
+      : explicitVariantColors;
+    const variantColors = /\bESCARCHAD[AO]?\b/i.test(variantText)
+      ? []
+      : directColors.length > 0
+        ? directColors
+        : productTitleColors;
     return CatalogVariantSchema.parse({
       variant_id: String(v.id),
       product_id: String(raw.id),
@@ -97,6 +121,7 @@ export function normalizarProducto(
       largo_pulg: tamano?.largoPulg ?? null,
       ancho_cm: tamano?.anchoCm ?? null,
       alto_cm: tamano?.altoCm ?? null,
+      derived_colors: variantColors.length ? variantColors : colores.length === 1 ? colores : [],
     });
   });
 

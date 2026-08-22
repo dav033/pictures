@@ -16,7 +16,7 @@ Reglas:
 - "globos" no es una categoría: no adivines entre látex, metalizado o número/letra.
 - formas solo significa forma física (redondo, corazón, link, modelar); metalizado es acabado,
   nunca forma.
-- diametros_pulgadas solo acepta 5, 9, 12, 18, 24 o 36 cuando el cliente lo pide explícitamente.
+- diametros_pulgadas solo acepta 5, 9, 12, 18, 24, 36 o 40 cuando el cliente lo pide explícitamente.
 - solo_disponibles es true salvo una petición explícita de agotados/descontinuados.
 - semantic_query resume la solicitud sin perder nombres exactos o identificadores escritos por el cliente.`;
 

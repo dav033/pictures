@@ -73,10 +73,12 @@ export type EstadoConversacion = {
   // esto para disparar /api/generate sin que el cliente haga clic.
   seleccionFinalIA?: Producto[];
   instruccionIA?: string;
-  // Whitelist de productos realmente recuperados en ESTA conversación (plan
-  // §4.8) — confirmar_seleccion_rag rechaza cualquier product_id que no esté
-  // aquí, sin importar qué tan convincente luzca la llamada del modelo.
+  // Whitelist de productos realmente recuperados en ESTE request/turno (plan
+  // §4.8). `ejecutar.ts` crea este estado por ejecución; sólo se acumulan
+  // varias llamadas de herramienta del mismo turno, nunca historial viejo.
   ragIdsRecuperados: Set<string>;
+  /** Product -> exact variant whitelist exposed by retrieval in this request. */
+  ragVariantIdsRecuperados: Map<string, Set<string>>;
   ragCandidatos?: ProductoCandidato[];
   ragValidados?: ItemValidado[];
   ragRechazados?: ItemRechazado[];
@@ -90,12 +92,15 @@ export type EstadoConversacion = {
 };
 
 export function crearEstadoConversacion(brief: Brief): EstadoConversacion {
+  // The wrapper in ejecutar.ts calls this once per request/turn, so these
+  // sets cannot carry a prior conversation's retrieval whitelist.
   return {
     brief: { ...brief },
     recomendaciones: [],
     decoraciones: [],
     categoriasSugeridas: [],
     ragIdsRecuperados: new Set(),
+    ragVariantIdsRecuperados: new Map(),
     ragRequestId: crypto.randomUUID(),
   };
 }
@@ -260,13 +265,28 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
           .flat()
           .map((item) => item.productId);
         const idsCanasta = respuesta.canasta?.piezas.map((p) => p.productId) ?? [];
-        for (const id of [...idsPool, ...idsCanasta]) estado.ragIdsRecuperados.add(id);
+        for (const id of [...idsPool, ...idsCanasta, ...respuesta.variantIdsRecuperados.map((item) => item.productId)]) estado.ragIdsRecuperados.add(id);
+        for (const item of respuesta.variantIdsRecuperados) {
+          const variantes = estado.ragVariantIdsRecuperados.get(item.productId) ?? new Set<string>();
+          variantes.add(item.variantId);
+          estado.ragVariantIdsRecuperados.set(item.productId, variantes);
+        }
+        for (const item of Object.values(respuesta.poolPorRol).flat()) {
+          const variantes = estado.ragVariantIdsRecuperados.get(item.productId) ?? new Set<string>();
+          variantes.add(item.variantId);
+          estado.ragVariantIdsRecuperados.set(item.productId, variantes);
+        }
+        for (const item of respuesta.canasta?.piezas ?? []) {
+          const variantes = estado.ragVariantIdsRecuperados.get(item.productId) ?? new Set<string>();
+          variantes.add(item.variantId);
+          estado.ragVariantIdsRecuperados.set(item.productId, variantes);
+        }
 
         await registrarBusqueda(pool, {
           requestId: estado.ragRequestId,
           mensaje,
           intent: respuesta.intent,
-          retrievedProductIds: [...new Set([...idsPool, ...idsCanasta])],
+          retrievedProductIds: [...new Set([...idsPool, ...idsCanasta, ...respuesta.variantIdsRecuperados.map((item) => item.productId)])],
           retrievalScores: null,
           status: respuesta.status,
           latencyParseMs: respuesta.latencyParseMs,
@@ -280,6 +300,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
 
         return {
           status: respuesta.status,
+          sku_status: respuesta.skuStatus,
           franja: respuesta.franja,
           canasta: respuesta.canasta
             ? {
@@ -309,6 +330,11 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
       const respuesta = await buscarCatalogoRag(pool, mensaje);
       estado.ragCandidatos = respuesta.candidatos;
       for (const c of respuesta.candidatos) estado.ragIdsRecuperados.add(c.productId);
+      for (const c of respuesta.candidatos) {
+        const variantes = estado.ragVariantIdsRecuperados.get(c.productId) ?? new Set<string>();
+        for (const variante of c.variantes) variantes.add(variante.variantId);
+        estado.ragVariantIdsRecuperados.set(c.productId, variantes);
+      }
 
       // Se espera (no fire-and-forget): en un runtime serverless la función
       // puede cortarse en cuanto termina esta llamada, y una escritura de log
@@ -328,6 +354,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
 
       return {
         status: respuesta.status,
+        sku_status: respuesta.skuStatus,
         filtro_relajado: respuesta.filtroRelajado,
         candidatos: respuesta.candidatos.map((c) => ({
           product_id: c.productId,
@@ -348,6 +375,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
             tamano: v.codigoTamano,
             diametro_pulgadas: v.diamPulg,
             forma: v.forma,
+            colores: v.colores,
           })),
         })),
       };
@@ -395,7 +423,8 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
           continue;
         }
 
-        const resuelto = resolverVariantesPorDespiece(productId, lineasDelColor);
+        const whitelist = estado.ragVariantIdsRecuperados.get(productId) ?? new Set<string>();
+        const resuelto = resolverVariantesPorDespiece(productId, lineasDelColor, whitelist);
         for (const linea of resuelto.lineas) {
           seleccion.push({ productId: linea.productId, variantId: linea.variantId, cantidad: linea.cantidad, razon: typeof cruda.razon === "string" ? cruda.razon : undefined });
           if (linea.sustitucion) sustituciones.push({ product_id: productId, ...linea.sustitucion });
@@ -405,7 +434,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
 
       const pool = getRagPool();
       const t0 = Date.now();
-      const resultado = await validarSeleccion(pool, seleccion, estado.ragIdsRecuperados);
+      const resultado = await validarSeleccion(pool, seleccion, estado.ragVariantIdsRecuperados);
       resultado.rechazados = [...resultado.rechazados, ...rechazosExpansion];
       estado.ragValidados = resultado.validados;
       estado.ragRechazados = resultado.rechazados;
