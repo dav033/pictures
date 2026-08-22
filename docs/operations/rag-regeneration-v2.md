@@ -20,12 +20,12 @@ La aplicación conserva dos corpus intencionalmente separados: SQLite legado tie
 ```dotenv
 DATABASE_URL=<valor local o secreto del entorno>
 RAG_ENABLED=true
-RAG_USE_VECTOR=false
+RAG_USE_VECTOR=true
 RAG_USE_FULLTEXT=true
 RAG_USE_TRIGRAM=true
 ```
 
-El estado local validado es `RAG_ENABLED=true`. Usar `RAG_ENABLED=false` sólo durante una reimportación controlada, diagnóstico o rollback, y reactivar el flag después de los gates del mismo snapshot. `RAG_USE_VECTOR=true` requiere key, pgvector, embeddings completos y evidencia de recall/latencia; no es necesario para aprobar la ruta no-key.
+El estado local validado es `RAG_ENABLED=true` con vector habilitado. Usar `RAG_ENABLED=false` sólo durante una reimportación controlada, diagnóstico o rollback, y reactivar el flag después de los gates del mismo snapshot. La ruta determinista no-key sigue siendo obligatoria; vector requiere key, pgvector, embeddings completos y evidencia de recall/latencia.
 
 ## 3. Bootstrap local
 
@@ -151,7 +151,7 @@ Health base sin key:
 npm run rag:stack-check
 ```
 
-`npm run rag:health` además prueba un embedding real y por eso requiere `GEMINI_API_KEY`; si falta, su fallo es opcional y no invalida `stack-check` ni el E2E no-key.
+`npm run rag:health` además prueba un embedding real y por eso requiere `GEMINI_API_KEY`; con la key disponible, la corrida validada terminó `PASS` junto con PostgreSQL, pgvector y embeddings de 768 dimensiones. Si falta, su fallo es opcional y no invalida `stack-check` ni el E2E no-key.
 
 Build y tipos:
 
@@ -177,14 +177,14 @@ npm run rag:e2e-v2
 Con Gemini, únicamente cuando la key ya está configurada en el entorno y el release lo permite:
 
 ```bash
-npx tsx --conditions=react-server scripts/eval-e2e-rag-v2.ts --with-gemini
+npm run rag:e2e-v2:gemini
 ```
 
-En PowerShell, el comando no-key es `npm run rag:e2e-v2`; el comando Gemini usa explícitamente `--conditions=react-server` para cargar módulos server-only. El E2E comprueba parser 3/3, SKU original/canónico/conversacional, SKU ambiguo como aclaración, inexistente sin fallback semántico, filtros same-variant de precio/stock/forma/diámetro/color, corazón, whitelist, selección, precio/subtotal desde PG, unidades de paquete, presupuesto, health y estados opcionales. Una variante fuera de whitelist, precio inventado o ID inexistente termina con exit code distinto de cero.
+En PowerShell, el comando no-key es `npm run rag:e2e-v2` y el comando Gemini carga `.env.local` y usa explícitamente `--conditions=react-server` para cargar módulos server-only. El E2E comprueba parser 3/3, SKU original/canónico/conversacional, SKU ambiguo como aclaración, inexistente sin fallback semántico, filtros same-variant de precio/stock/forma/diámetro/color, corazón, whitelist, selección, precio/subtotal desde PG, unidades de paquete, presupuesto, health y estados opcionales. Una variante fuera de whitelist, precio inventado o ID inexistente termina con exit code distinto de cero.
 
-Evidencia final de integración: `npm run rag:e2e-v2` terminó `PASS` con `0` fallos, p95 `72.4 ms` y `2` skips opcionales (vector/Gemini sin key). `npm run rag:test-generation-resolver` terminó `PASS` tras recuperar Docker; cubre metadata PG, legado Shopify real, legado curado, orden mixto, IDs desconocidos, duplicados, payload runtime y frontera HTTP sin proveedor pagado. La resolución usa revalidación confiable (`ACTIVE`, disponible y precio `> 0`), no heurística ni fallback, conserva el orden legado→RAG y mantiene procedencia en multi-turn y cotizaciones editadas.
+Evidencia final de integración: `npm run rag:e2e-v2` terminó `PASS` con `0` fallos, p95 no-key `88.2 ms` y `2` skips opcionales; `npm run rag:e2e-v2:gemini` terminó `PASS` con `0` fallos, p95 `446.8 ms` y límite absoluto PASS. El gate de regresión contra baseline no-key fue `SKIPPED_OPTIONAL` porque los embeddings remotos no son comparables. `npm run rag:test-generation-resolver` terminó `PASS` tras recuperar Docker; cubre metadata PG, legado Shopify real, legado curado, orden mixto, IDs desconocidos, duplicados, payload runtime y frontera HTTP sin proveedor pagado. La resolución usa revalidación confiable (`ACTIVE`, disponible y precio `> 0`), no heurística ni fallback, conserva el orden legado→RAG y mantiene procedencia en multi-turn y cotizaciones editadas.
 
-La generación validada en HTTP producción local (puerto `3010`) pasa por la frontera de catálogo: `/api/generate` con IDs PG o legados alcanza el error esperado `503 sin_llave`, no un `400` de validación. No se realizó ninguna llamada pagada porque no existe `GEMINI_API_KEY`; la ruta determinista obligatoria sí quedó verificada.
+La generación validada en HTTP producción local (puerto `3010`) pasa por la frontera de catálogo: sin key, `/api/generate` con IDs PG o legados alcanza el error esperado `503 sin_llave`, no un `400` de validación; con Gemini disponible, una solicitud real PG respondió `200` con imagen presente. `/api/chat` real respondió `200` SSE con eventos `herramienta`, `texto` y `fin`, sin error. FAL no se utilizó; la ruta determinista obligatoria sí quedó verificada.
 
 La corrida integrada de navegador también quedó en `PASS`: raíz/catálogo/búsqueda `globo corazón rojo` devolvió `28`, `forma=corazon` (Corazón) + `color=rojo` (rojo) devolvió `10`, y detalle → selección → frontera de generación terminó con `0` errores de consola y estado limpiado.
 
@@ -221,7 +221,7 @@ Conservar manifests, hashes, snapshots aprobados, backups y staging necesario pa
 - [ ] Demanda agregada PASS sin PII y replay-safe.
 - [ ] `stack-check`, lint, tsc y build PASS.
 - [ ] Benchmark no-key PASS por familia.
-- [ ] E2E no-key PASS; Gemini/vector `PASS` o `SKIPPED_OPTIONAL` explícito.
+- [ ] E2E no-key PASS; `npm run rag:e2e-v2:gemini` PASS cuando haya key, o Gemini/vector `SKIPPED_OPTIONAL` explícito si no la hay.
 - [ ] No quedan P0/P1 de whitelist, precio, disponibilidad o snapshot.
 - [ ] Manifest versionado y rollback verificable.
 - [ ] `RAG_ENABLED=true` sólo en el snapshot cuyos gates obligatorios están en `PASS`.

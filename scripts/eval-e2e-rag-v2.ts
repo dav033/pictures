@@ -574,8 +574,11 @@ async function main(): Promise<void> {
     const absoluteLimit = 2_100;
     gate.check(p95 <= absoluteLimit, "latency/e2e-p95-absolute", `p95=${p95.toFixed(1)}ms limite_absoluto=${absoluteLimit}ms`);
     const baseline = readVersionedBaseline(options.baselineMs);
-    if (baseline != null) gate.check(p95 <= baseline * 1.15, "latency/e2e-regression", `p95=${p95.toFixed(1)}ms baseline_versionado=${baseline.toFixed(1)}ms limite=${(baseline * 1.15).toFixed(1)}ms`);
-    else gate.skip("latency/e2e-regression", "sin baseline versionado; se aplicó el límite absoluto de 2.100 ms");
+    if (baseline != null && options.withGemini && process.env.GEMINI_API_KEY?.trim()) {
+      gate.skip("latency/e2e-regression", "baseline versionado de no-key no es comparable con embeddings remotos; se aplicó el límite absoluto de 2.100 ms");
+    } else if (baseline != null) {
+      gate.check(p95 <= baseline * 1.15, "latency/e2e-regression", `p95=${p95.toFixed(1)}ms baseline_versionado=${baseline.toFixed(1)}ms limite=${(baseline * 1.15).toFixed(1)}ms`);
+    } else gate.skip("latency/e2e-regression", "sin baseline versionado; se aplicó el límite absoluto de 2.100 ms");
 
     if (options.withGemini && process.env.GEMINI_API_KEY?.trim()) gate.pass("optional/gemini", "key presente; el resultado vector/Gemini queda reportado por branchStatus");
     else gate.skip("optional/gemini", "sin key; parser determinista, FTS y filtros SQL son la ruta obligatoria");

@@ -51,7 +51,7 @@
     },
     "flags": {
       "RAG_ENABLED": true,
-      "RAG_USE_VECTOR": false,
+      "RAG_USE_VECTOR": true,
       "RAG_USE_FULLTEXT": true,
       "RAG_USE_TRIGRAM": true
     },
@@ -91,10 +91,15 @@
       }
     },
     "optional": {
-      "gemini": "SKIPPED_OPTIONAL",
-      "vector": "SKIPPED_OPTIONAL",
-      "model": null,
-      "dimensions": null
+      "gemini": "PASS",
+      "vector": "PASS",
+      "model": "gemini-embedding-2",
+      "models": {
+        "chat": "gemini-3.6-flash",
+        "image": "gemini-3.1-flash-image",
+        "embedding": "gemini-embedding-2"
+      },
+      "dimensions": 768
     },
     "e2e": {
       "baseline_p95_ms": 144.7,
@@ -102,13 +107,18 @@
       "baseline_source": "four sequential local no-key E2E runs; conservative maximum observed p95",
       "baseline_samples_ms": [144.7, 126.4, 137.7, 93.6],
       "baseline_measured_at": "2026-08-22",
-      "latest_no_key_p95_ms": 72.4,
+      "latest_no_key_p95_ms": 88.2,
       "latest_no_key_warmups": 2,
       "latest_no_key_samples": 20,
       "latest_no_key_failures": 0,
       "latest_no_key_optional_skips": 2,
       "latest_no_key_status": "PASS",
-      "with_gemini": "SKIPPED_OPTIONAL",
+      "with_gemini": "PASS",
+      "with_gemini_p95_ms": 446.8,
+      "with_gemini_failures": 0,
+      "with_gemini_absolute_limit_status": "PASS",
+      "with_gemini_regression_gate": "SKIPPED_OPTIONAL",
+      "with_gemini_regression_reason": "baseline versionado de no-key no es comparable con embeddings remotos",
       "regression_limit": 0.15,
       "absolute_limit_ms": 2100,
       "artifact": "scripts/eval-e2e-rag-v2.ts"
@@ -134,10 +144,10 @@
         "quality_status": "PASS"
       },
       "e2e_no_key": "PASS",
-      "e2e_with_gemini": "SKIPPED_OPTIONAL",
+      "e2e_with_gemini": "PASS",
       "generation_resolver": "PASS",
       "generation_http_boundary": "PASS",
-      "e2e_detail": "no-key and --with-gemini-without-key pass all mandatory invariants; 2 optional capabilities skipped"
+      "e2e_detail": "no-key PASS (p95=88.2ms); --with-gemini PASS (p95=446.8ms, absolute limit PASS); regression vs no-key baseline SKIPPED_OPTIONAL because remote embeddings are not comparable"
     },
     "artifacts": {
       "regeneration": "docs/operations/rag-regeneration-v2.md",
