@@ -2,7 +2,7 @@
 
 **Updated:** 2026-08-21  
 **Phase:** `01-rag-regeneration`  
-**Status:** in progress — plan `01-01` complete  
+**Status:** in progress — plan `01-01` complete
 **Current wave:** 1
 
 ## Posición actual
