@@ -14,6 +14,11 @@ import {
   tipoExcluido,
   type TamanoDecodificado,
 } from "../../../lib/shopify/derivar";
+import {
+  clasificarCategorias,
+  clasificarColores,
+  clasificarOcasiones,
+} from "../taxonomy/v2";
 
 export type CanonicalRejection = {
   source_id: string | null;
@@ -248,9 +253,15 @@ function canonicalizeProduct(
 
   const rawTags = uniqueStrings(product.tags);
   const title = sanitizeTexto(limpiarTitulo(product.title));
-  const colors = derivarColores(rawTags, title);
-  const occasions = derivarOcasiones(rawTags, title);
-  const category = derivarCategoria(productType, rawTags);
+  const taxonomyText = [...rawTags, title, productType ?? ""].join(" ");
+  // v2 is the source of truth for query filters. Keep the legacy derivation
+  // as a compatibility fallback for old tags not yet represented by an alias,
+  // but never merge its overlapping color aliases into a v2 match.
+  const v2Colors = clasificarColores(taxonomyText).values;
+  const colors = v2Colors.length > 0 ? [...v2Colors] : derivarColores(rawTags, title);
+  const v2Occasions = clasificarOcasiones(taxonomyText).values;
+  const occasions = uniqueStrings([...v2Occasions, ...derivarOcasiones(rawTags, title)]);
+  const category = derivarCategoria(productType, rawTags) ?? clasificarCategorias(taxonomyText).values[0] ?? null;
   const variantTitles = variants.map((variant) => variant.title).filter((value): value is string => Boolean(value));
   const searchTags = uniqueStrings([...rawTags, ...(productType ? [productType] : []), ...variantTitles]);
   const skus = uniqueStrings(variants.flatMap((variant) => [variant.sku_original, variant.sku_canonical]).filter((value): value is string => Boolean(value)));
