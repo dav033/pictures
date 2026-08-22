@@ -1,7 +1,7 @@
 # RAG baseline v2 — PASS
 
-Generado: 2026-08-22T02:43:05.227Z  
-Rama evaluada: determinista local + PostgreSQL; vector/Gemini: SKIPPED_OPTIONAL (no-key)  
+Generado: 2026-08-22T02:43:05.227Z
+Rama evaluada: determinista local + PostgreSQL; vector/Gemini: SKIPPED_OPTIONAL (no-key)
 Repeticiones: 2; latencia medida de forma secuencial para no distorsionar contención.
 
 ## Corpus y snapshot

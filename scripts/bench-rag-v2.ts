@@ -619,8 +619,8 @@ function renderReport(
   const status = failures.length ? "FAIL" : "PASS";
   return `# RAG baseline v2 — ${status}
 
-Generado: ${new Date().toISOString()}  
-Rama evaluada: determinista local + PostgreSQL; vector/Gemini: ${options.noKey ? "SKIPPED_OPTIONAL (no-key)" : "habilitado por configuración"}  
+Generado: ${new Date().toISOString()}
+Rama evaluada: determinista local + PostgreSQL; vector/Gemini: ${options.noKey ? "SKIPPED_OPTIONAL (no-key)" : "habilitado por configuración"}
 Repeticiones: ${options.repeat}; latencia medida de forma secuencial para no distorsionar contención.
 
 ## Corpus y snapshot
