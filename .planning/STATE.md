@@ -2,17 +2,17 @@
 
 **Updated:** 2026-08-21  
 **Phase:** `01-rag-regeneration`  
-**Status:** planned / implementation pending  
+**Status:** in progress — plan `01-01` complete  
 **Current wave:** 1
 
 ## Posición actual
 
-La ingeniería inversa, auditoría de fuente, convenciones, pruebas y riesgos está documentada en `.planning/codebase/`. Los ocho planes ejecutables están creados, pero todavía no se implementó código ni se hizo commit.
+La ingeniería inversa, auditoría de fuente, convenciones, pruebas y riesgos está documentada en `.planning/codebase/`. El plan `01-01` dejó el runtime local, el health check y el build base verificados; los siguientes planes siguen pendientes.
 
 ## Bloqueos verificados
 
-- Docker engine responde, pero el contexto auditado no tiene contenedor/imagen PostgreSQL/pgvector listo.
-- `.env.local` está vacío; no hay `DATABASE_URL` ni `GEMINI_API_KEY` disponibles.
+- `.env.local` sigue vacío y no hay `GEMINI_API_KEY`; esto no bloquea el modo determinista. El `DATABASE_URL` de verificación se cargó desde `.env.example`.
+- `pg_trgm` es opcional en el plan 01 y queda pendiente de la migración de retrieval/indexes; su ausencia no bloquea el runtime base.
 - El importador actual espera REST Shopify y no acepta directamente el contrato camelCase/GID del CDN.
 - `order_data.json` no tiene consumidor y contiene `customer.id`; solo puede producir agregados sin PII.
 - La taxonomía existente no cubre de forma segura todos los colores compuestos, acabados, formas y tamaños del snapshot.
@@ -31,13 +31,13 @@ La ingeniería inversa, auditoría de fuente, convenciones, pruebas y riesgos es
 
 ## Próxima acción
 
-Ejecutar `01-01-PLAN.md` y continuar en orden estricto de `ROADMAP.md`. Si un plan falla, conservar logs y detener la ola; no marcarlo completo por existencia de archivos.
+Continuar con `01-02-PLAN.md` en orden estricto de `ROADMAP.md`. Si un plan falla, conservar logs y detener la ola; no marcarlo completo por existencia de archivos.
 
 ## Ledger de verificación
 
 | Gate | Estado | Evidencia requerida |
 | --- | --- | --- |
-| Runtime/Next/build | NOT STARTED | compose config, health, build |
+| Runtime/Next/build | PASS (`01-01`) | `docker compose config`; `docker compose ps` healthy; `npx tsx --env-file=.env.example scripts/stack-check.ts`; `npm run lint`; `npx tsc --noEmit --incremental false`; `npm run build` |
 | Contratos/snapshots | AUDITADO; NO IMPLEMENTADO | Zod + manifest + hash |
 | Schema/ingesta productos | NOT STARTED | staging, invariantes, diff de segunda corrida |
 | Agregados órdenes | NOT STARTED | scan PII + idempotencia |
