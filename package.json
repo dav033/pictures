@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "node scripts/next-with-system-ca.cjs start",
     "lint": "eslint",
+    "rag:stack-check": "tsx scripts/stack-check.ts",
     "rag:migrate": "tsx scripts/migrate.ts",
     "rag:health": "tsx scripts/rag-health.ts",
     "rag:import": "tsx scripts/import-shopify-catalog.ts",

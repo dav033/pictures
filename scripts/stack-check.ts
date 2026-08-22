@@ -1,0 +1,174 @@
+import { existsSync } from "node:fs";
+import { Pool } from "pg";
+
+/**
+ * Local-only readiness check for the RAG runtime. It deliberately does not
+ * import application modules: those may be marked `server-only` and this
+ * command must remain usable outside Next's React Server Components runtime.
+ */
+
+type Estado = "READY" | "BLOCKED" | "SKIPPED_OPTIONAL";
+
+type Resultado = {
+  nombre: string;
+  estado: Estado;
+  detalle: string;
+};
+
+function cargarEntornoLocal(): void {
+  if (process.env.DATABASE_URL) return;
+
+  for (const archivo of [".env.local", ".env"]) {
+    if (!existsSync(archivo)) continue;
+    try {
+      process.loadEnvFile(archivo);
+    } catch {
+      // The individual checks below produce the actionable failure. Do not
+      // print values from a malformed env file, which could contain secrets.
+    }
+    if (process.env.DATABASE_URL) return;
+  }
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function expectedDimensions(): number {
+  const value = Number(process.env.GEMINI_EMBEDDING_DIMENSIONS ?? 768);
+  return Number.isInteger(value) && value > 0 && value <= 4096 ? value : 0;
+}
+
+async function checkPostgres(): Promise<Resultado[]> {
+  const url = process.env.DATABASE_URL;
+  if (!url) {
+    return [
+      {
+        nombre: "PostgreSQL",
+        estado: "BLOCKED",
+        detalle: "DATABASE_URL no configurada (copia .env.example a .env.local)",
+      },
+      {
+        nombre: "Extensiones RAG",
+        estado: "BLOCKED",
+        detalle: "no se pueden comprobar sin conexión PostgreSQL",
+      },
+    ];
+  }
+
+  const dimension = expectedDimensions();
+  if (dimension === 0) {
+    return [
+      {
+        nombre: "Configuración de embeddings",
+        estado: "BLOCKED",
+        detalle: "GEMINI_EMBEDDING_DIMENSIONS debe ser un entero entre 1 y 4096",
+      },
+    ];
+  }
+
+  const pool = new Pool({
+    connectionString: url,
+    max: 1,
+    connectionTimeoutMillis: 2500,
+    idleTimeoutMillis: 2500,
+  });
+
+  try {
+    const database = await pool.query<{ database: string }>("SELECT current_database() AS database");
+    const extensions = await pool.query<{ extname: string; extversion: string }>(
+      "SELECT extname, extversion FROM pg_extension WHERE extname = ANY($1::text[])",
+      [["vector", "unaccent", "pg_trgm"]],
+    );
+    const installed = new Map(extensions.rows.map((row) => [row.extname, row.extversion]));
+    const missing = ["vector", "unaccent", "pg_trgm"].filter((name) => !installed.has(name));
+    const results: Resultado[] = [
+      {
+        nombre: "PostgreSQL",
+        estado: "READY",
+        detalle: `conexión OK (${database.rows[0]?.database ?? "desconocida"})`,
+      },
+      {
+        nombre: "Extensiones RAG",
+        estado: missing.length === 0 ? "READY" : "BLOCKED",
+        detalle:
+          missing.length === 0
+            ? `vector ${installed.get("vector")}, unaccent ${installed.get("unaccent")}, pg_trgm ${installed.get("pg_trgm")}`
+            : `faltan: ${missing.join(", ")}`,
+      },
+    ];
+
+    if (installed.has("vector")) {
+      const vector = await pool.query<{ dimensions: number }>(
+        "SELECT vector_dims(array_fill(0::real, ARRAY[$1::int])::vector) AS dimensions",
+        [dimension],
+      );
+      const actual = Number(vector.rows[0]?.dimensions);
+      results.push({
+        nombre: "pgvector",
+        estado: actual === dimension ? "READY" : "BLOCKED",
+        detalle: `dimensión ${actual || "desconocida"} (esperada ${dimension})`,
+      });
+    } else {
+      results.push({
+        nombre: "pgvector",
+        estado: "BLOCKED",
+        detalle: "extensión vector no instalada",
+      });
+    }
+
+    if (installed.has("unaccent")) {
+      const unaccent = await pool.query<{ normalized: string }>("SELECT unaccent('Árbol') AS normalized");
+      results.push({
+        nombre: "unaccent",
+        estado: unaccent.rows[0]?.normalized === "Arbol" ? "READY" : "BLOCKED",
+        detalle: `normalización ${JSON.stringify(unaccent.rows[0]?.normalized ?? null)}`,
+      });
+    } else {
+      results.push({ nombre: "unaccent", estado: "BLOCKED", detalle: "extensión no instalada" });
+    }
+
+    return results;
+  } catch (error) {
+    return [
+      {
+        nombre: "PostgreSQL",
+        estado: "BLOCKED",
+        detalle: errorMessage(error),
+      },
+    ];
+  } finally {
+    await pool.end();
+  }
+}
+
+function checkGemini(): Resultado {
+  if (process.env.GEMINI_API_KEY?.trim()) {
+    return {
+      nombre: "Gemini",
+      estado: "READY",
+      detalle: "GEMINI_API_KEY configurada; las capacidades generativas son opcionales",
+    };
+  }
+  return {
+    nombre: "Gemini",
+    estado: "SKIPPED_OPTIONAL",
+    detalle: "sin GEMINI_API_KEY; parser determinista y retrieval SQL siguen disponibles",
+  };
+}
+
+async function main(): Promise<void> {
+  cargarEntornoLocal();
+  const resultados = [...(await checkPostgres()), checkGemini()];
+
+  for (const resultado of resultados) {
+    console.log(`[${resultado.estado}] ${resultado.nombre} — ${resultado.detalle}`);
+  }
+
+  process.exitCode = resultados.some((resultado) => resultado.estado === "BLOCKED") ? 1 : 0;
+}
+
+void main().catch((error: unknown) => {
+  console.error(`[BLOCKED] stack-check — ${errorMessage(error)}`);
+  process.exitCode = 1;
+});
