@@ -81,7 +81,9 @@ async function checkPostgres(): Promise<Resultado[]> {
       [["vector", "unaccent", "pg_trgm"]],
     );
     const installed = new Map(extensions.rows.map((row) => [row.extname, row.extversion]));
-    const missing = ["vector", "unaccent", "pg_trgm"].filter((name) => !installed.has(name));
+    // pg_trgm is an optional retrieval accelerator. It is installed by a
+    // later RAG migration, so its absence must not block the base runtime.
+    const missing = ["vector", "unaccent"].filter((name) => !installed.has(name));
     const results: Resultado[] = [
       {
         nombre: "PostgreSQL",
@@ -93,10 +95,16 @@ async function checkPostgres(): Promise<Resultado[]> {
         estado: missing.length === 0 ? "READY" : "BLOCKED",
         detalle:
           missing.length === 0
-            ? `vector ${installed.get("vector")}, unaccent ${installed.get("unaccent")}, pg_trgm ${installed.get("pg_trgm")}`
+            ? `vector ${installed.get("vector")}, unaccent ${installed.get("unaccent")}`
             : `faltan: ${missing.join(", ")}`,
       },
     ];
+
+    results.push({
+      nombre: "pg_trgm",
+      estado: installed.has("pg_trgm") ? "READY" : "SKIPPED_OPTIONAL",
+      detalle: installed.has("pg_trgm") ? `extversion ${installed.get("pg_trgm")}` : "acelerador opcional aún no instalado",
+    });
 
     if (installed.has("vector")) {
       const vector = await pool.query<{ dimensions: number }>(
