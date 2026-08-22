@@ -14,13 +14,14 @@ import { buildVisualContext } from "@/lib/ia/visual-context";
 import { ErrorIA, type ImageInput, type Imagen, type ImagenEtiquetada, type PeticionImagen, type ProveedorId } from "@/lib/ia/tipos";
 import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import type { ResultadoMedidas } from "@/lib/medidas/geometria";
-import { productosPorId } from "@/lib/products";
+import { resolverProductosParaGeneracion } from "@/lib/rag/generate-products";
 import type { Brief, Producto } from "@/lib/types";
 
 export const maxDuration = 120;
 
 type Body = {
   productIds?: string[];
+  ragVariantIds?: string[];
   productQuantities?: Record<string, number>;
   /** Piezas que el cliente agregó a mano en el chat (no existen en el
    * catálogo real): llegan con sus datos completos, no un id a resolver, así
@@ -431,8 +432,10 @@ export async function POST(request: Request) {
   let proveedor: ProveedorId | undefined;
   try {
     if (!featureEnabled("REFERENCE_BLUEPRINT_V2")) throw new Error("REFERENCE_BLUEPRINT_V2 is disabled.");
-    const productosBase = await productosPorId(body.productIds ?? []);
-    if ((body.productIds ?? []).length && productosBase.length !== new Set(body.productIds).size) throw new Error("One or more selected catalog products could not be validated.");
+    const productosBase = (await resolverProductosParaGeneracion({
+      productIds: body.productIds,
+      ragVariantIds: body.ragVariantIds,
+    })).productos;
     const productosManuales = (body.manualProducts ?? []).map((product) => ({
       ...product,
       paquetes: Math.max(1, Math.round(body.productQuantities?.[product.id] ?? product.paquetes ?? 1)),

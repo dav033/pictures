@@ -24,6 +24,7 @@ import type { ItemValidado } from "@/lib/rag/chat/validar";
 import type { ImageQaReport } from "@/lib/ia/image-qa";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
+import { classifyGenerationIds } from "@/lib/generacion/provenance";
 
 type ProveedorId = "gemini";
 type SelectorIA = ProveedorId | "lora" | "comparar" | "gemini_sin_referencias";
@@ -253,6 +254,8 @@ type DatosFin = {
 
 type GenerarOverride = {
   ids: string[];
+  /** Exact RAG variant ids. Kept separate from legacy/manual catalog ids. */
+  ragVariantIds?: string[];
   paquetes?: Record<string, number>;
   instruccion?: string;
   automaticOnly?: boolean;
@@ -742,7 +745,8 @@ export default function Page() {
 
     if (seleccionIA.length > 0) {
       generar({
-        ids: seleccionIA.map((p) => p.id),
+        ids: [],
+        ragVariantIds: seleccionIA.map((p) => p.id),
         paquetes: Object.fromEntries(seleccionIA.map((p) => [p.id, p.paquetes ?? 1])),
         instruccion: datos.instruccionIA,
         brief: briefActualizado,
@@ -967,12 +971,24 @@ export default function Page() {
     const ultimaValidacion = [...mensajes]
       .reverse()
       .find((mensaje) => mensaje.role === "assistant" && mensaje.ragValidados?.length)?.ragValidados ?? [];
+    // A RAG variant can remain in the shared selection after a later chat
+    // turn validates a different set of variants. Provenance is conversation
+    // metadata, not an id-shape guess, so retain every variant validated by
+    // an assistant message in this conversation when splitting sources.
+    const idsRagValidados = new Set(
+      mensajes.flatMap((mensaje) => mensaje.ragValidados ?? []).map((item) => item.variantId),
+    );
     // /api/generate resuelve variantes; `productId` del RAG es el producto
     // padre y no sirve para recuperar la foto/precio de la variante elegida.
     const idsDePiezasValidadas = ultimaValidacion.map((item) => item.variantId);
     const paquetesValidados = Object.fromEntries(ultimaValidacion.map((item) => [item.variantId, item.cantidad]));
-    const idsCotizados = [...seleccion, ...idsDePiezasValidadas];
-    const idsBase = override?.automaticOnly ? idsCotizados : [...idsCotizados, ...(override?.ids ?? [])];
+    // RAG variants may be large numeric-looking ids, but provenance comes
+    // from the validated message, never from the shape of an id. Everything
+    // else in the shared browser selection remains a legacy productId.
+    const seleccionPorFuente = classifyGenerationIds(seleccion, idsRagValidados);
+    const idsSeleccionLegacy = seleccionPorFuente.productIds;
+    const idsBaseLegacy = override?.automaticOnly ? idsSeleccionLegacy : [...idsSeleccionLegacy, ...(override?.ids ?? [])];
+    const idsBaseRag = [...idsDePiezasValidadas, ...(override?.ragVariantIds ?? [])];
     // Con cotización existente, referencias solo definen composición. No
     // añaden sustitutos genéricos que desplacen las piezas reales cotizadas.
     //
@@ -980,18 +996,22 @@ export default function Page() {
     // `override.ids` ya es la lista completa y definitiva — mezclarla con la
     // selección compartida o con el último `ragValidados` reintroduciría
     // justo lo que el cliente acaba de quitar o reemplazar.
-    const idsAUsar = override?.soloIds
+    const productIdsAUsar = override?.soloIds
       ? [...new Set(override.ids)]
-      : idsBase.length > 0
-        ? [...new Set(idsBase)]
+      : idsBaseLegacy.length > 0
+        ? [...new Set(idsBaseLegacy)]
         : [...new Set([...(override?.ids ?? []), ...automaticIds])];
+    const ragVariantIdsAUsar = override?.soloIds
+      ? [...new Set(override.ragVariantIds ?? [])]
+      : [...new Set(idsBaseRag)];
+    const idsAUsar = [...new Set([...productIdsAUsar, ...ragVariantIdsAUsar])];
     const paquetesAUsar = override?.soloIds
       ? { ...(override.paquetes ?? {}) }
       : { ...paquetesValidados, ...Object.fromEntries(seleccionados.map((producto) => [producto.id, producto.paquetes ?? 1])), ...(override?.paquetes ?? {}) };
     // Piezas "agregadas a mano" no existen en el catálogo real: /api/generate
     // solo puede validar/resolver ids de catálogo, así que viajan aparte con
     // sus datos completos en vez de como un id que el servidor no encontraría.
-    const idsCatalogo = idsAUsar.filter((id) => !id.startsWith("manual-"));
+    const idsCatalogo = productIdsAUsar.filter((id) => !id.startsWith("manual-"));
     const productosManuales = override?.soloIds
       ? override.manualProducts ?? []
       : seleccionados.filter((producto) => producto.id.startsWith("manual-") && idsAUsar.includes(producto.id));
@@ -1000,7 +1020,7 @@ export default function Page() {
     const hasAutomaticReferencePlan = imagenesReferenciaRef.current.length > 0 && Boolean(referenceDraftRef.current?.blueprint ?? referenceDraft?.blueprint);
     if (imagenesReferenciaRef.current.length > 0 && !referenceReady) {
       // eslint-disable-next-line react-hooks/globals -- deliberado: cola de deduplicación de generación en curso, ver declaración de pendienteAutoGlobal.
-      pendienteAutoGlobal = { ids: idsAUsar, paquetes: paquetesAUsar, instruccion: (override?.instruccion ?? ajuste.trim()) || undefined, automaticOnly: override?.automaticOnly, brief: briefAUsar, solicitudUsuario };
+      pendienteAutoGlobal = { ids: productIdsAUsar, ragVariantIds: ragVariantIdsAUsar, paquetes: paquetesAUsar, manualProducts: productosManuales, instruccion: (override?.instruccion ?? ajuste.trim()) || undefined, automaticOnly: override?.automaticOnly, brief: briefAUsar, solicitudUsuario };
       return;
     }
     if (idsAUsar.length === 0 && !hasAutomaticReferencePlan) return;
@@ -1026,6 +1046,7 @@ export default function Page() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             productIds: idsCatalogo,
+            ragVariantIds: ragVariantIdsAUsar.length ? ragVariantIdsAUsar : undefined,
             manualProducts: productosManuales.length ? productosManuales : undefined,
             productQuantities: paquetesAUsar,
             brief: briefAUsar,
@@ -1156,12 +1177,20 @@ export default function Page() {
       }));
 
     reemplazarTodo(productos);
+    // The quote can mix a RAG line retained from an older turn with a legacy
+    // replacement from this turn. Provenance belongs to the conversation,
+    // not to the card's latest validation payload.
+    const ragIds = new Set(
+      mensajes.flatMap((mensaje) => mensaje.ragValidados ?? []).map((item) => item.variantId),
+    );
+    const productosPorFuente = classifyGenerationIds(productos.map((producto) => producto.id), ragIds);
     setMensajes((previos) => [
       ...previos,
       { id: crypto.randomUUID(), role: "assistant", content: "Listo, rehago la visualización con tus cambios." },
     ]);
     generar({
-      ids: productos.map((producto) => producto.id),
+      ids: productosPorFuente.productIds,
+      ragVariantIds: productosPorFuente.ragVariantIds,
       paquetes: Object.fromEntries(productos.map((producto) => [producto.id, producto.paquetes ?? 1])),
       manualProducts: productos.filter((producto) => producto.id.startsWith("manual-")),
       soloIds: true,

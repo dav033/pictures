@@ -55,6 +55,41 @@
       "RAG_USE_FULLTEXT": true,
       "RAG_USE_TRIGRAM": true
     },
+    "generation": {
+      "status": "PASS",
+      "source_routing": {
+        "legacy": "productIds -> SQLite",
+        "rag": "ragVariantIds -> PostgreSQL",
+        "trusted_revalidation": "ACTIVE + available + price > 0",
+        "fallback": "none",
+        "ordering": "legacy_then_rag",
+        "provenance": "multi_turn_and_edited_quotation"
+      },
+      "corpora": {
+        "sqlite_products": 1671,
+        "sqlite_variants": 3724,
+        "catalogo_visible_products": 1456,
+        "postgres_rag_products": 1411,
+        "postgres_rag_variants": 3592,
+        "exact_product_id_overlap": 0,
+        "exact_variant_id_overlap": 0,
+        "separation": "intentional"
+      },
+      "regression": {
+        "command": "npm run rag:test-generation-resolver",
+        "status": "PASS",
+        "paid_provider_called": false
+      },
+      "browser_e2e": {
+        "status": "PASS",
+        "search_query": "globo corazón rojo",
+        "search_results": 28,
+        "forma_corazon_color_rojo_results": 10,
+        "flows": ["detail", "selection", "generate_boundary"],
+        "console_errors": 0,
+        "state_cleared": true
+      }
+    },
     "optional": {
       "gemini": "SKIPPED_OPTIONAL",
       "vector": "SKIPPED_OPTIONAL",
@@ -67,9 +102,11 @@
       "baseline_source": "four sequential local no-key E2E runs; conservative maximum observed p95",
       "baseline_samples_ms": [144.7, 126.4, 137.7, 93.6],
       "baseline_measured_at": "2026-08-22",
-      "latest_no_key_p95_ms": 123.7,
+      "latest_no_key_p95_ms": 72.4,
       "latest_no_key_warmups": 2,
       "latest_no_key_samples": 20,
+      "latest_no_key_failures": 0,
+      "latest_no_key_optional_skips": 2,
       "latest_no_key_status": "PASS",
       "with_gemini": "SKIPPED_OPTIONAL",
       "regression_limit": 0.15,
@@ -98,6 +135,8 @@
       },
       "e2e_no_key": "PASS",
       "e2e_with_gemini": "SKIPPED_OPTIONAL",
+      "generation_resolver": "PASS",
+      "generation_http_boundary": "PASS",
       "e2e_detail": "no-key and --with-gemini-without-key pass all mandatory invariants; 2 optional capabilities skipped"
     },
     "artifacts": {
@@ -106,6 +145,12 @@
       "source_manifests": [
         "data/manifests/rag-products-source.json",
         "data/manifests/rag-order-demand.json"
+      ],
+      "key_files": [
+        "src/lib/rag/generate-products.ts",
+        "src/app/api/generate/route.ts",
+        "scripts/test-generation-resolver.ts",
+        "src/lib/generacion/provenance.ts"
       ]
     },
     "migrations": 10,

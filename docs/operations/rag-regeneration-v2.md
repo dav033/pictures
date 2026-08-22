@@ -13,6 +13,8 @@ El catálogo es autoridad para producto, variante, precio, estado, disponibilida
 
 No persistir ni imprimir cuerpos RAW, `customer.id`, order IDs, line-item IDs, credenciales ni API keys. Los manifests guardan únicamente URL, timestamp, content-type, bytes, SHA-256, versión de contrato y conteos agregados. Los IDs de Shopify del catálogo son artefactos restringidos, no datos de cliente.
 
+La aplicación conserva dos corpus intencionalmente separados: SQLite legado tiene `1671` productos y `3724` variantes (`/catalogo` muestra `1456`), mientras PostgreSQL RAG tiene `1411` productos y `3592` variantes. No hay solapamiento exacto de IDs (`0` productos, `0` variantes). Por eso `/api/generate` no infiere la fuente: `productIds` resuelve en SQLite y `ragVariantIds` en PostgreSQL.
+
 ## 2. Flags de despliegue
 
 ```dotenv
@@ -157,6 +159,7 @@ Build y tipos:
 npm run lint
 npx tsc -p tsconfig.json --noEmit --pretty false
 npm run build
+npm run rag:test-generation-resolver
 ```
 
 Retrieval no-key:
@@ -178,6 +181,12 @@ npx tsx --conditions=react-server scripts/eval-e2e-rag-v2.ts --with-gemini
 ```
 
 En PowerShell, el comando no-key es `npm run rag:e2e-v2`; el comando Gemini usa explícitamente `--conditions=react-server` para cargar módulos server-only. El E2E comprueba parser 3/3, SKU original/canónico/conversacional, SKU ambiguo como aclaración, inexistente sin fallback semántico, filtros same-variant de precio/stock/forma/diámetro/color, corazón, whitelist, selección, precio/subtotal desde PG, unidades de paquete, presupuesto, health y estados opcionales. Una variante fuera de whitelist, precio inventado o ID inexistente termina con exit code distinto de cero.
+
+Evidencia final de integración: `npm run rag:e2e-v2` terminó `PASS` con `0` fallos, p95 `72.4 ms` y `2` skips opcionales (vector/Gemini sin key). `npm run rag:test-generation-resolver` terminó `PASS` tras recuperar Docker; cubre metadata PG, legado Shopify real, legado curado, orden mixto, IDs desconocidos, duplicados, payload runtime y frontera HTTP sin proveedor pagado. La resolución usa revalidación confiable (`ACTIVE`, disponible y precio `> 0`), no heurística ni fallback, conserva el orden legado→RAG y mantiene procedencia en multi-turn y cotizaciones editadas.
+
+La generación validada en HTTP producción local (puerto `3010`) pasa por la frontera de catálogo: `/api/generate` con IDs PG o legados alcanza el error esperado `503 sin_llave`, no un `400` de validación. No se realizó ninguna llamada pagada porque no existe `GEMINI_API_KEY`; la ruta determinista obligatoria sí quedó verificada.
+
+La corrida integrada de navegador también quedó en `PASS`: raíz/catálogo/búsqueda `globo corazón rojo` devolvió `28`, `forma=corazon` (Corazón) + `color=rojo` (rojo) devolvió `10`, y detalle → selección → frontera de generación terminó con `0` errores de consola y estado limpiado.
 
 ## 8. Promoción
 

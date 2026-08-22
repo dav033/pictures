@@ -20,6 +20,7 @@
     "rag:e2e-v2": "tsx --conditions=react-server scripts/eval-e2e-rag-v2.ts",
     "rag:eval-chat": "tsx --env-file=.env.local --conditions=react-server scripts/eval-chat-thinking.ts",
     "rag:test-validation": "tsx scripts/test-rag-validation.ts",
+    "rag:test-generation-resolver": "tsx --conditions=react-server scripts/test-generation-resolver.ts",
     "rag:test-webhook": "tsx scripts/test-webhook.ts",
     "rag:metrics": "tsx scripts/rag-metrics.ts",
     "rag:regression": "tsx scripts/regression-anti-alucinacion.ts",

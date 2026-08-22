@@ -1,9 +1,18 @@
 # Plan maestro — Regeneración RAG v2
 
-**Estado:** listo para ejecución autónoma  
+**Estado:** completo — regeneración y cierre de integración verificados
 **Fecha:** 2026-08-21  
 **Fase:** `01-rag-regeneration`  
 **Planes:** 8, en `.planning/phases/01-rag-regeneration/`
+
+## Estado final de verificación
+
+- Los corpus siguen separados intencionalmente: SQLite `1671` productos/`3724` variantes (`/catalogo`: `1456` visibles) y PostgreSQL RAG `1411`/`3592`, con solapamiento exacto de `0` IDs de producto y `0` IDs de variante.
+- El bloqueo de `/api/generate` quedó resuelto con routing explícito: `productIds` usa SQLite legado y `ragVariantIds` PostgreSQL RAG; la revalidación exige `ACTIVE`, disponibilidad y precio positivo, sin heurística/fallback, con orden determinista legado→RAG y procedencia conservada en multi-turn/cotizaciones editadas.
+- `npm run rag:test-generation-resolver`: `PASS` tras recuperar Docker (metadata PG, legado Shopify/curado, orden mixto, desconocidos, duplicados, payload runtime y frontera HTTP sin proveedor pagado).
+- `npm run rag:e2e-v2`: `PASS`, `0` fallos, p95 `72.4 ms`, `2` skips opcionales (vector/Gemini sin key). Build, TypeScript, lint focal y `git diff --check`: `PASS`.
+- En HTTP producción local `3010`, `/`, `/catalogo`, `/api/productos`, `/api/shopify/sync` y `/api/ia/salud` respondieron `200`; `/api/generate` válido (PG y legado) alcanzó `503 sin_llave`, no `400` de catálogo. La generación Gemini pagada queda pendiente por ausencia de `GEMINI_API_KEY`; no se hizo ninguna llamada pagada.
+- En el navegador integrado final, `globo corazón rojo` devolvió `28`, `forma=corazon` (Corazón) + `color=rojo` (rojo) devolvió `10`; detalle, selección y frontera de generación PASS, con `0` errores de consola y estado limpiado.
 
 ## Resultado buscado
 
