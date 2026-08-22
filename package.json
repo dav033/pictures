@@ -17,6 +17,7 @@
     "rag:eval": "tsx scripts/eval-retrieval.ts",
     "rag:eval-presupuesto": "tsx scripts/eval-presupuesto.ts",
     "rag:eval-parser": "tsx scripts/eval-query-parser.ts",
+    "rag:e2e-v2": "tsx --conditions=react-server scripts/eval-e2e-rag-v2.ts",
     "rag:eval-chat": "tsx --env-file=.env.local --conditions=react-server scripts/eval-chat-thinking.ts",
     "rag:test-validation": "tsx scripts/test-rag-validation.ts",
     "rag:test-webhook": "tsx scripts/test-webhook.ts",

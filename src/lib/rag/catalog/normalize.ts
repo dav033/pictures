@@ -1,5 +1,6 @@
 import {
   decodificarTamano,
+  decodificarUnidadesPaquete,
   derivarCategoria,
   derivarColores,
   derivarOcasiones,
@@ -90,6 +91,8 @@ export function normalizarProducto(
     // IN"…) — misma columna que decodifica el catálogo SQLite
     // (sincronizar.ts), aquí replicado para que Postgres tenga el mismo dato.
     const tamano = decodificarTamano(v.option1 ?? null);
+    const tituloVariante = v.title ? sanitizeTexto(v.title) : null;
+    const unidadesPaq = decodificarUnidadesPaquete(v.option2 ?? null) ?? decodificarUnidadesPaquete(tituloVariante);
     const variantText = (v.title ?? "").replace(/[-_/]+/g, " ");
     const productTitleColors = clasificarColores(raw.title.replace(/[-_/]+/g, " ")).values;
     const explicitVariantColors = clasificarColores(variantText).values;
@@ -106,7 +109,7 @@ export function normalizarProducto(
       variant_id: String(v.id),
       product_id: String(raw.id),
       sku: v.sku ?? null,
-      title: v.title ? sanitizeTexto(v.title) : null,
+      title: tituloVariante,
       price: Number(v.price),
       currency: "COP",
       inventory_quantity: inv ?? null,
@@ -122,6 +125,8 @@ export function normalizarProducto(
       ancho_cm: tamano?.anchoCm ?? null,
       alto_cm: tamano?.altoCm ?? null,
       derived_colors: variantColors.length ? variantColors : colores.length === 1 ? colores : [],
+      unidades_paq: unidadesPaq,
+      unidades_inferidas: unidadesPaq === null,
     });
   });
 

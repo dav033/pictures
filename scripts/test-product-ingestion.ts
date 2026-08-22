@@ -48,6 +48,8 @@ function assertCanonicalInvariants(source: ProductsCatalogSource): void {
   assert.equal(variant.inventory_quantity, 12);
   assert.equal(variant.codigo_tamano, "R-12");
   assert.equal(variant.forma, "redondo");
+  assert.equal(variant.unidades_paq, 12);
+  assert.equal(variant.unidades_inferidas, false);
   assert.deepEqual(variant.derived_colors, ["rojo"]);
   assert.equal(variant.attribute_states.color, "derived");
   assert.equal(first.products[0].image_urls[0], "https://example.invalid/fixture-product-001.jpg");
@@ -70,6 +72,8 @@ function assertCanonicalInvariants(source: ProductsCatalogSource): void {
   const heart = canonicalizeCatalog(heartSource);
   assert.equal(heart.products[0]?.variants[0]?.codigo_tamano, "C-12", "CORAZON 12 must normalize to explicit C-12");
   assert.equal(heart.products[0]?.variants[0]?.forma, "corazon", "CORAZON 12 must derive heart shape");
+  assert.equal(heart.products[0]?.variants[0]?.unidades_paq, 10, "package count must be extracted from a compound title");
+  assert.equal(heart.products[0]?.variants[0]?.unidades_inferidas, false);
 
   const variantColorSource: ProductsCatalogSource = [{
     ...source[0],
@@ -85,6 +89,8 @@ function assertCanonicalInvariants(source: ProductsCatalogSource): void {
   }];
   const variantColor = canonicalizeCatalog(variantColorSource).products[0]?.variants[0];
   assert.deepEqual(variantColor?.derived_colors, ["rojo"], "variant color evidence must come from the variant title");
+  assert.equal(variantColor?.unidades_paq, null, "missing package count must remain unknown");
+  assert.equal(variantColor?.unidades_inferidas, true, "missing package count must be marked inferred/unknown");
 
   const roseGold = canonicalizeCatalog([{
     ...source[0],
@@ -284,6 +290,20 @@ function assertLegacyNormalizerInvariants(): void {
   assert.deepEqual(result.variantes[0]?.derived_colors, ["rojo"], "variant color must come from variant evidence");
   assert.equal(result.variantes[0]?.forma, "redondo");
   assert.equal(result.variantes[0]?.diam_pulg, 12);
+  assert.equal(result.variantes[0]?.unidades_paq, null, "legacy normalizer must not invent one package");
+  assert.equal(result.variantes[0]?.unidades_inferidas, true);
+
+  const optionPackage = normalizarProducto({
+    ...raw,
+    id: 700004,
+    handle: "fixture-legacy-package-option",
+    variants: [{ ...raw.variants[0]!, id: 700005, option2: "PAQUETE X 9" }],
+  }, new Map());
+  assert.equal(optionPackage.ok, true);
+  if (optionPackage.ok) {
+    assert.equal(optionPackage.variantes[0]?.unidades_paq, 9, "legacy option2 package count must be preserved");
+    assert.equal(optionPackage.variantes[0]?.unidades_inferidas, false);
+  }
 
   const wine = normalizarProducto({ ...raw, id: 700003, title: "Bolsa para vino", handle: "fixture-legacy-wine", tags: [], product_type: "EMPAQUES" }, new Map());
   assert.equal(wine.ok, true);
@@ -303,12 +323,12 @@ async function assertDbIdempotency(source: ProductsCatalogSource, body: string):
     // catalog, so isolate this two-run test with an explicit opt-in.
     await persistStagedCatalog(pool, catalog, { sourceSnapshotId: snapshotId, manifest, maxDropRatio: 0, allowPartial: true });
     const firstProducts = await pool.query("SELECT product_id, handle, title, status, available, price_min, price_max, derived, search_text, embedding_source_hash FROM catalog_products ORDER BY product_id");
-    const firstVariants = await pool.query("SELECT variant_id, product_id, sku, sku_canonical, sku_ambiguous, price, currency, inventory_quantity, available, codigo_tamano, forma FROM catalog_variants ORDER BY variant_id");
+    const firstVariants = await pool.query("SELECT variant_id, product_id, sku, sku_canonical, sku_ambiguous, price, currency, inventory_quantity, available, codigo_tamano, forma, unidades_paq, unidades_inferidas FROM catalog_variants ORDER BY variant_id");
     const firstAudit = await pool.query("SELECT published_products, published_variants, rejected_records, status FROM rag_source_snapshots WHERE source_snapshot_id = $1", [snapshotId]);
     const firstRejections = await pool.query("SELECT COUNT(*)::text AS count FROM catalog_rejections WHERE source_snapshot_id = $1", [snapshotId]);
     await persistStagedCatalog(pool, catalog, { sourceSnapshotId: snapshotId, manifest, maxDropRatio: 0, allowPartial: true });
     const secondProducts = await pool.query("SELECT product_id, handle, title, status, available, price_min, price_max, derived, search_text, embedding_source_hash FROM catalog_products ORDER BY product_id");
-    const secondVariants = await pool.query("SELECT variant_id, product_id, sku, sku_canonical, sku_ambiguous, price, currency, inventory_quantity, available, codigo_tamano, forma FROM catalog_variants ORDER BY variant_id");
+    const secondVariants = await pool.query("SELECT variant_id, product_id, sku, sku_canonical, sku_ambiguous, price, currency, inventory_quantity, available, codigo_tamano, forma, unidades_paq, unidades_inferidas FROM catalog_variants ORDER BY variant_id");
     const secondAudit = await pool.query("SELECT published_products, published_variants, rejected_records, status FROM rag_source_snapshots WHERE source_snapshot_id = $1", [snapshotId]);
     const secondRejections = await pool.query("SELECT COUNT(*)::text AS count FROM catalog_rejections WHERE source_snapshot_id = $1", [snapshotId]);
     assert.deepEqual(secondProducts.rows, firstProducts.rows, "second identical publish changed product content");
@@ -350,9 +370,10 @@ async function assertDbSchema(): Promise<void> {
        WHERE table_schema = 'public' AND (table_name, column_name) IN
        (('catalog_products','source_snapshot_id'),('catalog_products','source_status'),
         ('catalog_variants','sku_canonical'),('catalog_variants','sku_ambiguous'),
+        ('catalog_variants','unidades_paq'),('catalog_variants','unidades_inferidas'),
         ('catalog_rejections','source_snapshot_id'))`,
     );
-    assert.equal(columns.rows.length, 5, "provenance/ambiguity columns are incomplete");
+    assert.equal(columns.rows.length, 7, "provenance/ambiguity/unit columns are incomplete");
     const constraints = await pool.query<{ definition: string }>(
       `SELECT pg_get_constraintdef(oid) AS definition FROM pg_constraint
        WHERE conrelid IN ('catalog_products_staging'::regclass, 'catalog_variants_staging'::regclass)
@@ -366,7 +387,7 @@ async function assertDbSchema(): Promise<void> {
     assert.equal(orphaned.rows[0]?.count, "0", "published variants must have a product");
     const after = await pool.query("SELECT COUNT(*)::text AS count FROM catalog_products");
     assert.deepEqual(after.rows, before.rows, "schema verification must not mutate published data");
-    console.log("[PASS] schema: migration 007 tables, provenance columns, constraints and FK invariants present");
+    console.log("[PASS] schema: migrations 007/010 tables, provenance, unit constraints and FK invariants present");
   } finally {
     await pool.end();
   }

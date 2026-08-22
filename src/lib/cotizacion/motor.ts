@@ -1,13 +1,8 @@
 import "server-only";
 import { mejorVarianteParaTamano } from "@/lib/shopify/consultas";
 import type { Producto } from "@/lib/types";
-
-/**
- * 8% por defecto (revientes al inflar y al montar) — [POR CALIBRAR con
- * Sempertex, §8.2 del plan]. Con paquetes de 50 casi nunca cambia el número
- * de paquetes, pero se muestra igual porque justifica el sobrante.
- */
-export const MERMA = 0.08;
+import { MERMA } from "./constantes";
+export { MERMA } from "./constantes";
 
 /**
  * Confirmado con el negocio: los precios de www.sempertex.com ya incluyen

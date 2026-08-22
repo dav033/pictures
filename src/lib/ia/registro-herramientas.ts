@@ -7,7 +7,7 @@ import { productosPorId } from "@/lib/products";
 import { getRagPool } from "@/lib/rag/db";
 import { buscarCatalogoRag, type ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { buscarCatalogoRagConPresupuesto } from "@/lib/rag/chat/buscar-presupuesto";
-import { validarSeleccion, type ItemRechazado, type ItemValidado, type SeleccionSolicitada } from "@/lib/rag/chat/validar";
+import { aProductoValidado, validarSeleccion, type ItemRechazado, type ItemValidado, type SeleccionSolicitada } from "@/lib/rag/chat/validar";
 import { RAG_ENABLED, RAG_FRANJAS_ENABLED } from "@/lib/rag/flags";
 import { registrarBusqueda, registrarSeleccion } from "@/lib/rag/observability/log";
 import { resolverFranja } from "@/lib/rag/presupuesto/resolver";
@@ -383,6 +383,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
 
     confirmar_seleccion_rag: async (args) => {
       const seleccionCruda = Array.isArray(args.seleccion) ? args.seleccion : [];
+      const pool = getRagPool();
 
       // Ítems normales (tamaño explícito) pasan tal cual. Ítems
       // "usar_despiece" (plan de tamaños F3, "mezcla de diseñador") se
@@ -424,7 +425,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
         }
 
         const whitelist = estado.ragVariantIdsRecuperados.get(productId) ?? new Set<string>();
-        const resuelto = resolverVariantesPorDespiece(productId, lineasDelColor, whitelist);
+        const resuelto = await resolverVariantesPorDespiece(pool, productId, lineasDelColor, whitelist);
         for (const linea of resuelto.lineas) {
           seleccion.push({ productId: linea.productId, variantId: linea.variantId, cantidad: linea.cantidad, razon: typeof cruda.razon === "string" ? cruda.razon : undefined });
           if (linea.sustitucion) sustituciones.push({ product_id: productId, ...linea.sustitucion });
@@ -432,7 +433,6 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
         for (const faltante of resuelto.sinCobertura) sinCobertura.push({ product_id: productId, tamano: faltante.tamano });
       }
 
-      const pool = getRagPool();
       const t0 = Date.now();
       const resultado = await validarSeleccion(pool, seleccion, estado.ragVariantIdsRecuperados);
       resultado.rechazados = [...resultado.rechazados, ...rechazosExpansion];
@@ -443,16 +443,11 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
       const statusSeleccion = resultado.validados.length > 0 ? "OK" : "NO_MATCH";
 
       // El frontend dispara /api/generate cuando `seleccionFinalIA` llega
-      // poblado (mecanismo existente de confirmar_seleccion_ia) — se reusa tal
-      // cual en vez de duplicarlo, resolviendo los MISMOS variant_id ya
-      // validados contra el catálogo SQLite (mismo Shopify, mismos ids). Sin
-      // esto, confirmar_seleccion_rag validaba correctamente pero nunca
-      // generaba la imagen porque el frontend no sabe nada de este tool nuevo.
+      // poblado. La proyección sale de los mismos rows PG que acabamos de
+      // validar: no se vuelve a consultar SQLite para evitar mezclar snapshots,
+      // precios o metadata de otra fuente.
       if (resultado.validados.length > 0) {
-        const paquetesPorVariante = new Map(resultado.validados.map((v) => [v.variantId, v.cantidad]));
-        const productos = variantesPorIds(resultado.validados.map((v) => v.variantId))
-          .map(aProducto)
-          .map((producto) => ({ ...producto, paquetes: paquetesPorVariante.get(producto.id) ?? 1 }));
+        const productos = resultado.validados.map((validado) => aProductoValidado(validado, validado.cantidad));
         if (productos.length > 0) estado.seleccionFinalIA = productos;
       }
 

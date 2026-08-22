@@ -34,6 +34,10 @@ export const CatalogVariantSchema = z.object({
   alto_cm: z.number().nullable(),
   /** Variant-level color evidence; empty means unknown, never a union guess. */
   derived_colors: z.array(z.string()),
+  /** Parsed package count; null means the source did not expose a safe count. */
+  unidades_paq: z.number().int().positive().nullable(),
+  /** True when package count is unknown rather than source-confirmed. */
+  unidades_inferidas: z.boolean(),
 });
 
 export type CatalogVariant = z.infer<typeof CatalogVariantSchema>;

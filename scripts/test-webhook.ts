@@ -70,7 +70,8 @@ async function main() {
     const { rows: creado } = await pool.query("SELECT title, source_updated_at FROM catalog_products WHERE product_id = $1", [PRODUCT_ID]);
     reportar(creado[0]?.title === "Producto De Prueba Webhook", "producto quedó persistido con el título correcto", JSON.stringify(creado[0]));
     const { rows: varianteCreada } = await pool.query(
-      `SELECT sku_original, sku_canonical, sku_ambiguous, derived_colors, source_variant_id
+      `SELECT sku_original, sku_canonical, sku_ambiguous, derived_colors, source_variant_id,
+              unidades_paq, unidades_inferidas
          FROM catalog_variants WHERE product_id = $1`,
       [PRODUCT_ID],
     );
@@ -79,7 +80,9 @@ async function main() {
         varianteCreada[0]?.sku_canonical === "TEST-WEBHOOK-1" &&
         varianteCreada[0]?.sku_ambiguous === false &&
         JSON.stringify(varianteCreada[0]?.derived_colors) === JSON.stringify(["rojo"]) &&
-        varianteCreada[0]?.source_variant_id === "8888811",
+        varianteCreada[0]?.source_variant_id === "8888811" &&
+        varianteCreada[0]?.unidades_paq == null &&
+        varianteCreada[0]?.unidades_inferidas === true,
       "legacy writer conserva SKU v2, color same-variant y provenance",
       JSON.stringify(varianteCreada[0]),
     );
@@ -161,11 +164,24 @@ async function main() {
       webhookId: "wh-3",
       topic: "products/update",
       shopifyProductId: PRODUCT_ID,
-      body: payloadProducto({ title: "Título Actualizado", updated_at: "2026-06-01T10:00:00-05:00" }),
+      body: payloadProducto({
+        title: "Título Actualizado",
+        updated_at: "2026-06-01T10:00:00-05:00",
+        variants: [{ id: 8888811, title: "R-12 Rojo / PAQUETE X 12", option1: "R-12", option2: null, price: "10000", available: true, grams: 5, sku: "B2B-TEST-WEBHOOK-1" }],
+      }),
     });
     reportar(r4.status === "procesado", "update con updated_at más nuevo se aplica", JSON.stringify(r4));
     const { rows: trasNuevo } = await pool.query("SELECT title FROM catalog_products WHERE product_id = $1", [PRODUCT_ID]);
     reportar(trasNuevo[0]?.title === "Título Actualizado", "el título sí se actualizó", JSON.stringify(trasNuevo[0]));
+    const { rows: unidadesNuevas } = await pool.query<{ unidades_paq: number | null; unidades_inferidas: boolean }>(
+      "SELECT unidades_paq, unidades_inferidas FROM catalog_variants WHERE variant_id = $1",
+      ["8888811"],
+    );
+    reportar(
+      unidadesNuevas[0]?.unidades_paq === 12 && unidadesNuevas[0]?.unidades_inferidas === false,
+      "update webhook deriva y persiste unidades PAQUETE X N",
+      JSON.stringify(unidadesNuevas[0]),
+    );
 
     // --- topic no soportado ---
     const r5 = await procesarWebhookShopify(pool, {

@@ -7,6 +7,7 @@ import { construirSearchText, hashSearchText, sanitizeTexto, sanitizeTextoNullab
 import { CatalogProductSchema, CatalogVariantSchema, type CatalogProduct, type CatalogVariant } from "./schemas";
 import {
   decodificarTamano,
+  decodificarUnidadesPaquete,
   derivarCategoria,
   derivarColores,
   derivarOcasiones,
@@ -217,6 +218,7 @@ function canonicalizeVariant(
   const imageUrl = product.images[0]?.url ? sanitizeTexto(product.images[0].url) : null;
   const size = findExplicitSize(product, variant);
   const derivedColors = variantColors(product, variant);
+  const unidadesPaq = decodificarUnidadesPaquete(title);
 
   const value: CanonicalVariant = {
     variant_id: variantId,
@@ -233,6 +235,8 @@ function canonicalizeVariant(
     source_payload: variant,
     ...sizeFields(size),
     derived_colors: derivedColors,
+    unidades_paq: unidadesPaq,
+    unidades_inferidas: unidadesPaq === null,
     source_variant_id: variant.id,
     sku_original: skuOriginal,
     sku_canonical: skuCanonical,

@@ -58,11 +58,13 @@ export function decodificarTamano(codigo: string | null): TamanoDecodificado | n
   return null;
 }
 
-/** "PAQ X 50" / "PAQUETE X 8" → 50 / 8. Devuelve null si no es parseable (nunca se asume 1 en silencio). */
+/** "PAQ X 50" / "PAQUETE X 8" → 50 / 8, incluso dentro de un título de variante.
+ * Devuelve null si no es parseable o es cero (nunca se asume 1 en silencio). */
 export function decodificarUnidadesPaquete(codigo: string | null): number | null {
   if (!codigo) return null;
-  const m = codigo.trim().toUpperCase().match(/^PAQ(?:UETE)?\s*X\s*(\d+)$/);
-  return m ? Number(m[1]) : null;
+  const m = codigo.trim().toUpperCase().match(/(?:^|[^A-Z0-9])PAQ(?:UETE)?\s*X\s*(\d+)(?=$|[^A-Z0-9])/);
+  const unidades = m ? Number(m[1]) : null;
+  return unidades && unidades > 0 ? unidades : null;
 }
 
 const DICCIONARIO_COLOR: Record<string, string> = {

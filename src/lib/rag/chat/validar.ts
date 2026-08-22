@@ -1,4 +1,6 @@
 import type { Pool } from "pg";
+import type { Producto } from "@/lib/types";
+import { nombreCategoria } from "@/lib/shopify/derivar";
 
 /**
  * Lo único que el LLM puede mandar por cada pieza elegida (plan §4.5). A
@@ -25,6 +27,15 @@ export type ItemValidado = {
    * producto para que el cliente verifique contra la fuente de verdad que
    * esto no es un producto inventado por el LLM. */
   handle: string | null;
+  /** Metadata factual/derivada leída de las mismas filas PG validadas. */
+  tipoProducto: string | null;
+  categoria: string | null;
+  colores: string[];
+  descripcion: string | null;
+  unidadesPaquete: number | null;
+  codigoTamano: string | null;
+  forma: string | null;
+  diamPulg: number | null;
 };
 
 export type ItemRechazado = {
@@ -52,7 +63,42 @@ type FilaVariante = {
   inventario: number | null;
   imagen_principal: string | null;
   handle: string | null;
+  producto_tipo: string | null;
+  categoria: string | null;
+  colores_producto: unknown;
+  colores_variante: unknown;
+  descripcion: string | null;
+  unidades_paq: number | null;
+  codigo_tamano: string | null;
+  forma: string | null;
+  diam_pulg: number | null;
 };
+
+function strings(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.length > 0) : [];
+}
+
+/** Proyección visual segura: todo dato comercial proviene de ItemValidado/PG. */
+export function aProductoValidado(item: ItemValidado, paquetes = item.cantidad): Producto {
+  const producto: Producto = {
+    id: item.variantId,
+    nombre: item.titulo,
+    categoria: nombreCategoria(item.categoria),
+    estilos: [],
+    colores: item.colores,
+    descripcion: item.descripcion ?? item.titulo,
+    precio: item.precioUnitario,
+    familiaId: item.productId,
+    paquetes,
+  };
+  if (item.tipoProducto) producto.tipoProducto = item.tipoProducto;
+  if (item.unidadesPaquete != null) producto.unidadesPaquete = item.unidadesPaquete;
+  if (item.codigoTamano) producto.tamanoCodigo = item.codigoTamano;
+  if (item.forma) producto.forma = item.forma;
+  if (item.diamPulg != null) producto.diamPulg = item.diamPulg;
+  if (item.imagen) producto.foto = item.imagen;
+  return producto;
+}
 
 /**
  * Validación obligatoria (plan §4.7/§4.8). Ningún dato comercial sale de la
@@ -100,7 +146,13 @@ export async function validarSeleccion(
   const { rows } = await pool.query<FilaVariante>(
     `SELECT v.product_id, v.variant_id, v.sku, p.title AS producto_titulo, v.title AS variante_titulo,
             v.price AS precio, v.available AS variante_disponible, v.inventory_quantity AS inventario,
-            p.image_urls[1] AS imagen_principal, p.handle
+            p.image_urls[1] AS imagen_principal, p.handle, p.product_type AS producto_tipo,
+            p.derived->>'category' AS categoria,
+            COALESCE(p.derived->'colors', '[]'::jsonb) AS colores_producto,
+            COALESCE(v.derived_colors, ARRAY[]::text[]) AS colores_variante,
+            p.description_text AS descripcion,
+            NULLIF(to_jsonb(v)->>'unidades_paq', '')::integer AS unidades_paq,
+            v.codigo_tamano, v.forma, v.diam_pulg
      FROM catalog_variants v
      JOIN catalog_products p ON p.product_id = v.product_id
      WHERE v.variant_id = ANY($1::text[])`,
@@ -145,6 +197,8 @@ export async function validarSeleccion(
     }
 
     const precioUnitario = Number(fila.precio);
+    const coloresVariante = strings(fila.colores_variante);
+    const coloresProducto = strings(fila.colores_producto);
     validados.push({
       productId: item.productId,
       variantId: item.variantId,
@@ -155,6 +209,14 @@ export async function validarSeleccion(
       subtotal: precioUnitario * item.cantidad, // cálculo en código (plan §4.11), nunca del LLM
       imagen: fila.imagen_principal,
       handle: fila.handle,
+      tipoProducto: fila.producto_tipo,
+      categoria: fila.categoria,
+      colores: coloresVariante.length ? coloresVariante : coloresProducto.length === 1 ? coloresProducto : [],
+      descripcion: fila.descripcion,
+      unidadesPaquete: fila.unidades_paq,
+      codigoTamano: fila.codigo_tamano,
+      forma: fila.forma,
+      diamPulg: fila.diam_pulg == null ? null : Number(fila.diam_pulg),
     });
   }
 

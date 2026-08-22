@@ -57,8 +57,9 @@ async function stageVariant(client: PoolClient, snapshotId: string, variant: Can
       (source_snapshot_id, product_id, variant_id, source_variant_id, sku, sku_original,
        sku_canonical, sku_ambiguous, title, price, currency, inventory_quantity,
        inventory_source, available, options, image_url, source_payload, codigo_tamano,
-       forma, diam_pulg, largo_pulg, ancho_cm, alto_cm, derived_colors, attribute_states)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)
+       forma, diam_pulg, largo_pulg, ancho_cm, alto_cm, unidades_paq, unidades_inferidas,
+       derived_colors, attribute_states)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27)
      ON CONFLICT (source_snapshot_id, variant_id) DO UPDATE SET
        product_id = excluded.product_id, source_variant_id = excluded.source_variant_id,
        sku = excluded.sku, sku_original = excluded.sku_original, sku_canonical = excluded.sku_canonical,
@@ -68,6 +69,7 @@ async function stageVariant(client: PoolClient, snapshotId: string, variant: Can
        options = excluded.options, image_url = excluded.image_url, source_payload = excluded.source_payload,
        codigo_tamano = excluded.codigo_tamano, forma = excluded.forma, diam_pulg = excluded.diam_pulg,
        largo_pulg = excluded.largo_pulg, ancho_cm = excluded.ancho_cm, alto_cm = excluded.alto_cm,
+       unidades_paq = excluded.unidades_paq, unidades_inferidas = excluded.unidades_inferidas,
        derived_colors = excluded.derived_colors,
        attribute_states = excluded.attribute_states, staged_at = now()` ,
     [
@@ -76,7 +78,8 @@ async function stageVariant(client: PoolClient, snapshotId: string, variant: Can
       variant.title, variant.price, variant.currency, variant.inventory_quantity,
       variant.inventory_source, variant.available, json(variant.options), variant.image_url,
       json(variant.source_payload), variant.codigo_tamano, variant.forma, variant.diam_pulg,
-      variant.largo_pulg, variant.ancho_cm, variant.alto_cm, variant.derived_colors, json(variant.attribute_states),
+      variant.largo_pulg, variant.ancho_cm, variant.alto_cm, variant.unidades_paq,
+      variant.unidades_inferidas, variant.derived_colors, json(variant.attribute_states),
     ],
   );
 }
@@ -118,8 +121,9 @@ async function publishVariant(client: PoolClient, snapshotId: string, variant: C
       (variant_id, product_id, sku, title, price, currency, inventory_quantity,
        inventory_source, available, options, image_url, source_payload, codigo_tamano,
        forma, diam_pulg, largo_pulg, ancho_cm, alto_cm, source_snapshot_id,
-       source_variant_id, sku_original, sku_canonical, sku_ambiguous, derived_colors, attribute_states)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)
+       source_variant_id, sku_original, sku_canonical, sku_ambiguous, unidades_paq, unidades_inferidas,
+       derived_colors, attribute_states)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27)
      ON CONFLICT (variant_id) DO UPDATE SET
        product_id = excluded.product_id, sku = excluded.sku, title = excluded.title,
        price = excluded.price, currency = excluded.currency, inventory_quantity = excluded.inventory_quantity,
@@ -129,7 +133,8 @@ async function publishVariant(client: PoolClient, snapshotId: string, variant: C
        largo_pulg = excluded.largo_pulg, ancho_cm = excluded.ancho_cm, alto_cm = excluded.alto_cm,
        source_snapshot_id = excluded.source_snapshot_id, source_variant_id = excluded.source_variant_id,
        sku_original = excluded.sku_original, sku_canonical = excluded.sku_canonical,
-       sku_ambiguous = excluded.sku_ambiguous, derived_colors = excluded.derived_colors,
+       sku_ambiguous = excluded.sku_ambiguous, unidades_paq = excluded.unidades_paq,
+       unidades_inferidas = excluded.unidades_inferidas, derived_colors = excluded.derived_colors,
        attribute_states = excluded.attribute_states`,
     [
       variant.variant_id, variant.product_id, variant.sku, variant.title, variant.price, variant.currency,
@@ -137,7 +142,7 @@ async function publishVariant(client: PoolClient, snapshotId: string, variant: C
       variant.image_url, json(variant.source_payload), variant.codigo_tamano, variant.forma,
       variant.diam_pulg, variant.largo_pulg, variant.ancho_cm, variant.alto_cm, snapshotId,
       variant.source_variant_id, variant.sku_original, variant.sku_canonical, variant.sku_ambiguous,
-      variant.derived_colors, json(variant.attribute_states),
+      variant.unidades_paq, variant.unidades_inferidas, variant.derived_colors, json(variant.attribute_states),
     ],
   );
 }

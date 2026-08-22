@@ -1,108 +1,113 @@
 import "server-only";
-import { getDb } from "@/lib/db";
-import { MERMA } from "@/lib/cotizacion/motor";
+import type { Pool } from "pg";
+import { MERMA } from "@/lib/cotizacion/constantes";
 import type { LineaDespiece } from "@/lib/medidas/geometria";
 
 export type LineaResuelta = {
   productId: string;
   variantId: string;
-  /** Paquetes cerrados (no unidades sueltas) — mismo contrato que `SeleccionSolicitada.cantidad` en validar.ts. */
+  /** Paquetes cerrados — mismo contrato que `SeleccionSolicitada.cantidad`. */
   cantidad: number;
   diamPulgPedido: number;
   diamPulgEntregado: number;
-  /** No-null cuando el diámetro exacto del despiece no existía en este producto y se usó el más cercano disponible — nunca se sustituye en silencio (decisión del plan §3). */
+  /** Sustitución explícita cuando la whitelist no tiene el diámetro pedido. */
   sustitucion: { pedido: string; entregado: string; motivo: string } | null;
 };
 
 export type ResultadoResolverTamanos = {
   lineas: LineaResuelta[];
-  /** Líneas del despiece que este producto no puede cubrir en NINGUNA variante (no tiene globo redondo en absoluto). */
+  /** Líneas que no pudieron resolverse usando exclusivamente la whitelist PG. */
   sinCobertura: LineaDespiece[];
 };
 
 type FilaVarianteRedonda = {
-  id: string;
+  variant_id: string;
   diam_pulg: number;
-  disponible: number;
-  precio: number;
+  price: number;
   unidades_paq: number;
 };
 
 /**
- * Traduce un despiece geométrico (plan de tamaños F3, "mezcla de diseñador")
- * a variantes reales de UN producto/color ya elegido por el LLM — el LLM
- * decide QUÉ producto y color usar; este resolver decide CUÁNTO de cada
- * tamaño, en paquetes cerrados.
+ * Resuelve un despiece únicamente contra el catálogo RAG PostgreSQL.
  *
- * Corre contra el catálogo SQLite (shopify_variante), no Postgres: es la
- * misma fuente que ya usa `mejorVarianteParaTamano`/`aProducto` para
- * resolver la cotización final — `unidades_paq` (paquete real) solo vive
- * ahí, Postgres nunca lo decodificó (plan F1 solo llevó forma/diámetro).
- * `product_id` es el mismo id de Shopify en ambas bases, y sólo se consideran
- * los `variant_id` que el retrieval Postgres entregó en su whitelist interna.
- *
- * Fallback por cercanía (decisión de producto): si este producto no tiene el
- * diámetro exacto de una línea del despiece, se usa el disponible más
- * cercano y se marca en `sustitucion` — el LLM está obligado a decírselo al
- * cliente (nunca sustitución silenciosa). Mismo criterio de desempate que
- * `mejorVarianteParaTamano`: disponible primero, luego menor precio unitario.
+ * `productId` y `whitelistVariantIds` son identidades PG entregadas por el
+ * retrieval. No hay fallback a SQLite, SKU, producto hermano ni primer match:
+ * cada fila candidate debe pertenecer simultáneamente al producto, a la
+ * whitelist, ser ACTIVE/available y tener precio, diámetro y unidades de
+ * paquete factuals.
  */
-export function resolverVariantesPorDespiece(
+export async function resolverVariantesPorDespiece(
+  pool: Pool,
   productId: string,
   despiece: LineaDespiece[],
   whitelistVariantIds: ReadonlySet<string>,
-): ResultadoResolverTamanos {
-  const filas = getDb()
-    .prepare(
-      `SELECT id, diam_pulg, disponible, precio, unidades_paq
-       FROM shopify_variante
-       WHERE producto_id = ? AND forma = 'redondo' AND diam_pulg IS NOT NULL AND precio > 0`,
-    )
-    .all(productId) as unknown as FilaVarianteRedonda[];
+): Promise<ResultadoResolverTamanos> {
+  if (despiece.length === 0) return { lineas: [], sinCobertura: [] };
+  if (whitelistVariantIds.size === 0) return { lineas: [], sinCobertura: despiece };
 
-  if (filas.length === 0) {
-    return { lineas: [], sinCobertura: despiece };
-  }
+  const { rows } = await pool.query<FilaVarianteRedonda>(
+    `SELECT v.variant_id,
+            v.diam_pulg::float8 AS diam_pulg,
+            v.price::float8 AS price,
+            v.unidades_paq::int AS unidades_paq
+       FROM catalog_variants v
+       JOIN catalog_products p ON p.product_id = v.product_id
+      WHERE v.product_id = $1
+        AND v.variant_id = ANY($2::text[])
+        AND p.status = 'ACTIVE'
+        AND p.available = true
+        AND v.forma = 'redondo'
+        AND v.diam_pulg IS NOT NULL
+        AND v.price > 0
+        AND v.available = true
+        AND v.unidades_paq IS NOT NULL`,
+    [productId, [...whitelistVariantIds]],
+  );
 
-  const recuperadas = filas.filter((f) => whitelistVariantIds.has(f.id));
-  if (recuperadas.length === 0) return { lineas: [], sinCobertura: despiece };
-
-  const disponibles = recuperadas.filter((f) => f.disponible);
-  const candidatos = disponibles.length > 0 ? disponibles : recuperadas;
+  // A null/invalid package size is never replaced with an invented default.
+  const candidates = rows
+    .filter((row) => Number.isFinite(Number(row.diam_pulg)) && Number(row.price) > 0 && Number(row.unidades_paq) > 0)
+    .map((row) => ({
+      variantId: row.variant_id,
+      diameter: Number(row.diam_pulg),
+      price: Number(row.price),
+      packageUnits: Number(row.unidades_paq),
+    }));
+  if (candidates.length === 0) return { lineas: [], sinCobertura: despiece };
 
   const lineas: LineaResuelta[] = [];
-
   for (const linea of despiece) {
-    let mejor = candidatos[0];
-    let mejorDist = Math.abs(mejor.diam_pulg - linea.pulgadas);
-    for (const candidato of candidatos.slice(1)) {
-      const dist = Math.abs(candidato.diam_pulg - linea.pulgadas);
-      const mejorPrecioUnit = mejor.precio / Math.max(1, mejor.unidades_paq);
-      const candidatoPrecioUnit = candidato.precio / Math.max(1, candidato.unidades_paq);
-      if (dist < mejorDist || (dist === mejorDist && candidatoPrecioUnit < mejorPrecioUnit)) {
-        mejor = candidato;
-        mejorDist = dist;
+    let best = candidates[0]!;
+    let bestDistance = Math.abs(best.diameter - linea.pulgadas);
+    for (const candidate of candidates.slice(1)) {
+      const distance = Math.abs(candidate.diameter - linea.pulgadas);
+      const bestUnitPrice = best.price / best.packageUnits;
+      const candidateUnitPrice = candidate.price / candidate.packageUnits;
+      if (
+        distance < bestDistance ||
+        (distance === bestDistance && (candidateUnitPrice < bestUnitPrice ||
+          (candidateUnitPrice === bestUnitPrice && candidate.variantId < best.variantId)))
+      ) {
+        best = candidate;
+        bestDistance = distance;
       }
     }
 
-    const unidadesPaquete = Math.max(1, mejor.unidades_paq);
-    const unidadesNecesarias = Math.ceil(linea.cantidad * (1 + MERMA));
-    const paquetes = Math.max(1, Math.ceil(unidadesNecesarias / unidadesPaquete));
-
+    const unitsNeeded = Math.ceil(linea.cantidad * (1 + MERMA));
+    const packages = Math.max(1, Math.ceil(unitsNeeded / best.packageUnits));
     lineas.push({
       productId,
-      variantId: mejor.id,
-      cantidad: paquetes,
+      variantId: best.variantId,
+      cantidad: packages,
       diamPulgPedido: linea.pulgadas,
-      diamPulgEntregado: mejor.diam_pulg,
-      sustitucion:
-        mejorDist > 0
-          ? {
-              pedido: `R-${linea.pulgadas}`,
-              entregado: `R-${mejor.diam_pulg}`,
-              motivo: `Este producto no tiene R-${linea.pulgadas} disponible; se usó el diámetro más cercano.`,
-            }
-          : null,
+      diamPulgEntregado: best.diameter,
+      sustitucion: bestDistance > 0
+        ? {
+            pedido: `R-${linea.pulgadas}`,
+            entregado: `R-${best.diameter}`,
+            motivo: `La whitelist no tiene R-${linea.pulgadas}; se usó el diámetro más cercano disponible dentro de la whitelist.`,
+          }
+        : null,
     });
   }
 

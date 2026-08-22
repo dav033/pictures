@@ -156,9 +156,9 @@ export async function upsertProducto(
            (variant_id, product_id, sku, sku_original, sku_canonical, sku_ambiguous,
             title, price, currency, inventory_quantity, inventory_source,
             available, options, image_url, source_payload, codigo_tamano, forma,
-            diam_pulg, largo_pulg, ancho_cm, alto_cm, derived_colors,
-            source_variant_id, attribute_states)
-         VALUES ($1,$2,$3,$4,$5,FALSE,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23)
+            diam_pulg, largo_pulg, ancho_cm, alto_cm, unidades_paq, unidades_inferidas,
+            derived_colors, source_variant_id, attribute_states)
+         VALUES ($1,$2,$3,$4,$5,FALSE,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25)
          ON CONFLICT (variant_id) DO UPDATE SET
            product_id = excluded.product_id, sku = excluded.sku,
            sku_original = excluded.sku_original,
@@ -169,6 +169,7 @@ export async function upsertProducto(
            source_payload = excluded.source_payload, codigo_tamano = excluded.codigo_tamano,
            forma = excluded.forma, diam_pulg = excluded.diam_pulg, largo_pulg = excluded.largo_pulg,
            ancho_cm = excluded.ancho_cm, alto_cm = excluded.alto_cm,
+           unidades_paq = excluded.unidades_paq, unidades_inferidas = excluded.unidades_inferidas,
            derived_colors = excluded.derived_colors, source_variant_id = excluded.source_variant_id,
            attribute_states = excluded.attribute_states`,
         [
@@ -192,6 +193,8 @@ export async function upsertProducto(
           v.largo_pulg,
           v.ancho_cm,
           v.alto_cm,
+          v.unidades_paq,
+          v.unidades_inferidas,
           v.derived_colors,
           v.variant_id,
           JSON.stringify(attributeStates(v)),
