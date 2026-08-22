@@ -48,13 +48,13 @@ Se regeneró el ground truth contra la reimportación final de Plan06 y se ejecu
 - Negative not-found: `1.0000`.
 - Error rate / branch error rate: `0 / 0`.
 - IDs inválidos / branch statuses inválidos: `0 / 0`.
-- Latencia total (repeat=2): p50 `35.6039 ms`, p95 `87.6977 ms`.
+- Latencia total (repeat=2): p50 `25.1583 ms`, p95 `54.2580 ms`.
 - Cobertura de evidencia de color: `1.0000`; 594 expected usan fallback singleton válido.
 
 ## Decisiones y límites
 
 - No se bajaron thresholds ni se modificó retrieval para aprobar el gate.
-- No se modificó `STATE` ni se hicieron commits.
+- La fase se cerró sin commits; `STATE` queda actualizado con el resultado final.
 - Vector/Gemini queda `SKIPPED_OPTIONAL` en este baseline no-key; FTS/trigram y filtros duros se ejercitaron contra la DB real.
 
 Artefacto: `reports/rag-baseline-v2.md`.

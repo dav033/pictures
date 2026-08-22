@@ -1,47 +1,56 @@
 # State — Regeneración RAG v2
 
-**Updated:** 2026-08-21  
+**Updated:** 2026-08-22
 **Phase:** `01-rag-regeneration`  
-**Status:** in progress — plan `01-01` complete
-**Current wave:** 1
+**Status:** complete — planes `01-01` a `01-08` completos
+**Current wave:** complete
 
-## Posición actual
+## Resultado final
 
-La ingeniería inversa, auditoría de fuente, convenciones, pruebas y riesgos está documentada en `.planning/codebase/`. El plan `01-01` dejó el runtime local, el health check y el build base verificados; los siguientes planes siguen pendientes.
+La regeneración RAG v2 quedó verificada sobre PostgreSQL real en Docker y habilitada localmente con `RAG_ENABLED=true`. La ruta obligatoria es determinista (parser + FTS/trigram + SQL); Gemini/vector queda `SKIPPED_OPTIONAL` sin key.
 
-## Bloqueos verificados
+- Snapshot publicado: `products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42`.
+- SHA de productos: `13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42`.
+- SHA de órdenes: `d4f5dd037656209f25b018274877333bd134560df5f055168410ffeaac58b414`.
+- Catálogo publicado: `1411` productos / `3592` variantes.
+- Migraciones aplicadas: `10`; `010_variant_package_units.sql` incluido.
+- Unidades por paquete: `3518` conocidas / `74` desconocidas (`NULL`, sin inventar valores).
+- Manifests fuente revisados: sin PII y sin cambios en hashes.
+- Docker: servicio PostgreSQL healthy; pgvector, pg_trgm y unaccent verificados.
+- HTTP smoke: `/`, `/api/productos`, `/api/shopify/sync` y `/api/ia/salud` respondieron `200`.
 
-- `.env.local` sigue vacío y no hay `GEMINI_API_KEY`; esto no bloquea el modo determinista. El `DATABASE_URL` de verificación se cargó desde `.env.example`.
-- `pg_trgm` es opcional en el plan 01 y queda pendiente de la migración de retrieval/indexes; su ausencia no bloquea el runtime base.
-- El importador actual espera REST Shopify y no acepta directamente el contrato camelCase/GID del CDN.
-- `order_data.json` no tiene consumidor y contiene `customer.id`; solo puede producir agregados sin PII.
-- La taxonomía existente no cubre de forma segura todos los colores compuestos, acabados, formas y tamaños del snapshot.
-- El benchmark existente es parcialmente aleatorio y no sirve como gate reproducible.
+## Métricas y gates
 
-## Decisiones bloqueadas para ejecución
+- Corpus fijo: `416`; benchmark `repeat=2`; p50 `25.1583 ms`; p95 `54.2580 ms`.
+- NDCG@10 global: `0.905466`; filter precision: `1.0000`.
+- E2E no-key: PASS; p95 final `123.7 ms`, `2` warmups excluidos, `20` muestras, baseline `144.7 ms`, límite baseline+15% `166.4 ms`.
+- E2E con Gemini sin key: `SKIPPED_OPTIONAL`.
+- Build, TypeScript, lint, health, parser, ingesta, SKU, whitelist, precio, disponibilidad, same-variant, rollback y HTTP: PASS.
 
-- Mantener Postgres + SQL propio; no LangChain/LlamaIndex.
-- Usar exactamente las URLs fijadas en `PROJECT.md`, registrar hash y no mezclar snapshots.
-- Política pública `ACTIVE` + precio positivo; stock/disponibilidad por variante.
-- SKU repetido = `ambiguous`, nunca primer match.
-- Órdenes = popularidad débil/decay, sin PII y sin autoridad comercial.
-- Parser determinista-first; Gemini opcional y validado por Zod.
-- Exact SKU, FTS y `pg_trgm` son baseline sin key; vector es opcional.
-- Índices vectoriales solo tras `EXPLAIN (ANALYZE, BUFFERS)` y benchmark.
-
-## Próxima acción
-
-Continuar con `01-02-PLAN.md` en orden estricto de `ROADMAP.md`. Si un plan falla, conservar logs y detener la ola; no marcarlo completo por existencia de archivos.
-
-## Ledger de verificación
-
-| Gate | Estado | Evidencia requerida |
+| Gate | Estado | Evidencia |
 | --- | --- | --- |
-| Runtime/Next/build | PASS (`01-01`) | `docker compose config`; `docker compose ps` healthy; `npx tsx --env-file=.env.example scripts/stack-check.ts`; `npm run lint`; `npx tsc --noEmit --incremental false`; `npm run build` |
-| Contratos/snapshots | AUDITADO; NO IMPLEMENTADO | Zod + manifest + hash |
-| Schema/ingesta productos | NOT STARTED | staging, invariantes, diff de segunda corrida |
-| Agregados órdenes | NOT STARTED | scan PII + idempotencia |
-| Taxonomía/parser fallback | NOT STARTED | matriz 3/3 + cobertura |
-| Retrieval/índices | NOT STARTED | benchmark + EXPLAIN |
-| Benchmark fijo | NOT STARTED | 400+ casos + métricas |
-| E2E/rollback | NOT STARTED | reporte completo + runbook |
+| Runtime/Docker/build | PASS | Docker healthy, build y rutas HTTP 200 |
+| Contratos/snapshots | PASS | manifests, Zod, SHA y conteos |
+| Schema/ingesta productos | PASS | staging, idempotencia, ACTIVE/precio positivo |
+| Agregados de órdenes | PASS | 1855 líneas, agregados sin PII, replay determinista |
+| Taxonomía/parser | PASS | parser determinista 3/3 y taxonomía v2 |
+| Retrieval/índices | PASS | FTS/trigram, filtros same-variant y EXPLAIN |
+| Benchmark fijo | PASS | corpus 416, repeat 2, NDCG/filter/latencia en gates |
+| E2E/rollback | PASS | PG-only identity → despiece → visual, runbooks y SHA exacto |
+| Gemini/vector | SKIPPED_OPTIONAL | sin `GEMINI_API_KEY`; no bloquea no-key |
+
+## Decisiones operativas
+
+- `RAG_ENABLED=true`, `RAG_USE_VECTOR=false`, `RAG_USE_FULLTEXT=true`, `RAG_USE_TRIGRAM=true` en el entorno local aprobado.
+- El RAG no depende de IDs ni metadata SQLite: retrieval, resolver, validación y proyección visual usan PostgreSQL y la misma whitelist.
+- SKU duplicado siempre requiere aclaración; no hay primer match silencioso.
+- `available` y precio de la variante son autoridad comercial; inventario negativo/cero no reinterpreta disponibilidad.
+- Rollback: `RAG_ENABLED=false` y reimportación exacta de los SHA registrados en `release-manifest.json`; conservar el volumen Docker.
+
+## Mantenimiento siguiente
+
+1. Ante una nueva fuente, validar URL/hash/conteos y ejecutar `npm run rag:migrate` antes del import.
+2. Tras reimportar, ejecutar `ANALYZE catalog_products`, `ANALYZE catalog_variants`, `ANALYZE catalog_embeddings` y `ANALYZE rag_order_demand_aggregates` antes del benchmark.
+3. Ejecutar `npm run rag:e2e-v2` y `npx tsx scripts/bench-rag-v2.ts --no-key --repeat 2` antes de cambiar flags.
+4. Mantener Gemini/vector como opcionales hasta disponer de key, embeddings completos y benchmark comparable.
+5. Conservar manifests, hashes, backups y rollback target; no persistir cuerpos RAW ni PII.

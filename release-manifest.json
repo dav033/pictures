@@ -9,5 +9,119 @@
   "evaluation": "not_started",
   "rollback_target": null,
   "status": "development_only",
-  "approval": "none"
+  "approval": "none",
+  "rag": {
+    "version": "rag-v2",
+    "status": "READY",
+    "enabled": true,
+    "sources": [
+      {
+        "kind": "products_catalog",
+        "url": "https://cdn.shopify.com/s/files/1/0983/2752/7703/files/products_catalog.json?v=1779763986",
+        "sha256": "13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+        "counts": {
+          "products": 3297,
+          "variants": 6136,
+          "activeProducts": 1491,
+          "draftProducts": 1806,
+          "nonPositivePriceVariants": 278
+        }
+      },
+      {
+        "kind": "order_data",
+        "url": "https://cdn.shopify.com/s/files/1/0983/2752/7703/files/order_data.json?v=1779763985de",
+        "sha256": "d4f5dd037656209f25b018274877333bd134560df5f055168410ffeaac58b414",
+        "snapshot_id": "order_data:d4f5dd037656209f25b018274877333bd134560df5f055168410ffeaac58b414",
+        "counts": {
+          "orders": 200,
+          "lineItems": 1855,
+          "uniqueOrderSkus": 897,
+          "aggregateVariants": 869,
+          "matchedLines": 1785,
+          "unmatchedLines": 59,
+          "ambiguousSkuKeys": 2
+        }
+      }
+    ],
+    "contracts": {
+      "source": "cdn-graphql-v1",
+      "taxonomy": "catalog-taxonomy-v2",
+      "retrieval": "rag-search-v2"
+    },
+    "flags": {
+      "RAG_ENABLED": true,
+      "RAG_USE_VECTOR": false,
+      "RAG_USE_FULLTEXT": true,
+      "RAG_USE_TRIGRAM": true
+    },
+    "optional": {
+      "gemini": "SKIPPED_OPTIONAL",
+      "vector": "SKIPPED_OPTIONAL",
+      "model": null,
+      "dimensions": null
+    },
+    "e2e": {
+      "baseline_p95_ms": 144.7,
+      "baseline_status": "MEASURED_NO_KEY_E2E",
+      "baseline_source": "four sequential local no-key E2E runs; conservative maximum observed p95",
+      "baseline_samples_ms": [144.7, 126.4, 137.7, 93.6],
+      "baseline_measured_at": "2026-08-22",
+      "latest_no_key_p95_ms": 123.7,
+      "latest_no_key_warmups": 2,
+      "latest_no_key_samples": 20,
+      "latest_no_key_status": "PASS",
+      "with_gemini": "SKIPPED_OPTIONAL",
+      "regression_limit": 0.15,
+      "absolute_limit_ms": 2100,
+      "artifact": "scripts/eval-e2e-rag-v2.ts"
+    },
+    "gates": {
+      "source_snapshots": "PASS",
+      "stack_check": "PASS",
+      "health": "PASS",
+      "parser_no_key": "PASS",
+      "prices_from_db": "PASS",
+      "sku_ambiguity_requires_clarification": "PASS",
+      "build": "PASS",
+      "benchmark_no_key": "PASS",
+      "benchmark_detail": "corpus=416 repeat=2 p50=25.1583ms p95=54.2580ms ndcg@10_global=0.905466 filter_variant_precision=1.0000; all mandatory quality gates PASS",
+      "benchmark": {
+        "report": "reports/rag-baseline-v2.md",
+        "corpus": 416,
+        "repeat": 2,
+        "latency_p50_ms": 25.1583,
+        "latency_p95_ms": 54.2580,
+        "ndcg_at_10_global": 0.905466,
+        "filter_variant_precision": 1.0,
+        "quality_status": "PASS"
+      },
+      "e2e_no_key": "PASS",
+      "e2e_with_gemini": "SKIPPED_OPTIONAL",
+      "e2e_detail": "no-key and --with-gemini-without-key pass all mandatory invariants; 2 optional capabilities skipped"
+    },
+    "artifacts": {
+      "regeneration": "docs/operations/rag-regeneration-v2.md",
+      "rollback": "docs/operations/rag-rollback-v2.md",
+      "source_manifests": [
+        "data/manifests/rag-products-source.json",
+        "data/manifests/rag-order-demand.json"
+      ]
+    },
+    "migrations": 10,
+    "package_units": {
+      "known": 3518,
+      "unknown": 74,
+      "total_variants": 3592,
+      "unknown_policy": "NULL; resolver does not invent a package size"
+    },
+    "rollback_target": {
+      "RAG_ENABLED": false,
+      "strategy": "exact_sha_reimport",
+      "products_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+      "products_sha256": "13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+      "orders_snapshot_id": "order_data:d4f5dd037656209f25b018274877333bd134560df5f055168410ffeaac58b414",
+      "orders_sha256": "d4f5dd037656209f25b018274877333bd134560df5f055168410ffeaac58b414"
+    }
+  }
 }

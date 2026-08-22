@@ -1,6 +1,6 @@
 # RAG baseline v2 — PASS
 
-Generado: 2026-08-22T02:43:05.227Z
+Generado: 2026-08-22T03:16:13.264Z
 Rama evaluada: determinista local + PostgreSQL; vector/Gemini: SKIPPED_OPTIONAL (no-key)
 Repeticiones: 2; latencia medida de forma secuencial para no distorsionar contención.
 
@@ -29,8 +29,8 @@ Repeticiones: 2; latencia medida de forma secuencial para no distorsionar conten
 | hard_filter_variant_leakage | 0.0000 | = 0 | PASS |  |
 | invalid_result_ids | 0.0000 | = 0 | PASS |  |
 | invalid_branch_statuses | 0.0000 | = 0 | PASS |  |
-| latency_p50_ms | 35.6039 | <= 500 | PASS |  |
-| latency_p95_ms | 87.6977 | <= 2100 | PASS |  |
+| latency_p50_ms | 25.1583 | <= 500 | PASS |  |
+| latency_p95_ms | 54.2580 | <= 2100 | PASS |  |
 | color_variant_attribute_coverage | 1.0000 | = 1.00 | PASS | 2716 variantes tienen color explícito; 594 expected usan fallback singleton inequívoco; ambos son evidencia de la misma variant_id |
 
 El comando con `--gate` devuelve exit code **0**.
@@ -39,14 +39,14 @@ El comando con `--gate` devuelve exit code **0**.
 
 | Familia | Casos por repetición | Hit@1 producto/no-match | NDCG@10 | p50 total |
 |---|---:|---:|---:|---:|
-| budget | 25 | 100.00% | 100.00% | 36.9 ms |
-| color | 51 | 100.00% | 90.39% | 40.9 ms |
-| filter | 51 | 100.00% | 88.34% | 45.9 ms |
-| name | 51 | 100.00% | 97.11% | 36.6 ms |
-| negative | 25 | 100.00% | 0.00% | 14.2 ms |
-| semantic | 101 | 99.01% | 76.70% | 34.7 ms |
-| shape_size | 51 | 100.00% | 97.83% | 61.4 ms |
-| sku | 61 | 100.00% | 100.00% | 10.9 ms |
+| budget | 25 | 100.00% | 100.00% | 24.0 ms |
+| color | 51 | 100.00% | 90.39% | 30.3 ms |
+| filter | 51 | 100.00% | 88.34% | 33.2 ms |
+| name | 51 | 100.00% | 97.11% | 26.9 ms |
+| negative | 25 | 100.00% | 0.00% | 9.5 ms |
+| semantic | 101 | 99.01% | 76.70% | 23.8 ms |
+| shape_size | 51 | 100.00% | 97.83% | 40.2 ms |
+| sku | 61 | 100.00% | 100.00% | 6.2 ms |
 
 ## Métricas completas
 
@@ -80,12 +80,12 @@ El comando con `--gate` devuelve exit code **0**.
   "branch_error_rate": 0,
   "positive_empty_rate": 0,
   "latencies_ms": {
-    "p50": 35.60389999999825,
-    "p95": 87.69770000000062,
-    "mean": 41.348072115384625,
-    "parse_p50": 0.5649999999986903,
-    "retrieval_p50": 35.04190000000017,
-    "retrieval_p95": 86.96510000000126
+    "p50": 25.158299999999144,
+    "p95": 54.25799999999981,
+    "mean": 28.085969591346124,
+    "parse_p50": 0.4069999999992433,
+    "retrieval_p50": 24.562799999999697,
+    "retrieval_p95": 53.6262999999999
   },
   "sku_status": {
     "expected_unique": 51,

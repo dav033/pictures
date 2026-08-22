@@ -1,0 +1,22 @@
+{
+  "generated_at": "2026-08-22T03:07:34.425Z",
+  "sources": [
+    {
+      "kind": "products_catalog",
+      "url": "https://cdn.shopify.com/s/files/1/0983/2752/7703/files/products_catalog.json?v=1779763986",
+      "fetched_at": "2026-08-22T03:07:28.397Z",
+      "status": 200,
+      "content_type": "application/json",
+      "bytes": 5151603,
+      "sha256": "13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+      "counts": {
+        "products": 3297,
+        "variants": 6136,
+        "activeProducts": 1491,
+        "draftProducts": 1806,
+        "nonPositivePriceVariants": 278
+      },
+      "contract_version": "cdn-graphql-v1"
+    }
+  ]
+}
