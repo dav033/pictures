@@ -180,10 +180,12 @@ function aplicarEdicion(base: BasePlan, edicion: Edicion): PlanDecoracion {
       .find((item) => item.estructura_id === edicion.estructura_id)
       ?.lineas.find((linea) => linea.variant_id === edicion.objetivo_variant_id);
     if (!lineaObjetivo) throw new PlanEditError(404, "No se encontró la variante objetivo en la estructura.");
-    const indice = indiceMaterialParaLinea(materiales, lineaObjetivo);
-    if (indice < 0) throw new PlanEditError(409, "La variante visible no corresponde a un material editable.");
 
     if (edicion.accion === "reemplazar" && ["arco", "semiarco", "guirnalda", "columna", "pared", "centro_mesa"].includes(estructura.tipo)) {
+      // Las estructuras geométricas no mutan `materiales` (la "receta" de colores/participación);
+      // el cambio vive en variant_overrides, que ya encadena ediciones sucesivas sobre la misma
+      // pieza. Por eso esta rama no depende de indiceMaterialParaLinea: una pieza ya editada
+      // antes puede tener un color que no está en `materiales`, y eso es válido.
       const overrides = (estructura.variant_overrides ?? []).filter((override) => override.objetivo_variant_id !== edicion.objetivo_variant_id);
       const variante = edicion.variante!;
       const overrideAnterior = overrides.find((override) => override.variant_id === edicion.objetivo_variant_id);
@@ -202,6 +204,9 @@ function aplicarEdicion(base: BasePlan, edicion: Edicion): PlanDecoracion {
       };
       return PlanDecoracionSchema.parse(planEditado);
     }
+
+    const indice = indiceMaterialParaLinea(materiales, lineaObjetivo);
+    if (indice < 0) throw new PlanEditError(409, "La variante visible no corresponde a un material editable.");
 
     if (edicion.accion === "quitar") {
       if (materiales.length === 1) throw new PlanEditError(400, "No puedes quitar el único material de una estructura; reemplázalo o elimina la estructura completa.");
