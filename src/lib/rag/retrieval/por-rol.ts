@@ -19,6 +19,7 @@ export type ResultadoPorRol = {
 export type FiltrosBaseRol = {
   colores?: string[];
   ocasiones?: string[];
+  acabados?: string[];
   formas?: string[];
   diametrosPulgadas?: number[];
   disponible?: boolean;
@@ -62,6 +63,7 @@ export async function buscarPorRol(
     categorias: readonly string[];
     colores?: string[];
     ocasiones?: string[];
+    acabados?: string[];
     formas?: string[];
     diametrosPulgadas?: number[];
     topeCop: number;
@@ -71,7 +73,8 @@ export async function buscarPorRol(
     {
       categorias: cuota.categorias,
       colores: filtrosBase.colores,
-      ocasiones: filtrosBase.ocasiones,
+        ocasiones: filtrosBase.ocasiones,
+        acabados: filtrosBase.acabados,
       formas: filtrosBase.formas,
       diametrosPulgadas: filtrosBase.diametrosPulgadas,
       topeCop: cuota.topeCop,
@@ -80,7 +83,8 @@ export async function buscarPorRol(
     {
       categorias: cuota.categorias,
       colores: filtrosBase.colores,
-      ocasiones: filtrosBase.ocasiones,
+        ocasiones: filtrosBase.ocasiones,
+        acabados: filtrosBase.acabados,
       formas: filtrosBase.formas,
       diametrosPulgadas: filtrosBase.diametrosPulgadas,
       topeCop: topeAmpliado,
@@ -91,7 +95,8 @@ export async function buscarPorRol(
     intentos.push({
       categorias: cuota.categorias,
       colores: undefined,
-      ocasiones: filtrosBase.ocasiones,
+        ocasiones: filtrosBase.ocasiones,
+        acabados: filtrosBase.acabados,
       formas: filtrosBase.formas,
       diametrosPulgadas: filtrosBase.diametrosPulgadas,
       topeCop: topeAmpliado,
@@ -102,7 +107,8 @@ export async function buscarPorRol(
     intentos.push({
       categorias: cuota.categorias,
       colores: undefined,
-      ocasiones: undefined,
+        ocasiones: undefined,
+        acabados: filtrosBase.acabados,
       formas: filtrosBase.formas,
       diametrosPulgadas: filtrosBase.diametrosPulgadas,
       topeCop: topeAmpliado,
@@ -113,7 +119,8 @@ export async function buscarPorRol(
     intentos.push({
       categorias: [...cuota.categorias, ...cuota.categoriasRelajacion],
       colores: undefined,
-      ocasiones: undefined,
+        ocasiones: undefined,
+        acabados: filtrosBase.acabados,
       formas: filtrosBase.formas,
       diametrosPulgadas: filtrosBase.diametrosPulgadas,
       topeCop: topeAmpliado,
@@ -143,7 +150,8 @@ export async function buscarPorRol(
         precioMax: intento.topeCop,
         categorias: [...intento.categorias],
         ocasiones: intento.ocasiones,
-        colores: intento.colores,
+            colores: intento.colores,
+            acabados: intento.acabados,
         formas: intento.formas,
         diametrosPulgadas: intento.diametrosPulgadas,
       },

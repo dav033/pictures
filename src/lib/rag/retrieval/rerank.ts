@@ -11,6 +11,7 @@ export type CandidatoDetallado = {
   categoria: string | null;
   colores: string[];
   ocasiones: string[];
+  acabados: string[];
   disponible: boolean;
   imagen: string | null;
   precio: number;
@@ -32,6 +33,7 @@ export type ContextoRerank = {
   topeCop: number;
   coloresPedidos: readonly string[];
   ocasionesPedidas: readonly string[];
+  acabadosPedidos?: readonly string[];
 };
 
 // Pesos calibrados a mano sobre el catálogo real (§3, Etapa 3a) — el eval de
@@ -108,6 +110,11 @@ export function puntuarYOrdenar(candidatos: CandidatoDetallado[], contexto: Cont
         score += PESO_OCASION;
         porque.push("coincide con la ocasión pedida");
       }
+    }
+
+    if (contexto.acabadosPedidos?.length && c.acabados.some((acabado) => contexto.acabadosPedidos!.includes(acabado))) {
+      score += 0.25;
+      porque.push("coincide con el acabado pedido");
     }
 
     score += PESO_COMPLETITUD * completitud(c);

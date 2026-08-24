@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Search, Calculator, Ruler, PackageSearch, ClipboardCheck, NotebookPen, CheckCircle2, X, AlertCircle, Lock, Plus, type LucideIcon } from "lucide-react";
+import { Search, Calculator, Ruler, PackageSearch, ClipboardCheck, NotebookPen, CheckCircle2, X, AlertCircle, Lock, Plus, Sparkles, ArrowUp, type LucideIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DecoracionCard } from "@/components/DecoracionCard";
@@ -13,6 +13,7 @@ import { Markdown } from "@/components/Markdown";
 import { ProductoCard } from "@/components/ProductoCard";
 import { TarjetaCotizacion } from "@/components/TarjetaCotizacion";
 import { TarjetaMedidas } from "@/components/TarjetaMedidas";
+import { TarjetaPlanDecoracion } from "@/components/TarjetaPlanDecoracion";
 import { GenerationQaSummary } from "@/components/references/GenerationQaSummary";
 import { ReferenceReviewPanel, type ReferenceDraft } from "@/components/references/ReferenceReviewPanel";
 import { useSeleccion } from "@/lib/estado/seleccion";
@@ -20,11 +21,12 @@ import type { LineaBorrador } from "@/lib/estado/borrador-cotizacion";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { Imagen, PeticionImagen } from "@/lib/ia/tipos";
 import type { ResultadoMedidas } from "@/lib/medidas/geometria";
+import type { PlanResuelto } from "@/lib/plan/resuelto";
 import type { ItemValidado } from "@/lib/rag/chat/validar";
 import type { ImageQaReport } from "@/lib/ia/image-qa";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
-import { classifyGenerationIds } from "@/lib/generacion/provenance";
+import { classifyGenerationIds, normalizeGenerationSources } from "@/lib/generacion/provenance";
 
 type ProveedorId = "gemini";
 type SelectorIA = ProveedorId | "lora" | "comparar" | "gemini_sin_referencias";
@@ -61,6 +63,7 @@ type Mensaje = {
   /** Filtros que produjeron `categorias` (ocasión, colores…) — se reusan al navegar a un tipo puntual sin pasar por la IA. */
   categoriasFiltros?: FiltrosCatalogo;
   medidas?: ResultadoMedidas;
+  plan?: PlanResuelto;
   cotizacion?: Cotizacion;
   /** Debug: JSON crudo que usó el análisis de imágenes de referencia. Va
    * aparte del `content` markdown (que no interpreta HTML) para poder
@@ -78,6 +81,13 @@ const SALUDO: Mensaje = {
   content:
     "¡Hola! Soy el asistente de decoración. Cuéntame qué evento estás planeando y te armo una propuesta. En cualquier momento puedes tocar, agregar o quitar piezas tú mismo.",
 };
+
+// v2 invalida conversaciones que contienen planes resueltos antes de que
+// existiera el límite de sustituciones (por ejemplo R-12→R-24). Reutilizar
+// esos objetos haría que la UI siguiera mostrando una cotización que el
+// servidor actual ya rechaza.
+const CLAVE_CHAT = "demo_chat_v3";
+const CLAVE_CHAT_LEGACY = "demo_chat_v1";
 
 const SUGERENCIAS = [
   "Quiero ideas para mi boda en un jardín",
@@ -197,6 +207,8 @@ const ETIQUETA_HERRAMIENTA: Record<string, string> = {
   confirmar_seleccion_rag: "Confirmando selección…",
 };
 
+const LIMITE_INACTIVIDAD_CHAT_MS = 90_000;
+
 const ICONO_HERRAMIENTA: Record<string, LucideIcon> = {
   buscar_catalogo: Search,
   buscar_catalogo_rag: Search,
@@ -223,7 +235,8 @@ function EstadoHerramienta({ herramienta }: { herramienta: string | null }) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -4 }}
         transition={{ duration: 0.18, ease: "easeOut" }}
-        className="inline-flex items-center gap-1.5 text-sm text-texto-suave"
+        role="status"
+        className="typing-indicator inline-flex items-center gap-1.5 text-sm text-texto-suave"
       >
         {Icono && <Icono className="size-3.5 shrink-0" aria-hidden="true" />}
         <motion.span
@@ -232,6 +245,11 @@ function EstadoHerramienta({ herramienta }: { herramienta: string | null }) {
         >
           {etiqueta}
         </motion.span>
+        <span className="typing-dots" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </span>
       </motion.span>
     </AnimatePresence>
   );
@@ -250,6 +268,7 @@ type DatosFin = {
   seleccionIA?: Producto[];
   instruccionIA?: string;
   ragValidados?: ItemValidado[];
+  plan?: PlanResuelto;
 };
 
 type GenerarOverride = {
@@ -275,6 +294,7 @@ type GenerarOverride = {
    * antes) todavía no aplicó su actualización de estado en este mismo tick.
    */
   manualProducts?: Producto[];
+  plan?: PlanResuelto;
 };
 
 /**
@@ -290,11 +310,14 @@ async function consumirSSE(
     onHerramienta: (nombre: string, estado: "ejecutando" | "lista") => void;
     onFin: (datos: DatosFin) => void;
     onError: (datos: { error?: string }) => void;
+    onActividad?: () => void;
   },
 ) {
   const reader = body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
+  let recibioFinal = false;
+  let recibioError = false;
 
   function procesarBloque(bloque: string) {
     let evento = "message";
@@ -305,10 +328,16 @@ async function consumirSSE(
     }
     if (!datosCrudo) return;
     const datos = JSON.parse(datosCrudo);
+    manejadores.onActividad?.();
     if (evento === "texto") manejadores.onTexto(datos.delta);
     else if (evento === "herramienta") manejadores.onHerramienta(datos.nombre, datos.estado);
-    else if (evento === "fin") manejadores.onFin(datos);
-    else if (evento === "error") manejadores.onError(datos);
+    else if (evento === "fin") {
+      recibioFinal = true;
+      manejadores.onFin(datos);
+    } else if (evento === "error") {
+      recibioError = true;
+      manejadores.onError(datos);
+    }
   }
 
   while (true) {
@@ -321,6 +350,7 @@ async function consumirSSE(
       buffer = buffer.slice(indice + 2);
     }
   }
+  if (!recibioFinal && !recibioError) throw new Error("El asistente cerró la respuesta antes de terminar.");
 }
 
 // Debe coincidir con LIMITE_REFERENCIAS_CLIENTE en src/app/api/generate/route.ts.
@@ -581,6 +611,8 @@ export default function Page() {
   const fotoEspacioInputRef = useRef<HTMLInputElement>(null);
   const referenciasInputRef = useRef<HTMLInputElement>(null);
   const referenciaGeneradaRef = useRef<string | null>(null);
+  const [planAprobadoHash, setPlanAprobadoHash] = useState<string | null>(null);
+  const hayPlanEnConversacion = mensajes.some((mensaje) => mensaje.role === "assistant" && Boolean(mensaje.plan));
 
   useEffect(() => {
     const reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -621,7 +653,8 @@ export default function Page() {
   // sesión, no algo que deba sobrevivir entre visitas distintas.
   useEffect(() => {
     try {
-      const guardado = sessionStorage.getItem("demo_chat_v1");
+      sessionStorage.removeItem(CLAVE_CHAT_LEGACY);
+      const guardado = sessionStorage.getItem(CLAVE_CHAT);
       if (guardado) {
         const datos = JSON.parse(guardado);
         // eslint-disable-next-line react-hooks/set-state-in-effect -- hidratación desde sessionStorage, solo posible tras montar en cliente
@@ -641,7 +674,7 @@ export default function Page() {
   useEffect(() => {
     if (!cargadoDeStorage) return;
     try {
-      sessionStorage.setItem("demo_chat_v1", JSON.stringify({ mensajes, brief, ultimasMedidas }));
+      sessionStorage.setItem(CLAVE_CHAT, JSON.stringify({ mensajes, brief, ultimasMedidas }));
     } catch {
       // idem
     }
@@ -735,6 +768,7 @@ export default function Page() {
         categorias: datos.categorias?.length ? datos.categorias : undefined,
         categoriasFiltros: datos.categorias?.length ? datos.filtrosCategorias : undefined,
         medidas: datos.medidas ?? undefined,
+        plan: datos.plan,
         // Cuando la IA propone y confirma sola, la cotización pertenece al
         // resultado de imagen, nunca al mensaje previo de selección.
         cotizacion: seleccionIA.length ? undefined : datos.cotizacion ?? undefined,
@@ -742,8 +776,9 @@ export default function Page() {
       };
       return copia;
     });
+    if (datos.plan) setPlanAprobadoHash(null);
 
-    if (seleccionIA.length > 0) {
+    if (seleccionIA.length > 0 && !datos.plan) {
       generar({
         ids: [],
         ragVariantIds: seleccionIA.map((p) => p.id),
@@ -851,11 +886,23 @@ export default function Page() {
     setCargandoChat(true);
     setHerramientaEnCurso(null);
     setError(null);
+    const controlador = new AbortController();
+    let excedioTiempo = false;
+    let temporizador: number | undefined;
+    const reiniciarLimiteInactividad = () => {
+      if (temporizador !== undefined) window.clearTimeout(temporizador);
+      temporizador = window.setTimeout(() => {
+        excedioTiempo = true;
+        controlador.abort();
+      }, LIMITE_INACTIVIDAD_CHAT_MS);
+    };
+    reiniciarLimiteInactividad();
 
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controlador.signal,
         body: JSON.stringify({
           messages: nuevos.map(({ role, content }) => ({ role, content })),
           brief: briefRef.current,
@@ -867,10 +914,16 @@ export default function Page() {
             ? { base64: fotoEspacioRef.current.base64, mime: fotoEspacioRef.current.mime }
             : undefined,
           imagenesReferencia: imagenesReferenciaRef.current.length ? imagenesReferenciaRef.current : undefined,
+          // Mismo blueprint que ya produjo el panel de referencias en
+          // paralelo (ver ReferenceReviewPanel) — el chat lo usa solo como
+          // contexto de composición (plan de integración de referencias
+          // visuales, R2); con el modo plan apagado el backend lo ignora.
+          referenceBlueprint: referenceDraftRef.current?.blueprint ?? referenceDraft?.blueprint,
         }),
       });
 
       const esStream = (res.headers.get("content-type") ?? "").includes("text/event-stream");
+      reiniciarLimiteInactividad();
 
       if (esStream && res.body) {
         let hayError = false;
@@ -892,10 +945,11 @@ export default function Page() {
             setError(datos.error ?? "Algo salió mal.");
             setMensajes((previos) => previos.slice(0, -1));
           },
+          onActividad: reiniciarLimiteInactividad,
         });
         if (hayError) return;
       } else {
-        // El proveedor no pudo abrir el stream — mismo contrato de siempre, en JSON.
+        // Los errores de preparación (por ejemplo, falta de llave) responden JSON.
         const data = await res.json();
         if (!res.ok) {
           setError(data.error ?? "Algo salió mal.");
@@ -905,9 +959,10 @@ export default function Page() {
         finalizarUltimoMensaje(data);
       }
     } catch {
-      setError("No se pudo contactar al servidor.");
+      setError(excedioTiempo ? "El asistente tardó demasiado en responder. Intenta enviar el mensaje otra vez." : "No se pudo contactar al servidor.");
       setMensajes((previos) => previos.slice(0, -1));
     } finally {
+      if (temporizador !== undefined) window.clearTimeout(temporizador);
       setCargandoChat(false);
       setHerramientaEnCurso(null);
       entradaRef.current?.focus();
@@ -951,7 +1006,8 @@ export default function Page() {
     pendienteAutoGlobal = null;
     limpiarSeleccion();
     try {
-      sessionStorage.removeItem("demo_chat_v1");
+      sessionStorage.removeItem(CLAVE_CHAT);
+      sessionStorage.removeItem(CLAVE_CHAT_LEGACY);
     } catch {
       // sessionStorage no disponible — no hay nada que limpiar ahí.
     }
@@ -987,8 +1043,15 @@ export default function Page() {
     // else in the shared browser selection remains a legacy productId.
     const seleccionPorFuente = classifyGenerationIds(seleccion, idsRagValidados);
     const idsSeleccionLegacy = seleccionPorFuente.productIds;
-    const idsBaseLegacy = override?.automaticOnly ? idsSeleccionLegacy : [...idsSeleccionLegacy, ...(override?.ids ?? [])];
-    const idsBaseRag = [...idsDePiezasValidadas, ...(override?.ragVariantIds ?? [])];
+    // A confirmed size plan is authoritative: stale shared selections from
+    // older chat turns must not re-enter as legacy productIds or extra RAG
+    // variants during image generation.
+    const idsBaseLegacy = override?.plan
+      ? []
+      : override?.automaticOnly ? idsSeleccionLegacy : [...idsSeleccionLegacy, ...(override?.ids ?? [])];
+    const idsBaseRag = override?.plan
+      ? override.plan.compras.map((compra) => compra.variant_id)
+      : [...idsDePiezasValidadas, ...(override?.ragVariantIds ?? [])];
     // Con cotización existente, referencias solo definen composición. No
     // añaden sustitutos genéricos que desplacen las piezas reales cotizadas.
     //
@@ -1001,17 +1064,20 @@ export default function Page() {
       : idsBaseLegacy.length > 0
         ? [...new Set(idsBaseLegacy)]
         : [...new Set([...(override?.ids ?? []), ...automaticIds])];
-    const ragVariantIdsAUsar = override?.soloIds
+    const ragVariantIdsAUsarSinNormalizar = override?.soloIds
       ? [...new Set(override.ragVariantIds ?? [])]
       : [...new Set(idsBaseRag)];
-    const idsAUsar = [...new Set([...productIdsAUsar, ...ragVariantIdsAUsar])];
+    const fuentesGeneracion = normalizeGenerationSources(productIdsAUsar, ragVariantIdsAUsarSinNormalizar);
+    const productIdsGeneracion = fuentesGeneracion.productIds;
+    const ragVariantIdsAUsar = fuentesGeneracion.ragVariantIds;
+    const idsAUsar = [...new Set([...productIdsGeneracion, ...ragVariantIdsAUsar])];
     const paquetesAUsar = override?.soloIds
       ? { ...(override.paquetes ?? {}) }
       : { ...paquetesValidados, ...Object.fromEntries(seleccionados.map((producto) => [producto.id, producto.paquetes ?? 1])), ...(override?.paquetes ?? {}) };
     // Piezas "agregadas a mano" no existen en el catálogo real: /api/generate
     // solo puede validar/resolver ids de catálogo, así que viajan aparte con
     // sus datos completos en vez de como un id que el servidor no encontraría.
-    const idsCatalogo = productIdsAUsar.filter((id) => !id.startsWith("manual-"));
+    const idsCatalogo = productIdsGeneracion.filter((id) => !id.startsWith("manual-"));
     const productosManuales = override?.soloIds
       ? override.manualProducts ?? []
       : seleccionados.filter((producto) => producto.id.startsWith("manual-") && idsAUsar.includes(producto.id));
@@ -1020,7 +1086,7 @@ export default function Page() {
     const hasAutomaticReferencePlan = imagenesReferenciaRef.current.length > 0 && Boolean(referenceDraftRef.current?.blueprint ?? referenceDraft?.blueprint);
     if (imagenesReferenciaRef.current.length > 0 && !referenceReady) {
       // eslint-disable-next-line react-hooks/globals -- deliberado: cola de deduplicación de generación en curso, ver declaración de pendienteAutoGlobal.
-      pendienteAutoGlobal = { ids: productIdsAUsar, ragVariantIds: ragVariantIdsAUsar, paquetes: paquetesAUsar, manualProducts: productosManuales, instruccion: (override?.instruccion ?? ajuste.trim()) || undefined, automaticOnly: override?.automaticOnly, brief: briefAUsar, solicitudUsuario };
+      pendienteAutoGlobal = { ids: productIdsGeneracion, ragVariantIds: ragVariantIdsAUsar, paquetes: paquetesAUsar, manualProducts: productosManuales, instruccion: (override?.instruccion ?? ajuste.trim()) || undefined, automaticOnly: override?.automaticOnly, brief: briefAUsar, solicitudUsuario };
       return;
     }
     if (idsAUsar.length === 0 && !hasAutomaticReferencePlan) return;
@@ -1047,6 +1113,8 @@ export default function Page() {
           body: JSON.stringify({
             productIds: idsCatalogo,
             ragVariantIds: ragVariantIdsAUsar.length ? ragVariantIdsAUsar : undefined,
+            plan: override?.plan,
+            planHash: override?.plan?.plan_hash,
             manualProducts: productosManuales.length ? productosManuales : undefined,
             productQuantities: paquetesAUsar,
             brief: briefAUsar,
@@ -1086,6 +1154,7 @@ export default function Page() {
           setError(data.error ?? "No se pudo generar la imagen.");
           return;
         }
+        if (override?.plan) setPlanAprobadoHash(typeof data.plan?.plan_hash === "string" ? data.plan.plan_hash : override.plan.plan_hash);
 
         const modoGeneracion: GeneracionVisible["modo"] = data.modoImagen === "comparacion"
           ? "comparar"
@@ -1145,6 +1214,22 @@ export default function Page() {
     });
   }
 
+  function aprobarPlan(plan: PlanResuelto): void {
+    if (plan.comercial.estado === "PRESUPUESTO_EXCEDIDO" || plan.sin_cobertura.length > 0 || generando || generandoGlobal) return;
+    generar({
+      ids: [],
+      ragVariantIds: plan.compras.map((compra) => compra.variant_id),
+      plan,
+      brief: briefRef.current,
+      solicitudUsuario: solicitudUsuarioRef.current,
+    });
+  }
+
+  function actualizarPlanEnMensaje(mensajeId: string, plan: PlanResuelto): void {
+    setPlanAprobadoHash(null);
+    setMensajes((previos) => previos.map((mensaje) => mensaje.id === mensajeId ? { ...mensaje, plan } : mensaje));
+  }
+
   /**
    * El cliente confirmó con "Listo" su edición de una cotización (tarjeta →
    * `useBorradorCotizacion`): `lineas` ya son las definitivas, sin lo que
@@ -1173,6 +1258,8 @@ export default function Page() {
         precio: linea.precioPaquete ?? 0,
         unidadesPaquete: linea.unidadesPaquete,
         paquetes: linea.paquetes ?? 1,
+        tamanoCodigo: linea.tamanoCodigo,
+        diamPulg: linea.diamPulg,
         foto: linea.foto,
       }));
 
@@ -1200,14 +1287,14 @@ export default function Page() {
   // Dispara la generación automática que quedó encolada mientras otra seguía
   // en curso (ver el guard de `generando` dentro de `generar`).
   useEffect(() => {
-    if (generando || !referenceReady) return;
+    if (generando || !referenceReady || hayPlanEnConversacion) return;
     const pendiente = pendienteAutoGlobal;
     if (!pendiente) return;
     // eslint-disable-next-line react-hooks/globals -- deliberado: consumir la cola encolada por generar(), ver declaración de pendienteAutoGlobal.
     pendienteAutoGlobal = null;
     generar(pendiente);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- generar se recrea cada render; pendienteAutoGlobal ya evita relanzar dos veces.
-  }, [generando, referenceReady]);
+  }, [generando, referenceReady, hayPlanEnConversacion]);
 
   // Terminar el plan de referencias debe iniciar la imagen sola, sin esperar
   // un clic — el plan quedaba visible antes, pero ningún evento llamaba a
@@ -1220,7 +1307,7 @@ export default function Page() {
   // en curso, y `colaGeneracion` (declarada arriba) garantiza que, aunque
   // ambos terminen decidiendo generar, nunca corran al mismo tiempo.
   useEffect(() => {
-    if (!referenceReady || !referenceDraft || !imagenesReferencia.length || generando || cargandoChat) return;
+    if (!referenceReady || !referenceDraft || !imagenesReferencia.length || generando || cargandoChat || hayPlanEnConversacion) return;
     const key = [
       imagenesReferencia.length,
       ...referenceDraft.blueprint.elements.map((element) => `${element.element_id}:${element.model_decision?.catalog_product_id ?? "omit"}`),
@@ -1229,7 +1316,7 @@ export default function Page() {
     referenciaGeneradaRef.current = key;
     generar({ ids: referenceDraft.autoProductIds, automaticOnly: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- key ref evita relanzar la misma propuesta.
-  }, [referenceReady, referenceDraft, imagenesReferencia.length, generando, cargandoChat]);
+  }, [referenceReady, referenceDraft, imagenesReferencia.length, generando, cargandoChat, hayPlanEnConversacion]);
 
   /** No hay progreso real de la API — es un indicador de fase honesto por
    * tiempo transcurrido, no un porcentaje inventado. */
@@ -1331,10 +1418,13 @@ export default function Page() {
     ([, v]) => v !== undefined && v !== null && String(v).length > 0,
   );
   const listoParaGenerar = (seleccion.length > 0 || Boolean(referenceDraft?.autoProductIds.length) || (imagenesReferencia.length > 0 && Boolean(referenceDraft?.blueprint))) && referenceReady;
+  const planActual = [...mensajes].reverse().find((mensaje) => mensaje.role === "assistant" && mensaje.plan)?.plan;
+  const planActualAprobado = Boolean(planActual && planAprobadoHash === planActual.plan_hash);
+  const botonPlanBloqueado = Boolean(planActual && (planActual.comercial.estado === "PRESUPUESTO_EXCEDIDO" || planAprobadoHash === planActual.plan_hash));
   const ultimoIndiceUsuario = mensajes.map((m) => m.role).lastIndexOf("user");
 
   return (
-    <div className="workspace-shell flex flex-1 flex-col lg:h-dvh lg:overflow-hidden">
+    <div className="workspace-shell flex flex-1 flex-col">
       <header className="workspace-header material-topbar border-b px-4 py-3 sm:px-6">
         <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-3">
           <div className="flex flex-wrap items-center justify-between gap-4">
@@ -1428,13 +1518,17 @@ export default function Page() {
                 animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                 exit={{ opacity: 0, filter: "blur(3px)", transition: { duration: 0.15 } }}
                 transition={{ duration: 0.43, ease: [0.23, 1, 0.32, 1] }}
-                className="mx-auto w-full max-w-4xl"
+                className={`chat-row mx-auto w-full max-w-4xl ${m.role === "user" ? "chat-row-user" : "chat-row-ia"}`}
               >
+                <span className="chat-avatar" aria-hidden="true">
+                  {m.role === "user" ? <span className="chat-avatar-initial">Tú</span> : <Sparkles className="size-4" />}
+                </span>
+                <div className="chat-column">
                 <div
                   className={
                     m.role === "user"
-                      ? "material-message material-message-user ml-auto max-w-[85%] rounded-2xl rounded-br-sm bg-acento px-4 py-2.5 text-sm text-white"
-                      : "material-message max-w-[85%] rounded-2xl rounded-bl-sm border border-borde bg-superficie px-4 py-2.5 text-texto"
+                      ? "chat-bubble chat-bubble-user ml-auto max-w-[85%] px-4 py-2.5 text-sm text-white"
+                      : `chat-bubble chat-bubble-ia max-w-[85%] px-4 py-2.5 text-texto${esUltimoStreaming ? " is-streaming" : ""}`
                   }
                 >
                   {m.role === "assistant" ? (
@@ -1503,6 +1597,7 @@ export default function Page() {
                 )}
 
                 {m.medidas && <TarjetaMedidas medidas={m.medidas} />}
+                {m.plan && <TarjetaPlanDecoracion plan={m.plan} aprobado={planAprobadoHash === m.plan.plan_hash} generando={generando && m.plan.plan_hash === planActual?.plan_hash} onAprobar={m.plan.plan_hash === planActual?.plan_hash ? () => aprobarPlan(m.plan!) : undefined} onPlanActualizado={m.plan.plan_hash === planActual?.plan_hash ? (plan) => actualizarPlanEnMensaje(m.id, plan) : undefined} />}
                 {m.cotizacion && (
                   <TarjetaCotizacion
                     cotizacion={m.cotizacion}
@@ -1565,6 +1660,7 @@ export default function Page() {
                     ))}
                   </div>
                 )}
+                </div>
               </motion.div>
               );
             })}
@@ -1744,35 +1840,60 @@ export default function Page() {
                 </span>
                 {esquema.nombre}
               </button>
-            ))}
-          </div>
+             ))}
+           </div>
 
-          <form
+           {planActual && (
+             <div className="workspace-plan-action-dock" aria-label="Acción del plan">
+               <div className="mx-auto w-full max-w-4xl">
+                 <button
+                   type="button"
+                   data-testid="aprobar-generar-plan-sticky"
+                   onClick={() => aprobarPlan(planActual)}
+                   disabled={planActualAprobado || generando || planActual.comercial.estado === "PRESUPUESTO_EXCEDIDO" || planActual.sin_cobertura.length > 0}
+                   aria-busy={generando}
+                   className="ui-button-primary ui-pressable w-full disabled:opacity-60"
+                 >
+                   {generando ? "Generando…" : planActualAprobado ? "Aprobación registrada" : planActual.sin_cobertura.length > 0 ? "Completa las piezas sin cobertura" : "Aprobar y generar imagen"}
+                 </button>
+               </div>
+             </div>
+           )}
+
+           <form
             onSubmit={(e) => {
               e.preventDefault();
               enviar(entrada);
             }}
-            className="workspace-composer flex shrink-0 gap-2 border-t border-borde px-4 py-3 sm:px-6 lg:px-8"
+            className="workspace-composer chat-composer shrink-0 border-t border-borde px-4 py-3 sm:px-6 lg:px-8"
           >
-            <input
-              ref={entradaRef}
-              value={entrada}
-              onChange={(e) => setEntrada(e.target.value)}
-              placeholder={
-                fotoEspacio || imagenesReferencia.length
-                  ? "Cuéntame de tu evento… (o solo pulsa Enviar con la imagen adjunta)"
-                  : "Cuéntame de tu evento…"
-              }
-              aria-label="Escribe tu mensaje"
-              className="min-w-0 flex-1 rounded-xl border border-borde bg-fondo px-3.5 py-2.5 text-sm text-texto outline-none placeholder:text-texto-suave focus:border-acento"
-            />
-            <button
-              type="submit"
-              disabled={cargandoChat || (!entrada.trim() && !fotoEspacio && imagenesReferencia.length === 0)}
-              className="ui-button-primary ui-pressable shrink-0"
-            >
-              Enviar
-            </button>
+            <div className={`chat-composer-pill mx-auto flex w-full max-w-4xl items-center gap-2 ${cargandoChat ? "is-busy" : ""}`}>
+              <input
+                ref={entradaRef}
+                name="mensaje"
+                autoComplete="off"
+                value={entrada}
+                onChange={(e) => setEntrada(e.target.value)}
+                placeholder={
+                  fotoEspacio || imagenesReferencia.length
+                    ? "Cuéntame de tu evento… (o solo pulsa Enviar con la imagen adjunta)"
+                    : "Cuéntame de tu evento…"
+                }
+                aria-label="Escribe tu mensaje"
+                className="chat-composer-input min-w-0 flex-1 text-sm text-texto outline-none placeholder:text-texto-suave"
+              />
+              <button
+                type="submit"
+                disabled={cargandoChat || (!entrada.trim() && !fotoEspacio && imagenesReferencia.length === 0)}
+                // El texto se oculta por CSS bajo 480px y quedaría un botón
+                // solo-ícono sin nombre accesible.
+                aria-label="Enviar"
+                className="chat-send ui-pressable shrink-0"
+              >
+                <span className="chat-send-label">Enviar</span>
+                <ArrowUp className="size-4 shrink-0" aria-hidden="true" />
+              </button>
+            </div>
           </form>
         </section>
 
@@ -1790,6 +1911,7 @@ export default function Page() {
             onReady={setReferenceReady}
           />
 
+          <div className="workspace-sidebar-pinned space-y-5">
           <section>
             <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-texto-suave">
               Tu evento
@@ -1946,12 +2068,33 @@ export default function Page() {
             </AnimatePresence>
             <button
               type="button"
-              onClick={() => generar()}
-              disabled={!listoParaGenerar || generando}
+              onClick={() => {
+                if (!planActual) {
+                  generar();
+                  return;
+                }
+                if (planAprobadoHash === planActual.plan_hash && ajuste.trim()) {
+                  generar({
+                    ids: [],
+                    ragVariantIds: planActual.compras.map((compra) => compra.variant_id),
+                    plan: planActual,
+                    brief: briefRef.current,
+                    solicitudUsuario: solicitudUsuarioRef.current,
+                    instruccion: ajuste.trim(),
+                  });
+                  return;
+                }
+                aprobarPlan(planActual);
+              }}
+              disabled={planActual ? (botonPlanBloqueado && !ajuste.trim()) || generando : !listoParaGenerar || generando}
               aria-busy={generando}
               className="ui-button-primary ui-pressable w-full"
             >
-              {generando
+              {planActual && planAprobadoHash === planActual.plan_hash
+                ? ajuste.trim() ? "Aplicar ajuste y regenerar" : "Aprobación registrada"
+                : planActual
+                  ? "Aprobar y generar imagen"
+                  : generando
                 ? "Generando…"
                 : seleccionPendiente
                   ? "Regenerar imagen"
@@ -2023,6 +2166,7 @@ export default function Page() {
               <GenerationQaSummary qa={ultimaQa} />
             </section>
           )}
+          </div>
         </aside>
       </main>
 

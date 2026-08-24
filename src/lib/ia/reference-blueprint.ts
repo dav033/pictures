@@ -73,7 +73,10 @@ const CatalogResolutionSchema = z
     match_type: z.enum(["exact", "closest", "none"]),
     reason: texto(260),
     adaptation: texto(260),
-    bill_of_materials: z.array(MaterialLineSchema).max(6).optional(),
+    // Un plan puede expandir hasta 6 materiales declarados por 4 tamaños
+    // físicos en una estructura; conservar todas las variantes evita perder
+    // la mezcla real de tamaños antes de construir el scene spec.
+    bill_of_materials: z.array(MaterialLineSchema).max(24).optional(),
   })
   .strict()
   .superRefine((value, ctx) => {

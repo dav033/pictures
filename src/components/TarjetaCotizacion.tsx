@@ -21,7 +21,8 @@ type Props = {
 function detalleLinea(linea: LineaBorrador): string {
   const paquetes = linea.paquetes ?? 0;
   const unidades = linea.unidadesPaquete ?? 0;
-  return `${paquetes} paquete${paquetes === 1 ? "" : "s"} de ${unidades} · necesitas ${linea.cantidadNecesaria}${
+  const tamano = linea.tamanoCodigo ? ` · ${linea.tamanoCodigo}${linea.diamPulg ? ` (${Math.round(linea.diamPulg * 2.54 * 10) / 10} cm)` : ""}` : "";
+  return `${tamano} · ${paquetes} paquete${paquetes === 1 ? "" : "s"} de ${unidades} · necesitas ${linea.cantidadNecesaria}${
     linea.sobrante ? ` · ${linea.sobrante} de sobra` : ""
   }${!linea.disponible ? " · agotado" : ""}`;
 }

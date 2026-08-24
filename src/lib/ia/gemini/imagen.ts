@@ -61,7 +61,10 @@ export function crearImagenGemini(): ImagenPort {
       for (const ref of seleccionarInputs(p)) {
         input.push({
           type: "text",
-          text: `[IMAGE_ID=${ref.id}] ROLE=${ref.role}. ALLOWED_USE=${ref.allowed_use}. ${ref.descripcion}`,
+          // Identifiers are server-side bookkeeping. Passing strings such as
+          // IMAGE_ID=CATALOG_* to the image model makes them eligible for
+          // transcription, so describe the role without exposing the token.
+          text: `Reference image role: ${ref.role}. Allowed use: ${ref.allowed_use}. This description is invisible metadata; do not render any text, label, logo, or identifier from it. ${ref.descripcion}`,
         });
         input.push({ type: "image", data: ref.base64, mime_type: ref.mime });
       }

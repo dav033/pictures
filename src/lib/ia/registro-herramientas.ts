@@ -9,9 +9,18 @@ import { buscarCatalogoRag, type ProductoCandidato } from "@/lib/rag/chat/buscar
 import { buscarCatalogoRagConPresupuesto } from "@/lib/rag/chat/buscar-presupuesto";
 import { aProductoValidado, validarSeleccion, type ItemRechazado, type ItemValidado, type SeleccionSolicitada } from "@/lib/rag/chat/validar";
 import { RAG_ENABLED, RAG_FRANJAS_ENABLED } from "@/lib/rag/flags";
-import { registrarBusqueda, registrarSeleccion } from "@/lib/rag/observability/log";
+import { registrarBusqueda, registrarPlanAudit, registrarSeleccion } from "@/lib/rag/observability/log";
 import { resolverFranja } from "@/lib/rag/presupuesto/resolver";
 import { resolverVariantesPorDespiece } from "@/lib/rag/tamanos/resolver";
+import { resolverPlan } from "@/lib/plan/resolver";
+import { PlanDecoracionSchema } from "@/lib/plan/tipos";
+import type { PlanResuelto } from "@/lib/plan/resuelto";
+import { extraerRestriccionesUsuario, validarCoberturaReferencia, validarRestriccionesPlan } from "@/lib/plan/restricciones";
+import { crearTokenAprobacion } from "@/lib/plan/aprobacion";
+import { PLAN_DECORACION_ENABLED } from "@/lib/plan/flags";
+import { featureEnabled } from "@/lib/ia/feature-flags";
+import { sceneShadowPipeline } from "@/lib/scene/orchestrator";
+import { blockingPhysicalWarnings, estimateFromPlan, validateMaterialEstimate } from "@/lib/materiales/estimacion";
 import {
   aProducto,
   buscarCatalogoShopify,
@@ -21,7 +30,8 @@ import {
   type FiltrosCatalogo,
 } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
-import { HERRAMIENTAS, HERRAMIENTAS_RAG } from "./herramientas";
+import { HERRAMIENTAS, HERRAMIENTAS_PLAN, HERRAMIENTAS_RAG } from "./herramientas";
+import type { ReferenceBlueprintV2 } from "./reference-blueprint";
 import type { Herramienta } from "./tipos";
 
 // Superadas por buscar_catalogo_rag/confirmar_seleccion_rag (Fases 3B-6 ya
@@ -30,11 +40,15 @@ import type { Herramienta } from "./tipos";
 // tope de inventario y los datos de imagen/handle que alimentan la UI de
 // verificación — pasó en pruebas reales, no es un riesgo teórico.
 const HERRAMIENTAS_SUPERADAS_POR_RAG = new Set(["buscar_catalogo", "confirmar_seleccion_ia", "consultar_disponibilidad"]);
+const HERRAMIENTAS_SUPERADAS_POR_PLAN = new Set(["confirmar_seleccion_rag", "calcular_medidas"]);
 
 export function herramientasActivas(): Herramienta[] {
   const herramientas = !RAG_ENABLED
     ? HERRAMIENTAS
     : [...HERRAMIENTAS.filter((h) => !HERRAMIENTAS_SUPERADAS_POR_RAG.has(h.nombre)), ...HERRAMIENTAS_RAG];
+  if (PLAN_DECORACION_ENABLED && RAG_ENABLED) {
+    return [...herramientas.filter((h) => !HERRAMIENTAS_SUPERADAS_POR_PLAN.has(h.nombre)), ...HERRAMIENTAS_PLAN].filter((h) => h.nombre !== "cotizar");
+  }
   // La cotización no pertenece al razonamiento de selección en ningún modo.
   // La app la calcula después de terminar la imagen, usando exactamente los
   // productos que entraron en la propuesta visual.
@@ -59,6 +73,8 @@ const UMBRAL_AGRUPAR_POR_TIPO = 8;
 
 export type EstadoConversacion = {
   brief: Brief;
+  solicitudOriginal: string;
+  restriccionesUsuario: ReturnType<typeof extraerRestriccionesUsuario>;
   recomendaciones: Producto[];
   decoraciones: DecoracionConProductos[];
   categoriasSugeridas: Faceta[];
@@ -89,19 +105,27 @@ export type EstadoConversacion = {
    * RAG_FRANJAS_ENABLED) — confirmar_seleccion_rag la usa para avisar si la
    * selección final se pasó del techo, sin bloquearla (§3, Etapa 5). */
   ragFranja?: { slug: string; nombre: string; techoCop: number };
+  planResuelto?: PlanResuelto;
+  /** Blueprint de la(s) imagen(es) de referencia adjuntas a ESTE turno, ya
+   * analizado por /api/references/analyze — plan de integración de
+   * referencias visuales, R2/R4. Ausente si el cliente no adjuntó nada. */
+  referenceBlueprint?: ReferenceBlueprintV2;
 };
 
-export function crearEstadoConversacion(brief: Brief): EstadoConversacion {
+export function crearEstadoConversacion(brief: Brief, solicitudOriginal = "", referenceBlueprint?: ReferenceBlueprintV2): EstadoConversacion {
   // The wrapper in ejecutar.ts calls this once per request/turn, so these
   // sets cannot carry a prior conversation's retrieval whitelist.
   return {
     brief: { ...brief },
+    solicitudOriginal,
+    restriccionesUsuario: extraerRestriccionesUsuario(solicitudOriginal, brief),
     recomendaciones: [],
     decoraciones: [],
     categoriasSugeridas: [],
     ragIdsRecuperados: new Set(),
     ragVariantIdsRecuperados: new Map(),
     ragRequestId: crypto.randomUUID(),
+    referenceBlueprint,
   };
 }
 
@@ -247,7 +271,10 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
     },
 
     buscar_catalogo_rag: async (args) => {
-      const mensaje = typeof args.mensaje === "string" ? args.mensaje : "";
+      // The model may provide a richer phrase, but it cannot define customer
+      // constraints. Start retrieval from the original user words so a style
+      // term such as "glamour" cannot silently become a Reflex hard choice.
+      const mensaje = estado.solicitudOriginal || (typeof args.mensaje === "string" ? args.mensaje : "");
       const pool = getRagPool();
       const t0 = Date.now();
 
@@ -490,6 +517,175 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
               delta_cop: excedePresupuesto ? resultado.total - estado.ragFranja.techoCop : 0,
             }
           : {}),
+      };
+    },
+
+    confirmar_plan_decoracion: async (args) => {
+      const parseado = PlanDecoracionSchema.safeParse({
+        ...(args as Record<string, unknown>),
+        plan_version: "1.0",
+        plan_id: crypto.randomUUID(),
+        supuestos: [],
+        restricciones: estado.restriccionesUsuario,
+      });
+      if (!parseado.success) {
+        return { ok: false, errores: parseado.error.issues.map((issue) => `${issue.path.join(".") || "plan"}: ${issue.message}`) };
+      }
+      const erroresDeIntencion = validarRestriccionesPlan(parseado.data, estado.restriccionesUsuario);
+      if (erroresDeIntencion.length > 0) {
+        estado.planResuelto = undefined;
+        estado.seleccionFinalIA = [];
+        await registrarPlanAudit(getRagPool(), {
+          requestId: estado.ragRequestId,
+          solicitudOriginal: estado.solicitudOriginal,
+          restricciones: estado.restriccionesUsuario,
+          candidateProductIds: [...estado.ragIdsRecuperados],
+          status: "RESTRICCIONES_INCONSISTENTES",
+          error: erroresDeIntencion.join(" | "),
+        });
+        return {
+          ok: false,
+          status: "RESTRICCIONES_INCONSISTENTES",
+          errores: erroresDeIntencion,
+          accion_requerida: "Corrige la cardinalidad o los colores del plan antes de confirmar; no anuncies ni generes una imagen.",
+        };
+      }
+      // Cobertura referencia→plan (plan de integración de referencias
+      // visuales, R4): con una imagen de referencia analizada en este turno,
+      // cada elemento aprobado debe quedar cubierto por una estructura
+      // (referencia_element_id) o declarado omitido (referencia_omitida) —
+      // omitir uno en silencio es tan deshonesto como omitir un producto sin
+      // decirlo (ver HONESTIDAD AL SUSTITUIR en el prompt del sistema).
+      const elementosSinCubrir = validarCoberturaReferencia(parseado.data, estado.referenceBlueprint);
+      if (elementosSinCubrir.length > 0) {
+        estado.planResuelto = undefined;
+        estado.seleccionFinalIA = [];
+        await registrarPlanAudit(getRagPool(), {
+          requestId: estado.ragRequestId,
+          solicitudOriginal: estado.solicitudOriginal,
+          restricciones: estado.restriccionesUsuario,
+          candidateProductIds: [...estado.ragIdsRecuperados],
+          status: "COBERTURA_REFERENCIA_INCOMPLETA",
+          error: elementosSinCubrir.join(" | "),
+        });
+        return {
+          ok: false,
+          status: "COBERTURA_REFERENCIA_INCOMPLETA",
+          elementos_sin_cubrir: elementosSinCubrir,
+          accion_requerida: "Para cada elemento sin cubrir: asígnale una estructura con referencia_element_id, o decláralo en referencia_omitida con un motivo real. No anuncies ni generes esta imagen hasta cubrir todos.",
+        };
+      }
+      if (featureEnabled("SCENE_PLAN_V2_SHADOW") && estado.solicitudOriginal.trim()) {
+        let shadow: Awaited<ReturnType<typeof sceneShadowPipeline>>;
+        try {
+          shadow = await sceneShadowPipeline(estado.solicitudOriginal, getRagPool(), parseado.data.estructuras.length);
+        } catch (error) {
+          shadow = {
+            v1_exists: parseado.data.estructuras.length > 0,
+            v2_ran: false,
+            v2_slots_covered: 0,
+            v2_total_slots: 0,
+            v2_gaps: 0,
+            v2_approved: false,
+            latency_v2_ms: 0,
+            error: error instanceof Error ? error.message : String(error),
+          };
+        }
+        await registrarPlanAudit(getRagPool(), {
+          requestId: estado.ragRequestId,
+          solicitudOriginal: estado.solicitudOriginal,
+          geometry: shadow,
+          status: "SCENE_V2_SHADOW",
+          error: shadow.error,
+          flagSnapshot: { scenePlanV2Shadow: true },
+        });
+      }
+      const resuelto = await resolverPlan(getRagPool(), parseado.data, estado.ragVariantIdsRecuperados);
+      const materialEstimate = estimateFromPlan(resuelto);
+      const estimateValidation = validateMaterialEstimate(materialEstimate);
+      const physicalWarnings = blockingPhysicalWarnings(materialEstimate);
+      const auditarResuelto = async (status: string, error?: string) => registrarPlanAudit(getRagPool(), {
+        requestId: estado.ragRequestId,
+        planHash: resuelto.plan_hash,
+        solicitudOriginal: estado.solicitudOriginal,
+        restricciones: estado.restriccionesUsuario,
+        candidateProductIds: [...estado.ragIdsRecuperados],
+        selectedProductIds: parseado.data.estructuras.flatMap((estructura) => estructura.materiales.map((material) => material.product_id)),
+        geometry: resuelto.estructuras.map((estructura) => ({ id: estructura.estructura_id, tipo: estructura.tipo, repeticiones: estructura.repeticiones, unidades: estructura.total_unidades })),
+        costMinCop: Math.min(resuelto.totales.total_cop, ...resuelto.alternativas.map((alternativa) => alternativa.total_cop)),
+        costChosenCop: resuelto.totales.total_cop,
+        ceilingCop: resuelto.comercial.techo_cop,
+        deltaCop: resuelto.comercial.delta_cop,
+         packages: { ahorro_paquetes_cop: resuelto.totales.ahorro_paquetes_cop, lineas: resuelto.compras.map((compra) => ({ variant_id: compra.variant_id, paquetes: compra.paquetes, unidades: compra.unidades_necesarias, subtotal: compra.subtotal })) },
+        instances: parseado.data.estructuras.map((estructura) => ({ id: estructura.estructura_id, repeticiones: estructura.repeticiones })),
+        status,
+        error,
+      });
+      if (!estimateValidation.ok || physicalWarnings.length > 0) {
+        estado.planResuelto = undefined;
+        estado.seleccionFinalIA = [];
+        const error = [...estimateValidation.errors, ...physicalWarnings].join(" | ");
+        await auditarResuelto("ESTIMACION_INCONSISTENTE", error);
+        return {
+          ok: false,
+          status: "ESTIMACION_INCONSISTENTE",
+          advertencias: [...new Set([...estimateValidation.warnings, ...physicalWarnings])],
+          accion_requerida: "Revisa las medidas, densidad, mezcla o número de estructuras; la cantidad física estimada no es compatible con la escala solicitada. No cotices ni generes la imagen hasta corregirlo.",
+        };
+      }
+      if (resuelto.sin_cobertura.length > 0 || resuelto.compras.length === 0) {
+        estado.planResuelto = undefined;
+        estado.seleccionFinalIA = [];
+        await auditarResuelto("SIN_COBERTURA", resuelto.sin_cobertura.map((item) => `${item.estructura_id}:${item.tamano}`).join(" | "));
+        return {
+          ok: false,
+          status: "SIN_COBERTURA",
+          sin_cobertura: resuelto.sin_cobertura,
+          sustituciones_admisibles: resuelto.sustituciones,
+          accion_requerida: "Busca productos con los tamaños faltantes o cambia la mezcla a una que tenga cobertura real; no anuncies ni generes este plan.",
+        };
+      }
+      if (resuelto.comercial.estado === "PRESUPUESTO_EXCEDIDO") {
+        estado.planResuelto = undefined;
+        estado.seleccionFinalIA = [];
+        await auditarResuelto("PRESUPUESTO_EXCEDIDO");
+        return {
+          ok: false,
+          status: "PRESUPUESTO_EXCEDIDO",
+          total_cop: resuelto.totales.total_cop,
+          techo_cop: resuelto.comercial.techo_cop,
+          delta_cop: resuelto.comercial.delta_cop,
+          alternativas: resuelto.alternativas,
+          accion_requerida: "Reduce la complejidad o elige una alternativa compatible; no confirmes ni generes este plan por encima del techo.",
+        };
+      }
+      resuelto.request_id = estado.ragRequestId;
+      resuelto.approval_token = crearTokenAprobacion(resuelto.plan_hash, estado.ragRequestId);
+      estado.planResuelto = resuelto;
+      // La cotización se muestra, pero generar queda bloqueado hasta la
+      // aprobación explícita del cliente en la tarjeta del plan.
+      estado.seleccionFinalIA = [];
+      const estadoAuditoria = resuelto.comercial.estado === "APROBACION_REQUERIDA" ? "APROBACION_REQUERIDA" : "VERIFICADO";
+      await auditarResuelto(estadoAuditoria);
+      return {
+        ok: true,
+         status: resuelto.estructuras.length ? estadoAuditoria : "NO_MATCH",
+        plan_id: resuelto.plan.plan_id,
+        plan_hash: resuelto.plan_hash,
+        estructuras: resuelto.estructuras.map((estructura) => ({
+          estructura_id: estructura.estructura_id,
+          nombre: estructura.nombre,
+          tipo: estructura.tipo,
+          total_unidades: estructura.total_unidades,
+          tamanos: estructura.mezcla_real.map((linea) => `R-${linea.diam_pulg}×${linea.unidades}`),
+        })),
+        total_cop: resuelto.totales.total_cop,
+        sustituciones: resuelto.sustituciones,
+        sin_cobertura: resuelto.sin_cobertura,
+        advertencias: resuelto.advertencias,
+        comercial: resuelto.comercial,
+        alternativas: resuelto.alternativas,
+        fase: "desglose_previo; la imagen se genera despues de mostrarlo",
       };
     },
 

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { buildImagePrompt, buildLoraImagePrompt } from "../src/lib/ia/build-image-prompt";
+import { bloqueMezclaTamanos } from "../src/lib/ia/tamano-fisico";
 import type { SceneSpec } from "../src/lib/ia/scene-spec";
 import {
   buildPositiveEnvironmentCues,
@@ -79,6 +80,28 @@ assert.match(imagePrompt, /decoration itself must be the main subject/i);
 assert.match(imagePrompt, /No generic table, empty table, chairs, dining setup/i);
 assert.match(imagePrompt, /neutral real indoor celebration corner/i);
 assert.match(imagePrompt, /one intentional installation around a focal center/i);
+assert.match(imagePrompt, /COLOR VARIETY \/ MATERIAL MIX/i);
+assert.match(imagePrompt, /MONOCHROME LOCK/i);
+
+const mixedColorSceneSpec = {
+  ...imageSceneSpec,
+  elements: imageSceneSpec.elements.map((element) => ({
+    ...element,
+    name: "arco orgánico de globos rosa, fucsia y dorado",
+    resolved_colors: ["rosa", "fucsia", "dorado"],
+  })),
+} as SceneSpec;
+const mixedColorPrompt = buildImagePrompt({ sceneSpec: mixedColorSceneSpec });
+assert.match(mixedColorPrompt, /APPROVED COLOR VARIETY/i);
+assert.match(mixedColorPrompt, /rosa, fucsia, dorado/i);
+assert.match(mixedColorPrompt, /Do not invent, recolor/i);
+
+const singleR12Mix = bloqueMezclaTamanos([{ diamPulg: 12, forma: "redondo", cantidad: 50 }]);
+assert.ok(singleR12Mix);
+const singleR12Prompt = buildImagePrompt({ sceneSpec: imageSceneSpec, sizeMixBlock: singleR12Mix });
+assert.match(singleR12Prompt, /SINGLE-DIAMETER HARD CONSTRAINT/i);
+assert.match(singleR12Prompt, /every balloon must be exactly 12-inch/i);
+assert.match(singleR12Prompt, /Do not vary balloon size/i);
 
 const outdoorPrompt = buildImagePrompt({
   sceneSpec: imageSceneSpec,

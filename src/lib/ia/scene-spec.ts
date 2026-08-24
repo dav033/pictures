@@ -6,6 +6,7 @@ import {
   type ReferenceBlueprintV2,
   type ReferenceElement,
 } from "./reference-blueprint";
+import { MaterialEstimateSchema, type DesignMaterialEstimate } from "@/lib/materiales/estimacion";
 
 const texto = (max: number) => z.string().trim().min(1).max(max);
 
@@ -33,7 +34,9 @@ const SceneElementSchema = z
     // de globos) — `catalog_product_id` sigue siendo solo el principal, este
     // array es la lista completa que necesita ver el modelo de imagen y la
     // cotización.
-    catalog_product_ids: z.array(texto(160)).max(6).optional(),
+    // La mezcla real puede contener 6 materiales × 4 tamaños; no truncar las
+    // variantes cotizadas antes de cargar sus referencias visuales.
+    catalog_product_ids: z.array(texto(160)).max(24).optional(),
     required: z.boolean(),
     quantity: z
       .object({ mode: z.enum(["exact", "approximate", "range"]), min: z.number().int().min(0).max(999), max: z.number().int().min(0).max(999) })
@@ -74,6 +77,9 @@ export const SceneSpecSchema = z
       })
       .strict(),
     elements: z.array(SceneElementSchema).max(80),
+    /** Snapshot determinista que une cotización y render. No incluye capacidad
+     * comprada como cantidad visual: solo unidades instaladas. */
+    material_estimate: MaterialEstimateSchema.optional(),
     positive_prompt: z
       .object({
         required_elements: z.array(texto(320)).max(80),
@@ -92,6 +98,7 @@ export const SceneSpecSchema = z
     metadata: z
       .object({
         blueprint_hash: texto(128).optional(),
+        plan_hash: texto(128).optional(),
         created_by: z.enum(["server_default", "user_approval", "revision"]),
       })
       .strict(),
@@ -202,12 +209,14 @@ export function buildApprovedSceneSpec(input: {
   // Un elemento puede necesitar más de un producto real para armarse (ej.
   // árbol de globos = globos rojos + verdes + dorados) — cada entrada es un
   // material del "bill of materials", en orden con el principal primero.
-  catalogProducts?: Record<string, Array<{ id: string; name: string; description: string; category: string; colors?: string[]; unitsPerPackage?: number; packageCount?: number; share: number; role: string }>>;
+  catalogProducts?: Record<string, Array<{ id: string; name: string; description: string; category: string; colors?: string[]; unitsPerPackage?: number; packageCount?: number; installedUnits?: number; share: number; role: string }>>;
   protectedRegions?: Array<z.infer<typeof VenueRegionSchema>>;
   editableRegions?: Array<z.infer<typeof VenueRegionSchema>>;
   generationMode?: SceneSpec["generation_mode"];
   createdBy?: SceneSpec["metadata"]["created_by"];
+  planHash?: string;
   catalogOnly?: boolean;
+  materialEstimate?: DesignMaterialEstimate;
 }): SceneSpec {
   ReferenceBlueprintV2Schema.parse(input.blueprint);
   const elements = input.blueprint.elements
@@ -282,8 +291,8 @@ export function buildApprovedSceneSpec(input: {
           isMultiMaterial ? element.appearance.composition : (product?.description ?? ""),
           `Catalog category: ${product?.category ?? element.category}.`,
           isMultiMaterial
-            ? `Quoted quantity per material: ${joinWithinLimit(materials.map((material) => `"${material.name}": ${material.packageCount ?? 1}x${material.unitsPerPackage ?? 1}u`), 190)}; use the full combined quantity across all materials.`
-            : product?.unitsPerPackage ? `Quoted quantity: ${product.packageCount ?? 1} package(s) of ${product.unitsPerPackage} physical units; use the full quoted quantity in the installation.` : "Use the full quoted package or kit contents; do not reduce it to one isolated sample.",
+             ? `Installed units in THIS physical instance: ${joinWithinLimit(materials.map((material) => `"${material.name}": ${material.installedUnits ?? 0}u`), 190)}. The package purchase is consolidated at scene level; do not duplicate packages per repeated instance.`
+             : `Installed units in THIS physical instance: ${product?.installedUnits ?? 0}. The package purchase is consolidated at scene level; do not duplicate it per repeated instance.`,
           "CATALOG COLOR LOCK: preserve supplied catalog color exactly; never recolor this product from the reference palette.",
           "MANDATORY QUOTED CATALOG ITEM: visibly represent this product in the final scene; do not omit or replace it.",
           ...(element.scene_role === "lighting" ? ["Place lighting in the reference backdrop zone behind/around the decoration; do not move it to the ceiling unless the catalog product is explicitly a ceiling light."] : []),
@@ -311,6 +320,7 @@ export function buildApprovedSceneSpec(input: {
       editable_regions: input.editableRegions ?? elements.map((element) => ({ region_id: `EDIT_${element.element_id}`, bbox: element.target_bbox })),
     },
     elements,
+    material_estimate: input.materialEstimate,
     positive_prompt: {
       required_elements: elements.map((element) => `${element.name}; MANDATORY VISIBLE CATALOG ITEM; quantity: ${element.quantity.min === element.quantity.max ? `${element.quantity.min} physical units` : `${element.quantity.min}-${element.quantity.max} physical units`}; identity: ${element.identity_constraints.slice(0, 2).join(" ")}; colors: ${element.resolved_colors.join(", ")}; placement: ${placementDescription(element.target_bbox, element.category)}.`.slice(0, 320)),
       composition: [input.blueprint.composition.focal_point, `Density: ${input.blueprint.composition.density}.`, `Symmetry: ${input.blueprint.composition.symmetry}.`, `Keep negative space: ${input.blueprint.composition.negative_space.join(", ") || "as specified by venue"}.`, "Design one cohesive, event-ready installation with a clear focal point, visual hierarchy, balanced color, natural asymmetry, and believable physical support. Any scale variation between balloons must stay within the exact diameters stated for each mandatory element below — never invent a size not listed.", "Treat selected catalog products as ingredients for one party setup, not as isolated objects or a flat product list.", "Build a complete installed event scene with a rear backdrop/support, middle decoration, grounded floor contact, event lighting, realistic scale, depth, and visible relationships between elements.", "Do not default to a generic balloon arch, empty table, banquet vignette, garden/forest/park background, or any other generic event cliché.", "Selected products are installed decoration, never catalog samples, retail displays, packaging, or commercial objects added for atmosphere.", "Only a selected catalog-backed signage product may contain a focal, legible sign or printed message; otherwise add no sign, banner, lettering, or invented event text."],
@@ -321,25 +331,25 @@ export function buildApprovedSceneSpec(input: {
       // nueva" que con una enumeración exhaustiva de qué no tocar.
       venue_preservation: input.venueImageId
         ? [
-            `This is a local edit of the real photo ${input.venueImageId}, not a new scene. Change pixels ONLY inside the editable regions below; every other pixel must come out identical to the source — same camera, crop, architecture (walls, ceiling, floor, doors, windows), furniture, and ambient lighting.`.slice(0, 320),
+            "This is a local edit of the supplied real venue photo, not a new scene. Change pixels ONLY inside the editable regions below; every other pixel must come out identical to the source — same camera, crop, architecture (walls, ceiling, floor, doors, windows), furniture, and ambient lighting.".slice(0, 320),
             `Treat the untouched areas as a hard constraint, not a style reference: do not regenerate, reinterpret, relight, or redraw them even if that would look more polished.`.slice(0, 320),
           ]
         : [],
-      photorealistic_integration: ["Act as an event designer: turn the selected products into a polished, creative, usable party installation.", "Render every catalog-backed scene element visibly; each quoted product is mandatory, even when it is a backdrop or small accent.", "Respect the quotation: use every physical unit included in each purchased package or kit. Creative freedom applies to arrangement, grouping, scale, orientation, and support, never to inventing extra products or reducing a package to one sample.", "Treat the product list as ingredients, not a layout: group compatible balloons into an arch, garland, columns, or balanced clusters; vary scale and depth instead of spacing one object per product.", "Use accent kits, signs, and themed props as integrated focal-point details; never show product packaging or a catalog cutout as the decoration.", "Preserve each catalog product's supplied color exactly; reference palette cannot recolor catalog items.", "Place curtain, drape, backdrop, and panel elements as rear background surfaces behind the balloon decoration, spanning their target boxes.", "Place string lights and other lighting elements in the rear backdrop zone behind or around the decoration; never move them to the ceiling unless the catalog product is explicitly a ceiling light.", "Render only supplied catalog products as physical objects from the venue camera angle.", "Match perspective, scale, focus, white balance, light direction, contact shadows, occlusion, and surface contact.", "Use natural overlap and depth between layers; every item must touch, hang from, rest on, or clearly belong to the installation.", "Do not leave loose single balloons floating in empty space when they can be grouped into the main installation.", "Use only the selected catalog allowlist and preserved venue objects; do not add generic tables, empty furniture, flowers, plants, food, gifts, props, signs, lights, or extra balloons.", "Rebuild the scene from catalog products; never reproduce the reference image as a collage."],
+      photorealistic_integration: ["Act as an event designer: turn the selected products into a polished, creative, usable party installation.", "Render every catalog-backed scene element visibly; each quoted product is mandatory, even when it is a backdrop or small accent.", "Respect the installed design quantities in the material estimate. Package capacity, merma, and closed-package surplus are procurement data only; never add them to the visible decoration. Balloon diameter is controlled only by the hard size constraint, never by creative scale changes.", "Treat the product list as ingredients, not a layout: group compatible balloons into an arch, garland, columns, or balanced clusters; use overlap and depth instead of spacing one object per product, and obey the hard balloon-size constraint supplied by the image prompt.", "Use accent kits, signs, and themed props as integrated focal-point details; never show product packaging or a catalog cutout as the decoration.", "Preserve each catalog product's supplied color exactly; reference palette cannot recolor catalog items.", "Place curtain, drape, backdrop, and panel elements as rear background surfaces behind the balloon decoration, spanning their target boxes.", "Place string lights and other lighting elements in the rear backdrop zone behind or around the decoration; never move them to the ceiling unless the catalog product is explicitly a ceiling light.", "Render only supplied catalog products as physical objects from the venue camera angle.", "Match perspective, scale, focus, white balance, light direction, contact shadows, occlusion, and surface contact.", "Use natural overlap and depth between layers; every item must touch, hang from, rest on, or clearly belong to the installation.", "Do not leave loose single balloons floating in empty space when they can be grouped into the main installation.", "Use only the selected catalog allowlist and preserved venue objects; do not add generic tables, empty furniture, flowers, plants, food, gifts, props, signs, lights, or extra balloons.", "Rebuild the scene from catalog products; never reproduce the reference image as a collage."],
     },
     negative_prompt: {
       forbidden_elements: [
         ...forbidden,
         "generic or empty tables, chairs, furniture vignettes, isolated balloon arches, or loose garlands",
         "generic garden/forest/park backgrounds, empty landscapes, or unrelated outdoor scenes",
-        "unselected signs, flowers, plants, lights, people, text, logos, or commercial/event props beyond quoted package quantities",
+        "unselected signs, flowers, plants, lights, people, text, logos, or commercial/event props beyond installed design quantities",
       ],
       forbidden_venue_changes: input.venueImageId
-        ? [`Do not move, replace, redesign, widen, narrow, repaint, relight, or rebuild any part of ${input.venueImageId} outside the editable regions — treat it as a fixed photo you are drawing on top of, not a description to reinterpret.`.slice(0, 240)]
+        ? ["Do not move, replace, redesign, widen, narrow, repaint, relight, or rebuild any part of the supplied venue photo outside the editable regions — treat it as a fixed photo you are drawing on top of, not a description to reinterpret.".slice(0, 240)]
         : [],
-      forbidden_compositing_artifacts: ["No source-image background, rectangular crop, border, halo, studio shadow, flat sticker, cutout edge, pasted rectangle, floating object, impossible support, mismatched sharpness, or mismatched lighting.", "No catalog IDs, labels, callouts, arrows, captions, prices, watermarks, UI, or explanatory text in the output.", "No product cards, packages, catalog boards, isolated floating catalog cutouts, or evenly spaced inventory display.", "If a CATALOG_* image shows retail packaging (box art, QR code, printed icons), its graphic design is not a style cue: never reproduce a legend, color-swatch key, diagram, or pointer arrows in the output.","No catalog color drift: never turn black catalog products blue, blue products black, or silver products blue.", "Do not copy reference product designs; use catalog products only for object identity while preserving reference composition."],
+      forbidden_compositing_artifacts: ["No source-image background, rectangular crop, border, halo, studio shadow, flat sticker, cutout edge, pasted rectangle, floating object, impossible support, mismatched sharpness, or mismatched lighting.", "No catalog IDs, labels, callouts, arrows, captions, prices, watermarks, UI, or explanatory text in the output.", "No product cards, packages, catalog boards, isolated floating catalog cutouts, or evenly spaced inventory display.", "If a catalog product image shows retail packaging (box art, QR code, printed icons), its graphic design is not a style cue: never reproduce a legend, color-swatch key, diagram, or pointer arrows in the output.","No catalog color drift: never turn black catalog products blue, blue products black, or silver products blue.", "Do not copy reference product designs; use catalog products only for object identity while preserving reference composition."],
     },
-    metadata: { blueprint_hash: blueprintHash(input.blueprint), created_by: input.createdBy ?? "server_default" },
+    metadata: { blueprint_hash: blueprintHash(input.blueprint), ...(input.planHash ? { plan_hash: input.planHash } : {}), created_by: input.createdBy ?? "server_default" },
   };
   return SceneSpecSchema.parse(scene);
 }

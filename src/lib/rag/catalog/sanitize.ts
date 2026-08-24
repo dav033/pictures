@@ -24,6 +24,7 @@ type InsumosSearchText = {
   descripcion: string | null;
   tags: string[];
   colores: string[];
+  acabados: string[];
   ocasiones: string[];
   skus: string[];
 };
@@ -43,6 +44,7 @@ export function construirSearchText(insumos: InsumosSearchText): string {
     insumos.descripcion ? `description: ${insumos.descripcion}` : null,
     insumos.tags.length ? `tags: ${insumos.tags.join(", ")}` : null,
     insumos.colores.length ? `colors: ${insumos.colores.join(", ")}` : null,
+    insumos.acabados.length ? `finishes: ${insumos.acabados.join(", ")}` : null,
     insumos.ocasiones.length ? `events: ${insumos.ocasiones.map(nombreOcasion).join(", ")}` : null,
     insumos.skus.length ? `sku: ${insumos.skus.join(", ")}` : null,
   ].filter((p): p is string => p !== null);

@@ -1,21 +1,46 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { buildImagePrompt, buildLoraImagePrompt, type PromptImageInput } from "@/lib/ia/build-image-prompt";
-import { bloqueMezclaTamanos, descripcionFisicaTamano } from "@/lib/ia/tamano-fisico";
-import { cotizarProductos } from "@/lib/cotizacion/motor";
+import { bloqueMezclaTamanos, bloqueMezclaPorEstructura, descripcionFisicaTamano } from "@/lib/ia/tamano-fisico";
+import { cotizarPlan, cotizarProductos } from "@/lib/cotizacion/motor";
 import { featureEnabled } from "@/lib/ia/feature-flags";
 import { resolveAspectTransform } from "@/lib/ia/aspect-transform";
-import { evaluateSceneQa, buildCorrectiveRetryPrompt, type ImageQaReport } from "@/lib/ia/image-qa";
+import { evaluateSceneQa, buildCorrectiveRetryPrompt, observarImagenGenerada, type ImageQaReport } from "@/lib/ia/image-qa";
 import { imagenDe, resolverProveedor } from "@/lib/ia/registro";
 import { buildApprovedSceneSpec, SceneSpecSchema, sceneSpecHash } from "@/lib/ia/scene-spec";
 import { registrarEvento } from "@/lib/ia/telemetria";
+import { registrarPlanAudit } from "@/lib/rag/observability/log";
 import { generarConSempertexLora } from "@/lib/ia/sempertex-lora";
 import { buildVisualContext } from "@/lib/ia/visual-context";
 import { ErrorIA, type ImageInput, type Imagen, type ImagenEtiquetada, type PeticionImagen, type ProveedorId } from "@/lib/ia/tipos";
 import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import type { ResultadoMedidas } from "@/lib/medidas/geometria";
 import { resolverProductosParaGeneracion } from "@/lib/rag/generate-products";
+import { productosPorIdConFuente } from "@/lib/products";
+import {
+  classifyNonCommercialProducts,
+  NonCommercialSourceRejectedError,
+  type CommercialUsageIntent,
+  type NonCommercialProductClassification,
+} from "@/lib/generacion/provenance";
 import type { Brief, Producto } from "@/lib/types";
+import { getRagPool } from "@/lib/rag/db";
+import { resolverPlan } from "@/lib/plan/resolver";
+import { PlanDecoracionSchema } from "@/lib/plan/tipos";
+import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
+import { verificarCoherenciaPrompt } from "@/lib/plan/coherencia";
+import { verificarTokenAprobacion } from "@/lib/plan/aprobacion";
+import type { PlanResuelto } from "@/lib/plan/resuelto";
+import {
+  blockingPhysicalWarnings,
+  designQuantityForProduct,
+  estimateFromMeasuredMaterials,
+  estimateFromPlan,
+  formatMaterialEstimateLog,
+  purchaseForProduct,
+  validateMaterialEstimate,
+  type DesignMaterialEstimate,
+} from "@/lib/materiales/estimacion";
 
 export const maxDuration = 120;
 
@@ -54,6 +79,8 @@ type Body = {
   previousInteractionId?: string;
   revisionInstruction?: string;
   instruccion?: string;
+  plan?: PlanResuelto;
+  planHash?: string;
 };
 
 type SalidaComparacion = {
@@ -163,7 +190,11 @@ function catalogReferenceBox(category: ReferenceBlueprintV2["elements"][number][
     : { x: 0.66, y: 0.58, width: 0.26, height: 0.28 };
 }
 
-function quantityForProduct(product: Producto): ReferenceBlueprintV2["elements"][number]["quantity"] {
+function quantityForProduct(product: Producto, materialEstimate?: DesignMaterialEstimate): ReferenceBlueprintV2["elements"][number]["quantity"] {
+  if (materialEstimate) {
+    const estimatedQuantity = designQuantityForProduct(materialEstimate, product.id);
+    return { mode: "exact", min: estimatedQuantity, max: estimatedQuantity };
+  }
   const packageUnits = Math.max(1, Math.round(product.unidadesPaquete ?? 1));
   const packageCount = Math.max(1, Math.round(product.paquetes ?? 1));
   const isLooseBalloonPack = /(globo|balloon|latex|metalizado|redondo|infinity)/i.test(`${product.categoria} ${product.nombre}`);
@@ -177,7 +208,7 @@ function hermanosDeFamilia(product: Producto, lista: Producto[]): Producto[] {
   return lista.filter((p) => (p.familiaId ?? p.id) === clave);
 }
 
-function catalogElement(product: Producto, index: number, familia: Producto[] = [product]): ReferenceBlueprintV2["elements"][number] {
+function catalogElement(product: Producto, index: number, familia: Producto[] = [product], materialEstimate?: DesignMaterialEstimate): ReferenceBlueprintV2["elements"][number] {
   const category = categoryForProduct(product);
   const sceneRole = sceneRoleForProduct(category);
   const backdrop = sceneRole === "backdrop";
@@ -203,7 +234,7 @@ function catalogElement(product: Producto, index: number, familia: Producto[] = 
     include_policy: "include",
     approved: true,
     source_type: "catalog_backed",
-    quantity: quantityForProduct(product),
+    quantity: quantityForProduct(product, materialEstimate),
     appearance: {
       observed_colors: product.colores.slice(0, 8),
       resolved_colors: product.colores.slice(0, 8),
@@ -271,7 +302,7 @@ function addCreativeCatalogRelationships(blueprint: ReferenceBlueprintV2, produc
   });
 }
 
-function ensureQuotedProducts(blueprint: ReferenceBlueprintV2, products: Producto[]): ReferenceBlueprintV2 {
+function ensureQuotedProducts(blueprint: ReferenceBlueprintV2, products: Producto[], materialEstimate?: DesignMaterialEstimate): ReferenceBlueprintV2 {
   // Un producto puede estar representado solo como material secundario de un
   // bill_of_materials (ej. los globos verdes de un árbol cuyo material
   // principal son los rojos) — si solo se mira `catalog_product_id`, ese
@@ -292,7 +323,7 @@ function ensureQuotedProducts(blueprint: ReferenceBlueprintV2, products: Product
   return ReferenceBlueprintV2Schema.parse({
     ...blueprint,
     source_images: sourceImages,
-    elements: [...blueprint.elements, ...missing.map((product, index) => catalogElement(product, index, hermanosDeFamilia(product, missing)))],
+    elements: [...blueprint.elements, ...missing.map((product, index) => catalogElement(product, index, hermanosDeFamilia(product, missing), materialEstimate))],
     palette: {
       observed: [...new Set([...blueprint.palette.observed, ...products.flatMap((product) => product.colores)])].slice(0, 12),
       priority: [...new Set([...blueprint.palette.priority, ...products.flatMap((product) => product.colores)])].slice(0, 8),
@@ -300,11 +331,11 @@ function ensureQuotedProducts(blueprint: ReferenceBlueprintV2, products: Product
   });
 }
 
-function catalogBlueprint(productos: Producto[]): ReferenceBlueprintV2 {
+function catalogBlueprint(productos: Producto[], materialEstimate?: DesignMaterialEstimate): ReferenceBlueprintV2 {
   const blueprint = ReferenceBlueprintV2Schema.parse({
     schema_version: "2.0",
     source_images: [{ image_id: "CATALOG_SOURCE", approved_roles: ["catalog_product_reference"] }],
-    elements: productos.map((product, index) => catalogElement(product, index, hermanosDeFamilia(product, productos))),
+    elements: productos.map((product, index) => catalogElement(product, index, hermanosDeFamilia(product, productos), materialEstimate)),
     /*
       element_id: `CATALOG_E${String(index + 1).padStart(2, "0")}`,
       source_image_id: "CATALOG_SOURCE",
@@ -329,6 +360,93 @@ function catalogBlueprint(productos: Producto[]): ReferenceBlueprintV2 {
     unresolved_decisions: [],
   });
   return addCreativeCatalogRelationships(blueprint, productos);
+}
+
+function planBlueprint(plan: PlanResuelto): ReferenceBlueprintV2 {
+  const cajas = cajasDeEstructuras(plan.plan.estructuras);
+  const focal = plan.plan.estructuras.find((estructura) => estructura.rol_escena === "focal")?.estructura_id;
+  const focalDeclarada = plan.plan.estructuras.find((estructura) => estructura.estructura_id === focal);
+  const focalElementId = focal && focalDeclarada && focalDeclarada.repeticiones > 1 ? `${focal}#1` : focal;
+  const densidad = plan.plan.estructuras.some((estructura) => estructura.densidad === "lujosa")
+    ? "dense" as const
+    : plan.plan.estructuras.some((estructura) => estructura.densidad === "sencilla")
+      ? "sparse" as const
+      : "moderate" as const;
+  const elements = plan.estructuras.flatMap((resuelta) => {
+    const declarada = plan.plan.estructuras.find((estructura) => estructura.estructura_id === resuelta.estructura_id)!;
+    const materialPorVariante = new Map<string, { id: string; share: number; role: string; color: string | null }>();
+    for (const linea of resuelta.lineas) {
+      const previo = materialPorVariante.get(linea.variant_id);
+      materialPorVariante.set(linea.variant_id, {
+        id: linea.variant_id,
+        share: (previo?.share ?? 0) + linea.unidades / Math.max(1, resuelta.total_unidades),
+        role: declarada.materiales.find((material) => material.product_id === linea.product_id)?.rol_material ?? "principal",
+        color: linea.color,
+      });
+    }
+    const materiales = [...materialPorVariante.values()];
+    const medidas = [declarada.medidas.ancho_m, declarada.medidas.alto_m, declarada.medidas.largo_m].filter((value): value is number => value != null).map((value) => `${value} m`).join(" × ");
+    const nombreBase = medidas ? `${declarada.nombre} (${medidas})` : declarada.nombre;
+    const repeticiones = Math.max(1, declarada.repeticiones);
+    return Array.from({ length: repeticiones }, (_, index) => {
+      const elementId = repeticiones === 1 ? resuelta.estructura_id : `${resuelta.estructura_id}#${index + 1}`;
+      const baseUnits = Math.floor(resuelta.total_unidades / repeticiones);
+      const remainder = resuelta.total_unidades % repeticiones;
+      const instanceUnits = baseUnits + (index < remainder ? 1 : 0);
+      const relaciones: ReferenceBlueprintV2["elements"][number]["relationships"] = elementId === focalElementId
+        ? []
+        : focalElementId
+          ? [{ type: declarada.tipo === "backdrop" ? "behind" as const : "aligned_with" as const, target_element_id: focalElementId }]
+          : [];
+      const nombre = repeticiones > 1 ? `${nombreBase} #${index + 1} de ${repeticiones}` : nombreBase;
+      return {
+      element_id: elementId,
+      source_image_id: "PLAN_SOURCE",
+      name: nombre.slice(0, 160),
+      category: ["backdrop"].includes(declarada.tipo) ? "backdrop" as const : ["kit", "accesorio"].includes(declarada.tipo) ? "other" as const : "balloon_structure" as const,
+      scene_role: declarada.tipo === "backdrop" ? "backdrop" as const : declarada.rol_escena === "focal" ? "midground" as const : "foreground" as const,
+      detection_confidence: 1,
+      visible_evidence: "Estructura declarada y resuelta por el plan de decoración.",
+      reference_bbox: cajas[elementId]!.bbox,
+      depth_layer: cajas[elementId]!.depthLayer,
+      include_policy: "include" as const,
+      approved: true,
+      source_type: "catalog_backed" as const,
+      quantity: { mode: "exact" as const, min: instanceUnits, max: instanceUnits },
+      appearance: {
+        observed_colors: [...new Set(resuelta.lineas.map((linea) => linea.color).filter((color): color is string => Boolean(color)))].slice(0, 8),
+        resolved_colors: [...new Set(resuelta.lineas.map((linea) => linea.color).filter((color): color is string => Boolean(color)))].slice(0, 8),
+        color_policy: "match_reference" as const,
+        material: "Materiales reales del catálogo resueltos por variante.",
+        shape: nombre.slice(0, 160),
+        composition: materiales.map((material) => `${Math.round(material.share * 100)}% ${material.role} (${material.color ?? "color de catálogo"})`).join("; ").slice(0, 240) || "pieza de catálogo",
+      },
+      relationships: relaciones,
+      uncertainties: resuelta.supuestos,
+      model_decision: {
+        action: "include" as const,
+        catalog_product_id: materiales[0]?.id,
+        match_type: "exact" as const,
+        reason: declarada.porque,
+        adaptation: "Construir esta estructura completa en la ubicación indicada; no renderizar los materiales como piezas aisladas.",
+        bill_of_materials: materiales.map((material) => ({ catalog_product_id: material.id, role: material.role, share: Math.min(1, material.share) })),
+      },
+      };
+    });
+  });
+  return ReferenceBlueprintV2Schema.parse({
+    schema_version: "2.0",
+    source_images: [{ image_id: "PLAN_SOURCE", approved_roles: ["composition_reference"] }],
+    elements,
+    composition: {
+      focal_point: plan.plan.estructuras.find((estructura) => estructura.rol_escena === "focal")?.nombre ?? "instalación central",
+      density: densidad,
+      symmetry: "asymmetric",
+      negative_space: ["circulación libre", "contacto físico con piso o mobiliario"],
+    },
+    palette: { observed: plan.plan.concepto.paleta.slice(0, 12), priority: plan.plan.concepto.paleta.slice(0, 8) },
+    unresolved_decisions: [],
+  });
 }
 
 function applyAutomaticDecisions(blueprint: ReferenceBlueprintV2, validProductIds: Set<string>): ReferenceBlueprintV2 {
@@ -389,7 +507,7 @@ function buildInputs(input: {
   venue?: ImagenEtiquetada;
   previous?: ImagenEtiquetada;
   products: Array<ImagenEtiquetada & { productoId: string }>;
-}): { inputs: ImageInput[]; promptInputs: PromptImageInput[]; droppedImageIds: string[] } {
+}): { inputs: ImageInput[]; promptInputs: PromptImageInput[]; droppedImageIds: string[]; droppedCatalogProductIds: string[]; droppedReferenceCount: number } {
   // `catalog_product_ids` trae TODOS los materiales de un elemento (ej. rojo
   // + verde + dorado de un árbol de globos) — usar solo `catalog_product_id`
   // aquí dejaría fuera las fotos de los materiales secundarios, y el modelo
@@ -398,43 +516,75 @@ function buildInputs(input: {
   const candidates: ImageInput[] = [];
   if (input.previous) candidates.push({ ...input.previous, role: "previous_generated_result", priority: 0, allowed_use: "Current generated result is the edit base for this revision only." });
   if (input.venue) candidates.push({ ...input.venue, role: "venue_base", priority: 1, allowed_use: "Venue identity: camera, crop, architecture, perspective, and light." });
+  // La PRIMERA referencia del cliente (foto real de inspiración, no producto)
+  // reserva su propio cupo por encima de las fotos de producto — antes caía
+  // siempre al final y desaparecía en cuanto había 3-4 productos cotizados,
+  // dejando la composición (encuadre, proporción entre estructuras, densidad,
+  // geometría de fondo) sin ninguna entrada visual, solo texto. El resto de
+  // referencias adicionales (máx. 3 por request) sigue en el cupo bajo.
+  const [primaryReference, ...extraReferences] = input.references;
+  if (primaryReference) {
+    candidates.push({ ...primaryReference, role: "composition_reference", priority: 2, allowed_use: "Composition reference only: framing, proportion between structures, density, background geometry, and light placement. Never use it as a source of product identity, product color, or any object not already present in AUTOMATIC_SCENE_SPEC." });
+  }
   for (const product of input.products) {
     if (!requiredProductIds.has(product.productoId)) continue;
-    candidates.push({ ...product, role: "catalog_product_reference", priority: 3, allowed_use: "Product identity only: exact color, shape, material, print, and distinguishing details; re-render physically using the full quoted package quantity." });
+    candidates.push({ ...product, role: "catalog_product_reference", priority: 3, allowed_use: "Product identity only: exact color, shape, material, print, and distinguishing details; re-render physically using the installed design quantity from the estimate, never package surplus." });
   }
-  // Se conserva una referencia visual al final de la lista para dar contexto
-  // de encuadre y densidad. El prompt prohíbe usarla como catálogo de objetos.
-  for (const reference of input.references) {
+  for (const reference of extraReferences) {
     candidates.push({ ...reference, role: "composition_reference", priority: 4, allowed_use: "Composition inspiration only: framing, spatial relationships, density, backdrop geometry, and lighting placement. Do not copy or add any object from this image." });
   }
   const ordered = candidates.sort((a, b) => a.priority - b.priority);
   if (ordered.length > input.portLimit) {
-    const required = ordered.filter((candidate) => candidate.priority <= 3);
-    if (required.length > input.portLimit) throw new Error(`Approved scene needs ${required.length} image inputs, provider limit is ${input.portLimit}.`);
-    ordered.splice(input.portLimit);
+    // Product references are authoritative when present, but the provider
+    // limit is also authoritative. Keep the highest-priority inputs and let
+    // the scene spec's textual catalog metadata cover any omitted product
+    // image instead of rejecting an otherwise valid approved plan.
+    ordered.splice(Math.max(0, input.portLimit));
   }
   const used = new Set(ordered.map((item) => item.id));
+  const droppedCatalogProductIds = input.products.filter((product) => !used.has(product.id)).map((product) => product.productoId);
+  const droppedReferenceCount = input.references.filter((reference) => !used.has(reference.id)).length;
   return {
     inputs: ordered,
     promptInputs: ordered.map((item) => ({ image_id: item.id, role: item.role, allowed_use: item.allowed_use })),
     droppedImageIds: [...input.references.map((reference) => reference.id), ...input.products.map((product) => product.id)].filter((id) => !used.has(id)),
+    droppedCatalogProductIds,
+    droppedReferenceCount,
   };
 }
 
-function buildQa(sceneSpec: Parameters<typeof evaluateSceneQa>[0]): ImageQaReport {
-  const report = evaluateSceneQa(sceneSpec, { presentElementIds: sceneSpec.elements.map((element) => element.element_id) });
-  return { ...report, confidence: "unknown" };
+async function buildQa(sceneSpec: Parameters<typeof evaluateSceneQa>[0], image: Imagen, hashes: { planHash?: string; sceneSpecHash: string }, materialEstimate?: DesignMaterialEstimate): Promise<ImageQaReport> {
+  const observation = await observarImagenGenerada(sceneSpec, image, materialEstimate);
+  if (!observation) return { ...evaluateSceneQa(sceneSpec, {}, materialEstimate), pass: null, confidence: "unknown", observation_confidence: null, plan_hash: hashes.planHash, scene_spec_hash: hashes.sceneSpecHash, observed_instances: null };
+  return { ...evaluateSceneQa(sceneSpec, observation, materialEstimate), confidence: "vision_assisted", plan_hash: hashes.planHash, scene_spec_hash: hashes.sceneSpecHash, observed_instances: observation.presentElementIds ?? [] };
 }
 
 export async function POST(request: Request) {
   const body = await request.json() as Body;
   const inicio = Date.now();
+  const generationRequestId = crypto.randomUUID();
   let proveedor: ProveedorId | undefined;
   try {
     if (!featureEnabled("REFERENCE_BLUEPRINT_V2")) throw new Error("REFERENCE_BLUEPRINT_V2 is disabled.");
+    const planDeclarativo = body.plan ? PlanDecoracionSchema.parse(body.plan.plan) : undefined;
+    // Keep the generation whitelist aligned with /api/plan-editar: a
+    // declarative material may carry a variant that is not yet present in the
+    // resolved purchases, but it still changes which candidate the resolver
+    // is allowed to choose and therefore changes the plan hash.
+    const planVariantIds = planDeclarativo
+      ? [
+          ...body.plan?.compras.map((compra) => compra.variant_id) ?? [],
+          ...planDeclarativo.estructuras.flatMap((estructura) =>
+            estructura.materiales.map((material) => material.variant_id).filter((id): id is string => Boolean(id)),
+          ),
+          ...planDeclarativo.estructuras.flatMap((estructura) =>
+            (estructura.variant_overrides ?? []).flatMap((override) => [override.objetivo_variant_id, override.variant_id]),
+          ),
+        ]
+      : [];
     const productosBase = (await resolverProductosParaGeneracion({
       productIds: body.productIds,
-      ragVariantIds: body.ragVariantIds,
+      ragVariantIds: [...new Set([...(body.ragVariantIds ?? []), ...planVariantIds])],
     })).productos;
     const productosManuales = (body.manualProducts ?? []).map((product) => ({
       ...product,
@@ -447,13 +597,113 @@ export async function POST(request: Request) {
       })),
       ...productosManuales,
     ];
+    // Frontera de autoridad comercial (plan §2.2/§6, Tarea 00.3): ni el seed
+    // SQLite ni las piezas manuales del chat tienen offer_id/snapshot
+    // comerciales verificados. Cuando NO hay `planDeclarativo`, `productos`
+    // alimenta directo `catalogBlueprint` + `cotizarProductos`, que marca
+    // cada línea `disponible: true` como si tuviera oferta real — por eso
+    // ese camino cuenta como "commercial_line" y se bloquea en producción.
+    // Bajo un plan declarativo, el precio final sale exclusivamente de
+    // `cotizarPlan` (Postgres validado) y `productos` solo aporta fotos de
+    // referencia, así que ahí basta con etiquetar como referencia.
+    const usoComercialProductos: CommercialUsageIntent = planDeclarativo ? "reference" : "commercial_line";
+    const fuentesLegacy = productosPorIdConFuente(body.productIds ?? []);
+    const idsSeedDemo = fuentesLegacy
+      .filter((item) => item.fuente === "seed_demo")
+      .map((item) => item.producto.id);
+    const idsManuales = productosManuales.map((product) => product.id);
+    const productAuthority: NonCommercialProductClassification[] = [
+      ...classifyNonCommercialProducts(idsSeedDemo, "seed_demo", usoComercialProductos),
+      ...classifyNonCommercialProducts(idsManuales, "manual_product", usoComercialProductos),
+    ];
+    let planResuelto: PlanResuelto | undefined;
+    let approvalContext: { requestId: string; expiresAt: number } | null = null;
+    const auditarImagen = async (status: string, qa: ImageQaReport, scene: Parameters<typeof evaluateSceneQa>[0]) => {
+      if (!planResuelto) return;
+      await registrarPlanAudit(getRagPool(), {
+         requestId: approvalContext?.requestId ?? generationRequestId,
+        planHash: planResuelto.plan_hash,
+        restricciones: planResuelto.plan.restricciones,
+        selectedProductIds: planResuelto.compras.map((compra) => compra.variant_id),
+        geometry: scene.elements.map((element) => ({ id: element.element_id, bbox: element.target_bbox, quantity: element.quantity })),
+        costChosenCop: planResuelto.totales.total_cop,
+        ceilingCop: planResuelto.comercial.techo_cop,
+        deltaCop: planResuelto.comercial.delta_cop,
+         packages: { ahorro_paquetes_cop: planResuelto.totales.ahorro_paquetes_cop, lineas: planResuelto.compras.map((compra) => ({ variant_id: compra.variant_id, paquetes: compra.paquetes, subtotal: compra.subtotal })) },
+        instances: scene.elements.map((element) => ({ id: element.element_id, quantity: element.quantity })),
+         status,
+         error: qa.pass === false ? qa.retry_reasons.join(" | ") : undefined,
+         sceneSpecHash: qa.scene_spec_hash,
+         qaHash: qa.scene_spec_hash ? `${qa.scene_spec_hash}:${qa.pass === true ? "pass" : qa.pass === false ? "fail" : "unknown"}` : undefined,
+         flagSnapshot: { planCostOptimizerV2: featureEnabled("PLAN_COST_OPTIMIZER_V2"), planBudgetGateV2: featureEnabled("PLAN_BUDGET_GATE_V2"), imageInstanceQa: featureEnabled("IMAGE_INSTANCE_QA") },
+      });
+    };
+    if (planDeclarativo) {
+      const whitelist = new Map<string, Set<string>>();
+      for (const producto of productosBase) {
+        if (!producto.familiaId) continue;
+        const variantes = whitelist.get(producto.familiaId) ?? new Set<string>();
+        variantes.add(producto.id);
+        whitelist.set(producto.familiaId, variantes);
+      }
+      planResuelto = await resolverPlan(getRagPool(), planDeclarativo, whitelist);
+      if (body.planHash && body.planHash !== planResuelto.plan_hash) throw new Error("Plan hash does not match the validated server plan.");
+      if (body.plan?.plan_hash !== planResuelto.plan_hash) throw new Error("Plan hash does not match the validated server plan.");
+      if (planResuelto.sin_cobertura.length > 0) throw new Error("El plan tiene materiales sin cobertura en la selección validada; no se generó una imagen incoherente.");
+      if (planResuelto.comercial.estado === "PRESUPUESTO_EXCEDIDO") {
+        throw new Error(`PRESUPUESTO_EXCEDIDO: ${planResuelto.totales.total_cop} COP supera el techo de ${planResuelto.comercial.techo_cop} COP por ${planResuelto.comercial.delta_cop} COP.`);
+      }
+      approvalContext = verificarTokenAprobacion(body.plan?.approval_token, planResuelto.plan_hash);
+      if (!approvalContext) throw new Error("APROBACION_REQUERIDA: el plan debe aprobarse desde la tarjeta antes de generar.");
+      await registrarPlanAudit(getRagPool(), {
+        requestId: approvalContext.requestId,
+        planHash: planResuelto.plan_hash,
+        solicitudOriginal: body.solicitudUsuario,
+        restricciones: planResuelto.plan.restricciones,
+        selectedProductIds: planResuelto.compras.map((compra) => compra.variant_id),
+        costChosenCop: planResuelto.totales.total_cop,
+        ceilingCop: planResuelto.comercial.techo_cop,
+        deltaCop: planResuelto.comercial.delta_cop,
+         packages: { ahorro_paquetes_cop: planResuelto.totales.ahorro_paquetes_cop, lineas: planResuelto.compras.map((compra) => ({ variant_id: compra.variant_id, paquetes: compra.paquetes, subtotal: compra.subtotal })) },
+        status: "CLIENT_APPROVED",
+        flagSnapshot: { planCostOptimizerV2: featureEnabled("PLAN_COST_OPTIMIZER_V2"), planBudgetGateV2: featureEnabled("PLAN_BUDGET_GATE_V2"), imageInstanceQa: featureEnabled("IMAGE_INSTANCE_QA") },
+      });
+    }
+    const materialEstimateForLayout = planResuelto
+      ? estimateFromPlan(planResuelto)
+      : estimateFromMeasuredMaterials(body.medidas, productos);
+    const preflight = validateMaterialEstimate(materialEstimateForLayout);
+    if (!preflight.ok) throw new Error(`La estimación de materiales no es válida: ${preflight.errors.join("; ")}`);
+    const physicalWarnings = blockingPhysicalWarnings(materialEstimateForLayout);
+    if (physicalWarnings.length > 0) throw new Error(`La estimación de materiales no es compatible con la escala solicitada: ${physicalWarnings.join("; ")}`);
+    if (process.env.NODE_ENV !== "production" || process.env.IMAGE_DEBUG === "true") console.info(formatMaterialEstimateLog(materialEstimateForLayout));
     const aspecto = body.aspecto ?? "3:2";
     const venue = body.fotoEspacio ? { ...body.fotoEspacio, id: "VENUE_01", descripcion: "Venue base photo. Preserve its camera, crop, architecture, perspective, and ambient lighting." } : undefined;
     if (venue && !featureEnabled("LOCALIZED_EDIT_ENABLED")) throw new Error("Localized venue editing is disabled.");
     const previous = body.previousGeneratedImage ? { ...body.previousGeneratedImage, id: "PREVIOUS_RESULT", descripcion: "Previous generated result. Use as current revision base." } : undefined;
     const references = (body.imagenesReferencia ?? []).map((image, index) => ({ ...image, id: `REF_${String(index + 1).padStart(2, "0")}`, descripcion: "Automatic model decision defines element inclusion and catalog adaptation." }));
-    const rawBlueprint = body.blueprint ? ReferenceBlueprintV2Schema.parse(body.blueprint) : catalogBlueprint(productos);
-    const blueprint = addCreativeCatalogRelationships(ensureQuotedProducts(applyAutomaticDecisions(rawBlueprint, new Set(productos.map((product) => product.id))), productos), productos);
+    // Frontera de autoridad (plan de integración de referencias, R1): con un
+    // plan declarativo aprobado, el plan SIEMPRE es la única fuente de
+    // elementos — un blueprint de referencia adjunto (body.blueprint) usa ids
+    // REF_*/CATALOG_* que no existen en las cajas del plan (EST_*) y hacía
+    // fallar buildApprovedSceneSpec para cualquier cliente que adjuntara una
+    // foto de inspiración junto con un plan aprobado.
+    const productosParaEscena = planResuelto
+      ? productos
+      : productos.filter((product) => designQuantityForProduct(materialEstimateForLayout, product.id) > 0);
+    const rawBlueprint = planResuelto
+      ? planBlueprint(planResuelto)
+      : body.blueprint
+        ? ReferenceBlueprintV2Schema.parse(body.blueprint)
+        : catalogBlueprint(productosParaEscena, materialEstimateForLayout);
+    const decidedBlueprint = applyAutomaticDecisions(rawBlueprint, new Set(productos.map((product) => product.id)));
+    // Bajo un plan, `productos` puede incluir variantes fuera de las
+    // estructuras resueltas (ragVariantIds heredados del chat) — inyectarlas
+    // como elementos sueltos con ensureQuotedProducts rompería el diseño que
+    // el cliente ya aprobó; el plan es la única autoridad de qué se muestra.
+    const blueprint = planResuelto
+      ? addCreativeCatalogRelationships(decidedBlueprint, productos)
+      : addCreativeCatalogRelationships(ensureQuotedProducts(decidedBlueprint, productosParaEscena, materialEstimateForLayout), productosParaEscena);
     // Bill of materials: un elemento puede necesitar varios productos reales
     // en proporciones distintas (ej. árbol de globos = 60% rojo + 30% verde +
     // 10% dorado). Se suma la cantidad de paquetes que cada producto necesita
@@ -472,18 +722,32 @@ export async function POST(request: Request) {
         const producto = productos.find((candidate) => candidate.id === linea.catalog_product_id);
         if (!producto) continue;
         const unidadesNecesarias = Math.max(1, Math.round(cantidadTotal * linea.share));
-        const paquetesNecesarios = Math.max(1, Math.ceil(unidadesNecesarias / Math.max(1, producto.unidadesPaquete ?? 1)));
+        const compraEstimada = purchaseForProduct(materialEstimateForLayout, producto.id);
+        const paquetesNecesarios = compraEstimada?.package_count ?? Math.max(1, Math.ceil(unidadesNecesarias / Math.max(1, producto.unidadesPaquete ?? 1)));
         paquetesPorMaterial.set(producto.id, (paquetesPorMaterial.get(producto.id) ?? 0) + paquetesNecesarios);
       }
     }
     // El cliente puede haber fijado una cantidad explícita (ej. producto
     // elegido a mano en el catálogo) — eso siempre gana sobre lo derivado
     // automáticamente del plan de referencias.
-    const productosConMateriales = productos.map((producto) => {
+    const productosConMateriales = planResuelto
+      ? productos.map((producto) => {
+          const compra = planResuelto!.compras.find((item) => item.variant_id === producto.id);
+          return compra ? { ...producto, paquetes: compra.paquetes, unidadesPaquete: compra.unidades_paquete } : producto;
+        })
+      : productos.map((producto) => {
       const explicita = body.productQuantities?.[producto.id];
       const derivada = paquetesPorMaterial.get(producto.id);
       return explicita || !derivada ? producto : { ...producto, paquetes: derivada };
-    });
+       });
+    const materialEstimate = planResuelto
+      ? estimateFromPlan(planResuelto)
+      : estimateFromMeasuredMaterials(body.medidas, productosConMateriales);
+    const finalPreflight = validateMaterialEstimate(materialEstimate);
+    if (!finalPreflight.ok) throw new Error(`La estimación de materiales no es válida: ${finalPreflight.errors.join("; ")}`);
+    const finalPhysicalWarnings = blockingPhysicalWarnings(materialEstimate);
+    if (finalPhysicalWarnings.length > 0) throw new Error(`La estimación de materiales no es compatible con la escala solicitada: ${finalPhysicalWarnings.join("; ")}`);
+    if (process.env.NODE_ENV !== "production" || process.env.IMAGE_DEBUG === "true") console.info(formatMaterialEstimateLog(materialEstimate));
     const catalogProducts = Object.fromEntries(
       blueprint.elements
         .filter((element) => element.source_type === "catalog_backed")
@@ -496,14 +760,20 @@ export async function POST(request: Request) {
           const materiales = lineas
             .map((linea) => {
               const producto = productosConMateriales.find((candidate) => candidate.id === linea.catalog_product_id);
-              return producto ? { id: producto.id, name: producto.nombre, description: producto.descripcion, category: producto.categoria, colors: producto.colores, unitsPerPackage: producto.unidadesPaquete, packageCount: producto.paquetes, share: linea.share, role: linea.role } : undefined;
+               return producto ? { id: producto.id, name: producto.nombre, description: producto.descripcion, category: producto.categoria, colors: producto.colores, unitsPerPackage: producto.unidadesPaquete, packageCount: producto.paquetes, installedUnits: Math.max(0, Math.round((element.quantity.max || element.quantity.min || 0) * linea.share)), share: linea.share, role: linea.role } : undefined;
             })
-            .filter((material): material is { id: string; name: string; description: string; category: string; colors: string[]; unitsPerPackage: number | undefined; packageCount: number; share: number; role: string } => Boolean(material));
+             .filter((material): material is { id: string; name: string; description: string; category: string; colors: string[]; unitsPerPackage: number | undefined; packageCount: number; installedUnits: number; share: number; role: string } => Boolean(material));
           return [element.element_id, materiales] as const;
         })
-        .filter(([, materiales]) => materiales.length > 0),
+         .filter(([, materiales]) => materiales.length > 0),
     );
-    const targetBoxes = targetBoxesFor(blueprint, undefined, Boolean(venue));
+    // Unión, no reemplazo: las cajas del plan cubren cada EST_*, pero
+    // targetBoxesFor rellena con una caja automática cualquier elemento
+    // aprobado que quedara sin caja en vez de reventar buildApprovedSceneSpec.
+    const cajasDelPlan = planResuelto
+      ? Object.fromEntries(Object.entries(cajasDeEstructuras(planResuelto.plan.estructuras)).map(([id, layout]) => [id, layout.bbox]))
+      : undefined;
+    const targetBoxes = targetBoxesFor(blueprint, cajasDelPlan, Boolean(venue));
     const sceneSpec = buildApprovedSceneSpec({
       blueprint,
       aspectRatio: aspecto,
@@ -511,17 +781,17 @@ export async function POST(request: Request) {
       targetBoxes,
       eventPalette: body.brief?.colores,
       catalogProducts,
+      materialEstimate,
       protectedRegions: body.protectedRegions,
       editableRegions: body.editableRegions,
       generationMode: previous ? "revise_current_result" : venue ? "edit_venue" : "text_to_image",
       createdBy: previous ? "revision" : "server_default",
+      planHash: planResuelto?.plan_hash,
       catalogOnly: true,
     });
     if (body.sceneSpec) {
       const submittedScene = SceneSpecSchema.parse(body.sceneSpec);
-      const submittedIds = submittedScene.elements.map((element) => element.element_id).sort().join(",");
-      const rebuiltIds = sceneSpec.elements.map((element) => element.element_id).sort().join(",");
-      if (submittedIds !== rebuiltIds) throw new Error("Submitted scene specification does not match approved elements.");
+      if (sceneSpecHash(submittedScene) !== sceneSpecHash(sceneSpec)) throw new Error("Submitted scene specification does not match the server-approved scene.");
     }
     SceneSpecSchema.parse(sceneSpec);
     if (sceneSpec.elements.length === 0 && productos.length === 0 && !body.revisionInstruction && !body.instruccion) throw new Error("Approve at least one element before generating.");
@@ -570,16 +840,35 @@ export async function POST(request: Request) {
     // despiece pedido: si un tamaño exacto no existía y se sustituyó por el
     // más cercano, el prompt debe reflejar lo que de verdad se va a cobrar y
     // mostrar, no lo que se pidió originalmente.
-    const unidadesPorTamano = new Map<string, { diamPulg: number; forma: string | null; cantidad: number }>();
-    for (const producto of productosConMateriales) {
-      if (producto.diamPulg == null) continue;
-      const clave = `${producto.forma ?? "redondo"}:${producto.diamPulg}`;
-      const unidadesFisicas = Math.max(1, Math.round(producto.unidadesPaquete ?? 1)) * Math.max(1, Math.round(producto.paquetes ?? 1));
-      const existente = unidadesPorTamano.get(clave);
-      unidadesPorTamano.set(clave, { diamPulg: producto.diamPulg, forma: producto.forma ?? null, cantidad: (existente?.cantidad ?? 0) + unidadesFisicas });
+     const unidadesPorTamano = new Map<string, { diamPulg: number; forma: string | null; cantidad: number }>();
+     for (const linea of materialEstimate.balloons) {
+       if (linea.size_inches == null) continue;
+       const clave = `${linea.shape ?? "redondo"}:${linea.size_inches}`;
+       const existente = unidadesPorTamano.get(clave);
+       unidadesPorTamano.set(clave, { diamPulg: linea.size_inches, forma: linea.shape, cantidad: (existente?.cantidad ?? 0) + linea.design_quantity });
+     }
+    const sizeMixBlock = planResuelto
+      ? bloqueMezclaPorEstructura(planResuelto.estructuras.map((estructura) => ({
+          estructura_id: estructura.estructura_id,
+          nombre: estructura.nombre,
+          total_unidades: estructura.total_unidades,
+          mezcla_real: estructura.mezcla_real.map((linea) => ({ diamPulg: linea.diam_pulg, forma: linea.forma, unidades: linea.unidades, pct: linea.pct })),
+        }))) ?? undefined
+      : bloqueMezclaTamanos([...unidadesPorTamano.values()]) ?? undefined;
+    const providerPrompt = buildImagePrompt({ sceneSpec: transformedSceneSpec, inputs: selected.promptInputs, revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount: selected.droppedCatalogProductIds.length, droppedCompositionReferenceCount: selected.droppedReferenceCount });
+    if (planResuelto) {
+      const coherencia = verificarCoherenciaPrompt(providerPrompt, planResuelto);
+      if (!coherencia.ok) throw new Error(`El prompt no coincide con el plan resuelto: ${coherencia.errores.join("; ")}`);
     }
-    const sizeMixBlock = bloqueMezclaTamanos([...unidadesPorTamano.values()]) ?? undefined;
-    const providerPrompt = buildImagePrompt({ sceneSpec: transformedSceneSpec, inputs: selected.promptInputs, revisionInstruction, visualContext, sizeMixBlock });
+    // Fail closed before opening a paid provider call. An approved plan must
+    // have an observable instance-QA path, not a post-generation warning.
+    if (planResuelto && !featureEnabled("IMAGE_INSTANCE_QA")) {
+      throw new Error("IMAGE_QA_REQUIRED: activa IMAGE_INSTANCE_QA para generar un plan aprobado.");
+    }
+    // The quote is finalized before the paid provider call. The image receives
+    // the same estimate snapshot, but never gets package capacity as visual
+    // quantity.
+    const cotizacion = planResuelto ? cotizarPlan(planResuelto) : cotizarProductos(productosConMateriales, materialEstimate);
     const loraPrompt = buildLoraImagePrompt({ sceneSpec: transformedSceneSpec, visualContext, revisionInstruction });
     let result: { imagen: Imagen; interactionId?: string };
     let comparacion: SalidaComparacion[] | undefined;
@@ -620,20 +909,26 @@ export async function POST(request: Request) {
         ? { imagen: await generarConSempertexLora(loraPrompt, aspecto, selected.inputs) }
         : await port!.generar({ prompt: providerPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: previous, previousInteractionId, revisionMode: previous ? "revise_current_result" : "new_generation" });
     }
-    const cotizacion = cotizarProductos(productosConMateriales);
-    let qa = buildQa(transformedSceneSpec);
+    let qa = await buildQa(transformedSceneSpec, result.imagen, { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate);
     let retried = false;
-    if (!usarLora && !comparar && featureEnabled("IMAGE_QA_ENABLED") && !qa.pass) {
+    if (!usarLora && !comparar && featureEnabled("IMAGE_QA_ENABLED") && qa.pass === false) {
       const retryPrompt = `${providerPrompt}\n\n${buildCorrectiveRetryPrompt(qa)}`;
       const retry = await port!.generar({ prompt: retryPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: { ...result.imagen, id: "GENERATED_RESULT", descripcion: "Current generated result for one corrective retry." }, previousInteractionId: result.interactionId, revisionMode: "revise_current_result" });
       retried = true;
-      qa = buildQa(transformedSceneSpec);
-      return Response.json({ imagen: `data:${retry.imagen.mime};base64,${retry.imagen.base64}`, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, qa, retried, proveedor, cotizacion, interactionId: retry.interactionId });
+      qa = await buildQa(transformedSceneSpec, retry.imagen, { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate);
+      await auditarImagen("IMAGEN_QA_RETRY", qa, transformedSceneSpec);
+      if (qa.pass !== true) return Response.json({ error: "NON_CONFORME: la imagen no cumple la cardinalidad o composición aprobada.", qa, plan: planResuelto, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash }, { status: 422 });
+      return Response.json({ imagen: `data:${retry.imagen.mime};base64,${retry.imagen.base64}`, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, plan: planResuelto, qa, retried, proveedor, cotizacion, interactionId: retry.interactionId, productAuthority: productAuthority.length ? productAuthority : undefined });
     }
+    await auditarImagen("IMAGEN_QA", qa, transformedSceneSpec);
+    if (planResuelto && qa.pass !== true) return Response.json({ error: "NON_CONFORME: la imagen no fue observada conforme al plan aprobado.", qa, plan: planResuelto, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash }, { status: 422 });
     registrarEvento({ proveedor, operacion: "imagen", ms: Date.now() - inicio, resultado: "ok" });
     const debug = process.env.NODE_ENV !== "production" || process.env.IMAGE_DEBUG === "true";
-    return Response.json({ imagen: `data:${result.imagen.mime};base64,${result.imagen.base64}`, comparacion, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, qa, retried, proveedor: comparar ? "gemini" : proveedor, modoImagen: comparar ? "comparacion" : usarLora ? "lora" : "proveedor_base", cotizacion, interactionId: result.interactionId, ...(debug ? { prompt: providerPrompt, prompts: { provider: providerPrompt, lora: loraPrompt }, visualContext, droppedImageIds: selected.droppedImageIds, aspectTransform } : {}) });
+    return Response.json({ imagen: `data:${result.imagen.mime};base64,${result.imagen.base64}`, comparacion, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, plan: planResuelto, qa, retried, proveedor: comparar ? "gemini" : proveedor, modoImagen: comparar ? "comparacion" : usarLora ? "lora" : "proveedor_base", cotizacion, interactionId: result.interactionId, productAuthority: productAuthority.length ? productAuthority : undefined, ...(debug ? { prompt: providerPrompt, prompts: { provider: providerPrompt, lora: loraPrompt }, visualContext, droppedImageIds: selected.droppedImageIds, aspectTransform } : {}) });
   } catch (error) {
+    if (error instanceof NonCommercialSourceRejectedError) {
+      return Response.json({ error: error.message, causa: "fuente_no_comercial", productId: error.productId, source: error.source, referenceClass: error.referenceClass }, { status: 403 });
+    }
     if (error instanceof ErrorIA) {
       registrarEvento({ proveedor: proveedor ?? error.proveedor, operacion: "imagen", ms: Date.now() - inicio, resultado: "error", error: error.message });
       return Response.json({ error: error.message, causa: error.causa, proveedor: error.proveedor }, { status: statusDe(error.causa) });

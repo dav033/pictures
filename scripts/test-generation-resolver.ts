@@ -1,8 +1,13 @@
 import { existsSync } from "node:fs";
 import assert from "node:assert/strict";
+import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { getDb } from "../src/lib/db";
-import { classifyGenerationIds } from "../src/lib/generacion/provenance";
+import { classifyGenerationIds, normalizeGenerationSources } from "../src/lib/generacion/provenance";
+import { crearTokenAprobacion } from "../src/lib/plan/aprobacion";
+import { planHash } from "../src/lib/plan/hash";
+import { resolverPlan } from "../src/lib/plan/resolver";
+import { PlanDecoracionSchema } from "../src/lib/plan/tipos";
 import { resolverProductosParaGeneracion } from "../src/lib/rag/generate-products";
 
 for (const archivo of [".env.local", ".env"]) {
@@ -62,6 +67,16 @@ function testSourceProvenance(): void {
     classifyGenerationIds(["rag-old", "legacy-a", "rag-old", "legacy-a", "12345", "67890", "67890"], validatedRagIds),
     { productIds: ["legacy-a", "12345"], ragVariantIds: ["rag-old", "67890"] },
   );
+  assert.deepEqual(
+    normalizeGenerationSources(
+      ["legacy-selection", "46594156462375", "46594156462375"],
+      ["46594156462375", "46594221048103", "46594221048103"],
+    ),
+    {
+      productIds: ["legacy-selection"],
+      ragVariantIds: ["46594156462375", "46594221048103"],
+    },
+  );
   console.log("[PASS] provenance: multi-turn RAG retention, legacy replacement, source ordering, and stable deduplication.");
 }
 
@@ -95,7 +110,11 @@ async function main(): Promise<void> {
       .prepare("SELECT id FROM shopify_variante WHERE disponible = 1 AND precio > 0 ORDER BY id LIMIT 1")
       .get() as { id: string } | undefined;
     const legacyCuratedRow = db.prepare("SELECT id FROM productos ORDER BY id LIMIT 1").get() as { id: string } | undefined;
-    const legacyIds = [...new Set([legacyShopifyRow?.id, legacyCuratedRow?.id].filter((id): id is string => Boolean(id)))];
+    const allLegacyIds = [...new Set([legacyShopifyRow?.id, legacyCuratedRow?.id].filter((id): id is string => Boolean(id)))];
+    // The two stores intentionally have separate authority, but a historical
+    // fixture can reuse an identifier. Keep the mixed-source test on a pair
+    // that the runtime can legally classify without ambiguity.
+    const legacyIds = allLegacyIds.filter((id) => !rows.some((row) => row.variant_id === id));
     assert.ok(legacyIds.length > 0, "La base SQLite debe tener al menos un producto legado.");
     const legacyId = legacyIds[0];
     const [rag] = rows;
@@ -170,10 +189,102 @@ async function main(): Promise<void> {
     assert.match(validPgBoundary.error ?? "", /llave/i);
     console.log("[PASS] HTTP /api/generate: PG válido supera validación de catálogo; se detiene sin proveedor configurado (sin llamada pagada).");
 
+    const { rows: planRows } = await pool.query<{ product_id: string; variant_id: string }>(
+      `SELECT p.product_id, v.variant_id
+         FROM catalog_products p
+         JOIN catalog_variants v ON v.product_id = p.product_id
+        WHERE p.status = 'ACTIVE'
+          AND p.available = true
+          AND v.available = true
+          AND v.price > 0
+          AND NULLIF(to_jsonb(v)->>'unidades_paq', '')::integer > 0
+        ORDER BY v.variant_id
+        LIMIT 1`,
+    );
+    assert.ok(planRows[0], "La base RAG debe tener una variante cotizable para probar el hash aprobado.");
+    const planParaHash = PlanDecoracionSchema.parse({
+      plan_version: "1.0",
+      plan_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      concepto: { titulo: "Hash aprobado", descripcion: "Prueba de revalidación antes de generar.", paleta: [] },
+      espacio: { tipo: "salón", fuente: "supuesto" },
+      estructuras: [{
+        estructura_id: "EST_01_ACCESORIO",
+        nombre: "Pieza aprobada",
+        tipo: "accesorio",
+        rol_escena: "focal",
+        ubicacion: "fondo_pared",
+        medidas: {},
+        repeticiones: 1,
+        densidad: "sencilla",
+        mezcla: "clasica",
+        materiales: [{ product_id: planRows[0]!.product_id, variant_id: planRows[0]!.variant_id, participacion: 1, rol_material: "principal" }],
+        unidades_declaradas: 1,
+        porque: "Fixture de hash.",
+      }],
+      supuestos: [],
+    });
+    const planAprobado = await resolverPlan(pool, planParaHash, new Map([[planRows[0]!.product_id, new Set([planRows[0]!.variant_id])]]));
+    assert.equal(planAprobado.sin_cobertura.length, 0);
+    const requestId = randomUUID();
+    const token = crearTokenAprobacion(planAprobado.plan_hash, requestId);
+    const approvedPlanBoundary = await postGenerate({
+      ragVariantIds: [planRows[0]!.variant_id],
+      planHash: planAprobado.plan_hash,
+      plan: { ...planAprobado, request_id: requestId, approval_token: token },
+    });
+    assert.notEqual(approvedPlanBoundary.error && /Plan hash does not match/i.test(approvedPlanBoundary.error), true);
+    console.log("[PASS] HTTP /api/generate: un plan aprobado conserva el hash al revalidarse con la whitelist del catálogo.");
+
     const invalidBoundary = await postGenerate({ productIds: "no-es-array" });
     assert.equal(invalidBoundary.status, 400);
     assert.match(invalidBoundary.error ?? "", /productIds must be an array/i);
     console.log("[PASS] HTTP /api/generate: payload malformado devuelve 400 sin llegar al proveedor.");
+
+    const { rows: r24Rows } = await pool.query<{ product_id: string; variant_id: string }>(
+      `SELECT p.product_id, v.variant_id
+         FROM catalog_products p
+         JOIN catalog_variants v ON v.product_id = p.product_id
+        WHERE p.title ILIKE '%Diamantes Dorados Fashion Transparente%'
+          AND v.codigo_tamano = 'R-24' AND v.available = true
+        LIMIT 1`,
+    );
+    if (!r24Rows[0]) {
+      console.log("[N/A] prueba HTTP R-24: el producto del incidente no está en este snapshot de catálogo.");
+      return;
+    }
+    const declarativePlan = PlanDecoracionSchema.parse({
+      plan_version: "1.0",
+      plan_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+      concepto: { titulo: "Regresión R-24", descripcion: "No sustituir columnas R-12 por R-24.", paleta: ["dorado"] },
+      espacio: { tipo: "jardín", fuente: "supuesto" },
+      estructuras: [{
+        estructura_id: "EST_01_COLUMNAS",
+        nombre: "Columnas de entrada",
+        tipo: "columna",
+        rol_escena: "focal",
+        ubicacion: "entrada",
+        medidas: { alto_m: 1.8 },
+        repeticiones: 2,
+        densidad: "media",
+        mezcla: "clasica",
+        materiales: [{ product_id: r24Rows[0].product_id, participacion: 1, rol_material: "principal" }],
+        porque: "Caso que antes cotizaba 29 paquetes gigantes.",
+      }],
+      supuestos: [],
+    });
+    const hash = planHash(declarativePlan);
+    const invalidSizeBoundary = await postGenerate({
+      ragVariantIds: [r24Rows[0].variant_id],
+      planHash: hash,
+      plan: {
+        plan: declarativePlan,
+        plan_hash: hash,
+        compras: [{ variant_id: r24Rows[0].variant_id }],
+      },
+    });
+    assert.equal(invalidSizeBoundary.status, 400);
+    assert.match(invalidSizeBoundary.error ?? "", /sin cobertura/i);
+    console.log("[PASS] HTTP /api/generate: R-12→R-24 se bloquea antes de llamar al proveedor o emitir cotización.");
   } finally {
     if (previousApiKey === undefined) delete process.env.GEMINI_API_KEY;
     else process.env.GEMINI_API_KEY = previousApiKey;

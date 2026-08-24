@@ -16,6 +16,7 @@ export type PoolItemPresupuesto = {
   precio: number;
   imagen: string | null;
   disponible: boolean;
+  acabados: string[];
 };
 
 export type ResultadoBusquedaPresupuesto = {
@@ -38,7 +39,7 @@ export type ResultadoBusquedaPresupuesto = {
 type FilaCandidatoDetalle = {
   product_id: string;
   title: string;
-  derived: { category: string | null; colors: string[]; occasions: string[] };
+  derived: { category: string | null; colors: string[]; finishes?: string[]; occasions: string[] };
   available: boolean;
   imagen_principal: string | null;
   variant_id: string;
@@ -105,6 +106,7 @@ export async function buscarCatalogoRagConPresupuesto(
         colores: intento.filtros_duros.colores.length ? intento.filtros_duros.colores : undefined,
         ocasiones: intento.filtros_duros.ocasiones.length ? intento.filtros_duros.ocasiones : undefined,
         formas: intento.filtros_duros.formas.length ? intento.filtros_duros.formas : undefined,
+        acabados: intento.filtros_duros.acabados.length ? intento.filtros_duros.acabados : undefined,
         diametrosPulgadas: intento.filtros_duros.diametros_pulgadas.length ? intento.filtros_duros.diametros_pulgadas : undefined,
         disponible: intento.filtros_duros.solo_disponibles,
       }),
@@ -183,7 +185,8 @@ export async function buscarCatalogoRagConPresupuesto(
         : fila.derived.colors.length === 1
           ? fila.derived.colors
           : [],
-      ocasiones: fila.derived.occasions,
+       ocasiones: fila.derived.occasions,
+       acabados: fila.derived.finishes ?? [],
       disponible: fila.available && fila.variante_disponible,
       imagen: fila.imagen_principal,
       precio: Number(fila.price),
@@ -199,6 +202,7 @@ export async function buscarCatalogoRagConPresupuesto(
       topeCop: cuota.topeCop,
       coloresPedidos: intento.filtros_duros.colores,
       ocasionesPedidas: intento.filtros_duros.ocasiones,
+      acabadosPedidos: intento.filtros_duros.acabados,
     });
   }
 
@@ -207,13 +211,14 @@ export async function buscarCatalogoRagConPresupuesto(
   const poolPorRol: ResultadoBusquedaPresupuesto["poolPorRol"] = {};
   for (const cuota of plan.roles) {
     if (poolsPuntuados[cuota.rol].length === 0) continue;
-    poolPorRol[cuota.rol] = poolsPuntuados[cuota.rol].slice(0, 8).map((c) => ({
+   poolPorRol[cuota.rol] = poolsPuntuados[cuota.rol].slice(0, 8).map((c) => ({
       productId: c.productId,
       variantId: c.variantId,
       titulo: c.titulo,
       precio: c.precio,
       imagen: c.imagen,
       disponible: c.disponible,
+      acabados: c.acabados,
     }));
   }
 

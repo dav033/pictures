@@ -123,6 +123,7 @@ export function interpretarConsultaDeterminista(mensaje: string): DeterministicP
     categorias: hard && taxonomy.categorias.status === "known" ? unique(taxonomy.categorias.values) : [],
     ocasiones: hard && taxonomy.ocasiones.status === "known" ? unique(taxonomy.ocasiones.values) : [],
     colores: hard && taxonomy.colores.status === "known" ? unique(taxonomy.colores.values) : [],
+    acabados: hard && taxonomy.acabados.status === "known" ? unique(taxonomy.acabados.values) : [],
     formas: codeForma ? [codeForma] : (hard && taxonomy.formas.status === "known" ? unique(textualFormas) : []),
     diametros_pulgadas: diametros,
     precio_max: precio,
@@ -137,7 +138,7 @@ export function interpretarConsultaDeterminista(mensaje: string): DeterministicP
   });
 
   const hasSignal = sku || precio !== null || diametros.length > 0 || codeForma !== null || unavailable ||
-    taxonomy.colores.values.length > 0 || taxonomy.categorias.values.length > 0 ||
+    taxonomy.colores.values.length > 0 || taxonomy.acabados.values.length > 0 || taxonomy.categorias.values.length > 0 ||
     taxonomy.ocasiones.values.length > 0 || textualFormas.length > 0 || intentValue === "other";
   const hasAmbiguousTaxonomy = Object.values(taxonomy).some((match) => match.status === "ambiguous");
   const confidence: DeterministicConfidence = hasSignal && !hasAmbiguousTaxonomy ? "certain" : "ambiguous";
@@ -154,23 +155,25 @@ export function interpretarConsultaDeterminista(mensaje: string): DeterministicP
  * deterministic fact such as an exact price, SKU-adjacent size code, shape or
  * availability. All remote data is parsed by the same Zod contract first.
  */
-export function mergeGeminiIntent(local: DeterministicParse, remote: IntentQuery): IntentQuery {
+export function mergeGeminiIntent(local: DeterministicParse, _remote: IntentQuery): IntentQuery {
+  void _remote;
   const localFilters = local.intent.filtros_duros;
-  const remoteFilters = remote.filtros_duros;
-  const selectRemoteTaxonomy = <T>(status: "known" | "unknown" | "ambiguous", localValues: T[], remoteValues: T[]): T[] =>
-    status === "unknown" ? remoteValues : localValues;
+  // Remote taxonomy is a soft semantic hint only. A model-generated value can
+  // never become a SQL hard predicate when the customer did not write it.
+  const selectLocalTaxonomy = <T>(localValues: T[]): T[] => localValues;
   const merged = {
-    categorias: selectRemoteTaxonomy(local.taxonomy.categorias.status, localFilters.categorias, remoteFilters.categorias),
-    ocasiones: selectRemoteTaxonomy(local.taxonomy.ocasiones.status, localFilters.ocasiones, remoteFilters.ocasiones),
-    colores: selectRemoteTaxonomy(local.taxonomy.colores.status, localFilters.colores, remoteFilters.colores),
+    categorias: selectLocalTaxonomy(localFilters.categorias),
+    ocasiones: selectLocalTaxonomy(localFilters.ocasiones),
+    colores: selectLocalTaxonomy(localFilters.colores),
+    acabados: selectLocalTaxonomy(localFilters.acabados),
     formas: local.lockedFields.includes("formas")
       ? localFilters.formas
-      : selectRemoteTaxonomy(local.taxonomy.formas.status, localFilters.formas, remoteFilters.formas),
+      : selectLocalTaxonomy(localFilters.formas),
     diametros_pulgadas: local.lockedFields.includes("diametros_pulgadas") || local.taxonomy.tamanos.status !== "unknown"
       ? localFilters.diametros_pulgadas
-      : remoteFilters.diametros_pulgadas,
-    precio_max: local.lockedFields.includes("precio_max") ? localFilters.precio_max : remoteFilters.precio_max,
-    solo_disponibles: local.lockedFields.includes("solo_disponibles") ? localFilters.solo_disponibles : remoteFilters.solo_disponibles,
+      : localFilters.diametros_pulgadas,
+    precio_max: localFilters.precio_max,
+    solo_disponibles: localFilters.solo_disponibles,
   };
   return IntentQuerySchema.parse({
     intent: local.intent.intent,

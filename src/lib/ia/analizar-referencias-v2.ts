@@ -53,6 +53,24 @@ type Candidate = {
 
 export type ReferenceCatalogItem = Pick<Producto, "id" | "nombre" | "categoria" | "colores" | "descripcion">;
 
+/**
+ * `legacy`: matches elements against a supplied catalog and emits
+ * `model_decision.catalog_product_id`/`bill_of_materials` — the original
+ * behavior, used when no decoration plan bridges the reference into RAG.
+ *
+ * `perceptual`: never matches or invents a catalog id. Used when
+ * PLAN_DECORACION_ENABLED is on (plan de integración de referencias visuales,
+ * R3) — the chat model is the only one allowed to turn a detected element
+ * into a real product, via buscar_catalogo_rag against the validated
+ * PostgreSQL catalog. The two catalogs this module could otherwise match
+ * against (the 14-product SQLite demo seed and a separate SQLite mirror of
+ * Shopify) are never guaranteed to agree with the PostgreSQL RAG catalog
+ * that `resolverPlan` validates against — an id minted here could point at a
+ * stale price, a discontinued variant, or (for the demo seed) get rejected
+ * outright by `classifyNonCommercialProducts` in production.
+ */
+export type AnalysisMode = "legacy" | "perceptual";
+
 const INVENTORY_SYSTEM = `You are a forensic event-design image analyst and catalog matching director. Return only structured data through the tool.
 Inventory every visible decorative or background design element. Explicitly inspect the rear layer for curtains, fabric drapes, shimmer walls, printed backdrops, panels, frames, balloon structures, plinths, furniture, florals, signage, and lighting.
 Describe only visible evidence. Use low confidence when uncertain. Each item needs a normalized reference_bbox with x/y/width/height from 0 to 1.
@@ -62,9 +80,21 @@ For any \`balloon_structure\` element (arch, tree, column, cluster, garland, or 
 For every element, also detect its color mix and physical composition: what proportion of it is each observed color, and how those parts are arranged (base vs. tip, background vs. accent, size gradient, clustering pattern). Put this in \`composition\` as one short sentence, for example "60% red round balloons at the base, 30% green climbing the sides, 10% gold metallic accents near the top".
 When one element's composition needs more than one distinct color or material and a single catalog product cannot cover all of them, do not just pick the closest single product and drop the rest: return a \`bill_of_materials\` array in \`model_decision\` with one entry per required catalog product — each with its own \`role\` (what part of the composition it covers, matching \`composition\`) and \`share\` (its fraction of the element's total quantity, all entries summing to 1). List the primary/largest-share material first and also set \`catalog_product_id\` to that same primary material's id. Only use a single implicit material (no \`bill_of_materials\`) when the element is genuinely uniform in color and material.`;
 
+// Variante `perceptual` (R3): sin acceso a catálogo, así que nunca se le pide
+// resolver un product id — solo describir lo que ve. `model_decision` sigue
+// siendo obligatorio en el schema de la herramienta (compatibilidad de
+// forma), pero aquí solo transporta la decisión de relevancia visual
+// (incluir/omitir de la composición), no una decisión comercial.
+const INVENTORY_SYSTEM_PERCEPTUAL = `You are a forensic event-design image analyst. Return only structured data through the tool. You have no catalog access in this pass — never propose, guess, or invent a catalog_product_id or bill_of_materials.
+Inventory every visible decorative or background design element. Explicitly inspect the rear layer for curtains, fabric drapes, shimmer walls, printed backdrops, panels, frames, balloon structures, plinths, furniture, florals, signage, and lighting.
+Describe only visible evidence. Use low confidence when uncertain. Each item needs a normalized reference_bbox with x/y/width/height from 0 to 1.
+For every detected element, set model_decision.action to "include" when it is a meaningful, decorator-relevant part of the composition, or "omit" when it is negligible background clutter (e.g. an unrelated wall outlet, a stray chair leg) — base this purely on visual relevance, never on whether a matching product might exist. Always set model_decision.match_type to "none" and leave catalog_product_id and bill_of_materials unset.
+For every element, also detect its color mix and physical composition: what proportion of it is each observed color, and how those parts are arranged (base vs. tip, background vs. accent, size gradient, clustering pattern). Put this in \`composition\` as one short sentence, for example "60% red round balloons at the base, 30% green climbing the sides, 10% gold metallic accents near the top".`;
+
 const REAR_LAYER_RULE = "Rear-layer rule: any visible curtain, telon, drape, fabric backdrop, black cloth background, shimmer wall, or panel must be classified as curtain/drape/backdrop/panel and scene_role backdrop, never other or midground. If string lights are separately visible, classify them as lighting behind the decoration; do not move them to the ceiling.";
 
 const AUDIT_SYSTEM = `You are a strict verifier and catalog-resolution reviewer of an event-design reference inventory. Inspect the image and draft inventory. Report only visible event-design elements that were missed, misclassified, or lack evidence. For every new finding, decide include or omit and select the closest valid catalog product when useful. Do not ask the customer. Include normalized reference_bbox, visible_evidence, and the complete model_decision object.`;
+const AUDIT_SYSTEM_PERCEPTUAL = `You are a strict verifier of an event-design reference inventory. Inspect the image and draft inventory. Report only visible event-design elements that were missed, misclassified, or lack evidence. You have no catalog access — never propose a catalog_product_id or bill_of_materials; set match_type to "none" and decide include/omit purely on visual relevance. Do not ask the customer. Include normalized reference_bbox, visible_evidence, and the complete model_decision object.`;
 const ANALYSIS_PARSER_VERSION = "semantic-layers-v7-bill-of-materials";
 
 const TOOL: Herramienta = {
@@ -285,7 +315,7 @@ function parseCandidates(imageId: string, raw: unknown): Candidate[] {
       : "none";
     const catalogProductId = stringValue(rawDecision.catalog_product_id ?? value.catalog_product_id, "", 160) || undefined;
     const rawBillOfMaterials = Array.isArray(rawDecision.bill_of_materials) ? rawDecision.bill_of_materials : [];
-    const billOfMaterials = rawBillOfMaterials.slice(0, 6).map((line) => {
+    const billOfMaterials = rawBillOfMaterials.slice(0, 24).map((line) => {
       const item = object(line);
       return {
         catalog_product_id: stringValue(item.catalog_product_id, "", 160),
@@ -404,7 +434,7 @@ function resolveBillOfMaterials(
     : lines.map((line, index) => ({ ...line, share: index === 0 ? 1 : 0 }));
 }
 
-function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string, unknown>, auditRaw: Record<string, unknown>, catalogo: ReferenceCatalogItem[]): ReferenceBlueprintV2 {
+function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string, unknown>, auditRaw: Record<string, unknown>, catalogo: ReferenceCatalogItem[], mode: AnalysisMode): ReferenceBlueprintV2 {
   const inventoryImages = Array.isArray(inventoryRaw.images) ? inventoryRaw.images : [];
   const auditImages = Array.isArray(auditRaw.images) ? auditRaw.images : [];
   const knownImageIds = new Set(images.map((image) => image.id));
@@ -423,24 +453,34 @@ function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string,
     }),
   );
   const bySourceIndex = new Map<string, number>();
-  const catalogIds = new Set(catalogo.map((item) => item.id));
+  // Modo perceptual (R3): ningún id de catálogo puede salir de este módulo,
+  // sin importar lo que haya devuelto el modelo — el chat es el único que
+  // puede convertir un elemento detectado en un producto real, vía
+  // buscar_catalogo_rag contra PostgreSQL validado.
+  const catalogIds = new Set(mode === "perceptual" ? [] : catalogo.map((item) => item.id));
   const elements = allCandidates.map((candidate) => {
     const requestedId = candidate.model_decision.catalog_product_id;
-    const modelMatch = requestedId && catalogIds.has(requestedId) ? { id: requestedId, type: candidate.model_decision.match_type, reason: candidate.model_decision.reason, adaptation: candidate.model_decision.adaptation } : catalogFallback(candidate, catalogo);
+    const modelMatch = mode === "perceptual"
+      ? { id: undefined as string | undefined, type: "none" as const, reason: candidate.model_decision.reason, adaptation: "Sin emparejamiento de catálogo en este modo; el chat resuelve el producto real contra el RAG." }
+      : requestedId && catalogIds.has(requestedId)
+        ? { id: requestedId as string | undefined, type: candidate.model_decision.match_type, reason: candidate.model_decision.reason, adaptation: candidate.model_decision.adaptation }
+        : catalogFallback(candidate, catalogo);
     // Important: `&&` must return boolean here. Returning `modelMatch.id`
     // leaked catalog product id into `approved`, causing Zod error
     // `expected boolean, received string`.
-    const action = candidate.model_decision.action === "include" && Boolean(modelMatch.id || modelMatch.type === "none");
-    const resolution = action ? modelMatch : { ...modelMatch, id: undefined, type: "none" as const, reason: candidate.model_decision.reason, adaptation: "Omitir elemento según decisión automática del modelo." };
-    const sourceType = resolution.id ? "catalog_backed" as const : "reference_only" as const;
-    const matchedProduct = resolution.id ? catalogo.find((product) => product.id === resolution.id) : undefined;
+    const action = mode === "perceptual"
+      ? candidate.model_decision.action === "include"
+      : candidate.model_decision.action === "include" && Boolean(modelMatch.id || modelMatch.type === "none");
+    const resolution = action ? modelMatch : { ...modelMatch, id: undefined, type: "none" as const, reason: candidate.model_decision.reason, adaptation: mode === "perceptual" ? "Elemento omitido: no es relevante para la composición." : "Omitir elemento según decisión automática del modelo." };
+    const sourceType = mode === "perceptual" ? "reference_only" as const : resolution.id ? "catalog_backed" as const : "reference_only" as const;
+    const matchedProduct = sourceType === "catalog_backed" && resolution.id ? catalogo.find((product) => product.id === resolution.id) : undefined;
     const resolvedCategory = candidate.category === "other" && matchedProduct ? category(matchedProduct.categoria) : candidate.category;
     const resolvedName = candidate.name === "unidentified decorative element"
       ? matchedProduct?.nombre ?? "Elemento decorativo"
       : candidate.name;
     const index = bySourceIndex.get(candidate.source_image_id) ?? 0;
     bySourceIndex.set(candidate.source_image_id, index + 1);
-    const billOfMaterials = resolveBillOfMaterials(candidate.model_decision.bill_of_materials, catalogIds, resolution.id);
+    const billOfMaterials = mode === "perceptual" ? [] : resolveBillOfMaterials(candidate.model_decision.bill_of_materials, catalogIds, resolution.id);
     return {
       element_id: stableElementId(candidate.source_image_id, index),
       source_image_id: candidate.source_image_id,
@@ -505,18 +545,24 @@ function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string,
   });
 }
 
-export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenEtiquetada[], catalogo: ReferenceCatalogItem[] = []): Promise<AnalisisV2Resultado> {
+export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenEtiquetada[], catalogo: ReferenceCatalogItem[] = [], mode: AnalysisMode = "legacy"): Promise<AnalisisV2Resultado> {
   if (!referencias.length) throw new Error("At least one reference image is required.");
-  const catalogText = catalogo.length
-    ? catalogo.map((item) => JSON.stringify({ id: item.id, name: item.nombre, category: item.categoria, colors: item.colores, description: item.descripcion.slice(0, 180) })).join("\n")
-    : "No catalog products supplied.";
-  const systemPromptHash = createHash("sha256").update(ANALYSIS_PARSER_VERSION).update(INVENTORY_SYSTEM).update(AUDIT_SYSTEM).update(REAR_LAYER_RULE).update(catalogText).digest("hex");
+  const inventorySystem = mode === "perceptual" ? INVENTORY_SYSTEM_PERCEPTUAL : INVENTORY_SYSTEM;
+  const auditSystem = mode === "perceptual" ? AUDIT_SYSTEM_PERCEPTUAL : AUDIT_SYSTEM;
+  // En modo perceptual nunca se manda el catálogo al modelo: no hay nada
+  // válido que pueda elegir, y mandarlo solo lo tentaría a inventar un id.
+  const catalogText = mode === "perceptual"
+    ? "Not applicable in this mode."
+    : catalogo.length
+      ? catalogo.map((item) => JSON.stringify({ id: item.id, name: item.nombre, category: item.categoria, colors: item.colores, description: item.descripcion.slice(0, 180) })).join("\n")
+      : "No catalog products supplied.";
+  const systemPromptHash = createHash("sha256").update(ANALYSIS_PARSER_VERSION).update(mode).update(inventorySystem).update(auditSystem).update(REAR_LAYER_RULE).update(catalogText).digest("hex");
   const key = analysisCacheKey({ model: chat.modelo, systemPromptHash, images: referencias.map((image) => ({ image_id: image.id, mime: image.mime, base64: image.base64 })) });
   const cached = cache.get(key);
   if (cached) return cached;
   const ids = referencias.map((reference) => reference.id);
   const inventoryTurn = await chat.turno({
-    sistema: `${INVENTORY_SYSTEM}\n${REAR_LAYER_RULE}\n\nVALID CATALOG PRODUCTS\n${catalogText}`,
+    sistema: mode === "perceptual" ? `${inventorySystem}\n${REAR_LAYER_RULE}` : `${inventorySystem}\n${REAR_LAYER_RULE}\n\nVALID CATALOG PRODUCTS\n${catalogText}`,
     historial: [{ rol: "usuario", texto: `Inventory these references and resolve every element automatically. Preserve exact image IDs in this order: ${ids.join(", ")}. Return one model_decision per element.`, imagenes: referencias }],
     herramientas: [TOOL],
     temperatura: 0,
@@ -525,15 +571,27 @@ export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenE
   const inventoryRaw = toolArgs(inventoryTurn, TOOL.nombre);
   const draftJson = JSON.stringify(inventoryRaw).slice(0, 24000);
   const auditTurn = await chat.turno({
-    sistema: `${AUDIT_SYSTEM}\n${REAR_LAYER_RULE}\n\nVALID CATALOG PRODUCTS\n${catalogText}`,
+    sistema: mode === "perceptual" ? `${auditSystem}\n${REAR_LAYER_RULE}` : `${auditSystem}\n${REAR_LAYER_RULE}\n\nVALID CATALOG PRODUCTS\n${catalogText}`,
     historial: [{ rol: "usuario", texto: `Audit the draft inventory below against the same references. Keep exact image IDs. Resolve every finding automatically.\n<DRAFT_INVENTORY>${draftJson}</DRAFT_INVENTORY>`, imagenes: referencias }],
     herramientas: [AUDIT_TOOL],
     temperatura: 0,
     maxTokens: 4000,
   });
   const auditRaw = toolArgs(auditTurn, AUDIT_TOOL.nombre);
-  const blueprint = buildBlueprint(referencias, inventoryRaw, auditRaw, catalogo);
-  const result: AnalisisV2Resultado = { blueprint, metadata: { passes: ["inventory", "audit"], cache_key: key, system_prompt_hash: systemPromptHash, requires_review: false, unresolved_count: 0, default_approval_rule: "Model decides include, omit, or closest catalog substitution automatically; customer approval is never required." } };
+  const blueprint = buildBlueprint(referencias, inventoryRaw, auditRaw, mode === "perceptual" ? [] : catalogo, mode);
+  const result: AnalisisV2Resultado = {
+    blueprint,
+    metadata: {
+      passes: ["inventory", "audit"],
+      cache_key: key,
+      system_prompt_hash: systemPromptHash,
+      requires_review: false,
+      unresolved_count: 0,
+      default_approval_rule: mode === "perceptual"
+        ? "Model only decides visual relevance (include/omit); no catalog id is ever produced here — the chat resolves real products against the validated RAG catalog."
+        : "Model decides include, omit, or closest catalog substitution automatically; customer approval is never required.",
+    },
+  };
   if (cache.size >= MAX_CACHE) cache.delete(cache.keys().next().value!);
   cache.set(key, result);
   return result;

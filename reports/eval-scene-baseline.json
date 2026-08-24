@@ -1,0 +1,647 @@
+{
+  "schema": "scene-baseline-eval-v1",
+  "plan": "PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md",
+  "task": "00.1 — Fixtures de intención y catálogo",
+  "fixturesEvaluated": 8,
+  "catalogSnapshotsRegistered": [
+    {
+      "snapshotId": "catalog-snapshot-current-2026-08-22",
+      "label": "Catálogo actual (PostgreSQL activo, auditoría 2026-08-22)",
+      "totals": {
+        "products": 1411,
+        "variants": 3592,
+        "variantsAvailable": 3369
+      },
+      "weddingTaggedProducts": 17
+    },
+    {
+      "snapshotId": "catalog-snapshot-rich-verified-fixture-v1",
+      "label": "Catálogo rico verificado (fixture de proveedores completos, Ola 2+)",
+      "totals": {
+        "products": 2764,
+        "variants": 6890,
+        "variantsAvailable": 6512
+      },
+      "weddingTaggedProducts": 918
+    }
+  ],
+  "headlineFinding": {
+    "scenarioId": "E2E-1",
+    "statement": "El catálogo actual (1.411 productos) no tiene cobertura comercial verificable para mobiliario, floristería física ni iluminación física. La propuesta 'solo arco' para una boda en jardín balanced_scene falla por cobertura semántica insuficiente, no por invalidez del PlanDecoracion V1.",
+    "status": "PARTIAL",
+    "limitingFactor": "catalog_coverage",
+    "uncoveredCriticalFunctions": [
+      "guest_chair",
+      "table_surface",
+      "table_setting",
+      "floral_foliage_accent",
+      "focal_decor",
+      "centerpiece",
+      "ambient_light",
+      "floor_light"
+    ]
+  },
+  "contrastFinding": {
+    "scenarioId": "E2E-2",
+    "statement": "La misma intención contra un catálogo rico verificado sí cubre focal, pasillo, asientos y acentos.",
+    "status": "COMPLETE"
+  },
+  "scenarios": [
+    {
+      "scenarioId": "E2E-1",
+      "title": "Boda en jardín — catálogo actual (150.000 COP)",
+      "requestedProfile": "balanced_scene",
+      "achievedProfile": "focal_only",
+      "catalogSnapshotId": "catalog-snapshot-current-2026-08-22",
+      "catalogSnapshotLabel": "Catálogo actual (PostgreSQL activo, auditoría 2026-08-22)",
+      "status": "PARTIAL",
+      "limitingFactor": "catalog_coverage",
+      "distinctFamiliesCovered": 4,
+      "requiredGroupGaps": [
+        {
+          "groupId": "aisle",
+          "label": "Delimitación de pasillo (ceremony_aisle)",
+          "candidateFunctions": [
+            "aisle_runner",
+            "aisle_marker"
+          ],
+          "reason": "NO_SOURCE"
+        },
+        {
+          "groupId": "seating",
+          "label": "Asientos visibles (guest_seating)",
+          "candidateFunctions": [
+            "guest_chair"
+          ],
+          "reason": "NO_SOURCE"
+        }
+      ],
+      "criticalWeddingFunctionCoverage": {
+        "mobiliario": [
+          {
+            "function": "guest_chair",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          },
+          {
+            "function": "table_surface",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          },
+          {
+            "function": "table_setting",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          }
+        ],
+        "floral": [
+          {
+            "function": "floral_foliage_accent",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          },
+          {
+            "function": "focal_decor",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          },
+          {
+            "function": "centerpiece",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          }
+        ],
+        "iluminacion": [
+          {
+            "function": "ambient_light",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          },
+          {
+            "function": "floor_light",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          }
+        ]
+      },
+      "notes": "Caso reportado por el usuario. Debe fallar por cobertura semántica insuficiente (asientos/pasillo/floral/iluminación sin oferta comercial verificable), no porque el PlanDecoracion V1 resultante sea inválido."
+    },
+    {
+      "scenarioId": "E2E-2",
+      "title": "Boda en jardín — catálogo rico verificado",
+      "requestedProfile": "balanced_scene",
+      "achievedProfile": "balanced_scene",
+      "catalogSnapshotId": "catalog-snapshot-rich-verified-fixture-v1",
+      "catalogSnapshotLabel": "Catálogo rico verificado (fixture de proveedores completos, Ola 2+)",
+      "status": "COMPLETE",
+      "limitingFactor": "none",
+      "distinctFamiliesCovered": 17,
+      "requiredGroupGaps": [],
+      "criticalWeddingFunctionCoverage": {
+        "mobiliario": [
+          {
+            "function": "guest_chair",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 240
+          },
+          {
+            "function": "table_surface",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 60
+          },
+          {
+            "function": "table_setting",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 50
+          }
+        ],
+        "floral": [
+          {
+            "function": "floral_foliage_accent",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 95
+          },
+          {
+            "function": "focal_decor",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 30
+          },
+          {
+            "function": "centerpiece",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 65
+          }
+        ],
+        "iluminacion": [
+          {
+            "function": "ambient_light",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 70
+          },
+          {
+            "function": "floor_light",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 35
+          }
+        ]
+      },
+      "notes": "Misma intención textual que E2E-1, pero contra el fixture de proveedores ricos. Debe demostrar que el sistema SÍ puede cubrir focal + pasillo + asientos/contexto + acentos con cuatro o más familias distintas cuando el catálogo alcanza."
+    },
+    {
+      "scenarioId": "E2E-3",
+      "title": "Solo arco orgánico blanco y dorado",
+      "requestedProfile": "focal_only",
+      "achievedProfile": "focal_only",
+      "catalogSnapshotId": "catalog-snapshot-current-2026-08-22",
+      "catalogSnapshotLabel": "Catálogo actual (PostgreSQL activo, auditoría 2026-08-22)",
+      "status": "COMPLETE",
+      "limitingFactor": "none",
+      "distinctFamiliesCovered": 4,
+      "requiredGroupGaps": [],
+      "criticalWeddingFunctionCoverage": {
+        "mobiliario": [
+          {
+            "function": "guest_chair",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          },
+          {
+            "function": "table_surface",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          },
+          {
+            "function": "table_setting",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          }
+        ],
+        "floral": [
+          {
+            "function": "floral_foliage_accent",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          },
+          {
+            "function": "focal_decor",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          },
+          {
+            "function": "centerpiece",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          }
+        ],
+        "iluminacion": [
+          {
+            "function": "ambient_light",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          },
+          {
+            "function": "floor_light",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          }
+        ]
+      },
+      "notes": "Petición explícita de una sola instalación. `focal_only` es un perfil válido por sí mismo: el arco aislado no debe marcarse como incompleto ni forzarse a agregar pasillo, asientos o floristería no solicitados."
+    },
+    {
+      "scenarioId": "E2E-4",
+      "title": "Lugar con sillas, vegetación y sendero existentes",
+      "requestedProfile": "balanced_scene",
+      "achievedProfile": "balanced_scene",
+      "catalogSnapshotId": "catalog-snapshot-current-2026-08-22",
+      "catalogSnapshotLabel": "Catálogo actual (PostgreSQL activo, auditoría 2026-08-22)",
+      "status": "COMPLETE",
+      "limitingFactor": "none",
+      "distinctFamiliesCovered": 7,
+      "requiredGroupGaps": [],
+      "criticalWeddingFunctionCoverage": {
+        "mobiliario": [
+          {
+            "function": "guest_chair",
+            "covered": true,
+            "coveredBy": "venue_existing",
+            "verifiedOfferCount": 0
+          },
+          {
+            "function": "table_surface",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          },
+          {
+            "function": "table_setting",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          }
+        ],
+        "floral": [
+          {
+            "function": "floral_foliage_accent",
+            "covered": true,
+            "coveredBy": "venue_existing",
+            "verifiedOfferCount": 0
+          },
+          {
+            "function": "focal_decor",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          },
+          {
+            "function": "centerpiece",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          }
+        ],
+        "iluminacion": [
+          {
+            "function": "ambient_light",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          },
+          {
+            "function": "floor_light",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          }
+        ]
+      },
+      "notes": "guest_chair, aisle_runner y floral_foliage_accent quedan cubiertos vía `venue_existing` aunque el catálogo comercial no los tenga; no deben cotizarse ni autorizar mobiliario/floristería adicional inventada."
+    },
+    {
+      "scenarioId": "E2E-5",
+      "title": "Presupuesto insuficiente para escena inmersiva",
+      "requestedProfile": "immersive_scene",
+      "achievedProfile": "balanced_scene",
+      "catalogSnapshotId": "catalog-snapshot-rich-verified-fixture-v1",
+      "catalogSnapshotLabel": "Catálogo rico verificado (fixture de proveedores completos, Ola 2+)",
+      "status": "PARTIAL",
+      "limitingFactor": "budget",
+      "distinctFamiliesCovered": 17,
+      "requiredGroupGaps": [],
+      "criticalWeddingFunctionCoverage": {
+        "mobiliario": [
+          {
+            "function": "guest_chair",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 240
+          },
+          {
+            "function": "table_surface",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 60
+          },
+          {
+            "function": "table_setting",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 50
+          }
+        ],
+        "floral": [
+          {
+            "function": "floral_foliage_accent",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 95
+          },
+          {
+            "function": "focal_decor",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 30
+          },
+          {
+            "function": "centerpiece",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 65
+          }
+        ],
+        "iluminacion": [
+          {
+            "function": "ambient_light",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 70
+          },
+          {
+            "function": "floor_light",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 35
+          }
+        ]
+      },
+      "notes": "Se usa deliberadamente el catálogo rico para aislar la causa: el catálogo alcanzaría para `immersive_scene`, pero el techo de 250.000 COP no. El factor limitante esperado es presupuesto, no cobertura de catálogo; debe degradarse explícitamente o bloquearse, nunca ocultar el costo."
+    },
+    {
+      "scenarioId": "E2E-6",
+      "title": "Ceremonia y recepción (full_event)",
+      "requestedProfile": "full_event",
+      "achievedProfile": "full_event",
+      "catalogSnapshotId": "catalog-snapshot-rich-verified-fixture-v1",
+      "catalogSnapshotLabel": "Catálogo rico verificado (fixture de proveedores completos, Ola 2+)",
+      "status": "COMPLETE",
+      "limitingFactor": "none",
+      "distinctFamiliesCovered": 17,
+      "requiredGroupGaps": [],
+      "criticalWeddingFunctionCoverage": {
+        "mobiliario": [
+          {
+            "function": "guest_chair",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 240
+          },
+          {
+            "function": "table_surface",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 60
+          },
+          {
+            "function": "table_setting",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 50
+          }
+        ],
+        "floral": [
+          {
+            "function": "floral_foliage_accent",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 95
+          },
+          {
+            "function": "focal_decor",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 30
+          },
+          {
+            "function": "centerpiece",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 65
+          }
+        ],
+        "iluminacion": [
+          {
+            "function": "ambient_light",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 70
+          },
+          {
+            "function": "floor_light",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 35
+          }
+        ]
+      },
+      "notes": "`full_event` requiere al menos dos vistas vinculadas al mismo plan, cada una con sus slots núcleo cubiertos (ceremony: focal+pasillo+asientos; reception: mesas+mantelería+centros+asientos). No se intenta mostrar todo el evento en un único encuadre."
+    },
+    {
+      "scenarioId": "E2E-7",
+      "title": "Oferta comercial modificada después de aprobar",
+      "requestedProfile": "balanced_scene",
+      "achievedProfile": "balanced_scene",
+      "catalogSnapshotId": "catalog-snapshot-rich-verified-fixture-v1",
+      "catalogSnapshotLabel": "Catálogo rico verificado (fixture de proveedores completos, Ola 2+)",
+      "status": "COMPLETE",
+      "limitingFactor": "none",
+      "distinctFamiliesCovered": 17,
+      "requiredGroupGaps": [],
+      "criticalWeddingFunctionCoverage": {
+        "mobiliario": [
+          {
+            "function": "guest_chair",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 240
+          },
+          {
+            "function": "table_surface",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 60
+          },
+          {
+            "function": "table_setting",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 50
+          }
+        ],
+        "floral": [
+          {
+            "function": "floral_foliage_accent",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 95
+          },
+          {
+            "function": "focal_decor",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 30
+          },
+          {
+            "function": "centerpiece",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 65
+          }
+        ],
+        "iluminacion": [
+          {
+            "function": "ambient_light",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 70
+          },
+          {
+            "function": "floor_light",
+            "covered": true,
+            "coveredBy": "catalog",
+            "verifiedOfferCount": 35
+          }
+        ]
+      },
+      "offerLifecycle": {
+        "offerLifecycleId": "altar_frame_offer_lifecycle_v1",
+        "offerId": "OFR-ALTAR-0001",
+        "initialFingerprint": "413912369d06275c",
+        "revisedFingerprint": "3110f328f4e51247",
+        "fingerprintChanged": true,
+        "changeReason": "El proveedor actualizó la tarifa de alquiler del arco de altar después de la aprobación."
+      },
+      "notes": "Construido sobre el mismo catálogo rico de E2E-2/E2E-6, pero con una oferta (`altar_frame`, OFR-ALTAR-0001) que cambia de precio/snapshot después de la aprobación. Sirve para probar más adelante que `selection_hash`/`quote_hash` se invalidan; aquí solo se registra el fixture y se compara la huella antes/después."
+    },
+    {
+      "scenarioId": "E2E-8",
+      "title": "Boda en jardín sin foto de lugar",
+      "requestedProfile": "balanced_scene",
+      "achievedProfile": "focal_only",
+      "catalogSnapshotId": "catalog-snapshot-current-2026-08-22",
+      "catalogSnapshotLabel": "Catálogo actual (PostgreSQL activo, auditoría 2026-08-22)",
+      "status": "PARTIAL",
+      "limitingFactor": "catalog_coverage",
+      "distinctFamiliesCovered": 4,
+      "requiredGroupGaps": [
+        {
+          "groupId": "aisle",
+          "label": "Delimitación de pasillo (ceremony_aisle)",
+          "candidateFunctions": [
+            "aisle_runner",
+            "aisle_marker"
+          ],
+          "reason": "NO_SOURCE"
+        },
+        {
+          "groupId": "seating",
+          "label": "Asientos visibles (guest_seating)",
+          "candidateFunctions": [
+            "guest_chair"
+          ],
+          "reason": "NO_SOURCE"
+        }
+      ],
+      "criticalWeddingFunctionCoverage": {
+        "mobiliario": [
+          {
+            "function": "guest_chair",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          },
+          {
+            "function": "table_surface",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          },
+          {
+            "function": "table_setting",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          }
+        ],
+        "floral": [
+          {
+            "function": "floral_foliage_accent",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          },
+          {
+            "function": "focal_decor",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          },
+          {
+            "function": "centerpiece",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          }
+        ],
+        "iluminacion": [
+          {
+            "function": "ambient_light",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          },
+          {
+            "function": "floor_light",
+            "covered": false,
+            "coveredBy": "none",
+            "verifiedOfferCount": 0
+          }
+        ]
+      },
+      "notes": "Sin foto, `context_non_quotable` permite terreno/cielo/vegetación natural genéricos, pero nunca autoriza mobiliario, flores arregladas ni iluminación sin `SupplyBinding` verificable. Este fixture NO otorga cobertura vía `venue_existing` a ninguna función (existingAssets vacío) para que el diagnóstico distinga contexto de cobertura real."
+    }
+  ]
+}

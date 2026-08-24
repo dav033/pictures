@@ -158,3 +158,11 @@
 - Prueba empírica en vivo: prompt de texto detallado a Gemini (sin LoRA, sin foto de referencia) pidiendo recrear el producto real "E-DECOR NEON" (bouquet: base compacta + globos en cordones hacia arriba) — resultado: dos masas de globos separadas en el piso, sin la estructura de cordones/cascada. Confirma que acabado (Fashion/Reflex/Silk) y formato de armado (arco/guirnalda/bouquet/semi arco) son ejes que necesitan fotos reales en el LoRA base, no solo descripción por texto — se agregó al §7 del plan.
 - Decisión sobre foto de espacio: confirmado en código (`generate/route.ts`, `usarLora && venue → error`) que el LoRA de estilo no soporta ni soportará foto de espacio — es una tarea de edición/preservación, no de generación desde cero, y ya estaba identificada por separado como el LoRA de edición futuro (entrada del 18 de agosto). Gemini sigue siendo el único proveedor para ese caso; no se tocó ese código.
 - Coste: US$0 — ningún entrenamiento real se envió a fal.ai todavía.
+
+## 2026-08-22 — implementación end-to-end del plan de tamaños
+
+- Canal: terminal/código local + PostgreSQL de desarrollo.
+- Acción: se implementó la ruta opt-in `PlanDecoracion`: contratos y hash, geometría por estructura con reparto Hamilton tamaño × color, resolución contra whitelist, consolidación de paquetes/merma, desglose previo a la imagen, blueprint por ubicación, BOM/cotización con tamaños reales y coherencia prompt ↔ plan.
+- Resultado: `npm run plan:test`, `npm run plan:test-pg`, `npm run plan:eval`, typecheck, lint y build pasan. La evaluación determinística cubrió 12 briefs contra un producto real de PG con 7 diámetros: 12/12 cobertura y coherencia; ahorro medio de 2,42 paquetes por consolidación.
+- Decisión: `PLAN_DECORACION_ENABLED=false` por defecto para rollback seguro. `IMAGE_QA_VISION` queda opt-in; sin observador multimodal, el QA visual permanece `unknown` y no se reporta falsamente como aprobado.
+- Coste: US$0; no se llamó a un proveedor de imágenes durante la evaluación.

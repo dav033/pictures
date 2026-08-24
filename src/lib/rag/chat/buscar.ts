@@ -23,6 +23,7 @@ export type ProductoCandidato = {
   titulo: string;
   categoria: string | null;
   colores: string[];
+  acabados: string[];
   ocasiones: string[];
   disponible: boolean;
   imagen: string | null;
@@ -48,7 +49,7 @@ export type ResultadoBusquedaRag = {
 type FilaCandidato = {
   product_id: string;
   title: string;
-  derived: { category: string | null; colors: string[]; occasions: string[] };
+  derived: { category: string | null; colors: string[]; finishes?: string[]; occasions: string[] };
   available: boolean;
   imagen_principal: string | null;
   variant_id: string;
@@ -60,6 +61,7 @@ type FilaCandidato = {
   diam_pulg: string | null;
   forma: string | null;
   colores: string[];
+  acabados: string[];
 };
 
 /**
@@ -82,6 +84,7 @@ export async function buscarCatalogoRag(pool: Pool, mensaje: string): Promise<Re
     precioMax: intento.filtros_duros.precio_max ?? undefined,
     categorias: intento.filtros_duros.categorias.length ? intento.filtros_duros.categorias : undefined,
     formas: intento.filtros_duros.formas.length ? intento.filtros_duros.formas : undefined,
+    acabados: intento.filtros_duros.acabados.length ? intento.filtros_duros.acabados : undefined,
     diametrosPulgadas: intento.filtros_duros.diametros_pulgadas.length ? intento.filtros_duros.diametros_pulgadas : undefined,
   };
   const ocasiones = intento.filtros_duros.ocasiones.length ? intento.filtros_duros.ocasiones : undefined;
@@ -160,7 +163,8 @@ export async function buscarCatalogoRag(pool: Pool, mensaje: string): Promise<Re
         productId: fila.product_id,
         titulo: fila.title,
         categoria: fila.derived.category,
-        colores: fila.derived.colors,
+         colores: fila.derived.colors,
+         acabados: fila.derived.finishes ?? [],
         ocasiones: fila.derived.occasions,
         disponible: fila.available,
         imagen: fila.imagen_principal,

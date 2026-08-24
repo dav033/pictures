@@ -76,7 +76,7 @@ function tieneFiltrosNavegables(filtros: FiltrosDuros | undefined): boolean {
   return Boolean(
     filtros && (
       filtros.precioMax != null || filtros.categorias?.length || filtros.ocasiones?.length ||
-      filtros.colores?.length || filtros.formas?.length || filtros.diametrosPulgadas?.length
+      filtros.colores?.length || filtros.acabados?.length || filtros.formas?.length || filtros.diametrosPulgadas?.length
     ),
   );
 }
@@ -130,6 +130,10 @@ function construirFiltroDuro(
           AND jsonb_array_length(${aliases.product}.derived->'colors') = 1
           AND ${aliases.product}.derived->'colors' ?| $${params.length}::text[])
     )`);
+  }
+  if (filtros?.acabados?.length) {
+    params.push(filtros.acabados);
+    condiciones.push(`${aliases.product}.derived->'finishes' ?| $${params.length}::text[]`);
   }
   return condiciones.length ? `AND ${condiciones.join(" AND ")}` : "";
 }

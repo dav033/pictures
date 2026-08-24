@@ -1,10 +1,12 @@
 import { chatDe, resolverProveedor } from "@/lib/ia/registro";
 import { ErrorIA } from "@/lib/ia/tipos";
 import type { Imagen, Mensaje } from "@/lib/ia/tipos";
-import { ejecutarConversacion, ejecutarConversacionStream } from "@/lib/ia/ejecutar";
-import type { EventoConversacion } from "@/lib/ia/ejecutar";
+import { ejecutarConversacionStream } from "@/lib/ia/ejecutar";
+import { limitarHistorialChat } from "@/lib/ia/historial-chat";
 import { construirSistema } from "@/lib/ia/prompt-sistema";
+import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import { RAG_ENABLED, RAG_FRANJAS_ENABLED } from "@/lib/rag/flags";
+import { PLAN_DECORACION_ENABLED } from "@/lib/plan/flags";
 import type { Brief, ChatMessage } from "@/lib/types";
 
 type Body = {
@@ -16,7 +18,25 @@ type Body = {
   fotoEspacio?: Imagen;
   /** Imágenes de inspiración de estilo adjuntas al mensaje que se acaba de mandar. */
   imagenesReferencia?: Imagen[];
+  /** Blueprint ya analizado (panel de referencias) de las imágenes de este
+   * turno — plan de integración de referencias visuales, R2. Solo se usa
+   * como contexto de composición para el modelo; el emparejamiento con
+   * catálogo real sigue siendo exclusivo de buscar_catalogo_rag (R3). */
+  referenceBlueprint?: unknown;
 };
+
+const LIMITE_ESPERA_EVENTO_MS = 75_000;
+
+/** Evita que una llamada al proveedor sin respuesta deje un stream abierto para siempre. */
+function conLimiteDeEspera<T>(promesa: Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const temporizador = setTimeout(
+      () => reject(new ErrorIA("timeout", "gemini", "El asistente tardó demasiado en responder. Intenta nuevamente.", true)),
+      LIMITE_ESPERA_EVENTO_MS,
+    );
+    promesa.then(resolve, reject).finally(() => clearTimeout(temporizador));
+  });
+}
 
 function statusDe(causa: ErrorIA["causa"]): number {
   switch (causa) {
@@ -38,6 +58,12 @@ function datosDeError(error: unknown): { error: string; causa?: string; proveedo
     return { error: error.message, causa: error.causa, proveedor: error.proveedor };
   }
   const detalle = error instanceof Error ? error.message : "Error desconocido";
+  if (/ECONNREFUSED|DATABASE_URL|postgres/i.test(detalle)) {
+    return {
+      error: "No se pudo conectar al catálogo RAG (PostgreSQL). Verifica DATABASE_URL y que el contenedor de base de datos esté activo.",
+      causa: "base_datos",
+    };
+  }
   return { error: `Falló la llamada al proveedor de IA: ${detalle}` };
 }
 
@@ -46,7 +72,7 @@ function formatoSSE(evento: string, datos: unknown): string {
 }
 
 export async function POST(request: Request) {
-  const { messages, brief, proveedor, fotoEspacio, imagenesReferencia }: Body = await request.json();
+  const { messages, brief, proveedor, fotoEspacio, imagenesReferencia, referenceBlueprint: rawReferenceBlueprint }: Body = await request.json();
   const cookieProveedor = request.headers
     .get("cookie")
     ?.match(/ia_proveedor=(gemini)/)?.[1];
@@ -54,12 +80,20 @@ export async function POST(request: Request) {
   let chat;
   let historial: Mensaje[];
   let sistema: string;
+  let referenceBlueprint: ReferenceBlueprintV2 | undefined;
 
   try {
     const id = resolverProveedor({ override: proveedor, cookie: cookieProveedor });
     chat = await chatDe(id);
 
-    sistema = construirSistema({ ragEnabled: RAG_ENABLED, franjasEnabled: RAG_FRANJAS_ENABLED, brief });
+    // Solo se pasa al modelo con el plan de decoración activo — sin él, el
+    // chat sigue el camino legado y este bloque solo agregaría tokens sin
+    // que ninguna herramienta sepa qué hacer con los element_id.
+    referenceBlueprint = PLAN_DECORACION_ENABLED && rawReferenceBlueprint
+      ? ReferenceBlueprintV2Schema.parse(rawReferenceBlueprint)
+      : undefined;
+
+    sistema = construirSistema({ ragEnabled: RAG_ENABLED, franjasEnabled: RAG_FRANJAS_ENABLED, brief, referenceBlueprint });
 
     // Las imágenes solo se adjuntan al último mensaje (el que se acaba de
     // mandar en este turno) — `historial` se reconstruye desde texto plano
@@ -81,7 +115,9 @@ export async function POST(request: Request) {
         descripcion: "Referencia visual de decoración del cliente.",
       })),
     ];
-    const mensajes = messages ?? [];
+    // The brief carries durable event facts; old prose only adds input tokens
+    // and makes each tool-calling turn slower as the chat grows.
+    const mensajes = limitarHistorialChat(messages ?? []);
     historial = mensajes.map((m, i) => {
       if (m.role === "assistant") return { rol: "asistente" as const, texto: m.content };
       const esUltimo = i === mensajes.length - 1;
@@ -95,42 +131,11 @@ export async function POST(request: Request) {
     return Response.json(datosDeError(error), { status: statusDe(error instanceof ErrorIA ? error.causa : "desconocido") });
   }
 
-  // Se intenta abrir el stream primero. Si el proveedor falla ANTES de mandar
-  // el primer fragmento (llave inválida, red caída), todavía no se mandó
-  // ningún byte de la respuesta: se puede caer al camino JSON de toda la vida
-  // sin que el cliente note la diferencia (§5.4 del plan — fallback no-stream).
-  const generador = ejecutarConversacionStream({ chat, sistema, historial, brief: brief ?? {} });
+  // La respuesta SSE se abre antes de esperar al proveedor. Esperar el primer
+  // fragmento aquí bloqueaba los headers y permitía que el timeout absoluto
+  // del navegador venciera durante un turno válido con varias herramientas.
+  const generador = ejecutarConversacionStream({ chat, sistema, historial, brief: brief ?? {}, referenceBlueprint });
   const iterador = generador[Symbol.asyncIterator]();
-  let primero: IteratorResult<EventoConversacion>;
-  try {
-    primero = await iterador.next();
-  } catch {
-    try {
-      const resultado = await ejecutarConversacion({ chat, sistema, historial, brief: brief ?? {} });
-      return Response.json({
-        reply: resultado.texto,
-        brief: resultado.brief,
-        recomendaciones: resultado.recomendaciones,
-        decoraciones: resultado.decoraciones,
-        categorias: resultado.categorias,
-        filtrosCategorias: resultado.filtrosCategorias,
-        medidas: resultado.medidas,
-        cotizacion: resultado.cotizacion,
-        proveedor: resultado.proveedor,
-        modelo: resultado.modelo,
-        seleccionIA: resultado.seleccionFinalIA,
-        instruccionIA: resultado.instruccionIA,
-        ragCandidatos: resultado.ragCandidatos,
-        ragValidados: resultado.ragValidados,
-        ragRechazados: resultado.ragRechazados,
-        ragTotal: resultado.ragTotal,
-      });
-    } catch (error) {
-      return Response.json(datosDeError(error), {
-        status: statusDe(error instanceof ErrorIA ? error.causa : "desconocido"),
-      });
-    }
-  }
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -138,8 +143,9 @@ export async function POST(request: Request) {
       const enviar = (evento: string, datos: unknown) => controller.enqueue(encoder.encode(formatoSSE(evento, datos)));
 
       try {
-        let actual: IteratorResult<EventoConversacion> = primero;
-        while (!actual.done) {
+        while (true) {
+          const actual = await conLimiteDeEspera(iterador.next());
+          if (actual.done) break;
           const evento = actual.value;
           if (evento.tipo === "texto") {
             enviar("texto", { delta: evento.delta });
@@ -164,9 +170,9 @@ export async function POST(request: Request) {
               ragValidados: r.ragValidados,
               ragRechazados: r.ragRechazados,
               ragTotal: r.ragTotal,
+              plan: r.plan,
             });
           }
-          actual = await iterador.next();
         }
       } catch (error) {
         enviar("error", datosDeError(error));

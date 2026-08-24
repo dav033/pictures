@@ -6,8 +6,10 @@ import type { ItemRechazado, ItemValidado } from "@/lib/rag/chat/validar";
 import type { ProductoCandidato } from "@/lib/rag/chat/buscar";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
+import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { crearEstadoConversacion, crearRegistroHerramientas, herramientasActivas, textoAlAgotarVueltas, VUELTAS_MAX } from "./registro-herramientas";
 import type { EstadoConversacion } from "./registro-herramientas";
+import type { ReferenceBlueprintV2 } from "./reference-blueprint";
 import type { ChatPort, Mensaje } from "./tipos";
 
 /**
@@ -39,6 +41,7 @@ export type ResultadoConversacion = {
   ragValidados?: ItemValidado[];
   ragRechazados?: ItemRechazado[];
   ragTotal?: number;
+  plan?: PlanResuelto;
 };
 
 function empaquetar(estado: EstadoConversacion, texto: string, proveedor: ChatPort["id"], modelo: string): ResultadoConversacion {
@@ -59,6 +62,7 @@ function empaquetar(estado: EstadoConversacion, texto: string, proveedor: ChatPo
     ragValidados: estado.ragValidados,
     ragRechazados: estado.ragRechazados,
     ragTotal: estado.ragTotal,
+    plan: estado.planResuelto,
   };
 }
 
@@ -67,11 +71,15 @@ export async function ejecutarConversacion(opts: {
   sistema: string;
   historial: Mensaje[];
   brief: Brief;
+  /** Blueprint de referencia visual analizado en este turno — ver
+   * `EstadoConversacion.referenceBlueprint`. */
+  referenceBlueprint?: ReferenceBlueprintV2;
   /** Observabilidad pura: se llama justo antes de ejecutar cada herramienta,
    * con su nombre y args ya parseados. No cambia el flujo. */
   onLlamada?: (nombre: string, args: Record<string, unknown>) => void;
 }): Promise<ResultadoConversacion> {
-  const estado = crearEstadoConversacion(opts.brief);
+  const solicitud = opts.historial.filter((mensaje) => mensaje.rol === "usuario").map((mensaje) => mensaje.texto).join(" ");
+  const estado = crearEstadoConversacion(opts.brief, solicitud, opts.referenceBlueprint);
   const resultado = await core({
     chat: opts.chat,
     sistema: opts.sistema,
@@ -95,8 +103,12 @@ export async function* ejecutarConversacionStream(opts: {
   sistema: string;
   historial: Mensaje[];
   brief: Brief;
+  /** Blueprint de referencia visual analizado en este turno — ver
+   * `EstadoConversacion.referenceBlueprint`. */
+  referenceBlueprint?: ReferenceBlueprintV2;
 }): AsyncGenerator<EventoConversacion> {
-  const estado = crearEstadoConversacion(opts.brief);
+  const solicitud = opts.historial.filter((mensaje) => mensaje.rol === "usuario").map((mensaje) => mensaje.texto).join(" ");
+  const estado = crearEstadoConversacion(opts.brief, solicitud, opts.referenceBlueprint);
   const generador = coreStream({
     chat: opts.chat,
     sistema: opts.sistema,

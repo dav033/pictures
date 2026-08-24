@@ -3,6 +3,7 @@ import { chatDe, resolverProveedor } from "@/lib/ia/registro";
 import { ErrorIA, type Imagen, type ImagenEtiquetada, type ProveedorId } from "@/lib/ia/tipos";
 import { obtenerProductos } from "@/lib/products";
 import { productosParaMatchingReferencia } from "@/lib/shopify/consultas";
+import { PLAN_DECORACION_ENABLED } from "@/lib/plan/flags";
 
 export const maxDuration = 120;
 
@@ -44,11 +45,21 @@ export async function POST(request: Request) {
       id: `REF_${String(index + 1).padStart(2, "0")}`,
       descripcion: "Reference image pending forensic analysis.",
     }));
-    const catalogo = [...obtenerProductos(), ...productosParaMatchingReferencia()]
-      .filter((product, index, products) => products.findIndex((candidate) => candidate.id === product.id) === index)
-      .slice(0, 240)
-      .map(({ id, nombre, categoria, colores, descripcion }) => ({ id, nombre, categoria, colores, descripcion }));
-    const result = await analizarReferenciasV2(chat, references, catalogo);
+    // Con el plan de decoración activo, el emparejamiento con catálogo se
+    // mueve por completo al chat (buscar_catalogo_rag contra PostgreSQL
+    // validado) — este paso solo describe lo que ve, nunca decide un
+    // product_id. Evita mezclar dos catálogos que pueden divergir (el seed
+    // SQLite de demo y el espejo SQLite de Shopify) con el que de verdad
+    // valida el plan, y evita que un id de demo llegue a producción como
+    // línea comercial (ver NonCommercialSourceRejectedError).
+    const mode = PLAN_DECORACION_ENABLED ? "perceptual" as const : "legacy" as const;
+    const catalogo = mode === "legacy"
+      ? [...obtenerProductos(), ...productosParaMatchingReferencia()]
+          .filter((product, index, products) => products.findIndex((candidate) => candidate.id === product.id) === index)
+          .slice(0, 240)
+          .map(({ id, nombre, categoria, colores, descripcion }) => ({ id, nombre, categoria, colores, descripcion }))
+      : [];
+    const result = await analizarReferenciasV2(chat, references, catalogo, mode);
     return Response.json({ blueprint: result.blueprint, metadata: { ...result.metadata, image_dimensions: references.map((image) => ({ image_id: image.id, original: { width: image.originalAncho ?? null, height: image.originalAlto ?? null }, processed: { width: image.ancho ?? null, height: image.alto ?? null } })) }, proveedor: id });
   } catch (error) {
     if (error instanceof ErrorIA) return Response.json({ error: error.message, causa: error.causa, proveedor: error.proveedor }, { status: statusDe(error.causa) });

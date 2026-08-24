@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { buildImagePrompt } from "@/lib/ia/build-image-prompt";
 import { ReferenceBlueprintV2Schema } from "@/lib/ia/reference-blueprint";
 import { buildApprovedSceneSpec, resolveElementColors } from "@/lib/ia/scene-spec";
+import { evaluateSceneQa } from "@/lib/ia/image-qa";
 import { resolveAspectTransform } from "@/lib/ia/aspect-transform";
 
 const blueprint = ReferenceBlueprintV2Schema.parse({
@@ -27,13 +28,18 @@ assert.deepEqual(scene.elements[0].resolved_colors, ["ivory"]);
 const prompt = buildImagePrompt({ sceneSpec: scene, inputs: [{ image_id: "VENUE_01", role: "venue_base", allowed_use: "venue identity" }, { image_id: "REF_01", role: "composition_reference", allowed_use: "composition only" }] });
 assert.match(prompt, /fabric curtain backdrop/);
 assert.match(prompt, /No decorative object absent from the automatic element allowlist/);
+assert.match(prompt, /INSTANCE CONTRACT — NON-NEGOTIABLE/);
+assert.match(prompt, /EXACTLY ONE physical instance/);
 assert.match(prompt, /Never copy a source-image border/);
 assert.match(prompt, /Reference images were analyzed upstream/);
-assert.match(prompt, /CATALOG_\* image as the only visual source/);
+assert.match(prompt, /supplied catalog product image as the only visual source/);
 assert.match(prompt, /Every catalog-backed element .* mandatory quoted line item/);
 assert.match(scene.positive_prompt.required_elements[0], /MANDATORY VISIBLE CATALOG ITEM/);
 assert.match(prompt, /OUTPUT FORMAT/);
 assert.match(prompt, /Never render catalog IDs/);
+assert.match(prompt, /VISUAL TEXT BAN — ABSOLUTE AND NON-NEGOTIABLE/);
+assert.match(prompt, /Render ZERO visible typography/);
+assert.doesNotMatch(prompt, /VENUE_01|REF_01|EST_\d|plan_hash/i);
 assert.match(prompt, /Catalog color lock/);
 assert.match(prompt, /black product must remain black/);
 assert.match(scene.positive_prompt.photorealistic_integration.join(" "), /reference palette cannot recolor catalog items/);
@@ -50,17 +56,22 @@ assert.match(prompt, /Only a selected catalog-backed signage product may contain
 assert.match(prompt, /commercial\/event objects absent from the selected catalog allowlist/);
 assert.doesNotMatch(prompt, /visible wall or garden structure/);
 assert.doesNotMatch(prompt, /references never provide objects/i);
+assert.ok(!evaluateSceneQa({ ...scene, generation_mode: "text_to_image" }, { outsideRegionSimilarity: 0.1 }).retry_reasons.includes("outside edit region changed"));
+assert.ok(evaluateSceneQa(scene, { outsideRegionSimilarity: 0.1 }).retry_reasons.includes("outside edit region changed"));
+const textQa = evaluateSceneQa(scene, { textArtifacts: ["heading with measurements"], annotationArtifacts: ["element ID callout"] });
+assert.equal(textQa.pass, false);
+assert.deepEqual(textQa.text_artifacts, ["heading with measurements"]);
+assert.match(textQa.retry_reasons.join(" | "), /unapproved text or logo|annotation artifact/);
 assert.match(buildImagePrompt({ sceneSpec: { ...scene, generation_mode: "revise_current_result" }, revisionInstruction: "make curtain ivory" }), /REVISION DELTA/);
 assert.equal(resolveAspectTransform("16:9", { exactAspectRatios: ["3:2", "1:1", "2:3"], totalInputImageLimit: 16, objectFidelityInputLimit: 5, highFidelityInputSupport: false, multiTurnSupport: false }).strategy, "pad");
 
-// Bill of materials: un elemento (árbol de globos) armado con tres productos
-// distintos en proporciones distintas — nunca debe colapsar a "usa este
-// único producto exacto" ni perder los colores de los materiales secundarios.
+// Bill of materials: un elemento (árbol de globos) armado con siete variantes
+// de materiales/tamaños — nunca debe truncar la mezcla real a seis líneas.
 const treeBlueprint = ReferenceBlueprintV2Schema.parse({
   schema_version: "2.0",
   source_images: [{ image_id: "REF_01", approved_roles: ["element_reference"] }],
   elements: [{
-    element_id: "REF_01_E01", source_image_id: "REF_01", name: "balloon Christmas tree", category: "balloon_structure", scene_role: "foreground", detection_confidence: 0.8, visible_evidence: "Cone-shaped cluster of round balloons.", reference_bbox: { x: 0.1, y: 0.1, width: 0.3, height: 0.6 }, depth_layer: 3, include_policy: "include", approved: true, source_type: "catalog_backed", quantity: { mode: "approximate", min: 60, max: 60 }, appearance: { observed_colors: ["red", "green", "gold"], resolved_colors: [], color_policy: "match_reference", material: "latex balloons", shape: "cone-shaped tree", composition: "60% red round balloons at the base, 30% green climbing the sides, 10% gold accents near the top" }, relationships: [], uncertainties: [], model_decision: { action: "include", catalog_product_id: "cat-red", match_type: "closest", reason: "Closest catalog balloon match.", adaptation: "Combine three balloon colors into a hand-built cone.", bill_of_materials: [{ catalog_product_id: "cat-red", role: "base balloons", share: 0.6 }, { catalog_product_id: "cat-green", role: "side balloons", share: 0.3 }, { catalog_product_id: "cat-gold", role: "top accents", share: 0.1 }] },
+    element_id: "REF_01_E01", source_image_id: "REF_01", name: "balloon Christmas tree", category: "balloon_structure", scene_role: "foreground", detection_confidence: 0.8, visible_evidence: "Cone-shaped cluster of round balloons.", reference_bbox: { x: 0.1, y: 0.1, width: 0.3, height: 0.6 }, depth_layer: 3, include_policy: "include", approved: true, source_type: "catalog_backed", quantity: { mode: "approximate", min: 60, max: 60 }, appearance: { observed_colors: ["red", "green", "gold"], resolved_colors: [], color_policy: "match_reference", material: "latex balloons", shape: "cone-shaped tree", composition: "60% red round balloons at the base, 30% green climbing the sides, 10% gold accents near the top" }, relationships: [], uncertainties: [], model_decision: { action: "include", catalog_product_id: "cat-red", match_type: "closest", reason: "Closest catalog balloon match.", adaptation: "Combine three balloon colors and four sizes into a hand-built cone.", bill_of_materials: [{ catalog_product_id: "cat-red", role: "base balloons", share: 0.5 }, { catalog_product_id: "cat-green", role: "side balloons", share: 0.25 }, { catalog_product_id: "cat-gold", role: "top accents", share: 0.1 }, { catalog_product_id: "cat-red-r9", role: "small red anchors", share: 0.05 }, { catalog_product_id: "cat-green-r12", role: "middle green anchors", share: 0.04 }, { catalog_product_id: "cat-red-r18", role: "large red anchors", share: 0.03 }, { catalog_product_id: "cat-green-r24", role: "large green anchors", share: 0.03 }] },
   }],
   composition: { focal_point: "balloon tree", density: "dense", symmetry: "symmetric", negative_space: [] },
   palette: { observed: ["red", "green", "gold"], priority: ["red", "green", "gold"] },
@@ -75,11 +86,15 @@ const treeScene = buildApprovedSceneSpec({
       { id: "cat-red", name: "Globo Redondo Rojo", description: "Paquete de globos redondos rojos", category: "globo_latex", colors: ["rojo"], unitsPerPackage: 50, packageCount: 1, share: 0.6, role: "base balloons" },
       { id: "cat-green", name: "Globo Redondo Verde", description: "Paquete de globos redondos verdes", category: "globo_latex", colors: ["verde"], unitsPerPackage: 50, packageCount: 1, share: 0.3, role: "side balloons" },
       { id: "cat-gold", name: "Globo Metalizado Dorado", description: "Paquete de globos metalizados dorados", category: "globo_latex", colors: ["dorado"], unitsPerPackage: 50, packageCount: 1, share: 0.1, role: "top accents" },
+      { id: "cat-red-r9", name: "Globo Redondo Rojo R-9", description: "Paquete de globos redondos rojos R-9", category: "globo_latex", colors: ["rojo"], unitsPerPackage: 50, packageCount: 1, share: 0.05, role: "small red anchors" },
+      { id: "cat-green-r12", name: "Globo Redondo Verde R-12", description: "Paquete de globos redondos verdes R-12", category: "globo_latex", colors: ["verde"], unitsPerPackage: 50, packageCount: 1, share: 0.04, role: "middle green anchors" },
+      { id: "cat-red-r18", name: "Globo Redondo Rojo R-18", description: "Paquete de globos redondos rojos R-18", category: "globo_latex", colors: ["rojo"], unitsPerPackage: 50, packageCount: 1, share: 0.03, role: "large red anchors" },
+      { id: "cat-green-r24", name: "Globo Redondo Verde R-24", description: "Paquete de globos redondos verdes R-24", category: "globo_latex", colors: ["verde"], unitsPerPackage: 50, packageCount: 1, share: 0.03, role: "large green anchors" },
     ],
   },
 });
 assert.equal(treeScene.elements.length, 1);
-assert.deepEqual(treeScene.elements[0].catalog_product_ids, ["cat-red", "cat-green", "cat-gold"]);
+assert.deepEqual(treeScene.elements[0].catalog_product_ids, ["cat-red", "cat-green", "cat-gold", "cat-red-r9", "cat-green-r12", "cat-red-r18", "cat-green-r24"]);
 assert.deepEqual(new Set(treeScene.elements[0].resolved_colors), new Set(["rojo", "verde", "dorado"]));
 const treeIdentity = treeScene.elements[0].identity_constraints.join(" | ");
 assert.match(treeIdentity, /60% base balloons = "Globo Redondo Rojo"/);

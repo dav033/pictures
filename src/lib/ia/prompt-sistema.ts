@@ -1,4 +1,6 @@
 import type { Brief } from "@/lib/types";
+import { PLAN_DECORACION_ENABLED } from "@/lib/plan/flags";
+import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 
 /**
  * Extraído de src/app/api/chat/route.ts (PLAN_RENDIMIENTO_RAG.md Fase 4):
@@ -9,8 +11,8 @@ export const SYSTEM_PROMPT_BASE = `Eres el asistente de decoración con globos y
 
 FLUJO OBLIGATORIO DE PROPUESTA
 - Primero define la decoración: evento, concepto, composición y elementos concretos del catálogo.
-- Después confirma la selección visual con confirmar_seleccion_ia o confirmar_seleccion_rag. Esa acción dispara la generación de la imagen.
-- La cotización final la calcula automáticamente la aplicación después de recibir la imagen, usando exactamente los productos de la propuesta. No cotices antes de la imagen ni muestres precios como parte de la selección visual.
+- Después confirma la selección visual con la herramienta correspondiente al modo activo. En modo DISEÑO DE DECORACIÓN debes usar confirmar_plan_decoracion; esa herramienta solo muestra el desglose y nunca dispara una imagen.
+- En modo DISEÑO DE DECORACIÓN la aplicación genera únicamente después de que el cliente aprueba explícitamente el desglose. La cotización preliminar del plan se muestra antes de la imagen; la cotización final se recalcula después de la imagen con exactamente el snapshot aprobado.
 - La libertad creativa aplica a la composición, agrupación, escala y montaje; nunca a inventar productos, cambiar la cotización o reducir un paquete a una sola pieza.
 
 TONO
@@ -51,7 +53,7 @@ Si el cliente adjunta una foto de su espacio o imágenes de referencia de estilo
 export const BLOQUE_RAG = `
 
 MODO RAG (activo)
-- Las herramientas buscar_catalogo, confirmar_seleccion_ia y consultar_disponibilidad NO EXISTEN en este modo, aunque las instrucciones de abajo las mencionen por nombre (son de un modo anterior). Donde veas "buscar_catalogo", usa buscar_catalogo_rag. Donde veas "confirmar_seleccion_ia", usa confirmar_seleccion_rag — mismo comportamiento (la app genera la imagen automáticamente en cuanto la llames), pero con los ids reales del catálogo.
+- Las herramientas buscar_catalogo, confirmar_seleccion_ia y consultar_disponibilidad NO EXISTEN en este modo, aunque las instrucciones de abajo las mencionen por nombre (son de un modo anterior). Donde veas "buscar_catalogo", usa buscar_catalogo_rag. En modo DISEÑO DE DECORACIÓN no uses confirmar_seleccion_rag: usa confirmar_plan_decoracion y espera la aprobación del cliente; fuera de ese modo, confirmar_seleccion_rag confirma la selección visual.
 - No conoces el catálogo de memoria. Para cualquier pregunta comercial ("¿qué me recomiendas?", "¿cuánto vale?", "¿tienen algo rosado?", "¿me cotizas?"), llama primero buscar_catalogo_rag — nunca respondas antes de eso.
 - Si estás analizando una imagen de referencia: descompónla en CADA elemento decorativo distinto antes de buscar — no te quedes solo con "globos". El catálogo tiene categorías más allá de globos: cortinas/telones de fondo, velas, guirnaldas/arcos, kits, banderolas/carteles, complementos, desechables. Si la referencia tiene un fondo, cortina, telón, luces, base/soporte, centro de mesa, etc., haz una búsqueda de buscar_catalogo_rag POR CADA elemento (ej. "cortina metalizada negra con luces" además de "globos temática galáctica azul morado") — una sola búsqueda enfocada solo en globos deja fuera todo lo demás que sí aparece en la imagen.
 - Solo puedes mencionar o seleccionar productos y variantes que hayan aparecido en la respuesta de buscar_catalogo_rag de ESTE turno. confirmar_seleccion_rag rechaza en el backend cualquier product_id/variant_id que no venga de ahí, incluidos siblings del mismo producto, así que no lo intentes con nada que no acabes de ver.
@@ -82,7 +84,7 @@ FRANJAS DE PRESUPUESTO (activo)
 - Si "canasta.cumple_presupuesto" es false, dilo con honestidad ("con lo que hay en catálogo ahora, esto queda $X por encima de tu presupuesto") — nunca lo ocultes ni recortes piezas por tu cuenta para que "cierre" el número; eso ya lo intentó el backend y no pudo.
 - Si "relajaciones" no viene vacío, es porque algún rol tuvo que ceder algo (color, ocasión, o un tope de precio un poco más alto) para poder ofrecer algo — cuéntaselo al cliente en una frase, igual que harías con cualquier sustitución (ver HONESTIDAD AL SUSTITUIR).
 - Si "conflictos" no viene vacío, es porque el cliente pidió algo (ej. "quiero un arco") que la receta de esta franja de presupuesto no puede incluir — dile la razón real (el presupuesto no alcanza para ese tipo de pieza) en vez de omitirlo en silencio o prometerlo de todas formas.
-- confirmar_seleccion_rag puede devolver "excede_presupuesto": true con un "delta_cop" — si pasa, dile al cliente cuánto se pasó del techo de su franja en pesos, no lo redondees a "un poco más".`;
+- confirmar_seleccion_rag puede devolver "excede_presupuesto": true con un "delta_cop" — si pasa, dile al cliente cuánto se pasó del techo de su franja en pesos, no lo redondees a "un poco más". En modo DISEÑO DE DECORACIÓN el techo duro se valida en confirmar_plan_decoracion.`;
 
 // Ya no existen "modos" separados: las tarjetas clicables y la selección
 // propia de la IA conviven siempre en la misma conversación. La IA puede
@@ -100,7 +102,71 @@ CÓMO CONVIVEN TU PROPUESTA Y LA SELECCIÓN DEL CLIENTE
 - El cliente puede agregar o quitar piezas a mano en cualquier momento, tanto de tu propuesta como de las tarjetas de una búsqueda — eso no te llega como mensaje de chat, así que no lo des por hecho ni lo menciones a menos que el cliente te lo diga. Los cambios manuales sobre la imagen ya generada requieren que el cliente pulse "Regenerar imagen"; solo cuando el cliente te PIDE el ajuste por texto (ej. "hazla de noche", "más velas") vuelves a llamar confirmar_seleccion_ia con los ids que correspondan y describes el cambio en el parámetro "instruccion".
 - Cuando buscar_decoraciones traiga resultados, dile al cliente que puede adoptar un paquete completo y luego quitar piezas individuales si quiere (tocando la tarjeta correspondiente).`;
 
-export function construirSistema(opts: { ragEnabled: boolean; franjasEnabled: boolean; brief?: Brief }): string {
+export const BLOQUE_PLAN = `
+
+DISEÑO DE LA DECORACIÓN (activo)
+- PRIORIDAD DE ESTE MODO: no llames confirmar_seleccion_rag, confirmar_seleccion_ia ni cotizar. Usa buscar_catalogo_rag para recuperar candidatos y termina con confirmar_plan_decoracion.
+- confirmar_plan_decoracion devuelve el plan, el costo real por paquetes cerrados, las sustituciones, las alternativas y el estado del presupuesto. Después de recibirlo escribe el resumen y espera una aprobación explícita; no digas que la imagen se está generando ni llames otra herramienta de selección.
+- Tu propuesta es un DISEÑO completo, no una lista plana: decide qué estructuras armar, dónde va cada una y qué producto/color las compone.
+- Para una decoración principal de evento (salvo que el cliente pida una pieza única), diseña 3–5 estructuras coordinadas: una focal, dos soportes o marcos laterales y, cuando aporte valor, un acento de mesa/suelo/backdrop. No resuelvas todo como un único arco genérico.
+- En cada estructura orgánica usa la mezcla de tamaños que calcule el backend cuando el catálogo tenga cobertura; combina tamaños grandes, medianos y pequeños solo dentro de los diámetros reales resueltos. Si el cliente fija explícitamente un único tamaño, respétalo sin inventar otros.
+- Tú decides estructura, ubicación, producto y proporción. Nunca mandes tamaños de globo, cantidades de globos ni precios: el backend calcula R-5/R-9/R-12/R-18/R-24, cantidades, sustituciones, paquetes y total desde la geometría y el catálogo real.
+- Si el cliente pidió un tamaño, color o acabado explícito, consérvalo como restricción obligatoria del plan; no lo sustituyas en silencio. Registra el acabado en materiales[].acabado. Si no hay cobertura exacta, confirmar_plan_decoracion debe bloquearlo o devolver la sustitución declarada.
+- Si no hay medidas, confirma el plan igual: el sistema usa medidas por defecto y las muestra como supuesto explícito.
+- Para piezas sin geometría (backdrop, kit o accesorio) sí debes indicar variant_id y unidades_declaradas; para globos no elijas una variante por tamaño.
+- Si confirmar_plan_decoracion devuelve ok:false por SIN_COBERTURA, el plan no quedó confirmado: busca productos que cubran los tamaños faltantes o usa una mezcla compatible y vuelve a confirmar. Nunca anuncies que la imagen se está generando tras ese error.
+- Si el cliente adjuntó una imagen de referencia, ANALISIS_REFERENCIA_VISUAL (abajo, si está presente) lista cada elemento detectado con su element_id. Cada uno de esos ids debe aparecer o en materiales[].participacion de alguna estructura vía "referencia_element_id" (la estructura que lo materializa) o en "referencia_omitida" (con un motivo real de por qué no se incluye) — omitir uno en silencio es tan deshonesto como omitir un producto de la propuesta sin decirlo. Si confirmar_plan_decoracion devuelve ok:false por COBERTURA_REFERENCIA_INCOMPLETA, cubre los "elementos_sin_cubrir" que te indique antes de reintentar.
+- Después de confirmar_plan_decoracion el cliente verá el desglose completo antes de la imagen. Escribe solo 2 o 3 frases sobre el concepto y menciona cualquier supuesto, sustitución o falta de cobertura que devuelva la herramienta.`;
+
+const REFERENCE_ROLE_LABELS: Record<string, string> = {
+  behind: "detrás de",
+  in_front_of: "delante de",
+  overlaps: "se superpone con",
+  aligned_with: "alineado con",
+  supports: "sostiene a",
+};
+
+/**
+ * Serializa el blueprint de referencia (analizado por
+ * /api/references/analyze) a texto compacto para el turno de chat — plan de
+ * integración de referencias visuales, R2. Solo geometría/composición
+ * observada, nunca un product_id: el emparejamiento con catálogo real es
+ * responsabilidad exclusiva del modelo vía buscar_catalogo_rag (R3).
+ * Determinista (mismo blueprint → mismo texto) para que el hash del sistema
+ * no cambie entre llamadas idénticas.
+ */
+export function serializeReferenceBlueprint(blueprint: ReferenceBlueprintV2): string {
+  const elementos = blueprint.elements
+    .filter((element) => element.approved)
+    .slice()
+    .sort((a, b) => a.depth_layer - b.depth_layer)
+    .slice(0, 20)
+    .map((element) => {
+      const bbox = element.reference_bbox;
+      const posicion = `x${bbox.x.toFixed(2)} y${bbox.y.toFixed(2)} w${bbox.width.toFixed(2)} h${bbox.height.toFixed(2)}`;
+      const colores = element.appearance.observed_colors.join(", ") || "no determinable";
+      const relaciones = element.relationships
+        .map((relation) => `${REFERENCE_ROLE_LABELS[relation.type] ?? relation.type} ${relation.target_element_id}`)
+        .join("; ") || "ninguna";
+      return `- ${element.element_id} (${element.category}, capa ${element.scene_role}): "${element.name}" — colores observados: ${colores}; posición en la referencia: ${posicion}; cantidad ${element.quantity.mode === "exact" ? element.quantity.min : `${element.quantity.min}-${element.quantity.max}`}; relaciones: ${relaciones}.`;
+    })
+    .join("\n");
+  return elementos || "- Ningún elemento relevante detectado.";
+}
+
+function bloqueReferencia(blueprint: ReferenceBlueprintV2): string {
+  return `
+
+ANALISIS_REFERENCIA_VISUAL (presente en este turno)
+El cliente adjuntó una imagen de referencia. Esto es lo que un análisis visual automático detectó — NO son productos de catálogo, son geometría y composición observadas; los ids (ej. REF_01_E01) son el vocabulario para referirte a la escena en este turno y en confirmar_plan_decoracion (referencia_element_id / referencia_omitida) y en ajustes futuros ("quítale la cortina" = REF_01_E02).
+Composición general: foco visual "${blueprint.composition.focal_point}"; densidad ${blueprint.composition.density}; simetría ${blueprint.composition.symmetry}.
+Paleta observada: ${blueprint.palette.observed.join(", ") || "no determinable"}.
+Elementos detectados:
+${serializeReferenceBlueprint(blueprint)}
+Las posiciones (x/y/w/h) son proporciones DENTRO de la imagen de referencia, no coordenadas del render final — úsalas para entender proporción y relación entre estructuras, no como coordenadas literales a copiar.`;
+}
+
+export function construirSistema(opts: { ragEnabled: boolean; franjasEnabled: boolean; planEnabled?: boolean; brief?: Brief; referenceBlueprint?: ReferenceBlueprintV2 }): string {
   const contexto =
     opts.brief && Object.keys(opts.brief).length ? `\n\nDatos del evento que ya conoces: ${JSON.stringify(opts.brief)}` : "";
   return (
@@ -108,6 +174,12 @@ export function construirSistema(opts: { ragEnabled: boolean; franjasEnabled: bo
     BLOQUE_SELECCION +
     (opts.ragEnabled ? BLOQUE_RAG : "") +
     (opts.ragEnabled && opts.franjasEnabled ? BLOQUE_FRANJAS : "") +
+    (opts.ragEnabled && (opts.planEnabled ?? PLAN_DECORACION_ENABLED) ? BLOQUE_PLAN : "") +
+    // El bloque de referencia solo tiene sentido junto al modo plan: es ahí
+    // donde confirmar_plan_decoracion sabe leer referencia_element_id /
+    // referencia_omitida. Auto-gateado aquí (no solo en el caller) para que
+    // construirSistema sea consistente aunque alguien lo llame distinto.
+    (opts.ragEnabled && (opts.planEnabled ?? PLAN_DECORACION_ENABLED) && opts.referenceBlueprint ? bloqueReferencia(opts.referenceBlueprint) : "") +
     contexto
   );
 }

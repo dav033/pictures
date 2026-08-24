@@ -11,7 +11,8 @@ import type { ProductoInventarioCDN, ProductoPublico } from "@/lib/shopify/tipos
 import { enriquecerDescripcion } from "@/lib/shopify/enriquecer-descripcion";
 import { construirSearchText, hashSearchText, sanitizeTexto, sanitizeTextoNullable } from "./sanitize";
 import { CatalogProductSchema, CatalogVariantSchema, type CatalogProduct, type CatalogRejection, type CatalogVariant } from "./schemas";
-import { clasificarCategorias, clasificarColores, clasificarOcasiones } from "../taxonomy/v2";
+import { clasificarAcabados, clasificarCategorias, clasificarColores, clasificarOcasiones } from "../taxonomy/v2";
+import { deriveSceneCapabilities, type DeriveSceneCapabilitiesResult } from "./derive-scene-capabilities";
 
 function normalizarColoresV2(values: string[]): string[] {
   const unique = [...new Set(values)];
@@ -19,7 +20,19 @@ function normalizarColoresV2(values: string[]): string[] {
 }
 
 export type ResultadoNormalizacion =
-  | { ok: true; producto: CatalogProduct; variantes: CatalogVariant[] }
+  | {
+      ok: true;
+      producto: CatalogProduct;
+      variantes: CatalogVariant[];
+      /**
+       * Capacidades de escena candidatas (Tarea 03.1, PLAN_ARQUITECTURA_ESCENA_
+       * COMPLETA_RAG.md), derivadas determinísticamente del mismo `producto` ya
+       * normalizado — campo aditivo: los llamadores existentes que solo
+       * desestructuran `{ producto, variantes }` (p. ej.
+       * `scripts/import-shopify-catalog.ts`) siguen funcionando sin cambios.
+       */
+      capabilities: DeriveSceneCapabilitiesResult;
+    }
   | { ok: false; rechazo: CatalogRejection };
 
 /** sku (sin prefijo "B2B-") → cantidad de inventario, igual que el sync existente. */
@@ -70,6 +83,7 @@ export function normalizarProducto(
   const colores = v2Colors.length ? normalizarColoresV2(v2Colors) : derivarColores(tags, tituloLimpio);
   const v2Occasions = clasificarOcasiones(taxonomyText).values;
   const ocasiones = [...new Set([...v2Occasions, ...derivarOcasiones(tags, tituloLimpio)])];
+  const acabados = [...new Set(clasificarAcabados(taxonomyText).values)];
   // Match canonical CDN precedence: a title such as Decor-Kit wins over a
   // stale Shopify product_type such as LATEX.
   const titleCategory = clasificarCategorias(tituloLimpio.replace(/[-_/]+/g, " ")).values[0] ?? null;
@@ -142,6 +156,7 @@ export function normalizarProducto(
     tags,
     colores,
     ocasiones,
+    acabados,
     skus,
   });
 
@@ -158,12 +173,14 @@ export function normalizarProducto(
     available: variantes.some((v) => v.available),
     price_min: precios.length ? Math.min(...precios) : null,
     price_max: precios.length ? Math.max(...precios) : null,
-    derived: { category: categoria, colors: colores, occasions: ocasiones },
+     derived: { category: categoria, colors: colores, finishes: acabados, occasions: ocasiones },
     source_payload: raw,
     search_text: searchText,
     embedding_source_hash: hashSearchText(searchText),
     source_updated_at: raw.updated_at ?? null,
   });
 
-  return { ok: true, producto, variantes };
+  const capabilities = deriveSceneCapabilities(producto);
+
+  return { ok: true, producto, variantes, capabilities };
 }

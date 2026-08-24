@@ -1,6 +1,7 @@
 import type { Pool, PoolClient } from "pg";
 import type { SourceManifest } from "../sources/fetch";
 import type { CanonicalCatalog, CanonicalProduct, CanonicalVariant } from "./canonicalize";
+import type { DerivedSceneCapability, DeriveSceneCapabilitiesResult } from "./derive-scene-capabilities";
 
 export type PersistOptions = {
   sourceSnapshotId: string;
@@ -243,4 +244,126 @@ export async function persistStagedCatalog(
   } finally {
     client.release();
   }
+}
+
+// ---------------------------------------------------------------------------
+// Enriquecimiento con evidencia (Tarea 03.1, PLAN_ARQUITECTURA_ESCENA_COMPLETA_
+// RAG.md, Plan 03). Escritura DELIBERADAMENTE separada de
+// `persistStagedCatalog()` de arriba: esa función sigue exactamente igual
+// (mismo comportamiento para `scripts/import-cdn-catalog.ts` y cualquier otro
+// llamador), y `persistSceneCapabilities()` es un flujo de escritura aditivo
+// nuevo que un caller (p. ej. `scripts/enrich-scene-capabilities.ts`) invoca
+// explícitamente, ya sea sobre el catálogo recién publicado por
+// `persistStagedCatalog()` o sobre el catálogo ya publicado previamente por
+// cualquiera de los dos pipelines de importación. Nunca se ejecuta como
+// efecto secundario implícito de otra función de este módulo.
+// ---------------------------------------------------------------------------
+
+export type SceneCapabilityPersistOptions = {
+  /** Quién dispara la escritura, para `catalog_source_audit.actor` (plan §6.4/§8.2). */
+  actor?: string;
+};
+
+export type SceneCapabilityPersistSummary = {
+  itemsUpserted: number;
+  capabilitiesUpserted: number;
+  itemsNeedingReview: number;
+  auditRowsInserted: number;
+};
+
+async function upsertSceneCatalogItem(client: PoolClient, result: DeriveSceneCapabilitiesResult): Promise<void> {
+  // Item a nivel de producto (sin variante): mismo criterio que
+  // `adaptCatalogProductV2ToV3()`, que por defecto usa `product_id` como
+  // `item_id`. Coincide con el índice único parcial
+  // `ux_catalog_items_product_only` de la migración 012 (WHERE variant_id IS
+  // NULL) — nunca inventa una variante-especificidad que el catálogo V2 no
+  // tiene hoy.
+  await client.query(
+    `INSERT INTO catalog_items (item_id, product_id, variant_id, category_v3, updated_at)
+     VALUES ($1, $2, NULL, $3, now())
+     ON CONFLICT (item_id) DO UPDATE SET
+       product_id = excluded.product_id, category_v3 = excluded.category_v3, updated_at = now()`,
+    [result.itemId, result.productId, result.categoryV3],
+  );
+}
+
+async function upsertSceneCapability(client: PoolClient, itemId: string, capability: DerivedSceneCapability): Promise<void> {
+  // ON CONFLICT sobre la restricción UNIQUE (item_id, scene_function,
+  // evidence) de la migración 012: re-correr el enriquecimiento sobre el
+  // mismo dato de origen (mismo fragmento de evidencia) actualiza la misma
+  // fila en vez de duplicarla — esto es lo que hace posible que el modo real
+  // sea idempotente y el modo --dry-run sea comparable entre corridas.
+  await client.query(
+    `INSERT INTO catalog_product_capabilities (item_id, scene_function, confidence, evidence, derived_from)
+     VALUES ($1, $2, $3, $4, $5)
+     ON CONFLICT (item_id, scene_function, evidence) DO UPDATE SET
+       confidence = excluded.confidence, derived_from = excluded.derived_from`,
+    [itemId, capability.scene_function, capability.confidence, capability.evidence, capability.derived_from],
+  );
+}
+
+/**
+ * Persiste un lote de resultados de `deriveSceneCapabilities()` (Tarea 03.1):
+ * un `catalog_items` por producto y un `catalog_product_capabilities` por
+ * candidata (tanto `derived` como `review` — un estado ambiguo se PERSISTE y
+ * queda consultable como pendiente de revisión, nunca se descarta ni se trata
+ * silenciosamente como cierto). Cada item procesado deja un registro en
+ * `catalog_source_audit` con la evidencia completa, para que la procedencia
+ * de cada capacidad sea auditable con una consulta.
+ *
+ * Toda la operación corre en una única transacción: un error a mitad de lote
+ * revierte el lote completo, nunca deja un producto con `catalog_items` pero
+ * sin sus capacidades (o viceversa).
+ */
+export async function persistSceneCapabilities(
+  pool: Pool,
+  results: DeriveSceneCapabilitiesResult[],
+  options: SceneCapabilityPersistOptions = {},
+): Promise<SceneCapabilityPersistSummary> {
+  const actor = options.actor?.trim() || "enrich-scene-capabilities";
+  const client = await pool.connect();
+  let itemsUpserted = 0;
+  let capabilitiesUpserted = 0;
+  let itemsNeedingReview = 0;
+  let auditRowsInserted = 0;
+  try {
+    await client.query("BEGIN");
+    for (const result of results) {
+      await upsertSceneCatalogItem(client, result);
+      itemsUpserted++;
+      if (result.needsReview) itemsNeedingReview++;
+
+      for (const capability of result.capabilities) {
+        await upsertSceneCapability(client, result.itemId, capability);
+        capabilitiesUpserted++;
+      }
+
+      const reason = result.needsReview
+        ? `enriquecimiento de escena: ${result.capabilities.length} candidata(s), pendiente de revisión (${result.reviewReasons.join("; ")})`
+        : `enriquecimiento de escena: ${result.capabilities.length} candidata(s) derivada(s) con confianza publicable`;
+      await client.query(
+        `INSERT INTO catalog_source_audit (source_id, offer_id, action, reason, previous_state, new_state, actor)
+         VALUES (NULL, NULL, 'updated', $1, NULL, $2, $3)`,
+        [
+          reason,
+          json({
+            item_id: result.itemId,
+            product_id: result.productId,
+            category_v3: result.categoryV3,
+            overall_confidence: result.overallConfidence,
+            capabilities: result.capabilities,
+          }),
+          actor,
+        ],
+      );
+      auditRowsInserted++;
+    }
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+  return { itemsUpserted, capabilitiesUpserted, itemsNeedingReview, auditRowsInserted };
 }

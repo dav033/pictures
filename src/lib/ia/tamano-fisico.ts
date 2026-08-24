@@ -53,18 +53,50 @@ export function bloqueMezclaTamanos(lineas: LineaMezclaTamanos[]): string | null
   if (lineas.length === 0) return null;
   const total = lineas.reduce((suma, l) => suma + l.cantidad, 0);
   if (total === 0) return null;
+  const diametros = [...new Set(lineas.map((linea) => linea.diamPulg))];
   const filas = lineas
     .slice()
     .sort((a, b) => b.cantidad - a.cantidad)
     .map((l) => {
       const pct = Math.round((l.cantidad / total) * 100);
       const desc = descripcionFisicaTamano(l.diamPulg, l.forma) ?? `${l.diamPulg}-inch balloon`;
-      return `- ${pct}% ${desc}`;
+      return `- ${l.cantidad} balloons (${pct}%): ${desc}`;
     });
   return [
     "BALLOON SIZE MIX — HARD CONSTRAINT",
     "This installation uses EXACTLY these balloon diameters, in these proportions:",
     ...filas,
+    ...(diametros.length === 1
+      ? [`SINGLE DIAMETER: every balloon in this installation MUST be exactly ${diametros[0]} inches. Do not vary balloon size, even for depth, overlap, or visual interest.`]
+      : []),
+    "Every listed diameter must be visibly represented. Any visibly smaller-than-12-inch balloon must be one of the listed, quoted sizes above; do not add unquoted mini or intermediate balloons.",
     "Do not introduce any other diameter. Do not add jumbo, mini, or intermediate sizes not listed above.",
+  ].join("\n");
+}
+
+export function bloqueMezclaPorEstructura(estructuras: Array<{
+  estructura_id: string;
+  nombre: string;
+  total_unidades: number;
+  mezcla_real: Array<{ diamPulg: number; forma: string | null; unidades: number; pct: number }>;
+}>): string | null {
+  const bloques = estructuras.filter((estructura) => estructura.mezcla_real.length > 0).map((estructura) => {
+    const filas = estructura.mezcla_real.slice().sort((a, b) => b.unidades - a.unidades || b.diamPulg - a.diamPulg).map((linea) => {
+      const desc = descripcionFisicaTamano(linea.diamPulg, linea.forma) ?? `${linea.diamPulg}-inch balloon`;
+      return `- ${linea.unidades} balloons (${Math.round(linea.pct)}%): ${desc}`;
+    });
+    return [
+      `${estructura.estructura_id} — "${estructura.nombre}", ${estructura.total_unidades} balloons total:`,
+      ...filas,
+      ...(estructura.mezcla_real.length === 1
+        ? [`SINGLE DIAMETER FOR THIS STRUCTURE: every balloon in this structure MUST be exactly ${estructura.mezcla_real[0]!.diamPulg} inches. Do not vary balloon size.`]
+        : []),
+    ].join("\n");
+  });
+  if (bloques.length === 0) return null;
+  return [
+    "BALLOON SIZE MIX — HARD CONSTRAINT (per structure)",
+    ...bloques,
+    "Each structure uses EXACTLY its own quoted diameters and quantities. Every listed diameter must be visibly represented; any visibly smaller-than-12-inch balloon must be one of its listed, quoted sizes. Do not apply one structure's mix to another. Do not introduce any other diameter, and do not add jumbo, mini, or intermediate sizes not listed above.",
   ].join("\n");
 }

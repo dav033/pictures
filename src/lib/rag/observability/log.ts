@@ -1,5 +1,19 @@
 import type { Pool } from "pg";
 
+function metadataAuditable(value: unknown, depth = 0): unknown {
+  if (depth > 4 || value == null) return value == null ? null : "[truncated]";
+  if (typeof value === "string") return value.length > 1200 ? `${value.slice(0, 1200)}…` : value;
+  if (typeof value === "number" || typeof value === "boolean") return value;
+  if (Array.isArray(value)) return value.slice(0, 80).map((item) => metadataAuditable(item, depth + 1));
+  if (typeof value === "object") {
+    return Object.fromEntries(Object.entries(value as Record<string, unknown>).slice(0, 80).flatMap(([key, item]) => {
+      if (/(base64|image|secret|api.?key|token|payload|prompt)/i.test(key)) return [];
+      return [[key, metadataAuditable(item, depth + 1)]];
+    }));
+  }
+  return "[unsupported]";
+}
+
 /**
  * Trazabilidad (plan §6.1/§6.2): cada búsqueda y cada selección quedan en
  * Postgres, no solo en logs de consola que se pierden al reiniciar. Un fallo
@@ -27,33 +41,36 @@ export async function registrarBusqueda(
     utilizacion?: number;
     relajaciones?: unknown;
   },
-): Promise<void> {
+): Promise<string | null> {
   try {
-    await pool.query(
+    const result = await pool.query<{ id: string }>(
       `INSERT INTO rag_query_log
          (request_id, tipo, mensaje, intent, retrieved_product_ids, retrieval_scores, status,
           latency_parse_ms, latency_retrieval_ms, latency_total_ms,
-          franja, plan_canasta, canasta, utilizacion, relajaciones)
-       VALUES ($1, 'busqueda', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+           franja, plan_canasta, canasta, utilizacion, relajaciones)
+        VALUES ($1, 'busqueda', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        RETURNING id`,
       [
         datos.requestId,
-        datos.mensaje,
-        JSON.stringify(datos.intent),
+         datos.mensaje.slice(0, 2000),
+         JSON.stringify(metadataAuditable(datos.intent)),
         datos.retrievedProductIds,
-        JSON.stringify(datos.retrievalScores),
+         JSON.stringify(metadataAuditable(datos.retrievalScores)),
         datos.status,
         datos.latencyParseMs,
         datos.latencyRetrievalMs,
         datos.latencyTotalMs,
         datos.franja ?? null,
         datos.planCanasta != null ? JSON.stringify(datos.planCanasta) : null,
-        datos.canasta != null ? JSON.stringify(datos.canasta) : null,
+         datos.canasta != null ? JSON.stringify(metadataAuditable(datos.canasta)) : null,
         datos.utilizacion ?? null,
-        datos.relajaciones != null ? JSON.stringify(datos.relajaciones) : null,
-      ],
+         datos.relajaciones != null ? JSON.stringify(metadataAuditable(datos.relajaciones)) : null,
+       ],
     );
+    return result.rows[0]?.id ?? null;
   } catch (error) {
     console.error("[rag-log] no se pudo registrar búsqueda:", error);
+    return null;
   }
 }
 
@@ -72,9 +89,77 @@ export async function registrarSeleccion(
       `INSERT INTO rag_query_log
          (request_id, tipo, selected_product_ids, rejected, status, latency_total_ms)
        VALUES ($1, 'seleccion', $2, $3, $4, $5)`,
-      [datos.requestId, datos.selectedProductIds, JSON.stringify(datos.rejected), datos.status, datos.latencyTotalMs],
+       [datos.requestId, datos.selectedProductIds, JSON.stringify(metadataAuditable(datos.rejected)), datos.status, datos.latencyTotalMs],
     );
   } catch (error) {
     console.error("[rag-log] no se pudo registrar selección:", error);
+  }
+}
+
+/**
+ * Trazabilidad del plan determinista. Se guardan decisiones y hashes, nunca
+ * prompts completos de proveedor, imágenes ni secretos; así el incidente se
+ * puede reconstruir sin convertir la tabla de observabilidad en un almacén
+ * de contenido sensible.
+ */
+export async function registrarPlanAudit(
+  pool: Pool,
+  datos: {
+    requestId: string;
+    planHash?: string;
+    solicitudOriginal?: string;
+    restricciones?: unknown;
+    ragQueryIds?: string[];
+    candidateProductIds?: string[];
+    selectedProductIds?: string[];
+    geometry?: unknown;
+    costMinCop?: number;
+    costChosenCop?: number;
+    ceilingCop?: number;
+    deltaCop?: number;
+    packages?: unknown;
+    instances?: unknown;
+    status: string;
+    error?: string;
+    quoteHash?: string;
+    sceneSpecHash?: string;
+    qaHash?: string;
+    flagSnapshot?: unknown;
+  },
+): Promise<void> {
+  try {
+    await pool.query(
+      `INSERT INTO plan_audit_log
+         (request_id, plan_hash, solicitud_original, restricciones, rag_query_ids,
+           rag_query_refs, candidate_product_ids, selected_product_ids, geometry, cost_min_cop,
+           cost_chosen_cop, ceiling_cop, delta_cop, packages, instances, status, error,
+           quote_hash, scene_spec_hash, qa_hash, flag_snapshot)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)`,
+      [
+        datos.requestId,
+        datos.planHash ?? null,
+        datos.solicitudOriginal?.slice(0, 2000) ?? null,
+         datos.restricciones != null ? JSON.stringify(metadataAuditable(datos.restricciones)) : null,
+         datos.ragQueryIds ?? [],
+         datos.ragQueryIds ?? [],
+        datos.candidateProductIds ?? [],
+        datos.selectedProductIds ?? [],
+         datos.geometry != null ? JSON.stringify(metadataAuditable(datos.geometry)) : null,
+        datos.costMinCop ?? null,
+        datos.costChosenCop ?? null,
+        datos.ceilingCop ?? null,
+        datos.deltaCop ?? null,
+         datos.packages != null ? JSON.stringify(metadataAuditable(datos.packages)) : null,
+         datos.instances != null ? JSON.stringify(metadataAuditable(datos.instances)) : null,
+         datos.status,
+         datos.error?.slice(0, 1000) ?? null,
+         datos.quoteHash ?? null,
+         datos.sceneSpecHash ?? null,
+         datos.qaHash ?? null,
+         datos.flagSnapshot != null ? JSON.stringify(metadataAuditable(datos.flagSnapshot)) : null,
+      ],
+    );
+  } catch (error) {
+    console.error("[rag-log] no se pudo registrar auditoría de plan:", error);
   }
 }

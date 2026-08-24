@@ -4,6 +4,7 @@ export type FiltrosDuros = {
   categorias?: string[];
   ocasiones?: string[];
   colores?: string[];
+  acabados?: string[];
   /** Forma física del globo (redondo, corazon, link, modelar). */
   formas?: string[];
   /** Diámetro exacto en pulgadas para globos redondos. */

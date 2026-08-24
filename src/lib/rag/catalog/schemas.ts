@@ -45,6 +45,7 @@ export type CatalogVariant = z.infer<typeof CatalogVariantSchema>;
 export const CatalogProductDerivedSchema = z.object({
   category: z.string().nullable(),
   colors: z.array(z.string()),
+  finishes: z.array(z.string()).optional(),
   occasions: z.array(z.string()),
 });
 
@@ -79,3 +80,58 @@ export type CatalogRejection = {
   reason: string;
   raw_payload: unknown;
 };
+
+/**
+ * Re-export de conveniencia (Tarea 02.2, PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md
+ * §7.3): los contratos V3 (identidad física + verdad comercial) viven en
+ * `./scene-asset-schema` y `../taxonomy/v3`, pero el resto del código puede
+ * importarlos desde este módulo conocido (`@/lib/rag/catalog/schemas`) sin
+ * tener que descubrir la ruta exacta. Ningún esquema/tipo V2 de arriba se
+ * modifica ni se renombra.
+ */
+export {
+  SupplySourceClassSchema,
+  NonCommercialReferenceClassSchema,
+  CommercialOfferStatusSchema,
+  MediaRefRoleSchema,
+  MediaRefSchema,
+  SceneFunctionCandidateSchema,
+  PhysicalDimensionsSchema,
+  CompatibilitySchema,
+  CatalogItemV3Schema,
+  SourceRefSchema,
+  AvailabilityStatusSchema,
+  AvailabilitySchema,
+  ServiceAreaSchema,
+  RentalPeriodRulesSchema,
+  PriceComponentTypeSchema,
+  ServiceFeeKindSchema,
+  PriceComponentSchema,
+  CommercialOfferV1Schema,
+  ContextNonQuotableKindSchema,
+  SupplyBindingSchema,
+} from "./scene-asset-schema";
+export type {
+  SupplySourceClass,
+  NonCommercialReferenceClass,
+  CommercialOfferStatus,
+  MediaRefRole,
+  MediaRef,
+  SceneFunctionCandidate,
+  PhysicalDimensions,
+  Compatibility,
+  CatalogItemV3,
+  SourceRef,
+  AvailabilityStatus,
+  Availability,
+  ServiceArea,
+  RentalPeriodRules,
+  PriceComponentType,
+  ServiceFeeKind,
+  PriceComponent,
+  CommercialOfferV1,
+  ContextNonQuotableKind,
+  SupplyBinding,
+} from "./scene-asset-schema";
+export { SceneCategoryV3Schema, SceneFunctionV3Schema, SCENE_CATEGORIES_V3, SCENE_FUNCTIONS_V3 } from "../taxonomy/v3";
+export type { SceneCategoryV3, SceneFunctionV3 } from "../taxonomy/v3";

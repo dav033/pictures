@@ -52,6 +52,9 @@ export const PALETA_COLORES_V2 = [
 ] as const;
 
 export const ACABADOS_CATALOGO_V2 = [
+  "satin",
+  "metal",
+  "fashion",
   "metalizado",
   "mate",
   "reflex",
@@ -138,6 +141,9 @@ const COLORS: readonly Alias<(typeof PALETA_COLORES_V2)[number]>[] = [
 ];
 
 const FINISHES: readonly Alias<(typeof ACABADOS_CATALOGO_V2)[number]>[] = [
+  { value: "satin", aliases: ["satin", "satín", "satinado"] },
+  { value: "metal", aliases: ["metal", "metal metals", "metal dorado", "metal plateado"] },
+  { value: "fashion", aliases: ["fashion", "fashion color"] },
   { value: "metalizado", aliases: ["metalizado", "metalizados", "metallic", "foil"] },
   { value: "mate", aliases: ["mate", "matte"] },
   { value: "reflex", aliases: ["reflex", "reflectivo", "reflectante"] },

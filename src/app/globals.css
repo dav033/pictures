@@ -293,24 +293,9 @@ body {
   background: color-mix(in srgb, var(--superficie-2) 88%, var(--fondo));
 }
 
-/* .material-message(-user) y .material-panel/.material-subpanel tenían cada
-   una una segunda definición más abajo en el archivo que pisaba esta por
-   cascada (mismo selector, o un descendiente ".message-shell X" que en la
-   práctica siempre aplica) — se dejó una sola definición con las propiedades
-   que de verdad se veían en pantalla, en vez de dos reglas silenciosamente
-   en conflicto. */
-.material-message {
-  border-color: color-mix(in srgb, var(--borde) 76%, transparent);
-  background: color-mix(in srgb, var(--superficie) 86%, transparent);
-  box-shadow: 0 12px 28px color-mix(in srgb, var(--texto) 7%, transparent);
-  backdrop-filter: blur(12px);
-}
-
-.material-message-user {
-  border-color: color-mix(in srgb, var(--acento) 58%, transparent);
-  background: linear-gradient(135deg, var(--acento), color-mix(in srgb, var(--acento) 74%, var(--acento-2)));
-  box-shadow: 0 14px 28px var(--sombra-acento);
-}
+/* .material-message(-user) vivían aquí: las reemplazó .chat-bubble(-user) al
+   final del archivo (globos con borde de gradiente, avatar y estado de
+   streaming). Se borraron en vez de dejarlas muertas — ningún .tsx las usa. */
 
 .material-panel {
   border: 1px solid color-mix(in srgb, var(--borde) 88%, transparent);
@@ -453,7 +438,7 @@ body {
 .workspace-shell {
   position: relative;
   isolation: isolate;
-  overflow: hidden;
+  overflow-x: clip;
   background:
     radial-gradient(circle at 4% 0%, color-mix(in srgb, var(--acento) 15%, transparent), transparent 34rem),
     radial-gradient(circle at 96% 100%, color-mix(in srgb, var(--acento-2) 10%, transparent), transparent 30rem),
@@ -728,11 +713,53 @@ body {
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--acento) 16%, transparent);
 }
 
+.workspace-plan-action-dock {
+  display: none;
+}
+
+.plan-card-approval-action {
+  margin-top: 0.25rem;
+}
+
+@media (min-width: 1024px) {
+  .workspace-plan-action-dock {
+    display: block;
+    flex: 0 0 auto;
+    z-index: 4;
+    border-top: 1px solid color-mix(in srgb, var(--borde) 84%, transparent);
+    background: linear-gradient(to bottom, color-mix(in srgb, var(--superficie) 74%, transparent), color-mix(in srgb, var(--superficie) 96%, var(--fondo)));
+    padding: 0.75rem 2rem;
+    backdrop-filter: blur(18px) saturate(125%);
+  }
+
+  .plan-card-approval-action {
+    display: none;
+  }
+}
+
 .workspace-sidebar {
   position: relative;
-  overflow-y: auto;
   background: color-mix(in srgb, var(--superficie-2) 76%, transparent);
   backdrop-filter: blur(18px);
+}
+
+.workspace-sidebar-pinned {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  height: auto;
+  margin-inline: -1rem;
+  padding: 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--borde) 84%, transparent);
+  background: color-mix(in srgb, var(--superficie-2) 94%, var(--fondo));
+  backdrop-filter: blur(18px) saturate(125%);
+}
+
+@media (min-width: 640px) {
+  .workspace-sidebar-pinned {
+    margin-inline: -1.5rem;
+    padding-inline: 1.5rem;
+  }
 }
 
 .workspace-sidebar > * {
@@ -846,5 +873,451 @@ body {
 
   .quick-action {
     min-height: auto;
+  }
+}
+
+/* ==========================================================================
+   CHAT — capa visual "estudio": globos con borde de gradiente, avatares,
+   estado de streaming vivo y compositor flotante. Todo se apoya en los
+   tokens de marca de arriba (violeta/magenta) y en color-mix, así que el
+   tema oscuro sale gratis; ninguna regla de aquí fija un color literal
+   fuera de los blancos de realce.
+   ========================================================================== */
+
+/* --- El lienzo del log ---------------------------------------------------- */
+
+.workspace-log {
+  position: relative;
+  background:
+    radial-gradient(120% 60% at 12% -10%, color-mix(in srgb, var(--acento) 13%, transparent), transparent 60%),
+    radial-gradient(90% 55% at 92% 110%, color-mix(in srgb, var(--acento-2) 11%, transparent), transparent 60%);
+  /* El contenido se desvanece al entrar y salir del área de scroll en vez de
+     cortarse a filo contra el header y el compositor. */
+  mask-image: linear-gradient(to bottom, transparent 0, #000 1.75rem, #000 calc(100% - 1.25rem), transparent 100%);
+}
+
+.workspace-log::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--borde) 34%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--borde) 34%, transparent) 1px, transparent 1px);
+  background-size: 2.5rem 2.5rem;
+  content: "";
+  mask-image: radial-gradient(80% 60% at 50% 0%, #000, transparent 78%);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.workspace-log > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* --- Fila: avatar + columna de contenido ---------------------------------- */
+
+.chat-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+}
+
+.chat-row-user {
+  flex-direction: row-reverse;
+}
+
+.chat-column {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+
+.chat-row-user .chat-column {
+  align-items: flex-end;
+}
+
+.chat-avatar {
+  position: relative;
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  place-items: center;
+  margin-top: 0.15rem;
+  border-radius: 999px;
+  color: #fff;
+}
+
+.chat-row-ia .chat-avatar {
+  background: linear-gradient(145deg, var(--acento), color-mix(in srgb, var(--acento-2) 70%, var(--acento)));
+  box-shadow: 0 6px 18px var(--sombra-acento);
+}
+
+/* Anillo cónico girando: señal de "asistente vivo" que no ocupa layout. */
+.chat-row-ia .chat-avatar::before {
+  position: absolute;
+  inset: -3px;
+  border-radius: 999px;
+  background: conic-gradient(from 0deg, transparent 0deg, var(--acento) 90deg, var(--acento-2) 190deg, transparent 300deg);
+  content: "";
+  opacity: 0.55;
+  animation: avatar-orbit 6s linear infinite;
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+  pointer-events: none;
+}
+
+.chat-row-user .chat-avatar {
+  border: 1px solid color-mix(in srgb, var(--borde) 88%, transparent);
+  background: color-mix(in srgb, var(--superficie-2) 82%, transparent);
+  color: var(--texto-suave);
+}
+
+.chat-avatar-initial {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* --- El globo ------------------------------------------------------------- */
+
+.chat-bubble {
+  position: relative;
+  min-width: 0;
+  border-radius: 1.15rem;
+  isolation: isolate;
+  overflow-wrap: anywhere;
+  transition: transform 220ms var(--ease-out), box-shadow 220ms var(--ease-out);
+}
+
+/* Borde de 1px hecho con gradiente (border-color no admite gradientes): se
+   pinta un pseudo-elemento del tamaño del globo y se recorta su interior. */
+.chat-bubble::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 1px;
+  content: "";
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  pointer-events: none;
+}
+
+.chat-bubble-ia {
+  border-bottom-left-radius: 0.35rem;
+  background: linear-gradient(155deg, color-mix(in srgb, var(--superficie) 94%, transparent), color-mix(in srgb, var(--superficie) 72%, transparent));
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 16%, transparent) inset,
+    0 14px 34px color-mix(in srgb, var(--texto) 9%, transparent);
+  backdrop-filter: blur(14px) saturate(125%);
+}
+
+.chat-bubble-ia::before {
+  background: linear-gradient(150deg, color-mix(in srgb, var(--acento) 42%, transparent), color-mix(in srgb, var(--borde) 90%, transparent) 45%, color-mix(in srgb, var(--acento-2) 26%, transparent));
+}
+
+.chat-bubble-ia:hover {
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 18%, transparent) inset,
+    0 18px 40px color-mix(in srgb, var(--texto) 12%, transparent);
+  transform: translateY(-1px);
+}
+
+.chat-bubble-user {
+  border-bottom-right-radius: 0.35rem;
+  background: linear-gradient(135deg, var(--acento), color-mix(in srgb, var(--acento) 62%, var(--acento-2)));
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 30%, transparent) inset,
+    0 16px 34px var(--sombra-acento);
+}
+
+.chat-bubble-user::before {
+  background: linear-gradient(135deg, color-mix(in srgb, #fff 46%, transparent), transparent 55%);
+}
+
+.chat-bubble-user:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 34%, transparent) inset,
+    0 20px 42px var(--sombra-acento);
+}
+
+/* Streaming: el borde recorre el globo mientras el modelo escribe. Es la
+   misma señal que ya daba "Escribiendo…", pero visible también cuando el
+   mensaje ya tiene texto a medio llegar. */
+/* El comet conic-gradient por sí solo se apaga a casi transparente en el
+   tramo que no cubre (era el "borde incompleto" reportado): ahora corre
+   como una segunda capa encima del mismo degradado estático del globo en
+   reposo (línea ~1019), que sí envuelve el anillo completo. */
+.chat-bubble-ia.is-streaming::before {
+  background:
+    conic-gradient(
+      from var(--stream-angle, 0deg),
+      transparent 0deg,
+      var(--acento) 60deg,
+      var(--acento-2) 120deg,
+      transparent 180deg
+    ),
+    linear-gradient(
+      150deg,
+      color-mix(in srgb, var(--acento) 42%, transparent),
+      color-mix(in srgb, var(--borde) 90%, transparent) 45%,
+      color-mix(in srgb, var(--acento-2) 26%, transparent)
+    );
+  animation: stream-border 2.4s linear infinite;
+}
+
+.chat-bubble-ia.is-streaming::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(60% 120% at 0% 50%, color-mix(in srgb, var(--acento) 14%, transparent), transparent 70%);
+  content: "";
+  animation: stream-glow 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.chat-bubble-ia.is-streaming {
+  width: fit-content;
+  min-width: 11rem;
+}
+
+@property --stream-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes stream-border {
+  to {
+    --stream-angle: 360deg;
+  }
+}
+
+@keyframes stream-glow {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+@keyframes avatar-orbit {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+/* Las tarjetas que cuelgan de un mensaje del cliente (raro, pero posible)
+   se alinean con su globo, no con el borde opuesto del log. */
+.chat-row-user .chat-column > *:not(.chat-bubble) {
+  margin-left: auto;
+}
+
+/* --- Compositor ----------------------------------------------------------- */
+
+.chat-composer-pill {
+  position: relative;
+  min-height: 3.25rem;
+  border-radius: 1.35rem;
+  background: color-mix(in srgb, var(--fondo) 62%, var(--superficie));
+  padding: 0.4rem 0.4rem 0.4rem 1rem;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 14%, transparent) inset,
+    0 10px 26px color-mix(in srgb, var(--texto) 8%, transparent);
+  transition: box-shadow 220ms var(--ease-out), transform 220ms var(--ease-out);
+}
+
+.chat-composer-pill > * {
+  position: relative;
+  z-index: 1;
+}
+
+.chat-composer-pill::before {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--acento) 34%, transparent), color-mix(in srgb, var(--borde) 92%, transparent) 50%, color-mix(in srgb, var(--acento-2) 30%, transparent));
+  content: "";
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  pointer-events: none;
+}
+
+.chat-composer-pill:focus-within {
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 18%, transparent) inset,
+    0 0 0 4px color-mix(in srgb, var(--acento) 16%, transparent),
+    0 16px 34px color-mix(in srgb, var(--texto) 10%, transparent);
+}
+
+.chat-composer-pill.is-busy::before {
+  background: conic-gradient(
+    from var(--stream-angle, 0deg),
+    color-mix(in srgb, var(--borde) 92%, transparent) 0deg,
+    var(--acento) 90deg,
+    var(--acento-2) 180deg,
+    color-mix(in srgb, var(--borde) 92%, transparent) 270deg
+  );
+  animation: stream-border 2s linear infinite;
+}
+
+/* El input ya no dibuja su propia caja: borde y foco viven en la píldora,
+   para que sean una sola pieza y no dos rectángulos anidados. */
+.chat-composer-input {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0.6rem 0;
+  outline: none;
+  width: 100%;
+}
+
+/* The pill owns the focus state. Keeping a second focus box on the input
+   creates the clipped rectangle visible inside the composer. */
+.chat-composer-pill .chat-composer-input:focus,
+.chat-composer-pill .chat-composer-input:focus-visible {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+}
+
+.typing-indicator {
+  min-height: 1.4rem;
+}
+
+.typing-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding-top: 0.15rem;
+}
+
+.typing-dots span {
+  width: 0.28rem;
+  height: 0.28rem;
+  border-radius: 999px;
+  background: var(--acento);
+  animation: typing-dot 1.2s ease-in-out infinite;
+}
+
+.typing-dots span:nth-child(2) {
+  animation-delay: 0.14s;
+}
+
+.typing-dots span:nth-child(3) {
+  animation-delay: 0.28s;
+}
+
+@keyframes typing-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+
+  30% {
+    opacity: 1;
+    transform: translateY(-0.18rem);
+  }
+}
+
+.chat-send {
+  position: relative;
+  display: inline-flex;
+  min-height: 2.5rem;
+  align-items: center;
+  gap: 0.4rem;
+  overflow: hidden;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, var(--acento), color-mix(in srgb, var(--acento) 58%, var(--acento-2)));
+  padding: 0 0.9rem;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  box-shadow: 0 8px 20px var(--sombra-acento);
+}
+
+/* Destello que barre el botón al pasar el mouse. */
+.chat-send::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 35%, color-mix(in srgb, #fff 40%, transparent) 50%, transparent 65%);
+  content: "";
+  opacity: 0;
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+
+.chat-send:hover:not(:disabled)::after {
+  opacity: 1;
+  transform: translateX(120%);
+  transition: transform 620ms var(--ease-out), opacity 200ms linear;
+}
+
+.chat-send:hover:not(:disabled) {
+  box-shadow: 0 12px 26px var(--sombra-acento);
+}
+
+.chat-send:disabled {
+  cursor: not-allowed;
+  background: color-mix(in srgb, var(--superficie-2) 80%, var(--fondo));
+  color: var(--texto-suave);
+  box-shadow: none;
+}
+
+@media (max-width: 480px) {
+  .chat-bubble-ia.is-streaming {
+    min-width: 9.5rem;
+  }
+
+  .chat-send-label {
+    display: none;
+  }
+
+  .chat-send {
+    padding: 0 0.75rem;
+  }
+}
+
+/* --- Sugerencias de arranque --------------------------------------------- */
+
+.quick-action::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 40%, color-mix(in srgb, var(--acento) 16%, transparent) 50%, transparent 60%);
+  content: "";
+  opacity: 0;
+  transform: translateX(-110%);
+  pointer-events: none;
+}
+
+.quick-action:hover::after {
+  opacity: 1;
+  transform: translateX(110%);
+  transition: transform 700ms var(--ease-out), opacity 200ms linear;
+}
+
+/* El bloque global de prefers-reduced-motion ya neutraliza las animaciones
+   (0.01ms, una iteración); esto además apaga los efectos puramente
+   decorativos para que no queden congelados a media pose. */
+@media (prefers-reduced-motion: reduce) {
+  .chat-row-ia .chat-avatar::before,
+  .chat-bubble-ia.is-streaming::after,
+  .chat-send::after,
+  .quick-action::after,
+  .typing-dots span {
+    display: none;
   }
 }

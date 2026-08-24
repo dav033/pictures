@@ -45,13 +45,35 @@ export function buscarProductos(filtros: Parameters<typeof filtrarProductos>[1])
 }
 
 /**
- * Resuelve ids tanto del catálogo curado a mano (tabla `productos`) como del
- * catálogo real de Shopify (`shopify_variante`), en el orden en que llegaron
- * — necesario porque el chat puede recomendar piezas de las dos fuentes en
- * la misma conversación y la selección del cliente las mezcla sin distinguir
- * de dónde salió cada una.
+ * Frontera de autoridad comercial (Tarea 00.3 —
+ * PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md §2.2 y §6). `productosPorId`
+ * resuelve ids indistintamente desde dos fuentes que HOY comparten el mismo
+ * tipo `Producto` pero tienen procedencia muy distinta:
+ *
+ * - `"postgres_shopify"`: catálogo comercial vigente (`shopify_variante`,
+ *   respaldado por Postgres/Shopify) — fuente de verdad para venta/alquiler
+ *   real.
+ * - `"seed_demo"`: la tabla SQLite `productos`, sembrada desde
+ *   `CATALOGO_SEED` (`src/lib/catalog-data.ts`) — 14 productos demo ricos
+ *   sin proveedor, vigencia, modalidad ni fotos comerciales suficientes.
+ *
+ * Se alineará en espíritu con `SupplySourceClass`/`NonCommercialReferenceClass`
+ * del contrato Zod formal descrito en el plan §7.3 (Tarea 02.2, aún no
+ * implementada); hasta entonces este union local es la fuente de verdad
+ * para el código real de este módulo.
  */
-export function productosPorId(ids: string[]): Producto[] {
+export type CommercialSourceClass = "postgres_shopify" | "seed_demo";
+
+export type ProductoConFuente = { producto: Producto; fuente: CommercialSourceClass };
+
+/**
+ * Igual que `productosPorId`, pero conserva de qué fuente salió cada
+ * producto resuelto. Los llamadores que puedan producir una línea comercial
+ * (cotización, aprobación, generación) deben usar esta variante en vez de
+ * `productosPorId` para poder distinguir catálogo real de seed de
+ * demostración — ver `src/lib/generacion/provenance.ts`.
+ */
+export function productosPorIdConFuente(ids: string[]): ProductoConFuente[] {
   const delCatalogoMock = seleccionarProductos(obtenerProductos(), ids);
   const idsResueltos = new Set(delCatalogoMock.map((p) => p.id));
   const idsRestantes = ids.filter((id) => !idsResueltos.has(id));
@@ -59,9 +81,31 @@ export function productosPorId(ids: string[]): Producto[] {
   const deShopify = idsRestantes.length
     ? variantesPorIds(idsRestantes).map(aProducto)
     : [];
+  const fuentePorId = new Map<string, CommercialSourceClass>([
+    ...delCatalogoMock.map((p) => [p.id, "seed_demo" as const] as const),
+    ...deShopify.map((p) => [p.id, "postgres_shopify" as const] as const),
+  ]);
   const porId = new Map([...delCatalogoMock, ...deShopify].map((p) => [p.id, p]));
 
-  return ids.map((id) => porId.get(id)).filter((p): p is Producto => Boolean(p));
+  return ids
+    .map((id) => porId.get(id))
+    .filter((p): p is Producto => Boolean(p))
+    .map((producto) => ({ producto, fuente: fuentePorId.get(producto.id)! }));
+}
+
+/**
+ * Resuelve ids tanto del catálogo curado a mano (tabla `productos`) como del
+ * catálogo real de Shopify (`shopify_variante`), en el orden en que llegaron
+ * — necesario porque el chat puede recomendar piezas de las dos fuentes en
+ * la misma conversación y la selección del cliente las mezcla sin distinguir
+ * de dónde salió cada una.
+ *
+ * Nota de procedencia: esta función NO distingue seed de catálogo real en su
+ * valor de retorno. Cualquier ruta que decida si un producto puede convertirse
+ * en línea comercial verificada debe usar `productosPorIdConFuente`.
+ */
+export function productosPorId(ids: string[]): Producto[] {
+  return productosPorIdConFuente(ids).map((item) => item.producto);
 }
 
 export function crearProducto(datos: Omit<Producto, "id">): Producto {

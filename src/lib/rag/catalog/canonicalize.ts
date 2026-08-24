@@ -19,6 +19,7 @@ import {
   clasificarCategorias,
   clasificarColores,
   clasificarOcasiones,
+  clasificarAcabados,
 } from "../taxonomy/v2";
 
 export type CanonicalRejection = {
@@ -332,6 +333,7 @@ function canonicalizeProduct(
   const v2Colors = normalizeColorValues(clasificarColores(taxonomyMatchText).values);
   const colors = v2Colors.length > 0 ? v2Colors : normalizeColorValues(derivarColores(rawTags, title));
   const v2Occasions = clasificarOcasiones(taxonomyMatchText).values;
+  const finishes = uniqueStrings(clasificarAcabados(taxonomyMatchText).values);
   const occasions = uniqueStrings([...v2Occasions, ...derivarOcasiones(rawTags, title)]);
   // A public title is stronger evidence than a legacy productType. This is
   // important for names such as "Decor-Kit" whose old type may say LATEX.
@@ -347,6 +349,7 @@ function canonicalizeProduct(
     tags: searchTags,
     colores: colors,
     ocasiones: occasions,
+    acabados: finishes,
     skus,
   });
   const sizeForProduct = variants.find((variant) => variant.forma || variant.codigo_tamano);
@@ -371,7 +374,7 @@ function canonicalizeProduct(
     available: variants.some((variant) => variant.available),
     price_min: Math.min(...variants.map((variant) => variant.price)),
     price_max: Math.max(...variants.map((variant) => variant.price)),
-    derived: { category, colors, occasions },
+     derived: { category, colors, finishes, occasions },
     source_payload: product,
     search_text: searchText,
     embedding_source_hash: hashSearchText(searchText),

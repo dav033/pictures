@@ -5,6 +5,7 @@ import {
   FORMAS_CATALOGO_V2,
   OCASIONES_CATALOGO_V2,
   PALETA_COLORES_V2,
+  ACABADOS_CATALOGO_V2,
   TAXONOMY_VERSION,
 } from "@/lib/rag/taxonomy/v2";
 
@@ -20,6 +21,7 @@ export const IntentQuerySchema = z.object({
     categorias: z.array(enumSchema(CATEGORIAS_CATALOGO_V2)).default([]),
     ocasiones: z.array(enumSchema(OCASIONES_CATALOGO_V2)).default([]),
     colores: z.array(enumSchema(PALETA_COLORES_V2)).default([]),
+    acabados: z.array(enumSchema(ACABADOS_CATALOGO_V2)).default([]),
     /** Physical shape only; a finish such as metalizado is never a shape. */
     formas: z.array(enumSchema(FORMAS_CATALOGO_V2)).default([]),
     /** Exact catalog diameters in inches. */

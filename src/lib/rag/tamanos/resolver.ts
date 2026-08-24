@@ -1,6 +1,5 @@
 import "server-only";
 import type { Pool } from "pg";
-import { MERMA } from "@/lib/cotizacion/constantes";
 import type { LineaDespiece } from "@/lib/medidas/geometria";
 
 export type LineaResuelta = {
@@ -93,7 +92,10 @@ export async function resolverVariantesPorDespiece(
       }
     }
 
-    const unitsNeeded = Math.ceil(linea.cantidad * (1 + MERMA));
+    // This resolver returns package counts for the selected size. Project-wide
+    // waste is allocated later from natural package surplus; it must not be
+    // applied independently to every requested line here.
+    const unitsNeeded = linea.cantidad;
     const packages = Math.max(1, Math.ceil(unitsNeeded / best.packageUnits));
     lineas.push({
       productId,

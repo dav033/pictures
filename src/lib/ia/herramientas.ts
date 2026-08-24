@@ -173,7 +173,8 @@ export const HERRAMIENTAS: Herramienta[] = [
             required: ["tamano", "cantidad"],
             properties: {
               tamano: { type: "string", description: "código tal cual lo usa el catálogo, ej. R-12" },
-              color: { type: "string" },
+               color: { type: "string" },
+               acabado: { type: "string", description: "solo si el cliente lo pidió explícitamente; no lo inventes desde el estilo" },
               cantidad: { type: "integer" },
             },
           },
@@ -260,6 +261,95 @@ export const HERRAMIENTAS_RAG: Herramienta[] = [
               },
               color: { type: "string", description: "solo con usar_despiece + calcular_medidas con varios colores: cuál color de esa mezcla representa este producto" },
               razon: { type: "string", description: "por qué elegiste esta pieza, en una frase" },
+            },
+          },
+        },
+      },
+    },
+  },
+];
+
+export const HERRAMIENTAS_PLAN: Herramienta[] = [
+  {
+    nombre: "confirmar_plan_decoracion",
+    descripcion: "Confirma el diseño completo: estructuras, ubicación, productos y colores. No mandes tamaños, cantidades de globos ni precios; el backend los calcula desde la geometría y el catálogo real. Cada product_id debe haber aparecido en buscar_catalogo_rag de este turno. Es la última herramienta del turno y devuelve el desglose que se muestra antes de generar la imagen.",
+    esquema: {
+      type: "object",
+      required: ["concepto", "espacio", "estructuras"],
+      properties: {
+        concepto: {
+          type: "object",
+          required: ["titulo", "descripcion", "paleta"],
+          properties: {
+            titulo: { type: "string" },
+            descripcion: { type: "string" },
+            paleta: { type: "array", items: { type: "string" } },
+            estilo: { type: "string" },
+            ocasion: { type: "string" },
+            momento_dia: { type: "string" },
+          },
+        },
+        espacio: {
+          type: "object",
+          required: ["tipo", "fuente"],
+          properties: {
+            tipo: { type: "string" },
+            ancho_m: { type: "number" },
+            alto_m: { type: "number" },
+            largo_m: { type: "number" },
+            fuente: { type: "string", enum: ["cliente", "supuesto", "foto"] },
+          },
+        },
+        estructuras: {
+          type: "array",
+          minItems: 1,
+          maxItems: 8,
+          items: {
+            type: "object",
+            required: ["estructura_id", "nombre", "tipo", "rol_escena", "ubicacion", "medidas", "densidad", "mezcla", "materiales", "porque"],
+            properties: {
+              estructura_id: { type: "string", description: "EST_01_ARCO, EST_02_COLUMNAS..." },
+              nombre: { type: "string" },
+              tipo: { type: "string", enum: ["arco", "semiarco", "guirnalda", "columna", "pared", "centro_mesa", "backdrop", "kit", "accesorio"] },
+              rol_escena: { type: "string", enum: ["focal", "soporte", "relleno", "acento", "servicio"] },
+              ubicacion: { type: "string", enum: ["fondo_pared", "arco_central", "sobre_mesa_principal", "lateral_izquierdo", "lateral_derecho", "piso_frontal", "mesas_invitados", "entrada", "techo"] },
+              medidas: { type: "object", properties: { ancho_m: { type: "number" }, alto_m: { type: "number" }, largo_m: { type: "number" } } },
+              repeticiones: { type: "integer", minimum: 1, maximum: 24 },
+              densidad: { type: "string", enum: ["sencilla", "media", "lujosa"] },
+              mezcla: { type: "string", enum: ["clasica", "organica_fina", "organica_gruesa", "solo_grandes"] },
+              unidades_declaradas: { type: "integer", minimum: 1 },
+              materiales: {
+                type: "array",
+                minItems: 1,
+                maxItems: 6,
+                items: {
+                  type: "object",
+                  required: ["product_id", "participacion", "rol_material"],
+                  properties: {
+                    product_id: { type: "string" },
+                    variant_id: { type: "string", description: "Solo para backdrop, kit o accesorio; no mandes tamaños para estructuras de globos." },
+                    color: { type: "string" },
+                    acabado: { type: "string", description: "solo si el cliente lo pidió explícitamente; no lo inventes desde el estilo" },
+                    participacion: { type: "number", minimum: 0, maximum: 1 },
+                    rol_material: { type: "string", enum: ["principal", "secundario", "acento"] },
+                  },
+                },
+              },
+              porque: { type: "string" },
+              referencia_element_id: { type: "string", description: "Si el cliente adjuntó una imagen de referencia (ver ANALISIS_REFERENCIA_VISUAL), el element_id (ej. REF_01_E01) que esta estructura materializa. Omite si esta estructura no viene de la referencia." },
+            },
+          },
+        },
+        referencia_omitida: {
+          type: "array",
+          maxItems: 40,
+          description: "Elementos de ANALISIS_REFERENCIA_VISUAL que decides NO incluir en el plan, con el motivo real. Junto con estructuras[].referencia_element_id debe cubrir todos los elementos detectados en la referencia de este turno.",
+          items: {
+            type: "object",
+            required: ["element_id", "motivo"],
+            properties: {
+              element_id: { type: "string" },
+              motivo: { type: "string" },
             },
           },
         },

@@ -63,6 +63,37 @@ async function main() {
       `Invalid-id attempt rate (product_id fuera de whitelist): ${sel.rechazos_whitelist} intento(s) — cada uno es un id que el LLM mandó sin que viniera de una búsqueda real`,
     );
 
+    const { rows: planes } = await pool.query<{
+      total: number;
+      presentados: number;
+      aprobados_antes_de_generar: number;
+      sobre_techo: number;
+      qa_intentos: number;
+      qa_conformes: number;
+      ratio_costo: number | null;
+      ahorro_paquetes: number | null;
+    }>(
+      `SELECT
+         COUNT(*) FILTER (WHERE plan_hash IS NOT NULL)::int AS total,
+         COUNT(*) FILTER (WHERE status IN ('VERIFICADO', 'APROBACION_REQUERIDA'))::int AS presentados,
+         COUNT(*) FILTER (WHERE status = 'CLIENT_APPROVED')::int AS aprobados_antes_de_generar,
+         COUNT(*) FILTER (WHERE ceiling_cop IS NOT NULL AND cost_chosen_cop > ceiling_cop)::int AS sobre_techo,
+         COUNT(*) FILTER (WHERE status LIKE 'IMAGEN_QA%')::int AS qa_intentos,
+         COUNT(*) FILTER (WHERE qa_hash LIKE '%:pass')::int AS qa_conformes,
+         AVG(CASE WHEN cost_min_cop > 0 THEN cost_chosen_cop::numeric / cost_min_cop END) AS ratio_costo,
+         AVG(COALESCE((packages->>'ahorro_paquetes_cop')::numeric, 0)) AS ahorro_paquetes
+       FROM plan_audit_log
+       WHERE created_at > now() - ($1 || ' days')::interval`,
+      [dias],
+    );
+    const plan = planes[0];
+    console.log("\nPlanes y generación:");
+    console.log(`  planes presentados=${plan.presentados}/${plan.total}; aprobados antes de generar=${plan.aprobados_antes_de_generar}`);
+    console.log(`  sobre techo sin consentimiento=${plan.sobre_techo}`);
+    console.log(`  costo elegido / mínimo compatible=${plan.ratio_costo == null ? "N/A" : Number(plan.ratio_costo).toFixed(3)}`);
+    console.log(`  QA visual conforme=${plan.qa_intentos ? `${plan.qa_conformes}/${plan.qa_intentos}` : "N/A"}`);
+    console.log(`  ahorro medio por consolidación de paquetes=${Math.round(Number(plan.ahorro_paquetes ?? 0))} COP`);
+
     const { rows: sync } = await pool.query<{
       total: number; fallidos: number; ultimo: string | null; ultimo_normalizados: number | null;
     }>(
