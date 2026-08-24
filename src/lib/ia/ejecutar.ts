@@ -42,6 +42,7 @@ export type ResultadoConversacion = {
   ragRechazados?: ItemRechazado[];
   ragTotal?: number;
   plan?: PlanResuelto;
+  referenceBlueprint?: ReferenceBlueprintV2;
 };
 
 function empaquetar(estado: EstadoConversacion, texto: string, proveedor: ChatPort["id"], modelo: string): ResultadoConversacion {
@@ -63,6 +64,7 @@ function empaquetar(estado: EstadoConversacion, texto: string, proveedor: ChatPo
     ragRechazados: estado.ragRechazados,
     ragTotal: estado.ragTotal,
     plan: estado.planResuelto,
+    referenceBlueprint: estado.referenceBlueprint,
   };
 }
 

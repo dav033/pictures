@@ -1,4 +1,22 @@
+import type { ReferenceBlueprintV2 } from "../ia/reference-blueprint";
 import type { CompraConsolidada, PlanResuelto } from "./resuelto";
+
+export type EstadoCoberturaReferencia = "pendiente" | "incluido" | "omitido";
+
+export type ElementoCoberturaReferencia = {
+  elementId: string;
+  nombre: string;
+  categoria: ReferenceBlueprintV2["elements"][number]["category"];
+  estado: EstadoCoberturaReferencia;
+  estructuraId?: string;
+  estructuraNombre?: string;
+  variantIds: string[];
+  motivo?: string;
+};
+
+export type CoberturaReferencia = {
+  elementos: ElementoCoberturaReferencia[];
+};
 
 export type DesgloseMateriales = {
   por_estructura: Array<{
@@ -7,6 +25,8 @@ export type DesgloseMateriales = {
     tipo: string;
     eje_m: number | null;
     total_unidades: number;
+    referencia_element_id?: string;
+    referencia_nombre?: string;
     lineas: Array<{
       tamano: string | null;
       diam_cm: number | null;
@@ -18,35 +38,106 @@ export type DesgloseMateriales = {
     }>;
   }>;
   compras: CompraConsolidada[];
+  referencias_omitidas: Array<{
+    element_id: string;
+    nombre: string;
+    categoria: ReferenceBlueprintV2["elements"][number]["category"];
+    motivo: string;
+  }>;
   resumen_tamanos: Array<{ tamano: string; diam_pulg: number; diam_cm: number; unidades: number; pct: number }>;
   totales: { total_unidades: number; total_cop: number; incluye_iva: boolean; merma_porcentaje: number };
   notas: string[];
 };
 
-export function construirDesglose(plan: PlanResuelto): DesgloseMateriales {
-  const porTamano = new Map<number, { unidades: number; forma: string | null }>();
-  const porEstructura = plan.estructuras.map((estructura) => ({
-    estructura_id: estructura.estructura_id,
-    nombre: estructura.nombre,
-    tipo: estructura.tipo,
-    eje_m: estructura.eje_m,
-    total_unidades: estructura.total_unidades,
-    lineas: estructura.lineas.map((linea) => {
-      if (linea.diam_pulg != null) {
-        const previo = porTamano.get(linea.diam_pulg);
-        porTamano.set(linea.diam_pulg, { unidades: (previo?.unidades ?? 0) + linea.unidades, forma: linea.forma });
+export function construirCoberturaReferencia(blueprint: ReferenceBlueprintV2, planResuelto?: PlanResuelto | null): CoberturaReferencia {
+  const estructurasPorId = new Map(
+    planResuelto?.plan.estructuras.map((estructura) => [estructura.estructura_id, estructura]) ?? [],
+  );
+  const omitidasPorId = new Map(planResuelto?.plan.referencia_omitida?.map((item) => [item.element_id, item]) ?? []);
+
+  return {
+    elementos: blueprint.elements.map((elemento) => {
+      if (!planResuelto) {
+        return {
+          elementId: elemento.element_id,
+          nombre: elemento.name,
+          categoria: elemento.category,
+          estado: "pendiente",
+          variantIds: [],
+        };
       }
+
+      const estructuras = planResuelto.estructuras.filter((estructura) =>
+        estructurasPorId.get(estructura.estructura_id)?.referencia_element_id === elemento.element_id,
+      );
+      if (estructuras.length > 0) {
+        return {
+          elementId: elemento.element_id,
+          nombre: elemento.name,
+          categoria: elemento.category,
+          estado: "incluido",
+          estructuraId: estructuras[0]!.estructura_id,
+          estructuraNombre: estructuras[0]!.nombre,
+          variantIds: [...new Set(estructuras.flatMap((estructura) => estructura.lineas.map((linea) => linea.variant_id)))],
+        };
+      }
+
+      const omitida = omitidasPorId.get(elemento.element_id);
+      if (omitida) {
+        return {
+          elementId: elemento.element_id,
+          nombre: elemento.name,
+          categoria: elemento.category,
+          estado: "omitido",
+          variantIds: [],
+          motivo: omitida.motivo,
+        };
+      }
+
       return {
-        tamano: linea.tamano_codigo,
-        diam_cm: linea.diam_cm,
-        color: linea.color,
-        titulo: linea.titulo,
-        sku: linea.sku,
-        unidades: linea.unidades,
-        sustitucion: linea.sustitucion ? `${linea.sustitucion.pedido} → ${linea.sustitucion.entregado}: ${linea.sustitucion.motivo}` : null,
+        elementId: elemento.element_id,
+        nombre: elemento.name,
+        categoria: elemento.category,
+        estado: "pendiente",
+        variantIds: [],
       };
     }),
-  }));
+  };
+}
+
+export function construirDesglose(plan: PlanResuelto, blueprint?: ReferenceBlueprintV2): DesgloseMateriales {
+  const porTamano = new Map<number, { unidades: number; forma: string | null }>();
+  const estructurasPlanPorId = new Map(plan.plan.estructuras.map((estructura) => [estructura.estructura_id, estructura]));
+  const elementosReferenciaPorId = new Map(blueprint?.elements.map((elemento) => [elemento.element_id, elemento]) ?? []);
+  const porEstructura = plan.estructuras.map((estructura) => {
+    const estructuraPlan = estructurasPlanPorId.get(estructura.estructura_id);
+    const referenciaElementId = estructuraPlan?.referencia_element_id;
+    const referenciaNombre = referenciaElementId ? elementosReferenciaPorId.get(referenciaElementId)?.name : undefined;
+    return {
+      estructura_id: estructura.estructura_id,
+      nombre: estructura.nombre,
+      tipo: estructura.tipo,
+      eje_m: estructura.eje_m,
+      total_unidades: estructura.total_unidades,
+      ...(referenciaElementId ? { referencia_element_id: referenciaElementId } : {}),
+      ...(referenciaNombre ? { referencia_nombre: referenciaNombre } : {}),
+      lineas: estructura.lineas.map((linea) => {
+        if (linea.diam_pulg != null) {
+          const previo = porTamano.get(linea.diam_pulg);
+          porTamano.set(linea.diam_pulg, { unidades: (previo?.unidades ?? 0) + linea.unidades, forma: linea.forma });
+        }
+        return {
+          tamano: linea.tamano_codigo,
+          diam_cm: linea.diam_cm,
+          color: linea.color,
+          titulo: linea.titulo,
+          sku: linea.sku,
+          unidades: linea.unidades,
+          sustitucion: linea.sustitucion ? `${linea.sustitucion.pedido} → ${linea.sustitucion.entregado}: ${linea.sustitucion.motivo}` : null,
+        };
+      }),
+    };
+  });
   const totalConTamano = [...porTamano.values()].reduce((sum, item) => sum + item.unidades, 0);
   const resumen_tamanos = [...porTamano.entries()].sort(([a], [b]) => a - b).map(([diam_pulg, item]) => ({
     tamano: `R-${diam_pulg}`,
@@ -62,9 +153,21 @@ export function construirDesglose(plan: PlanResuelto): DesgloseMateriales {
     ...plan.compras.filter((compra) => compra.sobrante > 0).map((compra) => `${compra.titulo}: sobran ${compra.sobrante} unidades después de comprar paquetes completos.`),
     ...plan.sin_cobertura.map((item) => `${item.estructura_id}: sin cobertura para ${item.tamano}.`),
   ];
+  const referencias_omitidas = blueprint
+    ? (plan.plan.referencia_omitida ?? []).map((item) => {
+        const elemento = elementosReferenciaPorId.get(item.element_id);
+        return {
+          element_id: item.element_id,
+          nombre: elemento?.name ?? item.element_id,
+          categoria: elemento?.category ?? "other",
+          motivo: item.motivo,
+        };
+      })
+    : [];
   return {
     por_estructura: porEstructura,
     compras: plan.compras,
+    referencias_omitidas,
     resumen_tamanos,
     totales: plan.totales,
     notas: [...new Set(notas)],

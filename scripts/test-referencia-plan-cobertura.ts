@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { construirSistema, serializeReferenceBlueprint } from "@/lib/ia/prompt-sistema";
 import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
+import { construirCoberturaReferencia } from "@/lib/plan/desglose";
 import { validarCoberturaReferencia } from "@/lib/plan/restricciones";
 import { PlanDecoracionSchema, type PlanDecoracion } from "@/lib/plan/tipos";
+import type { PlanResuelto } from "@/lib/plan/resuelto";
 
 /**
  * R2 (blueprint → prompt del chat) + R4 (cobertura referencia→plan). Sin
@@ -116,6 +118,38 @@ function run() {
   assert.deepEqual(validarCoberturaReferencia(planSinMencionarNoAprobado, blueprint), [], "el elemento no aprobado (REF_01_E03) nunca debe exigirse");
 
   console.log("[PASS] R4 — cobertura referencia→plan (completa, incompleta, no-op sin blueprint, ignora no-aprobados)");
+
+  const pendiente = construirCoberturaReferencia(blueprint);
+  assert.ok(pendiente.elementos.every((elemento) => elemento.estado === "pendiente"), "sin plan todos los elementos quedan pendientes");
+
+  const planResuelto = {
+    plan: planCompleto,
+    estructuras: [{
+      estructura_id: "EST_01_ARCO",
+      nombre: "Arco central",
+      lineas: [{ variant_id: "V-1" }, { variant_id: "V-2" }, { variant_id: "V-1" }],
+    }],
+  } as unknown as PlanResuelto;
+  const cobertura = construirCoberturaReferencia(blueprint, planResuelto);
+  assert.deepEqual(cobertura.elementos[0], {
+    elementId: "REF_01_E01",
+    nombre: "cortina de fondo dorada",
+    categoria: "curtain",
+    estado: "omitido",
+    variantIds: [],
+    motivo: "la cortina no tiene equivalente real en catálogo",
+  });
+  assert.deepEqual(cobertura.elementos[1], {
+    elementId: "REF_01_E02",
+    nombre: "arco de globos",
+    categoria: "balloon_structure",
+    estado: "incluido",
+    estructuraId: "EST_01_ARCO",
+    estructuraNombre: "Arco central",
+    variantIds: ["V-1", "V-2"],
+  });
+  assert.equal(cobertura.elementos[2]?.estado, "pendiente", "un elemento no resuelto queda pendiente");
+  console.log("[PASS] cobertura derivada — pendiente, incluido, omitido, nombres, categorías y variantes únicas");
 }
 
 run();

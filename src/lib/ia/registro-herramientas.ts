@@ -1,6 +1,6 @@
 import "server-only";
 import type { RegistroHerramientas } from "@sempertex/agente-core";
-import { cotizar, type Cotizacion, type ItemCotizacion } from "@/lib/cotizacion/motor";
+import { cotizar, cotizarPlan, type Cotizacion, type ItemCotizacion } from "@/lib/cotizacion/motor";
 import { buscarDecoraciones } from "@/lib/decoraciones";
 import { calcularMedidas, type Figura, type ResultadoMedidas } from "@/lib/medidas/geometria";
 import { productosPorId } from "@/lib/products";
@@ -662,6 +662,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
       resuelto.request_id = estado.ragRequestId;
       resuelto.approval_token = crearTokenAprobacion(resuelto.plan_hash, estado.ragRequestId);
       estado.planResuelto = resuelto;
+      estado.cotizacion = cotizarPlan(resuelto);
       // La cotización se muestra, pero generar queda bloqueado hasta la
       // aprobación explícita del cliente en la tarjeta del plan.
       estado.seleccionFinalIA = [];
@@ -686,6 +687,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
         comercial: resuelto.comercial,
         alternativas: resuelto.alternativas,
         fase: "desglose_previo; la imagen se genera despues de mostrarlo",
+        cotizacion: estado.cotizacion,
       };
     },
 

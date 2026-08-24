@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Search, Calculator, Ruler, PackageSearch, ClipboardCheck, NotebookPen, CheckCircle2, X, AlertCircle, Lock, Plus, Sparkles, ArrowUp, type LucideIcon } from "lucide-react";
+import { Search, Calculator, Ruler, PackageSearch, ClipboardCheck, NotebookPen, CheckCircle2, X, AlertCircle, Lock, Plus, Sparkles, ArrowUp, Paperclip, Home, Image as ImageIcon, type LucideIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DecoracionCard } from "@/components/DecoracionCard";
@@ -15,11 +15,14 @@ import { TarjetaCotizacion } from "@/components/TarjetaCotizacion";
 import { TarjetaMedidas } from "@/components/TarjetaMedidas";
 import { TarjetaPlanDecoracion } from "@/components/TarjetaPlanDecoracion";
 import { GenerationQaSummary } from "@/components/references/GenerationQaSummary";
-import { ReferenceReviewPanel, type ReferenceDraft } from "@/components/references/ReferenceReviewPanel";
+import { ReferenceAnalysisController } from "@/components/references/ReferenceAnalysisController";
+import { ReferencePlanCard } from "@/components/references/ReferencePlanCard";
+import type { ReferenceDraft } from "@/components/references/ReferenceReviewPanel";
 import { useSeleccion } from "@/lib/estado/seleccion";
 import type { LineaBorrador } from "@/lib/estado/borrador-cotizacion";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { Imagen, PeticionImagen } from "@/lib/ia/tipos";
+import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import type { ResultadoMedidas } from "@/lib/medidas/geometria";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import type { ItemValidado } from "@/lib/rag/chat/validar";
@@ -65,6 +68,7 @@ type Mensaje = {
   medidas?: ResultadoMedidas;
   plan?: PlanResuelto;
   cotizacion?: Cotizacion;
+  referenceBlueprint?: ReferenceBlueprintV2;
   /** Debug: JSON crudo que usó el análisis de imágenes de referencia. Va
    * aparte del `content` markdown (que no interpreta HTML) para poder
    * mostrarlo colapsado sin reventar el layout del chat. */
@@ -86,7 +90,7 @@ const SALUDO: Mensaje = {
 // existiera el límite de sustituciones (por ejemplo R-12→R-24). Reutilizar
 // esos objetos haría que la UI siguiera mostrando una cotización que el
 // servidor actual ya rechaza.
-const CLAVE_CHAT = "demo_chat_v3";
+const CLAVE_CHAT = "demo_chat_v4";
 const CLAVE_CHAT_LEGACY = "demo_chat_v1";
 
 const SUGERENCIAS = [
@@ -98,89 +102,6 @@ const SUGERENCIAS = [
 // 4 franjas fijas de presupuesto — se guardan como propiedad del brief al
 // tocarlas (como un adjunto más), sin mandar un mensaje de chat. `valor` es
 // lo que se guarda en `brief.presupuesto`; se muestra igual en "Tu evento".
-// El backend resuelve la franja a partir de este mismo texto (ver
-// src/lib/rag/presupuesto/resolver.ts) — si cambias estas etiquetas, los
-// montos siguen viniendo de src/lib/rag/presupuesto/franjas.ts, no de aquí.
-const PRESUPUESTOS = [
-  { etiqueta: "Hasta $50.000", valor: "Hasta $50.000" },
-  { etiqueta: "$50.000 a $100.000", valor: "$50.000 a $100.000" },
-  { etiqueta: "$100.000 a $150.000", valor: "$100.000 a $150.000" },
-  { etiqueta: "Desde $150.000", valor: "Desde $150.000" },
-];
-
-/**
- * Paletas "Mix & Match" del catálogo impreso de Sempertex — combinaciones ya
- * curadas por su equipo de diseño, no inventadas. Los `hex` son una lectura
- * visual aproximada de los swatches del catálogo para pintar el chip, no un
- * valor Pantone/hex oficial de Sempertex.
- *
- * A propósito solo entran paletas genéricas (sin impresión ni motivo de
- * ocasión): las 2 combinaciones de Halloween del mismo catálogo (calabaza,
- * fantasmitas) se dejaron fuera aquí porque son forma+tema, no color — le
- * pertenecen al acento de Halloween (ver plan de entrenamiento §3), no a un
- * selector de inspiración de color transversal a todos los temas.
- */
-const ESQUEMAS_COLOR = [
-  {
-    nombre: "Ombré chocolate",
-    colores: [
-      { nombre: "Fashion Mocha", hex: "#8a5a34" },
-      { nombre: "Fashion Latte", hex: "#c9a876" },
-      { nombre: "Fashion Chocolate", hex: "#4a3327" },
-      { nombre: "Fashion Coffee", hex: "#5c3d24" },
-    ],
-  },
-  {
-    nombre: "Ombré lila",
-    colores: [
-      { nombre: "Satin Lilac", hex: "#a99bc9" },
-      { nombre: "Pastel Matte Lilac", hex: "#c9bfe0" },
-      { nombre: "Silk Light Amethyst", hex: "#a48fae" },
-      { nombre: "Pastel Dusk Lavender", hex: "#b99bab" },
-    ],
-  },
-  {
-    nombre: "Rosa romántico",
-    colores: [
-      { nombre: "Bright Hearts", hex: "#d98a94" },
-      { nombre: "Silk Pink Blossom", hex: "#c48f92" },
-      { nombre: "Pastel Matte Melon", hex: "#f0c4a8" },
-      { nombre: "Fashion Pink", hex: "#f2c6ce" },
-      { nombre: "Pastel Matte Pink", hex: "#f5dde0" },
-    ],
-  },
-  {
-    nombre: "Nude y burdeos",
-    colores: [
-      { nombre: "Silk Oyster White", hex: "#ece6da" },
-      { nombre: "Pastel Matte Nude", hex: "#e8cbb0" },
-      { nombre: "Reflex Crystal Red", hex: "#8f1a20" },
-      { nombre: "Pastel Matte Melon", hex: "#f0c4a8" },
-      { nombre: "Fashion Merlot", hex: "#5c1420" },
-    ],
-  },
-  {
-    nombre: "Dorado y salvia",
-    colores: [
-      { nombre: "Silk Gold Dust", hex: "#c2a15a" },
-      { nombre: "Pastel Dusk Lavender", hex: "#b99bab" },
-      { nombre: "Fashion White Sand", hex: "#eee6d8" },
-      { nombre: "Silk Oyster White", hex: "#ece6da" },
-      { nombre: "Pastel Dusk Blue", hex: "#8fa8bd" },
-    ],
-  },
-  {
-    nombre: "Aguamarina y lila",
-    colores: [
-      { nombre: "Fashion Aquamarine", hex: "#1b9c8e" },
-      { nombre: "Fashion Periwinkle Blue", hex: "#5a8fd4" },
-      { nombre: "Fashion Pink", hex: "#f2c6ce" },
-      { nombre: "Fashion Lilac", hex: "#9b7fc4" },
-      { nombre: "Pastel Matte Lilac", hex: "#c9bfe0" },
-    ],
-  },
-];
-
 const ETIQUETAS_BRIEF: Record<keyof Brief, string> = {
   tipo_evento: "Evento",
   espacio: "Espacio",
@@ -269,6 +190,7 @@ type DatosFin = {
   instruccionIA?: string;
   ragValidados?: ItemValidado[];
   plan?: PlanResuelto;
+  referenceBlueprint?: ReferenceBlueprintV2;
 };
 
 type GenerarOverride = {
@@ -295,6 +217,8 @@ type GenerarOverride = {
    */
   manualProducts?: Producto[];
   plan?: PlanResuelto;
+  /** Mensaje exacto al que debe volver la cotización final de esta generación. */
+  anchorMessageId?: string;
 };
 
 /**
@@ -521,12 +445,6 @@ export default function Page() {
   const [mensajes, setMensajes] = useState<Mensaje[]>([SALUDO]);
   const [entrada, setEntrada] = useState("");
   const [brief, setBrief] = useState<Brief>({});
-  // Nivel de presupuesto elegido con un toque — se guarda como propiedad del
-  // brief, igual que un adjunto (foto/referencias), sin mandar un mensaje.
-  const [presupuestoActivo, setPresupuestoActivo] = useState<string | null>(null);
-  // Paleta "Mix & Match" elegida con un toque — mismo patrón que el
-  // presupuesto: se guarda en brief.colores como adjunto, sin mandar mensaje.
-  const [esquemaColorActivo, setEsquemaColorActivo] = useState<string | null>(null);
   const [agregandoManual, setAgregandoManual] = useState(false);
   const [nombreManual, setNombreManual] = useState("");
   const [descripcionManual, setDescripcionManual] = useState("");
@@ -548,6 +466,7 @@ export default function Page() {
   const [cargandoChat, setCargandoChat] = useState(false);
   const [herramientaEnCurso, setHerramientaEnCurso] = useState<string | null>(null);
   const [generando, setGenerando] = useState(false);
+  const [planDecoracionActivo, setPlanDecoracionActivo] = useState(false);
   const [segundosGeneracion, setSegundosGeneracion] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [proveedor, setProveedor] = useState<ProveedorId>("gemini");
@@ -588,6 +507,7 @@ export default function Page() {
   // último que se le asignó.
   const fotoEspacioRef = useRef<(Imagen & { aspecto: PeticionImagen["aspecto"] }) | null>(null);
   const imagenesReferenciaRef = useRef<Imagen[]>([]);
+  const referenceReadyRef = useRef(true);
   const referenceDraftRef = useRef<ReferenceDraft | null>(null);
   const briefRef = useRef<Brief>({});
   const solicitudUsuarioRef = useRef("");
@@ -610,6 +530,8 @@ export default function Page() {
   const entradaRef = useRef<HTMLInputElement>(null);
   const fotoEspacioInputRef = useRef<HTMLInputElement>(null);
   const referenciasInputRef = useRef<HTMLInputElement>(null);
+  const menuAdjuntosRef = useRef<HTMLDivElement>(null);
+  const [menuAdjuntosAbierto, setMenuAdjuntosAbierto] = useState(false);
   const referenciaGeneradaRef = useRef<string | null>(null);
   const [planAprobadoHash, setPlanAprobadoHash] = useState<string | null>(null);
   const hayPlanEnConversacion = mensajes.some((mensaje) => mensaje.role === "assistant" && Boolean(mensaje.plan));
@@ -624,8 +546,28 @@ export default function Page() {
   }, [fotoEspacio]);
 
   useEffect(() => {
+    if (!menuAdjuntosAbierto) return;
+    function alClicFuera(evento: MouseEvent) {
+      if (!menuAdjuntosRef.current?.contains(evento.target as Node)) setMenuAdjuntosAbierto(false);
+    }
+    function alEscape(evento: KeyboardEvent) {
+      if (evento.key === "Escape") setMenuAdjuntosAbierto(false);
+    }
+    document.addEventListener("mousedown", alClicFuera);
+    document.addEventListener("keydown", alEscape);
+    return () => {
+      document.removeEventListener("mousedown", alClicFuera);
+      document.removeEventListener("keydown", alEscape);
+    };
+  }, [menuAdjuntosAbierto]);
+
+  useEffect(() => {
     imagenesReferenciaRef.current = imagenesReferencia;
   }, [imagenesReferencia]);
+
+  useEffect(() => {
+    referenceReadyRef.current = referenceReady;
+  }, [referenceReady]);
 
   useEffect(() => {
     referenceDraftRef.current = referenceDraft;
@@ -687,6 +629,7 @@ export default function Page() {
         const disponibles = (data.proveedores ?? [])
           .filter((p: { disponible: boolean }) => p.disponible)
           .map((p: { id: ProveedorId }) => p.id);
+        setPlanDecoracionActivo(Boolean(data.planDecoracionActivo));
         if (disponibles.length) {
           setProveedoresDisponibles(disponibles);
           setProveedor(data.predeterminado ?? disponibles[0]);
@@ -768,9 +711,10 @@ export default function Page() {
         categorias: datos.categorias?.length ? datos.categorias : undefined,
         categoriasFiltros: datos.categorias?.length ? datos.filtrosCategorias : undefined,
         medidas: datos.medidas ?? undefined,
+        referenceBlueprint: datos.referenceBlueprint,
         plan: datos.plan,
-        // Cuando la IA propone y confirma sola, la cotización pertenece al
-        // resultado de imagen, nunca al mensaje previo de selección.
+        // En modo plan la cotización preliminar pertenece al mismo mensaje que
+        // contiene el blueprint y el plan; la imagen final lo actualiza ahí.
         cotizacion: seleccionIA.length ? undefined : datos.cotizacion ?? undefined,
         ragValidados: datos.ragValidados?.length ? datos.ragValidados : undefined,
       };
@@ -860,6 +804,23 @@ export default function Page() {
     }
   }
 
+  /** El análisis de referencias corre en paralelo y normalmente termina en
+   * segundos; en vez de bloquear el envío con un error, el turno se encola
+   * aquí mismo y sale apenas `referenceReady` pase a true — al cliente le
+   * llega la impresión de que su mensaje ya se está procesando, no de que
+   * la app está lenta o rota. */
+  function esperarReferenciasListas(): Promise<void> {
+    if (referenceReadyRef.current) return Promise.resolve();
+    return new Promise((resolve) => {
+      const intervalo = window.setInterval(() => {
+        if (referenceReadyRef.current) {
+          window.clearInterval(intervalo);
+          resolve();
+        }
+      }, 150);
+    });
+  }
+
   async function enviar(texto: string) {
     if (cargandoChat) return;
     // El chat ya ve las imágenes adjuntas (van en el body más abajo), pero
@@ -886,6 +847,11 @@ export default function Page() {
     setCargandoChat(true);
     setHerramientaEnCurso(null);
     setError(null);
+    // El mensaje ya se ve enviado (burbuja + input limpio + "pensando"); si
+    // el análisis de referencias sigue en curso, la espera ocurre aquí,
+    // detrás de esa misma burbuja, en vez de con un error que obligue a
+    // reenviar el turno.
+    if (imagenesReferenciaRef.current.length > 0 && !referenceReadyRef.current) await esperarReferenciasListas();
     const controlador = new AbortController();
     let excedioTiempo = false;
     let temporizador: number | undefined;
@@ -984,7 +950,6 @@ export default function Page() {
     briefRef.current = {};
     solicitudUsuarioRef.current = "";
     setBrief({});
-    setPresupuestoActivo(null);
     setUltimasMedidas(null);
     setImagenes([]);
     setReferenceDraft(null);
@@ -1024,6 +989,7 @@ export default function Page() {
    */
   async function generar(override?: GenerarOverride) {
     const automaticIds = referenceDraftRef.current?.autoProductIds ?? referenceDraft?.autoProductIds ?? [];
+    if (planDecoracionActivo && imagenesReferenciaRef.current.length > 0 && !override?.plan) return;
     const ultimaValidacion = [...mensajes]
       .reverse()
       .find((mensaje) => mensaje.role === "assistant" && mensaje.ragValidados?.length)?.ragValidados ?? [];
@@ -1083,13 +1049,12 @@ export default function Page() {
       : seleccionados.filter((producto) => producto.id.startsWith("manual-") && idsAUsar.includes(producto.id));
     const briefAUsar = override?.brief ?? briefRef.current;
     const solicitudUsuario = override?.solicitudUsuario ?? solicitudUsuarioRef.current;
-    const hasAutomaticReferencePlan = imagenesReferenciaRef.current.length > 0 && Boolean(referenceDraftRef.current?.blueprint ?? referenceDraft?.blueprint);
     if (imagenesReferenciaRef.current.length > 0 && !referenceReady) {
       // eslint-disable-next-line react-hooks/globals -- deliberado: cola de deduplicación de generación en curso, ver declaración de pendienteAutoGlobal.
       pendienteAutoGlobal = { ids: productIdsGeneracion, ragVariantIds: ragVariantIdsAUsar, paquetes: paquetesAUsar, manualProducts: productosManuales, instruccion: (override?.instruccion ?? ajuste.trim()) || undefined, automaticOnly: override?.automaticOnly, brief: briefAUsar, solicitudUsuario };
       return;
     }
-    if (idsAUsar.length === 0 && !hasAutomaticReferencePlan) return;
+    if (idsAUsar.length === 0) return;
 
     // eslint-disable-next-line react-hooks/globals -- deliberado: encadenar sobre una promesa de módulo es justo lo que garantiza la serialización, ver declaración de colaGeneracion.
     colaGeneracion = colaGeneracion.then(async () => {
@@ -1179,7 +1144,13 @@ export default function Page() {
         setSeleccionPendiente(false);
         if (data.cotizacion) {
           setMensajes((previos) => {
-            const indiceAsistente = [...previos].map((mensaje, indice) => ({ mensaje, indice })).reverse().find(({ mensaje }) => mensaje.role === "assistant")?.indice;
+            const indiceAnclado = override?.anchorMessageId
+              ? previos.findIndex((mensaje) => mensaje.id === override.anchorMessageId)
+              : -1;
+            if (override?.anchorMessageId && indiceAnclado < 0) return previos;
+            const indiceAsistente = indiceAnclado >= 0
+              ? indiceAnclado
+              : [...previos].map((mensaje, indice) => ({ mensaje, indice })).reverse().find(({ mensaje }) => mensaje.role === "assistant")?.indice;
             if (indiceAsistente === undefined) {
               return [...previos, { id: crypto.randomUUID(), role: "assistant", content: "La visualización está lista. Esta es la cotización final de los productos usados.", cotizacion: data.cotizacion }];
             }
@@ -1214,7 +1185,7 @@ export default function Page() {
     });
   }
 
-  function aprobarPlan(plan: PlanResuelto): void {
+  function aprobarPlan(plan: PlanResuelto, messageId?: string): void {
     if (plan.comercial.estado === "PRESUPUESTO_EXCEDIDO" || plan.sin_cobertura.length > 0 || generando || generandoGlobal) return;
     generar({
       ids: [],
@@ -1222,12 +1193,13 @@ export default function Page() {
       plan,
       brief: briefRef.current,
       solicitudUsuario: solicitudUsuarioRef.current,
+      anchorMessageId: messageId,
     });
   }
 
-  function actualizarPlanEnMensaje(mensajeId: string, plan: PlanResuelto): void {
+  function actualizarPlanEnMensaje(mensajeId: string, plan: PlanResuelto, cotizacion?: Cotizacion): void {
     setPlanAprobadoHash(null);
-    setMensajes((previos) => previos.map((mensaje) => mensaje.id === mensajeId ? { ...mensaje, plan } : mensaje));
+    setMensajes((previos) => previos.map((mensaje) => mensaje.id === mensajeId ? { ...mensaje, plan, cotizacion: cotizacion ?? mensaje.cotizacion } : mensaje));
   }
 
   /**
@@ -1296,18 +1268,10 @@ export default function Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- generar se recrea cada render; pendienteAutoGlobal ya evita relanzar dos veces.
   }, [generando, referenceReady, hayPlanEnConversacion]);
 
-  // Terminar el plan de referencias debe iniciar la imagen sola, sin esperar
-  // un clic — el plan quedaba visible antes, pero ningún evento llamaba a
-  // generar().
-  //
-  // El chat y este efecto pueden ambos decidir generar a partir de la MISMA
-  // referencia adjunta (el chat la analiza por su cuenta vía BLOQUE_RAG, y
-  // el panel de referencias produce su propio blueprint en paralelo) —
-  // `cargandoChat` aquí evita que este efecto dispare mientras el chat sigue
-  // en curso, y `colaGeneracion` (declarada arriba) garantiza que, aunque
-  // ambos terminen decidiendo generar, nunca corran al mismo tiempo.
+  // El flujo legacy conserva su generación automática por referencias. En el
+  // modo plan el único disparador es aprobar el PlanResuelto.
   useEffect(() => {
-    if (!referenceReady || !referenceDraft || !imagenesReferencia.length || generando || cargandoChat || hayPlanEnConversacion) return;
+    if (planDecoracionActivo || !referenceReady || !referenceDraft || !imagenesReferencia.length || generando || cargandoChat || hayPlanEnConversacion) return;
     const key = [
       imagenesReferencia.length,
       ...referenceDraft.blueprint.elements.map((element) => `${element.element_id}:${element.model_decision?.catalog_product_id ?? "omit"}`),
@@ -1316,7 +1280,7 @@ export default function Page() {
     referenciaGeneradaRef.current = key;
     generar({ ids: referenceDraft.autoProductIds, automaticOnly: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- key ref evita relanzar la misma propuesta.
-  }, [referenceReady, referenceDraft, imagenesReferencia.length, generando, cargandoChat, hayPlanEnConversacion]);
+  }, [planDecoracionActivo, referenceReady, referenceDraft, imagenesReferencia.length, generando, cargandoChat, hayPlanEnConversacion]);
 
   /** No hay progreso real de la API — es un indicador de fase honesto por
    * tiempo transcurrido, no un porcentaje inventado. */
@@ -1374,51 +1338,12 @@ export default function Page() {
     setImagenesReferencia((previas) => previas.filter((_, i) => i !== indice));
   }
 
-  /** Toca de nuevo el mismo nivel para quitarlo; tocar otro lo reemplaza
-   * (selección única, como una sola foto de espacio). Elegirlo por primera
-   * vez solo guarda el dato, igual que un adjunto. Pero si ya había OTRO
-   * nivel elegido antes, esto es una actualización real de un presupuesto
-   * en curso — ahí sí se le pide a la IA de una vez que ajuste la propuesta
-   * y la cotización al nuevo monto, sin esperar a que el cliente lo escriba. */
-  function elegirPresupuesto(valor: string) {
-    const anterior = presupuestoActivo;
-    const activo = anterior === valor ? null : valor;
-    const actualizado = { ...brief };
-    if (activo) actualizado.presupuesto = activo;
-    else delete actualizado.presupuesto;
-    // Síncrono antes de `enviar()`: ese closure lee `briefRef.current`, no
-    // el estado `brief` (que aún no se habría re-renderizado a tiempo).
-    briefRef.current = actualizado;
-    setPresupuestoActivo(activo);
-    setBrief(actualizado);
-    if (anterior && activo && anterior !== activo) {
-      enviar(`Actualicé mi presupuesto a ${activo}. Ajusta la propuesta y la cotización actuales a este nuevo presupuesto.`);
-    }
-  }
-
-  /** Mismo patrón que `elegirPresupuesto`: primera elección es silenciosa
-   * (como un adjunto), reemplazar una paleta activa por otra sí le pide a la
-   * IA que ajuste la propuesta ya armada al nuevo esquema. */
-  function elegirEsquemaColor(nombreEsquema: string) {
-    const anterior = esquemaColorActivo;
-    const activo = anterior === nombreEsquema ? null : nombreEsquema;
-    const esquema = ESQUEMAS_COLOR.find((e) => e.nombre === activo);
-    const actualizado = { ...brief };
-    if (esquema) actualizado.colores = esquema.colores.map((c) => c.nombre);
-    else delete actualizado.colores;
-    briefRef.current = actualizado;
-    setEsquemaColorActivo(activo);
-    setBrief(actualizado);
-    if (anterior && activo && anterior !== activo) {
-      enviar(`Cambié la paleta de color a "${activo}". Ajusta la propuesta y la imagen a estos colores.`);
-    }
-  }
-
   const entradasBrief = Object.entries(brief).filter(
     ([, v]) => v !== undefined && v !== null && String(v).length > 0,
   );
   const listoParaGenerar = (seleccion.length > 0 || Boolean(referenceDraft?.autoProductIds.length) || (imagenesReferencia.length > 0 && Boolean(referenceDraft?.blueprint))) && referenceReady;
-  const planActual = [...mensajes].reverse().find((mensaje) => mensaje.role === "assistant" && mensaje.plan)?.plan;
+  const planActualEntry = [...mensajes].reverse().find((mensaje) => mensaje.role === "assistant" && mensaje.plan);
+  const planActual = planActualEntry?.plan;
   const planActualAprobado = Boolean(planActual && planAprobadoHash === planActual.plan_hash);
   const botonPlanBloqueado = Boolean(planActual && (planActual.comercial.estado === "PRESUPUESTO_EXCEDIDO" || planAprobadoHash === planActual.plan_hash));
   const ultimoIndiceUsuario = mensajes.map((m) => m.role).lastIndexOf("user");
@@ -1507,6 +1432,17 @@ export default function Page() {
             aria-busy={cargandoChat}
             className="workspace-log scroll-suave flex-1 space-y-4 overflow-y-auto px-4 py-6 sm:px-6 lg:min-h-0 lg:px-8"
           >
+            {planDecoracionActivo && <ReferenceAnalysisController
+               references={imagenesReferencia}
+               venue={fotoEspacio}
+               proveedor={proveedor}
+               eventPalette={brief.colores}
+               onDraft={(draft) => {
+                 referenceDraftRef.current = draft;
+                 setReferenceDraft(draft);
+               }}
+               onReady={setReferenceReady}
+            />}
             <AnimatePresence initial={false}>
             {mensajes.map((m, i) => {
               const esUltimoStreaming = i === mensajes.length - 1 && m.role === "assistant" && cargandoChat;
@@ -1597,12 +1533,14 @@ export default function Page() {
                 )}
 
                 {m.medidas && <TarjetaMedidas medidas={m.medidas} />}
-                {m.plan && <TarjetaPlanDecoracion plan={m.plan} aprobado={planAprobadoHash === m.plan.plan_hash} generando={generando && m.plan.plan_hash === planActual?.plan_hash} onAprobar={m.plan.plan_hash === planActual?.plan_hash ? () => aprobarPlan(m.plan!) : undefined} onPlanActualizado={m.plan.plan_hash === planActual?.plan_hash ? (plan) => actualizarPlanEnMensaje(m.id, plan) : undefined} />}
+                {m.referenceBlueprint && <ReferencePlanCard blueprint={m.referenceBlueprint} plan={m.plan} />}
+                {m.plan && <TarjetaPlanDecoracion plan={m.plan} aprobado={planAprobadoHash === m.plan.plan_hash} generando={generando && m.plan.plan_hash === planActual?.plan_hash} onAprobar={m.plan.plan_hash === planActual?.plan_hash ? () => aprobarPlan(m.plan!, m.id) : undefined} onPlanActualizado={m.plan.plan_hash === planActual?.plan_hash ? (plan, cotizacion) => actualizarPlanEnMensaje(m.id, plan, cotizacion) : undefined} />}
                 {m.cotizacion && (
                   <TarjetaCotizacion
                     cotizacion={m.cotizacion}
-                    editable={!cargandoChat && !generando}
-                    onAplicar={aplicarCotizacionEditada}
+                    referenceBlueprint={m.referenceBlueprint}
+                    editable={!m.plan && !m.cotizacion.plan_hash && !cargandoChat && !generando}
+                    onAplicar={!m.plan && !m.cotizacion.plan_hash ? aplicarCotizacionEditada : undefined}
                   />
                 )}
 
@@ -1709,8 +1647,20 @@ export default function Page() {
                 e.target.value = "";
               }}
             />
+            <input
+              ref={referenciasInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files?.length) subirImagenesReferencia(e.target.files);
+                e.target.value = "";
+              }}
+            />
+
             <AnimatePresence mode="wait" initial={false}>
-              {fotoEspacio ? (
+              {fotoEspacio && (
                 <motion.span
                   key="foto-espacio-adjunta"
                   initial={{ opacity: 0, scale: 0.85 }}
@@ -1740,33 +1690,9 @@ export default function Page() {
                     <TooltipContent>Quitar foto del espacio</TooltipContent>
                   </Tooltip>
                 </motion.span>
-              ) : (
-                <motion.button
-                  key="foto-espacio-boton"
-                  initial={{ opacity: 0, scale: 0.85 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.85 }}
-                  transition={{ duration: 0.15 }}
-                  type="button"
-                  onClick={() => fotoEspacioInputRef.current?.click()}
-                  className="ui-chip ui-pressable border-dashed"
-                >
-                  Foto del espacio
-                </motion.button>
               )}
             </AnimatePresence>
 
-            <input
-              ref={referenciasInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              multiple
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files?.length) subirImagenesReferencia(e.target.files);
-                e.target.value = "";
-              }}
-            />
             <AnimatePresence initial={false}>
               {imagenesReferencia.map((img, i) => (
                 <motion.span
@@ -1800,47 +1726,6 @@ export default function Page() {
                 </motion.span>
               ))}
             </AnimatePresence>
-            {imagenesReferencia.length < LIMITE_REFERENCIAS_CLIENTE && (
-              <button
-                type="button"
-                onClick={() => referenciasInputRef.current?.click()}
-                className="ui-chip ui-pressable border-dashed"
-              >
-                Imágenes de referencia
-              </button>
-            )}
-
-            <span className="mx-1 h-4 w-px bg-borde" aria-hidden="true" />
-            {PRESUPUESTOS.map((p) => (
-              <button
-                key={p.etiqueta}
-                type="button"
-                onClick={() => elegirPresupuesto(p.valor)}
-                aria-pressed={presupuestoActivo === p.valor}
-                className={`ui-chip ui-pressable ${presupuestoActivo === p.valor ? "border-acento text-acento" : ""}`}
-              >
-                {p.etiqueta}
-              </button>
-            ))}
-
-            <span className="mx-1 h-4 w-px bg-borde" aria-hidden="true" />
-            {ESQUEMAS_COLOR.map((esquema) => (
-              <button
-                key={esquema.nombre}
-                type="button"
-                onClick={() => elegirEsquemaColor(esquema.nombre)}
-                aria-pressed={esquemaColorActivo === esquema.nombre}
-                title={esquema.colores.map((c) => c.nombre).join(" · ")}
-                className={`ui-chip ui-pressable inline-flex items-center gap-1.5 ${esquemaColorActivo === esquema.nombre ? "border-acento text-acento" : ""}`}
-              >
-                <span className="inline-flex overflow-hidden rounded-full" aria-hidden="true">
-                  {esquema.colores.map((c, i) => (
-                    <span key={i} className="size-3" style={{ backgroundColor: c.hex }} />
-                  ))}
-                </span>
-                {esquema.nombre}
-              </button>
-             ))}
            </div>
 
            {planActual && (
@@ -1849,7 +1734,7 @@ export default function Page() {
                  <button
                    type="button"
                    data-testid="aprobar-generar-plan-sticky"
-                   onClick={() => aprobarPlan(planActual)}
+                    onClick={() => aprobarPlan(planActual, planActualEntry?.id)}
                    disabled={planActualAprobado || generando || planActual.comercial.estado === "PRESUPUESTO_EXCEDIDO" || planActual.sin_cobertura.length > 0}
                    aria-busy={generando}
                    className="ui-button-primary ui-pressable w-full disabled:opacity-60"
@@ -1868,6 +1753,52 @@ export default function Page() {
             className="workspace-composer chat-composer shrink-0 border-t border-borde px-4 py-3 sm:px-6 lg:px-8"
           >
             <div className={`chat-composer-pill mx-auto flex w-full max-w-4xl items-center gap-2 ${cargandoChat ? "is-busy" : ""}`}>
+              <div ref={menuAdjuntosRef} className="relative shrink-0">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => setMenuAdjuntosAbierto((abierto) => !abierto)}
+                      aria-haspopup="menu"
+                      aria-expanded={menuAdjuntosAbierto}
+                      aria-label="Adjuntar imagen"
+                      className="ui-pressable flex size-9 items-center justify-center rounded-full text-texto-suave hover:text-acento"
+                    >
+                      <Paperclip className="size-4" aria-hidden="true" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Adjuntar imagen</TooltipContent>
+                </Tooltip>
+                {menuAdjuntosAbierto && (
+                  <div role="menu" className="absolute bottom-full left-0 z-10 mb-2 w-52 overflow-hidden rounded-lg border border-borde bg-superficie shadow-lg">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        fotoEspacioInputRef.current?.click();
+                        setMenuAdjuntosAbierto(false);
+                      }}
+                      className="ui-pressable flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-texto hover:bg-superficie-2"
+                    >
+                      <Home className="size-4 text-texto-suave" aria-hidden="true" />
+                      Foto de tu espacio
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      disabled={imagenesReferencia.length >= LIMITE_REFERENCIAS_CLIENTE}
+                      onClick={() => {
+                        referenciasInputRef.current?.click();
+                        setMenuAdjuntosAbierto(false);
+                      }}
+                      className="ui-pressable flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-texto hover:bg-superficie-2 disabled:opacity-50"
+                    >
+                      <ImageIcon className="size-4 text-texto-suave" aria-hidden="true" />
+                      Imagen de referencia
+                    </button>
+                  </div>
+                )}
+              </div>
               <input
                 ref={entradaRef}
                 name="mensaje"
@@ -1899,7 +1830,7 @@ export default function Page() {
 
         {/* Panel lateral */}
         <aside aria-label="Panel de salida" className="workspace-sidebar scroll-suave space-y-5 border-t border-borde px-4 py-5 sm:px-6 lg:min-h-0 lg:border-l lg:border-t-0">
-          <ReferenceReviewPanel
+          {!planDecoracionActivo && <ReferenceAnalysisController
             references={imagenesReferencia}
             venue={fotoEspacio}
             proveedor={proveedor}
@@ -1909,8 +1840,7 @@ export default function Page() {
               setReferenceDraft(draft);
             }}
             onReady={setReferenceReady}
-          />
-
+          />}
           <div className="workspace-sidebar-pinned space-y-5">
           <section>
             <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-texto-suave">
@@ -2069,6 +1999,7 @@ export default function Page() {
             <button
               type="button"
               onClick={() => {
+                if (planDecoracionActivo && imagenesReferencia.length > 0 && !planActual) return;
                 if (!planActual) {
                   generar();
                   return;
@@ -2081,12 +2012,13 @@ export default function Page() {
                     brief: briefRef.current,
                     solicitudUsuario: solicitudUsuarioRef.current,
                     instruccion: ajuste.trim(),
+                    anchorMessageId: planActualEntry?.id,
                   });
                   return;
                 }
-                aprobarPlan(planActual);
+                aprobarPlan(planActual, planActualEntry?.id);
               }}
-              disabled={planActual ? (botonPlanBloqueado && !ajuste.trim()) || generando : !listoParaGenerar || generando}
+              disabled={planActual ? (botonPlanBloqueado && !ajuste.trim()) || generando : !listoParaGenerar || generando || (planDecoracionActivo && imagenesReferencia.length > 0)}
               aria-busy={generando}
               className="ui-button-primary ui-pressable w-full"
             >
@@ -2094,16 +2026,21 @@ export default function Page() {
                 ? ajuste.trim() ? "Aplicar ajuste y regenerar" : "Aprobación registrada"
                 : planActual
                   ? "Aprobar y generar imagen"
-                  : generando
-                ? "Generando…"
-                : seleccionPendiente
-                  ? "Regenerar imagen"
-                  : imagenes.length > 0
-                    ? "Generar otra versión"
-                    : "Generar visualización"}
+                  : planDecoracionActivo && imagenesReferencia.length > 0
+                    ? "Espera el plan comercial"
+                    : generando
+                      ? "Generando…"
+                      : seleccionPendiente
+                        ? "Regenerar imagen"
+                        : imagenes.length > 0
+                          ? "Generar otra versión"
+                          : "Generar visualización"}
             </button>
             {!listoParaGenerar && !generando && (
               <p className="text-xs text-texto-suave">{referenceReady ? "Necesitas una pieza o referencia para generar." : "La IA está resolviendo las referencias."}</p>
+            )}
+            {planDecoracionActivo && imagenesReferencia.length > 0 && !planActual && referenceReady && !generando && (
+              <p className="text-xs text-texto-suave">La imagen se habilita después de aprobar el plan que relaciona tus referencias con productos reales.</p>
             )}
           </section>
 

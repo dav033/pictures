@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { cotizarPlan } from "@/lib/cotizacion/motor";
 import { buscarCatalogoRag, type ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { getRagPool } from "@/lib/rag/db";
 import { registrarPlanAudit } from "@/lib/rag/observability/log";
@@ -424,7 +425,7 @@ export async function POST(request: Request) {
       status: "PLAN_EDITED",
     });
 
-    return Response.json({ plan: resuelto });
+    return Response.json({ plan: resuelto, cotizacion: cotizarPlan(resuelto) });
   } catch (error) {
     if (error instanceof z.ZodError) return Response.json({ error: "La edición del plan no tiene un formato válido.", detalles: error.issues }, { status: 400 });
     if (error instanceof PlanEditError) return Response.json({ error: error.message }, { status: error.status });

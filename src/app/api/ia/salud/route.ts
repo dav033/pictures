@@ -3,6 +3,7 @@ import { MODELO_CHAT as MODELO_CHAT_GEMINI, MODELO_IMAGEN as MODELO_IMAGEN_GEMIN
 import { obtenerAjusteGlobal, proveedoresDisponibles, resolverProveedor } from "@/lib/ia/registro";
 import { ultimosEventos } from "@/lib/ia/telemetria";
 import type { ProveedorId } from "@/lib/ia/tipos";
+import { PLAN_DECORACION_ENABLED } from "@/lib/plan/flags";
 
 const MODELOS: Record<ProveedorId, { chat: string; imagen: string }> = {
   gemini: { chat: MODELO_CHAT_GEMINI, imagen: MODELO_IMAGEN_GEMINI },
@@ -30,6 +31,7 @@ export async function GET() {
     })),
     ajusteGlobal: obtenerAjusteGlobal() ?? null,
     predeterminado,
+    planDecoracionActivo: PLAN_DECORACION_ENABLED,
     telemetria: ultimosEventos().slice(0, 20),
   });
 }

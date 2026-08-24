@@ -7,6 +7,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { ArrowLeftRight, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
+import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { ProductoCandidato, VarianteCandidata } from "@/lib/rag/chat/buscar";
 import { puntuacionCromatica } from "@/lib/rag/catalog/similitud-color";
 
@@ -26,7 +27,7 @@ type Props = {
   onAprobar?: () => void;
   aprobado?: boolean;
   generando?: boolean;
-  onPlanActualizado?: (plan: PlanResuelto) => void;
+  onPlanActualizado?: (plan: PlanResuelto, cotizacion?: Cotizacion) => void;
 };
 
 type OpcionCatalogo = { candidato: ProductoCandidato; variante: VarianteCandidata };
@@ -104,14 +105,16 @@ function opcionesCatalogo(candidatos: ProductoCandidato[], linea: LineaCatalogoS
     .slice(0, 10);
 }
 
-function ListaOpciones({ opciones, guardando, onCambiar, ariaLabel }: {
+function ListaOpciones({ opciones, guardando, onCambiar, ariaLabel, listId, activeVariantId }: {
   opciones: OpcionCatalogo[];
   guardando: boolean;
   onCambiar: (opcion: OpcionCatalogo) => void;
   ariaLabel: string;
+  listId?: string;
+  activeVariantId?: string;
 }) {
   return (
-    <ul className="space-y-1.5" aria-label={ariaLabel}>
+    <ul id={listId} role={listId ? "listbox" : undefined} className="space-y-1.5" aria-label={ariaLabel}>
       {opciones.map(({ candidato, variante }) => (
         <li key={variante.variantId} className="flex items-center gap-2 rounded-md border border-borde bg-superficie p-2">
           {candidato.imagen ? (
@@ -121,7 +124,7 @@ function ListaOpciones({ opciones, guardando, onCambiar, ariaLabel }: {
             <span className="block truncate text-xs font-semibold text-texto">{candidato.titulo}</span>
             <span className="block truncate text-[11px] text-texto-suave">{variante.codigoTamano ?? "Tamaño no especificado"} · {variante.colores.join(", ") || "Color de catálogo"} · {pesos.format(variante.precio)}</span>
           </span>
-          <button type="button" disabled={guardando} onClick={() => onCambiar({ candidato, variante })} className="ui-pressable shrink-0 rounded-md bg-acento px-2.5 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50">
+          <button id={listId ? `opcion-intercambio-${variante.variantId}` : undefined} type="button" role={listId ? "option" : undefined} aria-selected={listId ? activeVariantId === variante.variantId : undefined} disabled={guardando} onClick={() => onCambiar({ candidato, variante })} className={`ui-pressable shrink-0 rounded-md bg-acento px-2.5 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50 ${activeVariantId === variante.variantId ? "ring-2 ring-acento ring-offset-1" : ""}`}>
             {guardando ? "Cambiando…" : "Cambiar"}
           </button>
         </li>
@@ -151,7 +154,12 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   const [buscandoEdicion, setBuscandoEdicion] = useState(false);
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
   const [errorEdicion, setErrorEdicion] = useState<string | null>(null);
+  const [opcionBusquedaActiva, setOpcionBusquedaActiva] = useState(-1);
   const disparadorModalRef = useRef<HTMLButtonElement | null>(null);
+  const volverDetalleRef = useRef<HTMLButtonElement | null>(null);
+  const busquedaCatalogoRef = useRef<HTMLInputElement | null>(null);
+  const peticionCatalogoRef = useRef<AbortController | null>(null);
+  const secuenciaCatalogoRef = useRef(0);
   const editorDisponible = Boolean(onPlanActualizado);
   const editorId = `editor-plan-${plan.plan.plan_id}`;
   const supuestos = [...new Set(plan.plan.supuestos)];
@@ -210,6 +218,34 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     setErrorEdicion(null);
   }
 
+  function navegarOpcionesBusqueda(evento: React.KeyboardEvent<HTMLInputElement>): void {
+    if (evento.key === "ArrowDown" && opcionesBusqueda.length > 0) {
+      evento.preventDefault();
+      setOpcionBusquedaActiva((indice) => Math.min(indice + 1, opcionesBusqueda.length - 1));
+      return;
+    }
+    if (evento.key === "ArrowUp" && opcionesBusqueda.length > 0) {
+      evento.preventDefault();
+      setOpcionBusquedaActiva((indice) => Math.max(indice - 1, 0));
+      return;
+    }
+    if (evento.key === "Enter" && opcionBusquedaActiva >= 0 && opcionesBusqueda[opcionBusquedaActiva]) {
+      evento.preventDefault();
+      void reemplazarDesdeCatalogo(opcionesBusqueda[opcionBusquedaActiva]!);
+      return;
+    }
+    if (evento.key === "Escape") {
+      evento.preventDefault();
+      if (consultaCatalogo) {
+        setConsultaCatalogo("");
+        setResultadosCatalogo([]);
+        setOpcionBusquedaActiva(-1);
+      } else {
+        setIntercambioAbierto(false);
+      }
+    }
+  }
+
   async function aplicarEdicion(evento?: FormEvent<HTMLFormElement>) {
     evento?.preventDefault();
     if (!onPlanActualizado || guardandoEdicion || !estructuraSeleccionada) return;
@@ -231,9 +267,9 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ modo: "aplicar", base: plan, edicion: { accion: modoEdicion, estructura_id: estructuraEdicion, objetivo_variant_id: objetivoEdicion ?? undefined, variante: { product_id: varianteEdicion.productId, variant_id: varianteEdicion.variantId, color: colorEdicion.trim() || undefined }, participacion: modoEdicion === "agregar" ? participacion : undefined } }),
       });
-      const datos = await respuesta.json() as { plan?: PlanResuelto; error?: string };
-      if (!respuesta.ok || !datos.plan) throw new Error(datos.error ?? "No se pudo actualizar el plan.");
-      onPlanActualizado(datos.plan);
+       const datos = await respuesta.json() as { plan?: PlanResuelto; cotizacion?: Cotizacion; error?: string };
+       if (!respuesta.ok || !datos.plan) throw new Error(datos.error ?? "No se pudo actualizar el plan.");
+       onPlanActualizado(datos.plan, datos.cotizacion);
       cerrarEditor();
     } catch (error) {
       setErrorEdicion(error instanceof Error ? error.message : "No se pudo actualizar el plan.");
@@ -248,11 +284,12 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     setErrorEdicion(null);
     try {
       const respuesta = await fetch("/api/plan-editar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ modo: "aplicar", base: plan, edicion: { accion: "reemplazar", estructura_id: seleccionCatalogo.estructuraId, objetivo_variant_id: seleccionCatalogo.linea.variant_id, variante: { product_id: opcion.candidato.productId, variant_id: opcion.variante.variantId, color: opcion.variante.colores[0] ?? undefined } } }) });
-      const datos = await respuesta.json() as { plan?: PlanResuelto; error?: string };
-      if (!respuesta.ok || !datos.plan) throw new Error(datos.error ?? "No se pudo cambiar la pieza.");
-      onPlanActualizado(datos.plan);
-      setIntercambioAbierto(false);
-      setSeleccionCatalogo(null);
+       const datos = await respuesta.json() as { plan?: PlanResuelto; cotizacion?: Cotizacion; error?: string };
+       if (!respuesta.ok || !datos.plan) throw new Error(datos.error ?? "No se pudo cambiar la pieza.");
+       onPlanActualizado(datos.plan, datos.cotizacion);
+       setIntercambioAbierto(false);
+       setSeleccionCatalogo(null);
+       requestAnimationFrame(() => disparadorModalRef.current?.focus());
     } catch (error) {
       setErrorEdicion(error instanceof Error ? error.message : "No se pudo cambiar la pieza.");
     } finally {
@@ -267,9 +304,9 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     setErrorEdicion(null);
     try {
       const respuesta = await fetch("/api/plan-editar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ modo: "aplicar", base: plan, edicion: { accion: "quitar", estructura_id: estructuraId, objetivo_variant_id: linea.variant_id } }) });
-      const datos = await respuesta.json() as { plan?: PlanResuelto; error?: string };
-      if (!respuesta.ok || !datos.plan) throw new Error(datos.error ?? "No se pudo quitar la pieza.");
-      onPlanActualizado(datos.plan);
+       const datos = await respuesta.json() as { plan?: PlanResuelto; cotizacion?: Cotizacion; error?: string };
+       if (!respuesta.ok || !datos.plan) throw new Error(datos.error ?? "No se pudo quitar la pieza.");
+       onPlanActualizado(datos.plan, datos.cotizacion);
     } catch (error) {
       setErrorEdicion(error instanceof Error ? error.message : "No se pudo quitar la pieza.");
       setEditorAbierto(true);
@@ -280,40 +317,72 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
 
   async function abrirIntercambio() {
     if (!seleccionCatalogo || buscandoCatalogo) return;
+    peticionCatalogoRef.current?.abort();
+    const controlador = new AbortController();
+    peticionCatalogoRef.current = controlador;
+    const secuencia = ++secuenciaCatalogoRef.current;
     setIntercambioAbierto(true);
     setResultadosCatalogo([]);
     setConsultaCatalogo("");
+    setOpcionBusquedaActiva(-1);
     setBuscandoCatalogo(true);
     setErrorEdicion(null);
     try {
-      const respuesta = await fetch("/api/plan-editar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ modo: "recomendadas", variant_id: seleccionCatalogo.linea.variant_id }) });
+      const respuesta = await fetch("/api/plan-editar", { method: "POST", headers: { "Content-Type": "application/json" }, signal: controlador.signal, body: JSON.stringify({ modo: "recomendadas", variant_id: seleccionCatalogo.linea.variant_id }) });
       const datos = await respuesta.json() as { candidatos?: ProductoCandidato[]; error?: string };
       if (!respuesta.ok) throw new Error(datos.error ?? "No se pudieron cargar recomendaciones.");
+      if (secuencia !== secuenciaCatalogoRef.current) return;
       setRecomendaciones(datos.candidatos ?? []);
     } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
       setErrorEdicion(error instanceof Error ? error.message : "No se pudieron cargar recomendaciones.");
     } finally {
-      setBuscandoCatalogo(false);
+      if (secuencia === secuenciaCatalogoRef.current) setBuscandoCatalogo(false);
+    }
+  }
+
+  async function buscarCatalogoPorTexto(consultaCruda: string) {
+    const consulta = consultaCruda.trim();
+    if (consulta.length < 2) return;
+    peticionCatalogoRef.current?.abort();
+    const controlador = new AbortController();
+    peticionCatalogoRef.current = controlador;
+    const secuencia = ++secuenciaCatalogoRef.current;
+    setBuscandoCatalogo(true);
+    setErrorEdicion(null);
+    try {
+      const respuesta = await fetch("/api/plan-editar", { method: "POST", headers: { "Content-Type": "application/json" }, signal: controlador.signal, body: JSON.stringify({ modo: "buscar", consulta }) });
+      const datos = await respuesta.json() as { candidatos?: ProductoCandidato[]; error?: string };
+      if (!respuesta.ok) throw new Error(datos.error ?? "No se pudo buscar en el catálogo.");
+      if (secuencia !== secuenciaCatalogoRef.current) return;
+      setResultadosCatalogo(datos.candidatos ?? []);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      setErrorEdicion(error instanceof Error ? error.message : "No se pudo buscar en el catálogo.");
+    } finally {
+      if (secuencia === secuenciaCatalogoRef.current) setBuscandoCatalogo(false);
     }
   }
 
   async function buscarEnCatalogo(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
-    const consulta = consultaCatalogo.trim();
-    if (consulta.length < 2 || buscandoCatalogo) return;
-    setBuscandoCatalogo(true);
-    setErrorEdicion(null);
-    try {
-      const respuesta = await fetch("/api/plan-editar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ modo: "buscar", consulta }) });
-      const datos = await respuesta.json() as { candidatos?: ProductoCandidato[]; error?: string };
-      if (!respuesta.ok) throw new Error(datos.error ?? "No se pudo buscar en el catálogo.");
-      setResultadosCatalogo(datos.candidatos ?? []);
-    } catch (error) {
-      setErrorEdicion(error instanceof Error ? error.message : "No se pudo buscar en el catálogo.");
-    } finally {
-      setBuscandoCatalogo(false);
-    }
+    await buscarCatalogoPorTexto(consultaCatalogo);
   }
+
+  useEffect(() => {
+    if (!intercambioAbierto || consultaCatalogo.trim().length < 2) return;
+    const temporizador = window.setTimeout(() => void buscarCatalogoPorTexto(consultaCatalogo), 280);
+    return () => {
+      window.clearTimeout(temporizador);
+      peticionCatalogoRef.current?.abort();
+    };
+    // The search function reads only current local state; changing it on every
+    // render would restart the debounce.
+  }, [consultaCatalogo, intercambioAbierto]);
+
+  useEffect(() => {
+    if (!intercambioAbierto) peticionCatalogoRef.current?.abort();
+  }, [intercambioAbierto]);
 
   useEffect(() => {
     if (!solicitudImagenes) return;
@@ -337,6 +406,11 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     if (!editorAbierto) return;
     document.getElementById(editorId)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [editorAbierto, editorId]);
+
+  useEffect(() => {
+    if (!intercambioAbierto) return;
+    requestAnimationFrame(() => volverDetalleRef.current?.focus() ?? busquedaCatalogoRef.current?.focus());
+  }, [intercambioAbierto]);
 
   return (
     <section data-testid="plan-desglose" className="mt-3 max-w-[92%] space-y-3 rounded-xl border border-acento/30 bg-superficie p-4 shadow-sm">
@@ -395,17 +469,87 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       {(supuestos.length > 0 || sustituciones.length > 0 || sinCobertura.length > 0) && <div className="space-y-1 text-xs text-aviso">{supuestos.map((supuesto) => <p key={`supuesto:${supuesto}`}>⚠ {supuesto}</p>)}{sustituciones.map((item) => <p key={`sustitucion:${item.estructura_id}:${item.pedido}:${item.entregado}:${item.motivo}`}>⚠ {item.estructura_id}: {item.pedido} → {item.entregado}</p>)}{sinCobertura.map((item) => <p key={`cobertura:${item.estructura_id}:${item.product_id}:${item.tamano}`}>⚠ {item.estructura_id}: sin cobertura para {item.tamano}</p>)}</div>}
       {onAprobar && <div className="plan-card-approval-action"><button type="button" data-testid="aprobar-generar-plan" onClick={onAprobar} disabled={aprobado || generando || plan.comercial.estado === "PRESUPUESTO_EXCEDIDO" || plan.sin_cobertura.length > 0} aria-busy={generando} className="ui-button-primary ui-pressable w-full disabled:opacity-60">{generando ? "Generando…" : aprobado ? "Aprobación registrada" : plan.sin_cobertura.length > 0 ? "Completa las piezas sin cobertura" : "Aprobar y generar imagen"}</button></div>}
 
-      <Dialog.Root open={Boolean(seleccionCatalogo)} onOpenChange={(abierto) => { if (abierto) return; setSeleccionCatalogo(null); setIntercambioAbierto(false); requestAnimationFrame(() => disparadorModalRef.current?.focus()); }}>
+      <Dialog.Root open={Boolean(seleccionCatalogo) && !intercambioAbierto} onOpenChange={(abierto) => { if (abierto) return; setSeleccionCatalogo(null); setIntercambioAbierto(false); requestAnimationFrame(() => disparadorModalRef.current?.focus()); }}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60" />
           <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-borde bg-superficie p-4 shadow-lg">
             <Dialog.Title className="text-base font-semibold text-texto">{seleccionCatalogo?.linea.titulo ?? "Detalle del producto"}</Dialog.Title>
             <Dialog.Description className="mt-1 text-xs text-texto-suave">Referencia usada en {seleccionCatalogo?.estructura ?? "la decoración"}.</Dialog.Description>
             {seleccionCatalogo && <div className="mt-4 space-y-4"><div className="relative">{imagenSeleccionada ? <img src={imagenSeleccionada} alt={seleccionCatalogo.linea.titulo} width={400} height={400} className="aspect-square w-full rounded-lg bg-superficie-2 object-contain" /> : <div className="flex aspect-square items-center justify-center rounded-lg bg-superficie-2 text-sm text-texto-suave">{imagenesAusentes[seleccionCatalogo.linea.variant_id] ? "Foto no disponible en el catálogo" : "Cargando foto…"}</div>}{editorDisponible && <button type="button" title="Cambiar elemento" aria-label="Cambiar elemento del catálogo" aria-expanded={intercambioAbierto} aria-controls={`intercambio-${plan.plan.plan_id}`} onClick={() => void abrirIntercambio()} className="absolute right-2 top-2 inline-flex items-center gap-1.5 rounded-lg border border-borde bg-superficie/90 px-2.5 py-2 text-xs font-semibold text-texto shadow-sm backdrop-blur hover:bg-acento-suave hover:text-acento focus-visible:outline-2 focus-visible:outline-acento"><ArrowLeftRight className="size-3.5" aria-hidden="true" />Cambiar</button>}</div><dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm"><div><dt className="text-xs text-texto-suave">Tamaño</dt><dd className="font-medium text-texto">{seleccionCatalogo.linea.tamano_codigo ?? "No especificado"}{seleccionCatalogo.linea.diam_cm != null ? ` (${seleccionCatalogo.linea.diam_cm} cm)` : ""}</dd></div><div><dt className="text-xs text-texto-suave">Color</dt><dd className="font-medium text-texto">{seleccionCatalogo.linea.color ?? "Según catálogo"}</dd></div><div><dt className="text-xs text-texto-suave">Unidades en esta estructura</dt><dd className="font-medium tabular-nums text-texto">{seleccionCatalogo.linea.unidades}</dd></div>{compraSeleccionada && <><div><dt className="text-xs text-texto-suave">Presentación cotizada</dt><dd className="font-medium text-texto">{compraSeleccionada.paquetes} paquete{compraSeleccionada.paquetes === 1 ? "" : "s"} × {compraSeleccionada.unidades_paquete}</dd></div><div><dt className="text-xs text-texto-suave">Sobrante total</dt><dd className="font-medium tabular-nums text-texto">{compraSeleccionada.sobrante}</dd></div><div><dt className="text-xs text-texto-suave">Subtotal cotizado</dt><dd className="font-medium tabular-nums text-texto">{pesos.format(compraSeleccionada.subtotal)}</dd></div></>}</dl>
-              {editorDisponible && intercambioAbierto && <section id={`intercambio-${plan.plan.plan_id}`} aria-labelledby={`intercambio-${plan.plan.plan_id}-titulo`} className="space-y-3 rounded-lg border border-acento/30 bg-fondo/60 p-3"><div><h3 id={`intercambio-${plan.plan.plan_id}-titulo`} className="text-sm font-semibold text-texto">Cambia esta pieza</h3><p className="mt-0.5 text-xs text-texto-suave">Primero te muestro opciones del mismo tamaño y forma, priorizando colores cercanos y la misma familia; también puedes buscar cualquier pieza del catálogo.</p></div><div className="space-y-2"><p className="text-[11px] font-semibold uppercase tracking-wide text-texto-suave">Recomendados</p>{buscandoCatalogo && recomendaciones.length === 0 ? <p className="rounded-md bg-superficie px-2.5 py-2 text-xs text-texto-suave" role="status">Buscando opciones compatibles…</p> : opcionesRecomendadas.length > 0 ? <ListaOpciones opciones={opcionesRecomendadas} guardando={guardandoEdicion} onCambiar={(opcion) => void reemplazarDesdeCatalogo(opcion)} ariaLabel="Elementos recomendados" /> : <p className="rounded-md bg-superficie px-2.5 py-2 text-xs text-texto-suave">No encontré otra variante compatible. Prueba la búsqueda completa.</p>}</div><div className="space-y-2 border-t border-borde pt-3"><p className="text-[11px] font-semibold uppercase tracking-wide text-texto-suave">Todo el catálogo</p><form onSubmit={buscarEnCatalogo} className="flex gap-2"><label htmlFor={`buscar-intercambio-${plan.plan.plan_id}`} className="sr-only">Buscar en todo el catálogo</label><input id={`buscar-intercambio-${plan.plan.plan_id}`} name="buscar-intercambio-catalogo" autoComplete="off" value={consultaCatalogo} onChange={(evento) => setConsultaCatalogo(evento.target.value)} placeholder="Busca por nombre, tamaño o color…" className="min-w-0 flex-1 rounded-md border border-borde bg-superficie px-2.5 py-2 text-sm text-texto outline-none placeholder:text-texto-suave focus-visible:border-acento focus-visible:outline-2 focus-visible:outline-acento" /><button type="submit" disabled={buscandoCatalogo || consultaCatalogo.trim().length < 2} className="ui-pressable inline-flex shrink-0 items-center gap-1 rounded-md bg-acento px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"><Search className="size-3.5" aria-hidden="true" />{buscandoCatalogo ? "Buscando…" : "Buscar"}</button></form>{opcionesBusqueda.length > 0 && <ListaOpciones opciones={opcionesBusqueda} guardando={guardandoEdicion} onCambiar={(opcion) => void reemplazarDesdeCatalogo(opcion)} ariaLabel="Resultados de todo el catálogo" />}</div>{errorEdicion && <p role="alert" aria-live="polite" className="text-xs font-medium text-error">{errorEdicion}</p>}</section>}
+              {editorDisponible && intercambioAbierto && <section id={`intercambio-${plan.plan.plan_id}`} aria-labelledby={`intercambio-${plan.plan.plan_id}-titulo`} className="space-y-3 rounded-lg border border-acento/30 bg-fondo/60 p-3"><div><h3 id={`intercambio-${plan.plan.plan_id}-titulo`} className="text-sm font-semibold text-texto">Cambia esta pieza</h3><p className="mt-0.5 text-xs text-texto-suave">Primero te muestro opciones del mismo tamaño y forma, priorizando colores cercanos y la misma familia; también puedes buscar cualquier pieza del catálogo.</p></div><div className="space-y-2"><p className="text-[11px] font-semibold uppercase tracking-wide text-texto-suave">Recomendados</p>{buscandoCatalogo && recomendaciones.length === 0 ? <p className="rounded-md bg-superficie px-2.5 py-2 text-xs text-texto-suave" role="status">Buscando opciones compatibles…</p> : opcionesRecomendadas.length > 0 ? <ListaOpciones opciones={opcionesRecomendadas} guardando={guardandoEdicion} onCambiar={(opcion) => void reemplazarDesdeCatalogo(opcion)} ariaLabel="Elementos recomendados" /> : <p className="rounded-md bg-superficie px-2.5 py-2 text-xs text-texto-suave">No encontré otra variante compatible. Prueba la búsqueda completa.</p>}</div><div className="space-y-2 border-t border-borde pt-3"><p className="text-[11px] font-semibold uppercase tracking-wide text-texto-suave">Todo el catálogo</p><form onSubmit={buscarEnCatalogo} className="flex gap-2"><label htmlFor={`buscar-intercambio-${plan.plan.plan_id}`} className="sr-only">Buscar en todo el catálogo</label><input id={`buscar-intercambio-${plan.plan.plan_id}`} name="buscar-intercambio-catalogo" autoComplete="off" value={consultaCatalogo} onChange={(evento) => setConsultaCatalogo(evento.target.value)} placeholder="Busca por nombre, tamaño o color…" className="min-w-0 flex-1 rounded-md border border-borde bg-superficie px-2.5 py-2 text-sm text-texto outline-none placeholder:text-texto-suave focus-visible:border-acento focus-visible:outline-2 focus-visible:outline-acento" /><button type="submit" disabled={buscandoCatalogo || consultaCatalogo.trim().length < 2} className="ui-pressable inline-flex shrink-0 items-center gap-1 rounded-md bg-acento px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"><Search className="size-3.5" aria-hidden="true" />{buscandoCatalogo ? "Buscando…" : "Buscar"}</button></form>{opcionesBusqueda.length > 0 && <ListaOpciones opciones={opcionesBusqueda} guardando={guardandoEdicion} onCambiar={(opcion) => void reemplazarDesdeCatalogo(opcion)} ariaLabel="Resultados de todo el catálogo" />}</div></section>}
             </div>}
              {errorEdicion && <p role="alert" aria-live="polite" className="rounded-md border border-error/30 bg-error/10 px-3 py-2 text-xs font-medium text-error">{errorEdicion}</p>}
              <div className="mt-5 flex justify-end"><Dialog.Close asChild><button type="button" className="ui-pressable rounded-lg border border-borde px-3 py-2 text-sm font-medium text-texto hover:bg-fondo focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">Cerrar</button></Dialog.Close></div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+      <Dialog.Root open={Boolean(seleccionCatalogo) && intercambioAbierto} onOpenChange={(abierto) => { if (abierto) return; peticionCatalogoRef.current?.abort(); setIntercambioAbierto(false); requestAnimationFrame(() => disparadorModalRef.current?.focus()); }}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-y-auto overscroll-contain rounded-xl border border-borde bg-superficie p-4 shadow-lg">
+            <Dialog.Title className="text-base font-semibold text-texto">Cambiar {seleccionCatalogo?.linea.titulo ?? "elemento"}</Dialog.Title>
+            <Dialog.Description className="mt-1 text-xs text-texto-suave">Elige una variante real del catálogo para mantener el plan y la cotización trazables.</Dialog.Description>
+            {seleccionCatalogo && (
+              <div className="mt-4 flex min-h-0 flex-1 flex-col gap-3">
+                <button ref={volverDetalleRef} type="button" onClick={() => setIntercambioAbierto(false)} className="self-start text-xs font-semibold text-acento underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-acento">Volver al detalle</button>
+                <label htmlFor={`buscar-intercambio-${plan.plan.plan_id}`} className="sr-only">Buscar en todo el catálogo</label>
+                <input
+                  ref={busquedaCatalogoRef}
+                  id={`buscar-intercambio-${plan.plan.plan_id}`}
+                  name="buscar-intercambio-catalogo"
+                  autoComplete="off"
+                  spellCheck={false}
+                  role="combobox"
+                  aria-autocomplete="list"
+                  aria-expanded={consultaCatalogo.trim().length >= 2 && (buscandoCatalogo || opcionesBusqueda.length > 0)}
+                  aria-controls={`opciones-intercambio-${plan.plan.plan_id}`}
+                  aria-activedescendant={opcionBusquedaActiva >= 0 ? `opcion-intercambio-${opcionesBusqueda[opcionBusquedaActiva]?.variante.variantId}` : undefined}
+                  value={consultaCatalogo}
+                  onKeyDown={navegarOpcionesBusqueda}
+                  onChange={(evento) => {
+                    const valor = evento.target.value;
+                    setConsultaCatalogo(valor);
+                    setOpcionBusquedaActiva(-1);
+                    if (valor.trim().length < 2) {
+                      peticionCatalogoRef.current?.abort();
+                      setResultadosCatalogo([]);
+                    }
+                  }}
+                  placeholder="Busca por nombre, tamaño o color…"
+                  className="w-full rounded-md border border-borde bg-superficie px-2.5 py-2 text-sm text-texto outline-none placeholder:text-texto-suave focus-visible:border-acento focus-visible:outline-2 focus-visible:outline-acento"
+                />
+                <div className="min-h-0 flex-1" aria-live="polite">
+                  {consultaCatalogo.trim().length >= 2 ? (
+                    buscandoCatalogo ? (
+                      <p className="rounded-md bg-fondo px-2.5 py-2 text-xs text-texto-suave" role="status">Buscando en todo el catálogo…</p>
+                    ) : opcionesBusqueda.length > 0 ? (
+                      <ListaOpciones
+                        opciones={opcionesBusqueda}
+                        guardando={guardandoEdicion}
+                        onCambiar={(opcion) => void reemplazarDesdeCatalogo(opcion)}
+                        ariaLabel="Resultados de búsqueda del catálogo"
+                        listId={`opciones-intercambio-${plan.plan.plan_id}`}
+                        activeVariantId={opcionBusquedaActiva >= 0 ? opcionesBusqueda[opcionBusquedaActiva]?.variante.variantId : undefined}
+                      />
+                    ) : errorEdicion ? (
+                      <div className="space-y-2 rounded-md bg-fondo px-2.5 py-2 text-xs text-texto-suave">
+                        <p>{errorEdicion}</p>
+                        <button type="button" onClick={() => void buscarCatalogoPorTexto(consultaCatalogo)} className="font-semibold text-acento underline underline-offset-2">Reintentar búsqueda</button>
+                      </div>
+                    ) : (
+                      <p className="rounded-md bg-fondo px-2.5 py-2 text-xs text-texto-suave">No encontré variantes para esa búsqueda.</p>
+                    )
+                  ) : buscandoCatalogo && recomendaciones.length === 0 ? (
+                    <p className="rounded-md bg-fondo px-2.5 py-2 text-xs text-texto-suave" role="status">Buscando opciones compatibles…</p>
+                  ) : opcionesRecomendadas.length > 0 ? (
+                    <ListaOpciones opciones={opcionesRecomendadas} guardando={guardandoEdicion} onCambiar={(opcion) => void reemplazarDesdeCatalogo(opcion)} ariaLabel="Elementos recomendados" />
+                  ) : (
+                    <p className="rounded-md bg-fondo px-2.5 py-2 text-xs text-texto-suave">No encontré otra variante compatible. Escribe al menos dos caracteres para buscar.</p>
+                  )}
+                </div>
+                {errorEdicion && consultaCatalogo.trim().length < 2 && <p role="alert" className="rounded-md border border-error/30 bg-error/10 px-3 py-2 text-xs font-medium text-error">{errorEdicion}</p>}
+              </div>
+            )}
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>

@@ -171,6 +171,7 @@ export async function POST(request: Request) {
               ragRechazados: r.ragRechazados,
               ragTotal: r.ragTotal,
               plan: r.plan,
+              referenceBlueprint: r.referenceBlueprint,
             });
           }
         }

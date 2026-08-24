@@ -28,6 +28,7 @@ export type LineaCotizada = {
   tamanoCodigo?: string;
   diamPulg?: number;
   estructuras?: string[];
+  referenciaElementIds?: string[];
   color?: string;
   cantidadNecesaria: number;
   designQuantity?: number;
@@ -243,12 +244,16 @@ export function cotizarProductos(productos: Producto[], estimate?: DesignMateria
 }
 
 export function cotizarPlan(plan: PlanResuelto): Cotizacion {
+  const estructurasPlanPorId = new Map(plan.plan.estructuras.map((estructura) => [estructura.estructura_id, estructura]));
   const lineas: LineaCotizada[] = plan.compras.map((compra) => ({
     id: compra.variant_id,
     tamano: compra.tamano_codigo ?? "sin tamaño aplicable",
     tamanoCodigo: compra.tamano_codigo ?? undefined,
     diamPulg: compra.diam_pulg ?? undefined,
     estructuras: compra.estructuras,
+    referenciaElementIds: [...new Set(compra.estructuras
+      .map((estructuraId) => estructurasPlanPorId.get(estructuraId)?.referencia_element_id)
+      .filter((id): id is string => Boolean(id)))],
     cantidadNecesaria: compra.unidades_necesarias,
     designQuantity: compra.design_quantity,
     wasteReserve: compra.waste_reserve,

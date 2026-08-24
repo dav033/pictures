@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
+import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import { useBorradorCotizacion, type LineaBorrador } from "@/lib/estado/borrador-cotizacion";
 
 const pesos = new Intl.NumberFormat("es-CO", {
@@ -16,6 +17,7 @@ type Props = {
   editable?: boolean;
   /** Confirmed lines are handed back to the parent, which owns regeneration. */
   onAplicar?: (lineas: LineaBorrador[]) => void;
+  referenceBlueprint?: ReferenceBlueprintV2;
 };
 
 function detalleLinea(linea: LineaBorrador): string {
@@ -27,10 +29,11 @@ function detalleLinea(linea: LineaBorrador): string {
   }${!linea.disponible ? " · agotado" : ""}`;
 }
 
-export function TarjetaCotizacion({ cotizacion, editable = false, onAplicar }: Props) {
+export function TarjetaCotizacion({ cotizacion, editable = false, onAplicar, referenceBlueprint }: Props) {
   const borrador = useBorradorCotizacion(cotizacion);
   const [editando, setEditando] = useState(false);
   const puedeEditar = editable && Boolean(onAplicar);
+  const nombresReferencia = new Map((referenceBlueprint?.elements ?? []).map((elemento) => [elemento.element_id, elemento.name]));
 
   function aplicar(): void {
     if (!onAplicar) return;
@@ -70,6 +73,12 @@ export function TarjetaCotizacion({ cotizacion, editable = false, onAplicar }: P
                     <span className={`truncate ${linea.excluida ? "line-through" : ""}`}>{nombre}</span>
                     <span className="shrink-0">{pesos.format(linea.subtotal ?? 0)}</span>
                   </div>
+
+                  {linea.referenciaElementIds && linea.referenciaElementIds.length > 0 && (
+                    <span className="mt-1 text-xs text-texto-suave">
+                      Referencia: {linea.referenciaElementIds.map((id) => nombresReferencia.get(id) ?? id).join(", ")}
+                    </span>
+                  )}
 
                   {linea.excluida ? (
                     editando ? (
