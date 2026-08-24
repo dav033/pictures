@@ -249,7 +249,90 @@ Referencia: Left Organic Balloon Arrangement
    - conservar `referencia_element_id` de la estructura;
    - reiniciar aprobación e imagen pendiente.
 
-## 11. Fase F — Eliminar el disparador paralelo
+## 11. Fase F — Convertir la imagen en el control de reemplazo
+
+**Archivo principal:**
+
+- `src/components/TarjetaPlanDecoracion.tsx`
+
+La captura adjunta se usa únicamente como referencia del estado actual. El botón flotante “Cambiar” de la esquina debe desaparecer.
+
+### Vista de detalle
+
+1. La imagen completa será un `<button type="button">`, no un `div` con `onClick` ni una imagen con un botón superpuesto.
+2. El botón tendrá `aria-label="Cambiar {nombre del producto}"` y conservará la imagen con su texto alternativo descriptivo.
+3. El área interactiva ocupará el ancho y alto completos de la imagen.
+4. Hover y foco visible comunicarán que la imagen es interactuable:
+   - cursor de acción;
+   - leve reducción de brillo o velo con color semántico;
+   - borde o anillo de acento;
+   - overlay con icono y texto “Cambiar elemento”;
+   - transición solo de `opacity`, `transform`, `filter` o color, nunca `transition: all`.
+5. El overlay también será visible con `focus-visible` para navegación por teclado.
+6. En dispositivos sin hover se mantendrá una indicación visible dentro de la imagen para que la acción no dependa exclusivamente del puntero.
+7. `prefers-reduced-motion` eliminará cualquier escala o movimiento no esencial.
+8. Si no hay imagen, el placeholder completo seguirá siendo el mismo botón de cambio.
+
+### Vista de reemplazo
+
+El estado actual `intercambioAbierto` se reutilizará como selector de vista. No se creará otro modal.
+
+```text
+intercambioAbierto = false  → detalle del producto
+intercambioAbierto = true   → opciones de reemplazo
+```
+
+Al activar la imagen:
+
+1. `abrirIntercambio()` cambia el contenido completo del `Dialog.Content`.
+2. Desaparecen temporalmente imagen, tamaño, color, cantidades y subtotal del producto actual.
+3. El título cambia a “Cambiar {nombre del producto}”.
+4. Aparece una acción “Volver al detalle” que regresa a la vista anterior sin cerrar el diálogo.
+5. La vista de reemplazo contiene solamente:
+   - estado “Buscando opciones compatibles…”;
+   - recomendaciones por tamaño, forma y color;
+   - búsqueda en todo el catálogo;
+   - resultados reemplazables;
+   - errores inline con el siguiente paso.
+6. Los resultados no se renderizan debajo del detalle ni aumentan indefinidamente la altura del modal.
+7. El diálogo conservará `max-height`, scroll interno y `overscroll-behavior: contain`.
+8. Al entrar en la vista de reemplazo, el foco irá al encabezado o a “Volver al detalle”; no se usará `autoFocus` en móvil.
+9. Al volver, el foco regresará al botón-imagen.
+10. Al completar un reemplazo se recalcula el plan, se cierra el diálogo y el foco vuelve al elemento que lo abrió.
+11. Si el reemplazo falla, el diálogo permanece en la vista de reemplazo y muestra cómo reintentar.
+
+### Autocompletado del catálogo
+
+La búsqueda en todo el catálogo será reactiva. No requerirá pulsar un botón “Buscar” para obtener sugerencias.
+
+1. Reutilizar `consultaCatalogo`, `resultadosCatalogo`, `opcionesBusqueda` y el modo `buscar` de `/api/plan-editar`; no crear otro endpoint ni otro índice.
+2. Al escribir 2 o más caracteres, esperar entre 250 y 300 ms desde la última pulsación y ejecutar la búsqueda automáticamente.
+3. El texto escrito no se reemplaza ni se completa por la fuerza. El autocompletado consiste en mostrar opciones coincidentes mientras se escribe.
+4. Cancelar el temporizador y la petición anterior cuando cambie la consulta, se vuelva al detalle o se cierre el diálogo. Usar `AbortController` o un identificador de petición para impedir que resultados antiguos sobrescriban la consulta actual.
+5. El encabezado, “Volver al detalle” y el campo de búsqueda permanecen fijos. Solo cambia la zona de contenido:
+
+```text
+consulta con 0–1 caracteres → recomendaciones compatibles
+consulta con 2+ caracteres  → carga / resultados / vacío / error de búsqueda
+```
+
+6. Al comenzar una búsqueda, las recomendaciones desaparecen y son sustituidas por “Buscando en todo el catálogo…”.
+7. Cuando llegan los resultados, estos sustituyen el contenido anterior; nunca se agregan debajo de las recomendaciones.
+8. Al borrar la consulta por debajo de 2 caracteres, limpiar `resultadosCatalogo` y restaurar las recomendaciones ya cargadas sin repetir su petición.
+9. El botón actual “Buscar” se elimina por redundante. En caso de error se ofrece una acción explícita “Reintentar búsqueda”.
+10. El campo tendrá etiqueta accesible, `name`, `autoComplete="off"`, `spellCheck={false}` y placeholder terminado en `…`.
+11. Implementar el patrón de autocompletado accesible:
+    - campo con `role="combobox"`, `aria-autocomplete="list"`, `aria-expanded` y `aria-controls`;
+    - resultados aplanados desde `opcionesBusqueda` como opciones seleccionables;
+    - Flecha abajo/arriba recorre opciones;
+    - Enter elige la opción activa;
+    - Escape limpia una consulta no vacía y vuelve a recomendaciones; con la consulta vacía conserva el cierre normal del diálogo;
+    - el número de resultados y los estados de carga se anuncian con `aria-live="polite"`.
+12. Limitar la cantidad visible a la respuesta ya acotada del servidor. No agregar virtualización, caché ni una nueva dependencia mientras el límite siga siendo pequeño.
+
+No se extraerá un componente nuevo salvo que el mismo patrón vaya a reutilizarse en otra pantalla.
+
+## 12. Fase G — Eliminar el disparador paralelo
 
 **Archivos principales:**
 
@@ -267,7 +350,7 @@ Con `PLAN_DECORACION_ENABLED=false`, el flujo legacy conservará su comportamien
 
 No se añadirá otro feature flag. El flag de plan existente cubre la separación entre ambos flujos.
 
-## 12. Pruebas
+## 13. Pruebas
 
 Ampliar los scripts actuales con `node:assert`, sin agregar otro framework.
 
@@ -301,6 +384,18 @@ Ampliar los scripts actuales con `node:assert`, sin agregar otro framework.
 7. Flujo legacy con el plan desactivado.
 8. Vista móvil: tarjeta dentro del chat sin desbordamiento horizontal.
 9. Navegación por teclado y lectura de estados asíncronos.
+10. Toda la imagen abre el reemplazo; no queda un botón flotante en la esquina.
+11. Hover y `focus-visible` hacen evidente la interacción sin depender solo del color.
+12. En un dispositivo táctil existe una indicación visible para cambiar el elemento.
+13. Al abrir “Cambiar”, el detalle se sustituye completamente por los resultados.
+14. “Volver al detalle” restaura contenido y foco sin cerrar el diálogo.
+15. Carga, resultados vacíos y error permanecen dentro de la vista de reemplazo.
+16. `prefers-reduced-motion` desactiva movimiento no esencial.
+17. Escribir 2 caracteres dispara una sola búsqueda después del debounce, sin pulsar un botón.
+18. Al seguir escribiendo, una respuesta atrasada nunca reemplaza los resultados de la consulta más reciente.
+19. Los resultados de búsqueda sustituyen las recomendaciones en la misma zona del modal.
+20. Borrar la consulta restaura las recomendaciones sin volver a solicitarlas.
+21. Flechas, Enter y Escape permiten usar el autocompletado sin ratón.
 
 Comandos de verificación:
 
@@ -313,7 +408,7 @@ npm run lint
 npm run build
 ```
 
-## 13. Criterios de aceptación
+## 14. Criterios de aceptación
 
 - La sección de referencias ya no aparece en el panel lateral.
 - Aparece una sola vez en el turno correcto del chat y persiste al recargar.
@@ -326,8 +421,34 @@ npm run build
 - Editar un plan conserva trazabilidad y reinicia su aprobación.
 - En modo plan no existe generación previa a la aprobación.
 - El flujo sin referencias y el flujo legacy no cambian.
+- La imagen completa del producto funciona como botón accesible para cambiarlo.
+- Hover, foco y dispositivos táctiles comunican que la imagen es interactuable.
+- El botón flotante “Cambiar” ya no existe.
+- La vista de reemplazo sustituye el detalle dentro del mismo modal; nunca se agrega debajo.
+- Es posible volver al detalle sin cerrar el modal y sin perder el foco.
+- Carga, vacío y error tienen estados explícitos dentro de la vista de reemplazo.
+- La búsqueda consulta automáticamente al escribir 2 o más caracteres.
+- Las consultas anteriores se cancelan o ignoran y nunca pisan resultados nuevos.
+- Recomendaciones y resultados de búsqueda ocupan la misma región y se sustituyen entre sí.
+- Borrar la consulta restaura las recomendaciones cargadas.
+- El autocompletado funciona con teclado y anuncia sus cambios a tecnologías de asistencia.
 
-## 14. Orden de implementación
+## 15. Coordinación con subagentes
+
+Durante la implementación, si las herramientas disponibles permiten delegar y existe trabajo realmente independiente, se usarán subagentes con:
+
+- Modelo: `gpt-5.6-luna`.
+- Razonamiento: `xhigh`.
+
+Delegación sugerida:
+
+- Un subagente revisa interacción, accesibilidad y estados del modal.
+- Otro subagente revisa pruebas de cobertura, desglose y cotización.
+- El agente principal conserva la integración en `page.tsx` y resuelve cualquier solapamiento.
+
+No se crearán subagentes para tareas pequeñas, secuenciales o que deban editar simultáneamente las mismas líneas. Su uso es condicional a que reduzca tiempo sin aumentar conflictos.
+
+## 16. Orden de implementación
 
 1. Contrato de cobertura y pruebas de dominio.
 2. Separación analizador/tarjeta.
@@ -335,7 +456,8 @@ npm run build
 4. Cobertura visible en `TarjetaPlanDecoracion`.
 5. Trazabilidad en `cotizarPlan` y `TarjetaCotizacion`.
 6. Anclaje por `messageId` y coherencia de edición.
-7. Eliminación del disparador paralelo.
-8. Pruebas completas y revisión manual.
+7. Imagen interactiva, alternancia detalle/reemplazo y autocompletado dentro del modal.
+8. Eliminación del disparador paralelo.
+9. Pruebas completas y revisión manual.
 
 Cada fase debe dejar las pruebas anteriores pasando antes de continuar.
