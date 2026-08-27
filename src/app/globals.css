@@ -1321,3 +1321,51 @@ body {
     display: none;
   }
 }
+
+/* Happie IA: arte generativo por tema y transiciones del recomendador/wizard.
+   La regla global de prefers-reduced-motion (arriba) ya neutraliza duración e
+   iteración de estas animaciones. */
+@keyframes happie-flotar {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes happie-flotar-lento {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-10px) rotate(4deg); }
+}
+
+@keyframes happie-brillo {
+  0%, 100% { opacity: 0.32; }
+  50% { opacity: 0.9; }
+}
+
+@keyframes happie-entrar {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+.happie-flota {
+  animation: happie-flotar 5s ease-in-out infinite;
+}
+
+.happie-flota-lento {
+  animation: happie-flotar-lento 7s ease-in-out infinite;
+}
+
+.happie-brilla {
+  animation: happie-brillo 3.2s ease-in-out infinite;
+}
+
+.happie-entra {
+  animation: happie-entrar 0.5s var(--ease-out) both;
+}
+
+.happie-tarjeta {
+  transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out);
+}
+
+.happie-tarjeta:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px var(--sombra);
+}
