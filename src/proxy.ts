@@ -17,5 +17,7 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api/login|login|_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!api/login|api/happie/recommend-packages|api/happie/recommend-package|login|_next/static|_next/image|favicon.ico).*)",
+  ],
 };

@@ -10,8 +10,14 @@ export type {
   RecomendacionResultado,
   RecomendarPaquetesInput,
   RecomendarPaquetesEstructuradoInput,
+  ServiciosSolicitados,
+  RecomendarPaquetesConFiltrosInput,
 } from "./recomendador";
-export { recomendarPaquetes, recomendarPaquetesEstructurado } from "./recomendador";
+export {
+  recomendarPaquetes,
+  recomendarPaquetesEstructurado,
+  recomendarPaquetesConFiltros,
+} from "./recomendador";
 
 export type { TipoEventoCurado } from "./tipos-curados";
 export { tiposEventoCurados, paquetesParaTipoCurado } from "./tipos-curados";
