@@ -1,0 +1,48 @@
+import { timingSafeEqual } from "node:crypto";
+import { generarRecomendacion } from "./generar-recomendacion";
+
+const LONGITUD_MINIMA_SECRETO = 32;
+
+function clavesIguales(recibida: string, esperada: string): boolean {
+  const recibidaBytes = Buffer.from(recibida, "utf8");
+  const esperadaBytes = Buffer.from(esperada, "utf8");
+  return recibidaBytes.length === esperadaBytes.length && timingSafeEqual(recibidaBytes, esperadaBytes);
+}
+
+export function respuestaWebhook(body: unknown, status = 200): Response {
+  return Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
+}
+
+/** Devuelve una respuesta de error o `null` cuando la llamada está autorizada. */
+export function autenticarWebhook(request: Request): Response | null {
+  const esperada = process.env.HAPPIE_WEBHOOK_API_KEY?.trim();
+  if (!esperada || Buffer.byteLength(esperada, "utf8") < LONGITUD_MINIMA_SECRETO) {
+    return respuestaWebhook({ error: "Webhook no configurado en el servidor." }, 503);
+  }
+
+  const recibida = request.headers.get("x-api-key") ?? "";
+  if (!clavesIguales(recibida, esperada)) {
+    return respuestaWebhook({ error: "API key inválida o ausente." }, 401);
+  }
+
+  return null;
+}
+
+/**
+ * Versión server-to-server (webhook) de la recomendación: sin CORS ni
+ * preflight `OPTIONS` — no aplican porque no la llama JS de navegador, sino
+ * el backend de chat de Happia directo. Usa su propio secreto
+ * (`HAPPIE_WEBHOOK_API_KEY`), separado del que usan `recommend-packages` /
+ * `recommend-package`, porque ese otro viaja en JS de cliente y por tanto
+ * es visible — este no.
+ */
+export async function manejarRecomendacionWebhook(
+  request: Request,
+  maxRecomendaciones: number,
+): Promise<Response> {
+  const errorAutenticacion = autenticarWebhook(request);
+  if (errorAutenticacion) return errorAutenticacion;
+
+  const { status, body } = await generarRecomendacion(request, maxRecomendaciones);
+  return respuestaWebhook(body, status);
+}
