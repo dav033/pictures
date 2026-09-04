@@ -221,6 +221,12 @@ export function EstadisticasOrdenes() {
   const fotos = datos.fotos ?? { totalFotos: 0, ordenesConUnaFoto: 0, ordenesConVariasFotos: 0 };
   const captions = datos.captions ?? { totalCaptions: 0, editadosAMano: 0, generadosPorIa: 0, conProporcionRelativa: 0 };
 
+  // El servidor no tiene la carpeta de órdenes: allí estos números vienen del
+  // snapshot publicado, y hay que decirlo para que nadie los lea como frescos.
+  const avisoSnapshot = datos.origen === "snapshot"
+    ? `Datos del snapshot publicado${datos.generadoEn ? ` el ${new Date(datos.generadoEn).toLocaleString("es-CO")}` : ""}. Esta máquina no tiene la carpeta de órdenes, así que no son datos en vivo.`
+    : null;
+
   const maximoRanking = ranking[0]?.vecesReferenciado ?? 0;
   const LIMITE = 15;
   const visibles = verTodo ? ranking : ranking.slice(0, LIMITE);
@@ -259,6 +265,10 @@ export function EstadisticasOrdenes() {
         <h2 className="text-xl font-semibold tracking-tight text-texto">Resumen del dataset</h2>
         <p className="text-sm text-texto-suave">Cobertura, volumen y consistencia de las referencias analizadas.</p>
       </div>
+
+      {avisoSnapshot && (
+        <p className="rounded-xl border border-borde bg-superficie px-4 py-3 text-xs text-texto-suave">{avisoSnapshot}</p>
+      )}
 
       <PanelSalud alertas={alertas} />
 

@@ -7,6 +7,7 @@ import { randomUUID } from "node:crypto";
 import { leerComposicionLocal, type Composicion } from "./composicion";
 import { readLoraDatasetV005View, type LoraDatasetGalleryData } from "./dataset-v005-view";
 import { directorioImagenesSnapshot, prepararImagenesSnapshot } from "./snapshot-imagenes";
+import { calcularEstadisticasOrdenes, type EstadisticasOrdenes } from "@/lib/ordenes/estadisticas";
 
 /**
  * Empaqueta el estado local (estadísticas del LoRA + metadata del dataset
@@ -19,6 +20,12 @@ export type LoraSnapshot = {
   generatedAt: string;
   composicion: Composicion | null;
   datasetGallery: LoraDatasetGalleryData | null;
+  /**
+   * Estadísticas del dataset de órdenes. Se calculan de la carpeta local de
+   * órdenes, que el servidor no tiene: sin esto la pestaña de estadísticas
+   * solo mostraba "No se encontró la carpeta C:\...".
+   */
+  estadisticasOrdenes: EstadisticasOrdenes | null;
 };
 
 export type PublishResult = {
@@ -39,11 +46,12 @@ const TRANSFERENCIA_TIMEOUT_MS = 300_000;
 const DEFAULT_CONTAINER_PATH = "/app/data/snapshot/lora-estado.json";
 const TAR_LOCAL = path.join(SNAPSHOT_DIR, "imagenes.tar");
 
-export function buildSnapshot(): LoraSnapshot {
+export async function buildSnapshot(): Promise<LoraSnapshot> {
   return {
     generatedAt: new Date().toISOString(),
     composicion: leerComposicionLocal(),
     datasetGallery: readLoraDatasetV005View(),
+    estadisticasOrdenes: await calcularEstadisticasOrdenes(),
   };
 }
 
@@ -134,7 +142,7 @@ async function publicarImagenes(
  * sube a un temporal en el home del usuario SSH y de ahí se copia adentro.
  */
 export async function publishSnapshotToServer(): Promise<PublishResult> {
-  const snapshot = buildSnapshot();
+  const snapshot = await buildSnapshot();
   writeLocalSnapshot(snapshot);
 
   const host = process.env.LORA_SNAPSHOT_SSH_HOST?.trim();

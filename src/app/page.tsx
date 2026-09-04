@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Search, Calculator, Ruler, PackageSearch, ClipboardCheck, NotebookPen, CheckCircle2, X, AlertCircle, Lock, Plus, Sparkles, ArrowUp, Paperclip, Home, Image as ImageIcon, type LucideIcon } from "lucide-react";
+import { Search, Calculator, Ruler, PackageSearch, ClipboardCheck, NotebookPen, CheckCircle2, X, AlertCircle, Lock, Plus, Sparkles, ArrowUp, Paperclip, Home, ChartColumn, Image as ImageIcon, type LucideIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DecoracionCard } from "@/components/DecoracionCard";
@@ -1460,6 +1460,13 @@ export default function Page() {
                   <SelectItem value="gemini_sin_referencias">{NOMBRE_SELECTOR.gemini_sin_referencias}</SelectItem>
                 </SelectContent>
               </Select>
+              <Link
+                href="/estadisticas"
+                className="ui-button-secondary inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
+              >
+                <ChartColumn className="size-4" aria-hidden="true" />
+                Estadísticas
+              </Link>
               <button
                 type="button"
                 onClick={limpiarTodo}

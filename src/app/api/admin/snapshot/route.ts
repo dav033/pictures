@@ -7,13 +7,14 @@ export async function GET(request: Request) {
     return NextResponse.json({ code: "UNAUTHORIZED", message: "Sesión requerida" }, { status: 401 });
   }
 
-  const live = buildSnapshot();
+  const live = await buildSnapshot();
   return NextResponse.json({
     live: {
       generatedAt: live.generatedAt,
       composicionGenerado: live.composicion?.generado ?? null,
       datasetImagenes: live.datasetGallery?.imageCount ?? 0,
       datasetCaptions: live.datasetGallery?.captionCount ?? 0,
+      ordenesAnalizadas: live.estadisticasOrdenes?.ordenesAnalizadas ?? 0,
     },
     savedAt: readLocalSnapshot()?.generatedAt ?? null,
     lastPublish: readLastPublishState(),
