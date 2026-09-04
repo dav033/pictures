@@ -60,13 +60,14 @@
 
 import { TIPOS_ESTRUCTURA, type TipoEstructura } from "@/lib/plan/tipos";
 import { clasificarAcabados, clasificarColores, plegarTexto } from "@/lib/rag/taxonomy/v2";
-import { EventIntentV2Schema, type ComplexityProfile, type EventIntentV2, type EventScope, type RequestedView } from "@/lib/scene/tipos";
+import { EventIntentV2Schema, type ComplexityProfile, type EventFamily, type EventIntentV2, type EventScope, type RequestedView } from "@/lib/scene/tipos";
 import {
   RawEventIntentDraftSchema,
   type RawEventIntentDraft,
   type RawField,
   type RawHardConstraintCandidate,
 } from "./event-schema";
+import { parseEventSearchIntent } from "./event-search";
 
 // ---------------------------------------------------------------------------
 // Defaults deterministas — documentados uno a uno (exigencia de la Tarea 04.1).
@@ -269,6 +270,30 @@ function detectVenueEnvironment(folded: string): RawField<"indoor" | "outdoor"> 
   return undefined;
 }
 
+function detectGuestCount(folded: string): RawField<number> | undefined {
+  const match = folded.match(/(?:para|con|de)\s+(\d{1,6})\s+(?:invitados?|personas?|adultos?)/i)
+    ?? folded.match(/(\d{1,6})\s+(?:invitados?|personas?|adultos?)/i);
+  if (!match) return undefined;
+  const value = Number(match[1]);
+  return Number.isInteger(value) && value > 0
+    ? { value, provenance: "explicito", source_text: match[0] }
+    : undefined;
+}
+
+function classifyEventFamily(label: string | null, source: string): EventFamily {
+  const value = fold(`${label ?? ""} ${source}`).replace(
+    /\b(?:no|nunca|sin)\s+(?:(?:es|sea|ser)\s+)?(?:una?\s+)?(?:boda|matrimonio|wedding)\b/g,
+    " ",
+  );
+  if (/\b(boda|matrimonio|wedding)\b/.test(value)) return "wedding";
+  if (/\b(corporativ\w*|empresa|empresarial|conferencia|lanzamiento)\b/.test(value)) return "corporate";
+  if (/\b(bautizo|bautismo|comunion|comunión|religios\w*)\b/.test(value)) return "religious";
+  if (/\b(quince|xv|aniversario|graduacion|graduación|cumpleanos|cumpleaños|prom)\b/.test(value)) return "milestone";
+  if (/\b(navidad|halloween|san valentin|día de la madre|dia de la madre|temporad)\b/.test(value)) return "seasonal";
+  if (/\b(baby shower|fiesta|celebracion|celebración|festejo|evento social)\b/.test(value)) return "social";
+  return "other";
+}
+
 // ---------------------------------------------------------------------------
 // existing_asset_refs (hook de foto del lugar)
 // ---------------------------------------------------------------------------
@@ -424,7 +449,7 @@ function detectSizeCandidate(folded: string): RawHardConstraintCandidate | undef
   }
   if (codes.size === 0) return undefined;
   return {
-    key: "tamano",
+    key: "diametro_pulgadas",
     value: Array.from(codes),
     provenance: "user",
     source_text: [...folded.matchAll(SIZE_PATTERN)].map((m) => m[0]).join(", "),
@@ -466,6 +491,10 @@ export type ParseEventContext = {
   /** Período de alquiler ya conocido por el caller — este extractor no hace NLP de fechas. */
   rentalPeriod?: { starts_at: string; ends_at: string };
   eventDate?: string;
+  /** Datos del espacio ya confirmados por formulario o foto. */
+  space?: { type: string; width_cm?: number; height_cm?: number; depth_cm?: number };
+  guestCount?: number;
+  requestedStructures?: string[];
 };
 
 // ---------------------------------------------------------------------------
@@ -481,18 +510,35 @@ export function buildRawEventIntentDraft(mensaje: string, contexto: ParseEventCo
   const complexity = detectComplexity(folded, eventScope.value);
   const budget = detectBudgetCop(mensaje);
   const venueEnvironment = detectVenueEnvironment(folded);
+  const guestCount = contexto.guestCount !== undefined
+    ? { value: contexto.guestCount, provenance: "inferido" as const, source_text: "contexto estructurado" }
+    : detectGuestCount(folded);
   const existingAssetRefs = detectExistingAssetRefs(source, contexto);
   const styleTerms = detectStyleTerms(folded);
   const { palette, hardCandidate: colorCandidate } = detectColors(source, folded);
   const structureCandidate = detectStructureCandidate(folded);
   const sizeCandidate = detectSizeCandidate(folded);
   const finishCandidate = detectFinishCandidate(source, folded);
-
+  const eventSearch = parseEventSearchIntent(source);
+  const eventLabel = eventSearch.event_label;
+  const eventFamily = classifyEventFamily(eventLabel, source);
   const hardCandidates = [colorCandidate, structureCandidate, sizeCandidate, finishCandidate].filter(
     (c): c is RawHardConstraintCandidate => c !== undefined,
   );
+  const requestedStructures = Array.from(new Set([
+    ...(contexto.requestedStructures ?? []),
+    ...hardCandidates
+      .filter((candidate) => candidate.key === "estructura_focal")
+      .flatMap((candidate) => {
+        const value = candidate.value as { tipo?: string };
+        return value.tipo ? [value.tipo] : [];
+      }),
+  ]));
 
   const draft: RawEventIntentDraft = {
+    event_label: { value: eventLabel, provenance: eventLabel ? "explicito" : "supuesto", source_text: eventLabel ?? "" },
+    event_family: { value: eventFamily, provenance: eventFamily === "other" ? "supuesto" : "inferido", source_text: eventLabel ?? "" },
+    original_request: { value: source.slice(0, 1_000), provenance: "explicito", source_text: source.slice(0, 1_000) },
     event_scope: eventScope,
     requested_views: requestedViews,
     complexity_requested: complexity,
@@ -505,6 +551,9 @@ export function buildRawEventIntentDraft(mensaje: string, contexto: ParseEventCo
       ? { rental_period: { value: contexto.rentalPeriod, provenance: "explicito", source_text: "" } }
       : {}),
     ...(venueEnvironment ? { venue_environment: venueEnvironment } : {}),
+    ...(contexto.space ? { space: { value: contexto.space, provenance: "inferido", source_text: "contexto estructurado" } } : {}),
+    ...(guestCount ? { guest_count: guestCount } : {}),
+    ...(requestedStructures.length ? { requested_structures: { value: requestedStructures, provenance: "inferido", source_text: requestedStructures.join(", ") } } : {}),
     ...(existingAssetRefs ? { existing_asset_refs: existingAssetRefs } : {}),
     ...(palette ? { palette } : {}),
     ...(styleTerms ? { style_terms: styleTerms } : {}),
@@ -527,7 +576,10 @@ function finalizeEventIntent(draft: RawEventIntentDraft): EventIntentV2 {
 
   const intent: EventIntentV2 = {
     schema_version: "event-intent-v2",
-    event_type: "wedding",
+    event_type: draft.event_family?.value === "wedding" ? "wedding" : "open",
+    event_family: draft.event_family?.value ?? "other",
+    event_label: draft.event_label?.value ?? null,
+    original_request: draft.original_request?.value ?? "",
     event_scope: draft.event_scope?.value ?? DEFAULT_EVENT_SCOPE,
     requested_views: draft.requested_views?.value ?? deriveDefaultRequestedViews(DEFAULT_EVENT_SCOPE),
     complexity_requested: draft.complexity_requested?.value ?? DEFAULT_COMPLEXITY,
@@ -539,6 +591,9 @@ function finalizeEventIntent(draft: RawEventIntentDraft): EventIntentV2 {
       environment: draft.venue_environment?.value,
       existing_asset_refs: draft.existing_asset_refs?.value ?? [],
     },
+    space: draft.space?.value,
+    requested_structures: draft.requested_structures?.value ?? [],
+    guest_count: draft.guest_count?.value,
     palette: draft.palette?.value ?? [],
     style_terms: draft.style_terms?.value ?? [],
     hard_constraints,

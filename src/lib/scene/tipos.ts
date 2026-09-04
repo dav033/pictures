@@ -93,6 +93,30 @@ export const EventVenueSchema = z.object({
   existing_asset_refs: z.array(z.string().min(1)),
 });
 
+/**
+ * Datos espaciales que gobiernan composición. El evento queda como señal
+ * narrativa; nunca decide por sí solo geometría o número de estructuras.
+ */
+export const EventSpaceSchema = z.object({
+  type: z.string().trim().min(1).max(120),
+  width_cm: z.number().positive().max(100_000).optional(),
+  height_cm: z.number().positive().max(100_000).optional(),
+  depth_cm: z.number().positive().max(100_000).optional(),
+});
+export type EventSpace = z.infer<typeof EventSpaceSchema>;
+
+/** Families are deliberately coarse. The customer label remains free text. */
+export const EventFamilySchema = z.enum([
+  "wedding",
+  "social",
+  "corporate",
+  "religious",
+  "milestone",
+  "seasonal",
+  "other",
+]);
+export type EventFamily = z.infer<typeof EventFamilySchema>;
+
 export const HardConstraintSchema = z.object({
   key: z.string().min(1),
   value: z.unknown(),
@@ -101,7 +125,13 @@ export const HardConstraintSchema = z.object({
 
 export const EventIntentV2Schema = z.object({
   schema_version: z.literal("event-intent-v2"),
-  event_type: z.literal("wedding"),
+  /** Deprecated compatibility field. Unknown events use `open`, never wedding. */
+  event_type: z.string().trim().min(1).max(80).default("open"),
+  event_family: EventFamilySchema.optional(),
+  /** Customer wording, preserved verbatim when available. */
+  event_label: z.string().trim().min(1).max(160).nullable().optional(),
+  /** Full request retained for visual/prompt traceability. */
+  original_request: z.string().trim().max(1_000).optional(),
   event_scope: EventScopeSchema,
   requested_views: z.array(RequestedViewSchema).min(1),
   complexity_requested: ComplexityProfileSchema,
@@ -111,6 +141,9 @@ export const EventIntentV2Schema = z.object({
   event_location: EventLocationSchema.optional(),
   rental_period: RentalPeriodSchema.optional(),
   venue: EventVenueSchema,
+  space: EventSpaceSchema.optional(),
+  requested_structures: z.array(z.string().trim().min(1).max(80)).max(24).optional(),
+  guest_count: z.number().int().positive().max(100_000).optional(),
   palette: z.array(z.string().min(1)),
   style_terms: z.array(z.string().min(1)),
   hard_constraints: z.array(HardConstraintSchema),
@@ -263,6 +296,19 @@ export const SceneProgramV1Schema = z
     recipe_id: z.string().min(1),
     recipe_version: z.number().int().positive(),
     intent_hash: z.string().min(1),
+    /** Traceability fields; optional for old persisted programs. */
+    event_label: z.string().trim().min(1).max(160).nullable().optional(),
+    event_family: EventFamilySchema.optional(),
+    original_request: z.string().max(1_000).optional(),
+    recipe_label: z.string().trim().min(1).max(240).optional(),
+    composition_basis: z.object({
+      space: EventSpaceSchema.optional(),
+      requested_views: z.array(RequestedViewSchema).min(1),
+      complexity: ComplexityProfileSchema,
+      budget_cop: z.number().int().positive().optional(),
+      requested_structures: z.array(z.string().trim().min(1).max(80)).max(24),
+      guest_count: z.number().int().positive().optional(),
+    }).strict().optional(),
     views: z.array(SceneViewSchema),
     slots: z.array(SceneSlotSchema),
   })

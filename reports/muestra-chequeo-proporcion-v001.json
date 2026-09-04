@@ -1,0 +1,221 @@
+{
+  "generado": "2026-08-26",
+  "reconstruido": "2026-08-26T22:12:52.411Z",
+  "nota_reconstruccion": "Este archivo se reescribió por accidente al re-correr el muestreador después de desactivar 2 fotos duplicadas (la población pasó de 107 a 105, cambiando el barajado). Se restauró la lista exacta de las 30 órdenes evaluadas. El campo `descripcion_actual` es el texto TAL COMO ESTÁ HOY, no el que se evaluó: las marcadas con editado_despues_del_chequeo=true fueron corregidas después. El texto original de las corregidas está en su caption-N.json.bak o en los journals de data/processed/.",
+  "semilla": 20260826,
+  "n": 30,
+  "poblacion_al_congelar": 107,
+  "poblacion_hoy": 105,
+  "muestra": [
+    {
+      "orden": "16959",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "a large pastel lilac balloon anchors the base of the arch while clusters of small filler balloons in matching pastel tones fill the gaps throughout the garland",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "15142",
+      "archivo": "caption-2.json",
+      "foto": "foto-2.jpg",
+      "descripcion_actual": "The garland clusters large and medium round balloons together within each color section, giving the organic garland a varied, layered texture rather than uniform-sized balloons.",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "11216",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "Large round balloons (R-12, 12-inch) form the main structure of the arch while smaller round balloons (R-5, 5-inch) fill the gaps between them, both in the same silver, cream, pink, and brown palette.",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "950000181",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "The 9-inch balloons are roughly 1.8 times the diameter of the 5-inch balloons, creating larger anchors among the smaller cluster balloons.",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "13309",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "Gold chrome balloons mass densely at the crown of the column and again at its base, but they are the smaller calibres — R-9 (9-inch) and R-5 (5-inch). The largest balloons in the piece are the R-12 (12-inch) pearl satin ones forming the pale middle band, so the palest section of the garland is also its widest.",
+      "editado_despues_del_chequeo": true
+    },
+    {
+      "orden": "11262",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "Large round balloons in red and gold anchor the garland while smaller round balloons of the same matte red and glossy gold tones fill the gaps between them along the same corner arch.",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "16024",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "large round chrome balloons anchor the arch's corners and base while smaller balloons and flower clusters fill the spaces between them",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "8509",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "An oversized black question-mark balloon towers over the smaller standard-size pastel blue and coral round balloons clustered on the walls",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "20070",
+      "archivo": "caption-6.json",
+      "foto": "foto-6.jpg",
+      "descripcion_actual": "large round balloons anchor the top of each cluster while medium and small round balloons fill the spaces between them, with a few clear transparent balloons accenting the right-side cluster",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "9157",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "the large transparent bubble balloon dwarfs the small chrome blue and silver mini balloons floating inside it, creating a clear size contrast within the same balloon",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "8761",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "large round balloons (the big teal sphere and the red balloons) anchor focal points along the garland while smaller lime green and gray balloons fill the space between them",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "10357",
+      "archivo": "caption-2.json",
+      "foto": "foto-2.jpg",
+      "descripcion_actual": "The sand, terracotta and eucalyptus R-12 (12-inch) balloons form the large base clusters, while a cluster of tiny terracotta balls corresponds to the R-5 (5-inch) balloons, roughly less than half the diameter of the R-12 pieces; the gold chrome balls mix larger R-12 spheres with a smaller R-9 (9-inch) cluster, and a compact gold flower-shaped cluster of tiny spheres corresponds to the twisted T260 tubito balloons.",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "11826",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "Large round balloons anchor the top of the arch, medium round balloons build most of the body, and small clustered balloons fill the gaps between them",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "8248",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "Small R-12 (12-inch) latex balloons forming the arch contrast in scale with the oversized gold foil number \"8\" balloon and the large dinosaur-shaped foil balloon in the same frame.",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "13741",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "larger pumpkin-face printed balloons are interspersed among the smaller solid-color round balloons throughout the arch",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "14893",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "large silver and black round balloons form the cluster base while small silver accent balloons fill the gaps between them",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "19528",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "The large flower-petal balloons and the rose gold cluster balloons are noticeably bigger than the small round balloons used in the gold flower centers and the yellow cluster in the background.",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "18589",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "Larger and smaller round balloons are mixed together throughout the garland, creating an organic clustered texture rather than uniform-sized balloons.",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "15744",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "large focal balloons anchor the arch and side clusters while medium and small filler balloons fill the gaps between them",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "18071",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "large glossy chrome gold and matte navy round balloons anchor the garland while smaller round balloons in the same colors fill the gaps between them",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "19773",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "Large chrome-silver balloons anchor the organic sculptural clusters, with noticeably smaller filler balloons of the same silver finish tucked between them to build the bumpy texture.",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "17458",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "Large round and twisted orange balloons form the base column and pumpkin sculpture, while smaller printed Happy Halloween round balloons and mixed orange/black filler balloons cluster near the ceiling and side garlands.",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "13191",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "Within the garland's lilac section, large round lilac balloons anchor the cluster with small lilac filler balloons tucked between them, and the same large-and-small mix repeats in the standalone balloon cluster on the floor.",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "10357",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "Small R-9 (9-inch) gold chrome and R-5 (5-inch) terracotta round balloons are clustered tightly among the R-12 (12-inch) balloons, noticeably smaller (roughly three-quarters and less than half the diameter respectively) than the R-12 balloons dominating the garland, giving a dense textured cluster effect at several points along the piece.",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "8411",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "Large chrome silver balloons cluster at the base of the garland while small silver, pink, and lilac balloons fill the upper garland and accent areas.",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "950000178",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "The 9-inch R-9 sand balloons are visibly larger anchors, roughly 1.8 times the diameter of the 5-inch R-5 round balloons used as fillers.",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "10199",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "large chrome silver balloons anchor both sides of the ring while smaller chrome silver balloons cluster between the dense navy and pastel blue round balloons filling the rest of the arch",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "12967",
+      "archivo": "caption-4.json",
+      "foto": "foto-4.jpg",
+      "descripcion_actual": "A thin twisted tubito chain of small linked gold bubbles weaves between the round latex balloons of the garland and cascades below them, each bubble only a fraction of the diameter of the round balloons it threads past.",
+      "editado_despues_del_chequeo": true
+    },
+    {
+      "orden": "9018",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "large round matte balloons form the arch's outer ring while smaller filler balloons fill the gaps between them, and oversized foil letter balloons tower above the round balloon clusters",
+      "editado_despues_del_chequeo": false
+    },
+    {
+      "orden": "15142",
+      "archivo": "caption-1.json",
+      "foto": "foto-1.jpg",
+      "descripcion_actual": "large eucalyptus green balloons anchor the garland with smaller green filler balloons tucked between them, before transitioning into a cluster of similarly sized silver chrome balloons",
+      "editado_despues_del_chequeo": false
+    }
+  ]
+}

@@ -89,6 +89,7 @@ export function aProductoValidado(item: ItemValidado, paquetes = item.cantidad):
     descripcion: item.descripcion ?? item.titulo,
     precio: item.precioUnitario,
     familiaId: item.productId,
+    catalogSku: item.sku ?? undefined,
     paquetes,
   };
   if (item.tipoProducto) producto.tipoProducto = item.tipoProducto;

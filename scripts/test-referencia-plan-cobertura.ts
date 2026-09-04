@@ -5,6 +5,7 @@ import { construirCoberturaReferencia } from "@/lib/plan/desglose";
 import { validarCoberturaReferencia } from "@/lib/plan/restricciones";
 import { PlanDecoracionSchema, type PlanDecoracion } from "@/lib/plan/tipos";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
+import { ALCANCE_POR_CATEGORIA_REFERENCIA } from "@/lib/rag/taxonomy/alcance-referencia";
 
 /**
  * R2 (blueprint → prompt del chat) + R4 (cobertura referencia→plan). Sin
@@ -100,7 +101,7 @@ function run() {
 
   // --- R4: cobertura completa ---
   const planCompleto = planBase({
-    referencia_omitida: [{ element_id: "REF_01_E01", motivo: "la cortina no tiene equivalente real en catálogo" }],
+    referencia_omitida: [{ element_id: "REF_01_E01", motivo: "la cortina no tiene equivalente real en catálogo", motivo_tipo: "emulacion_propuesta", propuesta: "plano vertical de globos en dorado" }],
   });
   assert.deepEqual(validarCoberturaReferencia(planCompleto, blueprint), [], "cobertura completa: estructura + omisión declarada");
 
@@ -113,7 +114,7 @@ function run() {
 
   // --- R4: elemento no aprobado nunca exige cobertura ---
   const planSinMencionarNoAprobado = planBase({
-    referencia_omitida: [{ element_id: "REF_01_E01", motivo: "sin equivalente" }],
+    referencia_omitida: [{ element_id: "REF_01_E01", motivo: "sin equivalente", motivo_tipo: "emulacion_rechazada" }],
   });
   assert.deepEqual(validarCoberturaReferencia(planSinMencionarNoAprobado, blueprint), [], "el elemento no aprobado (REF_01_E03) nunca debe exigirse");
 
@@ -121,6 +122,8 @@ function run() {
 
   const pendiente = construirCoberturaReferencia(blueprint);
   assert.ok(pendiente.elementos.every((elemento) => elemento.estado === "pendiente"), "sin plan todos los elementos quedan pendientes");
+  assert.equal(pendiente.elementos[0]?.alcance, "emulable", "cortina expone alcance emulable");
+  assert.equal(ALCANCE_POR_CATEGORIA_REFERENCIA.furniture.alcance, "fuera_de_catalogo");
 
   const planResuelto = {
     plan: planCompleto,
@@ -135,20 +138,72 @@ function run() {
     elementId: "REF_01_E01",
     nombre: "cortina de fondo dorada",
     categoria: "curtain",
-    estado: "omitido",
+    alcance: "emulable",
+    estado: "emulable_pendiente",
     variantIds: [],
     motivo: "la cortina no tiene equivalente real en catálogo",
+    motivoTipo: "emulacion_propuesta",
+    propuesta: "plano vertical de globos en dorado",
   });
   assert.deepEqual(cobertura.elementos[1], {
     elementId: "REF_01_E02",
     nombre: "arco de globos",
     categoria: "balloon_structure",
+    alcance: "cubierto",
     estado: "incluido",
     estructuraId: "EST_01_ARCO",
     estructuraNombre: "Arco central",
     variantIds: ["V-1", "V-2"],
   });
   assert.equal(cobertura.elementos[2]?.estado, "pendiente", "un elemento no resuelto queda pendiente");
+
+  // B2: una emulación propuesta exige explicar qué se construye.
+  assert.throws(() => planBase({
+    referencia_omitida: [{ element_id: "REF_01_E01", motivo: "se puede reinterpretar", motivo_tipo: "emulacion_propuesta" }],
+  }), /emulación propuesta/i);
+
+  // B2/B3: una categoría fuera de catálogo no puede declararse cubierta por
+  // una estructura aunque el modelo intente asignarle referencia_element_id.
+  const blueprintConMuebleAprobado = ReferenceBlueprintV2Schema.parse({
+    ...blueprint,
+    elements: blueprint.elements.map((element) => element.element_id === "REF_01_E03"
+      ? { ...element, approved: true, include_policy: "include" as const }
+      : element),
+  });
+  const planConMuebleCubierto = planBase({
+    referencia_omitida: [{ element_id: "REF_01_E01", motivo: "se ofrece reinterpretación", motivo_tipo: "emulacion_propuesta", propuesta: "plano vertical de globos" }],
+    estructuras: [
+      ...planBase({}).estructuras,
+      {
+        estructura_id: "EST_02_KIT",
+        nombre: "Mobiliario inventado",
+        tipo: "kit",
+        rol_escena: "soporte",
+        ubicacion: "lateral_izquierdo",
+        medidas: {},
+        repeticiones: 1,
+        densidad: "sencilla",
+        mezcla: "clasica",
+        materiales: [{ product_id: "prod-kit", variant_id: "var-kit", participacion: 1, rol_material: "principal" }],
+        unidades_declaradas: 1,
+        porque: "prueba de rechazo",
+        referencia_element_id: "REF_01_E03",
+      },
+    ],
+  });
+  assert.deepEqual(validarCoberturaReferencia(planConMuebleCubierto, blueprintConMuebleAprobado), ["REF_01_E03"]);
+
+  const planConCortinaIncluida = planBase({
+    referencia_omitida: [{ element_id: "REF_01_E02", motivo: "se deja como decisión posterior", motivo_tipo: "decision_de_diseno" }],
+    estructuras: [{ ...planBase({}).estructuras[0]!, referencia_element_id: "REF_01_E01" }],
+  });
+  assert.deepEqual(validarCoberturaReferencia(planConCortinaIncluida, blueprint), ["REF_01_E01"]);
+
+  // `fuera_de_catalogo` solo es honesto cuando el mapa lo confirma.
+  const planCortinaFueraCatalogo = planBase({
+    referencia_omitida: [{ element_id: "REF_01_E01", motivo: "no se vende", motivo_tipo: "fuera_de_catalogo" }],
+  });
+  assert.deepEqual(validarCoberturaReferencia(planCortinaFueraCatalogo, blueprint), ["REF_01_E01"]);
   console.log("[PASS] cobertura derivada — pendiente, incluido, omitido, nombres, categorías y variantes únicas");
 }
 

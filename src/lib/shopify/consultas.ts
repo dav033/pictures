@@ -20,6 +20,7 @@ type FilaCatalogo = {
   tags: string;
   imagen_principal: string | null;
   variante_id: string;
+  sku: string | null;
   tamano_codigo: string | null;
   forma: string | null;
   diam_pulg: number | null;
@@ -34,6 +35,7 @@ type FilaCatalogo = {
 export type ResultadoCatalogo = {
   productoId: string;
   varianteId: string;
+  sku: string | null;
   handle: string;
   nombre: string;
   /** Ver comentario de `FilaCatalogo.tipo`. */
@@ -60,6 +62,7 @@ function filaAResultado(f: FilaCatalogo): ResultadoCatalogo {
   return {
     productoId: f.producto_id,
     varianteId: f.variante_id,
+    sku: f.sku,
     handle: f.handle,
     nombre: f.tamano_codigo ? `${f.titulo_limpio} — ${f.tamano_codigo}` : f.titulo_limpio,
     tipoProducto: f.tipo,
@@ -86,7 +89,7 @@ function candidatas(): FilaCatalogo[] {
          p.id AS producto_id, p.handle, p.titulo_limpio, p.categoria, p.tipo, p.colores, p.ocasiones, p.tags,
          p.descripcion_txt,
          p.imagen_principal, p.disponible AS disponible_producto,
-         v.id AS variante_id, v.tamano_codigo, v.forma, v.diam_pulg, v.precio, v.unidades_paq,
+         v.id AS variante_id, v.sku, v.tamano_codigo, v.forma, v.diam_pulg, v.precio, v.unidades_paq,
          v.disponible AS disponible_variante, v.inventario, v.inventario_fuente
        FROM shopify_variante v
        JOIN shopify_producto p ON p.id = v.producto_id
@@ -364,7 +367,7 @@ export function variantesPorIds(ids: string[]): ResultadoCatalogo[] {
          p.id AS producto_id, p.handle, p.titulo_limpio, p.categoria, p.tipo, p.colores, p.ocasiones, p.tags,
          p.descripcion_txt,
          p.imagen_principal, p.disponible AS disponible_producto,
-         v.id AS variante_id, v.tamano_codigo, v.forma, v.diam_pulg, v.precio, v.unidades_paq,
+         v.id AS variante_id, v.sku, v.tamano_codigo, v.forma, v.diam_pulg, v.precio, v.unidades_paq,
          v.disponible AS disponible_variante, v.inventario, v.inventario_fuente
        FROM shopify_variante v
        JOIN shopify_producto p ON p.id = v.producto_id
@@ -391,6 +394,7 @@ export function aProducto(r: ResultadoCatalogo): Producto {
     forma: r.forma ?? undefined,
     diamPulg: r.diamPulg ?? undefined,
     familiaId: r.productoId,
+    catalogSku: r.sku ?? undefined,
   };
 }
 

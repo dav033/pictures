@@ -1,0 +1,18 @@
+Recorriendo páginas 1-8 del listado...
+  página 1: 24 ideas
+  página 2: 24 ideas
+  página 3: 24 ideas
+  página 4: 24 ideas
+  página 5: 24 ideas
+  página 6: 24 ideas
+  página 7: 24 ideas
+  página 8: 24 ideas
+Total ideas a procesar: 192
+[mesa-aya-showroom-2026] -> orden #950000001 OK (4 materiales, tipo=sin determinar)
+[marco-rojo-corazon] -> orden #950000002 OK (4 materiales, tipo=sin determinar)
+[bouquet-corazon] -> orden #950000003 OK (6 materiales, tipo=bouquet)
+[decoracion-mundialista] -> orden #950000004 OK (6 materiales, tipo=sin determinar)
+[bouquet-de-flores] -> orden #950000005 OK (5 materiales, tipo=bouquet)
+[arco-de-flores-para-mama] -> orden #950000006 OK (5 materiales, tipo=arco)
+[ocaciones-especiales] -> orden #950000007 OK (18 materiales, tipo=sin determinar)
+[navidad-1] -> orden #950000008 OK (12 materiales, tipo=sin determinar)

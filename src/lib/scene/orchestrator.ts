@@ -18,7 +18,7 @@
 import "server-only";
 import type { Pool } from "pg";
 import { parseEventIntent } from "../rag/query-parser/parse-event";
-import { expandIntentToProgram } from "./recipes";
+import { expandIntentToProgram, selectSceneRecipeId } from "./recipes";
 import { planSlotQueries } from "../rag/retrieval/slot-query-planner";
 import { retrieveCandidatesBySlot } from "../rag/retrieval/by-scene-slot";
 import { rerankSlotCandidates } from "../rag/retrieval/scene-rerank";
@@ -60,8 +60,6 @@ export type ScenePipelineError = {
 // Orquestador principal
 // ---------------------------------------------------------------------------
 
-const DEFAULT_RECIPE = "wedding_ceremony_garden@1";
-
 /**
  * Ejecuta el pipeline completo de escena V2 desde un mensaje del cliente.
  *
@@ -79,7 +77,6 @@ export async function orchestrateScenePipeline(
   },
 ): Promise<ScenePipelineResult | ScenePipelineError> {
   const t0 = performance.now();
-  const recipeId = opts?.recipeId ?? DEFAULT_RECIPE;
 
   // 1. Parse intent
   let intent: EventIntentV2;
@@ -96,6 +93,7 @@ export async function orchestrateScenePipeline(
 
   // 2. Expand to program
   let program: SceneProgramV1;
+  const recipeId = opts?.recipeId ?? selectSceneRecipeId(intent);
   try {
     program = expandIntentToProgram(intent, recipeId);
   } catch (err: unknown) {

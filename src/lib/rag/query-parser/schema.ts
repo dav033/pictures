@@ -34,3 +34,7 @@ export const IntentQuerySchema = z.object({
 
 export type IntentQuery = z.infer<typeof IntentQuerySchema>;
 export { TAXONOMY_VERSION };
+
+// Open-event contract lives next to the flat product contract, but remains a
+// separate type: event labels are open while SQL filters stay closed.
+export { EventSearchIntentSchema, type EventSearchIntent } from "./event-search";

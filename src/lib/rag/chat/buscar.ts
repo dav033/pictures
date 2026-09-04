@@ -1,8 +1,19 @@
 import type { Pool } from "pg";
 import { buscarHibrido } from "../retrieval/search";
-import type { EstadoSku, ResultadoRetrieval } from "../retrieval/types";
+import type { EventMatchEvidence, EstadoSku, ResultadoRetrieval } from "../retrieval/types";
+import { parseEventSearchIntent, type EventSearchIntent } from "../query-parser/event-search";
 import { interpretarConsulta } from "../query-parser/parse";
-import type { IntentQuery } from "../query-parser/schema";
+import { IntentQuerySchema, type IntentQuery } from "../query-parser/schema";
+import type { ObservabilidadBusqueda, ResultadoBusquedaObservabilidad } from "../observability/types";
+import type { CatalogAllowlist } from "../retrieval/types";
+
+export type OpcionesBusquedaRag = {
+  /** Customer-verified filters; component wording cannot alter them. */
+  filtrosDuros?: IntentQuery["filtros_duros"];
+  eventIntent?: EventSearchIntent;
+  focusedQueries?: readonly string[];
+  allowlist?: CatalogAllowlist;
+};
 
 export type VarianteCandidata = {
   variantId: string;
@@ -28,6 +39,7 @@ export type ProductoCandidato = {
   disponible: boolean;
   imagen: string | null;
   variantes: VarianteCandidata[];
+  eventEvidence?: EventMatchEvidence;
 };
 
 export type ResultadoBusquedaRag = {
@@ -44,6 +56,7 @@ export type ResultadoBusquedaRag = {
    * §6) — null si la búsqueda original ya encontró algo. El LLM debe
    * decírselo al cliente, nunca sustituir en silencio. */
   filtroRelajado: "ocasiones" | "colores" | null;
+  observabilidad: ObservabilidadBusqueda;
 };
 
 type FilaCandidato = {
@@ -64,19 +77,63 @@ type FilaCandidato = {
   acabados: string[];
 };
 
+function observabilidadBusqueda(
+  mensaje: string,
+  eventIntent: EventSearchIntent,
+  scores: ResultadoRetrieval[],
+  status: ResultadoBusquedaRag["status"],
+  filtroRelajado: ResultadoBusquedaRag["filtroRelajado"],
+  focusedQueries?: readonly string[],
+): ObservabilidadBusqueda {
+  const candidateCountsByTier: ObservabilidadBusqueda["candidateCountsByTier"] = {
+    exact_event: 0,
+    thematic: 0,
+    adaptable: 0,
+  };
+  for (const score of scores) {
+    const nivel = score.eventEvidence?.match_level ?? "adaptable";
+    candidateCountsByTier[nivel]++;
+  }
+  const outcome: ResultadoBusquedaObservabilidad = status === "NO_MATCH"
+    ? "NO_MATCH"
+    : status === "AMBIGUOUS_SKU"
+      ? "aclaracion"
+      : "candidatos";
+  return {
+    eventLabel: eventIntent.event_label,
+    closedOccasionRecognized: eventIntent.occasion_filter.length > 0,
+    componentQueries: [...new Set((focusedQueries?.length ? focusedQueries : [mensaje]).map((query) => query.trim()).filter(Boolean))],
+    candidateCountsByTier,
+    selectedPieces: [],
+    relaxations: filtroRelajado ? [`${filtroRelajado} pasó de filtro duro a señal de ranking`] : [],
+    outcome,
+    planningLatencyMs: 0,
+  };
+}
+
 /**
  * search_products (plan §4.2): interpreta la consulta, recupera candidatos
  * reales del catálogo y los devuelve. NUNCA genera lenguaje para el cliente
  * ni decide la selección final — eso lo hace el LLM después, y el backend lo
  * vuelve a validar en confirmar_seleccion_rag.
  */
-export async function buscarCatalogoRag(pool: Pool, mensaje: string): Promise<ResultadoBusquedaRag> {
+export async function buscarCatalogoRag(
+  pool: Pool,
+  mensaje: string,
+  opciones: OpcionesBusquedaRag = {},
+): Promise<ResultadoBusquedaRag> {
   const t0 = Date.now();
-  const intento = await interpretarConsulta(mensaje);
+  const parseado = await interpretarConsulta(mensaje);
+  // Semantic retrieval uses component text. Hard SQL filters come only from
+  // the original customer context when the caller supplies them.
+  const intento: IntentQuery = opciones.filtrosDuros
+    ? IntentQuerySchema.parse({ ...parseado, filtros_duros: opciones.filtrosDuros })
+    : parseado;
+  const eventIntent = opciones.eventIntent ?? parseEventSearchIntent(mensaje);
   const latencyParseMs = Date.now() - t0;
 
   if (intento.intent !== "product_search") {
-    return { status: "NO_MATCH", skuStatus: "not_sku", candidatos: [], intent: intento, scores: [], latencyParseMs, latencyRetrievalMs: 0, filtroRelajado: null };
+    return { status: "NO_MATCH", skuStatus: "not_sku", candidatos: [], intent: intento, scores: [], latencyParseMs, latencyRetrievalMs: 0, filtroRelajado: null, observabilidad: observabilidadBusqueda(mensaje, eventIntent, [], "NO_MATCH", null, opciones.focusedQueries) };
   }
 
   const filtrosBase = {
@@ -91,7 +148,14 @@ export async function buscarCatalogoRag(pool: Pool, mensaje: string): Promise<Re
   const colores = intento.filtros_duros.colores.length ? intento.filtros_duros.colores : undefined;
 
   const t1 = Date.now();
-  let respuesta = await buscarHibrido(pool, { semanticQuery: intento.semantic_query, filtros: { ...filtrosBase, ocasiones, colores } });
+  let respuesta = await buscarHibrido(pool, {
+    semanticQuery: intento.semantic_query,
+    focusedQueries: opciones.focusedQueries,
+    eventTerms: eventIntent.event_terms,
+    eventIntent,
+    allowlist: opciones.allowlist,
+    filtros: { ...filtrosBase, ocasiones, colores },
+  });
   let filtroRelajado: ResultadoBusquedaRag["filtroRelajado"] = null;
 
   // Never expose ambiguous exact SKU candidates to the model as a normal
@@ -106,6 +170,7 @@ export async function buscarCatalogoRag(pool: Pool, mensaje: string): Promise<Re
       latencyParseMs,
       latencyRetrievalMs: Date.now() - t1,
       filtroRelajado: null,
+      observabilidad: observabilidadBusqueda(mensaje, eventIntent, [], "AMBIGUOUS_SKU", null, opciones.focusedQueries),
     };
   }
 
@@ -117,17 +182,31 @@ export async function buscarCatalogoRag(pool: Pool, mensaje: string): Promise<Re
   // cumpleaños" puede caer a NO_MATCH aunque sí existan globos rojos R-5
   // (solo que ninguno tiene la etiqueta de ocasión "cumpleanos").
   if (respuesta.results.length === 0 && ocasiones) {
-    respuesta = await buscarHibrido(pool, { semanticQuery: intento.semantic_query, filtros: { ...filtrosBase, colores } });
+    respuesta = await buscarHibrido(pool, {
+      semanticQuery: intento.semantic_query,
+      focusedQueries: opciones.focusedQueries,
+      eventTerms: eventIntent.event_terms,
+      eventIntent,
+      allowlist: opciones.allowlist,
+      filtros: { ...filtrosBase, colores },
+    });
     if (respuesta.results.length > 0) filtroRelajado = "ocasiones";
   }
   if (respuesta.results.length === 0 && colores) {
-    respuesta = await buscarHibrido(pool, { semanticQuery: intento.semantic_query, filtros: { ...filtrosBase } });
+    respuesta = await buscarHibrido(pool, {
+      semanticQuery: intento.semantic_query,
+      focusedQueries: opciones.focusedQueries,
+      eventTerms: eventIntent.event_terms,
+      eventIntent,
+      allowlist: opciones.allowlist,
+      filtros: { ...filtrosBase },
+    });
     if (respuesta.results.length > 0) filtroRelajado = "colores";
   }
   const latencyRetrievalMs = Date.now() - t1;
 
   if (respuesta.results.length === 0) {
-    return { status: "NO_MATCH", skuStatus: respuesta.skuStatus, candidatos: [], intent: intento, scores: [], latencyParseMs, latencyRetrievalMs, filtroRelajado: null };
+    return { status: "NO_MATCH", skuStatus: respuesta.skuStatus, candidatos: [], intent: intento, scores: [], latencyParseMs, latencyRetrievalMs, filtroRelajado: null, observabilidad: observabilidadBusqueda(mensaje, eventIntent, [], "NO_MATCH", null, opciones.focusedQueries) };
   }
 
   const ids = respuesta.results.map((r) => r.productId);
@@ -169,6 +248,7 @@ export async function buscarCatalogoRag(pool: Pool, mensaje: string): Promise<Re
         disponible: fila.available,
         imagen: fila.imagen_principal,
         variantes: [],
+        eventEvidence: respuesta.results.find((result) => result.productId === fila.product_id)?.eventEvidence,
       });
     }
     porProducto.get(fila.product_id)!.variantes.push({
@@ -203,5 +283,6 @@ export async function buscarCatalogoRag(pool: Pool, mensaje: string): Promise<Re
     latencyParseMs,
     latencyRetrievalMs,
     filtroRelajado,
+    observabilidad: observabilidadBusqueda(mensaje, eventIntent, respuesta.results, "OK", filtroRelajado, opciones.focusedQueries),
   };
 }

@@ -11,6 +11,7 @@ import { crearEstadoConversacion, crearRegistroHerramientas, herramientasActivas
 import type { EstadoConversacion } from "./registro-herramientas";
 import type { ReferenceBlueprintV2 } from "./reference-blueprint";
 import type { ChatPort, Mensaje } from "./tipos";
+import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 
 /**
  * Este archivo es un wrapper delgado sobre el motor genérico de
@@ -79,6 +80,7 @@ export async function ejecutarConversacion(opts: {
   /** Observabilidad pura: se llama justo antes de ejecutar cada herramienta,
    * con su nombre y args ya parseados. No cambia el flujo. */
   onLlamada?: (nombre: string, args: Record<string, unknown>) => void;
+  catalogAllowlist?: CatalogAllowlist;
 }): Promise<ResultadoConversacion> {
   const solicitud = opts.historial.filter((mensaje) => mensaje.rol === "usuario").map((mensaje) => mensaje.texto).join(" ");
   const estado = crearEstadoConversacion(opts.brief, solicitud, opts.referenceBlueprint);
@@ -87,7 +89,7 @@ export async function ejecutarConversacion(opts: {
     sistema: opts.sistema,
     historial: opts.historial,
     herramientas: herramientasActivas(),
-    registro: crearRegistroHerramientas(estado),
+    registro: crearRegistroHerramientas(estado, { catalogAllowlist: opts.catalogAllowlist }),
     vueltasMax: VUELTAS_MAX,
     onLlamada: opts.onLlamada,
     alAgotarVueltas: () => textoAlAgotarVueltas(estado),
@@ -108,6 +110,7 @@ export async function* ejecutarConversacionStream(opts: {
   /** Blueprint de referencia visual analizado en este turno — ver
    * `EstadoConversacion.referenceBlueprint`. */
   referenceBlueprint?: ReferenceBlueprintV2;
+  catalogAllowlist?: CatalogAllowlist;
 }): AsyncGenerator<EventoConversacion> {
   const solicitud = opts.historial.filter((mensaje) => mensaje.rol === "usuario").map((mensaje) => mensaje.texto).join(" ");
   const estado = crearEstadoConversacion(opts.brief, solicitud, opts.referenceBlueprint);
@@ -116,7 +119,7 @@ export async function* ejecutarConversacionStream(opts: {
     sistema: opts.sistema,
     historial: opts.historial,
     herramientas: herramientasActivas(),
-    registro: crearRegistroHerramientas(estado),
+    registro: crearRegistroHerramientas(estado, { catalogAllowlist: opts.catalogAllowlist }),
     vueltasMax: VUELTAS_MAX,
     alAgotarVueltas: () => textoAlAgotarVueltas(estado),
   });

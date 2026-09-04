@@ -63,6 +63,8 @@ export const SceneItemV2Schema = z.object({
   function: z.string().min(1),
   /** Zona del evento donde se ubica. */
   zone: z.string().min(1),
+  /** Catalog evidence; absent means no thematic verdict was supplied. */
+  match_level: z.enum(["exacto", "adaptable", "fuera_de_catalogo", "exact_event", "thematic"]).optional(),
 });
 
 export type SceneItemV2 = z.infer<typeof SceneItemV2Schema>;
@@ -83,6 +85,15 @@ export const SceneSpecV2Schema = z.object({
   preserve_venue: z.array(z.string().min(1)).max(30).default([]),
   /** Política de texto en señalización (sección 10.4). */
   text_policy: z.enum(["blank_surface", "graphic_only", "deterministic_overlay"]).default("blank_surface"),
+  /** Open-event traceability and visual authority context. */
+  event_label: z.string().trim().min(1).max(160).nullable().optional(),
+  original_request: z.string().max(1_000).optional(),
+  palette: z.array(z.string().min(1)).max(12).default([]),
+  style: z.string().max(120).optional(),
+  confirmed_motifs: z.array(z.string().min(1)).max(20).default([]),
+  piece_match_levels: z.array(z.object({ piece: z.string().min(1), match_level: z.string().min(1) }).strict()).max(40).default([]),
+  approved_plan: z.array(z.string().min(1)).max(40).default([]),
+  approved_materials: z.array(z.string().min(1)).max(80).default([]),
 });
 
 export type SceneSpecV2 = z.infer<typeof SceneSpecV2Schema>;
@@ -102,7 +113,17 @@ export function buildSceneSpecV2(
   plan: ResolvedScenePlan,
   viewId: string,
   programSlots: readonly { slot_id: string; view_id: string; function: string; zone: string; spatial_constraints: SpatialConstraint[] }[],
-  opts?: { aspectRatio?: "3:2" | "1:1" | "2:3" | "16:9" },
+  opts?: {
+    aspectRatio?: "3:2" | "1:1" | "2:3" | "16:9";
+    eventLabel?: string | null;
+    originalRequest?: string;
+    palette?: string[];
+    style?: string;
+    confirmedMotifs?: string[];
+    pieceMatchLevels?: Array<{ piece: string; match_level: string }>;
+    approvedPlan?: string[];
+    approvedMaterials?: string[];
+  },
 ): SceneSpecV2 {
   const aspectRatio = opts?.aspectRatio ?? "3:2";
   const compositionNotes: string[] = [];
@@ -169,6 +190,14 @@ export function buildSceneSpecV2(
       .filter((l) => l.source_class === "venue_existing" || l.source_class === "context_non_quotable")
       .map((l) => l.item_id),
     text_policy: "blank_surface",
+    event_label: opts?.eventLabel ?? null,
+    original_request: opts?.originalRequest,
+    palette: opts?.palette ?? [],
+    style: opts?.style,
+    confirmed_motifs: opts?.confirmedMotifs ?? [],
+    piece_match_levels: opts?.pieceMatchLevels ?? [],
+    approved_plan: opts?.approvedPlan ?? [],
+    approved_materials: opts?.approvedMaterials ?? [],
   };
 }
 

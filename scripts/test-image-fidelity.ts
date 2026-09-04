@@ -29,7 +29,8 @@ const prompt = buildImagePrompt({ sceneSpec: scene, inputs: [{ image_id: "VENUE_
 assert.match(prompt, /fabric curtain backdrop/);
 assert.match(prompt, /No decorative object absent from the automatic element allowlist/);
 assert.match(prompt, /INSTANCE CONTRACT — NON-NEGOTIABLE/);
-assert.match(prompt, /EXACTLY ONE physical instance/);
+assert.match(prompt, /EXACTLY ONE physical installed structure/);
+assert.match(prompt, /Each listed element is one visible structure, not one balloon or one package/);
 assert.match(prompt, /Never copy a source-image border/);
 assert.match(prompt, /Reference images were analyzed upstream/);
 assert.match(prompt, /supplied catalog product image as the only visual source/);

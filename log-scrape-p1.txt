@@ -1,0 +1,60 @@
+Recorriendo páginas 1-8 del listado...
+  página 1: 24 ideas
+  página 2: 24 ideas
+  página 3: 24 ideas
+  página 4: 24 ideas
+  página 5: 24 ideas
+  página 6: 24 ideas
+  página 7: 24 ideas
+  página 8: 24 ideas
+Total ideas: 192 -- esta partición (1/4) procesa 48
+[mesa-aya-showroom-2026] -> orden #950000001 OK (4 materiales, tipo=sin determinar)
+[bouquet-de-flores] -> orden #950000005 OK (5 materiales, tipo=bouquet)
+[triangulos-coloridos] -> orden #950000009 OK (10 materiales, tipo=sin determinar)
+[glamour-shines-nacional] -> orden #950000013 OK (10 materiales, tipo=sin determinar)
+[colorful-vibes-nacional-2025] -> orden #950000017 OK (11 materiales, tipo=sin determinar)
+[gender-reveal-2] -> orden #950000021 OK (15 materiales, tipo=arco)
+[amor-y-amistad] -> orden #950000025 OK (15 materiales, tipo=otro)
+[figura-de-amor-y-amistad] -> orden #950000029 OK (7 materiales, tipo=sin determinar)
+[columna-te-amo] -> orden #950000033 OK (5 materiales, tipo=columna)
+[crea-un-regalo-unico-para-papa] -> orden #950000037 OK (6 materiales, tipo=sin determinar)
+[centro-de-mesa-estrella] -> orden #950000041 OK (4 materiales, tipo=centro_mesa)
+[centro-de-mesa-corazones] -> orden #950000045 OK (4 materiales, tipo=centro_mesa)
+[centro-de-mesa-corazon-1] -> orden #950000049 OK (4 materiales, tipo=centro_mesa)
+[arco-con-flores] -> orden #950000053 OK (4 materiales, tipo=arco)
+[arreglo-de-flores-1] -> orden #950000057 OK (4 materiales, tipo=sin determinar)
+[watercolor-collection] -> orden #950000061 OK (5 materiales, tipo=sin determinar)
+[mi-carnaval] -> orden #950000065 OK (9 materiales, tipo=otro)
+[ano-nuevo-chino] -> orden #950000069 OK (2 materiales, tipo=sin determinar)
+[reyes-magos-1] -> orden #950000073 OK (2 materiales, tipo=sin determinar)
+[charming-love] -> orden #950000077 OK (5 materiales, tipo=sin determinar)
+[tropical-sunset] -> orden #950000081 OK (4 materiales, tipo=sin determinar)
+[lime-citrus] -> orden #950000085 OK (4 materiales, tipo=sin determinar)
+[christmas] -> orden #950000089 OK (3 materiales, tipo=sin determinar)
+[velitas] -> orden #950000093 OK (6 materiales, tipo=otro)
+[arco-ano-nuevo] -> orden #950000097 OK (7 materiales, tipo=arco)
+[dia-mundial-de-la-lucha-contra-el-cancer-de-mama] -> orden #950000101 OK (2 materiales, tipo=sin determinar)
+[calavera-colorida] ningún producto del carrusel matchea el catálogo local, salto
+[boo] ningún producto del carrusel matchea el catálogo local, salto
+[aro-de-aranas] -> orden #950000113 OK (6 materiales, tipo=pared)
+[bouquet-tenebroso] -> orden #950000117 OK (6 materiales, tipo=bouquet)
+[figura-webinar-amor-y-amistad] -> orden #950000121 OK (4 materiales, tipo=otro)
+[reyes-magos] -> orden #950000125 OK (9 materiales, tipo=otro)
+[figura-arbol-de-navidad] -> orden #950000129 OK (4 materiales, tipo=sin determinar)
+[australia-flag] -> orden #950000133 OK (3 materiales, tipo=pared)
+[olla-halloween] -> orden #950000137 OK (5 materiales, tipo=otro)
+[webinar-organico-merlot-coral-arena] -> orden #950000141 OK (4 materiales, tipo=pared)
+[semiarco-amor-y-amistad] -> orden #950000145 OK (4 materiales, tipo=sin determinar)
+[primera-comunion-1] -> orden #950000149 OK (6 materiales, tipo=otro)
+[san-valentin] -> orden #950000153 OK (4 materiales, tipo=columna)
+[princesa-rosada] -> orden #950000157 OK (5 materiales, tipo=otro)
+[cangrejo-1] -> orden #950000161 OK (2 materiales, tipo=otro)
+[sirenita-1] -> orden #950000165 OK (4 materiales, tipo=sin determinar)
+[photo-frame] -> orden #950000169 OK (4 materiales, tipo=sin determinar)
+[webinar-madres] -> orden #950000173 OK (3 materiales, tipo=sin determinar)
+[decoracion-corazones-polka] -> orden #950000177 OK (4 materiales, tipo=sin determinar)
+[picnic-amor] -> orden #950000181 OK (5 materiales, tipo=otro)
+[amor-en-fucsia-y-lila] ningún producto del carrusel matchea el catálogo local, salto
+[columna-azul-y-plateada] -> orden #950000189 OK (6 materiales, tipo=columna)
+
+Listo (partición 1/4). OK: 45 | sin productos mapeables: 3 | sin imagen: 0 | errores: 0

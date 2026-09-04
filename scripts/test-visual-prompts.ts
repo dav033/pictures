@@ -46,12 +46,43 @@ const sceneSpec = {
   ],
 } as unknown as SceneSpec;
 
+// El LoRA se entrena con 154 captions en prosa llana (sin campos etiquetados);
+// un prompt con secciones "Venue:"/"Time of day:" tipo ficha resultó fuera de
+// distribución y producía globos flotando y carteles alucinados (ver
+// HANDOFF-SESION-DATASET.md, auditoría de sesión 4). El prompt debe quedarse
+// en registro de caption: una oración fluida, sin etiquetas ni ALL-CAPS.
 const loraPrompt = buildLoraImagePrompt({ sceneSpec, visualContext: christmasNight });
-assert.match(loraPrompt, /fiesta de navidad en un jardin de noche/i);
-assert.match(loraPrompt, /Venue: jardín/i);
-assert.match(loraPrompt, /Time of day: noche/i);
+assert.match(loraPrompt, /^eventdecor_style_v2,/);
+// `element.name`/`resolved_colors`/`eventType` come from the catalog in
+// Spanish; the training captions are 100% English, so the LoRA prompt must
+// translate shape+color+event (see loraStructureNoun/loraColorWord/
+// LORA_EVENT_WORDS above) instead of embedding the raw Spanish text.
+assert.match(loraPrompt, /balloon arch/i);
+assert.match(loraPrompt, /red, green and gold/i);
+assert.match(loraPrompt, /christmas celebration/i);
 assert.match(loraPrompt, /outdoor garden/i);
-assert.ok(loraPrompt.length <= 3_500);
+assert.match(loraPrompt, /nighttime|dark sky/i);
+assert.doesNotMatch(loraPrompt, /Venue:|Time of day:|Exact user request:|COLOR VARIETY|MONOCHROME LOCK/);
+assert.doesNotMatch(loraPrompt, /arco orgánico|navideños|\brojo\b|\bverde\b|\bdorado\b|\bnavidad\b/i);
+assert.ok(loraPrompt.length <= 1_200);
+
+// El scene spec desdobla una estructura repetida en instancias físicas
+// separadas ("Columnas Laterales Pastel #1 de 2", "#2 de 2") — mismo nombre
+// base, mismo color, dos elementos. Un generación real de la app (sesión 4,
+// segunda vuelta) mostró que unirlas ingenuamente repite la misma frase dos
+// veces ("a balloon column in pink, a balloon column in pink"), y el LoRA la
+// lee como una sola instrucción reforzada: la imagen salía con una sola
+// columna, no dos. Deben agruparse en una cláusula contada y pluralizada.
+const twoColumnsSceneSpec = {
+  elements: [
+    { name: "Arco Orgánico Principal", category: "balloon_structure", quantity: { min: 1, max: 1 }, resolved_colors: ["rosado"], target_bbox: { x: 0.3, y: 0.1, width: 0.4, height: 0.7 } },
+    { name: "Columnas Laterales Pastel #1 de 2", category: "balloon_structure", quantity: { min: 30, max: 30 }, resolved_colors: ["rosado"], target_bbox: { x: 0.05, y: 0.3, width: 0.15, height: 0.6 } },
+    { name: "Columnas Laterales Pastel #2 de 2", category: "balloon_structure", quantity: { min: 30, max: 30 }, resolved_colors: ["rosado"], target_bbox: { x: 0.8, y: 0.3, width: 0.15, height: 0.6 } },
+  ],
+} as unknown as SceneSpec;
+const twoColumnsPrompt = buildLoraImagePrompt({ sceneSpec: twoColumnsSceneSpec, visualContext: buildVisualContext({}) });
+assert.match(twoColumnsPrompt, /two balloon columns in pink/i);
+assert.doesNotMatch(twoColumnsPrompt, /pink,\s*a balloon column in pink/i);
 
 const imageSceneSpec = {
   schema_version: "1.0",

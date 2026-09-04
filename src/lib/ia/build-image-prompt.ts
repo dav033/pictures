@@ -1,5 +1,8 @@
 import type { SceneSpec } from "./scene-spec";
+import type { DesignMaterialEstimate } from "@/lib/materiales/estimacion";
+import { buildLoraImagePromptV2, translateLoraColor } from "./lora-caption-compiler";
 import {
+  buildLoraEnvironmentCues,
   buildPositiveEnvironmentCues,
   buildVisualFailureConditions,
   buildVisualSceneLock,
@@ -80,7 +83,7 @@ function balloonScaleInstruction(sizeMixBlock?: string): string {
   if (diameters.length === 1) {
     return `SINGLE-DIAMETER HARD CONSTRAINT: every balloon must be exactly ${diameters[0]}-inch (${Math.round(diameters[0] * 2.54 * 10) / 10} cm). Do not vary balloon size for depth, overlap, hierarchy, or visual interest.`;
   }
-  return "Vary balloon scale ONLY among the exact quoted diameters and quantities in BALLOON SIZE MIX. Every visible balloon smaller than 12 inches must match a listed, quoted size; never invent a smaller, larger, or intermediate balloon.";
+  return "Vary balloon scale ONLY among the exact quoted diameters and quantities in BALLOON SIZE MIX. Every visible balloon must match one listed, quoted size; never invent a smaller, larger, or intermediate balloon.";
 }
 
 function materialEstimateContract(sceneSpec: SceneSpec): string {
@@ -166,7 +169,7 @@ function cardinalityContract(sceneSpec: SceneSpec): string {
     counts.set(kind, (counts.get(kind) ?? 0) + 1);
   }
   const summary = [...counts.entries()].map(([kind, count]) => `${count} ${kind}`).join(" and ");
-  return `CARDINALITY CONTRACT: render exactly ${summary || "zero approved physical instances"}. Each listed instance is distinct, positioned separately, and must not be merged, duplicated, or omitted.`;
+  return `CARDINALITY CONTRACT: render exactly ${summary || "zero approved physical instances"}, meaning exactly ${sceneSpec.elements.length} distinct installed structure(s). Each listed element is one visible structure, not one balloon or one package. The quantity inside an element is its installed material quantity; never turn it into extra structures. Keep every listed structure separate, positioned separately, and neither merge, duplicate, nor omit any one.`;
 }
 
 function colorVarietyContract(sceneSpec: SceneSpec): string[] {
@@ -185,7 +188,34 @@ function colorVarietyContract(sceneSpec: SceneSpec): string[] {
   });
 }
 
+function eventAuthorityContract(context?: VisualContext): string[] {
+  if (!context) return [];
+  const lines: string[] = [];
+  if (context.eventLabel) lines.push(`OPEN EVENT LABEL: ${context.eventLabel}. Convey it only through approved composition, palette, motifs, and lighting.`);
+  if (context.userRequest) lines.push(`ORIGINAL CUSTOMER REQUEST (TRACEABILITY): ${context.userRequest}`);
+  if (context.confirmedMotifs?.length) lines.push(`CONFIRMED MOTIFS ONLY: ${context.confirmedMotifs.join(", ")}. Do not add unconfirmed symbols or accessories.`);
+  if (context.pieceMatchLevels?.length) {
+    lines.push(`PIECE MATCH LEVELS (CATALOG FACT): ${context.pieceMatchLevels.map((item) => `${item.piece}=${item.match_level}`).join("; ")}. Never render adaptable as exact.`);
+  }
+  if (context.approvedPlan?.length) lines.push(`APPROVED PLAN / STRUCTURES: ${context.approvedPlan.join("; ")}. Render only these planned structures.`);
+  if (context.approvedMaterials?.length) lines.push(`APPROVED PLAN MATERIALS: ${context.approvedMaterials.join("; ")}. These are the complete material allowlist.`);
+  lines.push("OPEN-EVENT HONESTY: express an unclassified event through spatial composition and approved color/style; invent no signage, readable text, props, flowers, furniture, or accessories without an approved catalog line or preserved venue element.");
+  return lines;
+}
+
 export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount = 0, droppedCompositionReferenceCount = 0 }: ImagePromptInput): string {
+  // Keep prompt construction useful for lightweight visual eval fixtures that
+  // provide only approved elements. Production callers still pass the full
+  // server-validated SceneSpec.
+  sceneSpec = {
+    ...sceneSpec,
+    generation_mode: sceneSpec.generation_mode ?? "text_to_image",
+    canvas: sceneSpec.canvas ?? { aspect_ratio: "3:2", content_rect: { x: 0, y: 0, width: 1, height: 1 } },
+    venue: sceneSpec.venue ?? { preserve: [], protected_regions: [], editable_regions: [] },
+    positive_prompt: sceneSpec.positive_prompt ?? { required_elements: [], composition: [], venue_preservation: [], photorealistic_integration: [] },
+    negative_prompt: sceneSpec.negative_prompt ?? { forbidden_elements: [], forbidden_venue_changes: [], forbidden_compositing_artifacts: [] },
+    elements: sceneSpec.elements ?? [],
+  };
   const inputMap = inputs.map((input, index) => `Reference image ${index + 1}: role=${input.role}; allowed use=${input.allowed_use}. The reference label is invisible metadata and must never appear in the image.`).join("\n") || "None.";
   const sceneLock = visualContext ? buildVisualSceneLock(visualContext) : "No explicit scene context supplied.";
   const environmentCues = visualContext ? buildPositiveEnvironmentCues(visualContext) : [];
@@ -194,10 +224,11 @@ export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, 
   const scaleInstruction = balloonScaleInstruction(sizeMixBlock);
   const materialContract = materialEstimateContract(sceneSpec);
   const instanceContract = sceneSpec.elements.length
-    ? sceneSpec.elements.map((element, index) => `- EXACTLY ONE physical instance ${index + 1}: render the approved ${element.category} described by “${element.name}”; use only its assigned placement and quantity. This description is invisible metadata; never print or turn it into a sign.`).join("\n")
+    ? sceneSpec.elements.map((element, index) => `- EXACTLY ONE physical installed structure ${index + 1}: render the approved ${element.category} described by “${element.name}”; use only its assigned placement and installed quantity. Quantity means material units inside this one structure, not additional structures. This description is invisible metadata; never print or turn it into a sign.`).join("\n")
     : "- No physical decoration instances are approved.";
   const physicalCardinality = cardinalityContract(sceneSpec);
   const colorVariety = colorVarietyContract(sceneSpec);
+  const eventAuthority = eventAuthorityContract(visualContext);
   const referenceCapacityNotice = droppedCatalogReferenceCount > 0
     ? `CATALOG REFERENCE CAPACITY: ${droppedCatalogReferenceCount} catalog photo(s) could not be attached because the provider input limit was reached. Use the complete catalog metadata and quantities in AUTOMATIC_SCENE_SPEC for those lines; do not invent a substitute product, omit the line, or treat the missing photo as permission to change its color/material.`
     : "CATALOG REFERENCE CAPACITY: all selected catalog product photos fit within the provider limit.";
@@ -225,6 +256,8 @@ TASK
 ${task} Add only the automatically selected decorative elements in AUTOMATIC_SCENE_SPEC. This is one clean photographed scene, never a product board, catalog sheet, collage, or annotated mockup. Make thoughtful event-designer choices: build one convincing installation with a focal point, hierarchy, grouping, depth, atmosphere, and usable floor space. ${scaleInstruction}${revision}
 
 ${physicalCardinality}
+
+${eventAuthority.join("\n")}
 
 ${materialContract}
 
@@ -332,38 +365,222 @@ ${compactSceneSpec(sceneSpec)}
 </AUTOMATIC_SCENE_SPEC>`;
 }
 
+/**
+ * `resolved_colors` (and `visualContext.palette`) are catalog color tokens in
+ * Spanish (`PALETA_COLORES_V2`, e.g. "dorado", "rosado"). The 154 training
+ * captions are 100% English — passing "dorado" straight through is the same
+ * out-of-distribution mistake as the labeled-section bug, just on another
+ * axis. Unknown values (not in the fixed catalog palette) pass through
+ * as-is when they are already English; recognized Spanish aliases are
+ * canonicalized before they reach the LoRA prompt.
+ */
+function loraColorWord(color: string): string {
+  return translateLoraColor(color);
+}
+
+function loraColorPhrase(colors: string[]): string {
+  const unique = [...new Set(colors.map(loraColorWord).filter(Boolean))];
+  if (unique.length === 0) return "";
+  if (unique.length === 1) return ` in ${unique[0]}`;
+  return ` mixing ${unique.slice(0, -1).join(", ")} and ${unique[unique.length - 1]} in organic clusters`;
+}
+
+// No leading article — `loraNaturalJoin` adds "a"/"two"/"three" once it knows
+// how many elements share this exact noun+color phrase (see below).
+const LORA_CATEGORY_WORDS: Record<string, string> = {
+  curtain: "fabric curtain backdrop",
+  drape: "draped fabric backdrop",
+  backdrop: "decorated backdrop",
+  panel: "decorated panel",
+  balloon_structure: "balloon installation",
+  plinth: "display plinth",
+  furniture: "furniture piece",
+  floral: "floral arrangement",
+  signage: "signage piece",
+  lighting: "event lighting feature",
+  tableware: "table setting",
+  other: "decoration piece",
+};
+
+/**
+ * `element.name` is free-text Spanish from the catalog/order analysis (e.g.
+ * "Arco Orgánico Principal") — same distribution problem as color. Structure
+ * *shape* (arch vs column vs garland) is real visual information the
+ * training captions always carry, so this detects it from Spanish keywords
+ * (mirrors the same `normalized.includes("arco")` pattern `cardinalityContract`
+ * already uses above) instead of translating the free text wholesale.
+ */
+function loraStructureNoun(element: SceneSpec["elements"][number]): string {
+  const name = element.name.toLowerCase();
+  if (/\barco/.test(name)) return "balloon arch";
+  if (/\bcolumna/.test(name)) return "balloon column";
+  if (/\bguirnalda/.test(name)) return "organic balloon garland";
+  if (/\bcascada/.test(name)) return "balloon cascade";
+  if (/\bcentro\s+de\s+mesa/.test(name)) return "balloon centerpiece";
+  if (/\bbouquet|\bramillete/.test(name)) return "balloon bouquet";
+  if (/\bn[uú]mero|\bmarquesina|\bletra/.test(name)) return "number marquee frame";
+  if (/\bpared\b/.test(name)) return "balloon wall";
+  return LORA_CATEGORY_WORDS[element.category] ?? "decoration piece";
+}
+
+/**
+ * Every single "arch" caption in the 154-photo training set anchors the arch
+ * to something concrete right after naming it — "framing a doorway",
+ * "mounted on a round gold ring frame", "framing a stage", "framing a pair
+ * of wooden double doors". None of them just say "a balloon arch" and stop.
+ * A bare noun with no anchor is out of distribution the same way a raw
+ * Spanish word was — and produced an ungrounded, diagonal, physically
+ * impossible arch shape in a real generation (session 4, arch-shape
+ * complaint). Give the arch the same kind of anchor real captions do.
+ */
+function loraGroundingSuffix(element: SceneSpec["elements"][number]): string {
+  if (/\barco/.test(element.name.toLowerCase())) return ", framing the entrance";
+  return "";
+}
+
+const LORA_EVENT_WORDS: Record<string, string> = {
+  navidad: "a Christmas celebration",
+  halloween: "a Halloween celebration",
+  boda: "a wedding",
+  "cumpleaños": "a birthday party",
+  cumpleanos: "a birthday party",
+  "quinceañera": "a fifteenth-birthday celebration",
+  quinceanos: "a fifteenth-birthday celebration",
+  "baby shower": "a baby shower",
+  "graduación": "a graduation celebration",
+  graduacion: "a graduation celebration",
+};
+
+const LORA_STYLE_WORDS: Record<string, string> = {
+  "romántico": "romantic",
+  romantico: "romantic",
+  elegante: "elegant",
+  moderno: "modern",
+  "clásico": "classic",
+  clasico: "classic",
+  boho: "bohemian",
+  bohemio: "bohemian",
+  glamour: "glam",
+  "rústico": "rustic",
+  rustico: "rustic",
+  minimalista: "minimalist",
+  vintage: "vintage",
+  tropical: "tropical",
+  infantil: "playful, kid-friendly",
+};
+
+const LORA_NUMBER_WORDS: Record<number, string> = { 2: "two", 3: "three", 4: "four", 5: "five", 6: "six" };
+
+function loraPluralizeNoun(noun: string): string {
+  return /(?:ch|sh|s|x|z)$/.test(noun) ? `${noun}es` : `${noun}s`;
+}
+
+/**
+ * The scene spec splits a repeated structure into separate physical
+ * instances ("Columnas Laterales Pastel #1 de 2", "#2 de 2") that both
+ * translate to the exact same noun+color phrase. Joining them naively
+ * produced "a balloon column in pink, a balloon column in pink" — the same
+ * sentence said twice, which the model reads as one emphasized instruction
+ * rather than two distinct columns (this is the actual cause behind
+ * "missing required element EST_02_COLUMNAS#1/#2" in real generations, not
+ * a language/format problem). Group identical phrases into one counted,
+ * pluralized clause instead: "two balloon columns in pink".
+ */
+function loraNaturalJoin(items: string[]): string {
+  const counts = new Map<string, number>();
+  for (const item of items.filter(Boolean)) counts.set(item, (counts.get(item) ?? 0) + 1);
+  const grouped = [...counts.entries()].map(([phrase, count]) => {
+    if (count === 1) return `a ${phrase}`;
+    const number = LORA_NUMBER_WORDS[count] ?? String(count);
+    const [, noun, rest = ""] = phrase.match(/^(.+?)( in .+| mixing .+)?$/) ?? [, phrase];
+    return `${number} ${loraPluralizeNoun(noun)}${rest}`;
+  });
+  if (grouped.length <= 1) return grouped[0] ?? "";
+  if (grouped.length === 2) return `${grouped[0]} beside ${grouped[1]}`;
+  return `${grouped.slice(0, -1).join(", ")}, and ${grouped[grouped.length - 1]}`;
+}
+
+const LORA_DENSITY_WORDS: Partial<Record<DesignMaterialEstimate["design"]["visual_density"], string>> = {
+  low: "airy",
+  medium: "balanced",
+  high: "full, dense",
+};
+
+const LORA_SCALE_WORDS: Partial<Record<DesignMaterialEstimate["design"]["visual_scale"], string>> = {
+  small: "small-accent",
+  small_medium: "compact",
+  medium: "medium-sized",
+  large: "large",
+  very_large: "grand, oversized",
+};
+
+/** No leading article — the caller splices this into the noun phrase's own "a/an". */
+function loraVolumePhrase(sceneSpec: SceneSpec): string {
+  const design = sceneSpec.material_estimate?.design;
+  if (!design) return "";
+  const density = LORA_DENSITY_WORDS[design.visual_density];
+  const scale = LORA_SCALE_WORDS[design.visual_scale];
+  return [density, scale].filter(Boolean).join(", ");
+}
+
+/**
+ * The Gemini prompt above works because Gemini is an instruction-following
+ * model that can parse labeled ALL-CAPS contracts. FLUX.2's LoRA is trained
+ * on 154 plain photographic captions (avg. ~415 chars, plain descriptive
+ * prose, no labeled fields) — an A/B test with identical seed/scale showed a
+ * labeled-contract prompt produces floating balloons and hallucinated
+ * signage text, while the same content rewritten as a caption-style sentence
+ * renders correctly. This function must stay in that caption register:
+ * one flowing sentence, no headers, no ALL-CAPS, no meta-instructions.
+ */
+export function buildLoraImagePromptV1(input: {
+  sceneSpec: SceneSpec;
+  visualContext: VisualContext;
+  revisionInstruction?: string;
+}): string {
+  const { sceneSpec, visualContext } = input;
+
+  const structuresJoined = loraNaturalJoin(
+    sceneSpec.elements.slice(0, 6).map((element) => `${loraStructureNoun(element)}${loraColorPhrase(element.resolved_colors)}${loraGroundingSuffix(element)}`),
+  );
+  const volume = loraVolumePhrase(sceneSpec);
+  // Splice the density/scale words into the noun phrase's own leading
+  // article ("a balloon arch…" -> "a full, dense, large balloon arch…")
+  // instead of prefixing them, which produced a double article ("a full,
+  // dense large a balloon arch…").
+  const structures = volume && structuresJoined ? structuresJoined.replace(/^(a|an)\s+/, `a ${volume} `) : structuresJoined;
+  // Venue is intentionally left out here: `environment` (below) already
+  // carries an English venue cue via `buildLoraEnvironmentCues`, so
+  // repeating the raw (Spanish) `visualContext.venue` would just reintroduce
+  // the same distribution problem this function exists to avoid.
+  const eventPhrase = visualContext.eventType ? LORA_EVENT_WORDS[visualContext.eventType.trim().toLowerCase()] : undefined;
+  const stylePhrase = visualContext.style ? LORA_STYLE_WORDS[visualContext.style.trim().toLowerCase()] : undefined;
+  const palettePhrase = visualContext.palette.length ? visualContext.palette.map(loraColorWord).join(" and ") : undefined;
+  const knownEvent = eventPhrase?.replace(/^a\s+/i, "").toLowerCase();
+  const environment = buildLoraEnvironmentCues(visualContext)
+    .filter((cue) => !knownEvent || !cue.toLowerCase().includes(knownEvent))
+    .join(", ");
+
+  const clauses = [
+    structures ? `eventdecor_style_v2, ${structures}` : "eventdecor_style_v2, an event decoration installation",
+    eventPhrase ? `set up for ${eventPhrase}` : undefined,
+    stylePhrase ? `${stylePhrase} style` : undefined,
+    palettePhrase ? `${palettePhrase} tones` : undefined,
+    environment || undefined,
+    // Free-form revision text is often Spanish and cannot be safely translated
+    // with a fixed dictionary. Keep the LoRA prompt in the caption language;
+    // the structured scene spec remains the source of truth for the image.
+    "wide photorealistic event photograph, natural depth, physical floor supports",
+  ].filter(Boolean);
+
+  return `${clauses.join(", ")}.`.slice(0, 1_200);
+}
+
+/** Caption LoRA v2. V1 remains exported above for rollback and A/B tests. */
 export function buildLoraImagePrompt(input: {
   sceneSpec: SceneSpec;
   visualContext: VisualContext;
   revisionInstruction?: string;
 }): string {
-  const { sceneSpec, visualContext, revisionInstruction } = input;
-  const environment = buildPositiveEnvironmentCues(visualContext);
-  const elements = sceneSpec.elements.slice(0, 24).map((element) => {
-    const quantity = element.quantity.min === element.quantity.max
-      ? `${element.quantity.min}`
-      : `${element.quantity.min}-${element.quantity.max}`;
-    const colors = element.resolved_colors.length ? `, ${element.resolved_colors.join(" and ")}` : "";
-    return `${quantity} ${element.name}${colors}, ${placementDescription(element.target_bbox, element.category)}`;
-  });
-  const colorVariety = colorVarietyContract(sceneSpec);
-  const materialContract = materialEstimateContract(sceneSpec);
-
-  const sections = [
-    visualContext.userRequest ? `Exact user request: ${visualContext.userRequest}` : undefined,
-    visualContext.eventType ? `Event: ${visualContext.eventType}` : undefined,
-    visualContext.venue ? `Venue: ${visualContext.venue}` : undefined,
-    visualContext.timeOfDay ? `Time of day: ${visualContext.timeOfDay}` : undefined,
-    visualContext.style ? `Style: ${visualContext.style}` : undefined,
-    visualContext.palette.length ? `Palette: ${visualContext.palette.join(", ")}` : undefined,
-    ...environment,
-    "wide photorealistic event photograph that clearly shows the surrounding venue and its ambient lighting",
-    elements.length ? `One cohesive professional installation using exactly these visible ingredients: ${elements.join("; ")}` : "one cohesive professional event installation",
-    materialContract,
-    `COLOR VARIETY / MATERIAL MIX: ${colorVariety.join(" ")}`,
-    "realistic scale, physical supports, floor contact, natural depth, cinematic but believable event lighting, no catalog board, no product packaging, absolutely no visible text, logos, labels, or annotations",
-    revisionInstruction?.trim() ? `Revision: ${revisionInstruction.trim().slice(0, 500)}` : undefined,
-  ].filter(Boolean);
-
-  return sections.join(". ").slice(0, 3_500);
+  return buildLoraImagePromptV2(input);
 }

@@ -1,6 +1,11 @@
 import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import path from "node:path";
-import { buildImagePrompt, buildLoraImagePrompt, type PromptImageInput } from "@/lib/ia/build-image-prompt";
+import { buildImagePrompt, buildLoraImagePromptV1, type PromptImageInput } from "@/lib/ia/build-image-prompt";
+import { LORA_CAPTION_COMPILER_VERSION } from "@/lib/ia/lora-caption-compiler";
+import { compileProductPrompt, LORA_PRODUCT_RUNTIME_VERSION } from "@/lib/ia/lora-product-runtime";
+import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
+import { findLoraPromptLanguageLeaks, preflightLoraPrompt, type LoraPromptPreflightReport } from "@/lib/ia/lora-prompt-preflight";
 import { bloqueMezclaTamanos, bloqueMezclaPorEstructura, descripcionFisicaTamano } from "@/lib/ia/tamano-fisico";
 import { cotizarPlan, cotizarProductos } from "@/lib/cotizacion/motor";
 import { featureEnabled } from "@/lib/ia/feature-flags";
@@ -10,7 +15,9 @@ import { imagenDe, resolverProveedor } from "@/lib/ia/registro";
 import { buildApprovedSceneSpec, SceneSpecSchema, sceneSpecHash } from "@/lib/ia/scene-spec";
 import { registrarEvento } from "@/lib/ia/telemetria";
 import { registrarPlanAudit } from "@/lib/rag/observability/log";
-import { generarConSempertexLora } from "@/lib/ia/sempertex-lora";
+import { DEFAULT_SEMPERTEX_LORA_TRIGGER, ensureLoraTriggers, generarConSempertexLora } from "@/lib/ia/sempertex-lora";
+import { LoraModeSlugSchema, LoraSelectionSchema } from "@/lib/lora/schema";
+import { resolveLoraMode, resolveLoraModeDatasetAllowlist, resolveLoraSelection } from "@/lib/lora/mode-resolver";
 import { buildVisualContext } from "@/lib/ia/visual-context";
 import { ErrorIA, type ImageInput, type Imagen, type ImagenEtiquetada, type PeticionImagen, type ProveedorId } from "@/lib/ia/tipos";
 import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
@@ -56,7 +63,12 @@ type Body = {
   solicitudUsuario?: string;
   proveedor?: string;
   usarLora?: boolean;
+  loraSelection?: unknown;
+  loraMode?: unknown;
   comparar?: boolean;
+  /** Depuración: compara el prompt legado v1 de la app contra el compilador v2. */
+  compararLora?: boolean;
+  seedLoraDebug?: number;
   /** Prueba: fuerza al proveedor base (Gemini) a generar sin ninguna imagen
    * de referencia adjunta (ni de producto, ni de espacio, ni de estilo) —
    * identidad de producto solo por texto, igual que el LoRA, pero con
@@ -84,15 +96,26 @@ type Body = {
 };
 
 type SalidaComparacion = {
-  id: "gemini" | "lora";
+  id: "gemini" | "lora" | "lora-v1" | "lora-v2" | "lora-wrapper";
   nombre: string;
   modelo: string;
   imagen?: string;
   error?: string;
+  prompt?: string;
+  promptVersion?: string;
+  promptHash?: string;
+  compilerVersion?: string;
+  seed?: number;
+  qa?: ImageQaReport;
+  preflight?: LoraPromptPreflightReport;
 };
 
 function textoDeError(error: unknown): string {
   return error instanceof Error ? error.message : "No se pudo generar este resultado.";
+}
+
+function hashPrompt(prompt: string): string {
+  return createHash("sha256").update(prompt).digest("hex");
 }
 
 function statusDe(causa: ErrorIA["causa"]): number {
@@ -362,7 +385,7 @@ function catalogBlueprint(productos: Producto[], materialEstimate?: DesignMateri
   return addCreativeCatalogRelationships(blueprint, productos);
 }
 
-function planBlueprint(plan: PlanResuelto): ReferenceBlueprintV2 {
+export function planBlueprint(plan: PlanResuelto): ReferenceBlueprintV2 {
   const cajas = cajasDeEstructuras(plan.plan.estructuras);
   const focal = plan.plan.estructuras.find((estructura) => estructura.rol_escena === "focal")?.estructura_id;
   const focalDeclarada = plan.plan.estructuras.find((estructura) => estructura.estructura_id === focal);
@@ -387,6 +410,11 @@ function planBlueprint(plan: PlanResuelto): ReferenceBlueprintV2 {
     const materiales = [...materialPorVariante.values()];
     const medidas = [declarada.medidas.ancho_m, declarada.medidas.alto_m, declarada.medidas.largo_m].filter((value): value is number => value != null).map((value) => `${value} m`).join(" × ");
     const nombreBase = medidas ? `${declarada.nombre} (${medidas})` : declarada.nombre;
+    const dimensiones = {
+      ...(declarada.medidas.ancho_m !== undefined ? { width: declarada.medidas.ancho_m } : {}),
+      ...(declarada.medidas.alto_m !== undefined ? { height: declarada.medidas.alto_m } : {}),
+      ...(declarada.medidas.largo_m !== undefined ? { length: declarada.medidas.largo_m } : {}),
+    };
     const repeticiones = Math.max(1, declarada.repeticiones);
     return Array.from({ length: repeticiones }, (_, index) => {
       const elementId = repeticiones === 1 ? resuelta.estructura_id : `${resuelta.estructura_id}#${index + 1}`;
@@ -421,6 +449,15 @@ function planBlueprint(plan: PlanResuelto): ReferenceBlueprintV2 {
         shape: nombre.slice(0, 160),
         composition: materiales.map((material) => `${Math.round(material.share * 100)}% ${material.role} (${material.color ?? "color de catálogo"})`).join("; ").slice(0, 240) || "pieza de catálogo",
       },
+      visual_semantics: {
+        structure_type: declarada.tipo,
+        placement: declarada.ubicacion,
+        design_role: declarada.rol_escena === "focal" ? "focal" as const : declarada.rol_escena === "soporte" || declarada.tipo === "backdrop" ? "soporte" as const : "acento" as const,
+        repetition_group: resuelta.estructura_id,
+        ...(Object.keys(dimensiones).length ? { dimensions_m: dimensiones } : {}),
+        density: declarada.densidad,
+      },
+      resolved_finishes: [...new Set(resuelta.lineas.map((linea) => linea.acabado).filter((acabado): acabado is string => Boolean(acabado)))].slice(0, 8),
       relationships: relaciones,
       uncertainties: resuelta.supuestos,
       model_decision: {
@@ -796,18 +833,46 @@ export async function POST(request: Request) {
     SceneSpecSchema.parse(sceneSpec);
     if (sceneSpec.elements.length === 0 && productos.length === 0 && !body.revisionInstruction && !body.instruccion) throw new Error("Approve at least one element before generating.");
 
-    const usarLora = body.usarLora === true;
+    const parsedLoraMode = body.loraMode === undefined ? null : LoraModeSlugSchema.safeParse(body.loraMode);
+    if (body.loraMode !== undefined && !parsedLoraMode?.success) throw new Error("LORA_MODE_INVALID: modo LoRA inválido.");
+    const explicitLoraMode = parsedLoraMode?.success ? parsedLoraMode.data : null;
+    const parsedLoraSelection = body.loraSelection === undefined ? null : LoraSelectionSchema.safeParse(body.loraSelection);
+    if (body.loraSelection !== undefined && !parsedLoraSelection?.success) throw new Error("LORA_SELECTION_INVALID: selecciona un artifact producto o estructura válido.");
+    if (explicitLoraMode && body.loraSelection !== undefined) throw new Error("LORA_MODE_SELECTION_CONFLICT: usa un modo o una selección manual, no ambos.");
+    const explicitLoraSelection = parsedLoraSelection?.success ? parsedLoraSelection.data : null;
+    const resolvedLoras = explicitLoraMode
+      ? await resolveLoraMode(explicitLoraMode)
+      : explicitLoraSelection
+        ? await resolveLoraSelection(explicitLoraSelection)
+        : undefined;
+    const loraCatalogAllowlist = explicitLoraMode
+      ? await resolveLoraModeDatasetAllowlist(explicitLoraMode)
+      : null;
+    if (loraCatalogAllowlist) {
+      const allowedProductIds = new Set(loraCatalogAllowlist.productIds);
+      const allowedVariantIds = new Set(loraCatalogAllowlist.variantIds);
+      const requestedIds = [
+        ...(body.productIds ?? []),
+        ...(body.ragVariantIds ?? []),
+        ...(body.manualProducts ?? []).map((product) => product.id),
+      ];
+      const outsidePool = [...new Set(requestedIds)].filter((id) => !allowedProductIds.has(id) && !allowedVariantIds.has(id));
+      if (outsidePool.length) throw new Error(`LORA_DATASET_ALLOWLIST_REJECTED: ${outsidePool.join(", ")}`);
+    }
+    const usarLora = body.usarLora === true || Boolean(explicitLoraSelection || explicitLoraMode);
     const comparar = body.comparar === true;
+    const compararLora = body.compararLora === true;
     const sinReferencias = body.sinReferencias === true;
-    if (usarLora && (venue || references.length || previous)) {
+    if ((usarLora || compararLora) && (venue || references.length || previous)) {
       throw new Error("LoRA Sempertex genera desde texto. Para editar fotos o usar referencias, cambia a Gemini.");
     }
-    if (usarLora && comparar) throw new Error("El modo Comparar ya incluye LoRA; elige Comparar en vez de LoRA individual.");
-    if (sinReferencias && (usarLora || comparar)) {
+    if (usarLora && (comparar || compararLora)) throw new Error("Elige un modo de comparación o LoRA individual, no ambos.");
+    if (comparar && compararLora) throw new Error("Elige una sola comparación.");
+    if (sinReferencias && (usarLora || comparar || compararLora)) {
       throw new Error("Sin-referencias es una prueba solo para Gemini base; no se combina con LoRA ni Comparar.");
     }
     proveedor = resolverProveedor({ override: body.proveedor, cookie: request.headers.get("cookie")?.match(/ia_proveedor=(gemini)/)?.[1] });
-    const port = usarLora ? null : await imagenDe(comparar ? "gemini" : proveedor);
+    const port = usarLora || compararLora ? null : await imagenDe(comparar ? "gemini" : proveedor);
     const capabilities = port?.capabilities ?? {
       exactAspectRatios: ["3:2", "1:1", "2:3", "16:9"] as PeticionImagen["aspecto"][],
       totalInputImageLimit: 0,
@@ -832,7 +897,21 @@ export async function POST(request: Request) {
     const selected = sinReferencias
       ? buildInputs({ portLimit: 0, blueprint, sceneElements: sceneSpec.elements, references: [], venue: undefined, previous: undefined, products: [] })
       : buildInputs({ portLimit: inputLimit, blueprint, sceneElements: sceneSpec.elements, references, venue, previous, products: productImages });
-    const visualContext = buildVisualContext({ brief: body.brief, userRequest: body.solicitudUsuario });
+    const visualContext = buildVisualContext({
+      brief: body.brief,
+      userRequest: body.solicitudUsuario,
+      approvedPlan: planResuelto?.plan.estructuras.map((estructura) => `${estructura.nombre} (${estructura.tipo}, ${estructura.ubicacion})`),
+      approvedMaterials: planResuelto?.compras.map((compra) => {
+        const product = productosConMateriales.find((candidate) => candidate.id === compra.variant_id);
+        return product ? `${product.nombre}${product.colores.length ? ` — ${product.colores.join(", ")}` : ""}` : undefined;
+      }).filter((material): material is string => Boolean(material)),
+      pieceMatchLevels: blueprint.elements
+        .filter((element) => element.model_decision?.catalog_product_id && element.model_decision.match_type !== "none")
+        .map((element) => ({
+          piece: element.name,
+          match_level: element.model_decision?.match_type === "exact" ? "exacto" : "adaptable",
+        })),
+    });
     const revisionInstruction = body.revisionInstruction ?? body.instruccion;
     // Mezcla de tamaños REAL de lo cotizado (plan de tamaños F4) — se agrega
     // directo de `productosConMateriales` (post-sustitución de
@@ -869,17 +948,130 @@ export async function POST(request: Request) {
     // the same estimate snapshot, but never gets package capacity as visual
     // quantity.
     const cotizacion = planResuelto ? cotizarPlan(planResuelto) : cotizarProductos(productosConMateriales, materialEstimate);
-    const loraPrompt = buildLoraImagePrompt({ sceneSpec: transformedSceneSpec, visualContext, revisionInstruction });
+    // La identidad del producto se resuelve desde el vocabulario allowlisted
+    // de v007. El compilador solo recibe etiquetas ya resueltas; nunca infiere
+    // una etiqueta canónica desde color, SKU o nombre libre.
+    const sizeConfirmations = materialEstimate.balloons.flatMap((line) => {
+      const elementId = line.structure_id;
+      const selectedProductId = line.variant_id ?? line.product_id;
+      if (!elementId || !selectedProductId) return [];
+      const product = productosConMateriales.find((candidate) =>
+        candidate.id === selectedProductId ||
+        candidate.familiaId === line.product_id ||
+        candidate.familiaId === selectedProductId,
+      );
+      return product?.tamanoCodigo
+        ? [{ elementId, productId: selectedProductId, sizeCode: product.tamanoCodigo, diameterInches: product.diamPulg }]
+        : [];
+    });
+    const productIdAliases = new Map<string, string[]>();
+    for (const product of productosConMateriales) {
+      const aliases = [product.catalogSku, product.familiaId]
+        .filter((id): id is string => Boolean(id && id !== product.id));
+      if (aliases.length) {
+        productIdAliases.set(product.id, aliases);
+      }
+    }
+    const productPromptCompilation = compileProductPrompt({
+      sceneSpec: transformedSceneSpec,
+      visualContext,
+      vocabulary: PRODUCT_VOCABULARY,
+      sizeConfirmations,
+      productIdAliases,
+    });
+    const loraCompilation = {
+      prompt: productPromptCompilation.prompt,
+      clauses: productPromptCompilation.clauses,
+      compilerVersion: productPromptCompilation.captionCompilerVersion,
+    };
+    const catalogBackedElementCount = transformedSceneSpec.elements.filter((element) => element.source_type === "catalog_backed").length;
+    if ((usarLora || compararLora) && (productPromptCompilation.unresolved_products.length || (catalogBackedElementCount > 0 && productPromptCompilation.legacy))) {
+      const unresolved = productPromptCompilation.unresolved_products.map((product) => product.product_id ?? product.title ?? "unknown");
+      throw new Error(`LORA_PRODUCT_VOCABULARY_FAILED: no se pudo resolver identidad canónica para ${unresolved.join(", ") || "uno o más productos visibles"}.`);
+    }
+    const loraPromptV2 = loraCompilation.prompt;
+    const loraPromptV1 = buildLoraImagePromptV1({ sceneSpec: transformedSceneSpec, visualContext, revisionInstruction });
+    const requestedLoraVersion = process.env.LORA_PROMPT_VERSION === "v1" ? "v1" : "v2";
+    const loraPrompt = requestedLoraVersion === "v1" ? loraPromptV1 : loraPromptV2;
+    const effectiveLoraPrompt = ensureLoraTriggers(loraPrompt, resolvedLoras);
+    const loraPreflight = preflightLoraPrompt({
+      sceneSpec: transformedSceneSpec,
+      clauses: loraCompilation.clauses,
+      prompt: effectiveLoraPrompt,
+      triggers: resolvedLoras?.map((lora) => lora.trigger) ?? [DEFAULT_SEMPERTEX_LORA_TRIGGER],
+      vocabulary: PRODUCT_VOCABULARY,
+    });
+    const promptsGeneracion: Record<string, string> = compararLora
+      ? { "LoRA · app v1": loraPromptV1, "LoRA · app v2": loraPromptV2 }
+      : comparar
+        ? { "Gemini · Nano Banana 2": providerPrompt, "LoRA Sempertex": effectiveLoraPrompt }
+        : usarLora
+          ? { "LoRA Sempertex": effectiveLoraPrompt }
+          : { "Gemini · Nano Banana 2": providerPrompt };
+    const promptPrincipal = compararLora ? loraPromptV2 : usarLora ? effectiveLoraPrompt : providerPrompt;
+    const loraLanguageLeaks = [...new Set([
+      ...findLoraPromptLanguageLeaks(loraPromptV1),
+      ...findLoraPromptLanguageLeaks(loraPromptV2),
+    ])];
+    if ((usarLora || comparar || compararLora) && loraLanguageLeaks.length) {
+      throw new Error(`LORA_LANGUAGE_FAILED: el prompt contiene texto español sin traducir (${loraLanguageLeaks.join(", ")})`);
+    }
+    // `compararLora` always sends loraPromptV2 to fal.ai as its "lora-v2"
+    // variant regardless of LORA_PROMPT_VERSION, so it must be gated
+    // unconditionally — only usarLora/comparar respect the rollback flag via
+    // `loraPrompt`.
+    if (((usarLora || comparar) && requestedLoraVersion === "v2" || compararLora) && !loraPreflight.ok) {
+      throw new Error(`LORA_PREFLIGHT_FAILED: ${loraPreflight.errors.join("; ")}`);
+    }
+    const seedLoraDebug = Number.isInteger(body.seedLoraDebug) && body.seedLoraDebug! >= 0 ? body.seedLoraDebug : undefined;
     let result: { imagen: Imagen; interactionId?: string };
     let comparacion: SalidaComparacion[] | undefined;
     // Solo tiene sentido encadenar contexto real cuando esta petición ES una
     // revisión de una imagen previa (mismo criterio que `revisionMode`); una
     // generación nueva de cero no debe heredar la conversación de otra.
     const previousInteractionId = previous ? body.previousInteractionId : undefined;
-    if (comparar) {
+    let qa: ImageQaReport | undefined;
+    if (compararLora) {
+      const sharedSeed = seedLoraDebug ?? Math.floor(Math.random() * 2_147_483_647);
+      const loraVariants = [
+        { id: "lora-v1" as const, nombre: "LoRA app v1", modelo: "Prompt legado de la app", prompt: loraPromptV1 },
+        { id: "lora-v2" as const, nombre: "LoRA app v2", modelo: `Caption compiler ${LORA_CAPTION_COMPILER_VERSION}`, prompt: loraPromptV2 },
+      ];
+      const variantResults = await Promise.allSettled(loraVariants.map((variant) => generarConSempertexLora(variant.prompt, aspecto, [], { seed: sharedSeed })));
+      const variantImages = variantResults.map((variantResult) => variantResult.status === "fulfilled" ? variantResult.value : undefined);
+      const variantQa = await Promise.all(variantImages.map((image) => image
+        ? buildQa(transformedSceneSpec, image, { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate)
+        : Promise.resolve(undefined)));
+      await Promise.all(variantQa.map((candidateQa, index) => candidateQa
+        ? auditarImagen(`IMAGEN_QA_${loraVariants[index]!.id.toUpperCase()}`, candidateQa, transformedSceneSpec)
+        : Promise.resolve()));
+      comparacion = loraVariants.map((variant, index) => {
+        const settled = variantResults[index]!;
+        const image = variantImages[index];
+        return {
+          id: variant.id,
+          nombre: variant.nombre,
+          modelo: variant.modelo,
+          prompt: variant.prompt,
+          imagen: image ? `data:${image.mime};base64,${image.base64}` : undefined,
+          error: settled.status === "rejected" ? textoDeError(settled.reason) : undefined,
+          promptVersion: variant.id === "lora-v1" ? "v1" : "v2",
+          promptHash: hashPrompt(variant.prompt),
+          compilerVersion: variant.id === "lora-v2" ? LORA_CAPTION_COMPILER_VERSION : undefined,
+          seed: sharedSeed,
+          qa: variantQa[index],
+          preflight: variant.id === "lora-v2" ? loraPreflight : preflightLoraPrompt({ sceneSpec: transformedSceneSpec, clauses: loraCompilation.clauses, prompt: loraPromptV1 }),
+        };
+      });
+      const principalIndex = variantImages[1] ? 1 : variantImages.findIndex(Boolean);
+      const imagenPrincipal = principalIndex >= 0 ? variantImages[principalIndex] : undefined;
+      if (!imagenPrincipal) throw new Error("No se pudo generar ninguna comparación LoRA.");
+      qa = principalIndex >= 0 ? variantQa[principalIndex] : undefined;
+      result = { imagen: imagenPrincipal };
+    } else if (comparar) {
       const [gemini, lora] = await Promise.allSettled([
         port!.generar({ prompt: providerPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: previous, previousInteractionId, revisionMode: previous ? "revise_current_result" : "new_generation" }),
-        generarConSempertexLora(loraPrompt, aspecto, selected.inputs),
+        generarConSempertexLora(effectiveLoraPrompt, aspecto, selected.inputs, { loras: resolvedLoras }),
       ]);
       const geminiImagen = gemini.status === "fulfilled" ? gemini.value.imagen : undefined;
       const loraImagen = lora.status === "fulfilled" ? lora.value : undefined;
@@ -906,26 +1098,33 @@ export async function POST(request: Request) {
       result = { imagen: imagenPrincipal, interactionId: gemini.status === "fulfilled" ? gemini.value.interactionId : undefined };
     } else {
       result = usarLora
-        ? { imagen: await generarConSempertexLora(loraPrompt, aspecto, selected.inputs) }
+        ? { imagen: await generarConSempertexLora(effectiveLoraPrompt, aspecto, selected.inputs, { loras: resolvedLoras }) }
         : await port!.generar({ prompt: providerPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: previous, previousInteractionId, revisionMode: previous ? "revise_current_result" : "new_generation" });
     }
-    let qa = await buildQa(transformedSceneSpec, result.imagen, { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate);
+    qa ??= await buildQa(transformedSceneSpec, result.imagen, { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate);
     let retried = false;
-    if (!usarLora && !comparar && featureEnabled("IMAGE_QA_ENABLED") && qa.pass === false) {
+    if (!usarLora && !comparar && !compararLora && featureEnabled("IMAGE_QA_ENABLED") && qa.pass === false) {
       const retryPrompt = `${providerPrompt}\n\n${buildCorrectiveRetryPrompt(qa)}`;
       const retry = await port!.generar({ prompt: retryPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: { ...result.imagen, id: "GENERATED_RESULT", descripcion: "Current generated result for one corrective retry." }, previousInteractionId: result.interactionId, revisionMode: "revise_current_result" });
       retried = true;
       qa = await buildQa(transformedSceneSpec, retry.imagen, { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate);
       await auditarImagen("IMAGEN_QA_RETRY", qa, transformedSceneSpec);
-      if (qa.pass !== true) return Response.json({ error: "NON_CONFORME: la imagen no cumple la cardinalidad o composición aprobada.", qa, plan: planResuelto, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash }, { status: 422 });
-      return Response.json({ imagen: `data:${retry.imagen.mime};base64,${retry.imagen.base64}`, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, plan: planResuelto, qa, retried, proveedor, cotizacion, interactionId: retry.interactionId, productAuthority: productAuthority.length ? productAuthority : undefined });
+      if (qa.pass !== true) return Response.json({ error: `NON_CONFORME: la imagen no cumple la cardinalidad o composición aprobada${qa.retry_reasons.length ? ` — ${qa.retry_reasons.join("; ")}` : ""}.`, qa, plan: planResuelto, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash }, { status: 422 });
+      return Response.json({ imagen: `data:${retry.imagen.mime};base64,${retry.imagen.base64}`, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, plan: planResuelto, qa, retried, proveedor, cotizacion, interactionId: retry.interactionId, prompt: retryPrompt, prompts: { "Gemini · Nano Banana 2": retryPrompt }, productAuthority: productAuthority.length ? productAuthority : undefined });
     }
     await auditarImagen("IMAGEN_QA", qa, transformedSceneSpec);
-    if (planResuelto && qa.pass !== true) return Response.json({ error: "NON_CONFORME: la imagen no fue observada conforme al plan aprobado.", qa, plan: planResuelto, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash }, { status: 422 });
+    // Mientras se evalúa el LoRA v2 (sin retry automático como el camino
+    // Gemini), no bloqueamos con 422: se devuelve igual la imagen para poder
+    // verla, con el QA en pass:false para que el frontend siga mostrando la
+    // advertencia "no conforme" en vez de esconder el resultado.
+    if (planResuelto && qa.pass !== true && !usarLora && !compararLora) return Response.json({ error: `NON_CONFORME: la imagen no fue observada conforme al plan aprobado${qa.retry_reasons.length ? ` — ${qa.retry_reasons.join("; ")}` : ""}.`, qa, plan: planResuelto, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash }, { status: 422 });
     registrarEvento({ proveedor, operacion: "imagen", ms: Date.now() - inicio, resultado: "ok" });
     const debug = process.env.NODE_ENV !== "production" || process.env.IMAGE_DEBUG === "true";
-    return Response.json({ imagen: `data:${result.imagen.mime};base64,${result.imagen.base64}`, comparacion, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, plan: planResuelto, qa, retried, proveedor: comparar ? "gemini" : proveedor, modoImagen: comparar ? "comparacion" : usarLora ? "lora" : "proveedor_base", cotizacion, interactionId: result.interactionId, productAuthority: productAuthority.length ? productAuthority : undefined, ...(debug ? { prompt: providerPrompt, prompts: { provider: providerPrompt, lora: loraPrompt }, visualContext, droppedImageIds: selected.droppedImageIds, aspectTransform } : {}) });
+    return Response.json({ imagen: `data:${result.imagen.mime};base64,${result.imagen.base64}`, comparacion, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, plan: planResuelto, qa, loraPreflight: (usarLora || comparar || compararLora) ? loraPreflight : undefined, loraPromptVersion: requestedLoraVersion, loraPromptHash: hashPrompt(effectiveLoraPrompt), compilerVersion: LORA_CAPTION_COMPILER_VERSION, loraProductRuntimeVersion: LORA_PRODUCT_RUNTIME_VERSION, productPromptCompilation: { resolved_concepts: productPromptCompilation.resolved_concepts, unresolved_products: productPromptCompilation.unresolved_products, vocabulary_version: productPromptCompilation.vocabulary_version, compiler_version: productPromptCompilation.compiler_version, legacy: productPromptCompilation.legacy, diagnostics: productPromptCompilation.diagnostics }, retried, proveedor: comparar ? "gemini" : proveedor, modoImagen: compararLora ? "comparacion_lora" : comparar ? "comparacion" : usarLora ? "lora" : "proveedor_base", cotizacion, interactionId: result.interactionId, prompt: promptPrincipal, prompts: promptsGeneracion, productAuthority: productAuthority.length ? productAuthority : undefined, ...(debug ? { visualContext, droppedImageIds: selected.droppedImageIds, aspectTransform, loraSelection: resolvedLoras?.map((lora) => ({ artifactId: lora.artifactId, specialization: lora.specialization, scale: lora.scale, trigger: lora.trigger })) } : {}) });
   } catch (error) {
+    if (error instanceof Error && /^LORA_(?:MODE|SELECTION|ARTIFACT|SPECIALIZATION|RUN|EVALUATION|PROVIDER|INCOMPATIBLE|MULTI|DATASET_ALLOWLIST|PRODUCT_VOCABULARY)/.test(error.message)) {
+      return Response.json({ error: error.message }, { status: 409 });
+    }
     if (error instanceof NonCommercialSourceRejectedError) {
       return Response.json({ error: error.message, causa: "fuente_no_comercial", productId: error.productId, source: error.source, referenceClass: error.referenceClass }, { status: 403 });
     }

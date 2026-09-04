@@ -1,0 +1,60 @@
+Recorriendo páginas 1-8 del listado...
+  página 1: 24 ideas
+  página 2: 24 ideas
+  página 3: 24 ideas
+  página 4: 24 ideas
+  página 5: 24 ideas
+  página 6: 24 ideas
+  página 7: 24 ideas
+  página 8: 24 ideas
+Total ideas: 192 -- esta partición (3/4) procesa 48
+[bouquet-corazon] -> orden #950000003 OK (6 materiales, tipo=bouquet)
+[ocaciones-especiales] -> orden #950000007 OK (18 materiales, tipo=sin determinar)
+[halloween-2] -> orden #950000011 OK (15 materiales, tipo=sin determinar)
+[enchanted-butterflies-nacional-2025] -> orden #950000015 OK (9 materiales, tipo=sin determinar)
+[pastel-dream-nacional-2025] -> orden #950000019 OK (16 materiales, tipo=sin determinar)
+[mariposas-encantadas] -> orden #950000023 OK (15 materiales, tipo=arco)
+[love-amor-en-grande] -> orden #950000027 OK (4 materiales, tipo=centro_mesa)
+[corazon-feliz-dia] -> orden #950000031 OK (4 materiales, tipo=otro)
+[base-te-amo] -> orden #950000035 OK (5 materiales, tipo=columna)
+[celebrando-a-papa] -> orden #950000039 OK (6 materiales, tipo=sin determinar)
+[columna-romana-bigotes] -> orden #950000043 OK (5 materiales, tipo=columna)
+[garland-amor] -> orden #950000047 OK (3 materiales, tipo=sin determinar)
+[arco-iris-de-amor] -> orden #950000051 OK (7 materiales, tipo=arco)
+[arco-de-amor] -> orden #950000055 OK (4 materiales, tipo=arco)
+[banderola-colombia] -> orden #950000059 OK (4 materiales, tipo=otro)
+[tropical-sunset-1] -> orden #950000063 OK (4 materiales, tipo=sin determinar)
+[mi-silk-nuevos] -> orden #950000067 OK (4 materiales, tipo=sin determinar)
+[reyes-magos-3] -> orden #950000071 OK (2 materiales, tipo=sin determinar)
+[gender-reveal-1] -> orden #950000075 OK (5 materiales, tipo=sin determinar)
+[autumn-harvest] -> orden #950000079 OK (5 materiales, tipo=sin determinar)
+[ocean-hues] -> orden #950000083 OK (7 materiales, tipo=sin determinar)
+[gender-reveal] -> orden #950000087 OK (5 materiales, tipo=sin determinar)
+[decoracion-revelacion-genero] ningún producto del carrusel matchea el catálogo local, salto
+[decoracion-webinar-navidad] -> orden #950000095 OK (4 materiales, tipo=sin determinar)
+[escenario-halloween] -> orden #950000099 OK (4 materiales, tipo=sin determinar)
+[decoracion-halloween-friends] -> orden #950000103 OK (4 materiales, tipo=sin determinar)
+[arana-graffiti-invierno-violeta] ningún producto del carrusel matchea el catálogo local, salto
+[happy-halloween-1] -> orden #950000111 OK (4 materiales, tipo=pared)
+[halloween-fantasmal] -> orden #950000115 OK (4 materiales, tipo=sin determinar)
+[regalo-con-flores] -> orden #950000119 OK (4 materiales, tipo=sin determinar)
+[mural-bandera-colombia] -> orden #950000123 OK (4 materiales, tipo=pared)
+[cascanueces] -> orden #950000127 OK (5 materiales, tipo=otro)
+[webinar-aro-organico-merlot-coral-arena] -> orden #950000131 OK (5 materiales, tipo=arco)
+[easter] -> orden #950000135 OK (7 materiales, tipo=otro)
+[pride-day-love] -> orden #950000139 OK (6 materiales, tipo=otro)
+[webinar-otono] -> orden #950000143 OK (5 materiales, tipo=pared)
+[arco-primera-comunion-1] -> orden #950000147 OK (3 materiales, tipo=arco)
+[pastel-dusk] -> orden #950000151 OK (4 materiales, tipo=centro_mesa)
+[decoracion-pastel-melon] -> orden #950000155 OK (2 materiales, tipo=centro_mesa)
+[palmera-1] -> orden #950000159 OK (2 materiales, tipo=otro)
+[feliz-dia-bigotes] -> orden #950000163 OK (3 materiales, tipo=pared)
+[regalos-para-mama] -> orden #950000167 OK (5 materiales, tipo=otro)
+[corona-feliz-dia-mami] -> orden #950000171 OK (5 materiales, tipo=sin determinar)
+[directo-al-corazon] -> orden #950000175 OK (2 materiales, tipo=columna)
+[decoracion-organica-corazon-reflex-dorado] -> orden #950000179 OK (4 materiales, tipo=pared)
+[malla-link-o-loon-r-amor-en-fucsia-y-lila] -> orden #950000183 OK (3 materiales, tipo=pared)
+[bouquet-te-amo] ningún producto del carrusel matchea el catálogo local, salto
+[decoracion-navidad-blanca] -> orden #950000191 OK (4 materiales, tipo=sin determinar)
+
+Listo (partición 3/4). OK: 45 | sin productos mapeables: 3 | sin imagen: 0 | errores: 0

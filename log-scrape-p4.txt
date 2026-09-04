@@ -1,0 +1,60 @@
+Recorriendo páginas 1-8 del listado...
+  página 1: 24 ideas
+  página 2: 24 ideas
+  página 3: 24 ideas
+  página 4: 24 ideas
+  página 5: 24 ideas
+  página 6: 24 ideas
+  página 7: 24 ideas
+  página 8: 24 ideas
+Total ideas: 192 -- esta partición (4/4) procesa 48
+[decoracion-mundialista] -> orden #950000004 OK (6 materiales, tipo=sin determinar)
+[navidad-1] -> orden #950000008 OK (12 materiales, tipo=sin determinar)
+[merry-bright-nacional] -> orden #950000012 OK (6 materiales, tipo=sin determinar)
+[aurora-mist-nacional-2025] -> orden #950000016 OK (5 materiales, tipo=sin determinar)
+[silk-glow-nacional-2025] -> orden #950000020 OK (10 materiales, tipo=sin determinar)
+[celebra-a-papa-como-se-merece] -> orden #950000024 OK (13 materiales, tipo=arco)
+[figura-de-amor-y-amistad-1] -> orden #950000028 OK (6 materiales, tipo=pared)
+[arco-de-amor-y-flores] -> orden #950000032 OK (5 materiales, tipo=arco)
+[guirnalda-organica-amor-y-amistad] -> orden #950000036 OK (8 materiales, tipo=sin determinar)
+[aro-de-mesa-papa-bigotes] -> orden #950000040 OK (9 materiales, tipo=sin determinar)
+[columna-tejida-papa-futbolero] -> orden #950000044 OK (6 materiales, tipo=columna)
+[feliz-dia-mama-floral] -> orden #950000048 OK (5 materiales, tipo=sin determinar)
+[corazon-tejido] -> orden #950000052 OK (5 materiales, tipo=sin determinar)
+[flor-en-lol-3] -> orden #950000056 OK (4 materiales, tipo=sin determinar)
+[decoracion-webinar-ano-nuevo] -> orden #950000060 OK (7 materiales, tipo=sin determinar)
+[ocean-hues-1] -> orden #950000064 OK (4 materiales, tipo=sin determinar)
+[dia-contra-el-cancer] -> orden #950000068 OK (2 materiales, tipo=sin determinar)
+[reyes-magos-2] -> orden #950000072 OK (3 materiales, tipo=sin determinar)
+[creamy-dusk-1] -> orden #950000076 OK (5 materiales, tipo=sin determinar)
+[vibrant-festival] -> orden #950000080 OK (5 materiales, tipo=sin determinar)
+[love] -> orden #950000084 OK (5 materiales, tipo=sin determinar)
+[creamy-dusk] -> orden #950000088 OK (5 materiales, tipo=sin determinar)
+[thanksgiving] -> orden #950000092 OK (5 materiales, tipo=sin determinar)
+[corona-navidena] -> orden #950000096 OK (4 materiales, tipo=sin determinar)
+[figura-revelacion-de-genero] -> orden #950000100 OK (6 materiales, tipo=sin determinar)
+[calabaza-colorida] ningún producto del carrusel matchea el catálogo local, salto
+[graffiti-happy-halloween] ningún producto del carrusel matchea el catálogo local, salto
+[mesa-con-arco-organico-calabazas] -> orden #950000112 OK (4 materiales, tipo=arco)
+[halloween-embrujado] -> orden #950000116 OK (5 materiales, tipo=pared)
+[marco-para-fotos] -> orden #950000120 OK (4 materiales, tipo=pared)
+[mural-multicolor] -> orden #950000124 OK (7 materiales, tipo=sin determinar)
+[arbol-de-navidad-1] -> orden #950000128 OK (5 materiales, tipo=otro)
+[dia-del-arbol] -> orden #950000132 OK (6 materiales, tipo=otro)
+[malla-pastel-mate-melon] -> orden #950000136 OK (2 materiales, tipo=pared)
+[figura-paw-patrol] -> orden #950000140 OK (6 materiales, tipo=sin determinar)
+[figura-organica-merlot] -> orden #950000144 OK (1 materiales, tipo=otro)
+[corbata-padres] -> orden #950000148 OK (6 materiales, tipo=otro)
+[paleta-verano] -> orden #950000152 OK (5 materiales, tipo=otro)
+[colores-primavera] -> orden #950000156 OK (5 materiales, tipo=centro_mesa)
+[concha-marina] -> orden #950000160 OK (1 materiales, tipo=otro)
+[feliz-dia-papa] -> orden #950000164 OK (5 materiales, tipo=sin determinar)
+[ramo-de-flores-1] -> orden #950000168 OK (5 materiales, tipo=otro)
+[bouquet-flores-feliz-dia-mama] -> orden #950000172 OK (4 materiales, tipo=bouquet)
+[decoracion-corazones-surtidos] -> orden #950000176 OK (3 materiales, tipo=sin determinar)
+[centro-de-mesa-corazon-foil-te-amo] -> orden #950000180 OK (3 materiales, tipo=centro_mesa)
+[centro-de-mesa-de-amor-en-fucsia-y-lila] -> orden #950000184 OK (4 materiales, tipo=centro_mesa)
+[corazon-love] -> orden #950000188 OK (1 materiales, tipo=otro)
+[decoracion-navidad-dorada] -> orden #950000192 OK (3 materiales, tipo=sin determinar)
+
+Listo (partición 4/4). OK: 46 | sin productos mapeables: 2 | sin imagen: 0 | errores: 0

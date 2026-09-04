@@ -1,0 +1,450 @@
+{
+  "experimento": "eval-v004-1000",
+  "endpoint": "https://queue.fal.run/fal-ai/flux-2/lora",
+  "defaults": {
+    "seed": 777777,
+    "guidance": 3.5,
+    "ancho": 1536,
+    "alto": 1024,
+    "loraUrl": "https://v3b.fal.media/files/b/0aa82cf2/bv07AZ2sRktiGdQ42Tf_f_pytorch_lora_weights.safetensors"
+  },
+  "celdas": [
+    {
+      "id": "v004-1000-scale08-seed101",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 0.8,
+      "seed": 101,
+      "safety": false,
+      "nota": "v004-1000 @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa82cf2/bv07AZ2sRktiGdQ42Tf_f_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 101,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "v004-1000-scale08-seed202",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 0.8,
+      "seed": 202,
+      "safety": false,
+      "nota": "v004-1000 @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa82cf2/bv07AZ2sRktiGdQ42Tf_f_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 202,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "v004-1000-scale08-seed303",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 0.8,
+      "seed": 303,
+      "safety": false,
+      "nota": "v004-1000 @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa82cf2/bv07AZ2sRktiGdQ42Tf_f_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 303,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "v004-1000-scale08-seed404",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 0.8,
+      "seed": 404,
+      "safety": false,
+      "nota": "v004-1000 @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa82cf2/bv07AZ2sRktiGdQ42Tf_f_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 404,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "v004-1000-scale08-seed505",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 0.8,
+      "seed": 505,
+      "safety": false,
+      "nota": "v004-1000 @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa82cf2/bv07AZ2sRktiGdQ42Tf_f_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 505,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "v004-1000-scale08-seed606",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 0.8,
+      "seed": 606,
+      "safety": false,
+      "nota": "v004-1000 @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa82cf2/bv07AZ2sRktiGdQ42Tf_f_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 606,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "v004-1000-scale1-seed101",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 1,
+      "seed": 101,
+      "safety": false,
+      "nota": "v004-1000 @ lora_scale 1",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa82cf2/bv07AZ2sRktiGdQ42Tf_f_pytorch_lora_weights.safetensors",
+            "scale": 1
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 101,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "v004-1000-scale1-seed202",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 1,
+      "seed": 202,
+      "safety": false,
+      "nota": "v004-1000 @ lora_scale 1",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa82cf2/bv07AZ2sRktiGdQ42Tf_f_pytorch_lora_weights.safetensors",
+            "scale": 1
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 202,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "v004-1000-scale1-seed303",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 1,
+      "seed": 303,
+      "safety": false,
+      "nota": "v004-1000 @ lora_scale 1",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa82cf2/bv07AZ2sRktiGdQ42Tf_f_pytorch_lora_weights.safetensors",
+            "scale": 1
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 303,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "v004-1000-scale1-seed404",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 1,
+      "seed": 404,
+      "safety": false,
+      "nota": "v004-1000 @ lora_scale 1",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa82cf2/bv07AZ2sRktiGdQ42Tf_f_pytorch_lora_weights.safetensors",
+            "scale": 1
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 404,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "v004-1000-scale1-seed505",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 1,
+      "seed": 505,
+      "safety": false,
+      "nota": "v004-1000 @ lora_scale 1",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa82cf2/bv07AZ2sRktiGdQ42Tf_f_pytorch_lora_weights.safetensors",
+            "scale": 1
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 505,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "v004-1000-scale1-seed606",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 1,
+      "seed": 606,
+      "safety": false,
+      "nota": "v004-1000 @ lora_scale 1",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa82cf2/bv07AZ2sRktiGdQ42Tf_f_pytorch_lora_weights.safetensors",
+            "scale": 1
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 606,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    }
+  ],
+  "resultados": [
+    {
+      "celda": "v004-1000-scale08-seed101",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\eval-v004-1000\\v004-1000-scale08-seed101.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82d00/e5-FEXEhm1a-KfTnuzw7P_aaNvWKlz.png",
+      "bytes": 2430327
+    },
+    {
+      "celda": "v004-1000-scale08-seed202",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\eval-v004-1000\\v004-1000-scale08-seed202.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82d02/3F8MWhZ7yfVsbbS4Y3nWR_GtuV9yjn.png",
+      "bytes": 2588083
+    },
+    {
+      "celda": "v004-1000-scale08-seed303",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\eval-v004-1000\\v004-1000-scale08-seed303.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82d03/LJwkJ0oyNoGudIYvWlgth_u58dT3vu.png",
+      "bytes": 2537722
+    },
+    {
+      "celda": "v004-1000-scale08-seed404",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\eval-v004-1000\\v004-1000-scale08-seed404.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82d05/ULDKT2Xst7y1JAnkM1_GI_sTSjZGEJ.png",
+      "bytes": 2593064
+    },
+    {
+      "celda": "v004-1000-scale08-seed505",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\eval-v004-1000\\v004-1000-scale08-seed505.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82d07/Sm7HXySQwIw-fDxj87qlp_fs6p6UMp.png",
+      "bytes": 2515161
+    },
+    {
+      "celda": "v004-1000-scale08-seed606",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\eval-v004-1000\\v004-1000-scale08-seed606.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82d08/gahRf0szjNWkTROp_ee2r_i2kaG5cl.png",
+      "bytes": 2578420
+    },
+    {
+      "celda": "v004-1000-scale1-seed101",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\eval-v004-1000\\v004-1000-scale1-seed101.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82d0a/g3o_fqoNOlCUGpRXUZBOt_ks2b2l2S.png",
+      "bytes": 2403910
+    },
+    {
+      "celda": "v004-1000-scale1-seed202",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\eval-v004-1000\\v004-1000-scale1-seed202.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82d0c/niOkUVSjKLWEm3p2GdThP_7T1AwLeF.png",
+      "bytes": 2591169
+    },
+    {
+      "celda": "v004-1000-scale1-seed303",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\eval-v004-1000\\v004-1000-scale1-seed303.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82d0d/HngYijmPKLZvciAiL-P6W_Bc3pvV2U.png",
+      "bytes": 2595052
+    },
+    {
+      "celda": "v004-1000-scale1-seed404",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\eval-v004-1000\\v004-1000-scale1-seed404.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82d0e/Q_x_yt8HHDk2Y4mDPN-S3_1bo2ezEN.png",
+      "bytes": 2570436
+    },
+    {
+      "celda": "v004-1000-scale1-seed505",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\eval-v004-1000\\v004-1000-scale1-seed505.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82d10/9Y4k5l4Sbv5YuimqoDdED_JlLIZVKW.png",
+      "bytes": 2421201
+    },
+    {
+      "celda": "v004-1000-scale1-seed606",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\eval-v004-1000\\v004-1000-scale1-seed606.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82d11/07Dus254umaRce20cFMVT_5iDLbM95.png",
+      "bytes": 2573588
+    }
+  ],
+  "saldo_antes": 15.4,
+  "saldo_despues": 15.022,
+  "gasto_usd": 0.378
+}

@@ -1,5 +1,6 @@
 import type { Brief } from "@/lib/types";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
+import { ALCANCE_POR_CATEGORIA_REFERENCIA } from "@/lib/rag/taxonomy/alcance-referencia";
 import type { PlanDecoracion, RestriccionesUsuario, TipoEstructura } from "./tipos";
 
 const NUMEROS: Record<string, number> = {
@@ -35,10 +36,23 @@ function extraerTecho(texto: string): number | null {
     if (!Number.isFinite(base) || base <= 0) return null;
     return Math.round(base * (sufijo ? 1000 : 1));
   };
-  const rango = normalizado.match(/\$?\s*([\d.]+)\s*(mil|k)?\s*(?:a|hasta|-)\s*\$?\s*([\d.]+)\s*(mil|k)?/i);
+  // "entre X y Z" es tan común como "de X a Z"; sin la `y` el rango no se
+  // reconocía y caía al patrón de abajo, que tomaba el piso como techo.
+  const rango = normalizado.match(/\$?\s*([\d.]+)\s*(mil|k)?\s*(?:a|hasta|y|-)\s*\$?\s*([\d.]+)\s*(mil|k)?/i);
   if (rango) return monto(rango[3]!, rango[4]);
-  const match = normalizado.match(/(?:hasta|tope|presupuesto|maximo|no mas de|menos de)\s*\$?\s*([\d.]+)\s*(mil|k)?/i);
-  return match ? monto(match[1]!, match[2]) : null;
+  // Los conectores entre la palabra clave y el monto son la forma NORMAL de
+  // decirlo en español ("mi presupuesto es de 50k"), y sin ellos el techo se
+  // perdía en silencio: el plan se diseñaba sin restricción y el sobrecosto
+  // recién aparecía al cotizar.
+  const conector = "(?:\\s+(?:es|era|seria|sera|anda|ronda|de|en|por|como|mas|menos|o|:|,)){0,3}";
+  const match = normalizado.match(new RegExp(`(?:hasta|tope|presupuesto|maximo|limite|no mas de|menos de)${conector}\\s*\\$?\\s*([\\d.]+)\\s*(mil|k)?`, "i"));
+  if (match) return monto(match[1]!, match[2]);
+  // Sin palabra clave, un monto solo cuenta si viene marcado como dinero:
+  // "$50.000", "50k pesos", "50 mil cop". Un número suelto es ambiguo
+  // (invitados, metros, fecha) y no debe tomarse como techo.
+  const conMoneda = normalizado.match(/\$\s*([\d.]+)\s*(mil|k)?|([\d.]+)\s*(mil|k)\s*(?:cop|pesos)/i);
+  if (conMoneda) return monto(conMoneda[1] ?? conMoneda[3]!, conMoneda[2] ?? conMoneda[4]);
+  return null;
 }
 
 function extraerLista(texto: string, aliases: string[], limite = 8): string[] {
@@ -73,7 +87,24 @@ export function extraerRestriccionesUsuario(texto: string, brief: Brief = {}): R
   const presupuestoEnTexto = extraerTecho(texto);
   const presupuesto = presupuestoEnTexto ?? (typeof brief.presupuesto === "number" ? brief.presupuesto : extraerTecho(String(brief.presupuesto ?? "")));
   const presupuestoExplicito = presupuestoEnTexto !== null;
-  const colores = extraerLista(texto, ["dorado", "plateado", "plata", "rosado", "rosa", "rojo", "negro", "blanco", "azul", "verde", "morado", "lila", "nude"])
+  const colores = extraerLista(texto, [
+    "dorado", "dorada", "dorados", "doradas", "plateado", "plateada", "plateados", "plateadas", "plata",
+    "rosado", "rosada", "rosados", "rosadas", "rosa", "rojo", "roja", "rojos", "rojas", "negro", "negra", "negros", "negras",
+    "blanco", "blanca", "blancos", "blancas", "azul", "azules", "verde", "verdes", "morado", "morada", "morados", "moradas", "lila", "nude",
+  ])
+    .map((valor) => {
+      if (/^dorad/.test(valor)) return "dorado";
+      if (/^platead|^plata$/.test(valor)) return "plateado";
+      if (/^rosad|^rosa$/.test(valor)) return "rosa";
+      if (/^roj/.test(valor)) return "rojo";
+      if (/^negr/.test(valor)) return "negro";
+      if (/^blanc/.test(valor)) return "blanco";
+      if (/^azul/.test(valor)) return "azul";
+      if (/^verd/.test(valor)) return "verde";
+      if (/^morad/.test(valor)) return "morado";
+      return valor;
+    })
+    .filter((valor, index, values) => values.indexOf(valor) === index)
     .map((valor) => ({ valor, procedencia: "explicito" as const, texto_original: source, polaridad: "obligatorio" as const }));
   const tamanos = [...normalizar(texto).matchAll(/\br[- ]?(5|9|12|18|24|36|40)\b|\b(5|9|12|18|24|36|40)\s*(?:pulgadas?|in)\b/gi)]
     .map((match) => match[1] ?? match[2])
@@ -126,11 +157,75 @@ export function validarRestriccionesPlan(plan: PlanDecoracion, restricciones: Re
  */
 export function validarCoberturaReferencia(plan: PlanDecoracion, blueprint: ReferenceBlueprintV2 | undefined): string[] {
   if (!blueprint) return [];
-  const aprobados = blueprint.elements.filter((element) => element.approved).map((element) => element.element_id);
+  const aprobados = blueprint.elements.filter((element) => element.approved);
   if (aprobados.length === 0) return [];
-  const cubiertos = new Set([
-    ...plan.estructuras.map((estructura) => estructura.referencia_element_id).filter((id): id is string => Boolean(id)),
-    ...plan.referencia_omitida.map((item) => item.element_id),
-  ]);
-  return aprobados.filter((id) => !cubiertos.has(id));
+  const elementosPorId = new Map(blueprint.elements.map((element) => [element.element_id, element]));
+  const cubiertos = new Set<string>();
+  const invalidos = new Set<string>();
+
+  for (const estructura of plan.estructuras) {
+    const elementId = estructura.referencia_element_id;
+    if (!elementId) continue;
+    const elemento = elementosPorId.get(elementId);
+    if (!elemento || !elemento.approved) {
+      invalidos.add(elementId);
+      continue;
+    }
+    const alcance = ALCANCE_POR_CATEGORIA_REFERENCIA[elemento.category];
+    // Mobiliario, flores, iluminacion, soportes y elementos desconocidos nunca
+    // se emulan con globos ni pueden declararse incluidos.
+    // Una reinterpretacion emulable queda como propuesta pendiente; no entra
+    // en estructuras del primer plan sin respuesta afirmativa del cliente.
+    if (alcance.alcance === "fuera_de_catalogo" || alcance.alcance === "emulable") {
+      invalidos.add(elementId);
+      continue;
+    }
+    cubiertos.add(elementId);
+  }
+
+  for (const item of plan.referencia_omitida) {
+    const elemento = elementosPorId.get(item.element_id);
+    if (!elemento || !elemento.approved) continue;
+    const alcance = ALCANCE_POR_CATEGORIA_REFERENCIA[elemento.category];
+    if (item.motivo_tipo === "fuera_de_catalogo" && alcance.alcance !== "fuera_de_catalogo") {
+      invalidos.add(item.element_id);
+      continue;
+    }
+    if ((item.motivo_tipo === "emulacion_propuesta" || item.motivo_tipo === "emulacion_rechazada") && alcance.alcance !== "emulable") {
+      invalidos.add(item.element_id);
+      continue;
+    }
+    cubiertos.add(item.element_id);
+  }
+
+  return aprobados
+    .map((element) => element.element_id)
+    .filter((id) => invalidos.has(id) || !cubiertos.has(id));
+}
+
+/**
+ * Evento abierto necesita composición mínima para no cotizar un único
+ * elemento genérico. Se permite pieza única solo cuando cliente lo pidió de
+ * forma explícita; productos deben seguir saliendo de whitelist RAG.
+ */
+export function validarCardinalidadEventoAbierto(
+  plan: PlanDecoracion,
+  // EventIntentV2 keeps this compatibility field extensible for persisted
+  // payloads; parser currently emits only `open`/`wedding`. Keep validator
+  // compatible with that schema and reject every non-open value below.
+  eventType: string,
+  solicitudOriginal: string,
+  hayCandidatosCatalogo: boolean,
+): string[] {
+  if (eventType !== "open" || !hayCandidatosCatalogo) return [];
+  const source = normalizar(solicitudOriginal);
+  const piezaUnica = /\b(?:solo|solamente|unicamente|una sola|una pieza|un arco|una columna|un backdrop|un accesorio)\b/.test(source);
+  if (piezaUnica) return [];
+  if (plan.estructuras.length < 3) {
+    return ["Evento abierto requiere 3–5 estructuras coordinadas cuando hay candidatos de catálogo; el plan declara menos."];
+  }
+  if (plan.estructuras.length > 5) {
+    return ["Evento abierto admite 3–5 estructuras coordinadas; el plan declara más de cinco."];
+  }
+  return [];
 }

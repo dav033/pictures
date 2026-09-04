@@ -1,13 +1,18 @@
 import type { Pool } from "pg";
 import { embeberTexto } from "../embeddings";
 import { interpretarConsulta } from "../query-parser/parse";
-import type { IntentQuery } from "../query-parser/schema";
+import { parseEventSearchIntent } from "../query-parser/event-search";
+import { IntentQuerySchema, type IntentQuery } from "../query-parser/schema";
 import { buscarPorRol } from "../retrieval/por-rol";
+import type { EventSearchIntent } from "../query-parser/event-search";
 import { puntuarYOrdenar, type CandidatoDetallado, type CandidatoPuntuado } from "../retrieval/rerank";
 import { ensamblarCanasta, type Canasta } from "../presupuesto/ensamblar";
 import { ROLES_PRESUPUESTO, type Franja, type RolPresupuesto } from "../presupuesto/franjas";
 import { planificarCanasta } from "../presupuesto/plan";
 import type { EstadoSku } from "../retrieval/types";
+import type { EventMatchEvidence } from "../retrieval/types";
+import type { CatalogAllowlist } from "../retrieval/types";
+import type { ObservabilidadBusqueda, ResultadoBusquedaObservabilidad } from "../observability/types";
 
 export type PoolItemPresupuesto = {
   productId: string;
@@ -17,6 +22,7 @@ export type PoolItemPresupuesto = {
   imagen: string | null;
   disponible: boolean;
   acabados: string[];
+  eventEvidence?: EventMatchEvidence;
 };
 
 export type ResultadoBusquedaPresupuesto = {
@@ -34,6 +40,17 @@ export type ResultadoBusquedaPresupuesto = {
   intent: IntentQuery | null;
   latencyParseMs: number;
   latencyRetrievalMs: number;
+  latencyPlanningMs: number;
+  observabilidad: ObservabilidadBusqueda;
+};
+
+export type OpcionesBusquedaPresupuesto = {
+  /** Customer-verified filters; component wording cannot alter them. */
+  filtrosDuros?: IntentQuery["filtros_duros"];
+  /** Open event context for ranking; hard filters remain `filtrosDuros`. */
+  eventIntent?: EventSearchIntent;
+  focusedQueries?: readonly string[];
+  allowlist?: CatalogAllowlist;
 };
 
 type FilaCandidatoDetalle = {
@@ -49,6 +66,43 @@ type FilaCandidatoDetalle = {
   inventario: number | null;
   variant_colors: string[];
 };
+
+function observabilidadPresupuesto(
+  mensaje: string,
+  eventIntent: EventSearchIntent,
+  candidates: Array<{ productId: string; variantId?: string; rol?: string; eventEvidence?: EventMatchEvidence }>,
+  selected: Array<{ productId: string; variantId: string; rol: string; eventEvidence?: EventMatchEvidence }>,
+  relaxations: string[],
+  status: ResultadoBusquedaPresupuesto["status"],
+  planningLatencyMs: number,
+  focusedQueries?: readonly string[],
+): ObservabilidadBusqueda {
+  const candidateCountsByTier: ObservabilidadBusqueda["candidateCountsByTier"] = { exact_event: 0, thematic: 0, adaptable: 0 };
+  const countedCandidates = new Set<string>();
+  for (const candidate of candidates) {
+    const level = candidate.eventEvidence?.match_level ?? "adaptable";
+    const key = `${candidate.productId}:${level}`;
+    if (countedCandidates.has(key)) continue;
+    countedCandidates.add(key);
+    candidateCountsByTier[level]++;
+  }
+  const outcome: ResultadoBusquedaObservabilidad = status === "NO_MATCH"
+    ? "NO_MATCH"
+    : status === "AMBIGUOUS_SKU"
+      ? "aclaracion"
+      : "candidatos";
+  const roles = [...new Set(candidates.map((candidate) => candidate.rol).filter((rol): rol is string => Boolean(rol)))];
+  return {
+    eventLabel: eventIntent.event_label,
+    closedOccasionRecognized: eventIntent.occasion_filter.length > 0,
+    componentQueries: [...new Set([...(focusedQueries ?? []), ...roles.map((rol) => `${mensaje} — ${rol}`)].map((query) => query.trim()).filter(Boolean))],
+    candidateCountsByTier,
+    selectedPieces: selected.map((piece) => ({ productId: piece.productId, variantId: piece.variantId, rol: piece.rol, matchLevel: piece.eventEvidence?.match_level ?? "adaptable" })),
+    relaxations: [...new Set(relaxations)],
+    outcome,
+    planningLatencyMs,
+  };
+}
 
 /** Embedding is optional; lexical retrieval remains the safe fallback. */
 export async function embeddingOpcional(query: string): Promise<number[] | undefined> {
@@ -72,9 +126,16 @@ export async function buscarCatalogoRagConPresupuesto(
   mensaje: string,
   franja: Franja,
   cifraCliente: number | undefined,
+  opciones: OpcionesBusquedaPresupuesto = {},
 ): Promise<ResultadoBusquedaPresupuesto> {
   const t0 = Date.now();
-  const intento = await interpretarConsulta(mensaje);
+  const parseado = await interpretarConsulta(mensaje);
+  // Semantic retrieval uses component text. Hard SQL filters come only from
+  // the original customer context when the caller supplies them.
+  const intento: IntentQuery = opciones.filtrosDuros
+    ? IntentQuerySchema.parse({ ...parseado, filtros_duros: opciones.filtrosDuros })
+    : parseado;
+  const eventIntent = opciones.eventIntent ?? parseEventSearchIntent(mensaje);
   const latencyParseMs = Date.now() - t0;
 
   if (intento.intent !== "product_search") {
@@ -89,9 +150,12 @@ export async function buscarCatalogoRagConPresupuesto(
       intent: intento,
       latencyParseMs,
       latencyRetrievalMs: 0,
+      latencyPlanningMs: 0,
+      observabilidad: observabilidadPresupuesto(mensaje, eventIntent, [], [], [], "NO_MATCH", 0, opciones.focusedQueries),
     };
   }
 
+  const planningStart = Date.now();
   const plan = planificarCanasta(franja, { categoriasPedidas: intento.filtros_duros.categorias }, cifraCliente);
   const franjaInfo = { slug: franja.slug, nombre: franja.nombre, rangoMinCop: franja.minCop, rangoMaxCop: franja.maxCop };
 
@@ -109,6 +173,9 @@ export async function buscarCatalogoRagConPresupuesto(
         acabados: intento.filtros_duros.acabados.length ? intento.filtros_duros.acabados : undefined,
         diametrosPulgadas: intento.filtros_duros.diametros_pulgadas.length ? intento.filtros_duros.diametros_pulgadas : undefined,
         disponible: intento.filtros_duros.solo_disponibles,
+        eventIntent,
+        focusedQueries: opciones.focusedQueries,
+        allowlist: opciones.allowlist,
       }),
     ),
   );
@@ -116,7 +183,13 @@ export async function buscarCatalogoRagConPresupuesto(
 
   const relajaciones = resultadosPorRol.flatMap((r) => r.relajaciones);
   const pares = resultadosPorRol.flatMap((r) =>
-    r.candidatos.flatMap((c) => c.variantIds.map((variantId) => ({ productId: c.productId, variantId, rankRrf: c.finalScore, rol: r.rol }))),
+    r.candidatos.flatMap((c) => c.variantIds.map((variantId) => ({
+      productId: c.productId,
+      variantId,
+      rankRrf: c.finalScore,
+      rol: r.rol,
+      eventEvidence: c.eventEvidence,
+    }))),
   );
   const variantIdsRecuperados = [...new Map(
     pares.map((pair) => [`${pair.productId}:${pair.variantId}`, { productId: pair.productId, variantId: pair.variantId }]),
@@ -137,6 +210,8 @@ export async function buscarCatalogoRagConPresupuesto(
       intent: intento,
       latencyParseMs,
       latencyRetrievalMs,
+      latencyPlanningMs: Date.now() - planningStart,
+      observabilidad: observabilidadPresupuesto(mensaje, eventIntent, pares, [], [], "AMBIGUOUS_SKU", Date.now() - planningStart, opciones.focusedQueries),
     };
   }
 
@@ -152,6 +227,8 @@ export async function buscarCatalogoRagConPresupuesto(
       intent: intento,
       latencyParseMs,
       latencyRetrievalMs,
+      latencyPlanningMs: Date.now() - planningStart,
+      observabilidad: observabilidadPresupuesto(mensaje, eventIntent, pares, [], relajaciones, "NO_MATCH", Date.now() - planningStart, opciones.focusedQueries),
     };
   }
 
@@ -193,6 +270,7 @@ export async function buscarCatalogoRagConPresupuesto(
       inventario: fila.inventario,
       sku: fila.sku,
       rankRrf: par.rankRrf,
+      eventEvidence: par.eventEvidence,
     });
   }
 
@@ -207,6 +285,7 @@ export async function buscarCatalogoRagConPresupuesto(
   }
 
   const canasta = ensamblarCanasta(plan, poolsPuntuados);
+  const latencyPlanningMs = Date.now() - planningStart;
 
   const poolPorRol: ResultadoBusquedaPresupuesto["poolPorRol"] = {};
   for (const cuota of plan.roles) {
@@ -219,6 +298,7 @@ export async function buscarCatalogoRagConPresupuesto(
       imagen: c.imagen,
       disponible: c.disponible,
       acabados: c.acabados,
+      eventEvidence: c.eventEvidence,
     }));
   }
 
@@ -238,5 +318,16 @@ export async function buscarCatalogoRagConPresupuesto(
     intent: intento,
     latencyParseMs,
     latencyRetrievalMs,
+    latencyPlanningMs,
+    observabilidad: observabilidadPresupuesto(
+      mensaje,
+      eventIntent,
+      pares,
+      canasta.piezas.map((piece) => ({ productId: piece.productId, variantId: piece.variantId, rol: piece.rol, eventEvidence: piece.eventEvidence })),
+      [...relajaciones, ...relajacionesRolesIncompletos],
+      canasta.piezas.length > 0 ? "OK" : "NO_MATCH",
+      latencyPlanningMs,
+      opciones.focusedQueries,
+    ),
   };
 }

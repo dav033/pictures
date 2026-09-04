@@ -11,11 +11,35 @@ export type FiltrosDuros = {
   diametrosPulgadas?: number[];
 };
 
+/** Pool de productos/variantes permitido por una especialización LoRA. */
+export type CatalogAllowlist = {
+  productIds: readonly string[];
+  variantIds: readonly string[];
+};
+
+/** Canonical open-event contract lives in query-parser/event-search.ts. */
+import type { EventSearchIntent } from "../query-parser/event-search";
+export type { EventSearchIntent } from "../query-parser/event-search";
+
+export type EventMatchLevel = "exact_event" | "thematic" | "adaptable";
+
+export type EventMatchEvidence = {
+  match_level: EventMatchLevel;
+  matched_signals: string[];
+  relaxations: string[];
+};
+
 export type ConsultaRetrieval = {
   semanticQuery: string;
   filtros?: FiltrosDuros;
   /** Embedding ya calculado; evita otra llamada cuando un turno hace varias búsquedas. */
   embeddingPrecalculado?: number[];
+  /** Consultas enfocadas por componente; se fusionan dentro de cada rama lexical. */
+  focusedQueries?: readonly string[];
+  /** Event terms are ranking text, never SQL predicates. */
+  eventTerms?: readonly string[];
+  eventIntent?: EventSearchIntent;
+  allowlist?: CatalogAllowlist;
 };
 
 export type EstadoSku = "not_sku" | "unique" | "ambiguous" | "not_found" | "filtered_out";
@@ -32,6 +56,7 @@ export type ResultadoRetrieval = {
   finalScore: number;
   reasons?: string[];
   rrfContributions?: Array<{ branch: "fts" | "trigram" | "vector"; rank: number; contribution: number }>;
+  eventEvidence?: EventMatchEvidence;
 };
 
 export type RespuestaRetrieval = {

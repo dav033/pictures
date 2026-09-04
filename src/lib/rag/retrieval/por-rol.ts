@@ -2,7 +2,7 @@ import type { Pool } from "pg";
 import type { CuotaPlan } from "../presupuesto/plan";
 import type { RolPresupuesto } from "../presupuesto/franjas";
 import { buscarHibrido } from "./search";
-import type { EstadoSku, ResultadoRetrieval } from "./types";
+import type { CatalogAllowlist, EventSearchIntent, EstadoSku, ResultadoRetrieval } from "./types";
 
 export type CandidatoRol = ResultadoRetrieval & { rol: RolPresupuesto };
 
@@ -23,6 +23,10 @@ export type FiltrosBaseRol = {
   formas?: string[];
   diametrosPulgadas?: number[];
   disponible?: boolean;
+  /** Open event ranking context; never converted into a hard SQL predicate. */
+  eventIntent?: EventSearchIntent;
+  focusedQueries?: readonly string[];
+  allowlist?: CatalogAllowlist;
 };
 
 // Frase que orienta el retrieval semántico hacia lo que ese rol necesita
@@ -145,6 +149,12 @@ export async function buscarPorRol(
     const respuesta = await buscarHibrido(pool, {
       semanticQuery,
       embeddingPrecalculado: embeddingBase,
+      eventIntent: filtrosBase.eventIntent,
+      eventTerms: filtrosBase.eventIntent?.event_terms,
+      focusedQueries: filtrosBase.focusedQueries?.length
+        ? [...filtrosBase.focusedQueries, semanticQuery]
+        : undefined,
+      allowlist: filtrosBase.allowlist,
       filtros: {
         disponible: filtrosBase.disponible ?? true,
         precioMax: intento.topeCop,

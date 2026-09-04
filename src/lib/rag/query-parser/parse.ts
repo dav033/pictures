@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
 import { interpretarConsultaDeterminista, mergeGeminiIntent, type DeterministicParse } from "./deterministic";
 import { IntentQuerySchema, type IntentQuery } from "./schema";
+import { parseEventSearchIntent, interpretarConsultaEvento } from "./event-search";
 
 const JSON_SCHEMA = z.toJSONSchema(IntentQuerySchema, { target: "draft-7" });
 
@@ -57,3 +58,5 @@ export async function interpretarConsulta(mensaje: string): Promise<IntentQuery>
     return local.intent;
   }
 }
+
+export { parseEventSearchIntent, interpretarConsultaEvento };

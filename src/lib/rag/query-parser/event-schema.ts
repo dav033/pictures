@@ -42,6 +42,8 @@
 import { z } from "zod";
 import {
   ComplexityProfileSchema,
+  EventFamilySchema,
+  EventSpaceSchema,
   EventLocationSchema,
   EventScopeSchema,
   RentalPeriodSchema,
@@ -108,6 +110,9 @@ export type RawHardConstraintCandidate = z.infer<typeof RawHardConstraintCandida
 // ---------------------------------------------------------------------------
 
 export const RawEventIntentDraftSchema = z.object({
+  event_label: rawField(z.string().trim().min(1).max(160).nullable()).optional(),
+  event_family: rawField(EventFamilySchema).optional(),
+  original_request: rawField(z.string().max(1_000)).optional(),
   event_scope: rawField(EventScopeSchema).optional(),
   requested_views: rawField(z.array(RequestedViewSchema).min(1)).optional(),
   complexity_requested: rawField(ComplexityProfileSchema).optional(),
@@ -117,6 +122,9 @@ export const RawEventIntentDraftSchema = z.object({
   event_location: rawField(EventLocationSchema).optional(),
   rental_period: rawField(RentalPeriodSchema).optional(),
   venue_environment: rawField(z.enum(["indoor", "outdoor"])).optional(),
+  space: rawField(EventSpaceSchema).optional(),
+  requested_structures: rawField(z.array(z.string().trim().min(1).max(80)).max(24)).optional(),
+  guest_count: rawField(z.number().int().positive().max(100_000)).optional(),
   existing_asset_refs: rawField(z.array(z.string().min(1))).optional(),
   palette: rawField(z.array(z.string().min(1))).optional(),
   style_terms: rawField(z.array(z.string().min(1))).optional(),

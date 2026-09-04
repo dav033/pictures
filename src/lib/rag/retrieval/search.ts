@@ -7,6 +7,9 @@ import type {
   BranchStatus,
   ConsultaRetrieval,
   FiltrosDuros,
+  CatalogAllowlist,
+  EventMatchEvidence,
+  EventSearchIntent,
   RespuestaRetrieval,
   ResultadoRetrieval,
 } from "./types";
@@ -35,6 +38,15 @@ type FilterAliases = { product: string; variant: string };
 const DEFAULT_ALIASES: FilterAliases = { product: "p", variant: "v" };
 
 type FusedEntry = { productId: string; score: number; contributions: RrfContribution[] };
+
+type EventSignalRow = {
+  product_id: string;
+  title: string | null;
+  handle: string | null;
+  description_text: string | null;
+  tags: string[] | null;
+  occasions: string[] | null;
+};
 
 function safeLimit(value: number, fallback: number): number {
   return Number.isInteger(value) && value > 0 && value <= 500 ? value : fallback;
@@ -72,6 +84,52 @@ function textoLexical(semanticQuery: string): string {
   return semanticQuery.split(/[—–]/, 1)[0]?.trim() || semanticQuery.trim();
 }
 
+function foldEventText(value: string): string {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+async function eventEvidenceByProduct(
+  pool: Pool,
+  productIds: string[],
+  event: EventSearchIntent | undefined,
+): Promise<Map<string, EventMatchEvidence>> {
+  if (!event || !productIds.length) return new Map();
+  const { rows } = await pool.query<EventSignalRow>(
+    `SELECT p.product_id, p.title, p.handle, p.description_text,
+            p.tags, p.derived->'occasions' AS occasions
+     FROM catalog_products p
+     WHERE p.product_id = ANY($1::text[])`,
+    [productIds],
+  );
+  const terms = [...new Set([...event.event_terms, ...event.soft_signals.motivos].map((term) => term.trim()).filter(Boolean))];
+  const evidence = new Map<string, EventMatchEvidence>();
+  for (const row of rows) {
+    const text = foldEventText([row.title, row.handle, row.description_text, ...(row.tags ?? [])].filter(Boolean).join(" "));
+    const matchedSignals = terms.filter((term) => text.includes(foldEventText(term)));
+    const occasionHit = (row.occasions ?? []).some((occasion) => event.occasion_filter.includes(occasion));
+    const labelHit = Boolean(event.event_label && text.includes(foldEventText(event.event_label)));
+    const exact = occasionHit || labelHit;
+    const thematic = matchedSignals.length > 0;
+    const match_level = exact ? "exact_event" : thematic ? "thematic" : "adaptable";
+    evidence.set(row.product_id, {
+      match_level,
+      matched_signals: [...new Set([...(occasionHit ? event.occasion_filter : []), ...(labelHit && event.event_label ? [event.event_label] : []), ...matchedSignals])],
+      relaxations: match_level === "adaptable" ? ["evento sin señal verificable en título, descripción o tags"] : [],
+    });
+  }
+  return evidence;
+}
+
+/** Use component/event queries when provided; whole conversational requests
+ * are only fallback for legacy callers. Every query shares the same hard SQL
+ * predicates, so an AI-enriched text cannot loosen customer constraints. */
+function consultasLexicales(consulta: ConsultaRetrieval): string[] {
+  const focused = (consulta.focusedQueries ?? [])
+    .map((query) => textoLexical(query))
+    .filter(Boolean);
+  return [...new Set((focused.length ? focused : [textoLexical(consulta.semanticQuery)]).map((query) => query.trim()).filter(Boolean))].slice(0, 8);
+}
+
 function tieneFiltrosNavegables(filtros: FiltrosDuros | undefined): boolean {
   return Boolean(
     filtros && (
@@ -91,6 +149,7 @@ function construirFiltroDuro(
   filtros: FiltrosDuros | undefined,
   params: unknown[],
   aliases: FilterAliases = DEFAULT_ALIASES,
+  allowlist?: CatalogAllowlist,
 ): string {
   const condiciones: string[] = [`${aliases.product}.status = 'ACTIVE'`];
   const disponible = filtros?.disponible ?? true;
@@ -135,6 +194,24 @@ function construirFiltroDuro(
     params.push(filtros.acabados);
     condiciones.push(`${aliases.product}.derived->'finishes' ?| $${params.length}::text[]`);
   }
+  if (allowlist) {
+    const productIds = [...new Set(allowlist.productIds)];
+    const variantIds = [...new Set(allowlist.variantIds)];
+    if (productIds.length === 0 && variantIds.length === 0) {
+      condiciones.push("FALSE");
+    } else {
+      const permitidas: string[] = [];
+      if (productIds.length) {
+        params.push(productIds);
+        permitidas.push(`${aliases.product}.product_id = ANY($${params.length}::text[])`);
+      }
+      if (variantIds.length) {
+        params.push(variantIds);
+        permitidas.push(`${aliases.variant}.variant_id = ANY($${params.length}::text[])`);
+      }
+      condiciones.push(`(${permitidas.join(" OR ")})`);
+    }
+  }
   return condiciones.length ? `AND ${condiciones.join(" AND ")}` : "";
 }
 
@@ -164,13 +241,14 @@ async function queryExact(
   rawValues: string[],
   canonicalValues: string[],
   filtros: FiltrosDuros | undefined,
+  allowlist?: CatalogAllowlist,
 ): Promise<{ rows: ExactRow[]; anyRows: ExactRow[] }> {
   // Prefer the original representation. A canonical match is a fallback for
   // a query like `20008459`, and must never add sibling variants when the
   // user supplied the unambiguous source value `B2B-20000723`.
   const lookup = async (values: string[], columnSql: string, filter: FiltrosDuros | undefined) => {
     const params: unknown[] = [values];
-    const hardFilter = construirFiltroDuro(filter, params);
+    const hardFilter = construirFiltroDuro(filter, params, DEFAULT_ALIASES, allowlist);
     const { rows } = await pool.query<ExactRow>(
       `
         SELECT v.product_id, v.variant_id, COALESCE(v.sku_ambiguous, false) AS sku_ambiguous
@@ -195,9 +273,9 @@ async function queryExact(
   return { rows, anyRows };
 }
 
-async function queryFullText(pool: Pool, consulta: ConsultaRetrieval): Promise<BranchRow[]> {
-  const params: unknown[] = [textoLexical(consulta.semanticQuery)];
-  const filtro = construirFiltroDuro(consulta.filtros, params);
+async function queryFullTextOne(pool: Pool, query: string, filtros: FiltrosDuros | undefined, allowlist?: CatalogAllowlist): Promise<BranchRow[]> {
+  const params: unknown[] = [query];
+  const filtro = construirFiltroDuro(filtros, params, DEFAULT_ALIASES, allowlist);
   params.push(safeLimit(BRANCH_LIMIT, 40));
   const { rows } = await pool.query<BranchRow>(
     `
@@ -218,9 +296,23 @@ async function queryFullText(pool: Pool, consulta: ConsultaRetrieval): Promise<B
   return rows;
 }
 
-async function queryTrigram(pool: Pool, consulta: ConsultaRetrieval): Promise<BranchRow[]> {
-  const params: unknown[] = [textoLexical(consulta.semanticQuery), TRIGRAM_MIN_SIMILARITY];
-  const filtro = construirFiltroDuro(consulta.filtros, params);
+async function queryFullText(pool: Pool, consulta: ConsultaRetrieval): Promise<BranchRow[]> {
+  const rows = (await Promise.all(consultasLexicales(consulta).map((query) => queryFullTextOne(pool, query, consulta.filtros, consulta.allowlist)))).flat();
+  return mergeFocusedRows(rows);
+}
+
+function mergeFocusedRows(rows: BranchRow[]): BranchRow[] {
+  const best = new Map<string, BranchRow>();
+  for (const row of rows) {
+    const previous = best.get(`${row.product_id}:${row.variant_id}`);
+    if (!previous || Number(row.score) > Number(previous.score)) best.set(`${row.product_id}:${row.variant_id}`, row);
+  }
+  return [...best.values()].sort((left, right) => Number(right.score) - Number(left.score) || left.product_id.localeCompare(right.product_id) || left.variant_id.localeCompare(right.variant_id)).slice(0, safeLimit(BRANCH_LIMIT, 40));
+}
+
+async function queryTrigramOne(pool: Pool, query: string, filtros: FiltrosDuros | undefined, allowlist?: CatalogAllowlist): Promise<BranchRow[]> {
+  const params: unknown[] = [query, TRIGRAM_MIN_SIMILARITY];
+  const filtro = construirFiltroDuro(filtros, params, DEFAULT_ALIASES, allowlist);
   const limit = safeLimit(BRANCH_LIMIT, 40);
   const limitParam = params.length + 1;
   params.push(limit);
@@ -260,10 +352,15 @@ async function queryTrigram(pool: Pool, consulta: ConsultaRetrieval): Promise<Br
   return rows;
 }
 
+async function queryTrigram(pool: Pool, consulta: ConsultaRetrieval): Promise<BranchRow[]> {
+  const rows = (await Promise.all(consultasLexicales(consulta).map((query) => queryTrigramOne(pool, query, consulta.filtros, consulta.allowlist)))).flat();
+  return mergeFocusedRows(rows);
+}
+
 async function queryVector(pool: Pool, consulta: ConsultaRetrieval): Promise<BranchRow[]> {
   const embedding = consulta.embeddingPrecalculado ?? (await embeberTexto(consulta.semanticQuery, "RETRIEVAL_QUERY"));
   const params: unknown[] = [`[${embedding.join(",")}]`];
-  const filtro = construirFiltroDuro(consulta.filtros, params);
+  const filtro = construirFiltroDuro(consulta.filtros, params, DEFAULT_ALIASES, consulta.allowlist);
   params.push(safeLimit(BRANCH_LIMIT, 40));
   const { rows } = await pool.query<BranchRow>(
     `
@@ -285,9 +382,9 @@ async function queryVector(pool: Pool, consulta: ConsultaRetrieval): Promise<Bra
 }
 
 /** Controlled browse fallback for price/facet-only intents; never lists the catalog without a hard facet. */
-async function queryFilterBrowse(pool: Pool, filtros: FiltrosDuros): Promise<BranchRow[]> {
+async function queryFilterBrowse(pool: Pool, filtros: FiltrosDuros, allowlist?: CatalogAllowlist): Promise<BranchRow[]> {
   const params: unknown[] = [];
-  const filtro = construirFiltroDuro(filtros, params);
+  const filtro = construirFiltroDuro(filtros, params, DEFAULT_ALIASES, allowlist);
   params.push(safeLimit(BRANCH_LIMIT, 40));
   const { rows } = await pool.query<BranchRow>(
     `
@@ -342,10 +439,11 @@ async function finalVariantWhitelist(
   pool: Pool,
   rankedProductIds: string[],
   filtros: FiltrosDuros | undefined,
+  allowlist?: CatalogAllowlist,
 ): Promise<Map<string, string[]>> {
   if (!rankedProductIds.length) return new Map();
   const params: unknown[] = [rankedProductIds];
-  const filtro = construirFiltroDuro(filtros, params);
+  const filtro = construirFiltroDuro(filtros, params, DEFAULT_ALIASES, allowlist);
   const { rows } = await pool.query<{ product_id: string; variant_id: string }>(
     `
       SELECT v.product_id, v.variant_id
@@ -386,7 +484,7 @@ export async function buscarHibrido(pool: Pool, consulta: ConsultaRetrieval): Pr
     const canonical = canonicalizeSku(skuText);
     const rawValues = uniqueStrings([skuText]);
     const canonicalValues = canonical ? uniqueStrings([canonical]) : [];
-    const exact = await queryExact(pool, rawValues, canonicalValues, consulta.filtros);
+    const exact = await queryExact(pool, rawValues, canonicalValues, consulta.filtros, consulta.allowlist);
     const identityAmbiguous = exact.anyRows.some((row) => row.sku_ambiguous)
       || new Set(exact.anyRows.map((row) => row.variant_id)).size > 1;
     if (exact.rows.length > 0) {
@@ -458,7 +556,7 @@ export async function buscarHibrido(pool: Pool, consulta: ConsultaRetrieval): Pr
 
   let fused: FusedEntry[] = fusionarRankingsLocal(branches);
   if (!fused.length && tieneFiltrosNavegables(consulta.filtros)) {
-    const browseRows = await queryFilterBrowse(pool, consulta.filtros!);
+    const browseRows = await queryFilterBrowse(pool, consulta.filtros!, consulta.allowlist);
     const browseScores = new Map<string, number>();
     const browseVariants = new Map<string, Set<string>>();
     const browseRanked = addBranchRows(browseRows, browseScores, browseVariants);
@@ -468,13 +566,14 @@ export async function buscarHibrido(pool: Pool, consulta: ConsultaRetrieval): Pr
   if (!fused.length) return { query: consulta, results: [], skuStatus: "not_sku", branchStatus };
 
   const productIds = fused.map((entry) => entry.productId);
-  const whitelist = await finalVariantWhitelist(pool, productIds, consulta.filtros);
+  const whitelist = await finalVariantWhitelist(pool, productIds, consulta.filtros, consulta.allowlist);
   const validFused = fused.filter((entry) => (whitelist.get(entry.productId)?.length ?? 0) > 0);
   if (!validFused.length) return { query: consulta, results: [], skuStatus: "not_sku", branchStatus };
 
   const eligibleProductIds = validFused.map((entry) => entry.productId);
   const eligibleVariantIds = validFused.flatMap((entry) => whitelist.get(entry.productId) ?? []);
   const demand = await demandByProduct(pool, eligibleProductIds, eligibleVariantIds);
+  const eventEvidence = await eventEvidenceByProduct(pool, eligibleProductIds, consulta.eventIntent);
 
   const logDemand = new Map(validFused.map((entry) => [entry.productId, Math.log1p(demand.get(entry.productId) ?? 0)]));
   const maximumDemand = Math.max(...logDemand.values(), 0);
@@ -482,6 +581,14 @@ export async function buscarHibrido(pool: Pool, consulta: ConsultaRetrieval): Pr
   const results = validFused
     .map((entry): ResultadoRetrieval => {
       const demandScore = maximumDemand > 0 ? ((logDemand.get(entry.productId) ?? 0) / maximumDemand) * demandWeight : 0;
+      const evidence = eventEvidence.get(entry.productId);
+      // Tiny additive boost: exact/theme wins ties and nearby generic items can
+      // still complete the composition. Evidence never gates eligibility.
+      const eventScore = evidence?.match_level === "exact_event"
+        ? 0.004
+        : evidence?.match_level === "thematic"
+          ? 0.0015
+          : 0;
       return {
         productId: entry.productId,
         variantIds: whitelist.get(entry.productId) ?? [],
@@ -489,9 +596,13 @@ export async function buscarHibrido(pool: Pool, consulta: ConsultaRetrieval): Pr
         textScore: textScores.get(entry.productId) ?? 0,
         trigramScore: trigramScores.get(entry.productId) ?? 0,
         demandScore,
-        finalScore: entry.score + demandScore,
-        reasons: entry.contributions.map((contribution) => contribution.branch),
+        finalScore: entry.score + demandScore + eventScore,
+        reasons: [
+          ...entry.contributions.map((contribution) => contribution.branch),
+          ...(evidence ? [`event_${evidence.match_level}`] : []),
+        ],
         rrfContributions: entry.contributions,
+        eventEvidence: evidence,
       };
     })
     .sort((left, right) => right.finalScore - left.finalScore || right.demandScore! - left.demandScore! || left.productId.localeCompare(right.productId))

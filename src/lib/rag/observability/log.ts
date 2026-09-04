@@ -1,4 +1,5 @@
 import type { Pool } from "pg";
+import type { ObservabilidadBusqueda, PiezaObservabilidad, ResultadoBusquedaObservabilidad } from "./types";
 
 function metadataAuditable(value: unknown, depth = 0): unknown {
   if (depth > 4 || value == null) return value == null ? null : "[truncated]";
@@ -40,6 +41,7 @@ export async function registrarBusqueda(
     canasta?: unknown;
     utilizacion?: number;
     relajaciones?: unknown;
+    observabilidad?: ObservabilidadBusqueda;
   },
 ): Promise<string | null> {
   try {
@@ -47,8 +49,11 @@ export async function registrarBusqueda(
       `INSERT INTO rag_query_log
          (request_id, tipo, mensaje, intent, retrieved_product_ids, retrieval_scores, status,
           latency_parse_ms, latency_retrieval_ms, latency_total_ms,
-           franja, plan_canasta, canasta, utilizacion, relajaciones)
-        VALUES ($1, 'busqueda', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+           franja, plan_canasta, canasta, utilizacion, relajaciones,
+           event_label, closed_occasion_recognized, component_queries,
+           candidate_counts_by_tier, selected_match_levels, outcome, latency_planning_ms)
+        VALUES ($1, 'busqueda', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
+                $15, $16, $17, $18, $19, $20, $21)
         RETURNING id`,
       [
         datos.requestId,
@@ -65,12 +70,41 @@ export async function registrarBusqueda(
          datos.canasta != null ? JSON.stringify(metadataAuditable(datos.canasta)) : null,
         datos.utilizacion ?? null,
          datos.relajaciones != null ? JSON.stringify(metadataAuditable(datos.relajaciones)) : null,
+        datos.observabilidad?.eventLabel?.slice(0, 240) ?? null,
+        datos.observabilidad?.closedOccasionRecognized ?? null,
+        datos.observabilidad ? JSON.stringify(metadataAuditable(datos.observabilidad.componentQueries)) : null,
+        datos.observabilidad ? JSON.stringify(metadataAuditable(datos.observabilidad.candidateCountsByTier)) : null,
+        datos.observabilidad ? JSON.stringify(metadataAuditable(datos.observabilidad.selectedPieces)) : null,
+        datos.observabilidad?.outcome ?? null,
+        datos.observabilidad?.planningLatencyMs ?? null,
        ],
     );
     return result.rows[0]?.id ?? null;
   } catch (error) {
     console.error("[rag-log] no se pudo registrar búsqueda:", error);
     return null;
+  }
+}
+
+/** Actualiza resultado de búsqueda cuando el turno posterior confirma plan o pide aclaración. */
+export async function actualizarResultadoBusqueda(
+  pool: Pool,
+  requestId: string,
+  outcome: ResultadoBusquedaObservabilidad,
+  planningLatencyMs?: number,
+  selectedPieces?: PiezaObservabilidad[],
+): Promise<void> {
+  try {
+    await pool.query(
+      `UPDATE rag_query_log
+          SET outcome = $2,
+              latency_planning_ms = COALESCE($3, latency_planning_ms),
+              selected_match_levels = COALESCE($4, selected_match_levels)
+        WHERE request_id = $1 AND tipo = 'busqueda'`,
+      [requestId, outcome, planningLatencyMs ?? null, selectedPieces ? JSON.stringify(metadataAuditable(selectedPieces)) : null],
+    );
+  } catch (error) {
+    console.error("[rag-log] no se pudo actualizar resultado de búsqueda:", error);
   }
 }
 

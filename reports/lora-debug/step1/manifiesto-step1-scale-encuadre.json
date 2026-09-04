@@ -1,0 +1,92 @@
+{
+  "experimento": "step1-scale-encuadre",
+  "endpoint": "https://queue.fal.run/fal-ai/flux-2/lora",
+  "defaults": {
+    "seed": 777777,
+    "guidance": 3.5,
+    "ancho": 1536,
+    "alto": 1024,
+    "loraUrl": "https://v3b.fal.media/files/b/0aa80af5/Co4ylzKGOqhReEQpYIQl8_pytorch_lora_weights.safetensors"
+  },
+  "celdas": [
+    {
+      "id": "E2c-3x2-lora08-seed424242",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 0.8,
+      "seed": 424242,
+      "safety": false,
+      "nota": "control: mismo seed que el 1:1 bueno, solo cambia el aspecto",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa80af5/Co4ylzKGOqhReEQpYIQl8_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 424242,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "E2c-1x1-lora08-seed131313",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 0.8,
+      "ancho": 1024,
+      "alto": 1024,
+      "seed": 131313,
+      "safety": false,
+      "nota": "réplica del 1:1 bueno en un tercer seed",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. quinceañera celebration atmosphere, wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa80af5/Co4ylzKGOqhReEQpYIQl8_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1024,
+          "height": 1024
+        },
+        "seed": 131313,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    }
+  ],
+  "resultados": [
+    {
+      "celda": "E2c-3x2-lora08-seed424242",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\step1\\E2c-3x2-lora08-seed424242.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82a1b/IvcwKZbtWzDkFIYPZ6rMG_U2ryTTfW.png",
+      "bytes": 2082542
+    },
+    {
+      "celda": "E2c-1x1-lora08-seed131313",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\step1\\E2c-1x1-lora08-seed131313.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82a1c/VehZ9pofWhe6UDx7XWp0F_nYnncsMf.png",
+      "bytes": 1509755
+    }
+  ],
+  "saldo_antes": 23.375,
+  "saldo_despues": 23.375,
+  "gasto_usd": 0
+}

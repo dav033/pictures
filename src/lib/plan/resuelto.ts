@@ -67,6 +67,11 @@ export type CompraConsolidada = {
 export type PlanResuelto = {
   plan: PlanDecoracion;
   plan_hash: string;
+  /** Open-event traceability kept alongside the resolved plan for UI/audit. */
+  event_label?: string | null;
+  original_request?: string;
+  event_match_levels?: Array<"exact_event" | "thematic" | "adaptable">;
+  event_relaxations?: string[];
   /** Issued only after the server validated the plan; never used as plan data. */
   approval_token?: string;
   request_id?: string;

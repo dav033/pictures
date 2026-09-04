@@ -48,6 +48,56 @@ async function main() {
       `\nZero-results rate: ${zr.sin_resultado}/${zr.total} (${zr.total ? ((zr.sin_resultado / zr.total) * 100).toFixed(1) : "0"}%)`,
     );
 
+    const { rows: openIntent } = await pool.query<{
+      unclassified: number;
+      useful_unclassified: number;
+      classified: number;
+      useful_classified: number;
+      final_no_match: number;
+      before_fallback_no_match: number;
+      relaxed: number;
+      mean_role_coverage: number | null;
+      mean_structure_coverage: number | null;
+    }>(
+      `SELECT
+         COUNT(*) FILTER (WHERE event_label IS NOT NULL AND COALESCE(closed_occasion_recognized, false) = false)::int AS unclassified,
+         COUNT(*) FILTER (WHERE event_label IS NOT NULL AND COALESCE(closed_occasion_recognized, false) = false AND outcome = 'plan_confirmado')::int AS useful_unclassified,
+         COUNT(*) FILTER (WHERE event_label IS NOT NULL AND closed_occasion_recognized = true)::int AS classified,
+         COUNT(*) FILTER (WHERE event_label IS NOT NULL AND closed_occasion_recognized = true AND outcome = 'plan_confirmado')::int AS useful_classified,
+         COUNT(*) FILTER (WHERE status = 'NO_MATCH')::int AS final_no_match,
+         COUNT(*) FILTER (WHERE status = 'NO_MATCH' OR (status <> 'NO_MATCH' AND jsonb_typeof(relajaciones) = 'array' AND jsonb_array_length(relajaciones) > 0))::int AS before_fallback_no_match,
+         COUNT(*) FILTER (WHERE jsonb_typeof(relajaciones) = 'array' AND jsonb_array_length(relajaciones) > 0)::int AS relaxed,
+         AVG(CASE WHEN jsonb_typeof(canasta->'piezas') = 'array' THEN jsonb_array_length(canasta->'piezas') END) AS mean_role_coverage,
+         (SELECT AVG(CASE WHEN jsonb_typeof(geometry) = 'array' THEN jsonb_array_length(geometry) END)
+            FROM plan_audit_log
+           WHERE created_at > now() - ($1 || ' days')::interval
+             AND plan_hash IS NOT NULL) AS mean_structure_coverage
+       FROM rag_query_log
+       WHERE tipo = 'busqueda' AND created_at > now() - ($1 || ' days')::interval`,
+      [dias],
+    );
+    const oi = openIntent[0];
+    console.log("\nIntención abierta:");
+    console.log(`  propuesta útil en eventos no clasificados=${oi.useful_unclassified}/${oi.unclassified} (${oi.unclassified ? ((oi.useful_unclassified / oi.unclassified) * 100).toFixed(1) : "0"}%)`);
+    console.log(`  propuesta útil en eventos clasificados=${oi.useful_classified}/${oi.classified} (${oi.classified ? ((oi.useful_classified / oi.classified) * 100).toFixed(1) : "0"}%)`);
+    console.log(`  delta conversión no clasificados vs clasificados=${conversionDelta(oi.useful_unclassified, oi.unclassified, oi.useful_classified, oi.classified)}`);
+    console.log(`  NO_MATCH final=${oi.final_no_match}; estimado antes de fallback=${oi.before_fallback_no_match}; relajaciones=${oi.relaxed}`);
+    console.log(`  cobertura media de roles/piezas=${formatMetric(oi.mean_role_coverage)}; estructuras=${formatMetric(oi.mean_structure_coverage)}`);
+
+    const { rows: levels } = await pool.query<{ exact_event: number; thematic: number; adaptable: number }>(
+      `SELECT
+         COUNT(*) FILTER (WHERE piece->>'matchLevel' = 'exact_event')::int AS exact_event,
+         COUNT(*) FILTER (WHERE piece->>'matchLevel' = 'thematic')::int AS thematic,
+         COUNT(*) FILTER (WHERE piece->>'matchLevel' = 'adaptable')::int AS adaptable
+       FROM rag_query_log q
+       CROSS JOIN LATERAL jsonb_array_elements(CASE WHEN jsonb_typeof(q.selected_match_levels) = 'array' THEN q.selected_match_levels ELSE '[]'::jsonb END) piece
+       WHERE q.tipo = 'busqueda' AND q.created_at > now() - ($1 || ' days')::interval`,
+      [dias],
+    );
+    const level = levels[0];
+    const levelTotal = Number(level.exact_event ?? 0) + Number(level.thematic ?? 0) + Number(level.adaptable ?? 0);
+    console.log(`  piezas por nivel exacto/temático/adaptable=${share(level.exact_event, levelTotal)} / ${share(level.thematic, levelTotal)} / ${share(level.adaptable, levelTotal)}`);
+
     const { rows: seleccion } = await pool.query<{ total: number; con_rechazo: number; rechazos_whitelist: number }>(
       `SELECT
          COUNT(*)::int AS total,
@@ -131,3 +181,16 @@ main().catch((error) => {
   console.error("[FAIL] métricas fallaron:", error);
   process.exitCode = 1;
 });
+
+function formatMetric(value: number | null): string {
+  return value == null ? "N/A" : Number(value).toFixed(2);
+}
+
+function share(value: number, total: number): string {
+  return `${value}/${total} (${total ? ((value / total) * 100).toFixed(1) : "0"}%)`;
+}
+
+function conversionDelta(unclassifiedUseful: number, unclassifiedTotal: number, classifiedUseful: number, classifiedTotal: number): string {
+  if (!unclassifiedTotal || !classifiedTotal) return "N/A";
+  return `${(((unclassifiedUseful / unclassifiedTotal) - (classifiedUseful / classifiedTotal)) * 100).toFixed(1)} pp`;
+}

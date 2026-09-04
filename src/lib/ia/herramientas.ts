@@ -343,13 +343,15 @@ export const HERRAMIENTAS_PLAN: Herramienta[] = [
         referencia_omitida: {
           type: "array",
           maxItems: 40,
-          description: "Elementos de ANALISIS_REFERENCIA_VISUAL que decides NO incluir en el plan, con el motivo real. Junto con estructuras[].referencia_element_id debe cubrir todos los elementos detectados en la referencia de este turno.",
+          description: "Elementos aprobados de ANALISIS_REFERENCIA_VISUAL que decides NO incluir en el plan. Usa fuera_de_catalogo solo cuando el alcance real de esa categoría sea fuera_de_catalogo; usa emulacion_propuesta para ofrecer una reinterpretación de una categoría emulable y explica propuesta. Junto con estructuras[].referencia_element_id debe cubrir todos los elementos aprobados.",
           items: {
             type: "object",
-            required: ["element_id", "motivo"],
+            required: ["element_id", "motivo", "motivo_tipo"],
             properties: {
               element_id: { type: "string" },
               motivo: { type: "string" },
+              motivo_tipo: { type: "string", enum: ["fuera_de_catalogo", "emulacion_propuesta", "emulacion_rechazada", "decision_de_diseno"] },
+              propuesta: { type: "string", description: "Obligatoria con motivo_tipo emulacion_propuesta; describe qué se construirá en lugar del elemento observado." },
             },
           },
         },

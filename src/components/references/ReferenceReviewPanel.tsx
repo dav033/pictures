@@ -2,6 +2,7 @@
 
 import type { Imagen } from "@/lib/ia/tipos";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
+import { ALCANCE_POR_CATEGORIA_REFERENCIA, type AlcanceReferencia } from "@/lib/rag/taxonomy/alcance-referencia";
 
 export type ReferenceDraft = {
   blueprint: ReferenceBlueprintV2;
@@ -17,11 +18,12 @@ type Props = {
   error: string | null;
 };
 
-function labelMatch(type: "exact" | "closest" | "none"): string {
-  if (type === "exact") return "Coincidencia exacta";
-  if (type === "closest") return "Sustituto más parecido";
-  return "Sin producto equivalente";
-}
+const ALCANCE_LABEL: Record<AlcanceReferencia, string> = {
+  cubierto: "En catálogo",
+  parcial: "Cobertura parcial",
+  emulable: "Emulable con globos",
+  fuera_de_catalogo: "Fuera de catálogo",
+};
 
 export function ReferenceReviewPanel({ references, venue, eventPalette, blueprint, status, error }: Props) {
   if (!references.length) return null;
@@ -44,8 +46,8 @@ export function ReferenceReviewPanel({ references, venue, eventPalette, blueprin
           </p>
           <div className="space-y-2">
             {blueprint.elements.map((element) => {
-              const decision = element.model_decision;
               const observado = element.approved;
+              const alcance = ALCANCE_POR_CATEGORIA_REFERENCIA[element.category];
               return (
                 <article key={element.element_id} className="material-subpanel p-3">
                   <div className="flex items-start justify-between gap-2">
@@ -53,11 +55,11 @@ export function ReferenceReviewPanel({ references, venue, eventPalette, blueprin
                       <h4 className="truncate text-sm font-medium text-texto">{element.name}</h4>
                       <p className="mt-1 text-[11px] text-texto-suave">{element.category}: {observado ? "Detectado" : "Descartado por análisis"}</p>
                     </div>
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] ${observado ? "bg-acento-suave text-acento" : "bg-fondo text-texto-suave"}`}>
-                      {observado ? "Detectado" : "Descartado"}
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] ${alcance.alcance === "fuera_de_catalogo" ? "bg-fondo text-texto-suave" : "bg-acento-suave text-acento"}`}>
+                      {ALCANCE_LABEL[alcance.alcance]}
                     </span>
                   </div>
-                  {decision && <p className="mt-2 text-xs text-texto-suave">{labelMatch(decision.match_type)}: {decision.reason}</p>}
+                  <p className="mt-2 text-xs text-texto-suave">{alcance.nota}</p>
                 </article>
               );
             })}

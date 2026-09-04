@@ -1,5 +1,6 @@
 import "server-only";
 import type { RegistroHerramientas } from "@sempertex/agente-core";
+import type { Pool } from "pg";
 import { cotizar, cotizarPlan, type Cotizacion, type ItemCotizacion } from "@/lib/cotizacion/motor";
 import { buscarDecoraciones } from "@/lib/decoraciones";
 import { calcularMedidas, type Figura, type ResultadoMedidas } from "@/lib/medidas/geometria";
@@ -7,15 +8,19 @@ import { productosPorId } from "@/lib/products";
 import { getRagPool } from "@/lib/rag/db";
 import { buscarCatalogoRag, type ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { buscarCatalogoRagConPresupuesto } from "@/lib/rag/chat/buscar-presupuesto";
+import { extraerFiltrosDurosBusqueda } from "@/lib/rag/query-parser/hard-filters";
+import { parseEventSearchIntent } from "@/lib/rag/query-parser/event-search";
 import { aProductoValidado, validarSeleccion, type ItemRechazado, type ItemValidado, type SeleccionSolicitada } from "@/lib/rag/chat/validar";
 import { RAG_ENABLED, RAG_FRANJAS_ENABLED } from "@/lib/rag/flags";
-import { registrarBusqueda, registrarPlanAudit, registrarSeleccion } from "@/lib/rag/observability/log";
+import { actualizarResultadoBusqueda, registrarBusqueda, registrarPlanAudit, registrarSeleccion } from "@/lib/rag/observability/log";
 import { resolverFranja } from "@/lib/rag/presupuesto/resolver";
 import { resolverVariantesPorDespiece } from "@/lib/rag/tamanos/resolver";
 import { resolverPlan } from "@/lib/plan/resolver";
 import { PlanDecoracionSchema } from "@/lib/plan/tipos";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
-import { extraerRestriccionesUsuario, validarCoberturaReferencia, validarRestriccionesPlan } from "@/lib/plan/restricciones";
+import { extraerRestriccionesUsuario, validarCardinalidadEventoAbierto, validarCoberturaReferencia, validarRestriccionesPlan } from "@/lib/plan/restricciones";
+import { parseEventIntent } from "@/lib/rag/query-parser/parse-event";
+import type { CatalogAllowlist, EventMatchEvidence, EventMatchLevel } from "@/lib/rag/retrieval/types";
 import { crearTokenAprobacion } from "@/lib/plan/aprobacion";
 import { PLAN_DECORACION_ENABLED } from "@/lib/plan/flags";
 import { featureEnabled } from "@/lib/ia/feature-flags";
@@ -96,6 +101,12 @@ export type EstadoConversacion = {
   /** Product -> exact variant whitelist exposed by retrieval in this request. */
   ragVariantIdsRecuperados: Map<string, Set<string>>;
   ragCandidatos?: ProductoCandidato[];
+  /** Event evidence is kept separately so budget retrieval (pool_por_rol) and
+   * regular retrieval share the same plan/UI traceability contract. */
+  ragEventEvidence?: Map<string, EventMatchEvidence>;
+  ragEventRelaxations?: string[];
+  /** Any fallback that loosened a customer hard color in this turn. */
+  ragColorRelaxed?: string[];
   ragValidados?: ItemValidado[];
   ragRechazados?: ItemRechazado[];
   ragTotal?: number;
@@ -112,6 +123,49 @@ export type EstadoConversacion = {
   referenceBlueprint?: ReferenceBlueprintV2;
 };
 
+const EVENT_MATCH_PRIORITY: Record<EventMatchLevel, number> = {
+  adaptable: 0,
+  thematic: 1,
+  exact_event: 2,
+};
+
+function mergeEventEvidence(
+  current: EventMatchEvidence | undefined,
+  next: EventMatchEvidence,
+): EventMatchEvidence {
+  const match_level = !current || EVENT_MATCH_PRIORITY[next.match_level] > EVENT_MATCH_PRIORITY[current.match_level]
+    ? next.match_level
+    : current.match_level;
+  return {
+    match_level,
+    matched_signals: [...new Set([...(current?.matched_signals ?? []), ...next.matched_signals])],
+    relaxations: [...new Set([...(current?.relaxations ?? []), ...next.relaxations])],
+  };
+}
+
+/** Attach the event contract after the real resolver has produced the plan.
+ * Keeping this as a pure boundary makes it testable without an LLM and avoids
+ * losing metadata when the planner is entered through a budget search. */
+export function enriquecerPlanResueltoEvento(
+  resuelto: PlanResuelto,
+  eventIntent: ReturnType<typeof parseEventIntent>,
+  evidenceByProduct: ReadonlyMap<string, EventMatchEvidence>,
+  retrievalRelaxations: readonly string[] = [],
+): PlanResuelto {
+  const selectedProductIds = resuelto.plan.estructuras.flatMap((estructura) => estructura.materiales.map((material) => material.product_id));
+  const selectedEvidence = selectedProductIds
+    .map((productId) => evidenceByProduct.get(productId))
+    .filter((evidence): evidence is EventMatchEvidence => Boolean(evidence));
+  resuelto.event_label = eventIntent.event_label;
+  resuelto.original_request = eventIntent.original_request;
+  resuelto.event_match_levels = [...new Set(selectedEvidence.map((evidence) => evidence.match_level))];
+  resuelto.event_relaxations = [...new Set([
+    ...retrievalRelaxations,
+    ...selectedEvidence.flatMap((evidence) => evidence.relaxations),
+  ])];
+  return resuelto;
+}
+
 export function crearEstadoConversacion(brief: Brief, solicitudOriginal = "", referenceBlueprint?: ReferenceBlueprintV2): EstadoConversacion {
   // The wrapper in ejecutar.ts calls this once per request/turn, so these
   // sets cannot carry a prior conversation's retrieval whitelist.
@@ -124,6 +178,8 @@ export function crearEstadoConversacion(brief: Brief, solicitudOriginal = "", re
     categoriasSugeridas: [],
     ragIdsRecuperados: new Set(),
     ragVariantIdsRecuperados: new Map(),
+    ragEventEvidence: new Map(),
+    ragEventRelaxations: [],
     ragRequestId: crypto.randomUUID(),
     referenceBlueprint,
   };
@@ -146,7 +202,8 @@ export function textoAlAgotarVueltas(estado: EstadoConversacion): string {
 /** Arma el registro de herramientas (nombre → handler) que el motor genérico
  * de @sempertex/agente-core despacha — cada cuerpo es el mismo que tenía el
  * if-chain de ejecutar.ts antes de esta extracción, sin cambios de lógica. */
-export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroHerramientas {
+export function crearRegistroHerramientas(estado: EstadoConversacion, options: { pool?: Pool; catalogAllowlist?: CatalogAllowlist } = {}): RegistroHerramientas {
+  const ragPool = options.pool ?? getRagPool();
   return {
     guardar_brief: async (args) => {
       Object.assign(estado.brief, args);
@@ -271,11 +328,14 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
     },
 
     buscar_catalogo_rag: async (args) => {
-      // The model may provide a richer phrase, but it cannot define customer
-      // constraints. Start retrieval from the original user words so a style
-      // term such as "glamour" cannot silently become a Reflex hard choice.
-      const mensaje = estado.solicitudOriginal || (typeof args.mensaje === "string" ? args.mensaje : "");
-      const pool = getRagPool();
+      // Component text drives lexical/semantic retrieval. Customer constraints
+      // stay locked from original request + brief, so model enrichment cannot
+      // turn a style term such as "glamour" into a hard catalog filter.
+      const mensaje = typeof args.mensaje === "string" ? args.mensaje : "";
+      const solicitudParaFiltros = estado.solicitudOriginal.trim() || mensaje;
+      const filtrosDuros = extraerFiltrosDurosBusqueda(solicitudParaFiltros, estado.brief);
+      const eventIntent = parseEventSearchIntent(solicitudParaFiltros);
+      const pool = ragPool;
       const t0 = Date.now();
 
       // La franja NUNCA la nombra el LLM (§3, Etapa 0): se resuelve aquí, en
@@ -285,8 +345,17 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
       const franjaResuelta = RAG_FRANJAS_ENABLED ? resolverFranja(estado.brief.presupuesto) : null;
 
       if (franjaResuelta) {
-        const respuesta = await buscarCatalogoRagConPresupuesto(pool, mensaje, franjaResuelta.franja, franjaResuelta.cifraCliente);
+        const respuesta = await buscarCatalogoRagConPresupuesto(
+          pool,
+          mensaje,
+          franjaResuelta.franja,
+          franjaResuelta.cifraCliente,
+          { filtrosDuros, eventIntent, focusedQueries: [mensaje], allowlist: options.catalogAllowlist },
+        );
         estado.ragFranja = { slug: franjaResuelta.franja.slug, nombre: franjaResuelta.franja.nombre, techoCop: respuesta.canasta?.techoCop ?? franjaResuelta.franja.minCop };
+        if (respuesta.relajaciones.some((relajacion) => /color/i.test(relajacion))) {
+          estado.ragColorRelaxed = [...new Set([...(estado.ragColorRelaxed ?? []), "colores"])]
+        }
 
         const idsPool = Object.values(respuesta.poolPorRol)
           .flat()
@@ -299,10 +368,14 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
           estado.ragVariantIdsRecuperados.set(item.productId, variantes);
         }
         for (const item of Object.values(respuesta.poolPorRol).flat()) {
+          if (item.eventEvidence) {
+            estado.ragEventEvidence?.set(item.productId, mergeEventEvidence(estado.ragEventEvidence.get(item.productId), item.eventEvidence));
+          }
           const variantes = estado.ragVariantIdsRecuperados.get(item.productId) ?? new Set<string>();
           variantes.add(item.variantId);
           estado.ragVariantIdsRecuperados.set(item.productId, variantes);
         }
+        estado.ragEventRelaxations = [...new Set([...(estado.ragEventRelaxations ?? []), ...respuesta.relajaciones, ...respuesta.conflictos])];
         for (const item of respuesta.canasta?.piezas ?? []) {
           const variantes = estado.ragVariantIdsRecuperados.get(item.productId) ?? new Set<string>();
           variantes.add(item.variantId);
@@ -323,6 +396,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
           canasta: respuesta.canasta,
           utilizacion: respuesta.canasta?.utilizacion,
           relajaciones: [...respuesta.relajaciones, ...respuesta.conflictos],
+          observabilidad: respuesta.observabilidad,
         });
 
         return {
@@ -351,11 +425,28 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
           pool_por_rol: respuesta.poolPorRol,
           relajaciones: respuesta.relajaciones,
           conflictos: respuesta.conflictos,
+          evento: {
+            event_label: eventIntent.event_label,
+            original_request: eventIntent.semantic_query,
+            match_levels: [...new Set(Object.values(respuesta.poolPorRol).flat().map((item) => item.eventEvidence?.match_level).filter((level): level is "exact_event" | "thematic" | "adaptable" => Boolean(level)))],
+            relaxations: respuesta.relajaciones,
+          },
         };
       }
 
-      const respuesta = await buscarCatalogoRag(pool, mensaje);
-      estado.ragCandidatos = respuesta.candidatos;
+      const respuesta = await buscarCatalogoRag(pool, mensaje, { filtrosDuros, eventIntent, focusedQueries: [mensaje], allowlist: options.catalogAllowlist });
+      estado.ragCandidatos = [...new Map(
+        [...(estado.ragCandidatos ?? []), ...respuesta.candidatos].map((candidate) => [candidate.productId, candidate]),
+      ).values()];
+      for (const candidate of respuesta.candidatos) {
+        if (candidate.eventEvidence) {
+          estado.ragEventEvidence?.set(candidate.productId, mergeEventEvidence(estado.ragEventEvidence.get(candidate.productId), candidate.eventEvidence));
+        }
+      }
+      estado.ragEventRelaxations = [...new Set([...(estado.ragEventRelaxations ?? []), ...respuesta.observabilidad.relaxations])];
+      if (respuesta.filtroRelajado === "colores") {
+        estado.ragColorRelaxed = [...new Set([...(estado.ragColorRelaxed ?? []), "colores"])]
+      }
       for (const c of respuesta.candidatos) estado.ragIdsRecuperados.add(c.productId);
       for (const c of respuesta.candidatos) {
         const variantes = estado.ragVariantIdsRecuperados.get(c.productId) ?? new Set<string>();
@@ -375,14 +466,21 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
         retrievalScores: respuesta.scores,
         status: respuesta.status,
         latencyParseMs: respuesta.latencyParseMs,
-        latencyRetrievalMs: respuesta.latencyRetrievalMs,
-        latencyTotalMs: Date.now() - t0,
-      });
+          latencyRetrievalMs: respuesta.latencyRetrievalMs,
+          latencyTotalMs: Date.now() - t0,
+          observabilidad: respuesta.observabilidad,
+        });
 
       return {
         status: respuesta.status,
         sku_status: respuesta.skuStatus,
         filtro_relajado: respuesta.filtroRelajado,
+        evento: {
+          event_label: eventIntent.event_label,
+          original_request: eventIntent.semantic_query,
+          match_levels: [...new Set(respuesta.candidatos.map((c) => c.eventEvidence?.match_level).filter((level): level is "exact_event" | "thematic" | "adaptable" => Boolean(level)))],
+          relaxations: respuesta.observabilidad.relaxations,
+        },
         candidatos: respuesta.candidatos.map((c) => ({
           product_id: c.productId,
           titulo: c.titulo,
@@ -390,6 +488,9 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
           colores: c.colores,
           ocasiones: c.ocasiones,
           disponible: c.disponible,
+          match_level: c.eventEvidence?.match_level,
+          matched_signals: c.eventEvidence?.matched_signals ?? [],
+          relaxations: c.eventEvidence?.relaxations ?? [],
           variantes: c.variantes.map((v) => ({
             variant_id: v.variantId,
             sku: v.sku,
@@ -410,7 +511,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
 
     confirmar_seleccion_rag: async (args) => {
       const seleccionCruda = Array.isArray(args.seleccion) ? args.seleccion : [];
-      const pool = getRagPool();
+      const pool = ragPool;
 
       // Ítems normales (tamaño explícito) pasan tal cual. Ítems
       // "usar_despiece" (plan de tamaños F3, "mezcla de diseñador") se
@@ -485,6 +586,20 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
         status: statusSeleccion,
         latencyTotalMs: Date.now() - t0,
       });
+      await actualizarResultadoBusqueda(
+        pool,
+        estado.ragRequestId,
+        statusSeleccion === "NO_MATCH" ? "NO_MATCH" : "plan_confirmado",
+        undefined,
+        resultado.validados.map((validado) => {
+          const candidato = estado.ragCandidatos?.find((item) => item.productId === validado.productId);
+          return {
+            productId: validado.productId,
+            variantId: validado.variantId,
+            matchLevel: candidato?.eventEvidence?.match_level ?? "adaptable",
+          };
+        }),
+      );
 
       // Chequeo de presupuesto (§3, Etapa 5): la franja no bloquea la
       // confirmación — el LLM puede tener una razón real para excederse (ej.
@@ -521,32 +636,49 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
     },
 
     confirmar_plan_decoracion: async (args) => {
+      // C4: occasion is the customer's open label, not a closed taxonomy
+      // value invented by the model. Keep model wording only when no label
+      // was recoverable from the original request.
+      const eventLabel = parseEventSearchIntent(estado.solicitudOriginal).event_label;
+      const eventIntent = parseEventIntent(estado.solicitudOriginal);
       const parseado = PlanDecoracionSchema.safeParse({
         ...(args as Record<string, unknown>),
+        ...(eventLabel
+          ? { concepto: { ...((args as { concepto?: Record<string, unknown> }).concepto ?? {}), ocasion: eventLabel } }
+          : {}),
         plan_version: "1.0",
         plan_id: crypto.randomUUID(),
         supuestos: [],
         restricciones: estado.restriccionesUsuario,
       });
       if (!parseado.success) {
+        await actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion");
         return { ok: false, errores: parseado.error.issues.map((issue) => `${issue.path.join(".") || "plan"}: ${issue.message}`) };
       }
       const erroresDeIntencion = validarRestriccionesPlan(parseado.data, estado.restriccionesUsuario);
-      if (erroresDeIntencion.length > 0) {
+      const erroresDeCardinalidad = validarCardinalidadEventoAbierto(
+        parseado.data,
+        eventIntent.event_type,
+        estado.solicitudOriginal,
+        estado.ragIdsRecuperados.size > 0,
+      );
+      const erroresDeContrato = [...erroresDeIntencion, ...erroresDeCardinalidad];
+      if (erroresDeContrato.length > 0) {
         estado.planResuelto = undefined;
         estado.seleccionFinalIA = [];
-        await registrarPlanAudit(getRagPool(), {
+        await registrarPlanAudit(ragPool, {
           requestId: estado.ragRequestId,
           solicitudOriginal: estado.solicitudOriginal,
           restricciones: estado.restriccionesUsuario,
           candidateProductIds: [...estado.ragIdsRecuperados],
           status: "RESTRICCIONES_INCONSISTENTES",
-          error: erroresDeIntencion.join(" | "),
+          error: erroresDeContrato.join(" | "),
         });
+        await actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion");
         return {
           ok: false,
           status: "RESTRICCIONES_INCONSISTENTES",
-          errores: erroresDeIntencion,
+          errores: erroresDeContrato,
           accion_requerida: "Corrige la cardinalidad o los colores del plan antes de confirmar; no anuncies ni generes una imagen.",
         };
       }
@@ -560,7 +692,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
       if (elementosSinCubrir.length > 0) {
         estado.planResuelto = undefined;
         estado.seleccionFinalIA = [];
-        await registrarPlanAudit(getRagPool(), {
+        await registrarPlanAudit(ragPool, {
           requestId: estado.ragRequestId,
           solicitudOriginal: estado.solicitudOriginal,
           restricciones: estado.restriccionesUsuario,
@@ -568,6 +700,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
           status: "COBERTURA_REFERENCIA_INCOMPLETA",
           error: elementosSinCubrir.join(" | "),
         });
+        await actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion");
         return {
           ok: false,
           status: "COBERTURA_REFERENCIA_INCOMPLETA",
@@ -578,7 +711,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
       if (featureEnabled("SCENE_PLAN_V2_SHADOW") && estado.solicitudOriginal.trim()) {
         let shadow: Awaited<ReturnType<typeof sceneShadowPipeline>>;
         try {
-          shadow = await sceneShadowPipeline(estado.solicitudOriginal, getRagPool(), parseado.data.estructuras.length);
+          shadow = await sceneShadowPipeline(estado.solicitudOriginal, ragPool, parseado.data.estructuras.length);
         } catch (error) {
           shadow = {
             v1_exists: parseado.data.estructuras.length > 0,
@@ -591,7 +724,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
             error: error instanceof Error ? error.message : String(error),
           };
         }
-        await registrarPlanAudit(getRagPool(), {
+        await registrarPlanAudit(ragPool, {
           requestId: estado.ragRequestId,
           solicitudOriginal: estado.solicitudOriginal,
           geometry: shadow,
@@ -600,11 +733,12 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
           flagSnapshot: { scenePlanV2Shadow: true },
         });
       }
-      const resuelto = await resolverPlan(getRagPool(), parseado.data, estado.ragVariantIdsRecuperados);
+      const planningStart = Date.now();
+      const resuelto = await resolverPlan(ragPool, parseado.data, estado.ragVariantIdsRecuperados);
       const materialEstimate = estimateFromPlan(resuelto);
       const estimateValidation = validateMaterialEstimate(materialEstimate);
       const physicalWarnings = blockingPhysicalWarnings(materialEstimate);
-      const auditarResuelto = async (status: string, error?: string) => registrarPlanAudit(getRagPool(), {
+      const auditarResuelto = async (status: string, error?: string) => registrarPlanAudit(ragPool, {
         requestId: estado.ragRequestId,
         planHash: resuelto.plan_hash,
         solicitudOriginal: estado.solicitudOriginal,
@@ -626,6 +760,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
         estado.seleccionFinalIA = [];
         const error = [...estimateValidation.errors, ...physicalWarnings].join(" | ");
         await auditarResuelto("ESTIMACION_INCONSISTENTE", error);
+        await actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion", Date.now() - planningStart);
         return {
           ok: false,
           status: "ESTIMACION_INCONSISTENTE",
@@ -637,6 +772,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
         estado.planResuelto = undefined;
         estado.seleccionFinalIA = [];
         await auditarResuelto("SIN_COBERTURA", resuelto.sin_cobertura.map((item) => `${item.estructura_id}:${item.tamano}`).join(" | "));
+        await actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion", Date.now() - planningStart);
         return {
           ok: false,
           status: "SIN_COBERTURA",
@@ -649,6 +785,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
         estado.planResuelto = undefined;
         estado.seleccionFinalIA = [];
         await auditarResuelto("PRESUPUESTO_EXCEDIDO");
+        await actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion", Date.now() - planningStart);
         return {
           ok: false,
           status: "PRESUPUESTO_EXCEDIDO",
@@ -660,6 +797,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
         };
       }
       resuelto.request_id = estado.ragRequestId;
+      enriquecerPlanResueltoEvento(resuelto, eventIntent, estado.ragEventEvidence ?? new Map(), estado.ragEventRelaxations ?? []);
       resuelto.approval_token = crearTokenAprobacion(resuelto.plan_hash, estado.ragRequestId);
       estado.planResuelto = resuelto;
       estado.cotizacion = cotizarPlan(resuelto);
@@ -668,9 +806,16 @@ export function crearRegistroHerramientas(estado: EstadoConversacion): RegistroH
       estado.seleccionFinalIA = [];
       const estadoAuditoria = resuelto.comercial.estado === "APROBACION_REQUERIDA" ? "APROBACION_REQUERIDA" : "VERIFICADO";
       await auditarResuelto(estadoAuditoria);
+      await actualizarResultadoBusqueda(ragPool, estado.ragRequestId, resuelto.estructuras.length ? "plan_confirmado" : "NO_MATCH", Date.now() - planningStart);
       return {
         ok: true,
-         status: resuelto.estructuras.length ? estadoAuditoria : "NO_MATCH",
+        status: resuelto.estructuras.length ? estadoAuditoria : "NO_MATCH",
+        evento: {
+          event_label: resuelto.event_label,
+          original_request: resuelto.original_request,
+          match_levels: resuelto.event_match_levels ?? [],
+          relaxations: resuelto.event_relaxations ?? [],
+        },
         plan_id: resuelto.plan.plan_id,
         plan_hash: resuelto.plan_hash,
         estructuras: resuelto.estructuras.map((estructura) => ({

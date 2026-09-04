@@ -1,4 +1,5 @@
 import type { RolPresupuesto } from "../presupuesto/franjas";
+import type { EventMatchEvidence } from "./types";
 
 /** Candidato con los datos reales del catálogo ya resueltos — lo que el
  * rerank y el ensamblaje necesitan, a diferencia de `ResultadoRetrieval`
@@ -20,6 +21,8 @@ export type CandidatoDetallado = {
   /** `finalScore` de la fusión RRF (retrieval/search.ts) — `Infinity` en un
    * match exacto de SKU. */
   rankRrf: number;
+  /** Open-event evidence; additive ranking signal, never eligibility gate. */
+  eventEvidence?: EventMatchEvidence;
 };
 
 export type CandidatoPuntuado = CandidatoDetallado & {
@@ -44,6 +47,8 @@ const PESO_RANK = 1.0;
 const PESO_AJUSTE_PRECIO = 0.5;
 const PESO_COLOR = 0.35;
 const PESO_OCASION = 0.2;
+const PESO_EVENT_EXACT = 0.12;
+const PESO_EVENT_THEMATIC = 0.06;
 const PESO_COMPLETITUD = 0.15;
 const PESO_INVENTARIO_SANO = 0.1;
 
@@ -110,6 +115,14 @@ export function puntuarYOrdenar(candidatos: CandidatoDetallado[], contexto: Cont
         score += PESO_OCASION;
         porque.push("coincide con la ocasión pedida");
       }
+    }
+
+    if (c.eventEvidence?.match_level === "exact_event") {
+      score += PESO_EVENT_EXACT;
+      porque.push("coincide con el evento en datos textuales o etiqueta cerrada");
+    } else if (c.eventEvidence?.match_level === "thematic") {
+      score += PESO_EVENT_THEMATIC;
+      porque.push("coincide temáticamente con el evento");
     }
 
     if (contexto.acabadosPedidos?.length && c.acabados.some((acabado) => contexto.acabadosPedidos!.includes(acabado))) {

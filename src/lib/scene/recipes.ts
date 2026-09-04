@@ -24,6 +24,11 @@ import {
   type SceneRecipeDefinition,
 } from "./recipes/wedding-ceremony-garden.v1";
 import {
+  GENERIC_INDOOR_EVENT_V1,
+  GENERIC_OUTDOOR_EVENT_V1,
+  genericRecipeForEnvironment,
+} from "./recipes/generic-event.v1";
+import {
   SceneProgramV1Schema,
   type ComplexityProfile,
   type EventIntentV2,
@@ -118,7 +123,19 @@ export const PROFILE_COVERAGE_CONDITIONS: Record<ComplexityProfile, ProfileCover
 
 const SCENE_RECIPE_REGISTRY: Record<string, SceneRecipeDefinition> = {
   [`${WEDDING_CEREMONY_GARDEN_V1.id}@${WEDDING_CEREMONY_GARDEN_V1.version}`]: WEDDING_CEREMONY_GARDEN_V1,
+  [`${GENERIC_INDOOR_EVENT_V1.id}@${GENERIC_INDOOR_EVENT_V1.version}`]: GENERIC_INDOOR_EVENT_V1,
+  [`${GENERIC_OUTDOOR_EVENT_V1.id}@${GENERIC_OUTDOOR_EVENT_V1.version}`]: GENERIC_OUTDOOR_EVENT_V1,
 };
+
+/** Selects recipe from space, while preserving wedding recipe only for weddings. */
+export function selectSceneRecipeId(intent: EventIntentV2): string {
+  if (intent.event_family === "wedding" || (intent.event_family === undefined && intent.event_type === "wedding")) {
+    return `${WEDDING_CEREMONY_GARDEN_V1.id}@${WEDDING_CEREMONY_GARDEN_V1.version}`;
+  }
+  const environment = intent.venue.environment ?? "indoor";
+  const recipe = genericRecipeForEnvironment(environment);
+  return `${recipe.id}@${recipe.version}`;
+}
 
 export function findSceneRecipe(recipeId: string): SceneRecipeDefinition {
   const recipe = SCENE_RECIPE_REGISTRY[recipeId];
@@ -193,6 +210,18 @@ export function expandIntentToProgram(intent: EventIntentV2, recipeId: string): 
     recipe_id: recipe.id,
     recipe_version: recipe.version,
     intent_hash: computeIntentHash(intent),
+    event_label: intent.event_label,
+    event_family: intent.event_family,
+    original_request: intent.original_request,
+    recipe_label: recipe.label,
+    composition_basis: {
+      space: intent.space,
+      requested_views: intent.requested_views,
+      complexity: intent.complexity_requested,
+      budget_cop: intent.budget_cop,
+      requested_structures: intent.requested_structures ?? [],
+      guest_count: intent.guest_count,
+    },
     views,
     slots,
   };

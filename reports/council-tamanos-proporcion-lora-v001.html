@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>LLM Council — Tamaños/Proporción del LoRA Sempertex</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-soft: #f7f7f8;
+    --border: #e4e4e7;
+    --text: #18181b;
+    --text-soft: #52525b;
+    --accent: #7c3aed;
+    --accent-soft: #f3eefe;
+    --green: #16a34a;
+    --green-soft: #f0fdf4;
+    --amber: #d97706;
+    --amber-soft: #fffbeb;
+    --red: #dc2626;
+    --red-soft: #fef2f2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg-soft);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 40px 20px 80px; }
+  header { margin-bottom: 32px; }
+  .kicker { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+  h1 { font-size: 26px; margin: 0 0 12px; line-height: 1.3; }
+  .question-box {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 20px; font-size: 14.5px; color: var(--text-soft); white-space: pre-wrap;
+  }
+  .card {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 14px;
+    padding: 24px 26px; margin-bottom: 20px;
+  }
+  .card h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); margin: 0 0 14px; }
+  .card p { margin: 0 0 12px; font-size: 15px; }
+  .card p:last-child { margin-bottom: 0; }
+  .verdict-card { border: 2px solid var(--accent); background: var(--accent-soft); }
+  .verdict-card h2 { color: var(--accent); font-size: 17px; }
+  .verdict-card .headline { font-size: 16px; font-weight: 600; margin-bottom: 10px; }
+  .agree { border-left: 4px solid var(--green); }
+  .agree h2 { color: var(--green); }
+  .clash { border-left: 4px solid var(--amber); }
+  .clash h2 { color: var(--amber); }
+  .blindspot { border-left: 4px solid var(--red); }
+  .blindspot h2 { color: var(--red); }
+  .next-step {
+    background: var(--text); color: #fff; border-radius: 14px; padding: 22px 26px; margin-bottom: 28px;
+  }
+  .next-step .kicker2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #d4d4d8; margin-bottom: 8px; }
+  .next-step p { margin: 0; font-size: 16px; font-weight: 500; }
+
+  .spectrum {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 18px 0 28px;
+  }
+  .advisor-chip {
+    border-radius: 12px; padding: 14px 10px; text-align: center; font-size: 12.5px; font-weight: 600;
+    border: 1px solid var(--border); background: var(--bg-soft);
+  }
+  .advisor-chip .name { display: block; margin-bottom: 6px; font-size: 13px; }
+  .advisor-chip .tag { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .tag-strong { background: var(--green-soft); color: var(--green); }
+  .tag-blind { background: var(--red-soft); color: var(--red); }
+  .tag-neutral { background: var(--bg); color: var(--text-soft); border: 1px solid var(--border); }
+
+  details { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+  summary {
+    cursor: pointer; padding: 14px 18px; font-weight: 600; font-size: 14.5px;
+    list-style: none; display: flex; justify-content: space-between; align-items: center;
+  }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; font-size: 18px; color: var(--text-soft); font-weight: 400; }
+  details[open] summary::after { content: "–"; }
+  .details-body { padding: 0 18px 18px; font-size: 14.5px; color: var(--text-soft); white-space: pre-wrap; }
+  .example-box {
+    background: var(--bg-soft); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin: 6px 0 14px;
+    font-size: 13px; color: var(--text-soft); white-space: pre-wrap;
+  }
+  .section-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-soft); margin: 24px 0 10px; font-weight: 700; }
+  footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--text-soft); }
+
+  @media (max-width: 640px) {
+    .spectrum { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">LLM Council · Sempertex LoRA</div>
+    <h1>¿El captioning de tamaños/proporción del dataset es suficiente para entrenar?</h1>
+    <div class="question-box">Dataset de 401 fotos reales para un LoRA de estilo de decoración con globos (fal.ai/FLUX). La parte crítica del proyecto: que el modelo respete bien los TAMAÑOS/PROPORCIONES de globo. Se entrena proporción relativa (no medida absoluta) vía texto en el caption, usando tamaños reales confirmados por cada pedido. Una auditoría automática cruzó cada mención de tamaño en los 401 captions contra el desglose.json real de la orden: 0 tamaños inventados. ¿Es esto evidencia suficiente para dar luz verde al entrenamiento?</div>
+  </header>
+
+  <div class="card verdict-card">
+    <h2>Veredicto del presidente del consejo</h2>
+    <div class="headline">El pipeline no está listo para entrenar a ciegas — la auditoría 0/401 es higiene de datos, no evidencia de calidad geométrica.</div>
+    <p>Consenso unánime de los 5 revisores: la auditoría solo prueba texto-contra-texto (¿el número citado existe en el pedido?), nunca texto-contra-imagen (¿ese número está pegado al globo correcto, en la posición y proporción correctas?). Falta cerrar ese eslabón con ojos humanos midiendo contra la foto real.</p>
+  </div>
+
+  <div class="next-step">
+    <div class="kicker2">Lo primero que hay que hacer</div>
+    <p>Tomar una muestra aleatoria de 25–30 fotos con proporcion_relativa_presente=true y que una persona mida en pantalla (herramienta de medición de píxeles, no "a ojo") si la proporción del caption corresponde a la proporción real de la imagen — definiendo el umbral de aciertos aceptable ANTES de ver los resultados.</p>
+  </div>
+
+  <div class="section-label">Dónde se paró cada asesor</div>
+  <div class="spectrum">
+    <div class="advisor-chip"><span class="name">Contrarian</span><span class="tag tag-neutral">Riesgo arquitectónico</span></div>
+    <div class="advisor-chip"><span class="name">First Principles</span><span class="tag tag-strong">Más fuerte (5/5)</span></div>
+    <div class="advisor-chip"><span class="name">Expansionist</span><span class="tag tag-blind">Punto ciego (5/5)</span></div>
+    <div class="advisor-chip"><span class="name">Outsider</span><span class="tag tag-neutral">Confirma el hueco</span></div>
+    <div class="advisor-chip"><span class="name">Executor</span><span class="tag tag-neutral">Plan de acción</span></div>
+  </div>
+
+  <div class="card agree">
+    <h2>Dónde coincide el consejo</h2>
+    <p>La auditoría de 0/401 no prueba lo que el equipo cree que prueba. Es un chequeo de consistencia texto-contra-texto, no texto-contra-imagen. Cuatro de cinco asesores (Contrarian, First Principles, Outsider, Executor) llegan de forma independiente a la misma conclusión práctica: falta verificación humana que mire la foto real y compare la proporción descrita contra lo que se ve en píxeles.</p>
+    <p>Los cinco revisores, sin excepción, señalan a <strong>First Principles</strong> como la respuesta más fuerte: formaliza por qué el audit es "necesariamente cierto por construcción" — el modelo de visión solo tiene los códigos del pedido disponibles para citar, así que jamás va a "alucinar" uno que no esté ahí. Eso no es evidencia de precisión, es una restricción del espacio de respuestas.</p>
+  </div>
+
+  <div class="card clash">
+    <h2>Dónde choca el consejo</h2>
+    <p><strong>¿Problema de datos o de arquitectura?</strong> El Contrarian sostiene que los encoders de texto de modelos de difusión tienen una debilidad documentada para aritmética/relaciones numéricas — con probablemente menos de 140 fotos con proporción marcada, no hay suficiente repetición para aprender una regla generalizable, no importa qué tan limpios estén los datos. Los demás tratan el problema como solucionable con mejor QA; el Contrarian sugiere que podría ser una apuesta arquitectónica perdida de antemano.</p>
+    <p><strong>¿Vale la pena pivotar a monetización ahora?</strong> El Expansionist da por sentado que el pipeline es confiable y salta a "qué más se puede construir con este dataset" (estimador de presupuesto, QA automatizado, tabla de ratios canónicos). No es irrazonable a mediano plazo, pero es prematuro frente a la pregunta real: ¿esto funciona antes de gastar presupuesto de entrenamiento?</p>
+  </div>
+
+  <div class="card blindspot">
+    <h2>Puntos ciegos que solo salieron en la revisión cruzada</h2>
+    <p><strong>1. El auditor podría compartir el sesgo del generador.</strong> Tanto el captioner como una eventual verificación por otro modelo de visión son, en esencia, el mismo tipo de sistema — un sesgo de percepción (perspectiva, profundidad de campo) podría colarse en ambas etapas sin que nadie lo note. Solo una medición humana real con regla en pantalla rompe ese círculo.</p>
+    <p><strong>2. Nadie puso número al costo.</strong> Todos proponen auditoría humana de 25-50 fotos, pero ninguno estimó cuánto cuesta eso frente al presupuesto de entrenamiento que se busca proteger, ni el costo de NO validar y descubrir el fallo después de entrenar.</p>
+    <p><strong>3. Nadie definió un umbral de éxito.</strong> Si de 30 fotos auditadas 25 aciertan, ¿es luz verde? ¿27? Sin un criterio numérico definido de antemano, la auditoría humana corre el riesgo de ser tan ambigua como la automática.</p>
+    <p><strong>4. ¿401 fotos totales alcanza para un LoRA?</strong> Nadie cuestionó el tamaño absoluto del dataset, solo su composición interna.</p>
+    <p><strong>5. La señal a entrenar en sí podría estar mal elegida.</strong> Un revisor señala que "proporción relativa en texto" es más ambigua para el encoder que anotar diámetro absoluto por tipo de globo — desafiando la decisión de arquitectura que la pregunta daba por cerrada.</p>
+    <p><strong>6. proporcion_relativa_presente podría tener falsos negativos</strong> que ni el audit automático ni una muestra humana centrada solo en los casos marcados true capturarían.</p>
+  </div>
+
+  <div class="section-label">Respuestas completas de cada asesor</div>
+
+  <details>
+    <summary>The Contrarian — "le están pidiendo a un CLIP text encoder que haga aritmética"</summary>
+    <div class="details-body">Voy directo al punto débil que nadie está mirando: el problema no es la calidad del dato, es que le están pidiendo a un CLIP text encoder que haga aritmética.
+
+Los modelos de difusión (FLUX incluido) tienen una debilidad documentada y bien conocida para conteo, medida y relaciones numéricas — no es un problema de "falta de datos", es una limitación arquitectónica del encoder de texto. Frases como "roughly double the diameter of" no se codifican como una relación matemática; se codifican como bag-of-tokens asociados difusamente a las regiones de la imagen. Con 401 fotos totales y probablemente menos de 140 con proporcion_relativa_presente=true, jamás vas a acumular suficiente repetición de un patrón textual específico para que el LoRA aprenda ese patrón como señal generalizable — vas a memorizar 100 casos aislados, no una regla.
+
+Segundo punto ciego, más grave: el audit de 0/401 no prueba nada sobre lo que están intentando validar. Prueba higiene de datos (que el número mencionado exista en el pedido), no prueba que el balloon correcto en la foto tenga la etiqueta correcta. GPT-vision pudo perfectamente haber atado "R-12" al globo equivocado dentro del cuadro y el script jamás lo detecta porque solo cruza texto contra texto, nunca contra la imagen. Necesitan una muestra humana revisando visualmente "¿el globo que el caption llama más grande es efectivamente el más grande en la foto?" — eso ningún script de texto lo cubre.
+
+Tercero: formato mixto "18 in" vs "R-12" vs "R-9" fragmenta el tokenizer en subpalabras inconsistentes — reduce aún más la frecuencia efectiva de cualquier patrón aprendible.
+
+Antes de invertir más en el pipeline: generen 20 imágenes con el LoRA actual y midan proporciones a ojo. Si no lo han hecho, están validando la cocina, no el plato.</div>
+  </details>
+
+  <details>
+    <summary>The First Principles Thinker — "tres etapas con fugas de error acumuladas"</summary>
+    <div class="details-body">Este es un problema de atribución causal en un sistema de tres etapas con fugas de error acumuladas, y la pregunta correcta no es "¿el captioning funciona?" sino "¿en qué etapa se pierde la señal geométrica, y puede el texto siquiera detectarlo?"
+
+Redefino el problema real: hay tres transformaciones independientes, cada una con su propia tasa de error, y el LoRA solo puede aprender lo que sobrevive las tres:
+
+1. Pedido → foto: ¿el globo R-12 que compraron es el mismo objeto físico que aparece en la imagen, en la posición y escala que el caption describe? Nadie lo verificó. Un R-12 puede estar desinflado, parcialmente oculto, o fuera de cuadro mientras otro R-9 domina visualmente.
+2. Foto → descripción de proporción: el modelo de visión "mira" la foto y decide qué es más grande que qué. Esto es juicio visual de un LLM, no medición. Puede estar sistemáticamente sesgado (perspectiva, profundidad de campo, globos parcialmente inflados que parecen más chicos de lo que su código indica).
+3. Descripción de texto → geometría aprendida por el LoRA: un modelo de difusión no tiene garantía de traducir "roughly double the diameter" en píxeles consistentes. Eso es exactamente la apuesta de arquitectura que ya tomaron, y es razonable, pero no está validada todavía — solo está planteada.
+
+La auditoría de 0/401 tamaños inventados no toca ninguna de estas tres etapas. Es un chequeo de consistencia sintáctica texto-vs-pedido: confirma que no mintieron sobre qué códigos existían en la orden. Eso es necesariamente cierto por construcción (el modelo de visión solo tiene esos códigos disponibles para citar) — no es evidencia de que la comparación de tamaño sea visualmente correcta, solo de que es lexicalmente admisible. Es una prueba de que no alucinaron, no una prueba de que acertaron.
+
+Lo que falta y ningún script de texto puede darles: una auditoría humana de una muestra (30-50 fotos) donde alguien mida a ojo la proporción real en la imagen y la compare contra la "proporcion_relativa_descripcion" generada. Sin eso, están midiendo la honestidad del pipeline, no su precisión.</div>
+  </details>
+
+  <details>
+    <summary>The Expansionist — "esto no es solo ¿va a funcionar?, es ¿qué tan grande puede ser esto?"</summary>
+    <div class="details-body">Como Expansionista, esto no es solo "¿va a funcionar?" — es "¿qué tan grande puede ser esto?".
+
+El pipeline ya construyó un activo mucho más valioso que el LoRA. Tienen 401 fotos con desglose.json auditado que las cruza contra pedidos reales de Shopify. Eso es un dataset de ground truth precio-producto-proporción-visual que casi ninguna empresa de decoración tiene. El LoRA de estilo es apenas el primer producto que se le puede sacar. Con esos mismos datos podrían entrenar: (1) un estimador automático de presupuesto a partir de foto de referencia del cliente, (2) un clasificador de "materiales visibles vs. comprados" que audite fotos de instalación de franquiciados/distribuidores, (3) un motor de recomendación de mezcla de tamaños por tipo de evento.
+
+La proporción relativa es más poderosa de lo que están usando. Ahora mismo capturan "R-24 es el doble de R-12" como texto libre en un caption. Pero si tienen 401 órdenes con desglose completo, ya tienen suficiente señal para derivar una tabla de ratios canónicos por combinación de formas (R vs LOL vs foil vs T-twisting) — eso es un dataset estructurado independiente del LoRA, reutilizable para validar generaciones futuras automáticamente sin ojo humano.
+
+Sobre la auditoría del 0/401: no la subestimen, pero tampoco se detengan ahí — esa auditoría solo prueba que no hay alucinación de tamaño no confirmado. La oportunidad más grande es convertir esa misma infraestructura de auditoría en un verificador automático post-entrenamiento: generar N imágenes con el LoRA, correr el mismo cruce contra un desglose objetivo, y tener una métrica cuantitativa de fidelidad de proporción por lote — no solo para el training set, sino como QA continuo de producción. Eso es un producto en sí mismo, no un subproducto.</div>
+  </details>
+
+  <details>
+    <summary>The Outsider — "no tengo idea de qué es un R-12 hasta que lo veo definido"</summary>
+    <div class="details-body">No tengo idea de qué es un R-12, un LOL-6 o un T260 hasta que lo veo definido en el segundo párrafo de un mensaje de ustedes. Ese es exactamente el punto ciego que quiero marcarles: si algo tan básico como el sistema de nomenclatura no es evidente para alguien de afuera, tampoco lo es para el modelo de visión que está generando las descripciones de proporción.
+
+Miren el pipeline: el paso crítico es "el modelo de visión mira la foto Y la lista completa de materiales, y decide qué tamaños se ven de verdad." Eso no es visión pura — es visión guiada por una lista. Un modelo de lenguaje con acceso a la respuesta (el desglose real) tiene un incentivo estructural fortísimo a copiar los números del pedido en vez de estimarlos genuinamente por percepción visual. El Ejemplo 4 confirma que esto puede fallar en la dirección honesta ("size no confirmed") — pero eso no prueba que en los otros 400 casos el modelo esté viendo la proporción y no citando la lista de compra. La auditoría del 0/401 mide alucinación léxica (¿mencionó un tamaño que no está en la orden?), no exactitud perceptual (¿la proporción descrita coincide con lo que realmente se ve en píxeles?). Son dos cosas completamente distintas y el pipeline solo audita la primera.
+
+Otra cosa que salta a la vista sin contexto: en el Ejemplo 2, "27-inch metallic flower... larger than 18-inch foil" — comparan formas distintas (flor vs. redondo). ¿El LoRA va a aprender "27 > 18 en general" o "flor > foil específicamente"? Nadie de afuera puede saber si esa generalización cruzada de forma es intencional o un efecto colateral no examinado.
+
+Mi pregunta directa: ¿alguien comparó manualmente una muestra de las proporciones descritas contra medición real en la foto (regla, píxeles, lo que sea), o toda la validación de calidad vive dentro del texto mismo, nunca contra la imagen?</div>
+  </details>
+
+  <details>
+    <summary>The Executor — "eso no es luz verde, es media luz"</summary>
+    <div class="details-body">No hay dataset. Hay 401 captions con auditoría de un solo tipo de error (tamaños inventados), y con eso se quiere decidir si se entrena. Eso no es luz verde, es media luz.
+
+La auditoría automática solo prueba que el pipeline no alucina números que no estén en el desglose.json. No prueba tres cosas que sí importan para "el modelo respeta proporciones":
+
+1. ¿El modelo de visión ve bien lo que compara? GPT-vision puede confirmar que R-12 y R-5 están en el pedido, pero eso no garantiza que en la foto real el objeto que llamó "R-12" sea efectivamente el más grande. Si el pedido tiene R-12 y R-9 pero en la foto el R-9 quedó al frente (más cerca de cámara, se ve más grande por perspectiva), el caption puede describir la proporción correcta según el pedido pero incorrecta según lo que el modelo de imagen va a aprender a asociar visualmente. Eso el audit de texto-contra-pedido NUNCA lo detecta, porque no mira la imagen.
+2. Sesgo de posición/oclusión: si "the R-24 are roughly double the R-12" pero en el crop el R-24 está parcialmente cortado o detrás de un pedestal, el LoRA aprende una asociación texto-imagen ruidosa.
+3. Balance de la muestra: ¿cuántas de las 401 fotos tienen proporcion_relativa_presente=true? Si son 40 de 401, el LoRA no tiene señal suficiente para aprender la relación tamaño-proporción de forma consistente, sin importar qué tan limpio esté el texto.
+
+Qué hacer esta semana, concreto:
+— Tomar una muestra aleatoria de 25-30 fotos con proporcion_relativa_presente=true, y que un humano (no un LLM) mida a ojo/con regla en pantalla si la proporción descrita en el texto coincide con lo que se ve en píxeles. Es un check manual de 2-3 horas, no un experimento.
+— Contar cuántas fotos tienen esa bandera activa. Si es menos del 15-20% del dataset, ese es el verdadero bloqueante, no la auditoría de texto.
+— Antes de gastar presupuesto de entrenamiento completo, correr un LoRA de prueba chico (bajo rank, pocos steps) solo con el subset de proporción confirmada, y generar 10-15 imágenes con prompts de proporción explícita para inspección visual humana.
+
+La auditoría de texto es necesaria pero no suficiente. Sin el check visual humano y sin saber el tamaño real del subset con proporción, no hay base para dar luz verde.</div>
+  </details>
+
+  <div class="section-label">Revisión por pares</div>
+  <details>
+    <summary>Los 5 revisores, en su propia voz (cada uno vio las 5 respuestas anonimizadas)</summary>
+    <div class="details-body"><strong>Reviewer 1 (lente Contrarian):</strong> Más fuerte: First Principles — formaliza mejor el problema de tres etapas y por qué el audit 0/401 es "necesariamente cierto por construcción". Mayor punto ciego: Expansionist — cambia de tema hacia oportunidades de negocio sin cuestionar si el pipeline es sólido, único que no propone verificación visual humana. Omitido por todos: si el propio auditor de visión podría compartir sesgos sistemáticos con el generador de captions.
+
+<strong>Reviewer 2 (lente First Principles):</strong> Más fuerte: First Principles. Mayor punto ciego: Expansionist. Omitido por todos: el costo real de la verificación humana propuesta vs. el presupuesto de entrenamiento en juego, y si "proporcion_relativa_presente" podría tener falsos negativos.
+
+<strong>Reviewer 3 (lente Expansionist):</strong> Más fuerte: First Principles — el marco más generalizable y accionable. Mayor punto ciego: Expansionist — la única que no cuestiona la validez de la auditoría de fondo. Omitido por todos: si 401 fotos alcanza como tamaño de dataset, y la falta de un umbral de aceptación numérico definido de antemano.
+
+<strong>Reviewer 4 (lente Outsider):</strong> Más fuerte: First Principles. Mayor punto ciego: Expansionist — su "verificador automático post-entrenamiento" sigue siendo texto-contra-pedido. Omitido por todos: cuantificar costo/tiempo real de la auditoría humana, y si el pipeline podría auto-reportar confianza perceptual (bounding boxes) en vez de depender solo de revisión humana.
+
+<strong>Reviewer 5 (lente Executor):</strong> Más fuerte: First Principles. Mayor punto ciego: Expansionist — diluye la urgencia con una propuesta tangencial. Omitido por todos: el costo de NO validar antes de entrenar, una métrica objetiva reproducible (bounding-box + ratio de píxeles) en vez de "medir a ojo", y si "proporción relativa en texto" es siquiera la señal correcta vs. anotar diámetro absoluto.</div>
+  </details>
+
+  <footer>
+    Consejo generado el 26 de agosto de 2026 · 5 asesores (Contrarian, First Principles, Expansionist, Outsider, Executor) + 5 revisiones cruzadas + síntesis del presidente · Pregunta: calidad del captioning de tamaños/proporción para el LoRA de estilo Sempertex · Transcript completo: council-tamanos-proporcion-lora-v001.md
+  </footer>
+
+</div>
+</body>
+</html>

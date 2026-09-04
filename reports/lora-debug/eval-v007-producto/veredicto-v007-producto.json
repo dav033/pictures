@@ -1,0 +1,56 @@
+{
+  "protocolVersion": "lora-product-v1",
+  "runId": "lora-run-v007-1000",
+  "datasetId": "lora-dataset-v007-ordenes",
+  "loraScale": 0.8,
+  "seeds": [
+    101,
+    202,
+    303,
+    404,
+    505,
+    606
+  ],
+  "sourceDir": "reports\\lora-debug\\eval-v007-producto",
+  "generatedImages": {
+    "succeeded": 36,
+    "requested": 36
+  },
+  "criteria": {
+    "acabado": {
+      "minimum": "5/6",
+      "promptPair": "Reflex high-shine vs Fashion matte"
+    },
+    "color": {
+      "minimum": "5/6",
+      "promptPair": "Reflex rose gold vs Reflex gold"
+    },
+    "diametro": {
+      "minimum": "4/6",
+      "promptPair": "Fashion white 5-inch vs 24-inch"
+    }
+  },
+  "scores": {
+    "acabado": {
+      "passedCount": 0,
+      "totalCount": 6,
+      "observed": "Fashion conservó reflejos especulares fuertes; no hubo separación mate."
+    },
+    "color": {
+      "passedCount": 6,
+      "totalCount": 6,
+      "observed": "Rose gold y gold se distinguieron en las seis semillas."
+    },
+    "diametro": {
+      "passedCount": 0,
+      "totalCount": 6,
+      "observed": "Las salidas de 5-inch y 24-inch fueron visualmente similares."
+    }
+  },
+  "overall": {
+    "passedCount": 0,
+    "totalCount": 6
+  },
+  "verdict": "rejected",
+  "note": "Generación válida 36/36, pero falla fidelidad de producto en acabado y diámetro. No promover el modo."
+}

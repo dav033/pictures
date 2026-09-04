@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
+import { VisualSemanticsSchema } from "./lora-semantics";
 
 const texto = (max: number) => z.string().trim().min(1).max(max);
 
@@ -118,6 +119,10 @@ export const ReferenceElementSchema = z
     quantity: QuantitySchema,
     appearance: AppearanceSchema,
     relationships: z.array(RelationshipSchema).max(12),
+    // Semántica tipada del plan. Opcional para blueprints antiguos y referencias
+    // externas que todavía no pasan por el compilador LoRA v2.
+    visual_semantics: VisualSemanticsSchema.optional(),
+    resolved_finishes: z.array(texto(80)).max(8).optional(),
     uncertainties: z.array(texto(180)).max(8),
     model_decision: CatalogResolutionSchema.optional(),
   })

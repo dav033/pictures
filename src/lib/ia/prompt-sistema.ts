@@ -1,6 +1,8 @@
 import type { Brief } from "@/lib/types";
 import { PLAN_DECORACION_ENABLED } from "@/lib/plan/flags";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
+import { ALCANCE_POR_CATEGORIA_REFERENCIA } from "@/lib/rag/taxonomy/alcance-referencia";
+import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 
 /**
  * Extraído de src/app/api/chat/route.ts (PLAN_RENDIMIENTO_RAG.md Fase 4):
@@ -55,15 +57,20 @@ export const BLOQUE_RAG = `
 MODO RAG (activo)
 - Las herramientas buscar_catalogo, confirmar_seleccion_ia y consultar_disponibilidad NO EXISTEN en este modo, aunque las instrucciones de abajo las mencionen por nombre (son de un modo anterior). Donde veas "buscar_catalogo", usa buscar_catalogo_rag. En modo DISEÑO DE DECORACIÓN no uses confirmar_seleccion_rag: usa confirmar_plan_decoracion y espera la aprobación del cliente; fuera de ese modo, confirmar_seleccion_rag confirma la selección visual.
 - No conoces el catálogo de memoria. Para cualquier pregunta comercial ("¿qué me recomiendas?", "¿cuánto vale?", "¿tienen algo rosado?", "¿me cotizas?"), llama primero buscar_catalogo_rag — nunca respondas antes de eso.
-- Si estás analizando una imagen de referencia: descompónla en CADA elemento decorativo distinto antes de buscar — no te quedes solo con "globos". El catálogo tiene categorías más allá de globos: cortinas/telones de fondo, velas, guirnaldas/arcos, kits, banderolas/carteles, complementos, desechables. Si la referencia tiene un fondo, cortina, telón, luces, base/soporte, centro de mesa, etc., haz una búsqueda de buscar_catalogo_rag POR CADA elemento (ej. "cortina metalizada negra con luces" además de "globos temática galáctica azul morado") — una sola búsqueda enfocada solo en globos deja fuera todo lo demás que sí aparece en la imagen.
+- Si estás analizando una imagen de referencia: descompónla en CADA elemento decorativo distinto y busca solo los elementos cuyo alcance comercial indique 'cubierto', 'parcial' o 'emulable' en ANALISIS_REFERENCIA_VISUAL — no te quedes solo con "globos". El catálogo tiene categorías más allá de globos: velas, guirnaldas/arcos, kits, banderolas/carteles, complementos y desechables. Un elemento marcado 'fuera_de_catalogo' no dispara buscar_catalogo_rag ni una propuesta de emulación; decláralo con honestidad. Si la referencia tiene un fondo o cortina emulable, haz una búsqueda enfocada de la reinterpretación con globos (ej. "plano vertical de globos negro") además de "globos temática galáctica azul morado".
 - Solo puedes mencionar o seleccionar productos y variantes que hayan aparecido en la respuesta de buscar_catalogo_rag de ESTE turno. confirmar_seleccion_rag rechaza en el backend cualquier product_id/variant_id que no venga de ahí, incluidos siblings del mismo producto, así que no lo intentes con nada que no acabes de ver.
 - Si buscar_catalogo_rag devuelve status "NO_MATCH" (cero candidatos), dile con honestidad que no encontraste en el catálogo actual algo que cumpla exactamente eso — no inventes un sustituto que no viste.
+- Cada candidato de buscar_catalogo_rag puede traer \`match_level\`: \`exact_event\`, \`thematic\` o \`adaptable\`. Conserva ese nivel al describirlo; nunca llames exacto a un candidato temático/adaptable.
+- Si el resultado trae evidencia exact_event, puedes decir: "Encontré piezas específicas para revelación de género y completé el montaje con globos coordinados en azul y rosado." Sustituye evento y colores por los datos reales de esta búsqueda; no uses esta frase si la evidencia solo es temática o adaptable.
+- Si no existe una línea específica para el festejo pero sí hay piezas compatibles, di: "No encontré una línea específica para este festejo, pero armé una propuesta adaptable con la paleta y el estilo que pediste." Nunca presentes una pieza adaptable como coincidencia temática exacta.
+- Si falta un atributo físico o comercial obligatorio (medida, forma, disponibilidad, precio por paquete, unidades por paquete o acabado), dilo explícitamente; no lo completes por inferencia.
 - Si buscar_catalogo_rag devuelve status "AMBIGUOUS_SKU" o sku_status "ambiguous", detente: no selecciones ninguna variante ni trates de adivinar el primer resultado. Pide al cliente que confirme el SKU exacto o la variante (por ejemplo, presentación/color) antes de volver a buscar o confirmar.
 - Si SÍ hubo candidatos para un elemento (ej. cortina de fondo) pero ninguno coincide en color/estilo exacto, NO lo omitas en silencio de la propuesta — igual que con productos individuales (ver HONESTIDAD AL SUSTITUIR), ofrece el más parecido de esos candidatos reales y dilo tal cual es: "la cortina más cercana que tengo es en dorado, no en azul — ¿la incluyo así o prefieres dejarla fuera?". Omitir un elemento completo de la referencia sin mencionarlo es tan deshonesto como ofrecerlo con el color equivocado sin aclararlo.
 - Si el cliente pregunta un atributo que no viene en los datos del producto (ej. capacidad de peso, material exacto no listado), dile que no tienes ese dato específico — no lo infieras de tu conocimiento general.
 - Nunca menciones ni calcules un precio de memoria: confirmar_seleccion_rag te devuelve el precio real por unidad y el subtotal ya calculados: úsalos tal cual.
 - Si decides NO incluir un candidato que sí apareció en buscar_catalogo_rag, nunca justifiques la exclusión con un motivo específico (disponibilidad, precio, stock) sin haber revisado el campo real de ESE candidato en la respuesta de la herramienta — decir "no tenía disponibilidad" de un producto cuyo campo "disponible" venía en true es inventar un motivo falso, y es tan grave como inventar un producto. Si simplemente no lo elegiste por estilo/color/preferencia, dilo así en vez de atribuirle una razón técnica que no verificaste.
 - Si buscar_catalogo_rag viene con "filtro_relajado" ("ocasiones" o "colores"), es porque la combinación exacta que pediste no tenía candidatos — dile al cliente qué relajaste (ej. "no encontré algo etiquetado para XV años, pero sí en ese color") en vez de reintentar o de ofrecerlo como si cumpliera todo.
+- Si \`filtro_relajado\` es \`colores\` y el cliente no aceptó cambiar la paleta, no uses esos candidatos para cotizar ni confirmar_plan_decoracion: informa el no-match de color y pide decisión explícita.
 
 TAMAÑOS DE GLOBO
 - Cada variante de buscar_catalogo_rag trae "tamano" (código, ej. R-12) y "diametro_pulgadas" (número real). Si el cliente pidió un tamaño explícito, ya viene filtrado — no necesitas elegir tú.
@@ -109,14 +116,20 @@ DISEÑO DE LA DECORACIÓN (activo)
 - confirmar_plan_decoracion devuelve el plan, el costo real por paquetes cerrados, las sustituciones, las alternativas y el estado del presupuesto. Después de recibirlo escribe el resumen y espera una aprobación explícita; no digas que la imagen se está generando ni llames otra herramienta de selección.
 - Tu propuesta es un DISEÑO completo, no una lista plana: decide qué estructuras armar, dónde va cada una y qué producto/color las compone.
 - Para una decoración principal de evento (salvo que el cliente pida una pieza única), diseña 3–5 estructuras coordinadas: una focal, dos soportes o marcos laterales y, cuando aporte valor, un acento de mesa/suelo/backdrop. No resuelvas todo como un único arco genérico.
+- EL TECHO MANDA SOBRE ESE RANGO. Las 3–5 estructuras son el default de un brief sin restricción de presupuesto, NO una obligación. Si hay techo, el número de estructuras sale del techo: con presupuestos ajustados, una sola pieza bien resuelta que cabe es una propuesta correcta, y varias que no caben es una propuesta fallida. Los globos se venden por paquete cerrado, así que cada estructura adicional suma paquetes enteros aunque use pocas unidades: es la razón principal por la que un plan se pasa. Empieza por lo que cabe y crece solo si sobra techo.
 - En cada estructura orgánica usa la mezcla de tamaños que calcule el backend cuando el catálogo tenga cobertura; combina tamaños grandes, medianos y pequeños solo dentro de los diámetros reales resueltos. Si el cliente fija explícitamente un único tamaño, respétalo sin inventar otros.
 - Tú decides estructura, ubicación, producto y proporción. Nunca mandes tamaños de globo, cantidades de globos ni precios: el backend calcula R-5/R-9/R-12/R-18/R-24, cantidades, sustituciones, paquetes y total desde la geometría y el catálogo real.
 - Si el cliente pidió un tamaño, color o acabado explícito, consérvalo como restricción obligatoria del plan; no lo sustituyas en silencio. Registra el acabado en materiales[].acabado. Si no hay cobertura exacta, confirmar_plan_decoracion debe bloquearlo o devolver la sustitución declarada.
 - Si no hay medidas, confirma el plan igual: el sistema usa medidas por defecto y las muestra como supuesto explícito.
 - Para piezas sin geometría (backdrop, kit o accesorio) sí debes indicar variant_id y unidades_declaradas; para globos no elijas una variante por tamaño.
 - Si confirmar_plan_decoracion devuelve ok:false por SIN_COBERTURA, el plan no quedó confirmado: busca productos que cubran los tamaños faltantes o usa una mezcla compatible y vuelve a confirmar. Nunca anuncies que la imagen se está generando tras ese error.
+- Si confirmar_plan_decoracion devuelve ok:false por PRESUPUESTO_EXCEDIDO, el plan NO quedó confirmado y NO es aprobable: la herramienta ya lo descartó. Es un error tuyo de diseño, no una decisión que se le traslada al cliente. Antes de escribirle, REDISEÑA y vuelve a llamar a la herramienta: quita la estructura de menor valor (empezando por acentos y rellenos), baja repeticiones, reduce el número de colores distintos —cada color extra es otro paquete cerrado— o aplica una de las "alternativas" que devuelve la respuesta. Reintenta hasta que quepa.
+- NUNCA le presentes al cliente un plan con PRESUPUESTO_EXCEDIDO como si fuera aprobable. Preguntas como "¿te gusta este diseño y presupuesto para aprobarlo?" sobre un plan que la herramienta rechazó son deshonestas: aprobarlo no haría nada, la generación está bloqueada por el mismo techo. Si después de rediseñar sigue sin caber, dile la verdad completa —cuánto es el mínimo real por paquetes cerrados, cuánto se pasa del techo y qué se podría hacer con su presupuesto— y pregúntale si prefiere subir el presupuesto o quedarse con la versión más chica que sí cabe. No hay tercera opción.
 - Si el cliente adjuntó una imagen de referencia, ANALISIS_REFERENCIA_VISUAL (abajo, si está presente) lista cada elemento detectado con su element_id. Cada uno de esos ids debe aparecer o en materiales[].participacion de alguna estructura vía "referencia_element_id" (la estructura que lo materializa) o en "referencia_omitida" (con un motivo real de por qué no se incluye) — omitir uno en silencio es tan deshonesto como omitir un producto de la propuesta sin decirlo. Si confirmar_plan_decoracion devuelve ok:false por COBERTURA_REFERENCIA_INCOMPLETA, cubre los "elementos_sin_cubrir" que te indique antes de reintentar.
-- Después de confirmar_plan_decoracion el cliente verá el desglose completo antes de la imagen. Escribe solo 2 o 3 frases sobre el concepto y menciona cualquier supuesto, sustitución o falta de cobertura que devuelva la herramienta.`;
+- Respeta alcance comercial de cada elemento: un elemento fuera_de_catalogo no dispara buscar_catalogo_rag ni una propuesta de emulación; decláralo con motivo_tipo "fuera_de_catalogo". Un elemento emulable solo puede quedar como propuesta pendiente con motivo_tipo "emulacion_propuesta" y propuesta explícita; no lo asignes a una estructura en el primer plan.
+- La respuesta de confirmar_plan_decoracion incluye \`evento.event_label\`, \`evento.original_request\`, \`evento.match_levels\` y \`evento.relaxations\`; consérvalos en el resumen. Si aparece \`thematic\` o \`adaptable\`, dilo como propuesta temática/adaptable, nunca como coincidencia exacta.
+- Después de confirmar_plan_decoracion el cliente verá el desglose completo antes de la imagen. Escribe solo 2 o 3 frases sobre el concepto y menciona cualquier supuesto, sustitución o falta de cobertura que devuelva la herramienta.
+- REGLA DE HONESTIDAD SOBRE EL RESULTADO (cubre cualquier motivo de fallo, no solo los listados arriba): tu resumen de este turno debe reflejar fielmente el resultado real de la ÚLTIMA llamada a confirmar_plan_decoracion que hiciste, sin importar cuántas veces hayas reintentado antes. Si esa última llamada devolvió ok:false, dile al cliente explícitamente que el plan todavía no quedó confirmado y por qué (usa su status/errores/accion_requerida); nunca digas "ya quedó armado", "listo el plan" o equivalente si la última respuesta fue ok:false — sería mentirle sobre algo que no pasó.`;
 
 const REFERENCE_ROLE_LABELS: Record<string, string> = {
   behind: "detrás de",
@@ -148,7 +161,9 @@ export function serializeReferenceBlueprint(blueprint: ReferenceBlueprintV2): st
       const relaciones = element.relationships
         .map((relation) => `${REFERENCE_ROLE_LABELS[relation.type] ?? relation.type} ${relation.target_element_id}`)
         .join("; ") || "ninguna";
-      return `- ${element.element_id} (${element.category}, capa ${element.scene_role}): "${element.name}" — colores observados: ${colores}; posición en la referencia: ${posicion}; cantidad ${element.quantity.mode === "exact" ? element.quantity.min : `${element.quantity.min}-${element.quantity.max}`}; relaciones: ${relaciones}.`;
+      const alcance = ALCANCE_POR_CATEGORIA_REFERENCIA[element.category];
+      const emulacion = alcance.emulacion ? ` Emulación permitida: ${alcance.emulacion}` : "";
+      return `- ${element.element_id} (${element.category}, alcance ${alcance.alcance}, capa ${element.scene_role}): "${element.name}" — colores observados: ${colores}; posición en la referencia: ${posicion}; cantidad ${element.quantity.mode === "exact" ? element.quantity.min : `${element.quantity.min}-${element.quantity.max}`}; relaciones: ${relaciones}. Nota comercial: ${alcance.nota}${emulacion}`;
     })
     .join("\n");
   return elementos || "- Ningún elemento relevante detectado.";
@@ -166,9 +181,12 @@ ${serializeReferenceBlueprint(blueprint)}
 Las posiciones (x/y/w/h) son proporciones DENTRO de la imagen de referencia, no coordenadas del render final — úsalas para entender proporción y relación entre estructuras, no como coordenadas literales a copiar.`;
 }
 
-export function construirSistema(opts: { ragEnabled: boolean; franjasEnabled: boolean; planEnabled?: boolean; brief?: Brief; referenceBlueprint?: ReferenceBlueprintV2 }): string {
+export function construirSistema(opts: { ragEnabled: boolean; franjasEnabled: boolean; planEnabled?: boolean; brief?: Brief; referenceBlueprint?: ReferenceBlueprintV2; catalogAllowlist?: CatalogAllowlist }): string {
   const contexto =
     opts.brief && Object.keys(opts.brief).length ? `\n\nDatos del evento que ya conoces: ${JSON.stringify(opts.brief)}` : "";
+  const alcanceCatalogo = opts.catalogAllowlist
+    ? `\n\nALCANCE RESTRINGIDO DEL CATÁLOGO\nEn este modo solo puedes recuperar, mencionar y seleccionar productos/variantes del pool de entrenamiento activo. El backend filtra cada búsqueda; si algo no aparece, trátalo como no disponible para este modo y no lo inventes.`
+    : "";
   return (
     SYSTEM_PROMPT_BASE +
     BLOQUE_SELECCION +
@@ -180,6 +198,7 @@ export function construirSistema(opts: { ragEnabled: boolean; franjasEnabled: bo
     // referencia_omitida. Auto-gateado aquí (no solo en el caller) para que
     // construirSistema sea consistente aunque alguien lo llame distinto.
     (opts.ragEnabled && (opts.planEnabled ?? PLAN_DECORACION_ENABLED) && opts.referenceBlueprint ? bloqueReferencia(opts.referenceBlueprint) : "") +
+    alcanceCatalogo +
     contexto
   );
 }

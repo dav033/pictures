@@ -135,6 +135,10 @@ export function buildV2ImagePrompt(spec: SceneSpecV2): V2PromptOutput {
       parts.push(`colors: ${item.resolved_colors.join(", ")}`);
     }
 
+    if (item.match_level) {
+      parts.push(`catalog match level: ${item.match_level}; never present this as a stronger match`);
+    }
+
     const relations = describeRelationships(item);
     if (relations.length > 0) {
       parts.push(`spatial: ${relations.join("; ")}`);
@@ -147,12 +151,21 @@ export function buildV2ImagePrompt(spec: SceneSpecV2): V2PromptOutput {
 
   // Composition notes
   const composition: string[] = [
-    `Scene: wedding ceremony view with ${visibleItems.length} visible decorative elements and ${hiddenCount} support/venue elements.`,
+    `Scene: ${spec.event_label ?? "open event"} ${spec.view_id} view with ${visibleItems.length} visible decorative elements and ${hiddenCount} support/venue elements.`,
     `Aspect ratio: ${spec.aspect_ratio}.`,
     "Design one cohesive ceremony installation with clear focal point, visual hierarchy, balanced color, and natural asymmetry.",
     "Build a complete installed event scene with rear backdrop/support, middle decoration, grounded floor contact, and realistic scale.",
     ...spec.composition_notes,
   ];
+
+  if (spec.original_request) composition.push(`Original customer request: ${spec.original_request}`);
+  if (spec.palette.length) composition.push(`Approved palette: ${spec.palette.join(", ")}`);
+  if (spec.style) composition.push(`Approved style: ${spec.style}`);
+  if (spec.confirmed_motifs.length) composition.push(`Confirmed motifs only: ${spec.confirmed_motifs.join(", ")}`);
+  if (spec.piece_match_levels.length) composition.push(`Catalog match levels: ${spec.piece_match_levels.map((item) => `${item.piece}=${item.match_level}`).join("; ")}`);
+  if (spec.approved_plan.length) composition.push(`Approved plan only: ${spec.approved_plan.join("; ")}`);
+  if (spec.approved_materials.length) composition.push(`Approved materials only: ${spec.approved_materials.join("; ")}`);
+  composition.push("For an open or unclassified event, express the label through composition and approved colors only; invent no signage, text, props, or accessories.");
 
   // Venue preservation
   if (spec.preserve_venue.length > 0) {
@@ -187,6 +200,7 @@ export function buildV2ImagePrompt(spec: SceneSpecV2): V2PromptOutput {
     "text, letters, callouts, arrows, captions, SKU codes, logos",
     "flat sticker, cutout edge, pasted rectangle, floating object",
     "garden/park/forest background replacing the venue",
+    "unapproved signage, readable text, symbols, props, flowers, furniture, or accessories",
     ...(spec.preserve_venue.length > 0
       ? ["modifying or removing preserved venue elements"]
       : []),

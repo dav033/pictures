@@ -241,7 +241,7 @@ function category(value: unknown): Candidate["category"] {
     backdrop: "backdrop", fondo: "backdrop", wall: "backdrop", muro: "backdrop", panel: "panel", paneles: "panel",
     balloon_structure: "balloon_structure", balloons: "balloon_structure", balloon: "balloon_structure", arco: "balloon_structure", globos: "balloon_structure", globo: "balloon_structure", guirnalda: "balloon_structure", garland: "balloon_structure",
     plinth: "plinth", pedestal: "plinth", furniture: "furniture", mobiliario: "furniture", mueble: "furniture", mesa: "furniture", silla: "furniture",
-    floral: "floral", flores: "floral", flor: "floral", foliage: "floral", follaje: "floral", signage: "signage", letrero: "signage", cartel: "signage",
+    floral: "floral", flores: "floral", flor: "floral", foliage: "floral", follaje: "floral", signage: "signage", sign: "signage", signs: "signage", letrero: "signage", cartel: "signage", banner: "signage", lettering: "signage", text: "signage", texto: "signage", mensaje: "signage",
     lighting: "lighting", light: "lighting", luces: "lighting", luz: "lighting", iluminacion: "lighting", tableware: "tableware", vajilla: "tableware", velas: "tableware", centro_mesa: "tableware", manteleria: "drape",
   };
   if (direct[text]) return direct[text];
@@ -249,6 +249,7 @@ function category(value: unknown): Candidate["category"] {
   if (text.includes("globo") || text.includes("balloon") || text.includes("arco") || text.includes("guirnalda")) return "balloon_structure";
   if (text.includes("luz") || text.includes("light") || text.includes("foquito") || text.includes("ilumin")) return "lighting";
   if (text.includes("flor") || text.includes("follaje") || text.includes("floral")) return "floral";
+  if (text.includes("letrero") || text.includes("cartel") || text.includes("banner") || text.includes("lettering") || text.includes("signage") || text.includes("mensaje") || text.includes("happy birthday")) return "signage";
   if (text.includes("panel") || text.includes("fondo") || text.includes("backdrop") || text.includes("muro")) return "backdrop";
   if (text.includes("mesa") || text.includes("silla") || text.includes("mueble")) return "furniture";
   return "other";
@@ -266,9 +267,13 @@ export function inferReferenceLayer(input: { explicitCategory?: unknown; explici
   const text = normalize(semanticText);
   const nameText = normalize(input.name);
   const hasLighting = /luz|luces|led|foquito|ilumin/.test(text);
-  const hasNamedBackdropSurface = /telon|drape|tela|backdrop|muro|panel/.test(nameText);
-  const hasBackdropSurface = hasNamedBackdropSurface || /cortina de tela/.test(text);
-  const finalCategory = hasLighting && !hasNamedBackdropSurface
+  // A backdrop can carry string lights. Treating any lighting cue as the
+  // whole element used to demote "cortina con luces" to lighting and lose
+  // the rear surface from the plan. A named rear surface wins; lights stay a
+  // separate element only when no backdrop surface is present.
+  const hasNamedBackdropSurface = /cortin|telon|drape|tela|backdrop|fondo|muro|panel/.test(nameText);
+  const hasBackdropSurface = hasNamedBackdropSurface || /cortin|telon|drape|tela|backdrop|fondo|muro|panel/.test(text);
+  const finalCategory = hasLighting && !hasBackdropSurface
     ? "lighting"
     : inferredCategory === "other" && /cortin|telon|drape|tela|fondo|backdrop|muro|panel/.test(text)
       ? "backdrop"
@@ -379,7 +384,7 @@ function mergeCandidates(inventory: Candidate[], audit: Candidate[]): Candidate[
 }
 
 function normalize(value: string): string {
-  return value.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase();
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
 function catalogFallback(candidate: Candidate, catalogo: ReferenceCatalogItem[]): { id?: string; type: "exact" | "closest" | "none"; reason: string; adaptation: string } {

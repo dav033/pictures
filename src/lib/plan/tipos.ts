@@ -106,6 +106,29 @@ const EstructuraPlanSchema = z.object({
   }
 });
 
+export const MOTIVOS_OMISION_REFERENCIA = [
+  "fuera_de_catalogo",
+  "emulacion_propuesta",
+  "emulacion_rechazada",
+  "decision_de_diseno",
+] as const;
+
+export const MotivoOmissionReferenciaSchema = z.enum(MOTIVOS_OMISION_REFERENCIA);
+// Alias descriptivo para callers que hablan de tipo de motivo, sin romper el
+// nombre interno usado por el plan.
+export const MotivoTipoReferenciaSchema = MotivoOmissionReferenciaSchema;
+
+export const ReferenciaOmitidaSchema = z.object({
+  element_id: z.string().trim().min(1).max(80),
+  motivo: z.string().trim().min(1).max(240),
+  motivo_tipo: MotivoOmissionReferenciaSchema,
+  propuesta: z.string().trim().min(1).max(240).optional(),
+}).strict().superRefine((value, ctx) => {
+  if (value.motivo_tipo === "emulacion_propuesta" && !value.propuesta) {
+    ctx.addIssue({ code: "custom", path: ["propuesta"], message: "Una emulación propuesta debe explicar qué se construirá." });
+  }
+});
+
 export const PlanDecoracionSchema = z.object({
   plan_version: z.literal("1.0"),
   plan_id: z.string().uuid(),
@@ -114,7 +137,8 @@ export const PlanDecoracionSchema = z.object({
     descripcion: z.string().trim().min(1).max(320),
     paleta: z.array(z.string().trim().min(1).max(80)).max(8),
     estilo: z.string().trim().max(80).optional(),
-    ocasion: z.string().trim().max(80).optional(),
+    /** Customer's free event label; never restricted to catalog occasions. */
+    ocasion: z.string().trim().max(160).optional(),
     momento_dia: z.string().trim().max(80).optional(),
   }).strict(),
   espacio: z.object({
@@ -132,10 +156,7 @@ export const PlanDecoracionSchema = z.object({
    * visuales, R4. Junto con `estructuras[].referencia_element_id`, cubre la
    * unión completa de elementos aprobados del blueprint del turno; ver
    * `validarCoberturaReferencia`. */
-  referencia_omitida: z.array(z.object({
-    element_id: z.string().trim().min(1).max(80),
-    motivo: z.string().trim().min(1).max(240),
-  }).strict()).max(40).default([]),
+  referencia_omitida: z.array(ReferenciaOmitidaSchema).max(40).default([]),
 }).strict().superRefine((value, ctx) => {
   const ids = new Set<string>();
   for (const estructura of value.estructuras) {
@@ -163,3 +184,6 @@ export type Ubicacion = PlanDecoracion["estructuras"][number]["ubicacion"];
 export type Densidad = PlanDecoracion["estructuras"][number]["densidad"];
 export type Mezcla = PlanDecoracion["estructuras"][number]["mezcla"];
 export type RestriccionesUsuario = z.infer<typeof RestriccionesUsuarioSchema>;
+export type MotivoOmissionReferencia = z.infer<typeof MotivoOmissionReferenciaSchema>;
+export type MotivoTipoReferencia = MotivoOmissionReferencia;
+export type ReferenciaOmitida = z.infer<typeof ReferenciaOmitidaSchema>;

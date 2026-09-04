@@ -1,0 +1,450 @@
+{
+  "experimento": "step4-prompt-real",
+  "endpoint": "https://queue.fal.run/fal-ai/flux-2/lora",
+  "defaults": {
+    "seed": 777777,
+    "guidance": 3.5,
+    "ancho": 1536,
+    "alto": 1024,
+    "loraUrl": "https://v3b.fal.media/files/b/0aa80af5/Co4ylzKGOqhReEQpYIQl8_pytorch_lora_weights.safetensors"
+  },
+  "celdas": [
+    {
+      "id": "R-real03-seed101",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 0.3,
+      "seed": 101,
+      "safety": false,
+      "nota": "prompt literal de producción, lora_scale 0.3",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa80af5/Co4ylzKGOqhReEQpYIQl8_pytorch_lora_weights.safetensors",
+            "scale": 0.3
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 101,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "R-real03-seed202",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 0.3,
+      "seed": 202,
+      "safety": false,
+      "nota": "prompt literal de producción, lora_scale 0.3",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa80af5/Co4ylzKGOqhReEQpYIQl8_pytorch_lora_weights.safetensors",
+            "scale": 0.3
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 202,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "R-real03-seed303",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 0.3,
+      "seed": 303,
+      "safety": false,
+      "nota": "prompt literal de producción, lora_scale 0.3",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa80af5/Co4ylzKGOqhReEQpYIQl8_pytorch_lora_weights.safetensors",
+            "scale": 0.3
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 303,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "R-real03-seed404",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 0.3,
+      "seed": 404,
+      "safety": false,
+      "nota": "prompt literal de producción, lora_scale 0.3",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa80af5/Co4ylzKGOqhReEQpYIQl8_pytorch_lora_weights.safetensors",
+            "scale": 0.3
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 404,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "R-real03-seed505",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 0.3,
+      "seed": 505,
+      "safety": false,
+      "nota": "prompt literal de producción, lora_scale 0.3",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa80af5/Co4ylzKGOqhReEQpYIQl8_pytorch_lora_weights.safetensors",
+            "scale": 0.3
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 505,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "R-real03-seed606",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 0.3,
+      "seed": 606,
+      "safety": false,
+      "nota": "prompt literal de producción, lora_scale 0.3",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa80af5/Co4ylzKGOqhReEQpYIQl8_pytorch_lora_weights.safetensors",
+            "scale": 0.3
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 606,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "R-real08-seed101",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 0.8,
+      "seed": 101,
+      "safety": false,
+      "nota": "prompt literal de producción, lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa80af5/Co4ylzKGOqhReEQpYIQl8_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 101,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "R-real08-seed202",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 0.8,
+      "seed": 202,
+      "safety": false,
+      "nota": "prompt literal de producción, lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa80af5/Co4ylzKGOqhReEQpYIQl8_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 202,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "R-real08-seed303",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 0.8,
+      "seed": 303,
+      "safety": false,
+      "nota": "prompt literal de producción, lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa80af5/Co4ylzKGOqhReEQpYIQl8_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 303,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "R-real08-seed404",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 0.8,
+      "seed": 404,
+      "safety": false,
+      "nota": "prompt literal de producción, lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa80af5/Co4ylzKGOqhReEQpYIQl8_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 404,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "R-real08-seed505",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 0.8,
+      "seed": 505,
+      "safety": false,
+      "nota": "prompt literal de producción, lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa80af5/Co4ylzKGOqhReEQpYIQl8_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 505,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "R-real08-seed606",
+      "prompt": "a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+      "lora": 0.8,
+      "seed": 606,
+      "safety": false,
+      "nota": "prompt literal de producción, lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v2, a grand organic balloon arch in pink and rose gold centered around the stage photo area, two balloon columns, matching one another, one standing on the left and one on the right, flanking the main arch, with a low coordinated balloon centerpiece placed on the main table beneath the main arch. wide photorealistic event photograph, natural depth, believable floor contact and supports.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa80af5/Co4ylzKGOqhReEQpYIQl8_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 606,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    }
+  ],
+  "resultados": [
+    {
+      "celda": "R-real03-seed101",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\step4\\R-real03-seed101.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82ace/1Ctcv1GlSm1u6HP9IAgdn_yu6lwpDf.png",
+      "bytes": 2390272
+    },
+    {
+      "celda": "R-real03-seed202",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\step4\\R-real03-seed202.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82ad0/2wdiKQ2z1PPgMkByYOEKL_iCUypO50.png",
+      "bytes": 2521278
+    },
+    {
+      "celda": "R-real03-seed303",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\step4\\R-real03-seed303.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82ad1/j-Z5rfYXSUFNhEjjcmiR7_ZAhul3Mw.png",
+      "bytes": 2539605
+    },
+    {
+      "celda": "R-real03-seed404",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\step4\\R-real03-seed404.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82ad5/sCkFZIX0B4ZmyTmjDmO5L_e41rFUhS.png",
+      "bytes": 2520610
+    },
+    {
+      "celda": "R-real03-seed505",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\step4\\R-real03-seed505.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82ad7/y0lCVAqbgGv71y-f8s9oq_i7tVNGzX.png",
+      "bytes": 2386944
+    },
+    {
+      "celda": "R-real03-seed606",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\step4\\R-real03-seed606.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82ad8/NEvENj5h5ScPBxmSJfufQ_P8gZYvq2.png",
+      "bytes": 2510220
+    },
+    {
+      "celda": "R-real08-seed101",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\step4\\R-real08-seed101.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82ada/jU_kPq1R4S3s8RPNJwlZb_mdK4Ya0m.png",
+      "bytes": 2170087
+    },
+    {
+      "celda": "R-real08-seed202",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\step4\\R-real08-seed202.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82adc/Nx9XUcg4hUK_Vxq-eWS9X_muTCSS4u.png",
+      "bytes": 2378554
+    },
+    {
+      "celda": "R-real08-seed303",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\step4\\R-real08-seed303.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82add/UeRBWY0jMXAvG8CmS1Aq0_bZ0LqXtN.png",
+      "bytes": 2337231
+    },
+    {
+      "celda": "R-real08-seed404",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\step4\\R-real08-seed404.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82ade/XYjMZrLXlgjl9-Sk4_Bqk_VziWQycR.png",
+      "bytes": 2426262
+    },
+    {
+      "celda": "R-real08-seed505",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\step4\\R-real08-seed505.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82ae0/IBwYgFEQRcADHd2scT4fN_gwnfQChS.png",
+      "bytes": 2132233
+    },
+    {
+      "celda": "R-real08-seed606",
+      "ok": true,
+      "censurada": false,
+      "archivo": "C:\\Users\\davidt\\Downloads\\demo-decoracion\\reports\\lora-debug\\step4\\R-real08-seed606.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa82ae1/ZR3maez-zj0RyhdI7e73i_ABaByjfk.png",
+      "bytes": 2519654
+    }
+  ],
+  "saldo_antes": 22.304,
+  "saldo_despues": 21.884,
+  "gasto_usd": 0.42
+}

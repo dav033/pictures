@@ -1,0 +1,1315 @@
+{
+  "experimento": "eval-v007-producto",
+  "endpoint": "https://queue.fal.run/fal-ai/flux-2/lora",
+  "defaults": {
+    "seed": 777777,
+    "guidance": 3.5,
+    "ancho": 1536,
+    "alto": 1024,
+    "loraUrl": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+    "trigger": "eventdecor_style_v3"
+  },
+  "celdas": [
+    {
+      "id": "acabado-a-seed101",
+      "prompt": "a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 101,
+      "safety": false,
+      "nota": "acabado-a @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 101,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "acabado-a-seed202",
+      "prompt": "a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 202,
+      "safety": false,
+      "nota": "acabado-a @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 202,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "acabado-a-seed303",
+      "prompt": "a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 303,
+      "safety": false,
+      "nota": "acabado-a @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 303,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "acabado-a-seed404",
+      "prompt": "a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 404,
+      "safety": false,
+      "nota": "acabado-a @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 404,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "acabado-a-seed505",
+      "prompt": "a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 505,
+      "safety": false,
+      "nota": "acabado-a @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 505,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "acabado-a-seed606",
+      "prompt": "a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 606,
+      "safety": false,
+      "nota": "acabado-a @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 606,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "acabado-b-seed101",
+      "prompt": "a balloon column, standing to one side, built from 12-inch matte Fashion gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 101,
+      "safety": false,
+      "nota": "acabado-b @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch matte Fashion gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 101,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "acabado-b-seed202",
+      "prompt": "a balloon column, standing to one side, built from 12-inch matte Fashion gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 202,
+      "safety": false,
+      "nota": "acabado-b @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch matte Fashion gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 202,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "acabado-b-seed303",
+      "prompt": "a balloon column, standing to one side, built from 12-inch matte Fashion gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 303,
+      "safety": false,
+      "nota": "acabado-b @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch matte Fashion gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 303,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "acabado-b-seed404",
+      "prompt": "a balloon column, standing to one side, built from 12-inch matte Fashion gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 404,
+      "safety": false,
+      "nota": "acabado-b @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch matte Fashion gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 404,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "acabado-b-seed505",
+      "prompt": "a balloon column, standing to one side, built from 12-inch matte Fashion gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 505,
+      "safety": false,
+      "nota": "acabado-b @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch matte Fashion gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 505,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "acabado-b-seed606",
+      "prompt": "a balloon column, standing to one side, built from 12-inch matte Fashion gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 606,
+      "safety": false,
+      "nota": "acabado-b @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch matte Fashion gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 606,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "color-a-seed101",
+      "prompt": "a balloon column, standing to one side, built from 12-inch high-shine Reflex rose gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 101,
+      "safety": false,
+      "nota": "color-a @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch high-shine Reflex rose gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 101,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "color-a-seed202",
+      "prompt": "a balloon column, standing to one side, built from 12-inch high-shine Reflex rose gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 202,
+      "safety": false,
+      "nota": "color-a @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch high-shine Reflex rose gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 202,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "color-a-seed303",
+      "prompt": "a balloon column, standing to one side, built from 12-inch high-shine Reflex rose gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 303,
+      "safety": false,
+      "nota": "color-a @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch high-shine Reflex rose gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 303,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "color-a-seed404",
+      "prompt": "a balloon column, standing to one side, built from 12-inch high-shine Reflex rose gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 404,
+      "safety": false,
+      "nota": "color-a @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch high-shine Reflex rose gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 404,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "color-a-seed505",
+      "prompt": "a balloon column, standing to one side, built from 12-inch high-shine Reflex rose gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 505,
+      "safety": false,
+      "nota": "color-a @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch high-shine Reflex rose gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 505,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "color-a-seed606",
+      "prompt": "a balloon column, standing to one side, built from 12-inch high-shine Reflex rose gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 606,
+      "safety": false,
+      "nota": "color-a @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch high-shine Reflex rose gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 606,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "color-b-seed101",
+      "prompt": "a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 101,
+      "safety": false,
+      "nota": "color-b @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 101,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "color-b-seed202",
+      "prompt": "a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 202,
+      "safety": false,
+      "nota": "color-b @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 202,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "color-b-seed303",
+      "prompt": "a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 303,
+      "safety": false,
+      "nota": "color-b @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 303,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "color-b-seed404",
+      "prompt": "a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 404,
+      "safety": false,
+      "nota": "color-b @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 404,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "color-b-seed505",
+      "prompt": "a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 505,
+      "safety": false,
+      "nota": "color-b @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 505,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "color-b-seed606",
+      "prompt": "a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 606,
+      "safety": false,
+      "nota": "color-b @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon column, standing to one side, built from 12-inch high-shine Reflex gold round latex balloons, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 606,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "diametro-a-seed101",
+      "prompt": "a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 5-inch size, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 101,
+      "safety": false,
+      "nota": "diametro-a @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 5-inch size, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 101,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "diametro-a-seed202",
+      "prompt": "a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 5-inch size, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 202,
+      "safety": false,
+      "nota": "diametro-a @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 5-inch size, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 202,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "diametro-a-seed303",
+      "prompt": "a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 5-inch size, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 303,
+      "safety": false,
+      "nota": "diametro-a @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 5-inch size, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 303,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "diametro-a-seed404",
+      "prompt": "a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 5-inch size, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 404,
+      "safety": false,
+      "nota": "diametro-a @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 5-inch size, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 404,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "diametro-a-seed505",
+      "prompt": "a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 5-inch size, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 505,
+      "safety": false,
+      "nota": "diametro-a @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 5-inch size, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 505,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "diametro-a-seed606",
+      "prompt": "a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 5-inch size, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 606,
+      "safety": false,
+      "nota": "diametro-a @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 5-inch size, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 606,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "diametro-b-seed101",
+      "prompt": "a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 24-inch size, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 101,
+      "safety": false,
+      "nota": "diametro-b @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 24-inch size, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 101,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "diametro-b-seed202",
+      "prompt": "a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 24-inch size, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 202,
+      "safety": false,
+      "nota": "diametro-b @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 24-inch size, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 202,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "diametro-b-seed303",
+      "prompt": "a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 24-inch size, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 303,
+      "safety": false,
+      "nota": "diametro-b @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 24-inch size, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 303,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "diametro-b-seed404",
+      "prompt": "a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 24-inch size, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 404,
+      "safety": false,
+      "nota": "diametro-b @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 24-inch size, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 404,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "diametro-b-seed505",
+      "prompt": "a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 24-inch size, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 505,
+      "safety": false,
+      "nota": "diametro-b @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 24-inch size, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 505,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    },
+    {
+      "id": "diametro-b-seed606",
+      "prompt": "a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 24-inch size, set against a plain wall and floor.",
+      "lora": 0.8,
+      "seed": 606,
+      "safety": false,
+      "nota": "diametro-b @ lora_scale 0.8",
+      "payload": {
+        "prompt": "eventdecor_style_v3, a balloon garland, grounded across the front, built from matte Fashion white round latex balloons, all at a single 24-inch size, set against a plain wall and floor.",
+        "loras": [
+          {
+            "path": "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+            "scale": 0.8
+          }
+        ],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_size": {
+          "width": 1536,
+          "height": 1024
+        },
+        "seed": 606,
+        "num_images": 1,
+        "enable_prompt_expansion": false,
+        "enable_safety_checker": false,
+        "output_format": "png"
+      }
+    }
+  ],
+  "resultados": [
+    {
+      "celda": "acabado-a-seed101",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\acabado-a-seed101.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9c8/tSQpmXj7vcItuw9B5Wx7N_hwxoRLIG.png",
+      "bytes": 2326071
+    },
+    {
+      "celda": "acabado-a-seed202",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\acabado-a-seed202.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9b3/zkUjJE6IOTUASlOPxcHYh_FbWyqkvq.png",
+      "bytes": 2339555
+    },
+    {
+      "celda": "acabado-a-seed303",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\acabado-a-seed303.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9b4/MtunJfO3kebhwOgf6u4A1_0ZR8IQHk.png",
+      "bytes": 2333747
+    },
+    {
+      "celda": "acabado-a-seed404",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\acabado-a-seed404.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9b5/zD8jCGBPbZdmwLcGTfPE5_OoKuOT8U.png",
+      "bytes": 2398370
+    },
+    {
+      "celda": "acabado-a-seed505",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\acabado-a-seed505.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9cd/let3gkvfxvq1RtUhtq9vL_gVwNPjBP.png",
+      "bytes": 2143646
+    },
+    {
+      "celda": "acabado-a-seed606",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\acabado-a-seed606.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9b7/JC9h10V3zVsdxW6rqWIGs_1yF2GqP6.png",
+      "bytes": 2188771
+    },
+    {
+      "celda": "acabado-b-seed101",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\acabado-b-seed101.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9ba/Ub7C1qtJKd-7SxIlqYEuX_Fm2ILCob.png",
+      "bytes": 2346053
+    },
+    {
+      "celda": "acabado-b-seed202",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\acabado-b-seed202.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9bb/an3FRqKuys9PSMV6-jLdG_PpwARpdj.png",
+      "bytes": 2344060
+    },
+    {
+      "celda": "acabado-b-seed303",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\acabado-b-seed303.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9bc/bj8-yBhsAYTEOiGYLHvju_0PYhnGKj.png",
+      "bytes": 2372990
+    },
+    {
+      "celda": "acabado-b-seed404",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\acabado-b-seed404.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9bd/Vzf6K504fI7xIWQyLD-4a_JLZ2aw3I.png",
+      "bytes": 2419891
+    },
+    {
+      "celda": "acabado-b-seed505",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\acabado-b-seed505.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9bf/98ciJs-FTmt9GEotyj3Gr_yshGWeq1.png",
+      "bytes": 2138621
+    },
+    {
+      "celda": "acabado-b-seed606",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\acabado-b-seed606.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9d7/P8M0bYYeMYSm_oLqGhm1P_uq2TolCu.png",
+      "bytes": 2194514
+    },
+    {
+      "celda": "color-a-seed101",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\color-a-seed101.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9c1/jiUE4lNzA4Nbh3lSKmOP2_PUaMxdWX.png",
+      "bytes": 2327041
+    },
+    {
+      "celda": "color-a-seed202",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\color-a-seed202.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9c3/YYVlJ1pmUCTOKJ5pEJtLB_j8I7tKXF.png",
+      "bytes": 2308021
+    },
+    {
+      "celda": "color-a-seed303",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\color-a-seed303.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9c4/rrTLMyCGrePO7Na12zheo_HzcoqUYP.png",
+      "bytes": 2370605
+    },
+    {
+      "celda": "color-a-seed404",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\color-a-seed404.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9c5/_kaKdPuX6HW9JHIJwydru_kAsS7Ov9.png",
+      "bytes": 2370916
+    },
+    {
+      "celda": "color-a-seed505",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\color-a-seed505.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9c8/ams14UvFJU1spDYkovjwK_ItLB5QL3.png",
+      "bytes": 2223937
+    },
+    {
+      "celda": "color-a-seed606",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\color-a-seed606.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9c9/-bDl8PY_gwHB1rl5tveOj_Q8xyjT8K.png",
+      "bytes": 2224883
+    },
+    {
+      "celda": "color-b-seed101",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\color-b-seed101.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9ca/APt_sUIIY3VHtx-_6NLWu_GXEMlvvI.png",
+      "bytes": 2326071
+    },
+    {
+      "celda": "color-b-seed202",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\color-b-seed202.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9cb/Runqc2Nv7fNJa_tF8uePl_3uFfGyH9.png",
+      "bytes": 2339555
+    },
+    {
+      "celda": "color-b-seed303",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\color-b-seed303.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9e3/ZeA4mcIU6je6cnepL1dEb_0d4fVfGH.png",
+      "bytes": 2333747
+    },
+    {
+      "celda": "color-b-seed404",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\color-b-seed404.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9e5/o0-Yyd6Dfg6Gxea-iaKi8_Od4b9HtJ.png",
+      "bytes": 2398370
+    },
+    {
+      "celda": "color-b-seed505",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\color-b-seed505.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9d0/rtqDuCGfI_v9Sp8q-Q7Zm_OS2De2DJ.png",
+      "bytes": 2143646
+    },
+    {
+      "celda": "color-b-seed606",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\color-b-seed606.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9d1/meILkiM7wPPCRT9sztdjL_pFyznS7Z.png",
+      "bytes": 2188771
+    },
+    {
+      "celda": "diametro-a-seed101",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\diametro-a-seed101.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9d2/fLjmnnob_MeUZfmeYGY7n_hZaWvrCx.png",
+      "bytes": 2318458
+    },
+    {
+      "celda": "diametro-a-seed202",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\diametro-a-seed202.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9ea/k2QbYEJ5WB8k4rXtTEDi9_UIg1jMhV.png",
+      "bytes": 2457625
+    },
+    {
+      "celda": "diametro-a-seed303",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\diametro-a-seed303.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9d6/PTwAhaDANPTtQOPGrNTFJ_QCNDU21G.png",
+      "bytes": 2251779
+    },
+    {
+      "celda": "diametro-a-seed404",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\diametro-a-seed404.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9d7/Yc0aHq9mr5bpiVXO-72yG_RNOnfTGJ.png",
+      "bytes": 2519984
+    },
+    {
+      "celda": "diametro-a-seed505",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\diametro-a-seed505.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9d9/bqRmzFfkFL5sl0vUn3el-_1ntfdxOd.png",
+      "bytes": 2149861
+    },
+    {
+      "celda": "diametro-a-seed606",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\diametro-a-seed606.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9f0/annL9DOwhYGSkCdMiHQMK_6TjewGiU.png",
+      "bytes": 2279389
+    },
+    {
+      "celda": "diametro-b-seed101",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\diametro-b-seed101.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9db/KVZGO31P8YAMcpIsecKQG_GNaJmjIf.png",
+      "bytes": 2319924
+    },
+    {
+      "celda": "diametro-b-seed202",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\diametro-b-seed202.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9dc/iXkObgSwMxbZXsIuqaP8X_qj5YgoOb.png",
+      "bytes": 2467780
+    },
+    {
+      "celda": "diametro-b-seed303",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\diametro-b-seed303.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9dd/_AZWNqtXQNDbgrmu_BCHy_86pvdZMt.png",
+      "bytes": 2235577
+    },
+    {
+      "celda": "diametro-b-seed404",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\diametro-b-seed404.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9df/r3qLSIWR9f7vhVXZfV9j0_3LQiuF0i.png",
+      "bytes": 2520656
+    },
+    {
+      "celda": "diametro-b-seed505",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\diametro-b-seed505.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9f6/R9p7tBjPquH-N55sN4cJ1_k7vamiE5.png",
+      "bytes": 2177635
+    },
+    {
+      "celda": "diametro-b-seed606",
+      "ok": true,
+      "censurada": false,
+      "archivo": "reports\\lora-debug\\eval-v007-producto\\diametro-b-seed606.png",
+      "url_fal": "https://v3b.fal.media/files/b/0aa8f9e1/N0RNivu3lMAGJXFaVOV4s_7JxpBNlK.png",
+      "bytes": 2294810
+    }
+  ],
+  "saldo_antes": 6.144,
+  "saldo_despues": 4.632,
+  "gasto_usd": 1.512
+}

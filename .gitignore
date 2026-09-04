@@ -50,6 +50,10 @@ yarn-error.log*
 /data/captions/*
 !/data/**/.gitkeep
 !/data/**/DATASET_CARD.md
+# Análisis derivado que consume la pantalla de configuración del LoRA
+!/data/processed/
+/data/processed/*
+!/data/processed/lora-v004-composicion.json
 /public/uploads
 
 # typescript
@@ -58,3 +62,6 @@ next-env.d.ts
 
 # paquetes del workspace — build output
 packages/*/dist
+
+# perfiles persistentes de navegador para scrapers con sesión propia (Playwright)
+/.playwright-profiles/

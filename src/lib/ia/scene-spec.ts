@@ -7,6 +7,7 @@ import {
   type ReferenceElement,
 } from "./reference-blueprint";
 import { MaterialEstimateSchema, type DesignMaterialEstimate } from "@/lib/materiales/estimacion";
+import { VisualSemanticsSchema } from "./lora-semantics";
 
 const texto = (max: number) => z.string().trim().min(1).max(max);
 
@@ -45,6 +46,8 @@ const SceneElementSchema = z
     target_bbox: BBoxSchema,
     depth_layer: z.number().int().min(0).max(99),
     resolved_colors: z.array(texto(80)).max(8),
+    visual_semantics: VisualSemanticsSchema.optional(),
+    resolved_finishes: z.array(texto(80)).max(8).optional(),
     identity_constraints: z.array(texto(220)).max(12),
     relationships: z.array(RelationshipSchema).max(12),
   })
@@ -261,6 +264,8 @@ export function buildApprovedSceneSpec(input: {
             eventPalette: input.eventPalette ?? input.blueprint.palette.priority,
             observedColors: element.appearance.observed_colors,
           }),
+        visual_semantics: element.visual_semantics,
+        resolved_finishes: element.resolved_finishes,
         identity_constraints: [
           // `required_elements` (la sección MUST INCLUDE, lo primero y más
           // pesado que lee el modelo) solo toma los primeros DOS constraints

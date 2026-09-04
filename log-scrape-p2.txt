@@ -1,0 +1,60 @@
+Recorriendo páginas 1-8 del listado...
+  página 1: 24 ideas
+  página 2: 24 ideas
+  página 3: 24 ideas
+  página 4: 24 ideas
+  página 5: 24 ideas
+  página 6: 24 ideas
+  página 7: 24 ideas
+  página 8: 24 ideas
+Total ideas: 192 -- esta partición (2/4) procesa 48
+[marco-rojo-corazon] -> orden #950000002 OK (4 materiales, tipo=sin determinar)
+[arco-de-flores-para-mama] -> orden #950000006 OK (5 materiales, tipo=arco)
+[fluorescent-style-nacional] -> orden #950000010 OK (7 materiales, tipo=sin determinar)
+[eternal-love-nacional] -> orden #950000014 OK (5 materiales, tipo=sin determinar)
+[blue-tide-nacional-2025] -> orden #950000018 OK (12 materiales, tipo=sin determinar)
+[cumpleanos-fluorescente] -> orden #950000022 OK (9 materiales, tipo=pared)
+[ramo-de-rosas-1] -> orden #950000026 OK (5 materiales, tipo=columna)
+[ano-nuevo-con-estilo] -> orden #950000030 OK (9 materiales, tipo=arco)
+[centro-de-mesa-feliz-dia] -> orden #950000034 OK (8 materiales, tipo=centro_mesa)
+[centro-de-mesa-del-oeste] -> orden #950000038 OK (6 materiales, tipo=centro_mesa)
+[centro-de-mesa-papa-sombrero] -> orden #950000042 OK (5 materiales, tipo=centro_mesa)
+[desayuno-sorpresa] -> orden #950000046 OK (3 materiales, tipo=sin determinar)
+[love-base] -> orden #950000050 OK (5 materiales, tipo=sin determinar)
+[esfera-de-amor-1] -> orden #950000054 OK (4 materiales, tipo=sin determinar)
+[topiario-reflex] -> orden #950000058 OK (2 materiales, tipo=centro_mesa)
+[vibrant-festival-1] -> orden #950000062 OK (5 materiales, tipo=sin determinar)
+[semiarco-color-destacado] -> orden #950000066 OK (5 materiales, tipo=sin determinar)
+[reyes-magos-4] -> orden #950000070 OK (2 materiales, tipo=sin determinar)
+[lime-citrus-1] -> orden #950000074 OK (4 materiales, tipo=sin determinar)
+[bright-christmas] -> orden #950000078 OK (4 materiales, tipo=sin determinar)
+[special-occasions] -> orden #950000082 OK (5 materiales, tipo=sin determinar)
+[halloween-1] -> orden #950000086 OK (4 materiales, tipo=sin determinar)
+[autumn] -> orden #950000090 OK (5 materiales, tipo=sin determinar)
+[rudolph-el-reno] -> orden #950000094 OK (5 materiales, tipo=otro)
+[temporada-de-sustos] -> orden #950000098 OK (6 materiales, tipo=sin determinar)
+[decoracion-espantapajaros-otono] -> orden #950000102 OK (7 materiales, tipo=sin determinar)
+[happy-halloween-violeta-verde-lima] ningún producto del carrusel matchea el catálogo local, salto
+[arreglo-calabaza] -> orden #950000110 OK (4 materiales, tipo=centro_mesa)
+[arbol-halloween] -> orden #950000114 OK (6 materiales, tipo=sin determinar)
+[regalo-con-amor] -> orden #950000118 OK (5 materiales, tipo=centro_mesa)
+[figura-verano] -> orden #950000122 OK (5 materiales, tipo=centro_mesa)
+[botella-de-champana] -> orden #950000126 OK (6 materiales, tipo=otro)
+[centro-de-mesa-momento-inolvidable] -> orden #950000130 OK (5 materiales, tipo=otro)
+[conejo-ano-nuevo-chino] -> orden #950000134 OK (2 materiales, tipo=otro)
+[pared-corazon] -> orden #950000138 OK (6 materiales, tipo=pared)
+[amor-y-amistad-organico-malteada] -> orden #950000142 OK (6 materiales, tipo=pared)
+[arco-colores-verano] -> orden #950000146 OK (4 materiales, tipo=arco)
+[webinar-padre] -> orden #950000150 OK (5 materiales, tipo=otro)
+[revelacion-de-genero] -> orden #950000154 OK (5 materiales, tipo=centro_mesa)
+[pina-1] -> orden #950000158 OK (4 materiales, tipo=otro)
+[columna-feliz-dia-fiesta-bigotes] -> orden #950000162 OK (5 materiales, tipo=columna)
+[cola-de-sirena] -> orden #950000166 OK (5 materiales, tipo=otro)
+[figura-mariposas] -> orden #950000170 OK (7 materiales, tipo=otro)
+[amarillo-verde-lima-eucalipto-arena] -> orden #950000174 OK (4 materiales, tipo=sin determinar)
+[malla-organica] -> orden #950000178 OK (5 materiales, tipo=pared)
+[corazon-de-link-o-loon-r-6-con-reflex-plata] -> orden #950000182 OK (1 materiales, tipo=otro)
+[ramo-de-flores-en-reflex] -> orden #950000186 OK (2 materiales, tipo=otro)
+[muneco-de-nieve-1] -> orden #950000190 OK (4 materiales, tipo=sin determinar)
+
+Listo (partición 2/4). OK: 47 | sin productos mapeables: 1 | sin imagen: 0 | errores: 0

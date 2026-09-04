@@ -52,6 +52,8 @@ export type Producto = {
    * generate/route.ts).
    */
   familiaId?: string;
+  /** SKU factual de Shopify, solo para resolver identidad canónica internamente. */
+  catalogSku?: string;
   /** Emoji + color de acento para el placeholder cuando no hay foto real. */
   emoji?: string;
   tono?: string;

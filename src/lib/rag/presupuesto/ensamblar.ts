@@ -2,6 +2,7 @@ import { esMismaFamiliaQueAlguno, ordenarConDiversidad } from "../retrieval/dive
 import type { CandidatoPuntuado } from "../retrieval/rerank";
 import type { RolPresupuesto } from "./franjas";
 import type { PlanCanasta } from "./plan";
+import type { EventMatchEvidence } from "../retrieval/types";
 
 export type PiezaCanasta = {
   rol: RolPresupuesto;
@@ -14,6 +15,7 @@ export type PiezaCanasta = {
   cantidad: number;
   subtotal: number;
   porque: string[];
+  eventEvidence?: EventMatchEvidence;
 };
 
 export type Canasta = {
@@ -45,6 +47,7 @@ function aPieza(rol: RolPresupuesto, c: CandidatoPuntuado): PiezaCanasta {
     cantidad: 1,
     subtotal: c.precio,
     porque: c.porque,
+    eventEvidence: c.eventEvidence,
   };
 }
 

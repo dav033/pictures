@@ -69,7 +69,7 @@ export function bloqueMezclaTamanos(lineas: LineaMezclaTamanos[]): string | null
     ...(diametros.length === 1
       ? [`SINGLE DIAMETER: every balloon in this installation MUST be exactly ${diametros[0]} inches. Do not vary balloon size, even for depth, overlap, or visual interest.`]
       : []),
-    "Every listed diameter must be visibly represented. Any visibly smaller-than-12-inch balloon must be one of the listed, quoted sizes above; do not add unquoted mini or intermediate balloons.",
+    "Every listed diameter must be visibly represented. Every visible balloon must be one of the listed, quoted sizes above; do not add unquoted mini or intermediate balloons.",
     "Do not introduce any other diameter. Do not add jumbo, mini, or intermediate sizes not listed above.",
   ].join("\n");
 }
@@ -97,6 +97,6 @@ export function bloqueMezclaPorEstructura(estructuras: Array<{
   return [
     "BALLOON SIZE MIX — HARD CONSTRAINT (per structure)",
     ...bloques,
-    "Each structure uses EXACTLY its own quoted diameters and quantities. Every listed diameter must be visibly represented; any visibly smaller-than-12-inch balloon must be one of its listed, quoted sizes. Do not apply one structure's mix to another. Do not introduce any other diameter, and do not add jumbo, mini, or intermediate sizes not listed above.",
+    "Each structure uses EXACTLY its own quoted diameters and quantities. Every listed diameter must be visibly represented; every visible balloon must be one of its listed, quoted sizes. Do not apply one structure's mix to another. Do not introduce any other diameter, and do not add jumbo, mini, or intermediate sizes not listed above.",
   ].join("\n");
 }

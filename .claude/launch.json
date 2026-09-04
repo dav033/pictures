@@ -7,6 +7,13 @@
       "runtimeArgs": ["run", "dev"],
       "port": 3000,
       "autoPort": true
+    },
+    {
+      "name": "codex-lora-vocabulario",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "../demo-decoracion-codex-lora-vocabulario", "run", "dev", "--", "--webpack"],
+      "port": 3001,
+      "autoPort": true
     }
   ]
 }

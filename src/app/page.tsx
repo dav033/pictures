@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { DecoracionCard } from "@/components/DecoracionCard";
 import { ComparacionModelos, type ResultadoComparacion } from "@/components/ComparacionModelos";
 import { Lightbox } from "@/components/Lightbox";
+import { PromptModal } from "@/components/PromptModal";
 import { Markdown } from "@/components/Markdown";
 import { ProductoCard } from "@/components/ProductoCard";
 import { TarjetaCotizacion } from "@/components/TarjetaCotizacion";
@@ -23,6 +24,7 @@ import type { LineaBorrador } from "@/lib/estado/borrador-cotizacion";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { Imagen, PeticionImagen } from "@/lib/ia/tipos";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
+import type { LoraModeSlug } from "@/lib/lora/schema";
 import type { ResultadoMedidas } from "@/lib/medidas/geometria";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import type { ItemValidado } from "@/lib/rag/chat/validar";
@@ -32,7 +34,7 @@ import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
 import { classifyGenerationIds, normalizeGenerationSources } from "@/lib/generacion/provenance";
 
 type ProveedorId = "gemini";
-type SelectorIA = ProveedorId | "lora" | "comparar" | "gemini_sin_referencias";
+type SelectorIA = ProveedorId | "lora" | "comparar" | "comparar_lora" | "gemini_sin_referencias";
 
 const NOMBRE_PROVEEDOR: Record<ProveedorId, string> = {
   gemini: "Gemini 3.6 Flash / Nano Banana 2",
@@ -40,8 +42,9 @@ const NOMBRE_PROVEEDOR: Record<ProveedorId, string> = {
 
 const NOMBRE_SELECTOR: Record<SelectorIA, string> = {
   ...NOMBRE_PROVEEDOR,
-  lora: "LoRA Sempertex",
+  lora: "LoRA Sempertex v007",
   comparar: "Comparar: Nano Banana 2 + LoRA",
+  comparar_lora: "Depurar LoRA: app v1 + v2 + directo",
   /** Prueba: aísla si el problema de composición es "falta entrenamiento" o
    * "el texto solo no alcanza ni con un modelo capaz" — mismo Gemini, cero
    * fotos de referencia/producto adjuntas, identidad solo por texto. */
@@ -52,6 +55,7 @@ type GeneracionVisible = {
   modo: "gemini" | "lora" | "comparar";
   solicitado: SelectorIA;
   etiqueta: string;
+  prompts: Array<{ label: string; prompt: string }>;
 };
 
 type Mensaje = {
@@ -470,7 +474,9 @@ export default function Page() {
   const [segundosGeneracion, setSegundosGeneracion] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [proveedor, setProveedor] = useState<ProveedorId>("gemini");
-  const [selectorIA, setSelectorIA] = useState<SelectorIA>("gemini");
+  const [selectorIA, setSelectorIA] = useState<SelectorIA>("lora");
+  const loraModeRef = useRef<LoraModeSlug>("training_1");
+  const [seedLoraDebug, setSeedLoraDebug] = useState("42");
   const [proveedoresDisponibles, setProveedoresDisponibles] = useState<ProveedorId[]>(["gemini"]);
   // Últimas medidas calculadas en el chat: se le pasan al prompt de imagen
   // como referencia de escala (§3.6 del plan) — sin esto, un arco de 3 m
@@ -496,6 +502,7 @@ export default function Page() {
   const [comparacionActual, setComparacionActual] = useState<ResultadoComparacion[]>([]);
   const [ultimaImagenGenerada, setUltimaImagenGenerada] = useState<Imagen | null>(null);
   const [ultimaGeneracion, setUltimaGeneracion] = useState<GeneracionVisible | null>(null);
+  const [promptModalAbierto, setPromptModalAbierto] = useState(false);
   const [errorAdjuntos, setErrorAdjuntos] = useState<string | null>(null);
   // Espejo siempre-al-día de los dos estados de arriba: `generar()` se
   // dispara desde dentro de un closure de `enviar()` que puede llevar varios
@@ -525,6 +532,12 @@ export default function Page() {
   // de vuelta en la siguiente revisión (ajuste sobre una imagen ya generada)
   // para que el modelo encadene contexto real, no solo la imagen final.
   const ultimaInteraccionIdRef = useRef<string | undefined>(undefined);
+  // Recursos de la generación activa. Se guardan en refs para que la limpieza
+  // no dependa del closure de un render viejo: timeout, abort y desmontaje
+  // deben dejar la UI en estado idle incluso si la API devuelve 4xx/5xx.
+  const generacionAbortRef = useRef<AbortController | null>(null);
+  const generacionIntervalRef = useRef<number | null>(null);
+  const paginaMontadaRef = useRef(true);
 
   const finChat = useRef<HTMLDivElement>(null);
   const entradaRef = useRef<HTMLInputElement>(null);
@@ -535,6 +548,22 @@ export default function Page() {
   const referenciaGeneradaRef = useRef<string | null>(null);
   const [planAprobadoHash, setPlanAprobadoHash] = useState<string | null>(null);
   const hayPlanEnConversacion = mensajes.some((mensaje) => mensaje.role === "assistant" && Boolean(mensaje.plan));
+
+  useEffect(() => {
+    paginaMontadaRef.current = true;
+    return () => {
+      paginaMontadaRef.current = false;
+      generacionAbortRef.current?.abort();
+      generacionAbortRef.current = null;
+      if (generacionIntervalRef.current !== null) {
+        window.clearInterval(generacionIntervalRef.current);
+        generacionIntervalRef.current = null;
+      }
+      // La petición abortada ejecutará su finally; liberar también el guard
+      // aquí evita que una pestaña desmontada bloquee una nueva instancia.
+      generandoGlobal = false;
+    };
+  }, []);
 
   useEffect(() => {
     const reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -633,7 +662,10 @@ export default function Page() {
         if (disponibles.length) {
           setProveedoresDisponibles(disponibles);
           setProveedor(data.predeterminado ?? disponibles[0]);
-          setSelectorIA(data.predeterminado ?? disponibles[0]);
+          // No pisar `selectorIA` acá: este endpoint solo conoce proveedores
+          // Gemini (`ProveedorId`), nunca "lora" — sobrescribirlo en cada
+          // carga volvía a Gemini el default real (LoRA) sin que el usuario
+          // lo pidiera.
         }
       })
       .catch(() => {});
@@ -641,7 +673,7 @@ export default function Page() {
 
   async function cambiarSelector(nuevo: SelectorIA) {
     setSelectorIA(nuevo);
-    if (nuevo === "lora" || nuevo === "comparar" || nuevo === "gemini_sin_referencias") {
+    if (nuevo === "lora" || nuevo === "comparar" || nuevo === "comparar_lora" || nuevo === "gemini_sin_referencias") {
       setMensajes((previos) => [
         ...previos,
         {
@@ -650,9 +682,11 @@ export default function Page() {
           content:
             nuevo === "comparar"
               ? "Modo comparativo activado: generaré dos imágenes con la misma propuesta — Nano Banana 2 (Gemini) y LoRA Sempertex."
+              : nuevo === "comparar_lora"
+                ? "Modo de depuracion activado: generare dos salidas LoRA con la misma semilla — app v1 y app v2."
               : nuevo === "gemini_sin_referencias"
                 ? "Modo de prueba activado: Gemini generará sin ninguna imagen de referencia adjunta, solo con la descripción de texto. El chat continúa con el proveedor actual."
-                : "LoRA Sempertex seleccionado para las imágenes. El chat continúa con el proveedor actual.",
+                : "LoRA Sempertex v007 seleccionado para las imágenes. El chat continúa con el proveedor actual.",
         },
       ]);
       return;
@@ -873,6 +907,7 @@ export default function Page() {
           messages: nuevos.map(({ role, content }) => ({ role, content })),
           brief: briefRef.current,
           proveedor,
+          loraMode: loraModeRef.current ?? undefined,
           // Leídos de los refs (no del estado directo), mismo criterio que
           // en generar(): garantiza el valor más reciente sin importar
           // cuándo se creó este closure de enviar().
@@ -960,9 +995,12 @@ export default function Page() {
     setComparacionActual([]);
     setUltimaImagenGenerada(null);
     setUltimaGeneracion(null);
+    setPromptModalAbierto(false);
     setError(null);
     setSeleccionPendiente(false);
-    setSelectorIA(proveedor);
+    setSelectorIA("lora");
+    loraModeRef.current = "training_1";
+    setSeedLoraDebug("42");
     setFotoEspacio(null);
     setImagenesReferencia([]);
     setErrorAdjuntos(null);
@@ -1067,14 +1105,18 @@ export default function Page() {
       setSegundosGeneracion(0);
       setError(null);
 
-      const intervalo = setInterval(() => {
+      const controlador = new AbortController();
+      generacionAbortRef.current = controlador;
+      const intervalo = window.setInterval(() => {
         setSegundosGeneracion((segundos) => segundos + 1);
       }, 1000);
+      generacionIntervalRef.current = intervalo;
 
       try {
         const res = await fetch("/api/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: controlador.signal,
           body: JSON.stringify({
             productIds: idsCatalogo,
             ragVariantIds: ragVariantIdsAUsar.length ? ragVariantIdsAUsar : undefined,
@@ -1087,7 +1129,10 @@ export default function Page() {
             instruccion: (override?.instruccion ?? ajuste.trim()) || undefined,
             proveedor,
             usarLora: selectorIA === "lora",
+            loraMode: selectorIA === "lora" ? loraModeRef.current ?? undefined : undefined,
             comparar: selectorIA === "comparar",
+            compararLora: selectorIA === "comparar_lora",
+            seedLoraDebug: selectorIA === "comparar_lora" && seedLoraDebug.trim() ? Number(seedLoraDebug) : undefined,
             sinReferencias: selectorIA === "gemini_sin_referencias",
             medidas: ultimasMedidas ?? undefined,
             // Adjuntos del cliente, leídos de los refs (no del estado
@@ -1116,6 +1161,9 @@ export default function Page() {
         const data = await res.json();
 
         if (!res.ok) {
+          // El backend devuelve QA también en NON_CONFORME; conservarlo en
+          // pantalla expone la causa real sin convertir el fallo en éxito.
+          if (data.qa) setUltimaQa(data.qa);
           setError(data.error ?? "No se pudo generar la imagen.");
           return;
         }
@@ -1123,20 +1171,30 @@ export default function Page() {
 
         const modoGeneracion: GeneracionVisible["modo"] = data.modoImagen === "comparacion"
           ? "comparar"
+          : data.modoImagen === "comparacion_lora"
+            ? "comparar"
           : data.modoImagen === "lora"
             ? "lora"
             : "gemini";
         const etiquetaGeneracion = modoGeneracion === "comparar"
-          ? "Nano Banana 2 + LoRA"
+          ? selectorIA === "comparar_lora" ? "LoRA · app v1 + v2 + directo" : "Nano Banana 2 + LoRA"
           : modoGeneracion === "lora"
             ? "LoRA Sempertex"
             : selectorIA === "gemini_sin_referencias"
               ? "Gemini sin imágenes (prueba)"
               : "Nano Banana 2 (Gemini)";
-        setUltimaGeneracion({ modo: modoGeneracion, solicitado: selectorIA, etiqueta: etiquetaGeneracion });
+        const prompts = typeof data.prompts === "object" && data.prompts !== null
+          ? Object.entries(data.prompts as Record<string, unknown>)
+              .filter((entry): entry is [string, string] => typeof entry[1] === "string" && entry[1].trim().length > 0)
+              .map(([label, prompt]) => ({ label, prompt }))
+          : typeof data.prompt === "string" && data.prompt.trim().length > 0
+            ? [{ label: etiquetaGeneracion, prompt: data.prompt }]
+            : [];
+        setUltimaGeneracion({ modo: modoGeneracion, solicitado: selectorIA, etiqueta: etiquetaGeneracion, prompts });
+        setPromptModalAbierto(prompts.length > 0);
         ultimaInteraccionIdRef.current = typeof data.interactionId === "string" ? data.interactionId : undefined;
         setImagenes((previas) => [data.imagen, ...previas]);
-        setImagenAmpliada(data.imagen);
+        setImagenAmpliada(null);
         setComparacionActual(Array.isArray(data.comparacion) ? data.comparacion : []);
         setUltimaQa(data.qa ?? null);
         // La imagen que se acaba de generar ya refleja la selección actual.
@@ -1175,12 +1233,21 @@ export default function Page() {
           ]);
         }
         setAjuste("");
-      } catch {
-        setError("No se pudo contactar al servidor.");
+      } catch (reason) {
+        if (controlador.signal.aborted) {
+          if (paginaMontadaRef.current) setError("Generación cancelada.");
+          return;
+        }
+        setError(reason instanceof Error ? reason.message : "No se pudo contactar al servidor.");
       } finally {
-        clearInterval(intervalo);
+        window.clearInterval(intervalo);
+        if (generacionIntervalRef.current === intervalo) generacionIntervalRef.current = null;
+        if (generacionAbortRef.current === controlador) generacionAbortRef.current = null;
         generandoGlobal = false;
-        setGenerando(false);
+        if (paginaMontadaRef.current) {
+          setGenerando(false);
+          setSegundosGeneracion(0);
+        }
       }
     });
   }
@@ -1379,6 +1446,7 @@ export default function Page() {
                   ))}
                   <SelectItem value="lora">{NOMBRE_SELECTOR.lora}</SelectItem>
                   <SelectItem value="comparar">{NOMBRE_SELECTOR.comparar}</SelectItem>
+                  <SelectItem value="comparar_lora">{NOMBRE_SELECTOR.comparar_lora}</SelectItem>
                   <SelectItem value="gemini_sin_referencias">{NOMBRE_SELECTOR.gemini_sin_referencias}</SelectItem>
                 </SelectContent>
               </Select>
@@ -1974,6 +2042,33 @@ export default function Page() {
           </section>
 
           <section className="space-y-2">
+            {selectorIA === "comparar_lora" && (
+              <div className="material-panel space-y-3" aria-labelledby="lora-debug-title">
+                <div>
+                  <h2 id="lora-debug-title" className="text-sm font-semibold text-texto">Depuración de prompt LoRA</h2>
+                  <p className="mt-1 text-xs leading-5 text-texto-suave">
+                    Misma escena y semilla. Verás el prompt legado v1 y la caption compilada v2, generados con el mismo LoRA.
+                  </p>
+                </div>
+                <label className="flex items-center gap-2 text-xs font-medium text-texto" htmlFor="seed-lora-debug">
+                  <span>Semilla compartida</span>
+                  <input
+                    id="seed-lora-debug"
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={seedLoraDebug}
+                    onChange={(e) => setSeedLoraDebug(e.target.value)}
+                    className="w-28 rounded-lg border border-borde bg-fondo px-2.5 py-1.5 text-xs font-normal text-texto outline-none focus:border-acento"
+                  />
+                </label>
+                {(fotoEspacio || imagenesReferencia.length > 0) && (
+                  <p className="rounded-lg bg-aviso-suave px-2.5 py-2 text-xs leading-5 text-aviso" role="alert">
+                    Este modo compara generación desde texto. Quita foto o referencias antes de generar.
+                  </p>
+                )}
+              </div>
+            )}
             {imagenes.length > 0 && (
               <input
                 value={ajuste}
@@ -2018,7 +2113,7 @@ export default function Page() {
                 }
                 aprobarPlan(planActual, planActualEntry?.id);
               }}
-              disabled={planActual ? (botonPlanBloqueado && !ajuste.trim()) || generando : !listoParaGenerar || generando || (planDecoracionActivo && imagenesReferencia.length > 0)}
+              disabled={planActual ? (botonPlanBloqueado && !ajuste.trim()) || generando : !listoParaGenerar || generando || (planDecoracionActivo && imagenesReferencia.length > 0) || (selectorIA === "comparar_lora" && (fotoEspacio !== null || imagenesReferencia.length > 0))}
               aria-busy={generando}
               className="ui-button-primary ui-pressable w-full"
             >
@@ -2067,7 +2162,20 @@ export default function Page() {
           </AnimatePresence>
 
           {comparacionActual.length > 0 && (
-            <ComparacionModelos resultados={comparacionActual} onOpen={setImagenAmpliada} />
+            <>
+              {ultimaGeneracion?.prompts.length ? (
+                <div className="mb-3 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setPromptModalAbierto(true)}
+                    className="ui-button-secondary ui-pressable px-3 py-2 text-xs"
+                  >
+                    Ver prompt usado
+                  </button>
+                </div>
+              ) : null}
+              <ComparacionModelos resultados={comparacionActual} onOpen={setImagenAmpliada} />
+            </>
           )}
 
           {imagenes.length > 0 && comparacionActual.length === 0 && (
@@ -2077,9 +2185,20 @@ export default function Page() {
                   Visualizaciones
                 </h2>
                 {ultimaGeneracion && (
+                  <div className="flex flex-wrap items-center justify-end gap-2">
                   <span className="material-status" title="Proveedor que devolvió esta imagen">
                     Generada con {ultimaGeneracion.etiqueta}
                   </span>
+                  {ultimaGeneracion.prompts.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setPromptModalAbierto(true)}
+                      className="ui-button-secondary ui-pressable px-3 py-1.5 text-xs"
+                    >
+                      Ver prompt usado
+                    </button>
+                  )}
+                  </div>
                 )}
               </div>
               {ultimaGeneracion?.solicitado === "comparar" && ultimaGeneracion.modo !== "comparar" && (
@@ -2108,6 +2227,11 @@ export default function Page() {
       </main>
 
       <Lightbox src={imagenAmpliada} open={imagenAmpliada != null} onClose={() => setImagenAmpliada(null)} />
+      <PromptModal
+        entries={ultimaGeneracion?.prompts ?? []}
+        open={promptModalAbierto}
+        onClose={() => setPromptModalAbierto(false)}
+      />
     </div>
   );
 }

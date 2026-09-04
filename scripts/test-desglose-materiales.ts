@@ -18,7 +18,7 @@ const plan = PlanDecoracionSchema.parse({
     { estructura_id: "EST_02_COLUMNA", nombre: "Columna derecha", tipo: "columna", rol_escena: "relleno", ubicacion: "lateral_izquierdo", medidas: { alto_m: 1.4 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales: [{ product_id: "P-1", color: "rojo", participacion: 1, rol_material: "principal" }], porque: "Prueba.", referencia_element_id: "REF_01_E02" },
   ],
   supuestos: [],
-  referencia_omitida: [{ element_id: "REF_01_E03", motivo: "sin equivalente comercial" }],
+  referencia_omitida: [{ element_id: "REF_01_E03", motivo: "sin equivalente comercial", motivo_tipo: "emulacion_propuesta", propuesta: "plano vertical de globos" }],
 });
 
 const blueprint = ReferenceBlueprintV2Schema.parse({
@@ -73,7 +73,10 @@ async function main(): Promise<void> {
     element_id: "REF_01_E03",
     nombre: "Cortina",
     categoria: "curtain",
+    alcance: "emulable",
     motivo: "sin equivalente comercial",
+    motivo_tipo: "emulacion_propuesta",
+    propuesta: "plano vertical de globos",
   }]);
 
   const cotizacion = cotizarPlan(resuelto);

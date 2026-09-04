@@ -21,6 +21,8 @@ export const CATEGORIAS_CATALOGO_V2 = [
   "desechable",
 ] as const;
 
+export type CategoriaCatalogoV2 = (typeof CATEGORIAS_CATALOGO_V2)[number];
+
 /** Paleta ampliada a partir de tags observados en products_catalog.json. */
 export const PALETA_COLORES_V2 = [
   "dorado",
@@ -50,6 +52,42 @@ export const PALETA_COLORES_V2 = [
   "nude",
   "burdeos",
 ] as const;
+
+/**
+ * El LoRA de estilo Sempertex se entrenó con captions 100% en inglés
+ * (ver HANDOFF-SESION-DATASET.md, sesión 4) — pasarle un color en español
+ * queda fuera de esa distribución igual que un prompt con secciones
+ * etiquetadas. Este mapa es la única traducción ES→EN de color que necesita
+ * ese prompt; no cubre nada fuera de `PALETA_COLORES_V2`.
+ */
+export const PALETA_COLORES_EN_V2: Record<(typeof PALETA_COLORES_V2)[number], string> = {
+  dorado: "gold",
+  "dorado rosa": "rose gold",
+  plateado: "silver",
+  rojo: "red",
+  azul: "blue",
+  rosado: "pink",
+  verde: "green",
+  blanco: "white",
+  negro: "black",
+  morado: "purple",
+  naranja: "orange",
+  amarillo: "yellow",
+  fucsia: "fuchsia",
+  transparente: "clear",
+  multicolor: "multicolor",
+  lila: "lilac",
+  turquesa: "turquoise",
+  beige: "beige",
+  cafe: "brown",
+  champagne: "champagne",
+  violeta: "violet",
+  coral: "coral",
+  menta: "mint",
+  crema: "cream",
+  nude: "nude",
+  burdeos: "burgundy",
+};
 
 export const ACABADOS_CATALOGO_V2 = [
   "satin",
@@ -113,17 +151,17 @@ type Alias<T extends string> = { value: T; aliases: readonly string[] };
 
 const COLORS: readonly Alias<(typeof PALETA_COLORES_V2)[number]>[] = [
   { value: "dorado rosa", aliases: ["dorado rosa", "oro rosa", "rose gold", "rosé gold"] },
-  { value: "dorado", aliases: ["dorado", "dorados", "oro", "gold"] },
-  { value: "plateado", aliases: ["plateado", "plateados", "plata", "silver"] },
-  { value: "rojo", aliases: ["rojo", "rojos", "red"] },
+  { value: "dorado", aliases: ["dorado", "dorados", "dorada", "doradas", "oro", "gold"] },
+  { value: "plateado", aliases: ["plateado", "plateados", "plateada", "plateadas", "plata", "silver"] },
+  { value: "rojo", aliases: ["rojo", "rojos", "roja", "rojas", "red"] },
   { value: "azul", aliases: ["azul", "azules", "azul rey", "azul caribe", "azul naval", "blue"] },
-  { value: "rosado", aliases: ["rosado", "rosados", "rosa", "pink"] },
+  { value: "rosado", aliases: ["rosado", "rosados", "rosada", "rosadas", "rosa", "pink"] },
   { value: "verde", aliases: ["verde", "verdes", "lima", "esmeralda", "green"] },
-  { value: "blanco", aliases: ["blanco", "blancos", "white"] },
-  { value: "negro", aliases: ["negro", "negros", "black"] },
-  { value: "morado", aliases: ["morado", "morados", "purple"] },
-  { value: "naranja", aliases: ["naranja", "orange"] },
-  { value: "amarillo", aliases: ["amarillo", "yellow"] },
+  { value: "blanco", aliases: ["blanco", "blancos", "blanca", "blancas", "white"] },
+  { value: "negro", aliases: ["negro", "negros", "negra", "negras", "black"] },
+  { value: "morado", aliases: ["morado", "morados", "morada", "moradas", "purple"] },
+  { value: "naranja", aliases: ["naranja", "naranjas", "orange"] },
+  { value: "amarillo", aliases: ["amarillo", "amarillos", "amarilla", "amarillas", "yellow"] },
   { value: "fucsia", aliases: ["fucsia", "magenta", "fuchsia"] },
   { value: "transparente", aliases: ["transparente", "transparentes", "transparent", "crystal"] },
   { value: "multicolor", aliases: ["multicolor", "surtido", "rainbow", "arcoiris"] },

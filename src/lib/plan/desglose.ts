@@ -1,17 +1,22 @@
 import type { ReferenceBlueprintV2 } from "../ia/reference-blueprint";
+import { ALCANCE_POR_CATEGORIA_REFERENCIA, type AlcanceReferencia } from "../rag/taxonomy/alcance-referencia";
 import type { CompraConsolidada, PlanResuelto } from "./resuelto";
+import type { MotivoOmissionReferencia } from "./tipos";
 
-export type EstadoCoberturaReferencia = "pendiente" | "incluido" | "omitido";
+export type EstadoCoberturaReferencia = "pendiente" | "incluido" | "omitido" | "emulable_pendiente" | "fuera_de_catalogo";
 
 export type ElementoCoberturaReferencia = {
   elementId: string;
   nombre: string;
   categoria: ReferenceBlueprintV2["elements"][number]["category"];
+  alcance: AlcanceReferencia;
   estado: EstadoCoberturaReferencia;
   estructuraId?: string;
   estructuraNombre?: string;
   variantIds: string[];
   motivo?: string;
+  motivoTipo?: MotivoOmissionReferencia;
+  propuesta?: string;
 };
 
 export type CoberturaReferencia = {
@@ -42,7 +47,10 @@ export type DesgloseMateriales = {
     element_id: string;
     nombre: string;
     categoria: ReferenceBlueprintV2["elements"][number]["category"];
+    alcance: AlcanceReferencia;
     motivo: string;
+    motivo_tipo: MotivoOmissionReferencia;
+    propuesta?: string;
   }>;
   resumen_tamanos: Array<{ tamano: string; diam_pulg: number; diam_cm: number; unidades: number; pct: number }>;
   totales: { total_unidades: number; total_cop: number; incluye_iva: boolean; merma_porcentaje: number };
@@ -62,6 +70,7 @@ export function construirCoberturaReferencia(blueprint: ReferenceBlueprintV2, pl
           elementId: elemento.element_id,
           nombre: elemento.name,
           categoria: elemento.category,
+          alcance: ALCANCE_POR_CATEGORIA_REFERENCIA[elemento.category].alcance,
           estado: "pendiente",
           variantIds: [],
         };
@@ -75,6 +84,7 @@ export function construirCoberturaReferencia(blueprint: ReferenceBlueprintV2, pl
           elementId: elemento.element_id,
           nombre: elemento.name,
           categoria: elemento.category,
+          alcance: ALCANCE_POR_CATEGORIA_REFERENCIA[elemento.category].alcance,
           estado: "incluido",
           estructuraId: estructuras[0]!.estructura_id,
           estructuraNombre: estructuras[0]!.nombre,
@@ -84,13 +94,22 @@ export function construirCoberturaReferencia(blueprint: ReferenceBlueprintV2, pl
 
       const omitida = omitidasPorId.get(elemento.element_id);
       if (omitida) {
+        const alcance = ALCANCE_POR_CATEGORIA_REFERENCIA[elemento.category].alcance;
+        const estado: EstadoCoberturaReferencia = omitida.motivo_tipo === "emulacion_propuesta"
+          ? "emulable_pendiente"
+          : omitida.motivo_tipo === "fuera_de_catalogo"
+            ? "fuera_de_catalogo"
+            : "omitido";
         return {
           elementId: elemento.element_id,
           nombre: elemento.name,
           categoria: elemento.category,
-          estado: "omitido",
+          alcance,
+          estado,
           variantIds: [],
           motivo: omitida.motivo,
+          motivoTipo: omitida.motivo_tipo,
+          ...(omitida.propuesta ? { propuesta: omitida.propuesta } : {}),
         };
       }
 
@@ -98,6 +117,7 @@ export function construirCoberturaReferencia(blueprint: ReferenceBlueprintV2, pl
         elementId: elemento.element_id,
         nombre: elemento.name,
         categoria: elemento.category,
+        alcance: ALCANCE_POR_CATEGORIA_REFERENCIA[elemento.category].alcance,
         estado: "pendiente",
         variantIds: [],
       };
@@ -160,7 +180,10 @@ export function construirDesglose(plan: PlanResuelto, blueprint?: ReferenceBluep
           element_id: item.element_id,
           nombre: elemento?.name ?? item.element_id,
           categoria: elemento?.category ?? "other",
+          alcance: ALCANCE_POR_CATEGORIA_REFERENCIA[elemento?.category ?? "other"].alcance,
           motivo: item.motivo,
+          motivo_tipo: item.motivo_tipo,
+          ...(item.propuesta ? { propuesta: item.propuesta } : {}),
         };
       })
     : [];

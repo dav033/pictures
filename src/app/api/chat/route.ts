@@ -8,6 +8,8 @@ import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/
 import { RAG_ENABLED, RAG_FRANJAS_ENABLED } from "@/lib/rag/flags";
 import { PLAN_DECORACION_ENABLED } from "@/lib/plan/flags";
 import type { Brief, ChatMessage } from "@/lib/types";
+import { LoraModeSlugSchema } from "@/lib/lora/schema";
+import { resolveLoraModeDatasetAllowlist } from "@/lib/lora/mode-resolver";
 
 type Body = {
   messages: ChatMessage[];
@@ -23,6 +25,8 @@ type Body = {
    * como contexto de composición para el modelo; el emparejamiento con
    * catálogo real sigue siendo exclusivo de buscar_catalogo_rag (R3). */
   referenceBlueprint?: unknown;
+  /** Modo LoRA activo; habilita el allowlist de productos de su dataset. */
+  loraMode?: unknown;
 };
 
 const LIMITE_ESPERA_EVENTO_MS = 75_000;
@@ -72,7 +76,7 @@ function formatoSSE(evento: string, datos: unknown): string {
 }
 
 export async function POST(request: Request) {
-  const { messages, brief, proveedor, fotoEspacio, imagenesReferencia, referenceBlueprint: rawReferenceBlueprint }: Body = await request.json();
+  const { messages, brief, proveedor, fotoEspacio, imagenesReferencia, referenceBlueprint: rawReferenceBlueprint, loraMode: rawLoraMode }: Body = await request.json();
   const cookieProveedor = request.headers
     .get("cookie")
     ?.match(/ia_proveedor=(gemini)/)?.[1];
@@ -81,6 +85,7 @@ export async function POST(request: Request) {
   let historial: Mensaje[];
   let sistema: string;
   let referenceBlueprint: ReferenceBlueprintV2 | undefined;
+  let catalogAllowlist: Awaited<ReturnType<typeof resolveLoraModeDatasetAllowlist>> = null;
 
   try {
     const id = resolverProveedor({ override: proveedor, cookie: cookieProveedor });
@@ -92,8 +97,10 @@ export async function POST(request: Request) {
     referenceBlueprint = PLAN_DECORACION_ENABLED && rawReferenceBlueprint
       ? ReferenceBlueprintV2Schema.parse(rawReferenceBlueprint)
       : undefined;
+    const loraMode = rawLoraMode == null ? null : LoraModeSlugSchema.parse(rawLoraMode);
+    catalogAllowlist = RAG_ENABLED && loraMode ? await resolveLoraModeDatasetAllowlist(loraMode) : null;
 
-    sistema = construirSistema({ ragEnabled: RAG_ENABLED, franjasEnabled: RAG_FRANJAS_ENABLED, brief, referenceBlueprint });
+    sistema = construirSistema({ ragEnabled: RAG_ENABLED, franjasEnabled: RAG_FRANJAS_ENABLED, brief, referenceBlueprint, catalogAllowlist: catalogAllowlist ?? undefined });
 
     // Las imágenes solo se adjuntan al último mensaje (el que se acaba de
     // mandar en este turno) — `historial` se reconstruye desde texto plano
@@ -134,7 +141,7 @@ export async function POST(request: Request) {
   // La respuesta SSE se abre antes de esperar al proveedor. Esperar el primer
   // fragmento aquí bloqueaba los headers y permitía que el timeout absoluto
   // del navegador venciera durante un turno válido con varias herramientas.
-  const generador = ejecutarConversacionStream({ chat, sistema, historial, brief: brief ?? {}, referenceBlueprint });
+  const generador = ejecutarConversacionStream({ chat, sistema, historial, brief: brief ?? {}, referenceBlueprint, catalogAllowlist: catalogAllowlist ?? undefined });
   const iterador = generador[Symbol.asyncIterator]();
 
   const stream = new ReadableStream<Uint8Array>({

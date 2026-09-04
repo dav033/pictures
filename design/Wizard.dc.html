@@ -1,0 +1,389 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; font-family: Geist, system-ui, sans-serif; }
+    a { color: #6d3fe0; } a:hover { color: #5a2fc4; }
+    @keyframes entrar { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    @keyframes flotar { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+    .entra { animation: entrar .42s cubic-bezier(0.23, 1, 0.32, 1) both; }
+    .flota { animation: flotar 5s ease-in-out infinite; }
+    .op { transition: all 160ms cubic-bezier(0.23, 1, 0.32, 1); cursor: pointer; }
+    .op:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgb(28 20 37 / 0.13); }
+    .op:active { transform: scale(0.985); }
+  </style>
+</helmet>
+
+<div style="display: flex; flex-direction: column; width: 1440px; min-height: 900px; background: #f7f5fb">
+
+  <!-- Cabecera compacta -->
+  <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #ddd0f0; background: #ffffff; padding: 16px 40px">
+    <div style="display: flex; align-items: center; gap: 9px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6d3fe0" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 3v3M12 18v3M4.2 7.5l2.6 1.5M17.2 15l2.6 1.5M4.2 16.5l2.6-1.5M17.2 9l2.6-1.5"></path><circle cx="12" cy="12" r="3.4"></circle>
+      </svg>
+      <span style="color: #1c1425; font-size: 15px; font-weight: 600">Happie IA</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px; color: #6b6178; font-size: 12.5px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 4h2l2.2 11.2a1.8 1.8 0 0 0 1.8 1.4h8.4a1.8 1.8 0 0 0 1.8-1.4L21 7H6"></path><circle cx="9.5" cy="20" r="1.4"></circle><circle cx="17.5" cy="20" r="1.4"></circle>
+      </svg>
+      Tu selección · <strong style="color: #1c1425; font-weight: 600">0</strong>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 34px; max-width: 1000px; margin: 0 auto; padding: 44px 40px 56px">
+
+    <!-- Rail de progreso -->
+    <div style="display: flex; align-items: center; gap: 0">
+      <div style="display: flex; align-items: center; gap: 10px">
+        <div style="display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 999px; background: {{c.p1Bg}}; color: {{c.p1Fg}}; font-size: 13px; font-weight: 600">
+          <sc-if value="{{c.p1Hecho}}" hint-placeholder-val="{{ false }}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"></path></svg>
+          </sc-if>
+          <sc-if value="{{c.p1Pend}}" hint-placeholder-val="{{ true }}">1</sc-if>
+        </div>
+        <span style="color: {{c.p1Texto}}; font-size: 13px; font-weight: {{c.p1Peso}}">Tipo de evento</span>
+      </div>
+      <div style="flex-grow: 1; height: 2px; margin: 0 14px; border-radius: 2px; background: {{c.linea1}}"></div>
+      <div style="display: flex; align-items: center; gap: 10px">
+        <div style="display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 999px; background: {{c.p2Bg}}; color: {{c.p2Fg}}; font-size: 13px; font-weight: 600">
+          <sc-if value="{{c.p2Hecho}}" hint-placeholder-val="{{ false }}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"></path></svg>
+          </sc-if>
+          <sc-if value="{{c.p2Pend}}" hint-placeholder-val="{{ true }}">2</sc-if>
+        </div>
+        <span style="color: {{c.p2Texto}}; font-size: 13px; font-weight: {{c.p2Peso}}">Invitados</span>
+      </div>
+      <div style="flex-grow: 1; height: 2px; margin: 0 14px; border-radius: 2px; background: {{c.linea2}}"></div>
+      <div style="display: flex; align-items: center; gap: 10px">
+        <div style="display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 999px; background: {{c.p3Bg}}; color: {{c.p3Fg}}; font-size: 13px; font-weight: 600">3</div>
+        <span style="color: {{c.p3Texto}}; font-size: 13px; font-weight: {{c.p3Peso}}">Dónde</span>
+      </div>
+    </div>
+
+    <!-- ======= PASO 1 ======= -->
+    <sc-if value="{{c.esPaso1}}" hint-placeholder-val="{{ true }}">
+      <div class="entra" style="display: flex; flex-direction: column; gap: 22px">
+        <div style="display: flex; flex-direction: column; gap: 7px">
+          <h1 style="margin: 0; color: #1c1425; font-size: 30px; font-weight: 600; letter-spacing: -0.02em">¿Qué vas a celebrar?</h1>
+          <p style="margin: 0; color: #6b6178; font-size: 14.5px">Estos son los tipos de evento que tenemos armados hoy.</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px">
+          <!-- Cumpleaños -->
+          <div class="op" onClick="{{ c.elegirCumple }}" style="display: flex; flex-direction: column; overflow: hidden; border: 2px solid {{c.bordeCumple}}; border-radius: 18px; background: #ffffff; box-shadow: 0 2px 10px rgb(28 20 37 / 0.05)">
+            <div style="position: relative; height: 128px; overflow: hidden; background: linear-gradient(145deg, #6d3fe0 0%, #a855f7 52%, #d6216f 100%)">
+              <svg viewBox="0 0 300 128" preserveAspectRatio="xMidYMid slice" style="position: absolute; inset: 0; width: 100%; height: 100%">
+                <g opacity="0.9">
+                  <ellipse class="flota" cx="86" cy="52" rx="21" ry="26" fill="#fde68a"></ellipse>
+                  <path d="M86 78 L82 92 L90 92 Z" fill="#fde68a" opacity="0.8"></path>
+                  <ellipse class="flota" cx="150" cy="40" rx="19" ry="24" fill="#ffffff" opacity="0.92" style="animation-delay: .9s"></ellipse>
+                  <path d="M150 64 L146 78 L154 78 Z" fill="#ffffff" opacity="0.75"></path>
+                  <ellipse class="flota" cx="212" cy="56" rx="20" ry="25" fill="#f9a8d4" style="animation-delay: 1.8s"></ellipse>
+                  <path d="M212 81 L208 95 L216 95 Z" fill="#f9a8d4" opacity="0.8"></path>
+                </g>
+                <g fill="#ffffff" opacity="0.65">
+                  <rect x="42" y="96" width="5" height="5" rx="1" transform="rotate(28 44 98)"></rect>
+                  <rect x="256" y="88" width="5" height="5" rx="1" transform="rotate(-18 258 90)"></rect>
+                  <rect x="118" y="104" width="4" height="4" rx="1" transform="rotate(44 120 106)"></rect>
+                  <rect x="182" y="100" width="4" height="4" rx="1" transform="rotate(-32 184 102)"></rect>
+                </g>
+              </svg>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 18px">
+              <div style="display: flex; flex-direction: column; gap: 3px">
+                <span style="color: #1c1425; font-size: 16px; font-weight: 600">Cumpleaños</span>
+                <span style="color: #6b6178; font-size: 12.5px">11 paquetes</span>
+              </div>
+              <sc-if value="{{c.cumpleElegido}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 999px; background: #6d3fe0">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"></path></svg>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+
+          <!-- Espacio para crecer -->
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; border: 1.5px dashed #ddd0f0; border-radius: 18px; background: #ffffff; padding: 26px; text-align: center">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c4b5e8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 6v12M6 12h12"></path>
+            </svg>
+            <span style="color: #6b6178; font-size: 13px; line-height: 1.5; text-wrap: pretty">Los tipos salen del catálogo. Cuando Happia cree bodas o corporativos, aparecen aquí solos.</span>
+          </div>
+
+          <div></div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ======= PASO 2 ======= -->
+    <sc-if value="{{c.esPaso2}}" hint-placeholder-val="{{ false }}">
+      <div class="entra" style="display: flex; flex-direction: column; gap: 24px">
+        <div style="display: flex; flex-direction: column; gap: 7px">
+          <h1 style="margin: 0; color: #1c1425; font-size: 30px; font-weight: 600; letter-spacing: -0.02em">¿Cuántos van?</h1>
+          <p style="margin: 0; color: #6b6178; font-size: 14.5px">Nos sirve para ordenar los paquetes según lo que cubren.</p>
+        </div>
+
+        <!-- Contador visual -->
+        <div style="display: flex; align-items: center; gap: 26px; border: 1px solid #ddd0f0; border-radius: 20px; background: #ffffff; padding: 28px 32px; box-shadow: 0 2px 10px rgb(28 20 37 / 0.05)">
+          <div class="op" onClick="{{ c.menos }}" style="display: flex; align-items: center; justify-content: center; width: 46px; height: 46px; flex-shrink: 0; border: 1px solid #ddd0f0; border-radius: 14px; color: #6d3fe0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"></path></svg>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; width: 116px">
+            <span style="color: #1c1425; font-size: 46px; font-weight: 700; line-height: 1; letter-spacing: -0.03em">{{c.invitados}}</span>
+            <span style="color: #6b6178; font-size: 12.5px">invitados</span>
+          </div>
+          <div class="op" onClick="{{ c.mas }}" style="display: flex; align-items: center; justify-content: center; width: 46px; height: 46px; flex-shrink: 0; border: 1px solid #ddd0f0; border-radius: 14px; color: #6d3fe0">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+          </div>
+
+          <!-- Personas -->
+          <div style="display: flex; flex-grow: 1; align-items: flex-end; gap: 3px; height: 48px; overflow: hidden">
+            <sc-for list="{{c.figuras}}" as="f" hint-placeholder-count="12">
+              <svg width="17" height="34" viewBox="0 0 17 34" fill="{{f.color}}" style="flex-shrink: 0">
+                <circle cx="8.5" cy="7" r="5.4"></circle>
+                <path d="M8.5 14.5c-4.4 0-6.6 2.8-6.6 7.2V33h13.2V21.7c0-4.4-2.2-7.2-6.6-7.2z"></path>
+              </svg>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- Atajos -->
+        <div style="display: flex; gap: 9px">
+          <div class="op" onClick="{{ c.set10 }}" style="border: 1px solid #ddd0f0; border-radius: 999px; background: #ffffff; padding: 9px 17px; color: #6b6178; font-size: 13px; font-weight: 500">10</div>
+          <div class="op" onClick="{{ c.set20 }}" style="border: 1px solid #ddd0f0; border-radius: 999px; background: #ffffff; padding: 9px 17px; color: #6b6178; font-size: 13px; font-weight: 500">20</div>
+          <div class="op" onClick="{{ c.set30 }}" style="border: 1px solid #ddd0f0; border-radius: 999px; background: #ffffff; padding: 9px 17px; color: #6b6178; font-size: 13px; font-weight: 500">30</div>
+          <div class="op" onClick="{{ c.set50 }}" style="border: 1px solid #ddd0f0; border-radius: 999px; background: #ffffff; padding: 9px 17px; color: #6b6178; font-size: 13px; font-weight: 500">50</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ======= PASO 3 ======= -->
+    <sc-if value="{{c.esPaso3}}" hint-placeholder-val="{{ false }}">
+      <div class="entra" style="display: flex; flex-direction: column; gap: 22px">
+        <div style="display: flex; flex-direction: column; gap: 7px">
+          <h1 style="margin: 0; color: #1c1425; font-size: 30px; font-weight: 600; letter-spacing: -0.02em">¿Dónde será?</h1>
+          <p style="margin: 0; color: #6b6178; font-size: 14.5px">El lugar cambia qué decoración funciona mejor.</p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px">
+          <!-- Salón -->
+          <div class="op" onClick="{{ c.elegirSalon }}" style="display: flex; flex-direction: column; overflow: hidden; border: 2px solid {{c.bordeSalon}}; border-radius: 18px; background: #ffffff; box-shadow: 0 2px 10px rgb(28 20 37 / 0.05)">
+            <div style="position: relative; height: 140px; overflow: hidden; background: linear-gradient(165deg, #2e1065 0%, #6d3fe0 100%)">
+              <svg viewBox="0 0 300 140" preserveAspectRatio="xMidYMid slice" style="position: absolute; inset: 0; width: 100%; height: 100%">
+                <path d="M0 140V64a150 150 0 0 1 300 0v76z" fill="#4c1d95" opacity="0.55"></path>
+                <g stroke="#fde68a" stroke-width="1.4" opacity="0.75">
+                  <path d="M150 20v16"></path>
+                </g>
+                <g class="flota">
+                  <path d="M132 36h36l-8 15h-20z" fill="#fde68a" opacity="0.92"></path>
+                  <circle cx="140" cy="56" r="3.4" fill="#fde68a" opacity="0.8"></circle>
+                  <circle cx="150" cy="60" r="3.4" fill="#fde68a" opacity="0.8"></circle>
+                  <circle cx="160" cy="56" r="3.4" fill="#fde68a" opacity="0.8"></circle>
+                </g>
+                <rect x="58" y="96" width="184" height="8" rx="3" fill="#ffffff" opacity="0.85"></rect>
+                <rect x="76" y="104" width="10" height="36" fill="#ffffff" opacity="0.5"></rect>
+                <rect x="214" y="104" width="10" height="36" fill="#ffffff" opacity="0.5"></rect>
+                <g fill="#f9a8d4" opacity="0.9">
+                  <circle cx="70" cy="82" r="9"></circle><circle cx="86" cy="76" r="7"></circle><circle cx="230" cy="82" r="9"></circle><circle cx="214" cy="76" r="7"></circle>
+                </g>
+              </svg>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 18px">
+              <span style="color: #1c1425; font-size: 15.5px; font-weight: 600">Salón de eventos</span>
+              <sc-if value="{{c.salonElegido}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 999px; background: #6d3fe0">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"></path></svg>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+
+          <!-- Aire libre -->
+          <div class="op" onClick="{{ c.elegirAire }}" style="display: flex; flex-direction: column; overflow: hidden; border: 2px solid {{c.bordeAire}}; border-radius: 18px; background: #ffffff; box-shadow: 0 2px 10px rgb(28 20 37 / 0.05)">
+            <div style="position: relative; height: 140px; overflow: hidden; background: linear-gradient(170deg, #7dd3fc 0%, #38bdf8 42%, #4ade80 100%)">
+              <svg viewBox="0 0 300 140" preserveAspectRatio="xMidYMid slice" style="position: absolute; inset: 0; width: 100%; height: 100%">
+                <circle cx="238" cy="34" r="20" fill="#fde68a"></circle>
+                <path d="M0 108c40-14 76 8 116-2s72-22 110-8 74 6 74 6v36H0z" fill="#16a34a" opacity="0.85"></path>
+                <path d="M0 122c46-10 88 6 132-2s84-14 168-4v24H0z" fill="#15803d" opacity="0.7"></path>
+                <g>
+                  <rect x="66" y="72" width="4" height="34" rx="2" fill="#78350f"></rect>
+                  <circle cx="68" cy="66" r="17" fill="#22c55e"></circle>
+                  <circle cx="56" cy="74" r="11" fill="#16a34a"></circle>
+                  <circle cx="80" cy="74" r="11" fill="#16a34a"></circle>
+                </g>
+                <g class="flota" opacity="0.95">
+                  <ellipse cx="160" cy="52" rx="12" ry="15" fill="#ec4899"></ellipse>
+                  <path d="M160 67l-2.6 8h5.2z" fill="#ec4899" opacity="0.8"></path>
+                </g>
+                <g class="flota" style="animation-delay: 1.2s" opacity="0.95">
+                  <ellipse cx="190" cy="66" rx="10" ry="13" fill="#ffffff"></ellipse>
+                  <path d="M190 79l-2.2 7h4.4z" fill="#ffffff" opacity="0.8"></path>
+                </g>
+              </svg>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 18px">
+              <span style="color: #1c1425; font-size: 15.5px; font-weight: 600">Al aire libre</span>
+              <sc-if value="{{c.aireElegido}}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 999px; background: #6d3fe0">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"></path></svg>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+
+          <!-- Casa -->
+          <div class="op" onClick="{{ c.elegirCasa }}" style="display: flex; flex-direction: column; overflow: hidden; border: 2px solid {{c.bordeCasa}}; border-radius: 18px; background: #ffffff; box-shadow: 0 2px 10px rgb(28 20 37 / 0.05)">
+            <div style="position: relative; height: 140px; overflow: hidden; background: linear-gradient(165deg, #fed7aa 0%, #fdba74 48%, #fb923c 100%)">
+              <svg viewBox="0 0 300 140" preserveAspectRatio="xMidYMid slice" style="position: absolute; inset: 0; width: 100%; height: 100%">
+                <path d="M0 140V96h300v44z" fill="#c2410c" opacity="0.35"></path>
+                <path d="M84 96V56l66-32 66 32v40z" fill="#7c2d12" opacity="0.82"></path>
+                <path d="M150 18l78 40H72z" fill="#9a3412"></path>
+                <rect x="136" y="66" width="28" height="30" rx="3" fill="#fde68a"></rect>
+                <rect x="100" y="66" width="20" height="18" rx="2" fill="#fde68a" opacity="0.75"></rect>
+                <rect x="180" y="66" width="20" height="18" rx="2" fill="#fde68a" opacity="0.75"></rect>
+                <path d="M60 62c26-14 52-14 78-2" fill="none" stroke="#ffffff" stroke-width="1.6" opacity="0.55"></path>
+                <g class="flota">
+                  <circle cx="66" cy="60" r="9" fill="#ec4899" opacity="0.9"></circle>
+                  <circle cx="90" cy="52" r="7" fill="#a855f7" opacity="0.9"></circle>
+                  <circle cx="112" cy="56" r="8" fill="#22d3ee" opacity="0.9"></circle>
+                </g>
+                <g class="flota" style="animation-delay: 1.5s">
+                  <circle cx="234" cy="58" r="9" fill="#facc15" opacity="0.9"></circle>
+                  <circle cx="212" cy="52" r="7" fill="#ec4899" opacity="0.9"></circle>
+                </g>
+              </svg>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px 18px">
+              <span style="color: #1c1425; font-size: 15.5px; font-weight: 600">Casa</span>
+              <sc-if value="{{c.casaElegido}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 999px; background: #6d3fe0">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 6.5"></path></svg>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- Pie: resumen + navegación -->
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 6px; border-top: 1px solid #ddd0f0; padding-top: 22px">
+      <div style="display: flex; gap: 8px">
+        <sc-for list="{{c.resumen}}" as="r" hint-placeholder-count="2">
+          <div style="display: flex; align-items: center; gap: 6px; border: 1px solid #ddd0f0; border-radius: 999px; background: #ffffff; padding: 7px 13px; color: #6b6178; font-size: 12.5px">
+            <span style="width: 6px; height: 6px; border-radius: 999px; background: #6d3fe0"></span>
+            {{r.texto}}
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display: flex; gap: 10px">
+        <div class="op" onClick="{{ c.atras }}" style="display: flex; align-items: center; gap: 7px; border: 1px solid #ddd0f0; border-radius: 12px; background: #ffffff; padding: 11px 17px; color: #6b6178; font-size: 13px; font-weight: 600">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H6M11 6l-6 6 6 6"></path></svg>
+          Atrás
+        </div>
+        <div class="op" onClick="{{ c.siguiente }}" style="display: flex; align-items: center; gap: 7px; border-radius: 12px; background: #6d3fe0; padding: 11px 20px; color: #ffffff; font-size: 13px; font-weight: 600; box-shadow: 0 6px 16px rgb(109 63 224 / 0.28)">
+          {{c.textoSiguiente}}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"></path></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { paso: 1, tipo: null, invitados: 30, ubicacion: 'Al aire libre' };
+  }
+
+  renderVals() {
+    const { paso, tipo, invitados, ubicacion } = this.state;
+    const activo = '#6d3fe0';
+    const hechoBg = '#ece3fb';
+    const inerte = '#efe9f8';
+
+    const figuras = [];
+    const total = Math.min(14, Math.max(1, Math.round(invitados / 3)));
+    for (let i = 0; i < total; i++) {
+      figuras.push({ color: i < Math.round(total * 0.72) ? '#6d3fe0' : '#c4b5e8' });
+    }
+
+    const resumen = [];
+    if (tipo) resumen.push({ texto: tipo });
+    if (paso > 1) resumen.push({ texto: invitados + ' invitados' });
+    if (paso > 2 && ubicacion) resumen.push({ texto: ubicacion });
+
+    return {
+      c: {
+        esPaso1: paso === 1,
+        esPaso2: paso === 2,
+        esPaso3: paso === 3,
+
+        p1Hecho: paso > 1,
+        p1Pend: paso <= 1,
+        p1Bg: paso >= 1 ? activo : inerte,
+        p1Fg: paso >= 1 ? '#ffffff' : '#6b6178',
+        p1Texto: paso === 1 ? '#1c1425' : '#6b6178',
+        p1Peso: paso === 1 ? '600' : '500',
+
+        p2Hecho: paso > 2,
+        p2Pend: paso <= 2,
+        p2Bg: paso >= 2 ? activo : inerte,
+        p2Fg: paso >= 2 ? '#ffffff' : '#6b6178',
+        p2Texto: paso === 2 ? '#1c1425' : '#6b6178',
+        p2Peso: paso === 2 ? '600' : '500',
+
+        p3Bg: paso >= 3 ? activo : inerte,
+        p3Fg: paso >= 3 ? '#ffffff' : '#6b6178',
+        p3Texto: paso === 3 ? '#1c1425' : '#6b6178',
+        p3Peso: paso === 3 ? '600' : '500',
+
+        linea1: paso > 1 ? activo : hechoBg,
+        linea2: paso > 2 ? activo : hechoBg,
+
+        cumpleElegido: tipo === 'Cumpleaños',
+        bordeCumple: tipo === 'Cumpleaños' ? activo : '#ddd0f0',
+
+        salonElegido: ubicacion === 'Salón de eventos',
+        aireElegido: ubicacion === 'Al aire libre',
+        casaElegido: ubicacion === 'Casa',
+        bordeSalon: ubicacion === 'Salón de eventos' ? activo : '#ddd0f0',
+        bordeAire: ubicacion === 'Al aire libre' ? activo : '#ddd0f0',
+        bordeCasa: ubicacion === 'Casa' ? activo : '#ddd0f0',
+
+        invitados,
+        figuras,
+        resumen,
+        textoSiguiente: paso === 3 ? 'Ver paquetes' : 'Continuar',
+
+        elegirCumple: () => this.setState({ tipo: 'Cumpleaños', paso: 2 }),
+        elegirSalon: () => this.setState({ ubicacion: 'Salón de eventos' }),
+        elegirAire: () => this.setState({ ubicacion: 'Al aire libre' }),
+        elegirCasa: () => this.setState({ ubicacion: 'Casa' }),
+        menos: () => this.setState({ invitados: Math.max(1, invitados - 5) }),
+        mas: () => this.setState({ invitados: invitados + 5 }),
+        set10: () => this.setState({ invitados: 10 }),
+        set20: () => this.setState({ invitados: 20 }),
+        set30: () => this.setState({ invitados: 30 }),
+        set50: () => this.setState({ invitados: 50 }),
+        atras: () => this.setState({ paso: Math.max(1, paso - 1) }),
+        siguiente: () => this.setState({ paso: Math.min(3, paso + 1) }),
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>
