@@ -5,6 +5,8 @@ import { getRagPool } from "@/lib/rag/db";
 import { LoraModeSlugSchema, LoraSelectionSchema, type LoraModeSlug, type LoraSelection, type LoraSpecialization } from "./schema";
 import { assertLoraCompatibility, type LoraCompatibilityArtifact } from "./compatibility";
 import { LORA_V007_CATALOG_SOURCE_IDS, LORA_V007_DATASET_ID } from "./v007-catalog-allowlist";
+import { buildLookupIndexes, resolveProductConcept } from "./product-vocabulary";
+import { PRODUCT_VOCABULARY } from "./product-vocabulary-data";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 
 function allowRejectedForLocalTesting(): boolean {
@@ -240,7 +242,7 @@ export async function resolveLoraModeDatasetAllowlist(
     );
     const productIds = [...new Set(materialized.rows.map((row) => row.product_id))];
     const variantIds = [...new Set(materialized.rows.map((row) => row.variant_id))];
-    if (productIds.length || variantIds.length) return { productIds, variantIds };
+    if (productIds.length || variantIds.length) return filtrarPorVocabulario(pool, { productIds, variantIds });
   }
 
   const result = await pool.query<{ product_id: string | null; variant_id: string | null }>(
@@ -276,5 +278,41 @@ export async function resolveLoraModeDatasetAllowlist(
     [variantIdsRepresentados],
   );
   const variantIds = [...new Set([...variantIdsRepresentados, ...familias.rows.map((row) => row.variant_id)])];
-  return { productIds, variantIds };
+  return filtrarPorVocabulario(pool, { productIds, variantIds });
+}
+
+/**
+ * El allowlist dice qué vio el modelo; el vocabulario dice qué sabemos
+ * describir sin nombres comerciales. Eran dos coberturas distintas: el dataset
+ * v004 incluye impresos y artículos de mesa (platos, servilletas, manteles,
+ * tiaras, kits) que el vocabulario dejó fuera a propósito para no inventar
+ * descripciones. Ofrecerlos terminaba en LORA_PRODUCT_VOCABULARY_FAILED al
+ * generar, ya con el plan armado y aprobado.
+ *
+ * Se intersectan aquí para que un elemento indescribible simplemente no se
+ * ofrezca, en vez de fallar al final. La resolución replica la precedencia de
+ * `resolveProductConcept`: ids (variante, producto, sku) y luego título.
+ */
+async function filtrarPorVocabulario(pool: Pool, allowlist: CatalogAllowlist): Promise<CatalogAllowlist> {
+  if (!allowlist.variantIds.length) return allowlist;
+  const filas = await pool.query<{ variant_id: string; product_id: string; sku: string | null; titulo: string | null }>(
+    `SELECT v.variant_id, v.product_id, v.sku, p.title AS titulo
+       FROM catalog_variants v
+       JOIN catalog_products p ON p.product_id = v.product_id
+      WHERE v.variant_id = ANY($1::text[])`,
+    [[...allowlist.variantIds]],
+  );
+  const indexes = buildLookupIndexes(PRODUCT_VOCABULARY);
+  const describible = (fila: (typeof filas.rows)[number]): boolean => {
+    for (const id of [fila.variant_id, fila.product_id, fila.sku]) {
+      if (id && resolveProductConcept({ productId: id }, PRODUCT_VOCABULARY, indexes).status === "resolved") return true;
+    }
+    return Boolean(fila.titulo) && resolveProductConcept({ text: fila.titulo! }, PRODUCT_VOCABULARY, indexes).status === "resolved";
+  };
+  const permitidas = filas.rows.filter(describible);
+  if (!permitidas.length) throw new Error(`LORA_VOCABULARY_ALLOWLIST_EMPTY: ninguna variante del dataset tiene concepto de vocabulario.`);
+  return {
+    productIds: [...new Set(permitidas.map((fila) => fila.product_id))],
+    variantIds: [...new Set(permitidas.map((fila) => fila.variant_id))],
+  };
 }
