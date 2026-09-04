@@ -65,3 +65,6 @@ packages/*/dist
 
 # perfiles persistentes de navegador para scrapers con sesión propia (Playwright)
 /.playwright-profiles/
+
+# renders de depuración/evaluación del LoRA — no aportan al código, se regeneran
+/reports/lora-debug/
