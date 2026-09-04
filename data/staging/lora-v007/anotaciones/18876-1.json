@@ -1,0 +1,205 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "18876-1",
+  "image_sha256": "a5f99b9b3aa0c437e26ac8ec27745626b744a0c647722e5cf80ed4eab725c97b",
+  "idempotency_key": "63aa7b82f1f21d74a823f9f85284929e64f09b05cb3e1f6ebca91e7f8d188010",
+  "source": {
+    "kind": "order_photo",
+    "ref": "18876/foto-1.jpg",
+    "orden": "18876"
+  },
+  "anotacion": {
+    "image_id": "18876-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a tan fabric backdrop and a light tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.eucalyptus_green",
+          "balloon.round.latex.fashion.clear"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Cluster orgánico grande de globos redondos verde eucalipto mezclados con globos transparentes tipo burbuja, cubriendo el centro y la parte superior del fondo."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.coffee_brown",
+          "balloon.modeling.latex.fashion.coffee_brown"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.coffee_brown",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.fashion.coffee_brown",
+            "size_code": "T260"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Columna vertical de globos redondos y globos de modelar retorcidos en color café/marrón que baja por el lado derecho junto a las mesas."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.sand"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Pequeño racimo orgánico de globos redondos color arena en la esquina superior izquierda, junto con globos transparentes pequeños."
+      }
+    ],
+    "non_purchased_elements": [
+      "a car cutout",
+      "an elephant cutout",
+      "a number one sign",
+      "round gold side tables"
+    ],
+    "uncertainties": [
+      "El color del racimo superior izquierdo podría corresponder a sand u otro tono similar, no se distingue con total certeza."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.clear",
+      "balloon.round.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.sand"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-18",
+      "R-24",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "18876-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, installed against the rear wall, built from 24-inch and 18-inch matte Fashion clear round latex balloons, 18-inch and 12-inch matte Fashion eucalyptus green round latex balloons, mixed organically rather than graded, a balloon column, standing to one side, built from 2-inch matte Fashion coffee brown modeling latex balloons, 12-inch matte Fashion coffee brown round latex balloons, mixed organically rather than graded, with a balloon bouquet, standing to one side, built from matte Fashion sand round latex balloons, all 12-inch, alongside a car cutout, an elephant cutout, a number one sign and round gold side tables, set against a tan fabric backdrop and a light tiled floor.",
+    "palabras": 111,
+    "caracteres": 730,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.clear",
+      "balloon.round.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.sand"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.coffee_brown",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.clear",
+        "size_code": "R-24",
+        "inches": 24
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.clear",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.coffee_brown",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.fashion.clear",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.clear",
+        "size_code": "R-24",
+        "inches": 24
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:42:16.524Z",
+    "recompilado_en": "2026-09-03T14:45:22.974Z"
+  }
+}

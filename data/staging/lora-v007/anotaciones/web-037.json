@@ -1,0 +1,88 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-037",
+  "image_sha256": "96dab7d29231702ee69d571e9a3a93db93aa4cca8f68fcf2ce81ab6aa4f3c2d4",
+  "idempotency_key": "d7064011c87a5c7b8aa746110a71a82073721e437651bd8bab425d6fe659c190",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-037.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Columna-Org_C3_A1nica-Encanto-Dorado.jpg?v=1635997908",
+    "product_breakdown_status": "partial_source_blog_product_carousel",
+    "theme": "boda",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-037",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white background; floor not visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure_1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.satin.pearl",
+          "balloon.round.latex.satin.white"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Tall vertical arrangement of gold, pearl, and white round balloons in mixed diameters."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Exact size codes cannot be determined.",
+      "Support or anchoring is not visible."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.satin.pearl",
+      "balloon.round.latex.satin.white"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-037",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from high-shine Reflex gold round latex balloons and Satin round latex balloons in pearl and white, set against white background; floor not visible.",
+    "palabras": 32,
+    "caracteres": 220,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.satin.pearl",
+      "balloon.round.latex.satin.white"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:10:18.755Z"
+  }
+}

@@ -1,0 +1,193 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000149-1",
+  "image_sha256": "b9f5407da91a337ff9724a91ee8431696cbe63efea64907440dcf3d0c0a793be",
+  "idempotency_key": "388d00c6ae233093d2074fcfc86bb3d36973ebc44d6825e7accb6a0ab690d62a",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000149/foto-1.jpg",
+    "orden": "950000149"
+  },
+  "anotacion": {
+    "image_id": "950000149-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "column-left",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.yellow",
+          "balloon.modeling.latex.satin.pearl",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.satin.white"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.yellow",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.satin.pearl",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.satin.white",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Tall freestanding column with a yellow loop, white round balloons, pearl-white twisted balloons, and small gold round balloons on a wooden base."
+      },
+      {
+        "structure_id": "column-right",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.yellow",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.satin.white",
+          "balloon.tubito.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.yellow",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.satin.white",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.tubito.latex.reflex.gold",
+            "size_code": "T260"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Short freestanding column with a yellow loop, gold round balloons, white round balloons, and twisted gold tubito balloons on a wooden base."
+      }
+    ],
+    "non_purchased_elements": [
+      "wooden bases"
+    ],
+    "uncertainties": [
+      "No clear round balloons are confidently distinguishable from the white background."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.yellow",
+      "balloon.modeling.latex.satin.pearl",
+      "balloon.round.latex.fashion.clear",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.satin.white",
+      "balloon.tubito.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000149-1",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from 2-inch matte Fashion yellow modeling latex balloons and Satin pearl modeling latex balloons, 5-inch high-shine Reflex gold round latex balloons and Satin white round latex balloons, mixed organically rather than graded, a balloon column, grounded across the front, built from 2-inch matte Fashion yellow modeling latex balloons and high-shine Reflex gold modeling latex balloons, 5-inch high-shine Reflex gold round latex balloons and Satin white round latex balloons, mixed organically rather than graded, alongside wooden bases, set against white walls and a white floor.",
+    "palabras": 93,
+    "caracteres": 650,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.yellow",
+      "balloon.modeling.latex.reflex.gold",
+      "balloon.modeling.latex.satin.pearl",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.satin.white"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.yellow",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.fashion.yellow",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.reflex.gold",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.satin.pearl",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.satin.white",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.satin.white",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:14:09.170Z",
+    "recompilado_en": "2026-09-03T14:45:24.699Z"
+  }
+}

@@ -1,0 +1,133 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-054",
+  "image_sha256": "bbf734ff1bdc1067cb76c0f390d7a189a791cd9651fa1da3c9b25df5d9e0f587",
+  "idempotency_key": "bc794c4bd6c4ebf689497629074265d5bae44afbe452c9da8b977208f3380c24",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-054.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/2DSC9533-portada-1_adb886de-6204-4a7d-9e1c-0096dbfc8ca8.jpg?v=1642707296",
+    "product_breakdown_status": "found_in_source_blog_product_carousel",
+    "theme": "cumpleanos",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-054",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "gray walls and a light tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure_1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.caribbean_blue",
+          "balloon.round.latex.fashion.fuchsia",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.fashion.royal_blue",
+          "balloon.round.latex.pastel_matte.pink",
+          "balloon.round.latex.reflex.blue",
+          "balloon.round.latex.reflex.pink"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Three-dimensional balloon installation forms an inverted arch around the panel, with mixed blue clusters on the left and pink clusters on the right."
+      },
+      {
+        "structure_id": "structure_2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "behind",
+          "target_structure_id": "structure_1"
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Flat white perforated panel positioned behind the balloon arch."
+      },
+      {
+        "structure_id": "structure_3",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Large marquee number sign placed in front of the backdrop."
+      }
+    ],
+    "non_purchased_elements": [
+      "two cylindrical plinths",
+      "a number marquee",
+      "dessert displays"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.caribbean_blue",
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.reflex.blue",
+      "balloon.round.latex.reflex.pink"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-054",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from matte Fashion round latex balloons in caribbean blue, fuchsia, pink and royal blue, Pastel Matte pastel pink round latex balloons and high-shine Reflex round latex balloons in blue and pink, a decorated backdrop, behind the organic balloon arch, with a decorative accessory, grounded across the front, alongside two cylindrical plinths, a number marquee and dessert displays, set against gray walls and a light tiled floor.",
+    "palabras": 78,
+    "caracteres": 514,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.caribbean_blue",
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.reflex.blue",
+      "balloon.round.latex.reflex.pink"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:19:55.693Z"
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000147-1",
+  "image_sha256": "ebf28ed6f8ff93c53b73a6427a83cf8c4316d45f0a6d4b6e08e768e3e718048c",
+  "idempotency_key": "950550b04af917807a8f2744f6a664e3a6d312a3cfc1567c494a999f8ce2c71d",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000147/foto-1.jpg",
+    "orden": "950000147"
+  },
+  "anotacion": {
+    "image_id": "950000147-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.champagne",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.solid.printed_first_communion_lettering"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.reflex.champagne",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.solid.printed_first_communion_lettering",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Three-dimensional balloon arch with champagne and gold balloons, mixed small organic clusters, and larger printed first-communion balloons."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.reflex.champagne",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.solid.printed_first_communion_lettering"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000147-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from 5-inch high-shine Reflex round latex balloons in champagne and gold, 12-inch round latex balloons with printed first-communion lettering, mixed organically rather than graded, set against white wall and white floor.",
+    "palabras": 43,
+    "caracteres": 306,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.reflex.champagne",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.solid.printed_first_communion_lettering"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.reflex.champagne",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.solid.printed_first_communion_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:13:03.280Z",
+    "recompilado_en": "2026-09-03T14:45:24.667Z"
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "15142-2",
+  "image_sha256": "89c0100ace52c31be2808f09d7060208feb712ab9513c699632cefc635e96c86",
+  "idempotency_key": "87d1fe5fdbb1b2d225f25750dbf8c9003ac2e10fc65a246c66e51c2a97d2080d",
+  "source": {
+    "kind": "order_photo",
+    "ref": "15142/foto-2.jpg",
+    "orden": "15142"
+  },
+  "anotacion": {
+    "image_id": "15142-2",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "light tiled floor and off-white walls with a wood door",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.silver",
+          "balloon.round.latex.fashion.eucalyptus_green"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "long organic balloon garland running along the floor from a doorway toward the camera, silver metallic balloons near the door transitioning into green balloons in the foreground"
+      }
+    ],
+    "non_purchased_elements": [
+      "a chair",
+      "a person seated"
+    ],
+    "uncertainties": [
+      "only silver and green balloons are visible in this crop even though the order lists additional colors (caribbean blue, royal blue, dusk laurel green, gold reflex) not seen here",
+      "exact balloon size per color not distinguishable"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.caribbean_blue",
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.pastel_dusk.laurel_green",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "15142-2",
+    "caption": "eventdecor_style_v3, an organic balloon garland, grounded across the front, built from 12-inch, 9-inch and 5-inch matte Fashion eucalyptus green round latex balloons, 9-inch and 5-inch high-shine Reflex silver round latex balloons, mixed organically rather than graded, alongside a chair and a person seated, set against light tiled floor and off-white walls with a wood door.",
+    "palabras": 55,
+    "caracteres": 376,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:38:49.174Z",
+    "recompilado_en": "2026-09-03T14:45:22.586Z"
+  }
+}

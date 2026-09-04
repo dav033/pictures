@@ -1,0 +1,141 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000079-1",
+  "image_sha256": "68fab2384bd6e6884f6856c46b4c62420cfd80b8f65cd3381f246f62ef17374d",
+  "idempotency_key": "80dd32096820101e04a7144f5cff23df79c4c9d158a5425554d1cc5e3d53f234",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000079/foto-1.jpg",
+    "orden": "950000079"
+  },
+  "anotacion": {
+    "image_id": "950000079-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white studio background, no venue surfaces visible",
+      "symmetry": "unknown"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.copper_orange",
+          "balloon.round.latex.fashion.honey_yellow",
+          "balloon.round.latex.fashion.eucalyptus_green",
+          "balloon.round.latex.fashion.orange",
+          "balloon.round.latex.fashion.merlot"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.copper_orange",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.honey_yellow",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.orange",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.merlot",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Layered bouquet with distinct color bands from top to bottom: copper orange, honey yellow, eucalyptus green, orange, and merlot, with the orange band confirmed at a smaller diameter than the rest."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Isolated product photo on white background; real installation placement/venue is not shown.",
+      "The smaller 5-inch orange band is not visually distinguishable in size from the 9-inch balloons due to bouquet clustering."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.copper_orange",
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.honey_yellow",
+      "balloon.round.latex.fashion.merlot",
+      "balloon.round.latex.fashion.orange"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000079-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from 9-inch matte Fashion round latex balloons in copper orange, eucalyptus green, honey yellow and merlot, 5-inch matte Fashion orange round latex balloons, mixed organically rather than graded, set against white studio background, no venue surfaces visible.",
+    "palabras": 46,
+    "caracteres": 332,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.copper_orange",
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.honey_yellow",
+      "balloon.round.latex.fashion.merlot",
+      "balloon.round.latex.fashion.orange"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.copper_orange",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.honey_yellow",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.merlot",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:08:42.921Z",
+    "recompilado_en": "2026-09-03T14:45:24.070Z"
+  }
+}

@@ -1,0 +1,131 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000123-1",
+  "image_sha256": "5aa91aa2467f6abb8460df7ee8f5c21b42db1dede9b2c7dd2c751861ff08d888",
+  "idempotency_key": "692f9d2fc3b9e99b55553366378d894d3a29f564ae162f060df8e567cf5eba99",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000123/foto-1.jpg",
+    "orden": "950000123"
+  },
+  "anotacion": {
+    "image_id": "950000123-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.assorted_colors",
+          "balloon.round.latex.fashion.chocolate_brown",
+          "balloon.round.latex.fashion.clover_green",
+          "balloon.round.latex.fashion.pink"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.assorted_colors",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.chocolate_brown",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.clover_green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Dense green balloon wall with colorful bird and floral balloon details."
+      }
+    ],
+    "non_purchased_elements": [
+      "a balloon bird",
+      "balloon flowers",
+      "balloon leaves"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.assorted_colors",
+      "balloon.round.latex.fashion.chocolate_brown",
+      "balloon.round.latex.fashion.clover_green",
+      "balloon.round.latex.fashion.pink"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000123-1",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from 9-inch matte Fashion clover green round latex balloons and round latex balloons in assorted colors, solid Fashion finish, 5-inch matte Fashion round latex balloons in chocolate brown and pink, mixed organically rather than graded, alongside a balloon bird, balloon flowers and balloon leaves, set against white wall and floor.",
+    "palabras": 60,
+    "caracteres": 407,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.assorted_colors",
+      "balloon.round.latex.fashion.chocolate_brown",
+      "balloon.round.latex.fashion.clover_green",
+      "balloon.round.latex.fashion.pink"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.assorted_colors",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.chocolate_brown",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.clover_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:10:02.131Z",
+    "recompilado_en": "2026-09-03T14:45:24.403Z"
+  }
+}

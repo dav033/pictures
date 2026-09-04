@@ -1,0 +1,108 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-085",
+  "image_sha256": "855875d30d530ec57b5e74d5b6876a18c121ae520ecfab8276d092718e05df6e",
+  "idempotency_key": "8a7991ff7dbd1a3bc30b2250ee0ca0a1cf8d412be517fb550f4105f2077469bb",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-085.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Decoracion-Semiarco-Halloween-1000x1000_b9cff356-f700-4cfa-b979-f69de669926c.jpg?v=1642707126",
+    "product_breakdown_status": "found_in_source_blog_product_carousel",
+    "theme": "halloween",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-085",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white walls and a light wood floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "semiarco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.chocolate_brown",
+          "balloon.round.latex.fashion.orange",
+          "balloon.round.latex.fashion.peach"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Large three-dimensional organic balloon installation rises from the floor on the left and sweeps across the upper scene."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Floor balloon bouquet with a printed pumpkin balloon, dark stem balloons, gold balloon base, and attached helium balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "a beige bench",
+      "gold balloons",
+      "printed balloons",
+      "a pennant banner"
+    ],
+    "uncertainties": [
+      "No permitted size codes are provided for the visible concepts."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.chocolate_brown",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.peach"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-085",
+    "caption": "eventdecor_style_v3, an asymmetrical balloon half-arch, centred on the main display area, built from matte Fashion round latex balloons in chocolate brown, orange and peach, a balloon bouquet, grounded across the front, alongside a beige bench, gold balloons, printed balloons and a pennant banner, set against off-white walls and a light wood floor.",
+    "palabras": 52,
+    "caracteres": 350,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.chocolate_brown",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.peach"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:19:02.040Z"
+  }
+}

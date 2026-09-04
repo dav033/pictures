@@ -1,0 +1,93 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-014",
+  "image_sha256": "619ba6c4460824f33ddfa0735da6b16dc16d3ac20bde38c9b55df5e744964661",
+  "idempotency_key": "9c300a579758b584fedb88a6a315dede72d0e93d4ee87b5e3a41f6ff407e5ef5",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-014.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Columna_Te_amo.jpg?v=1755272721",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "amor_amistad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-014",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.heart.foil.pink.printed_text",
+          "balloon.round.latex.pastel_dusk.pink",
+          "balloon.round.latex.reflex.aurora_green",
+          "balloon.round.latex.reflex.champagne",
+          "balloon.round.latex.satin.pearl"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Freestanding vertical balloon column with a pink heart foil balloon and mixed pink, aurora green, champagne, and pearl latex balloons."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Exact balloon size codes cannot be distinguished."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.heart.foil.pink.printed_text",
+      "balloon.round.latex.pastel_dusk.pink",
+      "balloon.round.latex.reflex.aurora_green",
+      "balloon.round.latex.reflex.champagne",
+      "balloon.round.latex.satin.pearl"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-014",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from muted Pastel Dusk pink round latex balloons, high-shine Reflex round latex balloons in aurora green and champagne, Satin pearl round latex balloons and Metallic pink heart-shaped foil balloons with printed lettering, set against white wall and white floor.",
+    "palabras": 48,
+    "caracteres": 333,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.heart.foil.pink.printed_text",
+      "balloon.round.latex.pastel_dusk.pink",
+      "balloon.round.latex.reflex.aurora_green",
+      "balloon.round.latex.reflex.champagne",
+      "balloon.round.latex.satin.pearl"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:19:16.759Z"
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-064",
+  "image_sha256": "419e464bc9c94a0f66d2dc9a343c2226727e052405e1fd29e4dea2647d4efbe1",
+  "idempotency_key": "b85ad9aca19741994ea0d2b029fb91e9f99aee5d635fa3deea2b5f74ae7f0e65",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-064.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/7c0ebf1c09a4c5e43e1a4cd0876feb10_eb4d3818-c6e9-42e7-9f26-f06575c1ffd2.jpg?v=1642706352",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "cumpleanos",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-064",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.link.latex.fashion.fuchsia",
+          "balloon.modeling.latex.fashion.peach",
+          "balloon.modeling.latex.fashion.red",
+          "balloon.round.latex.fashion.peach",
+          "balloon.round.latex.fashion.white"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Freestanding balloon woman with red hair, peach body, white accents, and a clustered fuchsia skirt."
+      }
+    ],
+    "non_purchased_elements": [
+      "turquoise balloons"
+    ],
+    "uncertainties": [
+      "The ontology has no dedicated balloon-sculpture type."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.link.latex.fashion.fuchsia",
+      "balloon.modeling.latex.fashion.peach",
+      "balloon.modeling.latex.fashion.red",
+      "balloon.round.latex.fashion.peach",
+      "balloon.round.latex.fashion.white"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-064",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from matte Fashion fuchsia Link-O-Loon® linking latex balloons, matte Fashion modeling latex balloons in peach and red and matte Fashion round latex balloons in peach and white, alongside turquoise balloons, set against white wall and floor.",
+    "palabras": 45,
+    "caracteres": 314,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.link.latex.fashion.fuchsia",
+      "balloon.modeling.latex.fashion.peach",
+      "balloon.modeling.latex.fashion.red",
+      "balloon.round.latex.fashion.peach",
+      "balloon.round.latex.fashion.white"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:08:23.548Z"
+  }
+}

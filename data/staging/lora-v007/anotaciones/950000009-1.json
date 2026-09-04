@@ -1,0 +1,278 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000009-1",
+  "image_sha256": "5d66171dc0c7663d74321c49d23763e0fa015b252f7fa2164369788d14d26ab1",
+  "idempotency_key": "1083d8b72ce9c49e853b647727c844927ec44f0d8107fd283fbe63a09b632a65",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000009/foto-1.png",
+    "orden": "950000009"
+  },
+  "anotacion": {
+    "image_id": "950000009-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "yellow confetti-covered floor, wall not visible behind the backdrop panels",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s2"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.clover_green",
+          "balloon.round.latex.fashion.mustard",
+          "balloon.round.latex.fashion.orange",
+          "balloon.round.latex.fashion.purple_orchid",
+          "balloon.round.latex.reflex.blue"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "organic multicolor balloon garland arching over the top of the colored panels, blue-green-purple-orange-yellow clusters of mixed sizes"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "three flat colored panels (green, purple, orange) with a 'FELIZ CUMPLEAÑOS' paper banner on the center panel"
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "bouquet",
+        "count": 2,
+        "placement": "lateral_izquierdo",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.foil.unspecified.printed_birthday_lettering",
+          "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering",
+          "balloon.round.latex.reflex.blue"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "two balloon bunches on ribbon strings to the left, each mixing a printed foil balloon with metallic and printed latex balloons"
+      },
+      {
+        "structure_id": "s4",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "acento",
+        "salience": 4,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.clover_green",
+          "balloon.round.latex.reflex.blue",
+          "balloon.round.latex.fashion.orange"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "small organic balloon cluster decorating the side of the ladder shelf display on the right"
+      }
+    ],
+    "non_purchased_elements": [
+      "white display pedestals",
+      "a ladder shelf display",
+      "printed party tableware",
+      "a yellow confetti floor covering"
+    ],
+    "uncertainties": [
+      "exact sizes of the individual balloons within the organic garlands are hard to distinguish",
+      "balloons on the right ladder shelf may be a continuation of the main garland rather than its own structure"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.clover_green",
+      "balloon.modeling.latex.reflex.blue",
+      "balloon.round.foil.unspecified.printed_birthday_lettering",
+      "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering",
+      "balloon.round.latex.fashion.clover_green",
+      "balloon.round.latex.fashion.mustard",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.purple_orchid",
+      "balloon.round.latex.reflex.blue"
+    ],
+    "confirmed_size_codes": [
+      "18 IN",
+      "R-12",
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": [
+      "Globo Feliz Cumpleaños Fantasia"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000009-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, anchored to the decorated backdrop, built from 9-inch matte Fashion clover green round latex balloons, 12-inch matte Fashion round latex balloons in mustard and purple orchid, 5-inch matte Fashion orange round latex balloons and high-shine Reflex blue round latex balloons, mixed organically rather than graded, a decorated backdrop, installed against the rear wall, with two matching balloon bouquets, standing to one side, built from 18-inch round foil balloons with printed birthday lettering, 12-inch round latex balloons in assorted colors with a matte Fashion finish and printed birthday lettering, 5-inch high-shine Reflex blue round latex balloons, mixed organically rather than graded and an organic balloon garland, standing to one side, built from 9-inch matte Fashion clover green round latex balloons, 5-inch matte Fashion orange round latex balloons and high-shine Reflex blue round latex balloons, mixed organically rather than graded, alongside white display pedestals, a ladder shelf display, printed party tableware and a yellow confetti floor covering, set against yellow confetti-covered floor, wall not visible behind the backdrop panels.",
+    "palabras": 172,
+    "caracteres": 1208,
+    "clausulas_por_estructura": 4,
+    "concept_ids_resueltos": [
+      "balloon.round.foil.unspecified.printed_birthday_lettering",
+      "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering",
+      "balloon.round.latex.fashion.clover_green",
+      "balloon.round.latex.fashion.mustard",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.purple_orchid",
+      "balloon.round.latex.reflex.blue"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.foil.unspecified.printed_birthday_lettering",
+        "size_code": "18 IN",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.clover_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.clover_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.mustard",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.purple_orchid",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.blue",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.foil.unspecified.printed_birthday_lettering",
+        "size_code": "18 IN",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.clover_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.clover_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.mustard",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.purple_orchid",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.blue",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:51:33.453Z",
+    "recompilado_en": "2026-09-03T14:45:23.281Z"
+  }
+}

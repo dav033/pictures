@@ -1,0 +1,177 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "11262-1",
+  "image_sha256": "931d55f0d36f6ef02413750478a11e85957b8f982053c4ca072cebc007946bf3",
+  "idempotency_key": "1ba9f7b647f69b1aab62997862ac859f2f191e00d706b1dcb1bedbd2ebc5d591",
+  "source": {
+    "kind": "order_photo",
+    "ref": "11262/foto-1.jpg",
+    "orden": "11262"
+  },
+  "anotacion": {
+    "image_id": "11262-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "a red foil sequin paneled wall and a light floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s2"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.imperial_red",
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "An organic garland of bright red, dark red and metallic gold round balloons draped across the top and down the right side of the backdrop"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "A red foil sequin panel backdrop behind the balloon garland"
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s2"
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "A round gold hanging sign with a birthday greeting mounted on the backdrop"
+      }
+    ],
+    "non_purchased_elements": [
+      "a floral arrangement",
+      "a birthday cake",
+      "gift bags",
+      "a cake topper figure"
+    ],
+    "uncertainties": [
+      "The left side of the garland is cropped out of frame so overall symmetry is unclear",
+      "Exact balloon sizes are not distinguishable from the photo"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.imperial_red",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-18"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "11262-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, anchored to the decorated backdrop, built from 18-inch and 12-inch matte Fashion imperial red round latex balloons and high-shine Reflex gold round latex balloons, 12-inch matte Fashion red round latex balloons, mixed organically rather than graded, a decorated backdrop, installed against the rear wall, with a decorative accessory, anchored to the decorated backdrop, alongside a floral arrangement, a birthday cake, gift bags and a cake topper figure, set against a red foil sequin paneled wall and a light floor.",
+    "palabras": 84,
+    "caracteres": 565,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.imperial_red",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.imperial_red",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.imperial_red",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.fashion.imperial_red",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.imperial_red",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-18",
+        "inches": 18
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:35:43.715Z",
+    "recompilado_en": "2026-09-03T14:45:21.934Z"
+  }
+}

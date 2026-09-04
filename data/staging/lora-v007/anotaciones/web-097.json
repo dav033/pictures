@@ -1,0 +1,134 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-097",
+  "image_sha256": "387cda1f7c44702384e12834dfde4a729117fc976e610136a65752d55f609335",
+  "idempotency_key": "e576a817128b786e3036f67e6accf26244c3d06da811c21ace1e60139d35e3e5",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-097.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Mesa-con-arco-Organico-Calabazas-1000x1000_5b92e298-f265-4e95-9e82-47abcd04ca75.jpg?v=1642707130",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "halloween",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-097",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white wall and light wood floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "central_balloon_arch",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.fashion.grey",
+          "balloon.round.latex.fashion.orange.printed_pumpkin_face"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Three-dimensional organic balloon arch with black, grey, and orange pumpkin-face balloons."
+      },
+      {
+        "structure_id": "side_balloon_columns",
+        "structure_type": "columna",
+        "count": 2,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "bilateral_pair",
+          "target_structure_id": "central_balloon_arch"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.fashion.grey",
+          "balloon.round.latex.fashion.orange.printed_pumpkin_face"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Two matching vertical balloon columns flank the arch, each with an orange pumpkin-face balloon."
+      },
+      {
+        "structure_id": "table_balloon_figure",
+        "structure_type": "centro_mesa",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "on_furniture",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.fashion.grey",
+          "balloon.round.latex.fashion.orange.printed_pumpkin_face"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Small Halloween balloon figure arranged on the main table with an orange pumpkin-face balloon."
+      }
+    ],
+    "non_purchased_elements": [
+      "a decorated table",
+      "confetti balloons",
+      "solid orange balloons",
+      "a pennant banner"
+    ],
+    "uncertainties": [
+      "Exact balloon size codes are not discernible."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.grey",
+      "balloon.round.latex.fashion.orange.printed_pumpkin_face"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": [
+      "Globo Infinity® Araña Transparente"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-097",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from matte Fashion round latex balloons in black and grey and matte Fashion orange round latex balloons with printed pattern, two matching balloon columns, one at each end of the organic balloon arch, built from matte Fashion round latex balloons in black and grey and matte Fashion orange round latex balloons with printed pattern, with a low balloon centerpiece, placed on the main table, built from matte Fashion round latex balloons in black and grey and matte Fashion orange round latex balloons with printed pattern, alongside a decorated table, confetti balloons, solid orange balloons and a pennant banner, set against off-white wall and light wood floor.",
+    "palabras": 118,
+    "caracteres": 749,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.grey",
+      "balloon.round.latex.fashion.orange.printed_pumpkin_face"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:29:58.482Z"
+  }
+}

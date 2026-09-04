@@ -1,0 +1,92 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-021",
+  "image_sha256": "fad30b7c8215a527c3b99a85dd0c96426103781916b94bb8018c2ed8e46c2480",
+  "idempotency_key": "91f78c18e0cc22a5956af6068c69c7e1512f6d9df954853fbf309fe62e2cf9b7",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-021.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Flor_en_LOL_dc34d02f-0c81-470d-9acf-6d6d0e08c0b4.png?v=1749230228",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "amor_amistad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-021",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white background",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.link.latex.fashion.red",
+          "balloon.link.latex.metallic.gold",
+          "balloon.modeling.latex.fashion.red",
+          "balloon.modeling.latex.fashion.sand"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Tall balloon bouquet with a red flower base, metallic gold center balloons, sand-colored center details, red accents, and three printed heart balloons above."
+      }
+    ],
+    "non_purchased_elements": [
+      "printed heart balloons"
+    ],
+    "uncertainties": [
+      "Exact venue placement is not visible."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.link.latex.fashion.red",
+      "balloon.link.latex.metallic.gold",
+      "balloon.modeling.latex.fashion.red",
+      "balloon.modeling.latex.fashion.sand"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-021",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from matte Fashion red Link-O-Loon® linking latex balloons, Metallic gold Link-O-Loon® linking latex balloons and matte Fashion modeling latex balloons in red and sand, alongside printed heart balloons, set against plain white background.",
+    "palabras": 42,
+    "caracteres": 311,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.link.latex.fashion.red",
+      "balloon.link.latex.metallic.gold",
+      "balloon.modeling.latex.fashion.red",
+      "balloon.modeling.latex.fashion.sand"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:29:49.461Z"
+  }
+}

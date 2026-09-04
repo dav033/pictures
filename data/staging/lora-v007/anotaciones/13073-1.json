@@ -1,0 +1,137 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "13073-1",
+  "image_sha256": "b59faea887c1a86d62a0999cf5748fc129d35dc0b586b7314a1ea369a2ecb915",
+  "idempotency_key": "9073bc8b488ffeb06e5b57a560238f277875a1d608b9e5a7bc58e2010bd61529",
+  "source": {
+    "kind": "order_photo",
+    "ref": "13073/foto-1.jpg",
+    "orden": "13073"
+  },
+  "anotacion": {
+    "image_id": "13073-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a wood-look tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.silver",
+          "balloon.round.latex.silk.arctic_blue"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.arctic_blue",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "organic garland of pale blue and silvery round balloons in varied sizes running up the corner and along the ceiling, with faux greenery and butterfly accents"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 2,
+        "placement": "piso_frontal",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.silk.arctic_blue"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.silk.arctic_blue",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "small clusters of blue round balloons with butterfly accents wrapped around the base of two pedestal side tables"
+      }
+    ],
+    "non_purchased_elements": [
+      "a gold tufted armchair",
+      "a large framed portrait",
+      "a number fifteen marquee",
+      "a silver fringe curtain"
+    ],
+    "uncertainties": [
+      "whether the large pale balloons are silver-reflex or arctic-blue given similar lighting tones"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.reflex.silver",
+      "balloon.round.latex.silk.arctic_blue"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "13073-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, standing to one side, built from 5-inch high-shine Reflex silver round latex balloons, 12-inch satin Silk arctic blue round latex balloons, mixed organically rather than graded, two matching balloon bouquets, grounded across the front, built from satin Silk arctic blue round latex balloons, all at a single 12-inch size, alongside a gold tufted armchair, a large framed portrait, a number fifteen marquee and a silver fringe curtain, set against white walls and a wood-look tiled floor.",
+    "palabras": 81,
+    "caracteres": 536,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.reflex.silver",
+      "balloon.round.latex.silk.arctic_blue"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.arctic_blue",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.arctic_blue",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:35:29.975Z",
+    "recompilado_en": "2026-09-03T14:45:22.153Z"
+  }
+}

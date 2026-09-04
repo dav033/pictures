@@ -1,0 +1,151 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000138-1",
+  "image_sha256": "efc4a1611abbd33bc90469f4fc872c430e8ffd4e219193c0435d9f0378f8712f",
+  "idempotency_key": "bc6bdcc46f41c59107081da48577758f0b236dc4b78aa19b9c5f4de99b706a41",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000138/foto-1.jpg",
+    "orden": "950000138"
+  },
+  "anotacion": {
+    "image_id": "950000138-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and no visible floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure_1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.caribbean_blue",
+          "balloon.round.latex.fashion.lime_green",
+          "balloon.round.latex.fashion.orange",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.fashion.raspberry",
+          "balloon.round.latex.fashion.yellow"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.caribbean_blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.lime_green",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.orange",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.raspberry",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.yellow",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Rectangular panel densely covered with colorful balloons, featuring a large white heart-shaped opening and a small white heart detail."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.caribbean_blue",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.raspberry",
+      "balloon.round.latex.fashion.yellow"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000138-1",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from 5-inch matte Fashion round latex balloons in caribbean blue, lime green, orange, pink and yellow, 9-inch matte Fashion raspberry round latex balloons, mixed organically rather than graded, set against white wall and no visible floor.",
+    "palabras": 46,
+    "caracteres": 314,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.caribbean_blue",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.raspberry",
+      "balloon.round.latex.fashion.yellow"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.caribbean_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lime_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.raspberry",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.yellow",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:14:45.142Z",
+    "recompilado_en": "2026-09-03T14:45:24.550Z"
+  }
+}

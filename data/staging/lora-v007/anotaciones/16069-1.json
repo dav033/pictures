@@ -1,0 +1,153 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "16069-1",
+  "image_sha256": "fea119437e421ebc80fa38339e9c4c73067fb589f895e1b1510374064711730e",
+  "idempotency_key": "3e5a4d779eefe925986040e483b55a8e9434f3b5d7845d1ea8029be8eef826c3",
+  "source": {
+    "kind": "order_photo",
+    "ref": "16069/foto-1.jpg",
+    "orden": "16069"
+  },
+  "anotacion": {
+    "image_id": "16069-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white marble-patterned tiled floor and white walls",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "techo",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black.printed_polka_dots",
+          "balloon.round.latex.fashion.fuchsia.printed_polka_dots",
+          "balloon.round.latex.reflex.fuchsia",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.black.printed_polka_dots",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.fuchsia.printed_polka_dots",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.fuchsia",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Organic balloon garland spanning the top of the scene, made of black and fuchsia polka-dot round balloons plus glossy fuchsia and silver balloons, mixed with balloon-flower accents"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "curtain.fringe.metallized_foil.pink"
+        ],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Pink metallic fringe curtain hanging flat behind the seating area, framing a silver panel with hand-lettered text"
+      }
+    ],
+    "non_purchased_elements": [
+      "Minnie Mouse character balloons",
+      "a birthday sign",
+      "gift bags",
+      "a small cake stand"
+    ],
+    "uncertainties": [
+      "Exact balloon sizes in the garland assumed R-12 per the order; individual sizes are not fully distinguishable from the photo"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.black.printed_polka_dots",
+      "balloon.round.latex.fashion.fuchsia.printed_polka_dots",
+      "balloon.round.latex.reflex.fuchsia",
+      "balloon.round.latex.reflex.silver",
+      "curtain.fringe.metallized_foil.pink"
+    ],
+    "confirmed_size_codes": [
+      "PAQUETE X 1",
+      "R-12"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "16069-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, suspended overhead, built from high-shine Reflex round latex balloons in fuchsia and silver, matte Fashion black round latex balloons with printed polka dots and matte Fashion fuchsia round latex balloons with printed polka dots, all at a single 12-inch size, a decorated backdrop, installed against the rear wall, built from metallized foil fringe curtains in pink, alongside Minnie Mouse character balloons, a birthday sign, gift bags and a small cake stand, set against white marble-patterned tiled floor and white walls.",
+    "palabras": 85,
+    "caracteres": 573,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.black.printed_polka_dots",
+      "balloon.round.latex.fashion.fuchsia.printed_polka_dots",
+      "balloon.round.latex.reflex.fuchsia",
+      "balloon.round.latex.reflex.silver",
+      "curtain.fringe.metallized_foil.pink"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.black.printed_polka_dots",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.fuchsia.printed_polka_dots",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.fuchsia",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:44:46.640Z",
+    "recompilado_en": "2026-09-03T14:45:22.719Z"
+  }
+}

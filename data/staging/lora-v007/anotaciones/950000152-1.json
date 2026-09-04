@@ -1,0 +1,190 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000152-1",
+  "image_sha256": "276610e56346193a6223764c0859ae9d65414c6080bfa49eae61e33a8123206c",
+  "idempotency_key": "c144a40363f6d56d5f9c40e03eb205d517e5028f8f57582e7e1b89684f19d0b5",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000152/foto-1.jpg",
+    "orden": "950000152"
+  },
+  "anotacion": {
+    "image_id": "950000152-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a white wall and a blue floor covering",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "wall-1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.pastel_dusk.cream"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.cream",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Dense cream balloon wall forming a rectangular backdrop."
+      },
+      {
+        "structure_id": "column-1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.latte"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.latte",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Vertical central column of latte balloons."
+      },
+      {
+        "structure_id": "garland-1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "column-1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.lime_green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.lime_green",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Lime green organic garland draped around the central column."
+      },
+      {
+        "structure_id": "bouquet-1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "acento",
+        "salience": 4,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.purple_orchid"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.purple_orchid",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Small purple balloon bouquet at the lower left."
+      }
+    ],
+    "non_purchased_elements": [
+      "a blue floor mat",
+      "a metal bucket",
+      "a striped red ball",
+      "scattered pebbles"
+    ],
+    "uncertainties": [
+      "The striped red object may be a decorative prop rather than a balloon."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.latte",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.purple_orchid",
+      "balloon.round.latex.fashion.raspberry",
+      "balloon.round.latex.pastel_dusk.cream"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000152-1",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from muted Pastel Dusk cream round latex balloons, all at a single 9-inch size, a balloon column, centred on the main display area, built from matte Fashion latte round latex balloons, all at a single 9-inch size, an organic balloon garland, anchored to the balloon column, built from matte Fashion lime green round latex balloons, all at a single 5-inch size, with a balloon bouquet, grounded across the front, built from matte Fashion purple orchid round latex balloons, all at a single 12-inch size, alongside a blue floor mat, a metal bucket, a striped red ball and scattered pebbles, set against a white wall and a blue floor covering.",
+    "palabras": 119,
+    "caracteres": 716,
+    "clausulas_por_estructura": 4,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.latte",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.purple_orchid",
+      "balloon.round.latex.pastel_dusk.cream"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.latte",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lime_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.purple_orchid",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.cream",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:16:38.605Z",
+    "recompilado_en": "2026-09-03T14:45:24.737Z"
+  }
+}

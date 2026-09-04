@@ -1,0 +1,281 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000025-1",
+  "image_sha256": "e8730de61fb2c0bf0106ddcddedbe00e50818b9d70f076f75d6b3717a13eb493",
+  "idempotency_key": "b9a4e9a8cfcb8277e88b764677cf3fb9cc66ed3abd569a68b9c4dcd0c55e63b1",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000025/foto-1.png",
+    "orden": "950000025"
+  },
+  "anotacion": {
+    "image_id": "950000025-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white walls and a pink floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "pared-1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.rose_gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.reflex.rose_gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Dense rose-gold round balloon wall in the center."
+      },
+      {
+        "structure_id": "arco-1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "pared-1"
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.imperial_red",
+          "balloon.modeling.latex.fashion.red",
+          "balloon.tubito.latex.reflex.rose_gold",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.reflex.rose_gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.imperial_red",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.fashion.red",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.tubito.latex.reflex.rose_gold",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.rose_gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Three-dimensional red and rose-gold balloon frame around the central wall."
+      },
+      {
+        "structure_id": "bouquets-1",
+        "structure_type": "bouquet",
+        "count": 2,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "bilateral_pair",
+          "target_structure_id": "pared-1"
+        },
+        "visible_concept_ids": [
+          "balloon.heart.foil.pink.printed_text",
+          "balloon.heart.foil.red.printed_greeting_lettering",
+          "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+          "balloon.round.latex.fashion.assorted_colors.printed_unclassified_love",
+          "balloon.round.latex.solid.printed_hearts",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.reflex.rose_gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_unclassified_love",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.solid.printed_hearts",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.rose_gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Matching side balloon bouquets with printed round balloons, foil hearts, and metallic accents."
+      }
+    ],
+    "non_purchased_elements": [
+      "white lattice tables",
+      "dessert displays",
+      "a printed sign"
+    ],
+    "uncertainties": [
+      "Small base balloons may include linking latex balloons."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.heart.foil.pink",
+      "balloon.heart.foil.pink.printed_text",
+      "balloon.heart.foil.red.printed_greeting_lettering",
+      "balloon.heart.foil.unspecified.printed_greeting_lettering",
+      "balloon.link.latex.fashion.pink",
+      "balloon.modeling.latex.fashion.imperial_red",
+      "balloon.modeling.latex.fashion.red",
+      "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+      "balloon.round.latex.fashion.assorted_colors.printed_unclassified_love",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.reflex.rose_gold",
+      "balloon.round.latex.solid.printed_hearts",
+      "balloon.tubito.latex.reflex.rose_gold"
+    ],
+    "confirmed_size_codes": [
+      "16 IN",
+      "18 IN",
+      "LOL-6",
+      "R-12",
+      "R-5",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000025-1",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from high-shine Reflex rose gold round latex balloons, all at a single 5-inch size, an organic balloon arch, anchored to the balloon wall, built from 2-inch matte Fashion modeling latex balloons in imperial red and red and high-shine Reflex rose gold modeling latex balloons, 5-inch high-shine Reflex round latex balloons in gold and rose gold, mixed organically rather than graded, two matching balloon bouquets, one at each end of the balloon wall, built from 16-inch Metallic pink heart-shaped foil balloons with printed lettering and Metallic red heart-shaped foil balloons with printed greeting lettering, 12-inch round latex balloons in assorted colors with a matte Fashion finish and printed greeting lettering, round latex balloons in assorted colors with a matte Fashion finish and a printed pattern and round latex balloons with printed heart pattern, 5-inch high-shine Reflex round latex balloons in gold and rose gold, mixed organically rather than graded, alongside white lattice tables, dessert displays and a printed sign, set against off-white walls and a pink floor.",
+    "palabras": 176,
+    "caracteres": 1159,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.heart.foil.pink.printed_text",
+      "balloon.heart.foil.red.printed_greeting_lettering",
+      "balloon.modeling.latex.fashion.imperial_red",
+      "balloon.modeling.latex.fashion.red",
+      "balloon.modeling.latex.reflex.rose_gold",
+      "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+      "balloon.round.latex.fashion.assorted_colors.printed_unclassified_love",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.reflex.rose_gold",
+      "balloon.round.latex.solid.printed_hearts"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.heart.foil.pink.printed_text",
+        "size_code": "16 IN",
+        "inches": 16
+      },
+      {
+        "concept_id": "balloon.heart.foil.red.printed_greeting_lettering",
+        "size_code": "16 IN",
+        "inches": 16
+      },
+      {
+        "concept_id": "balloon.modeling.latex.fashion.imperial_red",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.fashion.red",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.reflex.rose_gold",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_unclassified_love",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.rose_gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.rose_gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.rose_gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.solid.printed_hearts",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.heart.foil.pink.printed_text",
+        "size_code": "16 IN",
+        "inches": 16
+      },
+      {
+        "concept_id": "balloon.heart.foil.red.printed_greeting_lettering",
+        "size_code": "16 IN",
+        "inches": 16
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T19:57:50.627Z",
+    "recompilado_en": "2026-09-03T14:45:23.452Z"
+  }
+}

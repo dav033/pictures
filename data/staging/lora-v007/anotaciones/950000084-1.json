@@ -1,0 +1,222 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000084-1",
+  "image_sha256": "341d8b4696b029c9a5a72b1ba2d28bfa80fce67922befa961a493f591b8bb407",
+  "idempotency_key": "a9803c8025c6e1bdd07aef284cea20622df4f139b2597af5b3b184e9f1ee5074",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000084/foto-1.jpg",
+    "orden": "950000084"
+  },
+  "anotacion": {
+    "image_id": "950000084-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and a wood floor with a white fluffy rug",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s2"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.fuchsia",
+          "balloon.round.latex.fashion.merlot",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.fashion.red"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.fuchsia",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.merlot",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Organic diagonal garland swags in fuchsia, deep merlot, pink, and red cross the balloon wall in clustered rosettes with clearly mixed balloon sizes."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.white",
+          "balloon.round.latex.fashion.pink"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.white",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Dense backdrop wall packed with uniform-size white and blush pink round balloons behind the garland swags."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "centro_mesa",
+        "count": 2,
+        "placement": "mesas_invitados",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "on_furniture",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.fashion.merlot"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.merlot",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Two matching clear acrylic pedestal stands at the front, each with a cascading cluster of red, pink, and merlot balloons spilling down the sides beneath place settings."
+      }
+    ],
+    "non_purchased_elements": [
+      "acrylic pedestal stands",
+      "printed party plates",
+      "paper cups",
+      "white fluffy rug"
+    ],
+    "uncertainties": [
+      "The large solid coral/red round balloon near the front-left could be fashion.red rather than a shade not in the allowed list; assumed red.",
+      "Exact split between the wall balloons (white vs pink) versus garland balloons is approximate given the density of the arrangement."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.merlot",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.white"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000084-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, anchored to the balloon wall, built from 5-inch matte Fashion round latex balloons in fuchsia, pink and red, 9-inch matte Fashion merlot round latex balloons, mixed organically rather than graded, a balloon wall, installed against the rear wall, built from matte Fashion round latex balloons in pink and white, all at a single 5-inch size, two matching low balloon centerpieces, distributed across the guest tables, built from 9-inch matte Fashion merlot round latex balloons, 5-inch matte Fashion round latex balloons in pink and red, mixed organically rather than graded, alongside acrylic pedestal stands, printed party plates, paper cups and white fluffy rug, set against white wall and a wood floor with a white fluffy rug.",
+    "palabras": 120,
+    "caracteres": 777,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.merlot",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.white"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.fuchsia",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.merlot",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.merlot",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:08:10.425Z",
+    "recompilado_en": "2026-09-03T14:45:24.123Z"
+  }
+}

@@ -1,0 +1,143 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000166-1",
+  "image_sha256": "ab1a5e4d60fb17567d83a96511bf9062fb25032309a13be39c57c926f211e971",
+  "idempotency_key": "2f68dcda2b88d7ff0329f15b9e41badc23bc124824885eedb58658cd262915e2",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000166/foto-1.png",
+    "orden": "950000166"
+  },
+  "anotacion": {
+    "image_id": "950000166-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white wall; floor not visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "column-1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.aquamarine",
+          "balloon.round.latex.fashion.lilac",
+          "balloon.round.latex.pastel_dusk.lavender",
+          "balloon.round.latex.reflex.silver",
+          "balloon.round.latex.reflex.violet"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.aquamarine",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.lilac",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.lavender",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.violet",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Tall vertical column of clustered round balloons with silver spiral balloons at the top."
+      }
+    ],
+    "non_purchased_elements": [
+      "silver spiral balloons"
+    ],
+    "uncertainties": [
+      "Floor placement is inferred because the floor is not visible."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.aquamarine",
+      "balloon.round.latex.fashion.lilac",
+      "balloon.round.latex.pastel_dusk.lavender",
+      "balloon.round.latex.reflex.silver",
+      "balloon.round.latex.reflex.violet"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000166-1",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from 9-inch matte Fashion aquamarine round latex balloons and muted Pastel Dusk lavender round latex balloons, 5-inch matte Fashion lilac round latex balloons and high-shine Reflex round latex balloons in silver and violet, mixed organically rather than graded, alongside silver spiral balloons, set against off-white wall; floor not visible.",
+    "palabras": 58,
+    "caracteres": 414,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.aquamarine",
+      "balloon.round.latex.fashion.lilac",
+      "balloon.round.latex.pastel_dusk.lavender",
+      "balloon.round.latex.reflex.silver",
+      "balloon.round.latex.reflex.violet"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.aquamarine",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lilac",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.lavender",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.violet",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:25:51.681Z",
+    "recompilado_en": "2026-09-03T14:45:24.940Z"
+  }
+}

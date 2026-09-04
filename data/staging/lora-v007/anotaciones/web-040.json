@@ -1,0 +1,89 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-040",
+  "image_sha256": "3a028cee9708a2729ee5f8b0ad9855313a8486dde4b0c2caf53ad4405f9c7e33",
+  "idempotency_key": "ca156679aaadbd8729066f9e5782140cf9ed5ce3fcfe92f87e598f5518e1c298",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-040.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Corazon-Organico_22ad339a-5209-49d5-ba84-48e4033662bf.jpg?v=1642706489",
+    "product_breakdown_status": "found_in_source_blog_product_carousel",
+    "theme": "boda",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-040",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a white seamless background",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.reflex.silver",
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Dense asymmetric cluster of red and silver round balloons with visible silver modeling balloons."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Exact placement is not visible in the isolated image."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.reflex.silver",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": [
+      "Globo Redondo Infinity® Graffiti Invierno Fashion Rojo"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-040",
+    "caption": "eventdecor_style_v3, a balloon bouquet, installed against the rear wall, built from high-shine Reflex silver modeling latex balloons, matte Fashion red round latex balloons and high-shine Reflex silver round latex balloons, set against a white seamless background.",
+    "palabras": 36,
+    "caracteres": 264,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.reflex.silver",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:12:27.769Z"
+  }
+}

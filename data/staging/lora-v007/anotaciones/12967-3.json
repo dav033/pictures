@@ -1,0 +1,144 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "12967-3",
+  "image_sha256": "722312317630eebb451f958a6e79160ec12226f51b5d7757a7cf9d76bae1292e",
+  "idempotency_key": "068781727d8faa9c7267f8578d5a696897cbffdcd6fa1e4108aa6261d4e7c298",
+  "source": {
+    "kind": "order_photo",
+    "ref": "12967/foto-3.jpg",
+    "orden": "12967"
+  },
+  "anotacion": {
+    "image_id": "12967-3",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white walls and a light tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.chocolate_brown"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.chocolate_brown",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "brown round balloons stacked at the base of the tall column"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "techo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "cluster of green round balloons with light green loops hanging near the ceiling"
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "on_furniture",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.assorted_colors"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.assorted_colors",
+            "size_code": "T160"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "a pink twisted modeling balloon shaped like an animal placed on the table"
+      }
+    ],
+    "non_purchased_elements": [
+      "a paper lantern",
+      "a Happy Birthday foil balloon",
+      "a birthday cake",
+      "a gold tablecloth"
+    ],
+    "uncertainties": [
+      "exact color match of the green garland balloons is not confirmed in the product list",
+      "precise size mix within the ceiling garland is not clearly distinguishable"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.assorted_colors",
+      "balloon.round.latex.fashion.chocolate_brown"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "T160"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "12967-3",
+    "caption": "eventdecor_style_v3, a balloon column, standing to one side, built from matte Fashion chocolate brown round latex balloons, all at a single 5-inch size, an organic balloon garland, suspended overhead, with a decorative accessory, placed on the main table, built from modeling latex balloons in assorted colors, solid Fashion finish, all at a single 1-inch size, alongside a paper lantern, a Happy Birthday foil balloon, a birthday cake and a gold tablecloth, set against off-white walls and a light tiled floor.",
+    "palabras": 80,
+    "caracteres": 511,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.assorted_colors",
+      "balloon.round.latex.fashion.chocolate_brown"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.assorted_colors",
+        "size_code": "T160",
+        "inches": 1
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.chocolate_brown",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:39:22.701Z",
+    "recompilado_en": "2026-09-03T14:45:22.129Z"
+  }
+}

@@ -1,0 +1,186 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000191-1",
+  "image_sha256": "b44c12db33b1c0979b0b77127dbf545425b7d40e1e6ffdef87ef57663d57e5d0",
+  "idempotency_key": "698a36e4b194359030f24d904854ab9da4554491a02630d753af921d336a170c",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000191/foto-1.png",
+    "orden": "950000191"
+  },
+  "anotacion": {
+    "image_id": "950000191-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white brick wall and a light floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "central_garland",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "metal_hoop"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.champagne",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.satin.pearl"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.reflex.champagne",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.satin.pearl",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Large organic garland of white, champagne, and gold balloons arranged around the central hoop."
+      },
+      {
+        "structure_id": "floor_bouquets",
+        "structure_type": "bouquet",
+        "count": 2,
+        "placement": "piso_frontal",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.champagne",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.satin.pearl"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.reflex.champagne",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.satin.pearl",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Two white and metallic balloon bouquets styled like gifts on the front floor."
+      },
+      {
+        "structure_id": "metal_hoop",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Circular metal hoop partially visible behind the central balloon garland."
+      }
+    ],
+    "non_purchased_elements": [
+      "a snowman figure",
+      "a wooden table",
+      "wrapped presents"
+    ],
+    "uncertainties": [
+      "Printed Christmas lettering is not visibly distinguishable on the white balloons."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.white.printed_christmas_lettering",
+      "balloon.round.latex.reflex.champagne",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.satin.pearl"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000191-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, anchored to the decorative accessory, built from high-shine Reflex round latex balloons in champagne and gold and Satin pearl round latex balloons, all at a single 5-inch size, two matching balloon bouquets, grounded across the front, built from high-shine Reflex round latex balloons in champagne and gold and Satin pearl round latex balloons, all at a single 5-inch size, a decorative accessory, centred on the main display area, alongside a snowman figure, a wooden table and wrapped presents, set against white brick wall and a light floor.",
+    "palabras": 92,
+    "caracteres": 593,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.reflex.champagne",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.satin.pearl"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.reflex.champagne",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.champagne",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.satin.pearl",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.satin.pearl",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:30:26.027Z",
+    "recompilado_en": "2026-09-03T14:45:25.263Z"
+  }
+}

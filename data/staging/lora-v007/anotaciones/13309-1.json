@@ -1,0 +1,137 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "13309-1",
+  "image_sha256": "96700edc88c1565e2d67b82f3dc60c64a7c69b912dcf82ad7642d12c63f8ba3b",
+  "idempotency_key": "439f62ec6d0f78e3d580fbb42ff9e6fcf454a823d446ff4132149c5839ca047f",
+  "source": {
+    "kind": "order_photo",
+    "ref": "13309/foto-1.jpg",
+    "orden": "13309"
+  },
+  "anotacion": {
+    "image_id": "13309-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "red wooden posts and a tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.satin.pearl"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.satin.pearl",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.satin.pearl",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.satin.pearl",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "an organic vertical column of gold chrome and pearl round balloons in mixed sizes running up the left edge of a printed backdrop sign"
+      }
+    ],
+    "non_purchased_elements": [
+      "a printed communion sign banner",
+      "a two-tier cake on a stand",
+      "geometric metal side tables",
+      "a small potted plant"
+    ],
+    "uncertainties": [
+      "whether the pale cream-colored balloons are pearl satin or a plain white balloon outside the confirmed list"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.satin.pearl"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "13309-1",
+    "caption": "eventdecor_style_v3, a balloon column, standing to one side, built from 9-inch and 5-inch high-shine Reflex gold round latex balloons, 12-inch, 9-inch and 5-inch Satin pearl round latex balloons, mixed organically rather than graded, alongside a printed communion sign banner, a two-tier cake on a stand, geometric metal side tables and a small potted plant, set against red wooden posts and a tiled floor.",
+    "palabras": 63,
+    "caracteres": 406,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.satin.pearl"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.satin.pearl",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.satin.pearl",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.satin.pearl",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:35:29.986Z",
+    "recompilado_en": "2026-09-03T14:45:22.229Z"
+  }
+}

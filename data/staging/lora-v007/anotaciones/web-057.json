@@ -1,0 +1,91 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-057",
+  "image_sha256": "5cb4072924d74a275e3ebe05788e48803e13e12983959614793b3eb15ee29142",
+  "idempotency_key": "f326191a3acd90d551df7af6a8eda9c3e2eba604b8edbf7de35392f624dbc633",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-057.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Organico-Base-Reflex-Dorado-Negro-740-570_1b2b824f-6a02-474e-ab7c-73123574635d.jpg?v=1642706939",
+    "product_breakdown_status": "partial_source_blog_product_carousel",
+    "theme": "cumpleanos",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-057",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a plain white background with no visible floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black.printed_birthday_lettering",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "A vertical balloon bouquet with black printed balloons, gold and silver reflective balloons, white balloons, and metallic number balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "white patterned balloons",
+      "white curling balloons",
+      "a number marquee"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.black.printed_birthday_lettering",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": [
+      "Globo Redondo Infinity® Metalink Plata Graffiti Fashion Negro"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-057",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from high-shine Reflex round latex balloons in gold and silver and matte Fashion black round latex balloons with printed birthday lettering, alongside white patterned balloons, white curling balloons and a number marquee, set against a plain white background with no visible floor.",
+    "palabras": 51,
+    "caracteres": 354,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.black.printed_birthday_lettering",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:23:19.111Z"
+  }
+}

@@ -1,0 +1,152 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000139-1",
+  "image_sha256": "1d5e8366ec492079f2f43802c1e8c25f816a134425f537c78827997173d7ffde",
+  "idempotency_key": "92e77dbf577034ecca6ec13a18424ddcde2bd5034f34621f229b03826f2b4280",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000139/foto-1.jpg",
+    "orden": "950000139"
+  },
+  "anotacion": {
+    "image_id": "950000139-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white background; floor not visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "kit",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.blue",
+          "balloon.round.latex.fashion.lilac",
+          "balloon.round.latex.fashion.lime_green",
+          "balloon.round.latex.fashion.orange",
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.fashion.yellow"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.lilac",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.lime_green",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.orange",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.yellow",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Four-dimensional balloon letters spelling LOVE, made from round balloons in six visible colors."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "The mounting surface is not distinguishable from the white background."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.blue",
+      "balloon.round.latex.fashion.lilac",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.yellow"
+    ],
+    "confirmed_size_codes": [
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000139-1",
+    "caption": "eventdecor_style_v3, a coordinated decoration kit, installed against the rear wall, built from matte Fashion round latex balloons in blue, lilac, lime green, orange, red and yellow, all at a single 5-inch size, set against plain white background; floor not visible.",
+    "palabras": 40,
+    "caracteres": 265,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.blue",
+      "balloon.round.latex.fashion.lilac",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.yellow"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lilac",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lime_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.yellow",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:09:57.146Z",
+    "recompilado_en": "2026-09-03T14:45:24.568Z"
+  }
+}

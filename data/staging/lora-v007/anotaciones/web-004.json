@@ -1,0 +1,90 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-004",
+  "image_sha256": "3a97dd8ea79a2312bd5d6ed57c0e91ca72a64f31a2b40700f70d9f597b944bf4",
+  "idempotency_key": "73292e1f0b4951c11446435057f74bb9318d9b9f981957f758908733101c2c08",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-004.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Arco_Webinar_San_Valentin_3f215280-1169-46ed-b39d-8f42f81f49fd.jpg?v=1749229909",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "amor_amistad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-004",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a white floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.heart.foil.red",
+          "balloon.heart.latex.fashion.red",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.fashion.white"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Three-dimensional symmetrical balloon arch with pink and white round balloons, red foil heart balloons, and red latex heart balloons."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Exact balloon sizes are not distinguishable."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.heart.foil.red",
+      "balloon.heart.latex.fashion.red",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.white"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-004",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from Metallic red heart-shaped foil balloons, matte Fashion red heart-shaped latex balloons and matte Fashion round latex balloons in pink and white, set against white walls and a white floor.",
+    "palabras": 42,
+    "caracteres": 278,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.heart.foil.red",
+      "balloon.heart.latex.fashion.red",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.white"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:10:15.274Z"
+  }
+}

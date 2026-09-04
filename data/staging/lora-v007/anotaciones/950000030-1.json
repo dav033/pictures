@@ -1,0 +1,211 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000030-1",
+  "image_sha256": "b90c9228112b201c5e6092bfbde3a631fc5a972744f97a1cf47e175a636c45c5",
+  "idempotency_key": "fd8797f70658498193f2c273127acc40f605c1f42743ae3bfd2c4c4e9f11b429",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000030/foto-1.png",
+    "orden": "950000030"
+  },
+  "anotacion": {
+    "image_id": "950000030-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a black floor with gold confetti, no wall visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "dense three-dimensional garland arch of gold balloons framing the backdrop"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "behind",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "flat panel of silver star foils and metallic fringe standing behind the gold arch"
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "kit",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.number.foil.matte_black",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.number.foil.matte_black",
+            "size_code": "16 IN"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "stacked black number balloons spelling 2025 above a mixed gold and silver balloon cluster base"
+      },
+      {
+        "structure_id": "s4",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "acento",
+        "salience": 4,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.solid.printed_new_year_lettering",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.solid.printed_new_year_lettering",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "cluster of gold and printed New Year balloons on a stand at the left"
+      }
+    ],
+    "non_purchased_elements": [
+      "white pedestal tables",
+      "party plates",
+      "a floor table runner",
+      "a printed banner"
+    ],
+    "uncertainties": [
+      "the star-shaped foil balloons and metallic fringe in the backdrop are not in the allowed product list",
+      "a black round balloon with New Year text on the center table could not be confidently assigned to a distinct structure"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.number.foil.matte_black",
+      "balloon.round.foil.unspecified.printed_graduation_lettering",
+      "balloon.round.latex.fashion.black.printed_new_year_lettering",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.reflex.silver",
+      "balloon.round.latex.solid.printed_new_year_lettering"
+    ],
+    "confirmed_size_codes": [
+      "16 IN",
+      "18 IN",
+      "R-12",
+      "R-24",
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000030-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from high-shine Reflex gold round latex balloons, all at a single 5-inch size, a decorated backdrop, behind the organic balloon arch, a coordinated decoration kit, standing to one side, built from 16-inch Metallic matte black number foil balloons, 5-inch high-shine Reflex round latex balloons in gold and silver, mixed organically rather than graded, with a balloon bouquet, standing to one side, built from 5-inch high-shine Reflex gold round latex balloons, 12-inch round latex balloons with printed new-year lettering, mixed organically rather than graded, alongside white pedestal tables, party plates, a floor table runner and a printed banner, set against a black floor with gold confetti, no wall visible.",
+    "palabras": 120,
+    "caracteres": 799,
+    "clausulas_por_estructura": 4,
+    "concept_ids_resueltos": [
+      "balloon.number.foil.matte_black",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.reflex.silver",
+      "balloon.round.latex.solid.printed_new_year_lettering"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.number.foil.matte_black",
+        "size_code": "16 IN",
+        "inches": 16
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.solid.printed_new_year_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:04:26.445Z",
+    "recompilado_en": "2026-09-03T14:45:23.503Z"
+  }
+}

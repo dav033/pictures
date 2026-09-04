@@ -1,0 +1,148 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000148-1",
+  "image_sha256": "9809b69e339e88330c72e11abc02881ab10f4ccf963f4b86f06378e697c5f2d6",
+  "idempotency_key": "70c42598f3d7c282de56de1654dee4eed2da55f501d91c49060f582134dd1711",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000148/foto-1.jpg",
+    "orden": "950000148"
+  },
+  "anotacion": {
+    "image_id": "950000148-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a plain white studio background, no floor or wall visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "kit",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.linkoloon.latex.fashion.white",
+          "balloon.modeling.latex.fashion.red",
+          "balloon.round.latex.fashion.blue",
+          "balloon.round.latex.fashion.navy_blue",
+          "balloon.round.latex.fashion.royal_blue",
+          "balloon.round.latex.pastel_dusk.blue"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.red",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.navy_blue",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.royal_blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.blue",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "graduation-cap-shaped balloon sculpture with a white chain-link trim forming the brim and necktie, a red twisted bow, and a round mixed-blue balloon ring in navy, royal, medium and muted blue tones"
+      }
+    ],
+    "non_purchased_elements": [
+      "small black button accents"
+    ],
+    "uncertainties": [
+      "placement guessed from product-shot framing; no venue context visible",
+      "unclear whether the white trim is the link-o-loon or a round latex balloon due to close twisting"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.linkoloon.latex.fashion.white",
+      "balloon.modeling.latex.fashion.red",
+      "balloon.round.latex.fashion.blue",
+      "balloon.round.latex.fashion.navy_blue",
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.pastel_dusk.blue"
+    ],
+    "confirmed_size_codes": [
+      "LOL-6",
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000148-1",
+    "caption": "eventdecor_style_v3, a coordinated decoration kit, grounded across the front, built from chain-link Link-O-Loon latex balloons in white, solid Fashion finish, 2-inch matte Fashion red modeling latex balloons, 5-inch matte Fashion round latex balloons in blue and royal blue, 9-inch matte Fashion navy blue round latex balloons and muted Pastel Dusk blue round latex balloons, mixed organically rather than graded, alongside small black button accents, set against a plain white studio background, no floor or wall visible.",
+    "palabras": 76,
+    "caracteres": 522,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.linkoloon.latex.fashion.white",
+      "balloon.modeling.latex.fashion.red",
+      "balloon.round.latex.fashion.blue",
+      "balloon.round.latex.fashion.navy_blue",
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.pastel_dusk.blue"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.red",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.navy_blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.royal_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.blue",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:30:28.985Z",
+    "recompilado_en": "2026-09-03T14:45:24.686Z"
+  }
+}

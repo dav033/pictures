@@ -1,0 +1,189 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000167-1",
+  "image_sha256": "a2bc0953f5b3355bed923e9720fad1ed7c61ebaee89baafdd1042d927fb2f3d3",
+  "idempotency_key": "63302f0dd3627c0ef30a40dda7935f8a80c8e906bf877f199ddd2875a9247642",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000167/foto-1.jpg",
+    "orden": "950000167"
+  },
+  "anotacion": {
+    "image_id": "950000167-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "bouquet_right",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.reflex.silver",
+          "balloon.round.latex.fashion.coral"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.reflex.silver",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.coral",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Coral round balloons with silver modeling balloons forming a gift-shaped bouquet."
+      },
+      {
+        "structure_id": "bouquet_left",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.reflex.silver",
+          "balloon.round.latex.pastel_dusk.lavender"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.reflex.silver",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.lavender",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Lavender round balloons with silver modeling balloons forming a gift-shaped bouquet."
+      },
+      {
+        "structure_id": "bouquet_center",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.reflex.silver",
+          "balloon.round.latex.reflex.rose_gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.reflex.silver",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.rose_gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Small rose-gold round balloons with silver modeling balloons forming a central gift-shaped bouquet."
+      }
+    ],
+    "non_purchased_elements": [
+      "three printed balloons"
+    ],
+    "uncertainties": [
+      "The three printed upper balloons do not exactly match an allowed product concept."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.reflex.silver",
+      "balloon.round.latex.fashion.coral",
+      "balloon.round.latex.pastel_dusk.lavender",
+      "balloon.round.latex.pastel_dusk.pink",
+      "balloon.round.latex.reflex.rose_gold"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000167-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, standing to one side, built from 2-inch high-shine Reflex silver modeling latex balloons, 9-inch matte Fashion coral round latex balloons, mixed organically rather than graded, a balloon bouquet, standing to one side, built from 2-inch high-shine Reflex silver modeling latex balloons, 9-inch muted Pastel Dusk lavender round latex balloons, mixed organically rather than graded, with a balloon bouquet, grounded across the front, built from 2-inch high-shine Reflex silver modeling latex balloons, 5-inch high-shine Reflex rose gold round latex balloons, mixed organically rather than graded, alongside three printed balloons, set against white walls and white floor.",
+    "palabras": 99,
+    "caracteres": 708,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.reflex.silver",
+      "balloon.round.latex.fashion.coral",
+      "balloon.round.latex.pastel_dusk.lavender",
+      "balloon.round.latex.reflex.rose_gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.reflex.silver",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.reflex.silver",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.reflex.silver",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.coral",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.lavender",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.rose_gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:17:13.262Z",
+    "recompilado_en": "2026-09-03T14:45:24.953Z"
+  }
+}

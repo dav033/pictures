@@ -1,0 +1,120 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000059-1",
+  "image_sha256": "983345b97c4dc41691b1f5386b1343eb622bd0ed0e4cd82113b854ec77981bc7",
+  "idempotency_key": "6994a3cc309e3e86891d631fb9a35861d438ec745a09e9ebb2b707e6aaf9c0fe",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000059/foto-1.jpg",
+    "orden": "950000059"
+  },
+  "anotacion": {
+    "image_id": "950000059-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "seamless white studio background",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.fashion.royal_blue",
+          "balloon.round.latex.fashion.yellow"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.royal_blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.yellow",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "A flat, die-cut shield-shaped panel densely covered in three vertical color bands of round balloons (yellow, blue, red) resembling a flag emblem, tapering to a point at the bottom."
+      }
+    ],
+    "non_purchased_elements": [
+      "a soccer ball ornament"
+    ],
+    "uncertainties": [
+      "Structure type is ambiguous between backdrop (flat board) and pared (dense wall panel); classified as backdrop due to the rigid, straight-edged shield silhouette.",
+      "Placement guessed as fondo_pared since this is a studio product shot with no venue context."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.fashion.yellow"
+    ],
+    "confirmed_size_codes": [
+      "R-5"
+    ],
+    "sin_resolver": [
+      "Globo Infinity® Balón De Futbol"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000059-1",
+    "caption": "eventdecor_style_v3, a decorated backdrop, installed against the rear wall, built from matte Fashion round latex balloons in red, royal blue and yellow, all at a single 5-inch size, alongside a soccer ball ornament, set against seamless white studio background.",
+    "palabras": 39,
+    "caracteres": 261,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.fashion.yellow"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.royal_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.yellow",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:09:53.410Z",
+    "recompilado_en": "2026-09-03T14:45:23.841Z"
+  }
+}

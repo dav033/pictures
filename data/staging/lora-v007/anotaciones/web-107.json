@@ -1,0 +1,88 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-107",
+  "image_sha256": "81ee03552074add41ff0d465d878904709d5c094c5f3529e863dd105e1ef45d5",
+  "idempotency_key": "db86b197d576570350cb9a9717e7cebca64203304fc23d8342f789947f02eef6",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-107.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Arbol_de_Navidad_Reflex.jpg?v=1670007998",
+    "product_breakdown_status": "found_in_source_blog_product_carousel",
+    "theme": "navidad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-107",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white background; floor not visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.chocolate_brown",
+          "balloon.modeling.latex.reflex.gold",
+          "balloon.modeling.latex.reflex.lime_green"
+        ],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Vertical balloon tree column with shiny green body and brown and gold accents."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Event wall and floor context are not visible.",
+      "Gold accents appear bronze-toned."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.chocolate_brown",
+      "balloon.modeling.latex.reflex.gold",
+      "balloon.modeling.latex.reflex.lime_green"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-107",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from matte Fashion chocolate brown modeling latex balloons and high-shine Reflex modeling latex balloons in gold and lime green, set against plain white background; floor not visible.",
+    "palabras": 36,
+    "caracteres": 255,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.chocolate_brown",
+      "balloon.modeling.latex.reflex.gold",
+      "balloon.modeling.latex.reflex.lime_green"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:11:16.891Z"
+  }
+}

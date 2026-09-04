@@ -1,0 +1,104 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000069-1",
+  "image_sha256": "adf500efb974d642587eb22d5e9c00a264d784c7a0b711a41d83bb12e6296b05",
+  "idempotency_key": "fb1ba68482fa22ab43d1b19b60591f2397777dddee9333faf65d5a3379736225",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000069/foto-1.jpg",
+    "orden": "950000069"
+  },
+  "anotacion": {
+    "image_id": "950000069-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio background, no floor or wall visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "kit",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.tubito.latex.reflex.gold",
+          "balloon.modeling.latex.fashion.imperial_red"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.tubito.latex.reflex.gold",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.fashion.imperial_red",
+            "size_code": "T260"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "twisted gold high-shine balloon figure shaped like a snake with a red modeling balloon forming the tongue"
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "product shot with no real venue context, so placement is a default guess",
+      "no structure type in the closed list matches a balloon animal sculpture exactly; kit chosen as closest fit"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.imperial_red",
+      "balloon.tubito.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000069-1",
+    "caption": "eventdecor_style_v3, a coordinated decoration kit, grounded across the front, built from matte Fashion imperial red modeling latex balloons and high-shine Reflex gold modeling latex balloons, all at a single 2-inch size, set against plain white studio background, no floor or wall visible.",
+    "palabras": 42,
+    "caracteres": 289,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.imperial_red",
+      "balloon.modeling.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.imperial_red",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.reflex.gold",
+        "size_code": "T260",
+        "inches": 2
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:06:54.171Z",
+    "recompilado_en": "2026-09-03T14:45:23.945Z"
+  }
+}

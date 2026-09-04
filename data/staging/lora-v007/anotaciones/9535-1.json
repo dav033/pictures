@@ -1,0 +1,128 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "9535-1",
+  "image_sha256": "f9046473fef2124f355a87e08ce4bba1460af22540a38f212ad2bf42c61f1a47",
+  "idempotency_key": "ea7eb13d7cd610930c5cf2f256aef6f3276a7faeb1d5530dbe8e817fa1f46592",
+  "source": {
+    "kind": "order_photo",
+    "ref": "9535/foto-1.jpg",
+    "orden": "9535"
+  },
+  "anotacion": {
+    "image_id": "9535-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "off-white wall and wood tabletop; floor not visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black.printed_halloween_lettering",
+          "balloon.round.latex.fashion.lime_green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.black.printed_halloween_lettering",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.lime_green",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.lime_green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.lime_green",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Dense organic lime green balloon garland in multiple sizes with black Halloween balloon accents along the wall."
+      }
+    ],
+    "non_purchased_elements": [
+      "a wood table",
+      "window blinds",
+      "a sheer curtain"
+    ],
+    "uncertainties": [
+      "Halloween lettering on the black balloons is not legible."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.black.printed_halloween_lettering",
+      "balloon.round.latex.fashion.lime_green"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "9535-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, installed against the rear wall, built from 12-inch matte Fashion black round latex balloons with printed halloween lettering, 12-inch, 9-inch and 5-inch matte Fashion lime green round latex balloons, mixed organically rather than graded, alongside a wood table, window blinds and a sheer curtain, set against off-white wall and wood tabletop; floor not visible.",
+    "palabras": 59,
+    "caracteres": 411,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.black.printed_halloween_lettering",
+      "balloon.round.latex.fashion.lime_green"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.black.printed_halloween_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lime_green",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lime_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lime_green",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:26:04.967Z",
+    "recompilado_en": "2026-09-03T14:45:25.316Z"
+  }
+}

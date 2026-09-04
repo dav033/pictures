@@ -1,0 +1,122 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000046-1",
+  "image_sha256": "002e78d5e0192dd24c57d535e33c4c4b2f11b5eb8eed8181272854f313d77d3a",
+  "idempotency_key": "424e9f4fb04fac1d67188849477c69827c42f64cd40fcdfabe4297a473a8fb7c",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000046/foto-1.jpg",
+    "orden": "950000046"
+  },
+  "anotacion": {
+    "image_id": "950000046-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white studio background, no floor or wall visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.silk.arctic_blue",
+          "balloon.round.latex.silk.gold",
+          "balloon.round.latex.solid.printed_hearts"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.silk.arctic_blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.solid.printed_hearts",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Heart-shaped three-dimensional balloon arch built from small pearl/gold round balloons with chrome blue flower accents at the base of each side, topped by one large printed-heart balloon"
+      }
+    ],
+    "non_purchased_elements": [
+      "a wooden crate",
+      "assorted fruit",
+      "bread pastries",
+      "a printed fabric liner"
+    ],
+    "uncertainties": [
+      "The pearl/champagne body balloons are matched to gold Silk sheen but the exact tone is hard to confirm against the reference",
+      "Structure could alternatively be read as a topper bouquet rather than an arco given its open heart shape"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.silk.arctic_blue",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.solid.printed_hearts"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000046-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, placed on the main table, built from 5-inch satin Silk round latex balloons in arctic blue and gold, 12-inch round latex balloons with printed heart pattern, mixed organically rather than graded, alongside a wooden crate, assorted fruit, bread pastries and a printed fabric liner, set against white studio background, no floor or wall visible.",
+    "palabras": 59,
+    "caracteres": 389,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.silk.arctic_blue",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.solid.printed_hearts"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.silk.arctic_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.solid.printed_hearts",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:07:58.921Z",
+    "recompilado_en": "2026-09-03T14:45:23.672Z"
+  }
+}

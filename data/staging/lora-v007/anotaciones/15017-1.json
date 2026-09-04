@@ -1,0 +1,172 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "15017-1",
+  "image_sha256": "bd388abadb880068cbed9bac58456e12bbafc9a46aeccc667be6ee2c46f546f8",
+  "idempotency_key": "876592197ff4167cf5bf677bb1f598c5da4fd67ab7718a816002a3b71f9387a3",
+  "source": {
+    "kind": "order_photo",
+    "ref": "15017/foto-1.jpg",
+    "orden": "15017"
+  },
+  "anotacion": {
+    "image_id": "15017-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a terracotta tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "entrada",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.eucalyptus_green",
+          "balloon.round.latex.fashion.sand"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "three-dimensional organic balloon arch in green and cream tones framing a doorway"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "gold chrome balloon garland running along the base of the arch near the wall"
+      }
+    ],
+    "non_purchased_elements": [
+      "a letter sign",
+      "a photo display",
+      "a birthday cake on a stand",
+      "hanging paper swirls"
+    ],
+    "uncertainties": [
+      "exact balloon sizes not distinguishable within the clustered garland",
+      "whether cream balloons correspond to the sand concept or a different neutral tone"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "15017-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, framing the entrance, built from matte Fashion round latex balloons in eucalyptus green and sand, all in 12-inch and 5-inch, mixed organically rather than graded, an organic balloon garland, anchored to the organic balloon arch, built from high-shine Reflex gold round latex balloons, all in 12-inch and 5-inch, mixed organically rather than graded, alongside a letter sign, a display, a birthday cake on a stand and hanging paper swirls, set against white walls and a terracotta tiled floor.",
+    "palabras": 83,
+    "caracteres": 538,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:42:36.197Z",
+    "recompilado_en": "2026-09-03T14:45:22.495Z"
+  }
+}

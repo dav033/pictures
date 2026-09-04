@@ -1,0 +1,136 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "12967-2",
+  "image_sha256": "b7ba7af68da988d202fba0eec4a639f76af28dba7ba6ce0c3afa99e6ccff011f",
+  "idempotency_key": "dc949cf905a6abb1a02f9993bf9b2d489f13e45564829eb05c31b1ea2af35c1f",
+  "source": {
+    "kind": "order_photo",
+    "ref": "12967/foto-2.jpg",
+    "orden": "12967"
+  },
+  "anotacion": {
+    "image_id": "12967-2",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "off-white brick-look wall and a wood-tone table surface",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "kit",
+        "count": 2,
+        "placement": "sobre_mesa_principal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.assorted_colors",
+          "banner.sign.metallized_foil.printed_greeting_lettering"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.assorted_colors",
+            "size_code": "T160"
+          },
+          {
+            "concept_id": "banner.sign.metallized_foil.printed_greeting_lettering",
+            "size_code": "PAQUETE X 2"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Two matching yellow modeling-balloon figures with smiley faces seated on the table, one on each side, each holding a heart-shaped foil sign printed with a greeting."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Dense cluster of large round red printed balloons and a red foil heart topped in the upper left corner behind the table."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Flat red metallic grid-pattern panel standing behind the table on the right side."
+      }
+    ],
+    "non_purchased_elements": [
+      "a paper boat",
+      "a framed picture",
+      "a hanging ornament"
+    ],
+    "uncertainties": [
+      "Not certain which specific foil hearts correspond to the 'package x2' banner-sign concept versus other unlisted red hearts in the cluster.",
+      "Uncertain if the mesh red panel is a purchased backdrop or venue decor not part of the order."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.assorted_colors",
+      "banner.sign.metallized_foil.printed_greeting_lettering"
+    ],
+    "confirmed_size_codes": [
+      "PAQUETE X 2",
+      "T160"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "12967-2",
+    "caption": "eventdecor_style_v3, two matching coordinated decoration kits, placed on the main table, built from 1-inch modeling latex balloons in assorted colors, solid Fashion finish, metallized foil decorative signs with printed greeting lettering, a balloon bouquet, installed against the rear wall, with a decorated backdrop, installed against the rear wall, alongside a paper boat, a framed picture and a hanging ornament, set against off-white brick-look wall and a wood-tone table surface.",
+    "palabras": 69,
+    "caracteres": 484,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.assorted_colors",
+      "banner.sign.metallized_foil.printed_greeting_lettering"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.assorted_colors",
+        "size_code": "T160",
+        "inches": 1
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:38:06.201Z",
+    "recompilado_en": "2026-09-03T14:45:22.118Z"
+  }
+}

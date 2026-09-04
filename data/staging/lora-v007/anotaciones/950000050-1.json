@@ -1,0 +1,140 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000050-1",
+  "image_sha256": "6441f0d360ea5d04913f2ea538c270e6b567c4cdc12947399ee08c4f67389f6c",
+  "idempotency_key": "e1a993525068e2b6fb624eaf27cbb0fdd5d9ec0ae5829ed1744820fe74d37cbf",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000050/foto-1.jpg",
+    "orden": "950000050"
+  },
+  "anotacion": {
+    "image_id": "950000050-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a plain white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.silk.amethyst",
+          "balloon.modeling.latex.silk.gold",
+          "balloon.round.latex.fashion.assorted_colors.printed_unclassified_love",
+          "balloon.round.latex.fashion.clear",
+          "balloon.round.latex.fashion.coral"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.silk.amethyst",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.silk.gold",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_unclassified_love",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.clear",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.coral",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "A single balloon bouquet with a large clear outer balloon, printed round balloons, coral round balloons, and gold and amethyst modeling balloons forming flowers and curved stems."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.silk.amethyst",
+      "balloon.modeling.latex.silk.gold",
+      "balloon.round.latex.fashion.assorted_colors.printed_unclassified_love",
+      "balloon.round.latex.fashion.clear",
+      "balloon.round.latex.fashion.coral"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000050-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from 2-inch satin Silk modeling latex balloons in amethyst and gold, 12-inch round latex balloons in assorted colors with a matte Fashion finish and a printed pattern, 9-inch matte Fashion round latex balloons in clear and coral, mixed organically rather than graded, set against a plain white wall and white floor.",
+    "palabras": 60,
+    "caracteres": 388,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.silk.amethyst",
+      "balloon.modeling.latex.silk.gold",
+      "balloon.round.latex.fashion.assorted_colors.printed_unclassified_love",
+      "balloon.round.latex.fashion.clear",
+      "balloon.round.latex.fashion.coral"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.silk.amethyst",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.silk.gold",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_unclassified_love",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.clear",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.coral",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T19:58:33.072Z",
+    "recompilado_en": "2026-09-03T14:45:23.728Z"
+  }
+}

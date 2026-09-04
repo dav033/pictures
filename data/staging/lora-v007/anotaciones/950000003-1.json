@@ -1,0 +1,133 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000003-1",
+  "image_sha256": "a868b7d5b8d361bae5e912321da133514ce0c323fa8d4ddcbe9a13fb97ea46d1",
+  "idempotency_key": "875d6847fbaa3cb47301b81e2a8bd5bdd0e85a3b37c7daae551f54a1836b3d1f",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000003/foto-1.png",
+    "orden": "950000003"
+  },
+  "anotacion": {
+    "image_id": "950000003-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio background",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "kit",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.heart.latex.fashion.red",
+          "balloon.round.latex.silk.gold",
+          "balloon.round.latex.silk.pearl_white",
+          "balloon.round.latex.fashion.imperial_red"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.heart.latex.fashion.red",
+            "size_code": "C-6"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.pearl_white",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.imperial_red",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "red heart-shaped balloon framed by small gold round balloons, mounted on a base cluster of pearl white and dark red round balloons"
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Small gold balls outlining the heart could be round silk gold balloons or twisted gold modeling balloon (T260) beads — appearance is nearly identical",
+      "Blush cream balloons from the allowed list were not clearly distinguishable from the pearl white ones, so they were omitted"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.heart.latex.fashion.red",
+      "balloon.modeling.latex.silk.gold",
+      "balloon.round.latex.fashion.blush_cream",
+      "balloon.round.latex.fashion.imperial_red",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.pearl_white"
+    ],
+    "confirmed_size_codes": [
+      "C-6",
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000003-1",
+    "caption": "eventdecor_style_v3, a coordinated decoration kit, placed on the main table, built from 6-inch matte Fashion red heart-shaped latex balloons, 9-inch matte Fashion imperial red round latex balloons, 5-inch satin Silk round latex balloons in gold and pearl white, mixed organically rather than graded, set against plain white studio background.",
+    "palabras": 49,
+    "caracteres": 342,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.heart.latex.fashion.red",
+      "balloon.round.latex.fashion.imperial_red",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.pearl_white"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.heart.latex.fashion.red",
+        "size_code": "C-6",
+        "inches": 6
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.imperial_red",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.pearl_white",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:49:39.879Z",
+    "recompilado_en": "2026-09-03T14:45:23.219Z"
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-114",
+  "image_sha256": "b0febb2797a2efbb03cfdafa44986e54ac3a8f415f2b867ba81c749ae85d4e08",
+  "idempotency_key": "c9e35415581bb8fea139a4b6ed41308f6874afc99e2bd0a977524f8f26d4b3a7",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-114.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Blue-and-silver-column_ec354f8c-92bc-462b-86cf-e994b6c0bb77.jpg?v=1642707152",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "navidad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-114",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white walls and a light tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.reflex.blue",
+          "balloon.modeling.latex.reflex.silver",
+          "balloon.round.latex.fashion.clear.printed_unclassified_graffiti_cielo",
+          "balloon.round.latex.fashion.clear.printed_unclassified_graffiti_invierno",
+          "balloon.round.latex.reflex.blue",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Tall vertical balloon column with twisted blue and silver modeling balloons, mixed-size round latex balloon clusters, and asymmetrical side accents."
+      }
+    ],
+    "non_purchased_elements": [
+      "star foil balloons",
+      "a metal stand"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.reflex.blue",
+      "balloon.modeling.latex.reflex.silver",
+      "balloon.round.latex.fashion.clear.printed_unclassified_graffiti_cielo",
+      "balloon.round.latex.fashion.clear.printed_unclassified_graffiti_invierno",
+      "balloon.round.latex.reflex.blue",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-114",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from high-shine Reflex modeling latex balloons in blue and silver, high-shine Reflex round latex balloons in blue and silver, matte Fashion clear round latex balloons with a printed pattern and matte Fashion clear round latex balloons with a printed pattern, alongside star foil balloons and a metal stand, set against off-white walls and a light tiled floor.",
+    "palabras": 66,
+    "caracteres": 431,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.reflex.blue",
+      "balloon.modeling.latex.reflex.silver",
+      "balloon.round.latex.fashion.clear.printed_unclassified_graffiti_cielo",
+      "balloon.round.latex.fashion.clear.printed_unclassified_graffiti_invierno",
+      "balloon.round.latex.reflex.blue",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:17:45.282Z"
+  }
+}

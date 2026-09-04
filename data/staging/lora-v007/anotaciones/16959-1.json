@@ -1,0 +1,306 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "16959-1",
+  "image_sha256": "51a13f4defe36ba770612c657ca57ce5aa1f63fc151bd6b3b0f2060c4ee7de28",
+  "idempotency_key": "145c48339885e1716bf2cd9a105c1893891e135aef31edc2a49503c325804a7e",
+  "source": {
+    "kind": "order_photo",
+    "ref": "16959/foto-1.jpg",
+    "orden": "16959"
+  },
+  "anotacion": {
+    "image_id": "16959-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "pink tulle drape and a light tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.crystal.pastel_lilac",
+          "balloon.round.latex.pastel_matte.green",
+          "balloon.round.latex.pastel_matte.lilac",
+          "balloon.round.latex.pastel_matte.melon",
+          "balloon.round.latex.pastel_matte.yellow",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Organic garland arcing across the top of a pink tulle canopy, mixing pastel lilac, green, melon and yellow round balloons with gold metallic accents and a large translucent lilac balloon at the top left"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.pastel_matte.green",
+          "balloon.round.latex.pastel_matte.lilac",
+          "balloon.round.latex.pastel_matte.yellow"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Flower-shaped cluster of small pastel green, lilac and yellow balloons on the right side of the canopy"
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.pastel_matte.pink"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Small cluster of pastel balloons on the left beside the teddy bear, including pink balloons"
+      }
+    ],
+    "non_purchased_elements": [
+      "a teddy bear",
+      "a butterfly balloon accent",
+      "white flower-shaped balloon toppers",
+      "pink tulle canopy drape"
+    ],
+    "uncertainties": [
+      "Overhead angle and small scale make exact balloon sizes hard to distinguish, so visible_sizes are left empty",
+      "Some colors on the left bouquet could not be confidently matched to allowed concepts beyond pink"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.crystal.pastel_lilac",
+      "balloon.round.latex.pastel_matte.green",
+      "balloon.round.latex.pastel_matte.lilac",
+      "balloon.round.latex.pastel_matte.melon",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.pastel_matte.yellow",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-24",
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "16959-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, centred on the main display area, built from 24-inch translucent Crystal pastel lilac round latex balloons, 12-inch and 5-inch Pastel Matte round latex balloons in green, lilac and yellow, 12-inch Pastel Matte melon round latex balloons, 9-inch high-shine Reflex gold round latex balloons, mixed organically rather than graded, a balloon bouquet, anchored to the organic balloon garland, built from Pastel Matte round latex balloons in green, lilac and yellow, all in 12-inch and 5-inch, mixed organically rather than graded, with a balloon bouquet, anchored to the organic balloon garland, built from Pastel Matte pastel pink round latex balloons, all 5-inch, alongside a teddy bear, a butterfly balloon accent, white flower-shaped balloon toppers and pink tulle canopy drape, set against pink tulle drape and a light tiled floor.",
+    "palabras": 132,
+    "caracteres": 880,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.crystal.pastel_lilac",
+      "balloon.round.latex.pastel_matte.green",
+      "balloon.round.latex.pastel_matte.lilac",
+      "balloon.round.latex.pastel_matte.melon",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.pastel_matte.yellow",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.crystal.pastel_lilac",
+        "size_code": "R-24",
+        "inches": 24
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.green",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.green",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.lilac",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.lilac",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.lilac",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.lilac",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.melon",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.pink",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.yellow",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.yellow",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.yellow",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.yellow",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.crystal.pastel_lilac",
+        "size_code": "R-24",
+        "inches": 24
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.green",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.green",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.lilac",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.lilac",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.lilac",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.lilac",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.melon",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.pink",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.yellow",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.yellow",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.yellow",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.yellow",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:40:23.643Z",
+    "recompilado_en": "2026-09-03T14:45:22.840Z"
+  }
+}

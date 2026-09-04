@@ -1,0 +1,96 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "11336-1",
+  "image_sha256": "56d9918f484b24f833d934f784eed8108f99c6ff02bdc95d861a1f2290e20430",
+  "idempotency_key": "557bdca006f6f98744aa78f5832a82a53395770baef6493c2f5b8b57d6f67805",
+  "source": {
+    "kind": "order_photo",
+    "ref": "11336/foto-1.jpg",
+    "orden": "11336"
+  },
+  "anotacion": {
+    "image_id": "11336-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "dark corrugated ceiling and a purple-draped table surface",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.violet"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.violet",
+            "size_code": "R-18"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Organic garland of light blue, pink and purple round balloons of varying sizes draped across the top of the backdrop above the table."
+      }
+    ],
+    "non_purchased_elements": [
+      "a metallic curtain backdrop",
+      "a Hello Kitty foil balloon",
+      "a foil heart balloon",
+      "drinks and snacks on the table"
+    ],
+    "uncertainties": [
+      "exact balloon size proportions are hard to judge from this angle; only one size (R-18) is in the allowed list"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.violet"
+    ],
+    "confirmed_size_codes": [
+      "R-18"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "11336-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, installed against the rear wall, built from matte Fashion violet round latex balloons, all 18-inch, alongside a metallic curtain backdrop, a Hello Kitty foil balloon, a foil heart balloon and drinks and snacks on the table, set against dark corrugated ceiling and a purple-draped table surface.",
+    "palabras": 51,
+    "caracteres": 343,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.violet"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.violet",
+        "size_code": "R-18",
+        "inches": 18
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:37:25.389Z",
+    "recompilado_en": "2026-09-03T14:45:21.943Z"
+  }
+}

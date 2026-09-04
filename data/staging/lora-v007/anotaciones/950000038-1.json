@@ -1,0 +1,172 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000038-1",
+  "image_sha256": "a5cb59bf4d79e2d93672d80721188e1ab474d3690f7e215d58f8d510f23571f1",
+  "idempotency_key": "05fe073c9cd00a49767df57865475d5dda7f1d7375ead6da2e35bfafcb046ee6",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000038/foto-1.jpg",
+    "orden": "950000038"
+  },
+  "anotacion": {
+    "image_id": "950000038-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio backdrop, no real wall or floor visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.royal_blue",
+          "balloon.round.latex.fashion.coffee_brown",
+          "balloon.round.latex.fashion.latte",
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.royal_blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.coffee_brown",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.latte",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "short balloon column base in blue, brown, tan, and sand tones topped by a large royal blue balloon printed 'Feliz Dia Papá'"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "acento",
+        "salience": 2,
+        "relation": {
+          "kind": "overhead",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "two printed balloons in brown and tan, each reading 'Feliz Dia Papá', floating on strings above the column"
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "studio product photo on white background, not an on-site venue shot",
+      "unclear whether Link-O-Loon royal blue balloons are used inside the column body, so that concept was left out"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.link.latex.fashion.royal_blue",
+      "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+      "balloon.round.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.latte",
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.fashion.sand"
+    ],
+    "confirmed_size_codes": [
+      "LOL-12",
+      "R-12",
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000038-1",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from 12-inch round latex balloons in assorted colors with a matte Fashion finish and printed greeting lettering, 9-inch matte Fashion round latex balloons in coffee brown, latte and sand, 5-inch matte Fashion royal blue round latex balloons, mixed organically rather than graded, with a balloon bouquet, suspended above the balloon column, built from round latex balloons in assorted colors with a matte Fashion finish and printed greeting lettering, all at a single 12-inch size, set against plain white studio backdrop, no real wall or floor visible.",
+    "palabras": 95,
+    "caracteres": 624,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+      "balloon.round.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.latte",
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.fashion.sand"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.coffee_brown",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.latte",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.royal_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:53:35.604Z",
+    "recompilado_en": "2026-09-03T14:45:23.589Z"
+  }
+}

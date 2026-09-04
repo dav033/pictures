@@ -1,0 +1,129 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000174-1",
+  "image_sha256": "bd17cd699030334731c938b0b3dfa54a636c11df8abe4e3aae5de63f5e552796",
+  "idempotency_key": "5989b56e0a12ca72369c15e49cd7261b28f7c787cce894ed90276dd3792bf3c0",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000174/foto-1.jpg",
+    "orden": "950000174"
+  },
+  "anotacion": {
+    "image_id": "950000174-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white background",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.eucalyptus_green",
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.pastel_matte.yellow",
+          "balloon.round.latex.reflex.lime_green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.yellow",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.lime_green",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Vertical balloon bouquet with pale matte yellow, eucalyptus green, sand, and shiny lime green balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "balloon strings"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.pastel_matte.yellow",
+      "balloon.round.latex.reflex.lime_green"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000174-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from 9-inch matte Fashion round latex balloons in eucalyptus green and sand and Pastel Matte yellow round latex balloons, 5-inch high-shine Reflex lime green round latex balloons, mixed organically rather than graded, alongside balloon strings, set against plain white background.",
+    "palabras": 49,
+    "caracteres": 353,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.pastel_matte.yellow",
+      "balloon.round.latex.reflex.lime_green"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.yellow",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.lime_green",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:20:48.328Z",
+    "recompilado_en": "2026-09-03T14:45:25.076Z"
+  }
+}

@@ -1,0 +1,130 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000172-1",
+  "image_sha256": "6404ada52cfa202559dd9231e1955ee6aa68cef32aaf4bbed699633af785506b",
+  "idempotency_key": "04001d51ab1fbf7c97eca0ddc3dd28ce5b312e43a88612421c66bff720085cea",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000172/foto-1.jpg",
+    "orden": "950000172"
+  },
+  "anotacion": {
+    "image_id": "950000172-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.heart.foil.unspecified.printed_greeting_lettering",
+          "balloon.round.latex.fashion.fuchsia",
+          "balloon.round.latex.reflex.rose_gold",
+          "balloon.tubito.latex.reflex.rose_gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.fuchsia",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.rose_gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.tubito.latex.reflex.rose_gold",
+            "size_code": "T260"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "A low balloon bouquet with fuchsia round balloons, rose-gold round balloons, rose-gold elongated balloons forming flowers, and elevated printed heart balloons."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.heart.foil.unspecified.printed_greeting_lettering",
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.reflex.rose_gold",
+      "balloon.tubito.latex.reflex.rose_gold"
+    ],
+    "confirmed_size_codes": [
+      "18 IN",
+      "R-5",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000172-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from 18-inch heart-shaped foil balloons with printed greeting lettering, 2-inch high-shine Reflex rose gold modeling latex balloons, 5-inch matte Fashion fuchsia round latex balloons and high-shine Reflex rose gold round latex balloons, mixed organically rather than graded, set against a white wall and white floor.",
+    "palabras": 54,
+    "caracteres": 389,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.heart.foil.unspecified.printed_greeting_lettering",
+      "balloon.modeling.latex.reflex.rose_gold",
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.reflex.rose_gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.heart.foil.unspecified.printed_greeting_lettering",
+        "size_code": "18 IN",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.modeling.latex.reflex.rose_gold",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.fuchsia",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.rose_gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.heart.foil.unspecified.printed_greeting_lettering",
+        "size_code": "18 IN",
+        "inches": 18
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:20:37.776Z",
+    "recompilado_en": "2026-09-03T14:45:25.041Z"
+  }
+}

@@ -54,6 +54,21 @@ yarn-error.log*
 !/data/processed/
 /data/processed/*
 !/data/processed/lora-v004-composicion.json
+
+# Anotaciones + captions de v007 que lee training-reference-counts.ts en
+# runtime (botón "N referencias en entrenamiento"). Sin versionarlas, esa
+# función siempre devuelve cero fuera de un checkout local con el staging
+# completo — no hay forma de que un deploy las traiga si no están en git.
+# Se listan explícitamente solo lo que el código realmente lee; el resto de
+# data/staging/lora-v007 (logs, reportes de corrida, config) sigue ignorado.
+!/data/staging/
+/data/staging/*
+!/data/staging/lora-v007/
+/data/staging/lora-v007/*
+!/data/staging/lora-v007/anotaciones/
+!/data/staging/lora-v007/captions/
+!/data/staging/lora-v007/aprobadas.json
+
 /public/uploads
 
 # typescript

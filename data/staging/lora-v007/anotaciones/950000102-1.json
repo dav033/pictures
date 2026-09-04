@@ -1,0 +1,208 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000102-1",
+  "image_sha256": "7016919260a93cec5f585a918f21149e8f6f63825d847d2d8faf099638769f8f",
+  "idempotency_key": "b6f3f5d268aa6b6602d15d5c0a0eed56c4c0ce8398f9115edce868b5768d4dcb",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000102/foto-1.png",
+    "orden": "950000102"
+  },
+  "anotacion": {
+    "image_id": "950000102-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white brick wall and green artificial turf",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "semiarco",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.eucalyptus_green",
+          "balloon.round.latex.fashion.mustard",
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.fashion.terracotta",
+          "balloon.round.latex.silk.cream_pearl"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.mustard",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.terracotta",
+            "size_code": "R-18"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.cream_pearl",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Large asymmetrical organic balloon installation rises at the left and trails across the wall toward the floor at the right."
+      },
+      {
+        "structure_id": "structure-2",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.eucalyptus_green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.eucalyptus_green",
+            "size_code": "T260"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Tall sculptural vertical balloon arrangement with elongated eucalyptus green balloons stands beside the left table."
+      },
+      {
+        "structure_id": "structure-3",
+        "structure_type": "centro_mesa",
+        "count": 1,
+        "placement": "mesas_invitados",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "on_furniture",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.eucalyptus_green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.eucalyptus_green",
+            "size_code": "T260"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Low green balloon ring arrangement with a circular printed panel rests on the right-hand table."
+      }
+    ],
+    "non_purchased_elements": [
+      "two dessert tables",
+      "wooden table bases",
+      "a birthday cake",
+      "balloon sculptures"
+    ],
+    "uncertainties": [
+      "Some sculptural and metallic balloons cannot be matched to the allowed product concepts."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.honey_yellow",
+      "balloon.round.latex.fashion.mustard",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.fashion.terracotta",
+      "balloon.round.latex.silk.cream_pearl"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-18",
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000102-1",
+    "caption": "eventdecor_style_v3, an asymmetrical balloon half-arch, installed against the rear wall, built from 9-inch matte Fashion round latex balloons in eucalyptus green and sand, 12-inch matte Fashion mustard round latex balloons, 18-inch matte Fashion terracotta round latex balloons, 5-inch satin Silk cream pearl round latex balloons, mixed organically rather than graded, a balloon column, standing to one side, built from matte Fashion eucalyptus green modeling latex balloons, all at a single 2-inch size, with a low balloon centerpiece, distributed across the guest tables, built from matte Fashion eucalyptus green modeling latex balloons, all at a single 2-inch size, alongside two dessert tables, wooden table bases, a birthday cake and balloon sculptures, set against off-white brick wall and green artificial turf.",
+    "palabras": 119,
+    "caracteres": 819,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.mustard",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.fashion.terracotta",
+      "balloon.round.latex.silk.cream_pearl"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.eucalyptus_green",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.fashion.eucalyptus_green",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.mustard",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.terracotta",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.cream_pearl",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:03:17.485Z",
+    "recompilado_en": "2026-09-03T14:45:24.283Z"
+  }
+}

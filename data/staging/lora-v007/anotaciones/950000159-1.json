@@ -1,0 +1,121 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000159-1",
+  "image_sha256": "e47809c1a8f1b2c632597a907fe1cc9bf0578bcbd0c84b0f0eb39201ec79c235",
+  "idempotency_key": "9f08b79480ad7ba0a00b6d9b7fd389c362d5a62db75d4c478dede761ac0daecb",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000159/foto-1.png",
+    "orden": "950000159"
+  },
+  "anotacion": {
+    "image_id": "950000159-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white background",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s2"
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.jungle_green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.jungle_green",
+            "size_code": "T260"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Green modeling balloons form clustered palm fronds above the trunk."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.coffee_brown"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.coffee_brown",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Coffee brown round balloons form a vertical palm tree trunk."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.jungle_green",
+      "balloon.round.latex.fashion.coffee_brown"
+    ],
+    "confirmed_size_codes": [
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000159-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, anchored to the balloon column, built from matte Fashion jungle green modeling latex balloons, all at a single 2-inch size, a balloon column, grounded across the front, built from matte Fashion coffee brown round latex balloons, all at a single 9-inch size, set against plain white background.",
+    "palabras": 51,
+    "caracteres": 333,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.jungle_green",
+      "balloon.round.latex.fashion.coffee_brown"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.jungle_green",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.coffee_brown",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:15:21.601Z",
+    "recompilado_en": "2026-09-03T14:45:24.862Z"
+  }
+}

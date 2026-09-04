@@ -1,0 +1,136 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000028-1",
+  "image_sha256": "f6db500e072fd429ae2b7e1b2dc4d536df8623b99e9089ed0670b30027271661",
+  "idempotency_key": "baaea9d9a70b1b75144036070e6a9f1cfc0d7290f41c1ed8321fecbf1d1ad0bc",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000028/foto-1.jpg",
+    "orden": "950000028"
+  },
+  "anotacion": {
+    "image_id": "950000028-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio background, no floor visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.heart.latex.fashion.red",
+          "balloon.round.latex.fashion.fuchsia",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.fashion.raspberry"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.heart.latex.fashion.red",
+            "size_code": "C-6"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.fuchsia",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.raspberry",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Horizontal organic garland of round pink, fuchsia and raspberry balloons, arranged in three repeating clusters, each with red heart-shaped balloons hanging like cherries from twisted bow-shaped stems."
+      }
+    ],
+    "non_purchased_elements": [
+      "green bow-shaped balloon stems"
+    ],
+    "uncertainties": [
+      "Placement guessed since this is a studio product photo with no real venue context",
+      "Gold modeling balloon (T260) from the allowed list is not clearly visible anywhere in the image"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.heart.latex.fashion.red",
+      "balloon.modeling.latex.metallic.gold",
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.raspberry"
+    ],
+    "confirmed_size_codes": [
+      "C-6",
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": [
+      "Globo Redondo Fashion Rosa"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000028-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, installed against the rear wall, built from 6-inch matte Fashion red heart-shaped latex balloons, 5-inch matte Fashion round latex balloons in fuchsia and pink, 9-inch matte Fashion raspberry round latex balloons, mixed organically rather than graded, alongside green bow-shaped balloon stems, set against plain white studio background, no floor visible.",
+    "palabras": 55,
+    "caracteres": 403,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.heart.latex.fashion.red",
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.raspberry"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.heart.latex.fashion.red",
+        "size_code": "C-6",
+        "inches": 6
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.fuchsia",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.raspberry",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:03:23.039Z",
+    "recompilado_en": "2026-09-03T14:45:23.481Z"
+  }
+}

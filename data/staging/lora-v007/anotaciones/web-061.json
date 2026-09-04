@@ -1,0 +1,86 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-061",
+  "image_sha256": "249c9a2d39a0fa48954afca65015bd05b37ac114d251ccea20d1bac4cfeeb228",
+  "idempotency_key": "43f78f644dad4d987ea27e44cdacba73cf0217d9ac31647858b1526e6c681594",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-061.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Decoracion_Pastel_Melon.jpg?v=1697660730",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "cumpleanos",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-061",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.pastel_matte.melon"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Circular balloon arrangement with pastel melon balloon clusters, flowers, foliage, and a gold balloon."
+      }
+    ],
+    "non_purchased_elements": [
+      "white flowers",
+      "green foliage",
+      "a gold balloon",
+      "a printed sign"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.pastel_matte.melon"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": [
+      "Globo Feliz Cumpleaños Destellos"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-061",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from Pastel Matte melon round latex balloons, alongside white flowers, green foliage, a gold balloon and a printed sign, set against white wall and white floor.",
+    "palabras": 38,
+    "caracteres": 246,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.pastel_matte.melon"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:30:57.070Z"
+  }
+}

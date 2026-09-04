@@ -1,0 +1,133 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000085-1",
+  "image_sha256": "2bb4da4eff0b336e8212af14447e8af2d6ef87a2e9f40d77c56ecba5cfe48f3f",
+  "idempotency_key": "5a1c63933b34ff0fe82b18f26be04db7326a207fc821694d553cf420da6493f6",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000085/foto-1.jpg",
+    "orden": "950000085"
+  },
+  "anotacion": {
+    "image_id": "950000085-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white brick wall and a green floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.clover_green",
+          "balloon.round.latex.fashion.lime_green",
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.pastel_dusk.laurel_green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.clover_green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.lime_green",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.laurel_green",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "vertical color-block balloon wall with distinct stripes of dark green, lime green, a muted gray-green, and sand, framed by dark green on both outer edges"
+      }
+    ],
+    "non_purchased_elements": [
+      "a round pedestal table",
+      "party tableware",
+      "small potted greenery"
+    ],
+    "uncertainties": [
+      "the gray-toned middle stripe is assumed to be the pastel dusk laurel green finish, not a plain gray",
+      "the size difference between R-9 and R-5 balloons is not clearly visible due to camera angle"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.clover_green",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.pastel_dusk.laurel_green"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000085-1",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from 9-inch matte Fashion round latex balloons in clover green and sand and muted Pastel Dusk laurel green round latex balloons, 5-inch matte Fashion lime green round latex balloons, mixed organically rather than graded, alongside a round pedestal table, party tableware and small potted greenery, set against white brick wall and a green floor.",
+    "palabras": 64,
+    "caracteres": 421,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.clover_green",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.pastel_dusk.laurel_green"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.clover_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lime_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.laurel_green",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:11:23.710Z",
+    "recompilado_en": "2026-09-03T14:45:24.133Z"
+  }
+}

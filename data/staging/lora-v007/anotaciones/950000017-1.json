@@ -1,0 +1,197 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000017-1",
+  "image_sha256": "e75f4b10699133d1282f861f76d32b58cb6c55e5952a7a7fd66c7bf51706836a",
+  "idempotency_key": "a7cd4ddd9c69a4a3406cc6a5fccbc899dd759d6a94d601153ef6251a75ff7fbe",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000017/foto-1.png",
+    "orden": "950000017"
+  },
+  "anotacion": {
+    "image_id": "950000017-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "green turf flooring, wall not visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s2"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.fuchsia",
+          "balloon.round.latex.fashion.orange",
+          "balloon.round.latex.fashion.yellow",
+          "balloon.round.latex.fashion.jungle_green",
+          "balloon.round.latex.fashion.mustard",
+          "balloon.round.latex.fashion.purple_orchid",
+          "balloon.round.latex.reflex.blue"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Two symmetric organic clusters of round balloons in green, orange, yellow, magenta/purple and chrome blue frame both sides of the arched backdrop panel, mixing large and small round balloons."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Flat cream-colored panel with an arch-shaped silhouette, built-in round lights and a neon 'Happy Birthday' sign, not made of balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "a birthday cake",
+      "a cactus cutout figure",
+      "a llama cutout figure",
+      "white side tables"
+    ],
+    "uncertainties": [
+      "Exact sizes of the round balloons in the garland clusters cannot be confirmed against the allowed size codes given the mixed diameters."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.fuchsia",
+      "balloon.modeling.latex.fashion.orange",
+      "balloon.modeling.latex.fashion.yellow",
+      "balloon.modeling.latex.reflex.blue",
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.jungle_green",
+      "balloon.round.latex.fashion.mustard",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.purple_orchid",
+      "balloon.round.latex.fashion.yellow",
+      "balloon.round.latex.reflex.blue"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000017-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, anchored to the decorated backdrop, built from 5-inch matte Fashion round latex balloons in fuchsia, jungle green, orange and yellow and high-shine Reflex blue round latex balloons, 12-inch matte Fashion round latex balloons in mustard and purple orchid, mixed organically rather than graded, a decorated backdrop, installed against the rear wall, alongside a birthday cake, a cactus cutout figure, a llama cutout figure and white side tables, set against green turf flooring, wall not visible.",
+    "palabras": 80,
+    "caracteres": 543,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.jungle_green",
+      "balloon.round.latex.fashion.mustard",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.purple_orchid",
+      "balloon.round.latex.fashion.yellow",
+      "balloon.round.latex.reflex.blue"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.fuchsia",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.jungle_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.mustard",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.purple_orchid",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.yellow",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.blue",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.fashion.fuchsia",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.jungle_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.mustard",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.purple_orchid",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.yellow",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.blue",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:51:38.917Z",
+    "recompilado_en": "2026-09-03T14:45:23.367Z"
+  }
+}

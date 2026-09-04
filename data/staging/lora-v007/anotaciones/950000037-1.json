@@ -1,0 +1,172 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000037-1",
+  "image_sha256": "3deca093299aa34ae4718d3c3d29cfa0c96cd8a613187a43ca452b40833fb85a",
+  "idempotency_key": "236d26b88aa96c75c7a6658aa47e2e6beec19c66e62ccf510a91340d9eab35ef",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000037/foto-1.jpg",
+    "orden": "950000037"
+  },
+  "anotacion": {
+    "image_id": "950000037-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio backdrop, no floor visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.royal_blue",
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.fashion.royal_blue",
+          "balloon.round.latex.fashion.white",
+          "balloon.round.latex.silk.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.royal_blue",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.black",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.royal_blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.white",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "A standing balloon-sculpture figure of a mustached man: black round balloons form the top hat and boots, a thin twisted royal blue balloon forms the mustache, white round balloons form the head, a gold band of round balloons circles the waist, and royal blue round balloons build the torso and legs."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 2,
+        "placement": "techo",
+        "design_role": "acento",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.solid.printed_greeting_lettering"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.solid.printed_greeting_lettering",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Two large round balloons with printed lettering (one light blue, one royal blue) float above the sculpture's hat, tied to it by strings."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Studio product photo with no real venue floor/wall shown; placement values are approximations.",
+      "No accessory placement code exists for 'floating above a sculpture on a string', so 'techo' was used as the closest match for structure s2."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.royal_blue",
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.solid.printed_greeting_lettering"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000037-1",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from 2-inch matte Fashion royal blue modeling latex balloons, 5-inch matte Fashion round latex balloons in black, royal blue and white and satin Silk gold round latex balloons, with two matching balloon bouquets, anchored to the balloon column, built from round latex balloons with printed greeting lettering, all at a single 12-inch size, set against plain white studio backdrop, no floor visible.",
+    "palabras": 71,
+    "caracteres": 470,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.royal_blue",
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.solid.printed_greeting_lettering"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.royal_blue",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.black",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.royal_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.solid.printed_greeting_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:05:48.906Z",
+    "recompilado_en": "2026-09-03T14:45:23.578Z"
+  }
+}

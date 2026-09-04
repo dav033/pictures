@@ -1,0 +1,90 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000144-1",
+  "image_sha256": "6199f0846856f3f9c448acc8245c4ffd2f6ec3b3ce7ed4bf4e72d370302f4e20",
+  "idempotency_key": "657e813758f0201e4ad4598543670fa7259184bb4e9c456d67aafc02545063ba",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000144/foto-1.jpg",
+    "orden": "950000144"
+  },
+  "anotacion": {
+    "image_id": "950000144-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.merlot"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.merlot",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "A three-dimensional organic balloon garland forms a tall curved sculptural cluster."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.merlot"
+    ],
+    "confirmed_size_codes": [
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000144-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, grounded across the front, built from matte Fashion merlot round latex balloons, all 9-inch, set against a white wall and white floor.",
+    "palabras": 27,
+    "caracteres": 183,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.merlot"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.merlot",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:12:24.481Z",
+    "recompilado_en": "2026-09-03T14:45:24.633Z"
+  }
+}

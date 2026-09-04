@@ -1,0 +1,90 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-012",
+  "image_sha256": "9d0a607c99bc710d080e8ad9e2feb6dd2e4e36f6de29382c62d2c0771dda8d71",
+  "idempotency_key": "a720765e74946c1cb758eb73e816a7ae2b9d0af19c178c9c873fa96de6098a33",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-012.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/CENTRO_DE_MESA_CORAZONES_BRILLANTES_-_BRIGHT_HEARTS_CENTER_PIECE.jpg?v=1746722623",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "amor_amistad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-012",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white background",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.imperial_red",
+          "balloon.round.latex.metallic.assorted_colors.printed_greeting_lettering",
+          "balloon.round.latex.silk.gold",
+          "balloon.round.latex.silk.pearl_white"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "A single balloon bouquet combines red modeling balloons, printed round balloons, gold balloons, pearl-white balloons, and balloon flowers."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "The exact installation surface is not visible."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.imperial_red",
+      "balloon.round.latex.metallic.assorted_colors.printed_greeting_lettering",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.pearl_white"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-012",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from matte Fashion imperial red modeling latex balloons, satin Silk round latex balloons in gold and pearl white and round latex balloons in assorted colors with a Metallic finish and printed greeting lettering, set against white background.",
+    "palabras": 46,
+    "caracteres": 314,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.imperial_red",
+      "balloon.round.latex.metallic.assorted_colors.printed_greeting_lettering",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.pearl_white"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:16:50.332Z"
+  }
+}

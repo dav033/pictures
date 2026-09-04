@@ -1,0 +1,146 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000090-1",
+  "image_sha256": "763bbc7b80f4f6c78f37ef20f783a14ff73f8383e2d7417db7c5d0fcb811f233",
+  "idempotency_key": "c9da552b51ebdb58ca9dd5fb2838941a2ecf200db440446dbe5f32d5672f83c9",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000090/foto-1.jpg",
+    "orden": "950000090"
+  },
+  "anotacion": {
+    "image_id": "950000090-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white brick wall and an orange floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.merlot",
+          "balloon.round.latex.fashion.eucalyptus_green",
+          "balloon.round.latex.fashion.copper_orange",
+          "balloon.round.latex.fashion.honey_yellow",
+          "balloon.round.latex.fashion.orange"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.merlot",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.copper_orange",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.honey_yellow",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.orange",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "organic clustered garland of matte balloons in maroon, sage green, burnt orange, yellow, and bright orange running across the wall and cascading to the floor on the right"
+      }
+    ],
+    "non_purchased_elements": [
+      "a skirted round table",
+      "a tiered birthday cake",
+      "paper party plates",
+      "cups and napkin holders"
+    ],
+    "uncertainties": [
+      "not fully sure whether the burnt-orange wall cluster is copper_orange and the floor cluster is the separate 'orange' concept, since both read as similar orange tones",
+      "cannot confirm the exact boundary between R-9 and R-5 orange balloons by sight alone"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.copper_orange",
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.honey_yellow",
+      "balloon.round.latex.fashion.merlot",
+      "balloon.round.latex.fashion.orange"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000090-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, installed against the rear wall, built from 9-inch matte Fashion round latex balloons in copper orange, eucalyptus green, honey yellow and merlot, 5-inch matte Fashion orange round latex balloons, mixed organically rather than graded, alongside a skirted round table, a tiered birthday cake, paper party plates and cups and napkin holders, set against white brick wall and an orange floor.",
+    "palabras": 65,
+    "caracteres": 438,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.copper_orange",
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.honey_yellow",
+      "balloon.round.latex.fashion.merlot",
+      "balloon.round.latex.fashion.orange"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.copper_orange",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.honey_yellow",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.merlot",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:10:34.210Z",
+    "recompilado_en": "2026-09-03T14:45:24.185Z"
+  }
+}

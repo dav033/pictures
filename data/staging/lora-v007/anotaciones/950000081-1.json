@@ -1,0 +1,179 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000081-1",
+  "image_sha256": "5946f5bc5bd4979d6fd9823edf3aff256551d1fb2532ef387d538eac511fc4f7",
+  "idempotency_key": "6cc12de886c7f074741bb628da7f9181c82feabe7a25cc9c98c657a3cd9cee07",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000081/foto-1.jpg",
+    "orden": "950000081"
+  },
+  "anotacion": {
+    "image_id": "950000081-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white walls and a green carpeted floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.reflex.lime_green",
+          "balloon.round.latex.fashion.copper_orange",
+          "balloon.round.latex.fashion.honey_yellow",
+          "balloon.round.latex.fashion.purple_orchid"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.reflex.lime_green",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.copper_orange",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.honey_yellow",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.purple_orchid",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Three-dimensional organic balloon arch with orange, yellow, purple, and lime-green balloon elements framing the central opening."
+      },
+      {
+        "structure_id": "structure-2",
+        "structure_type": "bouquet",
+        "count": 5,
+        "placement": "piso_frontal",
+        "design_role": "acento",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.copper_orange",
+          "balloon.round.latex.fashion.honey_yellow",
+          "balloon.round.latex.fashion.purple_orchid"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.copper_orange",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.honey_yellow",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.purple_orchid",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Five small flower-like balloon bouquets are scattered across the foreground floor."
+      }
+    ],
+    "non_purchased_elements": [
+      "a dessert table",
+      "a name sign"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.reflex.lime_green",
+      "balloon.round.latex.fashion.copper_orange",
+      "balloon.round.latex.fashion.honey_yellow",
+      "balloon.round.latex.fashion.purple_orchid"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000081-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from 2-inch high-shine Reflex lime green modeling latex balloons, 9-inch matte Fashion round latex balloons in copper orange and honey yellow, 12-inch matte Fashion purple orchid round latex balloons, mixed organically rather than graded, with five matching balloon bouquets, grounded across the front, built from 9-inch matte Fashion round latex balloons in copper orange and honey yellow, 12-inch matte Fashion purple orchid round latex balloons, mixed organically rather than graded, alongside a dessert table and a name sign, set against off-white walls and a green carpeted floor.",
+    "palabras": 99,
+    "caracteres": 671,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.reflex.lime_green",
+      "balloon.round.latex.fashion.copper_orange",
+      "balloon.round.latex.fashion.honey_yellow",
+      "balloon.round.latex.fashion.purple_orchid"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.reflex.lime_green",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.copper_orange",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.copper_orange",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.honey_yellow",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.honey_yellow",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.purple_orchid",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.purple_orchid",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:04:18.136Z",
+    "recompilado_en": "2026-09-03T14:45:24.092Z"
+  }
+}

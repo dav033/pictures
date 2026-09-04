@@ -1,0 +1,106 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000073-1",
+  "image_sha256": "0f1b5c95c382d847082551bf9660b21a4d2665dbc62f473e40d33b3f202f75fd",
+  "idempotency_key": "b98b815f74bd2dcb6f9adb20bc6644511e16343ef97b24170b2d904bd6a6eaa5",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000073/foto-1.jpg",
+    "orden": "950000073"
+  },
+  "anotacion": {
+    "image_id": "950000073-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio backdrop, no floor visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "kit",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.imperial_red",
+          "balloon.tubito.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.imperial_red",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.tubito.latex.reflex.gold",
+            "size_code": "T260"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "A symmetrical crown-shaped sculpture with a large solid red round balloon forming the domed center and glossy gold twisted balloons forming the base, points, and crossed arches."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Standalone product shot of a balloon crown, not an installed event scene; placement and design_role are guesses.",
+      "'Kit' was used as the closest available structure_type since a crown is not one of the listed categories.",
+      "The size_relation between the large round red balloon and the thin gold twisted balloons is a deliberate design rather than a true organic mix; 'mixed_organic' was the closest of the three closed options."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.imperial_red",
+      "balloon.tubito.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000073-1",
+    "caption": "eventdecor_style_v3, a coordinated decoration kit, grounded across the front, built from 2-inch high-shine Reflex gold modeling latex balloons, 9-inch matte Fashion imperial red round latex balloons, mixed organically rather than graded, set against plain white studio backdrop, no floor visible.",
+    "palabras": 40,
+    "caracteres": 296,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.reflex.gold",
+      "balloon.round.latex.fashion.imperial_red"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.reflex.gold",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.imperial_red",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:11:24.735Z",
+    "recompilado_en": "2026-09-03T14:45:24.003Z"
+  }
+}

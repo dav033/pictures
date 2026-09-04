@@ -1,0 +1,87 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "9503-1",
+  "image_sha256": "d37fc280773dc4339dfa32d4b298c9846d6008a08a5cb9d54bd0c94c5874a4cf",
+  "idempotency_key": "f5dc2210a3aed8fa589a89140985d9310af1b912a93a0995c3ca90759362bc4e",
+  "source": {
+    "kind": "order_photo",
+    "ref": "9503/foto-1.jpg",
+    "orden": "9503"
+  },
+  "anotacion": {
+    "image_id": "9503-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white walls and a light marble-look tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s2"
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Three-dimensional organic balloon arch framing the central panel."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Flat white panel centered behind the balloon arch."
+      }
+    ],
+    "non_purchased_elements": [
+      "dessert tables",
+      "a birthday cake",
+      "dried floral arrangement",
+      "a name sign"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "pending",
+    "image_id": "9503-1",
+    "reason": "no_resolvable_concepts",
+    "conceptos_rechazados": [],
+    "tamanos_rechazados": [],
+    "prohibiciones": [],
+    "contract_version": "lora-caption-v3-structure-clauses"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:25:03.409Z",
+    "recompilado_en": "2026-09-03T14:45:25.297Z"
+  }
+}

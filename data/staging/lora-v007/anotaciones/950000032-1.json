@@ -1,0 +1,149 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000032-1",
+  "image_sha256": "1c95c808e368f184744be3a5f2ff80c47d161750a36cb3def28a2b54ce30aaaa",
+  "idempotency_key": "077bc3ba768c38e445f9557a6207ed8bce0302ff1e5d73e5e1de4213e7bc8aac",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000032/foto-1.jpg",
+    "orden": "950000032"
+  },
+  "anotacion": {
+    "image_id": "950000032-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio background, no floor visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.fuchsia",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.solid.printed_hearts"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.fuchsia",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.solid.printed_hearts",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Three-dimensional garland arch built from pink and fuchsia round balloons with shiny gold accent balls, anchored at the base by clusters of heart-printed round balloons."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Large pink foil flower balloon with a gold center resting on top of the base cluster at the right end of the arch."
+      }
+    ],
+    "non_purchased_elements": [
+      "a foil flower balloon"
+    ],
+    "uncertainties": [
+      "The two base clusters at either end of the arch are not identical (one has gold accents, the other holds the foil flower), so they were not annotated as a bilateral_pair"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.solid.printed_hearts"
+    ],
+    "confirmed_size_codes": [
+      "27 IN",
+      "R-12",
+      "R-5"
+    ],
+    "sin_resolver": [
+      "Globo Metalizado Flor Rosada"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000032-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from 5-inch matte Fashion round latex balloons in fuchsia and pink and high-shine Reflex gold round latex balloons, 12-inch round latex balloons with printed heart pattern, mixed organically rather than graded, a balloon bouquet, anchored to the organic balloon arch, alongside a foil flower balloon, set against plain white studio background, no floor visible.",
+    "palabras": 66,
+    "caracteres": 447,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.solid.printed_hearts"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.fuchsia",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.solid.printed_hearts",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:03:23.069Z",
+    "recompilado_en": "2026-09-03T14:45:23.526Z"
+  }
+}

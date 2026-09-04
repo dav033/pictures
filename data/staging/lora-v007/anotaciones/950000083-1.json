@@ -1,0 +1,165 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000083-1",
+  "image_sha256": "2fc7c64b30cd126b99a309529353b76f66979bec839d0fad533007f7838a9fd3",
+  "idempotency_key": "12d7720a046437dc549495d6599b1c8a7b360ec003a147d8ed39b3d0d87343e2",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000083/foto-1.jpg",
+    "orden": "950000083"
+  },
+  "anotacion": {
+    "image_id": "950000083-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "walls and floor fully hidden behind the dense balloon wall",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.navy_blue",
+          "balloon.round.latex.fashion.deep_turquoise",
+          "balloon.round.latex.fashion.aquamarine",
+          "balloon.round.latex.pastel_matte.blue"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.navy_blue",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.deep_turquoise",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.aquamarine",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.blue",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Dense balloon wall filling the frame in navy, deep turquoise, aquamarine, and pale blue round balloons, all matching in diameter."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "acento",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.number.foil.latte"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.number.foil.latte",
+            "size_code": "16 IN"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Tan/latte foil number '40' balloon mounted against the balloon wall near its center."
+      }
+    ],
+    "non_purchased_elements": [
+      "a wooden plinth",
+      "a small frosted cake",
+      "birthday candles",
+      "black dessert plates"
+    ],
+    "uncertainties": [
+      "The palest blue balloons could be the pastel dusk or pastel matte blue finish; pastel matte blue assumed from lighting/tone.",
+      "Full venue walls and floor are not visible behind the balloon coverage."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.number.foil.latte",
+      "balloon.round.latex.fashion.aquamarine",
+      "balloon.round.latex.fashion.deep_turquoise",
+      "balloon.round.latex.fashion.navy_blue",
+      "balloon.round.latex.pastel_dusk.blue",
+      "balloon.round.latex.pastel_matte.blue"
+    ],
+    "confirmed_size_codes": [
+      "16 IN",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000083-1",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from matte Fashion round latex balloons in aquamarine, deep turquoise and navy blue and Pastel Matte blue round latex balloons, all at a single 9-inch size, with a decorative accessory, anchored to the balloon wall, built from Metallic latte number foil balloons, all at a single 16-inch size, alongside a wooden plinth, a small frosted cake, birthday candles and black dessert plates, set against walls and floor fully hidden behind the dense balloon wall.",
+    "palabras": 84,
+    "caracteres": 533,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.number.foil.latte",
+      "balloon.round.latex.fashion.aquamarine",
+      "balloon.round.latex.fashion.deep_turquoise",
+      "balloon.round.latex.fashion.navy_blue",
+      "balloon.round.latex.pastel_matte.blue"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.number.foil.latte",
+        "size_code": "16 IN",
+        "inches": 16
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.aquamarine",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.deep_turquoise",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.navy_blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.blue",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:08:42.927Z",
+    "recompilado_en": "2026-09-03T14:45:24.111Z"
+  }
+}

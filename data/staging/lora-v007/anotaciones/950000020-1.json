@@ -1,0 +1,220 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000020-1",
+  "image_sha256": "be38eeaf9791afce4928fe1f57e5ba6e34df220289daf671f891ea2af4271b7c",
+  "idempotency_key": "2c7e26f661b51709f9dc38d2a7716c2b836334ce579fd606b063a23c650e4f72",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000020/foto-1.png",
+    "orden": "950000020"
+  },
+  "anotacion": {
+    "image_id": "950000020-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "no wall or floor visible, isolated on a transparent/white background",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.silk.arctic_blue",
+          "balloon.round.latex.silk.amethyst",
+          "balloon.round.latex.silk.mint_green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.silk.arctic_blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.amethyst",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.mint_green",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Three-dimensional organic garland arch in dusty blue, mauve and teal tones frames the top and both sides of a backdrop with a fringe curtain and two small tables underneath."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.silk.arctic_blue",
+          "balloon.round.latex.silk.amethyst"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.silk.arctic_blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.amethyst",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "A cluster of matching-toned balloons on ribbons rests on the floor to the left of the arch."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "bouquet",
+        "count": 3,
+        "placement": "lateral_derecho",
+        "design_role": "acento",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.silk.gold",
+          "balloon.round.latex.silk.cream_pearl",
+          "balloon.round.latex.silk.spring_pink"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.silk.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.cream_pearl",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.spring_pink",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Three large balloon-flower clusters in gold, pearl-cream and pink tones are attached along the right side of the arch."
+      }
+    ],
+    "non_purchased_elements": [
+      "gold fringe curtain",
+      "gold X-frame tables",
+      "a round sign",
+      "party tableware"
+    ],
+    "uncertainties": [
+      "Distinguishing between similar pastel-chrome tones (arctic blue vs mint green vs amethyst) is difficult at this resolution.",
+      "Exact color match for the flower-cluster balloons (gold/cream pearl/spring pink) is approximate.",
+      "No real floor or wall is visible, so placement is inferred from composition only."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.silk.amethyst",
+      "balloon.modeling.latex.silk.arctic_blue",
+      "balloon.modeling.latex.silk.gold",
+      "balloon.modeling.latex.silk.spring_pink",
+      "balloon.round.latex.silk.amethyst",
+      "balloon.round.latex.silk.arctic_blue",
+      "balloon.round.latex.silk.cream_pearl",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.mint_green",
+      "balloon.round.latex.silk.spring_pink"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000020-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from 9-inch satin Silk amethyst round latex balloons, 5-inch satin Silk round latex balloons in arctic blue and mint green, mixed organically rather than graded, a balloon bouquet, standing to one side, built from 9-inch satin Silk amethyst round latex balloons, 5-inch satin Silk arctic blue round latex balloons, mixed organically rather than graded, with three matching balloon bouquets, anchored to the organic balloon arch, built from 5-inch satin Silk round latex balloons in cream pearl and gold, 9-inch satin Silk spring pink round latex balloons, mixed organically rather than graded, alongside gold fringe curtain, gold X-frame tables, a round sign and party tableware, set against no wall or floor visible, isolated on a transparent/white background.",
+    "palabras": 128,
+    "caracteres": 847,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.silk.amethyst",
+      "balloon.round.latex.silk.arctic_blue",
+      "balloon.round.latex.silk.cream_pearl",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.mint_green",
+      "balloon.round.latex.silk.spring_pink"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.silk.amethyst",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.amethyst",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.arctic_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.arctic_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.cream_pearl",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.mint_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.spring_pink",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:52:42.019Z",
+    "recompilado_en": "2026-09-03T14:45:23.396Z"
+  }
+}

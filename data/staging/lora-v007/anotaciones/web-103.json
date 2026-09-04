@@ -1,0 +1,99 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-103",
+  "image_sha256": "e56743056287b36a0fb14d2683c7d3d5c949c56b63304cef9da77472eca1ddc3",
+  "idempotency_key": "08105e440c3f65e3c7301fc6b734f9fd1aab19a92c1ee7b57bb62440b3be42a3",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-103.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Arbol_de_Navidad_Chris_Horne.png?v=1670008092",
+    "product_breakdown_status": "found_in_source_blog_product_carousel",
+    "theme": "navidad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-103",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a white background",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure_1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.jungle_green",
+          "balloon.round.latex.fashion.lime_green",
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.fashion.royal_blue",
+          "balloon.round.latex.fashion.violet",
+          "balloon.round.latex.fashion.yellow"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "A freestanding vertical Christmas-tree-shaped column built from dense clusters of round balloons in mixed sizes, with a star topper."
+      }
+    ],
+    "non_purchased_elements": [
+      "a red star topper",
+      "gold balloons",
+      "clear balloons",
+      "green foil leaves"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.jungle_green",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.fashion.violet",
+      "balloon.round.latex.fashion.yellow"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-103",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from matte Fashion round latex balloons in jungle green, lime green, red, royal blue, violet and yellow, alongside a red star topper, gold balloons, clear balloons and green foil leaves, set against a white background.",
+    "palabras": 44,
+    "caracteres": 290,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.jungle_green",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.fashion.violet",
+      "balloon.round.latex.fashion.yellow"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:08:50.393Z"
+  }
+}

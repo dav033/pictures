@@ -1,0 +1,147 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000165-1",
+  "image_sha256": "ffa321be46da8853afb0087a1fdd88fb71525a314ef72756df5f048dd2ebcc1d",
+  "idempotency_key": "c5766df2c1f585c7c9b92402bb1a2224f8acda611c666086e5098ecc7df3dba5",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000165/foto-1.jpg",
+    "orden": "950000165"
+  },
+  "anotacion": {
+    "image_id": "950000165-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a plain white wall and floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "central-balloon-arch",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.pastel_dusk.lavender",
+          "balloon.round.latex.pastel_dusk.pink",
+          "balloon.link.latex.metallic.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.lavender",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.pink",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.link.latex.metallic.gold",
+            "size_code": "LOL-6"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Large three-dimensional balloon arch with a central opening, lavender and pink balloons, and gold accents."
+      },
+      {
+        "structure_id": "gold-side-columns",
+        "structure_type": "columna",
+        "count": 2,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "bilateral_pair",
+          "target_structure_id": "central-balloon-arch"
+        },
+        "visible_concept_ids": [
+          "balloon.link.latex.metallic.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.link.latex.metallic.gold",
+            "size_code": "LOL-6"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Two matching tall gold balloon columns flank the central arch."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Mint and dark mauve balloon colors are visible but are not included in the allowed concepts."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.link.latex.metallic.gold",
+      "balloon.round.latex.pastel_dusk.lavender",
+      "balloon.round.latex.pastel_dusk.pink"
+    ],
+    "confirmed_size_codes": [
+      "LOL-6",
+      "R-9"
+    ],
+    "sin_resolver": [
+      "Globo Link-O-Loon® Pm Verde"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000165-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from 6-inch Metallic gold Link-O-Loon® linking latex balloons, 9-inch muted Pastel Dusk round latex balloons in lavender and pink, mixed organically rather than graded, two matching balloon columns, one at each end of the organic balloon arch, built from Metallic gold Link-O-Loon® linking latex balloons, all at a single 6-inch size, set against a plain white wall and floor.",
+    "palabras": 71,
+    "caracteres": 462,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.link.latex.metallic.gold",
+      "balloon.round.latex.pastel_dusk.lavender",
+      "balloon.round.latex.pastel_dusk.pink"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.link.latex.metallic.gold",
+        "size_code": "LOL-6",
+        "inches": 6
+      },
+      {
+        "concept_id": "balloon.link.latex.metallic.gold",
+        "size_code": "LOL-6",
+        "inches": 6
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.lavender",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.pink",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:25:18.661Z",
+    "recompilado_en": "2026-09-03T14:45:24.928Z"
+  }
+}

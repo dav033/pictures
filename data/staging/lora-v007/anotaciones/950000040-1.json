@@ -1,0 +1,162 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000040-1",
+  "image_sha256": "72a47985d153e81889bae56388e8d89db7966a3684b5d3c486057adf5bf21bcc",
+  "idempotency_key": "6e4486525a5ece496be5e05d7e01aceaea54cb373281627a1be8c1ad9c48e7e5",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000040/foto-1.jpg",
+    "orden": "950000040"
+  },
+  "anotacion": {
+    "image_id": "950000040-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio backdrop, no floor visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "entrada",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.pastel_matte.blue",
+          "balloon.round.latex.reflex.aurora_green",
+          "balloon.round.latex.reflex.blue",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.silk.arctic_blue",
+          "balloon.round.latex.silk.mint_green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.blue",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.aurora_green",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.arctic_blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.mint_green",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "A circular metal ring is wrapped in a chain of larger matte pale-blue balloons alternating with a chrome-linked section, with two organic clusters of smaller high-shine and satin balloons (blue, gold, teal-green, mint) bunched at two points on the ring."
+      }
+    ],
+    "non_purchased_elements": [
+      "a printed balloon",
+      "a patterned balloon"
+    ],
+    "uncertainties": [
+      "Studio product photo; placement (entrada) is an unverified guess since no venue is shown.",
+      "The metallic chrome tones are hard to tell apart precisely (reflex vs silk finishes look similar in this lighting), so individual color/finish assignments in the cluster carry some risk of error.",
+      "Could not confirm whether any silver/pale balloons in the ring chain are silk arctic blue vs pastel matte blue; sizes for the chain links are inferred, not certain."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.pastel_matte.blue",
+      "balloon.round.latex.reflex.aurora_green",
+      "balloon.round.latex.reflex.blue",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.silk.arctic_blue",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.mint_green"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": [
+      "Globo Infinity® Bigotes Y Corbatines Cristal",
+      "Globo Reflex Feliz Dia Fiesta Bigotes"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000040-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, framing the entrance, built from 9-inch Pastel Matte blue round latex balloons, 5-inch high-shine Reflex round latex balloons in aurora green, blue and gold and satin Silk round latex balloons in arctic blue and mint green, mixed organically rather than graded, alongside a printed balloon and a patterned balloon, set against plain white studio backdrop, no floor visible.",
+    "palabras": 63,
+    "caracteres": 422,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.pastel_matte.blue",
+      "balloon.round.latex.reflex.aurora_green",
+      "balloon.round.latex.reflex.blue",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.silk.arctic_blue",
+      "balloon.round.latex.silk.mint_green"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.aurora_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.arctic_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.mint_green",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:05:48.922Z",
+    "recompilado_en": "2026-09-03T14:45:23.610Z"
+  }
+}

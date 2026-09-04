@@ -1,0 +1,100 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-013",
+  "image_sha256": "f971a202b7e78083f3c17740302960443fe9932e62c7bf6ba80a17a30732ef68",
+  "idempotency_key": "86ccf51dc91301472e168ca498d9e6d63677ca581d0d8e17d2d8c7262a4bcea0",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-013.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Centro_de_mesa_Feliz_dia_ceee7195-d592-4070-a7c9-0016b31b0863.jpg?v=1755272644",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "amor_amistad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-013",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a white seamless background",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "bouquet-1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.fuchsia",
+          "balloon.modeling.latex.fashion.pink",
+          "balloon.modeling.latex.fashion.red",
+          "balloon.round.latex.fashion.clear",
+          "balloon.round.latex.fashion.fuchsia",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.metallic.assorted_colors.printed_greeting_lettering"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Freestanding balloon bouquet with a circular red balloon frame, clear inner balloon, printed greeting balloon, floral accents, and mixed-size base cluster."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.fuchsia",
+      "balloon.modeling.latex.fashion.pink",
+      "balloon.modeling.latex.fashion.red",
+      "balloon.round.latex.fashion.clear",
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.metallic.assorted_colors.printed_greeting_lettering"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-013",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from matte Fashion modeling latex balloons in fuchsia, pink and red, matte Fashion round latex balloons in clear, fuchsia, pink and red and round latex balloons in assorted colors with a Metallic finish and printed greeting lettering, set against a white seamless background.",
+    "palabras": 52,
+    "caracteres": 348,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.fuchsia",
+      "balloon.modeling.latex.fashion.pink",
+      "balloon.modeling.latex.fashion.red",
+      "balloon.round.latex.fashion.clear",
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.metallic.assorted_colors.printed_greeting_lettering"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:18:40.318Z"
+  }
+}

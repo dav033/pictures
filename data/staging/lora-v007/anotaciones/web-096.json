@@ -1,0 +1,92 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-096",
+  "image_sha256": "dc6b2dd82b7eeedf4df9551260b71ca924d432dcaa108f891cc5070bfd48cb1f",
+  "idempotency_key": "4790cbd625f0aecacc2d1fe816c2d9a0797d4d92acc661ad7775abaae921a821",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-096.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Bouquet-Halloween-Mascaras-Neon_186098b8-6f7c-4d60-9104-01e165774428.png?v=1642707111",
+    "product_breakdown_status": "found_in_source_blog_product_carousel",
+    "theme": "halloween",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-096",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white background",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.neon.blue",
+          "balloon.round.latex.neon.fuchsia",
+          "balloon.round.latex.neon.green"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Vertical bouquet of blue, fuchsia, and green round latex balloons, with smaller black printed balloons at the top."
+      }
+    ],
+    "non_purchased_elements": [
+      "black printed balloons",
+      "balloon strings"
+    ],
+    "uncertainties": [
+      "Exact balloon size codes are unavailable in the allowed concepts."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.neon.blue",
+      "balloon.round.latex.neon.fuchsia",
+      "balloon.round.latex.neon.green"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": [
+      "Globo Redondo Mascaras Neon"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-096",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from fluorescent Neon round latex balloons in blue, fuchsia and green, alongside black printed balloons and balloon strings, set against white background.",
+    "palabras": 31,
+    "caracteres": 227,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.neon.blue",
+      "balloon.round.latex.neon.fuchsia",
+      "balloon.round.latex.neon.green"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:28:17.704Z"
+  }
+}

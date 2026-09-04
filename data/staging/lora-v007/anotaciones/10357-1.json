@@ -1,0 +1,222 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "10357-1",
+  "image_sha256": "42a4efbd77195f0677dd0c968fdd1409359975a8f8e6c753d62e8fcf30ff8963",
+  "idempotency_key": "1209b73321048ed6b581761aa7830e65f9a13a662573ecc3857567d636549b92",
+  "source": {
+    "kind": "order_photo",
+    "ref": "10357/foto-1.jpg",
+    "orden": "10357"
+  },
+  "anotacion": {
+    "image_id": "10357-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a dark wood-look floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.eucalyptus_green",
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.fashion.terracotta",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.terracotta",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.terracotta",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Large organic garland climbing the wall corner with sage green, cream/sand, terracotta and chrome gold balloons of mixed sizes, plus gold leaf branch accents and small grape-like clusters."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "on_furniture",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.fashion.terracotta",
+          "balloon.round.latex.fashion.eucalyptus_green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.terracotta",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Smaller balloon cluster of cream, gold and terracotta balloons with a few sage green accents, sitting atop a white fabric-covered pedestal."
+      }
+    ],
+    "non_purchased_elements": [
+      "a fabric-draped pedestal",
+      "gold leaf branch accents"
+    ],
+    "uncertainties": [
+      "Small clustered gold balls could be R-9 tubito shapes but appear round, not elongated, so tubito was omitted.",
+      "Exact size split between R-12 and R-5/R-9 in dense clusters is approximate."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.fashion.terracotta",
+      "balloon.round.latex.reflex.gold",
+      "balloon.tubito.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "10357-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, standing to one side, built from 12-inch matte Fashion round latex balloons in eucalyptus green and sand, 12-inch and 5-inch matte Fashion terracotta round latex balloons, 12-inch and 9-inch high-shine Reflex gold round latex balloons, mixed organically rather than graded, a balloon bouquet, standing to one side, built from 12-inch matte Fashion round latex balloons in eucalyptus green, sand and terracotta, 12-inch and 9-inch high-shine Reflex gold round latex balloons, mixed organically rather than graded, alongside a fabric-draped pedestal and gold leaf branch accents, set against white walls and a dark wood-look floor.",
+    "palabras": 98,
+    "caracteres": 678,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.fashion.terracotta",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.terracotta",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.terracotta",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.terracotta",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:33:49.395Z",
+    "recompilado_en": "2026-09-03T14:45:21.847Z"
+  }
+}

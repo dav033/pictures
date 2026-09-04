@@ -1,0 +1,94 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-009",
+  "image_sha256": "f35d9ce5eb329f5e4e2d5f7338064ac263cc1987e94b1e9f78f1b83a54c286a2",
+  "idempotency_key": "56df1e357ab36d99f30d77e6cfcf2efa5f36a7d657147b47b2da174e787a95ed",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-009.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/BOUQUET_GLOBOS.png?v=1787173009",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "amor_amistad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-009",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure_1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.heart.latex.fashion.red",
+          "balloon.round.latex.fashion.blush_cream",
+          "balloon.round.latex.fashion.imperial_red",
+          "balloon.round.latex.silk.gold",
+          "balloon.round.latex.silk.pearl_white"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Freestanding balloon bouquet with a large red heart and mixed-size round balloons in red, blush cream, pearl white, and gold."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "The small gold balloons' latex format is not visually distinguishable."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.heart.latex.fashion.red",
+      "balloon.modeling.latex.silk.gold",
+      "balloon.round.latex.fashion.blush_cream",
+      "balloon.round.latex.fashion.imperial_red",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.pearl_white"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-009",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from matte Fashion red heart-shaped latex balloons, matte Fashion round latex balloons in blush cream and imperial red and satin Silk round latex balloons in gold and pearl white, set against white wall and white floor.",
+    "palabras": 45,
+    "caracteres": 292,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.heart.latex.fashion.red",
+      "balloon.round.latex.fashion.blush_cream",
+      "balloon.round.latex.fashion.imperial_red",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.pearl_white"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:14:20.931Z"
+  }
+}

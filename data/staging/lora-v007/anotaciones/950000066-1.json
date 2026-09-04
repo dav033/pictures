@@ -1,0 +1,120 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000066-1",
+  "image_sha256": "c7eef20068e6deda90ed6c124969e92db07bb23ae72a3e0d5fb8d377b3134974",
+  "idempotency_key": "e27d2ab507b120d683dd956b9e7edefcfa2b7428860ce4983fae2830cd1427e9",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000066/foto-1.jpg",
+    "orden": "950000066"
+  },
+  "anotacion": {
+    "image_id": "950000066-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio backdrop, no floor visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.pastel_dusk.cream",
+          "balloon.round.latex.reflex.champagne",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.cream",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.champagne",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Diagonal organic garland strand with clusters of matte cream/white round balloons, pearl champagne round balloons, and bright chrome gold round balloons in varying sizes."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "This is a studio product photo on a plain white background, not an installed event scene, so placement is a guess and venue_surface is not really applicable.",
+      "Cannot reliably distinguish Reflex (high-shine) vs Silk (satin/sheen) finishes at this resolution, so silk.cream_pearl and silk.gold were left out despite being in the allowed list.",
+      "The dark taupe/bronze balloons at the far left do not clearly match any allowed concept's color and were not annotated as a purchased product."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.pastel_dusk.cream",
+      "balloon.round.latex.reflex.champagne",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.silk.cream_pearl",
+      "balloon.round.latex.silk.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000066-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, installed against the rear wall, built from 9-inch muted Pastel Dusk cream round latex balloons, 5-inch high-shine Reflex round latex balloons in champagne and gold, mixed organically rather than graded, set against plain white studio backdrop, no floor visible.",
+    "palabras": 44,
+    "caracteres": 311,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.pastel_dusk.cream",
+      "balloon.round.latex.reflex.champagne",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.cream",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.champagne",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:11:24.715Z",
+    "recompilado_en": "2026-09-03T14:45:23.916Z"
+  }
+}

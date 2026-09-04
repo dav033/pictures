@@ -1,0 +1,117 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000183-1",
+  "image_sha256": "c154d0fc4ecc22d99a9fbb45c10983eb40fcb8e6cc20819e72ca6925af2dbe30",
+  "idempotency_key": "cb5b30cae54d6f5595665884eab8d98c8dc6fd92dd44b68966a9ade556f48548",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000183/foto-1.jpg",
+    "orden": "950000183"
+  },
+  "anotacion": {
+    "image_id": "950000183-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white wall; floor not visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure_1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.fuchsia",
+          "balloon.round.latex.pastel_matte.pink",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.fuchsia",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.pink",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Dense rectangular balloon wall with overlapping fuchsia, pink, and silver balloons."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Additional glitter-finish pink balloons are visible but have no matching allowed concept."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000183-1",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from 5-inch matte Fashion fuchsia round latex balloons and high-shine Reflex silver round latex balloons, 9-inch Pastel Matte pastel pink round latex balloons, mixed organically rather than graded, set against plain white wall; floor not visible.",
+    "palabras": 46,
+    "caracteres": 322,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.fuchsia",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.pink",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:30:19.185Z",
+    "recompilado_en": "2026-09-03T14:45:25.179Z"
+  }
+}

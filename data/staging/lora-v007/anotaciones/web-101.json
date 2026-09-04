@@ -1,0 +1,149 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-101",
+  "image_sha256": "0c69e2bdc605a907b353997dd434ca44639b07526757274a1a45852645b67e4f",
+  "idempotency_key": "7480d76542c4d33f0b49062841b2943983d4ac9aaa9c22456b49bfe37581624e",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-101.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Showroom_Ano_nuevo.png?v=1755294343",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "navidad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-101",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and black floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "arch_main",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "A dense three-dimensional metallic-gold balloon arch forms a closed frame around the central display."
+      },
+      {
+        "structure_id": "number_set",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.number.foil.matte_black"
+        ],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "A large set of matte-black number foil balloons stands on the right side."
+      },
+      {
+        "structure_id": "backdrop_silver",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "behind",
+          "target_structure_id": "arch_main"
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "A flat silver foil-fringe and star panel is visible behind the arch."
+      },
+      {
+        "structure_id": "bouquet_left",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 4,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black.printed_new_year_lettering",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.reflex.silver",
+          "balloon.round.latex.solid.printed_new_year_lettering"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "A tall freestanding bouquet of black, gold, and silver round balloons stands on the left."
+      }
+    ],
+    "non_purchased_elements": [
+      "display tables",
+      "round pedestal",
+      "black floor mat"
+    ],
+    "uncertainties": [
+      "Exact balloon size codes cannot be determined because none are provided for these concepts."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.number.foil.matte_black",
+      "balloon.round.foil.unspecified.printed_graduation_lettering",
+      "balloon.round.latex.fashion.black.printed_new_year_lettering",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.reflex.silver",
+      "balloon.round.latex.solid.printed_new_year_lettering"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-101",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from high-shine Reflex gold round latex balloons, a decorative accessory, standing to one side, built from Metallic matte black number foil balloons, a decorated backdrop, behind the organic balloon arch, a balloon bouquet, standing to one side, built from high-shine Reflex round latex balloons in gold and silver, matte Fashion black round latex balloons with printed new year lettering and round latex balloons with printed new-year lettering, alongside display tables, round pedestal and black floor mat, set against white wall and black floor.",
+    "palabras": 95,
+    "caracteres": 634,
+    "clausulas_por_estructura": 4,
+    "concept_ids_resueltos": [
+      "balloon.number.foil.matte_black",
+      "balloon.round.latex.fashion.black.printed_new_year_lettering",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.reflex.silver",
+      "balloon.round.latex.solid.printed_new_year_lettering"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:07:40.750Z"
+  }
+}

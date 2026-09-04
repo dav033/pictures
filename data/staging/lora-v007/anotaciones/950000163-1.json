@@ -1,0 +1,160 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000163-1",
+  "image_sha256": "0e1cfe8abe72a1e121edff827b7e43e881067be5f53b8c2dd9ca46f525e54f9f",
+  "idempotency_key": "ef5b9f43d15cfb849406139b6391e45dff773cbbe86c1130a4082a694cbccfe8",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000163/foto-1.jpg",
+    "orden": "950000163"
+  },
+  "anotacion": {
+    "image_id": "950000163-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white tiled wall and black floor covering",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure_1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.royal_blue",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.royal_blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Dense rectangular wall of royal-blue and silver balloons."
+      },
+      {
+        "structure_id": "structure_2",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+          "balloon.round.latex.fashion.royal_blue",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.royal_blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Freestanding left-side cluster of printed greeting balloons with blue and silver balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "a covered table",
+      "dessert stands",
+      "a printed sign",
+      "a balloon base"
+    ],
+    "uncertainties": [
+      "The exact size of the larger central blue balloon is visually uncertain."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000163-1",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from matte Fashion royal blue round latex balloons and high-shine Reflex silver round latex balloons, all at a single 5-inch size, a balloon bouquet, standing to one side, built from 12-inch round latex balloons in assorted colors with a matte Fashion finish and printed greeting lettering, 5-inch matte Fashion royal blue round latex balloons and high-shine Reflex silver round latex balloons, mixed organically rather than graded, alongside a covered table, dessert stands, a printed sign and a balloon base, set against off-white tiled wall and black floor covering.",
+    "palabras": 98,
+    "caracteres": 645,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.royal_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.royal_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:21:29.165Z",
+    "recompilado_en": "2026-09-03T14:45:24.902Z"
+  }
+}

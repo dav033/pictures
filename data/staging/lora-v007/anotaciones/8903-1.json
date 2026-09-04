@@ -1,0 +1,129 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "8903-1",
+  "image_sha256": "1a5f8434208f2c52b20abaefa9eb4d2e189e54643e62e4c054c5b60f200f81b1",
+  "idempotency_key": "5961c2db01943b8a3fe29892747e28b5a096695ada9987aa52239258bb7a0191",
+  "source": {
+    "kind": "order_photo",
+    "ref": "8903/foto-1.jpg",
+    "orden": "8903"
+  },
+  "anotacion": {
+    "image_id": "8903-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white walls and ceiling",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "techo",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "row of printed birthday-pattern balloons in pink, cream and rose strung along the ceiling above the fringe curtain"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "bunch of printed balloons with a gold star foil balloon tied to a gift bag on the left of the table"
+      }
+    ],
+    "non_purchased_elements": [
+      "a metallic fringe curtain backdrop",
+      "a birthday bunting banner",
+      "a gift bag",
+      "a dining table"
+    ],
+    "uncertainties": [
+      "Could not confirm whether every balloon in the left bouquet is the printed birthday concept or a plain matching color"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering"
+    ],
+    "confirmed_size_codes": [
+      "PAQUETE X 8",
+      "R-12",
+      "ROSADO"
+    ],
+    "sin_resolver": [
+      "MANTEL PLASTICO RECTANGULAR",
+      "PLATO ARCOIRIS"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "8903-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, suspended overhead, built from round latex balloons in assorted colors with a matte Fashion finish and printed birthday lettering, all at a single 12-inch size, a balloon bouquet, standing to one side, built from round latex balloons in assorted colors with a matte Fashion finish and printed birthday lettering, all at a single 12-inch size, alongside a metallic fringe curtain backdrop, a birthday bunting banner, a gift bag and a dining table, set against off-white walls and ceiling.",
+    "palabras": 83,
+    "caracteres": 536,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:49:39.867Z",
+    "recompilado_en": "2026-09-03T14:45:23.176Z"
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-091",
+  "image_sha256": "9811303b3710673689f14a2bc9e459fa2c5f07b2910a08df2e280604b87276f0",
+  "idempotency_key": "7dea6d1033fa6d62c62e4a5cf73b252165cac3a2322eb018357ba475e07476cd",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-091.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/ideas_de_fiesta_t_o_halloween_e1056198-b5e6-4fcc-8ebd-e3248fc09ee8.jpg?v=1739825749",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "halloween",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-091",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "light wood-paneled walls and a gray tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.copper_orange",
+          "balloon.round.latex.fashion.orange",
+          "balloon.round.latex.fashion.yellow",
+          "balloon.round.latex.pastel_dusk.laurel_green"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Large three-dimensional balloon arch framing the Halloween display, built with orange, copper-orange, yellow, and laurel-green balloons."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.copper_orange",
+          "balloon.round.latex.fashion.orange",
+          "balloon.round.latex.fashion.yellow",
+          "balloon.round.latex.pastel_dusk.laurel_green"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Balloon bouquet positioned at the left side of the main arch."
+      }
+    ],
+    "non_purchased_elements": [
+      "a display table",
+      "Halloween props",
+      "printed balloons",
+      "metallic balloons"
+    ],
+    "uncertainties": [
+      "Exact balloon sizes cannot be distinguished."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.copper_orange",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.yellow",
+      "balloon.round.latex.pastel_dusk.laurel_green"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-091",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from matte Fashion round latex balloons in copper orange, orange and yellow and muted Pastel Dusk laurel green round latex balloons, a balloon bouquet, standing to one side, built from matte Fashion round latex balloons in copper orange, orange and yellow and muted Pastel Dusk laurel green round latex balloons, alongside a display table, Halloween props, printed balloons and metallic balloons, set against light wood-paneled walls and a gray tiled floor.",
+    "palabras": 83,
+    "caracteres": 543,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.copper_orange",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.yellow",
+      "balloon.round.latex.pastel_dusk.laurel_green"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:22:40.517Z"
+  }
+}

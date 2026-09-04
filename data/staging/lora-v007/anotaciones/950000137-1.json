@@ -1,0 +1,142 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000137-1",
+  "image_sha256": "13550a02a8cd368ec483c539b15bafa808461c641d0513bf1689e61dc3374d46",
+  "idempotency_key": "32b1690c79663f0214376184505b984b4f4c47bca4ff0490444d4efdc612bdd2",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000137/foto-1.jpg",
+    "orden": "950000137"
+  },
+  "anotacion": {
+    "image_id": "950000137-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.coffee_brown",
+          "balloon.round.latex.fashion.merlot",
+          "balloon.round.latex.pastel_dusk.cream",
+          "balloon.round.latex.pastel_dusk.laurel_green",
+          "balloon.tubito.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.coffee_brown",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.merlot",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.cream",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.laurel_green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.tubito.latex.reflex.gold",
+            "size_code": "T260"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Three-dimensional balloon sculpture with a large laurel green center, merlot balloon cluster, coffee brown base, cream balloons, and gold elongated balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "orange tube balloons",
+      "yellow tube balloon"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.merlot",
+      "balloon.round.latex.pastel_dusk.cream",
+      "balloon.round.latex.pastel_dusk.laurel_green",
+      "balloon.tubito.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000137-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from 2-inch high-shine Reflex gold modeling latex balloons, 9-inch matte Fashion round latex balloons in coffee brown and merlot and muted Pastel Dusk round latex balloons in cream and laurel green, mixed organically rather than graded, alongside orange tube balloons and yellow tube balloon, set against white wall and white floor.",
+    "palabras": 60,
+    "caracteres": 405,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.reflex.gold",
+      "balloon.round.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.merlot",
+      "balloon.round.latex.pastel_dusk.cream",
+      "balloon.round.latex.pastel_dusk.laurel_green"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.reflex.gold",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.coffee_brown",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.merlot",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.cream",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.laurel_green",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:09:05.293Z",
+    "recompilado_en": "2026-09-03T14:45:24.534Z"
+  }
+}

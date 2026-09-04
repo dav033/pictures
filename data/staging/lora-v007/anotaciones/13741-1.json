@@ -1,0 +1,202 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "13741-1",
+  "image_sha256": "eda825d03887e40de6fc373e6cbd02929fbd9a7a1eaf7f52fa5b240dd01eb94d",
+  "idempotency_key": "454e9c6c442b505023657d133d8ac25116e89c1a11d6d15755868c9bc4e72985",
+  "source": {
+    "kind": "order_photo",
+    "ref": "13741/foto-1.jpg",
+    "orden": "13741"
+  },
+  "anotacion": {
+    "image_id": "13741-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a dim tiled floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "13741-1-s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.fashion.orange",
+          "balloon.round.latex.fashion.lime_green",
+          "balloon.round.latex.fashion.orange.printed_pumpkin_face",
+          "balloon.round.latex.metallic.violet"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.black",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.orange",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.lime_green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.orange.printed_pumpkin_face",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.metallic.violet",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Three-dimensional balloon arch built from purple, orange, lime green and black balloons studded with larger printed jack-o'-lantern face balloons and white eyeball foil balloons, framing the entrance to the dessert table."
+      },
+      {
+        "structure_id": "13741-1-s2",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "acento",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.black"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.black",
+            "size_code": "T260"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Black twisted balloon sculpture resembling a spider figure sitting on furniture to the right of the arch."
+      },
+      {
+        "structure_id": "13741-1-s3",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "prop.bucket.plastic.orange.pumpkin_face"
+        ],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Orange plastic pumpkin trick-or-treat bucket with a molded jack-o'-lantern face sitting on the treats table under the arch."
+      }
+    ],
+    "non_purchased_elements": [
+      "a large clock prop",
+      "a ghost backdrop with bats",
+      "a child in costume",
+      "eyeball balloons"
+    ],
+    "uncertainties": [
+      "The large white eyeball balloons on the arch do not clearly match the plain white round balloon in the allowed list, so they were excluded from visible_concept_ids.",
+      "The purple balloons in the arch could not be confirmed as the Metallic finish versus a plain Fashion finish; Metallic was used since it is the only violet option listed."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.black",
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.orange.printed_pumpkin_face",
+      "balloon.round.latex.fashion.white",
+      "balloon.round.latex.metallic.violet",
+      "prop.bucket.plastic.orange.pumpkin_face"
+    ],
+    "confirmed_size_codes": [
+      "PAQUETE X 1",
+      "R-12",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": [
+      "DECORACION IMPRESA HALLOWEEN CASTILLO",
+      "MANTEL PLASTICO RECTANGULAR HALLOWEEN FRIENDS"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "13741-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from 9-inch matte Fashion round latex balloons in black, lime green and orange and Metallic violet round latex balloons, 12-inch matte Fashion orange round latex balloons with printed pattern, mixed organically rather than graded, with a decorative accessory, standing to one side, built from matte Fashion black modeling latex balloons, all at a single 2-inch size and a decorative accessory, placed on the main table, built from orange plastic pumpkin trick-or-treat buckets with a molded jack-o'-lantern face, alongside a large clock prop, a ghost backdrop with bats, a child in costume and eyeball balloons, set against white walls and a dim tiled floor.",
+    "palabras": 115,
+    "caracteres": 744,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.black",
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.orange.printed_pumpkin_face",
+      "balloon.round.latex.metallic.violet",
+      "prop.bucket.plastic.orange.pumpkin_face"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.black",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.black",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lime_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange.printed_pumpkin_face",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.metallic.violet",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:40:53.328Z",
+    "recompilado_en": "2026-09-03T14:45:22.311Z"
+  }
+}

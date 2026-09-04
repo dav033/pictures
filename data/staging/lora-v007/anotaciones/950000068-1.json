@@ -1,0 +1,97 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000068-1",
+  "image_sha256": "9fcbb87b469dab3ad938b3db627989ed93c94a676f46d3fb7ebb1afbee944621",
+  "idempotency_key": "f43f1d52e44f2ed27be9a91116d7f9a963db7cd5979ea7d0216f88e86e8fdcda",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000068/foto-1.jpg",
+    "orden": "950000068"
+  },
+  "anotacion": {
+    "image_id": "950000068-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain light grey backdrop, no floor visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.coffee_brown"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.coffee_brown",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "trunk and two branching arms built densely from round brown latex balloons, forming a tree silhouette"
+      }
+    ],
+    "non_purchased_elements": [
+      "colorful ribbon-shaped balloons",
+      "small pink ribbon accents"
+    ],
+    "uncertainties": [
+      "brown modeling balloons (T260) from the allowed list are not clearly distinguishable anywhere in the photo, so that concept was omitted",
+      "structure type is a branching tree shape, not a perfect match to any closed category; columna chosen as closest fit"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.coffee_brown"
+    ],
+    "confirmed_size_codes": [
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000068-1",
+    "caption": "eventdecor_style_v3, a balloon column, installed against the rear wall, built from matte Fashion coffee brown round latex balloons, all at a single 9-inch size, alongside colorful ribbon-shaped balloons and small pink ribbon accents, set against plain light grey backdrop, no floor visible.",
+    "palabras": 42,
+    "caracteres": 290,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.coffee_brown"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.coffee_brown",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:06:54.164Z",
+    "recompilado_en": "2026-09-03T14:45:23.933Z"
+  }
+}

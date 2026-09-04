@@ -1,0 +1,208 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000164-1",
+  "image_sha256": "e3100a347ad641a4d46a17f834b663c82093c0919994a03b8b9d1d654c21393d",
+  "idempotency_key": "20cee19ef216bdf6b8ed63006c626833b7a586ee9fdbfb15e1730e681d057987",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000164/foto-1.jpg",
+    "orden": "950000164"
+  },
+  "anotacion": {
+    "image_id": "950000164-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white walls and floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.mustard",
+          "balloon.round.latex.fashion.navy_blue",
+          "balloon.round.latex.reflex.blue",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.mustard",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.navy_blue",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Three-dimensional organic balloon arch with mixed-size clusters."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 2,
+        "placement": "piso_frontal",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "bilateral_pair",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.mustard",
+          "balloon.round.latex.fashion.navy_blue",
+          "balloon.round.latex.reflex.blue",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.mustard",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.navy_blue",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.blue",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Two matching balloon bouquets flank the lower sides."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "behind",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Flat metal grid stand behind the balloon arrangement."
+      }
+    ],
+    "non_purchased_elements": [
+      "printed signs"
+    ],
+    "uncertainties": [
+      "Large printed blue and silver balloons cannot be mapped to the allowed concepts or sizes."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.mustard",
+      "balloon.round.latex.fashion.navy_blue",
+      "balloon.round.latex.reflex.blue",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": [
+      "Globo Reflex Feliz Dia Fiesta Bigotes"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000164-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from 12-inch matte Fashion mustard round latex balloons, 9-inch matte Fashion navy blue round latex balloons, 5-inch high-shine Reflex round latex balloons in blue and silver, mixed organically rather than graded, two matching balloon bouquets, one at each end of the organic balloon arch, built from 12-inch matte Fashion mustard round latex balloons, 9-inch matte Fashion navy blue round latex balloons, 5-inch high-shine Reflex round latex balloons in blue and silver, mixed organically rather than graded, a decorative accessory, behind the organic balloon arch, alongside printed signs, set against plain white walls and floor.",
+    "palabras": 106,
+    "caracteres": 718,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.mustard",
+      "balloon.round.latex.fashion.navy_blue",
+      "balloon.round.latex.reflex.blue",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.mustard",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.mustard",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.navy_blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.navy_blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:24:05.951Z",
+    "recompilado_en": "2026-09-03T14:45:24.913Z"
+  }
+}

@@ -1,0 +1,119 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000094-1",
+  "image_sha256": "f3120ee1f845f71ab8390e537d24544570c99dd1a2c2c1bd3242fa1c7a610d67",
+  "idempotency_key": "e08f26c46638c60e6a98e511f3b4174637053bdc740bdf6ae49fe7a90ac2d19b",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000094/foto-1.png",
+    "orden": "950000094"
+  },
+  "anotacion": {
+    "image_id": "950000094-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.fashion.latte",
+          "balloon.round.latex.fashion.white"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.latte",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.white",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Freestanding balloon reindeer figure with red, white, and tan round balloons, antlers, limbs, hat, and bow."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Exact taxonomy for the freestanding balloon figure."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.crystal.red.printed_unclassified_reflex",
+      "balloon.round.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.latte",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.white"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000094-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from 9-inch matte Fashion latte round latex balloons, 5-inch matte Fashion round latex balloons in red and white, mixed organically rather than graded, set against white wall and white floor.",
+    "palabras": 39,
+    "caracteres": 264,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.latte",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.white"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.latte",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T19:59:05.888Z",
+    "recompilado_en": "2026-09-03T14:45:24.214Z"
+  }
+}

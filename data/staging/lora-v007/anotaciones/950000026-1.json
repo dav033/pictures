@@ -1,0 +1,120 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000026-1",
+  "image_sha256": "d455c5075f18964d7bc3fd6435dbc1b9f7d36d714d01f328d753c4676eff3495",
+  "idempotency_key": "d70c8237ae438c6fff568a51097555a6be866de2ad9c1f6dac023a5bd3b8b897",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000026/foto-1.jpg",
+    "orden": "950000026"
+  },
+  "anotacion": {
+    "image_id": "950000026-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white background, no floor or wall visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.reflex.aurora_green",
+          "balloon.modeling.latex.reflex.violet",
+          "balloon.modeling.latex.fashion.pink"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.reflex.aurora_green",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.reflex.violet",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.fashion.pink",
+            "size_code": "T260"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Five flower shapes twisted from pearl mauve/violet modeling balloons on teal-green stems sit in a pot made of stacked lavender balloon rings, finished with a pink balloon bow."
+      }
+    ],
+    "non_purchased_elements": [
+      "a small gold bead accent"
+    ],
+    "uncertainties": [
+      "Whether the flower heads are the reflex violet or an unlisted pearl tone is not fully certain.",
+      "The small gold bead in the bow could not be matched to the elongated tubito shape in the allowed list."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.pink",
+      "balloon.modeling.latex.reflex.aurora_green",
+      "balloon.modeling.latex.reflex.violet",
+      "balloon.tubito.latex.reflex.gold",
+      "balloon.tubito.latex.reflex.rose_gold"
+    ],
+    "confirmed_size_codes": [
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000026-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, placed on the main table, built from matte Fashion pink modeling latex balloons and high-shine Reflex modeling latex balloons in aurora green and violet, all at a single 2-inch size, alongside a small gold bead accent, set against plain white background, no floor or wall visible.",
+    "palabras": 50,
+    "caracteres": 320,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.pink",
+      "balloon.modeling.latex.reflex.aurora_green",
+      "balloon.modeling.latex.reflex.violet"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.pink",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.reflex.aurora_green",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.reflex.violet",
+        "size_code": "T260",
+        "inches": 2
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:51:38.934Z",
+    "recompilado_en": "2026-09-03T14:45:23.459Z"
+  }
+}

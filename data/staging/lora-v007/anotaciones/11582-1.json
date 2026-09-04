@@ -1,0 +1,53 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "11582-1",
+  "image_sha256": "e5752728f7c1960e6a008f3a8ef9182dc60c94abf73f44e75b57169d1e7ff1d4",
+  "idempotency_key": "a2c168d3039791083ade0877b7fc7dcc044f0c2980d1b60466c04047e3a4d958",
+  "source": {
+    "kind": "order_photo",
+    "ref": "11582/foto-1.jpg",
+    "orden": "11582"
+  },
+  "anotacion": {
+    "image_id": "11582-1",
+    "usable": false,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "a wood floor",
+      "symmetry": "unknown"
+    },
+    "structures": [],
+    "non_purchased_elements": [
+      "an electric balloon pump",
+      "balloon packaging"
+    ],
+    "uncertainties": [
+      "shows loose individual balloons and pump equipment, not an assembled decoration structure"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.pastel_matte.lilac"
+    ],
+    "confirmed_size_codes": [
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "pending",
+    "reason": "no_usable"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:33:30.792Z"
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-003",
+  "image_sha256": "216334d30a5bc4553043dc82bff89e7ede21c4a8fec538fbe3b0ff21a91b606e",
+  "idempotency_key": "6b374da9b70020489c225a7607718fac52f53fc07395c03b006945bf7a410e6a",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-003.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Arco_de_amor_y_flores_994da22c-9b79-4939-9612-9c834b8bad29.jpg?v=1755272740",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "amor_amistad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-003",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.fuchsia",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.solid.printed_hearts"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Three-dimensional balloon arch with pink, fuchsia, gold, and printed-heart latex balloons, plus a large foil flower on the right."
+      }
+    ],
+    "non_purchased_elements": [
+      "a foil flower"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.solid.printed_hearts"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": [
+      "Globo Metalizado Flor Rosada"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-003",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from matte Fashion round latex balloons in fuchsia and pink, high-shine Reflex gold round latex balloons and round latex balloons with printed heart pattern, alongside a foil flower, set against white wall and white floor.",
+    "palabras": 47,
+    "caracteres": 308,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.fuchsia",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.solid.printed_hearts"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:09:44.220Z"
+  }
+}

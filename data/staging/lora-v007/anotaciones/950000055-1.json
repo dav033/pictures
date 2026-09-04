@@ -1,0 +1,129 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000055-1",
+  "image_sha256": "0538c8e95c31c9ca8aa04d342c82a8e91c80bfa7b9512c099211a0d6103be48e",
+  "idempotency_key": "8f423af482811092f0fce05bddee41968cdd43b69ba852cdfec3559d466922c0",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000055/foto-1.jpg",
+    "orden": "950000055"
+  },
+  "anotacion": {
+    "image_id": "950000055-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio background, no floor or wall visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.heart.foil.red",
+          "balloon.heart.latex.fashion.red",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.fashion.white"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.heart.latex.fashion.red",
+            "size_code": "C-6"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.white",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "three-dimensional balloon arch built from pink and white round balloons with red heart-shaped foil clusters at each base and red heart-shaped flower motifs at the top center"
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.heart.foil.red",
+      "balloon.heart.latex.fashion.red",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.white"
+    ],
+    "confirmed_size_codes": [
+      "18 IN",
+      "C-6",
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000055-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from 18-inch Metallic red heart-shaped foil balloons, 6-inch matte Fashion red heart-shaped latex balloons, 5-inch matte Fashion round latex balloons in pink and white, set against plain white studio background, no floor or wall visible.",
+    "palabras": 47,
+    "caracteres": 323,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.heart.foil.red",
+      "balloon.heart.latex.fashion.red",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.fashion.white"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.heart.foil.red",
+        "size_code": "18 IN",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.heart.latex.fashion.red",
+        "size_code": "C-6",
+        "inches": 6
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.heart.foil.red",
+        "size_code": "18 IN",
+        "inches": 18
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:06:25.358Z",
+    "recompilado_en": "2026-09-03T14:45:23.796Z"
+  }
+}

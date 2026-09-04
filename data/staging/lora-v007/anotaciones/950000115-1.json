@@ -1,0 +1,145 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000115-1",
+  "image_sha256": "84da862dca51602039835bc1edd10b6182e839feacf2edc8beffe7462eb5b746",
+  "idempotency_key": "742af09f761b282801d9816962ab0aa9edd8415791fd48f4bfde075f243c44e3",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000115/foto-1.png",
+    "orden": "950000115"
+  },
+  "anotacion": {
+    "image_id": "950000115-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "dark walls and a dark floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black",
+          "balloon.round.latex.fashion.grey",
+          "balloon.round.latex.reflex.violet"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.black",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.grey",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.violet",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Volumetric organic balloon arch frames the central display."
+      },
+      {
+        "structure_id": "structure-2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "behind",
+          "target_structure_id": "structure-1"
+        },
+        "visible_concept_ids": [
+          "backdrop.mural.metallized_foil.silver.printed_checks"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "backdrop.mural.metallized_foil.silver.printed_checks",
+            "size_code": "PAQUETE X 1"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Flat silver foil panel with a printed check pattern is visible behind the balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "two dessert tables",
+      "skeleton figure",
+      "witch hat",
+      "spider web fabric"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "backdrop.mural.metallized_foil.silver.printed_checks",
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.grey",
+      "balloon.round.latex.reflex.violet"
+    ],
+    "confirmed_size_codes": [
+      "PAQUETE X 1",
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000115-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from matte Fashion round latex balloons in black and grey and high-shine Reflex violet round latex balloons, all at a single 5-inch size, a decorated backdrop, behind the organic balloon arch, built from metallized foil backdrop murals in silver with printed check pattern, alongside two dessert tables, skeleton figure, witch hat and spider web fabric, set against dark walls and a dark floor.",
+    "palabras": 75,
+    "caracteres": 480,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "backdrop.mural.metallized_foil.silver.printed_checks",
+      "balloon.round.latex.fashion.black",
+      "balloon.round.latex.fashion.grey",
+      "balloon.round.latex.reflex.violet"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.black",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.grey",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.violet",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:09:44.729Z",
+    "recompilado_en": "2026-09-03T14:45:24.347Z"
+  }
+}

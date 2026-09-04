@@ -1,0 +1,103 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000070-1",
+  "image_sha256": "e93c7d1766ea3dde5d894f1057fd457a969da4bb160c55846a094df3860d9358",
+  "idempotency_key": "e99a405fb423f150df2e0dd34961a0837c0acd3d09eb5476d90408a64104ee88",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000070/foto-1.jpg",
+    "orden": "950000070"
+  },
+  "anotacion": {
+    "image_id": "950000070-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white studio background, no venue surfaces visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "kit",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.champagne",
+          "balloon.round.latex.satin.pearl"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.reflex.champagne",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.satin.pearl",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Large five-pointed star mosaic built from small round balloons alternating champagne high-shine and pearl finishes, all matching in diameter."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Isolated product photo on white background; real installation placement/venue is not shown."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.reflex.champagne",
+      "balloon.round.latex.satin.pearl"
+    ],
+    "confirmed_size_codes": [
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000070-1",
+    "caption": "eventdecor_style_v3, a coordinated decoration kit, installed against the rear wall, built from high-shine Reflex champagne round latex balloons and Satin pearl round latex balloons, all at a single 5-inch size, set against white studio background, no venue surfaces visible.",
+    "palabras": 39,
+    "caracteres": 274,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.reflex.champagne",
+      "balloon.round.latex.satin.pearl"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.reflex.champagne",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.satin.pearl",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:08:42.908Z",
+    "recompilado_en": "2026-09-03T14:45:23.955Z"
+  }
+}

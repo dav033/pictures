@@ -1,0 +1,88 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-120",
+  "image_sha256": "0a1563c5567a4cfd9412cf370c70761b3dcf0c2d7081889ba1f6a89c6dc34bd4",
+  "idempotency_key": "6011733659c9f2897589b48e7c441f68a0753f52966a1530181e1c65a6b3a3a9",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-120.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Curso_Figura_Arbol_de_Navidad.jpg?v=1698869108",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "navidad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-120",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.eucalyptus_green",
+          "balloon.round.latex.pastel_dusk.cream",
+          "balloon.round.latex.pastel_dusk.laurel_green",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Dense tapered vertical balloon arrangement with mixed green, cream, and gold balloons."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.pastel_dusk.cream",
+      "balloon.round.latex.pastel_dusk.laurel_green",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-120",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from matte Fashion eucalyptus green round latex balloons, muted Pastel Dusk round latex balloons in cream and laurel green and high-shine Reflex gold round latex balloons, set against white walls and a white floor.",
+    "palabras": 43,
+    "caracteres": 286,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.pastel_dusk.cream",
+      "balloon.round.latex.pastel_dusk.laurel_green",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:23:38.827Z"
+  }
+}

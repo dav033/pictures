@@ -1,0 +1,201 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "7513-1",
+  "image_sha256": "42100646194560f67dc2ffb16858ec50718baaca57b1944979b8114874844774",
+  "idempotency_key": "18e45afc2aa7aa1d86960dc730a312d947b5529c15388c6942c68d6127b96868",
+  "source": {
+    "kind": "order_photo",
+    "ref": "7513/foto-1.jpg",
+    "orden": "7513"
+  },
+  "anotacion": {
+    "image_id": "7513-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "white walls, floor not visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.royal_blue",
+          "balloon.round.latex.fashion.yellow"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.yellow",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Organic garland of royal blue round balloons with small yellow-green cluster flowers running along the wall-ceiling corner."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.orange",
+          "balloon.round.latex.fashion.yellow"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.yellow",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Vertical cluster of large orange round balloons interspersed with small yellow cluster flowers on the left side."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "behind",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Orange fabric backdrop printed with red stars behind the birthday boy."
+      }
+    ],
+    "non_purchased_elements": [
+      "a birthday boy",
+      "a two-tier character cake",
+      "cupcakes on a stand"
+    ],
+    "uncertainties": [
+      "Exact size codes for the orange and blue balloons are uncertain due to perspective and mixed apparent sizes.",
+      "The yellow-green cluster balloons may not exactly match the 'yellow' fashion concept color."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.fashion.yellow"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-18",
+      "R-24",
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "7513-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, installed against the rear wall, built from 12-inch and 9-inch matte Fashion royal blue round latex balloons, 5-inch matte Fashion yellow round latex balloons, mixed organically rather than graded, a balloon column, standing to one side, built from 24-inch, 18-inch and 12-inch matte Fashion orange round latex balloons, 5-inch matte Fashion yellow round latex balloons, mixed organically rather than graded, with a decorated backdrop, installed against the rear wall, alongside a birthday boy, a two-tier character cake and cupcakes on a stand, set against white walls, floor not visible.",
+    "palabras": 94,
+    "caracteres": 638,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.royal_blue",
+      "balloon.round.latex.fashion.yellow"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-24",
+        "inches": 24
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.royal_blue",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.royal_blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.yellow",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.yellow",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-24",
+        "inches": 24
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.royal_blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.royal_blue",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:47:43.859Z",
+    "recompilado_en": "2026-09-03T14:45:23.058Z"
+  }
+}

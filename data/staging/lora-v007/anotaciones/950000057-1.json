@@ -1,0 +1,131 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000057-1",
+  "image_sha256": "deec260009c2ebfcceec1377afa418ed4e8e301f2843266627df23fb4c3c5047",
+  "idempotency_key": "ff15182bdd61565c9755e7cb52f0931a5fccbc670559b5a4b0ec7bce8c37700e",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000057/foto-1.jpg",
+    "orden": "950000057"
+  },
+  "anotacion": {
+    "image_id": "950000057-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "seamless white studio background",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.merlot",
+          "balloon.round.latex.fashion.coral",
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.fashion.white"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.merlot",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.coral",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.white",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "A balloon bouquet shaped like flowers in a pot: twisted red, merlot and coral flower heads on top of a base made of white round balloons and a coral round-balloon pot with a white ring and coral feet."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Placement guessed as sobre_mesa_principal since this is a studio product shot with no venue context.",
+      "Light pink balloon petals are visible but pink is not in allowed_concepts, so excluded from visible_concept_ids.",
+      "The white ring around the pot could not be confidently matched to a specific product/size in the allowed list."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.merlot",
+      "balloon.round.latex.fashion.coral",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.white"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000057-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, placed on the main table, built from 2-inch matte Fashion merlot modeling latex balloons, 9-inch matte Fashion coral round latex balloons, 5-inch matte Fashion round latex balloons in red and white, mixed organically rather than graded, set against seamless white studio background.",
+    "palabras": 46,
+    "caracteres": 322,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.merlot",
+      "balloon.round.latex.fashion.coral",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.white"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.merlot",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.coral",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:09:53.389Z",
+    "recompilado_en": "2026-09-03T14:45:23.822Z"
+  }
+}

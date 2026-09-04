@@ -1,0 +1,157 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000006-1",
+  "image_sha256": "873aa4ee6a8fff1fa45e972b54c804fc8897ff241672626e1fa9ae97b538c26a",
+  "idempotency_key": "e3c39984f07f8eb062ec17948f7cb7238fade516309915f1eae299deaa35df9f",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000006/foto-1.jpg",
+    "orden": "950000006"
+  },
+  "anotacion": {
+    "image_id": "950000006-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.pastel_matte.yellow"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.yellow",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Three-dimensional pink balloon arch with pink bases and small yellow round accents."
+      },
+      {
+        "structure_id": "structure-2",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "structure-1"
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.eucalyptus_green",
+          "balloon.modeling.latex.fashion.honey_yellow",
+          "balloon.modeling.latex.pastel_matte.yellow"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.eucalyptus_green",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.fashion.honey_yellow",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.pastel_matte.yellow",
+            "size_code": "T260"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Grouped bouquet of green stems and yellow modeling-balloon flowers attached on the right side."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.eucalyptus_green",
+      "balloon.modeling.latex.fashion.honey_yellow",
+      "balloon.modeling.latex.pastel_matte.yellow",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.pastel_matte.yellow"
+    ],
+    "confirmed_size_codes": [
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000006-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from matte Fashion pink round latex balloons and Pastel Matte yellow round latex balloons, all at a single 9-inch size, a balloon bouquet, anchored to the organic balloon arch, built from matte Fashion modeling latex balloons in eucalyptus green and honey yellow and Pastel Matte yellow modeling latex balloons, all at a single 2-inch size, set against a white wall and white floor.",
+    "palabras": 75,
+    "caracteres": 468,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.eucalyptus_green",
+      "balloon.modeling.latex.fashion.honey_yellow",
+      "balloon.modeling.latex.pastel_matte.yellow",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.pastel_matte.yellow"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.eucalyptus_green",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.fashion.honey_yellow",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.pastel_matte.yellow",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.yellow",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T19:56:16.605Z",
+    "recompilado_en": "2026-09-03T14:45:23.248Z"
+  }
+}

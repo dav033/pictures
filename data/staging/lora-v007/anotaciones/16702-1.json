@@ -1,0 +1,72 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "16702-1",
+  "image_sha256": "73bc6b4d2533a324e5f7ba3625cb70f0560c927cd1b3ae059141d18b5e031286",
+  "idempotency_key": "002a0ef838d072816030ccf3bbb43952c852555765eac1d43d25967074e3928b",
+  "source": {
+    "kind": "order_photo",
+    "ref": "16702/foto-1.jpg",
+    "orden": "16702"
+  },
+  "anotacion": {
+    "image_id": "16702-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "white walls",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "techo",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Cluster of silver-gray and dusty pink chrome-finish balloons with curling ribbon streamers hanging overhead behind the two people"
+      }
+    ],
+    "non_purchased_elements": [
+      "rainbow foil letter balloons",
+      "a tiara headband",
+      "a wrapped gift box"
+    ],
+    "uncertainties": [
+      "No allowed_concepts were provided for this image, so no product ids could be assigned even though balloons are visible",
+      "Photo is a close selfie crop, decoration is partially obscured by the two people in the foreground"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "pending",
+    "image_id": "16702-1",
+    "reason": "no_resolvable_concepts",
+    "conceptos_rechazados": [],
+    "tamanos_rechazados": [],
+    "prohibiciones": [],
+    "contract_version": "lora-caption-v3-structure-clauses"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:40:23.639Z",
+    "recompilado_en": "2026-09-03T14:45:22.808Z"
+  }
+}

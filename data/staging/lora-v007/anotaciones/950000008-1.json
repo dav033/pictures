@@ -1,0 +1,206 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000008-1",
+  "image_sha256": "7584e5d57488a77cf284c5e90d47df94dcd7af35c9aeef89cef57ed26b87a86f",
+  "idempotency_key": "180da7a61c0474ebe54b0eb028c51df9cf1e967548e73eb448e82e033473762f",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000008/foto-1.png",
+    "orden": "950000008"
+  },
+  "anotacion": {
+    "image_id": "950000008-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "green turf flooring, wall mostly covered by the backdrop",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.orange",
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.silk.pearl_white"
+        ],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "flat scalloped-top panel densely covered in red balloons on the left, orange on the right and a white cluster top center, with a printed brick panel and a 'FELIZ NAVIDAD' banner in the middle"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.pastel_matte.blue"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.blue",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "tree-shaped mint balloon column with metallic ball accents and a gold ribbon bow on top, standing to the left of the backdrop"
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.reflex.aurora_green"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "balloon bunch on ribbon strings to the right of the backdrop, mixing printed round balloons with a large solid balloon"
+      }
+    ],
+    "non_purchased_elements": [
+      "a wooden dessert cart",
+      "printed party tableware",
+      "a hanging letter banner",
+      "a gold ribbon bow"
+    ],
+    "uncertainties": [
+      "backdrop balloons look larger than the R-5 size listed for red/orange in the allowed concepts, so no size code was assigned",
+      "teal metallic ball accents on the column may not correspond to an allowed concept",
+      "silver metallic and heart-shaped balloons in the right bouquet don't clearly match any listed concept"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.metallic.gold",
+      "balloon.modeling.latex.reflex.aurora_green",
+      "balloon.modeling.latex.reflex.blue",
+      "balloon.round.latex.fashion.assorted_colors.printed_christmas_lettering",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.fashion.white.printed_christmas_lettering",
+      "balloon.round.latex.pastel_matte.blue",
+      "balloon.round.latex.reflex.aurora_green",
+      "balloon.round.latex.reflex.blue",
+      "balloon.round.latex.silk.pearl_white",
+      "balloon.round.latex.solid.printed_christmas_lettering"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000008-1",
+    "caption": "eventdecor_style_v3, a decorated backdrop, installed against the rear wall, built from matte Fashion round latex balloons in orange and red and satin Silk pearl white round latex balloons, all at a single 5-inch size, a balloon column, standing to one side, built from Pastel Matte blue round latex balloons, all at a single 9-inch size, with a balloon bouquet, standing to one side, built from matte Fashion red round latex balloons and high-shine Reflex aurora green round latex balloons, all 5-inch, alongside a wooden dessert cart, printed party tableware, a hanging letter banner and a gold ribbon bow, set against green turf flooring, wall mostly covered by the backdrop.",
+    "palabras": 109,
+    "caracteres": 677,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.pastel_matte.blue",
+      "balloon.round.latex.reflex.aurora_green",
+      "balloon.round.latex.silk.pearl_white"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.aurora_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.pearl_white",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.aurora_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.pearl_white",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:51:33.446Z",
+    "recompilado_en": "2026-09-03T14:45:23.270Z"
+  }
+}

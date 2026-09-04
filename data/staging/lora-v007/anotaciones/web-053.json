@@ -1,0 +1,145 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-053",
+  "image_sha256": "a207db2e50b4568dcd87a9b4b6015eaf7450fffaac89466ba08d3d1eb24b098a",
+  "idempotency_key": "83af74c409703e150916f109bd887de8b34546300fda66870ed0a0af88c581b7",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-053.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Showroom_dia_del_padre.png?v=1755613880",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "cumpleanos",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-053",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a blue floor covering",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.navy_blue",
+          "balloon.round.latex.reflex.aurora_green",
+          "balloon.round.latex.silk.arctic_blue",
+          "balloon.round.latex.silk.mint_green"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "A large three-dimensional balloon arch encloses the central display."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "behind",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.aurora_green",
+          "balloon.round.latex.silk.mint_green"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "A dense green balloon panel is visible through the arch opening."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "bouquet",
+        "count": 2,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "bilateral_pair",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.navy_blue",
+          "balloon.round.latex.silk.arctic_blue",
+          "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering",
+          "balloon.round.latex.fashion.assorted_colors.printed_terrazzo"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Matching balloon bouquets flank the central arch, with printed round balloons and loose floor clusters."
+      }
+    ],
+    "non_purchased_elements": [
+      "white display pedestals",
+      "printed product bags"
+    ],
+    "uncertainties": [
+      "The exact foil-versus-latex construction of some printed balloons is uncertain."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.navy_blue",
+      "balloon.modeling.latex.reflex.aurora_green",
+      "balloon.modeling.latex.silk.mint_green",
+      "balloon.round.foil.unspecified.printed_birthday_lettering",
+      "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering",
+      "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+      "balloon.round.latex.fashion.assorted_colors.printed_terrazzo",
+      "balloon.round.latex.fashion.navy_blue",
+      "balloon.round.latex.pastel_matte.green",
+      "balloon.round.latex.reflex.aurora_green",
+      "balloon.round.latex.silk.arctic_blue",
+      "balloon.round.latex.silk.mint_green"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": [
+      "Globo Reflex Feliz Dia Fiesta Bigotes"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-053",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from matte Fashion navy blue round latex balloons, high-shine Reflex aurora green round latex balloons and satin Silk round latex balloons in arctic blue and mint green, a balloon wall, behind the organic balloon arch, built from high-shine Reflex aurora green round latex balloons and satin Silk mint green round latex balloons, two matching balloon bouquets, one at each end of the organic balloon arch, built from matte Fashion navy blue round latex balloons, satin Silk arctic blue round latex balloons, round latex balloons in assorted colors with a matte Fashion finish and printed birthday lettering and round latex balloons in assorted colors with a matte Fashion finish and printed terrazzo pattern, alongside white display pedestals and printed product bags, set against white walls and a blue floor covering.",
+    "palabras": 141,
+    "caracteres": 905,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.assorted_colors.printed_birthday_lettering",
+      "balloon.round.latex.fashion.assorted_colors.printed_terrazzo",
+      "balloon.round.latex.fashion.navy_blue",
+      "balloon.round.latex.reflex.aurora_green",
+      "balloon.round.latex.silk.arctic_blue",
+      "balloon.round.latex.silk.mint_green"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:18:06.665Z"
+  }
+}

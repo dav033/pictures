@@ -1,0 +1,223 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "17458-1",
+  "image_sha256": "4c7502cfc977f9f81adcf3a15a51b7acc2b19471719c615c607de514d036c4b3",
+  "idempotency_key": "16d1d606631009f941bf7f7d5c8d884de513b08c15191c3e4ea4b415c715328e",
+  "source": {
+    "kind": "order_photo",
+    "ref": "17458/foto-1.jpg",
+    "orden": "17458"
+  },
+  "anotacion": {
+    "image_id": "17458-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a light tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "techo",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.orange",
+          "balloon.round.latex.solid.printed_halloween_lettering"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.orange",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.solid.printed_halloween_lettering",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Cluster of orange and black round balloons with printed Happy Halloween text at the ceiling, accented with curling ribbons"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "banner.pennant_garland.metallized_foil.printed_halloween_lettering",
+          "curtain.fringe.metallized_foil.orange_and_black"
+        ],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Orange and black fringe curtain backdrop with a printed Happy Halloween pennant garland hanging across it"
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.orange",
+          "balloon.modeling.latex.fashion.orange"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.orange",
+            "size_code": "R-18"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Tall pumpkin-shaped balloon column on the floor built from twisted modeling balloons and clustered round orange balloons"
+      },
+      {
+        "structure_id": "s4",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "acento",
+        "salience": 4,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.orange",
+          "balloon.modeling.latex.fashion.orange"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.orange",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Twisted orange modeling-balloon column running down the left edge, topped by a cluster of orange and black round balloons"
+      }
+    ],
+    "non_purchased_elements": [
+      "black speaker boxes",
+      "a glass table",
+      "costume headbands",
+      "a paper tombstone decoration"
+    ],
+    "uncertainties": [
+      "Exact size codes (R-9 vs R-18) for the orange round balloons cannot be confirmed precisely from the photo",
+      "Some black balloons appear to have a spider print not matching any listed concept, so they were excluded"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.orange",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.solid.printed_halloween_lettering",
+      "banner.pennant_garland.metallized_foil.printed_halloween_lettering",
+      "curtain.fringe.metallized_foil.orange_and_black"
+    ],
+    "confirmed_size_codes": [
+      "PAQUETE X 1",
+      "PAQUETE X 3",
+      "PAQUETE X 4",
+      "R-12",
+      "R-18",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": [
+      "MOVIL 3D VAMPIRO",
+      "TIARA IMPRESA HALLOWEEN",
+      "TIARA HAPPY HALLOWEEN"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "17458-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, suspended overhead, built from 9-inch matte Fashion orange round latex balloons, 12-inch round latex balloons with printed Halloween lettering, mixed organically rather than graded, a decorated backdrop, installed against the rear wall, built from metallized foil pennant garlands with printed Halloween lettering and metallized foil fringe curtains in orange and black, a balloon column, grounded across the front, built from 2-inch matte Fashion orange modeling latex balloons, 18-inch matte Fashion orange round latex balloons, mixed organically rather than graded, with a balloon column, standing to one side, built from 2-inch matte Fashion orange modeling latex balloons, 9-inch matte Fashion orange round latex balloons, mixed organically rather than graded, alongside black speaker boxes, a glass table, costume headbands and a paper tombstone decoration, set against white walls and a light tiled floor.",
+    "palabras": 136,
+    "caracteres": 961,
+    "clausulas_por_estructura": 4,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.orange",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.solid.printed_halloween_lettering",
+      "banner.pennant_garland.metallized_foil.printed_halloween_lettering",
+      "curtain.fringe.metallized_foil.orange_and_black"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.orange",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.fashion.orange",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.solid.printed_halloween_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.orange",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.fashion.orange",
+        "size_code": "T260",
+        "inches": 2
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:44:46.651Z",
+    "recompilado_en": "2026-09-03T14:45:22.855Z"
+  }
+}

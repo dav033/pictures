@@ -1,0 +1,143 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000062-1",
+  "image_sha256": "8086a6cfade927e0e258a091dfed250e1a52f6656b9b14f221a913032bc14f35",
+  "idempotency_key": "08f62a40c67aea187ea0ccf7625c419de73cc5ebf6ef8ce9f8bf63458794a78f",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000062/foto-1.jpg",
+    "orden": "950000062"
+  },
+  "anotacion": {
+    "image_id": "950000062-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio background, no floor or wall visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.aquamarine",
+          "balloon.round.latex.fashion.clover_green",
+          "balloon.round.latex.fashion.copper_orange",
+          "balloon.round.latex.fashion.honey_yellow",
+          "balloon.round.latex.fashion.purple_orchid"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.aquamarine",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.clover_green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.copper_orange",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.honey_yellow",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.purple_orchid",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Vertical bouquet of round balloons tied in color bands (yellow, green, purple, aquamarine, orange) with visible ribbon strings at the base; purple band shows larger balloons matching the R-12 size while the rest are R-9."
+      }
+    ],
+    "non_purchased_elements": [
+      "balloon ribbon strings"
+    ],
+    "uncertainties": [
+      "Studio product shot with no floor/wall context, so placement (piso_frontal) is a best guess rather than an observed setting.",
+      "Purple balloons appearing larger is consistent with the confirmed R-12 size but was not measured, only visually compared."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.aquamarine",
+      "balloon.round.latex.fashion.clover_green",
+      "balloon.round.latex.fashion.copper_orange",
+      "balloon.round.latex.fashion.honey_yellow",
+      "balloon.round.latex.fashion.purple_orchid"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000062-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from 9-inch matte Fashion round latex balloons in aquamarine, clover green, copper orange and honey yellow, 12-inch matte Fashion purple orchid round latex balloons, mixed organically rather than graded, alongside balloon ribbon strings, set against plain white studio background, no floor or wall visible.",
+    "palabras": 53,
+    "caracteres": 379,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.aquamarine",
+      "balloon.round.latex.fashion.clover_green",
+      "balloon.round.latex.fashion.copper_orange",
+      "balloon.round.latex.fashion.honey_yellow",
+      "balloon.round.latex.fashion.purple_orchid"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.aquamarine",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.clover_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.copper_orange",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.honey_yellow",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.purple_orchid",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:08:10.403Z",
+    "recompilado_en": "2026-09-03T14:45:23.874Z"
+  }
+}

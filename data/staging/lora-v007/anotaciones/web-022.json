@@ -1,0 +1,103 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-022",
+  "image_sha256": "dbbe743b702ec4228b8786026a575d2f88635140a7c40b5b192c056262b76c90",
+  "idempotency_key": "260c6546ea114474000c9a68bd083c4682ace0dd38634cbefdb81c74544dc8a9",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-022.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/GUIRNALDA_LOVE_-_LOVE_GARLAND.jpg?v=1746722093",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "amor_amistad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-022",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.heart.foil.pink.printed_text"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "A dense organic balloon garland spans the top, with two pink heart-shaped foil balloons bearing printed text."
+      },
+      {
+        "structure_id": "structure-2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "structure-1"
+        },
+        "visible_concept_ids": [
+          "curtain.fringe.metallized_foil.pink"
+        ],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "A long pink metallized foil fringe curtain hangs vertically beneath the balloon garland."
+      }
+    ],
+    "non_purchased_elements": [
+      "latex balloons"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.heart.foil.pink.printed_text",
+      "curtain.fringe.metallized_foil.pink"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": [
+      "Kit Diy Guirnalda Sparkling Pink"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-022",
+    "caption": "eventdecor_style_v3, an organic balloon garland, installed against the rear wall, built from Metallic pink heart-shaped foil balloons with printed lettering, a decorated backdrop, anchored to the organic balloon garland, built from metallized foil fringe curtains in pink, alongside latex balloons, set against white wall and white floor.",
+    "palabras": 47,
+    "caracteres": 338,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.heart.foil.pink.printed_text",
+      "curtain.fringe.metallized_foil.pink"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:30:58.338Z"
+  }
+}

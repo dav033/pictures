@@ -1,0 +1,72 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "19210-1",
+  "image_sha256": "123f3dcd5c64eece8448f12ba819a3566bd74454a0f26e305f4b52930b61ff8e",
+  "idempotency_key": "7994375949a7849d817cb3ac1f45dcc1ca011e05da236f936fbea58a9f3bfebf",
+  "source": {
+    "kind": "order_photo",
+    "ref": "19210/foto-1.jpg",
+    "orden": "19210"
+  },
+  "anotacion": {
+    "image_id": "19210-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "stainless steel elevator walls, no floor visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "entrada",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Single round golden balloon printed with a birthday message, mounted on a stick with a gold ribbon bow, next to a gift tray."
+      }
+    ],
+    "non_purchased_elements": [
+      "a wooden gift tray",
+      "a fruit cup",
+      "a handwritten card",
+      "pastries"
+    ],
+    "uncertainties": [
+      "No confirmed products for this order (allowed_concepts is empty), so the balloon's color/finish cannot be attributed to a concept id."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "pending",
+    "image_id": "19210-1",
+    "reason": "no_resolvable_concepts",
+    "conceptos_rechazados": [],
+    "tamanos_rechazados": [],
+    "prohibiciones": [],
+    "contract_version": "lora-caption-v3-structure-clauses"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:47:43.832Z",
+    "recompilado_en": "2026-09-03T14:45:22.979Z"
+  }
+}

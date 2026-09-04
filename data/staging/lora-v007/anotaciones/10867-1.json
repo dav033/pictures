@@ -1,0 +1,165 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "10867-1",
+  "image_sha256": "9dedc45213843a00e8440568b89cf240d2c49cb114d9581e253ca40d337001e1",
+  "idempotency_key": "21810dbf6d9c0b6be5f15fcd52b2f203f20084836444a1be7bab0c251b9a9431",
+  "source": {
+    "kind": "order_photo",
+    "ref": "10867/foto-1.jpg",
+    "orden": "10867"
+  },
+  "anotacion": {
+    "image_id": "10867-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "dark tiled floor and a metal railing backdrop",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.coffee_brown",
+          "balloon.round.latex.fashion.eucalyptus_green",
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.neon.orange"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.coffee_brown",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.neon.orange",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Large organic garland in orange, brown, sand, and green with greenery leaves woven through, dominating the left side of the frame."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Flat arch-shaped printed panel behind the tiered cake stand."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Flat arch-shaped panel with a neon name sign on the right side of the frame."
+      }
+    ],
+    "non_purchased_elements": [
+      "a tiered cake",
+      "a neon sign",
+      "cupcakes on a stand",
+      "bottled water"
+    ],
+    "uncertainties": [
+      "Some pale balloons could be sand or a plain white tone not in the product list; assumed sand where color plausibly matches.",
+      "Night lighting alters perceived balloon color slightly, making exact color matching harder."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.neon.orange"
+    ],
+    "confirmed_size_codes": [
+      "R-12"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "10867-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, standing to one side, built from matte Fashion round latex balloons in coffee brown, eucalyptus green and sand and fluorescent Neon orange round latex balloons, all at a single 12-inch size, a decorated backdrop, installed against the rear wall, with a decorated backdrop, standing to one side, alongside a tiered cake, a neon sign, cupcakes on a stand and bottled water, set against dark tiled floor and a metal railing backdrop.",
+    "palabras": 76,
+    "caracteres": 479,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.neon.orange"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.coffee_brown",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.neon.orange",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:33:41.515Z",
+    "recompilado_en": "2026-09-03T14:45:21.880Z"
+  }
+}

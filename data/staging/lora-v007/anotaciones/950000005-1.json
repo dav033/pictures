@@ -1,0 +1,133 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000005-1",
+  "image_sha256": "5fccf1fe5e309375ce8e8d6eb90f39da101f1864488123465f972051feec55c3",
+  "idempotency_key": "fc211bc27c9a4209d8c7ceac40188b08aa7e12b1056e005b74898946970ba985",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000005/foto-1.jpg",
+    "orden": "950000005"
+  },
+  "anotacion": {
+    "image_id": "950000005-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white seamless studio background, no floor visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.orange",
+          "balloon.modeling.latex.fashion.pink",
+          "balloon.round.latex.fashion.blush_cream",
+          "balloon.round.latex.fashion.pink"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.orange",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.fashion.pink",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.blush_cream",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Single tall balloon bouquet in a small white pot: orange twisted-loop flower, magenta/pink twisted flower shapes, and round blush-cream and pink balloons forming petals and branch pearls."
+      }
+    ],
+    "non_purchased_elements": [
+      "a white plant pot",
+      "green paper-wrapped stems"
+    ],
+    "uncertainties": [
+      "No real venue visible (studio product shot), so placement is a best guess rather than observed context.",
+      "The small pearl-like balls along the top branches could be twisted modeling balloons or small round balloons; technique is not fully certain."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.orange",
+      "balloon.modeling.latex.fashion.pink",
+      "balloon.round.latex.fashion.blush_cream",
+      "balloon.round.latex.fashion.pink"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000005-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, placed on the main table, built from 2-inch matte Fashion modeling latex balloons in orange and pink, 9-inch matte Fashion blush cream round latex balloons, 5-inch matte Fashion pink round latex balloons, mixed organically rather than graded, alongside a white plant pot and green paper-wrapped stems, set against white seamless studio background, no floor visible.",
+    "palabras": 59,
+    "caracteres": 405,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.orange",
+      "balloon.modeling.latex.fashion.pink",
+      "balloon.round.latex.fashion.blush_cream",
+      "balloon.round.latex.fashion.pink"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.orange",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.fashion.pink",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.blush_cream",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:52:42.002Z",
+    "recompilado_en": "2026-09-03T14:45:23.239Z"
+  }
+}

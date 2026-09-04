@@ -1,0 +1,96 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "14523-1",
+  "image_sha256": "2bea33db609506e33cae43f0541fcabe771dd5bb0ea464dee3f1eda8b287c690",
+  "idempotency_key": "457e2c3d2e309d6b21a35ceb474d271fdf62ba144dfa2e74d1f70fd70628ac4d",
+  "source": {
+    "kind": "order_photo",
+    "ref": "14523/foto-1.jpg",
+    "orden": "14523"
+  },
+  "anotacion": {
+    "image_id": "14523-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "beige walls and a dark wood shelf",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "on_furniture",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.solid.printed_new_year_lettering"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.solid.printed_new_year_lettering",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Cluster of round balloons printed with new-year lettering in black and teal, tied with curling ribbon, standing on a console near a TV."
+      }
+    ],
+    "non_purchased_elements": [
+      "gold ribbon curls",
+      "wooden shelf with decor",
+      "framed photo",
+      "drinking glass"
+    ],
+    "uncertainties": [
+      "A confetti-filled clear balloon and a plain gold balloon are also present but do not match any allowed concept."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.solid.printed_new_year_lettering"
+    ],
+    "confirmed_size_codes": [
+      "R-12"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "14523-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, placed on the main table, built from round latex balloons with printed new-year lettering, all at a single 12-inch size, alongside gold ribbon curls, wooden shelf with decor, framed and drinking glass, set against beige walls and a dark wood shelf.",
+    "palabras": 45,
+    "caracteres": 288,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.solid.printed_new_year_lettering"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.solid.printed_new_year_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:37:13.793Z",
+    "recompilado_en": "2026-09-03T14:45:22.410Z"
+  }
+}

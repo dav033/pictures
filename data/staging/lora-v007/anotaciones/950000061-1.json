@@ -1,0 +1,141 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000061-1",
+  "image_sha256": "3f06813b8e13e512035c028044ca87a973bc4557ca2e891e0c027f2ae01a016d",
+  "idempotency_key": "837a82ad97006561b5222d763b26acc019d652f723dee8b36ab384856bcd025e",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000061/foto-1.png",
+    "orden": "950000061"
+  },
+  "anotacion": {
+    "image_id": "950000061-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white studio background, no floor or wall visible",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.pastel_matte.pink",
+          "balloon.round.latex.pastel_matte.lilac",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.fashion.lilac",
+          "balloon.round.latex.fashion.pink"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.pink",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.lilac",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.lilac",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "graded",
+        "evidence": "tied bouquet of round balloons with visibly larger pale pink and lilac balloons at the top grading down to smaller gold, deeper lilac and magenta balloons below, with visible strings hanging from the bottom"
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "distinguishing pastel matte finish from fashion finish relies on relative balloon size and sheen in the photo, not a fully certain visual cue",
+      "actual venue placement unknown, this is a studio product shot"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.lilac",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.pastel_matte.lilac",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000061-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from 5-inch matte Fashion round latex balloons in lilac and pink and high-shine Reflex gold round latex balloons, 9-inch Pastel Matte round latex balloons in lilac and pastel pink, graded from 9-inch down to 5-inch, set against plain white studio background, no floor or wall visible.",
+    "palabras": 55,
+    "caracteres": 357,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.lilac",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.pastel_matte.lilac",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.lilac",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.lilac",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.pink",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T17:06:25.375Z",
+    "recompilado_en": "2026-09-03T14:45:23.864Z"
+  }
+}

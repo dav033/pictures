@@ -1,0 +1,184 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000021-1",
+  "image_sha256": "5bf4fb27e78031de0ec6da9c637ea1e6e87562e080708e2842f669937b69b921",
+  "idempotency_key": "dd5b6b4f39de97cededda945cf80638b8ce5cfd4da9d6f72dcbb95dd660ddaa1",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000021/foto-1.png",
+    "orden": "950000021"
+  },
+  "anotacion": {
+    "image_id": "950000021-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a purple floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "arco_principal",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.pastel_dusk.green_tea",
+          "balloon.round.latex.pastel_matte.blue",
+          "balloon.round.latex.pastel_matte.lilac",
+          "balloon.round.latex.pastel_matte.malibu_peach",
+          "balloon.round.latex.pastel_matte.melon",
+          "balloon.round.latex.pastel_matte.yellow"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.green_tea",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.blue",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.lilac",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.malibu_peach",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.melon",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.yellow",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Arco tridimensional denso de globos redondos multicolores que rodea el panel central."
+      },
+      {
+        "structure_id": "backdrop_central",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "behind",
+          "target_structure_id": "arco_principal"
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Panel plano central de color rosa con frente decorado y marquesina."
+      }
+    ],
+    "non_purchased_elements": [
+      "three display pedestals",
+      "a dessert prop",
+      "a flower prop"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.heart.foil.pastel_blue",
+      "balloon.link.latex.fashion.red",
+      "balloon.modeling.latex.fashion.jungle_green",
+      "balloon.modeling.latex.pastel_matte.lilac",
+      "balloon.modeling.latex.pastel_matte.melon",
+      "balloon.modeling.latex.pastel_matte.yellow",
+      "balloon.round.latex.pastel_dusk.green_tea",
+      "balloon.round.latex.pastel_matte.blue",
+      "balloon.round.latex.pastel_matte.lilac",
+      "balloon.round.latex.pastel_matte.malibu_peach",
+      "balloon.round.latex.pastel_matte.melon",
+      "balloon.round.latex.pastel_matte.yellow",
+      "balloon.star.foil.blue"
+    ],
+    "confirmed_size_codes": [
+      "18 IN",
+      "27 IN",
+      "LOL-6",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": [
+      "Globo Metalizado Flor Rosada",
+      "Globo Metalizado Boy And Girl"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000021-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from muted Pastel Dusk green tea round latex balloons and Pastel Matte round latex balloons in blue, lilac, malibu peach, melon and yellow, all at a single 9-inch size, a decorated backdrop, behind the organic balloon arch, alongside three display pedestals, a dessert prop and a flower prop, set against white walls and a purple floor.",
+    "palabras": 68,
+    "caracteres": 422,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.pastel_dusk.green_tea",
+      "balloon.round.latex.pastel_matte.blue",
+      "balloon.round.latex.pastel_matte.lilac",
+      "balloon.round.latex.pastel_matte.malibu_peach",
+      "balloon.round.latex.pastel_matte.melon",
+      "balloon.round.latex.pastel_matte.yellow"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.green_tea",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.blue",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.lilac",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.malibu_peach",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.melon",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.yellow",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T19:56:10.014Z",
+    "recompilado_en": "2026-09-03T14:45:23.405Z"
+  }
+}

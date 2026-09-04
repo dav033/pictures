@@ -1,0 +1,141 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "8434-1",
+  "image_sha256": "d87876b04d6092c531431298376bf4834c8d953ab2a53de4a054999777283e34",
+  "idempotency_key": "eeda66827af4ba410428e0da44e810e256201a3ec2f9ccf3378984bad46713a2",
+  "source": {
+    "kind": "order_photo",
+    "ref": "8434/foto-1.jpg",
+    "orden": "8434"
+  },
+  "anotacion": {
+    "image_id": "8434-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white walls, floor not visible behind the dining table",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "techo",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.black.printed_birthday_lettering"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.black.printed_birthday_lettering",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "upper-right ceiling cluster includes a black balloon with visible printed 'Happy Birthd...' lettering among white star-print balloons"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "techo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "upper-left ceiling cluster of black and white star-print balloons with curling ribbon tails"
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "techo",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "overhead",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "single green balloon floating near the pendant light above the table"
+      }
+    ],
+    "non_purchased_elements": [
+      "a decorated cake",
+      "a wicker pendant light",
+      "patterned party cups and plates",
+      "curling ribbon streamers"
+    ],
+    "uncertainties": [
+      "Green balloon could not be confidently matched to the confirmed red/green assortment since no red balloon is visible nearby",
+      "White and black star-print balloons are not in the allowed product list and are left untagged"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.assortment.round.latex.fashion.red_green_christmas",
+      "balloon.round.latex.fashion.black.printed_birthday_lettering"
+    ],
+    "confirmed_size_codes": [
+      "DORADO",
+      "NEGRO",
+      "PAQUETE X 16",
+      "PAQUETE X 8",
+      "R-12"
+    ],
+    "sin_resolver": [
+      "PLATO FELIZ CUMPLEAÑOS DORADO-NEGRO",
+      "SERVILLETA DELUXE",
+      "SERVILLETA DELUXE",
+      "SERVILLETA FELIZ CUMPLEAÑOS DORADO-NEGRO",
+      "VASO FELIZ CUMPLEAÑOS DORADO-NEGRO",
+      "GLOBO LATEX REDONDO INFINITY DIAMANTE DORADO ESCARCHADO FASHION BLANCO"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "8434-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, suspended overhead, built from matte Fashion black round latex balloons with printed birthday lettering, all at a single 12-inch size, a balloon bouquet, suspended overhead, with a balloon bouquet, suspended overhead, alongside a decorated cake, a wicker pendant light, patterned party cups and plates and curling ribbon streamers, set against off-white walls, floor not visible behind the dining table.",
+    "palabras": 63,
+    "caracteres": 443,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.black.printed_birthday_lettering"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.black.printed_birthday_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:46:53.371Z",
+    "recompilado_en": "2026-09-03T14:45:23.147Z"
+  }
+}

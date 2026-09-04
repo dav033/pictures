@@ -1,0 +1,93 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-102",
+  "image_sha256": "f01224c1f1808a378e8315410bb253e10371a9ca8e1d047ae9126151cbefa3cd",
+  "idempotency_key": "dca4febf1b081171d5222b647d74120ec5825809ac9fcb2478bd9dbd9030dc50",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-102.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Arbol_de_navidad_-_Curso_decoracion.png?v=1715896262",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "navidad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-102",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure_1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.reflex.gold",
+          "balloon.round.latex.fashion.red",
+          "balloon.round.latex.pastel_dusk.laurel_green",
+          "balloon.round.latex.pastel_matte.melon",
+          "balloon.round.latex.pastel_matte.pink"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Tall freestanding tapered column of mixed-size round balloons with gold modeling-balloon bows and clustered color accents."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Exact balloon sizes cannot be determined."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.reflex.gold",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.pastel_dusk.laurel_green",
+      "balloon.round.latex.pastel_matte.melon",
+      "balloon.round.latex.pastel_matte.pink"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-102",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from high-shine Reflex gold modeling latex balloons, matte Fashion red round latex balloons, muted Pastel Dusk laurel green round latex balloons and Pastel Matte round latex balloons in melon and pastel pink, set against white wall and white floor.",
+    "palabras": 48,
+    "caracteres": 320,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.reflex.gold",
+      "balloon.round.latex.fashion.red",
+      "balloon.round.latex.pastel_dusk.laurel_green",
+      "balloon.round.latex.pastel_matte.melon",
+      "balloon.round.latex.pastel_matte.pink"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:08:15.695Z"
+  }
+}

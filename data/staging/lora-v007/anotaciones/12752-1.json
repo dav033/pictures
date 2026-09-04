@@ -1,0 +1,121 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "12752-1",
+  "image_sha256": "3fd7103ebfbbeef5b2b0742b2337b360ae4d0aab60b7a3ee61351aca0181e0eb",
+  "idempotency_key": "2de7e65ba99d0e9e74c7811e02a03b4cae1d8cfb296d22aa8631f0fb4464ff3c",
+  "source": {
+    "kind": "order_photo",
+    "ref": "12752/foto-1.jpg",
+    "orden": "12752"
+  },
+  "anotacion": {
+    "image_id": "12752-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "white wall with crown molding trim",
+      "symmetry": "unknown"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.dusty_rose",
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.pastel_matte.pink",
+          "balloon.round.latex.reflex.rose_gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.dusty_rose",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.rose_gold",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Organic garland along the wall molding mixing large dusty rose, blush pink, and metallic rose gold round balloons with small clustered sand-colored balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "a milestone number sign"
+    ],
+    "uncertainties": [
+      "Image is a tight crop with no floor visible, so venue surface and symmetry are limited to what is shown."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.reflex.rose_gold"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "12752-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, installed against the rear wall, built from 12-inch matte Fashion dusty rose round latex balloons and high-shine Reflex rose gold round latex balloons, 5-inch matte Fashion sand round latex balloons, Pastel Matte pastel pink round latex balloons, mixed organically rather than graded, alongside a milestone number sign, set against white wall with crown molding trim.",
+    "palabras": 60,
+    "caracteres": 416,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.reflex.rose_gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.rose_gold",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:36:19.883Z",
+    "recompilado_en": "2026-09-03T14:45:22.083Z"
+  }
+}

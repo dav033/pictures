@@ -1,0 +1,138 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-001",
+  "image_sha256": "289851867e1a132244fa8a54efbfc9f9abc14df4719534866758c60b0a3a6215",
+  "idempotency_key": "fc65afdde1a721b61ddfe063dd785340aa05de859aeb7477147bc8717ee0fc6e",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-001.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Showroom_amor_y_amistad.png?v=1755293319",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "amor_amistad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-001",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a pink floor covering",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.imperial_red",
+          "balloon.modeling.latex.fashion.red",
+          "balloon.modeling.latex.reflex.rose_gold",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.reflex.rose_gold"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Large heart-shaped balloon wall densely filled with round balloons and framed by modeling balloons."
+      },
+      {
+        "structure_id": "structure-2",
+        "structure_type": "bouquet",
+        "count": 2,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "bilateral_pair",
+          "target_structure_id": "structure-1"
+        },
+        "visible_concept_ids": [
+          "balloon.heart.foil.pink",
+          "balloon.heart.foil.pink.printed_text",
+          "balloon.heart.foil.red.printed_greeting_lettering",
+          "balloon.heart.foil.unspecified.printed_greeting_lettering",
+          "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+          "balloon.round.latex.fashion.assorted_colors.printed_unclassified_love",
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.reflex.rose_gold",
+          "balloon.round.latex.solid.printed_hearts"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Two balloon bouquets flank the central wall, with foil hearts and printed round balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "display tables",
+      "cupcake stands",
+      "printed signs"
+    ],
+    "uncertainties": [
+      "Exact balloon size codes cannot be determined."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.heart.foil.pink",
+      "balloon.heart.foil.pink.printed_text",
+      "balloon.heart.foil.red.printed_greeting_lettering",
+      "balloon.heart.foil.unspecified.printed_greeting_lettering",
+      "balloon.link.latex.fashion.pink",
+      "balloon.modeling.latex.fashion.imperial_red",
+      "balloon.modeling.latex.fashion.red",
+      "balloon.modeling.latex.reflex.rose_gold",
+      "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+      "balloon.round.latex.fashion.assorted_colors.printed_unclassified_love",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.reflex.rose_gold",
+      "balloon.round.latex.solid.printed_hearts"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-001",
+    "caption": "eventdecor_style_v3, a balloon wall, installed against the rear wall, built from matte Fashion modeling latex balloons in imperial red and red, high-shine Reflex rose gold modeling latex balloons and high-shine Reflex round latex balloons in gold and rose gold, two matching balloon bouquets, one at each end of the balloon wall, built from Metallic pink heart-shaped foil balloons, high-shine Reflex round latex balloons in gold and rose gold, Metallic pink heart-shaped foil balloons with printed lettering, Metallic red heart-shaped foil balloons with printed greeting lettering, heart-shaped foil balloons with printed greeting lettering, round latex balloons in assorted colors with a matte Fashion finish and printed greeting lettering, round latex balloons in assorted colors with a matte Fashion finish and a printed pattern and round latex balloons with printed heart pattern, alongside display tables, cupcake stands and printed signs, set against white walls and a pink floor covering.",
+    "palabras": 147,
+    "caracteres": 996,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.heart.foil.pink",
+      "balloon.heart.foil.pink.printed_text",
+      "balloon.heart.foil.red.printed_greeting_lettering",
+      "balloon.heart.foil.unspecified.printed_greeting_lettering",
+      "balloon.modeling.latex.fashion.imperial_red",
+      "balloon.modeling.latex.fashion.red",
+      "balloon.modeling.latex.reflex.rose_gold",
+      "balloon.round.latex.fashion.assorted_colors.printed_greeting_lettering",
+      "balloon.round.latex.fashion.assorted_colors.printed_unclassified_love",
+      "balloon.round.latex.reflex.gold",
+      "balloon.round.latex.reflex.rose_gold",
+      "balloon.round.latex.solid.printed_hearts"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:07:26.685Z"
+  }
+}

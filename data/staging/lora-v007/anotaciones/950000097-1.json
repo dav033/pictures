@@ -1,0 +1,158 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000097-1",
+  "image_sha256": "5421008a7fa7aade5a48bc2d6033c7ffaf6c8cae288f65cee5b213319aed33af",
+  "idempotency_key": "c3dcc5d54f2d35ca4fd14344d5bb6321640aba4d8e83a03dab495599955f279a",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000097/foto-1.jpg",
+    "orden": "950000097"
+  },
+  "anotacion": {
+    "image_id": "950000097-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.silk.gold",
+          "balloon.round.latex.silk.mint_green",
+          "balloon.round.latex.silk.pearl_white"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.silk.gold",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.mint_green",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.silk.pearl_white",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Three-dimensional balloon arch with gold, mint green, and pearl white round balloons."
+      },
+      {
+        "structure_id": "structure-2",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "acento",
+        "salience": 2,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "structure-1"
+        },
+        "visible_concept_ids": [
+          "balloon.number.foil.matte_gold",
+          "balloon.modeling.latex.fashion.black"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.number.foil.matte_gold",
+            "size_code": "16 IN"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.fashion.black",
+            "size_code": "T260"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Gold foil number balloons with black modeling balloon outlines attached to the arch."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.black",
+      "balloon.number.foil.matte_gold",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.mint_green",
+      "balloon.round.latex.silk.pearl_white"
+    ],
+    "confirmed_size_codes": [
+      "16 IN",
+      "R-5",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000097-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from satin Silk round latex balloons in gold, mint green and pearl white, all at a single 5-inch size, with a decorative accessory, anchored to the organic balloon arch, built from 2-inch matte Fashion black modeling latex balloons, 16-inch Metallic matte gold number foil balloons, mixed organically rather than graded, set against white wall and white floor.",
+    "palabras": 69,
+    "caracteres": 446,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.black",
+      "balloon.number.foil.matte_gold",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.mint_green",
+      "balloon.round.latex.silk.pearl_white"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.black",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.number.foil.matte_gold",
+        "size_code": "16 IN",
+        "inches": 16
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.mint_green",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.pearl_white",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:03:31.840Z",
+    "recompilado_en": "2026-09-03T14:45:24.242Z"
+  }
+}

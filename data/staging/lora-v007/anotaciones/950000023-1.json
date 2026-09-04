@@ -1,0 +1,211 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000023-1",
+  "image_sha256": "8c1627b17341ec692a30ab868aef6b73219baca7aca7c43f3ee0baa358211369",
+  "idempotency_key": "e0b94d16be18184ae4bd26d67c074ad4901ca7f5ab52187b7a4cad4bae0ec54b",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000023/foto-1.png",
+    "orden": "950000023"
+  },
+  "anotacion": {
+    "image_id": "950000023-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a gold-toned floor, wall not visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.silk.amethyst",
+          "balloon.round.latex.silk.arctic_blue"
+        ],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "A three-dimensional circular balloon ring closes fully behind the butterfly, built in bands of blue and purple round balloons with a gold script banner across the top."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "pared",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.silk.amethyst"
+        ],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "A large butterfly silhouette densely mosaicked from round mauve/purple pearl balloons sits centered in front of the arch, dominating the frame."
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "soporte",
+        "salience": 3,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s1"
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "An organic cluster of silver/pearl round balloons mixed with fresh flowers forms the base at the foot of the arch and butterfly."
+      },
+      {
+        "structure_id": "s4",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "acento",
+        "salience": 4,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.silk.arctic_blue",
+          "balloon.round.latex.silk.assorted_colors.printed_birthday_lettering"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "A standing bouquet of round balloons on sticks, including marbled balloons printed with birthday lettering, sits to the right beside the dessert table."
+      }
+    ],
+    "non_purchased_elements": [
+      "a birthday banner",
+      "fresh flowers",
+      "a pink display box",
+      "dessert table props"
+    ],
+    "uncertainties": [
+      "The exact identity of the silver/pearl balloons in the base cluster and butterfly could not be matched confidently to a listed color.",
+      "A small gold bead accent on the base could not be identified as a listed product."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.silk.amethyst",
+      "balloon.modeling.latex.silk.arctic_blue",
+      "balloon.modeling.latex.silk.spring_pink",
+      "balloon.round.foil.muted_pastel.printed_birthday_lettering",
+      "balloon.round.foil.unspecified.printed_birthday_lettering",
+      "balloon.round.latex.silk.amethyst",
+      "balloon.round.latex.silk.arctic_blue",
+      "balloon.round.latex.silk.assorted_colors",
+      "balloon.round.latex.silk.assorted_colors.printed_birthday_lettering",
+      "balloon.round.latex.silk.cream_pearl",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.mint_green",
+      "balloon.round.latex.silk.spring_pink",
+      "balloon.tubito.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "18 IN",
+      "R-12",
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000023-1",
+    "caption": "eventdecor_style_v3, a balloon wall, anchored to the organic balloon arch, built from satin Silk amethyst round latex balloons, all at a single 9-inch size, an organic balloon arch, centred on the main display area, built from 9-inch satin Silk amethyst round latex balloons, 5-inch satin Silk arctic blue round latex balloons, an organic balloon garland, anchored to the organic balloon arch, with a balloon bouquet, standing to one side, built from 5-inch satin Silk arctic blue round latex balloons, 12-inch round latex balloons in assorted colors with a Silk satin finish and printed birthday lettering, mixed organically rather than graded, alongside a birthday banner, fresh flowers, a pink display box and dessert table props, set against a gold-toned floor, wall not visible.",
+    "palabras": 122,
+    "caracteres": 783,
+    "clausulas_por_estructura": 4,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.silk.amethyst",
+      "balloon.round.latex.silk.arctic_blue",
+      "balloon.round.latex.silk.assorted_colors.printed_birthday_lettering"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.silk.amethyst",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.amethyst",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.arctic_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.arctic_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.assorted_colors.printed_birthday_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.silk.amethyst",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.amethyst",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.arctic_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.arctic_blue",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.silk.assorted_colors.printed_birthday_lettering",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:51:38.929Z",
+    "recompilado_en": "2026-09-03T14:45:23.426Z"
+  }
+}

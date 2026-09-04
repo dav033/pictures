@@ -1,0 +1,54 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "15048-1",
+  "image_sha256": "a0fca025d9ed496301909a715da57cc4cc5ac53978122f12f87eac8a6b96ce16",
+  "idempotency_key": "096cf91d672a58bb9aa4c0c561b9c122d669c4043ba13a7e4fce02fa41300929",
+  "source": {
+    "kind": "order_photo",
+    "ref": "15048/foto-1.jpg",
+    "orden": "15048"
+  },
+  "anotacion": {
+    "image_id": "15048-1",
+    "usable": false,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "white wall and a light table surface",
+      "symmetry": "asymmetric"
+    },
+    "structures": [],
+    "non_purchased_elements": [
+      "wrapped party favor bags",
+      "a yellow balloon",
+      "gift bags in a bin",
+      "balloon animal legs"
+    ],
+    "uncertainties": [
+      "No assembled balloon decoration structure is visible; this shows party favors and gift bags, not a decor structure.",
+      "allowed_concepts list is empty for this image, so no products could be annotated regardless."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [],
+    "confirmed_size_codes": [
+      "30X44 CM"
+    ],
+    "sin_resolver": [
+      "BOLSA REGALO PERLADO FLAMINGO"
+    ]
+  },
+  "compilacion": {
+    "status": "pending",
+    "reason": "no_usable"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:42:12.756Z"
+  }
+}

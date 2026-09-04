@@ -1,0 +1,127 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000145-1",
+  "image_sha256": "29de71b4a8488fbf7cda98bc22c8f008e75fbe79480470e39fd25aeb007cf8d1",
+  "idempotency_key": "57483e2e9bbb9d8b6a76b4603d2befc05c428b5cbf385852b05d8c58f0309667",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000145/foto-1.jpg",
+    "orden": "950000145"
+  },
+  "anotacion": {
+    "image_id": "950000145-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "plain white background",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "semiarco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.dusty_rose",
+          "balloon.round.latex.pastel_dusk.lavender",
+          "balloon.round.latex.pastel_dusk.pink",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.dusty_rose",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.lavender",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_dusk.pink",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Three-dimensional asymmetric balloon semi-arch with dusty rose, lavender, pink, and gold round balloons in mixed sizes."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.pastel_dusk.lavender",
+      "balloon.round.latex.pastel_dusk.pink",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000145-1",
+    "caption": "eventdecor_style_v3, an asymmetrical balloon half-arch, centred on the main display area, built from 5-inch matte Fashion dusty rose round latex balloons and high-shine Reflex gold round latex balloons, 9-inch muted Pastel Dusk round latex balloons in lavender and pink, mixed organically rather than graded, set against plain white background.",
+    "palabras": 49,
+    "caracteres": 344,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.pastel_dusk.lavender",
+      "balloon.round.latex.pastel_dusk.pink",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.dusty_rose",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.lavender",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_dusk.pink",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:13:01.035Z",
+    "recompilado_en": "2026-09-03T14:45:24.644Z"
+  }
+}

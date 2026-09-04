@@ -1,0 +1,158 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "14301-1",
+  "image_sha256": "38d5bf26f9d77a0461fbc1cacc689d828ef4a0312add3f99bb38379668ae8be4",
+  "idempotency_key": "1481813b04acaa2a77befa164b727ad0ea74aae4427b0a8178ee1124ed2763b8",
+  "source": {
+    "kind": "order_photo",
+    "ref": "14301/foto-1.jpg",
+    "orden": "14301"
+  },
+  "anotacion": {
+    "image_id": "14301-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "textured grey walls and a light tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.eucalyptus_green",
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "a garland of sage green, sand and gold balloons along the wall and ceiling corner with a gold foil cumpleanos banner"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "centro_mesa",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "on_furniture",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.gold",
+          "balloon.round.latex.fashion.sand"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "a small cluster of gold and cream balloons on the table beside a flower bouquet"
+      }
+    ],
+    "non_purchased_elements": [
+      "a foil cumpleanos banner",
+      "a flower bouquet",
+      "a small gift box",
+      "a teal foil tablecloth"
+    ],
+    "uncertainties": [
+      "low lighting makes the exact balloon colors on the table partially uncertain"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "14301-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, installed against the rear wall, built from matte Fashion round latex balloons in eucalyptus green and sand and high-shine Reflex gold round latex balloons, all at a single 9-inch size, a low balloon centerpiece, placed on the main table, built from matte Fashion sand round latex balloons and high-shine Reflex gold round latex balloons, all at a single 9-inch size, alongside a foil banner, a flower bouquet, a small gift box and a teal foil tablecloth, set against textured grey walls and a light tiled floor.",
+    "palabras": 91,
+    "caracteres": 561,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.eucalyptus_green",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.eucalyptus_green",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:39:22.719Z",
+    "recompilado_en": "2026-09-03T14:45:22.395Z"
+  }
+}

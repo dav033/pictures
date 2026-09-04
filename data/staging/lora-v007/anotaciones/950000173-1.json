@@ -1,0 +1,160 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000173-1",
+  "image_sha256": "3b5555457b41f04b6e9276b222a75f38fdbdaec6bcd2be7a6016f90171850c1a",
+  "idempotency_key": "939900779504ce55e931a0557bc497dba272d50f25839ce60b4000980d7d0d20",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000173/foto-1.jpg",
+    "orden": "950000173"
+  },
+  "anotacion": {
+    "image_id": "950000173-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "off-white walls and a light wood floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "semiarco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.crystal.red.printed_unclassified_reflex",
+          "balloon.round.latex.fashion.sand",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.crystal.red.printed_unclassified_reflex",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.sand",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Large open organic balloon installation curving across the upper wall and down the right side."
+      },
+      {
+        "structure_id": "structure-2",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.crystal.red.printed_unclassified_reflex",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.crystal.red.printed_unclassified_reflex",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Separate compact floor balloon bouquet with red printed balloons and small gold balloons."
+      }
+    ],
+    "non_purchased_elements": [
+      "white display plinths",
+      "wrapped party favors",
+      "silver balloons",
+      "feather accents"
+    ],
+    "uncertainties": [
+      "Exact sizes of the larger balloons are unclear."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.crystal.red.printed_unclassified_reflex",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000173-1",
+    "caption": "eventdecor_style_v3, an asymmetrical balloon half-arch, centred on the main display area, built from 5-inch high-shine Reflex gold round latex balloons and translucent Crystal red round latex balloons with a printed pattern, 9-inch matte Fashion sand round latex balloons, mixed organically rather than graded, a balloon bouquet, standing to one side, built from high-shine Reflex gold round latex balloons and translucent Crystal red round latex balloons with a printed pattern, all 5-inch, alongside white display plinths, wrapped party favors, silver balloons and feather accents, set against off-white walls and a light wood floor.",
+    "palabras": 92,
+    "caracteres": 635,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.crystal.red.printed_unclassified_reflex",
+      "balloon.round.latex.fashion.sand",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.crystal.red.printed_unclassified_reflex",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.crystal.red.printed_unclassified_reflex",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.sand",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T20:00:22.529Z",
+    "recompilado_en": "2026-09-03T14:45:25.060Z"
+  }
+}

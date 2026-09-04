@@ -1,0 +1,93 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-016",
+  "image_sha256": "bb50b75084056d6ee4e2d2de2fc976030e2b80a3de3f114cddc90f2b142f2c29",
+  "idempotency_key": "98eee423550a5a0d19d64781d3c640f584d235931951e4967e18c10a0e2b7429",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-016.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Corazon_tejido_San_Valentin_baf99c8f-10c8-4749-b20f-79d4cf552498.png?v=1749229977",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "amor_amistad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-016",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "a white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.dusty_rose",
+          "balloon.round.latex.fashion.pink",
+          "balloon.round.latex.pastel_matte.pink",
+          "balloon.round.latex.silk.gold",
+          "balloon.round.latex.silk.spring_pink"
+        ],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Vertical floor-standing balloon column with a large pink heart topper, a pink bow accent, mixed round balloon clusters, and a twisted gold element."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [
+      "Exact balloon size codes are not distinguishable."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.spring_pink"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-016",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from matte Fashion round latex balloons in dusty rose and pink, Pastel Matte pastel pink round latex balloons and satin Silk round latex balloons in gold and spring pink, set against a white wall and white floor.",
+    "palabras": 46,
+    "caracteres": 284,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.dusty_rose",
+      "balloon.round.latex.fashion.pink",
+      "balloon.round.latex.pastel_matte.pink",
+      "balloon.round.latex.silk.gold",
+      "balloon.round.latex.silk.spring_pink"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:23:34.166Z"
+  }
+}

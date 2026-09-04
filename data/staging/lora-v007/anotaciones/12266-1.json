@@ -1,0 +1,137 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "12266-1",
+  "image_sha256": "be2a343558db603fd6591aa19becc7511781a64d6dc1744fbe1ae236398a2357",
+  "idempotency_key": "1e3e2bae246ac6a3d0a06ebd7605bc65ed0205a32317b8b7d27d5a53b62436aa",
+  "source": {
+    "kind": "order_photo",
+    "ref": "12266/foto-1.jpg",
+    "orden": "12266"
+  },
+  "anotacion": {
+    "image_id": "12266-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "dark wood-paneled walls above a white fabric-draped table",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.aquamarine",
+          "balloon.round.latex.fashion.lilac",
+          "balloon.round.latex.fashion.pink"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.aquamarine",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.lilac",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.pink",
+            "size_code": "R-9"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Organic balloon garland built into a three-dimensional arch frame around a lit curtain backdrop, with teal/aquamarine, purple/lilac and pink balloons in varied sizes plus butterfly cutouts."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "accesorio",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "acento",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "mixed_organic",
+        "evidence": "Light-up number '1' marquee frame filled with white and pale gold balloons that do not match the order's color palette."
+      }
+    ],
+    "non_purchased_elements": [
+      "a lit curtain backdrop",
+      "a name sign",
+      "butterfly cutouts"
+    ],
+    "uncertainties": [
+      "Low ambient light makes exact balloon color boundaries (teal vs aquamarine, lilac vs pink) harder to confirm.",
+      "Number marquee's interior balloon colors are not in the allowed list, so they were left unassigned."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.aquamarine",
+      "balloon.round.latex.fashion.lilac",
+      "balloon.round.latex.fashion.pink"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-9"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "12266-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from 12-inch matte Fashion aquamarine round latex balloons, 9-inch matte Fashion round latex balloons in lilac and pink, mixed organically rather than graded, with a decorative accessory, grounded across the front, alongside a curtain backdrop, a name sign and butterfly cutouts, set against dark wood-paneled walls above a white fabric-draped table.",
+    "palabras": 63,
+    "caracteres": 436,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.aquamarine",
+      "balloon.round.latex.fashion.lilac",
+      "balloon.round.latex.fashion.pink"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.aquamarine",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lilac",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.pink",
+        "size_code": "R-9",
+        "inches": 9
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:33:49.409Z",
+    "recompilado_en": "2026-09-03T14:45:22.019Z"
+  }
+}

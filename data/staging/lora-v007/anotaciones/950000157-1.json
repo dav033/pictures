@@ -1,0 +1,143 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000157-1",
+  "image_sha256": "3682f433b63420f223e888033a84ad77e566a642f46393854e7fee4c226b19ba",
+  "idempotency_key": "9a828bfb6db6602d53d543bda381dd0c1c386490981a22463adc484532973f9b",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000157/foto-1.jpg",
+    "orden": "950000157"
+  },
+  "anotacion": {
+    "image_id": "950000157-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.link.latex.fashion.fuchsia",
+          "balloon.modeling.latex.fashion.peach",
+          "balloon.modeling.latex.fashion.red",
+          "balloon.round.latex.fashion.peach",
+          "balloon.round.latex.fashion.white"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.link.latex.fashion.fuchsia",
+            "size_code": "LOL-6"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.fashion.peach",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.modeling.latex.fashion.red",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.peach",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.white",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Freestanding vertical balloon figure with red hair, peach face and arms, white accents, and a fuchsia base."
+      }
+    ],
+    "non_purchased_elements": [
+      "turquoise balloons"
+    ],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.link.latex.fashion.fuchsia",
+      "balloon.modeling.latex.fashion.peach",
+      "balloon.modeling.latex.fashion.red",
+      "balloon.round.latex.fashion.peach",
+      "balloon.round.latex.fashion.white"
+    ],
+    "confirmed_size_codes": [
+      "LOL-6",
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000157-1",
+    "caption": "eventdecor_style_v3, a balloon column, grounded across the front, built from 6-inch matte Fashion fuchsia Link-O-Loon® linking latex balloons, 2-inch matte Fashion modeling latex balloons in peach and red, 9-inch matte Fashion peach round latex balloons, 5-inch matte Fashion white round latex balloons, mixed organically rather than graded, alongside turquoise balloons, set against white wall and white floor.",
+    "palabras": 57,
+    "caracteres": 411,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.link.latex.fashion.fuchsia",
+      "balloon.modeling.latex.fashion.peach",
+      "balloon.modeling.latex.fashion.red",
+      "balloon.round.latex.fashion.peach",
+      "balloon.round.latex.fashion.white"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.link.latex.fashion.fuchsia",
+        "size_code": "LOL-6",
+        "inches": 6
+      },
+      {
+        "concept_id": "balloon.modeling.latex.fashion.peach",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.modeling.latex.fashion.red",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.peach",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.white",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:18:39.379Z",
+    "recompilado_en": "2026-09-03T14:45:24.804Z"
+  }
+}

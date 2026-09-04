@@ -1,0 +1,91 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "web-028",
+  "image_sha256": "01b2eac2ecded5657abc31b688c66983f4291f0823b3375dc8b0081cc023d5c5",
+  "idempotency_key": "2ba17f33dd1dedb84fb90730342c76f272d82a33719010219a1520a27accb8c0",
+  "source": {
+    "kind": "web_photo",
+    "ref": "data/staging/lora-v006-orders-web-v001/original/web-028.jpg",
+    "source_url": "https://sempertex.com/cdn/shop/articles/Ramo_de_rosas.jpg?v=1755278754",
+    "product_breakdown_status": "found_in_local_sempertex_scrape",
+    "theme": "amor_amistad",
+    "tamanos_confiables": false
+  },
+  "anotacion": {
+    "image_id": "web-028",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "structure-1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.pink",
+          "balloon.modeling.latex.reflex.aurora_green",
+          "balloon.modeling.latex.reflex.gold",
+          "balloon.modeling.latex.reflex.rose_gold",
+          "balloon.modeling.latex.reflex.violet"
+        ],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Freestanding balloon flower bouquet with rose-gold flowers, green stems and leaves, pink accent, gold detail, and a violet coiled base."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.pink",
+      "balloon.modeling.latex.reflex.aurora_green",
+      "balloon.modeling.latex.reflex.gold",
+      "balloon.modeling.latex.reflex.rose_gold",
+      "balloon.modeling.latex.reflex.violet"
+    ],
+    "confirmed_size_codes": [],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "web-028",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from matte Fashion pink modeling latex balloons and high-shine Reflex modeling latex balloons in aurora green, gold, rose gold and violet, set against white walls and a white floor.",
+    "palabras": 38,
+    "caracteres": 254,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.pink",
+      "balloon.modeling.latex.reflex.aurora_green",
+      "balloon.modeling.latex.reflex.gold",
+      "balloon.modeling.latex.reflex.rose_gold",
+      "balloon.modeling.latex.reflex.violet"
+    ],
+    "tamanos_aplicados": [],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-03T16:09:46.422Z"
+  }
+}

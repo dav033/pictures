@@ -1,0 +1,183 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "8761-1",
+  "image_sha256": "5c38588709e4b0cf77701f5ca5f6f200beaaf7e07897b0cbb4ae6baca6494328",
+  "idempotency_key": "e74f4f036bf32b935f03bf5a72c7101d27ac27888c85ce13a9fc9674d0241af8",
+  "source": {
+    "kind": "order_photo",
+    "ref": "8761/foto-1.jpg",
+    "orden": "8761"
+  },
+  "anotacion": {
+    "image_id": "8761-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls with window blinds and a gray table",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.caribbean_blue",
+          "balloon.round.latex.fashion.lime_green"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.caribbean_blue",
+            "size_code": "R-24"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "organic garland with olive, gray, gold-chrome, lime and a single oversized teal balloon spanning the wall above the table"
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "lateral_derecho",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.red"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.red",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "cluster of gray and red round balloons with a giraffe foil balloon and palm leaves on the right side of the table"
+      },
+      {
+        "structure_id": "s3",
+        "structure_type": "columna",
+        "count": 1,
+        "placement": "lateral_izquierdo",
+        "design_role": "acento",
+        "salience": 3,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.orange"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.orange",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "orange balloon column at the front left with a tiger character balloon and palm leaves"
+      }
+    ],
+    "non_purchased_elements": [
+      "a giraffe character balloon",
+      "a tiger character balloon",
+      "a monkey plush toy",
+      "a table"
+    ],
+    "uncertainties": [
+      "Exact size code for the lime green balloons could not be confirmed (R-18 vs R-12)",
+      "Olive, gray and gold-chrome balloons in the garland are not in the allowed concept list so were left untagged"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.caribbean_blue",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.red"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-18",
+      "R-24"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "8761-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, installed against the rear wall, built from 24-inch matte Fashion caribbean blue round latex balloons, 18-inch and 12-inch matte Fashion lime green round latex balloons, mixed organically rather than graded, a balloon bouquet, standing to one side, built from matte Fashion red round latex balloons, all at a single 12-inch size, with a balloon column, standing to one side, built from matte Fashion orange round latex balloons, all at a single 12-inch size, alongside a giraffe character balloon, a tiger character balloon, a monkey plush toy and a table, set against white walls with window blinds and a gray table.",
+    "palabras": 105,
+    "caracteres": 666,
+    "clausulas_por_estructura": 3,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.caribbean_blue",
+      "balloon.round.latex.fashion.lime_green",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.red"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.caribbean_blue",
+        "size_code": "R-24",
+        "inches": 24
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lime_green",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lime_green",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.red",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [
+      {
+        "concept_id": "balloon.round.latex.fashion.lime_green",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.lime_green",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:49:39.861Z",
+    "recompilado_en": "2026-09-03T14:45:23.167Z"
+  }
+}

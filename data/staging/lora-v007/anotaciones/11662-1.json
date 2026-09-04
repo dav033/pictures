@@ -1,0 +1,79 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "11662-1",
+  "image_sha256": "968f9a5faadf1050de5616ce2a8076c371689de2b8f40880156f4414d42d80f0",
+  "idempotency_key": "b642c285f36ea0aef5c4ad32fa1757a91b36badd73ae7ae89d8ff68eb75c0afd",
+  "source": {
+    "kind": "order_photo",
+    "ref": "11662/foto-1.jpg",
+    "orden": "11662"
+  },
+  "anotacion": {
+    "image_id": "11662-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "cream walls and a gray concrete floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "kit",
+        "count": 1,
+        "placement": "sobre_mesa_principal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [],
+        "visible_sizes": [],
+        "size_relation": "single_size",
+        "evidence": "Coordinated Frozen-themed party display: matching tablecloth, plates, cups, favor bags and bottled water on a round table, with a banner overhead."
+      }
+    ],
+    "non_purchased_elements": [
+      "a birthday banner",
+      "a themed tablecloth",
+      "paper plates and cups",
+      "a character photo standee"
+    ],
+    "uncertainties": [
+      "No balloon or backdrop products are present; this image shows only a themed party-supplies table, which is a marginal fit for the defined structure types."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [],
+    "confirmed_size_codes": [],
+    "sin_resolver": [
+      "VASO FROZEN II",
+      "VASO METALIZADO FROZEN II",
+      "PLATO METALIZADO FROZEN II",
+      "PLATO FROZEN II",
+      "BANDEROLA METALIZADA FROZEN II",
+      "MANTEL PLASTICO RECTANGULAR FROZEN II"
+    ]
+  },
+  "compilacion": {
+    "status": "pending",
+    "image_id": "11662-1",
+    "reason": "no_resolvable_concepts",
+    "conceptos_rechazados": [],
+    "tamanos_rechazados": [],
+    "prohibiciones": [],
+    "contract_version": "lora-caption-v3-structure-clauses"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:35:07.600Z",
+    "recompilado_en": "2026-09-03T14:45:21.966Z"
+  }
+}

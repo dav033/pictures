@@ -1,0 +1,146 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "11826-1",
+  "image_sha256": "29c3e688b4f08a7037c89e4ac6cb869cf0f3d403f7e8b25739e9c668ad8cccec",
+  "idempotency_key": "bebe6e6b9cb908f259b79a51993cda418787f0e008e5014a76654191c7e733f4",
+  "source": {
+    "kind": "order_photo",
+    "ref": "11826/foto-1.jpg",
+    "orden": "11826"
+  },
+  "anotacion": {
+    "image_id": "11826-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white walls and a light tiled floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "guirnalda",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "anchored_to",
+          "target_structure_id": "s2"
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.assorted_colors"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.assorted_colors",
+            "size_code": "R-18"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.assorted_colors",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.assorted_colors",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Multicolor organic latex balloon garland arcing over the backdrop, mixing large single balloons with small twisted clusters in no set order."
+      },
+      {
+        "structure_id": "s2",
+        "structure_type": "backdrop",
+        "count": 1,
+        "placement": "fondo_pared",
+        "design_role": "soporte",
+        "salience": 2,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "backdrop.mural.plastic.black.printed_checks"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "backdrop.mural.plastic.black.printed_checks",
+            "size_code": "PAQUETE X 1"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Flat black plastic backdrop mural with a printed white grid/check pattern mounted on the wall."
+      }
+    ],
+    "non_purchased_elements": [
+      "a birthday cake",
+      "gift bags",
+      "a standing fan",
+      "a gold script sign"
+    ],
+    "uncertainties": [
+      "Small twisted metallic-looking balloon clusters (R-5) in the garland could not be reliably distinguished from the fashion-finish balloons of the same size.",
+      "A single white balloon on the table is not clearly part of any structure and was left unattributed."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "backdrop.mural.plastic.black.printed_checks",
+      "balloon.round.latex.fashion.assorted_colors",
+      "balloon.round.latex.metallic.assorted_colors"
+    ],
+    "confirmed_size_codes": [
+      "PAQUETE X 1",
+      "R-12",
+      "R-18",
+      "R-5"
+    ],
+    "sin_resolver": [
+      "MANTEL PEVA DIAMANTES"
+    ]
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "11826-1",
+    "caption": "eventdecor_style_v3, an organic balloon garland, anchored to the decorated backdrop, built from round latex balloons in assorted colors, solid Fashion finish, all in 18-inch, 12-inch and 5-inch, mixed organically rather than graded, a decorated backdrop, installed against the rear wall, built from plastic backdrop murals in black with printed check pattern, alongside a birthday cake, gift bags, a standing fan and a gold script sign, set against white walls and a light tiled floor.",
+    "palabras": 74,
+    "caracteres": 485,
+    "clausulas_por_estructura": 2,
+    "concept_ids_resueltos": [
+      "backdrop.mural.plastic.black.printed_checks",
+      "balloon.round.latex.fashion.assorted_colors"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.assorted_colors",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.assorted_colors",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.assorted_colors",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:35:07.602Z",
+    "recompilado_en": "2026-09-03T14:45:21.977Z"
+  }
+}

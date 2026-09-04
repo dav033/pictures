@@ -1,0 +1,141 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "10199-1",
+  "image_sha256": "4f97bc864b107b42de0c3c6a4e65d54f43d29bd757077bbacc2d7cbbf07bd51c",
+  "idempotency_key": "cbf70a9d0f91be53db4764031b34fd82715f53db3ef9d0eda3d59f5f429665da",
+  "source": {
+    "kind": "order_photo",
+    "ref": "10199/foto-1.jpg",
+    "orden": "10199"
+  },
+  "anotacion": {
+    "image_id": "10199-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white paneled walls and a beige tiled floor",
+      "symmetry": "symmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "arco",
+        "count": 1,
+        "placement": "arco_central",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.fashion.navy_blue",
+          "balloon.round.latex.pastel_matte.blue",
+          "balloon.round.latex.reflex.silver"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.fashion.navy_blue",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.blue",
+            "size_code": "R-18"
+          },
+          {
+            "concept_id": "balloon.round.latex.pastel_matte.blue",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-24"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.silver",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Circular balloon garland fully wrapping a round metal hoop, in navy, light blue, and silver chrome, with a round logo sign hanging in the center."
+      }
+    ],
+    "non_purchased_elements": [
+      "wrapped gift boxes",
+      "a round logo sign",
+      "a speaker",
+      "small favor jars"
+    ],
+    "uncertainties": [
+      "Could not confirm exact count of loose navy balloons scattered on the floor as part of the main structure."
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.fashion.navy_blue",
+      "balloon.round.latex.pastel_matte.blue",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "confirmed_size_codes": [
+      "R-12",
+      "R-18",
+      "R-24",
+      "R-5"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "10199-1",
+    "caption": "eventdecor_style_v3, an organic balloon arch, centred on the main display area, built from 12-inch matte Fashion navy blue round latex balloons, 18-inch and 12-inch Pastel Matte blue round latex balloons, 24-inch and 5-inch high-shine Reflex silver round latex balloons, mixed organically rather than graded, alongside wrapped gift boxes, a round logo sign, a speaker and small favor jars, set against white paneled walls and a beige tiled floor.",
+    "palabras": 68,
+    "caracteres": 446,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.fashion.navy_blue",
+      "balloon.round.latex.pastel_matte.blue",
+      "balloon.round.latex.reflex.silver"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.fashion.navy_blue",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.blue",
+        "size_code": "R-18",
+        "inches": 18
+      },
+      {
+        "concept_id": "balloon.round.latex.pastel_matte.blue",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-24",
+        "inches": 24
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.silver",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:33:41.506Z",
+    "recompilado_en": "2026-09-03T14:45:21.835Z"
+  }
+}

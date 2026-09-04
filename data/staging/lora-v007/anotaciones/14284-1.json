@@ -1,0 +1,108 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "14284-1",
+  "image_sha256": "9d0cf0204fb502328e1010d99411699fb898003cd152b67cd99af6629c2f43d9",
+  "idempotency_key": "4aa91c0b0f802a74edbad1636fdc6d79b4524626a8ebde08ca85d1d67e149bc4",
+  "source": {
+    "kind": "order_photo",
+    "ref": "14284/foto-1.jpg",
+    "orden": "14284"
+  },
+  "anotacion": {
+    "image_id": "14284-1",
+    "usable": true,
+    "scene": {
+      "framing": "partial_crop",
+      "venue_surface": "red brick walls with a burgundy curtain backdrop; floor not visible",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "s1",
+        "structure_type": "bouquet",
+        "count": 3,
+        "placement": "fondo_pared",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.round.latex.reflex.blue",
+          "balloon.round.latex.reflex.gold"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.round.latex.reflex.blue",
+            "size_code": "R-12"
+          },
+          {
+            "concept_id": "balloon.round.latex.reflex.gold",
+            "size_code": "R-12"
+          }
+        ],
+        "size_relation": "single_size",
+        "evidence": "Three matching flower-shaped clusters of four blue metallic balloons around a gold metallic center balloon, mounted directly on the brick wall between the cutout figures."
+      }
+    ],
+    "non_purchased_elements": [
+      "a foam mascot figure",
+      "a number block stack",
+      "cardboard cutout figures",
+      "a printed sign"
+    ],
+    "uncertainties": [
+      "exact size code assumed R-12 based on visual scale, not fully certain given the photo angle"
+    ],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.round.latex.reflex.blue",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "confirmed_size_codes": [
+      "R-12"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "14284-1",
+    "caption": "eventdecor_style_v3, three matching balloon bouquets, installed against the rear wall, built from high-shine Reflex round latex balloons in blue and gold, all at a single 12-inch size, alongside a foam mascot figure, a number block stack, cardboard cutout figures and a printed sign, set against red brick walls with a burgundy curtain backdrop; floor not visible.",
+    "palabras": 56,
+    "caracteres": 364,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.round.latex.reflex.blue",
+      "balloon.round.latex.reflex.gold"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.round.latex.reflex.blue",
+        "size_code": "R-12",
+        "inches": 12
+      },
+      {
+        "concept_id": "balloon.round.latex.reflex.gold",
+        "size_code": "R-12",
+        "inches": 12
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "model": "sonnet",
+    "effort": "medium",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T16:30:43.654Z",
+    "recompilado_en": "2026-09-03T14:45:22.373Z"
+  }
+}

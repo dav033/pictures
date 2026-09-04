@@ -1,0 +1,140 @@
+{
+  "schema_version": "annotation.v007",
+  "image_id": "950000168-1",
+  "image_sha256": "592aa992d555f462509c7f2d316702c2502584b72fb84eacefdd6ab6a89418c3",
+  "idempotency_key": "6907be6090e67b146b399476287f7d3ae4ed4b24b6b4ab18770dfb13b57da347",
+  "source": {
+    "kind": "order_photo",
+    "ref": "950000168/foto-1.jpg",
+    "orden": "950000168"
+  },
+  "anotacion": {
+    "image_id": "950000168-1",
+    "usable": true,
+    "scene": {
+      "framing": "full_scene",
+      "venue_surface": "white wall and white floor",
+      "symmetry": "asymmetric"
+    },
+    "structures": [
+      {
+        "structure_id": "bouquet-1",
+        "structure_type": "bouquet",
+        "count": 1,
+        "placement": "piso_frontal",
+        "design_role": "focal",
+        "salience": 1,
+        "relation": {
+          "kind": "none",
+          "target_structure_id": null
+        },
+        "visible_concept_ids": [
+          "balloon.modeling.latex.fashion.coffee_brown",
+          "balloon.round.latex.fashion.coral",
+          "balloon.round.latex.fashion.orange",
+          "balloon.round.latex.fashion.raspberry",
+          "balloon.round.latex.fashion.yellow"
+        ],
+        "visible_sizes": [
+          {
+            "concept_id": "balloon.modeling.latex.fashion.coffee_brown",
+            "size_code": "T260"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.coral",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.orange",
+            "size_code": "R-5"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.raspberry",
+            "size_code": "R-9"
+          },
+          {
+            "concept_id": "balloon.round.latex.fashion.yellow",
+            "size_code": "R-5"
+          }
+        ],
+        "size_relation": "mixed_organic",
+        "evidence": "Upright balloon bouquet with multiple flower shapes, colored round balloons, yellow centers, and brown modeling-balloon stems and base."
+      }
+    ],
+    "non_purchased_elements": [],
+    "uncertainties": [],
+    "_prompt_sha256": "537e0215c5a070d9"
+  },
+  "verdad_referencia": {
+    "allowed_concept_ids": [
+      "balloon.modeling.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.coral",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.raspberry",
+      "balloon.round.latex.fashion.yellow"
+    ],
+    "confirmed_size_codes": [
+      "R-5",
+      "R-9",
+      "T260"
+    ],
+    "sin_resolver": []
+  },
+  "compilacion": {
+    "status": "resolved",
+    "image_id": "950000168-1",
+    "caption": "eventdecor_style_v3, a balloon bouquet, grounded across the front, built from 2-inch matte Fashion coffee brown modeling latex balloons, 9-inch matte Fashion round latex balloons in coral and raspberry, 5-inch matte Fashion round latex balloons in orange and yellow, mixed organically rather than graded, set against white wall and white floor.",
+    "palabras": 50,
+    "caracteres": 344,
+    "clausulas_por_estructura": 1,
+    "concept_ids_resueltos": [
+      "balloon.modeling.latex.fashion.coffee_brown",
+      "balloon.round.latex.fashion.coral",
+      "balloon.round.latex.fashion.orange",
+      "balloon.round.latex.fashion.raspberry",
+      "balloon.round.latex.fashion.yellow"
+    ],
+    "tamanos_aplicados": [
+      {
+        "concept_id": "balloon.modeling.latex.fashion.coffee_brown",
+        "size_code": "T260",
+        "inches": 2
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.coral",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.orange",
+        "size_code": "R-5",
+        "inches": 5
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.raspberry",
+        "size_code": "R-9",
+        "inches": 9
+      },
+      {
+        "concept_id": "balloon.round.latex.fashion.yellow",
+        "size_code": "R-5",
+        "inches": 5
+      }
+    ],
+    "escena_omitida": [],
+    "tamanos_inferidos": [],
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3"
+  },
+  "provenance": {
+    "proveedor": "opencode",
+    "model": "openai/gpt-5.6-luna",
+    "esfuerzo": "xhigh",
+    "prompt_sha256": "537e0215c5a070d9",
+    "vocabulary_version": "product-vocabulary.v1",
+    "contract_version": "lora-caption-v3-structure-clauses",
+    "trigger": "eventdecor_style_v3",
+    "generado_en": "2026-09-02T18:26:19.771Z",
+    "recompilado_en": "2026-09-03T14:45:24.964Z"
+  }
+}
