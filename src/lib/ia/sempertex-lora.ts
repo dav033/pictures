@@ -3,15 +3,24 @@ import type { LoraSpecialization } from "@/lib/lora/schema";
 
 const TEXT_ENDPOINT = "https://queue.fal.run/fal-ai/flux-2/lora";
 const EDIT_ENDPOINT = "https://queue.fal.run/fal-ai/flux-2/lora/edit";
+/**
+ * Trigger neutro usado SOLO para preflight/telemetría cuando todavía no hay
+ * una aplicación LoRA resuelta (por ejemplo, al reportar qué trigger se
+ * esperaría). Nunca se usa para armar un payload real: `lorasFor` exige
+ * `ResolvedLoraApplication[]` explícito y falla si no lo recibe.
+ */
 export const DEFAULT_SEMPERTEX_LORA_TRIGGER = "eventdecor_style_v3" as const;
-const LEGACY_SEMPERTEX_LORA_TRIGGER = "eventdecor_style_v2" as const;
-const TRIGGER = DEFAULT_SEMPERTEX_LORA_TRIGGER;
-const DEFAULT_LORA = "https://v3b.fal.media/files/b/0aa82cf2/bv07AZ2sRktiGdQ42Tf_f_pytorch_lora_weights.safetensors";
 const MAX_EDIT_IMAGES = 4;
 
 export type SempertexLoraOptions = {
   seed?: number;
-  loras?: LoraApplication[];
+  /**
+   * Obligatorio. Debe venir de `resolveLoraMode`/`resolveLoraSelection`
+   * (`@/lib/lora/mode-resolver`) — nunca de una URL o trigger escritos a
+   * mano. No existe combinación por defecto: sin esto, la llamada falla
+   * antes de tocar la red. Ver PLAN-COMPOSICION-RICA-V001.md §1.1 y §9.2.
+   */
+  loras: LoraApplication[];
 };
 
 export type LoraApplication = {
@@ -57,28 +66,6 @@ const imageSizeFor = (aspecto: PeticionImagen["aspecto"]) => {
     default: return { width: 1536, height: 1024 };
   }
 };
-
-/**
- * Default 0.8, con el LoRA v004 (1000 pasos, lr 5e-5, captions v004).
- *
- * Medido con `scripts/eval-lora-nuevo.ts` sobre la escena XV multi-estructura,
- * 6 seeds, criterio fijado de antemano (arco 3D que cierra + dos columnas
- * separadas + mesa en cuadro):
- *
- *              escala 0.8    escala 1.0
- *   v004          6/6           6/6
- *   v2            1/6            —        <- 4000 pasos, lr 2e-4: sobreentrenado
- *   sin LoRA      6/6 (techo composicional del modelo base)
- *
- * El v2 obligaba a bajar a 0.3 para no romper la composición, o sea a apagar el
- * LoRA para evitar su daño. El v004 sostiene la escena a intensidad plena y
- * además conserva los brillos especulares (0.840 contra 0.181 del v2, base
- * 0.583) en vez de aplanarlos. Ver HANDOFF-LORA-COMPOSICION.md.
- */
-function loraScale(): number {
-  const parsed = Number(process.env.SEMPERTEX_LORA_SCALE ?? "0.8");
-  return Number.isFinite(parsed) ? Math.min(1.5, Math.max(0, parsed)) : 0.8;
-}
 
 /**
  * Por defecto el LoRA NO recibe imágenes: siempre texto a imagen.
@@ -133,8 +120,11 @@ export async function generarConSempertexLora(
   prompt: string,
   aspecto: PeticionImagen["aspecto"],
   inputs: ImageInput[] = [],
-  options: SempertexLoraOptions = {},
+  options: SempertexLoraOptions,
 ): Promise<Imagen> {
+  if (!options.loras?.length) {
+    throw new Error("LORA_APPLICATION_REQUIRED: generarConSempertexLora necesita al menos un ResolvedLoraApplication resuelto desde el registro; no existe combinación URL/trigger por defecto.");
+  }
   const key = process.env.FAL_KEY;
   if (!key) throw new Error("LoRA Sempertex no está conectado todavía: falta FAL_KEY en .env.local.");
 
@@ -204,19 +194,32 @@ export async function generarConSempertexLora(
   };
 }
 
-function lorasFor(loras: LoraApplication[] | undefined): Array<{ path: string; scale: number }> {
-  if (loras?.length) return loras.map((lora) => ({ path: lora.path, scale: lora.scale }));
-  return [{ path: process.env.SEMPERTEX_LORA_URL ?? DEFAULT_LORA, scale: loraScale() }];
+function lorasFor(loras: LoraApplication[]): Array<{ path: string; scale: number }> {
+  return loras.map((lora) => ({ path: lora.path, scale: lora.scale }));
 }
 
-export function ensureLoraTriggers(prompt: string, loras?: LoraApplication[]): string {
+/**
+ * Cualquier trigger de este proyecto sigue el patrón `eventdecor_<nombre>_v<N>`
+ * (`eventdecor_style_v2`, `eventdecor_style_v3`, `eventdecor_structure_v1`, …).
+ * En vez de mantener una lista hardcodeada de triggers "conocidos" para
+ * quitar, se quita cualquier corrida de triggers que ya venga como preámbulo
+ * del prompt — así no hay que tocar esta función cada vez que se registra un
+ * nuevo trigger en el registro LoRA.
+ */
+const LEADING_TRIGGER_RUN = /^(?:eventdecor_[a-z0-9]+_v\d+\s*,\s*)+/i;
+
+/**
+ * Antepone los triggers de las aplicaciones LoRA resueltas y quita el
+ * preámbulo de triggers que ya viniera en el texto (evita duplicarlo si el
+ * compilador lo dejó suelto). `loras` es obligatorio: sin una aplicación
+ * resuelta no hay trigger válido que anteponer.
+ */
+export function ensureLoraTriggers(prompt: string, loras: LoraApplication[]): string {
+  if (!loras?.length) {
+    throw new Error("LORA_APPLICATION_REQUIRED: ensureLoraTriggers necesita al menos un ResolvedLoraApplication resuelto desde el registro.");
+  }
   const trimmed = prompt.trim();
-  const triggers = [...new Set((loras?.length ? loras : [{ trigger: TRIGGER }] as LoraApplication[]).map((lora) => lora.trigger.trim()).filter(Boolean))];
-  const triggersToRemove = [...new Set([TRIGGER, LEGACY_SEMPERTEX_LORA_TRIGGER, ...triggers])];
-  const withoutTriggers = triggersToRemove.reduce((value, trigger) => value.replace(new RegExp(`\\b${escapeRegExp(trigger)}\\b,?\\s*`, "gi"), ""), trimmed).trim();
+  const triggers = [...new Set(loras.map((lora) => lora.trigger.trim()).filter(Boolean))];
+  const withoutTriggers = trimmed.replace(LEADING_TRIGGER_RUN, "").trim();
   return `${triggers.join(", ")}, ${withoutTriggers}`;
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

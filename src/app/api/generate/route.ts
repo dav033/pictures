@@ -17,7 +17,18 @@ import { registrarEvento } from "@/lib/ia/telemetria";
 import { registrarPlanAudit } from "@/lib/rag/observability/log";
 import { DEFAULT_SEMPERTEX_LORA_TRIGGER, ensureLoraTriggers, generarConSempertexLora } from "@/lib/ia/sempertex-lora";
 import { LoraModeSlugSchema, LoraSelectionSchema } from "@/lib/lora/schema";
-import { resolveLoraMode, resolveLoraModeDatasetAllowlist, resolveLoraSelection } from "@/lib/lora/mode-resolver";
+import { resolveLoraMode, resolveLoraModeDatasetAllowlist, resolveLoraSelection, type ResolvedLoraApplication } from "@/lib/lora/mode-resolver";
+
+/**
+ * Guardián en el punto de uso: nunca se llama a `generarConSempertexLora` con
+ * `loras` vacío o indefinido. Es cinturón y tirantes sobre la resolución de
+ * más arriba — si algo cambia esa lógica y deja de garantizar la resolución,
+ * esto falla antes de tocar la red en vez de caer en un fallback anónimo.
+ */
+function requireResolvedLoras(loras: ResolvedLoraApplication[] | undefined): ResolvedLoraApplication[] {
+  if (!loras?.length) throw new Error("LORA_MODE_REQUIRED: no se pudo resolver un artifact LoRA registrado para esta generación.");
+  return loras;
+}
 import { buildVisualContext } from "@/lib/ia/visual-context";
 import { ErrorIA, type ImageInput, type Imagen, type ImagenEtiquetada, type PeticionImagen, type ProveedorId } from "@/lib/ia/tipos";
 import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
@@ -863,6 +874,18 @@ export async function POST(request: Request) {
     const comparar = body.comparar === true;
     const compararLora = body.compararLora === true;
     const sinReferencias = body.sinReferencias === true;
+    // Ninguna ruta que llame a fal.ai puede usar una combinación URL/trigger
+    // anónima (PLAN-COMPOSICION-RICA-V001.md §1.1/§9.2). No existe un modo
+    // "por defecto" seguro para adivinar aquí: qué slot está listo depende
+    // del registro (hoy, por ejemplo, `unlimited` puede estar `pending` y
+    // `training_1` solo `ready` bajo el override local de pruebas), así que
+    // adivinar produciría un comportamiento no determinista según el estado
+    // de la base de datos. Si el turno necesita LoRA (usarLora, comparar o
+    // compararLora) y el cliente no mandó `loraMode` ni `loraSelection`
+    // explícitos, se falla cerrado antes de tocar la red.
+    if ((usarLora || comparar || compararLora) && !resolvedLoras) {
+      throw new Error("LORA_MODE_REQUIRED: especifica loraMode (\"unlimited\" | \"training_1\" | \"training_2\") o loraSelection antes de generar con LoRA Sempertex. No existe un modo por defecto anónimo.");
+    }
     if ((usarLora || compararLora) && (venue || references.length || previous)) {
       throw new Error("LoRA Sempertex genera desde texto. Para editar fotos o usar referencias, cambia a Gemini.");
     }
@@ -993,12 +1016,16 @@ export async function POST(request: Request) {
     const loraPromptV1 = buildLoraImagePromptV1({ sceneSpec: transformedSceneSpec, visualContext, revisionInstruction });
     const requestedLoraVersion = process.env.LORA_PROMPT_VERSION === "v1" ? "v1" : "v2";
     const loraPrompt = requestedLoraVersion === "v1" ? loraPromptV1 : loraPromptV2;
-    const effectiveLoraPrompt = ensureLoraTriggers(loraPrompt, resolvedLoras);
+    // Fuera de usarLora/comparar/compararLora no hay LoRA resuelto (ni falta
+    // que haga: es una generación Gemini pura). effectiveLoraPrompt/loraPreflight
+    // solo se usan más abajo cuando alguno de esos tres es cierto, y en ese
+    // caso resolvedLoras ya quedó garantizado arriba.
+    const effectiveLoraPrompt = resolvedLoras?.length ? ensureLoraTriggers(loraPrompt, resolvedLoras) : loraPrompt;
     const loraPreflight = preflightLoraPrompt({
       sceneSpec: transformedSceneSpec,
       clauses: loraCompilation.clauses,
       prompt: effectiveLoraPrompt,
-      triggers: resolvedLoras?.map((lora) => lora.trigger) ?? [DEFAULT_SEMPERTEX_LORA_TRIGGER],
+      triggers: resolvedLoras?.length ? resolvedLoras.map((lora) => lora.trigger) : [DEFAULT_SEMPERTEX_LORA_TRIGGER],
       vocabulary: PRODUCT_VOCABULARY,
     });
     const promptsGeneracion: Record<string, string> = compararLora
@@ -1037,7 +1064,8 @@ export async function POST(request: Request) {
         { id: "lora-v1" as const, nombre: "LoRA app v1", modelo: "Prompt legado de la app", prompt: loraPromptV1 },
         { id: "lora-v2" as const, nombre: "LoRA app v2", modelo: `Caption compiler ${LORA_CAPTION_COMPILER_VERSION}`, prompt: loraPromptV2 },
       ];
-      const variantResults = await Promise.allSettled(loraVariants.map((variant) => generarConSempertexLora(variant.prompt, aspecto, [], { seed: sharedSeed })));
+      const compararLoraApplications = requireResolvedLoras(resolvedLoras);
+      const variantResults = await Promise.allSettled(loraVariants.map((variant) => generarConSempertexLora(variant.prompt, aspecto, [], { seed: sharedSeed, loras: compararLoraApplications })));
       const variantImages = variantResults.map((variantResult) => variantResult.status === "fulfilled" ? variantResult.value : undefined);
       const variantQa = await Promise.all(variantImages.map((image) => image
         ? buildQa(transformedSceneSpec, image, { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate)
@@ -1071,7 +1099,7 @@ export async function POST(request: Request) {
     } else if (comparar) {
       const [gemini, lora] = await Promise.allSettled([
         port!.generar({ prompt: providerPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: previous, previousInteractionId, revisionMode: previous ? "revise_current_result" : "new_generation" }),
-        generarConSempertexLora(effectiveLoraPrompt, aspecto, selected.inputs, { loras: resolvedLoras }),
+        generarConSempertexLora(effectiveLoraPrompt, aspecto, selected.inputs, { loras: requireResolvedLoras(resolvedLoras) }),
       ]);
       const geminiImagen = gemini.status === "fulfilled" ? gemini.value.imagen : undefined;
       const loraImagen = lora.status === "fulfilled" ? lora.value : undefined;
@@ -1098,7 +1126,7 @@ export async function POST(request: Request) {
       result = { imagen: imagenPrincipal, interactionId: gemini.status === "fulfilled" ? gemini.value.interactionId : undefined };
     } else {
       result = usarLora
-        ? { imagen: await generarConSempertexLora(effectiveLoraPrompt, aspecto, selected.inputs, { loras: resolvedLoras }) }
+        ? { imagen: await generarConSempertexLora(effectiveLoraPrompt, aspecto, selected.inputs, { loras: requireResolvedLoras(resolvedLoras) }) }
         : await port!.generar({ prompt: providerPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: previous, previousInteractionId, revisionMode: previous ? "revise_current_result" : "new_generation" });
     }
     qa ??= await buildQa(transformedSceneSpec, result.imagen, { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate);

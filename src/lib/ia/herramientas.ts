@@ -1,9 +1,20 @@
 import type { Herramienta } from "./tipos";
+import { DENSIDADES, MEZCLAS, ROLES_ESCENA, ROLES_MATERIAL, TIPOS_ESTRUCTURA, UBICACIONES } from "@/lib/plan/tipos";
+import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "@/lib/plan/composicion";
 
 /**
  * Catálogo de herramientas en JSON Schema puro. El adaptador de Gemini las
  * traduce a su propio formato de cable (FunctionDeclaration) — este archivo
  * es la única fuente de verdad.
+ *
+ * Los enums de `estructuras[]` (tipo, rol_escena, ubicacion, densidad, mezcla,
+ * rol_material) se toman de `@/lib/plan/tipos`, que a su vez los toma de
+ * `@/lib/plan/composicion` (PLAN-COMPOSICION-RICA-V001.md §6.2): no se
+ * mantiene una segunda lista manual de los mismos valores. Esto todavía
+ * describe Plan 1.0 — `TIPOS_ESTRUCTURA`/`UBICACIONES` re-exportan a
+ * propósito el subconjunto legado (sin `escultura` ni ubicaciones nuevas)
+ * hasta que el planificador y `registro-herramientas.ts` sepan producir y
+ * resolver Plan 1.1.
  */
 export const HERRAMIENTAS: Herramienta[] = [
   {
@@ -139,20 +150,20 @@ export const HERRAMIENTAS: Herramienta[] = [
       properties: {
         figura: {
           type: "string",
-          enum: ["arco", "semiarco", "guirnalda", "columna", "pared", "centro_mesa"],
+          enum: [...TIPOS_ESTRUCTURA_GEOMETRICOS],
         },
         ancho_m: { type: "number" },
         alto_m: { type: "number" },
         largo_m: { type: "number", description: "solo guirnalda recta" },
         densidad: {
           type: "string",
-          enum: ["sencilla", "media", "lujosa"],
+          enum: [...DENSIDADES],
           default: "media",
         },
         colores: { type: "array", items: { type: "string" } },
         mezcla: {
           type: "string",
-          enum: ["clasica", "organica_fina", "organica_gruesa", "solo_grandes"],
+          enum: [...MEZCLAS],
           default: "organica_fina",
         },
       },
@@ -310,13 +321,13 @@ export const HERRAMIENTAS_PLAN: Herramienta[] = [
             properties: {
               estructura_id: { type: "string", description: "EST_01_ARCO, EST_02_COLUMNAS..." },
               nombre: { type: "string" },
-              tipo: { type: "string", enum: ["arco", "semiarco", "guirnalda", "columna", "pared", "centro_mesa", "backdrop", "kit", "accesorio"] },
-              rol_escena: { type: "string", enum: ["focal", "soporte", "relleno", "acento", "servicio"] },
-              ubicacion: { type: "string", enum: ["fondo_pared", "arco_central", "sobre_mesa_principal", "lateral_izquierdo", "lateral_derecho", "piso_frontal", "mesas_invitados", "entrada", "techo"] },
+              tipo: { type: "string", enum: [...TIPOS_ESTRUCTURA] },
+              rol_escena: { type: "string", enum: [...ROLES_ESCENA] },
+              ubicacion: { type: "string", enum: [...UBICACIONES] },
               medidas: { type: "object", properties: { ancho_m: { type: "number" }, alto_m: { type: "number" }, largo_m: { type: "number" } } },
               repeticiones: { type: "integer", minimum: 1, maximum: 24 },
-              densidad: { type: "string", enum: ["sencilla", "media", "lujosa"] },
-              mezcla: { type: "string", enum: ["clasica", "organica_fina", "organica_gruesa", "solo_grandes"] },
+              densidad: { type: "string", enum: [...DENSIDADES] },
+              mezcla: { type: "string", enum: [...MEZCLAS] },
               unidades_declaradas: { type: "integer", minimum: 1 },
               materiales: {
                 type: "array",
@@ -331,7 +342,7 @@ export const HERRAMIENTAS_PLAN: Herramienta[] = [
                     color: { type: "string" },
                     acabado: { type: "string", description: "solo si el cliente lo pidió explícitamente; no lo inventes desde el estilo" },
                     participacion: { type: "number", minimum: 0, maximum: 1 },
-                    rol_material: { type: "string", enum: ["principal", "secundario", "acento"] },
+                    rol_material: { type: "string", enum: [...ROLES_MATERIAL] },
                   },
                 },
               },

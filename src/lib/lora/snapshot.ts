@@ -6,6 +6,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { leerComposicionLocal, type Composicion } from "./composicion";
 import { readLoraDatasetV005View, type LoraDatasetGalleryData } from "./dataset-v005-view";
+import { directorioImagenesSnapshot, prepararImagenesSnapshot } from "./snapshot-imagenes";
 
 /**
  * Empaqueta el estado local (estadísticas del LoRA + metadata del dataset
@@ -26,6 +27,7 @@ export type PublishResult = {
   container: string;
   containerPath: string;
   ok: boolean;
+  imagenes?: { enviadas: number; sinOrigen: number; mb: number };
   error?: string;
 };
 
@@ -33,7 +35,9 @@ const SNAPSHOT_DIR = path.join(process.cwd(), "data", "snapshot");
 const SNAPSHOT_PATH = path.join(SNAPSHOT_DIR, "lora-estado.json");
 const PUBLISH_STATE_PATH = path.join(SNAPSHOT_DIR, "estado-publicacion.json");
 const SCP_TIMEOUT_MS = 15_000;
+const TRANSFERENCIA_TIMEOUT_MS = 300_000;
 const DEFAULT_CONTAINER_PATH = "/app/data/snapshot/lora-estado.json";
+const TAR_LOCAL = path.join(SNAPSHOT_DIR, "imagenes.tar");
 
 export function buildSnapshot(): LoraSnapshot {
   return {
@@ -70,9 +74,9 @@ export function readLastPublishState(): PublishResult | null {
   }
 }
 
-function runCommand(command: string, args: string[]): Promise<void> {
+function runCommand(command: string, args: string[], timeout: number = SCP_TIMEOUT_MS): Promise<void> {
   return new Promise((resolve, reject) => {
-    execFile(command, args, { timeout: SCP_TIMEOUT_MS }, (error, _stdout, stderr) => {
+    execFile(command, args, { timeout }, (error, _stdout, stderr) => {
       if (error) {
         reject(new Error(stderr?.trim() || error.message));
         return;
@@ -80,6 +84,45 @@ function runCommand(command: string, args: string[]): Promise<void> {
       resolve();
     });
   });
+}
+
+/**
+ * Empaqueta las fotos de la galería y las mete en el volumen del contenedor.
+ *
+ * Van en un tar porque son ~276 archivos: mandarlos uno a uno por scp sería
+ * un round trip por foto. `docker cp` no extrae, así que el tar se copia
+ * adentro y se desempaca con `docker exec`.
+ */
+async function publicarImagenes(
+  host: string,
+  container: string,
+  snapshot: LoraSnapshot,
+): Promise<PublishResult["imagenes"]> {
+  const resumen = await prepararImagenesSnapshot(snapshot);
+  const destinoContenedor = path.posix.join(path.posix.dirname(DEFAULT_CONTAINER_PATH), "imagenes");
+  const tarRemoto = `~/.demo-decoracion-imagenes-${process.pid}.tar`;
+  const tarEnContenedor = `/tmp/imagenes-${process.pid}.tar`;
+
+  await runCommand("tar", ["-cf", TAR_LOCAL, "-C", directorioImagenesSnapshot(), "."], TRANSFERENCIA_TIMEOUT_MS);
+  try {
+    await runCommand("scp", [TAR_LOCAL, `${host}:${tarRemoto}`], TRANSFERENCIA_TIMEOUT_MS);
+    await runCommand("ssh", [host, "docker", "exec", container, "mkdir", "-p", destinoContenedor]);
+    await runCommand("ssh", [host, "docker", "cp", tarRemoto, `${container}:${tarEnContenedor}`], TRANSFERENCIA_TIMEOUT_MS);
+    await runCommand("ssh", [host, "docker", "exec", container, "tar", "-xf", tarEnContenedor, "-C", destinoContenedor], TRANSFERENCIA_TIMEOUT_MS);
+  } finally {
+    // `docker cp` deposita el tar como root y el contenedor corre como nextjs,
+    // así que borrarlo necesita -u root. Nada de esto puede tumbar una
+    // publicación que ya dejó las fotos en su lugar.
+    await runCommand("ssh", [host, "docker", "exec", "-u", "root", container, "rm", "-f", tarEnContenedor]).catch(() => undefined);
+    await runCommand("ssh", [host, "rm", "-f", tarRemoto]).catch(() => undefined);
+    fs.rmSync(TAR_LOCAL, { force: true });
+  }
+
+  return {
+    enviadas: resumen.preparadas + resumen.omitidas,
+    sinOrigen: resumen.sinOrigen.length,
+    mb: Number((resumen.bytes / 1024 / 1024).toFixed(1)),
+  };
 }
 
 /**
@@ -91,7 +134,8 @@ function runCommand(command: string, args: string[]): Promise<void> {
  * sube a un temporal en el home del usuario SSH y de ahí se copia adentro.
  */
 export async function publishSnapshotToServer(): Promise<PublishResult> {
-  writeLocalSnapshot(buildSnapshot());
+  const snapshot = buildSnapshot();
+  writeLocalSnapshot(snapshot);
 
   const host = process.env.LORA_SNAPSHOT_SSH_HOST?.trim();
   const container = process.env.LORA_SNAPSHOT_DOCKER_CONTAINER?.trim();
@@ -119,7 +163,8 @@ export async function publishSnapshotToServer(): Promise<PublishResult> {
     await runCommand("ssh", [host, "docker", "exec", container, "mkdir", "-p", containerDir]);
     await runCommand("ssh", [host, "docker", "cp", remoteTmpPath, `${container}:${containerPath}`]);
     await runCommand("ssh", [host, "rm", "-f", remoteTmpPath]);
-    const result: PublishResult = { publishedAt, host, container, containerPath, ok: true };
+    const imagenes = await publicarImagenes(host, container, snapshot);
+    const result: PublishResult = { publishedAt, host, container, containerPath, ok: true, imagenes };
     writeJsonAtomic(PUBLISH_STATE_PATH, result);
     return result;
   } catch (error) {

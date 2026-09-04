@@ -1,0 +1,107 @@
+{
+  "fecha": "2026-09-04T16:57:03.596Z",
+  "modo": "fixtures",
+  "fuente": "Fixtures escritos a mano (este archivo), no captura real del planificador. Ver comentario de cabecera.",
+  "metricas": {
+    "n_planes": 13,
+    "tasa_arco_columnas": 0.46153846153846156,
+    "colision_composicional": 0.19230769230769232,
+    "arquetipo_dominante": 0.46153846153846156,
+    "arquetipo_dominante_firma": "arco|arco_central;columna|lateral_derecho;columna|lateral_izquierdo",
+    "cobertura_relaciones_fisicas": 0,
+    "concentracion_relacion": 0,
+    "planes_ricos_elegibles": 0,
+    "planes_ricos_elegibles_base": 10,
+    "tipos_distintos_usados": [
+      "accesorio",
+      "arco",
+      "backdrop",
+      "centro_mesa",
+      "columna",
+      "guirnalda",
+      "kit",
+      "pared",
+      "semiarco"
+    ]
+  },
+  "briefs": [
+    {
+      "id": "cumpleanos-infantil-medio",
+      "celebracion": "cumpleanos_infantil",
+      "franja": "medio",
+      "firma": "arco|arco_central;columna|lateral_derecho;columna|lateral_izquierdo"
+    },
+    {
+      "id": "xv-anos-alto",
+      "celebracion": "xv_anos",
+      "franja": "alto",
+      "firma": "arco|arco_central;columna|lateral_derecho;columna|lateral_izquierdo"
+    },
+    {
+      "id": "boda-alto",
+      "celebracion": "boda",
+      "franja": "alto",
+      "firma": "arco|arco_central;columna|lateral_derecho;columna|lateral_izquierdo"
+    },
+    {
+      "id": "baby-shower-medio",
+      "celebracion": "baby_shower",
+      "franja": "medio",
+      "firma": "arco|arco_central;columna|lateral_derecho;columna|lateral_izquierdo"
+    },
+    {
+      "id": "corporativo-alto-backdrop",
+      "celebracion": "corporativo",
+      "franja": "alto",
+      "firma": "backdrop|fondo_pared;centro_mesa|mesas_invitados"
+    },
+    {
+      "id": "halloween-medio-guirnalda-entrada",
+      "celebracion": "halloween",
+      "franja": "medio",
+      "firma": "guirnalda|entrada"
+    },
+    {
+      "id": "navidad-bajo-pieza-unica",
+      "celebracion": "navidad",
+      "franja": "bajo",
+      "firma": "centro_mesa|sobre_mesa_principal"
+    },
+    {
+      "id": "graduacion-medio-pared",
+      "celebracion": "graduacion",
+      "franja": "medio",
+      "firma": "columna|lateral_izquierdo;pared|fondo_pared"
+    },
+    {
+      "id": "aniversario-alto",
+      "celebracion": "aniversario",
+      "franja": "alto",
+      "firma": "arco|arco_central;columna|lateral_derecho;columna|lateral_izquierdo"
+    },
+    {
+      "id": "san-valentin-bajo-semiarco",
+      "celebracion": "san_valentin",
+      "franja": "bajo",
+      "firma": "semiarco|sobre_mesa_principal"
+    },
+    {
+      "id": "revelacion-genero-medio-kit-techo",
+      "celebracion": "revelacion_genero",
+      "franja": "medio",
+      "firma": "kit|techo"
+    },
+    {
+      "id": "bautizo-medio",
+      "celebracion": "bautizo",
+      "franja": "medio",
+      "firma": "arco|arco_central;columna|lateral_derecho;columna|lateral_izquierdo"
+    },
+    {
+      "id": "cumpleanos-adulto-bajo-accesorio",
+      "celebracion": "cumpleanos_adulto",
+      "franja": "bajo",
+      "firma": "accesorio|sobre_mesa_principal"
+    }
+  ]
+}

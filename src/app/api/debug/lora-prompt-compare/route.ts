@@ -133,8 +133,12 @@ export async function GET(request: Request): Promise<Response> {
       : [];
   });
   const compilation = compileProductPrompt({ sceneSpec, visualContext, vocabulary: PRODUCT_VOCABULARY, sizeConfirmations });
-  const promptV1 = ensureLoraTriggers(buildLoraImagePromptV1({ sceneSpec, visualContext }));
-  const promptV2 = ensureLoraTriggers(compilation.prompt);
+  // Herramienta de solo lectura: el trigger es un valor de depuración para
+  // previsualizar el prompt, no una aplicación LoRA resuelta contra el
+  // registro. Nunca se manda a fal.ai desde esta ruta.
+  const debugLoras = [{ path: "debug://no-provider-call", trigger: DEFAULT_SEMPERTEX_LORA_TRIGGER, scale: 0 }];
+  const promptV1 = ensureLoraTriggers(buildLoraImagePromptV1({ sceneSpec, visualContext }), debugLoras);
+  const promptV2 = ensureLoraTriggers(compilation.prompt, debugLoras);
   const preflight = preflightLoraPrompt({ sceneSpec, clauses: compilation.clauses, prompt: promptV2, triggers: [DEFAULT_SEMPERTEX_LORA_TRIGGER], vocabulary: PRODUCT_VOCABULARY });
 
   return Response.json({

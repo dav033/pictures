@@ -25,6 +25,66 @@ export const TRIGGER = "eventdecor_style_v2";
 export const DEFAULT_LORA = "https://v3b.fal.media/files/b/0aa80af5/Co4ylzKGOqhReEQpYIQl8_pytorch_lora_weights.safetensors";
 
 /**
+ * Identidad de un LoRA = tupla (artifact, corrida, dataset, trigger,
+ * evaluación) — nunca una URL suelta (PLAN-CONTROL-ENTRENAMIENTOS-LORA-UI.md
+ * §1, PLAN-COMPOSICION-RICA-V001.md §1.1/§5.7). Los tres experimentos
+ * "halloween-jardin", "halloween-referencia" y "riqueza-composicion" mezclaron
+ * la URL de v004 con el trigger de v007 precisamente porque `--lora <url>`
+ * dejaba escribir la URL a mano sin verificar contra su trigger real.
+ *
+ * `--artifact-id` reemplaza eso para protocolos oficiales nuevos: resuelve
+ * URL + trigger + dataset + evaluación desde esta tabla, citando su fuente.
+ * `--lora <url>` sigue existiendo solo para los scripts históricos ya
+ * congelados como evidencia (exp-step0..4) — no lo uses en experimentos
+ * nuevos.
+ */
+export type LoraIdentidadConocida = {
+  artifactId: string;
+  runId: string;
+  datasetId: string;
+  url: string;
+  trigger: string;
+  evaluationStatus: "approved" | "rejected";
+  fuente: string;
+};
+
+export const LORA_IDENTIDADES_CONOCIDAS: Record<string, LoraIdentidadConocida> = {
+  "v004-1000": {
+    artifactId: "v004-1000",
+    runId: "lora-run-v004-1000",
+    datasetId: "lora-dataset-v004-154",
+    url: "https://v3b.fal.media/files/b/0aa82cf2/bv07AZ2sRktiGdQ42Tf_f_pytorch_lora_weights.safetensors",
+    trigger: "eventdecor_style_v2",
+    evaluationStatus: "approved",
+    fuente: "data/lora-artifacts/runs/lora-run-v004-1000/receipt.json",
+  },
+  "v007-1000": {
+    artifactId: "v007-1000",
+    runId: "lora-run-v007-1000",
+    datasetId: "lora-dataset-v007-ordenes",
+    url: "https://v3b.fal.media/files/b/0aa8f88d/dACfQPmchrcACAaPlWyhN_pytorch_lora_weights.safetensors",
+    trigger: "eventdecor_style_v3",
+    evaluationStatus: "rejected",
+    fuente: "data/lora-artifacts/runs/lora-run-v007-1000/receipt.json + reports/lora-debug/eval-v007-producto/manifiesto-eval-v007-producto.json",
+  },
+};
+
+/** Resuelve `--artifact-id` contra la tabla anterior. Nunca acepta una URL libre. */
+export function resolverIdentidadLora(artifactId: string): LoraIdentidadConocida {
+  const identidad = LORA_IDENTIDADES_CONOCIDAS[artifactId];
+  if (!identidad) {
+    throw new Error(
+      `--artifact-id "${artifactId}" no está en el registro conocido. Usa uno de: ${Object.keys(LORA_IDENTIDADES_CONOCIDAS).join(", ")}. ` +
+      "No se acepta una URL o trigger sueltos: la identidad de un LoRA es una tupla artifact/corrida/dataset/trigger/evaluación.",
+    );
+  }
+  if (identidad.evaluationStatus === "rejected") {
+    console.warn(`⚠ ${artifactId} está RECHAZADO (evaluation_status=rejected). Úsalo solo para pruebas explícitas de regresión, nunca como validación de producción.`);
+  }
+  return identidad;
+}
+
+/**
  * Escena XV multi-estructura (arco central + 2 columnas + centro de mesa), el
  * caso que falla. Los dos prompts son salida LITERAL de
  * `scripts/proto-lora-caption-v3.ts`, sin retocar, para que las tandas se
@@ -129,8 +189,8 @@ export function payloadDe(celda: Celda, defaults: Defaults) {
   };
 }
 
-export async function generar(key: string, payload: object): Promise<{ url: string; bytes: Buffer }> {
-  const envio = await fetch(ENDPOINT, {
+export async function generar(key: string, payload: object, endpoint: string = ENDPOINT): Promise<{ url: string; bytes: Buffer }> {
+  const envio = await fetch(endpoint, {
     method: "POST",
     headers: { Authorization: `Key ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -176,8 +236,33 @@ export async function generar(key: string, payload: object): Promise<{ url: stri
 }
 
 /**
+ * Falla si `defaults.loraUrl` pertenece a una identidad conocida pero
+ * `defaults.trigger` no es el suyo — exactamente el bug que produjo
+ * "halloween-jardin", "halloween-referencia" y "riqueza-composicion"
+ * (URL de v004 + trigger de v007). No falla ante una URL desconocida: los
+ * scripts históricos congelados (exp-step0..4) usan checkpoints que no están
+ * en `LORA_IDENTIDADES_CONOCIDAS` y siguen siendo evidencia válida.
+ */
+export function verificarIdentidadCoherente(defaults: Defaults): void {
+  const conocida = Object.values(LORA_IDENTIDADES_CONOCIDAS).find((identidad) => identidad.url === defaults.loraUrl);
+  if (conocida && defaults.trigger && defaults.trigger !== conocida.trigger) {
+    throw new Error(
+      `IDENTIDAD_LORA_CRUZADA: defaults.loraUrl pertenece a ${conocida.artifactId} (trigger entrenado "${conocida.trigger}", fuente: ${conocida.fuente}), pero defaults.trigger es "${defaults.trigger}". La URL y el trigger deben pertenecer a la misma corrida.`,
+    );
+  }
+}
+
+/**
  * Corre las celdas en serie, guarda un PNG por celda y un manifiesto con los
- * payloads literales. Con `--dry-run` imprime los payloads y no gasta nada.
+ * payloads literales.
+ *
+ * Guardarraíles antes de gastar un centavo:
+ * - `--dry-run` imprime los payloads sin red y sin `FAL_KEY`.
+ * - `verificarIdentidadCoherente` corre siempre, incluso en dry-run.
+ * - Fuera de dry-run, se exige `--confirm-spend` y `--max-usd <número>`.
+ * - Nunca corre con `CI=true`: un runner de integración no debe poder gastar.
+ * - Si el gasto acumulado alcanza `--max-usd`, se detiene antes de la
+ *   siguiente celda en vez de seguir encadenando llamadas.
  */
 export async function correrExperimento(opciones: {
   nombre: string;
@@ -186,8 +271,7 @@ export async function correrExperimento(opciones: {
   outDir: string;
 }): Promise<void> {
   const { nombre, defaults, outDir } = opciones;
-  const key = leerEnv("FAL_KEY");
-  if (!key) throw new Error("Falta FAL_KEY en .env.local");
+  verificarIdentidadCoherente(defaults);
 
   // `--solo <subcadena>` repite una celda puntual sin volver a pagar la tanda entera.
   const solo = process.argv.indexOf("--solo") >= 0 ? process.argv[process.argv.indexOf("--solo") + 1] : undefined;
@@ -203,17 +287,33 @@ export async function correrExperimento(opciones: {
     saldo_antes: null as number | null,
     saldo_despues: null as number | null,
     gasto_usd: null as number | null,
+    detenido_por_limite: false,
   };
 
   if (process.argv.includes("--dry-run")) {
     console.log(JSON.stringify(manifiesto.celdas, null, 2));
-    console.log(`\n[DRY-RUN] ${celdas.length} celdas. No se envió nada a fal.ai.`);
+    console.log(`\n[DRY-RUN] ${celdas.length} celdas. No se envió nada a fal.ai. FAL_KEY no hace falta para esto.`);
     return;
   }
 
+  if (process.env.CI === "true") {
+    throw new Error("CI_SPEND_FORBIDDEN: este runner gasta dinero real en fal.ai y no puede ejecutarse con CI=true. Usa --dry-run.");
+  }
+  if (!process.argv.includes("--confirm-spend")) {
+    throw new Error("CONFIRM_SPEND_REQUIRED: esta corrida gasta dinero real en fal.ai. Repite el comando con --confirm-spend (y --max-usd <tope>) para confirmar.");
+  }
+  const maxUsdRaw = flag("max-usd", "");
+  const maxUsd = Number(maxUsdRaw);
+  if (!maxUsdRaw || !Number.isFinite(maxUsd) || maxUsd <= 0) {
+    throw new Error("MAX_USD_REQUIRED: pasa --max-usd <tope en dólares> mayor que 0 antes de gastar.");
+  }
+
+  const key = leerEnv("FAL_KEY");
+  if (!key) throw new Error("Falta FAL_KEY en .env.local");
+
   fs.mkdirSync(outDir, { recursive: true });
   manifiesto.saldo_antes = await saldo(key);
-  console.log(`${nombre}: ${celdas.length} celdas · saldo antes US$${manifiesto.saldo_antes ?? "?"}`);
+  console.log(`${nombre}: ${celdas.length} celdas · saldo antes US$${manifiesto.saldo_antes ?? "?"} · tope US$${maxUsd}`);
 
   for (const celda of celdas) {
     process.stdout.write(`-> ${celda.id} ... `);
@@ -231,6 +331,16 @@ export async function correrExperimento(opciones: {
     } catch (error) {
       manifiesto.resultados.push({ celda: celda.id, ok: false, error: String(error) });
       console.log(`FALLO: ${String(error).slice(0, 200)}`);
+    }
+
+    const saldoActual = await saldo(key);
+    if (manifiesto.saldo_antes !== null && saldoActual !== null) {
+      const gastoHastaAhora = manifiesto.saldo_antes - saldoActual;
+      if (gastoHastaAhora >= maxUsd) {
+        manifiesto.detenido_por_limite = true;
+        console.log(`\n[LIMITE] gasto acumulado US$${gastoHastaAhora.toFixed(4)} alcanzó --max-usd ${maxUsd}. Deteniendo antes de la siguiente celda.`);
+        break;
+      }
     }
   }
 

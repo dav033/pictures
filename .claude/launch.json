@@ -9,6 +9,13 @@
       "autoPort": true
     },
     {
+      "name": "demo-decoracion-3001",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--", "-p", "3001"],
+      "port": 3001,
+      "autoPort": true
+    },
+    {
       "name": "codex-lora-vocabulario",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "../demo-decoracion-codex-lora-vocabulario", "run", "dev", "--", "--webpack"],

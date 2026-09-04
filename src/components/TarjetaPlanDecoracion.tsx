@@ -10,6 +10,7 @@ import type { PlanResuelto } from "@/lib/plan/resuelto";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { ProductoCandidato, VarianteCandidata } from "@/lib/rag/chat/buscar";
 import { puntuacionCromatica } from "@/lib/rag/catalog/similitud-color";
+import { ReferenciasEntrenamientoModal, type ReferenciasEvidenciaData } from "@/components/ReferenciasEntrenamientoModal";
 
 const pesos = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
@@ -23,6 +24,12 @@ type ModoEdicion = "agregar" | "reemplazar";
 type VarianteEdicion = VarianteCandidata & { productId: string };
 type ReferenciaEntrenamiento = { total: number; bySize?: Record<string, number> };
 type ReferenciasEntrenamientoResponse = { countsByCatalogId?: Record<string, ReferenciaEntrenamiento> };
+type ReferenciaEvidenciaSeleccionada = {
+  catalogId: string;
+  sizeCode: string | null;
+  productLabel: string;
+  expectedCount: number;
+};
 
 type Props = {
   plan: PlanResuelto;
@@ -139,6 +146,11 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   const [imagenesCatalogo, setImagenesCatalogo] = useState<Record<string, string>>({});
   const [imagenesAusentes, setImagenesAusentes] = useState<Record<string, true>>({});
   const [referenciasEntrenamiento, setReferenciasEntrenamiento] = useState<Record<string, ReferenciaEntrenamiento>>({});
+  const [referenciaEvidencia, setReferenciaEvidencia] = useState<ReferenciaEvidenciaSeleccionada | null>(null);
+  const [estadoEvidencia, setEstadoEvidencia] = useState<"idle" | "loading" | "error" | "ready">("idle");
+  const [datosEvidencia, setDatosEvidencia] = useState<ReferenciasEvidenciaData | null>(null);
+  const [errorEvidencia, setErrorEvidencia] = useState<string | null>(null);
+  const [revisionEvidencia, setRevisionEvidencia] = useState(0);
   const [seleccionCatalogo, setSeleccionCatalogo] = useState<LineaCatalogoSeleccionada | null>(null);
   const [intercambioAbierto, setIntercambioAbierto] = useState(false);
   const [recomendaciones, setRecomendaciones] = useState<ProductoCandidato[]>([]);
@@ -163,6 +175,8 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   const busquedaCatalogoRef = useRef<HTMLInputElement | null>(null);
   const peticionCatalogoRef = useRef<AbortController | null>(null);
   const secuenciaCatalogoRef = useRef(0);
+  const peticionEvidenciaRef = useRef<AbortController | null>(null);
+  const secuenciaEvidenciaRef = useRef(0);
   const editorDisponible = Boolean(onPlanActualizado);
   const editorId = `editor-plan-${plan.plan.plan_id}`;
   const supuestos = [...new Set(plan.plan.supuestos)];
@@ -177,15 +191,64 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   const opcionesRecomendadas = seleccionCatalogo ? opcionesCatalogo(recomendaciones, seleccionCatalogo.linea, true) : [];
   const opcionesBusqueda = seleccionCatalogo ? opcionesCatalogo(resultadosCatalogo, seleccionCatalogo.linea, false) : [];
 
-  function referenciaEntrenamiento(linea: PlanResuelto["estructuras"][number]["lineas"][number]): number | null {
+  function referenciaEntrenamiento(linea: PlanResuelto["estructuras"][number]["lineas"][number]): { count: number; catalogId: string } | null {
     const referencia = [linea.sku, linea.product_id, linea.variant_id]
       .filter((id): id is string => Boolean(id))
-      .map((id) => referenciasEntrenamiento[id])
-      .find(Boolean);
+      .map((id) => ({ catalogId: id, reference: referenciasEntrenamiento[id] }))
+      .find((item) => Boolean(item.reference));
     if (!referencia) return null;
-    return linea.tamano_codigo && referencia.bySize?.[linea.tamano_codigo] != null
-      ? referencia.bySize[linea.tamano_codigo]
-      : referencia.total;
+    const count = linea.tamano_codigo && referencia.reference.bySize?.[linea.tamano_codigo] != null
+      ? referencia.reference.bySize[linea.tamano_codigo]
+      : referencia.reference.total;
+    return { count, catalogId: referencia.catalogId };
+  }
+
+  function cargarEvidencia(seleccion: ReferenciaEvidenciaSeleccionada): void {
+    peticionEvidenciaRef.current?.abort();
+    const controlador = new AbortController();
+    peticionEvidenciaRef.current = controlador;
+    const secuencia = ++secuenciaEvidenciaRef.current;
+    setRevisionEvidencia((revision) => revision + 1);
+    setEstadoEvidencia("loading");
+    setDatosEvidencia(null);
+    setErrorEvidencia(null);
+    const parametros = new URLSearchParams({ catalog_id: seleccion.catalogId });
+    if (seleccion.sizeCode) parametros.set("size_code", seleccion.sizeCode);
+    fetch(`/api/lora/training-references?${parametros}`, { signal: controlador.signal, cache: "no-store" })
+      .then(async (respuesta) => {
+        const datos = await respuesta.json() as ReferenciasEvidenciaData & { error?: string };
+        if (!respuesta.ok) throw new Error(datos.error ?? "No se pudieron cargar las fotos de entrenamiento.");
+        return datos;
+      })
+      .then((datos) => {
+        if (secuencia !== secuenciaEvidenciaRef.current) return;
+        setDatosEvidencia(datos);
+        setEstadoEvidencia("ready");
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        if (secuencia !== secuenciaEvidenciaRef.current) return;
+        setErrorEvidencia(error instanceof Error ? error.message : "No se pudieron cargar las fotos de entrenamiento.");
+        setEstadoEvidencia("error");
+      });
+  }
+
+  function abrirEvidencia(linea: PlanResuelto["estructuras"][number]["lineas"][number], referencia: NonNullable<ReturnType<typeof referenciaEntrenamiento>>): void {
+    const seleccion = {
+      catalogId: referencia.catalogId,
+      sizeCode: linea.tamano_codigo ?? null,
+      productLabel: linea.titulo,
+      expectedCount: referencia.count,
+    };
+    setReferenciaEvidencia(seleccion);
+    cargarEvidencia(seleccion);
+  }
+
+  function cerrarEvidencia(): void {
+    peticionEvidenciaRef.current?.abort();
+    ++secuenciaEvidenciaRef.current;
+    setReferenciaEvidencia(null);
+    setEstadoEvidencia("idle");
   }
 
   function abrirEditor(modo: ModoEdicion, estructuraId: string, objetivo?: PlanResuelto["estructuras"][number]["lineas"][number]) {
@@ -428,6 +491,8 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     return () => controlador.abort();
   }, []);
 
+  useEffect(() => () => peticionEvidenciaRef.current?.abort(), []);
+
   useEffect(() => {
     if (!editorAbierto) return;
     document.getElementById(editorId)?.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -499,7 +564,25 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
                 {editorDisponible && <button type="button" onClick={() => abrirEditor("agregar", estructura.estructura_id)} className="mb-2 inline-flex items-center gap-1 rounded-md border border-acento/40 px-2 py-1 text-[11px] font-semibold text-acento hover:bg-acento-suave focus-visible:outline-2 focus-visible:outline-acento"><Plus className="size-3" aria-hidden="true" />Agregar pieza</button>}
                 <p className="text-xs font-semibold text-texto">Elementos del catálogo</p>
                 <p className="mt-1 text-[11px] text-texto-suave">Una fila por variante. El desglose de paquetes se muestra en la cotización.</p>
-                <ul className="mt-2 space-y-2">{lineasVisiblesPorVariante(estructura.lineas).map((linea) => { const imagen = linea.imagen ?? imagenesCatalogo[linea.variant_id]; const referencias = referenciaEntrenamiento(linea); return <li key={linea.variant_id} className="flex items-center gap-1.5"><button type="button" onClick={(evento) => { disparadorModalRef.current = evento.currentTarget; setSeleccionCatalogo({ linea, estructuraId: estructura.estructura_id, estructura: estructura.nombre }); setIntercambioAbierto(false); setRecomendaciones([]); setResultadosCatalogo([]); setErrorEdicion(null); }} aria-haspopup="dialog" className="flex min-w-0 flex-1 items-center gap-2.5 rounded-md bg-superficie/70 p-2 text-left text-xs transition-colors hover:bg-superficie-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">{imagen ? <img src={imagen} alt="" width={40} height={40} loading="lazy" className="size-10 shrink-0 rounded-md object-cover" /> : <span aria-hidden className="flex size-10 shrink-0 items-center justify-center rounded-md bg-superficie-2 text-center text-[10px] font-medium text-texto-suave">{imagenesAusentes[linea.variant_id] ? "Foto no disponible" : "Cargando foto…"}</span>}<span className="min-w-0 flex-1"><span className="block truncate font-medium text-texto">{linea.titulo}</span><span className="mt-0.5 block text-texto-suave">{linea.tamano_codigo ?? "sin tamaño"}{linea.color ? ` · ${linea.color}` : ""} · {linea.unidades} unidades</span>{referencias != null && <span data-testid="linea-referencias-entrenamiento" className="mt-0.5 block text-[11px] text-acento-2">{referencias} {referencias === 1 ? "referencia" : "referencias"} en entrenamiento</span>}</span><span aria-hidden className="shrink-0 text-base leading-none text-texto-suave">›</span></button>{editorDisponible && <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-borde/70 bg-superficie/50 p-0.5"><button type="button" title={`Modificar ${linea.titulo}`} aria-label={`Modificar ${linea.titulo}`} onClick={() => abrirEditor("reemplazar", estructura.estructura_id, linea)} className="flex size-7 items-center justify-center rounded-md text-texto-suave hover:bg-acento-suave hover:text-acento focus-visible:outline-2 focus-visible:outline-acento"><Pencil className="size-3.5" aria-hidden="true" /></button><button type="button" title={`Quitar ${linea.titulo}`} aria-label={`Quitar ${linea.titulo}`} onClick={() => void quitarVariante(estructura.estructura_id, linea)} className="flex size-7 items-center justify-center rounded-md text-texto-suave hover:bg-error-suave hover:text-error focus-visible:outline-2 focus-visible:outline-acento"><Trash2 className="size-3.5" aria-hidden="true" /></button></div>}</li>; })}</ul>
+                <ul className="mt-2 space-y-2">
+                  {lineasVisiblesPorVariante(estructura.lineas).map((linea) => {
+                    const imagen = linea.imagen ?? imagenesCatalogo[linea.variant_id];
+                    const referencias = referenciaEntrenamiento(linea);
+                    return (
+                      <li key={linea.variant_id} className="flex items-center gap-1.5">
+                        <button type="button" onClick={(evento) => { disparadorModalRef.current = evento.currentTarget; setSeleccionCatalogo({ linea, estructuraId: estructura.estructura_id, estructura: estructura.nombre }); setIntercambioAbierto(false); setRecomendaciones([]); setResultadosCatalogo([]); setErrorEdicion(null); }} aria-haspopup="dialog" className="flex min-w-0 flex-1 items-center gap-2.5 rounded-md bg-superficie/70 p-2 text-left text-xs transition-colors hover:bg-superficie-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">
+                          {imagen ? <img src={imagen} alt="" width={40} height={40} loading="lazy" className="size-10 shrink-0 rounded-md object-cover" /> : <span aria-hidden className="flex size-10 shrink-0 items-center justify-center rounded-md bg-superficie-2 text-center text-[10px] font-medium text-texto-suave">{imagenesAusentes[linea.variant_id] ? "Foto no disponible" : "Cargando foto…"}</span>}
+                          <span className="min-w-0 flex-1"><span className="block truncate font-medium text-texto">{linea.titulo}</span><span className="mt-0.5 block text-texto-suave">{linea.tamano_codigo ?? "sin tamaño"}{linea.color ? ` · ${linea.color}` : ""} · {linea.unidades} unidades</span></span>
+                          <span aria-hidden className="shrink-0 text-base leading-none text-texto-suave">›</span>
+                        </button>
+                        {referencias && <button type="button" data-testid="linea-referencias-entrenamiento" onClick={() => abrirEvidencia(linea, referencias)} className="ui-pressable shrink-0 rounded-lg border border-acento/35 bg-acento-suave px-2 py-1.5 text-left text-[11px] font-semibold leading-4 text-acento hover:bg-acento/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento" aria-label={`Ver ${referencias.count} ${referencias.count === 1 ? "referencia" : "referencias"} de entrenamiento para ${linea.titulo}`}>
+                          <span className="block tabular-nums">{referencias.count} {referencias.count === 1 ? "referencia" : "referencias"}</span><span className="block font-normal">en entrenamiento</span>
+                        </button>}
+                        {editorDisponible && <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-borde/70 bg-superficie/50 p-0.5"><button type="button" title={`Modificar ${linea.titulo}`} aria-label={`Modificar ${linea.titulo}`} onClick={() => abrirEditor("reemplazar", estructura.estructura_id, linea)} className="flex size-7 items-center justify-center rounded-md text-texto-suave hover:bg-acento-suave hover:text-acento focus-visible:outline-2 focus-visible:outline-acento"><Pencil className="size-3.5" aria-hidden="true" /></button><button type="button" title={`Quitar ${linea.titulo}`} aria-label={`Quitar ${linea.titulo}`} onClick={() => void quitarVariante(estructura.estructura_id, linea)} className="flex size-7 items-center justify-center rounded-md text-texto-suave hover:bg-error-suave hover:text-error focus-visible:outline-2 focus-visible:outline-acento"><Trash2 className="size-3.5" aria-hidden="true" /></button></div>}
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
             </details>
           </li>
@@ -594,6 +677,17 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+      <ReferenciasEntrenamientoModal
+        key={revisionEvidencia}
+        open={Boolean(referenciaEvidencia)}
+        onClose={cerrarEvidencia}
+        onRetry={() => { if (referenciaEvidencia) cargarEvidencia(referenciaEvidencia); }}
+        loadState={estadoEvidencia}
+        error={errorEvidencia}
+        data={datosEvidencia}
+        productLabel={referenciaEvidencia?.productLabel ?? "Producto"}
+        expectedCount={referenciaEvidencia?.expectedCount ?? 0}
+      />
     </section>
   );
 }

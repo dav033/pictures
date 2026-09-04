@@ -1,5 +1,6 @@
 import { VOCABULARY_VERSION, type ProductVocabulary } from "./product-vocabulary";
 import { CATALOG_PRODUCT_CONCEPTS } from "./product-vocabulary-catalog-data";
+import { V007_DATASET_PRODUCT_CONCEPTS } from "./v007-dataset-product-vocabulary";
 
 /**
  * Initial conservative product vocabulary for `product-vocabulary.v1`.
@@ -599,78 +600,6 @@ export const PRODUCT_VOCABULARY: ProductVocabulary = [
     status: "active",
     vocabulary_version: VOCABULARY_VERSION,
   },
-  // Promoted from the v007 vocabulary audit. These concepts are present in
-  // the approved training evidence and cover live Shopify families that were
-  // already accepted by the v007 dataset allowlist.
-  {
-    concept_id: "balloon.round.latex.pastel_dusk.pink",
-    canonical_label: "round latex balloon in pink with a Pastel Dusk muted finish",
-    catalog_titles: ["Globo Redondo Pastel Dusk Rosa"],
-    visual: {
-      family: "Pastel Dusk",
-      shape: "round",
-      material: "latex",
-      color: "pink",
-      finish: "Pastel Dusk muted",
-      pattern: { kind: "solid" },
-    },
-    aliases: {
-      es: ["globo redondo pastel dusk rosa"],
-      en: [],
-      contextual: [],
-    },
-    catalog_product_ids: ["20017281", "7546469318849"],
-    sizes: { separate: true, allowed_codes: ["R-12", "R-18", "R-24", "R-5", "R-9"] },
-    status: "active",
-    vocabulary_version: VOCABULARY_VERSION,
-  },
-  {
-    concept_id: "balloon.round.latex.silk.spring_pink",
-    canonical_label: "round latex balloon in spring pink with a Silk satin finish",
-    catalog_titles: ["Globo Redondo Silk Rosa Primaveral"],
-    visual: {
-      family: "Silk",
-      shape: "round",
-      material: "latex",
-      color: "spring pink",
-      finish: "Silk satin",
-      pattern: { kind: "solid" },
-    },
-    aliases: {
-      es: ["globo redondo silk rosa primaveral", "globo latex redondo silk rosa primaveral"],
-      en: [],
-      contextual: [],
-    },
-    catalog_product_ids: ["20018506", "20018505", "10467043377345"],
-    sizes: { separate: true, allowed_codes: ["R-12", "R-18", "R-24", "R-5", "R-9"] },
-    status: "active",
-    vocabulary_version: VOCABULARY_VERSION,
-  },
-  {
-    concept_id: "balloon.round.latex.fashion.black.printed_unclassified_interrogacion",
-    canonical_label: "round latex balloon in black with a matte Fashion finish and a printed pattern",
-    catalog_titles: ["Globo Redondo Infinity® Interrogacion Fashion Negro"],
-    visual: {
-      family: "Fashion",
-      shape: "round",
-      material: "latex",
-      color: "black",
-      finish: "solid Fashion",
-      pattern: { kind: "printed", descriptor: "unclassified_interrogacion" },
-    },
-    aliases: {
-      es: [
-        "globo redondo infinity® interrogacion fashion negro",
-        "globo latex redondo infinity interrogacion fashion negro",
-      ],
-      en: [],
-      contextual: [],
-    },
-    catalog_product_ids: ["20010800", "7109602214081"],
-    sizes: { separate: true, allowed_codes: ["R-36"] },
-    status: "active",
-    vocabulary_version: VOCABULARY_VERSION,
-  },
   {
     concept_id: "balloon.foil.chrome.pending",
     canonical_label: "pending catalog foil balloon concept",
@@ -688,6 +617,6 @@ export const PRODUCT_VOCABULARY: ProductVocabulary = [
     status: "pending",
     vocabulary_version: VOCABULARY_VERSION,
   },
+  ...V007_DATASET_PRODUCT_CONCEPTS,
   ...CATALOG_PRODUCT_CONCEPTS,
 ];
-

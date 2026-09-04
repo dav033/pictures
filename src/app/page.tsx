@@ -1129,7 +1129,12 @@ export default function Page() {
             instruccion: (override?.instruccion ?? ajuste.trim()) || undefined,
             proveedor,
             usarLora: selectorIA === "lora",
-            loraMode: selectorIA === "lora" ? loraModeRef.current ?? undefined : undefined,
+            // El servidor ya no acepta una llamada LoRA sin modo resuelto
+            // (PLAN-COMPOSICION-RICA-V001.md §1.1/§9.2: no hay fallback
+            // anónimo de URL/trigger). "comparar" y "comparar_lora" también
+            // llaman a LoRA Sempertex, así que necesitan el mismo modo que
+            // el selector "lora".
+            loraMode: selectorIA === "lora" || selectorIA === "comparar" || selectorIA === "comparar_lora" ? loraModeRef.current ?? undefined : undefined,
             comparar: selectorIA === "comparar",
             compararLora: selectorIA === "comparar_lora",
             seedLoraDebug: selectorIA === "comparar_lora" && seedLoraDebug.trim() ? Number(seedLoraDebug) : undefined,

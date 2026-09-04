@@ -1,0 +1,371 @@
+{
+  "creado_en": "2026-09-04T14:54:40.640Z",
+  "actualizado_en": "2026-09-04T16:07:12.502Z",
+  "fuentes": {
+    "vocabulario": "src/lib/lora/v007-dataset-product-vocabulary.ts",
+    "snapshot_shopify": "data/raw/shopify-products.snapshot.json",
+    "descriptor_perceptual": "src/lib/lora/descriptor-perceptual.ts"
+  },
+  "resumen": {
+    "conceptos_vocabulario": 178,
+    "conceptos_en_reporte": 5,
+    "completados": 5,
+    "errores": 0,
+    "pendientes_sin_procesar": 173,
+    "revisiones_humanas_requeridas": 0
+  },
+  "auditoria_colores_mapeados": [
+    {
+      "color_comercial": "spring pink",
+      "descriptor_mapeado_actual": "extremely pale desaturated silvery mauve-pink",
+      "estado": "CONFIRMADO",
+      "evaluaciones": [
+        {
+          "concept_id": "balloon.round.latex.silk.spring_pink",
+          "veredicto": "CONFIRMADO",
+          "confianza": 0.9,
+          "razon": "The observed hue matches: very light value, low saturation, cool silvery undertone with a faint mauve-pink cast, consistent with the candidate descriptor."
+        }
+      ]
+    },
+    {
+      "color_comercial": "arctic blue",
+      "descriptor_mapeado_actual": "very pale icy blue",
+      "estado": "CONFIRMADO",
+      "evaluaciones": [
+        {
+          "concept_id": "balloon.modeling.latex.silk.arctic_blue",
+          "veredicto": "CONFIRMADO",
+          "confianza": 0.85,
+          "razon": "The observed hue is a light, desaturated, cool-toned blue with a chrome/icy quality, matching the claridad, saturación, matiz and subtono of \"very pale icy blue\" with no material discrepancy."
+        }
+      ]
+    },
+    {
+      "color_comercial": "amethyst",
+      "descriptor_mapeado_actual": "soft muted violet",
+      "estado": "CONFIRMADO",
+      "evaluaciones": [
+        {
+          "concept_id": "balloon.modeling.latex.silk.amethyst",
+          "veredicto": "CONFIRMADO",
+          "confianza": 0.85,
+          "razon": "The observed hue is a light, moderately desaturated violet/lavender tone consistent with \"soft muted violet\" in clarity, saturation, and hue family"
+        }
+      ]
+    },
+    {
+      "color_comercial": "cream pearl",
+      "descriptor_mapeado_actual": "warm ivory off-white",
+      "estado": "CONTRADICHO",
+      "evaluaciones": [
+        {
+          "concept_id": "balloon.modeling.latex.silk.cream_pearl",
+          "veredicto": "CONTRADICHO",
+          "confianza": 0.78,
+          "razon": "The observed color is a cool, silvery, desaturated grayish-green with metallic highlights, whereas \"warm ivory off-white\" implies a warm cream/yellow-tinted light hue; the temperature and hue family differ materially."
+        }
+      ]
+    },
+    {
+      "color_comercial": "pearl white",
+      "descriptor_mapeado_actual": "soft luminous white",
+      "estado": "PENDIENTE_SIN_EVIDENCIA",
+      "evaluaciones": []
+    },
+    {
+      "color_comercial": "mint green",
+      "descriptor_mapeado_actual": "pale desaturated mint",
+      "estado": "PENDIENTE_SIN_EVIDENCIA",
+      "evaluaciones": []
+    },
+    {
+      "color_comercial": "aurora green",
+      "descriptor_mapeado_actual": "pale iridescent green",
+      "estado": "CONTRADICHO",
+      "evaluaciones": [
+        {
+          "concept_id": "balloon.modeling.latex.reflex.aurora_green",
+          "veredicto": "CONTRADICHO",
+          "confianza": 0.88,
+          "razon": "The candidate descriptor \"pale iridescent green\" implies low saturation and light value, but the observed surface is a deeply saturated, medium-to-dark emerald teal-green with strong metallic-style reflectivity rather than pale, soft iridescence."
+        }
+      ]
+    },
+    {
+      "color_comercial": "champagne",
+      "descriptor_mapeado_actual": "pale warm golden beige",
+      "estado": "PENDIENTE_SIN_EVIDENCIA",
+      "evaluaciones": []
+    },
+    {
+      "color_comercial": "green tea",
+      "descriptor_mapeado_actual": "muted sage green",
+      "estado": "PENDIENTE_SIN_EVIDENCIA",
+      "evaluaciones": []
+    },
+    {
+      "color_comercial": "pastel lilac",
+      "descriptor_mapeado_actual": "soft pale lilac",
+      "estado": "PENDIENTE_SIN_EVIDENCIA",
+      "evaluaciones": []
+    },
+    {
+      "color_comercial": "pastel blue",
+      "descriptor_mapeado_actual": "soft pale blue",
+      "estado": "PENDIENTE_SIN_EVIDENCIA",
+      "evaluaciones": []
+    }
+  ],
+  "conceptos": [
+    {
+      "concept_id": "balloon.modeling.latex.reflex.aurora_green",
+      "estado": "completado",
+      "anterior": {
+        "canonical_label": "modeling latex balloon in aurora green with a Reflex high-shine finish",
+        "color": "aurora green",
+        "finish": "Reflex high-shine"
+      },
+      "propuesta": {
+        "canonical_label": "deep saturated emerald teal-green with metallic undertone, chrome-like high-gloss metallic sheen modeling latex form",
+        "color": "deep saturated emerald teal-green with metallic undertone",
+        "finish": "chrome-like high-gloss metallic sheen"
+      },
+      "confianza": 0.88,
+      "auditoria_descriptor_perceptual": {
+        "aplica": true,
+        "color_comercial": "aurora green",
+        "descriptor_mapeado_actual": "pale iridescent green",
+        "veredicto": "CONTRADICHO",
+        "razon": "The candidate descriptor \"pale iridescent green\" implies low saturation and light value, but the observed surface is a deeply saturated, medium-to-dark emerald teal-green with strong metallic-style reflectivity rather than pale, soft iridescence."
+      },
+      "analizado_en": "2026-09-04T16:04:38.983Z",
+      "evidencia": {
+        "foto_url": "https://cdn.shopify.com/s/files/1/0593/1981/2289/files/260_1VerdeAurora-AuroraGreen_932.jpg?v=1756757492",
+        "archivo_shopify": "260_1VerdeAurora-AuroraGreen_932.jpg",
+        "shopify_product_id": "10671799435457",
+        "catalog_title": "GLOBO TUBITO REFLEX VERDE AURORA",
+        "coincidencias": [
+          "product_id:10671799435457",
+          "sku:20019392",
+          "catalog_title"
+        ],
+        "observacion_color": "The elongated rounded object shows a strong, richly saturated teal-green hue across its entire surface, darker toward the edges and lighter in a vertical highlight band down the center, indicating a deep chromatic color rather than a pale one.",
+        "observacion_acabado": "A sharp, bright vertical specular highlight runs down the middle of the form with smooth gradient falloff to darker shadow at the edges, characteristic of a glossy, reflective, metallic-like surface rather than a matte or soft-sheen one.",
+        "shopify_image_id": "48486436962497"
+      },
+      "cache_key": "e210c4e685fba4bb13166f89e22ded52e4ca154aa4afeb2c95c01a34db31815c",
+      "revision_humana": {
+        "requerida": false,
+        "motivos": []
+      },
+      "proveedor": "claude-code",
+      "modelo": "sonnet",
+      "esfuerzo": "medium"
+    },
+    {
+      "concept_id": "balloon.modeling.latex.silk.amethyst",
+      "estado": "completado",
+      "anterior": {
+        "canonical_label": "modeling latex balloon in amethyst with a Silk satin finish",
+        "color": "amethyst",
+        "finish": "Silk satin"
+      },
+      "propuesta": {
+        "canonical_label": "soft muted lavender-violet, chrome-like pearl sheen modeling shape",
+        "color": "soft muted lavender-violet",
+        "finish": "chrome-like pearl sheen"
+      },
+      "evidencia": {
+        "foto_url": "https://cdn.shopify.com/s/files/1/0593/1981/2289/files/260_1Amatista-LightAmethysc_850.jpg?v=1756764977",
+        "archivo_shopify": "260_1Amatista-LightAmethysc_850.jpg",
+        "shopify_image_id": "48486996443329",
+        "shopify_product_id": "10467043705025",
+        "catalog_title": "GLOBO TUBITO SILK AMATISTA",
+        "coincidencias": [
+          "product_id:10467043705025",
+          "sku:20018537",
+          "catalog_title"
+        ],
+        "observacion_color": "The rounded elongated surface shows a light purple hue with moderate desaturation, cool violet undertone, no strong pink or gray cast dominating",
+        "observacion_acabado": "A bright vertical highlight streak runs along the curved surface with a smooth gradient into shadow, indicating a glossy pearlescent reflective coating rather than flat matte or fully mirrored chrome"
+      },
+      "confianza": 0.85,
+      "auditoria_descriptor_perceptual": {
+        "aplica": true,
+        "color_comercial": "amethyst",
+        "descriptor_mapeado_actual": "soft muted violet",
+        "veredicto": "CONFIRMADO",
+        "razon": "The observed hue is a light, moderately desaturated violet/lavender tone consistent with \"soft muted violet\" in clarity, saturation, and hue family"
+      },
+      "proveedor": "claude-code",
+      "modelo": "sonnet",
+      "esfuerzo": "medium",
+      "cache_key": "c29dd0afe8b04eeb80c316669d4adb9703fa94eb2a711745139235e2b1415bde",
+      "revision_humana": {
+        "requerida": false,
+        "motivos": []
+      },
+      "analizado_en": "2026-09-04T16:07:12.501Z"
+    },
+    {
+      "concept_id": "balloon.modeling.latex.silk.arctic_blue",
+      "estado": "completado",
+      "anterior": {
+        "canonical_label": "modeling latex balloon in arctic blue with a Silk satin finish",
+        "color": "arctic blue",
+        "finish": "Silk satin"
+      },
+      "propuesta": {
+        "canonical_label": "very pale desaturated icy blue with cool silvery undertone, chrome-like pearl sheen modeling latex",
+        "color": "very pale desaturated icy blue with cool silvery undertone",
+        "finish": "chrome-like pearl sheen"
+      },
+      "evidencia": {
+        "foto_url": "https://cdn.shopify.com/s/files/1/0593/1981/2289/files/260AzulArtico-ArcticBlue_839.jpg?v=1756764952",
+        "archivo_shopify": "260AzulArtico-ArcticBlue_839.jpg",
+        "shopify_image_id": "48486995099841",
+        "shopify_product_id": "10467043737793",
+        "catalog_title": "GLOBO TUBITO SILK AZUL ÁRTICO",
+        "coincidencias": [
+          "product_id:10467043737793",
+          "sku:20018575",
+          "catalog_title"
+        ],
+        "observacion_color": "The elongated cylindrical latex surface shows a light, low-saturation blue with a cool, slightly silvery cast; darker steel-blue shading at the edges and a bright near-white specular highlight running down the center.",
+        "observacion_acabado": "A sharp vertical bright highlight band and smooth gradient shading from light to darker blue at the edges indicate a metallic, mirror-like reflective surface typical of chrome/pearlescent latex rather than a flat matte or fully transparent surface."
+      },
+      "confianza": 0.85,
+      "auditoria_descriptor_perceptual": {
+        "aplica": true,
+        "color_comercial": "arctic blue",
+        "descriptor_mapeado_actual": "very pale icy blue",
+        "veredicto": "CONFIRMADO",
+        "razon": "The observed hue is a light, desaturated, cool-toned blue with a chrome/icy quality, matching the claridad, saturación, matiz and subtono of \"very pale icy blue\" with no material discrepancy."
+      },
+      "proveedor": "claude-code",
+      "modelo": "sonnet",
+      "esfuerzo": "medium",
+      "cache_key": "3833116d032d833c1e29791bceae2cfef820f56b611c208b4c9eea56305bfde4",
+      "revision_humana": {
+        "requerida": false,
+        "motivos": []
+      },
+      "analizado_en": "2026-09-04T16:07:12.501Z"
+    },
+    {
+      "concept_id": "balloon.modeling.latex.silk.cream_pearl",
+      "estado": "completado",
+      "anterior": {
+        "canonical_label": "modeling latex balloon in cream pearl with a Silk satin finish",
+        "color": "cream pearl",
+        "finish": "Silk satin"
+      },
+      "propuesta": {
+        "canonical_label": "extremely pale desaturated silvery grayish-green chrome-like pearl sheen modeling latex",
+        "color": "extremely pale desaturated silvery grayish-green",
+        "finish": "chrome-like pearl sheen"
+      },
+      "evidencia": {
+        "foto_url": "https://cdn.shopify.com/s/files/1/0593/1981/2289/files/260_1Crema-CreamPearl_873.jpg?v=1756764880",
+        "archivo_shopify": "260_1Crema-CreamPearl_873.jpg",
+        "shopify_image_id": "48486991233217",
+        "shopify_product_id": "10467043770561",
+        "catalog_title": "GLOBO TUBITO SILK PERLA CREMA",
+        "coincidencias": [
+          "product_id:10467043770561",
+          "sku:20018499",
+          "catalog_title"
+        ],
+        "observacion_color": "The elongated rounded surface shows a very light, almost silver-gray tone with a faint cool greenish cast, most visible along the shaded left edge and rounded top cap; there is no warm or pink undertone present.",
+        "observacion_acabado": "A bright elongated highlight runs down the center of the form with a soft metallic gradient toward the edges, and the rounded tip shows a diffused bright reflection typical of a pearlescent/chrome-like reflective coating rather than flat matte or clear translucent latex."
+      },
+      "confianza": 0.78,
+      "auditoria_descriptor_perceptual": {
+        "aplica": true,
+        "color_comercial": "cream pearl",
+        "descriptor_mapeado_actual": "warm ivory off-white",
+        "veredicto": "CONTRADICHO",
+        "razon": "The observed color is a cool, silvery, desaturated grayish-green with metallic highlights, whereas \"warm ivory off-white\" implies a warm cream/yellow-tinted light hue; the temperature and hue family differ materially."
+      },
+      "proveedor": "claude-code",
+      "modelo": "sonnet",
+      "esfuerzo": "medium",
+      "cache_key": "faa38a0dc12f58a27e770b547166e650914b7bd36331f8bef6e406401da431bf",
+      "revision_humana": {
+        "requerida": false,
+        "motivos": []
+      },
+      "analizado_en": "2026-09-04T16:07:12.501Z"
+    },
+    {
+      "concept_id": "balloon.round.latex.silk.spring_pink",
+      "estado": "completado",
+      "anterior": {
+        "canonical_label": "round latex balloon in spring pink with a Silk satin finish",
+        "color": "spring pink",
+        "finish": "Silk satin"
+      },
+      "propuesta": {
+        "canonical_label": "extremely pale desaturated silvery mauve-pink chrome-like pearl sheen round latex balloon",
+        "color": "extremely pale desaturated silvery mauve-pink",
+        "finish": "chrome-like pearl sheen"
+      },
+      "evidencia": {
+        "foto_url": "https://cdn.shopify.com/s/files/1/0593/1981/2289/files/R12RosaPrimaveral-PinkBlossom_809.jpg?v=1756764813",
+        "archivo_shopify": "R12RosaPrimaveral-PinkBlossom_809.jpg",
+        "shopify_image_id": "48486984941761",
+        "shopify_product_id": "10467043377345",
+        "catalog_title": "GLOBO REDONDO SILK ROSA PRIMAVERAL",
+        "coincidencias": [
+          "product_id:10467043377345",
+          "sku:20018505",
+          "sku:20018506",
+          "catalog_title"
+        ],
+        "observacion_color": "The balloon surface shows a very light grayish-pink hue with almost no saturation, leaning toward a metallic silver-mauve tone rather than a clear pink.",
+        "observacion_acabado": "Sharp, bright white specular highlights and mirror-like reflections spread across the surface, with smooth gradients typical of a metallic/pearlescent chrome latex finish rather than flat matte or clear translucent material."
+      },
+      "confianza": 0.9,
+      "auditoria_descriptor_perceptual": {
+        "aplica": true,
+        "color_comercial": "spring pink",
+        "descriptor_mapeado_actual": "extremely pale desaturated silvery mauve-pink",
+        "veredicto": "CONFIRMADO",
+        "razon": "The observed hue matches: very light value, low saturation, cool silvery undertone with a faint mauve-pink cast, consistent with the candidate descriptor."
+      },
+      "proveedor": "claude-code",
+      "modelo": "sonnet",
+      "esfuerzo": "medium",
+      "cache_key": "adfae9b98eaeced8c6069a1a22982a7a4338edbd03fb2a9dfb836803c2462241",
+      "revision_humana": {
+        "requerida": false,
+        "motivos": []
+      },
+      "analizado_en": "2026-09-04T16:07:12.497Z"
+    }
+  ],
+  "schema_version": "propuesta-vocabulario-visual.v4",
+  "ejecucion": {
+    "proveedor": "claude-code",
+    "orquestacion": "pool_claude_code",
+    "modelo": "sonnet",
+    "esfuerzo": "medium",
+    "subagentes": 5,
+    "concurrencia": 5,
+    "limit": 5,
+    "concepto": null,
+    "seleccion": [
+      "balloon.round.latex.silk.spring_pink",
+      "balloon.modeling.latex.reflex.aurora_green",
+      "balloon.modeling.latex.silk.amethyst",
+      "balloon.modeling.latex.silk.arctic_blue",
+      "balloon.modeling.latex.silk.cream_pearl"
+    ],
+    "firma": "{\"proveedor\":\"claude-code\",\"orquestacion\":\"pool_claude_code\",\"contrato_subagente\":\"vision-producto-worker.v2\",\"modelo\":\"sonnet\",\"esfuerzo\":\"medium\",\"subagentes\":5,\"limit\":5,\"concepto\":null,\"seleccion\":[\"balloon.round.latex.silk.spring_pink\",\"balloon.modeling.latex.reflex.aurora_green\",\"balloon.modeling.latex.silk.amethyst\",\"balloon.modeling.latex.silk.arctic_blue\",\"balloon.modeling.latex.silk.cream_pearl\"]}"
+  },
+  "migracion": {
+    "desde": "propuesta-vocabulario-visual.v3",
+    "migrado_en": "2026-09-04T16:02:48.093Z"
+  }
+}

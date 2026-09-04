@@ -1,4 +1,4 @@
-import { generarConSempertexLora } from "@/lib/ia/sempertex-lora";
+import { generarConSempertexLora, type LoraApplication } from "@/lib/ia/sempertex-lora";
 import type { ImageInput } from "@/lib/ia/tipos";
 
 /**
@@ -8,8 +8,21 @@ import type { ImageInput } from "@/lib/ia/tipos";
  * arma `generarConSempertexLora`, así no hay riesgo de que esta descripción se
  * desincronice del código. Nunca sale a la red ni gasta un centavo.
  *
+ * `generarConSempertexLora` ya no acepta un fallback anónimo de URL/trigger
+ * (PLAN-COMPOSICION-RICA-V001.md §1.1/§9.2): este dump simula una aplicación
+ * LoRA YA RESUELTA, del mismo tipo que devolvería `resolveLoraMode` en
+ * producción. La URL es un placeholder de depuración, no un artifact real.
+ *
  *   npx tsx --conditions=react-server scripts/dump-payload-lora.ts
  */
+
+const APLICACION_LORA_DEPURACION: LoraApplication = {
+  artifactId: "debug-artifact",
+  specialization: "structure",
+  path: "https://example.invalid/debug-lora-weights.safetensors",
+  trigger: "eventdecor_style_v2",
+  scale: 0.8,
+};
 
 /** Prompt real del compilador v2 para la escena XV (ver exp-prompt-produccion-xv.ts). */
 const PROMPT = "a grand organic balloon arch in pink and rose gold centered around the stage photo area, " +
@@ -39,7 +52,7 @@ async function capturar(referencias: ImageInput[]): Promise<Captura> {
     throw new Error("__CAPTURADO__"); // corta antes de salir a la red
   }) as typeof fetch;
   try {
-    await generarConSempertexLora(PROMPT, "3:2", referencias);
+    await generarConSempertexLora(PROMPT, "3:2", referencias, { loras: [APLICACION_LORA_DEPURACION] });
   } catch (error) {
     if (!String(error).includes("__CAPTURADO__")) throw error;
   } finally {
@@ -65,7 +78,6 @@ function mostrar(titulo: string, captura: Captura): void {
 }
 
 async function main(): Promise<void> {
-  process.env.SEMPERTEX_LORA_URL ??= "https://v3b.fal.media/files/b/0aa82cf2/bv07AZ2sRktiGdQ42Tf_f_pytorch_lora_weights.safetensors";
   process.env.FAL_KEY ??= "clave-de-mentira-no-se-usa";
 
   mostrar('MODO "Depurar LoRA"  ·  sin imágenes  ·  lo que se evaluó en esta sesión', await capturar([]));

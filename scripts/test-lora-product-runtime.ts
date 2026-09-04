@@ -15,6 +15,7 @@ import { compileProductPrompt, type ElementSizeConfirmation } from "../src/lib/i
 import { findLoraPromptProductLeaks, preflightLoraPrompt } from "../src/lib/ia/lora-prompt-preflight";
 import { buildVisualContext } from "../src/lib/ia/visual-context";
 import { PRODUCT_VOCABULARY } from "../src/lib/lora/product-vocabulary-data";
+import { aDescriptorPerceptual } from "../src/lib/lora/descriptor-perceptual";
 import { VOCABULARY_VERSION, type ProductVocabulary } from "../src/lib/lora/product-vocabulary";
 
 let passCount = 0;
@@ -133,8 +134,13 @@ console.log("2. Canonical label + separate size phrase");
   const result = compileProductPrompt({ sceneSpec: spec, visualContext: context, vocabulary: PRODUCT_VOCABULARY, sizeConfirmations });
 
   const concept = PRODUCT_VOCABULARY.find((c) => c.concept_id === "balloon.round.latex.reflex.rose_gold")!;
-  assert.ok(result.prompt.includes(concept.canonical_label), "prompt must contain the exact canonical_label string");
-  pass("canonical_label appears exactly in the rendered prompt");
+  // El label viaja completo, pero traducido: los nombres comerciales del catálogo
+  // no significan nada para el modelo de imagen (ver descriptor-perceptual.ts).
+  assert.ok(
+    result.prompt.includes(aDescriptorPerceptual(concept.canonical_label)),
+    "prompt must contain the whole canonical_label, in perceptual form",
+  );
+  pass("canonical_label appears whole in the rendered prompt");
 
   assert.match(result.prompt, /\(12-inch\)/, "confirmed size must appear as an English diameter, not folded into the label");
   assert.doesNotMatch(result.prompt, /R-12/, "catalog size codes must not leak into the v007 prompt");
@@ -159,7 +165,7 @@ console.log("3. Dedupe concept, keep distinct sizes");
   const concept = PRODUCT_VOCABULARY.find((c) => c.concept_id === "balloon.round.latex.reflex.rose_gold")!;
 
   assert.deepEqual(result.resolved_concepts, [concept.concept_id]);
-  const occurrences = result.prompt.split(concept.canonical_label).length - 1;
+  const occurrences = result.prompt.split(aDescriptorPerceptual(concept.canonical_label)).length - 1;
   assert.equal(occurrences, 1, "the same concept at two sizes must not duplicate its finish/color prose");
   assert.match(result.prompt, /5-inch/);
   assert.match(result.prompt, /18-inch/);
@@ -220,14 +226,19 @@ console.log("5. Visual/finish distinctions preserved in the rendered prompt");
     visualContext: context,
     vocabulary: PRODUCT_VOCABULARY,
   });
-  assert.match(goldResult.prompt, /\bReflex\b/, "Reflex must remain a literal word, never reduced to generic 'glossy'");
-  assert.match(roseGoldResult.prompt, /\bReflex\b/);
-  assert.doesNotMatch(goldResult.prompt, /\bglossy\b/i, "Reflex canonical rendering must not fall back to the legacy 'glossy' translation");
+  // El acabado debe seguir siendo específico, pero descrito por su apariencia y
+  // no por el nombre de la línea: la evaluación del v007 midió 0/6 en acabado
+  // ("Fashion conservó reflejos especulares fuertes; no hubo separación mate"),
+  // así que conservar la palabra "Reflex" no compraba ninguna discriminación.
+  assert.match(goldResult.prompt, /high-gloss chrome/i, "Reflex must render as its observable finish, not as a catalog line name");
+  assert.match(roseGoldResult.prompt, /high-gloss chrome/i);
+  assert.doesNotMatch(goldResult.prompt, /\bglossy\b/i, "the finish must stay specific, never the legacy generic 'glossy'");
+  assert.doesNotMatch(goldResult.prompt, /\bReflex\b/, "catalog line names mean nothing to the image model");
   assert.match(goldResult.prompt, /\bgold\b/i);
   assert.doesNotMatch(goldResult.prompt, /rose gold/i, "plain gold must not collapse into rose gold");
   assert.match(roseGoldResult.prompt, /rose gold/i);
   assert.notEqual(goldResult.prompt, roseGoldResult.prompt);
-  pass("Reflex is preserved literally; gold and rose gold render distinct, non-colliding text");
+  pass("Reflex renders as observable finish; gold and rose gold stay distinct");
 
   const silverResult = compileProductPrompt({
     sceneSpec: scene([element({ id: "ARCH", name: "Arco", type: "arco", placement: "arco_central", role: "focal", productId: SILVER_REFLEX_ID })]),
@@ -452,7 +463,7 @@ console.log("11. Variant id -> product family resolution");
   });
   assert.deepEqual(result.unresolved_products, []);
   assert.deepEqual(result.resolved_concepts, ["balloon.round.latex.reflex.rose_gold"]);
-  assert.match(result.prompt, /round latex balloon in rose gold with a Reflex high-shine finish/);
+  assert.match(result.prompt, /round latex balloon in rose gold with a high-gloss chrome finish/);
   assert.match(result.prompt, /12-inch/);
   pass("a Shopify variant id resolves canonically through its parent product id while preserving its confirmed size");
 }
@@ -482,7 +493,7 @@ console.log("12. v007 Silk and metallized-curtain coverage");
     ],
   });
   assert.deepEqual(result.unresolved_products, []);
-  assert.ok(result.prompt.includes("round latex balloon in cream pearl with a Silk satin finish"));
+  assert.ok(result.prompt.includes(aDescriptorPerceptual("round latex balloon in cream pearl with a Silk satin finish")));
   assert.ok(result.prompt.includes("metallized foil fringe curtain in pink"));
   assert.match(result.prompt, /12-inch/);
   assert.equal(result.legacy, false);
@@ -531,7 +542,7 @@ console.log("13. Previously failing live v007 families resolve canonically");
     });
     assert.deepEqual(result.unresolved_products, [], `${testCase.variantId} must resolve through its approved family`);
     assert.deepEqual(result.resolved_concepts, [testCase.conceptId]);
-    assert.match(result.prompt, new RegExp(testCase.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+    assert.match(result.prompt, new RegExp(aDescriptorPerceptual(testCase.label).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
   pass("Pastel Dusk pink, Silk spring pink, and Infinity Interrogacion black variants resolve from v007 evidence");
 }

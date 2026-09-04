@@ -25,6 +25,7 @@ export type LoraDatasetGalleryRecord = {
   componentsStatus: "confirmed_visible" | "order_breakdown_only" | "source_breakdown_only" | "not_available";
   productBreakdownStatus?: string;
   sourceUrl?: string | null;
+  sourceRef?: string | null;
 };
 
 export type LoraDatasetGalleryData = {
@@ -49,6 +50,7 @@ const ORDER_DATASET_DIR = path.join(process.cwd(), "data", "lora-artifacts", "da
 const ORDER_IMAGE_DIR = path.join(process.cwd(), "data", "staging", "recaption-v004", "original");
 const ORDER_CAPTIONS_DIR = path.join(process.cwd(), "data", "staging", "recaption-v004", "nuevo");
 const V007_CAPTIONS_DIR = path.join(process.cwd(), "data", "staging", "lora-v007", "captions");
+const V007_ANNOTATIONS_DIR = path.join(process.cwd(), "data", "staging", "lora-v007", "anotaciones");
 const WEB_STAGING_DIR = path.join(process.cwd(), "data", "staging", "lora-v006-orders-web-v001");
 const WEB_IMAGE_DIR = path.join(WEB_STAGING_DIR, "original");
 const WEB_MANIFEST_PATH = path.join(WEB_STAGING_DIR, "manifest.json");
@@ -60,12 +62,41 @@ type CatalogImageRow = {
   imagenes: string | null;
 };
 
+type V007Annotation = {
+  image_id?: unknown;
+  source?: { ref?: unknown };
+  anotacion?: { structures?: unknown };
+};
+
+type V007Structure = { visible_concept_ids?: unknown };
+
 function readJson<T>(filePath: string): T | null {
   try {
     return JSON.parse(fs.readFileSync(filePath, "utf8")) as T;
   } catch {
     return null;
   }
+}
+
+function strings(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0) : [];
+}
+
+function readV007Metadata(): Map<string, Pick<LoraDatasetGalleryRecord, "conceptIds" | "sourceRef">> {
+  const metadata = new Map<string, Pick<LoraDatasetGalleryRecord, "conceptIds" | "sourceRef">>();
+  if (!fs.existsSync(V007_ANNOTATIONS_DIR)) return metadata;
+  for (const file of fs.readdirSync(V007_ANNOTATIONS_DIR).filter((entry) => entry.endsWith(".json"))) {
+    const annotation = readJson<V007Annotation>(path.join(V007_ANNOTATIONS_DIR, file));
+    const imageId = typeof annotation?.image_id === "string" ? annotation.image_id : file.slice(0, -5);
+    const structures = Array.isArray(annotation?.anotacion?.structures)
+      ? annotation.anotacion.structures.filter((item): item is V007Structure => Boolean(item && typeof item === "object"))
+      : [];
+    metadata.set(imageId, {
+      conceptIds: [...new Set(structures.flatMap((structure) => strings(structure.visible_concept_ids)))],
+      sourceRef: typeof annotation?.source?.ref === "string" ? annotation.source.ref : null,
+    });
+  }
+  return metadata;
 }
 
 function normalizeProductText(value: string): string {
@@ -177,7 +208,10 @@ function readWebComponents(
   };
 }
 
-function readOrderRecords(catalogImagesBySku: Map<string, string>): LoraDatasetGalleryRecord[] {
+function readOrderRecords(
+  catalogImagesBySku: Map<string, string>,
+  v007Metadata: Map<string, Pick<LoraDatasetGalleryRecord, "conceptIds" | "sourceRef">>,
+): LoraDatasetGalleryRecord[] {
   if (!fs.existsSync(ORDERS_DIR)) return [];
   return fs.readdirSync(ORDERS_DIR, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
@@ -203,6 +237,7 @@ function readOrderRecords(catalogImagesBySku: Map<string, string>): LoraDatasetG
           const captionFromStaging = fs.existsSync(stagedCaptionPath) ? fs.readFileSync(stagedCaptionPath, "utf8").trim() : "";
           const captionFromOrder = readJson<Caption>(path.join(orderDir, `caption-${photoIndex}.json`))?.caption?.trim() ?? "";
           const caption = captionV007 || captionFromStaging || captionFromOrder || null;
+          const metadata = v007Metadata.get(imageId);
           return {
             imageId,
             imageFile: stagedImage ?? `${imageId}.jpg`,
@@ -210,7 +245,8 @@ function readOrderRecords(catalogImagesBySku: Map<string, string>): LoraDatasetG
             captionVersion: captionV007 ? ("v007" as const) : caption ? ("legacy" as const) : null,
             status: "order" as const,
             origin: "ordenes-decoracion",
-            conceptIds: [],
+            conceptIds: metadata?.conceptIds ?? [],
+            sourceRef: metadata?.sourceRef ?? null,
             ...readOrderComponents(imageId, catalogImagesBySku),
           };
         });
@@ -218,7 +254,10 @@ function readOrderRecords(catalogImagesBySku: Map<string, string>): LoraDatasetG
     .filter((record): record is NonNullable<typeof record> => record !== null);
 }
 
-function readWebRecords(catalogImagesBySku: Map<string, string>): LoraDatasetGalleryRecord[] {
+function readWebRecords(
+  catalogImagesBySku: Map<string, string>,
+  v007Metadata: Map<string, Pick<LoraDatasetGalleryRecord, "conceptIds" | "sourceRef">>,
+): LoraDatasetGalleryRecord[] {
   const manifest = readJson<{ records?: WebManifestRecord[] }>(WEB_MANIFEST_PATH);
   if (!manifest || !fs.existsSync(WEB_IMAGE_DIR)) return [];
   return (manifest.records ?? [])
@@ -226,6 +265,7 @@ function readWebRecords(catalogImagesBySku: Map<string, string>): LoraDatasetGal
       const imageFile = typeof record.image === "string" ? path.basename(record.image) : "";
       if (!record.id || !/^web-\d+\.(jpe?g|png|webp)$/i.test(imageFile)) return null;
       if (!fs.existsSync(path.join(WEB_IMAGE_DIR, imageFile))) return null;
+      const metadata = v007Metadata.get(record.id);
       return {
         imageId: record.id,
         imageFile,
@@ -233,7 +273,8 @@ function readWebRecords(catalogImagesBySku: Map<string, string>): LoraDatasetGal
         captionVersion: null,
         status: "web_pending" as const,
         origin: "Sempertex.com â€” Ideas de Fiesta",
-        conceptIds: [],
+        conceptIds: metadata?.conceptIds ?? [],
+        sourceRef: metadata?.sourceRef ?? null,
         ...readWebComponents(record.productBreakdown, catalogImagesBySku),
         productBreakdownStatus: record.productBreakdownStatus ?? "pending",
         sourceUrl: record.sourceUrl ?? null,
@@ -244,8 +285,9 @@ function readWebRecords(catalogImagesBySku: Map<string, string>): LoraDatasetGal
 
 export function readLoraDatasetV005View(): LoraDatasetGalleryData | null {
   const catalogImagesBySku = readCatalogImagesBySku();
-  const orderRecords = readOrderRecords(catalogImagesBySku);
-  const webRecords = readWebRecords(catalogImagesBySku);
+  const v007Metadata = readV007Metadata();
+  const orderRecords = readOrderRecords(catalogImagesBySku, v007Metadata);
+  const webRecords = readWebRecords(catalogImagesBySku, v007Metadata);
   const records = [...orderRecords, ...webRecords];
   if (records.length === 0) return null;
 
@@ -268,5 +310,4 @@ export function readLoraDatasetV005View(): LoraDatasetGalleryData | null {
     records,
   };
 }
-
 

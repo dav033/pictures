@@ -2,6 +2,9 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 const DATASET = path.join(process.cwd(), "data", "staging", "recaption-v004", "original");
+// El servidor no tiene el dataset de staging (.dockerignore excluye data/), así
+// que ahí las miniaturas salen de las fotos publicadas con el snapshot.
+const SNAPSHOT = path.join(process.cwd(), "data", "snapshot", "imagenes");
 const IMAGEN = /\.(jpe?g|png|webp)$/i;
 const MIME: Record<string, string> = {
   jpg: "image/jpeg",
@@ -22,7 +25,7 @@ export async function GET(
   }
 
   try {
-    const buffer = await readFile(path.join(DATASET, archivo));
+    const buffer = await readFile(path.join(DATASET, archivo)).catch(() => readFile(path.join(SNAPSHOT, archivo)));
     const extension = path.extname(archivo).slice(1).toLowerCase();
     return new Response(new Uint8Array(buffer), {
       headers: {

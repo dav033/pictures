@@ -10,7 +10,15 @@ type SnapshotStatus = {
     datasetCaptions: number;
   };
   savedAt: string | null;
-  lastPublish: { publishedAt: string; host: string; container: string; containerPath: string; ok: boolean; error?: string } | null;
+  lastPublish: {
+    publishedAt: string;
+    host: string;
+    container: string;
+    containerPath: string;
+    ok: boolean;
+    imagenes?: { enviadas: number; sinOrigen: number; mb: number };
+    error?: string;
+  } | null;
 };
 
 function formatoFecha(iso: string | null | undefined): string {
@@ -63,7 +71,9 @@ export default function SnapshotSyncPanel() {
         setResultado({
           ok: Boolean(data.ok),
           mensaje: data.ok
-            ? `Publicado en ${data.host} · contenedor ${data.container}`
+            ? `Publicado en ${data.host} · contenedor ${data.container}${
+                data.imagenes ? ` · ${data.imagenes.enviadas} fotos (${data.imagenes.mb} MB)` : ""
+              }`
             : data.error ?? "No se pudo publicar",
         });
       })
@@ -110,6 +120,9 @@ export default function SnapshotSyncPanel() {
                 </p>
                 <p className="mt-1 text-xs text-texto-suave">
                   {formatoFecha(estado.lastPublish.publishedAt)}
+                  {estado.lastPublish.ok && estado.lastPublish.imagenes
+                    ? ` · ${estado.lastPublish.imagenes.enviadas} fotos (${estado.lastPublish.imagenes.mb} MB)`
+                    : ""}
                   {!estado.lastPublish.ok && estado.lastPublish.error ? ` · ${estado.lastPublish.error}` : ""}
                 </p>
               </>

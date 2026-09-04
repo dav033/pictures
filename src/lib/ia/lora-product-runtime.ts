@@ -11,6 +11,7 @@ import {
   VOCABULARY_VERSION,
   type ProductVocabulary,
 } from "@/lib/lora/product-vocabulary";
+import { aDescriptorPerceptual } from "@/lib/lora/descriptor-perceptual";
 
 /**
  * Subagent G deliverable â€” runtime prompt integration.
@@ -143,7 +144,7 @@ function resolveElement(
       entries.push({
         elementId: element.element_id,
         conceptId: result.concept.concept_id,
-        canonicalLabel: result.concept.canonical_label,
+        canonicalLabel: aDescriptorPerceptual(result.concept.canonical_label),
         sizeCodes: confirmedSizes.length ? confirmedSizes : undefined,
       });
     } else if (result.status === "ambiguous") {
