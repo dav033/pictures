@@ -664,6 +664,38 @@ export async function POST(request: Request) {
       ...classifyNonCommercialProducts(idsSeedDemo, "seed_demo", usoComercialProductos),
       ...classifyNonCommercialProducts(idsManuales, "manual_product", usoComercialProductos),
     ];
+    // Esto se resuelve ANTES de resolver el plan: el resolutor necesita el
+    // allowlist para no elegir variantes que el modelo nunca vio, y los ids
+    // que llegan del cliente conviene rechazarlos antes de cotizar.
+    const parsedLoraMode = body.loraMode === undefined ? null : LoraModeSlugSchema.safeParse(body.loraMode);
+    if (body.loraMode !== undefined && !parsedLoraMode?.success) throw new Error("LORA_MODE_INVALID: modo LoRA inválido.");
+    const explicitLoraMode = parsedLoraMode?.success ? parsedLoraMode.data : null;
+    const parsedLoraSelection = body.loraSelection === undefined ? null : LoraSelectionSchema.safeParse(body.loraSelection);
+    if (body.loraSelection !== undefined && !parsedLoraSelection?.success) throw new Error("LORA_SELECTION_INVALID: selecciona un artifact producto o estructura válido.");
+    if (explicitLoraMode && body.loraSelection !== undefined) throw new Error("LORA_MODE_SELECTION_CONFLICT: usa un modo o una selección manual, no ambos.");
+    const explicitLoraSelection = parsedLoraSelection?.success ? parsedLoraSelection.data : null;
+    const resolvedLoras = explicitLoraMode
+      ? await resolveLoraMode(explicitLoraMode)
+      : explicitLoraSelection
+        ? await resolveLoraSelection(explicitLoraSelection)
+        : undefined;
+    const loraCatalogAllowlist = explicitLoraMode
+      ? await resolveLoraModeDatasetAllowlist(explicitLoraMode)
+      : null;
+    if (loraCatalogAllowlist) {
+      const allowedProductIds = new Set(loraCatalogAllowlist.productIds);
+      const allowedVariantIds = new Set(loraCatalogAllowlist.variantIds);
+      const requestedIds = [
+        ...(body.productIds ?? []),
+        ...(body.ragVariantIds ?? []),
+        ...(body.manualProducts ?? []).map((product) => product.id),
+      ];
+      // `productIds` solo puede validar ids de producto (p. ej. piezas manuales
+      // del chat); un variant_id tiene que estar en `variantIds` sí o sí, que
+      // es la granularidad real de la cobertura (modelo + familia + tamaño).
+      const outsidePool = [...new Set(requestedIds)].filter((id) => !allowedProductIds.has(id) && !allowedVariantIds.has(id));
+      if (outsidePool.length) throw new Error(`LORA_DATASET_ALLOWLIST_REJECTED: ${outsidePool.join(", ")}`);
+    }
     let planResuelto: PlanResuelto | undefined;
     let approvalContext: { requestId: string; expiresAt: number } | null = null;
     const auditarImagen = async (status: string, qa: ImageQaReport, scene: Parameters<typeof evaluateSceneQa>[0]) => {
@@ -694,7 +726,7 @@ export async function POST(request: Request) {
         variantes.add(producto.id);
         whitelist.set(producto.familiaId, variantes);
       }
-      planResuelto = await resolverPlan(getRagPool(), planDeclarativo, whitelist);
+      planResuelto = await resolverPlan(getRagPool(), planDeclarativo, whitelist, loraCatalogAllowlist);
       if (body.planHash && body.planHash !== planResuelto.plan_hash) throw new Error("Plan hash does not match the validated server plan.");
       if (body.plan?.plan_hash !== planResuelto.plan_hash) throw new Error("Plan hash does not match the validated server plan.");
       if (planResuelto.sin_cobertura.length > 0) throw new Error("El plan tiene materiales sin cobertura en la selección validada; no se generó una imagen incoherente.");
@@ -844,32 +876,6 @@ export async function POST(request: Request) {
     SceneSpecSchema.parse(sceneSpec);
     if (sceneSpec.elements.length === 0 && productos.length === 0 && !body.revisionInstruction && !body.instruccion) throw new Error("Approve at least one element before generating.");
 
-    const parsedLoraMode = body.loraMode === undefined ? null : LoraModeSlugSchema.safeParse(body.loraMode);
-    if (body.loraMode !== undefined && !parsedLoraMode?.success) throw new Error("LORA_MODE_INVALID: modo LoRA inválido.");
-    const explicitLoraMode = parsedLoraMode?.success ? parsedLoraMode.data : null;
-    const parsedLoraSelection = body.loraSelection === undefined ? null : LoraSelectionSchema.safeParse(body.loraSelection);
-    if (body.loraSelection !== undefined && !parsedLoraSelection?.success) throw new Error("LORA_SELECTION_INVALID: selecciona un artifact producto o estructura válido.");
-    if (explicitLoraMode && body.loraSelection !== undefined) throw new Error("LORA_MODE_SELECTION_CONFLICT: usa un modo o una selección manual, no ambos.");
-    const explicitLoraSelection = parsedLoraSelection?.success ? parsedLoraSelection.data : null;
-    const resolvedLoras = explicitLoraMode
-      ? await resolveLoraMode(explicitLoraMode)
-      : explicitLoraSelection
-        ? await resolveLoraSelection(explicitLoraSelection)
-        : undefined;
-    const loraCatalogAllowlist = explicitLoraMode
-      ? await resolveLoraModeDatasetAllowlist(explicitLoraMode)
-      : null;
-    if (loraCatalogAllowlist) {
-      const allowedProductIds = new Set(loraCatalogAllowlist.productIds);
-      const allowedVariantIds = new Set(loraCatalogAllowlist.variantIds);
-      const requestedIds = [
-        ...(body.productIds ?? []),
-        ...(body.ragVariantIds ?? []),
-        ...(body.manualProducts ?? []).map((product) => product.id),
-      ];
-      const outsidePool = [...new Set(requestedIds)].filter((id) => !allowedProductIds.has(id) && !allowedVariantIds.has(id));
-      if (outsidePool.length) throw new Error(`LORA_DATASET_ALLOWLIST_REJECTED: ${outsidePool.join(", ")}`);
-    }
     const usarLora = body.usarLora === true || Boolean(explicitLoraSelection || explicitLoraMode);
     const comparar = body.comparar === true;
     const compararLora = body.compararLora === true;

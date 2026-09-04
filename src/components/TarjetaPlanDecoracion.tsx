@@ -11,6 +11,7 @@ import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { ProductoCandidato, VarianteCandidata } from "@/lib/rag/chat/buscar";
 import { puntuacionCromatica } from "@/lib/rag/catalog/similitud-color";
 import { ReferenciasEntrenamientoModal, type ReferenciasEvidenciaData } from "@/components/ReferenciasEntrenamientoModal";
+import type { LoraModeSlug } from "@/lib/lora/schema";
 
 const pesos = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
@@ -37,6 +38,10 @@ type Props = {
   aprobado?: boolean;
   generando?: boolean;
   onPlanActualizado?: (plan: PlanResuelto, cotizacion?: Cotizacion) => void;
+  /** Modo LoRA activo: el editor de piezas debe respetar el mismo allowlist
+   * de dataset que ya aplica el chat, o se puede agregar/reemplazar una
+   * pieza que el modelo nunca vio y enterarse recién al generar. */
+  loraMode?: LoraModeSlug;
 };
 
 type OpcionCatalogo = { candidato: ProductoCandidato; variante: VarianteCandidata };
@@ -142,7 +147,7 @@ function ListaOpciones({ opciones, guardando, onCambiar, ariaLabel, listId, acti
   );
 }
 
-export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, generando = false, onPlanActualizado }: Props) {
+export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, generando = false, onPlanActualizado, loraMode }: Props) {
   const [imagenesCatalogo, setImagenesCatalogo] = useState<Record<string, string>>({});
   const [imagenesAusentes, setImagenesAusentes] = useState<Record<string, true>>({});
   const [referenciasEntrenamiento, setReferenciasEntrenamiento] = useState<Record<string, ReferenciaEntrenamiento>>({});
@@ -277,7 +282,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     setBuscandoEdicion(true);
     setErrorEdicion(null);
     try {
-      const respuesta = await fetch("/api/plan-editar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ modo: "buscar", consulta }) });
+      const respuesta = await fetch("/api/plan-editar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ modo: "buscar", consulta, loraMode }) });
       const datos = await respuesta.json() as { candidatos?: ProductoCandidato[]; error?: string };
       if (!respuesta.ok) throw new Error(datos.error ?? "No se pudo buscar en el catálogo.");
       setCandidatosEdicion(datos.candidatos ?? []);
@@ -342,7 +347,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       const respuesta = await fetch("/api/plan-editar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ modo: "aplicar", base: plan, edicion: { accion: modoEdicion, estructura_id: estructuraEdicion, objetivo_variant_id: objetivoEdicion ?? undefined, variante: { product_id: varianteEdicion.productId, variant_id: varianteEdicion.variantId, color: colorEdicion.trim() || undefined }, participacion: modoEdicion === "agregar" ? participacion : undefined } }),
+        body: JSON.stringify({ modo: "aplicar", base: plan, edicion: { accion: modoEdicion, estructura_id: estructuraEdicion, objetivo_variant_id: objetivoEdicion ?? undefined, variante: { product_id: varianteEdicion.productId, variant_id: varianteEdicion.variantId, color: colorEdicion.trim() || undefined }, participacion: modoEdicion === "agregar" ? participacion : undefined }, loraMode }),
       });
        const datos = await respuesta.json() as { plan?: PlanResuelto; cotizacion?: Cotizacion; error?: string };
        if (!respuesta.ok || !datos.plan) throw new Error(datos.error ?? "No se pudo actualizar el plan.");
@@ -360,7 +365,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     setGuardandoEdicion(true);
     setErrorEdicion(null);
     try {
-      const respuesta = await fetch("/api/plan-editar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ modo: "aplicar", base: plan, edicion: { accion: "reemplazar", estructura_id: seleccionCatalogo.estructuraId, objetivo_variant_id: seleccionCatalogo.linea.variant_id, variante: { product_id: opcion.candidato.productId, variant_id: opcion.variante.variantId, color: opcion.variante.colores[0] ?? undefined } } }) });
+      const respuesta = await fetch("/api/plan-editar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ modo: "aplicar", base: plan, edicion: { accion: "reemplazar", estructura_id: seleccionCatalogo.estructuraId, objetivo_variant_id: seleccionCatalogo.linea.variant_id, variante: { product_id: opcion.candidato.productId, variant_id: opcion.variante.variantId, color: opcion.variante.colores[0] ?? undefined } }, loraMode }) });
        const datos = await respuesta.json() as { plan?: PlanResuelto; cotizacion?: Cotizacion; error?: string };
        if (!respuesta.ok || !datos.plan) throw new Error(datos.error ?? "No se pudo cambiar la pieza.");
        onPlanActualizado(datos.plan, datos.cotizacion);
@@ -380,7 +385,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     setGuardandoEdicion(true);
     setErrorEdicion(null);
     try {
-      const respuesta = await fetch("/api/plan-editar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ modo: "aplicar", base: plan, edicion: { accion: "quitar", estructura_id: estructuraId, objetivo_variant_id: linea.variant_id } }) });
+      const respuesta = await fetch("/api/plan-editar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ modo: "aplicar", base: plan, edicion: { accion: "quitar", estructura_id: estructuraId, objetivo_variant_id: linea.variant_id }, loraMode }) });
        const datos = await respuesta.json() as { plan?: PlanResuelto; cotizacion?: Cotizacion; error?: string };
        if (!respuesta.ok || !datos.plan) throw new Error(datos.error ?? "No se pudo quitar la pieza.");
        onPlanActualizado(datos.plan, datos.cotizacion);
@@ -405,7 +410,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     setBuscandoCatalogo(true);
     setErrorEdicion(null);
     try {
-      const respuesta = await fetch("/api/plan-editar", { method: "POST", headers: { "Content-Type": "application/json" }, signal: controlador.signal, body: JSON.stringify({ modo: "recomendadas", variant_id: seleccionCatalogo.linea.variant_id }) });
+      const respuesta = await fetch("/api/plan-editar", { method: "POST", headers: { "Content-Type": "application/json" }, signal: controlador.signal, body: JSON.stringify({ modo: "recomendadas", variant_id: seleccionCatalogo.linea.variant_id, loraMode }) });
       const datos = await respuesta.json() as { candidatos?: ProductoCandidato[]; error?: string };
       if (!respuesta.ok) throw new Error(datos.error ?? "No se pudieron cargar recomendaciones.");
       if (secuencia !== secuenciaCatalogoRef.current) return;
@@ -428,7 +433,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     setBuscandoCatalogo(true);
     setErrorEdicion(null);
     try {
-      const respuesta = await fetch("/api/plan-editar", { method: "POST", headers: { "Content-Type": "application/json" }, signal: controlador.signal, body: JSON.stringify({ modo: "buscar", consulta }) });
+      const respuesta = await fetch("/api/plan-editar", { method: "POST", headers: { "Content-Type": "application/json" }, signal: controlador.signal, body: JSON.stringify({ modo: "buscar", consulta, loraMode }) });
       const datos = await respuesta.json() as { candidatos?: ProductoCandidato[]; error?: string };
       if (!respuesta.ok) throw new Error(datos.error ?? "No se pudo buscar en el catálogo.");
       if (secuencia !== secuenciaCatalogoRef.current) return;
@@ -481,7 +486,8 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
 
   useEffect(() => {
     const controlador = new AbortController();
-    fetch("/api/lora/training-reference-counts", { signal: controlador.signal, cache: "no-store" })
+    const parametros = loraMode ? `?loraMode=${encodeURIComponent(loraMode)}` : "";
+    fetch(`/api/lora/training-reference-counts${parametros}`, { signal: controlador.signal, cache: "no-store" })
       .then((respuesta) => (respuesta.ok ? respuesta.json() : Promise.reject(new Error("No se pudieron cargar las referencias de entrenamiento."))))
       .then((datos: ReferenciasEntrenamientoResponse) => setReferenciasEntrenamiento(datos.countsByCatalogId ?? {}))
       .catch((error: unknown) => {
@@ -489,7 +495,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
         setReferenciasEntrenamiento({});
       });
     return () => controlador.abort();
-  }, []);
+  }, [loraMode]);
 
   useEffect(() => () => peticionEvidenciaRef.current?.abort(), []);
 

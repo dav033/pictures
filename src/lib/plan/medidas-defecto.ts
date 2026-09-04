@@ -1,4 +1,4 @@
-import type { EstructuraPlan, PlanDecoracion } from "./tipos";
+import type { EstructuraPlan, EstructuraPlan1_1, PlanDecoracion, PlanDecoracion1_1 } from "./tipos";
 
 type Medidas = { ancho_m?: number; alto_m?: number; largo_m?: number };
 const EXTERIOR = /jard[ií]n|exterior|terraza|playa|patio|campo/i;
@@ -21,6 +21,31 @@ export function completarMedidas(plan: PlanDecoracion): PlanDecoracion {
   const estructuras = plan.estructuras.map((estructura) => {
     if (["backdrop", "kit", "accesorio"].includes(estructura.tipo)) return estructura;
     const defaults = DEFAULTS[estructura.tipo][exterior ? "exterior" : "interior"];
+    const medidas = { ...defaults, ...estructura.medidas };
+    const faltaban = Object.keys(defaults).some((key) => (estructura.medidas as Record<string, unknown>)[key] == null);
+    if (faltaban) {
+      const valores = [medidas.ancho_m, medidas.alto_m, medidas.largo_m].filter((value): value is number => value != null);
+      const texto = valores.length === 1 ? `${valores[0]} m` : valores.map((value) => `${value} m`).join(" × ");
+      supuestos.push(`medidas asumidas para ${estructura.tipo}: ${texto} — no nos diste el tamaño del espacio`);
+    }
+    return { ...estructura, medidas };
+  });
+  return { ...plan, estructuras, supuestos: [...new Set(supuestos)] };
+}
+
+/**
+ * Plan 1.1: idéntica lógica, pero `escultura` se suma al grupo que nunca
+ * recibe medidas geométricas por defecto (PLAN-COMPOSICION-RICA-V001.md
+ * §10.1 — "reconocer escultura sin inventar medidas ni geometría"). Una
+ * araña no tiene ancho×alto de despiece; su cantidad sale de
+ * `unidades_por_instancia`, no de `DEFAULTS`.
+ */
+export function completarMedidas1_1(plan: PlanDecoracion1_1): PlanDecoracion1_1 {
+  const exterior = EXTERIOR.test(plan.espacio.tipo);
+  const supuestos = [...plan.supuestos];
+  const estructuras = plan.estructuras.map((estructura): EstructuraPlan1_1 => {
+    if (["backdrop", "kit", "accesorio", "escultura"].includes(estructura.tipo)) return estructura;
+    const defaults = DEFAULTS[estructura.tipo as EstructuraPlan["tipo"]][exterior ? "exterior" : "interior"];
     const medidas = { ...defaults, ...estructura.medidas };
     const faltaban = Object.keys(defaults).some((key) => (estructura.medidas as Record<string, unknown>)[key] == null);
     if (faltaban) {

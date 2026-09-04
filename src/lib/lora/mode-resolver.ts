@@ -252,7 +252,29 @@ export async function resolveLoraModeDatasetAllowlist(
     [option.dataset_id],
   );
   const productIds = [...new Set(result.rows.flatMap((row) => row.product_id ? [row.product_id] : []))];
-  const variantIds = [...new Set(result.rows.flatMap((row) => row.variant_id ? [row.variant_id] : []))];
-  if (productIds.length === 0 && variantIds.length === 0) throw new Error(`LORA_DATASET_ALLOWLIST_EMPTY: ${option.dataset_id}`);
+  const variantIdsRepresentados = result.rows.flatMap((row) => row.variant_id ? [row.variant_id] : []);
+  if (productIds.length === 0 && variantIdsRepresentados.length === 0) throw new Error(`LORA_DATASET_ALLOWLIST_EMPTY: ${option.dataset_id}`);
+
+  // El tamaño de paquete (unidades_paq) no cambia el globo que el LoRA vio:
+  // es la misma familia/modelo/color/diámetro empacado distinto. Restringir
+  // por variant_id exacto bloqueaba paquetes nunca fotografiados de un globo
+  // que sí está cubierto (ej. R-12 Fashion Fucsia PAQ X20 cubre PAQ X50).
+  // Se amplía a cualquier variante que comparta product_id + forma + diámetro
+  // con una variante representada — "modelo, familia y tamaño", no empaque.
+  const familias = await pool.query<{ product_id: string; variant_id: string }>(
+    `WITH identidad_visual AS (
+       SELECT DISTINCT v.product_id, v.forma, v.diam_pulg
+         FROM catalog_variants v
+        WHERE v.variant_id = ANY($1::text[])
+     )
+     SELECT DISTINCT v.product_id, v.variant_id
+       FROM catalog_variants v
+       JOIN identidad_visual iv
+         ON iv.product_id = v.product_id
+        AND iv.forma IS NOT DISTINCT FROM v.forma
+        AND iv.diam_pulg IS NOT DISTINCT FROM v.diam_pulg`,
+    [variantIdsRepresentados],
+  );
+  const variantIds = [...new Set([...variantIdsRepresentados, ...familias.rows.map((row) => row.variant_id)])];
   return { productIds, variantIds };
 }

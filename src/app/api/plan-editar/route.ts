@@ -7,6 +7,9 @@ import { puntuacionCromatica } from "@/lib/rag/catalog/similitud-color";
 import { crearTokenAprobacion, verificarTokenAprobacion } from "@/lib/plan/aprobacion";
 import { resolverPlan } from "@/lib/plan/resolver";
 import { PlanDecoracionSchema, type MaterialPlan, type PlanDecoracion } from "@/lib/plan/tipos";
+import { LoraModeSlugSchema } from "@/lib/lora/schema";
+import { resolveLoraModeDatasetAllowlist } from "@/lib/lora/mode-resolver";
+import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 
 const BaseLineaSchema = z.object({
   product_id: z.string().min(1),
@@ -52,9 +55,9 @@ const EdicionSchema = z.object({
 });
 
 const BodySchema = z.discriminatedUnion("modo", [
-  z.object({ modo: z.literal("buscar"), consulta: z.string().trim().min(2).max(240) }).strict(),
-  z.object({ modo: z.literal("recomendadas"), variant_id: z.string().trim().min(1).max(160) }).strict(),
-  z.object({ modo: z.literal("aplicar"), base: BasePlanSchema, edicion: EdicionSchema }).strict(),
+  z.object({ modo: z.literal("buscar"), consulta: z.string().trim().min(2).max(240), loraMode: LoraModeSlugSchema.optional() }).strict(),
+  z.object({ modo: z.literal("recomendadas"), variant_id: z.string().trim().min(1).max(160), loraMode: LoraModeSlugSchema.optional() }).strict(),
+  z.object({ modo: z.literal("aplicar"), base: BasePlanSchema, edicion: EdicionSchema, loraMode: LoraModeSlugSchema.optional() }).strict(),
 ]);
 
 type BasePlan = z.infer<typeof BasePlanSchema>;
@@ -299,6 +302,22 @@ function cercaniaCromatica(colores: string[], actuales: string[]): number {
   return puntuacionCromatica(actuales, colores);
 }
 
+/**
+ * `buscarRecomendaciones` no acepta allowlist en su SQL (recorre familia +
+ * tamaño físico, no está indexado por dataset). Se filtra después: un
+ * producto queda solo si su product_id está permitido, y dentro de él solo
+ * las variantes cubiertas — nunca se enseña una variante que el modo LoRA
+ * activo no puede renderizar, aunque el producto sí tenga alguna cubierta.
+ */
+function filtrarPorAllowlist(candidatos: ProductoCandidato[], allowlist: CatalogAllowlist | null): ProductoCandidato[] {
+  if (!allowlist) return candidatos;
+  const variantes = new Set(allowlist.variantIds);
+  return candidatos.flatMap((candidato) => {
+    const variantesPermitidas = candidato.variantes.filter((variante) => variantes.has(variante.variantId));
+    return variantesPermitidas.length ? [{ ...candidato, variantes: variantesPermitidas }] : [];
+  });
+}
+
 async function buscarRecomendaciones(pool: ReturnType<typeof getRagPool>, variantId: string): Promise<ProductoCandidato[]> {
   const actual = await pool.query<{
     product_id: string;
@@ -385,13 +404,23 @@ export async function POST(request: Request) {
     const body = BodySchema.parse(await request.json());
     const pool = getRagPool();
 
+    // Un modo LoRA restringido (training_1/2) nunca debe poder ofrecer ni
+    // aplicar una pieza fuera de su dataset — el mismo allowlist que ya
+    // filtra la búsqueda del chat (PLAN-CONTROL-ENTRENAMIENTOS-LORA-UI.md
+    // §9). Sin esto, el editor podía agregar/reemplazar cualquier producto
+    // real del catálogo y el rechazo solo aparecía al generar, ya tarde.
+    const catalogAllowlist: CatalogAllowlist | null = body.loraMode
+      ? await resolveLoraModeDatasetAllowlist(body.loraMode, pool)
+      : null;
+
     if (body.modo === "buscar") {
-      const resultado = await buscarCatalogoRag(pool, body.consulta);
+      const resultado = await buscarCatalogoRag(pool, body.consulta, { allowlist: catalogAllowlist ?? undefined });
       return Response.json({ status: resultado.status, candidatos: serializarCandidatos(resultado), filtroRelajado: resultado.filtroRelajado });
     }
 
     if (body.modo === "recomendadas") {
-      return Response.json({ candidatos: (await buscarRecomendaciones(pool, body.variant_id)).slice(0, 12) });
+      const candidatos = filtrarPorAllowlist(await buscarRecomendaciones(pool, body.variant_id), catalogAllowlist);
+      return Response.json({ candidatos: candidatos.slice(0, 12) });
     }
 
     const base = body.base;
@@ -399,14 +428,26 @@ export async function POST(request: Request) {
     if (!aprobacionBase) throw new PlanEditError(409, "La aprobación base expiró o no corresponde a este plan.");
 
     const whitelist = await whitelistDesdeBase(pool, base);
-    const planBaseVerificado = await resolverPlan(pool, base.plan, whitelist);
+    // El allowlist entra en las dos resoluciones: si solo entrara en la
+    // edición, el hash del plan base se calcularía con otras reglas que las
+    // que lo produjeron y toda edición fallaría con "el plan base cambió".
+    const planBaseVerificado = await resolverPlan(pool, base.plan, whitelist, catalogAllowlist);
     if (planBaseVerificado.plan_hash !== base.plan_hash) {
       throw new PlanEditError(409, "El plan base cambió desde que se mostró. Vuelve a solicitar la propuesta.");
     }
 
-    if (body.edicion.accion !== "quitar") await agregarVarianteAWhitelist(pool, whitelist, body.edicion.variante!);
+    if (body.edicion.accion !== "quitar") {
+      const variante = body.edicion.variante!;
+      // Se exige la variante exacta: que el producto esté entrenado no dice
+      // nada del tamaño concreto, y aceptarlo por `product_id` dejaba pasar
+      // tamaños nunca fotografiados (R-24 de un producto entrenado en R-5..R-18).
+      if (catalogAllowlist && !catalogAllowlist.variantIds.includes(variante.variant_id)) {
+        throw new PlanEditError(409, `LORA_DATASET_ALLOWLIST_REJECTED: ${variante.variant_id}`);
+      }
+      await agregarVarianteAWhitelist(pool, whitelist, variante);
+    }
     const planEditado = aplicarEdicion(base, body.edicion);
-    const resuelto = await resolverPlan(pool, planEditado, whitelist);
+    const resuelto = await resolverPlan(pool, planEditado, whitelist, catalogAllowlist);
     if (resuelto.compras.length === 0) throw new PlanEditError(422, "El cambio dejó la estructura sin piezas disponibles.");
 
     const requestId = base.request_id ?? aprobacionBase.requestId;

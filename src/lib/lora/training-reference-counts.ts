@@ -2,6 +2,10 @@ import "server-only";
 
 import fs from "node:fs";
 import path from "node:path";
+import type { Pool } from "pg";
+import { getRagPool } from "@/lib/rag/db";
+import { LoraModeSlugSchema, type LoraModeSlug } from "./schema";
+import { listLoraModeOptions } from "./mode-resolver";
 import { PRODUCT_VOCABULARY } from "./product-vocabulary-data";
 
 export type LoraTrainingReferenceCount = {
@@ -211,6 +215,71 @@ export function readLoraTrainingReferenceCounts(): LoraTrainingReferenceCounts {
   return {
     datasetVersion: "v007",
     trainingImageCount: trainingIds.size,
+    countsByCatalogId,
+  };
+}
+
+export type LoraActiveTrainingReferenceCounts = {
+  mode: LoraModeSlug;
+  datasetId: string | null;
+  datasetLabel: string | null;
+  /** sku, variant_id y product_id apuntan al mismo objeto — mismo criterio de búsqueda que ya usa el editor de plan. */
+  countsByCatalogId: Record<string, { total: number }>;
+};
+
+/**
+ * Igual que `readLoraTrainingReferenceCounts`, pero contra el dataset del
+ * MODO LORA REALMENTE ACTIVO (Postgres, `lora_dataset_element_stats`) en vez
+ * del corpus v007 fijo del filesystem. v007 está rechazado y no es lo que
+ * genera hoy — mostrar su cobertura en el badge de "referencias en
+ * entrenamiento" es engañoso cuando el modo activo (training_1/unlimited)
+ * corre sobre otro dataset (hoy v004) con coverage distinta.
+ *
+ * El conteo por variante se agrega por familia visual (product_id + forma +
+ * diam_pulg, IGNORANDO el tamaño de paquete) — el mismo criterio que
+ * `resolveLoraModeDatasetAllowlist`: el globo que el LoRA vio no cambia
+ * porque se haya empacado distinto.
+ */
+export async function readActiveLoraTrainingReferenceCounts(
+  mode: unknown,
+  pool: Pool = getRagPool(),
+): Promise<LoraActiveTrainingReferenceCounts> {
+  const parsedMode = LoraModeSlugSchema.parse(mode);
+  const option = (await listLoraModeOptions(pool)).find((candidate) => candidate.slug === parsedMode);
+  if (!option?.dataset_id) return { mode: parsedMode, datasetId: null, datasetLabel: null, countsByCatalogId: {} };
+
+  const { rows } = await pool.query<{ product_id: string; variant_id: string; sku: string | null; total: string }>(
+    `WITH representadas AS (
+       SELECT s.variant_id, s.image_count
+         FROM lora_dataset_element_stats s
+        WHERE s.dataset_id = $1 AND s.element_kind = 'shopify_variant' AND s.variant_id IS NOT NULL
+     ),
+     familias AS (
+       SELECT DISTINCT v.product_id, v.forma, v.diam_pulg, SUM(r.image_count) OVER (PARTITION BY v.product_id, v.forma, v.diam_pulg) AS total
+         FROM catalog_variants v
+         JOIN representadas r ON r.variant_id = v.variant_id
+     )
+     SELECT v.product_id, v.variant_id, v.sku, f.total::text AS total
+       FROM catalog_variants v
+       JOIN familias f
+         ON f.product_id = v.product_id
+        AND f.forma IS NOT DISTINCT FROM v.forma
+        AND f.diam_pulg IS NOT DISTINCT FROM v.diam_pulg`,
+    [option.dataset_id],
+  );
+
+  const countsByCatalogId: Record<string, { total: number }> = {};
+  for (const row of rows) {
+    const entry = { total: Number(row.total) };
+    if (row.sku) countsByCatalogId[row.sku] = entry;
+    countsByCatalogId[row.variant_id] = entry;
+    countsByCatalogId[row.product_id] ??= entry;
+  }
+
+  return {
+    mode: parsedMode,
+    datasetId: option.dataset_id,
+    datasetLabel: option.display_name,
     countsByCatalogId,
   };
 }

@@ -476,6 +476,10 @@ export default function Page() {
   const [proveedor, setProveedor] = useState<ProveedorId>("gemini");
   const [selectorIA, setSelectorIA] = useState<SelectorIA>("lora");
   const loraModeRef = useRef<LoraModeSlug>("training_1");
+  // Espejo en estado del ref anterior, solo para lecturas durante el render
+  // (p. ej. la tarjeta del plan): un ref no puede leerse ahí sin violar las
+  // reglas de React, así que este valor se actualiza junto con el ref.
+  const [loraModeParaBadge, setLoraModeParaBadge] = useState<LoraModeSlug>("training_1");
   const [seedLoraDebug, setSeedLoraDebug] = useState("42");
   const [proveedoresDisponibles, setProveedoresDisponibles] = useState<ProveedorId[]>(["gemini"]);
   // Últimas medidas calculadas en el chat: se le pasan al prompt de imagen
@@ -1000,6 +1004,7 @@ export default function Page() {
     setSeleccionPendiente(false);
     setSelectorIA("lora");
     loraModeRef.current = "training_1";
+    setLoraModeParaBadge("training_1");
     setSeedLoraDebug("42");
     setFotoEspacio(null);
     setImagenesReferencia([]);
@@ -1607,7 +1612,7 @@ export default function Page() {
 
                 {m.medidas && <TarjetaMedidas medidas={m.medidas} />}
                 {m.referenceBlueprint && <ReferencePlanCard blueprint={m.referenceBlueprint} plan={m.plan} />}
-                {m.plan && <TarjetaPlanDecoracion plan={m.plan} aprobado={planAprobadoHash === m.plan.plan_hash} generando={generando && m.plan.plan_hash === planActual?.plan_hash} onAprobar={m.plan.plan_hash === planActual?.plan_hash ? () => aprobarPlan(m.plan!, m.id) : undefined} onPlanActualizado={m.plan.plan_hash === planActual?.plan_hash ? (plan, cotizacion) => actualizarPlanEnMensaje(m.id, plan, cotizacion) : undefined} />}
+                {m.plan && <TarjetaPlanDecoracion plan={m.plan} aprobado={planAprobadoHash === m.plan.plan_hash} generando={generando && m.plan.plan_hash === planActual?.plan_hash} onAprobar={m.plan.plan_hash === planActual?.plan_hash ? () => aprobarPlan(m.plan!, m.id) : undefined} onPlanActualizado={m.plan.plan_hash === planActual?.plan_hash ? (plan, cotizacion) => actualizarPlanEnMensaje(m.id, plan, cotizacion) : undefined} loraMode={loraModeParaBadge} />}
                 {m.cotizacion && (
                   <TarjetaCotizacion
                     cotizacion={m.cotizacion}

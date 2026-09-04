@@ -7,6 +7,7 @@ import { planHashResuelto } from "./hash";
 import { completarMedidas } from "./medidas-defecto";
 import { distribuirReservaProyecto, optimizarCobertura } from "./optimizar-materiales";
 import { cajasDeEstructuras } from "./ubicaciones";
+import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import type { MaterialPlan, PlanDecoracion } from "./tipos";
 import type { CompraConsolidada, EstructuraResuelta, LineaMaterial, PlanResuelto } from "./resuelto";
 
@@ -302,10 +303,21 @@ function calcularAlternativas(
   }));
 }
 
+/**
+ * `allowlistLora` es la cobertura real del dataset del modo LoRA activo. Sin
+ * ella, la rama geométrica elegía cualquier variante del producto por costo o
+ * por sustitución de diámetro (`elegir`/`sustitucionAdmisible`) porque el SQL
+ * trae todas las variantes de `idsProducto`. Eso producía planes con tamaños
+ * que el modelo nunca vio —p. ej. R-24 de un producto entrenado solo en
+ * R-5/R-9/R-12/R-18— que después `/api/generate` rechazaba con
+ * LORA_DATASET_ALLOWLIST_REJECTED. Filtrar aquí convierte ese rechazo tardío
+ * en `sin_cobertura` visible al armar el plan, que es donde se puede corregir.
+ */
 export async function resolverPlan(
   pool: Pool,
   planEntrada: PlanDecoracion,
   whitelist: ReadonlyMap<string, ReadonlySet<string>>,
+  allowlistLora?: CatalogAllowlist | null,
 ): Promise<PlanResuelto> {
   const plan = completarMedidas(planEntrada);
   const idsProducto = plan.estructuras.flatMap((estructura) => estructura.materiales.map((material) => material.product_id));
@@ -330,11 +342,16 @@ export async function resolverPlan(
          [idsProducto, idsVariante, idsWhitelistVariante],
       )
     : { rows: [] as FilaCatalogoPlan[] };
+  // Se filtra por `variantIds` y no por `productIds`: que un producto esté en
+  // el dataset no implica que todos sus tamaños se hayan fotografiado, y es
+  // justo esa diferencia la que rompía la generación.
+  const variantesPermitidasLora = allowlistLora ? new Set(allowlistLora.variantIds) : null;
   const candidatosPorProducto = new Map<string, Candidato[]>();
   const candidatoPorVariante = new Map<string, Candidato>();
   for (const row of rows) {
     const candidato = aCandidato(row);
     if (!candidato) continue;
+    if (variantesPermitidasLora && !variantesPermitidasLora.has(candidato.variantId)) continue;
     if (!candidatosPorProducto.has(candidato.productId)) candidatosPorProducto.set(candidato.productId, []);
     candidatosPorProducto.get(candidato.productId)!.push(candidato);
     candidatoPorVariante.set(candidato.variantId, candidato);

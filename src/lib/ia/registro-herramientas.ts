@@ -734,7 +734,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         });
       }
       const planningStart = Date.now();
-      const resuelto = await resolverPlan(ragPool, parseado.data, estado.ragVariantIdsRecuperados);
+      const resuelto = await resolverPlan(ragPool, parseado.data, estado.ragVariantIdsRecuperados, options.catalogAllowlist);
       const materialEstimate = estimateFromPlan(resuelto);
       const estimateValidation = validateMaterialEstimate(materialEstimate);
       const physicalWarnings = blockingPhysicalWarnings(materialEstimate);

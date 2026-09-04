@@ -199,17 +199,18 @@ function construirFiltroDuro(
     const variantIds = [...new Set(allowlist.variantIds)];
     if (productIds.length === 0 && variantIds.length === 0) {
       condiciones.push("FALSE");
+    } else if (variantIds.length) {
+      // La variante manda, y no se combina con `product_id` por OR: que un
+      // producto esté entrenado no implica que todos sus tamaños se hayan
+      // fotografiado. Con el OR anterior, un R-24 de un producto entrenado
+      // solo en R-5..R-18 pasaba la búsqueda, Gemini lo metía al plan y
+      // /api/generate lo rechazaba después con LORA_DATASET_ALLOWLIST_REJECTED.
+      params.push(variantIds);
+      condiciones.push(`${aliases.variant}.variant_id = ANY($${params.length}::text[])`);
     } else {
-      const permitidas: string[] = [];
-      if (productIds.length) {
-        params.push(productIds);
-        permitidas.push(`${aliases.product}.product_id = ANY($${params.length}::text[])`);
-      }
-      if (variantIds.length) {
-        params.push(variantIds);
-        permitidas.push(`${aliases.variant}.variant_id = ANY($${params.length}::text[])`);
-      }
-      condiciones.push(`(${permitidas.join(" OR ")})`);
+      // Allowlist sin variantes: es lo más fino que puede expresar.
+      params.push(productIds);
+      condiciones.push(`${aliases.product}.product_id = ANY($${params.length}::text[])`);
     }
   }
   return condiciones.length ? `AND ${condiciones.join(" AND ")}` : "";
