@@ -2,24 +2,15 @@ import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { z } from "zod";
 import { generarRecomendacion } from "./generar-recomendacion";
 import { autenticarWebhook, respuestaWebhook } from "./recomendar-paquetes-webhook";
+import {
+  HappieConversationRequestV1Schema,
+  HappieConversationStateV1Schema,
+} from "@/lib/ia/contracts/happie-v1";
 
 const MODELO_POR_DEFECTO = process.env.GEMINI_CHAT_MODEL ?? "gemini-3.6-flash";
 const SERVICIOS = ["comida", "bebida", "decoracion", "fotografia"] as const;
 
-const EstadoConversacionSchema = z.object({
-  fase: z.enum(["descubrimiento", "detalles", "confirmacion", "finalizado"]),
-  tipoEvento: z.string().trim().min(1).max(120).optional(),
-  invitados: z.number().int().positive().max(100_000).optional(),
-  presupuesto: z.number().finite().positive().optional(),
-  servicios: z.array(z.enum(SERVICIOS)).max(SERVICIOS.length),
-  preferencias: z.array(z.string().trim().min(1).max(300)).max(20),
-});
-
-const EntradaConversacionSchema = z.object({
-  mensaje: z.string().trim().min(1).max(2_000),
-  estado: EstadoConversacionSchema.optional(),
-  url: z.string().trim().max(2_048).optional(),
-});
+const EntradaConversacionSchema = HappieConversationRequestV1Schema;
 
 const ExtraccionSchema = z.object({
   tipoEvento: z.string().trim().min(1).max(120).nullable(),
@@ -32,7 +23,7 @@ const ExtraccionSchema = z.object({
   acuse: z.string().trim().max(160),
 });
 
-export type EstadoConversacion = z.infer<typeof EstadoConversacionSchema>;
+export type EstadoConversacion = z.infer<typeof HappieConversationStateV1Schema>;
 type EntradaConversacion = z.infer<typeof EntradaConversacionSchema>;
 type Extraccion = z.infer<typeof ExtraccionSchema>;
 

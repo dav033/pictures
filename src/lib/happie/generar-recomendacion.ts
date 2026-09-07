@@ -7,28 +7,14 @@ import {
   type ServiciosSolicitados,
 } from "@sempertex/happie-package-ia";
 import { z } from "zod";
+import {
+  HAPPIE_CONTRACT_VERSION,
+  HappieErrorV1Schema,
+  HappieRecommendationRequestV1Schema,
+  HappieRecommendationResponseV1Schema,
+} from "@/lib/ia/contracts/happie-v1";
 
-const UrlHttpSchema = z.string().trim().refine((valor) => {
-  try {
-    const url = new URL(valor);
-    return url.protocol === "https:" || url.protocol === "http:";
-  } catch {
-    return false;
-  }
-}, "Debe ser una URL HTTP o HTTPS válida.");
-
-const CuerpoSolicitudSchema = z.object({
-  tipoEvento: z.string().trim().min(1).max(120),
-  invitados: z.number().int().positive().max(100_000),
-  presupuesto: z.number().finite().positive(),
-  comida: z.boolean().optional(),
-  bebida: z.boolean().optional(),
-  decoracion: z.boolean().optional(),
-  fotografia: z.boolean().optional(),
-  preferencias: z.array(z.string().trim().min(1).max(300)).max(20).optional(),
-  /** Dominio base del sitio de Happia, usado para armar el enlace final. */
-  url: UrlHttpSchema.optional(),
-});
+const CuerpoSolicitudSchema = HappieRecommendationRequestV1Schema;
 
 type CuerpoSolicitud = z.infer<typeof CuerpoSolicitudSchema> & ServiciosSolicitados;
 
@@ -99,7 +85,7 @@ export async function generarRecomendacion(
   try {
     const config = cargarConfigDesdeEnv();
     const cliente = new HappiaClient(config);
-    const { packages } = await cliente.listarPackages();
+    const { packages } = await cliente.listarPackages(request.signal);
 
     // Mismo narrowing determinista (sin LLM) que el flujo por pasos: primero
     // por tipo curado (con fallback a todo el catálogo activo si no hay
@@ -116,21 +102,29 @@ export async function generarRecomendacion(
       paquetes: candidatos,
       coincidenciaExacta,
       maxRecomendaciones: Math.max(1, Math.min(3, Math.trunc(maxRecomendaciones))),
+      signal: request.signal,
     });
 
     const baseUrlFinal = baseUrl ?? baseUrlPorDefecto(config.baseUrl);
+    const body = HappieRecommendationResponseV1Schema.parse({
+      schema_version: HAPPIE_CONTRACT_VERSION,
+      recomendaciones: resultado.recomendaciones.map((recomendacion) => ({
+        url: urlDePaquete(baseUrlFinal, recomendacion.paquete.id),
+        razon: recomendacion.razon,
+      })),
+      resumen: resultado.resumen,
+    });
     return {
       status: 200,
-      body: {
-        recomendaciones: resultado.recomendaciones.map((recomendacion) => ({
-          url: urlDePaquete(baseUrlFinal, recomendacion.paquete.id),
-          razon: recomendacion.razon,
-        })),
-        resumen: resultado.resumen,
-      },
+      body,
     };
-  } catch (error) {
-    const detalle = error instanceof Error ? error.message : "Error desconocido";
-    return { status: 502, body: { error: `No se pudo generar la recomendación: ${detalle}` } };
+  } catch {
+    return {
+      status: 502,
+      body: HappieErrorV1Schema.parse({
+        schema_version: HAPPIE_CONTRACT_VERSION,
+        error: "No se pudo generar la recomendación.",
+      }),
+    };
   }
 }

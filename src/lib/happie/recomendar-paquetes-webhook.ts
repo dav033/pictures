@@ -1,5 +1,10 @@
 import { timingSafeEqual } from "node:crypto";
 import { generarRecomendacion } from "./generar-recomendacion";
+import {
+  HAPPIE_CONTRACT_VERSION,
+  HappieConversationResponseV1Schema,
+  HappieErrorV1Schema,
+} from "@/lib/ia/contracts/happie-v1";
 
 const LONGITUD_MINIMA_SECRETO = 32;
 
@@ -10,7 +15,22 @@ function clavesIguales(recibida: string, esperada: string): boolean {
 }
 
 export function respuestaWebhook(body: unknown, status = 200): Response {
-  return Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
+  let normalizado = body;
+  if (status >= 400) {
+    const recibido = typeof body === "object" && body !== null && "error" in body && typeof body.error === "string"
+      ? body.error
+      : "No se pudo procesar la solicitud.";
+    const error = /^No se pudo procesar la conversación:/.test(recibido)
+      ? "No se pudo procesar la conversación."
+      : recibido;
+    normalizado = HappieErrorV1Schema.parse({ schema_version: HAPPIE_CONTRACT_VERSION, error });
+  } else if (typeof body === "object" && body !== null && "tipo" in body) {
+    normalizado = HappieConversationResponseV1Schema.parse({
+      schema_version: HAPPIE_CONTRACT_VERSION,
+      ...body,
+    });
+  }
+  return Response.json(normalizado, { status, headers: { "Cache-Control": "no-store" } });
 }
 
 /** Devuelve una respuesta de error o `null` cuando la llamada está autorizada. */

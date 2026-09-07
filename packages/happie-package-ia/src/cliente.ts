@@ -1,5 +1,33 @@
 import type { HappiaConfig } from "./config";
 import type { ListarPackagesRespuesta } from "./tipos";
+import { z } from "zod";
+
+const packageItemSchema = z.object({
+  id: z.string().min(1),
+  total: z.number().finite().nonnegative(),
+  is_active: z.boolean(),
+  package_id: z.string().min(1),
+  charge_type: z.string(),
+  description: z.string(),
+  suggested_start_time: z.string().nullable(),
+  provider_name: z.string().nullable(),
+  category_name: z.string().nullable(),
+}).passthrough();
+
+const packageSchema = z.object({
+  id: z.string().min(1),
+  event_type_id: z.string().min(1),
+  name: z.string().min(1),
+  base_guests: z.number().int().positive(),
+  standard_duration_minutes: z.number().int().positive().nullable(),
+  conditions: z.string().nullable(),
+  restrictions: z.string().nullable(),
+  is_active: z.boolean(),
+  is_featured: z.boolean(),
+  package_items: z.array(packageItemSchema),
+}).passthrough();
+
+const listarPackagesSchema = z.object({ packages: z.array(packageSchema) }).passthrough();
 
 export class HappiaApiError extends Error {
   constructor(
@@ -16,7 +44,8 @@ export class HappiaClient {
   constructor(private readonly config: HappiaConfig) {}
 
   async listarPackages(signal?: AbortSignal): Promise<ListarPackagesRespuesta> {
-    return this.solicitar("/packages", { signal }) as Promise<ListarPackagesRespuesta>;
+    const datos = await this.solicitar("/packages", { signal });
+    return listarPackagesSchema.parse(datos) as ListarPackagesRespuesta;
   }
 
   private async solicitar(

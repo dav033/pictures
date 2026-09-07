@@ -5,30 +5,45 @@ import {
   ordenarPorInvitados,
   recomendarPaquetesEstructurado,
 } from "@sempertex/happie-package-ia";
-
-type Body = {
-  tipoEvento?: string;
-  invitados?: number;
-  ubicacion?: string;
-  necesidades?: string[];
-};
+import { isAuthenticatedRequest, isSameOriginRequest } from "@/lib/auth/request";
+import {
+  HAPPIE_CONTRACT_VERSION,
+  HappieErrorV1Schema,
+  HappiePackageRecommendationResponseV1Schema,
+  HappieStructuredRecommendationRequestV1Schema,
+} from "@/lib/ia/contracts/happie-v1";
 
 export async function POST(request: Request) {
-  const { tipoEvento, invitados, ubicacion, necesidades }: Body = await request.json();
-
-  if (!tipoEvento || !ubicacion || !invitados || invitados <= 0) {
-    return Response.json({ error: "Falta tipo de evento, cantidad de invitados o ubicación." }, { status: 400 });
+  if (!isAuthenticatedRequest(request) || !isSameOriginRequest(request)) {
+    return Response.json(
+      HappieErrorV1Schema.parse({ schema_version: HAPPIE_CONTRACT_VERSION, error: "Sesión requerida." }),
+      { status: 401 },
+    );
   }
 
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json(
+      HappieErrorV1Schema.parse({ schema_version: HAPPIE_CONTRACT_VERSION, error: "El body debe ser JSON válido." }),
+      { status: 400 },
+    );
+  }
+  const parsed = HappieStructuredRecommendationRequestV1Schema.safeParse(body);
+  if (!parsed.success) {
+    return Response.json(
+      HappieErrorV1Schema.parse({ schema_version: HAPPIE_CONTRACT_VERSION, error: "Faltan datos del evento." }),
+      { status: 400 },
+    );
+  }
+
+  const { tipoEvento, invitados, ubicacion, necesidades } = parsed.data;
   try {
     const config = cargarConfigDesdeEnv();
     const cliente = new HappiaClient(config);
-    const { packages } = await cliente.listarPackages();
+    const { packages } = await cliente.listarPackages(request.signal);
 
-    // Narrowing determinista (sin LLM): primero por el tipo curado elegido
-    // (con fallback a todo el catálogo activo si no hay categoría exacta —
-    // así el LLM sí llega a evaluar si algo encaja por temática), luego por
-    // cercanía a los invitados pedidos.
     const { paquetes: coincidencias, coincidenciaExacta } = paquetesParaTipoCurado(tipoEvento, packages);
     const candidatos = ordenarPorInvitados(coincidencias, invitados);
     const resultado = await recomendarPaquetesEstructurado({
@@ -38,11 +53,19 @@ export async function POST(request: Request) {
       paquetes: candidatos,
       coincidenciaExacta,
       necesidades,
+      signal: request.signal,
     });
 
-    return Response.json(resultado);
-  } catch (error) {
-    const detalle = error instanceof Error ? error.message : "Error desconocido";
-    return Response.json({ error: `No se pudo generar la recomendación: ${detalle}` }, { status: 502 });
+    return Response.json(
+      HappiePackageRecommendationResponseV1Schema.parse({
+        schema_version: HAPPIE_CONTRACT_VERSION,
+        ...resultado,
+      }),
+    );
+  } catch {
+    return Response.json(
+      HappieErrorV1Schema.parse({ schema_version: HAPPIE_CONTRACT_VERSION, error: "No se pudo generar la recomendación." }),
+      { status: 502 },
+    );
   }
 }

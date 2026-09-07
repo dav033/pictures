@@ -16,7 +16,9 @@ function cookieValue(request: Request, name: string): string | undefined {
 /** Guardia de servidor para Route Handlers; Proxy sigue siendo una primera barrera. */
 export function isAuthenticatedRequest(request: Request): boolean {
   const expected = process.env.APP_PASSWORD;
-  if (!expected) return true;
+  // Desarrollo sin secreto sigue siendo explícitamente permisivo; producción
+  // falla cerrado para que un despliegue incompleto no exponga mutaciones.
+  if (!expected) return process.env.NODE_ENV !== "production";
   return cookieValue(request, SESSION_COOKIE) === sessionToken(expected);
 }
 

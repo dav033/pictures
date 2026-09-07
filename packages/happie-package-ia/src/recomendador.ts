@@ -61,6 +61,7 @@ export interface RecomendarPaquetesInput {
   maxRecomendaciones?: number;
   apiKey?: string;
   modelo?: string;
+  signal?: AbortSignal;
 }
 
 function precioTotalPaquete(paquete: HappiaPackage): number {
@@ -112,11 +113,12 @@ export async function recomendarPaquetes(input: RecomendarPaquetesInput): Promis
         ],
       },
     ],
-    config: {
+      config: {
       systemInstruction: construirInstruccion(maxRecomendaciones),
       responseMimeType: "application/json",
       responseJsonSchema: jsonSchema,
-      thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+        thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+        abortSignal: input.signal,
     },
   });
 
@@ -155,6 +157,7 @@ export interface RecomendarPaquetesEstructuradoInput {
   maxRecomendaciones?: number;
   apiKey?: string;
   modelo?: string;
+  signal?: AbortSignal;
 }
 
 /**
@@ -181,6 +184,7 @@ export function recomendarPaquetesEstructurado(
     maxRecomendaciones: input.maxRecomendaciones,
     apiKey: input.apiKey,
     modelo: input.modelo,
+    signal: input.signal,
   });
 }
 
@@ -227,6 +231,7 @@ export interface RecomendarPaquetesConFiltrosInput {
   maxRecomendaciones?: number;
   apiKey?: string;
   modelo?: string;
+  signal?: AbortSignal;
 }
 
 /**
@@ -260,5 +265,6 @@ export function recomendarPaquetesConFiltros(
     maxRecomendaciones: input.maxRecomendaciones,
     apiKey: input.apiKey,
     modelo: input.modelo,
+    signal: input.signal,
   });
 }

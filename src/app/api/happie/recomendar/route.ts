@@ -1,26 +1,37 @@
 import { HappiaClient, cargarConfigDesdeEnv, recomendarPaquetes } from "@sempertex/happie-package-ia";
-
-type Body = {
-  descripcionEvento?: string;
-};
+import {
+  HAPPIE_CONTRACT_VERSION,
+  HappieDescriptionRequestV1Schema,
+  HappieErrorV1Schema,
+  HappiePackageRecommendationResponseV1Schema,
+} from "@/lib/ia/contracts/happie-v1";
+import { isAuthenticatedRequest, isSameOriginRequest } from "@/lib/auth/request";
 
 export async function POST(request: Request) {
-  const { descripcionEvento }: Body = await request.json();
+  if (!isAuthenticatedRequest(request) || !isSameOriginRequest(request)) {
+    return Response.json(HappieErrorV1Schema.parse({ schema_version: HAPPIE_CONTRACT_VERSION, error: "Sesión requerida." }), { status: 401 });
+  }
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json(HappieErrorV1Schema.parse({ schema_version: HAPPIE_CONTRACT_VERSION, error: "El body debe ser JSON válido." }), { status: 400 });
+  }
+  const parsed = HappieDescriptionRequestV1Schema.safeParse(body);
 
-  if (!descripcionEvento || !descripcionEvento.trim()) {
-    return Response.json({ error: "Describe el evento que vas a realizar." }, { status: 400 });
+  if (!parsed.success) {
+    return Response.json(HappieErrorV1Schema.parse({ schema_version: HAPPIE_CONTRACT_VERSION, error: "Describe el evento que vas a realizar." }), { status: 400 });
   }
 
   try {
     const config = cargarConfigDesdeEnv();
     const cliente = new HappiaClient(config);
-    const { packages } = await cliente.listarPackages();
+    const { packages } = await cliente.listarPackages(request.signal);
 
-    const resultado = await recomendarPaquetes({ descripcionEvento, paquetes: packages });
+    const resultado = await recomendarPaquetes({ descripcionEvento: parsed.data.descripcionEvento, paquetes: packages, signal: request.signal });
 
-    return Response.json(resultado);
-  } catch (error) {
-    const detalle = error instanceof Error ? error.message : "Error desconocido";
-    return Response.json({ error: `No se pudo generar la recomendación: ${detalle}` }, { status: 502 });
+    return Response.json(HappiePackageRecommendationResponseV1Schema.parse({ schema_version: HAPPIE_CONTRACT_VERSION, ...resultado }));
+  } catch {
+    return Response.json(HappieErrorV1Schema.parse({ schema_version: HAPPIE_CONTRACT_VERSION, error: "No se pudo generar la recomendación." }), { status: 502 });
   }
 }
