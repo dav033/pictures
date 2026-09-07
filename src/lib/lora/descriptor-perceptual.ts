@@ -1,3 +1,5 @@
+import type { ProductConcept } from "./product-vocabulary";
+
 /**
  * Traduce los nombres comerciales del catálogo a descripciones de lo que se ve.
  *
@@ -49,6 +51,11 @@ const COLORES: ReadonlyArray<readonly [RegExp, string]> = [
 export const TERMINOS_COMERCIALES: readonly string[] = [
   ...ACABADOS.map(([patron]) => patron.source.replace(/\\b/g, "")),
   ...COLORES.map(([patron]) => patron.source.replace(/\\b/g, "")),
+  "Reflex",
+  "Fashion",
+  "Silk",
+  "Pastel",
+  "Crystal",
 ];
 
 /**
@@ -62,4 +69,54 @@ export function aDescriptorPerceptual(frase: string): string {
   }
   // "with a soft pearlescent finish" queda bien; "sheen finish" no.
   return resultado.replace(/\bsheen finish\b/gi, "sheen");
+}
+
+function patternDescription(pattern: ProductConcept["visual"]["pattern"]): string[] {
+  const kind = pattern.kind.trim().toLowerCase();
+  const parts: string[] = [];
+  if (kind === "printed" || pattern.motif) {
+    parts.push(pattern.motif ? `printed with ${pattern.motif.trim()}` : "with a printed pattern");
+  } else if (!new Set(["solid", "plain", "none"]).has(kind)) {
+    parts.push(`with a ${pattern.kind.trim()} pattern`);
+  }
+  if (pattern.text_policy === "exact_approved") {
+    if (!pattern.approved_text || !pattern.evidence_ref) {
+      throw new Error("Descriptor perceptual inválido: exact_approved requiere approved_text y evidence_ref.");
+    }
+    parts.push(`with approved lettering \"${pattern.approved_text.trim()}\"`);
+  } else if (pattern.text_policy === "graphic_lettering" || (pattern.contains_text && !pattern.motif)) {
+    parts.push("with graphic lettering");
+  }
+  return parts;
+}
+
+/** Compila solo atributos visuales evidenciados; nunca usa título, SKU o familia comercial. */
+export function compilarDescriptorProductoPerceptual(concepto: ProductConcept): string {
+  const visual = concepto.visual;
+  const parts = [
+    visual.shape.trim(),
+    visual.material.trim(),
+    visual.color.trim() ? `in ${visual.color.trim()}` : "",
+    visual.finish.trim() ? `with ${visual.finish.trim()} finish` : "",
+    visual.transparency?.trim() ? visual.transparency.trim() : "",
+    ...patternDescription(visual.pattern),
+  ].filter(Boolean);
+  const descriptor = aDescriptorPerceptual(parts.join(" ")).replace(/\s+/g, " ").trim();
+  assertDescriptorPerceptualSeguro(descriptor);
+  return descriptor;
+}
+
+/** Gate central para cualquier frase de descriptor antes de entrar al modelo. */
+export function assertDescriptorPerceptualSeguro(texto: string): void {
+  const normalized = texto.trim();
+  if (!normalized) throw new Error("Descriptor perceptual inválido: está vacío.");
+  const escape = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const leaks = TERMINOS_COMERCIALES.filter((term) => new RegExp(`\\b${escape(term)}\\b`, "i").test(normalized));
+  if (/\b(?:sku|catalog_|est_|prop_|variant_id|product_id)\b|\b\d{6,}\b|\$\s?\d|\b(?:cop|usd|price|precio|package|paquete)\b/i.test(normalized)) {
+    leaks.push("identidad o compra");
+  }
+  if (/\b(?:globo|globos|redondo|redonda|metalizado|dorado|rosado|negro|blanco|impreso|con texto)\b/i.test(normalized)) {
+    leaks.push("español");
+  }
+  if (leaks.length) throw new Error(`Descriptor perceptual inseguro: ${[...new Set(leaks)].join(", ")}`);
 }

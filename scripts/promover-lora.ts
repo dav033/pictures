@@ -43,7 +43,7 @@ function main(): void {
     console.error(`No hay procedencia para ${etiqueta}. Correr antes scripts/recibir-lora.ts.`);
     process.exit(1);
   }
-  const proc = JSON.parse(fs.readFileSync(rutaProc, "utf8")) as Record<string, any>;
+  const proc = JSON.parse(fs.readFileSync(rutaProc, "utf8")) as Record<string, unknown>;
 
   if (process.argv.includes("--revertir")) {
     const previa = proc.url_anterior as string | undefined;

@@ -74,8 +74,8 @@ export function AgregarImagenManual({ onCreada }: { onCreada: () => void }) {
   useEffect(() => {
     if (!abierto) return;
     let vigente = true;
-    setBuscando(true);
     const timer = setTimeout(() => {
+      setBuscando(true);
       fetch(`/api/admin/ordenes/catalogo-buscar?q=${encodeURIComponent(busqueda)}`)
         .then((r) => r.json())
         .then((data) => {

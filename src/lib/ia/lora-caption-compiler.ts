@@ -2,8 +2,12 @@ import type { SceneElement, SceneSpec } from "./scene-spec";
 import { buildLoraEnvironmentCues, type VisualContext } from "./visual-context";
 import { clasificarColores, PALETA_COLORES_EN_V2 } from "@/lib/rag/taxonomy/v2";
 import type { LoraDensity, LoraDesignRole, LoraPlacement, LoraStructureType, VisualSemantics } from "./lora-semantics";
+import type { PhysicalForm, PhysicalRelation, SceneElementKind, QuantitySemantics } from "./scene-visual-contract";
 
 export const LORA_CAPTION_COMPILER_VERSION = "lora-caption-v2.3-product-vocabulary" as const;
+
+/** Alias legacy que aún aparece en nombres de escenas antiguas. */
+type CaptionStructureType = LoraStructureType | "bouquet";
 
 /**
  * A single element's resolved canonical product concept, supplied by the
@@ -22,7 +26,7 @@ export type ProductConceptClauseInput = {
 
 export type LoraVisualClause = {
   elementIds: string[];
-  structureType: LoraStructureType;
+  structureType: CaptionStructureType;
   noun: string;
   count: number;
   colors: string[];
@@ -51,6 +55,13 @@ export type LoraVisualClause = {
   canonicalPhrase?: string;
   /** concept_id values rendered into this clause, for diagnostics only â€” never emitted into the prompt text itself. */
   canonicalConceptIds?: string[];
+  elementKind: SceneElementKind;
+  quantitySemantics: QuantitySemantics;
+  visibleCount?: number;
+  physicalForm?: PhysicalForm;
+  productDescriptors: string[];
+  printedMotifs: string[];
+  physicalRelations: PhysicalRelation[];
 };
 
 export type LoraCaptionCompilation = {
@@ -68,12 +79,12 @@ export type LoraCaptionCompilation = {
 
 type SemanticElement = {
   element: SceneElement;
-  semantics: VisualSemantics;
+  semantics: Omit<VisualSemantics, "structure_type"> & { structure_type: CaptionStructureType };
   fallback: boolean;
   index: number;
 };
 
-const STRUCTURE_NOUNS: Record<LoraStructureType, string> = {
+const STRUCTURE_NOUNS: Record<CaptionStructureType, string> = {
   arco: "organic balloon arch",
   semiarco: "asymmetrical balloon half-arch",
   guirnalda: "organic balloon garland",
@@ -84,6 +95,7 @@ const STRUCTURE_NOUNS: Record<LoraStructureType, string> = {
   backdrop: "decorated backdrop",
   kit: "balloon decoration kit",
   accesorio: "decorative accessory",
+  escultura: "balloon sculpture",
 };
 
 const PLACEMENT_PHRASES: Record<LoraPlacement, string> = {
@@ -96,6 +108,14 @@ const PLACEMENT_PHRASES: Record<LoraPlacement, string> = {
   piso_frontal: "grounded across the front of the stage",
   mesas_invitados: "distributed across the guest tables",
   techo: "suspended overhead from the ceiling",
+  zona_central: "in the central decoration zone",
+  fachada: "against the venue facade",
+  pared_lateral: "against the side wall",
+  alrededor_mobiliario: "around the existing furniture",
+  vegetacion: "within the approved vegetation area",
+  techo_multipunto: "suspended overhead at multiple ceiling points",
+  recorrido_suelo: "along the approved floor path",
+  esquina: "in the architectural corner",
 };
 
 const EVENT_WORDS: Record<string, string> = {
@@ -198,7 +218,7 @@ function cleanGroupName(name: string): string {
     .trim();
 }
 
-function inferredStructureType(element: SceneElement): LoraStructureType {
+function inferredStructureType(element: SceneElement): CaptionStructureType {
   const name = normalized(element.name);
   if (/\bsemiarco(?:s)?\b/.test(name)) return "semiarco";
   if (/\barco(?:s)?\b/.test(name)) return "arco";
@@ -250,6 +270,22 @@ function semanticFor(element: SceneElement, index: number, sceneSpec: SceneSpec)
       density: inferredDensity(sceneSpec),
     },
   };
+}
+
+function elementKindFor(element: SceneElement): SceneElementKind {
+  return element.element_kind ?? (element.category === "backdrop" ? "backdrop" : "balloon_structure");
+}
+
+function quantitySemanticsFor(element: SceneElement): QuantitySemantics {
+  return element.quantity_semantics ?? "material_units";
+}
+
+function physicalFormFor(element: SceneElement): PhysicalForm | undefined {
+  return element.physical_form;
+}
+
+function physicalRelationsFor(element: SceneElement): PhysicalRelation[] {
+  return element.physical_relations ?? [];
 }
 
 export function translateLoraColor(color: string): string {
@@ -321,11 +357,14 @@ function compatibleKey(item: SemanticElement): string {
   const semantics = item.semantics;
   const colors = uniqueEnglish(item.element.resolved_colors, translateLoraColor).join("|");
   const finishes = uniqueEnglish(item.element.resolved_finishes ?? [], englishFinish).join("|");
-  return [semantics.structure_type, colors, finishes, semantics.repetition_group].join(FIELD_SEP);
+  const relationKey = physicalRelationsFor(item.element).map((relation) => JSON.stringify(relation)).sort().join("|");
+  const motifKey = item.element.catalog_visual?.pattern.motif ?? "";
+  const subjectKey = item.element.physical_form?.sujeto ?? "";
+  return [semantics.structure_type, elementKindFor(item.element), colors, finishes, motifKey, subjectKey, relationKey, semantics.repetition_group].join(FIELD_SEP);
 }
 
 function structuralKey(item: SemanticElement): string {
-  return compatibleKey(item).split(FIELD_SEP).slice(0, 3).join(FIELD_SEP);
+  return compatibleKey(item).split(FIELD_SEP).slice(0, 7).join(FIELD_SEP);
 }
 
 /**
@@ -370,6 +409,14 @@ function createClause(
     ? elementIds.every((elementId) => (productConceptsByElementId.get(elementId)?.length ?? 0) > 0)
     : false;
   const canonical = allElementsResolved && conceptEntries.length ? buildCanonicalPhrase(conceptEntries) : undefined;
+  const physicalRelations = items.flatMap((item) => physicalRelationsFor(item.element));
+  const productDescriptors = [...new Set(items.map((item) => item.element.catalog_visual?.descriptor_perceptual_en).filter((value): value is string => Boolean(value)))];
+  const printedMotifs = [...new Set(items.map((item) => item.element.catalog_visual?.pattern.motif).filter((value): value is string => Boolean(value)))];
+  const physicalForm = items.length === 1 ? physicalFormFor(first.element) : undefined;
+  const quantitySemantics = quantitySemanticsFor(first.element);
+  const visibleCount = quantitySemantics === "physical_instances"
+    ? Math.max(1, first.element.quantity.min)
+    : undefined;
   return {
     elementIds,
     structureType: first.semantics.structure_type,
@@ -384,6 +431,13 @@ function createClause(
     usedFallbackSemantics: items.some((item) => item.fallback && (item.semantics.structure_type === "kit" || item.semantics.structure_type === "accesorio")),
     canonicalPhrase: canonical?.phrase,
     canonicalConceptIds: canonical?.conceptIds,
+    elementKind: elementKindFor(first.element),
+    quantitySemantics,
+    visibleCount,
+    physicalForm,
+    productDescriptors,
+    printedMotifs,
+    physicalRelations,
   };
 }
 
@@ -397,11 +451,64 @@ function focusDescription(clause: LoraVisualClause | undefined): string {
   return "the main arrangement";
 }
 
-function resolveRelations(clauses: LoraVisualClause[]): void {
+const RELATION_PHRASES: Record<string, string> = {
+  enmarcar: "framing",
+  trepar_por: "climbing",
+  envolver: "wrapping around",
+  colgar_de: "suspended from",
+  derramarse_sobre: "spilling onto",
+  montar_sobre: "mounted on",
+  apoyarse_en: "resting on",
+  conectar_con: "leading toward",
+  quedar_detras_de: "behind",
+  quedar_debajo_de: "below",
+};
+
+const ANCHOR_PHRASES: Record<string, string> = {
+  puerta: "the doorway",
+  pared: "the wall",
+  mesa: "the table",
+  arbol: "the tree branches",
+  techo: "the ceiling",
+  piso: "the floor",
+  fachada: "the venue facade",
+  esquina: "the architectural corner",
+  mobiliario_existente: "the existing furniture",
+};
+
+function targetPhrase(sceneSpec: SceneSpec, relation: PhysicalRelation): string {
+  if (relation.target.kind === "ancla_espacio") {
+    return ANCHOR_PHRASES[sceneSpec.venue.anchors?.find((anchor) => anchor.anchor_id === relation.target.id)?.tipo ?? ""] ?? "the approved physical anchor";
+  }
+  const target = sceneSpec.elements.find((element) => element.element_id === relation.target.id);
+  return target?.physical_form?.sujeto ? `the balloon ${target.physical_form.sujeto} sculpture` : "the approved decoration";
+}
+
+function relationPhrase(sceneSpec: SceneSpec, relation: PhysicalRelation): string {
+  const base = RELATION_PHRASES[relation.relacion] ?? relation.relacion;
+  const target = targetPhrase(sceneSpec, relation);
+  const distribution = relation.distribucion === "continua" ? " as one continuous installation"
+    : relation.distribucion === "asimetrica" ? " asymmetrically"
+      : relation.distribucion === "en_racimos" ? " in connected clusters"
+        : relation.distribucion === "multipunto" ? " at multiple attachment points"
+          : relation.distribucion === "alturas_escalonadas" ? " at staggered heights"
+            : relation.distribucion === "recorrido" ? " forming a continuous trail" : "";
+  return relation.relacion === "conectar_con" ? `${base} ${target}${distribution}` : `${base} ${target}${distribution}`;
+}
+
+function resolveRelations(sceneSpec: SceneSpec, clauses: LoraVisualClause[]): void {
   const focal = findFocalClause(clauses);
   const focalId = focal?.elementIds[0];
   const focus = focusDescription(focal);
   for (const clause of clauses) {
+    if (sceneSpec.schema_version === "1.1") {
+      const declared = clause.physicalRelations.find((relation) => relation.prioridad === "primaria") ?? clause.physicalRelations[0];
+      if (declared) {
+        clause.relation = relationPhrase(sceneSpec, declared);
+        clause.anchorElementId = declared.target.id;
+      }
+      continue;
+    }
     if (clause === focal) continue;
     if (clause.bilateral) {
       clause.relation = `flanking ${focus}`;
@@ -428,15 +535,20 @@ function colorFinishPhrase(clause: LoraVisualClause): string {
 
 function clauseText(clause: LoraVisualClause): string {
   const hasCanonicalProduct = Boolean(clause.canonicalPhrase);
+  const renderedCount = clause.visibleCount ?? clause.count;
   const qualifier = hasCanonicalProduct
     ? undefined
     : clause.structureType === "centro_mesa"
     ? "low coordinated"
     : [clause.scale].filter(Boolean).join(", ");
+  const descriptor = clause.physicalForm?.descripcion_perceptual_en
+    ?? (!hasCanonicalProduct ? clause.productDescriptors[0] : undefined);
   const noun = qualifier ? `${qualifier} ${clause.noun}` : clause.noun;
-  const material = colorFinishPhrase(clause);
+  const material = clause.productDescriptors.length && !hasCanonicalProduct ? "" : colorFinishPhrase(clause);
   const article = /^[aeiou]/i.test(noun) ? "an" : "a";
-  const core = clause.count === 1 ? `${article} ${noun}` : `${numberWord(clause.count)} ${pluralize(noun)}`;
+  const core = descriptor
+    ? renderedCount === 1 ? descriptor : `${numberWord(renderedCount)} ${descriptor}`
+    : renderedCount === 1 ? `${article} ${noun}` : `${numberWord(renderedCount)} ${pluralize(noun)}`;
   const colored = material ? `${core} ${material}` : core;
 
   if (clause.structureType === "backdrop") {
@@ -446,7 +558,7 @@ function clauseText(clause: LoraVisualClause): string {
     return material ? `${core} ${placement} ${material}` : `${core} ${placement}`;
   }
 
-  if (clause.count > 1 && clause.placement === "lateral_izquierdo" && clause.relation?.startsWith("flanking")) {
+  if (renderedCount > 1 && clause.placement === "lateral_izquierdo" && clause.relation?.startsWith("flanking")) {
     const matching = hasCanonicalProduct ? "" : " matching one another,";
     return `${colored},${matching} one standing on the left and one on the right, ${clause.relation}`;
   }
@@ -510,7 +622,7 @@ function groupClauses(sceneSpec: SceneSpec, productConceptsByElementId?: Map<str
 }
 
 function buildCaption(sceneSpec: SceneSpec, context: VisualContext, clauses: LoraVisualClause[]): string {
-  resolveRelations(clauses);
+  resolveRelations(sceneSpec, clauses);
   const focal = clauses[0];
   const hasCanonicalSemantics = sceneSpec.elements.every((element) => Boolean(element.visual_semantics));
   const conciseClause = (clause: LoraVisualClause): LoraVisualClause => {

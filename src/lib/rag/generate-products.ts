@@ -71,6 +71,7 @@ function itemDesdeFila(fila: FilaVarianteGeneracion): ItemValidado {
     productId: fila.product_id,
     variantId: fila.variant_id,
     sku: fila.sku,
+    productoTitulo: fila.producto_titulo,
     titulo: fila.variante_titulo ? `${fila.producto_titulo} — ${fila.variante_titulo}` : fila.producto_titulo,
     precioUnitario,
     cantidad: 1,

@@ -37,6 +37,7 @@ export type ResultadoCatalogo = {
   varianteId: string;
   sku: string | null;
   handle: string;
+  productoTitulo: string;
   nombre: string;
   /** Ver comentario de `FilaCatalogo.tipo`. */
   tipoProducto: string | null;
@@ -64,6 +65,7 @@ function filaAResultado(f: FilaCatalogo): ResultadoCatalogo {
     varianteId: f.variante_id,
     sku: f.sku,
     handle: f.handle,
+    productoTitulo: f.titulo_limpio,
     nombre: f.tamano_codigo ? `${f.titulo_limpio} — ${f.tamano_codigo}` : f.titulo_limpio,
     tipoProducto: f.tipo,
     categoria: f.categoria,
@@ -395,6 +397,7 @@ export function aProducto(r: ResultadoCatalogo): Producto {
     diamPulg: r.diamPulg ?? undefined,
     familiaId: r.productoId,
     catalogSku: r.sku ?? undefined,
+    catalogProductTitle: r.productoTitulo,
   };
 }
 

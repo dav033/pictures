@@ -18,6 +18,7 @@ export type ItemValidado = {
   productId: string;
   variantId: string;
   sku: string | null;
+  productoTitulo: string;
   titulo: string;
   precioUnitario: number;
   cantidad: number;
@@ -90,6 +91,7 @@ export function aProductoValidado(item: ItemValidado, paquetes = item.cantidad):
     precio: item.precioUnitario,
     familiaId: item.productId,
     catalogSku: item.sku ?? undefined,
+    catalogProductTitle: item.productoTitulo,
     paquetes,
   };
   if (item.tipoProducto) producto.tipoProducto = item.tipoProducto;
@@ -204,6 +206,7 @@ export async function validarSeleccion(
       productId: item.productId,
       variantId: item.variantId,
       sku: fila.sku,
+      productoTitulo: fila.producto_titulo,
       titulo: fila.variante_titulo ? `${fila.producto_titulo} — ${fila.variante_titulo}` : fila.producto_titulo,
       precioUnitario,
       cantidad: item.cantidad,

@@ -54,6 +54,8 @@ export type Producto = {
   familiaId?: string;
   /** SKU factual de Shopify, solo para resolver identidad canónica internamente. */
   catalogSku?: string;
+  /** Título factual del producto padre en Shopify, separado del título de variante. */
+  catalogProductTitle?: string;
   /** Emoji + color de acento para el placeholder cuando no hay foto real. */
   emoji?: string;
   tono?: string;

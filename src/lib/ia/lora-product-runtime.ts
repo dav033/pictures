@@ -104,6 +104,7 @@ function resolveElement(
   indexes: ReturnType<typeof buildLookupIndexes>,
   sizesByProductId: Map<string, ElementSizeConfirmation[]>,
   productIdAliases: ReadonlyMap<string, string | readonly string[]>,
+  productCatalogTitles: ReadonlyMap<string, string | readonly string[]>,
 ): ElementResolution {
   const productIds = elementProductIds(element);
   const entries: ProductConceptClauseInput[] = [];
@@ -127,6 +128,19 @@ function resolveElement(
     for (const aliasId of aliasIds) {
       if (result.status !== "unknown" || aliasId === productId) break;
       result = resolveProductConcept({ productId: aliasId }, vocabulary, indexes);
+    }
+    // A Shopify variant can be absent from the vocabulary while its trusted
+    // parent title is present in catalog_titles. This is an exact title
+    // lookup, never fuzzy matching and never a model-generated identity.
+    const catalogTitleValue = productCatalogTitles.get(productId);
+    const catalogTitles = catalogTitleValue === undefined
+      ? []
+      : Array.isArray(catalogTitleValue)
+        ? catalogTitleValue
+        : [catalogTitleValue];
+    for (const catalogTitle of catalogTitles) {
+      if (result.status !== "unknown" || !catalogTitle.trim()) break;
+      result = resolveProductConcept({ text: catalogTitle }, vocabulary, indexes);
     }
     if (result.status === "resolved") {
       resolvedConceptIds.push(result.concept.concept_id);
@@ -199,6 +213,8 @@ export function compileProductPrompt(input: {
   sizeConfirmations?: ElementSizeConfirmation[];
   /** Maps selected Shopify variant ids to exact canonical SKU/family ids. */
   productIdAliases?: ReadonlyMap<string, string | readonly string[]>;
+  /** Maps selected ids to factual Shopify parent titles for exact vocabulary lookup. */
+  productCatalogTitles?: ReadonlyMap<string, string | readonly string[]>;
 }): ProductPromptRuntimeResult {
   const vocabulary = input.vocabulary ?? [];
   const activeConcept = vocabulary.find((concept) => concept.status === "active");
@@ -241,6 +257,7 @@ export function compileProductPrompt(input: {
       indexes,
       sizesByProductId,
       input.productIdAliases ?? new Map<string, string>(),
+      input.productCatalogTitles ?? new Map<string, string>(),
     );
     unresolved.push(...resolution.unresolved);
     diagnostics.push(...resolution.diagnostics);

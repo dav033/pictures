@@ -25,6 +25,16 @@ const visualPatternSchema = z.object({
   kind: nonEmptyString,
   motif: nonEmptyString.optional(),
   contains_text: z.boolean().optional(),
+  text_policy: z.enum(["none", "graphic_lettering", "exact_approved"]).optional(),
+  approved_text: nonEmptyString.optional(),
+  evidence_ref: nonEmptyString.optional(),
+}).superRefine((pattern, ctx) => {
+  if (pattern.text_policy === "exact_approved" && (!pattern.approved_text || !pattern.evidence_ref)) {
+    ctx.addIssue({ code: "custom", path: ["text_policy"], message: "exact_approved requiere approved_text y evidence_ref." });
+  }
+  if (pattern.text_policy !== "exact_approved" && (pattern.approved_text || pattern.evidence_ref)) {
+    ctx.addIssue({ code: "custom", path: ["approved_text"], message: "approved_text/evidence_ref solo aplican a exact_approved." });
+  }
 });
 
 const visualSchema = z.object({
@@ -547,7 +557,5 @@ export function resolveProductConceptsWithDiagnostics(
 export function parseProductVocabulary(raw: unknown): ProductVocabulary {
   return productVocabularySchema.parse(raw);
 }
-
-
 
 

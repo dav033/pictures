@@ -1,29 +1,9 @@
 import { z } from "zod";
+import { TIPOS_ESTRUCTURA, UBICACIONES } from "@/lib/plan/composicion";
 
-export const LORA_STRUCTURE_TYPES = [
-  "arco",
-  "semiarco",
-  "guirnalda",
-  "columna",
-  "bouquet",
-  "pared",
-  "centro_mesa",
-  "backdrop",
-  "kit",
-  "accesorio",
-] as const;
+export const LORA_STRUCTURE_TYPES = TIPOS_ESTRUCTURA;
 
-export const LORA_PLACEMENTS = [
-  "fondo_pared",
-  "arco_central",
-  "sobre_mesa_principal",
-  "lateral_izquierdo",
-  "lateral_derecho",
-  "piso_frontal",
-  "mesas_invitados",
-  "entrada",
-  "techo",
-] as const;
+export const LORA_PLACEMENTS = UBICACIONES;
 
 export const LORA_DESIGN_ROLES = ["focal", "soporte", "acento"] as const;
 export const LORA_DENSITIES = ["sencilla", "media", "lujosa"] as const;

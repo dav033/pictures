@@ -994,11 +994,17 @@ export async function POST(request: Request) {
         : [];
     });
     const productIdAliases = new Map<string, string[]>();
+    const productCatalogTitles = new Map<string, string>();
     for (const product of productosConMateriales) {
       const aliases = [product.catalogSku, product.familiaId]
         .filter((id): id is string => Boolean(id && id !== product.id));
       if (aliases.length) {
         productIdAliases.set(product.id, aliases);
+      }
+      const catalogTitle = product.catalogProductTitle?.trim();
+      if (catalogTitle) {
+        productCatalogTitles.set(product.id, catalogTitle);
+        if (product.familiaId) productCatalogTitles.set(product.familiaId, catalogTitle);
       }
     }
     const productPromptCompilation = compileProductPrompt({
@@ -1007,6 +1013,7 @@ export async function POST(request: Request) {
       vocabulary: PRODUCT_VOCABULARY,
       sizeConfirmations,
       productIdAliases,
+      productCatalogTitles,
     });
     const loraCompilation = {
       prompt: productPromptCompilation.prompt,

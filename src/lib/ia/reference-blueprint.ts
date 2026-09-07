@@ -1,6 +1,14 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
 import { VisualSemanticsSchema } from "./lora-semantics";
+import {
+  CatalogVisualDescriptorSchema,
+  PhysicalFormSchema,
+  PhysicalRelationSchema,
+  QuantitySemanticsSchema,
+  SceneAnchorSchema,
+  SceneElementKindSchema,
+} from "./scene-visual-contract";
 
 const texto = (max: number) => z.string().trim().min(1).max(max);
 
@@ -122,6 +130,11 @@ export const ReferenceElementSchema = z
     // Semántica tipada del plan. Opcional para blueprints antiguos y referencias
     // externas que todavía no pasan por el compilador LoRA v2.
     visual_semantics: VisualSemanticsSchema.optional(),
+    element_kind: SceneElementKindSchema.optional(),
+    quantity_semantics: QuantitySemanticsSchema.optional(),
+    physical_form: PhysicalFormSchema.optional(),
+    catalog_visual: CatalogVisualDescriptorSchema.optional(),
+    physical_relations: z.array(PhysicalRelationSchema).max(2).optional(),
     resolved_finishes: z.array(texto(80)).max(8).optional(),
     uncertainties: z.array(texto(180)).max(8),
     model_decision: CatalogResolutionSchema.optional(),
@@ -167,6 +180,7 @@ export const ReferenceBlueprintV2Schema = z
     composition: CompositionSchema,
     palette: PaletteSchema,
     unresolved_decisions: z.array(DecisionSchema).max(40),
+    anchors: z.array(SceneAnchorSchema).max(16).optional(),
   })
   .strict()
   .superRefine((value, ctx) => {

@@ -8,6 +8,16 @@ import {
 } from "./reference-blueprint";
 import { MaterialEstimateSchema, type DesignMaterialEstimate } from "@/lib/materiales/estimacion";
 import { VisualSemanticsSchema } from "./lora-semantics";
+import {
+  CatalogVisualDescriptorSchema,
+  PhysicalFormSchema,
+  PhysicalRelationSchema,
+  QuantitySemanticsSchema,
+  SceneAnchorSchema,
+  SceneElementKindSchema,
+  type CatalogVisualDescriptor,
+} from "./scene-visual-contract";
+import { assertDescriptorPerceptualSeguro } from "@/lib/lora/descriptor-perceptual";
 
 const texto = (max: number) => z.string().trim().min(1).max(max);
 
@@ -47,6 +57,11 @@ const SceneElementSchema = z
     depth_layer: z.number().int().min(0).max(99),
     resolved_colors: z.array(texto(80)).max(8),
     visual_semantics: VisualSemanticsSchema.optional(),
+    element_kind: SceneElementKindSchema.optional(),
+    quantity_semantics: QuantitySemanticsSchema.optional(),
+    physical_form: PhysicalFormSchema.optional(),
+    catalog_visual: CatalogVisualDescriptorSchema.optional(),
+    physical_relations: z.array(PhysicalRelationSchema).max(2).optional(),
     resolved_finishes: z.array(texto(80)).max(8).optional(),
     identity_constraints: z.array(texto(220)).max(12),
     relationships: z.array(RelationshipSchema).max(12),
@@ -63,7 +78,7 @@ const SceneElementSchema = z
 
 export const SceneSpecSchema = z
   .object({
-    schema_version: z.literal("1.0"),
+    schema_version: z.enum(["1.0", "1.1"]),
     generation_mode: z.enum(["text_to_image", "edit_venue", "revise_current_result"]),
     canvas: z
       .object({
@@ -75,6 +90,7 @@ export const SceneSpecSchema = z
       .object({
         source_image_id: texto(40).optional(),
         preserve: z.array(texto(160)).max(30),
+        anchors: z.array(SceneAnchorSchema).max(16).optional(),
         protected_regions: z.array(VenueRegionSchema).max(80),
         editable_regions: z.array(VenueRegionSchema).max(80),
       })
@@ -109,6 +125,7 @@ export const SceneSpecSchema = z
   .strict()
   .superRefine((value, ctx) => {
     const ids = new Set(value.elements.map((element) => element.element_id));
+    const anchorIds = new Set((value.venue.anchors ?? []).map((anchor) => anchor.anchor_id));
     for (const element of value.elements) {
       for (const relationship of element.relationships) {
         if (!ids.has(relationship.target_element_id)) {
@@ -117,6 +134,37 @@ export const SceneSpecSchema = z
       }
       if (value.generation_mode === "edit_venue" && !value.venue.source_image_id) {
         ctx.addIssue({ code: "custom", path: ["venue", "source_image_id"], message: "edit_venue requires a venue source image." });
+      }
+      if (value.schema_version === "1.1") {
+        if (!value.venue.anchors) ctx.addIssue({ code: "custom", path: ["venue", "anchors"], message: "SceneSpec 1.1 requiere venue.anchors." });
+        if (!element.element_kind || !element.quantity_semantics || !element.physical_relations) {
+          ctx.addIssue({ code: "custom", path: ["elements"], message: `SceneSpec 1.1 requiere semántica completa: ${element.element_id}.` });
+        }
+        if (element.source_type === "catalog_backed" && !element.catalog_visual) {
+          ctx.addIssue({ code: "custom", path: ["elements"], message: `Elemento catalogado sin descriptor perceptual: ${element.element_id}.` });
+        }
+        for (const relation of element.physical_relations ?? []) {
+          const exists = relation.target.kind === "elemento_plan" ? ids.has(relation.target.id) : anchorIds.has(relation.target.id);
+          if (!exists) ctx.addIssue({ code: "custom", path: ["elements"], message: `Target físico inexistente: ${relation.target.id}.` });
+        }
+        if (element.catalog_visual) {
+          try {
+            assertDescriptorPerceptualSeguro(element.catalog_visual.descriptor_perceptual_en);
+          } catch (error) {
+            ctx.addIssue({ code: "custom", path: ["elements"], message: error instanceof Error ? error.message : "Descriptor perceptual inválido." });
+          }
+        }
+        if (element.element_kind === "catalog_prop" && element.quantity_semantics !== "physical_instances") {
+          ctx.addIssue({ code: "custom", path: ["elements"], message: `Prop ${element.element_id} debe usar physical_instances.` });
+        }
+        if (element.physical_form) {
+          const catalogIds = new Set(element.catalog_product_ids ?? []);
+          for (const part of element.physical_form.partes) {
+            for (const variantId of part.variant_ids) {
+              if (!catalogIds.has(variantId)) ctx.addIssue({ code: "custom", path: ["elements"], message: `Parte ${part.parte_id} usa variante fuera del BOM.` });
+            }
+          }
+        }
       }
     }
     const visit = (id: string, path: string[], visiting: Set<string>, visited: Set<string>) => {
@@ -202,6 +250,26 @@ function placementDescription(target: z.infer<typeof BBoxSchema>, category: stri
   return `${vertical} ${horizontal} area of the composition`;
 }
 
+const STRUCTURE_DESCRIPTORS: Record<string, string> = {
+  arco: "organic balloon arch",
+  semiarco: "asymmetrical balloon half-arch",
+  guirnalda: "organic balloon garland",
+  columna: "balloon column",
+  pared: "balloon wall",
+  centro_mesa: "balloon centerpiece",
+  backdrop: "decorated backdrop",
+  kit: "balloon decoration kit",
+  accesorio: "decorative balloon accent",
+  escultura: "balloon sculpture",
+};
+
+function visualLabel(element: ReferenceElement, materials: Array<{ visual?: CatalogVisualDescriptor }>): string {
+  if (element.physical_form?.descripcion_perceptual_en) return element.physical_form.descripcion_perceptual_en;
+  const descriptors = materials.map((material) => material.visual?.descriptor_perceptual_en).filter((value): value is string => Boolean(value));
+  const structure = STRUCTURE_DESCRIPTORS[element.visual_semantics?.structure_type ?? ""] ?? "catalog-backed decoration";
+  return descriptors.length ? `${structure} made from ${descriptors.join(" and ")}` : structure;
+}
+
 export function buildApprovedSceneSpec(input: {
   blueprint: ReferenceBlueprintV2;
   aspectRatio: SceneSpec["canvas"]["aspect_ratio"];
@@ -212,7 +280,7 @@ export function buildApprovedSceneSpec(input: {
   // Un elemento puede necesitar más de un producto real para armarse (ej.
   // árbol de globos = globos rojos + verdes + dorados) — cada entrada es un
   // material del "bill of materials", en orden con el principal primero.
-  catalogProducts?: Record<string, Array<{ id: string; name: string; description: string; category: string; colors?: string[]; unitsPerPackage?: number; packageCount?: number; installedUnits?: number; share: number; role: string }>>;
+  catalogProducts?: Record<string, Array<{ id: string; name: string; description: string; category: string; colors?: string[]; unitsPerPackage?: number; packageCount?: number; installedUnits?: number; share: number; role: string; visual?: CatalogVisualDescriptor }>>;
   protectedRegions?: Array<z.infer<typeof VenueRegionSchema>>;
   editableRegions?: Array<z.infer<typeof VenueRegionSchema>>;
   generationMode?: SceneSpec["generation_mode"];
@@ -243,6 +311,10 @@ export function buildApprovedSceneSpec(input: {
       // producto", nunca "arma esto como un arco".
       const productName = element.name;
       const isMultiMaterial = materials.length > 1;
+      const catalogVisuals = materials.map((material) => material.visual).filter((visual): visual is CatalogVisualDescriptor => Boolean(visual));
+      const modelDescriptor = visualLabel(element, materials);
+      const elementKind = element.element_kind ?? (element.category === "backdrop" ? "backdrop" : "balloon_structure");
+      const quantitySemantics = element.quantity_semantics ?? "material_units";
       return {
         element_id: element.element_id,
         name: productName,
@@ -265,6 +337,15 @@ export function buildApprovedSceneSpec(input: {
             observedColors: element.appearance.observed_colors,
           }),
         visual_semantics: element.visual_semantics,
+        element_kind: elementKind,
+        quantity_semantics: quantitySemantics,
+        physical_form: element.physical_form,
+        catalog_visual: catalogVisuals.length === materials.length && catalogVisuals.length === 1
+          ? catalogVisuals[0]
+          : catalogVisuals.length === materials.length && catalogVisuals.length > 1
+            ? { descriptor_perceptual_en: catalogVisuals.map((visual) => visual.descriptor_perceptual_en).join("; ").slice(0, 420), pattern: { kind: "composite", text_policy: "none" as const } }
+            : undefined,
+        physical_relations: element.physical_relations ?? [],
         resolved_finishes: element.resolved_finishes,
         identity_constraints: [
           // `required_elements` (la sección MUST INCLUDE, lo primero y más
@@ -309,25 +390,34 @@ export function buildApprovedSceneSpec(input: {
         relationships: element.relationships,
       } satisfies SceneElement;
     });
+  const safeElements = elements.map((element) => ({
+    ...element,
+    identity_constraints: [
+      `Required final arrangement and appearance: ${element.catalog_visual?.descriptor_perceptual_en ?? STRUCTURE_DESCRIPTORS[element.visual_semantics?.structure_type ?? ""] ?? "approved catalog decoration"}.`,
+      "Render the approved catalog-backed visual as an installed physical element; do not add packaging, labels, or unrelated objects.",
+    ].map((constraint) => constraint.slice(0, 220)),
+  }));
 
-  const approvedIds = new Set(elements.map((element) => element.element_id));
+  const approvedIds = new Set(safeElements.map((element) => element.element_id));
   const forbidden = input.blueprint.elements
     .filter((element) => !approvedIds.has(element.element_id))
     .map((element) => `${element.name} (${element.category})`);
+  const richScene = safeElements.every((element) => element.source_type === "reference_only" || Boolean(element.catalog_visual));
   const scene: SceneSpec = {
-    schema_version: "1.0",
+    schema_version: richScene ? "1.1" : "1.0",
     generation_mode: input.generationMode ?? (input.venueImageId ? "edit_venue" : "text_to_image"),
     canvas: { aspect_ratio: input.aspectRatio, content_rect: { x: 0, y: 0, width: 1, height: 1 } },
     venue: {
       source_image_id: input.venueImageId,
       preserve: VENUE_PRESERVATION,
+      anchors: input.blueprint.anchors ?? [],
       protected_regions: input.protectedRegions ?? [],
       editable_regions: input.editableRegions ?? elements.map((element) => ({ region_id: `EDIT_${element.element_id}`, bbox: element.target_bbox })),
     },
-    elements,
+    elements: safeElements,
     material_estimate: input.materialEstimate,
     positive_prompt: {
-      required_elements: elements.map((element) => `${element.name}; MANDATORY VISIBLE CATALOG ITEM; quantity: ${element.quantity.min === element.quantity.max ? `${element.quantity.min} physical units` : `${element.quantity.min}-${element.quantity.max} physical units`}; identity: ${element.identity_constraints.slice(0, 2).join(" ")}; colors: ${element.resolved_colors.join(", ")}; placement: ${placementDescription(element.target_bbox, element.category)}.`.slice(0, 320)),
+      required_elements: safeElements.map((element) => `${element.identity_constraints[0]}; MANDATORY VISIBLE CATALOG ITEM; quantity: ${element.quantity.min === element.quantity.max ? `${element.quantity.min} physical units` : `${element.quantity.min}-${element.quantity.max} physical units`}; placement: ${placementDescription(element.target_bbox, element.category)}.`.slice(0, 320)),
       composition: [input.blueprint.composition.focal_point, `Density: ${input.blueprint.composition.density}.`, `Symmetry: ${input.blueprint.composition.symmetry}.`, `Keep negative space: ${input.blueprint.composition.negative_space.join(", ") || "as specified by venue"}.`, "Design one cohesive, event-ready installation with a clear focal point, visual hierarchy, balanced color, natural asymmetry, and believable physical support. Any scale variation between balloons must stay within the exact diameters stated for each mandatory element below — never invent a size not listed.", "Treat selected catalog products as ingredients for one party setup, not as isolated objects or a flat product list.", "Build a complete installed event scene with a rear backdrop/support, middle decoration, grounded floor contact, event lighting, realistic scale, depth, and visible relationships between elements.", "Do not default to a generic balloon arch, empty table, banquet vignette, garden/forest/park background, or any other generic event cliché.", "Selected products are installed decoration, never catalog samples, retail displays, packaging, or commercial objects added for atmosphere.", "Only a selected catalog-backed signage product may contain a focal, legible sign or printed message; otherwise add no sign, banner, lettering, or invented event text."],
       // Instrucción concentrada en vez de una lista larga ítem por ítem
       // ("Preserve camera position.", "Preserve floor.", ...): Google

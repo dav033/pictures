@@ -330,6 +330,21 @@ console.log("7. unresolved_products reasons and partial-resolution safety");
   assert.equal(unknownResult.legacy, true);
   pass("an unmapped product id is reported with reason 'unknown' and the scene falls back to legacy");
 
+  // Shopify variant ids are not guaranteed to be present in the vocabulary;
+  // the trusted parent title must resolve them through an exact catalog title.
+  const variantId = "41264805445825";
+  const parentConcept = PRODUCT_VOCABULARY.find((concept) => concept.catalog_titles?.length && concept.catalog_product_ids.includes(ROSE_GOLD_REFLEX_ID));
+  assert.ok(parentConcept, "fixture must contain a concept with a catalog title");
+  const variantResult = compileProductPrompt({
+    sceneSpec: scene([element({ id: "VARIANT", name: "Variante Shopify", type: "arco", placement: "arco_central", role: "focal", productId: variantId })]),
+    visualContext: context,
+    vocabulary: PRODUCT_VOCABULARY,
+    productCatalogTitles: new Map([[variantId, parentConcept.catalog_titles![0]]]),
+  });
+  assert.deepEqual(variantResult.unresolved_products, []);
+  assert.deepEqual(variantResult.resolved_concepts, [parentConcept.concept_id]);
+  pass("a variant id absent from the vocabulary resolves through its trusted parent catalog title");
+
   const invalidSpec = scene([element({ id: "ARCH", name: "Arco", type: "arco", placement: "arco_central", role: "focal", productId: "   " })]);
   const invalidResult = compileProductPrompt({ sceneSpec: invalidSpec, visualContext: context, vocabulary: PRODUCT_VOCABULARY });
   assert.deepEqual(invalidResult.unresolved_products, [{ product_id: "   ", reason: "invalid" }]);
