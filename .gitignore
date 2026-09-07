@@ -78,8 +78,18 @@ next-env.d.ts
 # paquetes del workspace — build output
 packages/*/dist
 
+# Servicio Python: entornos y cachés locales, nunca artefactos de runtime.
+/services/ai-api/.venv/
+/services/ai-api/.pytest_cache/
+/services/ai-api/.mypy_cache/
+/services/ai-api/**/__pycache__/
+/services/ai-api/*.egg-info/
+
 # perfiles persistentes de navegador para scrapers con sesión propia (Playwright)
 /.playwright-profiles/
 
 # renders de depuración/evaluación del LoRA — no aportan al código, se regeneran
 /reports/lora-debug/
+
+# copias .bak de reportes: respaldo local antes de regenerar, nunca versionado
+/reports/*.bak

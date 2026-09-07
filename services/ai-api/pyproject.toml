@@ -1,0 +1,51 @@
+[build-system]
+requires = [
+    "setuptools==75.6.0",
+    "wheel==0.45.1",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "decoracion-ai-api"
+version = "0.1.0"
+description = "Deterministic Python contract-model scaffold for the AI API"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "fastapi==0.115.6",
+    "jsonschema==4.23.0",
+    "pydantic==2.10.4",
+    "uvicorn==0.34.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "httpx==0.28.1",
+    "pytest==8.3.4",
+]
+quality = [
+    "mypy==1.14.1",
+    "ruff==0.9.10",
+]
+
+[tool.setuptools]
+py-modules = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-ra"]
+
+[tool.ruff]
+line-length = 100
+exclude = ["app/generated_models.py"]
+
+[tool.mypy]
+python_version = "3.11"
+check_untyped_defs = true
+disallow_any_generics = true
+follow_imports = "skip"
+ignore_missing_imports = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_return_any = true
+warn_unused_ignores = true
+exclude = "app/generated_models\\.py$"
