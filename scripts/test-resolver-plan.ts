@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import type { Pool } from "pg";
+import { cotizarPlan } from "../src/lib/cotizacion/motor";
 import { resolverPlan } from "../src/lib/plan/resolver";
-import { PlanDecoracionSchema, type PlanDecoracion } from "../src/lib/plan/tipos";
+import { PlanDecoracion1_1Schema, PlanDecoracionSchema, type PlanDecoracion } from "../src/lib/plan/tipos";
 
 const rows = [
   ...[5, 9, 12, 18, 24].map((diam) => ({ product_id: "P-GLOBOS", variant_id: `V-R-${diam}`, sku: `SKU-R-${diam}`, producto_titulo: "Globo rojo", variante_titulo: `R-${diam}`, precio: diam === 24 ? 21479 : 10000, unidades_paq: diam === 24 ? 3 : 50, disponible: true, producto_disponible: true, codigo_tamano: `R-${diam}`, forma: "redondo", diam_pulg: diam, colores_producto: ["rojo"], colores_variante: ["rojo"], descripcion: "Globo látex rojo.", imagen: diam === 12 ? "https://cdn.example.test/r-12.jpg" : null })),
@@ -9,7 +10,20 @@ const rows = [
   { product_id: "P-BACK", variant_id: "V-BACK", sku: "SKU-BACK", producto_titulo: "Telón", variante_titulo: "Dorado", precio: 30000, unidades_paq: 1, disponible: true, producto_disponible: true, codigo_tamano: null, forma: null, diam_pulg: null, colores_producto: ["dorado"], colores_variante: ["dorado"], descripcion: "Telón de fondo." },
   { product_id: "P-BLUE", variant_id: "V-BLUE-R-12", sku: "SKU-BLUE-R-12", producto_titulo: "Globo azul", variante_titulo: "R-12", precio: 10000, unidades_paq: 50, disponible: true, producto_disponible: true, codigo_tamano: "R-12", forma: "redondo", diam_pulg: 12, colores_producto: ["azul"], colores_variante: ["azul"], descripcion: "Globo látex azul R-12." },
 ];
+const rowsFase2 = [
+  ...rows,
+  { product_id: "P-GLOBOS", variant_id: "V-ESC-PATAS", sku: "SKU-ESC-PATAS", producto_titulo: "Globo modelable negro", variante_titulo: "Tubular", precio: 1500, unidades_paq: 10, disponible: true, producto_disponible: true, codigo_tamano: null, forma: "modelar", diam_pulg: null, colores_producto: ["negro"], colores_variante: ["negro"], descripcion: "Globo modelable tubular negro." },
+  { product_id: "P-GLOBOS", variant_id: "V-ESC-OJO-BLANCO", sku: "SKU-ESC-OJO-BLANCO", producto_titulo: "Globo blanco", variante_titulo: "R-5", precio: 1000, unidades_paq: 10, disponible: true, producto_disponible: true, codigo_tamano: "R-5", forma: "redondo", diam_pulg: 5, colores_producto: ["blanco"], colores_variante: ["blanco"], descripcion: "Globo latex blanco R-5." },
+  { product_id: "P-GLOBOS", variant_id: "V-ESC-OJO-NEGRO", sku: "SKU-ESC-OJO-NEGRO", producto_titulo: "Globo negro", variante_titulo: "R-5", precio: 1000, unidades_paq: 10, disponible: true, producto_disponible: true, codigo_tamano: "R-5", forma: "redondo", diam_pulg: 5, colores_producto: ["negro"], colores_variante: ["negro"], descripcion: "Globo latex negro R-5." },
+  { product_id: "P-GLOBOS", variant_id: "V-R-12-NEGRO", sku: "SKU-R-12-NEGRO", producto_titulo: "Globo negro", variante_titulo: "R-12", precio: 10000, unidades_paq: 50, disponible: true, producto_disponible: true, codigo_tamano: "R-12", forma: "redondo", diam_pulg: 12, colores_producto: ["negro"], colores_variante: ["negro"], descripcion: "Globo latex negro R-12." },
+  { product_id: "P-GLOBOS", variant_id: "V-ESC-PATAS-CORTAS", sku: "SKU-ESC-PATAS-CORTAS", producto_titulo: "Globo modelable negro", variante_titulo: "Tubular corto", precio: 2200, unidades_paq: 10, disponible: true, producto_disponible: true, codigo_tamano: null, forma: "modelar", diam_pulg: null, colores_producto: ["negro"], colores_variante: ["negro"], descripcion: "Globo modelable tubular negro corto." },
+  { product_id: "P-PROP-CALABAZA", variant_id: "V-PROP-CALABAZA", sku: "SKU-PROP-CALABAZA", producto_titulo: "Calabaza decorativa", variante_titulo: "Naranja", precio: 7000, unidades_paq: 2, disponible: true, producto_disponible: true, codigo_tamano: null, forma: null, diam_pulg: null, colores_producto: ["naranja"], colores_variante: ["naranja"], descripcion: "Calabaza decorativa naranja de mesa." },
+  { product_id: "P-PROP-CALABAZA", variant_id: "V-PROP-CALABAZA-GRANDE", sku: "SKU-PROP-CALABAZA-GRANDE", producto_titulo: "Calabaza decorativa", variante_titulo: "Naranja grande", precio: 9000, unidades_paq: 1, disponible: true, producto_disponible: true, codigo_tamano: null, forma: null, diam_pulg: null, colores_producto: ["naranja"], colores_variante: ["naranja"], descripcion: "Calabaza decorativa naranja grande de mesa." },
+  { product_id: "P-PROP-MANTEL", variant_id: "V-PROP-MANTEL", sku: "SKU-PROP-MANTEL", sku_original: "SHOP-MANTEL-1", source_snapshot_id: "SNAP-FASE-2", source_variant_id: "SOURCE-MANTEL-1", inventory_quantity: 9, unidades_inferidas: false, producto_titulo: "Mantel", variante_titulo: "Negro", precio: 12000, unidades_paq: 1, disponible: true, producto_disponible: true, codigo_tamano: null, forma: null, diam_pulg: null, colores_producto: ["negro"], colores_variante: ["negro"], descripcion: "Mantel textil negro para mesa." },
+  { product_id: "P-PROP-MANTEL", variant_id: "V-PROP-NO-RECUPERADO", sku: "SKU-PROP-NO-RECUPERADO", producto_titulo: "Mantel", variante_titulo: "Rojo no recuperado", precio: 12000, unidades_paq: 1, disponible: true, producto_disponible: true, codigo_tamano: null, forma: null, diam_pulg: null, colores_producto: ["rojo"], colores_variante: ["rojo"], descripcion: "Mantel textil rojo." },
+];
 const pool = { query: async () => ({ rows }) } as unknown as Pool;
+const poolFase2 = { query: async () => ({ rows: rowsFase2 }) } as unknown as Pool;
 const whitelist = new Map<string, ReadonlySet<string>>([
   ["P-GLOBOS", new Set(rows.filter((row) => row.product_id === "P-GLOBOS").map((row) => row.variant_id))],
   ["P-BACK", new Set(["V-BACK"])],
@@ -134,6 +148,133 @@ async function main(): Promise<void> {
   const sinCobertura = await resolverPlan(pool, PlanDecoracionSchema.parse({ ...plan, plan_id: "44444444-4444-4444-8444-444444444444", estructuras: [{ ...estructura("EST_01_ARCO", "arco_central", "focal"), tipo: "arco", medidas: { ancho_m: 3, alto_m: 2.4 }, mezcla: "organica_fina" }] }), new Map([["P-GLOBOS", new Set<string>()]]));
   assert.ok(sinCobertura.sin_cobertura.length > 0);
   assert.notEqual(sinCobertura.plan_hash, (await resolverPlan(pool, sinCobertura.plan, new Map([["P-GLOBOS", new Set(["V-R-12"])]]))).plan_hash, "un snapshot sin cobertura no comparte hash con una compra resuelta");
+
+  const planRica = PlanDecoracion1_1Schema.parse({
+    plan_version: "1.1",
+    plan_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    concepto: { titulo: "Halloween de entrada", descripcion: "Guirnalda en puerta, arana construida y props sobre mesa.", paleta: ["negro", "naranja"] },
+    espacio: {
+      tipo: "interior",
+      fuente: "cliente",
+      anclas: [
+        { ancla_id: "ANC_PUERTA", tipo: "puerta", procedencia: "cliente", evidencia: "La puerta principal aparece en el brief." },
+        { ancla_id: "ANC_MESA", tipo: "mesa", procedencia: "cliente", evidencia: "La mesa de entrada aparece en el brief." },
+      ],
+    },
+    estructuras: [
+      {
+        estructura_id: "EST_01_GUIRNALDA",
+        nombre: "Guirnalda de entrada",
+        tipo: "guirnalda",
+        rol_escena: "focal",
+        ubicacion: "entrada",
+        medidas: { largo_m: 1 },
+        repeticiones: 1,
+        densidad: "sencilla",
+        mezcla: "clasica",
+        materiales: [{ product_id: "P-GLOBOS", color: "negro", participacion: 1, rol_material: "principal" }],
+        relaciones_fisicas: [{ relacion: "enmarcar", target: { kind: "ancla_espacio", id: "ANC_PUERTA" }, prioridad: "primaria" }],
+        porque: "Enmarca la puerta real.",
+      },
+      {
+        estructura_id: "EST_02_ARANA",
+        nombre: "Arana de globos",
+        tipo: "escultura",
+        rol_escena: "focal",
+        ubicacion: "zona_central",
+        medidas: {},
+        repeticiones: 2,
+        densidad: "media",
+        mezcla: "clasica",
+        materiales: [
+          { product_id: "P-GLOBOS", variant_id: "V-R-12-NEGRO", color: "negro", rol_material: "principal", unidades_por_instancia: 12, parte_ids: ["cuerpo"] },
+          { product_id: "P-GLOBOS", variant_id: "V-ESC-PATAS", color: "negro", rol_material: "secundario", unidades_por_instancia: 8, parte_ids: ["patas"] },
+          { product_id: "P-GLOBOS", variant_id: "V-ESC-OJO-BLANCO", color: "blanco", rol_material: "acento", unidades_por_instancia: 2, parte_ids: ["ojos"] },
+          { product_id: "P-GLOBOS", variant_id: "V-ESC-OJO-NEGRO", color: "negro", rol_material: "acento", unidades_por_instancia: 2, parte_ids: ["ojos"] },
+        ],
+        escultura_visual: {
+          categoria_sujeto: "animal",
+          sujeto: "arana",
+          descripcion_perceptual_en: "a black balloon spider with a round body, eight tubular legs and contrasting eyes",
+          partes: [
+            { parte_id: "cuerpo", funcion: "volumen_principal", descriptor_perceptual_en: "round black balloon body", variant_ids: ["V-R-12-NEGRO"] },
+            { parte_id: "patas", funcion: "extremidad", descriptor_perceptual_en: "eight black tubular balloon legs", variant_ids: ["V-ESC-PATAS"] },
+            { parte_id: "ojos", funcion: "detalle", descriptor_perceptual_en: "small white and black balloon eyes", variant_ids: ["V-ESC-OJO-BLANCO", "V-ESC-OJO-NEGRO"] },
+          ],
+        },
+        relaciones_fisicas: [{ relacion: "montar_sobre", target: { kind: "elemento_plan", id: "EST_01_GUIRNALDA" }, prioridad: "primaria" }],
+        porque: "Sujeto tematico con BOM verificable.",
+      },
+    ],
+    props_catalogo: [
+      { prop_id: "PROP_01_CALABAZAS", product_id: "P-PROP-CALABAZA", variant_id: "V-PROP-CALABAZA", unidades_declaradas: 3, rol_escena: "acento", ubicacion: "alrededor_mobiliario", relaciones_fisicas: [{ relacion: "apoyarse_en", target: { kind: "ancla_espacio", id: "ANC_MESA" }, prioridad: "primaria" }], porque: "Acento tematico sobre la mesa." },
+      { prop_id: "PROP_02_MANTEL", product_id: "P-PROP-MANTEL", variant_id: "V-PROP-MANTEL", unidades_declaradas: 1, rol_escena: "soporte", ubicacion: "alrededor_mobiliario", relaciones_fisicas: [{ relacion: "montar_sobre", target: { kind: "ancla_espacio", id: "ANC_MESA" }, prioridad: "primaria" }], porque: "Cubre la mesa existente." },
+    ],
+    supuestos: [],
+  });
+  const whitelistRica = new Map<string, ReadonlySet<string>>([
+    ["P-GLOBOS", new Set(["V-R-12-NEGRO", "V-ESC-PATAS", "V-ESC-OJO-BLANCO", "V-ESC-OJO-NEGRO"])],
+    ["P-PROP-CALABAZA", new Set(["V-PROP-CALABAZA", "V-PROP-CALABAZA-GRANDE"])],
+    ["P-PROP-MANTEL", new Set(["V-PROP-MANTEL"])],
+  ]);
+  const araña = await resolverPlan(poolFase2, planRica, whitelistRica);
+  assert.equal(araña.plan.plan_version, "1.1");
+  assert.equal(araña.sin_cobertura.length, 0, "la arana fixture debe tener cobertura completa");
+  assert.equal(araña.props?.length, 2, "los props deben resolverse como elementos independientes");
+  assert.equal(araña.estructuras.find((item) => item.tipo === "escultura")?.total_unidades, 48, "repeticiones multiplica todo BOM de escultura");
+  assert.equal(araña.estructuras.find((item) => item.tipo === "escultura")?.lineas.find((linea) => linea.variant_id === "V-ESC-PATAS")?.unidades, 16);
+  assert.equal(araña.compras.find((item) => item.variant_id === "V-PROP-CALABAZA")?.unidades_necesarias, 3);
+  assert.equal(araña.compras.find((item) => item.variant_id === "V-PROP-CALABAZA")?.paquetes, 2);
+  const mantel = araña.compras.find((item) => item.variant_id === "V-PROP-MANTEL");
+  assert.equal(mantel?.subtotal, 12000);
+  assert.equal(mantel?.required_quantity, 1, "los props no reciben merma de globos");
+  assert.equal(mantel?.sku_original, "SHOP-MANTEL-1");
+  assert.equal(mantel?.source_snapshot_id, "SNAP-FASE-2");
+  assert.equal(araña.compras.find((item) => item.variant_id === "V-R-12-NEGRO")?.unidades_necesarias, 41, "una variante compartida se consolida entre guirnalda y escultura");
+  assert.ok(araña.compras.find((item) => item.variant_id === "V-R-12-NEGRO")?.elementos_origen.some((origen) => origen.kind === "estructura" && origen.id === "EST_02_ARANA"), "compra compartida conserva origen de arana");
+  assert.equal(araña.totales.total_cop, 41000, "COP sale de precio y paquetes del catalogo fixture");
+  const cotizacionRica = cotizarPlan(araña);
+  assert.equal(cotizacionRica.total, 41000);
+  assert.equal(cotizacionRica.lineas.find((linea) => linea.id === "V-PROP-CALABAZA")?.productId, "P-PROP-CALABAZA");
+  assert.ok(cotizacionRica.lineas.find((linea) => linea.id === "V-PROP-CALABAZA")?.elementosOrigen?.some((origen) => origen.kind === "prop" && origen.id === "PROP_01_CALABAZAS"));
+
+  const conPataDistinta = PlanDecoracion1_1Schema.parse({
+    ...planRica,
+    plan_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    estructuras: planRica.estructuras.map((estructura) => estructura.tipo === "escultura"
+      ? { ...estructura, materiales: estructura.materiales.map((material) => material.variant_id === "V-ESC-PATAS" ? { ...material, variant_id: "V-ESC-PATAS-CORTAS" } : material), escultura_visual: { ...estructura.escultura_visual!, partes: estructura.escultura_visual!.partes.map((parte) => parte.parte_id === "patas" ? { ...parte, variant_ids: ["V-ESC-PATAS-CORTAS"] } : parte) } }
+      : estructura),
+  });
+  const arañaConPataDistinta = await resolverPlan(poolFase2, conPataDistinta, whitelistRica);
+  assert.notEqual(arañaConPataDistinta.plan_hash, araña.plan_hash, "cambiar pata cambia hash");
+  assert.notEqual(arañaConPataDistinta.totales.total_cop, araña.totales.total_cop, "cambiar pata cambia total");
+  assert.notDeepEqual(arañaConPataDistinta.compras.map((item) => [item.variant_id, item.paquetes, item.subtotal]), araña.compras.map((item) => [item.variant_id, item.paquetes, item.subtotal]), "cambiar pata cambia compra");
+
+  const conPropDistinto = PlanDecoracion1_1Schema.parse({
+    ...planRica,
+    plan_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    props_catalogo: planRica.props_catalogo.map((prop) => prop.prop_id === "PROP_01_CALABAZAS" ? { ...prop, variant_id: "V-PROP-CALABAZA-GRANDE" } : prop),
+  });
+  const arañaConPropDistinto = await resolverPlan(poolFase2, conPropDistinto, whitelistRica);
+  assert.notEqual(arañaConPropDistinto.plan_hash, araña.plan_hash, "cambiar prop cambia hash");
+  assert.notEqual(arañaConPropDistinto.totales.total_cop, araña.totales.total_cop, "cambiar prop cambia total");
+
+  const propNoRecuperado = PlanDecoracion1_1Schema.parse({
+    ...planRica,
+    plan_id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+    props_catalogo: planRica.props_catalogo.map((prop) => prop.prop_id === "PROP_02_MANTEL" ? { ...prop, variant_id: "V-PROP-NO-RECUPERADO" } : prop),
+  });
+  const resultadoNoRecuperado = await resolverPlan(poolFase2, propNoRecuperado, whitelistRica);
+  assert.ok(resultadoNoRecuperado.sin_cobertura.some((item) => item.estructura_id === "PROP_02_MANTEL"), "un prop no recuperado nunca debe aprobarse");
+  assert.equal(resultadoNoRecuperado.compras.some((item) => item.variant_id === "V-PROP-NO-RECUPERADO"), false);
+
+  const productoVarianteCruzados = PlanDecoracion1_1Schema.parse({
+    ...planRica,
+    plan_id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+    props_catalogo: planRica.props_catalogo.map((prop) => prop.prop_id === "PROP_02_MANTEL" ? { ...prop, product_id: "P-PROP-CALABAZA", variant_id: "V-PROP-MANTEL" } : prop),
+  });
+  const resultadoCruzado = await resolverPlan(poolFase2, productoVarianteCruzados, whitelistRica);
+  assert.ok(resultadoCruzado.sin_cobertura.some((item) => item.estructura_id === "PROP_02_MANTEL"), "producto y variante cruzados deben fallar");
   console.log(`[PASS] resolver de plan — ${compra.unidades_necesarias} unidades consolidadas en ${compra.paquetes} paquetes; sustituciones y cobertura declaradas`);
 }
 

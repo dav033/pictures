@@ -1,7 +1,7 @@
 import "server-only";
 import { mejorVarianteParaTamano } from "@/lib/shopify/consultas";
 import type { Producto } from "@/lib/types";
-import type { PlanResuelto } from "@/lib/plan/resuelto";
+import type { OrigenLineaPlan, PlanResuelto } from "@/lib/plan/resuelto";
 import { purchaseForProduct, type DesignMaterialEstimate } from "@/lib/materiales/estimacion";
 import { distribuirReservaProyecto } from "@/lib/plan/optimizar-materiales";
 import { MERMA } from "./constantes";
@@ -24,10 +24,12 @@ export type LineaCotizada = {
    * misma cotización).
    */
   id: string;
+  productId?: string;
   tamano: string;
   tamanoCodigo?: string;
   diamPulg?: number;
   estructuras?: string[];
+  elementosOrigen?: OrigenLineaPlan[];
   referenciaElementIds?: string[];
   color?: string;
   cantidadNecesaria: number;
@@ -247,10 +249,12 @@ export function cotizarPlan(plan: PlanResuelto): Cotizacion {
   const estructurasPlanPorId = new Map(plan.plan.estructuras.map((estructura) => [estructura.estructura_id, estructura]));
   const lineas: LineaCotizada[] = plan.compras.map((compra) => ({
     id: compra.variant_id,
+    productId: compra.product_id,
     tamano: compra.tamano_codigo ?? "sin tamaño aplicable",
     tamanoCodigo: compra.tamano_codigo ?? undefined,
     diamPulg: compra.diam_pulg ?? undefined,
     estructuras: compra.estructuras,
+    elementosOrigen: compra.elementos_origen,
     referenciaElementIds: [...new Set(compra.estructuras
       .map((estructuraId) => estructurasPlanPorId.get(estructuraId)?.referencia_element_id)
       .filter((id): id is string => Boolean(id)))],

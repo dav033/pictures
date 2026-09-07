@@ -1,12 +1,34 @@
-import type { EstructuraPlan, PlanDecoracion } from "./tipos";
+import type { PlanDecoracion, PlanDecoracion1_1, PropCatalogo } from "./tipos";
+import type { TipoEstructura, Ubicacion } from "./composicion";
 
 export type EstadoComercialPlan = "VERIFICADO" | "APROBACION_REQUERIDA" | "PRESUPUESTO_EXCEDIDO";
 
+/**
+ * De dónde viene una línea comprada (PLAN-COMPOSICION-RICA-V001.md §6.8):
+ * una estructura (globos, escultura) o un prop de catálogo independiente.
+ * Ver `LineaMaterial.origen` / `CompraConsolidada.elementos_origen`.
+ */
+export type OrigenLineaPlan =
+  | { kind: "estructura"; id: string }
+  | { kind: "prop"; id: string };
+
 export type LineaMaterial = {
+  /**
+   * Histórico: id de la estructura dueña de esta línea. Para una línea que
+   * viene de un prop de catálogo (Plan 1.1), lleva el `prop_id` en su lugar
+   * — nunca queda vacío — pero `origen` es la fuente de verdad tipada para
+   * distinguir ambos casos; los consumidores nuevos deben leer `origen`.
+   */
   estructura_id: string;
+  origen: OrigenLineaPlan;
   product_id: string;
   variant_id: string;
   sku: string | null;
+  sku_original?: string | null;
+  source_snapshot_id?: string | null;
+  source_variant_id?: string | null;
+  inventory_quantity?: number | null;
+  unidades_inferidas?: boolean | null;
   titulo: string;
   color: string | null;
   tamano_codigo: string | null;
@@ -22,8 +44,9 @@ export type LineaMaterial = {
 export type EstructuraResuelta = {
   estructura_id: string;
   nombre: string;
-  tipo: EstructuraPlan["tipo"];
-  ubicacion: EstructuraPlan["ubicacion"];
+  /** Tipo canónico completo (composicion.ts): incluye `escultura` para Plan 1.1. */
+  tipo: TipoEstructura;
+  ubicacion: Ubicacion;
   repeticiones: number;
   eje_m: number | null;
   total_unidades: number;
@@ -32,10 +55,31 @@ export type EstructuraResuelta = {
   supuestos: string[];
 };
 
+/**
+ * Un prop de catálogo resuelto (Plan 1.1, §6.7): un solo `product_id`/
+ * `variant_id`, cantidad instalada exacta y una única línea de compra —
+ * nunca un BOM de varios componentes como una escultura.
+ */
+export type PropResuelto = {
+  prop_id: string;
+  product_id: string;
+  variant_id: string;
+  rol_escena: PropCatalogo["rol_escena"];
+  ubicacion: Ubicacion;
+  unidades: number;
+  linea: LineaMaterial;
+  porque: string;
+};
+
 export type CompraConsolidada = {
   variant_id: string;
   product_id: string;
   sku: string | null;
+  sku_original?: string | null;
+  source_snapshot_id?: string | null;
+  source_variant_id?: string | null;
+  inventory_quantity?: number | null;
+  unidades_inferidas?: boolean | null;
   titulo: string;
   tamano_codigo: string | null;
   diam_pulg: number | null;
@@ -59,13 +103,23 @@ export type CompraConsolidada = {
   sobrante: number;
   precio_paquete: number;
   subtotal: number;
+  /**
+   * Histórico: solo ids de estructura. Se mantiene sin cambios para no
+   * romper consumidores existentes (`cotizarPlan` en
+   * `src/lib/cotizacion/motor.ts`); una compra que solo viene de un prop deja
+   * este arreglo vacío. `elementos_origen` es la fuente generalizada.
+   */
   estructuras: string[];
+  /** Todo lo que consolidó esta compra: estructuras y/o props (§6.8). */
+  elementos_origen: OrigenLineaPlan[];
   /** La imagen puede faltar en planes guardados antes de que se mostrara en el desglose. */
   imagen?: string | null;
 };
 
 export type PlanResuelto = {
-  plan: PlanDecoracion;
+  plan: PlanDecoracion | PlanDecoracion1_1;
+  /** Props de catálogo resueltos (Plan 1.1). Vacío para Plan 1.0. */
+  props?: PropResuelto[];
   plan_hash: string;
   /** Open-event traceability kept alongside the resolved plan for UI/audit. */
   event_label?: string | null;

@@ -3,18 +3,24 @@ import type { Pool } from "pg";
 import { featureEnabled } from "@/lib/ia/feature-flags";
 import { MERMA } from "@/lib/cotizacion/constantes";
 import { calcularDespieceEstructura } from "@/lib/medidas/geometria";
+import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "./composicion";
 import { planHashResuelto } from "./hash";
-import { completarMedidas } from "./medidas-defecto";
+import { completarMedidas, completarMedidas1_1 } from "./medidas-defecto";
 import { distribuirReservaProyecto, optimizarCobertura } from "./optimizar-materiales";
 import { cajasDeEstructuras } from "./ubicaciones";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
-import type { MaterialPlan, PlanDecoracion } from "./tipos";
-import type { CompraConsolidada, EstructuraResuelta, LineaMaterial, PlanResuelto } from "./resuelto";
+import type { PlanDecoracion, PlanDecoracion1_1 } from "./tipos";
+import type { CompraConsolidada, EstructuraResuelta, LineaMaterial, OrigenLineaPlan, PlanResuelto } from "./resuelto";
 
 type FilaCatalogoPlan = {
   product_id: string;
   variant_id: string;
   sku: string | null;
+  sku_original: string | null;
+  source_snapshot_id: string | null;
+  source_variant_id: string | null;
+  inventory_quantity: number | null;
+  unidades_inferidas: boolean | null;
   producto_titulo: string;
   variante_titulo: string | null;
   precio: number | string;
@@ -35,6 +41,11 @@ type Candidato = {
   productId: string;
   variantId: string;
   sku: string | null;
+  skuOriginal: string | null;
+  sourceSnapshotId: string | null;
+  sourceVariantId: string | null;
+  inventoryQuantity: number | null;
+  unidadesInferidas: boolean | null;
   titulo: string;
   precio: number;
   unidadesPaquete: number;
@@ -47,7 +58,7 @@ type Candidato = {
   imagen: string | null;
 };
 
-const GEOMETRICOS = new Set(["arco", "semiarco", "guirnalda", "columna", "pared", "centro_mesa"]);
+const GEOMETRICOS = new Set<string>(TIPOS_ESTRUCTURA_GEOMETRICOS);
 const DIAMETROS_ESTANDAR = [5, 9, 12, 18, 24] as const;
 
 function strings(value: unknown): string[] {
@@ -67,6 +78,11 @@ function aCandidato(row: FilaCatalogoPlan): Candidato | null {
     productId: row.product_id,
     variantId: row.variant_id,
     sku: row.sku,
+    skuOriginal: row.sku_original ?? null,
+    sourceSnapshotId: row.source_snapshot_id ?? null,
+    sourceVariantId: row.source_variant_id ?? null,
+    inventoryQuantity: row.inventory_quantity ?? null,
+    unidadesInferidas: row.unidades_inferidas ?? null,
     titulo: row.variante_titulo ? `${row.producto_titulo} — ${row.variante_titulo}` : row.producto_titulo,
     precio,
     unidadesPaquete,
@@ -128,7 +144,7 @@ function unicosPor<T>(items: T[], clave: (item: T) => string): T[] {
   });
 }
 
-function lineaDesdeCandidato(estructuraId: string, candidato: Candidato, unidades: number, color: string | undefined, pedidoPulgadas?: number): LineaMaterial {
+function lineaDesdeCandidato(origen: OrigenLineaPlan, candidato: Candidato, unidades: number, color: string | undefined, pedidoPulgadas?: number): LineaMaterial {
   const sustitucion = pedidoPulgadas != null && candidato.diamPulg != null && candidato.diamPulg !== pedidoPulgadas
     ? {
         pedido: `R-${pedidoPulgadas}`,
@@ -137,10 +153,16 @@ function lineaDesdeCandidato(estructuraId: string, candidato: Candidato, unidade
       }
     : null;
   return {
-    estructura_id: estructuraId,
+    estructura_id: origen.id,
+    origen,
     product_id: candidato.productId,
     variant_id: candidato.variantId,
     sku: candidato.sku,
+    sku_original: candidato.skuOriginal,
+    source_snapshot_id: candidato.sourceSnapshotId,
+    source_variant_id: candidato.sourceVariantId,
+    inventory_quantity: candidato.inventoryQuantity,
+    unidades_inferidas: candidato.unidadesInferidas,
     titulo: candidato.titulo,
     color: color ?? candidato.colores[0] ?? null,
     tamano_codigo: candidato.codigoTamano,
@@ -154,8 +176,8 @@ function lineaDesdeCandidato(estructuraId: string, candidato: Candidato, unidade
   };
 }
 
-function repartirUnidades(total: number, materiales: MaterialPlan[]): number[] {
-  const cuotas = materiales.map((material) => total * material.participacion);
+function repartirUnidades(total: number, materiales: ReadonlyArray<{ participacion?: number }>): number[] {
+  const cuotas = materiales.map((material) => total * (material.participacion ?? 0));
   const unidades = cuotas.map(Math.floor);
   let faltan = total - unidades.reduce((sum, value) => sum + value, 0);
   const orden = cuotas.map((cuota, index) => ({ index, resto: cuota - unidades[index]! })).sort((a, b) => b.resto - a.resto || a.index - b.index);
@@ -234,7 +256,7 @@ function reoptimizarPresentaciones(
         if (asignadas <= 0) continue;
         const candidato = optimizacion.candidatos.get(compra.variantId);
         if (!candidato) continue;
-        const nueva = lineaDesdeCandidato(linea.estructura_id, candidato, asignadas, linea.color ?? undefined, linea.diam_pulg);
+        const nueva = lineaDesdeCandidato(linea.origen, candidato, asignadas, linea.color ?? undefined, linea.diam_pulg);
         nueva.sustitucion = linea.sustitucion;
         lineasNuevas.push(nueva);
         compra.capacidad -= asignadas;
@@ -251,7 +273,7 @@ function reoptimizarPresentaciones(
 }
 
 function calcularAlternativas(
-  plan: PlanDecoracion,
+  plan: PlanDecoracion | PlanDecoracion1_1,
   estructuras: EstructuraResuelta[],
   comprasActuales: CompraConsolidada[],
   candidatosPorProducto: Map<string, Candidato[]>,
@@ -315,17 +337,24 @@ function calcularAlternativas(
  */
 export async function resolverPlan(
   pool: Pool,
-  planEntrada: PlanDecoracion,
+  planEntrada: PlanDecoracion | PlanDecoracion1_1,
   whitelist: ReadonlyMap<string, ReadonlySet<string>>,
   allowlistLora?: CatalogAllowlist | null,
 ): Promise<PlanResuelto> {
-  const plan = completarMedidas(planEntrada);
-  const idsProducto = plan.estructuras.flatMap((estructura) => estructura.materiales.map((material) => material.product_id));
-  const idsVariante = plan.estructuras.flatMap((estructura) => estructura.materiales.map((material) => material.variant_id).filter((id): id is string => Boolean(id)));
+  const plan = planEntrada.plan_version === "1.1" ? completarMedidas1_1(planEntrada) : completarMedidas(planEntrada);
+  const idsProducto = [
+    ...plan.estructuras.flatMap((estructura) => estructura.materiales.map((material) => material.product_id)),
+    ...(plan.plan_version === "1.1" ? plan.props_catalogo.map((prop) => prop.product_id) : []),
+  ];
+  const idsVariante = [
+    ...plan.estructuras.flatMap((estructura) => estructura.materiales.map((material) => material.variant_id).filter((id): id is string => Boolean(id))),
+    ...(plan.plan_version === "1.1" ? plan.props_catalogo.map((prop) => prop.variant_id) : []),
+  ];
   const idsWhitelistVariante = [...new Set([...whitelist.values()].flatMap((ids) => [...ids]))];
   const { rows } = idsProducto.length || idsVariante.length || idsWhitelistVariante.length
     ? await pool.query<FilaCatalogoPlan>(
-        `SELECT v.product_id, v.variant_id, v.sku,
+        `SELECT v.product_id, v.variant_id, v.sku, v.sku_original,
+                v.source_snapshot_id, v.source_variant_id, v.inventory_quantity, v.unidades_inferidas,
                 p.title AS producto_titulo, v.title AS variante_titulo,
                 v.price AS precio, NULLIF(to_jsonb(v)->>'unidades_paq', '')::integer AS unidades_paq,
                 v.available AS disponible, p.available AS producto_disponible,
@@ -366,7 +395,30 @@ export async function resolverPlan(
     const lineas: LineaMaterial[] = [];
     let ejeM: number | null = null;
     const faltantesAntes = sinCobertura.length;
-    if (geometrica) {
+    if (plan.plan_version === "1.1" && estructura.tipo === "escultura") {
+      const repeticiones = Math.max(1, Math.round(estructura.repeticiones));
+      for (const material of estructura.materiales) {
+        const variantId = material.variant_id;
+        const recuperado = variantId ? candidatoPorVariante.get(variantId) : undefined;
+        const permitido = Boolean(
+          variantId
+          && recuperado
+          && recuperado.productId === material.product_id
+          && whitelist.get(material.product_id)?.has(variantId),
+        );
+        const unidadesPorInstancia = material.unidades_por_instancia;
+        if (!permitido || !recuperado || !unidadesPorInstancia) {
+          sinCobertura.push({ estructura_id: estructura.estructura_id, product_id: material.product_id, tamano: variantId ?? "variant_id inválido" });
+          continue;
+        }
+        lineas.push(lineaDesdeCandidato(
+          { kind: "estructura", id: estructura.estructura_id },
+          recuperado,
+          unidadesPorInstancia * repeticiones,
+          material.color,
+        ));
+      }
+    } else if (geometrica) {
       const geometria = calcularDespieceEstructura({
         tipo: estructura.tipo as Parameters<typeof calcularDespieceEstructura>[0]["tipo"],
         medidas: {
@@ -378,7 +430,7 @@ export async function resolverPlan(
         densidad: estructura.densidad,
         mezcla: estructura.mezcla,
         tamanos: plan.restricciones?.tamanos.filter((item) => item.polaridad === "obligatorio").map((item) => Number(item.valor.replace(/^R-/i, ""))).filter(Number.isFinite),
-        materiales: estructura.materiales.map((material) => ({ color: material.color, participacion: material.participacion })),
+        materiales: estructura.materiales.map((material) => ({ color: material.color, participacion: material.participacion ?? 0 })),
       });
       ejeM = geometria.ejeM;
       const candidatos = candidatosPorProducto;
@@ -401,12 +453,17 @@ export async function resolverPlan(
         const override = elegidoBase
           ? estructura.variant_overrides?.find((item) => item.objetivo_variant_id === elegidoBase.variantId)
           : undefined;
-        const elegido = override ? candidatoPorVariante.get(override.variant_id) ?? null : elegidoBase;
+        const candidatoOverride = override ? candidatoPorVariante.get(override.variant_id) : undefined;
+        const elegido = override
+          ? candidatoOverride && candidatoOverride.productId === override.product_id && whitelist.get(override.product_id)?.has(override.variant_id)
+            ? candidatoOverride
+            : null
+          : elegidoBase;
         if (!elegido) {
           sinCobertura.push({ estructura_id: estructura.estructura_id, product_id: materialId, tamano: despiece.tamano });
           continue;
         }
-        const linea = lineaDesdeCandidato(estructura.estructura_id, elegido, despiece.cantidad, override?.color ?? despiece.color, despiece.pulgadas);
+        const linea = lineaDesdeCandidato({ kind: "estructura", id: estructura.estructura_id }, elegido, despiece.cantidad, override?.color ?? despiece.color, despiece.pulgadas);
         lineas.push(linea);
         if (linea.sustitucion) sustituciones.push({ estructura_id: estructura.estructura_id, ...linea.sustitucion });
       }
@@ -414,13 +471,14 @@ export async function resolverPlan(
       const unidades = repartirUnidades(estructura.unidades_declaradas ?? 0, estructura.materiales);
       for (const [index, material] of estructura.materiales.entries()) {
         if ((unidades[index] ?? 0) <= 0) continue;
-        const permitido = whitelist.get(material.product_id)?.has(material.variant_id ?? "") ?? false;
-        const elegido = material.variant_id && permitido ? candidatoPorVariante.get(material.variant_id) : null;
+        const permitido = Boolean(material.variant_id && whitelist.get(material.product_id)?.has(material.variant_id));
+        const candidato = material.variant_id ? candidatoPorVariante.get(material.variant_id) : undefined;
+        const elegido = permitido && candidato?.productId === material.product_id ? candidato : null;
         if (!elegido) {
           sinCobertura.push({ estructura_id: estructura.estructura_id, product_id: material.product_id, tamano: material.variant_id ?? "variant_id inválido" });
           continue;
         }
-        lineas.push(lineaDesdeCandidato(estructura.estructura_id, elegido, unidades[index]!, material.color));
+        lineas.push(lineaDesdeCandidato({ kind: "estructura", id: estructura.estructura_id }, elegido, unidades[index]!, material.color));
       }
     }
     const totalUnidades = lineas.reduce((sum, linea) => sum + linea.unidades, 0);
@@ -439,48 +497,87 @@ export async function resolverPlan(
     });
   }
 
+  const props: NonNullable<PlanResuelto["props"]> = [];
+  if (plan.plan_version === "1.1") {
+    for (const prop of plan.props_catalogo) {
+      const candidato = candidatoPorVariante.get(prop.variant_id);
+      const permitido = Boolean(
+        candidato
+        && candidato.productId === prop.product_id
+        && whitelist.get(prop.product_id)?.has(prop.variant_id),
+      );
+      if (!permitido || !candidato) {
+        sinCobertura.push({ estructura_id: prop.prop_id, product_id: prop.product_id, tamano: prop.variant_id });
+        advertencias.push(`prop_sin_cobertura:${prop.prop_id}`);
+        continue;
+      }
+      const linea = lineaDesdeCandidato({ kind: "prop", id: prop.prop_id }, candidato, prop.unidades_declaradas, undefined);
+      props.push({
+        prop_id: prop.prop_id,
+        product_id: prop.product_id,
+        variant_id: prop.variant_id,
+        rol_escena: prop.rol_escena,
+        ubicacion: prop.ubicacion,
+        unidades: prop.unidades_declaradas,
+        linea,
+        porque: prop.porque,
+      });
+    }
+  }
+
   const optimizerEnabled = featureEnabled("PLAN_COST_OPTIMIZER_V2");
   const paquetesOptimos = optimizerEnabled
     ? reoptimizarPresentaciones(estructuras, candidatosPorProducto, whitelist)
     : new Map<string, number>();
   const comprasPorVariante = new Map<string, CompraConsolidada>();
-  for (const estructura of estructuras) {
-    for (const linea of estructura.lineas) {
-      const previa = comprasPorVariante.get(linea.variant_id);
-      if (previa) {
-        previa.unidades_necesarias += linea.unidades;
-        if (!previa.estructuras.includes(estructura.estructura_id)) previa.estructuras.push(estructura.estructura_id);
-      } else {
-        const candidato = candidatoPorVariante.get(linea.variant_id);
-        if (!candidato) continue;
-        comprasPorVariante.set(linea.variant_id, {
-          variant_id: linea.variant_id,
-          product_id: linea.product_id,
-          sku: linea.sku,
-          titulo: linea.titulo,
-          tamano_codigo: linea.tamano_codigo,
-          diam_pulg: linea.diam_pulg,
-          color: linea.color,
-          unidades_necesarias: linea.unidades,
-          design_quantity: linea.unidades,
-          waste_reserve: 0,
-          required_quantity: linea.unidades,
-          unidades_con_merma: 0,
-          unidades_paquete: candidato.unidadesPaquete,
-          paquetes: 0,
-          purchase_quantity: 0,
-          used: linea.unidades,
-          leftover_inventory: 0,
-          consumption_cost: 0,
-          purchase_cost: 0,
-          additional_package_for_waste: false,
-          sobrante: 0,
-          precio_paquete: candidato.precio,
-          subtotal: 0,
-          estructuras: [estructura.estructura_id],
-          imagen: candidato.imagen,
-        });
+  const lineasResueltas = [
+    ...estructuras.flatMap((estructura) => estructura.lineas),
+    ...props.map((prop) => prop.linea),
+  ];
+  for (const linea of lineasResueltas) {
+    const previa = comprasPorVariante.get(linea.variant_id);
+    if (previa) {
+      previa.unidades_necesarias += linea.unidades;
+      if (linea.origen.kind === "estructura" && !previa.estructuras.includes(linea.origen.id)) previa.estructuras.push(linea.origen.id);
+      if (!previa.elementos_origen.some((origen) => origen.kind === linea.origen.kind && origen.id === linea.origen.id)) {
+        previa.elementos_origen.push(linea.origen);
       }
+    } else {
+      const candidato = candidatoPorVariante.get(linea.variant_id);
+      if (!candidato) continue;
+      comprasPorVariante.set(linea.variant_id, {
+        variant_id: linea.variant_id,
+        product_id: linea.product_id,
+        sku: linea.sku,
+        sku_original: linea.sku_original,
+        source_snapshot_id: linea.source_snapshot_id,
+        source_variant_id: linea.source_variant_id,
+        inventory_quantity: linea.inventory_quantity,
+        unidades_inferidas: linea.unidades_inferidas,
+        titulo: linea.titulo,
+        tamano_codigo: linea.tamano_codigo,
+        diam_pulg: linea.diam_pulg,
+        color: linea.color,
+        unidades_necesarias: linea.unidades,
+        design_quantity: linea.unidades,
+        waste_reserve: 0,
+        required_quantity: linea.unidades,
+        unidades_con_merma: 0,
+        unidades_paquete: candidato.unidadesPaquete,
+        paquetes: 0,
+        purchase_quantity: 0,
+        used: linea.unidades,
+        leftover_inventory: 0,
+        consumption_cost: 0,
+        purchase_cost: 0,
+        additional_package_for_waste: false,
+        sobrante: 0,
+        precio_paquete: candidato.precio,
+        subtotal: 0,
+        estructuras: linea.origen.kind === "estructura" ? [linea.origen.id] : [],
+        elementos_origen: [linea.origen],
+        imagen: candidato.imagen,
+      });
     }
   }
   const compras = [...comprasPorVariante.values()].sort((a, b) => a.variant_id.localeCompare(b.variant_id));
@@ -527,20 +624,18 @@ export async function resolverPlan(
     `${item.estructura_id}|${item.product_id}|${item.tamano}`,
   );
   const totalCop = compras.reduce((sum, compra) => sum + compra.subtotal, 0);
-  const costoPaquetesSinConsolidar = estructuras.flatMap((estructura) => estructura.lineas)
-    .filter((linea) => linea.diam_pulg != null)
+  const costoPaquetesSinConsolidar = lineasResueltas
     .reduce((sum, linea) => {
-      const candidato = candidatosPorProducto.get(linea.product_id)?.find((item) => item.variantId === linea.variant_id);
+      const candidato = candidatoPorVariante.get(linea.variant_id);
       return candidato ? sum + costoPaquetes(candidato, linea.unidades) : sum;
     }, 0);
   const costoPaquetesConsolidado = compras
-    .filter((compra) => compra.diam_pulg != null)
     .reduce((sum, compra) => sum + compra.subtotal, 0);
   const ahorroPaquetesCop = Math.max(0, costoPaquetesSinConsolidar - costoPaquetesConsolidado);
-  const costoIngenuoConMerma = estructuras.flatMap((estructura) => estructura.lineas)
+  const costoIngenuoConMerma = lineasResueltas
     .filter((linea) => linea.diam_pulg != null)
     .reduce((sum, linea) => {
-      const candidato = candidatosPorProducto.get(linea.product_id)?.find((item) => item.variantId === linea.variant_id);
+      const candidato = candidatoPorVariante.get(linea.variant_id);
       return candidato ? sum + costoPaquetes(candidato, linea.unidades, MERMA) : sum;
     }, 0);
   const ahorroMermaCop = Math.max(0, costoIngenuoConMerma - costoPaquetesSinConsolidar);
@@ -557,6 +652,7 @@ export async function resolverPlan(
        lineas: estructura.lineas.map((linea) => ({ variant_id: linea.variant_id, unidades: linea.unidades, color: linea.color, acabado: linea.acabado, forma: linea.forma, diam_pulg: linea.diam_pulg })),
     })),
     compras: compras.map((compra) => ({ variant_id: compra.variant_id, unidades_paquete: compra.unidades_paquete, paquetes: compra.paquetes, precio_paquete: compra.precio_paquete, subtotal: compra.subtotal, sobrante: compra.sobrante })),
+    props: props.map((prop) => ({ prop_id: prop.prop_id, variant_id: prop.variant_id, unidades: prop.unidades, linea: { product_id: prop.linea.product_id, variant_id: prop.linea.variant_id, unidades: prop.linea.unidades } })),
     layout: cajasDeEstructuras(plan.estructuras),
     total_cop: totalCop,
     ahorro_paquetes_cop: ahorroPaquetesCop,
@@ -576,6 +672,7 @@ export async function resolverPlan(
     plan,
     plan_hash: planHashResuelto(plan, snapshot),
     estructuras,
+    ...(plan.plan_version === "1.1" ? { props } : {}),
     compras,
     totales: {
       globos_por_tamano: globosPorTamano,

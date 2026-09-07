@@ -49,11 +49,13 @@ async function main(): Promise<void> {
       `SELECT p.product_id, v.variant_id
          FROM catalog_products p
          JOIN catalog_variants v ON v.product_id = p.product_id
-        WHERE p.title ILIKE '%Diamantes Dorados Fashion Transparente%'
+        WHERE p.status = 'ACTIVE' AND p.available = true
           AND v.codigo_tamano = 'R-24' AND v.available = true
+          AND v.price > 0 AND v.unidades_paq IS NOT NULL AND v.unidades_paq > 0
+        ORDER BY p.product_id, v.variant_id
         LIMIT 1`,
     );
-    assert.ok(gigante.rows[0], "falta el producto real R-24 que originó la cotización de 622.891 COP");
+    assert.ok(gigante.rows[0], "falta una variante real R-24 activa para probar ausencia de cobertura");
     const planR24 = PlanDecoracionSchema.parse({
       ...plan,
       plan_id: "99999999-9999-4999-8999-999999999999",
