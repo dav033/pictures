@@ -1,0 +1,131 @@
+{
+  "schema_version": "plan-resuelto.v1",
+  "plan": {
+    "plan_version": "1.0",
+    "plan_id": "00000000-0000-4000-8000-000000000010",
+    "concepto": {
+      "titulo": "Arco rojo",
+      "descripcion": "Arco focal rojo para salón.",
+      "paleta": ["rojo", "blanco"]
+    },
+    "espacio": {
+      "tipo": "salón",
+      "fuente": "cliente"
+    },
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_ARCO",
+        "nombre": "Arco principal",
+        "tipo": "arco",
+        "rol_escena": "focal",
+        "ubicacion": "fondo_pared",
+        "medidas": { "ancho_m": 3, "alto_m": 2.5 },
+        "repeticiones": 1,
+        "densidad": "media",
+        "mezcla": "clasica",
+        "materiales": [
+          {
+            "product_id": "prod-rojo",
+            "variant_id": "var-rojo-12",
+            "color": "rojo",
+            "participacion": 1,
+            "rol_material": "principal"
+          }
+        ],
+        "porque": "Define el foco visual de la entrada."
+      }
+    ],
+    "supuestos": [],
+    "referencia_omitida": []
+  },
+  "plan_hash": "sha256:fixture-plan",
+  "request_id": "00000000-0000-4000-8000-000000000001",
+  "estructuras": [
+    {
+      "estructura_id": "EST_01_ARCO",
+      "nombre": "Arco principal",
+      "tipo": "arco",
+      "ubicacion": "fondo_pared",
+      "repeticiones": 1,
+      "eje_m": 5.5,
+      "total_unidades": 24,
+      "lineas": [
+        {
+          "estructura_id": "EST_01_ARCO",
+          "origen": { "kind": "estructura", "id": "EST_01_ARCO" },
+          "product_id": "prod-rojo",
+          "variant_id": "var-rojo-12",
+          "sku": "ROJO-12",
+          "titulo": "Globo látex rojo — R-12",
+          "color": "rojo",
+          "tamano_codigo": "R-12",
+          "diam_pulg": 12,
+          "diam_cm": 30.48,
+          "forma": "redondo",
+          "acabado": null,
+          "unidades": 24,
+          "sustitucion": null
+        }
+      ],
+      "mezcla_real": [
+        { "diam_pulg": 12, "forma": "redondo", "unidades": 24, "pct": 1 }
+      ],
+      "supuestos": []
+    }
+  ],
+  "compras": [
+    {
+      "variant_id": "var-rojo-12",
+      "product_id": "prod-rojo",
+      "sku": "ROJO-12",
+      "titulo": "Globo látex rojo — R-12",
+      "tamano_codigo": "R-12",
+      "diam_pulg": 12,
+      "color": "rojo",
+      "unidades_necesarias": 24,
+      "design_quantity": 24,
+      "waste_reserve": 3,
+      "required_quantity": 27,
+      "unidades_con_merma": 27,
+      "unidades_paquete": 50,
+      "paquetes": 1,
+      "purchase_quantity": 50,
+      "used": 24,
+      "leftover_inventory": 23,
+      "consumption_cost": 6480,
+      "purchase_cost": 12000,
+      "additional_package_for_waste": false,
+      "sobrante": 23,
+      "precio_paquete": 12000,
+      "subtotal": 12000,
+      "estructuras": ["EST_01_ARCO"],
+      "elementos_origen": [{ "kind": "estructura", "id": "EST_01_ARCO" }]
+    }
+  ],
+  "totales": {
+    "globos_por_tamano": { "R-12": 24 },
+    "total_unidades": 24,
+    "total_cop": 12000,
+    "design_quantity": 24,
+    "target_waste_reserve": 3,
+    "covered_waste_reserve": 3,
+    "uncovered_waste_reserve": 0,
+    "natural_package_surplus": 26,
+    "purchase_cost": 12000,
+    "consumption_cost": 6480,
+    "waste_only_savings_cop": 0,
+    "additional_waste_packages": 0,
+    "ahorro_paquetes_cop": 0,
+    "incluye_iva": true,
+    "merma_porcentaje": 12.5
+  },
+  "comercial": {
+    "estado": "VERIFICADO",
+    "delta_cop": 0
+  },
+  "alternativas": [],
+  "merma_log": "Reserva distribuida sobre variantes compatibles.",
+  "sustituciones": [],
+  "sin_cobertura": [],
+  "advertencias": []
+}

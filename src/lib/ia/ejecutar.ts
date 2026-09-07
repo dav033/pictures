@@ -81,6 +81,7 @@ export async function ejecutarConversacion(opts: {
    * con su nombre y args ya parseados. No cambia el flujo. */
   onLlamada?: (nombre: string, args: Record<string, unknown>) => void;
   catalogAllowlist?: CatalogAllowlist;
+  signal?: AbortSignal;
 }): Promise<ResultadoConversacion> {
   const solicitud = opts.historial.filter((mensaje) => mensaje.rol === "usuario").map((mensaje) => mensaje.texto).join(" ");
   const estado = crearEstadoConversacion(opts.brief, solicitud, opts.referenceBlueprint);
@@ -93,6 +94,7 @@ export async function ejecutarConversacion(opts: {
     vueltasMax: VUELTAS_MAX,
     onLlamada: opts.onLlamada,
     alAgotarVueltas: () => textoAlAgotarVueltas(estado),
+    signal: opts.signal,
   });
   return empaquetar(estado, resultado.texto, resultado.proveedor, resultado.modelo);
 }
@@ -111,6 +113,7 @@ export async function* ejecutarConversacionStream(opts: {
    * `EstadoConversacion.referenceBlueprint`. */
   referenceBlueprint?: ReferenceBlueprintV2;
   catalogAllowlist?: CatalogAllowlist;
+  signal?: AbortSignal;
 }): AsyncGenerator<EventoConversacion> {
   const solicitud = opts.historial.filter((mensaje) => mensaje.rol === "usuario").map((mensaje) => mensaje.texto).join(" ");
   const estado = crearEstadoConversacion(opts.brief, solicitud, opts.referenceBlueprint);
@@ -122,6 +125,7 @@ export async function* ejecutarConversacionStream(opts: {
     registro: crearRegistroHerramientas(estado, { catalogAllowlist: opts.catalogAllowlist }),
     vueltasMax: VUELTAS_MAX,
     alAgotarVueltas: () => textoAlAgotarVueltas(estado),
+    signal: opts.signal,
   });
 
   for await (const evento of generador) {

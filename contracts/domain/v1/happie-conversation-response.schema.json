@@ -1,0 +1,198 @@
+{
+  "$id": "happie-conversation-response.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "happie.v1"
+        },
+        "tipo": {
+          "type": "string",
+          "const": "pregunta"
+        },
+        "mensaje": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "estado": {
+          "type": "object",
+          "properties": {
+            "fase": {
+              "type": "string",
+              "enum": [
+                "descubrimiento",
+                "detalles",
+                "confirmacion",
+                "finalizado"
+              ]
+            },
+            "tipoEvento": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "invitados": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 100000
+            },
+            "presupuesto": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "servicios": {
+              "maxItems": 4,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "comida",
+                  "bebida",
+                  "decoracion",
+                  "fotografia"
+                ]
+              }
+            },
+            "preferencias": {
+              "maxItems": 20,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              }
+            }
+          },
+          "required": [
+            "fase",
+            "servicios",
+            "preferencias"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "schema_version",
+        "tipo",
+        "mensaje",
+        "estado"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "happie.v1"
+        },
+        "tipo": {
+          "type": "string",
+          "const": "recomendaciones"
+        },
+        "mensaje": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "estado": {
+          "type": "object",
+          "properties": {
+            "fase": {
+              "type": "string",
+              "enum": [
+                "descubrimiento",
+                "detalles",
+                "confirmacion",
+                "finalizado"
+              ]
+            },
+            "tipoEvento": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "invitados": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 100000
+            },
+            "presupuesto": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "servicios": {
+              "maxItems": 4,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "comida",
+                  "bebida",
+                  "decoracion",
+                  "fotografia"
+                ]
+              }
+            },
+            "preferencias": {
+              "maxItems": 20,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              }
+            }
+          },
+          "required": [
+            "fase",
+            "servicios",
+            "preferencias"
+          ],
+          "additionalProperties": false
+        },
+        "recomendaciones": {
+          "maxItems": 3,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "url": {
+                "type": "string",
+                "format": "uri"
+              },
+              "razon": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              }
+            },
+            "required": [
+              "url",
+              "razon"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "resumen": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        }
+      },
+      "required": [
+        "schema_version",
+        "tipo",
+        "mensaje",
+        "estado",
+        "recomendaciones",
+        "resumen"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}

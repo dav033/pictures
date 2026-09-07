@@ -1,0 +1,136 @@
+{
+  "$id": "catalog-product.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "product_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "handle": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description_text": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "vendor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "product_type": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "image_urls": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string",
+      "const": "ACTIVE"
+    },
+    "available": {
+      "type": "boolean"
+    },
+    "price_min": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "price_max": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "derived": {
+      "type": "object",
+      "properties": {
+        "category": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "colors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "finishes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "occasions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "category",
+        "colors",
+        "occasions"
+      ],
+      "additionalProperties": false
+    },
+    "source_payload": {},
+    "search_text": {
+      "type": "string"
+    },
+    "embedding_source_hash": {
+      "type": "string"
+    },
+    "source_updated_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "product_id",
+    "handle",
+    "title",
+    "description_text",
+    "vendor",
+    "product_type",
+    "tags",
+    "image_urls",
+    "status",
+    "available",
+    "price_min",
+    "price_max",
+    "derived",
+    "source_payload",
+    "search_text",
+    "embedding_source_hash",
+    "source_updated_at"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,487 @@
+{
+  "$id": "design-material-estimate.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "design-material-estimate-v1"
+    },
+    "design": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "shape": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "dimensions_m": {
+          "type": "object",
+          "properties": {
+            "width": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "height": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "length": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "width",
+            "height",
+            "length"
+          ],
+          "additionalProperties": false
+        },
+        "installation_length_m": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "density": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "visual_density": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "visual_scale": {
+          "type": "string",
+          "enum": [
+            "small",
+            "small_medium",
+            "medium",
+            "large",
+            "very_large"
+          ]
+        },
+        "cluster_count": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "type",
+        "shape",
+        "dimensions_m",
+        "installation_length_m",
+        "density",
+        "visual_density",
+        "visual_scale",
+        "cluster_count"
+      ],
+      "additionalProperties": false
+    },
+    "balloons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "structure_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "product_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "variant_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "finish": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "size_inches": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "shape": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "design_quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "waste_reserve": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "required_quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "waste_adjusted_quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "color",
+          "finish",
+          "size_inches",
+          "shape",
+          "design_quantity",
+          "waste_reserve",
+          "required_quantity",
+          "waste_adjusted_quantity"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "special_elements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "structure_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "product_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "variant_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "finish": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "size_inches": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "shape": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "design_quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "waste_reserve": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "required_quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "waste_adjusted_quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "color",
+          "finish",
+          "size_inches",
+          "shape",
+          "design_quantity",
+          "waste_reserve",
+          "required_quantity",
+          "waste_adjusted_quantity"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "purchases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "variant_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "design_quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "waste_reserve": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "required_quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "waste_adjusted_quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "units_per_package": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "package_count": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "purchase_quantity": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "used": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "leftover_inventory": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "consumption_cost": {
+            "type": "number",
+            "minimum": 0
+          },
+          "purchase_cost": {
+            "type": "number",
+            "minimum": 0
+          },
+          "additional_package_for_waste": {
+            "type": "boolean"
+          },
+          "operational_surplus": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "potential_surplus": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "product_id",
+          "variant_id",
+          "design_quantity",
+          "waste_reserve",
+          "required_quantity",
+          "waste_adjusted_quantity",
+          "units_per_package",
+          "package_count",
+          "purchase_quantity",
+          "used",
+          "leftover_inventory",
+          "consumption_cost",
+          "purchase_cost",
+          "additional_package_for_waste",
+          "operational_surplus",
+          "potential_surplus"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "totals": {
+      "type": "object",
+      "properties": {
+        "design_quantity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "target_waste_reserve": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "covered_waste_reserve": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "uncovered_waste_reserve": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "natural_package_surplus": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "required_quantity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "consumption_cost": {
+          "type": "number",
+          "minimum": 0
+        },
+        "purchase_cost": {
+          "type": "number",
+          "minimum": 0
+        },
+        "waste_only_savings_cop": {
+          "type": "number",
+          "minimum": 0
+        },
+        "additional_waste_packages": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "waste_adjusted_quantity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "purchase_quantity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "operational_surplus": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "potential_surplus": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "design_quantity",
+        "target_waste_reserve",
+        "covered_waste_reserve",
+        "uncovered_waste_reserve",
+        "natural_package_surplus",
+        "required_quantity",
+        "consumption_cost",
+        "purchase_cost",
+        "waste_only_savings_cop",
+        "additional_waste_packages",
+        "waste_adjusted_quantity",
+        "purchase_quantity",
+        "operational_surplus",
+        "potential_surplus"
+      ],
+      "additionalProperties": false
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": [
+    "version",
+    "design",
+    "balloons",
+    "special_elements",
+    "purchases",
+    "totals",
+    "warnings"
+  ],
+  "additionalProperties": false
+}

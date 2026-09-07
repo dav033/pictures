@@ -145,13 +145,14 @@ export function crearChatGemini(opts?: { apiKey?: string; modelo?: string; think
               contents: historialAContents(p.historial),
               config: {
                 systemInstruction: p.sistema,
+                abortSignal: p.signal,
                 tools: p.herramientas.length
                   ? [{ functionDeclarations: p.herramientas.map(herramientaADeclaracion) }]
                   : undefined,
                 ...(thinkingConfig ? { thinkingConfig } : {}),
               },
             }),
-          { esReintentable },
+          { esReintentable, signal: p.signal },
         );
 
         const partes = respuesta.candidates?.[0]?.content?.parts ?? [];
@@ -186,13 +187,14 @@ export function crearChatGemini(opts?: { apiKey?: string; modelo?: string; think
               contents: historialAContents(p.historial),
               config: {
                 systemInstruction: p.sistema,
+                abortSignal: p.signal,
                 tools: p.herramientas.length
                   ? [{ functionDeclarations: p.herramientas.map(herramientaADeclaracion) }]
                   : undefined,
                 ...(thinkingConfig ? { thinkingConfig } : {}),
               },
             }),
-          { esReintentable },
+          { esReintentable, signal: p.signal },
         );
 
         let texto = "";

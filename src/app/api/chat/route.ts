@@ -10,8 +10,22 @@ import { PLAN_DECORACION_ENABLED } from "@/lib/plan/flags";
 import type { Brief, ChatMessage } from "@/lib/types";
 import { LoraModeSlugSchema } from "@/lib/lora/schema";
 import { resolveLoraModeDatasetAllowlist } from "@/lib/lora/mode-resolver";
+import {
+  CHAT_SSE_CONTRACT_VERSION,
+  ERROR_CONTRACT_VERSION,
+  ChatSseEventV1Schema,
+  parseChatRequestV1,
+  type ChatRequestV1,
+  type ErrorCodeV1,
+} from "@/lib/ia/contracts/chat-v1";
+import {
+  crearDeadlineSignal,
+  leerContextoOperativo,
+  remainingDeadlineMs,
+  sha256Body,
+} from "@/lib/ia/contracts/operational-v1";
 
-type Body = {
+type LegacyBody = {
   messages: ChatMessage[];
   brief: Brief;
   /** Override de proveedor para esta petición — A/B en vivo desde la UI. */
@@ -29,14 +43,16 @@ type Body = {
   loraMode?: unknown;
 };
 
-const LIMITE_ESPERA_EVENTO_MS = 75_000;
+type Body = ChatRequestV1 & Partial<LegacyBody>;
+
+export const maxDuration = 75;
 
 /** Evita que una llamada al proveedor sin respuesta deje un stream abierto para siempre. */
-function conLimiteDeEspera<T>(promesa: Promise<T>): Promise<T> {
+function conLimiteDeEspera<T>(promesa: Promise<T>, timeoutMs: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const temporizador = setTimeout(
       () => reject(new ErrorIA("timeout", "gemini", "El asistente tardó demasiado en responder. Intenta nuevamente.", true)),
-      LIMITE_ESPERA_EVENTO_MS,
+      timeoutMs,
     );
     promesa.then(resolve, reject).finally(() => clearTimeout(temporizador));
   });
@@ -59,7 +75,16 @@ function statusDe(causa: ErrorIA["causa"]): number {
 
 function datosDeError(error: unknown): { error: string; causa?: string; proveedor?: string } {
   if (error instanceof ErrorIA) {
-    return { error: error.message, causa: error.causa, proveedor: error.proveedor };
+    const mensaje = error.causa === "sin_llave"
+      ? "El proveedor de IA no está configurado en el servidor."
+      : error.causa === "cuota"
+        ? "El proveedor de IA está temporalmente sin cuota. Intenta nuevamente."
+        : error.causa === "filtrado"
+          ? "El proveedor no pudo procesar esta solicitud."
+          : error.causa === "timeout"
+            ? "El asistente tardó demasiado en responder. Intenta nuevamente."
+            : "No se pudo completar la respuesta del asistente.";
+    return { error: mensaje, causa: error.causa, proveedor: error.proveedor };
   }
   const detalle = error instanceof Error ? error.message : "Error desconocido";
   if (/ECONNREFUSED|DATABASE_URL|postgres/i.test(detalle)) {
@@ -68,15 +93,85 @@ function datosDeError(error: unknown): { error: string; causa?: string; proveedo
       causa: "base_datos",
     };
   }
-  return { error: `Falló la llamada al proveedor de IA: ${detalle}` };
+  return { error: "No se pudo completar la respuesta del asistente.", causa: "desconocido" };
 }
 
 function formatoSSE(evento: string, datos: unknown): string {
   return `event: ${evento}\ndata: ${JSON.stringify(datos)}\n\n`;
 }
 
+function codigoDeError(error: unknown): ErrorCodeV1 {
+  if (error instanceof ErrorIA) {
+    switch (error.causa) {
+      case "sin_llave":
+        return "AI_KEY_MISSING";
+      case "cuota":
+        return "AI_QUOTA";
+      case "filtrado":
+        return "AI_FILTERED";
+      case "timeout":
+        return "AI_TIMEOUT";
+      default:
+        return "AI_PROVIDER";
+    }
+  }
+  const detalle = error instanceof Error ? error.message : "";
+  if (/ECONNREFUSED|DATABASE_URL|postgres/i.test(detalle)) return "RAG_UNAVAILABLE";
+  return "INTERNAL_ERROR";
+}
+
+function reintentable(error: unknown): boolean {
+  if (!(error instanceof ErrorIA)) return false;
+  return error.causa === "cuota" || error.causa === "timeout" || error.causa === "desconocido";
+}
+
+function envelopeHttp(requestId: string, code: ErrorCodeV1, message: string, retryable: boolean): Record<string, unknown> {
+  return {
+    schema_version: ERROR_CONTRACT_VERSION,
+    code,
+    message,
+    retryable,
+    request_id: requestId,
+    error: message,
+  };
+}
+
 export async function POST(request: Request) {
-  const { messages, brief, proveedor, fotoEspacio, imagenesReferencia, referenceBlueprint: rawReferenceBlueprint, loraMode: rawLoraMode }: Body = await request.json();
+  const contextoPreliminar = leerContextoOperativo(request);
+  const requestIdPreliminar = contextoPreliminar.request_id;
+  const correlationIdPreliminar = contextoPreliminar.correlation_id;
+  let headersDeIds = {
+    "X-Request-ID": requestIdPreliminar,
+    "X-Correlation-ID": correlationIdPreliminar,
+  };
+  const contentLength = Number(request.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > 25_000_000) {
+    return Response.json(
+      envelopeHttp(requestIdPreliminar, "PAYLOAD_TOO_LARGE", "La solicitud supera el tamaño máximo permitido.", false),
+      { status: 413, headers: headersDeIds },
+    );
+  }
+  let contextoOperativo = contextoPreliminar;
+  let textoBody: string;
+  let body: Body;
+  try {
+    textoBody = await request.text();
+    contextoOperativo = leerContextoOperativo(request, sha256Body(textoBody));
+    headersDeIds = {
+      "X-Request-ID": contextoOperativo.request_id,
+      "X-Correlation-ID": contextoOperativo.correlation_id,
+    };
+    body = parseChatRequestV1(JSON.parse(textoBody));
+  } catch {
+    const requestId = contextoOperativo.request_id;
+    return Response.json(
+      envelopeHttp(requestId, "INVALID_INPUT", "La solicitud de chat no es válida.", false),
+      { status: 400, headers: headersDeIds },
+    );
+  }
+  const requestId = contextoOperativo.request_id;
+  const correlationId = contextoOperativo.correlation_id;
+  const { messages, brief, proveedor, fotoEspacio, imagenesReferencia, referenceBlueprint: rawReferenceBlueprint, loraMode: rawLoraMode } = body;
   const cookieProveedor = request.headers
     .get("cookie")
     ?.match(/ia_proveedor=(gemini)/)?.[1];
@@ -135,24 +230,75 @@ export async function POST(request: Request) {
       };
     });
   } catch (error) {
-    return Response.json(datosDeError(error), { status: statusDe(error instanceof ErrorIA ? error.causa : "desconocido") });
+    const datos = datosDeError(error);
+    const code = codigoDeError(error);
+    return Response.json(
+      { ...envelopeHttp(requestId, code, datos.error, reintentable(error)), causa: datos.causa, proveedor: datos.proveedor },
+      { status: statusDe(error instanceof ErrorIA ? error.causa : "desconocido"), headers: headersDeIds },
+    );
   }
 
   // La respuesta SSE se abre antes de esperar al proveedor. Esperar el primer
   // fragmento aquí bloqueaba los headers y permitía que el timeout absoluto
   // del navegador venciera durante un turno válido con varias herramientas.
-  const generador = ejecutarConversacionStream({ chat, sistema, historial, brief: brief ?? {}, referenceBlueprint, catalogAllowlist: catalogAllowlist ?? undefined });
+  const deadline = crearDeadlineSignal(request.signal, contextoOperativo.deadline_ms);
+  const generador = ejecutarConversacionStream({
+    chat,
+    sistema,
+    historial,
+    brief: brief ?? {},
+    referenceBlueprint,
+    catalogAllowlist: catalogAllowlist ?? undefined,
+    signal: deadline.signal,
+  });
   const iterador = generador[Symbol.asyncIterator]();
+  let cancelarStream: (() => void) | undefined;
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const encoder = new TextEncoder();
-      const enviar = (evento: string, datos: unknown) => controller.enqueue(encoder.encode(formatoSSE(evento, datos)));
+      let terminal = false;
+      let cancelado = request.signal.aborted;
+      let deadlineCancelado = deadline.wasDeadlineExceeded();
+      const enviar = (evento: "texto" | "herramienta" | "fin" | "error", datos: Record<string, unknown>) => {
+        const versionado = {
+          schema_version: CHAT_SSE_CONTRACT_VERSION,
+          type: evento,
+          request_id: requestId,
+          correlation_id: correlationId,
+          ...datos,
+        };
+        ChatSseEventV1Schema.parse(versionado);
+        controller.enqueue(encoder.encode(formatoSSE(evento, versionado)));
+      };
+      const abortar = () => {
+        cancelado = true;
+        void iterador.return?.(undefined);
+      };
+      cancelarStream = () => {
+        cancelado = true;
+        deadline.cancel();
+        void iterador.return?.(undefined);
+      };
+      request.signal.addEventListener("abort", abortar, { once: true });
 
       try {
         while (true) {
-          const actual = await conLimiteDeEspera(iterador.next());
-          if (actual.done) break;
+          if (cancelado) break;
+          const actual = await conLimiteDeEspera(iterador.next(), remainingDeadlineMs(deadline.deadlineAt));
+          deadlineCancelado = deadline.wasDeadlineExceeded();
+          if (cancelado) break;
+          if (actual.done) {
+            if (!terminal && !cancelado) {
+              terminal = true;
+              enviar("error", {
+                error: "El asistente cerró la respuesta antes de terminar.",
+                code: "AI_PROVIDER",
+                retryable: true,
+              });
+            }
+            break;
+          }
           const evento = actual.value;
           if (evento.tipo === "texto") {
             enviar("texto", { delta: evento.delta });
@@ -180,21 +326,41 @@ export async function POST(request: Request) {
               plan: r.plan,
               referenceBlueprint: r.referenceBlueprint,
             });
+            terminal = true;
+            break;
           }
         }
       } catch (error) {
-        enviar("error", datosDeError(error));
+        if (!cancelado && !terminal) {
+          terminal = true;
+          const datos = deadlineCancelado
+            ? { error: "El asistente tardó demasiado en responder. Intenta nuevamente.", causa: "timeout" }
+            : datosDeError(error);
+          enviar("error", {
+            ...datos,
+            code: deadlineCancelado ? "AI_TIMEOUT" : codigoDeError(error),
+            retryable: deadlineCancelado || reintentable(error),
+          });
+        }
       } finally {
+        if (!terminal || cancelado) void iterador.return?.(undefined);
+        request.signal.removeEventListener("abort", abortar);
+        cancelarStream = undefined;
+        deadline.dispose();
         controller.close();
       }
-    },
-  });
+      },
+      cancel() {
+        cancelarStream?.();
+      },
+    });
 
   return new Response(stream, {
     headers: {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
       Connection: "keep-alive",
+      ...headersDeIds,
     },
   });
 }

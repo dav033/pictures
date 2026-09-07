@@ -8,6 +8,7 @@ import type { ChatPort, Herramienta, LlamadaHerramienta, Mensaje, ProveedorId } 
 export type ManejadorHerramienta = (
   args: Record<string, unknown>,
   llamada: LlamadaHerramienta,
+  signal?: AbortSignal,
 ) => Promise<Record<string, unknown>>;
 
 /** Nombre de herramienta → handler. Reemplaza el if-chain que tendría que
@@ -45,18 +46,25 @@ export type OpcionesConversacion = {
    * Default: un mensaje genérico en español; el consumidor normalmente
    * quiere algo consciente de SU propio estado (ver demo-decoracion). */
   alAgotarVueltas?: (historial: Mensaje[]) => string;
+  /** Señal de desconexión/cancelación del consumidor. */
+  signal?: AbortSignal;
 };
 
 const VUELTAS_MAX_DEFECTO = 10;
 const textoAlAgotarVueltasDefecto = () => "Se agotaron los intentos sin llegar a una respuesta final.";
 
+function asegurarNoCancelado(signal: AbortSignal | undefined): void {
+  if (signal?.aborted) throw new Error("CLIENT_CANCELLED");
+}
+
 async function ejecutarHerramienta(
   registro: RegistroHerramientas,
   llamada: LlamadaHerramienta,
+  signal?: AbortSignal,
 ): Promise<Record<string, unknown>> {
   const manejador = registro[llamada.nombre];
   if (!manejador) return { error: `herramienta desconocida: ${llamada.nombre}` };
-  return manejador(llamada.args ?? {}, llamada);
+  return manejador(llamada.args ?? {}, llamada, signal);
 }
 
 /**
@@ -71,10 +79,11 @@ export async function ejecutarConversacion(opts: OpcionesConversacion): Promise<
   const alAgotarVueltas = opts.alAgotarVueltas ?? textoAlAgotarVueltasDefecto;
 
   for (let vuelta = 0; vuelta < vueltasMax; vuelta++) {
+    asegurarNoCancelado(opts.signal);
     const inicio = Date.now();
     let turno;
     try {
-      turno = await opts.chat.turno({ sistema: opts.sistema, historial, herramientas: opts.herramientas });
+      turno = await opts.chat.turno({ sistema: opts.sistema, historial, herramientas: opts.herramientas, signal: opts.signal });
     } catch (error) {
       registrarEvento({
         proveedor: opts.chat.id,
@@ -104,8 +113,9 @@ export async function ejecutarConversacion(opts: OpcionesConversacion): Promise<
     historial.push({ rol: "asistente", llamadas });
 
     for (const llamada of llamadas) {
+      asegurarNoCancelado(opts.signal);
       opts.onLlamada?.(llamada.nombre, llamada.args ?? {});
-      const resultado = await ejecutarHerramienta(opts.registro, llamada);
+      const resultado = await ejecutarHerramienta(opts.registro, llamada, opts.signal);
       historial.push({ rol: "herramienta", nombre: llamada.nombre, llamadaId: llamada.id, resultado });
     }
   }
@@ -129,6 +139,7 @@ export async function* ejecutarConversacionStream(opts: OpcionesConversacion): A
   const alAgotarVueltas = opts.alAgotarVueltas ?? textoAlAgotarVueltasDefecto;
 
   for (let vuelta = 0; vuelta < vueltasMax; vuelta++) {
+    asegurarNoCancelado(opts.signal);
     const inicio = Date.now();
     let texto = "";
     let llamadasCrudas: LlamadaHerramienta[] = [];
@@ -136,7 +147,8 @@ export async function* ejecutarConversacionStream(opts: OpcionesConversacion): A
     let modelo = opts.chat.modelo;
 
     try {
-      for await (const fragmento of opts.chat.turnoStream({ sistema: opts.sistema, historial, herramientas: opts.herramientas })) {
+      for await (const fragmento of opts.chat.turnoStream({ sistema: opts.sistema, historial, herramientas: opts.herramientas, signal: opts.signal })) {
+        asegurarNoCancelado(opts.signal);
         if (fragmento.tipo === "texto") {
           texto += fragmento.delta;
           yield { tipo: "texto", delta: fragmento.delta };
@@ -177,9 +189,10 @@ export async function* ejecutarConversacionStream(opts: OpcionesConversacion): A
     historial.push({ rol: "asistente", llamadas });
 
     for (const llamada of llamadas) {
+      asegurarNoCancelado(opts.signal);
       opts.onLlamada?.(llamada.nombre, llamada.args ?? {});
       yield { tipo: "herramienta", nombre: llamada.nombre, estado: "ejecutando" };
-      const resultado = await ejecutarHerramienta(opts.registro, llamada);
+      const resultado = await ejecutarHerramienta(opts.registro, llamada, opts.signal);
       yield { tipo: "herramienta", nombre: llamada.nombre, estado: "lista" };
       historial.push({ rol: "herramienta", nombre: llamada.nombre, llamadaId: llamada.id, resultado });
     }

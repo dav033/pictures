@@ -32,6 +32,7 @@ import type { ImageQaReport } from "@/lib/ia/image-qa";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
 import { classifyGenerationIds, normalizeGenerationSources } from "@/lib/generacion/provenance";
+import { ChatSseEventV1Schema } from "@/lib/ia/contracts/chat-v1";
 
 type ProveedorId = "gemini";
 type SelectorIA = ProveedorId | "lora" | "comparar" | "comparar_lora" | "gemini_sin_referencias";
@@ -255,16 +256,22 @@ async function consumirSSE(
       else if (linea.startsWith("data: ")) datosCrudo += linea.slice(6);
     }
     if (!datosCrudo) return;
-    const datos = JSON.parse(datosCrudo);
+    const datos = JSON.parse(datosCrudo) as unknown;
+    if (recibioFinal || recibioError) return;
+    const eventoValidado = ChatSseEventV1Schema.safeParse(datos);
+    if (!eventoValidado.success || eventoValidado.data.type !== evento) {
+      throw new Error("El servidor devolvió un evento SSE inválido.");
+    }
+    const datosValidados = eventoValidado.data;
     manejadores.onActividad?.();
-    if (evento === "texto") manejadores.onTexto(datos.delta);
-    else if (evento === "herramienta") manejadores.onHerramienta(datos.nombre, datos.estado);
-    else if (evento === "fin") {
+    if (datosValidados.type === "texto") manejadores.onTexto(datosValidados.delta);
+    else if (datosValidados.type === "herramienta") manejadores.onHerramienta(datosValidados.nombre, datosValidados.estado);
+    else if (datosValidados.type === "fin") {
       recibioFinal = true;
-      manejadores.onFin(datos);
-    } else if (evento === "error") {
+      manejadores.onFin(datosValidados);
+    } else if (datosValidados.type === "error") {
       recibioError = true;
-      manejadores.onError(datos);
+      manejadores.onError(datosValidados);
     }
   }
 
@@ -540,6 +547,7 @@ export default function Page() {
   // no dependa del closure de un render viejo: timeout, abort y desmontaje
   // deben dejar la UI en estado idle incluso si la API devuelve 4xx/5xx.
   const generacionAbortRef = useRef<AbortController | null>(null);
+  const chatAbortRef = useRef<AbortController | null>(null);
   const generacionIntervalRef = useRef<number | null>(null);
   const paginaMontadaRef = useRef(true);
 
@@ -559,6 +567,8 @@ export default function Page() {
       paginaMontadaRef.current = false;
       generacionAbortRef.current?.abort();
       generacionAbortRef.current = null;
+      chatAbortRef.current?.abort();
+      chatAbortRef.current = null;
       if (generacionIntervalRef.current !== null) {
         window.clearInterval(generacionIntervalRef.current);
         generacionIntervalRef.current = null;
@@ -891,6 +901,7 @@ export default function Page() {
     // reenviar el turno.
     if (imagenesReferenciaRef.current.length > 0 && !referenceReadyRef.current) await esperarReferenciasListas();
     const controlador = new AbortController();
+    chatAbortRef.current = controlador;
     let excedioTiempo = false;
     let temporizador: number | undefined;
     const reiniciarLimiteInactividad = () => {
@@ -964,10 +975,15 @@ export default function Page() {
         finalizarUltimoMensaje(data);
       }
     } catch {
+      if (controlador.signal.aborted && !excedioTiempo) {
+        setMensajes((previos) => previos.slice(0, -1));
+        return;
+      }
       setError(excedioTiempo ? "El asistente tardó demasiado en responder. Intenta enviar el mensaje otra vez." : "No se pudo contactar al servidor.");
       setMensajes((previos) => previos.slice(0, -1));
     } finally {
       if (temporizador !== undefined) window.clearTimeout(temporizador);
+      if (chatAbortRef.current === controlador) chatAbortRef.current = null;
       setCargandoChat(false);
       setHerramientaEnCurso(null);
       entradaRef.current?.focus();
@@ -975,6 +991,10 @@ export default function Page() {
   }
 
   /** Recupera tu último mensaje en el input y borra todo lo que vino después, para corregirlo y reenviarlo. */
+  function cancelarChat() {
+    chatAbortRef.current?.abort();
+  }
+
   function editarUltimoMensaje(indice: number) {
     if (cargandoChat) return;
     setEntrada(mensajes[indice].content);
@@ -1898,6 +1918,17 @@ export default function Page() {
                 aria-label="Escribe tu mensaje"
                 className="chat-composer-input min-w-0 flex-1 text-sm text-texto outline-none placeholder:text-texto-suave"
               />
+              {cargandoChat && (
+                <button
+                  type="button"
+                  onClick={cancelarChat}
+                  aria-label="Cancelar respuesta"
+                  className="ui-pressable shrink-0 rounded-full px-2 text-xs text-texto-suave hover:text-acento"
+                >
+                  <span className="chat-send-label">Cancelar</span>
+                  <X className="size-4" aria-hidden="true" />
+                </button>
+              )}
               <button
                 type="submit"
                 disabled={cargandoChat || (!entrada.trim() && !fotoEspacio && imagenesReferencia.length === 0)}

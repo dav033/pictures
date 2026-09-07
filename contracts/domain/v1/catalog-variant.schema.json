@@ -1,0 +1,163 @@
+{
+  "$id": "catalog-variant.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "variant_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "product_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sku": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "title": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "price": {
+      "type": "number",
+      "minimum": 0
+    },
+    "currency": {
+      "type": "string",
+      "const": "COP"
+    },
+    "inventory_quantity": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "inventory_source": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "cdn"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "available": {
+      "type": "boolean"
+    },
+    "options": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    },
+    "image_url": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "source_payload": {},
+    "codigo_tamano": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "forma": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "diam_pulg": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "largo_pulg": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "ancho_cm": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "alto_cm": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "derived_colors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "unidades_paq": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "unidades_inferidas": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "variant_id",
+    "product_id",
+    "sku",
+    "title",
+    "price",
+    "currency",
+    "inventory_quantity",
+    "inventory_source",
+    "available",
+    "options",
+    "image_url",
+    "source_payload",
+    "codigo_tamano",
+    "forma",
+    "diam_pulg",
+    "largo_pulg",
+    "ancho_cm",
+    "alto_cm",
+    "derived_colors",
+    "unidades_paq",
+    "unidades_inferidas"
+  ],
+  "additionalProperties": false
+}

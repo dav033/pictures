@@ -1,0 +1,45 @@
+{
+  "$id": "happie-recommendation-response.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "happie.v1"
+    },
+    "recomendaciones": {
+      "maxItems": 3,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "razon": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "url",
+          "razon"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "resumen": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    }
+  },
+  "required": [
+    "schema_version",
+    "recomendaciones",
+    "resumen"
+  ],
+  "additionalProperties": false
+}

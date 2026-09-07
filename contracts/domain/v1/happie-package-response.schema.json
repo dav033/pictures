@@ -1,0 +1,182 @@
+{
+  "$id": "happie-package-response.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "happie.v1"
+    },
+    "recomendaciones": {
+      "maxItems": 3,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "paquete": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "event_type_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "base_guests": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "standard_duration_minutes": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "conditions": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "restrictions": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "is_active": {
+                "type": "boolean"
+              },
+              "is_featured": {
+                "type": "boolean"
+              },
+              "package_items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "is_active": {
+                      "type": "boolean"
+                    },
+                    "package_id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "charge_type": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "description": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "suggested_start_time": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "provider_name": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "category_name": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "total",
+                    "is_active",
+                    "package_id",
+                    "charge_type",
+                    "description",
+                    "suggested_start_time",
+                    "provider_name",
+                    "category_name"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "id",
+              "event_type_id",
+              "name",
+              "base_guests",
+              "standard_duration_minutes",
+              "conditions",
+              "restrictions",
+              "is_active",
+              "is_featured",
+              "package_items"
+            ],
+            "additionalProperties": false
+          },
+          "razon": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "paquete",
+          "razon"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "resumen": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    }
+  },
+  "required": [
+    "schema_version",
+    "recomendaciones",
+    "resumen"
+  ],
+  "additionalProperties": false
+}

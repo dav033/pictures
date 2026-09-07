@@ -1,0 +1,7 @@
+{
+  "schema_version": "error.v1",
+  "code": "AI_TIMEOUT",
+  "message": "El asistente tardó demasiado en responder.",
+  "retryable": true,
+  "request_id": "00000000-0000-4000-8000-000000000001"
+}

@@ -1,0 +1,206 @@
+{
+  "$id": "product-vocabulary.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "concept_id": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[a-z0-9]+(\\.[a-z0-9_]+)+$"
+      },
+      "canonical_label": {
+        "type": "string",
+        "minLength": 1
+      },
+      "catalog_titles": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "visual": {
+        "type": "object",
+        "properties": {
+          "family": {
+            "type": "string",
+            "minLength": 1
+          },
+          "shape": {
+            "type": "string",
+            "minLength": 1
+          },
+          "material": {
+            "type": "string",
+            "minLength": 1
+          },
+          "color": {
+            "type": "string",
+            "minLength": 1
+          },
+          "finish": {
+            "type": "string",
+            "minLength": 1
+          },
+          "pattern": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "minLength": 1
+              },
+              "motif": {
+                "type": "string",
+                "minLength": 1
+              },
+              "contains_text": {
+                "type": "boolean"
+              },
+              "text_policy": {
+                "type": "string",
+                "enum": [
+                  "none",
+                  "graphic_lettering",
+                  "exact_approved"
+                ]
+              },
+              "approved_text": {
+                "type": "string",
+                "minLength": 1
+              },
+              "evidence_ref": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false
+          },
+          "transparency": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "family",
+          "shape",
+          "material",
+          "color",
+          "finish",
+          "pattern"
+        ],
+        "additionalProperties": false
+      },
+      "aliases": {
+        "type": "object",
+        "properties": {
+          "es": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "en": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "contextual": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "product_ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required_tokens": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "required": [
+                "value"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "es",
+          "en",
+          "contextual"
+        ],
+        "additionalProperties": false
+      },
+      "catalog_product_ids": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "sizes": {
+        "type": "object",
+        "properties": {
+          "separate": {
+            "type": "boolean",
+            "const": true
+          },
+          "allowed_codes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "separate",
+          "allowed_codes"
+        ],
+        "additionalProperties": false
+      },
+      "status": {
+        "type": "string",
+        "enum": [
+          "active",
+          "pending",
+          "deprecated"
+        ]
+      },
+      "vocabulary_version": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required": [
+      "concept_id",
+      "canonical_label",
+      "visual",
+      "aliases",
+      "catalog_product_ids",
+      "sizes",
+      "status",
+      "vocabulary_version"
+    ],
+    "additionalProperties": false
+  }
+}

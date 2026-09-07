@@ -1,0 +1,24 @@
+{
+  "schema_version": "transcript.v1",
+  "messages": [
+    { "role": "user", "text": "Busca globos." },
+    {
+      "role": "assistant",
+      "tool_calls": [
+        {
+          "schema_version": "tools.v1",
+          "call_id": "local_0_0",
+          "name": "buscar_catalogo_rag",
+          "arguments": {},
+          "metadata": { "thought_signature": "opaque" }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "call_id": "local_0_0",
+      "name": "buscar_catalogo_rag",
+      "result": { "ok": true, "items": [] }
+    }
+  ]
+}

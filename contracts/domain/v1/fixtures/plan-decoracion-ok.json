@@ -1,0 +1,44 @@
+{
+  "plan_version": "1.0",
+  "plan_id": "00000000-0000-4000-8000-000000000010",
+  "concepto": {
+    "titulo": "Arco rojo",
+    "descripcion": "Arco focal rojo para salón.",
+    "paleta": ["rojo", "blanco"],
+    "estilo": "clásico"
+  },
+  "espacio": {
+    "tipo": "salón",
+    "ancho_m": 6,
+    "alto_m": 3,
+    "fuente": "cliente"
+  },
+  "estructuras": [
+    {
+      "estructura_id": "EST_01_ARCO",
+      "nombre": "Arco principal",
+      "tipo": "arco",
+      "rol_escena": "focal",
+      "ubicacion": "fondo_pared",
+      "medidas": {
+        "ancho_m": 3,
+        "alto_m": 2.5
+      },
+      "repeticiones": 1,
+      "densidad": "media",
+      "mezcla": "clasica",
+      "materiales": [
+        {
+          "product_id": "prod-rojo",
+          "variant_id": "var-rojo-12",
+          "color": "rojo",
+          "participacion": 1,
+          "rol_material": "principal"
+        }
+      ],
+      "porque": "Define el foco visual de la entrada."
+    }
+  ],
+  "supuestos": [],
+  "referencia_omitida": []
+}

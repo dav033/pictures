@@ -1,0 +1,601 @@
+{
+  "$id": "plan-decoracion.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "plan_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "plan_id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "concepto": {
+      "type": "object",
+      "properties": {
+        "titulo": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "descripcion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 320
+        },
+        "paleta": {
+          "maxItems": 8,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "estilo": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "ocasion": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "momento_dia": {
+          "type": "string",
+          "maxLength": 80
+        }
+      },
+      "required": [
+        "titulo",
+        "descripcion",
+        "paleta"
+      ],
+      "additionalProperties": false
+    },
+    "espacio": {
+      "type": "object",
+      "properties": {
+        "tipo": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "ancho_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        },
+        "alto_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        },
+        "largo_m": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 100
+        },
+        "fuente": {
+          "type": "string",
+          "enum": [
+            "cliente",
+            "supuesto",
+            "foto"
+          ]
+        }
+      },
+      "required": [
+        "tipo",
+        "fuente"
+      ],
+      "additionalProperties": false
+    },
+    "estructuras": {
+      "minItems": 1,
+      "maxItems": 8,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "estructura_id": {
+            "type": "string",
+            "pattern": "^EST_\\d{2}_[A-Z_]+$"
+          },
+          "nombre": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "arco",
+              "semiarco",
+              "guirnalda",
+              "columna",
+              "pared",
+              "centro_mesa",
+              "backdrop",
+              "kit",
+              "accesorio"
+            ]
+          },
+          "rol_escena": {
+            "type": "string",
+            "enum": [
+              "focal",
+              "soporte",
+              "relleno",
+              "acento",
+              "servicio"
+            ]
+          },
+          "ubicacion": {
+            "type": "string",
+            "enum": [
+              "fondo_pared",
+              "sobre_mesa_principal",
+              "lateral_izquierdo",
+              "lateral_derecho",
+              "piso_frontal",
+              "mesas_invitados",
+              "entrada",
+              "techo",
+              "arco_central"
+            ]
+          },
+          "medidas": {
+            "type": "object",
+            "properties": {
+              "ancho_m": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 100
+              },
+              "alto_m": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 100
+              },
+              "largo_m": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 100
+              }
+            },
+            "additionalProperties": false
+          },
+          "repeticiones": {
+            "default": 1,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 24
+          },
+          "densidad": {
+            "type": "string",
+            "enum": [
+              "sencilla",
+              "media",
+              "lujosa"
+            ]
+          },
+          "mezcla": {
+            "type": "string",
+            "enum": [
+              "clasica",
+              "organica_fina",
+              "organica_gruesa",
+              "solo_grandes"
+            ]
+          },
+          "materiales": {
+            "minItems": 1,
+            "maxItems": 6,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "product_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "variant_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "color": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "acabado": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "participacion": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 1
+                },
+                "rol_material": {
+                  "type": "string",
+                  "enum": [
+                    "principal",
+                    "secundario",
+                    "acento"
+                  ]
+                }
+              },
+              "required": [
+                "product_id",
+                "participacion",
+                "rol_material"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "unidades_declaradas": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 999
+          },
+          "porque": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "variant_overrides": {
+            "maxItems": 24,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "objetivo_variant_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "product_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "variant_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "color": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                }
+              },
+              "required": [
+                "objetivo_variant_id",
+                "product_id",
+                "variant_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "referencia_element_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "required": [
+          "estructura_id",
+          "nombre",
+          "tipo",
+          "rol_escena",
+          "ubicacion",
+          "medidas",
+          "repeticiones",
+          "densidad",
+          "mezcla",
+          "materiales",
+          "porque"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "supuestos": {
+      "maxItems": 30,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 240
+      }
+    },
+    "restricciones": {
+      "type": "object",
+      "properties": {
+        "presupuesto": {
+          "type": "object",
+          "properties": {
+            "techo_cop": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "procedencia": {
+              "type": "string",
+              "enum": [
+                "explicito",
+                "inferido",
+                "supuesto"
+              ]
+            },
+            "texto_original": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 240
+            }
+          },
+          "required": [
+            "techo_cop",
+            "procedencia",
+            "texto_original"
+          ],
+          "additionalProperties": false
+        },
+        "estructuras": {
+          "default": [],
+          "maxItems": 24,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "tipo": {
+                "type": "string",
+                "enum": [
+                  "arco",
+                  "semiarco",
+                  "guirnalda",
+                  "columna",
+                  "pared",
+                  "centro_mesa",
+                  "backdrop",
+                  "kit",
+                  "accesorio"
+                ]
+              },
+              "repeticiones": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 24
+              },
+              "procedencia": {
+                "type": "string",
+                "enum": [
+                  "explicito",
+                  "inferido",
+                  "supuesto"
+                ]
+              },
+              "texto_original": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              },
+              "polaridad": {
+                "default": "obligatorio",
+                "type": "string",
+                "enum": [
+                  "obligatorio",
+                  "prohibido",
+                  "preferencia"
+                ]
+              }
+            },
+            "required": [
+              "tipo",
+              "repeticiones",
+              "procedencia",
+              "texto_original",
+              "polaridad"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "colores": {
+          "default": [],
+          "maxItems": 12,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "valor": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "procedencia": {
+                "type": "string",
+                "enum": [
+                  "explicito",
+                  "inferido",
+                  "supuesto"
+                ]
+              },
+              "texto_original": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              },
+              "polaridad": {
+                "default": "obligatorio",
+                "type": "string",
+                "enum": [
+                  "obligatorio",
+                  "prohibido",
+                  "preferencia"
+                ]
+              }
+            },
+            "required": [
+              "valor",
+              "procedencia",
+              "texto_original",
+              "polaridad"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "tamanos": {
+          "default": [],
+          "maxItems": 12,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "valor": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "procedencia": {
+                "type": "string",
+                "enum": [
+                  "explicito",
+                  "inferido",
+                  "supuesto"
+                ]
+              },
+              "texto_original": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              },
+              "polaridad": {
+                "default": "obligatorio",
+                "type": "string",
+                "enum": [
+                  "obligatorio",
+                  "prohibido",
+                  "preferencia"
+                ]
+              }
+            },
+            "required": [
+              "valor",
+              "procedencia",
+              "texto_original",
+              "polaridad"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "acabados": {
+          "default": [],
+          "maxItems": 12,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "valor": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 120
+              },
+              "procedencia": {
+                "type": "string",
+                "enum": [
+                  "explicito",
+                  "inferido",
+                  "supuesto"
+                ]
+              },
+              "texto_original": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              },
+              "polaridad": {
+                "default": "obligatorio",
+                "type": "string",
+                "enum": [
+                  "obligatorio",
+                  "prohibido",
+                  "preferencia"
+                ]
+              }
+            },
+            "required": [
+              "valor",
+              "procedencia",
+              "texto_original",
+              "polaridad"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "estructuras",
+        "colores",
+        "tamanos",
+        "acabados"
+      ],
+      "additionalProperties": false
+    },
+    "referencia_omitida": {
+      "default": [],
+      "maxItems": 40,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "element_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "motivo": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "motivo_tipo": {
+            "type": "string",
+            "enum": [
+              "fuera_de_catalogo",
+              "emulacion_propuesta",
+              "emulacion_rechazada",
+              "decision_de_diseno"
+            ]
+          },
+          "propuesta": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          }
+        },
+        "required": [
+          "element_id",
+          "motivo",
+          "motivo_tipo"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "plan_version",
+    "plan_id",
+    "concepto",
+    "espacio",
+    "estructuras",
+    "supuestos",
+    "referencia_omitida"
+  ],
+  "additionalProperties": false
+}

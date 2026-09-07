@@ -1,0 +1,7 @@
+{
+  "schema_version": "chat.sse.v1",
+  "type": "texto",
+  "request_id": "00000000-0000-4000-8000-000000000001",
+  "correlation_id": "00000000-0000-4000-8000-000000000001",
+  "delta": "Hola"
+}

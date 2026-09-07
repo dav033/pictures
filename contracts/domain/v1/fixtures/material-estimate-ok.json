@@ -1,0 +1,69 @@
+{
+  "version": "design-material-estimate-v1",
+  "design": {
+    "type": "arco",
+    "shape": "arco",
+    "dimensions_m": {
+      "width": 3,
+      "height": 2.5,
+      "length": null
+    },
+    "installation_length_m": 5.5,
+    "density": "media",
+    "visual_density": "medium",
+    "visual_scale": "medium",
+    "cluster_count": 1
+  },
+  "balloons": [
+    {
+      "product_id": "prod-rojo",
+      "variant_id": "var-rojo-12",
+      "color": "rojo",
+      "finish": null,
+      "size_inches": 12,
+      "shape": "redondo",
+      "design_quantity": 24,
+      "waste_reserve": 3,
+      "required_quantity": 27,
+      "waste_adjusted_quantity": 27
+    }
+  ],
+  "special_elements": [],
+  "purchases": [
+    {
+      "product_id": "prod-rojo",
+      "variant_id": "var-rojo-12",
+      "design_quantity": 24,
+      "waste_reserve": 3,
+      "required_quantity": 27,
+      "waste_adjusted_quantity": 27,
+      "units_per_package": 50,
+      "package_count": 1,
+      "purchase_quantity": 50,
+      "used": 24,
+      "leftover_inventory": 23,
+      "consumption_cost": 6480,
+      "purchase_cost": 12000,
+      "additional_package_for_waste": false,
+      "operational_surplus": 23,
+      "potential_surplus": 23
+    }
+  ],
+  "totals": {
+    "design_quantity": 24,
+    "target_waste_reserve": 3,
+    "covered_waste_reserve": 3,
+    "uncovered_waste_reserve": 0,
+    "natural_package_surplus": 26,
+    "required_quantity": 27,
+    "consumption_cost": 6480,
+    "purchase_cost": 12000,
+    "waste_only_savings_cop": 0,
+    "additional_waste_packages": 0,
+    "waste_adjusted_quantity": 27,
+    "purchase_quantity": 50,
+    "operational_surplus": 23,
+    "potential_surplus": 23
+  },
+  "warnings": []
+}

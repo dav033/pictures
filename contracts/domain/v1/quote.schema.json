@@ -1,0 +1,242 @@
+{
+  "$id": "quote.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "quote.v1"
+    },
+    "currency": {
+      "type": "string",
+      "const": "COP"
+    },
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "product_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "variant_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "size": {
+            "type": "string",
+            "minLength": 1
+          },
+          "size_code": {
+            "type": "string"
+          },
+          "diameter_inches": {
+            "type": "number",
+            "minimum": 0
+          },
+          "structures": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            }
+          },
+          "origins": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "estructura"
+                    },
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "id"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "prop"
+                    },
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "id"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "color": {
+            "type": "string"
+          },
+          "required_quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "design_quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "waste_reserve": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "purchase_quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "used": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "leftover_inventory": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "consumption_cost_cop": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "purchase_cost_cop": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string"
+          },
+          "package_price_cop": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "units_per_package": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "packages": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "subtotal_cop": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "surplus": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "without_reference": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "size",
+          "required_quantity",
+          "available"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "total_cop": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "waste_percentage": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "includes_vat": {
+      "type": "boolean"
+    },
+    "supported_complements": {
+      "type": "boolean",
+      "const": false
+    },
+    "purchase_cost_cop": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "consumption_cost_cop": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "target_waste_reserve": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "covered_waste_reserve": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "leftover_inventory": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "plan_hash": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "schema_version",
+    "currency",
+    "lines",
+    "total_cop",
+    "waste_percentage",
+    "includes_vat",
+    "supported_complements"
+  ],
+  "additionalProperties": false
+}

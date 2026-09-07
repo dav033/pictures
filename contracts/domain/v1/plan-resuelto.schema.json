@@ -1,0 +1,2790 @@
+{
+  "$id": "plan-resuelto.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "plan-resuelto.v1"
+    },
+    "plan": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "plan_version": {
+              "type": "string",
+              "const": "1.0"
+            },
+            "plan_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "concepto": {
+              "type": "object",
+              "properties": {
+                "titulo": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "descripcion": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 320
+                },
+                "paleta": {
+                  "maxItems": 8,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  }
+                },
+                "estilo": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "ocasion": {
+                  "type": "string",
+                  "maxLength": 160
+                },
+                "momento_dia": {
+                  "type": "string",
+                  "maxLength": 80
+                }
+              },
+              "required": [
+                "titulo",
+                "descripcion",
+                "paleta"
+              ],
+              "additionalProperties": false
+            },
+            "espacio": {
+              "type": "object",
+              "properties": {
+                "tipo": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "ancho_m": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 100
+                },
+                "alto_m": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 100
+                },
+                "largo_m": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 100
+                },
+                "fuente": {
+                  "type": "string",
+                  "enum": [
+                    "cliente",
+                    "supuesto",
+                    "foto"
+                  ]
+                }
+              },
+              "required": [
+                "tipo",
+                "fuente"
+              ],
+              "additionalProperties": false
+            },
+            "estructuras": {
+              "minItems": 1,
+              "maxItems": 8,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "estructura_id": {
+                    "type": "string",
+                    "pattern": "^EST_\\d{2}_[A-Z_]+$"
+                  },
+                  "nombre": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  },
+                  "tipo": {
+                    "type": "string",
+                    "enum": [
+                      "arco",
+                      "semiarco",
+                      "guirnalda",
+                      "columna",
+                      "pared",
+                      "centro_mesa",
+                      "backdrop",
+                      "kit",
+                      "accesorio"
+                    ]
+                  },
+                  "rol_escena": {
+                    "type": "string",
+                    "enum": [
+                      "focal",
+                      "soporte",
+                      "relleno",
+                      "acento",
+                      "servicio"
+                    ]
+                  },
+                  "ubicacion": {
+                    "type": "string",
+                    "enum": [
+                      "fondo_pared",
+                      "sobre_mesa_principal",
+                      "lateral_izquierdo",
+                      "lateral_derecho",
+                      "piso_frontal",
+                      "mesas_invitados",
+                      "entrada",
+                      "techo",
+                      "arco_central"
+                    ]
+                  },
+                  "medidas": {
+                    "type": "object",
+                    "properties": {
+                      "ancho_m": {
+                        "type": "number",
+                        "exclusiveMinimum": 0,
+                        "maximum": 100
+                      },
+                      "alto_m": {
+                        "type": "number",
+                        "exclusiveMinimum": 0,
+                        "maximum": 100
+                      },
+                      "largo_m": {
+                        "type": "number",
+                        "exclusiveMinimum": 0,
+                        "maximum": 100
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "repeticiones": {
+                    "default": 1,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 24
+                  },
+                  "densidad": {
+                    "type": "string",
+                    "enum": [
+                      "sencilla",
+                      "media",
+                      "lujosa"
+                    ]
+                  },
+                  "mezcla": {
+                    "type": "string",
+                    "enum": [
+                      "clasica",
+                      "organica_fina",
+                      "organica_gruesa",
+                      "solo_grandes"
+                    ]
+                  },
+                  "materiales": {
+                    "minItems": 1,
+                    "maxItems": 6,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "product_id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 160
+                        },
+                        "variant_id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 160
+                        },
+                        "color": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 80
+                        },
+                        "acabado": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 80
+                        },
+                        "participacion": {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 1
+                        },
+                        "rol_material": {
+                          "type": "string",
+                          "enum": [
+                            "principal",
+                            "secundario",
+                            "acento"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "product_id",
+                        "participacion",
+                        "rol_material"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "unidades_declaradas": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 999
+                  },
+                  "porque": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 240
+                  },
+                  "variant_overrides": {
+                    "maxItems": 24,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "objetivo_variant_id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 160
+                        },
+                        "product_id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 160
+                        },
+                        "variant_id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 160
+                        },
+                        "color": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 80
+                        }
+                      },
+                      "required": [
+                        "objetivo_variant_id",
+                        "product_id",
+                        "variant_id"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "referencia_element_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  }
+                },
+                "required": [
+                  "estructura_id",
+                  "nombre",
+                  "tipo",
+                  "rol_escena",
+                  "ubicacion",
+                  "medidas",
+                  "repeticiones",
+                  "densidad",
+                  "mezcla",
+                  "materiales",
+                  "porque"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "supuestos": {
+              "maxItems": 30,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              }
+            },
+            "restricciones": {
+              "type": "object",
+              "properties": {
+                "presupuesto": {
+                  "type": "object",
+                  "properties": {
+                    "techo_cop": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "procedencia": {
+                      "type": "string",
+                      "enum": [
+                        "explicito",
+                        "inferido",
+                        "supuesto"
+                      ]
+                    },
+                    "texto_original": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 240
+                    }
+                  },
+                  "required": [
+                    "techo_cop",
+                    "procedencia",
+                    "texto_original"
+                  ],
+                  "additionalProperties": false
+                },
+                "estructuras": {
+                  "default": [],
+                  "maxItems": 24,
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "tipo": {
+                        "type": "string",
+                        "enum": [
+                          "arco",
+                          "semiarco",
+                          "guirnalda",
+                          "columna",
+                          "pared",
+                          "centro_mesa",
+                          "backdrop",
+                          "kit",
+                          "accesorio"
+                        ]
+                      },
+                      "repeticiones": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 24
+                      },
+                      "procedencia": {
+                        "type": "string",
+                        "enum": [
+                          "explicito",
+                          "inferido",
+                          "supuesto"
+                        ]
+                      },
+                      "texto_original": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 240
+                      },
+                      "polaridad": {
+                        "default": "obligatorio",
+                        "type": "string",
+                        "enum": [
+                          "obligatorio",
+                          "prohibido",
+                          "preferencia"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "tipo",
+                      "repeticiones",
+                      "procedencia",
+                      "texto_original",
+                      "polaridad"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "colores": {
+                  "default": [],
+                  "maxItems": 12,
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "valor": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                      },
+                      "procedencia": {
+                        "type": "string",
+                        "enum": [
+                          "explicito",
+                          "inferido",
+                          "supuesto"
+                        ]
+                      },
+                      "texto_original": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 240
+                      },
+                      "polaridad": {
+                        "default": "obligatorio",
+                        "type": "string",
+                        "enum": [
+                          "obligatorio",
+                          "prohibido",
+                          "preferencia"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "valor",
+                      "procedencia",
+                      "texto_original",
+                      "polaridad"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "tamanos": {
+                  "default": [],
+                  "maxItems": 12,
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "valor": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                      },
+                      "procedencia": {
+                        "type": "string",
+                        "enum": [
+                          "explicito",
+                          "inferido",
+                          "supuesto"
+                        ]
+                      },
+                      "texto_original": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 240
+                      },
+                      "polaridad": {
+                        "default": "obligatorio",
+                        "type": "string",
+                        "enum": [
+                          "obligatorio",
+                          "prohibido",
+                          "preferencia"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "valor",
+                      "procedencia",
+                      "texto_original",
+                      "polaridad"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "acabados": {
+                  "default": [],
+                  "maxItems": 12,
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "valor": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                      },
+                      "procedencia": {
+                        "type": "string",
+                        "enum": [
+                          "explicito",
+                          "inferido",
+                          "supuesto"
+                        ]
+                      },
+                      "texto_original": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 240
+                      },
+                      "polaridad": {
+                        "default": "obligatorio",
+                        "type": "string",
+                        "enum": [
+                          "obligatorio",
+                          "prohibido",
+                          "preferencia"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "valor",
+                      "procedencia",
+                      "texto_original",
+                      "polaridad"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "estructuras",
+                "colores",
+                "tamanos",
+                "acabados"
+              ],
+              "additionalProperties": false
+            },
+            "referencia_omitida": {
+              "default": [],
+              "maxItems": 40,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "element_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "motivo": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 240
+                  },
+                  "motivo_tipo": {
+                    "type": "string",
+                    "enum": [
+                      "fuera_de_catalogo",
+                      "emulacion_propuesta",
+                      "emulacion_rechazada",
+                      "decision_de_diseno"
+                    ]
+                  },
+                  "propuesta": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 240
+                  }
+                },
+                "required": [
+                  "element_id",
+                  "motivo",
+                  "motivo_tipo"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "plan_version",
+            "plan_id",
+            "concepto",
+            "espacio",
+            "estructuras",
+            "supuestos",
+            "referencia_omitida"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "plan_version": {
+              "type": "string",
+              "const": "1.1"
+            },
+            "plan_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "concepto": {
+              "type": "object",
+              "properties": {
+                "titulo": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "descripcion": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 320
+                },
+                "paleta": {
+                  "maxItems": 8,
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  }
+                },
+                "estilo": {
+                  "type": "string",
+                  "maxLength": 80
+                },
+                "ocasion": {
+                  "type": "string",
+                  "maxLength": 160
+                },
+                "momento_dia": {
+                  "type": "string",
+                  "maxLength": 80
+                }
+              },
+              "required": [
+                "titulo",
+                "descripcion",
+                "paleta"
+              ],
+              "additionalProperties": false
+            },
+            "espacio": {
+              "type": "object",
+              "properties": {
+                "tipo": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 80
+                },
+                "ancho_m": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 100
+                },
+                "alto_m": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 100
+                },
+                "largo_m": {
+                  "type": "number",
+                  "exclusiveMinimum": 0,
+                  "maximum": 100
+                },
+                "fuente": {
+                  "type": "string",
+                  "enum": [
+                    "cliente",
+                    "supuesto",
+                    "foto"
+                  ]
+                },
+                "anclas": {
+                  "default": [],
+                  "maxItems": 16,
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "ancla_id": {
+                        "type": "string",
+                        "pattern": "^ANC_[A-Za-z0-9_]+$"
+                      },
+                      "tipo": {
+                        "type": "string",
+                        "enum": [
+                          "puerta",
+                          "pared",
+                          "mesa",
+                          "arbol",
+                          "techo",
+                          "piso",
+                          "fachada",
+                          "esquina",
+                          "mobiliario_existente"
+                        ]
+                      },
+                      "procedencia": {
+                        "type": "string",
+                        "enum": [
+                          "cliente",
+                          "foto_espacio",
+                          "foto_referencia"
+                        ]
+                      },
+                      "evidencia": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 240
+                      },
+                      "bbox": {
+                        "type": "object",
+                        "properties": {
+                          "x": {
+                            "type": "number"
+                          },
+                          "y": {
+                            "type": "number"
+                          },
+                          "width": {
+                            "type": "number",
+                            "exclusiveMinimum": 0
+                          },
+                          "height": {
+                            "type": "number",
+                            "exclusiveMinimum": 0
+                          }
+                        },
+                        "required": [
+                          "x",
+                          "y",
+                          "width",
+                          "height"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "ancla_id",
+                      "tipo",
+                      "procedencia",
+                      "evidencia"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "tipo",
+                "fuente",
+                "anclas"
+              ],
+              "additionalProperties": false
+            },
+            "estructuras": {
+              "minItems": 1,
+              "maxItems": 8,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "estructura_id": {
+                    "type": "string",
+                    "pattern": "^EST_\\d{2}_[A-Z_]+$"
+                  },
+                  "nombre": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  },
+                  "tipo": {
+                    "type": "string",
+                    "enum": [
+                      "arco",
+                      "semiarco",
+                      "guirnalda",
+                      "columna",
+                      "pared",
+                      "centro_mesa",
+                      "backdrop",
+                      "kit",
+                      "accesorio",
+                      "escultura"
+                    ]
+                  },
+                  "rol_escena": {
+                    "type": "string",
+                    "enum": [
+                      "focal",
+                      "soporte",
+                      "relleno",
+                      "acento",
+                      "servicio"
+                    ]
+                  },
+                  "ubicacion": {
+                    "type": "string",
+                    "enum": [
+                      "fondo_pared",
+                      "sobre_mesa_principal",
+                      "lateral_izquierdo",
+                      "lateral_derecho",
+                      "piso_frontal",
+                      "mesas_invitados",
+                      "entrada",
+                      "techo",
+                      "zona_central",
+                      "fachada",
+                      "pared_lateral",
+                      "alrededor_mobiliario",
+                      "vegetacion",
+                      "techo_multipunto",
+                      "recorrido_suelo",
+                      "esquina"
+                    ]
+                  },
+                  "medidas": {
+                    "type": "object",
+                    "properties": {
+                      "ancho_m": {
+                        "type": "number",
+                        "exclusiveMinimum": 0,
+                        "maximum": 100
+                      },
+                      "alto_m": {
+                        "type": "number",
+                        "exclusiveMinimum": 0,
+                        "maximum": 100
+                      },
+                      "largo_m": {
+                        "type": "number",
+                        "exclusiveMinimum": 0,
+                        "maximum": 100
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "repeticiones": {
+                    "default": 1,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 24
+                  },
+                  "densidad": {
+                    "type": "string",
+                    "enum": [
+                      "sencilla",
+                      "media",
+                      "lujosa"
+                    ]
+                  },
+                  "mezcla": {
+                    "type": "string",
+                    "enum": [
+                      "clasica",
+                      "organica_fina",
+                      "organica_gruesa",
+                      "solo_grandes"
+                    ]
+                  },
+                  "materiales": {
+                    "minItems": 1,
+                    "maxItems": 12,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "product_id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 160
+                        },
+                        "variant_id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 160
+                        },
+                        "color": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 80
+                        },
+                        "acabado": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 80
+                        },
+                        "participacion": {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 1
+                        },
+                        "rol_material": {
+                          "type": "string",
+                          "enum": [
+                            "principal",
+                            "secundario",
+                            "acento"
+                          ]
+                        },
+                        "unidades_por_instancia": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 999
+                        },
+                        "parte_ids": {
+                          "maxItems": 12,
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 60
+                          }
+                        }
+                      },
+                      "required": [
+                        "product_id",
+                        "rol_material"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "unidades_declaradas": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 999
+                  },
+                  "escultura_visual": {
+                    "type": "object",
+                    "properties": {
+                      "categoria_sujeto": {
+                        "type": "string",
+                        "enum": [
+                          "animal",
+                          "personaje",
+                          "numero",
+                          "letra",
+                          "objeto",
+                          "simbolo",
+                          "forma_tematica"
+                        ]
+                      },
+                      "sujeto": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 80
+                      },
+                      "descripcion_perceptual_en": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 400
+                      },
+                      "partes": {
+                        "minItems": 1,
+                        "maxItems": 12,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "parte_id": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 60
+                            },
+                            "funcion": {
+                              "type": "string",
+                              "enum": [
+                                "volumen_principal",
+                                "extremidad",
+                                "detalle",
+                                "base",
+                                "conexion"
+                              ]
+                            },
+                            "descriptor_perceptual_en": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 200
+                            },
+                            "variant_ids": {
+                              "minItems": 1,
+                              "maxItems": 12,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 160
+                              }
+                            }
+                          },
+                          "required": [
+                            "parte_id",
+                            "funcion",
+                            "descriptor_perceptual_en",
+                            "variant_ids"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "categoria_sujeto",
+                      "sujeto",
+                      "descripcion_perceptual_en",
+                      "partes"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "relaciones_fisicas": {
+                    "default": [],
+                    "maxItems": 2,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "relacion": {
+                          "type": "string",
+                          "enum": [
+                            "enmarcar",
+                            "trepar_por",
+                            "envolver",
+                            "colgar_de",
+                            "derramarse_sobre",
+                            "montar_sobre",
+                            "apoyarse_en",
+                            "conectar_con",
+                            "quedar_detras_de",
+                            "quedar_debajo_de"
+                          ]
+                        },
+                        "target": {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "ancla_espacio"
+                                },
+                                "id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 80
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "elemento_plan"
+                                },
+                                "id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 80
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ]
+                        },
+                        "prioridad": {
+                          "type": "string",
+                          "enum": [
+                            "primaria",
+                            "secundaria"
+                          ]
+                        },
+                        "distribucion": {
+                          "type": "string",
+                          "enum": [
+                            "continua",
+                            "asimetrica",
+                            "en_racimos",
+                            "multipunto",
+                            "alturas_escalonadas",
+                            "recorrido"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "relacion",
+                        "target",
+                        "prioridad"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "porque": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 240
+                  },
+                  "variant_overrides": {
+                    "maxItems": 24,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "objetivo_variant_id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 160
+                        },
+                        "product_id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 160
+                        },
+                        "variant_id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 160
+                        },
+                        "color": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 80
+                        }
+                      },
+                      "required": [
+                        "objetivo_variant_id",
+                        "product_id",
+                        "variant_id"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "referencia_element_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  }
+                },
+                "required": [
+                  "estructura_id",
+                  "nombre",
+                  "tipo",
+                  "rol_escena",
+                  "ubicacion",
+                  "medidas",
+                  "repeticiones",
+                  "densidad",
+                  "mezcla",
+                  "materiales",
+                  "relaciones_fisicas",
+                  "porque"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "props_catalogo": {
+              "default": [],
+              "maxItems": 16,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "prop_id": {
+                    "type": "string",
+                    "pattern": "^PROP_[A-Za-z0-9_]+$"
+                  },
+                  "product_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  },
+                  "variant_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 160
+                  },
+                  "unidades_declaradas": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 999
+                  },
+                  "rol_escena": {
+                    "type": "string",
+                    "enum": [
+                      "focal",
+                      "soporte",
+                      "relleno",
+                      "acento",
+                      "servicio"
+                    ]
+                  },
+                  "ubicacion": {
+                    "type": "string",
+                    "enum": [
+                      "fondo_pared",
+                      "sobre_mesa_principal",
+                      "lateral_izquierdo",
+                      "lateral_derecho",
+                      "piso_frontal",
+                      "mesas_invitados",
+                      "entrada",
+                      "techo",
+                      "zona_central",
+                      "fachada",
+                      "pared_lateral",
+                      "alrededor_mobiliario",
+                      "vegetacion",
+                      "techo_multipunto",
+                      "recorrido_suelo",
+                      "esquina"
+                    ]
+                  },
+                  "relaciones_fisicas": {
+                    "default": [],
+                    "maxItems": 2,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "relacion": {
+                          "type": "string",
+                          "enum": [
+                            "enmarcar",
+                            "trepar_por",
+                            "envolver",
+                            "colgar_de",
+                            "derramarse_sobre",
+                            "montar_sobre",
+                            "apoyarse_en",
+                            "conectar_con",
+                            "quedar_detras_de",
+                            "quedar_debajo_de"
+                          ]
+                        },
+                        "target": {
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "ancla_espacio"
+                                },
+                                "id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 80
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "const": "elemento_plan"
+                                },
+                                "id": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 80
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id"
+                              ],
+                              "additionalProperties": false
+                            }
+                          ]
+                        },
+                        "prioridad": {
+                          "type": "string",
+                          "enum": [
+                            "primaria",
+                            "secundaria"
+                          ]
+                        },
+                        "distribucion": {
+                          "type": "string",
+                          "enum": [
+                            "continua",
+                            "asimetrica",
+                            "en_racimos",
+                            "multipunto",
+                            "alturas_escalonadas",
+                            "recorrido"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "relacion",
+                        "target",
+                        "prioridad"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "porque": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 240
+                  },
+                  "referencia_element_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  }
+                },
+                "required": [
+                  "prop_id",
+                  "product_id",
+                  "variant_id",
+                  "unidades_declaradas",
+                  "rol_escena",
+                  "ubicacion",
+                  "relaciones_fisicas",
+                  "porque"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "supuestos": {
+              "maxItems": 30,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 240
+              }
+            },
+            "restricciones": {
+              "type": "object",
+              "properties": {
+                "presupuesto": {
+                  "type": "object",
+                  "properties": {
+                    "techo_cop": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "procedencia": {
+                      "type": "string",
+                      "enum": [
+                        "explicito",
+                        "inferido",
+                        "supuesto"
+                      ]
+                    },
+                    "texto_original": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 240
+                    }
+                  },
+                  "required": [
+                    "techo_cop",
+                    "procedencia",
+                    "texto_original"
+                  ],
+                  "additionalProperties": false
+                },
+                "estructuras": {
+                  "default": [],
+                  "maxItems": 24,
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "tipo": {
+                        "type": "string",
+                        "enum": [
+                          "arco",
+                          "semiarco",
+                          "guirnalda",
+                          "columna",
+                          "pared",
+                          "centro_mesa",
+                          "backdrop",
+                          "kit",
+                          "accesorio"
+                        ]
+                      },
+                      "repeticiones": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 24
+                      },
+                      "procedencia": {
+                        "type": "string",
+                        "enum": [
+                          "explicito",
+                          "inferido",
+                          "supuesto"
+                        ]
+                      },
+                      "texto_original": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 240
+                      },
+                      "polaridad": {
+                        "default": "obligatorio",
+                        "type": "string",
+                        "enum": [
+                          "obligatorio",
+                          "prohibido",
+                          "preferencia"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "tipo",
+                      "repeticiones",
+                      "procedencia",
+                      "texto_original",
+                      "polaridad"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "colores": {
+                  "default": [],
+                  "maxItems": 12,
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "valor": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                      },
+                      "procedencia": {
+                        "type": "string",
+                        "enum": [
+                          "explicito",
+                          "inferido",
+                          "supuesto"
+                        ]
+                      },
+                      "texto_original": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 240
+                      },
+                      "polaridad": {
+                        "default": "obligatorio",
+                        "type": "string",
+                        "enum": [
+                          "obligatorio",
+                          "prohibido",
+                          "preferencia"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "valor",
+                      "procedencia",
+                      "texto_original",
+                      "polaridad"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "tamanos": {
+                  "default": [],
+                  "maxItems": 12,
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "valor": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                      },
+                      "procedencia": {
+                        "type": "string",
+                        "enum": [
+                          "explicito",
+                          "inferido",
+                          "supuesto"
+                        ]
+                      },
+                      "texto_original": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 240
+                      },
+                      "polaridad": {
+                        "default": "obligatorio",
+                        "type": "string",
+                        "enum": [
+                          "obligatorio",
+                          "prohibido",
+                          "preferencia"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "valor",
+                      "procedencia",
+                      "texto_original",
+                      "polaridad"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "acabados": {
+                  "default": [],
+                  "maxItems": 12,
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "valor": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                      },
+                      "procedencia": {
+                        "type": "string",
+                        "enum": [
+                          "explicito",
+                          "inferido",
+                          "supuesto"
+                        ]
+                      },
+                      "texto_original": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 240
+                      },
+                      "polaridad": {
+                        "default": "obligatorio",
+                        "type": "string",
+                        "enum": [
+                          "obligatorio",
+                          "prohibido",
+                          "preferencia"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "valor",
+                      "procedencia",
+                      "texto_original",
+                      "polaridad"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "estructuras",
+                "colores",
+                "tamanos",
+                "acabados"
+              ],
+              "additionalProperties": false
+            },
+            "referencia_omitida": {
+              "default": [],
+              "maxItems": 40,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "element_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 80
+                  },
+                  "motivo": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 240
+                  },
+                  "motivo_tipo": {
+                    "type": "string",
+                    "enum": [
+                      "fuera_de_catalogo",
+                      "emulacion_propuesta",
+                      "emulacion_rechazada",
+                      "decision_de_diseno"
+                    ]
+                  },
+                  "propuesta": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 240
+                  }
+                },
+                "required": [
+                  "element_id",
+                  "motivo",
+                  "motivo_tipo"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "plan_version",
+            "plan_id",
+            "concepto",
+            "espacio",
+            "estructuras",
+            "props_catalogo",
+            "supuestos",
+            "referencia_omitida"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "props": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "prop_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "product_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "variant_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "rol_escena": {
+            "type": "string",
+            "minLength": 1
+          },
+          "ubicacion": {
+            "type": "string",
+            "minLength": 1
+          },
+          "unidades": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "linea": {
+            "type": "object",
+            "properties": {
+              "estructura_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "origen": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "estructura"
+                      },
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 160
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "id"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "const": "prop"
+                      },
+                      "id": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 160
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "id"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              },
+              "product_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "variant_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 160
+              },
+              "sku": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sku_original": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "source_snapshot_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "source_variant_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "inventory_quantity": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": -9007199254740991,
+                    "maximum": 9007199254740991
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "unidades_inferidas": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "titulo": {
+                "type": "string",
+                "minLength": 1
+              },
+              "color": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "tamano_codigo": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "diam_pulg": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "diam_cm": {
+                "anyOf": [
+                  {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "forma": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "acabado": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "unidades": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "imagen": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "sustitucion": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "pedido": {
+                        "type": "string"
+                      },
+                      "entregado": {
+                        "type": "string"
+                      },
+                      "motivo": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "pedido",
+                      "entregado",
+                      "motivo"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "estructura_id",
+              "origen",
+              "product_id",
+              "variant_id",
+              "sku",
+              "titulo",
+              "color",
+              "tamano_codigo",
+              "diam_pulg",
+              "diam_cm",
+              "forma",
+              "acabado",
+              "unidades",
+              "sustitucion"
+            ],
+            "additionalProperties": false
+          },
+          "porque": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "prop_id",
+          "product_id",
+          "variant_id",
+          "rol_escena",
+          "ubicacion",
+          "unidades",
+          "linea",
+          "porque"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "plan_hash": {
+      "type": "string",
+      "minLength": 1
+    },
+    "event_label": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "original_request": {
+      "type": "string"
+    },
+    "event_match_levels": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "exact_event",
+          "thematic",
+          "adaptable"
+        ]
+      }
+    },
+    "event_relaxations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "request_id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "estructuras": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "estructura_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "nombre": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tipo": {
+            "type": "string",
+            "minLength": 1
+          },
+          "ubicacion": {
+            "type": "string",
+            "minLength": 1
+          },
+          "repeticiones": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "eje_m": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "total_unidades": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "lineas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "estructura_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "origen": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "estructura"
+                        },
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 160
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "id"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "const": "prop"
+                        },
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 160
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "id"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "product_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "variant_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                },
+                "sku": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "sku_original": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "source_snapshot_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "source_variant_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "inventory_quantity": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "unidades_inferidas": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "titulo": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "color": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "tamano_codigo": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "diam_pulg": {
+                  "anyOf": [
+                    {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "diam_cm": {
+                  "anyOf": [
+                    {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "forma": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "acabado": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "unidades": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "imagen": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "sustitucion": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "pedido": {
+                          "type": "string"
+                        },
+                        "entregado": {
+                          "type": "string"
+                        },
+                        "motivo": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "pedido",
+                        "entregado",
+                        "motivo"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "estructura_id",
+                "origen",
+                "product_id",
+                "variant_id",
+                "sku",
+                "titulo",
+                "color",
+                "tamano_codigo",
+                "diam_pulg",
+                "diam_cm",
+                "forma",
+                "acabado",
+                "unidades",
+                "sustitucion"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "mezcla_real": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "diam_pulg": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "forma": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "unidades": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "pct": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              },
+              "required": [
+                "diam_pulg",
+                "forma",
+                "unidades",
+                "pct"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "supuestos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "estructura_id",
+          "nombre",
+          "tipo",
+          "ubicacion",
+          "repeticiones",
+          "eje_m",
+          "total_unidades",
+          "lineas",
+          "mezcla_real",
+          "supuestos"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "compras": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "variant_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "product_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "sku": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sku_original": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_snapshot_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_variant_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "inventory_quantity": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unidades_inferidas": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "titulo": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tamano_codigo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "diam_pulg": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "color": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "unidades_necesarias": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "design_quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "waste_reserve": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "required_quantity": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "unidades_con_merma": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "unidades_paquete": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "paquetes": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "purchase_quantity": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "used": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "leftover_inventory": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "consumption_cost": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "purchase_cost": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "additional_package_for_waste": {
+            "type": "boolean"
+          },
+          "sobrante": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "precio_paquete": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "subtotal": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "estructuras": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 160
+            }
+          },
+          "elementos_origen": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "estructura"
+                    },
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "id"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "const": "prop"
+                    },
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 160
+                    }
+                  },
+                  "required": [
+                    "kind",
+                    "id"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "imagen": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "variant_id",
+          "product_id",
+          "sku",
+          "titulo",
+          "tamano_codigo",
+          "diam_pulg",
+          "color",
+          "unidades_necesarias",
+          "design_quantity",
+          "waste_reserve",
+          "required_quantity",
+          "unidades_con_merma",
+          "unidades_paquete",
+          "paquetes",
+          "purchase_quantity",
+          "used",
+          "leftover_inventory",
+          "consumption_cost",
+          "purchase_cost",
+          "additional_package_for_waste",
+          "sobrante",
+          "precio_paquete",
+          "subtotal",
+          "estructuras",
+          "elementos_origen"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "totales": {
+      "type": "object",
+      "properties": {
+        "globos_por_tamano": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "total_unidades": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "total_cop": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "design_quantity": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "target_waste_reserve": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "covered_waste_reserve": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "uncovered_waste_reserve": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "natural_package_surplus": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "purchase_cost": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "consumption_cost": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "waste_only_savings_cop": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "additional_waste_packages": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "ahorro_paquetes_cop": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "incluye_iva": {
+          "type": "boolean"
+        },
+        "merma_porcentaje": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        }
+      },
+      "required": [
+        "globos_por_tamano",
+        "total_unidades",
+        "total_cop",
+        "design_quantity",
+        "target_waste_reserve",
+        "covered_waste_reserve",
+        "uncovered_waste_reserve",
+        "natural_package_surplus",
+        "purchase_cost",
+        "consumption_cost",
+        "waste_only_savings_cop",
+        "additional_waste_packages",
+        "ahorro_paquetes_cop",
+        "incluye_iva",
+        "merma_porcentaje"
+      ],
+      "additionalProperties": false
+    },
+    "comercial": {
+      "type": "object",
+      "properties": {
+        "estado": {
+          "type": "string",
+          "enum": [
+            "VERIFICADO",
+            "APROBACION_REQUERIDA",
+            "PRESUPUESTO_EXCEDIDO"
+          ]
+        },
+        "techo_cop": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "delta_cop": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "procedencia": {
+          "type": "string",
+          "enum": [
+            "explicito",
+            "inferido",
+            "supuesto"
+          ]
+        }
+      },
+      "required": [
+        "estado",
+        "delta_cop"
+      ],
+      "additionalProperties": false
+    },
+    "alternativas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "familia_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "titulo": {
+            "type": "string",
+            "minLength": 1
+          },
+          "total_cop": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "ahorro_cop": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "etiqueta": {
+            "type": "string",
+            "enum": [
+              "economica",
+              "equilibrada",
+              "premium"
+            ]
+          }
+        },
+        "required": [
+          "familia_id",
+          "titulo",
+          "total_cop",
+          "ahorro_cop",
+          "etiqueta"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "merma_log": {
+      "type": "string"
+    },
+    "sustituciones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "estructura_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "pedido": {
+            "type": "string"
+          },
+          "entregado": {
+            "type": "string"
+          },
+          "motivo": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "estructura_id",
+          "pedido",
+          "entregado",
+          "motivo"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "sin_cobertura": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "estructura_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "product_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "tamano": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "estructura_id",
+          "product_id",
+          "tamano"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "advertencias": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "plan",
+    "plan_hash",
+    "estructuras",
+    "compras",
+    "totales",
+    "comercial",
+    "alternativas",
+    "merma_log",
+    "sustituciones",
+    "sin_cobertura",
+    "advertencias"
+  ],
+  "additionalProperties": false
+}

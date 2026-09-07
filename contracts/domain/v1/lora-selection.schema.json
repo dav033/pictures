@@ -1,0 +1,46 @@
+{
+  "$id": "lora-selection.v1",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "product": {
+      "type": "object",
+      "properties": {
+        "artifactId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1.5
+        }
+      },
+      "required": [
+        "artifactId"
+      ],
+      "additionalProperties": false
+    },
+    "structure": {
+      "type": "object",
+      "properties": {
+        "artifactId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1.5
+        }
+      },
+      "required": [
+        "artifactId"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

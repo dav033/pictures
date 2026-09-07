@@ -1,0 +1,44 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "chat.sse.v1"
+    },
+    "type": {
+      "type": "string",
+      "const": "herramienta"
+    },
+    "request_id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "correlation_id": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+    },
+    "nombre": {
+      "type": "string",
+      "minLength": 1
+    },
+    "estado": {
+      "type": "string",
+      "enum": [
+        "ejecutando",
+        "lista"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "type",
+    "request_id",
+    "correlation_id",
+    "nombre",
+    "estado"
+  ],
+  "additionalProperties": false
+}

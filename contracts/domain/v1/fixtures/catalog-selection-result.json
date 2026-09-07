@@ -1,0 +1,36 @@
+{
+  "schema_version": "catalog-selection.v1",
+  "request_id": "00000000-0000-4000-8000-000000000001",
+  "status": "partial",
+  "catalog_snapshot_id": "shopify-2026-09-07",
+  "validados": [
+    {
+      "product_id": "prod-rojo",
+      "variant_id": "var-rojo-12",
+      "sku": "ROJO-12",
+      "product_title": "Globo látex rojo",
+      "title": "Globo látex rojo — R-12",
+      "unit_price_cop": 12000,
+      "quantity": 24,
+      "subtotal_cop": 288000,
+      "image_url": "https://cdn.example.test/rojo-12.jpg",
+      "handle": "globo-latex-rojo",
+      "product_type": "Globos látex",
+      "category": "globos",
+      "colors": ["rojo"],
+      "description": "Globo rojo para decoración.",
+      "units_per_package": 50,
+      "size_code": "R-12",
+      "shape": "redondo",
+      "diameter_inches": 12
+    }
+  ],
+  "rechazados": [
+    {
+      "product_id": "prod-azul",
+      "variant_id": "var-azul-12",
+      "reason": "variant_id no estaba en la whitelist de variantes recuperadas de este turno"
+    }
+  ],
+  "total_cop": 288000
+}

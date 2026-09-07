@@ -47,6 +47,8 @@ export type PeticionChat = {
   herramientas: Herramienta[];
   temperatura?: number;
   maxTokens?: number;
+  /** Cancela la llamada local y la petición HTTP del proveedor cuando aplica. */
+  signal?: AbortSignal;
 };
 
 export type TurnoChat = {

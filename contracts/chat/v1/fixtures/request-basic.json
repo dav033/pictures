@@ -1,0 +1,10 @@
+{
+  "schema_version": "chat.v1",
+  "messages": [
+    { "role": "user", "content": "Necesito un arco para una boda." }
+  ],
+  "brief": {
+    "tipo_evento": "boda",
+    "colores": ["blanco"]
+  }
+}
