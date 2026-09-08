@@ -1,5 +1,7 @@
 -- Deterministic plan audit trail. Content is bounded JSON metadata only:
 -- no provider prompts, generated images, API keys, or raw catalog payloads.
+-- rollback: DROP INDEX plan_audit_log_hash_idx; DROP INDEX plan_audit_log_request_idx; DROP TABLE plan_audit_log;
+-- El rollback elimina todo el histórico de auditoría de planes; exportarlo y asegurar que no haya escritores activos antes de ejecutarlo.
 CREATE TABLE IF NOT EXISTS plan_audit_log (
   id BIGSERIAL PRIMARY KEY,
   request_id UUID NOT NULL,

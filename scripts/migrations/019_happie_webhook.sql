@@ -1,3 +1,5 @@
+-- rollback: DROP INDEX happie_webhook_requests_expiry; DROP TABLE happie_webhook_requests; DROP TABLE happie_webhook_rate;
+-- El rollback elimina leases, respuestas idempotentes y estado de rate limiting; respaldarlos y detener webhooks activos antes de ejecutarlo.
 CREATE TABLE IF NOT EXISTS happie_webhook_rate (
   scope TEXT PRIMARY KEY,
   window_start TIMESTAMPTZ NOT NULL,

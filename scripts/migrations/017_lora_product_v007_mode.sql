@@ -2,6 +2,8 @@
 -- No lo activa por sí solo: el resolvedor exige corrida terminada, pesos
 -- respaldados, URL del proveedor y evaluación aprobada.
 
+-- rollback: no reversible, requiere restore de backup. Actualiza varios campos y updated_at de la fila existente training_1; el estado previo completo no puede reconstruirse con certeza.
+
 UPDATE lora_mode_slots
    SET display_name = 'Producto Sempertex v007',
        enforce_dataset_allowlist = TRUE,

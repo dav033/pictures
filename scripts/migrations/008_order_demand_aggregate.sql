@@ -4,6 +4,9 @@
 -- A repeat of the same source hash updates the same rows instead of adding
 -- demand again.
 
+-- rollback: DROP INDEX idx_rag_order_demand_snapshot; DROP INDEX idx_rag_order_demand_weak_rank; DROP INDEX idx_rag_order_demand_variant; DROP TABLE rag_order_demand_aggregates;
+-- El rollback elimina los agregados históricos de demanda; exportarlos y confirmar que ningún consumidor activo los necesita antes de ejecutarlo.
+
 CREATE TABLE IF NOT EXISTS rag_order_demand_aggregates (
   id                    BIGSERIAL PRIMARY KEY,
   source_snapshot_id    TEXT NOT NULL

@@ -3,6 +3,8 @@
 -- catalog_embeddings is small and an ANN index needs a measured recall/latency
 -- decision from the benchmark before it can become a production dependency.
 
+-- rollback: no reversible, requiere restore de backup. Elimina un índice previo cuya definición no está en el repositorio y cambia columnas cuyo estado o datos anteriores no pueden reconstruirse con certeza.
+
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- Variant-level color evidence is separate from product-level facets. An
