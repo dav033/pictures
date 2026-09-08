@@ -1,4 +1,4 @@
-# Prompt de implementación — Fase 1.5 y auditoría de las Fases 2 a 6
+# Prompt de implementación — Fase 1.5 y auditorías previas 3.0, 4.0 y 5.0
 
 Pega este documento como primer mensaje de una sesión nueva.
 
@@ -11,7 +11,7 @@ Dos cosas, en este orden:
 1. **Implementar la Fase 1.5**: telemetría durable de IA con taxonomía de dos
    niveles (`flujo` y `capacidad`). Es lo que hace visible y atribuible el
    gasto por funcionalidad del producto.
-2. **Auditar las Fases 2 a 6** con subagentes, para saber si el plan sigue en
+2. **Lanzar las auditorías previas 3.0, 4.0 y 5.0** con subagentes, para saber si el plan sigue en
    pie contra el código actual antes de seguir gastando trabajo en él.
 
 Puedes lanzar la auditoría en paralelo mientras implementas, porque los
@@ -30,7 +30,7 @@ Esto ya causó una confusión y conviene tenerlo claro desde el primer minuto:
 | Nombre | Qué es | Estado |
 |---|---|---|
 | **Etapas 1 a 4** | Las cuatro etapas del plan **viejo** que ya se ejecutaron: auditoría, contratos, base FastAPI y preparación reversible. Documentadas en `01-` a `04-` de esta carpeta | Cerradas en local |
-| **Fases 1 a 6** | El trabajo **nuevo**, definido en `PLAN-MAESTRO-V2.md`. La Fase 1 es el primer trabajo nuevo, no una repetición de nada | Fase 1 en curso |
+| **Fases 1 a 10** | El trabajo **nuevo**, definido en `PLAN-MAESTRO-V2.md`. La Fase 1 es el primer trabajo nuevo, no una repetición de nada | Fase 1 en curso |
 
 Cuando alguien diga "la etapa 5" se está refiriendo al plan viejo. El trabajo
 vivo se numera por fases.
@@ -77,21 +77,21 @@ relativa. El repo API es el artefacto de despliegue.
 
 ## 4. Estado verificado
 
-Rama `fase-1/medicion-y-migraciones-seguras`, worktree limpio. `main` intacto
-en `c89cda1`.
+Rama `fase-1/medicion-y-migraciones-seguras`, worktree limpio en los dos repos.
+`main` está en `b56551d` y ya fue mezclado en esta rama.
 
 ```
-903c1eb docs(plan): renumera el trabajo nuevo como Fases 1-6
+878b66a docs(plan): incorpora lo que trajo main y lo que la mezcla descubrio
+72ecbfb Merge main: controles de webhook Happie sobre la rama de la Fase 1
+b56551d feat(happie): idempotencia durable, rate limit y cancelacion  <- de main
+6bccf67 docs(plan): prompt de implementacion
+903c1eb docs(plan): renumera el trabajo nuevo como Fases
 5c0c83c feat(migraciones): runner con destino confirmado, checksum y lock
 b471e4c feat(python): store PostgreSQL durable con asyncpg
-1635d49 docs(migracion): plan maestro v2, auditorias, ADRs y planes recuperados
-c8fc6b5 docs(reglas): AGENTS.md como fuente unica de reglas de ingenieria
-3737510 feat(python): servicio FastAPI, store de idempotencia y adaptador reversible
-9aa8971 fix(happie): auth directa en endpoints internos y validacion runtime
-e6cc461 feat(contratos): versiona chat, SSE, dominio y frontera operativa
-1a69d77 feat(lora): vocabulario compositivo, contrato visual y titulo de producto
-b391e32 feat(plan): resolucion comercial de esculturas, props y estructuras 1.1
 ```
+
+Antes de eso, los siete commits del trabajo de las Etapas 1-4, en
+`migracion/python-etapas-1-4`.
 
 Hecho de la Fase 1:
 
@@ -99,17 +99,35 @@ Hecho de la Fase 1:
 - **1.2** Nueve planes borrados recuperados en `docs/planes-recuperados/`; los
   seis comentarios de código que apuntaban a rutas inexistentes ya resuelven.
 - **1.3** `scripts/migrate.ts` endurecido: confirma destino y aborta si es
-  remoto sin `--allow-remote`, verifica checksums, toma `pg_advisory_lock`, usa
-  un único `Client` (antes `BEGIN`/SQL/`COMMIT` iban sobre el pool y podían
-  salir por conexiones distintas), valida unicidad del prefijo numérico, y
-  ofrece `--dry-run` y `--target`. La colisión de `016` se resolvió moviendo el
-  operacional a `019`, con reconciliación en `RENOMBRADOS`.
+  remoto sin `--allow-remote`, verifica checksums normalizando CRLF, toma
+  `pg_advisory_lock`, usa un único `Client` (antes `BEGIN`/SQL/`COMMIT` iban
+  sobre el pool y podían salir por conexiones distintas), valida unicidad del
+  prefijo numérico, y ofrece `--dry-run` y `--target`.
 
 Pendiente de la Fase 1:
 
 - **1.5** Telemetría durable y taxonomía. **Es tu primera tarea.**
 - **1.4** Arnés `npm run ia:bench`. Va **después** de 1.5 a propósito: se
   apoya en los mismos campos, y hacerlo antes obliga a medir dos veces.
+
+### Lo que dejó la mezcla de `main`
+
+Los webhooks Happie ya tienen idempotencia durable, rate limit, límite de body,
+deadline y cancelación, en `src/lib/happie/webhook-control.ts`. Eso importa
+para tu tarea por dos razones:
+
+1. Las dos llamadas de IA de Happie ahora pasan por `ejecutarWebhook`, que ya
+   genera un `correlationId`. **Reúsalo** (ver 5.1).
+2. Sus rutas de control responden fuera del contrato Happie. Está anotado como
+   capítulo 4.7 del plan y entra como Fase 3.13. **No es tu tarea ahora**, pero
+   no lo empeores: cualquier respuesta nueva que agregues debe ir por el
+   responder que valida contra el contrato.
+
+La mezcla también dejó al descubierto dos defectos ya corregidos, que sirven de
+advertencia: `git` auto-mezcló un campo duplicado en tres interfaces sin
+marcarlo como conflicto, y `contracts:check` llevaba comparando finales de
+línea en vez de contenido. Después de cualquier mezcla, corre la verificación
+completa del capítulo 10 antes de dar nada por bueno.
 
 ---
 
@@ -204,85 +222,40 @@ ya aplica `metadataAuditable` (`src/lib/rag/observability/log.ts:4-16`).
   rompe.
 - Ningún secreto ni contenido de conversación llega a la tabla.
 
-La pantalla de consumo (capítulo 11.3) es de la **Fase 2.12**, no de esta. Aquí
+La pantalla de consumo (capítulo 11.3) es de la **Fase 3.12**, no de esta. Aquí
 solo se genera el dato.
 
 ---
 
-## 6. Tarea 2 — Auditoría de las Fases 2 a 6
+## 6. Tarea 2 — Auditorías previas de las Fases 3, 4 y 5
 
-### 6.1 Por qué
+**El alcance, las seis secciones de cada informe y las reglas de todo auditor
+están en el capítulo 13 del plan.** No se repiten aquí para que no divergan.
+Léelo antes de lanzar nada.
 
-El plan se escribió sobre auditorías del código anterior a la consolidación del
-servicio Python y al endurecimiento del runner. Cada fila de las Fases 2 a 6
-lleva evidencia `archivo:línea`, y esas referencias pueden haberse movido. Antes
-de gastar más trabajo sobre el plan hay que saber qué sigue en pie.
+Lo que corresponde a esta sesión: lanzar las auditorías previas **3.0, 4.0 y
+5.0**, que son las tres que no dependen de nada y pueden salir en paralelo.
 
-### 6.2 Tres auditores en paralelo
-
-Lanza tres subagentes de solo lectura. Cada uno escribe **únicamente** su
-informe.
-
-| Auditor | Alcance | Informe |
+| Auditoría | Alcance | Informe |
 |---|---|---|
-| **A** | Fase 2 completa: los 12 puntos de optimización de Gemini en TypeScript | `docs/migracion-python/auditoria/07-revision-fase-2.md` |
-| **B** | Fases 3 y 4: staging en el EC2 y Neon, y la primera capacidad de IA en Python (reranking, suite pytest, embeddings en batch) | `docs/migracion-python/auditoria/08-revision-fases-3-4.md` |
-| **C** | Fases 5 y 6: camino LoRA y generación, y el cutover selectivo | `docs/migracion-python/auditoria/09-revision-fases-5-6.md` |
+| **3.0** | Los 13 puntos de la Fase 3 | `docs/migracion-python/auditoria/07-revision-fase-3.md` |
+| **4.0** | Secretos e inyección de prompt por referencias y por catálogo Happia | `docs/migracion-python/auditoria/08-revision-fase-4.md` |
+| **5.0** | Reversibilidad de las 18 migraciones, recuperación de datos y flags dispersos | `docs/migracion-python/auditoria/09-revision-fase-5.md` |
 
-### 6.3 Qué debe producir cada informe
+Las de las Fases 6 a 10 se lanzan cuando toque su fase, no ahora: el código
+sobre el que opinarían va a cambiar antes de llegar ahí.
 
-Las mismas seis secciones en los tres:
-
-1. **Verificación de evidencia.** Cada `archivo:línea` que cita el plan en su
-   alcance: ¿sigue apuntando a lo que dice? Lista las que se movieron y a dónde.
-2. **Sigue en pie / ya no aplica / cambió de forma.** Una fila por entrega del
-   plan, con el motivo.
-3. **Riesgo y esfuerzo por entrega.** Cualitativo, no en horas. Qué invariante
-   podría romper cada una.
-4. **Orden propuesto dentro de la fase**, con la razón. Puede diferir del plan;
-   si difiere, dilo explícitamente.
-5. **Lo que el plan no vio.** Lo más valioso del informe. Defectos u
-   oportunidades en su alcance que el plan no menciona.
-6. **Preguntas abiertas** que un implementador necesita resueltas antes de
-   empezar esa fase.
-
-Reglas para los tres:
-
-- Solo lectura. No modifican nada del repo salvo su informe.
-- **Cero llamadas a proveedores pagados**: ni Gemini, ni fal.ai, ni Shopify.
-  Nada de `npm run *:eval*`.
-- Toda cifra de latencia o coste va marcada como **medida** o **inferida**. Si
-  no la midieron, dicen "no medido". No se inventan números.
-- No reabren lo ya descartado con medición (capítulo 7 del plan):
-  `flash-lite` para el parser, caché semántico, fusionar el parser en el tool
-  loop, paralelizar la escalera de relajación, índice ANN en pgvector.
-
-### 6.4 Al recibir los tres informes
-
-Léelos tú y sintetiza. Si alguno contradice el plan con evidencia, **actualiza
-el plan** — no lo dejes divergir en silencio. Si alguno afirma algo sin
-evidencia, descártalo y dilo.
+Al recibir los informes los lees tú y sintetizas. Si alguno contradice el plan
+con evidencia, actualiza el plan en el mismo commit.
 
 ---
 
 ## 7. Cómo usar subagentes
 
-### 7.1 Cuándo sí
+Las reglas de cuándo delegar, cuándo no, y los scopes disjuntos están en el
+capítulo 13.5 del plan. Lo de abajo es solo lo operativo, que caduca.
 
-- Lectura en abanico: buscar un patrón en muchos archivos, verificar que una
-  lista de referencias sigue viva, inventariar call sites.
-- Auditoría acotada con un informe como única salida.
-- Una porción de implementación con **scope de escritura separado** del tuyo y
-  criterio de aceptación escrito antes de lanzarla.
-
-### 7.2 Cuándo no
-
-- Decisiones de arquitectura o de contrato.
-- Cualquier cosa que toque autoridad comercial.
-- Trabajo cuyo criterio de aceptación no sepas escribir todavía. Si no puedes
-  decir cómo verificarás el resultado, todavía no está listo para delegar.
-
-### 7.3 Sintaxis de opencode
+### 7.1 Sintaxis de opencode
 
 El mensaje posicional va **antes** de las flags, y `--file` necesita el `=`:
 sin él, el flag de tipo array se come el mensaje siguiente como si fuera parte
@@ -306,13 +279,16 @@ Al cierre de la sesión que generó este documento quedaban tres procesos
 `opencode` huérfanos de sesiones anteriores (PIDs 28248, 28836, 31700). Si
 siguen ahí, confirma con el usuario antes de matarlos.
 
-### 7.4 Scopes de escritura
+### 7.2 Scopes para esta tarea concreta
 
-Si delegas implementación, cada subagente escribe en archivos disjuntos y tú
-integras. Dos subagentes no tocan el mismo archivo. La telemetría de la Fase
-1.5 se presta bien a esto: la migración SQL, la instrumentación de
-`agente-core`, y la instrumentación de las llamadas fuera de `agente-core` son
-tres scopes que no se solapan.
+La regla general está en el capítulo 13.5 del plan. Aplicada a la Fase 1.5, hay
+tres scopes de escritura que no se solapan y se pueden repartir:
+
+1. La migración SQL y la tabla de precios.
+2. La instrumentación dentro de `packages/agente-core`.
+3. La instrumentación de las llamadas que viven fuera de `agente-core`.
+
+Quien coordina integra los tres y escribe las pruebas de 5.3.
 
 ---
 
@@ -357,7 +333,7 @@ Del capítulo 6 del plan. Si un cambio toca uno de estos, detente y consulta.
 
 Añade uno más, específico de esta fase: **la telemetría es observación, nunca
 control.** Ningún dato del `ai_call_log` puede cambiar una decisión comercial.
-Los topes de gasto de la Fase 5.1(f) son la única excepción prevista, y
+Los topes de gasto de la Fase 9.1(f) son la única excepción prevista, y
 bloquean una llamada a proveedor, no una regla de negocio.
 
 ---

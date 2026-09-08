@@ -7,12 +7,19 @@ Estado global: **Etapa 4 local cerrada; despliegue/cutover externo pendiente**
 >
 > **Dos numeraciones, no las mezcles.** Las **Etapas 1 a 4** son las del plan
 > viejo que ya se ejecutaron y que documentan los archivos `01-` a `04-` de
-> esta carpeta. Las **Fases 1 a 6** son el trabajo nuevo que define el plan
+> esta carpeta. Las **Fases 1 a 10** son el trabajo nuevo que define el plan
 > maestro v2: la Fase 1 es el primer trabajo nuevo, no una repetición.
 >
-> La antigua quinta etapa (staging) pasa a ser la **Fase 3**; su contenido
+> La antigua quinta etapa (staging) pasa a ser la **Fase 6**; su contenido
 > técnico en [`prompt-seguimiento-etapa-5.md`](prompt-seguimiento-etapa-5.md)
 > sigue siendo válido y se adopta tal cual.
+>
+> **El plan pasó de 6 a 10 fases** al revisar qué faltaba para que la
+> implementación quedara cubierta. Las cuatro nuevas son CI y gates (Fase 2),
+> seguridad y secretos (4), resiliencia y degradación (5), y carga y
+> concurrencia (7). El mapa de la renumeración está en el capítulo 0 del plan.
+> El capítulo 13 recoge las auditorías previas por fase y las reglas de
+> delegación.
 >
 > Estado: **Fases 1.1, 1.2 y 1.3 hechas.** El trabajo de las Etapas 1-4 está
 > commiteado en `migracion/python-etapas-1-4` (7 commits) y el runner de
@@ -24,7 +31,7 @@ Estado global: **Etapa 4 local cerrada; despliegue/cutover externo pendiente**
 > rate limit, límite de body, deadline y cancelación— ya mezclados en la rama de
 > trabajo. Eso cierra el riesgo "estado webhook no durable ni deduplicado" que
 > la Etapa 1 dejó abierto, y abre dos puntos nuevos: las rutas de control
-> responden fuera del contrato Happie (capítulo 4.7, entra como Fase 2.13) y hay
+> responden fuera del contrato Happie (capítulo 4.7, entra como Fase 3.13) y hay
 > un tercer mecanismo de idempotencia en el repo (capítulo 10.7).
 >
 > Los planes borrados del repositorio que seguían referenciados por comentarios
