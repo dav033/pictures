@@ -6,16 +6,18 @@ import asyncio
 import hashlib
 import hmac
 import importlib
+import inspect
 import logging
 import os
 import re
 import threading
 import time
 import uuid
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from types import ModuleType
-from typing import Awaitable, Callable, cast
+from typing import Awaitable, Callable, TypeVar, cast
 from uuid import UUID
 
 from fastapi import FastAPI, HTTPException, Request
@@ -25,6 +27,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from app.generated_models import InternalRequestSignature, OperationalContext
 from app.operational_store import InMemoryOperationalStore, StoredHttpResponse
+from app.postgres_store import PostgresOperationalStore
 
 
 SCHEMA_VERSION = "operational.v1"
@@ -35,6 +38,7 @@ _SCOPE_RE = re.compile(r"^[a-zA-Z0-9._:/-]+$")
 _LOCAL_ENVIRONMENTS = {"development", "test", "local"}
 MIN_SECRET_BYTES = 32
 logger = logging.getLogger("decoracion.ai_api")
+T = TypeVar("T")
 
 
 @dataclass(frozen=True, slots=True)
@@ -47,6 +51,7 @@ class Settings:
     max_clock_skew_seconds: int = 300
     nonce_namespace: str = "ai-api"
     max_body_bytes: int = MAX_BODY_BYTES
+    database_url: str | None = None
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -56,6 +61,7 @@ class Settings:
             environment=environment.strip().lower(),
             hmac_secret=secret.strip() if secret and secret.strip() else None,
             required_scope=os.getenv("INTERNAL_REQUIRED_SCOPE", DEFAULT_SCOPE),
+            database_url=os.getenv("DATABASE_URL"),
         )
 
 
@@ -85,6 +91,12 @@ class InMemoryMetrics:
 
 
 EchoHandler = Callable[[EchoRequest], Awaitable[dict[str, object]]]
+
+
+async def _await_result(value: T | Awaitable[T]) -> T:
+    if inspect.isawaitable(value):
+        return cast(T, await value)
+    return value
 
 
 async def _default_echo_handler(payload: EchoRequest) -> dict[str, object]:
@@ -241,7 +253,7 @@ def _load_auth_module() -> ModuleType | None:
         return None
 
 
-def _consume_nonce(request: Request, nonce: str, settings: Settings) -> None:
+async def _consume_nonce(request: Request, nonce: str, settings: Settings) -> None:
     store = getattr(request.app.state, "nonce_store", None)
     if store is None:
         raise _error("nonce_store_unavailable", 503)
@@ -249,19 +261,21 @@ def _consume_nonce(request: Request, nonce: str, settings: Settings) -> None:
     try:
         consume_nonce = getattr(store, "consume_nonce", None)
         if callable(consume_nonce):
-            result = consume_nonce(settings.nonce_namespace, nonce, now=now)
+            result = await _await_result(consume_nonce(settings.nonce_namespace, nonce, now=now))
             accepted = result.kind == "accepted"
         else:
-            result = store.consume(nonce, now=now)
+            result = await _await_result(store.consume(nonce, now=now))
             accepted = bool(result.accepted)
-    except (AttributeError, TypeError, ValueError, RuntimeError):
+    except Exception:
         raise _error("nonce_store_error", 503) from None
     if not accepted:
         request.app.state.metrics.increment("auth.nonce_replay")
         raise _error("nonce_replay", 401)
 
 
-def _authorize(request: Request, raw_body: bytes, settings: Settings) -> InternalRequestSignature:
+async def _authorize(
+    request: Request, raw_body: bytes, settings: Settings
+) -> InternalRequestSignature:
     secret = settings.hmac_secret
     if not _secret_is_valid(secret):
         raise _error("auth_unavailable", 503)
@@ -317,7 +331,7 @@ def _authorize(request: Request, raw_body: bytes, settings: Settings) -> Interna
             request.app.state.metrics.increment("auth.invalid_signature")
             raise _error("invalid_signature", 401)
 
-    _consume_nonce(request, str(signature.nonce), settings)
+    await _consume_nonce(request, str(signature.nonce), settings)
     return signature
 
 
@@ -346,7 +360,7 @@ def _detail_code(exception: HTTPException) -> str:
     return "internal_error"
 
 
-def _store_failure(
+async def _store_failure(
     request: Request,
     *,
     scope: str,
@@ -359,13 +373,15 @@ def _store_failure(
     if store is None:
         return
     try:
-        store.fail(
-            scope=scope,
-            idempotency_key=idempotency_key,
-            body_sha256=body_sha256,
-            response=_stored_response(_error_body(request, code), status),
+        await _await_result(
+            store.fail(
+                scope=scope,
+                idempotency_key=idempotency_key,
+                body_sha256=body_sha256,
+                response=_stored_response(_error_body(request, code), status),
+            )
         )
-    except (AttributeError, RuntimeError, TypeError, ValueError):
+    except Exception:
         request.app.state.metrics.increment("idempotency.finalize_error")
         logger.warning(
             "idempotency finalization failed",
@@ -380,11 +396,40 @@ def create_app(
     operational_store: object | None = None,
     echo_handler: EchoHandler | None = None,
 ) -> FastAPI:
-    application = FastAPI(title="AI API", version="0.1.0")
     current_settings = settings or Settings.from_env()
+    default_store: object | None = None
+    if current_settings.database_url:
+        try:
+            default_store = PostgresOperationalStore(current_settings.database_url)
+        except ValueError as error:
+            logger.warning("invalid DATABASE_URL configuration: %s", str(error))
+    elif current_settings.environment in _LOCAL_ENVIRONMENTS:
+        default_store = InMemoryOperationalStore()
+
+    @asynccontextmanager
+    async def lifespan(application: FastAPI):
+        store = application.state.operational_store
+        start = getattr(store, "start", None)
+        if callable(start):
+            try:
+                await _await_result(start())
+            except Exception as error:
+                application.state.store_startup_error = type(error).__name__
+                logger.error("operational store startup failed: %s", type(error).__name__)
+        try:
+            yield
+        finally:
+            close = getattr(store, "close", None)
+            if callable(close):
+                try:
+                    await _await_result(close())
+                except Exception as error:
+                    logger.error("operational store shutdown failed: %s", type(error).__name__)
+
+    application = FastAPI(title="AI API", version="0.1.0", lifespan=lifespan)
     application.state.settings = current_settings
-    if operational_store is None and current_settings.environment in _LOCAL_ENVIRONMENTS:
-        operational_store = InMemoryOperationalStore()
+    if operational_store is None:
+        operational_store = default_store
     if nonce_store is None and operational_store is not None:
         nonce_store = operational_store
     application.state.operational_store = operational_store
@@ -431,7 +476,7 @@ def create_app(
         return {"status": "ok"}
 
     @application.get("/readyz")
-    def readyz(request: Request) -> dict[str, str]:
+    async def readyz(request: Request) -> dict[str, str]:
         runtime_settings: Settings = request.app.state.settings
         store = request.app.state.operational_store
         if not _secret_is_valid(runtime_settings.hmac_secret) or store is None:
@@ -440,6 +485,14 @@ def create_app(
             store, "durable", False
         ):
             raise _error("not_ready", 503)
+        check_ready = getattr(store, "check_ready", None)
+        if callable(check_ready):
+            try:
+                ready = await _await_result(check_ready())
+            except Exception:
+                ready = False
+            if not ready:
+                raise _error("not_ready", 503)
         return {"status": "ready"}
 
     @application.post("/internal/v1/echo")
@@ -456,7 +509,7 @@ def create_app(
         if len(raw_body) > runtime_settings.max_body_bytes:
             raise _error("body_too_large", 413)
 
-        _authorize(request, raw_body, runtime_settings)
+        await _authorize(request, raw_body, runtime_settings)
         payload = _parse_model(EchoRequest, raw_body)
         context = payload.context
         _validate_context(context)
@@ -473,13 +526,19 @@ def create_app(
             store = request.app.state.operational_store
             if store is None or not callable(getattr(store, "claim", None)):
                 raise _error("idempotency_store_unavailable", 503)
-            claim = store.claim(
-                scope=scope,
-                idempotency_key=idempotency_key,
-                body_sha256=body_sha256,
-                request_id=str(context.request_id),
-                correlation_id=str(context.correlation_id),
-            )
+            try:
+                claim = await _await_result(
+                    store.claim(
+                        scope=scope,
+                        idempotency_key=idempotency_key,
+                        body_sha256=body_sha256,
+                        request_id=str(context.request_id),
+                        correlation_id=str(context.correlation_id),
+                    )
+                )
+            except Exception:
+                request.app.state.metrics.increment("idempotency.claim_error")
+                raise _error("idempotency_store_error", 503) from None
             if claim.kind == "conflict":
                 request.app.state.metrics.increment("idempotency.conflict")
                 raise _error("idempotency_conflict", 409)
@@ -507,7 +566,7 @@ def create_app(
         except asyncio.TimeoutError:
             request.app.state.metrics.increment("echo.timeout")
             if idempotency_key is not None:
-                _store_failure(
+                await _store_failure(
                     request,
                     scope=scope,
                     idempotency_key=idempotency_key,
@@ -518,7 +577,7 @@ def create_app(
             raise _error("deadline_exceeded", 408) from None
         except asyncio.CancelledError:
             if idempotency_key is not None:
-                _store_failure(
+                await _store_failure(
                     request,
                     scope=scope,
                     idempotency_key=idempotency_key,
@@ -530,7 +589,7 @@ def create_app(
             return _error_response(request, 499, "client_cancelled")
         except HTTPException as exception:
             if idempotency_key is not None:
-                _store_failure(
+                await _store_failure(
                     request,
                     scope=scope,
                     idempotency_key=idempotency_key,
@@ -542,7 +601,7 @@ def create_app(
         except Exception as error:
             del error
             if idempotency_key is not None:
-                _store_failure(
+                await _store_failure(
                     request,
                     scope=scope,
                     idempotency_key=idempotency_key,
@@ -555,13 +614,15 @@ def create_app(
         if idempotency_key is not None:
             store = request.app.state.operational_store
             try:
-                store.complete(
-                    scope=scope,
-                    idempotency_key=idempotency_key,
-                    body_sha256=body_sha256,
-                    response=_stored_response(response_body),
+                await _await_result(
+                    store.complete(
+                        scope=scope,
+                        idempotency_key=idempotency_key,
+                        body_sha256=body_sha256,
+                        response=_stored_response(response_body),
+                    )
                 )
-            except (AttributeError, RuntimeError, TypeError, ValueError):
+            except Exception:
                 request.app.state.metrics.increment("idempotency.finalize_error")
                 raise _error("idempotency_store_error", 503) from None
         request.app.state.metrics.increment("echo.completed")

@@ -74,3 +74,23 @@ fail-closed cuando no existe store durable en produccion. No incluye secretos;
 inyectar `INTERNAL_HMAC_SECRET` mediante el gestor autorizado del entorno.
 
 No hay servidor desplegado, credenciales de proveedores ni pruebas contra tráfico real en esta slice.
+
+## Store PostgreSQL durable
+
+En producción configura `DATABASE_URL` con un DSN PostgreSQL válido y aplica
+antes la migración `migrations/016_operational_idempotency.sql` desde el repo
+propietario de migraciones. El servicio crea un pool `asyncpg` acotado y usa
+transacciones no bloqueantes para consumir nonces y reservar/finalizar claves de
+idempotencia. Nunca registra el DSN ni sus credenciales.
+
+```powershell
+$env:APP_ENV = "production"
+$env:DATABASE_URL = "postgresql://usuario:contraseña@host/base"
+$env:INTERNAL_HMAC_SECRET = "<secreto provisionado de 32 bytes o más>"
+rtk uv run --system-certs uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+Sin `DATABASE_URL`, los entornos `development`, `test` y `local` usan el store
+en memoria. En producción `/readyz` devuelve `503` hasta que exista el DSN,
+el pool pueda conectarse y el store durable esté listo. El ejemplo de secreto
+es un marcador: no lo generes ni lo guardes en el repositorio.
