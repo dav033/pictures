@@ -27,7 +27,7 @@ import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import type { LoraModeSlug } from "@/lib/lora/schema";
 import type { ResultadoMedidas } from "@/lib/medidas/geometria";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
-import type { ItemValidado } from "@/lib/rag/chat/validar";
+import type { ItemRechazado, ItemValidado } from "@/lib/rag/chat/validar";
 import type { ImageQaReport } from "@/lib/ia/image-qa";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
@@ -82,6 +82,12 @@ type Mensaje = {
    * foto y link a la tienda para poder verificar que el modelo no inventó
    * nada, en vez de confiar a ciegas en la tabla de texto que redacta. */
   ragValidados?: ItemValidado[];
+  /** Fase 3.11: piezas que el modelo propuso pero el backend descartó (no
+   * estaban en la whitelist recuperada, variante agotada, etc.). El backend
+   * ya calcula esto — antes se recibía en el SSE y se tiraba sin mostrarlo,
+   * así que una sustitución o un descarte podía pasar sin que el cliente lo
+   * viera nunca (viola "nunca sustituir en silencio"). */
+  ragRechazados?: ItemRechazado[];
 };
 
 const SALUDO: Mensaje = {
@@ -194,6 +200,7 @@ type DatosFin = {
   seleccionIA?: Producto[];
   instruccionIA?: string;
   ragValidados?: ItemValidado[];
+  ragRechazados?: ItemRechazado[];
   plan?: PlanResuelto;
   referenceBlueprint?: ReferenceBlueprintV2;
 };
@@ -765,6 +772,7 @@ export default function Page() {
         // contiene el blueprint y el plan; la imagen final lo actualiza ahí.
         cotizacion: seleccionIA.length ? undefined : datos.cotizacion ?? undefined,
         ragValidados: datos.ragValidados?.length ? datos.ragValidados : undefined,
+        ragRechazados: datos.ragRechazados?.length ? datos.ragRechazados : undefined,
       };
       return copia;
     });
@@ -1700,6 +1708,19 @@ export default function Page() {
                           </a>
                         )}
                       </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Fase 3.11 (honestidad estructural): si el modelo propuso una
+                    pieza que el backend descartó (no estaba en la whitelist
+                    recuperada, variante agotada, etc.), el cliente debe verlo en
+                    vez de que la sustitución pase en silencio. */}
+                {m.ragRechazados && m.ragRechazados.length > 0 && (
+                  <div className="mt-2 max-w-[85%] space-y-1 rounded-lg border border-aviso/30 bg-aviso/10 p-2 text-xs text-aviso">
+                    <p className="font-medium">Piezas descartadas de esta propuesta:</p>
+                    {m.ragRechazados.map((r) => (
+                      <p key={`${r.productId}:${r.variantId}`}>⚠ {r.variantId}: {r.motivo}</p>
                     ))}
                   </div>
                 )}
