@@ -78,7 +78,7 @@ No hay servidor desplegado, credenciales de proveedores ni pruebas contra tráfi
 ## Store PostgreSQL durable
 
 En producción configura `DATABASE_URL` con un DSN PostgreSQL válido y aplica
-antes la migración `migrations/016_operational_idempotency.sql` desde el repo
+antes la migración `migrations/019_operational_idempotency.sql` desde el repo
 propietario de migraciones. El servicio crea un pool `asyncpg` acotado y usa
 transacciones no bloqueantes para consumir nonces y reservar/finalizar claves de
 idempotencia. Nunca registra el DSN ni sus credenciales.

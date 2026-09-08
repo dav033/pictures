@@ -1,6 +1,16 @@
 -- Etapa 3: replay durable de la frontera operational.v1.
 -- DDL aditiva/idempotente. No reclamar in_progress vencido evita duplicar efectos
 -- cuando el proveedor ejecutó la solicitud y la respuesta local se perdió.
+--
+-- rollback: DROP TABLE operational_request_nonces; DROP TABLE
+-- operational_idempotency; No hay tabla comercial implicada, así que el drop no
+-- toca catálogo ni precios. Pierde el registro de idempotencia en vuelo:
+-- hacerlo mientras haya operaciones sin respuesta terminal puede permitir un
+-- efecto duplicado.
+--
+-- Este archivo se llamaba 016_operational_idempotency.sql y se renumeró a 019
+-- porque colisionaba con 016_lora_specializations.sql. scripts/migrate.ts
+-- reconcilia el nombre viejo en schema_migrations; no re-aplica el DDL.
 
 CREATE TABLE IF NOT EXISTS operational_idempotency (
   scope                 TEXT NOT NULL,

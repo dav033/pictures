@@ -52,7 +52,7 @@ autorizado:
    rotación acordada;
 3. destino de ejecución, imagen/runtime y permisos de health/readiness;
 4. base PostgreSQL desechable autorizada para aplicar la DDL de
-   `scripts/migrations/016_operational_idempotency.sql`;
+   `scripts/migrations/019_operational_idempotency.sql`;
 5. adaptador Next por endpoint con HMAC, IDs, hash, scopes, nonce,
    idempotencia y errores estables;
 6. observabilidad y rollback verificados en staging.

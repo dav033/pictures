@@ -50,7 +50,7 @@ externos; no se inventan.
   validación Draft 7 en runtime y `uv.lock`.
 - Store PostgreSQL durable de idempotencia/replay y nonce, con TTL, respuesta
   guardada, reserva atómica, pool asyncpg y pruebas sin credenciales.
-- Migración `016_operational_idempotency.sql` aplicada dos veces en un
+- Migración `019_operational_idempotency.sql` aplicada dos veces en un
   PostgreSQL Docker desechable local; tablas verificadas e integración Next →
   Python comprobada con ese store durable.
 - Cutover local comprobado: Next por defecto, Python con flag y kill switch

@@ -56,11 +56,11 @@ Contratos extraídos:
 
 Migración fuente:
 
-`C:\Users\davidt\Downloads\demo-decoracion\scripts\migrations\016_operational_idempotency.sql`
+`C:\Users\davidt\Downloads\demo-decoracion\scripts\migrations\019_operational_idempotency.sql`
 
 Migración del backend:
 
-`C:\Users\davidt\Downloads\workspace\demo-decoracion-api\migrations\016_operational_idempotency.sql`
+`C:\Users\davidt\Downloads\workspace\demo-decoracion-api\migrations\019_operational_idempotency.sql`
 
 ## Estado final de la Etapa 4
 
@@ -156,7 +156,7 @@ lint PASS, con warnings heredados y sin errores
 
 4. La extracción no incluía migración ni `.gitignore`.
 
-   Ahora el repo backend incluye `migrations/016_operational_idempotency.sql`,
+   Ahora el repo backend incluye `migrations/019_operational_idempotency.sql`,
    `.gitignore` y `extraction-manifest.json`.
 
 5. El replay usaba inicialmente un hash afectado por IDs variables.
@@ -235,7 +235,7 @@ No leer ni reutilizar automáticamente la URL Neon de `.env.local`.
 
 Aplicar explícitamente:
 
-`migrations/016_operational_idempotency.sql`
+`migrations/019_operational_idempotency.sql`
 
 Usar `ON_ERROR_STOP`, identificar la base antes de ejecutar y comprobar:
 

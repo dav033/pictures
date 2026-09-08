@@ -102,7 +102,7 @@ una opción de implementación, pero requiere una base/schema autorizados y
 desechables para pruebas; no habilita por sí solo lectura de catálogo,
 precios, inventario o procedencia.
 
-Estado: **PASS local**. `016_operational_idempotency.sql` crea tablas aditivas
+Estado: **PASS local**. `019_operational_idempotency.sql` crea tablas aditivas
 para idempotencia y nonce; el store implementa reserva atómica, `new/replay`,
 `conflict`, `in_flight`, respuesta terminal, TTL y cleanup con `SKIP LOCKED`.
 Test fake cubre concurrencia conceptual, replay, conflicto, nonce y expiración.

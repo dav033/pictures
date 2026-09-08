@@ -173,7 +173,7 @@ function response(body: JsonValue, status = 200) {
 }
 
 async function main(): Promise<void> {
-  const migration = readFileSync("scripts/migrations/016_operational_idempotency.sql", "utf8");
+  const migration = readFileSync("scripts/migrations/019_operational_idempotency.sql", "utf8");
   assert.match(migration, /CREATE TABLE IF NOT EXISTS operational_idempotency/);
   assert.match(migration, /PRIMARY KEY \(scope, idempotency_key\)/);
   assert.match(migration, /state IN \('in_progress', 'completed', 'failed'\)/);

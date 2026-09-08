@@ -20,6 +20,7 @@
     "lint": "eslint",
     "rag:stack-check": "tsx scripts/stack-check.ts",
     "rag:migrate": "tsx scripts/migrate.ts",
+    "rag:migrate:check": "tsx scripts/migrate.ts --dry-run",
     "rag:health": "tsx scripts/rag-health.ts",
     "rag:import": "tsx scripts/import-shopify-catalog.ts",
     "rag:embed": "tsx scripts/generate-embeddings.ts",

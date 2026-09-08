@@ -757,7 +757,7 @@ Solo hashes, tamaños y metadatos acotados, con el mismo criterio que ya aplica
 ### 10.1 Defectos actuales, verificados
 
 1. **Hay una colisión de número.** `scripts/migrations/` contiene
-   `016_lora_specializations.sql` y `016_operational_idempotency.sql`. El
+   `016_lora_specializations.sql` y `019_operational_idempotency.sql`. El
    runner ordena alfabéticamente (`scripts/migrate.ts:26-28`), así que hoy
    funciona por accidente: `_lora_` ordena antes que `_operational_`. Nada lo
    garantiza y nada avisa si vuelve a pasar.
@@ -775,7 +775,7 @@ Solo hashes, tamaños y metadatos acotados, con el mismo criterio que ya aplica
    remota sin una sola pregunta.
 6. **No hay reversión.** No existen migraciones `down` ni una nota de rollback
    por archivo.
-7. **Dos dueños del mismo DDL.** `016_operational_idempotency.sql` existe en
+7. **Dos dueños del mismo DDL.** `019_operational_idempotency.sql` existe en
    `scripts/migrations/` (repo Next) y en `migrations/` (repo Python). Ninguno
    de los dos es declaradamente el dueño.
 
@@ -845,7 +845,7 @@ El runner Python replica las mismas siete garantías de 10.3 y añade:
 | Comercial | Repo Next | `public.*` — catálogo, variantes, embeddings, planes, órdenes, observabilidad RAG | `npm run rag:migrate` |
 | Operacional | Repo Python | `operational.*` — idempotencia, nonces | Runner Python |
 
-`016_operational_idempotency.sql` **se retira de `scripts/migrations/`** del
+`019_operational_idempotency.sql` **se retira de `scripts/migrations/`** del
 repo Next una vez el linaje Python esté operativo, y se documenta en el propio
 archivo cuál es su nuevo dueño. Mientras tanto sigue duplicado, pero con una
 nota explícita en ambos lados diciendo cuál es la copia autoritativa.
