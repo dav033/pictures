@@ -62,7 +62,7 @@ Las cuatro nuevas cubren huecos que ninguna fase trataba como trabajo propio:
 |---|---|
 | **Fase 2** — CI y gates | Cualquier push a `main` despliega al EC2 **sin un solo check**, y hay varios agentes commiteando. Todo lo demás se estaba planeando sin red |
 | **Fase 4** — Seguridad y secretos | Ninguna fase trataba los secretos ni el contenido no confiable que llega al prompt. El staging necesita un secreto rotable antes de existir |
-| **Fase 5** — Resiliencia y degradación | 18 migraciones sin nota de reversión, sin procedimiento de restore probado, y nadie ha probado qué pasa cuando un proveedor está caído |
+| **Fase 5** — Resiliencia y degradación | 19 migraciones sin nota de reversión (corregido por auditoría 5.0: el conteo de 18 ya estaba mal cuando se escribió — ver `auditoria/09-revision-fase-5.md`), sin procedimiento de restore probado, y nadie ha probado qué pasa cuando un proveedor está caído |
 | **Fase 7** — Carga y concurrencia | Todas las cifras son de una máquina y un momento. Nadie midió el sistema con más de una conversación a la vez |
 
 Mapa de la renumeración, para cualquier documento o rama que use los números
@@ -540,7 +540,7 @@ analizado.
 | Fase 4.2 | Escaneo de secretos en CI y sobre el histórico completo | Cero hallazgos, o una lista de los que hay que rotar |
 | Fase 4.3 | **Análisis de inyección de prompt** por las dos vías de arriba. Qué puede lograr un cliente con una imagen preparada y qué puede lograr Happia con un catálogo manipulado | Un informe con las rutas probadas y el resultado real, no una afirmación de que "está acotado" |
 | Fase 4.4 | Procedimiento de rotación escrito y **probado** para cada secreto | Rotar el HMAC interno no tumba el servicio; rotar la clave de Gemini tampoco |
-| Fase 4.5 | Superficie externa por endpoint: qué expone, qué CORS aplica, qué rate limit tiene y con qué credencial | Los webhooks Happie ya tienen rate limit por credencial; el resto queda inventariado |
+| Fase 4.5 | Superficie externa por endpoint: qué expone, qué CORS aplica, qué rate limit tiene y con qué credencial. **Hallazgo nuevo de la auditoría 4.0** (`auditoria/08-revision-fase-4.md` sección 5a): `src/proxy.ts` (gate de autenticación por `APP_PASSWORD`, no mencionado en ninguna versión previa de este plan) no excluye `/api/rag/webhooks/shopify` de su matcher; un POST server-to-server de Shopify sin cookie de sesión recibiría un redirect a `/login` en vez de 2xx/401, lo que rompería silenciosamente la sincronización de catálogo si ese webhook está en uso real (sin confirmar — ver preguntas abiertas del informe). Se corrige como parte de esta entrega, antes de 4.4 | Los webhooks Happie ya tienen rate limit por credencial; el resto queda inventariado, incluida la corrección del matcher de `proxy.ts` si el webhook de Shopify está activo |
 
 #### Salida
 
@@ -558,7 +558,9 @@ encuentra algo explotable, se arregla en esta fase y no se aplaza.
 
 Hay tres cosas que el plan daba por hechas sin estarlo:
 
-1. **Reversión de migraciones.** 18 archivos sin nota `-- rollback:`. El runner
+1. **Reversión de migraciones.** 19 archivos sin nota `-- rollback:` (corregido:
+   ver `auditoria/09-revision-fase-5.md` sección 1 — el conteo de 18 ya
+   subestimaba el universo real incluso en el commit donde se fijó). El runner
    avisa desde la Fase 1.3, pero avisar no es tener el procedimiento.
 2. **Recuperación de datos.** No hay procedimiento de backup ni de restore
    documentado para la base comercial. `data/` está casi todo en `.gitignore` y
@@ -579,11 +581,11 @@ hay que generalizarlo, no inventarlo.
 
 | # | Entrega | Criterio de aceptación |
 |---|---|---|
-| Fase 5.1 | Nota `-- rollback:` en las 18 migraciones que no la tienen. Cierra 10.3(g) | El aviso del runner desaparece porque el problema se resolvió, no porque se silenció el aviso |
+| Fase 5.1 | Nota `-- rollback:` en las **19** migraciones que no la tienen (corregido por auditoría 5.0, ver `auditoria/09-revision-fase-5.md`). Cierra 10.3(g) | El aviso del runner desaparece porque el problema se resolvió, no porque se silenció el aviso |
 | Fase 5.2 | Backup y restore de la base comercial: procedimiento escrito y **ejecutado una vez** contra una copia | Un restore verificado, no una afirmación de que se podría |
-| Fase 5.3 | Registro único de capacidades de IA con default explícito por cada una (capítulo 12.3) | Ningún flag queda activo por omisión sin que esa sea la decisión escrita |
-| Fase 5.4 | **Degradación probada por capacidad**: proveedor caído, sin saldo en fal.ai, PostgreSQL no disponible, embeddings fallando, store de idempotencia no alcanzable | Cada caso degrada de forma observable, con un error estable, y **ninguno fabrica éxito** |
-| Fase 5.5 | Inventario de artefactos LoRA y cómo se recuperan si se pierde el filesystem o el volumen del EC2 | Se sabe qué es irrecuperable y qué no, antes de necesitarlo |
+| Fase 5.3 | Registro único de capacidades de IA con default explícito por cada una (capítulo 12.3). Auditoría 5.0 encontró un cuarto archivo de flags no citado (`src/lib/plan/flags.ts`) y una reimplementación duplicada de `IMAGE_INSTANCE_QA` en dos archivos con lógica de default distinta — ver `auditoria/09-revision-fase-5.md` secciones 2 y 5 | Ningún flag queda activo por omisión sin que esa sea la decisión escrita |
+| Fase 5.4 | **Degradación probada por capacidad**: proveedor caído, sin saldo en fal.ai, PostgreSQL no disponible, embeddings fallando, store de idempotencia no alcanzable. Auditoría 5.0: las ramas FTS/trigram de retrieval no capturan la caída de Postgres (`throw` no capturado, tumba el turno) mientras la rama vectorial sí degrada correctamente — no es un solo caso, son dos con estado distinto | Cada caso degrada de forma observable, con un error estable, y **ninguno fabrica éxito** |
+| Fase 5.5 | Inventario de artefactos LoRA y cómo se recuperan si se pierde el filesystem o el volumen del EC2. **Corregido por auditoría 5.0:** los pesos `.safetensors` no viajan por la sincronización SSH al EC2 — esa solo mueve estadísticas y galería del dataset. Los pesos viven como URL de fal.ai y, si acaso, en una copia manual local (`data/lora-backup/`) de quien corrió `scripts/recibir-lora.ts`, no replicada ni versionada. Ver `auditoria/09-revision-fase-5.md` secciones 2 y 5 | Se sabe qué es irrecuperable y qué no, antes de necesitarlo |
 
 #### Salida
 
@@ -1501,7 +1503,7 @@ fase sin verificar su propia evidencia es construir sobre una foto vieja.
 |---|---|---|
 | **3.0** | Los 13 puntos de la Fase 3 | `auditoria/07-revision-fase-3.md` |
 | **4.0** | Superficie de secretos e inyección de prompt por referencias y por catálogo Happia | `auditoria/08-revision-fase-4.md` |
-| **5.0** | Reversibilidad de las 18 migraciones, recuperación de datos y flags dispersos | `auditoria/09-revision-fase-5.md` |
+| **5.0** | Reversibilidad de las migraciones (19, no 18 — ver informe), recuperación de datos y flags dispersos | `auditoria/09-revision-fase-5.md` |
 | **6.0** | Viabilidad real del EC2 y de Neon como destino, y el problema de distribución de contratos al repo API | `auditoria/10-revision-fase-6.md` |
 | **7.0** | Concurrencia real del pool y del loop, y cancelación física de queries | `auditoria/11-revision-fase-7.md` |
 | **8.0** | Qué puede hacer el reranking sin tocar autoridad, y qué mide hoy el ground truth existente | `auditoria/12-revision-fase-8.md` |
@@ -1510,6 +1512,18 @@ fase sin verificar su propia evidencia es construir sobre una foto vieja.
 
 Las auditorías de fases independientes entre sí se pueden lanzar en paralelo.
 Las de la 3, 4 y 5 no dependen de nada y pueden salir juntas.
+
+**Estado (2026-09-08): 3.0, 4.0 y 5.0 hechas.** Se lanzaron en paralelo con
+subagentes `openai/gpt-5.6-luna` variante `xhigh` vía `opencode`, pero la
+cuenta OpenAI alcanzó su tope de uso (`Error: The usage limit has been
+reached`, confirmado en tres intentos independientes) antes de producir
+ningún informe. Con autorización explícita del usuario en la misma sesión, se
+relanzaron con subagentes Claude (`Plan`, sin herramientas de escritura,
+mismo formato de seis secciones y mismas reglas de solo-lectura/cero-
+proveedores-pagados de 13.2/13.3) y los tres completaron. Cada informe deja
+esta desviación anotada en su propia cabecera. Los hallazgos con evidencia
+que contradecían el plan ya se integraron en los capítulos 5 (Fase 4.5,
+Fase 5.1, 5.3, 5.4, 5.5) y en la fila de la Fase 5 de la tabla del capítulo 0.
 
 ### 13.2 Las seis secciones que produce cada informe
 
