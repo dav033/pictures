@@ -3,6 +3,11 @@
 -- consola de un servidor que ya se reinició. request_id conecta la búsqueda
 -- con la selección que vino después en el mismo turno.
 
+-- rollback: DROP INDEX ix_rag_query_log_created; DROP INDEX ix_rag_query_log_request;
+-- DROP TABLE rag_query_log;
+-- Pierde toda la trazabilidad de consultas RAG; exportar antes y no ejecutar
+-- mientras haya procesos registrando consultas.
+
 CREATE TABLE IF NOT EXISTS rag_query_log (
   id                     BIGSERIAL PRIMARY KEY,
   request_id             TEXT NOT NULL,

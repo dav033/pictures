@@ -4,6 +4,11 @@
 -- mismo X-Shopify-Webhook-Id procesado dos veces no debe cambiar el estado
 -- final ni reprocesar de más.
 
+-- rollback: DROP INDEX ix_catalog_webhook_log_product; DROP TABLE catalog_webhook_log;
+-- ALTER TABLE catalog_products DROP COLUMN source_updated_at;
+-- Pierde el histórico de webhooks y las marcas source_updated_at; exportar antes
+-- y no ejecutar mientras haya sincronizadores activos.
+
 ALTER TABLE catalog_products ADD COLUMN IF NOT EXISTS source_updated_at TIMESTAMPTZ;
 
 CREATE TABLE IF NOT EXISTS catalog_webhook_log (

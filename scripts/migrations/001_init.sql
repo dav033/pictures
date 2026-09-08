@@ -2,6 +2,11 @@
 -- Shopify es la fuente de verdad: los campos factuales viven tal cual salen de Shopify;
 -- "derived" guarda todo lo inferido (estilos, colores visuales, etc.) por separado.
 
+-- rollback: DROP TABLE catalog_sync_log; DROP TABLE catalog_rejections; DROP TABLE
+-- catalog_embeddings; DROP TABLE catalog_variants; DROP TABLE catalog_products;
+-- Pierde catálogo, variantes, embeddings y logs de sincronización; exportar antes,
+-- revertir primero migraciones dependientes y no ejecutar mientras haya escritores activos.
+
 CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE TABLE IF NOT EXISTS catalog_products (

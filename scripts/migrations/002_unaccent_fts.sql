@@ -10,6 +10,8 @@
 -- search configuration: to_tsvector('config', texto) sí es IMMUTABLE cuando
 -- la config va como constante.
 
+-- rollback: no reversible, requiere restore de backup. Recalcula y reemplaza catalog_products.search_tsv y no conserva la expresión previa ni si unaccent/spanish_unaccent ya existían.
+
 CREATE EXTENSION IF NOT EXISTS unaccent;
 
 DO $$

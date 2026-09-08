@@ -5,6 +5,14 @@
 -- (src/lib/shopify/derivar.ts) ya calcula para el catálogo SQLite —
 -- mismo derivado, misma fuente de verdad, ahora también disponible donde
 -- corre el retrieval real (Postgres).
+
+-- rollback: DROP INDEX ix_catalog_variants_forma_diam; ALTER TABLE catalog_variants
+-- DROP COLUMN alto_cm; ALTER TABLE catalog_variants DROP COLUMN largo_pulg;
+-- ALTER TABLE catalog_variants DROP COLUMN ancho_cm; ALTER TABLE catalog_variants DROP COLUMN diam_pulg;
+-- ALTER TABLE catalog_variants DROP COLUMN forma; ALTER TABLE catalog_variants DROP COLUMN codigo_tamano;
+-- Pierde los datos decodificados de tamaño/forma y su índice; exportar antes y
+-- no ejecutar mientras el retrieval o escritores activos los utilicen.
+
 ALTER TABLE catalog_variants ADD COLUMN IF NOT EXISTS codigo_tamano TEXT;
 ALTER TABLE catalog_variants ADD COLUMN IF NOT EXISTS forma         TEXT;
 ALTER TABLE catalog_variants ADD COLUMN IF NOT EXISTS diam_pulg     NUMERIC;

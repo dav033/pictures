@@ -3,6 +3,14 @@
 -- (src/lib/rag/presupuesto/franjas.ts) — esta tabla es un override opcional
 -- para el admin: puede mover rangos y cuotas, nunca crear ni borrar una
 -- franja ni cambiar los 5 roles.
+
+-- rollback: DROP INDEX ix_catalog_variants_price_avail; ALTER TABLE rag_query_log
+-- DROP COLUMN relajaciones; ALTER TABLE rag_query_log DROP COLUMN utilizacion;
+-- ALTER TABLE rag_query_log DROP COLUMN canasta; ALTER TABLE rag_query_log DROP COLUMN plan_canasta;
+-- ALTER TABLE rag_query_log DROP COLUMN franja; DROP TABLE presupuesto_franjas;
+-- Pierde los overrides de franjas y la trazabilidad de planes/canastas; exportar
+-- antes y no ejecutar mientras haya administradores o escritores activos.
+
 CREATE TABLE IF NOT EXISTS presupuesto_franjas (
   slug            TEXT PRIMARY KEY,
   min_cop         NUMERIC NOT NULL,
