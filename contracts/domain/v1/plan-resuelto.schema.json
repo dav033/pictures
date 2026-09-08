@@ -1745,27 +1745,43 @@
                 "maxLength": 160
               },
               "sku": {
-                "type": [
-                  "string",
-                  "null"
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
                 ]
               },
               "sku_original": {
-                "type": [
-                  "string",
-                  "null"
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
                 ]
               },
               "source_snapshot_id": {
-                "type": [
-                  "string",
-                  "null"
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
                 ]
               },
               "source_variant_id": {
-                "type": [
-                  "string",
-                  "null"
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
                 ]
               },
               "inventory_quantity": {
@@ -1781,9 +1797,13 @@
                 ]
               },
               "unidades_inferidas": {
-                "type": [
-                  "boolean",
-                  "null"
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
                 ]
               },
               "titulo": {
@@ -1791,15 +1811,23 @@
                 "minLength": 1
               },
               "color": {
-                "type": [
-                  "string",
-                  "null"
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
                 ]
               },
               "tamano_codigo": {
-                "type": [
-                  "string",
-                  "null"
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
                 ]
               },
               "diam_pulg": {
@@ -1825,15 +1853,23 @@
                 ]
               },
               "forma": {
-                "type": [
-                  "string",
-                  "null"
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
                 ]
               },
               "acabado": {
-                "type": [
-                  "string",
-                  "null"
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
                 ]
               },
               "unidades": {
@@ -1921,9 +1957,13 @@
       "minLength": 1
     },
     "event_label": {
-      "type": [
-        "string",
-        "null"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "original_request": {
@@ -2057,27 +2097,43 @@
                   "maxLength": 160
                 },
                 "sku": {
-                  "type": [
-                    "string",
-                    "null"
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
                   ]
                 },
                 "sku_original": {
-                  "type": [
-                    "string",
-                    "null"
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
                   ]
                 },
                 "source_snapshot_id": {
-                  "type": [
-                    "string",
-                    "null"
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
                   ]
                 },
                 "source_variant_id": {
-                  "type": [
-                    "string",
-                    "null"
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
                   ]
                 },
                 "inventory_quantity": {
@@ -2093,9 +2149,13 @@
                   ]
                 },
                 "unidades_inferidas": {
-                  "type": [
-                    "boolean",
-                    "null"
+                  "anyOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "null"
+                    }
                   ]
                 },
                 "titulo": {
@@ -2103,15 +2163,23 @@
                   "minLength": 1
                 },
                 "color": {
-                  "type": [
-                    "string",
-                    "null"
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
                   ]
                 },
                 "tamano_codigo": {
-                  "type": [
-                    "string",
-                    "null"
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
                   ]
                 },
                 "diam_pulg": {
@@ -2137,15 +2205,23 @@
                   ]
                 },
                 "forma": {
-                  "type": [
-                    "string",
-                    "null"
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
                   ]
                 },
                 "acabado": {
-                  "type": [
-                    "string",
-                    "null"
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
                   ]
                 },
                 "unidades": {
@@ -2221,9 +2297,13 @@
                   "minimum": 0
                 },
                 "forma": {
-                  "type": [
-                    "string",
-                    "null"
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
                   ]
                 },
                 "unidades": {
@@ -2284,27 +2364,43 @@
             "maxLength": 160
           },
           "sku": {
-            "type": [
-              "string",
-              "null"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "sku_original": {
-            "type": [
-              "string",
-              "null"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "source_snapshot_id": {
-            "type": [
-              "string",
-              "null"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "source_variant_id": {
-            "type": [
-              "string",
-              "null"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "inventory_quantity": {
@@ -2320,9 +2416,13 @@
             ]
           },
           "unidades_inferidas": {
-            "type": [
-              "boolean",
-              "null"
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "titulo": {
@@ -2330,9 +2430,13 @@
             "minLength": 1
           },
           "tamano_codigo": {
-            "type": [
-              "string",
-              "null"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "diam_pulg": {
@@ -2347,9 +2451,13 @@
             ]
           },
           "color": {
-            "type": [
-              "string",
-              "null"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "unidades_necesarias": {

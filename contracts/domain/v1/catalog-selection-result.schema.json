@@ -48,9 +48,13 @@
             "maxLength": 160
           },
           "sku": {
-            "type": [
-              "string",
-              "null"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "product_title": {
@@ -128,9 +132,13 @@
             }
           },
           "description": {
-            "type": [
-              "string",
-              "null"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "units_per_package": {

@@ -16,21 +16,33 @@
       "minLength": 1
     },
     "description_text": {
-      "type": [
-        "string",
-        "null"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "vendor": {
-      "type": [
-        "string",
-        "null"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "product_type": {
-      "type": [
-        "string",
-        "null"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "tags": {
@@ -53,24 +65,36 @@
       "type": "boolean"
     },
     "price_min": {
-      "type": [
-        "number",
-        "null"
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "price_max": {
-      "type": [
-        "number",
-        "null"
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "derived": {
       "type": "object",
       "properties": {
         "category": {
-          "type": [
-            "string",
-            "null"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "colors": {
@@ -107,9 +131,13 @@
       "type": "string"
     },
     "source_updated_at": {
-      "type": [
-        "string",
-        "null"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
       ]
     }
   },

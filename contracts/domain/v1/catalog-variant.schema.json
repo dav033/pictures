@@ -12,15 +12,23 @@
       "minLength": 1
     },
     "sku": {
-      "type": [
-        "string",
-        "null"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "title": {
-      "type": [
-        "string",
-        "null"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "price": {
@@ -65,53 +73,85 @@
         "type": "string"
       },
       "additionalProperties": {
-        "type": [
-          "string",
-          "null"
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
         ]
       }
     },
     "image_url": {
-      "type": [
-        "string",
-        "null"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "source_payload": {},
     "codigo_tamano": {
-      "type": [
-        "string",
-        "null"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "forma": {
-      "type": [
-        "string",
-        "null"
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "diam_pulg": {
-      "type": [
-        "number",
-        "null"
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "largo_pulg": {
-      "type": [
-        "number",
-        "null"
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "ancho_cm": {
-      "type": [
-        "number",
-        "null"
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "alto_cm": {
-      "type": [
-        "number",
-        "null"
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
       ]
     },
     "derived_colors": {

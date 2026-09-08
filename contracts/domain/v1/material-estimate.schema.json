@@ -15,9 +15,13 @@
           "minLength": 1
         },
         "shape": {
-          "type": [
-            "string",
-            "null"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "dimensions_m": {
@@ -76,9 +80,13 @@
           ]
         },
         "density": {
-          "type": [
-            "string",
-            "null"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
           ]
         },
         "visual_density": {
@@ -135,15 +143,23 @@
             "minLength": 1
           },
           "color": {
-            "type": [
-              "string",
-              "null"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "finish": {
-            "type": [
-              "string",
-              "null"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "size_inches": {
@@ -158,9 +174,13 @@
             ]
           },
           "shape": {
-            "type": [
-              "string",
-              "null"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "design_quantity": {
@@ -215,15 +235,23 @@
             "minLength": 1
           },
           "color": {
-            "type": [
-              "string",
-              "null"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "finish": {
-            "type": [
-              "string",
-              "null"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "size_inches": {
@@ -238,9 +266,13 @@
             ]
           },
           "shape": {
-            "type": [
-              "string",
-              "null"
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "design_quantity": {

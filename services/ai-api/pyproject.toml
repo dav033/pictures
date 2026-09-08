@@ -34,6 +34,11 @@ py-modules = []
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["-ra"]
+# [tool.setuptools] py-modules = [] deliberately installs nothing (the
+# Dockerfile runs uvicorn straight from source via `uv run` with WORKDIR
+# /app, never through the installed package). Tests need `app` importable
+# too, but from source in the same way, not through the (empty) install.
+pythonpath = ["."]
 
 [tool.ruff]
 line-length = 100
