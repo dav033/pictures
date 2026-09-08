@@ -136,8 +136,14 @@ son indistinguibles entre sí, y dos no reportan tokens:
 | Referencia — auditoría | `src/lib/ia/analizar-referencias-v2.ts:576` | `chat`, indistinguible |
 | Imagen Gemini | `src/lib/ia/gemini/imagen.ts:74` | `imagen`, sin tokens |
 | Imagen LoRA fal.ai | `src/lib/ia/sempertex-lora.ts:134` | `imagen`, sin tokens ni `request_id` del proveedor |
-| Recomendador Happie | `packages/happie-package-ia/src/recomendador.ts:105` | nada |
-| Conversación Happie | `src/lib/happie/conversacion-webhook.ts:57` | nada |
+| Recomendador Happie | `packages/happie-package-ia/src/recomendador.ts:107` | nada |
+| Conversación Happie | `src/lib/happie/conversacion-webhook.ts:60` | nada |
+
+**Las dos de Happie ya tienen un `correlationId`: reúsalo.** Desde la mezcla de
+`main`, ambas pasan por `ejecutarWebhook`, que genera un UUID por solicitud
+(`src/lib/happie/webhook-control.ts:169`) y lo devuelve en `X-Correlation-ID`.
+Si la telemetría inventa uno propio, el evento y el log del webhook quedan sin
+forma de correlacionarse. Hay que propagarlo hasta el evento.
 
 Y el adaptador lee tres campos de `usageMetadata`
 (`packages/agente-core/src/gemini/chat.ts:158-162`) e ignora
@@ -150,10 +156,17 @@ de la factura es el modelo pensando.
 
 Lee el capítulo 9 completo antes de escribir código. Resumen de lo exigido:
 
-**a. Migración `020_ai_call_log.sql`.** El 020 no es negociable: 017 y 018 son
-de LoRA y 019 lo tomó `operational_idempotency`. `migrate.ts` valida la
-unicidad del prefijo, así que un número repetido falla antes de tocar la base.
-Incluye su nota `-- rollback:`, como hace `019`.
+**a. Migración `ai_call_log`.** **Confirma el número libre con
+`ls scripts/migrations` en el momento de crearla; no lo tomes de este
+documento.** Al escribirse decía 020, y al día siguiente ya era 021: `main`
+creó `019_happie_webhook.sql` y el operacional tuvo que moverse a 020. Con
+varios agentes en paralelo sobre el mismo repo, un contador secuencial global
+es una fuente estructural de colisiones (ver capítulo 10.7 del plan).
+
+`migrate.ts` valida la unicidad del prefijo, así que un número repetido falla
+antes de tocar la base — pero descubrirlo en el commit es peor que mirar el
+directorio antes. Incluye su nota `-- rollback:`, como hace
+`020_operational_idempotency.sql`.
 
 Dos tablas: `ai_call_log` y `ai_model_pricing`. Un evento guarda el
 `pricing_id` que usó, para que un cambio de tarifa no reescriba el histórico.

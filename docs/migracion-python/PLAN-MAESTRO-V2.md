@@ -325,6 +325,36 @@ pero los tokens del turno de LLM no llegan ahí.
 Sin esto, "coste por conversación" no se puede responder ni optimizar, y la
 decisión sobre el caché explícito no se puede tomar con datos.
 
+### 4.7 Las rutas de control de los webhooks Happie responden fuera de contrato
+
+Detectado al mezclar `main`. `ejecutarWebhook` construye sus respuestas con
+`Response.json` directo (`src/lib/happie/webhook-control.ts:173-175`), sin
+pasar por `respuestaWebhook`, que es quien valida contra
+`HappieErrorV1Schema` y añade `schema_version`.
+
+Consecuencia: el camino feliz y el de autenticación sí van sobre contrato, pero
+las rutas de control nuevas **no**:
+
+| Ruta | Estado |
+|---|---|
+| Solicitud inválida | 400 |
+| Límite de solicitudes excedido | 429 |
+| Solicitud en curso | 409 |
+| Cancelada por el cliente | 408 |
+| Deadline agotado | 504 |
+| Servicio no disponible | 503 |
+
+Ninguna lleva `schema_version`. No es un descuido de quien escribió el módulo:
+la capa de contratos no existía en la base sobre la que trabajó. Pero un
+integrador externo que valide la respuesta contra el schema publicado la
+rechazará.
+
+El arreglo es mover el responder que normaliza contra el contrato a
+`webhook-control.ts` y que los dos módulos de webhook lo importen desde ahí.
+Hacerlo al revés —que `webhook-control` importe de
+`recomendar-paquetes-webhook`— crea un ciclo de imports, que `AGENTS.md`
+prohíbe. Entra en la Fase 2 como 2.13.
+
 ---
 
 ## 5. Fases 1 a 6
@@ -376,6 +406,7 @@ antes de esta revisión.
 | Fase 2.10 | Revisar el truncado de historial (caracteres → tokens, y que cuente el base64) | `src/lib/ia/historial-chat.ts:3` | **No medida** | Bajo |
 | Fase 2.11 | **Honestidad estructural en la UI** (capítulo 11.1): renderizar `filtro_relajado`, `match_level`, `sustituciones`, `sin_cobertura` y `rechazados` como elementos propios, independientes de lo que el modelo escriba | `src/lib/ia/registro-herramientas.ts:474-509,611-635`, `src/app/page.tsx` | No es de latencia: **reduce el riesgo de todo lo demás de esta etapa** | Bajo — solo añade, no quita |
 | Fase 2.12 | **Pantalla de consumo de IA por flujo** (capítulo 11.3): tarjetas por funcionalidad, desglose por capacidad, coste por conversación de punta a punta | `src/components/admin/MotorIATab.tsx:128-143` | Hace visible el resultado de Fase 2.1 a 2.10 | Bajo |
+| Fase 2.13 | **Rutas de control de los webhooks Happie sobre contrato** (capítulo 4.7): mover el responder que normaliza a `webhook-control.ts` para que 400, 429, 409, 408, 504 y 503 lleven `schema_version` | `src/lib/happie/webhook-control.ts:173-175` | Corrección de contrato, no de latencia | Bajo — `happie:test-webhook` cubre las seis rutas |
 
 **Por qué Fase 2.11 va en esta etapa y no en una de UI aparte:** parte de lo que hoy
 vigila el set de regresión conversacional —que el modelo confiese una
@@ -617,6 +648,21 @@ El sistema hace **once llamadas de IA distintas**. Así se ven hoy:
 reportan tokens.** Y las dos generaciones de imagen —una de Gemini, una de
 fal.ai, con tarifas y monedas completamente distintas— comparten la misma
 etiqueta `imagen`.
+
+**Actualización tras mezclar `main`.** Las dos llamadas de Happie pasan ahora
+por `ejecutarWebhook` (`src/lib/happie/webhook-control.ts:165`), que ya genera
+un `correlationId` por solicitud y lo devuelve en la cabecera
+`X-Correlation-ID`. La instrumentación de la Fase 1.5 **debe reutilizar ese
+identificador** en vez de inventar uno propio: si no, el evento de telemetría y
+el log del webhook quedan sin forma de correlacionarse.
+
+Ese módulo también trae su propia tabla de idempotencia,
+`happie_webhook_requests` (`019_happie_webhook.sql`). Con eso el repositorio
+tiene ya tres mecanismos de idempotencia: éste, `operational_idempotency` para
+la frontera Next→Python, y el `PostgresOperationalStore` del servicio Python
+sobre esa misma tabla. Los tres resuelven el mismo problema en fronteras
+distintas. Consolidarlos no es tarea de la Fase 1; queda anotado en 10.7 para
+decidirlo cuando la Fase 3 defina los linajes.
 
 ### 9.2 Faltan los tokens de razonamiento
 
@@ -904,6 +950,41 @@ y vive en `public`.
   Son 18 archivos y cada nota exige entender qué deja atrás esa migración.
 - 10.4 y 10.5, el runner Python y los dos linajes → **Fase 3**, junto con el
   despliegue del backend. Cierra también 10.1(7).
+- 10.7, consolidar los tres mecanismos de idempotencia → **Fase 3**, con la
+  decisión de linajes.
+
+### 10.7 La validación de numeración se cobró su primera pieza
+
+Al día siguiente de implementarla, mezclar `main` produjo una segunda colisión:
+allí se había creado `019_happie_webhook.sql` mientras esta rama tenía
+`019_operational_idempotency.sql`. Git no lo marca como conflicto —son nombres
+de archivo distintos, cada uno añadido en un lado— así que **sin la validación
+habría entrado silenciosamente**, y el orden de aplicación habría quedado a
+merced del desempate alfabético.
+
+Resolución: el de Happie conserva el 019 porque puede estar aplicado en una
+base real; el operacional se movió a 020. `RENOMBRADOS` conserva las **dos**
+entradas viejas, `016` y `019`, porque cualquiera de las dos puede estar
+registrada en algún entorno y la reconciliación de cada una es independiente.
+
+Dos lecciones, y la segunda importa más que la primera:
+
+1. **Ningún documento debe fijar el próximo número de migración.** Este plan lo
+   hizo dos veces y quedó obsoleto las dos. Se confirma con
+   `ls scripts/migrations` en el momento de crear el archivo.
+2. **Con varios agentes trabajando en paralelo sobre el mismo repo, un
+   contador global secuencial es una fuente estructural de colisiones.** La
+   validación las convierte en un error temprano en vez de un fallo silencioso,
+   que es la mitad del problema resuelta. La otra mitad —que el número no sea
+   un recurso disputado— pide un esquema distinto: prefijo por marca de tiempo,
+   o por rama. No se cambia ahora: renumerar 20 archivos existentes tiene su
+   propio riesgo y `RENOMBRADOS` tendría que crecer con cada uno. Queda como
+   decisión abierta para la Fase 3, junto con los linajes.
+
+Y un tercer mecanismo de idempotencia apareció en el camino:
+`happie_webhook_requests`, además de `operational_idempotency` y el store
+Python sobre esa misma tabla. Los tres son correctos en su frontera; tener tres
+no lo es. Consolidarlos entra en la Fase 3.
 
 ---
 

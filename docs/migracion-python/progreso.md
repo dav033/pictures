@@ -1,6 +1,6 @@
 # Progreso migración Python
 
-Última actualización: 2026-09-07  
+Última actualización: 2026-09-08  
 Estado global: **Etapa 4 local cerrada; despliegue/cutover externo pendiente**
 
 > **Plan rector vigente:** [`PLAN-MAESTRO-V2.md`](PLAN-MAESTRO-V2.md).
@@ -19,6 +19,13 @@ Estado global: **Etapa 4 local cerrada; despliegue/cutover externo pendiente**
 > migraciones ya confirma destino, verifica checksums y toma advisory lock.
 > Siguen pendientes la Fase 1.4 (arnés `ia:bench`) y la Fase 1.5 (telemetría
 > con taxonomía de flujo y capacidad).
+>
+> `main` aportó los controles de los webhooks Happie —idempotencia durable,
+> rate limit, límite de body, deadline y cancelación— ya mezclados en la rama de
+> trabajo. Eso cierra el riesgo "estado webhook no durable ni deduplicado" que
+> la Etapa 1 dejó abierto, y abre dos puntos nuevos: las rutas de control
+> responden fuera del contrato Happie (capítulo 4.7, entra como Fase 2.13) y hay
+> un tercer mecanismo de idempotencia en el repo (capítulo 10.7).
 >
 > Los planes borrados del repositorio que seguían referenciados por comentarios
 > de código vivo están recuperados en
