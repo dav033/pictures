@@ -159,9 +159,14 @@ export function crearChatGemini(opts?: { apiKey?: string; modelo?: string; think
   const modelo = opts?.modelo ?? MODELO_POR_DEFECTO;
   const thinkingConfig = opts?.thinkingLevel !== undefined ? { thinkingLevel: opts.thinkingLevel } : undefined;
 
+  // Fase 3.6: antes se creaba un GoogleGenAI nuevo (y su agente HTTP
+  // subyacente) en CADA llamada a turno()/turnoStream() — es decir, una
+  // instancia por vuelta del tool loop, no por request. apiKey es fijo
+  // para toda la vida de este ChatPort (capturado arriba al construirlo),
+  // así que basta con crear el cliente una sola vez aquí.
+  const instanciaCliente = apiKey ? new GoogleGenAI({ apiKey }) : null;
   function cliente(): GoogleGenAI | null {
-    if (!apiKey) return null;
-    return new GoogleGenAI({ apiKey });
+    return instanciaCliente;
   }
 
   // Vive por instancia de ChatPort — creada una vez por request (ver
