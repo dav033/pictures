@@ -29,49 +29,73 @@ paso, verificando antes de avanzar al siguiente.
    — esto último implica que el servicio verificó su propia conexión a
    Neon con el rol restringido, no es solo "el proceso arrancó".
 
-## Deliberadamente NO hecho todavía
+## Continuación el mismo día: contrato validado, canario y rollback probados
 
-- **El contenedor Next en vivo no tiene `PYTHON_BACKEND_ENABLED` ni
-  `INTERNAL_HMAC_SECRET` configurados** (verificado con `printenv` dentro
-  del contenedor: cero coincidencias). El backend Python está desplegado y
-  sano, pero **inerte** — ningún tráfico real puede llegar a él todavía
-  porque Next nunca lo selecciona.
-- No se validó el contrato `operational.v1` de punta a punta (Next →
-  Python con HMAC real) contra el despliegue real. El adaptador
-  (`src/lib/ia/python-adapter.ts`) firma las peticiones con un esquema
-  canónico específico (`firmarRequestInterna`); reproducirlo a mano en un
-  script suelto arriesgaba una firma que no coincidiera con el contrato
-  real y diera un falso negativo o falso positivo. La forma correcta de
-  probarlo es con el propio adaptador, lo que implica tocar la
-  configuración del contenedor Next en vivo — no se hizo sin confirmarlo
-  antes con el usuario.
-- No se ejecutó ningún canario (activar `PYTHON_BACKEND_ENABLED` para el
-  endpoint `/api/internal/ai/echo`, aunque sea con tráfico controlado).
-- No se probó el rollback (`PYTHON_BACKEND_KILL_SWITCH=true` devolviendo
-  el tráfico a Next) porque no hay tráfico Python que revertir todavía.
+El usuario autorizó explícitamente continuar con los cuatro pasos que este
+documento dejaba pendientes, con una condición explícita: verificar el
+webhook de Happie después de cada paso que tocara el contenedor Next en
+vivo. Se hizo así, y **el webhook de Happie devolvió `200` con una
+recomendación real después de cada uno de los cuatro redeploys** que
+siguen.
 
-## Siguiente paso exacto
+1. **`INTERNAL_HMAC_SECRET` y `PYTHON_BACKEND_URL` añadidos a
+   `.env.production`** (backup tomado antes de cada cambio) y redeploy con
+   el mismo SHA ya desplegado (`1e7d53f827c787eed623a94c0bdf394a9db11253`)
+   para que Next los recogiera. `PYTHON_BACKEND_URL=http://demo-decoracion-ai-api:8000`
+   — ambos contenedores están en la red `stack_web`, se resuelven por
+   nombre sin exponer ningún puerto.
+2. **Contrato validado con una llamada real, no una simulación.** Se
+   confirmó primero que `PYTHON_BACKEND_ENABLED` seguía sin definirse y que
+   `POST /api/internal/ai/echo` respondía `backend: "next"` (con una cookie
+   de sesión calculada dentro del propio contenedor —
+   `sha256(APP_PASSWORD)`, nunca leída en texto plano fuera de ese
+   proceso). Se confirmó también, antes de tocar nada, que
+   `PYTHON_BACKEND_ENABLED` es consumido únicamente por
+   `src/lib/ia/python-adapter.ts`, y ese módulo solo lo importa
+   `src/app/api/internal/ai/echo/route.ts` — ninguna ruta de Happie, chat o
+   generación depende de este flag, así que activarlo no podía afectarlas.
+3. **Canario controlado:** `PYTHON_BACKEND_ENABLED=true`, redeploy, y la
+   misma llamada devolvió `{"backend":"python", ...}` con el mismo payload
+   y IDs correctos — primera solicitud real de la migración que cruza
+   Next → Python con HMAC real, nonce real y el rol restringido de Neon de
+   por medio.
+4. **Rollback probado de verdad:** con `PYTHON_BACKEND_ENABLED=true`
+   todavía activo, se añadió `PYTHON_BACKEND_KILL_SWITCH=true` y se
+   redesplegó. La misma llamada volvió a devolver `backend: "next"` — el
+   kill switch gana sobre el flag de activación, tal como exige el
+   invariante 6, comprobado contra el despliegue real y no solo en tests
+   locales.
+5. **Estado final restaurado al default seguro:** se añadieron
+   `PYTHON_BACKEND_ENABLED=false` y `PYTHON_BACKEND_KILL_SWITCH=false` al
+   final de `.env.production` (los parsers de env-file, incluido el de
+   Docker, toman la última ocurrencia de una clave repetida) y se
+   redesplegó una última vez. Verificado: el eco vuelve a `backend: "next"`
+   por defecto, y Happie sigue en `200`. La sesión de hoy fue una
+   validación completa de la Fase 6, no una decisión de cortar tráfico real
+   a Python — esa decisión de cutover, por capacidad y con evidencia, es
+   explícitamente el alcance de la Fase 10.
 
-Para cerrar el criterio de salida de la Fase 6 (`prompt-seguimiento-etapa-5.md`,
-pasos 5-7) hace falta, en orden:
+**Con esto, el criterio de salida completo de
+`prompt-seguimiento-etapa-5.md` queda satisfecho con evidencia real:**
+backend desplegado, PostgreSQL de staging migrado (schema `operational`),
+secreto HMAC provisionado, contrato Next → Python validado, canario
+controlado, y rollback comprobado. Ningún punto de estos se afirma sin la
+llamada real que lo respalda, documentada arriba.
 
-1. Añadir `INTERNAL_HMAC_SECRET` (el mismo valor que ya tiene el contenedor
-   Python) al env-file del contenedor Next (`.env.production` en el EC2) y
-   redesplegar Next para que lo recoja — sin tocar `PYTHON_BACKEND_ENABLED`
-   todavía, así el secreto queda disponible pero la ruta Python sigue sin
-   seleccionarse.
-2. Con eso, probar el contrato real (llamada válida, HMAC inválido, scope
-   inválido, nonce repetido, replay, conflicto de idempotencia, timeout,
-   cancelación, body demasiado grande) usando el propio adaptador Next
-   contra el Python ya desplegado, sin activar tráfico de usuarios reales.
-3. Solo si el punto 2 pasa completo: canario controlado (`PYTHON_BACKEND_ENABLED=true`
-   para el endpoint interno aprobado), vigilando latencia/errores.
-4. Probar el kill switch devolviendo tráfico a Next.
+## Qué queda pendiente después de esto
 
-Cada uno de estos cuatro pasos toca la configuración del contenedor Next
-que ya sirve tráfico real de usuarios — se dejan para que el usuario decida
-explícitamente cuándo continuar, no se encadenan automáticamente al
-despliegue del backend.
+- **La decisión de cutover real** (activar Python de forma permanente para
+  algún endpoint o capacidad) no se tomó hoy y no se toma implícitamente
+  por haber probado el canario — corresponde a la Fase 10, por capacidad y
+  con evidencia de antes/después, no a esta validación.
+- `services/ai-api` no tiene builds ni tests corriendo en CI todavía más
+  allá de `python-quality` (que sí corre en cada push, ver
+  `.github/workflows/checks.yml`), pero no hay ningún job que reconstruya
+  ni redespliegue automáticamente su imagen Docker — el despliegue de hoy
+  fue manual y así queda hasta que se decida construir ese mecanismo.
+- Las notas `-- rollback:` de `services/ai-api/migrations/001_operational_schema.sql`
+  nunca se ejercitaron de verdad (`DROP SCHEMA operational` no se probó) —
+  no hizo falta porque no hubo ningún fallo que revertir.
 
 ## Riesgos abiertos
 
