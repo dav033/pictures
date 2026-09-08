@@ -17,7 +17,11 @@ function chatLento(): ChatPort {
       return { texto: "ok", llamadas: [], uso: { entrada: 1, salida: 1 }, modelo: "fake" };
     },
     async *turnoStream() {
-      await new Promise((resolve) => setTimeout(resolve, 25));
+      // Margen amplio a propósito (no 25/5ms): en un runner de CI compartido
+      // y con más carga que una máquina local, una ventana ajustada entre el
+      // delay del proveedor falso y el abort programado es una fuente real
+      // de flaky test — se vio fallar en CI mientras aquí siempre pasaba.
+      await new Promise((resolve) => setTimeout(resolve, 200));
       yield fragmentoFinal;
     },
   };
@@ -50,7 +54,7 @@ async function debeCancelarMientrasEsperaProveedor(): Promise<void> {
     signal: controller.signal,
   });
   const siguiente = generator.next();
-  setTimeout(() => controller.abort(new Error("CLIENT_CANCELLED")), 5);
+  setTimeout(() => controller.abort(new Error("CLIENT_CANCELLED")), 40);
   await assert.rejects(() => siguiente, /CLIENT_CANCELLED/);
 }
 
