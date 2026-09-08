@@ -88,3 +88,19 @@ jobs:
       - run: uv run mypy app scripts
       - run: uv run python scripts/generate_models.py --check
       - run: uv run pytest
+
+  secret-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          # GITLEAKS_LICENSE is only required for organization-owned repositories;
+          # this repository belongs to a personal GitHub account.
