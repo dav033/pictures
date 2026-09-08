@@ -12,11 +12,14 @@ export type {
   RecomendarPaquetesEstructuradoInput,
   ServiciosSolicitados,
   RecomendarPaquetesConFiltrosInput,
+  TelemetriaRecomendacion,
+  RegistrarTelemetriaRecomendacion,
 } from "./recomendador";
 export {
   recomendarPaquetes,
   recomendarPaquetesEstructurado,
   recomendarPaquetesConFiltros,
+  registrarTelemetriaSeguro,
 } from "./recomendador";
 
 export type { TipoEventoCurado } from "./tipos-curados";

@@ -54,6 +54,20 @@ export interface RecomendacionResultado {
   resumen: string;
 }
 
+/** Hook sin dependencia de infraestructura. Consumidor decide persistencia. */
+export type TelemetriaRecomendacion = {
+  modelo: string;
+  ms: number;
+  resultado: "ok" | "error" | "timeout" | "cancelado";
+  tokensEntrada?: number;
+  tokensSalida?: number;
+  tokensPensamiento?: number;
+  tokensCacheados?: number;
+  tokensPromptHerramientas?: number;
+};
+
+export type RegistrarTelemetriaRecomendacion = (evento: TelemetriaRecomendacion) => void;
+
 export interface RecomendarPaquetesInput {
   descripcionEvento: string;
   paquetes: HappiaPackage[];
@@ -62,6 +76,11 @@ export interface RecomendarPaquetesInput {
   apiKey?: string;
   modelo?: string;
   signal?: AbortSignal;
+  registrarTelemetria?: RegistrarTelemetriaRecomendacion;
+}
+
+export function registrarTelemetriaSeguro(registrar: RegistrarTelemetriaRecomendacion | undefined, evento: TelemetriaRecomendacion): void {
+  try { registrar?.(evento); } catch { /* Telemetría nunca rompe recomendación. */ }
 }
 
 function precioTotalPaquete(paquete: HappiaPackage): number {
@@ -103,9 +122,11 @@ export async function recomendarPaquetes(input: RecomendarPaquetesInput): Promis
   const client = new GoogleGenAI({ apiKey });
   const contenido = JSON.stringify(paquetesActivos.map(paqueteAContexto));
   const signal = AbortSignal.any([...(input.signal ? [input.signal] : []), AbortSignal.timeout(25_000)]);
+  const modelo = input.modelo ?? MODELO_POR_DEFECTO;
+  const inicio = Date.now();
 
   const respuesta = await client.models.generateContent({
-    model: input.modelo ?? MODELO_POR_DEFECTO,
+    model: modelo,
     contents: [
       {
         role: "user",
@@ -127,10 +148,24 @@ export async function recomendarPaquetes(input: RecomendarPaquetesInput): Promis
       thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
     },
   }).catch((error: unknown) => {
+    const resultado = error instanceof Error && error.name === "TimeoutError"
+      ? "timeout" as const
+      : error instanceof Error && error.name === "AbortError" ? "cancelado" as const : "error" as const;
+    registrarTelemetriaSeguro(input.registrarTelemetria, { modelo, ms: Date.now() - inicio, resultado });
     signal.throwIfAborted();
     throw error;
   });
   signal.throwIfAborted();
+  registrarTelemetriaSeguro(input.registrarTelemetria, {
+    modelo,
+    ms: Date.now() - inicio,
+    resultado: "ok",
+    tokensEntrada: respuesta.usageMetadata?.promptTokenCount,
+    tokensSalida: respuesta.usageMetadata?.candidatesTokenCount,
+    tokensPensamiento: respuesta.usageMetadata?.thoughtsTokenCount,
+    tokensCacheados: respuesta.usageMetadata?.cachedContentTokenCount,
+    tokensPromptHerramientas: respuesta.usageMetadata?.toolUsePromptTokenCount,
+  });
 
   const texto = respuesta.text;
   if (!texto) {
@@ -168,6 +203,7 @@ export interface RecomendarPaquetesEstructuradoInput {
   apiKey?: string;
   modelo?: string;
   signal?: AbortSignal;
+  registrarTelemetria?: RegistrarTelemetriaRecomendacion;
 }
 
 /**
@@ -195,6 +231,7 @@ export function recomendarPaquetesEstructurado(
     apiKey: input.apiKey,
     modelo: input.modelo,
     signal: input.signal,
+    registrarTelemetria: input.registrarTelemetria,
   });
 }
 
@@ -242,6 +279,7 @@ export interface RecomendarPaquetesConFiltrosInput {
   apiKey?: string;
   modelo?: string;
   signal?: AbortSignal;
+  registrarTelemetria?: RegistrarTelemetriaRecomendacion;
 }
 
 /**
@@ -276,5 +314,6 @@ export function recomendarPaquetesConFiltros(
     apiKey: input.apiKey,
     modelo: input.modelo,
     signal: input.signal,
+    registrarTelemetria: input.registrarTelemetria,
   });
 }

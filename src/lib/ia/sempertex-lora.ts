@@ -1,5 +1,7 @@
 import type { ImageInput, Imagen, PeticionImagen } from "./tipos";
 import type { LoraSpecialization } from "@/lib/lora/schema";
+import { bytesBase64, idsTelemetria, resultadoTelemetria, type ContextoTelemetriaIA } from "./telemetria-llamadas";
+import { registrarLlamadaIA } from "@sempertex/agente-core";
 
 const TEXT_ENDPOINT = "https://queue.fal.run/fal-ai/flux-2/lora";
 const EDIT_ENDPOINT = "https://queue.fal.run/fal-ai/flux-2/lora/edit";
@@ -21,6 +23,7 @@ export type SempertexLoraOptions = {
    * antes de tocar la red. Ver PLAN-COMPOSICION-RICA-V001.md §1.1 y §9.2.
    */
   loras: LoraApplication[];
+  telemetria?: ContextoTelemetriaIA;
 };
 
 export type LoraApplication = {
@@ -131,6 +134,26 @@ export async function generarConSempertexLora(
   const references = prepararReferencias(inputs);
   const endpoint = references.length ? EDIT_ENDPOINT : TEXT_ENDPOINT;
 
+  const inicio = Date.now();
+  let proveedorRequestId: string | undefined;
+  const ids = idsTelemetria(options.telemetria);
+  const registrar = (resultado: "ok" | "error" | "timeout" | "cancelado") => registrarLlamadaIA({
+    proveedor: "fal",
+    flujo: "generador_imagen",
+    capacidad: "imagen_generacion",
+    modelo: references.length ? "flux-2/lora/edit" : "flux-2/lora",
+    superficie: options.telemetria?.superficie ?? "/api/generate",
+    requestId: ids.requestId,
+    correlationId: ids.correlationId,
+    intento: options.telemetria?.intento ?? 1,
+    proveedorRequestId,
+    ms: Math.max(0, Date.now() - inicio),
+    resultado,
+    bytesImagenEntrada: references.reduce((total, image) => total + bytesBase64(image.base64), 0),
+    unidadesFacturadas: resultado === "ok" ? 1 : undefined,
+  });
+
+  try {
   const response = await fetch(endpoint, {
     method: "POST",
     headers: { Authorization: `Key ${key}`, "Content-Type": "application/json" },
@@ -155,6 +178,7 @@ export async function generarConSempertexLora(
   if (!submission.request_id || !submission.status_url || !submission.response_url) {
     throw new Error("fal.ai no devolvió una solicitud LoRA en cola válida.");
   }
+  proveedorRequestId = submission.request_id;
 
   const deadline = Date.now() + 110_000;
   let completed = false;
@@ -188,10 +212,16 @@ export async function generarConSempertexLora(
 
   const imageResponse = await fetch(url, { signal: AbortSignal.timeout(30_000) });
   if (!imageResponse.ok) throw new Error(`No se pudo descargar la imagen generada por fal.ai (${imageResponse.status}).`);
-  return {
+  const imagen = {
     base64: Buffer.from(await imageResponse.arrayBuffer()).toString("base64"),
     mime: result.images?.[0]?.content_type ?? imageResponse.headers.get("content-type") ?? "image/png",
   };
+  registrar("ok");
+  return imagen;
+  } catch (error) {
+    registrar(resultadoTelemetria(error));
+    throw error;
+  }
 }
 
 function lorasFor(loras: LoraApplication[]): Array<{ path: string; scale: number }> {

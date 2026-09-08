@@ -3,6 +3,24 @@ import { conReintento } from "../retry";
 import { ErrorIA } from "../tipos";
 import type { ChatPort, FragmentoChat, Herramienta, LlamadaHerramienta, Mensaje, PeticionChat, TurnoChat } from "../tipos";
 
+type MetadatosUsoGemini = {
+  promptTokenCount?: number;
+  candidatesTokenCount?: number;
+  cachedContentTokenCount?: number;
+  thoughtsTokenCount?: number;
+  toolUsePromptTokenCount?: number;
+};
+
+export function extraerUsoGemini(metadata: MetadatosUsoGemini | undefined): TurnoChat["uso"] {
+  return {
+    entrada: metadata?.promptTokenCount ?? 0,
+    salida: metadata?.candidatesTokenCount ?? 0,
+    cacheados: metadata?.cachedContentTokenCount ?? 0,
+    pensamiento: metadata?.thoughtsTokenCount ?? 0,
+    promptHerramientas: metadata?.toolUsePromptTokenCount ?? 0,
+  };
+}
+
 /** Mismo default que tenía este adaptador dentro de demo-decoracion — se
  * conserva para no cambiar comportamiento; un consumidor nuevo lo overridea
  * con `opts.modelo` o la misma env var. */
@@ -159,11 +177,7 @@ export function crearChatGemini(opts?: { apiKey?: string; modelo?: string; think
         return {
           texto: respuesta.text ?? "",
           llamadas: extraerLlamadas(partes),
-          uso: {
-            entrada: respuesta.usageMetadata?.promptTokenCount ?? 0,
-            salida: respuesta.usageMetadata?.candidatesTokenCount ?? 0,
-            cacheados: respuesta.usageMetadata?.cachedContentTokenCount ?? 0,
-          },
+          uso: extraerUsoGemini(respuesta.usageMetadata),
           modelo,
         };
       } catch (error) {
@@ -206,7 +220,7 @@ export function crearChatGemini(opts?: { apiKey?: string; modelo?: string; think
         // Gemini rechazaba el turno siguiente por "missing thought_signature"
         // en la llamada que quedó pisada.
         const llamadasPorClave = new Map<string, LlamadaHerramienta>();
-        let uso = { entrada: 0, salida: 0, cacheados: 0 };
+        let uso: TurnoChat["uso"] = extraerUsoGemini(undefined);
 
         for await (const chunk of stream) {
           const delta = chunk.text ?? "";
@@ -220,11 +234,7 @@ export function crearChatGemini(opts?: { apiKey?: string; modelo?: string; think
             llamadasPorClave.set(clave, llamada);
           }
           if (chunk.usageMetadata) {
-            uso = {
-              entrada: chunk.usageMetadata.promptTokenCount ?? 0,
-              salida: chunk.usageMetadata.candidatesTokenCount ?? 0,
-              cacheados: chunk.usageMetadata.cachedContentTokenCount ?? 0,
-            };
+            uso = extraerUsoGemini(chunk.usageMetadata);
           }
         }
 

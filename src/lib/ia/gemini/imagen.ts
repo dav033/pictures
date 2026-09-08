@@ -1,6 +1,7 @@
 import { getGeminiClient, MODELO_IMAGEN } from "@/lib/gemini";
 import { ErrorIA } from "../tipos";
 import type { Imagen, ImageInput, ImagenPort, PeticionImagen } from "../tipos";
+import { bytesBase64, registrarGemini, resultadoTelemetria } from "../telemetria-llamadas";
 
 type EntradaGemini =
   | { type: "text"; text: string }
@@ -10,6 +11,13 @@ type RespuestaGemini = {
   id?: string;
   output_image?: { data?: string };
   steps?: Array<{ type?: string; content?: Array<{ type?: string; data?: string }> }>;
+  usageMetadata?: {
+    promptTokenCount?: number;
+    candidatesTokenCount?: number;
+    thoughtsTokenCount?: number;
+    cachedContentTokenCount?: number;
+    toolUsePromptTokenCount?: number;
+  };
 };
 
 function extraerImagen(respuesta: unknown): string | undefined {
@@ -93,8 +101,27 @@ export function crearImagenGemini(): ImagenPort {
         if (!b64) throw new Error("Gemini no devolvió imagen.");
 
         const imagen: Imagen = { base64: b64, mime: "image/jpeg" };
+        registrarGemini({
+          flujo: "generador_imagen",
+          capacidad: p.telemetria?.capacidad ?? "imagen_generacion",
+          modelo: MODELO_IMAGEN,
+          inicio,
+          resultado: "ok",
+          contexto: { superficie: "/api/generate", ...p.telemetria },
+          usage: (respuesta as RespuestaGemini).usageMetadata,
+          bytesImagenEntrada: p.inputs.reduce((total, image) => total + bytesBase64(image.base64), 0),
+        });
         return { imagen, modelo: MODELO_IMAGEN, ms: Date.now() - inicio, interactionId: (respuesta as RespuestaGemini).id };
       } catch (error) {
+        registrarGemini({
+          flujo: "generador_imagen",
+          capacidad: p.telemetria?.capacidad ?? "imagen_generacion",
+          modelo: MODELO_IMAGEN,
+          inicio,
+          resultado: resultadoTelemetria(error),
+          contexto: { superficie: "/api/generate", ...p.telemetria },
+          bytesImagenEntrada: p.inputs.reduce((total, image) => total + bytesBase64(image.base64), 0),
+        });
         throw categorizarError(error);
       }
     },

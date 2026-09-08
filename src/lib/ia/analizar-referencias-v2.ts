@@ -2,6 +2,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 import type { ChatPort, Herramienta, ImagenEtiquetada } from "./tipos";
 import type { Producto } from "@/lib/types";
+import { bytesBase64, registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "./telemetria-llamadas";
 import {
   analysisCacheKey,
   bboxOverlap,
@@ -550,7 +551,7 @@ function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string,
   });
 }
 
-export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenEtiquetada[], catalogo: ReferenceCatalogItem[] = [], mode: AnalysisMode = "legacy"): Promise<AnalisisV2Resultado> {
+export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenEtiquetada[], catalogo: ReferenceCatalogItem[] = [], mode: AnalysisMode = "legacy", telemetria?: ContextoTelemetriaIA): Promise<AnalisisV2Resultado> {
   if (!referencias.length) throw new Error("At least one reference image is required.");
   const inventorySystem = mode === "perceptual" ? INVENTORY_SYSTEM_PERCEPTUAL : INVENTORY_SYSTEM;
   const auditSystem = mode === "perceptual" ? AUDIT_SYSTEM_PERCEPTUAL : AUDIT_SYSTEM;
@@ -566,22 +567,54 @@ export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenE
   const cached = cache.get(key);
   if (cached) return cached;
   const ids = referencias.map((reference) => reference.id);
-  const inventoryTurn = await chat.turno({
+  const bytesImagenEntrada = referencias.reduce((total, image) => total + bytesBase64(image.base64), 0);
+  const ejecutarPaso = async (
+    capacidad: "analisis_referencia_inventario" | "analisis_referencia_auditoria",
+    peticion: Parameters<ChatPort["turno"]>[0],
+    intento: number,
+  ) => {
+    const inicio = Date.now();
+    try {
+      const turno = await chat.turno(peticion);
+      registrarGemini({
+        flujo: "analisis_referencia",
+        capacidad,
+        modelo: turno.modelo || chat.modelo,
+        inicio,
+        resultado: "ok",
+        contexto: { superficie: "/api/references/analyze", ...telemetria, intento },
+        usage: {
+          promptTokenCount: turno.uso.entrada,
+          candidatesTokenCount: turno.uso.salida,
+          thoughtsTokenCount: turno.uso.pensamiento,
+          cachedContentTokenCount: turno.uso.cacheados,
+          toolUsePromptTokenCount: turno.uso.promptHerramientas,
+        },
+        bytesImagenEntrada,
+        promptVersion: systemPromptHash.slice(0, 16),
+      });
+      return turno;
+    } catch (error) {
+      registrarGemini({ flujo: "analisis_referencia", capacidad, modelo: chat.modelo, inicio, resultado: resultadoTelemetria(error), contexto: { superficie: "/api/references/analyze", ...telemetria, intento }, bytesImagenEntrada, promptVersion: systemPromptHash.slice(0, 16) });
+      throw error;
+    }
+  };
+  const inventoryTurn = await ejecutarPaso("analisis_referencia_inventario", {
     sistema: mode === "perceptual" ? `${inventorySystem}\n${REAR_LAYER_RULE}` : `${inventorySystem}\n${REAR_LAYER_RULE}\n\nVALID CATALOG PRODUCTS\n${catalogText}`,
     historial: [{ rol: "usuario", texto: `Inventory these references and resolve every element automatically. Preserve exact image IDs in this order: ${ids.join(", ")}. Return one model_decision per element.`, imagenes: referencias }],
     herramientas: [TOOL],
     temperatura: 0,
     maxTokens: 6000,
-  });
+  }, 1);
   const inventoryRaw = toolArgs(inventoryTurn, TOOL.nombre);
   const draftJson = JSON.stringify(inventoryRaw).slice(0, 24000);
-  const auditTurn = await chat.turno({
+  const auditTurn = await ejecutarPaso("analisis_referencia_auditoria", {
     sistema: mode === "perceptual" ? `${auditSystem}\n${REAR_LAYER_RULE}` : `${auditSystem}\n${REAR_LAYER_RULE}\n\nVALID CATALOG PRODUCTS\n${catalogText}`,
     historial: [{ rol: "usuario", texto: `Audit the draft inventory below against the same references. Keep exact image IDs. Resolve every finding automatically.\n<DRAFT_INVENTORY>${draftJson}</DRAFT_INVENTORY>`, imagenes: referencias }],
     herramientas: [AUDIT_TOOL],
     temperatura: 0,
     maxTokens: 4000,
-  });
+  }, 1);
   const auditRaw = toolArgs(auditTurn, AUDIT_TOOL.nombre);
   const blueprint = buildBlueprint(referencias, inventoryRaw, auditRaw, mode === "perceptual" ? [] : catalogo, mode);
   const result: AnalisisV2Resultado = {

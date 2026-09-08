@@ -32,6 +32,7 @@ async function debeCancelarAntesDeProveedor(): Promise<void> {
     historial: [{ rol: "usuario", texto: "hola" }],
     herramientas: [],
     registro: {},
+    telemetria: { flujo: "evaluacion", superficie: "script:test-cancelacion-agente" },
     signal: controller.signal,
   });
   await assert.rejects(() => generator.next(), /CLIENT_CANCELLED/);
@@ -45,6 +46,7 @@ async function debeCancelarMientrasEsperaProveedor(): Promise<void> {
     historial: [{ rol: "usuario", texto: "hola" }],
     herramientas: [],
     registro: {},
+    telemetria: { flujo: "evaluacion", superficie: "script:test-cancelacion-agente" },
     signal: controller.signal,
   });
   const siguiente = generator.next();

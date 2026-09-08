@@ -13,7 +13,6 @@ import { resolveAspectTransform } from "@/lib/ia/aspect-transform";
 import { evaluateSceneQa, buildCorrectiveRetryPrompt, observarImagenGenerada, type ImageQaReport } from "@/lib/ia/image-qa";
 import { imagenDe, resolverProveedor } from "@/lib/ia/registro";
 import { buildApprovedSceneSpec, SceneSpecSchema, sceneSpecHash } from "@/lib/ia/scene-spec";
-import { registrarEvento } from "@/lib/ia/telemetria";
 import { registrarPlanAudit } from "@/lib/rag/observability/log";
 import { DEFAULT_SEMPERTEX_LORA_TRIGGER, ensureLoraTriggers, generarConSempertexLora } from "@/lib/ia/sempertex-lora";
 import { LoraModeSlugSchema, LoraSelectionSchema } from "@/lib/lora/schema";
@@ -601,16 +600,20 @@ function buildInputs(input: {
   };
 }
 
-async function buildQa(sceneSpec: Parameters<typeof evaluateSceneQa>[0], image: Imagen, hashes: { planHash?: string; sceneSpecHash: string }, materialEstimate?: DesignMaterialEstimate): Promise<ImageQaReport> {
-  const observation = await observarImagenGenerada(sceneSpec, image, materialEstimate);
+async function buildQa(sceneSpec: Parameters<typeof evaluateSceneQa>[0], image: Imagen, hashes: { planHash?: string; sceneSpecHash: string }, materialEstimate?: DesignMaterialEstimate, telemetria?: Parameters<typeof observarImagenGenerada>[3]): Promise<ImageQaReport> {
+  const observation = await observarImagenGenerada(sceneSpec, image, materialEstimate, telemetria);
   if (!observation) return { ...evaluateSceneQa(sceneSpec, {}, materialEstimate), pass: null, confidence: "unknown", observation_confidence: null, plan_hash: hashes.planHash, scene_spec_hash: hashes.sceneSpecHash, observed_instances: null };
   return { ...evaluateSceneQa(sceneSpec, observation, materialEstimate), confidence: "vision_assisted", plan_hash: hashes.planHash, scene_spec_hash: hashes.sceneSpecHash, observed_instances: observation.presentElementIds ?? [] };
 }
 
 export async function POST(request: Request) {
   const body = await request.json() as Body;
-  const inicio = Date.now();
   const generationRequestId = crypto.randomUUID();
+  const correlationHeader = request.headers.get("x-correlation-id");
+  const generationCorrelationId = correlationHeader && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(correlationHeader)
+    ? correlationHeader
+    : generationRequestId;
+  const contextoTelemetria = { requestId: generationRequestId, correlationId: generationCorrelationId, superficie: "/api/generate" };
   let proveedor: ProveedorId | undefined;
   try {
     if (!featureEnabled("REFERENCE_BLUEPRINT_V2")) throw new Error("REFERENCE_BLUEPRINT_V2 is disabled.");
@@ -1078,10 +1081,10 @@ export async function POST(request: Request) {
         { id: "lora-v2" as const, nombre: "LoRA app v2", modelo: `Caption compiler ${LORA_CAPTION_COMPILER_VERSION}`, prompt: loraPromptV2 },
       ];
       const compararLoraApplications = requireResolvedLoras(resolvedLoras);
-      const variantResults = await Promise.allSettled(loraVariants.map((variant) => generarConSempertexLora(variant.prompt, aspecto, [], { seed: sharedSeed, loras: compararLoraApplications })));
+      const variantResults = await Promise.allSettled(loraVariants.map((variant, index) => generarConSempertexLora(variant.prompt, aspecto, [], { seed: sharedSeed, loras: compararLoraApplications, telemetria: { ...contextoTelemetria, intento: index + 1 } })));
       const variantImages = variantResults.map((variantResult) => variantResult.status === "fulfilled" ? variantResult.value : undefined);
-      const variantQa = await Promise.all(variantImages.map((image) => image
-        ? buildQa(transformedSceneSpec, image, { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate)
+      const variantQa = await Promise.all(variantImages.map((image, index) => image
+        ? buildQa(transformedSceneSpec, image, { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, { ...contextoTelemetria, intento: index + 1 })
         : Promise.resolve(undefined)));
       await Promise.all(variantQa.map((candidateQa, index) => candidateQa
         ? auditarImagen(`IMAGEN_QA_${loraVariants[index]!.id.toUpperCase()}`, candidateQa, transformedSceneSpec)
@@ -1111,8 +1114,8 @@ export async function POST(request: Request) {
       result = { imagen: imagenPrincipal };
     } else if (comparar) {
       const [gemini, lora] = await Promise.allSettled([
-        port!.generar({ prompt: providerPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: previous, previousInteractionId, revisionMode: previous ? "revise_current_result" : "new_generation" }),
-        generarConSempertexLora(effectiveLoraPrompt, aspecto, selected.inputs, { loras: requireResolvedLoras(resolvedLoras) }),
+        port!.generar({ prompt: providerPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: previous, previousInteractionId, revisionMode: previous ? "revise_current_result" : "new_generation", telemetria: { ...contextoTelemetria, capacidad: "imagen_generacion" } }),
+        generarConSempertexLora(effectiveLoraPrompt, aspecto, selected.inputs, { loras: requireResolvedLoras(resolvedLoras), telemetria: contextoTelemetria }),
       ]);
       const geminiImagen = gemini.status === "fulfilled" ? gemini.value.imagen : undefined;
       const loraImagen = lora.status === "fulfilled" ? lora.value : undefined;
@@ -1139,16 +1142,16 @@ export async function POST(request: Request) {
       result = { imagen: imagenPrincipal, interactionId: gemini.status === "fulfilled" ? gemini.value.interactionId : undefined };
     } else {
       result = usarLora
-        ? { imagen: await generarConSempertexLora(effectiveLoraPrompt, aspecto, selected.inputs, { loras: requireResolvedLoras(resolvedLoras) }) }
-        : await port!.generar({ prompt: providerPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: previous, previousInteractionId, revisionMode: previous ? "revise_current_result" : "new_generation" });
+        ? { imagen: await generarConSempertexLora(effectiveLoraPrompt, aspecto, selected.inputs, { loras: requireResolvedLoras(resolvedLoras), telemetria: contextoTelemetria }) }
+        : await port!.generar({ prompt: providerPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: previous, previousInteractionId, revisionMode: previous ? "revise_current_result" : "new_generation", telemetria: { ...contextoTelemetria, capacidad: "imagen_generacion" } });
     }
-    qa ??= await buildQa(transformedSceneSpec, result.imagen, { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate);
+    qa ??= await buildQa(transformedSceneSpec, result.imagen, { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, contextoTelemetria);
     let retried = false;
     if (!usarLora && !comparar && !compararLora && featureEnabled("IMAGE_QA_ENABLED") && qa.pass === false) {
       const retryPrompt = `${providerPrompt}\n\n${buildCorrectiveRetryPrompt(qa)}`;
-      const retry = await port!.generar({ prompt: retryPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: { ...result.imagen, id: "GENERATED_RESULT", descripcion: "Current generated result for one corrective retry." }, previousInteractionId: result.interactionId, revisionMode: "revise_current_result" });
+      const retry = await port!.generar({ prompt: retryPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: { ...result.imagen, id: "GENERATED_RESULT", descripcion: "Current generated result for one corrective retry." }, previousInteractionId: result.interactionId, revisionMode: "revise_current_result", telemetria: { ...contextoTelemetria, capacidad: "imagen_generacion_correctiva", intento: 2 } });
       retried = true;
-      qa = await buildQa(transformedSceneSpec, retry.imagen, { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate);
+      qa = await buildQa(transformedSceneSpec, retry.imagen, { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, { ...contextoTelemetria, intento: 2 });
       await auditarImagen("IMAGEN_QA_RETRY", qa, transformedSceneSpec);
       if (qa.pass !== true) return Response.json({ error: `NON_CONFORME: la imagen no cumple la cardinalidad o composición aprobada${qa.retry_reasons.length ? ` — ${qa.retry_reasons.join("; ")}` : ""}.`, qa, plan: planResuelto, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash }, { status: 422 });
       return Response.json({ imagen: `data:${retry.imagen.mime};base64,${retry.imagen.base64}`, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, plan: planResuelto, qa, retried, proveedor, cotizacion, interactionId: retry.interactionId, prompt: retryPrompt, prompts: { "Gemini · Nano Banana 2": retryPrompt }, productAuthority: productAuthority.length ? productAuthority : undefined });
@@ -1159,7 +1162,6 @@ export async function POST(request: Request) {
     // verla, con el QA en pass:false para que el frontend siga mostrando la
     // advertencia "no conforme" en vez de esconder el resultado.
     if (planResuelto && qa.pass !== true && !usarLora && !compararLora) return Response.json({ error: `NON_CONFORME: la imagen no fue observada conforme al plan aprobado${qa.retry_reasons.length ? ` — ${qa.retry_reasons.join("; ")}` : ""}.`, qa, plan: planResuelto, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash }, { status: 422 });
-    registrarEvento({ proveedor, operacion: "imagen", ms: Date.now() - inicio, resultado: "ok" });
     const debug = process.env.NODE_ENV !== "production" || process.env.IMAGE_DEBUG === "true";
     return Response.json({ imagen: `data:${result.imagen.mime};base64,${result.imagen.base64}`, comparacion, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, plan: planResuelto, qa, loraPreflight: (usarLora || comparar || compararLora) ? loraPreflight : undefined, loraPromptVersion: requestedLoraVersion, loraPromptHash: hashPrompt(effectiveLoraPrompt), compilerVersion: LORA_CAPTION_COMPILER_VERSION, loraProductRuntimeVersion: LORA_PRODUCT_RUNTIME_VERSION, productPromptCompilation: { resolved_concepts: productPromptCompilation.resolved_concepts, unresolved_products: productPromptCompilation.unresolved_products, vocabulary_version: productPromptCompilation.vocabulary_version, compiler_version: productPromptCompilation.compiler_version, legacy: productPromptCompilation.legacy, diagnostics: productPromptCompilation.diagnostics }, retried, proveedor: comparar ? "gemini" : proveedor, modoImagen: compararLora ? "comparacion_lora" : comparar ? "comparacion" : usarLora ? "lora" : "proveedor_base", cotizacion, interactionId: result.interactionId, prompt: promptPrincipal, prompts: promptsGeneracion, productAuthority: productAuthority.length ? productAuthority : undefined, ...(debug ? { visualContext, droppedImageIds: selected.droppedImageIds, aspectTransform, loraSelection: resolvedLoras?.map((lora) => ({ artifactId: lora.artifactId, specialization: lora.specialization, scale: lora.scale, trigger: lora.trigger })) } : {}) });
   } catch (error) {
@@ -1170,7 +1172,6 @@ export async function POST(request: Request) {
       return Response.json({ error: error.message, causa: "fuente_no_comercial", productId: error.productId, source: error.source, referenceClass: error.referenceClass }, { status: 403 });
     }
     if (error instanceof ErrorIA) {
-      registrarEvento({ proveedor: proveedor ?? error.proveedor, operacion: "imagen", ms: Date.now() - inicio, resultado: "error", error: error.message });
       return Response.json({ error: error.message, causa: error.causa, proveedor: error.proveedor }, { status: statusDe(error.causa) });
     }
     return Response.json({ error: error instanceof Error ? error.message : "Image generation failed." }, { status: 400 });

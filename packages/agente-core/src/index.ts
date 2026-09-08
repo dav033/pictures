@@ -15,8 +15,29 @@ export { ErrorIA } from "./tipos";
 export type { OpcionesReintento } from "./retry";
 export { conReintento } from "./retry";
 
-export type { Operacion, EventoTelemetria } from "./telemetria";
-export { registrarEvento, ultimosEventos } from "./telemetria";
+export type {
+  FlujoIA,
+  CapacidadIA,
+  Operacion,
+  ResultadoLlamadaIA,
+  PrecioModeloIA,
+  EventoLlamadaIA,
+  EventoTelemetria,
+  PersistenciaTelemetria,
+  EjecutorSql,
+} from "./telemetria";
+export {
+  FLUJOS_IA,
+  ETIQUETAS_FLUJO_IA,
+  CAPACIDADES_IA,
+  calcularCosteEstimado,
+  crearPersistenciaPostgres,
+  configurarPersistenciaTelemetria,
+  registrarLlamadaIA,
+  registrarEvento,
+  ultimosEventos,
+  esperarPersistenciaTelemetria,
+} from "./telemetria";
 
 export type {
   ManejadorHerramienta,
@@ -26,4 +47,3 @@ export type {
   EventoConversacion,
 } from "./ejecutar";
 export { ejecutarConversacion, ejecutarConversacionStream } from "./ejecutar";
-

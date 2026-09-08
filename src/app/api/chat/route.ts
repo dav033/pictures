@@ -250,6 +250,13 @@ export async function POST(request: Request) {
     referenceBlueprint,
     catalogAllowlist: catalogAllowlist ?? undefined,
     signal: deadline.signal,
+    telemetria: {
+      flujo: "armador_decoracion",
+      requestId,
+      correlationId,
+      superficie: "/api/chat",
+      thinkingLevel: process.env.GEMINI_CHAT_THINKING_LEVEL ?? "default",
+    },
   });
   const iterador = generador[Symbol.asyncIterator]();
   let cancelarStream: (() => void) | undefined;

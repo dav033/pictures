@@ -1,5 +1,5 @@
-import { registrarEvento } from "./telemetria";
-import type { ChatPort, Herramienta, LlamadaHerramienta, Mensaje, ProveedorId } from "./tipos";
+import { registrarLlamadaIA, type FlujoIA } from "./telemetria";
+import { ErrorIA, type ChatPort, type Herramienta, type LlamadaHerramienta, type Mensaje, type ProveedorId } from "./tipos";
 
 /** Un handler recibe los args ya parseados de la llamada y la llamada cruda
  * completa (por si necesita el `id`/`meta` — la mayoría no los usa, pero es
@@ -48,6 +48,16 @@ export type OpcionesConversacion = {
   alAgotarVueltas?: (historial: Mensaje[]) => string;
   /** Señal de desconexión/cancelación del consumidor. */
   signal?: AbortSignal;
+  /** Atribución de producto obligatoria para cada llamada del loop. */
+  telemetria: {
+    flujo: FlujoIA;
+    requestId?: string;
+    correlationId?: string;
+    superficie?: string;
+    herramienta?: string;
+    thinkingLevel?: string;
+    promptVersion?: string;
+  };
 };
 
 const VUELTAS_MAX_DEFECTO = 10;
@@ -55,6 +65,24 @@ const textoAlAgotarVueltasDefecto = () => "Se agotaron los intentos sin llegar a
 
 function asegurarNoCancelado(signal: AbortSignal | undefined): void {
   if (signal?.aborted) throw new Error("CLIENT_CANCELLED");
+}
+
+function resultadoDeFallo(error: unknown, signal: AbortSignal | undefined): "error" | "timeout" | "cancelado" {
+  if (signal?.aborted || (error instanceof Error && error.message === "CLIENT_CANCELLED")) return "cancelado";
+  return error instanceof ErrorIA && error.causa === "timeout" ? "timeout" : "error";
+}
+
+function bytesImagenes(historial: Mensaje[]): number {
+  let total = 0;
+  for (const mensaje of historial) {
+    if (mensaje.rol !== "usuario") continue;
+    for (const imagen of mensaje.imagenes ?? []) {
+      const limpio = imagen.base64.replace(/\s/g, "");
+      const relleno = limpio.endsWith("==") ? 2 : limpio.endsWith("=") ? 1 : 0;
+      total += Math.max(0, Math.floor((limpio.length * 3) / 4) - relleno);
+    }
+  }
+  return total;
 }
 
 async function ejecutarHerramienta(
@@ -85,23 +113,37 @@ export async function ejecutarConversacion(opts: OpcionesConversacion): Promise<
     try {
       turno = await opts.chat.turno({ sistema: opts.sistema, historial, herramientas: opts.herramientas, signal: opts.signal });
     } catch (error) {
-      registrarEvento({
+      registrarLlamadaIA({
+        ...opts.telemetria,
+        flujo: opts.telemetria.flujo,
+        capacidad: "chat_turno",
         proveedor: opts.chat.id,
+        modelo: opts.chat.modelo,
         operacion: "chat",
+        vuelta,
+        bytesImagenEntrada: bytesImagenes(historial),
         ms: Date.now() - inicio,
-        resultado: "error",
+        resultado: resultadoDeFallo(error, opts.signal),
         error: error instanceof Error ? error.message : "error desconocido",
       });
       throw error;
     }
 
-    registrarEvento({
+    registrarLlamadaIA({
+      ...opts.telemetria,
+      flujo: opts.telemetria.flujo,
+      capacidad: "chat_turno",
       proveedor: opts.chat.id,
+      modelo: turno.modelo,
       operacion: "chat",
+      vuelta,
+      bytesImagenEntrada: bytesImagenes(historial),
       ms: Date.now() - inicio,
       tokensEntrada: turno.uso.entrada,
       tokensSalida: turno.uso.salida,
       tokensCacheados: turno.uso.cacheados,
+      tokensPensamiento: turno.uso.pensamiento,
+      tokensPromptHerramientas: turno.uso.promptHerramientas,
       resultado: "ok",
     });
 
@@ -143,7 +185,7 @@ export async function* ejecutarConversacionStream(opts: OpcionesConversacion): A
     const inicio = Date.now();
     let texto = "";
     let llamadasCrudas: LlamadaHerramienta[] = [];
-    let uso = { entrada: 0, salida: 0, cacheados: 0 };
+    let uso = { entrada: 0, salida: 0, cacheados: 0, pensamiento: 0, promptHerramientas: 0 };
     let modelo = opts.chat.modelo;
 
     try {
@@ -155,28 +197,48 @@ export async function* ejecutarConversacionStream(opts: OpcionesConversacion): A
         } else {
           texto = fragmento.texto;
           llamadasCrudas = fragmento.llamadas;
-          uso = { entrada: fragmento.uso.entrada, salida: fragmento.uso.salida, cacheados: fragmento.uso.cacheados ?? 0 };
+          uso = {
+            entrada: fragmento.uso.entrada,
+            salida: fragmento.uso.salida,
+            cacheados: fragmento.uso.cacheados ?? 0,
+            pensamiento: fragmento.uso.pensamiento ?? 0,
+            promptHerramientas: fragmento.uso.promptHerramientas ?? 0,
+          };
           modelo = fragmento.modelo;
         }
       }
     } catch (error) {
-      registrarEvento({
+      registrarLlamadaIA({
+        ...opts.telemetria,
+        flujo: opts.telemetria.flujo,
+        capacidad: "chat_turno",
         proveedor: opts.chat.id,
+        modelo: opts.chat.modelo,
         operacion: "chat",
+        vuelta,
+        bytesImagenEntrada: bytesImagenes(historial),
         ms: Date.now() - inicio,
-        resultado: "error",
+        resultado: resultadoDeFallo(error, opts.signal),
         error: error instanceof Error ? error.message : "error desconocido",
       });
       throw error;
     }
 
-    registrarEvento({
+    registrarLlamadaIA({
+      ...opts.telemetria,
+      flujo: opts.telemetria.flujo,
+      capacidad: "chat_turno",
       proveedor: opts.chat.id,
+      modelo,
       operacion: "chat",
+      vuelta,
+      bytesImagenEntrada: bytesImagenes(historial),
       ms: Date.now() - inicio,
       tokensEntrada: uso.entrada,
       tokensSalida: uso.salida,
       tokensCacheados: uso.cacheados,
+      tokensPensamiento: uso.pensamiento,
+      tokensPromptHerramientas: uso.promptHerramientas,
       resultado: "ok",
     });
 

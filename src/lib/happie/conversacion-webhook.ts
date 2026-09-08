@@ -7,6 +7,7 @@ import {
   HappieConversationRequestV1Schema,
   HappieConversationStateV1Schema,
 } from "@/lib/ia/contracts/happie-v1";
+import { registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/telemetria-llamadas";
 
 const MODELO_POR_DEFECTO = process.env.GEMINI_CHAT_MODEL ?? "gemini-3.6-flash";
 const SERVICIOS = ["comida", "bebida", "decoracion", "fotografia"] as const;
@@ -39,7 +40,7 @@ export type RespuestaConversacion =
     };
 
 type DependenciasConversacion = {
-  extraer: (mensaje: string, estado: EstadoConversacion, signal?: AbortSignal) => Promise<Extraccion>;
+  extraer: (mensaje: string, estado: EstadoConversacion, signal?: AbortSignal, telemetria?: ContextoTelemetriaIA) => Promise<Extraccion>;
   recomendar: typeof generarRecomendacion;
 };
 
@@ -49,7 +50,7 @@ const ESTADO_INICIAL: EstadoConversacion = {
   preferencias: [],
 };
 
-async function extraerConIA(mensaje: string, estado: EstadoConversacion, signal?: AbortSignal): Promise<Extraccion> {
+async function extraerConIA(mensaje: string, estado: EstadoConversacion, signal?: AbortSignal, telemetria?: ContextoTelemetriaIA): Promise<Extraccion> {
   signal?.throwIfAborted();
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("Falta GEMINI_API_KEY para conversar.");
@@ -57,6 +58,7 @@ async function extraerConIA(mensaje: string, estado: EstadoConversacion, signal?
   const client = new GoogleGenAI({ apiKey });
   const jsonSchema = z.toJSONSchema(ExtraccionSchema, { target: "draft-7" });
   const providerSignal = AbortSignal.any([...(signal ? [signal] : []), AbortSignal.timeout(25_000)]);
+  const inicio = Date.now();
   const respuesta = await client.models.generateContent({
     model: MODELO_POR_DEFECTO,
     contents: [{ role: "user", parts: [{ text: mensaje }] }],
@@ -79,10 +81,12 @@ Devuelve el estado completo actualizado dentro de los campos del esquema. Reglas
       thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
     },
   }).catch((error: unknown) => {
+    registrarGemini({ flujo: "happie_conversacion", capacidad: "happie_conversacion", modelo: MODELO_POR_DEFECTO, inicio, resultado: resultadoTelemetria(error), contexto: { superficie: "/api/happie/webhook/chat", ...telemetria }, thinkingLevel: "minimal" });
     providerSignal.throwIfAborted();
     throw error;
   });
   providerSignal.throwIfAborted();
+  registrarGemini({ flujo: "happie_conversacion", capacidad: "happie_conversacion", modelo: MODELO_POR_DEFECTO, inicio, resultado: "ok", contexto: { superficie: "/api/happie/webhook/chat", ...telemetria }, usage: respuesta.usageMetadata, thinkingLevel: "minimal" });
 
   if (!respuesta.text) throw new Error("La IA no devolvió datos de conversación.");
   return ExtraccionSchema.parse(JSON.parse(respuesta.text));
@@ -135,10 +139,11 @@ export async function procesarTurnoConversacion(
   entrada: EntradaConversacion,
   dependencias: DependenciasConversacion = { extraer: extraerConIA, recomendar: generarRecomendacion },
   signal?: AbortSignal,
+  telemetria?: ContextoTelemetriaIA,
 ): Promise<{ status: number; body: RespuestaConversacion | { error: string } }> {
   const estadoAnterior = entrada.estado?.fase === "finalizado" ? ESTADO_INICIAL : (entrada.estado ?? ESTADO_INICIAL);
   signal?.throwIfAborted();
-  const extraccion = await dependencias.extraer(entrada.mensaje, estadoAnterior, signal);
+  const extraccion = await dependencias.extraer(entrada.mensaje, estadoAnterior, signal, telemetria);
   signal?.throwIfAborted();
   let estado = actualizarEstado(estadoAnterior, extraccion);
 
@@ -151,7 +156,7 @@ export async function procesarTurnoConversacion(
     const request = new Request("http://happie.local/recomendacion", {
       method: "POST",
       signal,
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", ...(telemetria?.correlationId ? { "x-correlation-id": telemetria.correlationId } : {}), "x-happie-flow": "conversation" },
       body: JSON.stringify({
         tipoEvento: estado.tipoEvento,
         invitados: estado.invitados,
@@ -221,7 +226,8 @@ export async function procesarTurnoConversacion(
 export async function manejarChatWebhook(request: Request): Promise<Response> {
   return ejecutarWebhook(request, "chat", autenticarWebhook(request), EntradaConversacionSchema, async (bounded) => {
     try {
-      return await procesarTurnoConversacion(EntradaConversacionSchema.parse(await bounded.json()), undefined, bounded.signal);
+      const correlationId = bounded.headers.get("x-correlation-id") ?? crypto.randomUUID();
+      return await procesarTurnoConversacion(EntradaConversacionSchema.parse(await bounded.json()), undefined, bounded.signal, { requestId: crypto.randomUUID(), correlationId, superficie: "/api/happie/webhook/chat" });
     } catch (error) {
       if (bounded.signal.aborted || (error instanceof Error && error.name === "TimeoutError")) throw error;
       return { status: 502, body: { error: "No se pudo procesar la conversacion. Intenta de nuevo." } };

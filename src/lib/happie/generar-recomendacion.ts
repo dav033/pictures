@@ -13,6 +13,7 @@ import {
   HappieRecommendationRequestV1Schema,
   HappieRecommendationResponseV1Schema,
 } from "@/lib/ia/contracts/happie-v1";
+import { telemetriaRecomendacion } from "./telemetria";
 
 /**
  * El schema del contrato versionado es la fuente única. `main` había vuelto a
@@ -100,6 +101,7 @@ export async function generarRecomendacion(
     const { paquetes: coincidencias, coincidenciaExacta } = paquetesParaTipoCurado(tipoEvento, packages);
     const candidatos = ordenarPorInvitados(coincidencias, invitados);
 
+    const flujo = request.headers.get("x-happie-flow") === "conversation" ? "happie_conversacion" as const : "happie_paquetes" as const;
     const resultado = await recomendarPaquetesConFiltros({
       tipoEvento,
       invitados,
@@ -110,6 +112,7 @@ export async function generarRecomendacion(
       coincidenciaExacta,
       maxRecomendaciones: Math.max(1, Math.min(3, Math.trunc(maxRecomendaciones))),
       signal: request.signal,
+      registrarTelemetria: telemetriaRecomendacion(request, flujo),
     });
 
     const baseUrlFinal = baseUrl ?? baseUrlPorDefecto(config.baseUrl);

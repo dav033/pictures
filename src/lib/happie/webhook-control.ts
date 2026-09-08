@@ -198,7 +198,9 @@ export async function ejecutarWebhook(
       claimed = true;
     }
     signal.throwIfAborted();
-    const result = await esperarConSignal(work(new Request(request.url, { method: "POST", headers: request.headers, body: raw, signal })), signal);
+    const workHeaders = new Headers(request.headers);
+    workHeaders.set("x-correlation-id", correlationId);
+    const result = await esperarConSignal(work(new Request(request.url, { method: "POST", headers: workHeaders, body: raw, signal })), signal);
     signal.throwIfAborted();
     if (claimed) {
       claimed = false;

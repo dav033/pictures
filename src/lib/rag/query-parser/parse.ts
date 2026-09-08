@@ -4,6 +4,7 @@ import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
 import { interpretarConsultaDeterminista, mergeGeminiIntent, type DeterministicParse } from "./deterministic";
 import { IntentQuerySchema, type IntentQuery } from "./schema";
 import { parseEventSearchIntent, interpretarConsultaEvento } from "./event-search";
+import { registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/telemetria-llamadas";
 
 const JSON_SCHEMA = z.toJSONSchema(IntentQuerySchema, { target: "draft-7" });
 
@@ -30,13 +31,14 @@ export function interpretarConsultaLocal(mensaje: string): DeterministicParse {
  * Deterministic-first query interpreter. Gemini is an optional enrichment only
  * for genuinely ambiguous local parses; a provider failure falls back cleanly.
  */
-export async function interpretarConsulta(mensaje: string): Promise<IntentQuery> {
+export async function interpretarConsulta(mensaje: string, telemetria?: ContextoTelemetriaIA): Promise<IntentQuery> {
   const local = interpretarConsultaDeterminista(mensaje);
   if (local.confidence === "certain") return local.intent;
 
   const client = getGeminiClient();
   if (!client) return local.intent;
 
+  const inicio = Date.now();
   try {
     const respuesta = await client.models.generateContent({
       model: MODELO_CHAT,
@@ -48,11 +50,13 @@ export async function interpretarConsulta(mensaje: string): Promise<IntentQuery>
         thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
       },
     });
+    registrarGemini({ flujo: "armador_decoracion", capacidad: "parser_intencion", modelo: MODELO_CHAT, inicio, resultado: "ok", contexto: { superficie: "/api/chat", ...telemetria }, usage: respuesta.usageMetadata, thinkingLevel: "minimal" });
     const texto = respuesta.text;
     if (!texto) return local.intent;
     const remote = IntentQuerySchema.parse(JSON.parse(texto));
     return mergeGeminiIntent(local, remote);
-  } catch {
+  } catch (error) {
+    registrarGemini({ flujo: "armador_decoracion", capacidad: "parser_intencion", modelo: MODELO_CHAT, inicio, resultado: resultadoTelemetria(error), contexto: { superficie: "/api/chat", ...telemetria }, thinkingLevel: "minimal" });
     // A search must remain available during quota, timeout or malformed model
     // output incidents. Local facts are safer than a partial remote result.
     return local.intent;

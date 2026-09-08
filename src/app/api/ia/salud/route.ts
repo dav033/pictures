@@ -5,7 +5,8 @@ import { ultimosEventos } from "@/lib/ia/telemetria";
 import type { ProveedorId } from "@/lib/ia/tipos";
 import { PLAN_DECORACION_ENABLED } from "@/lib/plan/flags";
 
-const MODELOS: Record<ProveedorId, { chat: string; imagen: string }> = {
+const PROVEEDORES_CHAT = ["gemini"] as const satisfies readonly ProveedorId[];
+const MODELOS: Record<(typeof PROVEEDORES_CHAT)[number], { chat: string; imagen: string }> = {
   gemini: { chat: MODELO_CHAT_GEMINI, imagen: MODELO_IMAGEN_GEMINI },
 };
 
@@ -16,7 +17,7 @@ export async function GET() {
   // todas las peticiones en producción.
   await connection();
   const disponibles = proveedoresDisponibles();
-  const proveedores: ProveedorId[] = ["gemini"];
+  const proveedores = PROVEEDORES_CHAT;
 
   // El mismo que resolvería una petición real sin override de cookie ni de
   // body: respeta IA_PROVEEDOR y el ajuste global, no solo "el primero que

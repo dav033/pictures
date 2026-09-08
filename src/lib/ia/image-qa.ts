@@ -2,6 +2,7 @@ import type { SceneSpec } from "./scene-spec";
 import { z } from "zod";
 import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
 import type { DesignMaterialEstimate } from "@/lib/materiales/estimacion";
+import { bytesBase64, registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "./telemetria-llamadas";
 
 export type ImageQaReport = {
   required_elements: Array<{ element_id: string; present: boolean; placement_ok: boolean; appearance_ok: boolean; confidence: number | null }>;
@@ -75,7 +76,7 @@ const VisionObservationSchema = z.object({
   material_scale_reason: z.string().default(""),
 }).strict();
 
-export async function observarImagenGenerada(sceneSpec: SceneSpec, image: { base64: string; mime: string }, estimate?: DesignMaterialEstimate): Promise<SceneQaObservation | null> {
+export async function observarImagenGenerada(sceneSpec: SceneSpec, image: { base64: string; mime: string }, estimate?: DesignMaterialEstimate, telemetria?: ContextoTelemetriaIA): Promise<SceneQaObservation | null> {
   const flag = process.env.IMAGE_QA_VISION;
   const instanceFlag = process.env.IMAGE_INSTANCE_QA;
   const habilitado = instanceFlag != null
@@ -91,6 +92,7 @@ export async function observarImagenGenerada(sceneSpec: SceneSpec, image: { base
   const materialExpectation = estimate
     ? `\nMaterial estimate: approximately ${estimate.totals.design_quantity} installed units; expected visual scale=${estimate.design.visual_scale}; density=${estimate.design.visual_density}; installed balloon sizes=${estimate.balloons.map((line) => `${line.design_quantity}x${line.size_inches ?? "special"}-inch`).join(", ") || "none"}. Purchased capacity=${estimate.totals.purchase_quantity} is not visual quantity. Assess physical scale, not exact object count.`
     : "";
+  const inicio = Date.now();
   try {
     const response = await client.models.generateContent({
       model: MODELO_CHAT,
@@ -103,6 +105,7 @@ export async function observarImagenGenerada(sceneSpec: SceneSpec, image: { base
         responseJsonSchema: z.toJSONSchema(VisionObservationSchema, { target: "draft-7" }),
       },
     });
+    registrarGemini({ flujo: "generador_imagen", capacidad: "qa_visual", modelo: MODELO_CHAT, inicio, resultado: "ok", contexto: { superficie: "/api/generate", ...telemetria }, usage: response.usageMetadata, bytesImagenEntrada: bytesBase64(image.base64) });
     const observado = VisionObservationSchema.parse(JSON.parse(response.text ?? "{}"));
     return {
       presentElementIds: observado.present_element_ids,
@@ -128,7 +131,8 @@ export async function observarImagenGenerada(sceneSpec: SceneSpec, image: { base
       materialScaleConsistent: observado.material_scale_consistent,
       materialScaleReason: observado.material_scale_reason,
     };
-  } catch {
+  } catch (error) {
+    registrarGemini({ flujo: "generador_imagen", capacidad: "qa_visual", modelo: MODELO_CHAT, inicio, resultado: resultadoTelemetria(error), contexto: { superficie: "/api/generate", ...telemetria }, bytesImagenEntrada: bytesBase64(image.base64) });
     return null;
   }
 }

@@ -12,6 +12,16 @@ import type { EstadoConversacion } from "./registro-herramientas";
 import type { ReferenceBlueprintV2 } from "./reference-blueprint";
 import type { ChatPort, Mensaje } from "./tipos";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
+import type { FlujoIA } from "@sempertex/agente-core";
+
+type TelemetriaConversacion = {
+  flujo: FlujoIA;
+  requestId?: string;
+  correlationId?: string;
+  superficie?: string;
+  thinkingLevel?: string;
+  promptVersion?: string;
+};
 
 /**
  * Este archivo es un wrapper delgado sobre el motor genérico de
@@ -82,6 +92,7 @@ export async function ejecutarConversacion(opts: {
   onLlamada?: (nombre: string, args: Record<string, unknown>) => void;
   catalogAllowlist?: CatalogAllowlist;
   signal?: AbortSignal;
+  telemetria?: TelemetriaConversacion;
 }): Promise<ResultadoConversacion> {
   const solicitud = opts.historial.filter((mensaje) => mensaje.rol === "usuario").map((mensaje) => mensaje.texto).join(" ");
   const estado = crearEstadoConversacion(opts.brief, solicitud, opts.referenceBlueprint);
@@ -95,6 +106,7 @@ export async function ejecutarConversacion(opts: {
     onLlamada: opts.onLlamada,
     alAgotarVueltas: () => textoAlAgotarVueltas(estado),
     signal: opts.signal,
+    telemetria: opts.telemetria ?? { flujo: "armador_decoracion", superficie: "/api/chat" },
   });
   return empaquetar(estado, resultado.texto, resultado.proveedor, resultado.modelo);
 }
@@ -114,6 +126,7 @@ export async function* ejecutarConversacionStream(opts: {
   referenceBlueprint?: ReferenceBlueprintV2;
   catalogAllowlist?: CatalogAllowlist;
   signal?: AbortSignal;
+  telemetria?: TelemetriaConversacion;
 }): AsyncGenerator<EventoConversacion> {
   const solicitud = opts.historial.filter((mensaje) => mensaje.rol === "usuario").map((mensaje) => mensaje.texto).join(" ");
   const estado = crearEstadoConversacion(opts.brief, solicitud, opts.referenceBlueprint);
@@ -126,6 +139,7 @@ export async function* ejecutarConversacionStream(opts: {
     vueltasMax: VUELTAS_MAX,
     alAgotarVueltas: () => textoAlAgotarVueltas(estado),
     signal: opts.signal,
+    telemetria: opts.telemetria ?? { flujo: "armador_decoracion", superficie: "/api/chat" },
   });
 
   for await (const evento of generador) {

@@ -1,4 +1,4 @@
-export type ProveedorId = "gemini";
+export type ProveedorId = "gemini" | "fal";
 
 /** Forma mínima de una imagen adjunta a un mensaje — solo lo que el motor
  * necesita para mandarla al modelo (base64 + mime type) y, si el consumidor
@@ -57,7 +57,13 @@ export type TurnoChat = {
   /** `cacheados` viene de `cachedContentTokenCount` (caché implícito de
    * Gemini). Medido en 0 de forma consistente en el proyecto original; se
    * expone igual para que cualquier consumidor pueda instrumentarlo. */
-  uso: { entrada: number; salida: number; cacheados?: number };
+  uso: {
+    entrada: number;
+    salida: number;
+    cacheados?: number;
+    pensamiento?: number;
+    promptHerramientas?: number;
+  };
   modelo: string;
 };
 

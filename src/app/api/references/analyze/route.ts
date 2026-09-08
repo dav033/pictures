@@ -33,6 +33,11 @@ function validarImagenes(images: Imagen[]): void {
 
 export async function POST(request: Request) {
   let id: ProveedorId | undefined;
+  const requestId = crypto.randomUUID();
+  const correlationHeader = request.headers.get("x-correlation-id");
+  const correlationId = correlationHeader && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(correlationHeader)
+    ? correlationHeader
+    : requestId;
   try {
     const body = await request.json() as Body;
     const images = body.images ?? [];
@@ -59,7 +64,7 @@ export async function POST(request: Request) {
           .slice(0, 240)
           .map(({ id, nombre, categoria, colores, descripcion }) => ({ id, nombre, categoria, colores, descripcion }))
       : [];
-    const result = await analizarReferenciasV2(chat, references, catalogo, mode);
+    const result = await analizarReferenciasV2(chat, references, catalogo, mode, { requestId, correlationId, superficie: "/api/references/analyze" });
     return Response.json({ blueprint: result.blueprint, metadata: { ...result.metadata, image_dimensions: references.map((image) => ({ image_id: image.id, original: { width: image.originalAncho ?? null, height: image.originalAlto ?? null }, processed: { width: image.ancho ?? null, height: image.alto ?? null } })) }, proveedor: id });
   } catch (error) {
     if (error instanceof ErrorIA) return Response.json({ error: error.message, causa: error.causa, proveedor: error.proveedor }, { status: statusDe(error.causa) });

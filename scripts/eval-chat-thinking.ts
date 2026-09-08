@@ -143,6 +143,7 @@ async function correrCaso(config: ConfigThinking, caso: Caso) {
     chat,
     sistema,
     historial,
+    telemetria: { flujo: "evaluacion", superficie: "script:eval-chat-thinking" },
     brief: caso.brief ?? {},
     onLlamada: (nombre, args) => trazas.push({ nombre, args }),
   });
