@@ -5,6 +5,7 @@ import { HappiaClient, recomendarPaquetesConFiltros, type HappiaPackage } from "
 import { BODY_LIMIT, MAX_PENDING_ACQUISITIONS, ejecutarWebhook, leerBodyLimitado, postgresWebhookStore, type WebhookStore } from "../src/lib/happie/webhook-control";
 import { procesarTurnoConversacion } from "../src/lib/happie/conversacion-webhook";
 import { manejarChatWebhook } from "../src/lib/happie/conversacion-webhook";
+import { HAPPIE_CONTRACT_VERSION } from "../src/lib/ia/contracts/happie-v1";
 import type { Pool, PoolClient } from "pg";
 
 const schema = z.object({ value: z.number() });
@@ -50,11 +51,18 @@ async function main() {
     assert.deepEqual(await response.json(), result.body);
     assert.notEqual(response.headers.get("x-correlation-id"), firstId);
     assert.equal(calls, 1);
-    assert.equal((await run(request('{"value":2}'))).status, 409);
+    response = await run(request('{"value":2}'));
+    assert.equal(response.status, 409);
+    // Fase 3.13: las seis rutas de control deben ir sobre contrato, igual
+    // que el camino feliz — antes salian con Response.json directo, sin
+    // schema_version.
+    assert.equal((await response.json()).schema_version, HAPPIE_CONTRACT_VERSION);
     await run(request(undefined, null));
     await run(request(undefined, null));
     assert.equal(calls, 3, "no guarantee without header");
-    assert.equal((await run(request(undefined, " "))).status, 400);
+    response = await run(request(undefined, " "));
+    assert.equal(response.status, 400);
+    assert.equal((await response.json()).schema_version, HAPPIE_CONTRACT_VERSION);
     assert.equal((await run(request("{"))).status, 400);
     assert.equal((await run(request('{"value":"wrong"}'))).status, 400);
 
@@ -72,20 +80,26 @@ async function main() {
     release(); await pending;
     for (const status of [502, 503, 504]) {
       const key = `retry-${status}`;
-      assert.equal((await run(request(undefined, key), async () => ({ status, body: { ok: false } }))).status, status);
+      const retried = await run(request(undefined, key), async () => ({ status, body: { ok: false } }));
+      assert.equal(retried.status, status);
+      if (status >= 500) assert.equal((await retried.json()).schema_version, HAPPIE_CONTRACT_VERSION);
       assert.equal((await run(request(undefined, key))).status, 200);
     }
     response = await run(request(undefined, "secret-error"), async () => { throw new Error("secret-provider-body"); });
     const error = await response.json();
     assert.equal(response.status, 503);
+    assert.equal(error.schema_version, HAPPIE_CONTRACT_VERSION);
     assert.ok(error.correlationId);
     assert.ok(!JSON.stringify(error).includes("secret-provider-body"));
     response = await run(request(), work, { ...store, rate: async () => false });
     assert.equal(response.status, 429);
     assert.equal(response.headers.get("retry-after"), "60");
+    assert.equal((await response.json()).schema_version, HAPPIE_CONTRACT_VERSION);
     response = await run(request(), work, { ...store, rate: async () => { throw new Error("db-password"); } });
+    const dbErrorText = await response.text();
     assert.equal(response.status, 503);
-    assert.ok(!(await response.text()).includes("db-password"));
+    assert.ok(!dbErrorText.includes("db-password"));
+    assert.equal(JSON.parse(dbErrorText).schema_version, HAPPIE_CONTRACT_VERSION);
 
     let cancelled = false;
     const streamed = new Request(url, { method: "POST", body: new ReadableStream({
@@ -107,6 +121,7 @@ async function main() {
     const abort = new AbortController();
     response = await run(request(undefined, "abort", abort.signal), async () => { abort.abort(); return result; });
     assert.equal(response.status, 408);
+    assert.equal((await response.json()).schema_version, HAPPIE_CONTRACT_VERSION);
     assert.equal((await run(request(undefined, "abort"))).status, 409, "cancel retains lease");
 
     mock.timers.enable({ apis: ["setTimeout"] });
@@ -121,7 +136,9 @@ async function main() {
       }, store);
       await timeoutReady;
       mock.timers.tick(60_000);
-      assert.equal((await timed).status, 504);
+      const timedResponse = await timed;
+      assert.equal(timedResponse.status, 504);
+      assert.equal((await timedResponse.json()).schema_version, HAPPIE_CONTRACT_VERSION);
       assert.ok(deadlineSignal?.aborted);
       assert.equal((await run(request(undefined, "deadline"))).status, 409);
     } finally { mock.timers.reset(); }

@@ -2,6 +2,7 @@ import { createHash, randomUUID } from "node:crypto";
 import type { ZodType } from "zod";
 import type { PoolClient, QueryConfig } from "pg";
 import { getRagPool } from "../rag/db";
+import { HAPPIE_CONTRACT_VERSION, HappieErrorV1Schema } from "@/lib/ia/contracts/happie-v1";
 
 export const BODY_LIMIT = 32 * 1024;
 export const WEBHOOK_TIMEOUT_MS = 60_000;
@@ -170,10 +171,33 @@ export async function ejecutarWebhook(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(new DOMException("Deadline", "TimeoutError")), WEBHOOK_TIMEOUT_MS);
   const signal = AbortSignal.any([request.signal, controller.signal]);
-  const respond = (result: Result, retry?: string) => Response.json(
-    result.status >= 400 ? { ...(result.body as object), correlationId } : result.body,
-    { status: result.status, headers: { "Cache-Control": "no-store", "X-Correlation-ID": correlationId, ...(retry ? { "Retry-After": retry } : {}) } },
-  );
+  // Fase 3.13: las rutas de control (400/429/409/408/504/503) las fabrica
+  // este archivo, no `work()` — antes salian con `Response.json` directo,
+  // sin `schema_version`, mientras que el camino feliz y las respuestas de
+  // `autenticarWebhook`/`generarRecomendacion` ya iban sobre contrato. Si el
+  // body no trae `schema_version` (porque lo fabrico este catch/return, no
+  // un modulo que ya pasa por `HappieErrorV1Schema`/`HappieConversationResponseV1Schema`),
+  // se normaliza aqui antes de responder. Los que ya lo traen (auth, work())
+  // pasan intactos.
+  const yaTieneSchemaVersion = (body: unknown): body is { schema_version: string } =>
+    typeof body === "object" && body !== null && "schema_version" in body;
+  const respond = (result: Result, retry?: string) => {
+    let body = result.body;
+    if (result.status >= 400 && !yaTieneSchemaVersion(body)) {
+      const mensaje = typeof body === "object" && body !== null && "error" in body
+        && typeof (body as { error: unknown }).error === "string"
+        ? (body as { error: string }).error
+        : "No se pudo procesar la solicitud.";
+      const campos = typeof body === "object" && body !== null && "campos" in body
+        ? (body as { campos: unknown }).campos
+        : undefined;
+      body = HappieErrorV1Schema.parse({ schema_version: HAPPIE_CONTRACT_VERSION, error: mensaje, campos });
+    }
+    return Response.json(
+      result.status >= 400 ? { ...(body as object), correlationId } : body,
+      { status: result.status, headers: { "Cache-Control": "no-store", "X-Correlation-ID": correlationId, ...(retry ? { "Retry-After": retry } : {}) } },
+    );
+  };
   const digest = (text: string) => createHash("sha256").update(text).digest("hex");
   let claimed = false;
   let key = "";
