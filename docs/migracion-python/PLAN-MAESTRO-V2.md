@@ -596,9 +596,9 @@ está?". La que hoy no tiene respuesta es todas.
 
 ### Fase 6 — Staging real del backend Python
 
-**Destino confirmado:** EC2 `n8n-maros` (Docker, script de deploy ya instalado
-en `/home/ec2-user/deploy-demo-decoracion.sh`, responde HTTP 200) y PostgreSQL
-Neon.
+**Destino confirmado — y actualizado por la auditoría 6.0** (`auditoria/10-revision-fase-6.md`, con acceso real de solo lectura autorizado explícitamente por el usuario): EC2 `n8n-maros` ya **sirve un despliegue vivo de `demo-decoracion`** (no solo "está listo para desplegar"), compartido con otros tres proyectos activos en la misma máquina. PostgreSQL Neon confirmado y con datos reales: solo existe el schema `public` (el schema `operational` de la condición de abajo todavía no existe), y las migraciones aplicadas en Neon llegan hasta `019_happie_webhook.sql` — **020 y 021 (Fase 1.5, esta sesión) no están aplicadas en Neon todavía**.
+
+**Hallazgo crítico de la auditoría 6.0, no anticipado por este plan:** el gate de CI/CD de la Fase 2 (`checks.yml`, `deploy.yml` gateado por `workflow_run`, script de deploy con validación de SHA) existe solo en el commit local de la rama de trabajo — **`main` no tiene `checks.yml`, el `deploy.yml` real de `main` sigue disparando por `push` sin ningún gate, y el script ejecutable real del EC2 (`/home/ec2-user/deploy-demo-decoracion.sh`, fuera del checkout de git) es la versión vieja sin validación de SHA.** Mientras esto no se mergee y se despliegue, cualquier push a `main` de cualquier agente sigue desplegando sin checks al mismo servidor que ya sirve tráfico. Esto debe resolverse antes de que la Fase 6 genere más actividad de despliegue (ver orden en el informe de auditoría, sección 4).
 
 **Condición no negociable:** las tablas operacionales van a un **schema
 separado** dentro de Neon, nunca mezcladas con las tablas comerciales del
@@ -1524,6 +1524,15 @@ proveedores-pagados de 13.2/13.3) y los tres completaron. Cada informe deja
 esta desviación anotada en su propia cabecera. Los hallazgos con evidencia
 que contradecían el plan ya se integraron en los capítulos 5 (Fase 4.5,
 Fase 5.1, 5.3, 5.4, 5.5) y en la fila de la Fase 5 de la tabla del capítulo 0.
+
+**6.0 hecha (2026-09-08).** A diferencia de 3.0/4.0/5.0, esta auditoría
+requería credenciales reales de infraestructura compartida (SSH al EC2,
+lectura de Neon), así que la hizo el orquestador directamente, con
+autorización explícita del usuario en la misma sesión, en vez de un
+subagente. Confirma que el EC2 ya sirve un despliegue vivo (no solo que
+está listo) y que el gate de CI/CD de la Fase 2 existe solo en local, no
+en `main` ni en el script real del servidor — ver el cuerpo de la Fase 6
+y `auditoria/10-revision-fase-6.md`.
 
 ### 13.2 Las seis secciones que produce cada informe
 
