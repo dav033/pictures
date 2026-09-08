@@ -60,20 +60,18 @@ export class HappiaClient {
         "content-type": "application/json",
       },
       body: opciones.body !== undefined ? JSON.stringify(opciones.body) : undefined,
-      signal: opciones.signal,
+      signal: AbortSignal.any([...(opciones.signal ? [opciones.signal] : []), AbortSignal.timeout(10_000)]),
     });
 
     const texto = await respuesta.text();
-    const datos = texto ? JSON.parse(texto) : null;
-
     if (!respuesta.ok) {
       throw new HappiaApiError(
         `Happia API respondió ${respuesta.status} en ${ruta}`,
         respuesta.status,
-        datos,
+        null,
       );
     }
 
-    return datos;
+    return texto ? JSON.parse(texto) : null;
   }
 }

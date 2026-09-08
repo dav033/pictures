@@ -14,7 +14,14 @@ import {
   HappieRecommendationResponseV1Schema,
 } from "@/lib/ia/contracts/happie-v1";
 
-const CuerpoSolicitudSchema = HappieRecommendationRequestV1Schema;
+/**
+ * El schema del contrato versionado es la fuente única. `main` había vuelto a
+ * escribirlo a mano porque la capa de contratos no existía en su base; tiene
+ * los mismos campos y la misma validación de URL, y además es `.strict()` y
+ * acepta `schema_version`. Se exporta porque `ejecutarWebhook` lo recibe como
+ * parámetro.
+ */
+export const CuerpoSolicitudSchema = HappieRecommendationRequestV1Schema;
 
 type CuerpoSolicitud = z.infer<typeof CuerpoSolicitudSchema> & ServiciosSolicitados;
 
@@ -118,12 +125,16 @@ export async function generarRecomendacion(
       status: 200,
       body,
     };
-  } catch {
+  } catch (error) {
+    // Un abort del caller se propaga tal cual: `ejecutarWebhook` lo traduce a
+    // 408 o 504 según quién canceló. Convertirlo aquí en 502 ocultaría la causa.
+    if (request.signal.aborted) throw error;
+    const esTimeout = error instanceof Error && error.name === "TimeoutError";
     return {
-      status: 502,
+      status: esTimeout ? 504 : 502,
       body: HappieErrorV1Schema.parse({
         schema_version: HAPPIE_CONTRACT_VERSION,
-        error: "No se pudo generar la recomendación.",
+        error: esTimeout ? "Tiempo de espera agotado." : "No se pudo generar la recomendación. Intenta de nuevo.",
       }),
     };
   }

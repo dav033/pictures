@@ -1,5 +1,6 @@
 import { timingSafeEqual } from "node:crypto";
-import { generarRecomendacion } from "./generar-recomendacion";
+import { CuerpoSolicitudSchema, generarRecomendacion } from "./generar-recomendacion";
+import { ejecutarWebhook } from "./webhook-control";
 import {
   HAPPIE_CONTRACT_VERSION,
   HappieConversationResponseV1Schema,
@@ -60,9 +61,6 @@ export async function manejarRecomendacionWebhook(
   request: Request,
   maxRecomendaciones: number,
 ): Promise<Response> {
-  const errorAutenticacion = autenticarWebhook(request);
-  if (errorAutenticacion) return errorAutenticacion;
-
-  const { status, body } = await generarRecomendacion(request, maxRecomendaciones);
-  return respuestaWebhook(body, status);
+  return ejecutarWebhook(request, `recommend-${maxRecomendaciones}`, autenticarWebhook(request),
+    CuerpoSolicitudSchema, (bounded) => generarRecomendacion(bounded, maxRecomendaciones));
 }

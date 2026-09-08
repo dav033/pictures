@@ -8,9 +8,10 @@
 -- hacerlo mientras haya operaciones sin respuesta terminal puede permitir un
 -- efecto duplicado.
 --
--- Este archivo se llamaba 016_operational_idempotency.sql y se renumeró a 019
--- porque colisionaba con 016_lora_specializations.sql. scripts/migrate.ts
--- reconcilia el nombre viejo en schema_migrations; no re-aplica el DDL.
+-- Este archivo se llamaba 016_operational_idempotency.sql, pasó por 019 y quedó en 020.
+-- Colisionó primero con 016_lora_specializations.sql y después con
+-- 019_happie_webhook.sql. scripts/migrate.ts reconcilia los dos nombres viejos
+-- en schema_migrations; no re-aplica el DDL.
 
 CREATE TABLE IF NOT EXISTS operational_idempotency (
   scope                 TEXT NOT NULL,

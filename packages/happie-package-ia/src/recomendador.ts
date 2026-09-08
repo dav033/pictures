@@ -79,7 +79,7 @@ function paqueteAContexto(paquete: HappiaPackage) {
     precio_total: precioTotalPaquete(paquete),
     condiciones: paquete.conditions,
     restricciones: paquete.restrictions,
-    items: paquete.package_items.map((item) => ({
+    items: paquete.package_items.filter((item) => item.is_active).map((item) => ({
       descripcion: item.description,
       categoria: item.category_name,
     })),
@@ -87,6 +87,7 @@ function paqueteAContexto(paquete: HappiaPackage) {
 }
 
 export async function recomendarPaquetes(input: RecomendarPaquetesInput): Promise<RecomendacionResultado> {
+  input.signal?.throwIfAborted();
   const apiKey = input.apiKey ?? process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("Falta GEMINI_API_KEY (o apiKey) para generar recomendaciones.");
@@ -101,6 +102,7 @@ export async function recomendarPaquetes(input: RecomendarPaquetesInput): Promis
 
   const client = new GoogleGenAI({ apiKey });
   const contenido = JSON.stringify(paquetesActivos.map(paqueteAContexto));
+  const signal = AbortSignal.any([...(input.signal ? [input.signal] : []), AbortSignal.timeout(25_000)]);
 
   const respuesta = await client.models.generateContent({
     model: input.modelo ?? MODELO_POR_DEFECTO,
@@ -113,18 +115,26 @@ export async function recomendarPaquetes(input: RecomendarPaquetesInput): Promis
         ],
       },
     ],
-      config: {
+    config: {
+      // `signal` combina el del caller con un timeout propio de 25 s, así que
+      // sustituye al `input.signal` que se pasaba suelto: cubre también el caso
+      // en que el caller no cancele nunca.
+      abortSignal: signal,
+      httpOptions: { timeout: 25_000, retryOptions: { attempts: 1 } },
       systemInstruction: construirInstruccion(maxRecomendaciones),
       responseMimeType: "application/json",
       responseJsonSchema: jsonSchema,
-        thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
-        abortSignal: input.signal,
+      thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
     },
+  }).catch((error: unknown) => {
+    signal.throwIfAborted();
+    throw error;
   });
+  signal.throwIfAborted();
 
   const texto = respuesta.text;
   if (!texto) {
-    return { recomendaciones: [], resumen: "No se pudo generar una recomendación en este momento." };
+    throw new Error("Respuesta vacia del proveedor.");
   }
 
   const cruda = schema.parse(JSON.parse(texto));

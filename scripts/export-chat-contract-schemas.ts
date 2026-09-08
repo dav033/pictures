@@ -14,6 +14,16 @@ import {
 } from "../src/lib/ia/contracts/chat-v1";
 
 const outputDirectory = path.join(process.cwd(), "contracts", "chat", "v1");
+
+/**
+ * La comparación de drift normaliza CRLF a LF. Con `core.autocrlf=true` git
+ * materializa estos archivos con CRLF en Windows, mientras el blob versionado y
+ * lo que escribe este script son LF: comparar en crudo reportaba drift después
+ * de cualquier checkout sin que el contrato hubiera cambiado.
+ */
+function normalizarFinDeLinea(texto: string | null): string | null {
+  return texto === null ? null : texto.replace(/\r\n/g, "\n");
+}
 const checkOnly = process.argv.includes("--check");
 const schemas = {
   "request.schema.json": ChatRequestV1Schema,
@@ -35,7 +45,9 @@ async function main(): Promise<void> {
     const expected = `${JSON.stringify(jsonSchema, null, 2)}\n`;
     if (checkOnly) {
       const current = await readFile(target, "utf8").catch(() => null);
-      if (current !== expected) throw new Error(`Contract drift detected: ${target}`);
+      if (normalizarFinDeLinea(current) !== expected) {
+        throw new Error(`Contract drift detected: ${target}`);
+      }
     } else {
       await writeFile(target, expected, "utf8");
     }

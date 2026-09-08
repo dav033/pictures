@@ -339,7 +339,7 @@ decisión sobre el caché explícito no se puede tomar con datos.
 | Fase 1.2 | Planes recuperados en `docs/planes-recuperados/` y comentarios de código apuntando a una ruta que existe | **Hecha** | Los 6 comentarios de 1.4(5) resuelven a un archivo existente |
 | Fase 1.3 | **Migraciones seguras**, capítulo 10: confirmación de destino, checksum, advisory lock, transacción sobre un solo cliente, validación de numeración, `--dry-run`, `--target`, y la colisión 016 corregida con su reconciliación | **Hecha** | 7 pruebas contra PostgreSQL Docker desechable: gate remoto aborta sin conectar, dry-run deja 0 tablas, 19 migraciones con 19 checksums, segunda corrida 0 nuevas, checksum alterado falla, renombrado reconcilia sin re-aplicar, prefijo duplicado falla |
 | Fase 1.4 | **Arnés de medición** `npm run ia:bench`. Mide por turno: latencia de parseo, retrieval, TTFT, turno completo, vueltas del loop, tokens de entrada/salida/pensamiento/cacheados, bytes de imagen enviados, y coste estimado por modelo | Pendiente | Reproduce las cifras del capítulo 3 con ±15% |
-| Fase 1.5 | **Telemetría durable y taxonomía de IA**, capítulo 9. Migración `020_ai_call_log.sql`, tabla de precios versionada, catálogos cerrados de `flujo` y `capacidad`, y `thoughtsTokenCount` leído del SDK. Cubre las once llamadas de IA, no dos. El buffer en memoria se conserva para el panel en caliente | Pendiente | Los 8 flujos y las 12 capacidades emiten evento; la telemetría sobrevive un reinicio; un fallo al registrar no rompe un turno |
+| Fase 1.5 | **Telemetría durable y taxonomía de IA**, capítulo 9. Migración `021_ai_call_log.sql`, tabla de precios versionada, catálogos cerrados de `flujo` y `capacidad`, y `thoughtsTokenCount` leído del SDK. Cubre las once llamadas de IA, no dos. El buffer en memoria se conserva para el panel en caliente | Pendiente | Los 8 flujos y las 12 capacidades emiten evento; la telemetría sobrevive un reinicio; un fallo al registrar no rompe un turno |
 
 **Salida:** existe una línea base numérica del sistema tal como está hoy, y
 aplicar una migración dejó de ser una operación peligrosa. Sin lo primero,
@@ -739,10 +739,14 @@ misma etiqueta `imagen` que Gemini.
 
 ### 9.7 Esquema y numeración
 
-Migración `020_ai_call_log.sql` — 020 porque 017 y 018 están ocupados por LoRA
-y 019 lo tomó `operational_idempotency` al resolverse la colisión de 016 (ver
-10.1). `scripts/migrate.ts` valida la unicidad del prefijo, así que un número
-repetido falla antes de tocar la base.
+Migración `021_ai_call_log.sql`. La numeración se movió dos veces por
+colisiones reales: 017 y 018 son de LoRA, 019 lo tomó `happie_webhook` en
+`main`, y 020 quedó para `operational_idempotency`. Ver 10.1 y 10.7.
+
+`scripts/migrate.ts` valida la unicidad del prefijo, así que un número repetido
+falla antes de tocar la base. Confirma el siguiente número libre con
+`ls scripts/migrations` antes de crear el archivo; no lo asumas de este
+documento, que ya quedó obsoleto una vez.
 
 Tablas: `ai_call_log` (un evento por llamada) y `ai_model_pricing`. Índices por
 `request_id`, `correlation_id`, `(capacidad, created_at)` y
@@ -884,7 +888,7 @@ El runner Python replica las mismas siete garantías de 10.3 y añade:
 | Comercial | Repo Next | `public.*` — catálogo, variantes, embeddings, planes, órdenes, observabilidad RAG | `npm run rag:migrate` |
 | Operacional | Repo Python | `operational.*` — idempotencia, nonces | Runner Python |
 
-`019_operational_idempotency.sql` **se retira de `scripts/migrations/`** del
+`020_operational_idempotency.sql` **se retira de `scripts/migrations/`** del
 repo Next una vez el linaje Python esté operativo, y se documenta en el propio
 archivo cuál es su nuevo dueño. Mientras tanto sigue duplicado, pero con una
 nota explícita en ambos lados diciendo cuál es la copia autoritativa.

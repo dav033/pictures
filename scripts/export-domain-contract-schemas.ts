@@ -5,6 +5,16 @@ import { DomainContractSchemas } from "../src/lib/ia/contracts/domain-v1";
 
 const outputDirectory = path.join(process.cwd(), "contracts", "domain", "v1");
 const checkOnly = process.argv.includes("--check");
+
+/**
+ * La comparación de drift normaliza CRLF a LF. Con `core.autocrlf=true` git
+ * materializa estos archivos con CRLF en Windows, mientras el blob versionado y
+ * lo que escribe este script son LF: comparar en crudo reportaba drift después
+ * de cualquier checkout sin que el contrato hubiera cambiado.
+ */
+function normalizarFinDeLinea(texto: string | null): string | null {
+  return texto === null ? null : texto.replace(/\r\n/g, "\n");
+}
 const filenames: Record<string, string> = {
   "catalog-product.v1": "catalog-product.schema.json",
   "catalog-variant.v1": "catalog-variant.schema.json",
@@ -46,7 +56,9 @@ async function main(): Promise<void> {
     const expected = `${JSON.stringify(jsonSchema, null, 2)}\n`;
     if (checkOnly) {
       const current = await readFile(target, "utf8").catch(() => null);
-      if (current !== expected) throw new Error(`Contract drift detected: ${target}`);
+      if (normalizarFinDeLinea(current) !== expected) {
+        throw new Error(`Contract drift detected: ${target}`);
+      }
     } else {
       await writeFile(target, expected, "utf8");
     }

@@ -1,7 +1,8 @@
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 import { z } from "zod";
 import { generarRecomendacion } from "./generar-recomendacion";
-import { autenticarWebhook, respuestaWebhook } from "./recomendar-paquetes-webhook";
+import { autenticarWebhook } from "./recomendar-paquetes-webhook";
+import { ejecutarWebhook } from "./webhook-control";
 import {
   HappieConversationRequestV1Schema,
   HappieConversationStateV1Schema,
@@ -38,7 +39,7 @@ export type RespuestaConversacion =
     };
 
 type DependenciasConversacion = {
-  extraer: (mensaje: string, estado: EstadoConversacion) => Promise<Extraccion>;
+  extraer: (mensaje: string, estado: EstadoConversacion, signal?: AbortSignal) => Promise<Extraccion>;
   recomendar: typeof generarRecomendacion;
 };
 
@@ -48,16 +49,20 @@ const ESTADO_INICIAL: EstadoConversacion = {
   preferencias: [],
 };
 
-async function extraerConIA(mensaje: string, estado: EstadoConversacion): Promise<Extraccion> {
+async function extraerConIA(mensaje: string, estado: EstadoConversacion, signal?: AbortSignal): Promise<Extraccion> {
+  signal?.throwIfAborted();
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("Falta GEMINI_API_KEY para conversar.");
 
   const client = new GoogleGenAI({ apiKey });
   const jsonSchema = z.toJSONSchema(ExtraccionSchema, { target: "draft-7" });
+  const providerSignal = AbortSignal.any([...(signal ? [signal] : []), AbortSignal.timeout(25_000)]);
   const respuesta = await client.models.generateContent({
     model: MODELO_POR_DEFECTO,
     contents: [{ role: "user", parts: [{ text: mensaje }] }],
     config: {
+      abortSignal: providerSignal,
+      httpOptions: { timeout: 25_000, retryOptions: { attempts: 1 } },
       systemInstruction: `Eres el extractor de datos de un chat para contratar paquetes de eventos en Colombia.
 Recibes el último mensaje del cliente y este estado actual: ${JSON.stringify(estado)}
 
@@ -73,7 +78,11 @@ Devuelve el estado completo actualizado dentro de los campos del esquema. Reglas
       responseJsonSchema: jsonSchema,
       thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
     },
+  }).catch((error: unknown) => {
+    providerSignal.throwIfAborted();
+    throw error;
   });
+  providerSignal.throwIfAborted();
 
   if (!respuesta.text) throw new Error("La IA no devolvió datos de conversación.");
   return ExtraccionSchema.parse(JSON.parse(respuesta.text));
@@ -125,9 +134,12 @@ function siguientePregunta(estado: EstadoConversacion, acuse: string): Respuesta
 export async function procesarTurnoConversacion(
   entrada: EntradaConversacion,
   dependencias: DependenciasConversacion = { extraer: extraerConIA, recomendar: generarRecomendacion },
+  signal?: AbortSignal,
 ): Promise<{ status: number; body: RespuestaConversacion | { error: string } }> {
   const estadoAnterior = entrada.estado?.fase === "finalizado" ? ESTADO_INICIAL : (entrada.estado ?? ESTADO_INICIAL);
-  const extraccion = await dependencias.extraer(entrada.mensaje, estadoAnterior);
+  signal?.throwIfAborted();
+  const extraccion = await dependencias.extraer(entrada.mensaje, estadoAnterior, signal);
+  signal?.throwIfAborted();
   let estado = actualizarEstado(estadoAnterior, extraccion);
 
   if (!estado.tipoEvento || !estado.invitados || !estado.presupuesto) {
@@ -138,6 +150,7 @@ export async function procesarTurnoConversacion(
   if (estadoAnterior.fase === "confirmacion" && extraccion.confirmacion === "si") {
     const request = new Request("http://happie.local/recomendacion", {
       method: "POST",
+      signal,
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         tipoEvento: estado.tipoEvento,
@@ -206,29 +219,12 @@ export async function procesarTurnoConversacion(
 }
 
 export async function manejarChatWebhook(request: Request): Promise<Response> {
-  const errorAutenticacion = autenticarWebhook(request);
-  if (errorAutenticacion) return errorAutenticacion;
-
-  let desconocido: unknown;
-  try {
-    desconocido = await request.json();
-  } catch {
-    return respuestaWebhook({ error: "El body debe ser JSON válido." }, 400);
-  }
-
-  const entrada = EntradaConversacionSchema.safeParse(desconocido);
-  if (!entrada.success) {
-    return respuestaWebhook({
-      error: "Turno de conversación inválido.",
-      campos: entrada.error.issues.map((issue) => issue.path.join(".")).filter(Boolean),
-    }, 400);
-  }
-
-  try {
-    const resultado = await procesarTurnoConversacion(entrada.data);
-    return respuestaWebhook(resultado.body, resultado.status);
-  } catch (error) {
-    const detalle = error instanceof Error ? error.message : "Error desconocido";
-    return respuestaWebhook({ error: `No se pudo procesar la conversación: ${detalle}` }, 502);
-  }
+  return ejecutarWebhook(request, "chat", autenticarWebhook(request), EntradaConversacionSchema, async (bounded) => {
+    try {
+      return await procesarTurnoConversacion(EntradaConversacionSchema.parse(await bounded.json()), undefined, bounded.signal);
+    } catch (error) {
+      if (bounded.signal.aborted || (error instanceof Error && error.name === "TimeoutError")) throw error;
+      return { status: 502, body: { error: "No se pudo procesar la conversacion. Intenta de nuevo." } };
+    }
+  });
 }

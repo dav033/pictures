@@ -31,10 +31,16 @@ const HOSTS_LOCALES = new Set(["localhost", "127.0.0.1", "::1", "0.0.0.0"]);
  * conserva el nombre viejo. Mientras haya duda, se queda.
  */
 const RENOMBRADOS: Array<{ antes: string; despues: string }> = [
-  // Colisión de número: existían dos archivos `016_`. El de LoRA ya estaba
+  // Primera colisión: existían dos archivos `016_`. El de LoRA ya estaba
   // aplicado en bases reales y conserva su número; el operacional solo se
-  // había aplicado a un PostgreSQL Docker desechable, y se mueve a 019.
-  { antes: "016_operational_idempotency.sql", despues: "019_operational_idempotency.sql" },
+  // había aplicado a un PostgreSQL Docker desechable, y se movió a 019.
+  //
+  // Segunda colisión, al mezclar `main`: allí se creó `019_happie_webhook.sql`,
+  // que puede estar aplicada en una base real. El operacional se mueve otra vez,
+  // ahora a 020. Se conservan las dos entradas porque cualquiera de los dos
+  // nombres viejos puede estar registrado en algún entorno.
+  { antes: "016_operational_idempotency.sql", despues: "020_operational_idempotency.sql" },
+  { antes: "019_operational_idempotency.sql", despues: "020_operational_idempotency.sql" },
 ];
 
 type Opciones = {

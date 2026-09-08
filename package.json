@@ -37,6 +37,7 @@
     "rag:test-validation": "tsx scripts/test-rag-validation.ts",
     "rag:test-generation-resolver": "tsx --conditions=react-server scripts/test-generation-resolver.ts",
     "rag:test-webhook": "tsx scripts/test-webhook.ts",
+    "happie:test-webhook": "npm run build --workspace=@sempertex/happie-package-ia && tsx --conditions=react-server scripts/test-happie-webhook.ts && tsx --conditions=react-server scripts/test-happie-controls.ts",
     "rag:metrics": "tsx scripts/rag-metrics.ts",
     "rag:regression": "tsx scripts/regression-anti-alucinacion.ts",
     "catalog:enrich": "tsx scripts/enrich-shopify-catalog.ts",

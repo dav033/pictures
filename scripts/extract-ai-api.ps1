@@ -114,8 +114,8 @@ if ($PSCmdlet.ShouldProcess($targetMigrations, "Crear layout migrations")) {
 
 $serviceFileCount = Copy-Tree $sourcePath $targetService
 $contractFileCount = Copy-Tree (Join-Path $repoRoot "contracts") $targetContracts
-$migrationSource = Join-Path $repoRoot "scripts\migrations\019_operational_idempotency.sql"
-$migrationTarget = Join-Path $targetMigrations "019_operational_idempotency.sql"
+$migrationSource = Join-Path $repoRoot "scripts\migrations\020_operational_idempotency.sql"
+$migrationTarget = Join-Path $targetMigrations "020_operational_idempotency.sql"
 $migrationFileCount = 0
 if (Test-Path -LiteralPath $migrationSource) {
     if ($PSCmdlet.ShouldProcess($migrationTarget, "Copiar migración operacional")) {
