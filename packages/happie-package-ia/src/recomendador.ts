@@ -55,6 +55,7 @@ export interface RecomendacionResultado {
 }
 
 export interface RecomendarPaquetesInput {
+  signal?: AbortSignal;
   descripcionEvento: string;
   paquetes: HappiaPackage[];
   /** Cuántas recomendaciones como máximo debe devolver la IA (por defecto 3). */
@@ -78,7 +79,7 @@ function paqueteAContexto(paquete: HappiaPackage) {
     precio_total: precioTotalPaquete(paquete),
     condiciones: paquete.conditions,
     restricciones: paquete.restrictions,
-    items: paquete.package_items.map((item) => ({
+    items: paquete.package_items.filter((item) => item.is_active).map((item) => ({
       descripcion: item.description,
       categoria: item.category_name,
     })),
@@ -86,6 +87,7 @@ function paqueteAContexto(paquete: HappiaPackage) {
 }
 
 export async function recomendarPaquetes(input: RecomendarPaquetesInput): Promise<RecomendacionResultado> {
+  input.signal?.throwIfAborted();
   const apiKey = input.apiKey ?? process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("Falta GEMINI_API_KEY (o apiKey) para generar recomendaciones.");
@@ -100,6 +102,7 @@ export async function recomendarPaquetes(input: RecomendarPaquetesInput): Promis
 
   const client = new GoogleGenAI({ apiKey });
   const contenido = JSON.stringify(paquetesActivos.map(paqueteAContexto));
+  const signal = AbortSignal.any([...(input.signal ? [input.signal] : []), AbortSignal.timeout(25_000)]);
 
   const respuesta = await client.models.generateContent({
     model: input.modelo ?? MODELO_POR_DEFECTO,
@@ -113,16 +116,22 @@ export async function recomendarPaquetes(input: RecomendarPaquetesInput): Promis
       },
     ],
     config: {
+      abortSignal: signal,
+      httpOptions: { timeout: 25_000, retryOptions: { attempts: 1 } },
       systemInstruction: construirInstruccion(maxRecomendaciones),
       responseMimeType: "application/json",
       responseJsonSchema: jsonSchema,
       thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
     },
+  }).catch((error: unknown) => {
+    signal.throwIfAborted();
+    throw error;
   });
+  signal.throwIfAborted();
 
   const texto = respuesta.text;
   if (!texto) {
-    return { recomendaciones: [], resumen: "No se pudo generar una recomendación en este momento." };
+    throw new Error("Respuesta vacia del proveedor.");
   }
 
   const cruda = schema.parse(JSON.parse(texto));
@@ -139,6 +148,7 @@ export async function recomendarPaquetes(input: RecomendarPaquetesInput): Promis
 }
 
 export interface RecomendarPaquetesEstructuradoInput {
+  signal?: AbortSignal;
   tipoEvento: string;
   invitados: number;
   ubicacion: string;
@@ -181,6 +191,7 @@ export function recomendarPaquetesEstructurado(
     maxRecomendaciones: input.maxRecomendaciones,
     apiKey: input.apiKey,
     modelo: input.modelo,
+    signal: input.signal,
   });
 }
 
@@ -210,6 +221,7 @@ function serviciosRequeridos(servicios?: ServiciosSolicitados): string[] {
 }
 
 export interface RecomendarPaquetesConFiltrosInput {
+  signal?: AbortSignal;
   tipoEvento: string;
   invitados: number;
   presupuesto: number;
@@ -260,5 +272,6 @@ export function recomendarPaquetesConFiltros(
     maxRecomendaciones: input.maxRecomendaciones,
     apiKey: input.apiKey,
     modelo: input.modelo,
+    signal: input.signal,
   });
 }

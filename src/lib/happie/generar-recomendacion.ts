@@ -17,7 +17,7 @@ const UrlHttpSchema = z.string().trim().refine((valor) => {
   }
 }, "Debe ser una URL HTTP o HTTPS válida.");
 
-const CuerpoSolicitudSchema = z.object({
+export const CuerpoSolicitudSchema = z.object({
   tipoEvento: z.string().trim().min(1).max(120),
   invitados: z.number().int().positive().max(100_000),
   presupuesto: z.number().finite().positive(),
@@ -99,7 +99,7 @@ export async function generarRecomendacion(
   try {
     const config = cargarConfigDesdeEnv();
     const cliente = new HappiaClient(config);
-    const { packages } = await cliente.listarPackages();
+    const { packages } = await cliente.listarPackages(request.signal);
 
     // Mismo narrowing determinista (sin LLM) que el flujo por pasos: primero
     // por tipo curado (con fallback a todo el catálogo activo si no hay
@@ -116,6 +116,7 @@ export async function generarRecomendacion(
       paquetes: candidatos,
       coincidenciaExacta,
       maxRecomendaciones: Math.max(1, Math.min(3, Math.trunc(maxRecomendaciones))),
+      signal: request.signal,
     });
 
     const baseUrlFinal = baseUrl ?? baseUrlPorDefecto(config.baseUrl);
@@ -130,7 +131,8 @@ export async function generarRecomendacion(
       },
     };
   } catch (error) {
-    const detalle = error instanceof Error ? error.message : "Error desconocido";
-    return { status: 502, body: { error: `No se pudo generar la recomendación: ${detalle}` } };
+    if (request.signal.aborted) throw error;
+    if (error instanceof Error && error.name === "TimeoutError") return { status: 504, body: { error: "Tiempo de espera agotado." } };
+    return { status: 502, body: { error: "No se pudo generar la recomendación. Intenta de nuevo." } };
   }
 }
