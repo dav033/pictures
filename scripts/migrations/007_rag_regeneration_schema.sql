@@ -1,6 +1,13 @@
 -- RAG regeneration: source snapshots, isolated staging and provenance.
 -- This migration is intentionally additive and safe to run more than once.
 
+-- rollback: DROP INDEX IF EXISTS idx_catalog_rejections_snapshot; DROP INDEX IF EXISTS idx_catalog_variants_source_snapshot_sku; DROP INDEX IF EXISTS idx_catalog_products_source_snapshot; DROP INDEX IF EXISTS idx_catalog_variants_staging_snapshot_sku; DROP INDEX IF EXISTS idx_catalog_products_staging_snapshot_status;
+-- ALTER TABLE catalog_rejections DROP COLUMN IF EXISTS record_type, DROP COLUMN IF EXISTS source_snapshot_id;
+-- ALTER TABLE catalog_variants DROP COLUMN IF EXISTS attribute_states, DROP COLUMN IF EXISTS sku_ambiguous, DROP COLUMN IF EXISTS sku_canonical, DROP COLUMN IF EXISTS sku_original, DROP COLUMN IF EXISTS source_variant_id, DROP COLUMN IF EXISTS source_snapshot_id;
+-- ALTER TABLE catalog_products DROP COLUMN IF EXISTS attribute_states, DROP COLUMN IF EXISTS publication_reason, DROP COLUMN IF EXISTS source_status, DROP COLUMN IF EXISTS source_product_id, DROP COLUMN IF EXISTS source_snapshot_id;
+-- DROP TABLE IF EXISTS catalog_variants_staging; DROP TABLE IF EXISTS catalog_products_staging; DROP TABLE IF EXISTS rag_source_snapshots;
+-- Pierde snapshots, staging y la procedencia/enriquecimiento RAG añadido al catálogo; exportar esas tablas y columnas antes y detener sus consumidores.
+
 CREATE TABLE IF NOT EXISTS rag_source_snapshots (
   source_snapshot_id TEXT PRIMARY KEY,
   source_kind TEXT NOT NULL CHECK (source_kind IN ('products_catalog', 'order_data')),

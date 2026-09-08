@@ -2,6 +2,10 @@
 -- Esta migración es aditiva e idempotente: scripts/migrate.ts puede ejecutarla
 -- sobre una base nueva o existente sin borrar evidencia histórica.
 
+-- rollback: DROP INDEX IF EXISTS ix_lora_jobs_claim; DROP INDEX IF EXISTS ix_lora_slot_history_slot; DROP INDEX IF EXISTS ix_lora_evaluations_run; DROP INDEX IF EXISTS ix_lora_training_runs_status; DROP INDEX IF EXISTS ix_lora_training_runs_dataset; DROP INDEX IF EXISTS ix_lora_dataset_stats_shopify; DROP INDEX IF EXISTS ix_lora_dataset_elements_variant; DROP INDEX IF EXISTS ix_lora_dataset_elements_lookup; DROP INDEX IF EXISTS ix_lora_dataset_images_source; DROP INDEX IF EXISTS ix_lora_dataset_images_review; DROP INDEX IF EXISTS ix_lora_datasets_coverage; DROP INDEX IF EXISTS ix_lora_datasets_status;
+-- DROP TABLE IF EXISTS lora_jobs; DROP TABLE IF EXISTS lora_mode_slot_history; DROP TABLE IF EXISTS lora_evaluations; DROP TABLE IF EXISTS lora_mode_slots; DROP TABLE IF EXISTS lora_dataset_element_stats; DROP TABLE IF EXISTS lora_dataset_image_elements; DROP TABLE IF EXISTS lora_dataset_images; DROP TABLE IF EXISTS lora_training_runs; DROP TABLE IF EXISTS lora_datasets;
+-- Pierde datasets, imágenes, elementos, corridas, evaluaciones, slots, su histórico y jobs de entrenamiento LoRA; exportar todas esas tablas antes y no revertir con trabajos activos.
+
 CREATE TABLE IF NOT EXISTS lora_datasets (
   id                       TEXT PRIMARY KEY,
   label                    TEXT NOT NULL UNIQUE,

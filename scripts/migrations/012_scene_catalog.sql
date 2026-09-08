@@ -8,6 +8,10 @@
 -- CREATE TABLE IF NOT EXISTS / CREATE INDEX IF NOT EXISTS, and no statement
 -- drops or mutates existing rows in catalog_products/catalog_variants.
 
+-- rollback: DROP INDEX IF EXISTS ix_catalog_source_audit_offer; DROP INDEX IF EXISTS ix_catalog_source_audit_source; DROP INDEX IF EXISTS ix_catalog_product_spatial_mounting; DROP INDEX IF EXISTS ix_catalog_product_spatial_indoor_outdoor; DROP INDEX IF EXISTS ix_catalog_price_components_validity; DROP INDEX IF EXISTS ix_catalog_price_components_offer; DROP INDEX IF EXISTS ix_catalog_product_capabilities_item; DROP INDEX IF EXISTS ix_catalog_product_capabilities_function; DROP INDEX IF EXISTS ix_catalog_commercial_offers_variant; DROP INDEX IF EXISTS ix_catalog_commercial_offers_validity; DROP INDEX IF EXISTS ix_catalog_commercial_offers_class_status; DROP INDEX IF EXISTS ix_catalog_commercial_offers_source; DROP INDEX IF EXISTS ix_catalog_commercial_offers_item; DROP INDEX IF EXISTS ix_catalog_sources_class_status; DROP INDEX IF EXISTS ix_catalog_items_category_v3; DROP INDEX IF EXISTS ix_catalog_items_variant; DROP INDEX IF EXISTS ix_catalog_items_product; DROP INDEX IF EXISTS ux_catalog_items_product_variant; DROP INDEX IF EXISTS ux_catalog_items_product_only;
+-- DROP TABLE IF EXISTS catalog_source_audit; DROP TABLE IF EXISTS catalog_price_components; DROP TABLE IF EXISTS catalog_product_capabilities; DROP TABLE IF EXISTS catalog_product_spatial; DROP TABLE IF EXISTS catalog_commercial_offers; DROP TABLE IF EXISTS catalog_items; DROP TABLE IF EXISTS catalog_sources;
+-- Pierde la extensión de escenas, ofertas, precios, capacidades, geometría y auditoría de procedencia; exportar estas tablas antes y detener los consumidores.
+
 -- ---------------------------------------------------------------------------
 -- catalog_items: stable physical identity, one row per sellable physical
 -- thing. Sits on top of catalog_products (required) and, when the physical

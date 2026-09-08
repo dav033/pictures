@@ -1,6 +1,17 @@
 -- Separación auditable de LoRA producto y estructura.
 -- No borra ni fusiona pesos históricos. Requiere 015_lora_training_registry.sql.
 
+-- rollback: no reversible, requiere restore de backup. El UPDATE de la línea 49 convierte status='succeeded' en status='completed' y después no permite distinguir esos valores transformados de otros cambios posteriores; restaura el backup antes de ejecutar el DDL siguiente.
+-- DROP INDEX IF EXISTS ux_lora_generation_profiles_active; DROP INDEX IF EXISTS ix_lora_artifacts_lookup; DROP INDEX IF EXISTS ix_lora_runs_specialization; DROP INDEX IF EXISTS ix_lora_datasets_specialization;
+-- DROP TABLE IF EXISTS lora_composition_events; DROP TABLE IF EXISTS lora_idempotency_events; DROP TABLE IF EXISTS lora_checkpoints; DROP TABLE IF EXISTS lora_generation_profiles; DROP TABLE IF EXISTS lora_artifacts;
+-- ALTER TABLE lora_datasets DROP CONSTRAINT IF EXISTS lora_datasets_evaluation_status_check, DROP CONSTRAINT IF EXISTS lora_datasets_license_status_check, DROP CONSTRAINT IF EXISTS lora_datasets_specialization_check;
+-- ALTER TABLE lora_training_runs DROP CONSTRAINT IF EXISTS lora_training_runs_evaluation_status_check, DROP CONSTRAINT IF EXISTS lora_training_runs_license_status_check, DROP CONSTRAINT IF EXISTS lora_training_runs_specialization_check, DROP CONSTRAINT IF EXISTS lora_training_runs_status_check;
+-- ALTER TABLE lora_training_runs ADD CONSTRAINT lora_training_runs_status_check CHECK (status IN ('draft', 'uploading', 'queued', 'running', 'succeeded', 'failed', 'cancelled'));
+-- ALTER TABLE lora_datasets DROP COLUMN IF EXISTS split_policy, DROP COLUMN IF EXISTS evaluation_status, DROP COLUMN IF EXISTS license_status, DROP COLUMN IF EXISTS caption_audit, DROP COLUMN IF EXISTS caption_schema_version, DROP COLUMN IF EXISTS resolution, DROP COLUMN IF EXISTS tokenizer_revision, DROP COLUMN IF EXISTS base_model, DROP COLUMN IF EXISTS structure_types, DROP COLUMN IF EXISTS specialization;
+-- ALTER TABLE lora_dataset_images DROP COLUMN IF EXISTS quality_flags, DROP COLUMN IF EXISTS structure_types, DROP COLUMN IF EXISTS event_key, DROP COLUMN IF EXISTS assembly_id, DROP COLUMN IF EXISTS split;
+-- ALTER TABLE lora_training_runs DROP COLUMN IF EXISTS evaluation_status, DROP COLUMN IF EXISTS license_status, DROP COLUMN IF EXISTS caption_audit, DROP COLUMN IF EXISTS resolution, DROP COLUMN IF EXISTS tokenizer_revision, DROP COLUMN IF EXISTS base_model, DROP COLUMN IF EXISTS trigger_token, DROP COLUMN IF EXISTS specialization;
+-- Debe revertirse antes que 015_lora_training_registry.sql si ambos se revierten, porque las tablas nuevas de 016 tienen FK hacia tablas de 015; exportar el histórico y artefactos LoRA antes.
+
 ALTER TABLE lora_datasets
   ADD COLUMN IF NOT EXISTS specialization TEXT NOT NULL DEFAULT 'product',
   ADD COLUMN IF NOT EXISTS structure_types JSONB NOT NULL DEFAULT '[]',
