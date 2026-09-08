@@ -17,7 +17,8 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
+  // Shopify es server-to-server: no trae cookie y usa su propia autenticación HMAC.
   matcher: [
-    "/((?!api/login|api/happie/recommend-packages|api/happie/recommend-package|api/happie/webhook|login|_next/static|_next/image|favicon.ico).*)",
+    "/((?!api/login|api/happie/recommend-packages|api/happie/recommend-package|api/happie/webhook|api/rag/webhooks/shopify|login|_next/static|_next/image|favicon.ico).*)",
   ],
 };

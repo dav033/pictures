@@ -16,6 +16,7 @@
     "contracts:test:operational": "tsx scripts/test-operational-boundary.ts",
     "contracts:test:cancel": "tsx scripts/test-cancelacion-agente.ts",
     "contracts:test:python-adapter": "tsx scripts/test-python-adapter.ts",
+    "test-proxy-matcher": "tsx scripts/test-proxy-matcher.ts",
     "start": "node scripts/next-with-system-ca.cjs start",
     "lint": "eslint",
     "rag:stack-check": "tsx scripts/stack-check.ts",
