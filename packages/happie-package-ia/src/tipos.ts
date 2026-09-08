@@ -4,7 +4,7 @@ export interface HappiaPackageItem {
   is_active: boolean;
   package_id: string;
   charge_type: string;
-  description: string;
+  description: string | null;
   suggested_start_time: string | null;
   provider_name: string | null;
   category_name: string | null;

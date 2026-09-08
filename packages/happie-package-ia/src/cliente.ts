@@ -8,7 +8,12 @@ const packageItemSchema = z.object({
   is_active: z.boolean(),
   package_id: z.string().min(1),
   charge_type: z.string(),
-  description: z.string(),
+  // La API real de Happia devuelve `null` en la mayoría de los ítems — no es
+  // un caso raro, es el estado normal de "sin descripción". Antes exigía
+  // string y toda llamada a listarPackages() fallaba con un ZodError,
+  // devolviendo 503 en los tres webhooks sin ninguna pista visible (por
+  // diseño, el catch de webhook-control.ts nunca loguea el error real).
+  description: z.string().nullable(),
   suggested_start_time: z.string().nullable(),
   provider_name: z.string().nullable(),
   category_name: z.string().nullable(),
