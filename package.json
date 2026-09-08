@@ -52,6 +52,7 @@
     "dataset:build-pilot": "python scripts/build-sempertex-pilot-dataset.py",
     "dataset:build-full": "python scripts/build-sempertex-full-training-dataset.py",
     "ia:test": "tsx scripts/test-image-fidelity.ts",
+    "ia:bench": "tsx scripts/bench-ia/cli.ts",
     "ia:test-prompts": "tsx scripts/test-visual-prompts.ts",
     "ia:test-lora-compiler": "tsx scripts/test-lora-caption-compiler.ts",
     "lora:test-product-runtime": "tsx scripts/test-lora-product-runtime.ts",

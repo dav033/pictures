@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "ia-pricing.v1",
+  "pricingVersion": "fixture-pricing-v001",
+  "vigenteDesde": "2026-09-08",
+  "estimado": true,
+  "modelos": [
+    {
+      "modelo": "gemini-3.6-flash",
+      "moneda": "USD",
+      "precioEntradaPorMillon": 0.5,
+      "precioSalidaPorMillon": 3,
+      "precioCacheadoPorMillon": 0.05,
+      "fuente": "Tarifa sintética exclusiva del fixture; no es precio publicado ni vigente"
+    },
+    {
+      "modelo": "gemini-embedding-2",
+      "moneda": "USD",
+      "precioEntradaPorMillon": 0.15,
+      "precioSalidaPorMillon": 0,
+      "precioCacheadoPorMillon": 0,
+      "fuente": "Tarifa sintética exclusiva del fixture; no es precio publicado ni vigente"
+    }
+  ]
+}
