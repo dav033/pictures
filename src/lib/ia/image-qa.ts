@@ -1,3 +1,4 @@
+import { ThinkingLevel } from "@google/genai";
 import type { SceneSpec } from "./scene-spec";
 import { z } from "zod";
 import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
@@ -103,9 +104,14 @@ export async function observarImagenGenerada(sceneSpec: SceneSpec, image: { base
       config: {
         responseMimeType: "application/json",
         responseJsonSchema: z.toJSONSchema(VisionObservationSchema, { target: "draft-7" }),
+        // Fase 3.3: extracción estructurada a un schema cerrado, el mismo caso
+        // donde MINIMAL ya se midió 12/12 estable en el parser de intención
+        // (3,5x de mejora). Antes esta llamada no pasaba thinkingConfig y
+        // corría en el default "medium" del modelo.
+        thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
       },
     });
-    registrarGemini({ flujo: "generador_imagen", capacidad: "qa_visual", modelo: MODELO_CHAT, inicio, resultado: "ok", contexto: { superficie: "/api/generate", ...telemetria }, usage: response.usageMetadata, bytesImagenEntrada: bytesBase64(image.base64) });
+    registrarGemini({ flujo: "generador_imagen", capacidad: "qa_visual", modelo: MODELO_CHAT, inicio, resultado: "ok", contexto: { superficie: "/api/generate", ...telemetria }, usage: response.usageMetadata, bytesImagenEntrada: bytesBase64(image.base64), thinkingLevel: "minimal" });
     const observado = VisionObservationSchema.parse(JSON.parse(response.text ?? "{}"));
     return {
       presentElementIds: observado.present_element_ids,
@@ -132,7 +138,7 @@ export async function observarImagenGenerada(sceneSpec: SceneSpec, image: { base
       materialScaleReason: observado.material_scale_reason,
     };
   } catch (error) {
-    registrarGemini({ flujo: "generador_imagen", capacidad: "qa_visual", modelo: MODELO_CHAT, inicio, resultado: resultadoTelemetria(error), contexto: { superficie: "/api/generate", ...telemetria }, bytesImagenEntrada: bytesBase64(image.base64) });
+    registrarGemini({ flujo: "generador_imagen", capacidad: "qa_visual", modelo: MODELO_CHAT, inicio, resultado: resultadoTelemetria(error), contexto: { superficie: "/api/generate", ...telemetria }, bytesImagenEntrada: bytesBase64(image.base64), thinkingLevel: "minimal" });
     return null;
   }
 }
