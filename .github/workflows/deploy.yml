@@ -1,11 +1,23 @@
 name: Deploy to EC2
 
 on:
-  push:
-    branches: [main]
+  workflow_run:
+    workflows: [Quality checks]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
 
 jobs:
   deploy:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - name: Deploy via SSH
@@ -17,4 +29,4 @@ jobs:
           # El authorized_keys de esta llave fuerza el comando del lado del
           # servidor (command="...") — esto es solo un formalismo para el
           # cliente ssh-action, el servidor ignora cualquier otra cosa.
-          script: /home/ec2-user/deploy-demo-decoracion.sh
+          script: /home/ec2-user/deploy-demo-decoracion.sh '${{ github.event.workflow_run.head_sha }}'

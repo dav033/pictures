@@ -1,0 +1,90 @@
+name: Quality checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  types-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build --workspaces --if-present
+      - run: npm run contracts:check
+      - run: npm run lint
+      - run: npm run build
+      - run: npx tsc --noEmit
+
+  deterministic-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: decoracion_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d decoracion_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/decoracion_test
+      APP_ENV: test
+      GEMINI_API_KEY: local-ci-placeholder
+      FAL_KEY: local-ci-placeholder
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run rag:migrate
+      - run: npm run contracts:test
+      - run: npm run contracts:test:domain
+      - run: npm run contracts:test:operational
+      - run: npm run contracts:test:cancel
+      - run: npm run contracts:test:python-adapter
+      - run: npm run plan:test
+      - run: npm run chat:test-historial
+      - run: npm run happie:test-webhook
+      - run: npx tsx scripts/test-idempotency-store.ts
+
+  python-quality:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/ai-api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.15"
+          enable-cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: uv lock --check
+      - run: uv sync --locked --extra test --extra quality
+      - run: uv run ruff check app scripts tests
+      - run: uv run ruff format --check app scripts tests
+      - run: uv run mypy app scripts
+      - run: uv run python scripts/generate_models.py --check
+      - run: uv run pytest
