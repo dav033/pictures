@@ -1,5 +1,5 @@
 import { registrarLlamadaIA, type FlujoIA } from "./telemetria";
-import { ErrorIA, type ChatPort, type Herramienta, type LlamadaHerramienta, type Mensaje, type ProveedorId } from "./tipos";
+import { bytesDeBase64, ErrorIA, type ChatPort, type Herramienta, type LlamadaHerramienta, type Mensaje, type ProveedorId } from "./tipos";
 
 /** Un handler recibe los args ya parseados de la llamada y la llamada cruda
  * completa (por si necesita el `id`/`meta` — la mayoría no los usa, pero es
@@ -72,14 +72,17 @@ function resultadoDeFallo(error: unknown, signal: AbortSignal | undefined): "err
   return error instanceof ErrorIA && error.causa === "timeout" ? "timeout" : "error";
 }
 
+/** Conteo estructural: todo lo que HAY en el historial, sin distinguir qué se
+ * transmitió de verdad en esta vuelta. Sirve de fallback cuando el adaptador
+ * no reporta `bytesImagenEnviados` (p. ej. en el camino de error, antes de
+ * tener un `TurnoChat`) y para adaptadores que todavía no implementan la
+ * deduplicación de la Fase 3.1. */
 function bytesImagenes(historial: Mensaje[]): number {
   let total = 0;
   for (const mensaje of historial) {
     if (mensaje.rol !== "usuario") continue;
     for (const imagen of mensaje.imagenes ?? []) {
-      const limpio = imagen.base64.replace(/\s/g, "");
-      const relleno = limpio.endsWith("==") ? 2 : limpio.endsWith("=") ? 1 : 0;
-      total += Math.max(0, Math.floor((limpio.length * 3) / 4) - relleno);
+      total += bytesDeBase64(imagen.base64);
     }
   }
   return total;
@@ -137,7 +140,7 @@ export async function ejecutarConversacion(opts: OpcionesConversacion): Promise<
       modelo: turno.modelo,
       operacion: "chat",
       vuelta,
-      bytesImagenEntrada: bytesImagenes(historial),
+      bytesImagenEntrada: turno.bytesImagenEnviados ?? bytesImagenes(historial),
       ms: Date.now() - inicio,
       tokensEntrada: turno.uso.entrada,
       tokensSalida: turno.uso.salida,
@@ -187,6 +190,7 @@ export async function* ejecutarConversacionStream(opts: OpcionesConversacion): A
     let llamadasCrudas: LlamadaHerramienta[] = [];
     let uso = { entrada: 0, salida: 0, cacheados: 0, pensamiento: 0, promptHerramientas: 0 };
     let modelo = opts.chat.modelo;
+    let bytesImagenEnviados: number | undefined;
 
     try {
       for await (const fragmento of opts.chat.turnoStream({ sistema: opts.sistema, historial, herramientas: opts.herramientas, signal: opts.signal })) {
@@ -205,6 +209,7 @@ export async function* ejecutarConversacionStream(opts: OpcionesConversacion): A
             promptHerramientas: fragmento.uso.promptHerramientas ?? 0,
           };
           modelo = fragmento.modelo;
+          bytesImagenEnviados = fragmento.bytesImagenEnviados;
         }
       }
     } catch (error) {
@@ -232,7 +237,7 @@ export async function* ejecutarConversacionStream(opts: OpcionesConversacion): A
       modelo,
       operacion: "chat",
       vuelta,
-      bytesImagenEntrada: bytesImagenes(historial),
+      bytesImagenEntrada: bytesImagenEnviados ?? bytesImagenes(historial),
       ms: Date.now() - inicio,
       tokensEntrada: uso.entrada,
       tokensSalida: uso.salida,

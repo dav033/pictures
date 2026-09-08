@@ -9,6 +9,17 @@ export type ProveedorId = "gemini" | "fal";
  * tenga más campos. */
 export type ImagenAdjunta = { base64: string; mime: string; id?: string; descripcion?: string };
 
+/** Bytes reales que representa un base64 (sin el padding `=`/`==`). Mismo
+ * cálculo que antes vivía duplicado en el conteo de telemetría; centralizado
+ * aquí porque tanto el motor (`ejecutar.ts`, para el caso de fallback/error)
+ * como el adaptador de Gemini (para medir lo que de verdad se transmite tras
+ * la Fase 3.1) lo necesitan. */
+export function bytesDeBase64(base64: string): number {
+  const limpio = base64.replace(/\s/g, "");
+  const relleno = limpio.endsWith("==") ? 2 : limpio.endsWith("=") ? 1 : 0;
+  return Math.max(0, Math.floor((limpio.length * 3) / 4) - relleno);
+}
+
 /* ---------- Transcript neutral ----------
    El historial no se guarda en el formato de ningún proveedor: cada adaptador
    lo traduce a su formato de cable en cada turno. Eso es lo que permite
@@ -65,6 +76,12 @@ export type TurnoChat = {
     promptHerramientas?: number;
   };
   modelo: string;
+  /** Bytes de imagen realmente transmitidos en ESTA llamada (Fase 3.1): un
+   * adaptador que evita reenviar `inlineData` ya visto en una vuelta anterior
+   * reporta aquí solo lo nuevo, no lo que hay en todo el historial. Si el
+   * adaptador no lo implementa, el consumidor cae al conteo estructural del
+   * historial completo (comportamiento anterior). */
+  bytesImagenEnviados?: number;
 };
 
 /** Fragmentos de un turno en streaming: texto incremental y, al final, el turno completo ya armado. */

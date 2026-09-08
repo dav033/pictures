@@ -1,7 +1,7 @@
 import { ApiError, GoogleGenAI, ThinkingLevel, type Content, type FunctionDeclaration, type Part } from "@google/genai";
 import { conReintento } from "../retry";
-import { ErrorIA } from "../tipos";
-import type { ChatPort, FragmentoChat, Herramienta, LlamadaHerramienta, Mensaje, PeticionChat, TurnoChat } from "../tipos";
+import { bytesDeBase64, ErrorIA } from "../tipos";
+import type { ChatPort, FragmentoChat, Herramienta, ImagenAdjunta, LlamadaHerramienta, Mensaje, PeticionChat, TurnoChat } from "../tipos";
 
 type MetadatosUsoGemini = {
   promptTokenCount?: number;
@@ -38,9 +38,23 @@ function herramientaADeclaracion(h: Herramienta): FunctionDeclaration {
  * Agrupa mensajes "herramienta" consecutivos en un solo Content: Gemini
  * espera todas las functionResponse de un mismo turno juntas en un único
  * mensaje de rol "user".
+ *
+ * Fase 3.1: `historial` es el mismo array (mutado por referencia) durante
+ * las hasta 10 vueltas de una sola ejecución del tool loop — `ejecutar.ts`
+ * nunca clona los mensajes de usuario ya existentes, solo agrega mensajes
+ * nuevos al final. Eso permite marcar cada `ImagenAdjunta` ya transmitida en
+ * `imagenesEnviadas` (vive en el closure de `crearChatGemini`, una por
+ * request) y, en vueltas siguientes, omitir su `inlineData` — el modelo
+ * sigue viendo el texto `[IMAGEN_ID=...]` para referirse a ella, pero el
+ * base64 no se vuelve a subir. Devuelve además cuántos bytes de imagen se
+ * transmitieron de verdad en esta llamada, para telemetría honesta.
  */
-function historialAContents(historial: Mensaje[]): Content[] {
+export function historialAContents(
+  historial: Mensaje[],
+  imagenesEnviadas: WeakSet<ImagenAdjunta>,
+): { contents: Content[]; bytesImagenEnviados: number } {
   const contents: Content[] = [];
+  let bytesImagenEnviados = 0;
 
   for (const m of historial) {
     if (m.rol === "usuario") {
@@ -54,7 +68,10 @@ function historialAContents(historial: Mensaje[]): Content[] {
             text: `[IMAGEN_ID=${img.id}]${img.descripcion ? ` ${img.descripcion}` : ""}`,
           });
         }
+        if (imagenesEnviadas.has(img)) continue;
         parts.push({ inlineData: { mimeType: img.mime, data: img.base64 } });
+        imagenesEnviadas.add(img);
+        bytesImagenEnviados += bytesDeBase64(img.base64);
       }
       parts.push({ text: m.texto });
       contents.push({ role: "user", parts });
@@ -88,7 +105,7 @@ function historialAContents(historial: Mensaje[]): Content[] {
     }
   }
 
-  return contents;
+  return { contents, bytesImagenEnviados };
 }
 
 function extraerLlamadas(partes: Part[]): LlamadaHerramienta[] {
@@ -147,6 +164,12 @@ export function crearChatGemini(opts?: { apiKey?: string; modelo?: string; think
     return new GoogleGenAI({ apiKey });
   }
 
+  // Vive por instancia de ChatPort — creada una vez por request (ver
+  // `chatDe()`), así que sobrevive exactamente las hasta 10 vueltas de una
+  // ejecución del tool loop y se descarta con ella. No hay estado compartido
+  // entre requests ni entre conversaciones distintas.
+  const imagenesEnviadas = new WeakSet<ImagenAdjunta>();
+
   return {
     id: "gemini",
     modelo,
@@ -155,12 +178,13 @@ export function crearChatGemini(opts?: { apiKey?: string; modelo?: string; think
       const client = cliente();
       if (!client) throw new ErrorIA("sin_llave", "gemini", "No hay GEMINI_API_KEY configurada.", false);
 
+      const { contents, bytesImagenEnviados } = historialAContents(p.historial, imagenesEnviadas);
       try {
         const respuesta = await conReintento(
           () =>
             client.models.generateContent({
               model: modelo,
-              contents: historialAContents(p.historial),
+              contents,
               config: {
                 systemInstruction: p.sistema,
                 abortSignal: p.signal,
@@ -179,6 +203,7 @@ export function crearChatGemini(opts?: { apiKey?: string; modelo?: string; think
           llamadas: extraerLlamadas(partes),
           uso: extraerUsoGemini(respuesta.usageMetadata),
           modelo,
+          bytesImagenEnviados,
         };
       } catch (error) {
         throw categorizarError(error);
@@ -189,6 +214,7 @@ export function crearChatGemini(opts?: { apiKey?: string; modelo?: string; think
       const client = cliente();
       if (!client) throw new ErrorIA("sin_llave", "gemini", "No hay GEMINI_API_KEY configurada.", false);
 
+      const { contents, bytesImagenEnviados } = historialAContents(p.historial, imagenesEnviadas);
       try {
         // Reintento SOLO en la apertura del stream (aún no salió ningún byte
         // al cliente). Un fallo DESPUÉS del primer chunk nunca se reintenta
@@ -198,7 +224,7 @@ export function crearChatGemini(opts?: { apiKey?: string; modelo?: string; think
           () =>
             client.models.generateContentStream({
               model: modelo,
-              contents: historialAContents(p.historial),
+              contents,
               config: {
                 systemInstruction: p.sistema,
                 abortSignal: p.signal,
@@ -238,7 +264,7 @@ export function crearChatGemini(opts?: { apiKey?: string; modelo?: string; think
           }
         }
 
-        yield { tipo: "fin", texto, llamadas: [...llamadasPorClave.values()], uso, modelo };
+        yield { tipo: "fin", texto, llamadas: [...llamadasPorClave.values()], uso, modelo, bytesImagenEnviados };
       } catch (error) {
         throw categorizarError(error);
       }

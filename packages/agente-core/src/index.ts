@@ -10,7 +10,7 @@ export type {
   ChatPort,
   CausaFallo,
 } from "./tipos";
-export { ErrorIA } from "./tipos";
+export { ErrorIA, bytesDeBase64 } from "./tipos";
 
 export type { OpcionesReintento } from "./retry";
 export { conReintento } from "./retry";
