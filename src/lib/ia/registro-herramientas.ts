@@ -7,7 +7,8 @@ import { calcularMedidas, type Figura, type ResultadoMedidas } from "@/lib/medid
 import { productosPorId } from "@/lib/products";
 import { getRagPool } from "@/lib/rag/db";
 import { buscarCatalogoRag, type ProductoCandidato } from "@/lib/rag/chat/buscar";
-import { buscarCatalogoRagConPresupuesto } from "@/lib/rag/chat/buscar-presupuesto";
+import { buscarCatalogoRagConPresupuesto, type PoolItemPresupuesto, type ResultadoBusquedaPresupuesto } from "@/lib/rag/chat/buscar-presupuesto";
+import type { RolPresupuesto } from "@/lib/rag/presupuesto/franjas";
 import { extraerFiltrosDurosBusqueda } from "@/lib/rag/query-parser/hard-filters";
 import { parseEventSearchIntent } from "@/lib/rag/query-parser/event-search";
 import { aProductoValidado, validarSeleccion, type ItemRechazado, type ItemValidado, type SeleccionSolicitada } from "@/lib/rag/chat/validar";
@@ -128,6 +129,30 @@ const EVENT_MATCH_PRIORITY: Record<EventMatchLevel, number> = {
   thematic: 1,
   exact_event: 2,
 };
+
+/** Fase 3.2: proyección compacta de `pool_por_rol` para el modelo. Quita
+ * `imagen` (una URL que un modelo de texto no puede usar) sin tocar ningún
+ * campo del que dependa la honestidad al sustituir (sku, precio, tamaño,
+ * disponibilidad, `eventEvidence`). La UI obtiene sus fotos por una vía
+ * completamente separada (`estado.ragValidados`, poblado en
+ * `confirmar_seleccion_rag`), así que esto no le quita nada. */
+function proyectarPoolParaModelo(
+  poolPorRol: ResultadoBusquedaPresupuesto["poolPorRol"],
+): Partial<Record<RolPresupuesto, Omit<PoolItemPresupuesto, "imagen">[]>> {
+  const proyectado: Partial<Record<RolPresupuesto, Omit<PoolItemPresupuesto, "imagen">[]>> = {};
+  for (const [rol, items] of Object.entries(poolPorRol) as [RolPresupuesto, PoolItemPresupuesto[]][]) {
+    proyectado[rol] = items.map((item) => ({
+      productId: item.productId,
+      variantId: item.variantId,
+      titulo: item.titulo,
+      precio: item.precio,
+      disponible: item.disponible,
+      acabados: item.acabados,
+      eventEvidence: item.eventEvidence,
+    }));
+  }
+  return proyectado;
+}
 
 function mergeEventEvidence(
   current: EventMatchEvidence | undefined,
@@ -422,7 +447,14 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
                 holgura: respuesta.canasta.holgura,
               }
             : null,
-          pool_por_rol: respuesta.poolPorRol,
+          // Fase 3.2: `imagen` no se poda del tipo interno `PoolItemPresupuesto`
+          // (lo usa `estado.ragValidados`/la UI por otra vía, vía
+          // `confirmar_seleccion_rag`), pero un modelo de texto no puede leer
+          // una URL de foto — proyectarla afuera de lo que ve el modelo ahorra
+          // tokens de entrada sin perder ningún campo de honestidad (sku,
+          // precio, tamaño, disponibilidad, match_level, eventEvidence siguen
+          // intactos).
+          pool_por_rol: proyectarPoolParaModelo(respuesta.poolPorRol),
           relajaciones: respuesta.relajaciones,
           conflictos: respuesta.conflictos,
           evento: {
@@ -816,8 +848,10 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
           match_levels: resuelto.event_match_levels ?? [],
           relaxations: resuelto.event_relaxations ?? [],
         },
-        plan_id: resuelto.plan.plan_id,
-        plan_hash: resuelto.plan_hash,
+        // Fase 3.2: plan_id/plan_hash no van al modelo — no los necesita
+        // (nunca los pasa de vuelta en una llamada; el cliente los lee de
+        // `estado.planResuelto`, surfaceado aparte en `ResultadoConversacion`,
+        // y `/api/generate` los valida contra el plan guardado en servidor).
         estructuras: resuelto.estructuras.map((estructura) => ({
           estructura_id: estructura.estructura_id,
           nombre: estructura.nombre,

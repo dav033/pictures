@@ -78,7 +78,7 @@
     "plan:test-contratos": "tsx scripts/test-plan-contratos.ts",
     "plan:test-geometria": "tsx scripts/test-geometria-plan.ts",
     "plan:test-resolver": "tsx --conditions=react-server scripts/test-resolver-plan.ts",
-    "plan:test-presupuesto": "tsx scripts/test-plan-presupuesto.ts",
+    "plan:test-presupuesto": "tsx --conditions=react-server scripts/test-plan-presupuesto.ts",
     "plan:test-pg": "tsx --conditions=react-server --env-file=.env.local scripts/test-plan-pg.ts",
     "plan:test-desglose": "tsx --conditions=react-server scripts/test-desglose-materiales.ts",
     "plan:test-orden": "tsx scripts/test-orden-desglose.ts",
