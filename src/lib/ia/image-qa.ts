@@ -3,6 +3,7 @@ import type { SceneSpec } from "./scene-spec";
 import { z } from "zod";
 import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
 import type { DesignMaterialEstimate } from "@/lib/materiales/estimacion";
+import { featureEnabled } from "./feature-flags";
 import { bytesBase64, registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "./telemetria-llamadas";
 
 export type ImageQaReport = {
@@ -78,12 +79,12 @@ const VisionObservationSchema = z.object({
 }).strict();
 
 export async function observarImagenGenerada(sceneSpec: SceneSpec, image: { base64: string; mime: string }, estimate?: DesignMaterialEstimate, telemetria?: ContextoTelemetriaIA): Promise<SceneQaObservation | null> {
-  const flag = process.env.IMAGE_QA_VISION;
-  const instanceFlag = process.env.IMAGE_INSTANCE_QA;
-  const habilitado = instanceFlag != null
-    ? ["1", "true", "on"].includes(instanceFlag.toLowerCase())
-    : flag == null ? Boolean(process.env.GEMINI_API_KEY) : ["1", "true", "on"].includes(flag.toLowerCase());
-  if (!habilitado) return null;
+  // Fase 5.3: antes esta condición reimplementaba su propia versión de
+  // IMAGE_INSTANCE_QA/IMAGE_QA_VISION, distinta de la que usa el gate de
+  // planes aprobados en generate/route.ts — podían discrepar (el gate creía
+  // que el QA estaba activo mientras esta llamada se saltaba en silencio).
+  // featureEnabled() es ahora la única fuente de verdad para las dos.
+  if (!featureEnabled("IMAGE_INSTANCE_QA")) return null;
   const client = getGeminiClient();
   if (!client) return null;
   const expected = sceneSpec.elements.map((element) => {
