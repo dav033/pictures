@@ -29,11 +29,36 @@ seguían siendo referenciados por comentarios de código vivo. Están en
 este trabajo es `PLAN_RENDIMIENTO_RAG.md`: contiene el trabajo de optimización
 de Gemini con **mediciones reales**, y es la base del capítulo 3.
 
+### Cómo se numera todo esto
+
+Hay dos numeraciones y conviene no mezclarlas:
+
+| Nombre | Qué es | Estado |
+|---|---|---|
+| **Etapas 1 a 4** | Las cuatro etapas del plan viejo que **ya se ejecutaron**: auditoría, contratos, base del servicio Python y preparación reversible. Documentadas en `01-` a `04-` de esta carpeta | Cerradas en local |
+| **Fases 1 a 6** | El trabajo nuevo que define este documento. La Fase 1 es el primer trabajo nuevo, no una repetición de nada | Fase 1 en curso |
+
+La primera versión de este documento llamaba "Etapa 5" a lo que ahora es la
+Fase 1, por continuidad con la numeración vieja. Se renombró porque inducía a
+error: leer "plan nuevo" y encontrarlo empezando en 5 sugiere que algo se
+saltó, cuando en realidad las cuatro primeras ya estaban hechas antes de
+escribir este plan.
+
+Hay además una razón de fondo. La crítica central del capítulo 1.3 es que las
+etapas del plan viejo cerraban entregando frontera de transporte sin ninguna
+capacidad de IA. Este plan tiene un criterio de salida distinto, así que
+numerar su primer paso como continuación de esa serie implicaría una
+continuidad que no existe.
+
+Nada del trabajo ya ejecutado cambia por el renombrado.
+
 ---
 
 ## 1. Estado real verificado
 
 ### 1.1 Migración Python
+
+Las cuatro etapas del plan viejo que sí se ejecutaron:
 
 | Etapa | Estado | Evidencia |
 |---|---|---|
@@ -41,8 +66,10 @@ de Gemini con **mediciones reales**, y es la base del capítulo 3.
 | 2 — contratos | Cerrada | 33 JSON Schema Draft 7, `contracts:check` sin drift |
 | 3 — base del servicio | Cerrada local | FastAPI, 33 modelos Pydantic generados, `uv.lock` |
 | 4 — preparación reversible | Cerrada local | Repo backend separado, store PG durable, E2E HTTP local |
-| 5 — staging | **No iniciada** | Bloqueada por gates externos hasta hoy |
-| 6-10 | **No existían** | Este documento las define |
+
+Lo que el plan viejo llamaba etapas 5 a 10 no existía por escrito, salvo la
+quinta (staging), que estaba redactada pero nunca se inició por gates externos.
+Su contenido técnico sigue siendo válido y se adopta tal cual en la Fase 3.
 
 ### 1.2 Qué hace Python hoy — y qué no
 
@@ -66,8 +93,8 @@ Python/RAG y todo su ecosistema". Sin embargo:
 - Las optimizaciones de IA que sí dieron ganancia medida (bajar el nivel de
   razonamiento en el parser y en el chat: **-72% y -49% de latencia**) se
   hicieron **en TypeScript**, sin Python de por medio.
-- La Etapa 5 tal como estaba escrita habría añadido despliegue y
-  observabilidad para seguir sin mover una sola capacidad de IA.
+- La quinta etapa tal como estaba escrita en el plan viejo habría añadido
+  despliegue y observabilidad para seguir sin mover una sola capacidad de IA.
 
 Ese desalineamiento no invalida el trabajo hecho: la frontera es un
 prerrequisito real y está bien construida. Lo que hay que corregir es el orden
@@ -79,24 +106,31 @@ no cierra etapa.
 
 ### 1.4 Riesgos abiertos del repositorio
 
-1. **Todo el trabajo de las etapas 1 a 4 está sin commitear.** Último commit:
-   `c89cda1`, 2026-09-04. Hoy hay 41 archivos modificados (1.279 inserciones) y
-   sin trackear: `contracts/`, `docs/migracion-python/`, `services/`,
+1. ~~**Todo el trabajo de las etapas 1 a 4 está sin commitear.**~~ **Resuelto
+   en la Fase 1.1.** Eran 41 archivos modificados (1.279 inserciones) más
+   `contracts/`, `docs/migracion-python/`, `services/`,
    `src/lib/ia/contracts/`, `src/lib/ia/idempotencia/`,
-   `src/lib/ia/python-adapter.ts`, `src/app/api/internal/` y 12 scripts. Se
-   pierde con cualquier accidente.
-2. **No existe arnés de medición.** `PLAN_RENDIMIENTO_RAG.md` puso la Fase 0
+   `src/lib/ia/python-adapter.ts`, `src/app/api/internal/` y 12 scripts, todo
+   sin versionar desde `c89cda1` (2026-09-04). Está en la rama
+   `migracion/python-etapas-1-4`, en siete commits por frente de trabajo.
+2. **El runner de migraciones podía escribir en producción sin preguntar.**
+   `npm run rag:migrate` tomaba `DATABASE_URL` de `.env.local` —que en este
+   checkout apunta a Neon remoto— sin imprimir ni confirmar el destino.
+   Además `BEGIN`/SQL/`COMMIT` se ejecutaban sobre el pool, así que podían
+   salir por conexiones distintas y la garantía transaccional era ilusoria.
+   **Resuelto en la Fase 1.3**; el detalle está en el capítulo 10.
+3. **No existe arnés de medición.** `PLAN_RENDIMIENTO_RAG.md` puso la Fase 0
    ("arnés de medición permanente") antes que todo lo demás, precisamente
    porque sin ella no se puede probar que una optimización funcionó. Nunca se
    construyó. Hay `scripts/bench-rag-v2.ts` y `scripts/bench-retrieval-v2.ts`,
    pero no están cableados en `package.json` y miden calidad de retrieval
    contra ground truth, no latencia ni tokens.
-3. **La telemetría de tokens no sobrevive un reinicio.** Es un buffer en
+4. **La telemetría de tokens no sobrevive un reinicio.** Es un buffer en
    memoria de 50 eventos (`packages/agente-core/src/telemetria.ts:18`), sin
    `request_id`, sin versión de prompt y sin coste. `AGENTS.md` exige
    registrar identificadores de traza, proveedor, modelo, versión de prompt y
    uso reportado.
-4. **Comentarios de código apuntando a archivos borrados.** Seis referencias
+5. **Comentarios de código apuntando a archivos borrados.** Seis referencias
    vivas a `PLAN_RENDIMIENTO_RAG.md` en `src/lib/ia/prompt-sistema.ts:8`,
    `src/lib/ia/registro.ts:51`, `src/lib/rag/embeddings.ts:14`,
    `src/lib/rag/retrieval/por-rol.ts:135`, `scripts/eval-chat-thinking.ts:16` y
@@ -171,7 +205,7 @@ vida, invalidación al cambiar el prompt) es complejidad de mantenimiento real a
 cambio de un ahorro absoluto insignificante en este patrón de uso.
 
 **Queda como el primer punto a reevaluar en cuanto haya tráfico real**, con
-datos de ese tráfico y no con una proyección. La Etapa 5 deja la telemetría que
+datos de ese tráfico y no con una proyección. La Fase 1 deja la telemetría que
 hará posible tomar esa decisión con números.
 
 ---
@@ -293,57 +327,57 @@ decisión sobre el caché explícito no se puede tomar con datos.
 
 ---
 
-## 5. Etapas 5 a 10
+## 5. Fases 1 a 6
 
-### Etapa 5 — Consolidación, rescate y arnés de medición
+### Fase 1 — Consolidación, rescate y arnés de medición
 
-**Sin gates externos. Es la etapa más barata y desbloquea todas las demás.**
+**Sin gates externos. Es la fase más barata y desbloquea todas las demás.**
 
-| # | Entrega | Criterio de aceptación |
-|---|---|---|
-| 5.1 | Commit del trabajo de etapas 1-4 en rama `migracion/python-etapas-1-4`, en slices coherentes (contratos, servicio Python, adaptador, docs). `main` intacto. | `git status` limpio en la rama; `main` sin cambios; ningún archivo perdido respecto al inventario de 1.4 |
-| 5.2 | Planes recuperados en `docs/planes-recuperados/` y comentarios de código apuntando a la ruta nueva. | Los 6 comentarios de 1.4.4 resuelven a un archivo existente |
-| 5.3 | **Migraciones seguras**, capítulo 10. Prioridad al punto 10.1(5): hoy `npm run rag:migrate` aplica DDL a Neon remoto sin preguntar. Incluye checksum, advisory lock, confirmación de destino, validación de numeración y la corrección de la colisión 016 con su reconciliación (10.2) | `--dry-run` funciona; un `migrate` contra host remoto sin `--allow-remote` aborta; la colisión 016 resuelta sin re-aplicar DDL en ningún entorno |
-| 5.4 | **Arnés de medición** `npm run ia:bench`. Mide por turno: latencia de parseo, retrieval, TTFT, turno completo, vueltas del loop, tokens de entrada/salida/pensamiento/cacheados, bytes de imagen enviados, y coste estimado por modelo | Reproduce las cifras del capítulo 3 con ±15% |
-| 5.5 | **Telemetría durable y taxonomía de IA**, capítulo 9. Migración `019_ai_call_log.sql`, tabla de precios versionada, catálogos cerrados de `flujo` y `capacidad`, y `thoughtsTokenCount` leído del SDK. Cubre las once llamadas de IA, no dos. El buffer en memoria se conserva para el panel en caliente | Los 8 flujos y las 12 capacidades emiten evento; la telemetría sobrevive un reinicio; un fallo al registrar no rompe un turno |
+| # | Entrega | Estado | Criterio de aceptación |
+|---|---|---|---|
+| Fase 1.1 | Commit del trabajo de etapas 1-4 en rama, en slices por frente. `main` intacto | **Hecha** | `git status` limpio; `main` en `c89cda1`; 7 commits; sin archivos perdidos respecto al inventario de 1.4 |
+| Fase 1.2 | Planes recuperados en `docs/planes-recuperados/` y comentarios de código apuntando a una ruta que existe | **Hecha** | Los 6 comentarios de 1.4(5) resuelven a un archivo existente |
+| Fase 1.3 | **Migraciones seguras**, capítulo 10: confirmación de destino, checksum, advisory lock, transacción sobre un solo cliente, validación de numeración, `--dry-run`, `--target`, y la colisión 016 corregida con su reconciliación | **Hecha** | 7 pruebas contra PostgreSQL Docker desechable: gate remoto aborta sin conectar, dry-run deja 0 tablas, 19 migraciones con 19 checksums, segunda corrida 0 nuevas, checksum alterado falla, renombrado reconcilia sin re-aplicar, prefijo duplicado falla |
+| Fase 1.4 | **Arnés de medición** `npm run ia:bench`. Mide por turno: latencia de parseo, retrieval, TTFT, turno completo, vueltas del loop, tokens de entrada/salida/pensamiento/cacheados, bytes de imagen enviados, y coste estimado por modelo | Pendiente | Reproduce las cifras del capítulo 3 con ±15% |
+| Fase 1.5 | **Telemetría durable y taxonomía de IA**, capítulo 9. Migración `020_ai_call_log.sql`, tabla de precios versionada, catálogos cerrados de `flujo` y `capacidad`, y `thoughtsTokenCount` leído del SDK. Cubre las once llamadas de IA, no dos. El buffer en memoria se conserva para el panel en caliente | Pendiente | Los 8 flujos y las 12 capacidades emiten evento; la telemetría sobrevive un reinicio; un fallo al registrar no rompe un turno |
 
 **Salida:** existe una línea base numérica del sistema tal como está hoy, y
 aplicar una migración dejó de ser una operación peligrosa. Sin lo primero,
-ninguna afirmación de la Etapa 6 es verificable; sin lo segundo, la propia
-migración de 5.5 es un riesgo.
+ninguna afirmación de la Fase 2 es verificable; sin lo segundo, la propia
+migración de Fase 1.5 es un riesgo.
 
-**Nota sobre 5.5:** es la entrega que atiende directamente "coste por
+**Nota sobre Fase 1.5:** es la entrega que atiende directamente "coste por
 conversación" y "diferenciar cada IA". No reduce el coste todavía — lo hace
 visible y atribuible, que es el requisito previo de todo lo demás.
 
 ---
 
-### Etapa 6 — Optimización de la interacción con Gemini, en TypeScript
+### Fase 2 — Optimización de la interacción con Gemini, en TypeScript
 
-**Sin gates externos.** Cada punto se mide contra el arnés de la Etapa 5, se
+**Sin gates externos.** Cada punto se mide contra el arnés de la Fase 1, se
 activa por variable de entorno con default en el comportamiento actual, y no
 entra si su regresión no está verde.
 
-Orden revisado tras la auditoría del anexo A. El punto 6.1 pasó a ser el
+Orden revisado tras la auditoría del anexo A. El punto Fase 2.1 pasó a ser el
 primero: es el mayor desperdicio del camino de chat y no estaba identificado
 antes de esta revisión.
 
 | # | Cambio | Referencia | Ganancia esperada | Riesgo |
 |---|---|---|---|---|
-| 6.1 | **No reenviar las imágenes inline en cada vuelta del loop.** Hoy el base64 de la foto del espacio y las referencias se re-serializa en cada una de hasta 10 vueltas, y `limitarHistorialChat` **no cuenta el base64** en su presupuesto de 16.000 caracteres — el tope real es el body HTTP de 25 MB | `src/app/api/chat/route.ts:204-230`, `packages/agente-core/src/gemini/chat.ts:27-41`, `src/lib/ia/historial-chat.ts:13-18` | **Alta** en cualquier turno con foto: cientos de KB a varios MB por vuelta. **No medida** | Medio — el modelo debe seguir viendo la imagen y su `IMAGEN_ID` |
-| 6.2 | **Proyección compacta del resultado de herramienta para el modelo**, separada del payload de UI/telemetría. El caso más claro: `pool_por_rol` envía un campo `imagen` a un modelo de texto que no puede usarlo | `src/lib/rag/chat/buscar-presupuesto.ts:17-26,290-302`, `src/lib/ia/registro-herramientas.ts:402-434,810-836` | **Alta** sobre tokens de entrada en búsquedas por franja y confirmación de plan. **No medida** | Medio — no puede perder ids, precios, tamaños, evidencia ni sustituciones |
-| 6.3 | `thinkingLevel` explícito en `observarImagenGenerada` | `src/lib/ia/image-qa.ts:95` | Proyectada por analogía con el parser (3,5x en esa llamada). **No medida** | Bajo — extracción a schema cerrado |
-| 6.4 | Filtrar variantes en SQL en vez de traerlas todas y filtrarlas en JavaScript | `src/lib/rag/chat/buscar.ts:213-239`, `src/lib/rag/chat/buscar-presupuesto.ts:235-247` | Media/alta en productos con muchas presentaciones. **No medida** | Medio — la semántica de whitelist debe conservarse exactamente |
-| 6.5 | Batch de `resolverVariantesPorDespiece`: hoy es un `SELECT` por cada ítem `usar_despiece` (N+1 real) | `src/lib/ia/registro-herramientas.ts:527-561`, `src/lib/rag/tamanos/resolver.ts:47-64` | Media en planes con varios colores/productos. **No medida** | Medio — no puede cruzar variantes entre familias |
-| 6.6 | Cliente Gemini reutilizado en vez de instanciado por llamada. En el camino SSE real es **una instancia por vuelta del loop**, no por request | `src/lib/gemini.ts:6`, `packages/agente-core/src/gemini/chat.ts:122-130` | **No medida**. Puede ser ruido | Bajo |
-| 6.7 | Pool PostgreSQL con `max`, timeouts y `statement_timeout` | `src/lib/rag/db.ts:12` | Robustez, no velocidad | Bajo |
-| 6.8 | Sacar de la ruta crítica los INSERT/UPDATE de observabilidad (`registrarBusqueda`, `registrarSeleccion`, `registrarPlanAudit`) con un outbox durable | `src/lib/ia/registro-herramientas.ts:385-400,461-472,582-602` | 1+ round-trip PG menos por herramienta. **No medida** | Medio — la trazabilidad debe seguir siendo durable |
-| 6.9 | Herramientas de solo lectura en paralelo dentro de una vuelta | `packages/agente-core/src/ejecutar.ts:188-199` | Ahorra una latencia de herramienta cuando el modelo pide 2+ | Medio — exige marcar handlers |
-| 6.10 | Revisar el truncado de historial (caracteres → tokens, y que cuente el base64) | `src/lib/ia/historial-chat.ts:3` | **No medida** | Bajo |
-| 6.11 | **Honestidad estructural en la UI** (capítulo 11.1): renderizar `filtro_relajado`, `match_level`, `sustituciones`, `sin_cobertura` y `rechazados` como elementos propios, independientes de lo que el modelo escriba | `src/lib/ia/registro-herramientas.ts:474-509,611-635`, `src/app/page.tsx` | No es de latencia: **reduce el riesgo de todo lo demás de esta etapa** | Bajo — solo añade, no quita |
-| 6.12 | **Pantalla de consumo de IA por flujo** (capítulo 11.3): tarjetas por funcionalidad, desglose por capacidad, coste por conversación de punta a punta | `src/components/admin/MotorIATab.tsx:128-143` | Hace visible el resultado de 6.1 a 6.10 | Bajo |
+| Fase 2.1 | **No reenviar las imágenes inline en cada vuelta del loop.** Hoy el base64 de la foto del espacio y las referencias se re-serializa en cada una de hasta 10 vueltas, y `limitarHistorialChat` **no cuenta el base64** en su presupuesto de 16.000 caracteres — el tope real es el body HTTP de 25 MB | `src/app/api/chat/route.ts:204-230`, `packages/agente-core/src/gemini/chat.ts:27-41`, `src/lib/ia/historial-chat.ts:13-18` | **Alta** en cualquier turno con foto: cientos de KB a varios MB por vuelta. **No medida** | Medio — el modelo debe seguir viendo la imagen y su `IMAGEN_ID` |
+| Fase 2.2 | **Proyección compacta del resultado de herramienta para el modelo**, separada del payload de UI/telemetría. El caso más claro: `pool_por_rol` envía un campo `imagen` a un modelo de texto que no puede usarlo | `src/lib/rag/chat/buscar-presupuesto.ts:17-26,290-302`, `src/lib/ia/registro-herramientas.ts:402-434,810-836` | **Alta** sobre tokens de entrada en búsquedas por franja y confirmación de plan. **No medida** | Medio — no puede perder ids, precios, tamaños, evidencia ni sustituciones |
+| Fase 2.3 | `thinkingLevel` explícito en `observarImagenGenerada` | `src/lib/ia/image-qa.ts:95` | Proyectada por analogía con el parser (3,5x en esa llamada). **No medida** | Bajo — extracción a schema cerrado |
+| Fase 2.4 | Filtrar variantes en SQL en vez de traerlas todas y filtrarlas en JavaScript | `src/lib/rag/chat/buscar.ts:213-239`, `src/lib/rag/chat/buscar-presupuesto.ts:235-247` | Media/alta en productos con muchas presentaciones. **No medida** | Medio — la semántica de whitelist debe conservarse exactamente |
+| Fase 2.5 | Batch de `resolverVariantesPorDespiece`: hoy es un `SELECT` por cada ítem `usar_despiece` (N+1 real) | `src/lib/ia/registro-herramientas.ts:527-561`, `src/lib/rag/tamanos/resolver.ts:47-64` | Media en planes con varios colores/productos. **No medida** | Medio — no puede cruzar variantes entre familias |
+| Fase 2.6 | Cliente Gemini reutilizado en vez de instanciado por llamada. En el camino SSE real es **una instancia por vuelta del loop**, no por request | `src/lib/gemini.ts:6`, `packages/agente-core/src/gemini/chat.ts:122-130` | **No medida**. Puede ser ruido | Bajo |
+| Fase 2.7 | Pool PostgreSQL con `max`, timeouts y `statement_timeout` | `src/lib/rag/db.ts:12` | Robustez, no velocidad | Bajo |
+| Fase 2.8 | Sacar de la ruta crítica los INSERT/UPDATE de observabilidad (`registrarBusqueda`, `registrarSeleccion`, `registrarPlanAudit`) con un outbox durable | `src/lib/ia/registro-herramientas.ts:385-400,461-472,582-602` | 1+ round-trip PG menos por herramienta. **No medida** | Medio — la trazabilidad debe seguir siendo durable |
+| Fase 2.9 | Herramientas de solo lectura en paralelo dentro de una vuelta | `packages/agente-core/src/ejecutar.ts:188-199` | Ahorra una latencia de herramienta cuando el modelo pide 2+ | Medio — exige marcar handlers |
+| Fase 2.10 | Revisar el truncado de historial (caracteres → tokens, y que cuente el base64) | `src/lib/ia/historial-chat.ts:3` | **No medida** | Bajo |
+| Fase 2.11 | **Honestidad estructural en la UI** (capítulo 11.1): renderizar `filtro_relajado`, `match_level`, `sustituciones`, `sin_cobertura` y `rechazados` como elementos propios, independientes de lo que el modelo escriba | `src/lib/ia/registro-herramientas.ts:474-509,611-635`, `src/app/page.tsx` | No es de latencia: **reduce el riesgo de todo lo demás de esta etapa** | Bajo — solo añade, no quita |
+| Fase 2.12 | **Pantalla de consumo de IA por flujo** (capítulo 11.3): tarjetas por funcionalidad, desglose por capacidad, coste por conversación de punta a punta | `src/components/admin/MotorIATab.tsx:128-143` | Hace visible el resultado de Fase 2.1 a 2.10 | Bajo |
 
-**Por qué 6.11 va en esta etapa y no en una de UI aparte:** parte de lo que hoy
+**Por qué Fase 2.11 va en esta etapa y no en una de UI aparte:** parte de lo que hoy
 vigila el set de regresión conversacional —que el modelo confiese una
 sustitución o un filtro relajado— pasa a ser una propiedad del sistema. Eso
 baja el riesgo de tocar el razonamiento del modelo, que es exactamente lo que
@@ -363,7 +397,7 @@ con `flash-lite` y con la escalera paralela.
 
 ---
 
-### Etapa 7 — Staging real del backend Python
+### Fase 3 — Staging real del backend Python
 
 **Destino confirmado:** EC2 `n8n-maros` (Docker, script de deploy ya instalado
 en `/home/ec2-user/deploy-demo-decoracion.sh`, responde HTTP 200) y PostgreSQL
@@ -389,7 +423,7 @@ documenta el siguiente paso exacto. No se afirma tráfico remoto no ejecutado.
 
 ---
 
-### Etapa 8 — Primera capacidad de IA real en Python
+### Fase 4 — Primera capacidad de IA real en Python
 
 Aquí la migración empieza a pagar. Se eligen capacidades donde el ecosistema
 Python aporta algo que TypeScript no tiene, y que **no son autoridad
@@ -412,7 +446,7 @@ tocar código, y con el resultado documentado aunque sea negativo.
 
 ---
 
-### Etapa 9 — Camino LoRA y generación de imagen
+### Fase 5 — Camino LoRA y generación de imagen
 
 Los ejes son **seguridad del gasto primero**, luego fidelidad, luego coste. El
 detalle con evidencia está en el anexo B.
@@ -421,7 +455,7 @@ La auditoría cambió el orden previsto: hay tres defectos de seguridad del gast
 que deben ir antes que cualquier optimización de calidad, porque hoy un
 request puede pagar una generación que nadie puede reconciliar.
 
-#### E9.0 — Bloqueo previo (sin coste)
+#### Fase 5.0 — Bloqueo previo (sin coste)
 
 `PLAN-COMPOSICION-RICA-V001.md` §1.1 bloquea nuevas llamadas pagadas hasta
 resolver la inconsistencia de atribución de identidad del LoRA: la URL
@@ -430,7 +464,7 @@ terminada en `0aa82cf2` (v004) aparece registrada junto al trigger
 `src/lib/ia/sempertex-lora.ts:6-10`. **Esto se resuelve antes de gastar un
 dólar más.**
 
-#### E9.1 — Seguridad del gasto
+#### Fase 5.1 — Seguridad del gasto
 
 | # | Defecto | Referencia |
 |---|---|---|
@@ -439,9 +473,9 @@ dólar más.**
 | c | **La generación de imagen de Gemini no recibe `AbortSignal` ni timeout.** El único límite es `maxDuration` | `src/lib/ia/gemini/imagen.ts:74-90` |
 | d | **`/api/generate` no limita el tamaño de las imágenes de entrada** (`fotoEspacio`, `imagenesReferencia`, `previousGeneratedImage`), mientras `/api/references/analyze` sí lo hace (1-3 imágenes, MIME, 28 MB por imagen, dimensiones) | `src/app/api/generate/route.ts:65-107`, `src/app/api/references/analyze/route.ts:20-31` |
 | e | **`cargarFoto` descarga sin validar** `Content-Length`, MIME, dimensiones ni allowlist de host | `src/app/api/generate/route.ts:140-150` |
-| f | **No hay presupuesto de gasto** (capítulo 12.1). Nada impide repetir por accidente la sesión que gastó US$1.932 en 61 generaciones. Requiere el `ai_call_log` de la Etapa 5; bloquea **antes** de la llamada, con umbral de aviso y umbral de corte | depende de 9.7 |
+| f | **No hay presupuesto de gasto** (capítulo 12.1). Nada impide repetir por accidente la sesión que gastó US$1.932 en 61 generaciones. Requiere el `ai_call_log` de la Fase 1; bloquea **antes** de la llamada, con umbral de aviso y umbral de corte | depende de 9.7 |
 
-#### E9.2 — Coste y latencia
+#### Fase 5.2 — Coste y latencia
 
 | # | Cambio | Referencia | Nota |
 |---|---|---|---|
@@ -456,7 +490,7 @@ dólar más.**
 `/api/references/analyze` = hasta 6 intentos Gemini (2 turnos lógicos × 3
 reintentos), sin clave de idempotencia.
 
-#### E9.3 — Fidelidad
+#### Fase 5.3 — Fidelidad
 
 Documentos vivos que esta etapa retoma, hoy huérfanos:
 `PLAN-COMPOSICION-RICA-V001.md`, `PLAN-COMPOSICION-Y-CELEBRACIONES-V001.md`,
@@ -469,10 +503,10 @@ aunque no cambie ninguna regla comercial.
 
 ---
 
-### Etapa 10 — Cutover selectivo, limpieza y entrega
+### Fase 6 — Cutover selectivo, limpieza y entrega
 
 - **No hay cutover del handler de chat completo.** El cutover es por
-  capacidad, no por ruta: se migra lo que la Etapa 8 demostró que Python hace
+  capacidad, no por ruta: se migra lo que la Fase 4 demostró que Python hace
   mejor, y se deja en Next lo demás.
 - Retirar el código temporal cuya condición de remoción ya se cumplió, no por
   antigüedad.
@@ -483,7 +517,7 @@ aunque no cambie ninguna regla comercial.
 
 ---
 
-## 6. Invariantes que ninguna etapa puede romper
+## 6. Invariantes que ninguna fase puede romper
 
 Cualquier cambio de este plan que toque uno de estos puntos se detiene y se
 consulta antes de continuar.
@@ -512,47 +546,47 @@ consulta antes de continuar.
 
 | Propuesta | Veredicto | Razón |
 |---|---|---|
-| Caché explícito de Gemini | Aplazado a Etapa 10 | Sin tráfico concurrente el ahorro absoluto es insignificante frente al coste de mantener el ciclo de vida del `CachedContent` |
+| Caché explícito de Gemini | Aplazado a Fase 6 | Sin tráfico concurrente el ahorro absoluto es insignificante frente al coste de mantener el ciclo de vida del `CachedContent` |
 | Caché semántico de consultas | Descartado | 0,8% de repetición medida sobre 238 consultas reales |
 | Modelo más barato para el parser | Descartado | Medido: `flash-lite` falla clasificación de intención hasta 5 de 8 veces |
 | Fusionar el parser en el tool loop | Descartado | Ahorra 850 ms a costa del aislamiento del schema determinista, que es lo que hoy impide que el modelo transporte un producto inventado |
 | Índice HNSW/IVFFlat en pgvector | No aplica | 430 ms p50 sobre 1.672 filas; el retrieval es el 8% del problema |
 | LangChain u otro framework de orquestación | No aplica | Agrega capas sobre las mismas llamadas; no quita round-trips ni tokens |
 | Reescribir el resolver de plan en Python | Descartado | Duplicaría la autoridad comercial en dos lenguajes. `AGENTS.md` lo prohíbe explícitamente |
-| Migrar el handler de chat completo a Python | Descartado | El cutover es por capacidad, no por ruta (Etapa 10) |
+| Migrar el handler de chat completo a Python | Descartado | El cutover es por capacidad, no por ruta (Fase 6) |
 
 ---
 
 ## 8. Orden de ejecución recomendado
 
 ```
-Etapa 5  ─── sin gates ──────────────► desbloquea todo lo demás
+Fase 1  ─── sin gates ──────────────► desbloquea todo lo demás
    │
-   ├─► Etapa 6  ─── sin gates ───────► latencia y coste, medidos
+   ├─► Fase 2  ─── sin gates ───────► latencia y coste, medidos
    │
-   └─► Etapa 7  ─── EC2 + Neon ──────► frontera Python en staging
+   └─► Fase 3  ─── EC2 + Neon ──────► frontera Python en staging
               │
-              └─► Etapa 8 ───────────► primera capacidad de IA en Python
+              └─► Fase 4 ───────────► primera capacidad de IA en Python
                          │
-                         └─► Etapa 9 ► LoRA y generación
+                         └─► Fase 5 ► LoRA y generación
                                   │
-                                  └─► Etapa 10 ► cutover selectivo y entrega
+                                  └─► Fase 6 ► cutover selectivo y entrega
 ```
 
-Las etapas 6 y 7 son **independientes entre sí** y pueden correr en paralelo:
-la 6 no necesita staging y la 7 no necesita las optimizaciones. La 8 sí
-necesita ambas.
+Las fases 2 y 3 son **independientes entre sí** y pueden correr en paralelo: la
+2 no necesita staging y la 3 no necesita las optimizaciones. La 4 sí necesita
+ambas.
 
-Sugerencia de arranque: Etapa 5 completa, luego 6.1 (imágenes reenviadas) y
-6.2 (proyección compacta), que son las dos ganancias grandes del camino de
-chat, y en paralelo abrir la 7. Si la 9 se adelanta por algún motivo, su
-bloqueo previo E9.0 y la seguridad del gasto E9.1 van primero, siempre.
+Sugerencia de arranque: Fase 1 completa, luego Fase 2.1 (imágenes reenviadas) y
+Fase 2.2 (proyección compacta), que son las dos ganancias grandes del camino de
+chat, y en paralelo abrir la Fase 3. Si la Fase 5 se adelanta por algún motivo,
+su bloqueo previo 5.0 y la seguridad del gasto 5.1 van primero, siempre.
 
 ---
 
 ## 9. Diseño: observabilidad y taxonomía de las IA
 
-Esta es la especificación concreta de la entrega 5.4. Sin ella no se puede
+Esta es la especificación concreta de la entrega Fase 1.4. Sin ella no se puede
 responder "cuántos tokens gastó esta conversación y en qué parte".
 
 ### 9.1 El problema, medido en el código
@@ -683,7 +717,7 @@ analisis_referencia_inventario
 analisis_referencia_auditoria
 happie_recomendacion
 happie_conversacion
-rerank_candidatos          (reservado para la Etapa 8)
+rerank_candidatos          (reservado para la Fase 4)
 ```
 
 `imagen_generacion_correctiva` va separada a propósito: es la llamada que se
@@ -705,14 +739,16 @@ misma etiqueta `imagen` que Gemini.
 
 ### 9.7 Esquema y numeración
 
-Migración `019_ai_call_log.sql` — 019 porque 016 está duplicado (ver 10.1) y
-017/018 están ocupados por LoRA.
+Migración `020_ai_call_log.sql` — 020 porque 017 y 018 están ocupados por LoRA
+y 019 lo tomó `operational_idempotency` al resolverse la colisión de 016 (ver
+10.1). `scripts/migrate.ts` valida la unicidad del prefijo, así que un número
+repetido falla antes de tocar la base.
 
 Tablas: `ai_call_log` (un evento por llamada) y `ai_model_pricing`. Índices por
 `request_id`, `correlation_id`, `(capacidad, created_at)` y
 `(proveedor, modelo, created_at)`.
 
-La escritura va por el outbox de 6.8, no en la ruta crítica. Un fallo al
+La escritura va por el outbox de Fase 2.8, no en la ruta crítica. Un fallo al
 registrar telemetría **nunca** puede hacer fallar un turno de chat.
 
 ### 9.8 Qué no se registra, nunca
@@ -746,7 +782,7 @@ Solo hashes, tamaños y metadatos acotados, con el mismo criterio que ya aplica
 - "Bajar `thinkingLevel` ahorró N tokens de razonamiento por turno en
   producción", no solo en un benchmark de 7 diálogos.
 - "La foto del cliente costó 4 MB × 6 vueltas en este turno" — la cifra que
-  justifica o descarta la entrega 6.1.
+  justifica o descarta la entrega Fase 2.1.
 - "El caché explícito ahorraría X al mes con el tráfico actual" — la decisión
   aplazada en 3.1, tomada con datos.
 
@@ -754,32 +790,33 @@ Solo hashes, tamaños y metadatos acotados, con el mismo criterio que ya aplica
 
 ## 10. Migraciones seguras
 
-### 10.1 Defectos actuales, verificados
+### 10.1 Defectos que tenía el runner
 
-1. **Hay una colisión de número.** `scripts/migrations/` contiene
-   `016_lora_specializations.sql` y `019_operational_idempotency.sql`. El
-   runner ordena alfabéticamente (`scripts/migrate.ts:26-28`), así que hoy
-   funciona por accidente: `_lora_` ordena antes que `_operational_`. Nada lo
-   garantiza y nada avisa si vuelve a pasar.
-2. **No hay checksum.** El runner marca aplicada por `filename`
-   (`scripts/migrate.ts:22-24,38`). Si alguien edita una migración ya aplicada,
-   el cambio se ignora en silencio y dos entornos divergen sin señal.
-3. **No hay lock.** Dos `rag:migrate` concurrentes pueden intentar aplicar la
-   misma migración a la vez. Falta un `pg_advisory_lock`.
-4. **No hay dry-run ni preview.** No se puede ver qué se va a aplicar.
-5. **No confirma el destino, y el destino por defecto es remoto.** El script
-   carga `.env.local` automáticamente (`scripts/migrate.ts:6-8`) y usa
-   `DATABASE_URL` sin imprimir ni confirmar a qué host y base apunta. En este
-   checkout, esa URL es **Neon remoto** — la misma que toda la Etapa 4 se
-   cuidó de no tocar. Un `npm run rag:migrate` distraído aplica DDL a una base
-   remota sin una sola pregunta.
-6. **No hay reversión.** No existen migraciones `down` ni una nota de rollback
-   por archivo.
-7. **Dos dueños del mismo DDL.** `019_operational_idempotency.sql` existe en
-   `scripts/migrations/` (repo Next) y en `migrations/` (repo Python). Ninguno
-   de los dos es declaradamente el dueño.
+Los siete se verificaron leyendo `scripts/migrate.ts` tal como estaba. La
+columna de estado refleja la Fase 1.3.
 
-De estos, el 5 es el que puede causar un incidente hoy mismo.
+| # | Defecto | Estado |
+|---|---|---|
+| 1 | **Colisión de número.** Existían `016_lora_specializations.sql` y `016_operational_idempotency.sql`. El runner ordenaba alfabéticamente, así que funcionaba por accidente: `_lora_` ordena antes que `_operational_` | Resuelto: el operacional pasó a `019`, y un prefijo repetido ahora es error |
+| 2 | **Sin checksum.** Marcaba aplicada por `filename`. Editar una migración ya aplicada se ignoraba en silencio y dos entornos divergían sin señal | Resuelto: columna aditiva; una divergencia detiene la ejecución |
+| 3 | **Sin lock.** Dos `rag:migrate` concurrentes podían aplicar lo mismo a la vez | Resuelto: `pg_advisory_lock` de sesión |
+| 4 | **Sin dry-run.** No se podía ver qué se iba a aplicar | Resuelto: `--dry-run` que no escribe ni la tabla de registro, y `--target` para bisecar |
+| 5 | **No confirmaba el destino, y el destino por defecto es remoto.** Cargaba `.env.local` y usaba `DATABASE_URL` sin imprimir a qué host apuntaba. En este checkout esa URL es **Neon remoto** — la misma que toda la Etapa 4 se cuidó de no tocar | Resuelto: imprime `usuario@host:puerto/base` sin la contraseña y aborta si el host no es local sin `--allow-remote` |
+| 6 | **Sin reversión.** No hay migraciones `down` ni nota de rollback por archivo | **Parcial**: el runner avisa de las 18 sin nota `-- rollback:`. Escribirlas exige entender qué deja atrás cada una; no se inventan |
+| 7 | **Dos dueños del mismo DDL.** El archivo operacional existe en `scripts/migrations/` (repo Next) y en `migrations/` (repo Python) | **Abierto**: se cierra en la Fase 3 con los dos linajes de 10.5 |
+
+Había un octavo, que solo apareció al leer el archivo completo:
+
+8. **La transacción era ilusoria.** `BEGIN`, el SQL y `COMMIT` se ejecutaban
+   con `pool.query`, es decir sobre el **pool** y no sobre un cliente. Con un
+   pool, esas tres llamadas pueden salir por conexiones distintas, así que una
+   migración que fallara a mitad podía quedar parcialmente aplicada sin que el
+   `ROLLBACK` la alcanzara. En un flujo secuencial normalmente reutilizaba la
+   misma conexión ociosa, pero nada lo garantizaba. Resuelto: toda la ejecución
+   usa un único `Client`.
+
+De todos, el 5 era el que podía causar un incidente el mismo día, y el 8 el
+que podía dejar una base a medio migrar sin dejar rastro.
 
 ### 10.2 La trampa de renumerar
 
@@ -795,7 +832,9 @@ no solo en este documento.
 
 ### 10.3 Runner endurecido — TypeScript
 
-Cambios concretos a `scripts/migrate.ts`:
+**Implementado en la Fase 1.3.** Los siete puntos están en `scripts/migrate.ts`
+y verificados contra un PostgreSQL Docker desechable; el (g) quedó como aviso y
+no como error, por la razón de 10.1(6).
 
 | # | Cambio | Detalle |
 |---|---|---|
@@ -853,12 +892,14 @@ nota explícita en ambos lados diciendo cuál es la copia autoritativa.
 `ai_call_log` (capítulo 9) pertenece al **linaje comercial**: lo escribe Next
 y vive en `public`.
 
-### 10.6 Cómo esto entra en las etapas
+### 10.6 Cómo esto entra en las fases
 
-- 10.1(5), 10.2, 10.3(a,b,d,f) → **Etapa 5**. Son la condición para que
-  cualquier migración posterior sea segura, incluida la de 9.7.
-- 10.3(c,e,g) → Etapa 5 si da tiempo, Etapa 6 si no.
-- 10.4 y 10.5 → **Etapa 7**, junto con el despliegue del backend.
+- 10.1(1-5, 8), 10.2 y 10.3(a-f) → **Fase 1.3, hecha.** Eran la condición para
+  que cualquier migración posterior fuera segura, incluida la de 9.7.
+- 10.3(g), la nota de reversión por archivo → **abierto**, sin fase asignada.
+  Son 18 archivos y cada nota exige entender qué deja atrás esa migración.
+- 10.4 y 10.5, el runner Python y los dos linajes → **Fase 3**, junto con el
+  despliegue del backend. Cierra también 10.1(7).
 
 ---
 
@@ -896,7 +937,7 @@ Beneficios, en orden de importancia:
 3. El usuario final entiende mejor por qué le ofrecen lo que le ofrecen.
 
 Es, probablemente, la mejora de UI con más valor real del plan, y además
-refuerza la Etapa 6 en vez de competir con ella.
+refuerza la Fase 2 en vez de competir con ella.
 
 ### 11.2 El indicador de progreso ya existe, pero dice poco
 
@@ -1072,7 +1113,7 @@ que se reproduzcan contra un `ChatPort` falso permitiría:
 - Convertir `scripts/eval-chat-thinking.ts` de 7 diálogos pagados en un set
   grande y gratuito, reservando las llamadas reales para la validación final.
 
-Encaja como entrega de la Etapa 8 (suite de evaluación en Python), que ya
+Encaja como entrega de la Fase 4 (suite de evaluación en Python), que ya
 contempla fixtures versionados.
 
 ### 12.3 Un solo interruptor por capacidad de IA

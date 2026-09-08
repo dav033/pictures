@@ -3,12 +3,22 @@
 Última actualización: 2026-09-07  
 Estado global: **Etapa 4 local cerrada; despliegue/cutover externo pendiente**
 
-> **Plan rector vigente:** [`PLAN-MAESTRO-V2.md`](PLAN-MAESTRO-V2.md). Define
-> las etapas 5 a 10, que nunca se habían escrito, y reordena el trabajo
-> alrededor de la optimización de la interacción con Gemini y el LoRA. La
-> antigua Etapa 5 (staging) pasa a ser la Etapa 7; su contenido técnico en
-> [`prompt-seguimiento-etapa-5.md`](prompt-seguimiento-etapa-5.md) sigue siendo
-> válido y se adopta tal cual.
+> **Plan rector vigente:** [`PLAN-MAESTRO-V2.md`](PLAN-MAESTRO-V2.md).
+>
+> **Dos numeraciones, no las mezcles.** Las **Etapas 1 a 4** son las del plan
+> viejo que ya se ejecutaron y que documentan los archivos `01-` a `04-` de
+> esta carpeta. Las **Fases 1 a 6** son el trabajo nuevo que define el plan
+> maestro v2: la Fase 1 es el primer trabajo nuevo, no una repetición.
+>
+> La antigua quinta etapa (staging) pasa a ser la **Fase 3**; su contenido
+> técnico en [`prompt-seguimiento-etapa-5.md`](prompt-seguimiento-etapa-5.md)
+> sigue siendo válido y se adopta tal cual.
+>
+> Estado: **Fases 1.1, 1.2 y 1.3 hechas.** El trabajo de las Etapas 1-4 está
+> commiteado en `migracion/python-etapas-1-4` (7 commits) y el runner de
+> migraciones ya confirma destino, verifica checksums y toma advisory lock.
+> Siguen pendientes la Fase 1.4 (arnés `ia:bench`) y la Fase 1.5 (telemetría
+> con taxonomía de flujo y capacidad).
 >
 > Los planes borrados del repositorio que seguían referenciados por comentarios
 > de código vivo están recuperados en
