@@ -563,6 +563,16 @@ Los secretos tienen dueño y procedimiento de rotación, y la frontera de
 contenido no confiable está analizada con evidencia. Si el análisis de 4.3
 encuentra algo explotable, se arregla en esta fase y no se aplaza.
 
+**Estado real al 2026-09-09** (evidencia, no plan):
+
+- **4.1** — hecho. `docs/migracion-python/seguridad/inventario-secretos.md` cubre los 9 secretos propios más el rol Postgres de Fase 6, con un hallazgo nuevo (fallback no documentado de `NEXTAUTH_SECRET` en `PLAN_APPROVAL_SECRET`). Sigue pendiente asignar dueño humano a cada uno — decisión de organización, no de código.
+- **4.2** — ya estaba hecho (gitleaks en CI, histórico completo, gatea el deploy) desde antes de esta sesión de continuación. Se encontró y corrigió un hallazgo que un escáner por regex no detecta: un correo personal expuesto en `HANDOFF-LORA-COMPOSICION.md`, redactado del HEAD (sigue en el historial público de git — decisión explícita del usuario de no reescribir historial).
+- **4.3** — análisis estático completo con evidencia de código (`docs/migracion-python/seguridad/inyeccion-prompt.md`), más una validación dinámica real autorizada por el usuario: una corrida contra Gemini con una imagen adversarial de prueba, que el modelo NO obedeció (resultado observado, no garantía de diseño). La vía 2 (catálogo Happia) queda solo con análisis estático — simular el backend real de Happia excede el alcance autorizado.
+- **4.4** — el hallazgo de `src/proxy.ts` (matcher sin excluir `/api/rag/webhooks/shopify`) ya estaba corregido de una sesión anterior. Procedimiento de rotación escrito y **probado de verdad** (`npm run test-rotacion-secretos`, en CI) para los 5 secretos que la app controla sin cuenta externa. Los otros 4 (`GEMINI_API_KEY`, `FAL_KEY`, `HAPPIA_API_KEY`, `DATABASE_URL`) tienen procedimiento escrito con prueba explícitamente pendiente de acceso a cada consola de proveedor — se decidió no rotar `DATABASE_URL` de producción sin más alcance autorizado, dado su blast radius.
+- **4.5** — inventario completo de las 51 rutas (`docs/migracion-python/seguridad/superficie-externa.md`), más dos correcciones de bajo riesgo encontradas en el proceso: comparación de credenciales en tiempo constante en `/api/login` y `HAPPIE_EXTERNO_API_KEY` (ya lo hacía bien el webhook server-to-server; se extrajo a un helper compartido), y el webhook de Shopify ya no expone `error.message` crudo en su 500. Hallazgos documentados sin corregir en esta fase (se solapan con Fase 9.1, "seguridad del gasto"): `/api/lora/trainings/[id]/start` sin rate limit para un entrenamiento LoRA facturable, y ningún límite de tasa en `/api/chat`/`/api/generate`/`/api/references/analyze`.
+
+Fase 4 queda cerrada salvo: asignar dueño humano a cada secreto (4.1, decisión de organización) y probar la rotación de los 4 secretos de proveedor externo cuando haya acceso a esas cuentas (4.4).
+
 ---
 
 ### Fase 5 — Resiliencia, recuperación y degradación
