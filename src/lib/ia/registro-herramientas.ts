@@ -48,6 +48,28 @@ import type { Herramienta } from "./tipos";
 const HERRAMIENTAS_SUPERADAS_POR_RAG = new Set(["buscar_catalogo", "confirmar_seleccion_ia", "consultar_disponibilidad"]);
 const HERRAMIENTAS_SUPERADAS_POR_PLAN = new Set(["confirmar_seleccion_rag", "calcular_medidas"]);
 
+/**
+ * Fase 3.9: herramientas sin efectos comerciales — nunca deciden catálogo,
+ * precio, stock ni aprobación (invariante del capítulo 6), y lo único que
+ * escriben en `EstadoConversacion` son campos de resultado de búsqueda que
+ * de todas formas se sobrescriben por completo en cada llamada nueva. Se
+ * excluye deliberadamente cualquier herramienta que toque
+ * `seleccionFinalIA`/`planResuelto`/`cotizacion` o que dependa del orden de
+ * ejecución (`guardar_brief`, `calcular_medidas`, `cotizar`,
+ * `confirmar_seleccion_ia`, `confirmar_seleccion_rag`,
+ * `confirmar_plan_decoracion`). `ejecutarConversacion`/`ejecutarConversacionStream`
+ * solo paralelizan una vuelta si CADA llamada de esa vuelta está en este
+ * set Y ningún nombre se repite (ver `puedeParalelizarse` en agente-core) —
+ * dos llamadas al mismo handler en la misma vuelta seguirían corriendo en
+ * secuencia porque compiten por el mismo campo de estado.
+ */
+export const HERRAMIENTAS_SOLO_LECTURA = new Set([
+  "buscar_catalogo",
+  "consultar_disponibilidad",
+  "buscar_catalogo_rag",
+  "buscar_decoraciones",
+]);
+
 export function herramientasActivas(): Herramienta[] {
   const herramientas = !RAG_ENABLED
     ? HERRAMIENTAS

@@ -42,6 +42,14 @@ export type OpcionesConversacion = {
   /** Observabilidad pura: se llama justo antes de ejecutar cada herramienta,
    * con su nombre y args ya parseados. No cambia el flujo. */
   onLlamada?: (nombre: string, args: Record<string, unknown>) => void;
+  /** Fase 3.9: nombres de herramientas sin efectos secundarios (solo lectura
+   * — ni mutan estado de forma que un orden distinto cambie el resultado
+   * comercial, ni requieren ejecutarse en el orden en que el modelo las
+   * pidió). El motor NUNCA infiere esto por su cuenta — el dominio es quien
+   * conoce sus propios handlers. Si TODAS las llamadas de una vuelta están
+   * en esta lista y ninguna se repite, se ejecutan en paralelo; si no, la
+   * vuelta completa sigue siendo secuencial, igual que siempre. */
+  herramientasSoloLectura?: ReadonlySet<string>;
   /** Texto a devolver si se agotan las vueltas sin que el modelo termine.
    * Default: un mensaje genérico en español; el consumidor normalmente
    * quiere algo consciente de SU propio estado (ver demo-decoracion). */
@@ -96,6 +104,50 @@ async function ejecutarHerramienta(
   const manejador = registro[llamada.nombre];
   if (!manejador) return { error: `herramienta desconocida: ${llamada.nombre}` };
   return manejador(llamada.args ?? {}, llamada, signal);
+}
+
+/** Solo paraleliza cuando CADA llamada de la vuelta está marcada solo-lectura
+ * y ningún nombre se repite. Un nombre repetido significaría dos llamadas al
+ * mismo handler dentro de la misma vuelta escribiendo el mismo campo de
+ * estado del dominio — con await secuencial esa carrera no existe hoy (gana
+ * determinísticamente la última de la lista); en paralelo ganaría la que
+ * responda más rápido de la DB, un cambio de comportamiento real. */
+function puedeParalelizarse(soloLectura: ReadonlySet<string> | undefined, llamadas: readonly LlamadaHerramienta[]): boolean {
+  if (!soloLectura || llamadas.length < 2) return false;
+  const vistos = new Set<string>();
+  for (const llamada of llamadas) {
+    if (!soloLectura.has(llamada.nombre) || vistos.has(llamada.nombre)) return false;
+    vistos.add(llamada.nombre);
+  }
+  return true;
+}
+
+type SalidaHerramienta = { nombre: string; llamadaId: string | undefined; resultado: Record<string, unknown> };
+
+/** Ejecuta todas las llamadas de una vuelta; ver `puedeParalelizarse` para
+ * cuándo corren en paralelo. El orden de `salidas` siempre coincide con el
+ * orden en que el modelo pidió las llamadas, corran o no en paralelo — el
+ * historial que ve el modelo después nunca cambia de orden por esto. */
+async function ejecutarLlamadasDeVuelta(
+  registro: RegistroHerramientas,
+  llamadas: readonly LlamadaHerramienta[],
+  soloLectura: ReadonlySet<string> | undefined,
+  onLlamada: ((nombre: string, args: Record<string, unknown>) => void) | undefined,
+  signal?: AbortSignal,
+): Promise<SalidaHerramienta[]> {
+  if (puedeParalelizarse(soloLectura, llamadas)) {
+    for (const llamada of llamadas) onLlamada?.(llamada.nombre, llamada.args ?? {});
+    asegurarNoCancelado(signal);
+    const resultados = await Promise.all(llamadas.map((llamada) => ejecutarHerramienta(registro, llamada, signal)));
+    return llamadas.map((llamada, i) => ({ nombre: llamada.nombre, llamadaId: llamada.id, resultado: resultados[i]! }));
+  }
+  const salidas: SalidaHerramienta[] = [];
+  for (const llamada of llamadas) {
+    asegurarNoCancelado(signal);
+    onLlamada?.(llamada.nombre, llamada.args ?? {});
+    salidas.push({ nombre: llamada.nombre, llamadaId: llamada.id, resultado: await ejecutarHerramienta(registro, llamada, signal) });
+  }
+  return salidas;
 }
 
 /**
@@ -157,11 +209,8 @@ export async function ejecutarConversacion(opts: OpcionesConversacion): Promise<
     const llamadas = turno.llamadas.map((l, i) => ({ ...l, id: l.id ?? `local_${vuelta}_${i}` }));
     historial.push({ rol: "asistente", llamadas });
 
-    for (const llamada of llamadas) {
-      asegurarNoCancelado(opts.signal);
-      opts.onLlamada?.(llamada.nombre, llamada.args ?? {});
-      const resultado = await ejecutarHerramienta(opts.registro, llamada, opts.signal);
-      historial.push({ rol: "herramienta", nombre: llamada.nombre, llamadaId: llamada.id, resultado });
+    for (const salida of await ejecutarLlamadasDeVuelta(opts.registro, llamadas, opts.herramientasSoloLectura, opts.onLlamada, opts.signal)) {
+      historial.push({ rol: "herramienta", nombre: salida.nombre, llamadaId: salida.llamadaId, resultado: salida.resultado });
     }
   }
 
@@ -255,13 +304,27 @@ export async function* ejecutarConversacionStream(opts: OpcionesConversacion): A
     const llamadas = llamadasCrudas.map((l, i) => ({ ...l, id: l.id ?? `local_${vuelta}_${i}` }));
     historial.push({ rol: "asistente", llamadas });
 
-    for (const llamada of llamadas) {
+    if (puedeParalelizarse(opts.herramientasSoloLectura, llamadas)) {
+      for (const llamada of llamadas) {
+        opts.onLlamada?.(llamada.nombre, llamada.args ?? {});
+        yield { tipo: "herramienta", nombre: llamada.nombre, estado: "ejecutando" };
+      }
       asegurarNoCancelado(opts.signal);
-      opts.onLlamada?.(llamada.nombre, llamada.args ?? {});
-      yield { tipo: "herramienta", nombre: llamada.nombre, estado: "ejecutando" };
-      const resultado = await ejecutarHerramienta(opts.registro, llamada, opts.signal);
-      yield { tipo: "herramienta", nombre: llamada.nombre, estado: "lista" };
-      historial.push({ rol: "herramienta", nombre: llamada.nombre, llamadaId: llamada.id, resultado });
+      const resultados = await Promise.all(llamadas.map((llamada) => ejecutarHerramienta(opts.registro, llamada, opts.signal)));
+      for (let i = 0; i < llamadas.length; i++) {
+        const llamada = llamadas[i]!;
+        yield { tipo: "herramienta", nombre: llamada.nombre, estado: "lista" };
+        historial.push({ rol: "herramienta", nombre: llamada.nombre, llamadaId: llamada.id, resultado: resultados[i]! });
+      }
+    } else {
+      for (const llamada of llamadas) {
+        asegurarNoCancelado(opts.signal);
+        opts.onLlamada?.(llamada.nombre, llamada.args ?? {});
+        yield { tipo: "herramienta", nombre: llamada.nombre, estado: "ejecutando" };
+        const resultado = await ejecutarHerramienta(opts.registro, llamada, opts.signal);
+        yield { tipo: "herramienta", nombre: llamada.nombre, estado: "lista" };
+        historial.push({ rol: "herramienta", nombre: llamada.nombre, llamadaId: llamada.id, resultado });
+      }
     }
   }
 

@@ -7,7 +7,7 @@ import type { ProductoCandidato } from "@/lib/rag/chat/buscar";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
-import { crearEstadoConversacion, crearRegistroHerramientas, herramientasActivas, textoAlAgotarVueltas, VUELTAS_MAX } from "./registro-herramientas";
+import { crearEstadoConversacion, crearRegistroHerramientas, HERRAMIENTAS_SOLO_LECTURA, herramientasActivas, textoAlAgotarVueltas, VUELTAS_MAX } from "./registro-herramientas";
 import type { EstadoConversacion } from "./registro-herramientas";
 import type { ReferenceBlueprintV2 } from "./reference-blueprint";
 import type { ChatPort, Mensaje } from "./tipos";
@@ -102,6 +102,7 @@ export async function ejecutarConversacion(opts: {
     historial: opts.historial,
     herramientas: herramientasActivas(),
     registro: crearRegistroHerramientas(estado, { catalogAllowlist: opts.catalogAllowlist }),
+    herramientasSoloLectura: HERRAMIENTAS_SOLO_LECTURA,
     vueltasMax: VUELTAS_MAX,
     onLlamada: opts.onLlamada,
     alAgotarVueltas: () => textoAlAgotarVueltas(estado),
@@ -136,6 +137,7 @@ export async function* ejecutarConversacionStream(opts: {
     historial: opts.historial,
     herramientas: herramientasActivas(),
     registro: crearRegistroHerramientas(estado, { catalogAllowlist: opts.catalogAllowlist }),
+    herramientasSoloLectura: HERRAMIENTAS_SOLO_LECTURA,
     vueltasMax: VUELTAS_MAX,
     alAgotarVueltas: () => textoAlAgotarVueltas(estado),
     signal: opts.signal,
