@@ -697,6 +697,16 @@ puede prometer cancelación física.
 Se sabe cuántas conversaciones concurrentes aguanta y qué cede primero. Hoy no
 se sabe ninguna de las dos cosas.
 
+**Estado real al 2026-09-09** (evidencia, no plan) — detalle completo en
+`resiliencia/carga-concurrencia-cancelacion.md`:
+
+- **7.1** — hecho. `scripts/load-test-rag.ts`, carga real contra Postgres local (nunca Neon) con proveedor de IA falso (cero gasto real). Mide los dos flujos que más presionan el pool (`chat`, `presupuesto` con fan-out de 5 roles) en 8 niveles de concurrencia (1 a 80, ambos flujos) más una corrida confirmatoria hasta 250 (`presupuesto` solo). Resultados en `reports/load-test-rag.md` y `reports/load-test-rag-extremo.md`.
+- **7.2** — parcial, tal como se acordó con el usuario antes de empezar: no existe un requisito de negocio de latencia documentado, así que se registra el baseline medido (chat p50 35ms/p95 108ms; presupuesto p50 53ms/p95 104ms, sin contención) sin fijar un umbral de aceptación. Queda listo para convertirse en gates el día que exista un requisito real.
+- **7.3** — hecho, con un hallazgo que cambia el diagnóstico del plan: el pool **no falla bajo saturación, se vuelve lento sin techo**. Hasta 400 turnos concurrentes (20× el `max: 20` configurado) en el flujo `presupuesto`: **0% de error**, p50 15,7s, p99 23,1s. Causa verificada: cada turno hace muchas adquisiciones cortas de `pool.query()` en vez de reservar una conexión de principio a fin, así que ninguna espera individual llega a los 5000ms de `connectionTimeoutMillis` aunque la suma por turno sí. Es exactamente el "timeout ciego" que la fase pedía descartar o confirmar — se confirmó que existe, no se corrigió (7.3 pide documentar, no arreglar).
+- **7.4** — hecho. `scripts/test-query-cancellation.ts`, 10 aserciones contra Postgres real, verificadas contra `pg_stat_activity` (no solo contra el rechazo de una promesa). Resultado: `statement_timeout` (ya configurado, 30s en producción) sí cancela físicamente una query colgada; el patrón real de `conLimiteDeEspera` en `src/app/api/chat/route.ts` (dejar de esperar del lado del cliente) **no cancela nada** — la query sigue corriendo huérfana en Postgres; existe un mecanismo real de cancelación en el driver `pg` (probado, cancela en 131ms) pero depende de una API interna marcada `deprecated` (se elimina en `pg@9.0`) y no está conectado a ningún punto del código actual, que nunca reserva una conexión por turno ni pasa una señal de cancelación hasta la capa de retrieval. Veredicto de la entrega: **probada y declarada no soportada en el código actual**, aunque técnicamente posible en el driver.
+
+Pendiente de esta fase: backpressure de aplicación y cancelación real conectada a la cadena de llamadas (ambos son cambios de código fuera del alcance de "medir y probar" de 7.1-7.4); prueba bajo carga contra el proveedor de IA real (Gemini) y contra Neon, ninguna de las dos ejecutada deliberadamente para no gastar dinero ni tocar producción; y 7.2 completa el día que exista un requisito de negocio de latencia.
+
 ---
 
 ### Fase 8 — Primera capacidad de IA real en Python
