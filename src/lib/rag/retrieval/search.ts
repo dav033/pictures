@@ -522,24 +522,29 @@ export async function buscarHibrido(pool: Pool, consulta: ConsultaRetrieval): Pr
 
   // Independent lexical branches can share one round-trip window. They still
   // apply exactly the same hard predicates before their own ranking.
-  const [ftsRows, trigramRows] = await Promise.all([
+  // allSettled (not all): a Postgres failure on one branch must not throw
+  // away a result the other branch already got — same degrade-in-place
+  // contract as the vector branch below, never a thrown, unhandled turn.
+  const [ftsOutcome, trigramOutcome] = await Promise.allSettled([
     USE_FULLTEXT ? queryFullText(pool, consulta) : Promise.resolve(null),
     USE_TRIGRAM ? queryTrigram(pool, consulta) : Promise.resolve(null),
   ]);
+  const ftsRows = ftsOutcome.status === "fulfilled" ? ftsOutcome.value : null;
+  const trigramRows = trigramOutcome.status === "fulfilled" ? trigramOutcome.value : null;
 
   if (ftsRows) {
     const rows = ftsRows;
     const ranked = addBranchRows(rows, textScores, variantsByProduct);
     branches.push({ name: "fts", ids: ranked, weight: RRF_WEIGHTS.fts });
     branchStatus.fts = ranked.length ? "READY" : "EMPTY";
-  } else branchStatus.fts = "SKIPPED_OPTIONAL";
+  } else branchStatus.fts = ftsOutcome.status === "rejected" ? "ERROR" : "SKIPPED_OPTIONAL";
 
   if (trigramRows) {
     const rows = trigramRows;
     const ranked = addBranchRows(rows, trigramScores, variantsByProduct);
     branches.push({ name: "trigram", ids: ranked, weight: RRF_WEIGHTS.trigram });
     branchStatus.trigram = ranked.length ? "READY" : "EMPTY";
-  } else branchStatus.trigram = "SKIPPED_OPTIONAL";
+  } else branchStatus.trigram = trigramOutcome.status === "rejected" ? "ERROR" : "SKIPPED_OPTIONAL";
 
   const hasPrecalculatedVector = Array.isArray(consulta.embeddingPrecalculado) && consulta.embeddingPrecalculado.length > 0;
   const vectorRequested = USE_VECTOR || hasPrecalculatedVector;
