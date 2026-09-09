@@ -8,7 +8,7 @@ import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
 import { findLoraPromptLanguageLeaks, preflightLoraPrompt, type LoraPromptPreflightReport } from "@/lib/ia/lora-prompt-preflight";
 import { bloqueMezclaTamanos, bloqueMezclaPorEstructura, descripcionFisicaTamano } from "@/lib/ia/tamano-fisico";
 import { cotizarPlan, cotizarProductos } from "@/lib/cotizacion/motor";
-import { featureEnabled } from "@/lib/ia/feature-flags";
+import { featureEnabled, IMAGE_DEBUG } from "@/lib/ia/feature-flags";
 import { resolveAspectTransform } from "@/lib/ia/aspect-transform";
 import { evaluateSceneQa, buildCorrectiveRetryPrompt, observarImagenGenerada, type ImageQaReport } from "@/lib/ia/image-qa";
 import { imagenDe, resolverProveedor } from "@/lib/ia/registro";
@@ -759,7 +759,7 @@ export async function POST(request: Request) {
     if (!preflight.ok) throw new Error(`La estimación de materiales no es válida: ${preflight.errors.join("; ")}`);
     const physicalWarnings = blockingPhysicalWarnings(materialEstimateForLayout);
     if (physicalWarnings.length > 0) throw new Error(`La estimación de materiales no es compatible con la escala solicitada: ${physicalWarnings.join("; ")}`);
-    if (process.env.NODE_ENV !== "production" || process.env.IMAGE_DEBUG === "true") console.info(formatMaterialEstimateLog(materialEstimateForLayout));
+    if (IMAGE_DEBUG) console.info(formatMaterialEstimateLog(materialEstimateForLayout));
     const aspecto = body.aspecto ?? "3:2";
     const venue = body.fotoEspacio ? { ...body.fotoEspacio, id: "VENUE_01", descripcion: "Venue base photo. Preserve its camera, crop, architecture, perspective, and ambient lighting." } : undefined;
     if (venue && !featureEnabled("LOCALIZED_EDIT_ENABLED")) throw new Error("Localized venue editing is disabled.");
@@ -830,7 +830,7 @@ export async function POST(request: Request) {
     if (!finalPreflight.ok) throw new Error(`La estimación de materiales no es válida: ${finalPreflight.errors.join("; ")}`);
     const finalPhysicalWarnings = blockingPhysicalWarnings(materialEstimate);
     if (finalPhysicalWarnings.length > 0) throw new Error(`La estimación de materiales no es compatible con la escala solicitada: ${finalPhysicalWarnings.join("; ")}`);
-    if (process.env.NODE_ENV !== "production" || process.env.IMAGE_DEBUG === "true") console.info(formatMaterialEstimateLog(materialEstimate));
+    if (IMAGE_DEBUG) console.info(formatMaterialEstimateLog(materialEstimate));
     const catalogProducts = Object.fromEntries(
       blueprint.elements
         .filter((element) => element.source_type === "catalog_backed")
@@ -1162,7 +1162,7 @@ export async function POST(request: Request) {
     // verla, con el QA en pass:false para que el frontend siga mostrando la
     // advertencia "no conforme" en vez de esconder el resultado.
     if (planResuelto && qa.pass !== true && !usarLora && !compararLora) return Response.json({ error: `NON_CONFORME: la imagen no fue observada conforme al plan aprobado${qa.retry_reasons.length ? ` — ${qa.retry_reasons.join("; ")}` : ""}.`, qa, plan: planResuelto, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash }, { status: 422 });
-    const debug = process.env.NODE_ENV !== "production" || process.env.IMAGE_DEBUG === "true";
+    const debug = IMAGE_DEBUG;
     return Response.json({ imagen: `data:${result.imagen.mime};base64,${result.imagen.base64}`, comparacion, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, plan: planResuelto, qa, loraPreflight: (usarLora || comparar || compararLora) ? loraPreflight : undefined, loraPromptVersion: requestedLoraVersion, loraPromptHash: hashPrompt(effectiveLoraPrompt), compilerVersion: LORA_CAPTION_COMPILER_VERSION, loraProductRuntimeVersion: LORA_PRODUCT_RUNTIME_VERSION, productPromptCompilation: { resolved_concepts: productPromptCompilation.resolved_concepts, unresolved_products: productPromptCompilation.unresolved_products, vocabulary_version: productPromptCompilation.vocabulary_version, compiler_version: productPromptCompilation.compiler_version, legacy: productPromptCompilation.legacy, diagnostics: productPromptCompilation.diagnostics }, retried, proveedor: comparar ? "gemini" : proveedor, modoImagen: compararLora ? "comparacion_lora" : comparar ? "comparacion" : usarLora ? "lora" : "proveedor_base", cotizacion, interactionId: result.interactionId, prompt: promptPrincipal, prompts: promptsGeneracion, productAuthority: productAuthority.length ? productAuthority : undefined, ...(debug ? { visualContext, droppedImageIds: selected.droppedImageIds, aspectTransform, loraSelection: resolvedLoras?.map((lora) => ({ artifactId: lora.artifactId, specialization: lora.specialization, scale: lora.scale, trigger: lora.trigger })) } : {}) });
   } catch (error) {
     if (error instanceof Error && /^LORA_(?:MODE|SELECTION|ARTIFACT|SPECIALIZATION|RUN|EVALUATION|PROVIDER|INCOMPATIBLE|MULTI|DATASET_ALLOWLIST|PRODUCT_VOCABULARY)/.test(error.message)) {

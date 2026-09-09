@@ -13,13 +13,11 @@ import type {
   RespuestaRetrieval,
   ResultadoRetrieval,
 } from "./types";
+import { RAG_USE_VECTOR as USE_VECTOR, RAG_USE_FULLTEXT as USE_FULLTEXT, RAG_USE_TRIGRAM as USE_TRIGRAM } from "@/lib/ia/feature-flags";
 
 const BRANCH_LIMIT = Number(process.env.RAG_BRANCH_LIMIT ?? 40);
 const FINAL_LIMIT = Number(process.env.RAG_FINAL_LIMIT ?? 15);
 const TRIGRAM_MIN_SIMILARITY = Math.max(0.3, Number(process.env.RAG_TRIGRAM_MIN_SIMILARITY ?? 0.3));
-const USE_VECTOR = process.env.RAG_USE_VECTOR === "true";
-const USE_FULLTEXT = process.env.RAG_USE_FULLTEXT !== "false";
-const USE_TRIGRAM = process.env.RAG_USE_TRIGRAM !== "false";
 const RRF_WEIGHTS = { fts: 0.55, trigram: 0.3, vector: 0.15 } as const;
 
 type BranchRow = {

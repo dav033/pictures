@@ -3,7 +3,7 @@ import { MODELO_CHAT as MODELO_CHAT_GEMINI, MODELO_IMAGEN as MODELO_IMAGEN_GEMIN
 import { obtenerAjusteGlobal, proveedoresDisponibles, resolverProveedor } from "@/lib/ia/registro";
 import { ultimosEventos } from "@/lib/ia/telemetria";
 import type { ProveedorId } from "@/lib/ia/tipos";
-import { PLAN_DECORACION_ENABLED } from "@/lib/plan/flags";
+import { PLAN_DECORACION_ENABLED } from "@/lib/ia/feature-flags";
 
 const PROVEEDORES_CHAT = ["gemini"] as const satisfies readonly ProveedorId[];
 const MODELOS: Record<(typeof PROVEEDORES_CHAT)[number], { chat: string; imagen: string }> = {

@@ -13,6 +13,7 @@ import type { EstadoSku } from "../retrieval/types";
 import type { EventMatchEvidence } from "../retrieval/types";
 import type { CatalogAllowlist } from "../retrieval/types";
 import type { ObservabilidadBusqueda, ResultadoBusquedaObservabilidad } from "../observability/types";
+import { RAG_USE_VECTOR } from "@/lib/ia/feature-flags";
 
 export type PoolItemPresupuesto = {
   productId: string;
@@ -106,7 +107,7 @@ function observabilidadPresupuesto(
 
 /** Embedding is optional; lexical retrieval remains the safe fallback. */
 export async function embeddingOpcional(query: string): Promise<number[] | undefined> {
-  const vectorEnabled = process.env.RAG_USE_VECTOR === "true" && Boolean(process.env.GEMINI_API_KEY?.trim());
+  const vectorEnabled = RAG_USE_VECTOR && Boolean(process.env.GEMINI_API_KEY?.trim());
   if (!vectorEnabled || !query.trim()) return undefined;
   try {
     return await embeberTexto(query, "RETRIEVAL_QUERY");

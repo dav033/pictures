@@ -1,3 +1,20 @@
+// Fase 5.3 (plan §12.3, auditoria/09-revision-fase-5.md secciones 2 y 5):
+// este archivo es la única fuente de verdad para las capacidades de IA que
+// se leen desde process.env. Antes había tres archivos con tres convenciones
+// distintas (este, src/lib/plan/flags.ts, src/lib/rag/flags.ts) más media
+// docena de lecturas sueltas de process.env repetidas en varios call sites.
+// Se consolidan aquí sin normalizar la semántica de cada flag -- cada uno
+// conserva su convención de parseo y su default original tal cual estaban en
+// producción; cambiar eso sería una decisión de producto, no una limpieza.
+//
+// PYTHON_BACKEND_ENABLED / PYTHON_BACKEND_KILL_SWITCH quedan deliberadamente
+// FUERA de este registro (ver auditoria/09-revision-fase-5.md, pregunta
+// abierta 7): no son una capacidad de IA sino el selector de linaje
+// Next/Python de la migración (capítulo 10.4/10.5), con su propia función
+// dueña (`seleccionarBackendMigracion` en src/lib/ia/contracts/operational-v1.ts)
+// donde el kill switch tiene precedencia absoluta sobre el enabled. Meterlo
+// aquí arriesgaría diluir esa precedencia dentro del genérico "1/true/on".
+
 export type FeatureFlag =
   | "REFERENCE_BLUEPRINT_V2"
   | "IMAGE_QA_ENABLED"
@@ -34,3 +51,37 @@ export function featureEnabled(name: FeatureFlag): boolean {
   }
   return raw === "1" || raw.toLowerCase() === "true" || raw.toLowerCase() === "on";
 }
+
+// --- RAG capability flags ---------------------------------------------
+// Exact-match "true" parsing (not the "1/true/on" convention above) is the
+// existing, load-bearing production behavior for this group -- preserved
+// verbatim from src/lib/rag/flags.ts and src/lib/rag/retrieval/search.ts.
+
+/** Default: OFF. Gates the RAG retrieval subsystem end-to-end (chat and budget flows). */
+export const RAG_ENABLED = process.env.RAG_ENABLED === "true";
+/** Default: OFF. Gates the budget-tier ("franjas de presupuesto") RAG mode. */
+export const RAG_FRANJAS_ENABLED = process.env.RAG_FRANJAS_ENABLED === "true";
+/** Default: OFF. Enables the vector retrieval branch; also needs a Gemini key at call sites that check it. */
+export const RAG_USE_VECTOR = process.env.RAG_USE_VECTOR === "true";
+/** Default: ON. Disabled only by the literal string "false" -- inverted polarity from the other RAG flags on purpose (full-text is the primary retrieval branch). */
+export const RAG_USE_FULLTEXT = process.env.RAG_USE_FULLTEXT !== "false";
+/** Default: ON. Disabled only by the literal string "false" -- same inverted-polarity reasoning as RAG_USE_FULLTEXT. */
+export const RAG_USE_TRIGRAM = process.env.RAG_USE_TRIGRAM !== "false";
+
+// --- Plan capability flags -----------------------------------------------
+
+/** Default: OFF ("1"/"true"/"on", case-insensitive). Preserved from src/lib/plan/flags.ts. */
+export const PLAN_DECORACION_ENABLED = ["1", "true", "on"].includes((process.env.PLAN_DECORACION_ENABLED ?? "").toLowerCase());
+
+// --- LoRA capability flags -------------------------------------------------
+
+/** Default: OFF, and hard-gated to non-production regardless of the env var -- never allow a rejected LoRA run outside a developer's own machine. */
+export const LORA_ALLOW_REJECTED_FOR_TESTING =
+  process.env.NODE_ENV !== "production" && process.env.LORA_ALLOW_REJECTED_FOR_TESTING === "true";
+/** Default: OFF (single-LoRA composition only) -- exact "true" match. */
+export const FAL_MULTI_LORA_SUPPORTED = process.env.FAL_MULTI_LORA_SUPPORTED === "true";
+
+// --- Debug flags -----------------------------------------------------------
+
+/** Default: ON outside production, OFF in production unless IMAGE_DEBUG is explicitly "true". */
+export const IMAGE_DEBUG = process.env.NODE_ENV !== "production" || process.env.IMAGE_DEBUG === "true";

@@ -1,5 +1,5 @@
 import type { Brief } from "@/lib/types";
-import { PLAN_DECORACION_ENABLED } from "@/lib/plan/flags";
+import { PLAN_DECORACION_ENABLED } from "@/lib/ia/feature-flags";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import { ALCANCE_POR_CATEGORIA_REFERENCIA } from "@/lib/rag/taxonomy/alcance-referencia";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";

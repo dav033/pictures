@@ -8,9 +8,10 @@ import { LORA_V007_CATALOG_SOURCE_IDS, LORA_V007_DATASET_ID } from "./v007-catal
 import { buildLookupIndexes, resolveProductConcept } from "./product-vocabulary";
 import { PRODUCT_VOCABULARY } from "./product-vocabulary-data";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
+import { LORA_ALLOW_REJECTED_FOR_TESTING, FAL_MULTI_LORA_SUPPORTED } from "@/lib/ia/feature-flags";
 
 function allowRejectedForLocalTesting(): boolean {
-  return process.env.NODE_ENV !== "production" && process.env.LORA_ALLOW_REJECTED_FOR_TESTING === "true";
+  return LORA_ALLOW_REJECTED_FOR_TESTING;
 }
 
 export type ResolvedLoraApplication = LoraCompatibilityArtifact & {
@@ -213,7 +214,7 @@ export async function resolveLoraSelection(
     } satisfies ResolvedLoraApplication;
   });
 
-  if (applications.length > 1 && process.env.FAL_MULTI_LORA_SUPPORTED !== "true") {
+  if (applications.length > 1 && !FAL_MULTI_LORA_SUPPORTED) {
     throw new Error("LORA_MULTI_UNSUPPORTED: confirma el schema multi-LoRA del proveedor antes de habilitar dos pesos");
   }
   assertLoraCompatibility(applications);

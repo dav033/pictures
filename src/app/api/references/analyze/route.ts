@@ -3,7 +3,7 @@ import { chatDe, resolverProveedor } from "@/lib/ia/registro";
 import { ErrorIA, type Imagen, type ImagenEtiquetada, type ProveedorId } from "@/lib/ia/tipos";
 import { obtenerProductos } from "@/lib/products";
 import { productosParaMatchingReferencia } from "@/lib/shopify/consultas";
-import { PLAN_DECORACION_ENABLED } from "@/lib/plan/flags";
+import { PLAN_DECORACION_ENABLED } from "@/lib/ia/feature-flags";
 
 export const maxDuration = 120;
 

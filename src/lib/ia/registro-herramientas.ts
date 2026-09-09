@@ -12,7 +12,6 @@ import type { RolPresupuesto } from "@/lib/rag/presupuesto/franjas";
 import { extraerFiltrosDurosBusqueda } from "@/lib/rag/query-parser/hard-filters";
 import { parseEventSearchIntent } from "@/lib/rag/query-parser/event-search";
 import { aProductoValidado, validarSeleccion, type ItemRechazado, type ItemValidado, type SeleccionSolicitada } from "@/lib/rag/chat/validar";
-import { RAG_ENABLED, RAG_FRANJAS_ENABLED } from "@/lib/rag/flags";
 import { actualizarResultadoBusqueda, encolarEscrituraObservabilidad, registrarBusqueda, registrarPlanAudit, registrarSeleccion } from "@/lib/rag/observability/log";
 import { resolverFranja } from "@/lib/rag/presupuesto/resolver";
 import { resolverVariantesPorDespieceBatch, type GrupoDespiece } from "@/lib/rag/tamanos/resolver";
@@ -23,8 +22,7 @@ import { extraerRestriccionesUsuario, validarCardinalidadEventoAbierto, validarC
 import { parseEventIntent } from "@/lib/rag/query-parser/parse-event";
 import type { CatalogAllowlist, EventMatchEvidence, EventMatchLevel } from "@/lib/rag/retrieval/types";
 import { crearTokenAprobacion } from "@/lib/plan/aprobacion";
-import { PLAN_DECORACION_ENABLED } from "@/lib/plan/flags";
-import { featureEnabled } from "@/lib/ia/feature-flags";
+import { PLAN_DECORACION_ENABLED, RAG_ENABLED, RAG_FRANJAS_ENABLED, featureEnabled } from "@/lib/ia/feature-flags";
 import { sceneShadowPipeline } from "@/lib/scene/orchestrator";
 import { blockingPhysicalWarnings, estimateFromPlan, validateMaterialEstimate } from "@/lib/materiales/estimacion";
 import {

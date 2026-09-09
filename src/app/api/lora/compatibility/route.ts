@@ -3,10 +3,11 @@ import { isAuthenticatedRequest, isSameOriginRequest } from "@/lib/auth/request"
 import { LoraSelectionSchema } from "@/lib/lora/schema";
 import { LoraCompatibilityError } from "@/lib/lora/compatibility";
 import { resolveLoraSelection } from "@/lib/lora/mode-resolver";
+import { FAL_MULTI_LORA_SUPPORTED } from "@/lib/ia/feature-flags";
 
 export async function GET(request: Request) {
   if (!isAuthenticatedRequest(request)) return NextResponse.json({ code: "UNAUTHORIZED", message: "Sesión requerida" }, { status: 401 });
-  return NextResponse.json({ multiLora: process.env.FAL_MULTI_LORA_SUPPORTED === "true", baseModel: "FLUX.2 [dev]", resolution: 1024 });
+  return NextResponse.json({ multiLora: FAL_MULTI_LORA_SUPPORTED, baseModel: "FLUX.2 [dev]", resolution: 1024 });
 }
 
 export async function POST(request: Request) {
