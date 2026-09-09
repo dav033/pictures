@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { Pool } from "pg";
-import { resolverVariantesPorDespiece } from "../src/lib/rag/tamanos/resolver";
+import { resolverVariantesPorDespiece, resolverVariantesPorDespieceBatch, type GrupoDespiece } from "../src/lib/rag/tamanos/resolver";
 
 for (const archivo of [".env.local", ".env", ".env.example"]) {
   if (existsSync(archivo)) process.loadEnvFile(archivo);
@@ -105,7 +105,51 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error) => {
-  console.error(`[FAIL] resolver PG whitelist — ${error instanceof Error ? error.message : String(error)}`);
-  process.exitCode = 1;
-});
+/**
+ * Fase 3.5: `resolverVariantesPorDespieceBatch` hace UNA consulta para todos
+ * los grupos del turno, con `variant_id = ANY(...)` de la UNIÓN de sus
+ * whitelists — así que el filtro de whitelist por grupo ya no lo garantiza
+ * la consulta por sí sola cuando dos grupos comparten `productId` con
+ * whitelists distintas. Esto no ocurre hoy desde `confirmar_seleccion_rag`
+ * (la whitelist sale del mismo mapa por `productId`), pero la función es de
+ * uso general — se prueba sin DB real, con una fila de PG simulada, que el
+ * segundo filtro en JS (resolver.ts) sigue aislando cada grupo por su propia
+ * whitelist exacta.
+ */
+async function testBatchAislaWhitelistPorGrupo(): Promise<void> {
+  const filasSimuladas = [
+    { product_id: "P-X", variant_id: "V1", diam_pulg: 5, price: 1000, unidades_paq: 10 },
+    { product_id: "P-X", variant_id: "V2", diam_pulg: 9, price: 1200, unidades_paq: 10 },
+    { product_id: "P-X", variant_id: "V3", diam_pulg: 12, price: 1500, unidades_paq: 5 },
+  ];
+  const poolFalso = { query: async () => ({ rows: filasSimuladas }) } as unknown as Pool;
+
+  const grupos: GrupoDespiece[] = [
+    // Mismo producto que el grupo 2, pero solo ve V1/V2 — pide 9" y debe
+    // resolver exacto con V2, nunca con V3 (fuera de SU whitelist).
+    { productId: "P-X", despiece: [{ tamano: "R-9", pulgadas: 9, cantidad: 1 }], whitelistVariantIds: new Set(["V1", "V2"]) },
+    // Mismo producto, whitelist disjunta — solo ve V3. Pide 9" y debe
+    // sustituir a V3 (12"), nunca colarse V1/V2 de la whitelist del otro grupo.
+    { productId: "P-X", despiece: [{ tamano: "R-9", pulgadas: 9, cantidad: 1 }], whitelistVariantIds: new Set(["V3"]) },
+  ];
+
+  const [resultadoUno, resultadoDos] = await resolverVariantesPorDespieceBatch(poolFalso, grupos);
+  assert.equal(resultadoUno?.lineas[0]?.variantId, "V2", "grupo 1 debió resolver exacto con su propia whitelist (V2), no con V3 del otro grupo");
+  assert.equal(resultadoUno?.lineas[0]?.sustitucion, null, "grupo 1 tenía match exacto (9\"=V2), no debía marcar sustitución");
+  assert.equal(resultadoDos?.lineas[0]?.variantId, "V3", "grupo 2 solo tiene V3 en su whitelist — no debía colarse V1/V2 del otro grupo");
+  assert.ok(resultadoDos?.lineas[0]?.sustitucion, "grupo 2 no tenía 9\" en su whitelist — debía quedar registrada la sustitución a 12\"");
+
+  console.log("[PASS] resolverVariantesPorDespieceBatch aísla la whitelist de cada grupo aunque compartan product_id y una sola consulta");
+}
+
+async function ejecutarTodo(): Promise<void> {
+  const resultados = await Promise.allSettled([main(), testBatchAislaWhitelistPorGrupo()]);
+  for (const resultado of resultados) {
+    if (resultado.status === "rejected") {
+      console.error(`[FAIL] resolver PG whitelist — ${resultado.reason instanceof Error ? resultado.reason.message : String(resultado.reason)}`);
+      process.exitCode = 1;
+    }
+  }
+}
+
+void ejecutarTodo();

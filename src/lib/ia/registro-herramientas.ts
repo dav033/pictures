@@ -15,7 +15,7 @@ import { aProductoValidado, validarSeleccion, type ItemRechazado, type ItemValid
 import { RAG_ENABLED, RAG_FRANJAS_ENABLED } from "@/lib/rag/flags";
 import { actualizarResultadoBusqueda, registrarBusqueda, registrarPlanAudit, registrarSeleccion } from "@/lib/rag/observability/log";
 import { resolverFranja } from "@/lib/rag/presupuesto/resolver";
-import { resolverVariantesPorDespiece } from "@/lib/rag/tamanos/resolver";
+import { resolverVariantesPorDespieceBatch, type GrupoDespiece } from "@/lib/rag/tamanos/resolver";
 import { resolverPlan } from "@/lib/plan/resolver";
 import { PlanDecoracionSchema } from "@/lib/plan/tipos";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
@@ -551,47 +551,83 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       // resolver determinístico decide cuánto de cada tamaño según el
       // despiece geométrico de calcular_medidas — nunca al revés, o vuelve
       // a caer en que el LLM elija una sola variante a ojo.
-      const seleccion: SeleccionSolicitada[] = [];
       const sustituciones: { product_id: string; pedido: string; entregado: string; motivo: string }[] = [];
       const sinCobertura: { product_id: string; tamano: string }[] = [];
       const rechazosExpansion: ItemRechazado[] = [];
 
+      // Fase 3.5: los ítems `usar_despiece` de este turno se recolectan
+      // primero (sin tocar la DB) y se resuelven todos en UNA sola consulta
+      // batch en vez de una por ítem — antes cada `usar_despiece` de la
+      // selección disparaba su propio round-trip a Postgres dentro de este
+      // `for`. `porIndice` conserva el orden exacto de `seleccionCruda`: un
+      // ítem normal produce una entrada, un `usar_despiece` produce N (una
+      // por tamaño resuelto), pero la posición relativa entre ítems no
+      // relacionados con el despiece no debe cambiar frente al código previo.
+      const porIndice: SeleccionSolicitada[][] = [];
+      const indicesDespiece: number[] = [];
+      const gruposDespiece: GrupoDespiece[] = [];
+      const productIdPorIndiceDespiece: string[] = [];
+      const razonPorIndiceDespiece: (string | undefined)[] = [];
+
       for (const cruda of seleccionCruda as Record<string, unknown>[]) {
         const productId = String(cruda.product_id ?? "");
         if (cruda.usar_despiece !== true) {
-          seleccion.push({
+          porIndice.push([{
             productId,
             variantId: String(cruda.variant_id ?? ""),
             cantidad: Number(cruda.cantidad ?? 0),
             razon: typeof cruda.razon === "string" ? cruda.razon : undefined,
-          });
+          }]);
           continue;
         }
 
         if (!estado.medidas) {
           rechazosExpansion.push({ productId, variantId: "", motivo: "usar_despiece sin haber llamado calcular_medidas en este turno" });
+          porIndice.push([]);
           continue;
         }
         const colorArg = typeof cruda.color === "string" ? cruda.color : undefined;
         const despieceTieneColores = estado.medidas.despiece.some((l) => l.color);
         if (despieceTieneColores && !colorArg) {
           rechazosExpansion.push({ productId, variantId: "", motivo: "calculaste medidas con varios colores; usar_despiece necesita 'color' para saber qué parte del despiece cubre este producto" });
+          porIndice.push([]);
           continue;
         }
         const lineasDelColor = estado.medidas.despiece.filter((l) => (colorArg ? l.color === colorArg : true));
         if (lineasDelColor.length === 0) {
           rechazosExpansion.push({ productId, variantId: "", motivo: `ningún tamaño del despiece corresponde al color '${colorArg}'` });
+          porIndice.push([]);
           continue;
         }
 
         const whitelist = estado.ragVariantIdsRecuperados.get(productId) ?? new Set<string>();
-        const resuelto = await resolverVariantesPorDespiece(pool, productId, lineasDelColor, whitelist);
-        for (const linea of resuelto.lineas) {
-          seleccion.push({ productId: linea.productId, variantId: linea.variantId, cantidad: linea.cantidad, razon: typeof cruda.razon === "string" ? cruda.razon : undefined });
-          if (linea.sustitucion) sustituciones.push({ product_id: productId, ...linea.sustitucion });
-        }
-        for (const faltante of resuelto.sinCobertura) sinCobertura.push({ product_id: productId, tamano: faltante.tamano });
+        porIndice.push([]); // se rellena abajo tras resolver el batch
+        indicesDespiece.push(porIndice.length - 1);
+        gruposDespiece.push({ productId, despiece: lineasDelColor, whitelistVariantIds: whitelist });
+        productIdPorIndiceDespiece.push(productId);
+        razonPorIndiceDespiece.push(typeof cruda.razon === "string" ? cruda.razon : undefined);
       }
+
+      if (gruposDespiece.length > 0) {
+        const resueltos = await resolverVariantesPorDespieceBatch(pool, gruposDespiece);
+        for (let i = 0; i < indicesDespiece.length; i++) {
+          const productId = productIdPorIndiceDespiece[i]!;
+          const razon = razonPorIndiceDespiece[i];
+          const resuelto = resueltos[i]!;
+          porIndice[indicesDespiece[i]!] = resuelto.lineas.map((linea) => ({
+            productId: linea.productId,
+            variantId: linea.variantId,
+            cantidad: linea.cantidad,
+            razon,
+          }));
+          for (const linea of resuelto.lineas) {
+            if (linea.sustitucion) sustituciones.push({ product_id: productId, ...linea.sustitucion });
+          }
+          for (const faltante of resuelto.sinCobertura) sinCobertura.push({ product_id: productId, tamano: faltante.tamano });
+        }
+      }
+
+      const seleccion: SeleccionSolicitada[] = porIndice.flat();
 
       const t0 = Date.now();
       const resultado = await validarSeleccion(pool, seleccion, estado.ragVariantIdsRecuperados);
