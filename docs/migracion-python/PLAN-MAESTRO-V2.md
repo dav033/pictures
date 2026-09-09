@@ -493,6 +493,21 @@ sustitución o un filtro relajado— pasa a ser una propiedad del sistema. Eso
 baja el riesgo de tocar el razonamiento del modelo, que es exactamente lo que
 hace el resto de la etapa.
 
+**Estado real al 2026-09-09** (evidencia, no plan): 3.1 a 3.11 y 3.13 —
+implementadas, verificadas (tsc/lint/build + regresión real contra
+Postgres local o `happie:test-webhook` según el caso) y desplegadas a
+producción, cada una en un commit propio de `main`. **3.12 queda
+explícitamente bloqueada**, no por dificultad técnica sino por la propia
+precondición que fija el orden revisado más arriba ("después de que
+3.1/3.2/3.3 tengan datos reales en `ai_call_log`"): una consulta de
+solo lectura contra la Neon de producción el 2026-09-09 mostró **2 filas
+totales** en `ai_call_log`, ambas de flujos `happie_*` de pruebas de
+verificación de esta misma sesión, **cero filas de `armador_decoracion`**
+(el chat principal). Construir el desglose por flujo/capacidad y coste
+por conversación ahora mismo sería una UI sin datos reales contra los
+que validar la agregación — se retoma cuando haya tráfico real del chat
+principal instrumentado por 3.1/3.2/3.3.
+
 **Regresiones obligatorias antes de activar cualquiera:**
 `npm run rag:eval-parser`, `npm run rag:eval-chat`, `npm run plan:test`,
 `npm run contracts:test` y sus variantes, `npx tsc --noEmit`, `npm run lint`.
