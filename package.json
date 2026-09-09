@@ -19,7 +19,7 @@
     "test-feature-flags": "tsx scripts/test-feature-flags.ts",
     "test-proxy-matcher": "tsx scripts/test-proxy-matcher.ts",
     "test-comparar-constante": "tsx scripts/test-comparar-constante.ts",
-    "test-rotacion-secretos": "tsx --conditions=react-server scripts/test-rotacion-secretos.ts",
+    "test-rotacion-secretos": "npm run build --workspace=@sempertex/happie-package-ia && tsx --conditions=react-server scripts/test-rotacion-secretos.ts",
     "start": "node scripts/next-with-system-ca.cjs start",
     "lint": "eslint",
     "rag:stack-check": "tsx scripts/stack-check.ts",
