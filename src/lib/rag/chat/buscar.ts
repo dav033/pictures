@@ -210,6 +210,18 @@ export async function buscarCatalogoRag(
   }
 
   const ids = respuesta.results.map((r) => r.productId);
+  // `buscarHibrido` ya calculó, por producto, cuáles variantes pasan el
+  // filtro de precio/disponibilidad (retrieval/search.ts:finalVariantWhitelist,
+  // una consulta SQL real). Fase 3.4: esa whitelist se pasa aquí como
+  // `AND v.variant_id = ANY($2)` en vez de traer TODAS las variantes del
+  // producto y descartar en JS después — mismo conjunto exacto, sin la
+  // ronda de filas descartadas. Antes de que existiera el filtro (ni en SQL
+  // ni en JS) esta función pedía TODAS las variantes del producto sin
+  // restricción, así que un producto que entraba por su variante barata
+  // podía mostrarle al LLM (y luego cotizar) una variante muy por encima del
+  // presupuesto del cliente — de ahí que la whitelist tenga que ser exacta,
+  // no solo una optimización de rendimiento.
+  const variantesPermitidas = respuesta.results.flatMap((r) => r.variantIds);
   const { rows } = await pool.query<FilaCandidato>(
     `SELECT p.product_id, p.title, p.derived, p.available, p.image_urls[1] AS imagen_principal,
             v.variant_id, v.sku, v.title AS variante_titulo, v.price, v.available AS variante_disponible,
@@ -217,26 +229,13 @@ export async function buscarCatalogoRag(
      FROM catalog_products p
      JOIN catalog_variants v ON v.product_id = p.product_id
      WHERE p.product_id = ANY($1::text[])
+       AND v.variant_id = ANY($2::text[])
      ORDER BY v.diam_pulg ASC NULLS LAST`,
-    [ids],
-  );
-
-  // `buscarHibrido` ya calculó, por producto, cuáles variantes pasan el
-  // filtro de precio/disponibilidad (retrieval/search.ts) — ese cálculo NO
-  // se repite aquí. Antes esta función volvía a pedir TODAS las variantes
-  // del producto sin filtro, así que un producto que entraba por su
-  // variante barata podía mostrarle al LLM (y luego cotizar) una variante
-  // muy por encima del presupuesto del cliente. Se restringe a esa
-  // whitelist para que lo que ve el LLM sea exactamente lo que pasó el filtro.
-  const variantesPermitidasPorProducto = new Map<string, Set<string>>(
-    respuesta.results.map((r) => [r.productId, new Set(r.variantIds)]),
+    [ids, variantesPermitidas],
   );
 
   const porProducto = new Map<string, ProductoCandidato>();
   for (const fila of rows) {
-    const permitidas = variantesPermitidasPorProducto.get(fila.product_id);
-    if (permitidas && !permitidas.has(fila.variant_id)) continue;
-
     if (!porProducto.has(fila.product_id)) {
       porProducto.set(fila.product_id, {
         productId: fila.product_id,

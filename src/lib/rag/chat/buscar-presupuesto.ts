@@ -233,16 +233,22 @@ export async function buscarCatalogoRagConPresupuesto(
   }
 
   // Una sola consulta de detalle para la unión de (producto, variante) de
-  // todos los roles, en vez de una por rol.
+  // todos los roles, en vez de una por rol. Fase 3.4: se restringe también
+  // por `variant_id` (whitelist ya calculada en `pares`) para no traer del
+  // producto variantes que ningún rol recuperó — `filaPorPar` nunca las
+  // habría expuesto de todos modos (el loop de abajo itera sobre `pares`,
+  // no sobre `rows`), así que esto es puramente evitar filas descartadas.
   const productIds = [...new Set(pares.map((p) => p.productId))];
+  const variantIds = [...new Set(pares.map((p) => p.variantId))];
   const { rows } = await pool.query<FilaCandidatoDetalle>(
     `SELECT p.product_id, p.title, p.derived, p.available, p.image_urls[1] AS imagen_principal,
             v.variant_id, v.sku, v.price, v.available AS variante_disponible,
             v.inventory_quantity AS inventario, v.derived_colors AS variant_colors
      FROM catalog_products p
      JOIN catalog_variants v ON v.product_id = p.product_id
-     WHERE p.product_id = ANY($1::text[])`,
-    [productIds],
+     WHERE p.product_id = ANY($1::text[])
+       AND v.variant_id = ANY($2::text[])`,
+    [productIds, variantIds],
   );
   const filaPorPar = new Map<string, FilaCandidatoDetalle>(rows.map((r) => [`${r.product_id}:${r.variant_id}`, r]));
 

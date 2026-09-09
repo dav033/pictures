@@ -36,7 +36,7 @@
     "rag:e2e-v2": "tsx --conditions=react-server scripts/eval-e2e-rag-v2.ts --no-key",
     "rag:e2e-v2:gemini": "tsx --env-file=.env.local --conditions=react-server scripts/eval-e2e-rag-v2.ts --with-gemini",
     "rag:eval-chat": "tsx --env-file=.env.local --conditions=react-server scripts/eval-chat-thinking.ts",
-    "rag:test-validation": "tsx scripts/test-rag-validation.ts",
+    "rag:test-validation": "tsx --conditions=react-server scripts/test-rag-validation.ts",
     "rag:test-generation-resolver": "tsx --conditions=react-server scripts/test-generation-resolver.ts",
     "rag:test-webhook": "tsx scripts/test-webhook.ts",
     "happie:test-webhook": "npm run build --workspace=@sempertex/happie-package-ia && tsx --conditions=react-server scripts/test-happie-webhook.ts && tsx --conditions=react-server scripts/test-happie-controls.ts",
