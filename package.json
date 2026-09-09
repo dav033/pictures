@@ -18,6 +18,7 @@
     "contracts:test:python-adapter": "tsx scripts/test-python-adapter.ts",
     "test-feature-flags": "tsx scripts/test-feature-flags.ts",
     "test-proxy-matcher": "tsx scripts/test-proxy-matcher.ts",
+    "test-comparar-constante": "tsx scripts/test-comparar-constante.ts",
     "start": "node scripts/next-with-system-ca.cjs start",
     "lint": "eslint",
     "rag:stack-check": "tsx scripts/stack-check.ts",

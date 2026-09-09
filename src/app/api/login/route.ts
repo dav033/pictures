@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { SESSION_COOKIE, SESSION_MAX_AGE, sessionToken } from "@/lib/auth/session";
+import { compararEnTiempoConstante } from "@/lib/seguridad/comparar-constante";
 
 /**
  * Redirección con `Location` RELATIVO.
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
   const expected = process.env.APP_PASSWORD;
   const safeFrom = from.startsWith("/") && !from.startsWith("//") ? from : "/";
 
-  if (!expected || !password || password !== expected) {
+  if (!expected || !password || !compararEnTiempoConstante(password, expected)) {
     if (!isJsonRequest) {
       const parametros = new URLSearchParams({ from: safeFrom, error: "1" });
       return redireccionRelativa(`/login?${parametros.toString()}`);

@@ -1,3 +1,5 @@
+import { compararEnTiempoConstante } from "@/lib/seguridad/comparar-constante";
+
 /**
  * CORS + API key para los endpoints de Happie pensados para un consumidor
  * externo desde el navegador (no la sesión de cookie de la app). El origen
@@ -32,7 +34,8 @@ export function respuestaPreflight(request: Request): Response {
 
 export function apiKeyValida(request: Request): boolean {
   const esperada = process.env.HAPPIE_EXTERNO_API_KEY;
-  return Boolean(esperada) && request.headers.get("x-api-key") === esperada;
+  const recibida = request.headers.get("x-api-key");
+  return Boolean(esperada) && Boolean(recibida) && compararEnTiempoConstante(recibida!, esperada!);
 }
 
 export function conEncabezadosCors(respuesta: Response, cors: Record<string, string>): Response {

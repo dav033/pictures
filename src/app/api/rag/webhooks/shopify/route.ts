@@ -51,9 +51,10 @@ export async function POST(request: Request) {
     return Response.json({ status: resultado.status });
   } catch (error) {
     // Error real (DB caída, etc.) — aquí SÍ conviene que Shopify reintente.
-    return Response.json(
-      { error: error instanceof Error ? error.message : "error desconocido" },
-      { status: 500 },
-    );
+    // Fase 4.5: nunca el mensaje crudo del error (puede traer detalle de
+    // conexión/consulta) — mismo criterio que ya aplican los webhooks de
+    // Happie en webhook-control.ts. Se registra server-side para depurar.
+    console.error("[shopify-webhook] error procesando webhook:", error);
+    return Response.json({ error: "No se pudo procesar el webhook." }, { status: 500 });
   }
 }

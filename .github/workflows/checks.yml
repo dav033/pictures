@@ -63,6 +63,8 @@ jobs:
       - run: npm run contracts:test:cancel
       - run: npm run contracts:test:python-adapter
       - run: npm run test-feature-flags
+      - run: npm run test-proxy-matcher
+      - run: npm run test-comparar-constante
       - run: npm run plan:test
       - run: npm run chat:test-historial
       - run: npm run happie:test-webhook
