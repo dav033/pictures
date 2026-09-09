@@ -1,6 +1,32 @@
 import type { Pool } from "pg";
 import type { ObservabilidadBusqueda, PiezaObservabilidad, ResultadoBusquedaObservabilidad } from "./types";
 
+const pendientes = new Set<Promise<void>>();
+
+/**
+ * Fase 3.8: saca una escritura de observabilidad de la ruta crítica del
+ * turno sin perder el resultado si falla. Solo es seguro usarla con
+ * escrituras que NO tengan una lectura/actualización posterior en el mismo
+ * turno esperando que ya hayan terminado — `actualizarResultadoBusqueda`,
+ * `registrarSeleccion` y `registrarPlanAudit` encajan porque nunca compiten
+ * con el INSERT que crea la fila que actualizan: ese INSERT
+ * (`registrarBusqueda`) sigue esperándose exactamente igual que antes, así
+ * que para cuando el modelo puede llamar a la herramienta que dispara
+ * cualquiera de estas tres, la fila ya existe de forma durable. Los errores
+ * ya los atrapan estas funciones internamente (nunca tumban la
+ * conversación); esto solo evita bloquear el turno en el I/O de Postgres.
+ */
+export function encolarEscrituraObservabilidad(tarea: Promise<unknown>): void {
+  const normalizada = Promise.resolve(tarea).then(() => undefined, () => undefined);
+  pendientes.add(normalizada);
+  void normalizada.finally(() => pendientes.delete(normalizada));
+}
+
+/** Útil para cierre ordenado y pruebas; los fallos ya quedaron aislados arriba. */
+export async function esperarObservabilidadPendiente(): Promise<void> {
+  await Promise.all([...pendientes]);
+}
+
 function metadataAuditable(value: unknown, depth = 0): unknown {
   if (depth > 4 || value == null) return value == null ? null : "[truncated]";
   if (typeof value === "string") return value.length > 1200 ? `${value.slice(0, 1200)}…` : value;

@@ -13,7 +13,7 @@ import { extraerFiltrosDurosBusqueda } from "@/lib/rag/query-parser/hard-filters
 import { parseEventSearchIntent } from "@/lib/rag/query-parser/event-search";
 import { aProductoValidado, validarSeleccion, type ItemRechazado, type ItemValidado, type SeleccionSolicitada } from "@/lib/rag/chat/validar";
 import { RAG_ENABLED, RAG_FRANJAS_ENABLED } from "@/lib/rag/flags";
-import { actualizarResultadoBusqueda, registrarBusqueda, registrarPlanAudit, registrarSeleccion } from "@/lib/rag/observability/log";
+import { actualizarResultadoBusqueda, encolarEscrituraObservabilidad, registrarBusqueda, registrarPlanAudit, registrarSeleccion } from "@/lib/rag/observability/log";
 import { resolverFranja } from "@/lib/rag/presupuesto/resolver";
 import { resolverVariantesPorDespieceBatch, type GrupoDespiece } from "@/lib/rag/tamanos/resolver";
 import { resolverPlan } from "@/lib/plan/resolver";
@@ -647,14 +647,18 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         if (productos.length > 0) estado.seleccionFinalIA = productos;
       }
 
-      await registrarSeleccion(pool, {
+      // Fase 3.8: la fila que crea `registrarBusqueda` (tool `buscar_catalogo*`,
+      // ya awaiteada en una vuelta anterior) es durable para cuando el modelo
+      // puede llegar a llamar a esta herramienta — la selección/actualización
+      // de esa fila puede salir de la ruta crítica sin arriesgar el orden.
+      encolarEscrituraObservabilidad(registrarSeleccion(pool, {
         requestId: estado.ragRequestId,
         selectedProductIds: resultado.validados.map((v) => v.productId),
         rejected: resultado.rechazados,
         status: statusSeleccion,
         latencyTotalMs: Date.now() - t0,
-      });
-      await actualizarResultadoBusqueda(
+      }));
+      encolarEscrituraObservabilidad(actualizarResultadoBusqueda(
         pool,
         estado.ragRequestId,
         statusSeleccion === "NO_MATCH" ? "NO_MATCH" : "plan_confirmado",
@@ -667,7 +671,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
             matchLevel: candidato?.eventEvidence?.match_level ?? "adaptable",
           };
         }),
-      );
+      ));
 
       // Chequeo de presupuesto (§3, Etapa 5): la franja no bloquea la
       // confirmación — el LLM puede tener una razón real para excederse (ej.
@@ -720,7 +724,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         restricciones: estado.restriccionesUsuario,
       });
       if (!parseado.success) {
-        await actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion");
+        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
         return { ok: false, errores: parseado.error.issues.map((issue) => `${issue.path.join(".") || "plan"}: ${issue.message}`) };
       }
       const erroresDeIntencion = validarRestriccionesPlan(parseado.data, estado.restriccionesUsuario);
@@ -734,15 +738,15 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       if (erroresDeContrato.length > 0) {
         estado.planResuelto = undefined;
         estado.seleccionFinalIA = [];
-        await registrarPlanAudit(ragPool, {
+        encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
           requestId: estado.ragRequestId,
           solicitudOriginal: estado.solicitudOriginal,
           restricciones: estado.restriccionesUsuario,
           candidateProductIds: [...estado.ragIdsRecuperados],
           status: "RESTRICCIONES_INCONSISTENTES",
           error: erroresDeContrato.join(" | "),
-        });
-        await actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion");
+        }));
+        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
         return {
           ok: false,
           status: "RESTRICCIONES_INCONSISTENTES",
@@ -760,15 +764,15 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       if (elementosSinCubrir.length > 0) {
         estado.planResuelto = undefined;
         estado.seleccionFinalIA = [];
-        await registrarPlanAudit(ragPool, {
+        encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
           requestId: estado.ragRequestId,
           solicitudOriginal: estado.solicitudOriginal,
           restricciones: estado.restriccionesUsuario,
           candidateProductIds: [...estado.ragIdsRecuperados],
           status: "COBERTURA_REFERENCIA_INCOMPLETA",
           error: elementosSinCubrir.join(" | "),
-        });
-        await actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion");
+        }));
+        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
         return {
           ok: false,
           status: "COBERTURA_REFERENCIA_INCOMPLETA",
@@ -792,21 +796,21 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
             error: error instanceof Error ? error.message : String(error),
           };
         }
-        await registrarPlanAudit(ragPool, {
+        encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
           requestId: estado.ragRequestId,
           solicitudOriginal: estado.solicitudOriginal,
           geometry: shadow,
           status: "SCENE_V2_SHADOW",
           error: shadow.error,
           flagSnapshot: { scenePlanV2Shadow: true },
-        });
+        }));
       }
       const planningStart = Date.now();
       const resuelto = await resolverPlan(ragPool, parseado.data, estado.ragVariantIdsRecuperados, options.catalogAllowlist);
       const materialEstimate = estimateFromPlan(resuelto);
       const estimateValidation = validateMaterialEstimate(materialEstimate);
       const physicalWarnings = blockingPhysicalWarnings(materialEstimate);
-      const auditarResuelto = async (status: string, error?: string) => registrarPlanAudit(ragPool, {
+      const auditarResuelto = (status: string, error?: string) => encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
         requestId: estado.ragRequestId,
         planHash: resuelto.plan_hash,
         solicitudOriginal: estado.solicitudOriginal,
@@ -822,13 +826,13 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         instances: parseado.data.estructuras.map((estructura) => ({ id: estructura.estructura_id, repeticiones: estructura.repeticiones })),
         status,
         error,
-      });
+      }));
       if (!estimateValidation.ok || physicalWarnings.length > 0) {
         estado.planResuelto = undefined;
         estado.seleccionFinalIA = [];
         const error = [...estimateValidation.errors, ...physicalWarnings].join(" | ");
-        await auditarResuelto("ESTIMACION_INCONSISTENTE", error);
-        await actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion", Date.now() - planningStart);
+        auditarResuelto("ESTIMACION_INCONSISTENTE", error);
+        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion", Date.now() - planningStart));
         return {
           ok: false,
           status: "ESTIMACION_INCONSISTENTE",
@@ -839,8 +843,8 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       if (resuelto.sin_cobertura.length > 0 || resuelto.compras.length === 0) {
         estado.planResuelto = undefined;
         estado.seleccionFinalIA = [];
-        await auditarResuelto("SIN_COBERTURA", resuelto.sin_cobertura.map((item) => `${item.estructura_id}:${item.tamano}`).join(" | "));
-        await actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion", Date.now() - planningStart);
+        auditarResuelto("SIN_COBERTURA", resuelto.sin_cobertura.map((item) => `${item.estructura_id}:${item.tamano}`).join(" | "));
+        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion", Date.now() - planningStart));
         return {
           ok: false,
           status: "SIN_COBERTURA",
@@ -852,8 +856,8 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       if (resuelto.comercial.estado === "PRESUPUESTO_EXCEDIDO") {
         estado.planResuelto = undefined;
         estado.seleccionFinalIA = [];
-        await auditarResuelto("PRESUPUESTO_EXCEDIDO");
-        await actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion", Date.now() - planningStart);
+        auditarResuelto("PRESUPUESTO_EXCEDIDO");
+        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion", Date.now() - planningStart));
         return {
           ok: false,
           status: "PRESUPUESTO_EXCEDIDO",
@@ -873,8 +877,8 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       // aprobación explícita del cliente en la tarjeta del plan.
       estado.seleccionFinalIA = [];
       const estadoAuditoria = resuelto.comercial.estado === "APROBACION_REQUERIDA" ? "APROBACION_REQUERIDA" : "VERIFICADO";
-      await auditarResuelto(estadoAuditoria);
-      await actualizarResultadoBusqueda(ragPool, estado.ragRequestId, resuelto.estructuras.length ? "plan_confirmado" : "NO_MATCH", Date.now() - planningStart);
+      auditarResuelto(estadoAuditoria);
+      encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, resuelto.estructuras.length ? "plan_confirmado" : "NO_MATCH", Date.now() - planningStart));
       return {
         ok: true,
         status: resuelto.estructuras.length ? estadoAuditoria : "NO_MATCH",
