@@ -730,6 +730,13 @@ apaga por flag, el orden vuelve a ser el de PostgreSQL y nada más cambia.
 el ground truth existente (`eval/rag/ground-truth-v2.jsonl`), desactivable sin
 tocar código, y con el resultado documentado aunque sea negativo.
 
+**Estado real al 2026-09-09** (evidencia, no plan) — detalle completo en
+`docs/migracion-python/rag/eval-python-fase8.md`:
+
+- **8.1** — hecho, sobre un fixture distinto al que el plan nombraba. `eval/rag/ground-truth-v2.jsonl` (el corpus "v2" de 416 casos que también cita la Salida de esta fase) depende de una fila publicada en `rag_source_snapshots`, que solo escribe `scripts/import-cdn-catalog.ts` — el pipeline que de verdad usa `npm run rag:sync` (`scripts/import-shopify-catalog.ts`) nunca la escribe. `rag_source_snapshots` está vacía tanto en Neon como en el Postgres local; ni `bench-rag-v2.ts` ni `eval-rag-v2.ts` pueden correr contra ninguna base real disponible hoy, y llevan así desde después del 2026-08-22 sin que nadie lo notara (no están en CI ni en `package.json`). Se documenta como hallazgo separado, sin arreglarlo (es trabajo de la Fase 3/regeneración RAG). `scripts/eval-rag-fixture.ts` construye un fixture nuevo, determinista (`ORDER BY`, nunca `random()`), directamente contra el catálogo en vivo, sin depender de esa tabla. `services/ai-api/tests/test_rag_eval_variance.py` corre ese fixture en 3 procesos independientes y exige que las métricas de correctitud sean idénticas entre corridas (determinismo real, no un umbral inventado); la latencia se reporta con su desviación estándar, sin gate. De paso se encontró que el Postgres local no tiene `sku_original`/`sku_canonical` poblados (el pipeline legado de `rag:sync` no los calcula) mientras que Neon sí — producción no está afectada, pero cualquiera que sincronice localmente con el comando de siempre reproduce el mismo hueco.
+- **8.2** — no iniciado. Modelo aprobado por el usuario para cuando se construya: `cross-encoder/ms-marco-MiniLM-L-6-v2`. Su evaluación antes/después no puede usar `ground-truth-v2.jsonl` por el mismo motivo que 8.1 lo evitó — probablemente reutilice o extienda el fixture de 8.1.
+- **8.3** — no iniciado.
+
 ---
 
 ### Fase 9 — Camino LoRA y generación de imagen
