@@ -4,6 +4,26 @@ Inventario del estado actual del código para la Fase 5.3 del plan maestro
 (capítulo 12.3). La fuente de verdad de cada default es la expresión que se
 ejecuta en `src/` o `packages/`, no el valor de ejemplo de `.env.example`.
 
+**Actualización 2026-09-09:** este documento se escribió el 2026-09-08 contra
+`src/lib/ia/feature-flags.ts`, `src/lib/rag/flags.ts` y `src/lib/plan/flags.ts`
+como tres archivos separados. Esa fragmentación de archivos ya se corrigió
+(commit `0ef7881`): `src/lib/rag/flags.ts` y `src/lib/plan/flags.ts` se
+eliminaron y los 9 flags que vivían ahí (`RAG_ENABLED`, `RAG_FRANJAS_ENABLED`,
+`RAG_USE_VECTOR`, `RAG_USE_FULLTEXT`, `RAG_USE_TRIGRAM`,
+`PLAN_DECORACION_ENABLED`, `LORA_ALLOW_REJECTED_FOR_TESTING`,
+`FAL_MULTI_LORA_SUPPORTED`, `IMAGE_DEBUG`) ahora viven en
+`src/lib/ia/feature-flags.ts` junto con los 11 de `FeatureFlag`, cada uno con
+su default preservado exactamente y documentado en un comentario. La tabla de
+abajo no se reescribió fila por fila para reflejar los nuevos paths; donde
+diga `src/lib/rag/flags.ts` o `src/lib/plan/flags.ts`, leer
+`src/lib/ia/feature-flags.ts`.
+**Lo que esa consolidación NO cerró:** documentar el *default técnico* de un
+flag no es lo mismo que escribir la *decisión de negocio* de por qué ese es
+el default correcto. Los 13 flags de la sección "Huecos detectados" siguen sin
+esa decisión escrita — eso requiere criterio de producto, no una
+reorganización de archivos, y sigue pendiente de que alguien con esa autoridad
+lo resuelva flag por flag.
+
 El registro incluye toggles booleanos y los dos controles enumerados que el
 código usa como rollback o selección de comportamiento (`LORA_PROMPT_VERSION`
 y `GEMINI_CHAT_THINKING_LEVEL`). No incluye secretos, credenciales, URLs,
