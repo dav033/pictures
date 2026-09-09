@@ -21,6 +21,7 @@ export type ObservabilidadBusqueda = {
   relaxations: string[];
   outcome: ResultadoBusquedaObservabilidad;
   planningLatencyMs?: number;
+  rerankStatus?: "READY" | "SKIPPED_OPTIONAL" | "ERROR";
 };
 
 export const nivelesCandidatosVacios = (): NivelCandidatos => ({

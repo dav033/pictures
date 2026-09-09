@@ -52,6 +52,7 @@ estos toggles.
 | `RAG_USE_VECTOR` | `src/lib/rag/retrieval/search.ts` y `src/lib/rag/chat/buscar-presupuesto.ts` | `false` (solo el texto exacto `true` lo activa) | Sin decision escrita — default implicito, revisar | Habilita la rama vectorial y los embeddings. En presupuesto tambien requiere una credencial Gemini; sin ella el retrieval vuelve a la ruta lexica. |
 | `RAG_USE_FULLTEXT` | `src/lib/rag/retrieval/search.ts` | `true` (solo el texto exacto `false` la apaga) | Sin decision escrita — default implicito, revisar | Activa o desactiva la rama de busqueda full-text del retrieval hibrido. |
 | `RAG_USE_TRIGRAM` | `src/lib/rag/retrieval/search.ts` | `true` (solo el texto exacto `false` la apaga) | Sin decision escrita — default implicito, revisar | Activa o desactiva la rama trigram del retrieval hibrido. |
+| `RAG_RERANK_ENABLED` | `src/lib/ia/feature-flags.ts`; consumidor en `src/lib/rag/retrieval/search.ts` | `false` (solo el texto exacto `true` lo activa) | Decision escrita (Fase 8.2 en `PLAN-MAESTRO-V2.md` y comentario del flag) | Solicita reranking local con cross-encoder a Python despues de la whitelist SQL. Si Python esta apagado, falla o supera el deadline, conserva el orden local y no cambia el conjunto de candidatos. |
 | `PLAN_DECORACION_ENABLED` | `src/lib/plan/flags.ts`; consumidores en `src/app/api/chat/route.ts`, `src/app/api/references/analyze/route.ts`, `src/app/api/ia/salud/route.ts`, `src/lib/ia/registro-herramientas.ts` y `src/lib/ia/prompt-sistema.ts` | `false` (acepta `1`, `true` u `on`, sin distinguir mayusculas) | Sin decision escrita — default implicito, revisar | Activa el plan declarativo de decoracion, el modo perceptual de referencias y sus herramientas cuando RAG tambien esta activo. |
 | `LORA_PROMPT_VERSION` | Lectura en `src/app/api/generate/route.ts` | `v2`; cualquier valor distinto del literal `v1` cae en `v2` | Sin decision escrita — default implicito, revisar | Selecciona el compilador de prompt LoRA V1 o V2. `v1` es rollback explicito; la comparacion LoRA siempre envia V2 y no respeta este selector. |
 | `LORA_ALLOW_REJECTED_FOR_TESTING` | Lectura en `src/lib/lora/mode-resolver.ts` | `false`; solo el texto exacto `true` y un entorno distinto de produccion pueden habilitarlo | Sin decision escrita — default implicito, revisar | Permite, unicamente para pruebas locales y cuando el caller lo solicita, usar un artefacto LoRA rechazado. En produccion permanece desactivado aunque la variable este en `true`. |
@@ -90,5 +91,5 @@ Estos son los flags cuya fila queda marcada como **Sin decision escrita — defa
 - `FAL_MULTI_LORA_SUPPORTED`
 - `IMAGE_DEBUG`
 
-El registro contiene **27 flags o controles de comportamiento** y **13** quedan
+El registro contiene **28 flags o controles de comportamiento** y **13** quedan
 sin decision escrita visible en el codigo.

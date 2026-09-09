@@ -13,12 +13,24 @@ import type {
   RespuestaRetrieval,
   ResultadoRetrieval,
 } from "./types";
-import { RAG_USE_VECTOR as USE_VECTOR, RAG_USE_FULLTEXT as USE_FULLTEXT, RAG_USE_TRIGRAM as USE_TRIGRAM } from "@/lib/ia/feature-flags";
+import {
+  RAG_USE_VECTOR as USE_VECTOR,
+  RAG_USE_FULLTEXT as USE_FULLTEXT,
+  RAG_USE_TRIGRAM as USE_TRIGRAM,
+  RAG_RERANK_ENABLED as USE_RERANK,
+} from "@/lib/ia/feature-flags";
+import { llamarPythonRerank, seleccionarBackendPython } from "@/lib/ia/python-adapter";
 
 const BRANCH_LIMIT = Number(process.env.RAG_BRANCH_LIMIT ?? 40);
 const FINAL_LIMIT = Number(process.env.RAG_FINAL_LIMIT ?? 15);
 const TRIGRAM_MIN_SIMILARITY = Math.max(0.3, Number(process.env.RAG_TRIGRAM_MIN_SIMILARITY ?? 0.3));
 const RRF_WEIGHTS = { fts: 0.55, trigram: 0.3, vector: 0.15 } as const;
+// Fase 8.2: reranking a fixed-size window of the already-whitelisted,
+// finalScore-sorted candidates -- not the whole branch, so one cross-encoder
+// call stays cheap regardless of how many candidates passed the whitelist.
+const RERANK_CANDIDATE_WINDOW = Number(process.env.RAG_RERANK_CANDIDATE_WINDOW ?? 30);
+export const RERANK_DEADLINE_MS = safeDeadline(Number(process.env.RAG_RERANK_DEADLINE_MS ?? 5_000));
+const RERANK_OPERATION_BUDGET_BYTES = 48 * 1024;
 
 type BranchRow = {
   product_id: string;
@@ -46,8 +58,44 @@ type EventSignalRow = {
   occasions: string[] | null;
 };
 
+type RerankTextRow = {
+  product_id: string;
+  search_text: string | null;
+};
+
+export type RerankStatus = "READY" | "SKIPPED_OPTIONAL" | "ERROR";
+
 function safeLimit(value: number, fallback: number): number {
   return Number.isInteger(value) && value > 0 && value <= 500 ? value : fallback;
+}
+
+function safeDeadline(value: number, fallback = 5_000): number {
+  return Number.isInteger(value) && value > 0 && value <= 75_000 ? value : fallback;
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, parentSignal?: AbortSignal): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let abort: (() => void) | undefined;
+  try {
+    const timeout = new Promise<T>((_, reject) => {
+      timer = setTimeout(() => reject(new Error("rerank preparation deadline exceeded")), timeoutMs);
+    });
+    const cancelled = parentSignal
+      ? new Promise<T>((_, reject) => {
+          abort = () => reject(new Error("rerank preparation cancelled"));
+          if (parentSignal.aborted) abort();
+          else parentSignal.addEventListener("abort", abort, { once: true });
+        })
+      : undefined;
+    return await Promise.race([
+      promise,
+      timeout,
+      ...(cancelled ? [cancelled] : []),
+    ]);
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
+    if (abort && parentSignal) parentSignal.removeEventListener("abort", abort);
+  }
 }
 
 function pareceSku(value: string): boolean {
@@ -116,6 +164,102 @@ async function eventEvidenceByProduct(
     });
   }
   return evidence;
+}
+
+async function rerankTextByProduct(pool: Pool, productIds: string[]): Promise<Map<string, string>> {
+  if (!productIds.length) return new Map();
+  const { rows } = await pool.query<RerankTextRow>(
+    `SELECT product_id, search_text
+     FROM catalog_products
+     WHERE product_id = ANY($1::text[])`,
+    [productIds],
+  );
+  return new Map(
+    rows
+      .filter((row): row is RerankTextRow & { search_text: string } => typeof row.search_text === "string" && row.search_text.trim().length > 0)
+      .map((row) => [row.product_id, row.search_text]),
+  );
+}
+
+async function rerankResults(
+  pool: Pool,
+  consulta: ConsultaRetrieval,
+  sortedResults: ResultadoRetrieval[],
+): Promise<{ results: ResultadoRetrieval[]; status: RerankStatus }> {
+  if (!USE_RERANK || seleccionarBackendPython().backend !== "python") {
+    return { results: sortedResults, status: "SKIPPED_OPTIONAL" };
+  }
+  if (!consulta.semanticQuery.trim() || sortedResults.length < 2) {
+    return { results: sortedResults, status: "SKIPPED_OPTIONAL" };
+  }
+
+  const windowSize = Math.min(100, safeLimit(RERANK_CANDIDATE_WINDOW, FINAL_LIMIT));
+  const window = sortedResults.slice(0, windowSize);
+  const configuredDeadlineAt = consulta.rerankDeadlineAt;
+  const deadlineAt = typeof configuredDeadlineAt === "number" && Number.isFinite(configuredDeadlineAt)
+    ? configuredDeadlineAt
+    : Date.now() + RERANK_DEADLINE_MS;
+  try {
+    const preparationDeadlineMs = deadlineAt - Date.now();
+    if (preparationDeadlineMs <= 0) return { results: sortedResults, status: "ERROR" };
+    const textByProduct = await withTimeout(
+      rerankTextByProduct(pool, window.map((result) => result.productId)),
+      preparationDeadlineMs,
+      consulta.rerankSignal,
+    );
+    const candidates = window.map((result) => ({
+      id: result.productId,
+      text: textByProduct.get(result.productId)?.trim().slice(0, 4_000) ?? "",
+    }));
+    if (candidates.some((candidate) => !candidate.text)) {
+      return { results: sortedResults, status: "SKIPPED_OPTIONAL" };
+    }
+
+    const query = consulta.semanticQuery.trim().slice(0, 1_000);
+    const boundedCandidates: typeof candidates = [];
+    for (const candidate of candidates) {
+      const nextCandidates = [...boundedCandidates, candidate];
+      const operationBytes = new TextEncoder().encode(
+        JSON.stringify({ query, candidates: nextCandidates }),
+      ).byteLength;
+      if (operationBytes > RERANK_OPERATION_BUDGET_BYTES) break;
+      boundedCandidates.push(candidate);
+    }
+    if (boundedCandidates.length < 2) {
+      return { results: sortedResults, status: "SKIPPED_OPTIONAL" };
+    }
+
+    const requestId = consulta.rerankRequestId ?? crypto.randomUUID();
+    const correlationId = consulta.rerankCorrelationId ?? requestId;
+    const remainingDeadlineMs = deadlineAt - Date.now();
+    if (remainingDeadlineMs <= 0) return { results: sortedResults, status: "ERROR" };
+    const response = await llamarPythonRerank({
+      query,
+      candidates: boundedCandidates,
+      requestId,
+      correlationId,
+      deadlineMs: remainingDeadlineMs,
+      parentSignal: consulta.rerankSignal,
+    });
+    const rerankWindow = window.slice(0, boundedCandidates.length);
+    const byId = new Map(rerankWindow.map((result) => [result.productId, result]));
+    const reorderedWindow = response.order.map((productId) => byId.get(productId));
+    if (reorderedWindow.some((result): result is undefined => result === undefined)) {
+      return { results: sortedResults, status: "ERROR" };
+    }
+    const orderedWindow: ResultadoRetrieval[] = reorderedWindow.map((result) => {
+      if (!result) throw new Error("rerank response referenced an unknown candidate");
+      return result;
+    });
+    return {
+      results: [...orderedWindow, ...sortedResults.slice(rerankWindow.length)],
+      status: "READY",
+    };
+  } catch {
+    // Reranking is an optional quality signal. Any transport, model, or
+    // validation failure falls back to the already-authorized local order.
+    return { results: sortedResults, status: "ERROR" };
+  }
 }
 
 /** Use component/event queries when provided; whole conversational requests
@@ -582,7 +726,7 @@ export async function buscarHibrido(pool: Pool, consulta: ConsultaRetrieval): Pr
   const logDemand = new Map(validFused.map((entry) => [entry.productId, Math.log1p(demand.get(entry.productId) ?? 0)]));
   const maximumDemand = Math.max(...logDemand.values(), 0);
   const demandWeight = maximumDemand > 0 ? 0.0001 : 0;
-  const results = validFused
+  const sortedResults = validFused
     .map((entry): ResultadoRetrieval => {
       const demandScore = maximumDemand > 0 ? ((logDemand.get(entry.productId) ?? 0) / maximumDemand) * demandWeight : 0;
       const evidence = eventEvidence.get(entry.productId);
@@ -610,7 +754,9 @@ export async function buscarHibrido(pool: Pool, consulta: ConsultaRetrieval): Pr
       };
     })
     .sort((left, right) => right.finalScore - left.finalScore || right.demandScore! - left.demandScore! || left.productId.localeCompare(right.productId))
-    .slice(0, FINAL_LIMIT);
+  const reranked = await rerankResults(pool, consulta, sortedResults);
+  branchStatus.rerank = reranked.status;
+  const results = reranked.results.slice(0, FINAL_LIMIT);
 
   return { query: consulta, results, skuStatus: "not_sku", branchStatus };
 }

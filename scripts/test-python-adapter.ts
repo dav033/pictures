@@ -7,6 +7,7 @@ import {
 import {
   PythonAdapterError,
   llamarPythonEcho,
+  llamarPythonRerank,
   seleccionarBackendPython,
 } from "../src/lib/ia/python-adapter";
 import { POST } from "../src/app/api/internal/ai/echo/route";
@@ -202,6 +203,67 @@ async function testStableFailures(): Promise<void> {
   assert.equal(networkCalls, 1);
 }
 
+async function testRerankEnvelopeAndPermutation(): Promise<void> {
+  const calls: CapturedCall[] = [];
+  const candidates = [
+    { id: "prod-1", text: "arreglo de girasoles" },
+    { id: "prod-2", text: "ramo de rosas rojas" },
+  ];
+  const fetchImpl: typeof fetch = async (input, init) => {
+    calls.push({ input, init });
+    return successResponse({
+      order: ["prod-2", "prod-1"],
+      scores: { "prod-1": 0.1, "prod-2": 0.9 },
+    });
+  };
+  const result = await llamarPythonRerank({
+    query: "rosas rojas",
+    candidates,
+    requestId: REQUEST_ID,
+    correlationId: CORRELATION_ID,
+    env: BASE_ENV,
+    fetchImpl,
+  });
+  assert.deepEqual(result.order, ["prod-2", "prod-1"]);
+  assert.equal(calls.length, 1);
+  const body = JSON.parse(String(calls[0].init?.body)) as {
+    context: { body_sha256: string; scopes: string[] };
+    query?: string;
+    candidates?: typeof candidates;
+    payload?: unknown;
+  };
+  const operationBody = { query: "rosas rojas", candidates };
+  assert.equal(body.query, operationBody.query);
+  assert.deepEqual(body.candidates, operationBody.candidates);
+  assert.equal(body.payload, undefined);
+  assert.equal(body.context.scopes[0], "ai.rerank");
+  assert.equal(body.context.body_sha256, sha256Body(JSON.stringify(operationBody)));
+  assert.equal(new URL(String(calls[0].input)).pathname, "/internal/v1/rerank");
+
+  const invalidResponseFetch: typeof fetch = async () => Response.json(
+    {
+      schema_version: "operational.v1",
+      request_id: REQUEST_ID,
+      correlation_id: CORRELATION_ID,
+      payload: {
+        order: ["prod-1", "prod-1"],
+        scores: { "prod-1": 0.5 },
+      },
+    },
+  );
+  await assert.rejects(
+    () => llamarPythonRerank({
+      query: "rosas",
+      candidates,
+      requestId: REQUEST_ID,
+      correlationId: CORRELATION_ID,
+      env: BASE_ENV,
+      fetchImpl: invalidResponseFetch,
+    }),
+    (error: unknown) => error instanceof PythonAdapterError && error.code === "PYTHON_INVALID_RESPONSE",
+  );
+}
+
 async function testRouteEnabledAndMissingConfig(): Promise<void> {
   const originalFetch = globalThis.fetch;
   try {
@@ -264,6 +326,7 @@ async function main(): Promise<void> {
   await testEndpointSelection();
   await testEnabledHeadersAndNonce();
   await testStableFailures();
+  await testRerankEnvelopeAndPermutation();
   await testRouteEnabledAndMissingConfig();
   console.log("Python adapter: OK");
 }

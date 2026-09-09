@@ -15,6 +15,8 @@ dependencies = [
     "fastapi==0.115.6",
     "jsonschema==4.23.0",
     "pydantic==2.10.4",
+    "sentence-transformers==3.3.1",
+    "torch==2.5.1",
     "uvicorn==0.34.0",
 ]
 
@@ -22,11 +24,26 @@ dependencies = [
 test = [
     "httpx==0.28.1",
     "pytest==8.3.4",
+    "truststore==0.10.4",
 ]
 quality = [
     "mypy==1.14.1",
     "ruff==0.9.10",
 ]
+
+[tool.uv.sources]
+# CPU-only torch: the EC2 deployment target has no GPU, and the default
+# (CUDA) wheels pull in ~2GB of nvidia-* packages for zero benefit. Scoped to
+# linux (the Docker deployment platform) -- the pytorch-cpu index does not
+# publish macOS wheels, and macOS/Windows dev wheels do not pull CUDA anyway.
+torch = [
+  { index = "pytorch-cpu", marker = "sys_platform == 'linux'" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [tool.setuptools]
 py-modules = []

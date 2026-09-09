@@ -1,5 +1,5 @@
 import type { Pool } from "pg";
-import { buscarHibrido } from "../retrieval/search";
+import { buscarHibrido, RERANK_DEADLINE_MS } from "../retrieval/search";
 import type { EventMatchEvidence, EstadoSku, ResultadoRetrieval } from "../retrieval/types";
 import { parseEventSearchIntent, type EventSearchIntent } from "../query-parser/event-search";
 import { interpretarConsulta } from "../query-parser/parse";
@@ -13,6 +13,10 @@ export type OpcionesBusquedaRag = {
   eventIntent?: EventSearchIntent;
   focusedQueries?: readonly string[];
   allowlist?: CatalogAllowlist;
+  rerankRequestId?: string;
+  rerankCorrelationId?: string;
+  rerankSignal?: AbortSignal;
+  rerankDeadlineAt?: number;
 };
 
 export type VarianteCandidata = {
@@ -111,6 +115,16 @@ function observabilidadBusqueda(
   };
 }
 
+function observabilidadConRerank(
+  observabilidad: ObservabilidadBusqueda,
+  branchStatus: Record<string, string> | undefined,
+): ObservabilidadBusqueda {
+  const status = branchStatus?.rerank;
+  return status === "READY" || status === "SKIPPED_OPTIONAL" || status === "ERROR"
+    ? { ...observabilidad, rerankStatus: status }
+    : observabilidad;
+}
+
 /**
  * search_products (plan §4.2): interpreta la consulta, recupera candidatos
  * reales del catálogo y los devuelve. NUNCA genera lenguaje para el cliente
@@ -146,6 +160,7 @@ export async function buscarCatalogoRag(
   };
   const ocasiones = intento.filtros_duros.ocasiones.length ? intento.filtros_duros.ocasiones : undefined;
   const colores = intento.filtros_duros.colores.length ? intento.filtros_duros.colores : undefined;
+  const rerankDeadlineAt = opciones.rerankDeadlineAt ?? Date.now() + RERANK_DEADLINE_MS;
 
   const t1 = Date.now();
   let respuesta = await buscarHibrido(pool, {
@@ -154,6 +169,10 @@ export async function buscarCatalogoRag(
     eventTerms: eventIntent.event_terms,
     eventIntent,
     allowlist: opciones.allowlist,
+    rerankRequestId: opciones.rerankRequestId,
+    rerankCorrelationId: opciones.rerankCorrelationId,
+    rerankSignal: opciones.rerankSignal,
+    rerankDeadlineAt,
     filtros: { ...filtrosBase, ocasiones, colores },
   });
   let filtroRelajado: ResultadoBusquedaRag["filtroRelajado"] = null;
@@ -170,7 +189,10 @@ export async function buscarCatalogoRag(
       latencyParseMs,
       latencyRetrievalMs: Date.now() - t1,
       filtroRelajado: null,
-      observabilidad: observabilidadBusqueda(mensaje, eventIntent, [], "AMBIGUOUS_SKU", null, opciones.focusedQueries),
+      observabilidad: observabilidadConRerank(
+        observabilidadBusqueda(mensaje, eventIntent, [], "AMBIGUOUS_SKU", null, opciones.focusedQueries),
+        respuesta.branchStatus,
+      ),
     };
   }
 
@@ -187,8 +209,12 @@ export async function buscarCatalogoRag(
       focusedQueries: opciones.focusedQueries,
       eventTerms: eventIntent.event_terms,
       eventIntent,
-      allowlist: opciones.allowlist,
-      filtros: { ...filtrosBase, colores },
+        allowlist: opciones.allowlist,
+        rerankRequestId: opciones.rerankRequestId,
+        rerankCorrelationId: opciones.rerankCorrelationId,
+        rerankSignal: opciones.rerankSignal,
+        rerankDeadlineAt,
+        filtros: { ...filtrosBase, colores },
     });
     if (respuesta.results.length > 0) filtroRelajado = "ocasiones";
   }
@@ -198,15 +224,32 @@ export async function buscarCatalogoRag(
       focusedQueries: opciones.focusedQueries,
       eventTerms: eventIntent.event_terms,
       eventIntent,
-      allowlist: opciones.allowlist,
-      filtros: { ...filtrosBase },
+        allowlist: opciones.allowlist,
+        rerankRequestId: opciones.rerankRequestId,
+        rerankCorrelationId: opciones.rerankCorrelationId,
+        rerankSignal: opciones.rerankSignal,
+        rerankDeadlineAt,
+        filtros: { ...filtrosBase },
     });
     if (respuesta.results.length > 0) filtroRelajado = "colores";
   }
   const latencyRetrievalMs = Date.now() - t1;
 
   if (respuesta.results.length === 0) {
-    return { status: "NO_MATCH", skuStatus: respuesta.skuStatus, candidatos: [], intent: intento, scores: [], latencyParseMs, latencyRetrievalMs, filtroRelajado: null, observabilidad: observabilidadBusqueda(mensaje, eventIntent, [], "NO_MATCH", null, opciones.focusedQueries) };
+    return {
+      status: "NO_MATCH",
+      skuStatus: respuesta.skuStatus,
+      candidatos: [],
+      intent: intento,
+      scores: [],
+      latencyParseMs,
+      latencyRetrievalMs,
+      filtroRelajado: null,
+      observabilidad: observabilidadConRerank(
+        observabilidadBusqueda(mensaje, eventIntent, [], "NO_MATCH", null, opciones.focusedQueries),
+        respuesta.branchStatus,
+      ),
+    };
   }
 
   const ids = respuesta.results.map((r) => r.productId);
@@ -282,6 +325,9 @@ export async function buscarCatalogoRag(
     latencyParseMs,
     latencyRetrievalMs,
     filtroRelajado,
-    observabilidad: observabilidadBusqueda(mensaje, eventIntent, respuesta.results, "OK", filtroRelajado, opciones.focusedQueries),
+    observabilidad: observabilidadConRerank(
+      observabilidadBusqueda(mensaje, eventIntent, respuesta.results, "OK", filtroRelajado, opciones.focusedQueries),
+      respuesta.branchStatus,
+    ),
   };
 }

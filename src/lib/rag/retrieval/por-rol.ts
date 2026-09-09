@@ -2,6 +2,7 @@ import type { Pool } from "pg";
 import type { CuotaPlan } from "../presupuesto/plan";
 import type { RolPresupuesto } from "../presupuesto/franjas";
 import { buscarHibrido } from "./search";
+import type { RerankStatus } from "./search";
 import type { CatalogAllowlist, EventSearchIntent, EstadoSku, ResultadoRetrieval } from "./types";
 
 export type CandidatoRol = ResultadoRetrieval & { rol: RolPresupuesto };
@@ -14,6 +15,7 @@ export type ResultadoPorRol = {
    * relaja en silencio (§3, "Escalera de relajación"). Vacío si el intento
    * base ya tuvo resultados. */
   relajaciones: string[];
+  rerankStatus?: RerankStatus;
 };
 
 export type FiltrosBaseRol = {
@@ -27,6 +29,10 @@ export type FiltrosBaseRol = {
   eventIntent?: EventSearchIntent;
   focusedQueries?: readonly string[];
   allowlist?: CatalogAllowlist;
+  rerankRequestId?: string;
+  rerankCorrelationId?: string;
+  rerankSignal?: AbortSignal;
+  rerankDeadlineAt?: number;
 };
 
 // Frase que orienta el retrieval semántico hacia lo que ese rol necesita
@@ -39,6 +45,17 @@ const PISTA_POR_ROL: Record<RolPresupuesto, string> = {
   acento: "detalle o acento decorativo pequeño",
   servicio: "vajilla, desechables o empaque para la mesa",
 };
+
+function combinarRerankStatus(
+  current: RerankStatus | undefined,
+  next: RerankStatus | undefined,
+): RerankStatus | undefined {
+  if (!current) return next;
+  if (!next) return current;
+  if (current === "ERROR" || next === "ERROR") return "ERROR";
+  if (current === "READY" || next === "READY") return "READY";
+  return "SKIPPED_OPTIONAL";
+}
 
 /**
  * Retrieval de un rol de la canasta (§3, Etapa 2): filtro duro de categorías
@@ -145,6 +162,7 @@ export async function buscarPorRol(
   // revirtió a secuencial — pagar más queries (hasta 5x por rol) sin
   // ganancia medida es peor, no mejor.
   const relajaciones: string[] = [];
+  let rerankStatus: RerankStatus | undefined;
   for (const intento of intentos) {
     const respuesta = await buscarHibrido(pool, {
       semanticQuery,
@@ -154,8 +172,12 @@ export async function buscarPorRol(
       focusedQueries: filtrosBase.focusedQueries?.length
         ? [...filtrosBase.focusedQueries, semanticQuery]
         : undefined,
-      allowlist: filtrosBase.allowlist,
-      filtros: {
+        allowlist: filtrosBase.allowlist,
+        rerankRequestId: filtrosBase.rerankRequestId,
+        rerankCorrelationId: filtrosBase.rerankCorrelationId,
+        rerankSignal: filtrosBase.rerankSignal,
+        rerankDeadlineAt: filtrosBase.rerankDeadlineAt,
+        filtros: {
         disponible: filtrosBase.disponible ?? true,
         precioMax: intento.topeCop,
         categorias: [...intento.categorias],
@@ -165,9 +187,16 @@ export async function buscarPorRol(
         formas: intento.formas,
         diametrosPulgadas: intento.diametrosPulgadas,
       },
-    });
+      });
+    const attemptRerankStatus = respuesta.branchStatus?.rerank;
+    rerankStatus = combinarRerankStatus(
+      rerankStatus,
+      attemptRerankStatus === "READY" || attemptRerankStatus === "SKIPPED_OPTIONAL" || attemptRerankStatus === "ERROR"
+        ? attemptRerankStatus
+        : undefined,
+    );
     if (respuesta.skuStatus === "ambiguous") {
-      return { rol: cuota.rol, candidatos: [], skuStatus: "ambiguous", relajaciones: [] };
+      return { rol: cuota.rol, candidatos: [], skuStatus: "ambiguous", relajaciones: [], rerankStatus };
     }
     if (respuesta.results.length > 0) {
       if (intento.etiqueta) relajaciones.push(`${cuota.rol}: ${intento.etiqueta}`);
@@ -176,10 +205,11 @@ export async function buscarPorRol(
         candidatos: respuesta.results.map((r) => ({ ...r, rol: cuota.rol })),
         skuStatus: respuesta.skuStatus,
         relajaciones,
+        rerankStatus,
       };
     }
   }
 
   relajaciones.push(`${cuota.rol}: rol_sin_inventario — ningún candidato ni relajando color, ocasión y categorías`);
-  return { rol: cuota.rol, candidatos: [], relajaciones };
+  return { rol: cuota.rol, candidatos: [], relajaciones, rerankStatus };
 }

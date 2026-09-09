@@ -76,10 +76,11 @@ export async function registrarBusqueda(
          (request_id, tipo, mensaje, intent, retrieved_product_ids, retrieval_scores, status,
           latency_parse_ms, latency_retrieval_ms, latency_total_ms,
            franja, plan_canasta, canasta, utilizacion, relajaciones,
-           event_label, closed_occasion_recognized, component_queries,
-           candidate_counts_by_tier, selected_match_levels, outcome, latency_planning_ms)
-        VALUES ($1, 'busqueda', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
-                $15, $16, $17, $18, $19, $20, $21)
+            event_label, closed_occasion_recognized, component_queries,
+            candidate_counts_by_tier, selected_match_levels, outcome, latency_planning_ms,
+            rerank_status)
+         VALUES ($1, 'busqueda', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
+                 $15, $16, $17, $18, $19, $20, $21, $22)
         RETURNING id`,
       [
         datos.requestId,
@@ -100,10 +101,11 @@ export async function registrarBusqueda(
         datos.observabilidad?.closedOccasionRecognized ?? null,
         datos.observabilidad ? JSON.stringify(metadataAuditable(datos.observabilidad.componentQueries)) : null,
         datos.observabilidad ? JSON.stringify(metadataAuditable(datos.observabilidad.candidateCountsByTier)) : null,
-        datos.observabilidad ? JSON.stringify(metadataAuditable(datos.observabilidad.selectedPieces)) : null,
-        datos.observabilidad?.outcome ?? null,
-        datos.observabilidad?.planningLatencyMs ?? null,
-       ],
+         datos.observabilidad ? JSON.stringify(metadataAuditable(datos.observabilidad.selectedPieces)) : null,
+         datos.observabilidad?.outcome ?? null,
+         datos.observabilidad?.planningLatencyMs ?? null,
+         datos.observabilidad?.rerankStatus ?? null,
+        ],
     );
     return result.rows[0]?.id ?? null;
   } catch (error) {

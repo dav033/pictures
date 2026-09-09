@@ -247,7 +247,7 @@ export function textoAlAgotarVueltas(estado: EstadoConversacion): string {
 /** Arma el registro de herramientas (nombre → handler) que el motor genérico
  * de @sempertex/agente-core despacha — cada cuerpo es el mismo que tenía el
  * if-chain de ejecutar.ts antes de esta extracción, sin cambios de lógica. */
-export function crearRegistroHerramientas(estado: EstadoConversacion, options: { pool?: Pool; catalogAllowlist?: CatalogAllowlist } = {}): RegistroHerramientas {
+export function crearRegistroHerramientas(estado: EstadoConversacion, options: { pool?: Pool; catalogAllowlist?: CatalogAllowlist; correlationId?: string; signal?: AbortSignal } = {}): RegistroHerramientas {
   const ragPool = options.pool ?? getRagPool();
   return {
     guardar_brief: async (args) => {
@@ -395,7 +395,15 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
           mensaje,
           franjaResuelta.franja,
           franjaResuelta.cifraCliente,
-          { filtrosDuros, eventIntent, focusedQueries: [mensaje], allowlist: options.catalogAllowlist },
+          {
+            filtrosDuros,
+            eventIntent,
+            focusedQueries: [mensaje],
+            allowlist: options.catalogAllowlist,
+            rerankRequestId: estado.ragRequestId,
+            rerankCorrelationId: options.correlationId ?? estado.ragRequestId,
+            rerankSignal: options.signal,
+          },
         );
         estado.ragFranja = { slug: franjaResuelta.franja.slug, nombre: franjaResuelta.franja.nombre, techoCop: respuesta.canasta?.techoCop ?? franjaResuelta.franja.minCop };
         if (respuesta.relajaciones.some((relajacion) => /color/i.test(relajacion))) {
@@ -486,7 +494,15 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         };
       }
 
-      const respuesta = await buscarCatalogoRag(pool, mensaje, { filtrosDuros, eventIntent, focusedQueries: [mensaje], allowlist: options.catalogAllowlist });
+      const respuesta = await buscarCatalogoRag(pool, mensaje, {
+        filtrosDuros,
+        eventIntent,
+        focusedQueries: [mensaje],
+        allowlist: options.catalogAllowlist,
+        rerankRequestId: estado.ragRequestId,
+        rerankCorrelationId: options.correlationId ?? estado.ragRequestId,
+        rerankSignal: options.signal,
+      });
       estado.ragCandidatos = [...new Map(
         [...(estado.ragCandidatos ?? []), ...respuesta.candidatos].map((candidate) => [candidate.productId, candidate]),
       ).values()];

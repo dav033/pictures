@@ -4,6 +4,8 @@ import { interpretarConsulta } from "../query-parser/parse";
 import { parseEventSearchIntent } from "../query-parser/event-search";
 import { IntentQuerySchema, type IntentQuery } from "../query-parser/schema";
 import { buscarPorRol } from "../retrieval/por-rol";
+import { RERANK_DEADLINE_MS } from "../retrieval/search";
+import type { RerankStatus } from "../retrieval/search";
 import type { EventSearchIntent } from "../query-parser/event-search";
 import { puntuarYOrdenar, type CandidatoDetallado, type CandidatoPuntuado } from "../retrieval/rerank";
 import { ensamblarCanasta, type Canasta } from "../presupuesto/ensamblar";
@@ -52,6 +54,10 @@ export type OpcionesBusquedaPresupuesto = {
   eventIntent?: EventSearchIntent;
   focusedQueries?: readonly string[];
   allowlist?: CatalogAllowlist;
+  rerankRequestId?: string;
+  rerankCorrelationId?: string;
+  rerankSignal?: AbortSignal;
+  rerankDeadlineAt?: number;
 };
 
 type FilaCandidatoDetalle = {
@@ -77,6 +83,7 @@ function observabilidadPresupuesto(
   status: ResultadoBusquedaPresupuesto["status"],
   planningLatencyMs: number,
   focusedQueries?: readonly string[],
+  rerankStatus?: RerankStatus,
 ): ObservabilidadBusqueda {
   const candidateCountsByTier: ObservabilidadBusqueda["candidateCountsByTier"] = { exact_event: 0, thematic: 0, adaptable: 0 };
   const countedCandidates = new Set<string>();
@@ -102,7 +109,17 @@ function observabilidadPresupuesto(
     relaxations: [...new Set(relaxations)],
     outcome,
     planningLatencyMs,
+    rerankStatus,
   };
+}
+
+function rerankStatusPorRol(resultadosPorRol: Array<{ rerankStatus?: RerankStatus }>): RerankStatus | undefined {
+  const statuses = resultadosPorRol.map((resultado) => resultado.rerankStatus).filter(
+    (status): status is RerankStatus => status !== undefined,
+  );
+  if (statuses.includes("ERROR")) return "ERROR";
+  if (statuses.includes("READY")) return "READY";
+  return statuses.length > 0 ? "SKIPPED_OPTIONAL" : undefined;
 }
 
 /** Embedding is optional; lexical retrieval remains the safe fallback. */
@@ -164,6 +181,7 @@ export async function buscarCatalogoRagConPresupuesto(
   // Un solo embedding para todo el turno (§3, Etapa 2) — cada rol lo reusa.
   // Vector is opt-in; FTS/trigram remain the no-key production fallback.
   const embeddingBase = await embeddingOpcional(intento.semantic_query);
+  const rerankDeadlineAt = opciones.rerankDeadlineAt ?? Date.now() + RERANK_DEADLINE_MS;
 
   const resultadosPorRol = await Promise.all(
     plan.roles.map((cuota) =>
@@ -177,12 +195,17 @@ export async function buscarCatalogoRagConPresupuesto(
         eventIntent,
         focusedQueries: opciones.focusedQueries,
         allowlist: opciones.allowlist,
+         rerankRequestId: opciones.rerankRequestId,
+         rerankCorrelationId: opciones.rerankCorrelationId,
+         rerankSignal: opciones.rerankSignal,
+         rerankDeadlineAt,
       }),
     ),
   );
   const latencyRetrievalMs = Date.now() - t1;
 
   const relajaciones = resultadosPorRol.flatMap((r) => r.relajaciones);
+  const rerankStatus = rerankStatusPorRol(resultadosPorRol);
   const pares = resultadosPorRol.flatMap((r) =>
     r.candidatos.flatMap((c) => c.variantIds.map((variantId) => ({
       productId: c.productId,
@@ -212,7 +235,7 @@ export async function buscarCatalogoRagConPresupuesto(
       latencyParseMs,
       latencyRetrievalMs,
       latencyPlanningMs: Date.now() - planningStart,
-      observabilidad: observabilidadPresupuesto(mensaje, eventIntent, pares, [], [], "AMBIGUOUS_SKU", Date.now() - planningStart, opciones.focusedQueries),
+       observabilidad: observabilidadPresupuesto(mensaje, eventIntent, pares, [], [], "AMBIGUOUS_SKU", Date.now() - planningStart, opciones.focusedQueries, rerankStatus),
     };
   }
 
@@ -229,7 +252,7 @@ export async function buscarCatalogoRagConPresupuesto(
       latencyParseMs,
       latencyRetrievalMs,
       latencyPlanningMs: Date.now() - planningStart,
-      observabilidad: observabilidadPresupuesto(mensaje, eventIntent, pares, [], relajaciones, "NO_MATCH", Date.now() - planningStart, opciones.focusedQueries),
+       observabilidad: observabilidadPresupuesto(mensaje, eventIntent, pares, [], relajaciones, "NO_MATCH", Date.now() - planningStart, opciones.focusedQueries, rerankStatus),
     };
   }
 
@@ -334,7 +357,8 @@ export async function buscarCatalogoRagConPresupuesto(
       [...relajaciones, ...relajacionesRolesIncompletos],
       canasta.piezas.length > 0 ? "OK" : "NO_MATCH",
       latencyPlanningMs,
-      opciones.focusedQueries,
+       opciones.focusedQueries,
+       rerankStatus,
     ),
   };
 }

@@ -13,6 +13,8 @@ import { z } from "zod";
 
 export const PYTHON_ECHO_PATH = "/internal/v1/echo";
 export const PYTHON_ECHO_SCOPE = "ai.echo";
+export const PYTHON_RERANK_PATH = "/internal/v1/rerank";
+export const PYTHON_RERANK_SCOPE = "ai.rerank";
 export const PYTHON_MAX_BODY_BYTES = 64 * 1024;
 
 type AdapterEnvironment = Record<string, string | undefined>;
@@ -100,8 +102,10 @@ export function seleccionarBackendPython(
   return seleccionarBackendMigracion(env);
 }
 
-export interface PythonEchoInput {
+export interface PythonOperationInput {
   payload: JsonObject;
+  /** Optional operation fields for endpoints whose body is not { payload }. */
+  operationBody?: JsonObject;
   requestId: string;
   correlationId: string;
   bodySha256?: string;
@@ -114,13 +118,18 @@ export interface PythonEchoInput {
   randomUUID?: () => string;
 }
 
-export interface PythonEchoResponse {
+export interface PythonOperationResponse {
   schema_version: "operational.v1";
   request_id: string;
   correlation_id: string;
   payload: JsonObject;
   replayed?: boolean;
 }
+
+/** @deprecated use PythonOperationInput -- kept as an alias so existing echo call sites and tests do not need to change. */
+export type PythonEchoInput = PythonOperationInput;
+/** @deprecated use PythonOperationResponse -- kept as an alias so existing echo call sites and tests do not need to change. */
+export type PythonEchoResponse = PythonOperationResponse;
 
 function errorFor(
   code: PythonAdapterErrorCode,
@@ -161,10 +170,10 @@ function readPythonConfig(
   return { url, secret };
 }
 
-function endpointUrl(baseUrl: URL): URL {
+function endpointUrl(baseUrl: URL, path: string): URL {
   const result = new URL(baseUrl.toString());
   const basePath = result.pathname.endsWith("/") ? result.pathname : `${result.pathname}/`;
-  result.pathname = `${basePath}${PYTHON_ECHO_PATH.slice(1)}`.replace(/\/+/g, "/");
+  result.pathname = `${basePath}${path.slice(1)}`.replace(/\/+/g, "/");
   return result;
 }
 
@@ -226,7 +235,17 @@ function readJsonObject(value: unknown): JsonObject | undefined {
   return isJsonObject(value) ? value : undefined;
 }
 
-export async function llamarPythonEcho(input: PythonEchoInput): Promise<PythonEchoResponse> {
+/**
+ * Shared Next -> Python boundary for every /internal/v1/* operation: HMAC
+ * signing, deadline, nonce, idempotency headers and upstream error mapping
+ * are identical across operations. Only `path` (which endpoint) and the
+ * default `scope` (when the caller does not pass explicit scopes) vary.
+ */
+async function llamarPythonOperacion(
+  path: string,
+  defaultScope: string,
+  input: PythonOperationInput,
+): Promise<PythonOperationResponse> {
   const requestId = z.string().uuid().parse(input.requestId);
   const correlationId = z.string().uuid().parse(input.correlationId);
   const env = input.env ?? process.env;
@@ -236,8 +255,8 @@ export async function llamarPythonEcho(input: PythonEchoInput): Promise<PythonEc
   }
 
   const { url: baseUrl, secret } = readPythonConfig(env, requestId, correlationId);
-  const target = endpointUrl(baseUrl);
-  const scopes = [...(input.scopes ?? [PYTHON_ECHO_SCOPE])];
+  const target = endpointUrl(baseUrl, path);
+  const scopes = [...(input.scopes ?? [defaultScope])];
   const deadlineMs = normalizeDeadlineMs(input.deadlineMs);
   const parentSignal = input.parentSignal ?? new AbortController().signal;
   const deadline = crearDeadlineSignal(parentSignal, deadlineMs);
@@ -255,7 +274,10 @@ export async function llamarPythonEcho(input: PythonEchoInput): Promise<PythonEc
       ...(input.idempotencyKey ? { idempotency_key: input.idempotencyKey } : {}),
       scopes,
     });
-    const body = JSON.stringify({ context, payload: input.payload });
+    const body = JSON.stringify({
+      context,
+      ...(input.operationBody ?? { payload: input.payload }),
+    });
     if (new TextEncoder().encode(body).byteLength > PYTHON_MAX_BODY_BYTES) {
       throw errorFor("PYTHON_PAYLOAD_TOO_LARGE", 413, requestId, correlationId);
     }
@@ -333,6 +355,76 @@ export async function llamarPythonEcho(input: PythonEchoInput): Promise<PythonEc
   } finally {
     deadline.dispose();
   }
+}
+
+export async function llamarPythonEcho(input: PythonOperationInput): Promise<PythonOperationResponse> {
+  return llamarPythonOperacion(PYTHON_ECHO_PATH, PYTHON_ECHO_SCOPE, input);
+}
+
+export interface PythonRerankCandidate {
+  id: string;
+  text: string;
+}
+
+export interface PythonRerankInput {
+  query: string;
+  candidates: PythonRerankCandidate[];
+  requestId: string;
+  correlationId: string;
+  bodySha256?: string;
+  deadlineMs?: number;
+  idempotencyKey?: string;
+  scopes?: readonly string[];
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+export interface PythonRerankResult {
+  /** Candidate ids in reranked order -- always a permutation of the input ids. */
+  order: string[];
+  scores: Record<string, number>;
+  replayed?: boolean;
+}
+
+const rerankPayloadResultSchema = z.object({
+  order: z.array(z.string().min(1)),
+  scores: z.record(z.string().min(1), z.number().finite()),
+});
+
+/**
+ * Reorders a candidate list PostgreSQL already authorized (see
+ * buscarHibrido in src/lib/rag/retrieval/search.ts). Never adds or removes a
+ * candidate -- `order` is validated to be a permutation of the input ids.
+ */
+export async function llamarPythonRerank(input: PythonRerankInput): Promise<PythonRerankResult> {
+  const { query, candidates, ...rest } = input;
+  const operationPayload = { query, candidates };
+  const response = await llamarPythonOperacion(PYTHON_RERANK_PATH, PYTHON_RERANK_SCOPE, {
+    ...rest,
+    payload: operationPayload,
+    operationBody: operationPayload,
+  });
+  const parsed = rerankPayloadResultSchema.safeParse(response.payload);
+  if (!parsed.success) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  const expectedIdList = candidates.map((candidate) => candidate.id);
+  const expectedIds = new Set(expectedIdList);
+  const returnedIds = new Set(parsed.data.order);
+  const scoreIds = new Set(Object.keys(parsed.data.scores));
+  const isPermutation = parsed.data.order.length === candidates.length
+    && expectedIds.size === expectedIdList.length
+    && expectedIds.size === returnedIds.size
+    && expectedIds.size === scoreIds.size
+    && [...expectedIds].every((id) => returnedIds.has(id) && scoreIds.has(id));
+  if (!isPermutation) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  return response.replayed
+    ? { ...parsed.data, replayed: true }
+    : parsed.data;
 }
 
 export function pythonErrorBody(error: PythonAdapterError): {

@@ -1,6 +1,6 @@
 # AI API: contratos locales
 
-Servicio mínimo para validar contratos versionados con FastAPI y Pydantic v2. Esta carpeta no llama proveedores de IA ni envía tráfico real.
+Servicio FastAPI para validar contratos versionados y ejecutar el cross-encoder local de reranking. El runtime no llama a un proveedor generativo; el build de Docker descarga el modelo abierto aprobado desde Hugging Face y lo deja dentro de la imagen.
 
 ## Entorno
 
@@ -69,11 +69,22 @@ python -m pytest
 rtk uv run --system-certs uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
+Evaluacion local del reranker (descarga el modelo si aun no esta en cache):
+
+```powershell
+uv run --system-certs --extra test python scripts/eval_rerank.py
+```
+
 La imagen usa `Dockerfile`, ejecuta como usuario no root y conserva readiness
 fail-closed cuando no existe store durable en produccion. No incluye secretos;
 inyectar `INTERNAL_HMAC_SECRET` mediante el gestor autorizado del entorno.
 
-No hay servidor desplegado, credenciales de proveedores ni pruebas contra tráfico real en esta slice.
+La capacidad de reranking esta apagada por defecto en Next (`RAG_RERANK_ENABLED=false`).
+El servicio solo procesa candidatos enviados por el caller; no consulta el catalogo
+ni puede cambiar la whitelist. La imagen de Docker descarga el modelo durante el
+build y activa un warmup antes de readiness (`RERANK_MODEL_WARMUP=1`), por lo que
+el runtime no necesita acceso saliente a Hugging Face ni inicializa Torch en la
+primera request.
 
 ## Store PostgreSQL durable
 

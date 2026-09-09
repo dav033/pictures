@@ -40,6 +40,12 @@ export type ConsultaRetrieval = {
   eventTerms?: readonly string[];
   eventIntent?: EventSearchIntent;
   allowlist?: CatalogAllowlist;
+  /** Operational context for the optional Python reranking call. */
+  rerankRequestId?: string;
+  rerankCorrelationId?: string;
+  rerankSignal?: AbortSignal;
+  /** Absolute turn deadline shared by every retrieval branch and relaxation. */
+  rerankDeadlineAt?: number;
 };
 
 export type EstadoSku = "not_sku" | "unique" | "ambiguous" | "not_found" | "filtered_out";

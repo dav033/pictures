@@ -23,7 +23,7 @@ from uuid import UUID
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from app.generated_models import InternalRequestSignature, OperationalContext
 from app.operational_store import InMemoryOperationalStore, StoredHttpResponse
@@ -32,11 +32,13 @@ from app.postgres_store import PostgresOperationalStore
 
 SCHEMA_VERSION = "operational.v1"
 DEFAULT_SCOPE = "ai.echo"
+DEFAULT_RERANK_SCOPE = "ai.rerank"
 MAX_BODY_BYTES = 64 * 1024
 _SHA256_RE = re.compile(r"^[a-f0-9]{64}$")
 _SCOPE_RE = re.compile(r"^[a-zA-Z0-9._:/-]+$")
 _LOCAL_ENVIRONMENTS = {"development", "test", "local"}
 MIN_SECRET_BYTES = 32
+RERANK_WARMUP_TIMEOUT_SECONDS = 60.0
 logger = logging.getLogger("decoracion.ai_api")
 T = TypeVar("T")
 
@@ -48,6 +50,7 @@ class Settings:
     environment: str = "development"
     hmac_secret: str | None = None
     required_scope: str = DEFAULT_SCOPE
+    rerank_required_scope: str = DEFAULT_RERANK_SCOPE
     max_clock_skew_seconds: int = 300
     nonce_namespace: str = "ai-api"
     max_body_bytes: int = MAX_BODY_BYTES
@@ -61,6 +64,7 @@ class Settings:
             environment=environment.strip().lower(),
             hmac_secret=secret.strip() if secret and secret.strip() else None,
             required_scope=os.getenv("INTERNAL_REQUIRED_SCOPE", DEFAULT_SCOPE),
+            rerank_required_scope=os.getenv("INTERNAL_RERANK_REQUIRED_SCOPE", DEFAULT_RERANK_SCOPE),
             database_url=os.getenv("DATABASE_URL"),
         )
 
@@ -69,9 +73,49 @@ class ContractModel(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-class EchoRequest(ContractModel):
+class OperationalRequest(ContractModel):
+    """Shared envelope for every /internal/v1/* operation: a signed context
+    plus an operation-specific body. Each operation subclasses this with its
+    own fields instead of reusing EchoRequest's untyped `payload` dict."""
+
     context: OperationalContext
+
+
+class EchoRequest(OperationalRequest):
     payload: dict[str, object] = Field(default_factory=dict)
+
+
+class RerankCandidate(ContractModel):
+    id: str = Field(min_length=1, max_length=200)
+    text: str = Field(min_length=1, max_length=4_000)
+
+    @field_validator("id", "text")
+    @classmethod
+    def reject_blank_values(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("candidate values must not be blank")
+        return stripped
+
+
+class RerankRequest(OperationalRequest):
+    query: str = Field(min_length=1, max_length=1_000)
+    candidates: list[RerankCandidate] = Field(default_factory=list, max_length=100)
+
+    @field_validator("query")
+    @classmethod
+    def reject_blank_query(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("query must not be blank")
+        return stripped
+
+    @model_validator(mode="after")
+    def reject_duplicate_candidate_ids(self) -> "RerankRequest":
+        ids = [candidate.id for candidate in self.candidates]
+        if len(ids) != len(set(ids)):
+            raise ValueError("candidate ids must be unique")
+        return self
 
 
 class InMemoryMetrics:
@@ -91,6 +135,8 @@ class InMemoryMetrics:
 
 
 EchoHandler = Callable[[EchoRequest], Awaitable[dict[str, object]]]
+RerankHandler = Callable[[RerankRequest], Awaitable[dict[str, object]]]
+OperationalHandler = Callable[[OperationalRequest], Awaitable[dict[str, object]]]
 
 
 async def _await_result(value: T | Awaitable[T]) -> T:
@@ -101,6 +147,53 @@ async def _await_result(value: T | Awaitable[T]) -> T:
 
 async def _default_echo_handler(payload: EchoRequest) -> dict[str, object]:
     return {"payload": payload.payload}
+
+
+_RERANK_WORKER_LIMIT = threading.Semaphore(1)
+
+
+def _rerank_in_worker(payload: RerankRequest) -> dict[str, object]:
+    # Imported lazily: loading sentence-transformers/torch (and, on first use,
+    # downloading the ~80MB model) must never happen at module import time --
+    # /healthz, /readyz and the echo path stay fast and offline.
+    from app.reranker import model_score_fn
+    from app.reranker import rerank as rerank_candidates
+
+    pairs = [(candidate.id, candidate.text) for candidate in payload.candidates]
+    ordered = rerank_candidates(payload.query, pairs, score_fn=model_score_fn())
+    # Nested under "payload", like echo's result -- every /internal/v1/*
+    # operation shares the same {schema_version, request_id, correlation_id,
+    # payload} envelope, so the Next-side adapter's response schema stays
+    # generic across operations instead of needing one shape per route.
+    return {
+        "payload": {
+            "order": [candidate_id for candidate_id, _score in ordered],
+            "scores": {candidate_id: score for candidate_id, score in ordered},
+        }
+    }
+
+
+async def _default_rerank_handler(payload: RerankRequest) -> dict[str, object]:
+    # Cross-encoder inference is CPU-bound and may download model weights on
+    # first use. Run it outside the event loop and serialize model work so one
+    # small CPU instance cannot be saturated by concurrent requests.
+    return await asyncio.to_thread(_run_bounded_rerank, payload)
+
+
+def _run_bounded_rerank(payload: RerankRequest) -> dict[str, object]:
+    with _RERANK_WORKER_LIMIT:
+        return _rerank_in_worker(payload)
+
+
+async def _warm_rerank_model() -> None:
+    # Warm the process-local model before readiness when the image opts in.
+    # This keeps the first real request inside its normal deadline instead of
+    # making it pay the one-time torch/model initialization cost.
+    payload = RerankRequest.model_construct(
+        query="warmup",
+        candidates=[RerankCandidate.model_construct(id="warmup", text="warmup")],
+    )
+    await asyncio.to_thread(_run_bounded_rerank, payload)
 
 
 def _error(code: str, status_code: int) -> HTTPException:
@@ -274,14 +367,14 @@ async def _consume_nonce(request: Request, nonce: str, settings: Settings) -> No
 
 
 async def _authorize(
-    request: Request, raw_body: bytes, settings: Settings
+    request: Request, raw_body: bytes, settings: Settings, *, required_scope: str
 ) -> InternalRequestSignature:
     secret = settings.hmac_secret
     if not _secret_is_valid(secret):
         raise _error("auth_unavailable", 503)
     assert isinstance(secret, str)
     signature = _parse_signature_headers(request)
-    required_scope = settings.required_scope.strip()
+    required_scope = required_scope.strip()
     if required_scope not in signature.scopes:
         raise _error("insufficient_scope", 403)
     if abs(int(time.time()) - int(signature.timestamp)) > settings.max_clock_skew_seconds:
@@ -389,12 +482,161 @@ async def _store_failure(
         )
 
 
+async def _handle_operational_request(
+    request: Request,
+    *,
+    operation: str,
+    model: type[OperationalRequest],
+    scope: str,
+    handler: OperationalHandler,
+) -> Response:
+    """Shared auth/idempotency/deadline/error-mapping boundary for every
+    /internal/v1/* operation. `scope` is the required scope for THIS
+    operation -- it is never read from a single app-wide setting, so two
+    routes (e.g. echo and rerank) can require different scopes."""
+
+    runtime_settings: Settings = request.app.state.settings
+    content_length = request.headers.get("content-length")
+    if (
+        content_length
+        and content_length.isdigit()
+        and int(content_length) > runtime_settings.max_body_bytes
+    ):
+        raise _error("body_too_large", 413)
+    raw_body = await request.body()
+    if len(raw_body) > runtime_settings.max_body_bytes:
+        raise _error("body_too_large", 413)
+
+    await _authorize(request, raw_body, runtime_settings, required_scope=scope)
+    payload = cast(OperationalRequest, _parse_model(model, raw_body))
+    context = payload.context
+    _validate_context(context)
+    if scope not in context.scopes:
+        raise _error("insufficient_scope", 403)
+    timeout_seconds = _deadline_seconds(context)
+    # Idempotency covers the operation payload, not volatile transport
+    # fields such as request_id, correlation_id, or deadline_at. The
+    # adapter supplies that stable operation hash in the signed context.
+    body_sha256 = str(context.body_sha256)
+    idempotency_key = context.idempotency_key
+    if idempotency_key is not None:
+        store = request.app.state.operational_store
+        if store is None or not callable(getattr(store, "claim", None)):
+            raise _error("idempotency_store_unavailable", 503)
+        try:
+            claim = await _await_result(
+                store.claim(
+                    scope=scope,
+                    idempotency_key=idempotency_key,
+                    body_sha256=body_sha256,
+                    request_id=str(context.request_id),
+                    correlation_id=str(context.correlation_id),
+                )
+            )
+        except Exception:
+            request.app.state.metrics.increment("idempotency.claim_error")
+            raise _error("idempotency_store_error", 503) from None
+        if claim.kind == "conflict":
+            request.app.state.metrics.increment("idempotency.conflict")
+            raise _error("idempotency_conflict", 409)
+        if claim.kind == "in_flight":
+            request.app.state.metrics.increment("idempotency.in_flight")
+            raise _error("idempotency_in_flight", 409)
+        if claim.kind == "replay":
+            request.app.state.metrics.increment("idempotency.replay")
+            if claim.response is None:
+                raise _error("idempotency_store_error", 503)
+            return JSONResponse(
+                status_code=claim.response.status,
+                content=claim.response.body,
+                headers=_response_headers(request, replay=True),
+            )
+
+    try:
+        result = await asyncio.wait_for(handler(payload), timeout=timeout_seconds)
+        response_body = {
+            "schema_version": SCHEMA_VERSION,
+            "request_id": str(context.request_id),
+            "correlation_id": str(context.correlation_id),
+            **result,
+        }
+    except asyncio.TimeoutError:
+        request.app.state.metrics.increment(f"{operation}.timeout")
+        if idempotency_key is not None:
+            await _store_failure(
+                request,
+                scope=scope,
+                idempotency_key=idempotency_key,
+                body_sha256=body_sha256,
+                code="deadline_exceeded",
+                status=408,
+            )
+        raise _error("deadline_exceeded", 408) from None
+    except asyncio.CancelledError:
+        if idempotency_key is not None:
+            await _store_failure(
+                request,
+                scope=scope,
+                idempotency_key=idempotency_key,
+                body_sha256=body_sha256,
+                code="client_cancelled",
+                status=499,
+            )
+        request.app.state.metrics.increment(f"{operation}.cancelled")
+        return _error_response(request, 499, "client_cancelled")
+    except HTTPException as exception:
+        if idempotency_key is not None:
+            await _store_failure(
+                request,
+                scope=scope,
+                idempotency_key=idempotency_key,
+                body_sha256=body_sha256,
+                code=_detail_code(exception),
+                status=exception.status_code,
+            )
+        raise
+    except Exception as error:
+        del error
+        if idempotency_key is not None:
+            await _store_failure(
+                request,
+                scope=scope,
+                idempotency_key=idempotency_key,
+                body_sha256=body_sha256,
+                code="internal_error",
+                status=500,
+            )
+        raise _error("internal_error", 500) from None
+
+    if idempotency_key is not None:
+        store = request.app.state.operational_store
+        try:
+            await _await_result(
+                store.complete(
+                    scope=scope,
+                    idempotency_key=idempotency_key,
+                    body_sha256=body_sha256,
+                    response=_stored_response(response_body),
+                )
+            )
+        except Exception:
+            request.app.state.metrics.increment("idempotency.finalize_error")
+            raise _error("idempotency_store_error", 503) from None
+    request.app.state.metrics.increment(f"{operation}.completed")
+    return JSONResponse(
+        status_code=200,
+        content=response_body,
+        headers=_response_headers(request),
+    )
+
+
 def create_app(
     settings: Settings | None = None,
     nonce_store: object | None = None,
     *,
     operational_store: object | None = None,
     echo_handler: EchoHandler | None = None,
+    rerank_handler: RerankHandler | None = None,
 ) -> FastAPI:
     current_settings = settings or Settings.from_env()
     default_store: object | None = None
@@ -416,6 +658,12 @@ def create_app(
             except Exception as error:
                 application.state.store_startup_error = type(error).__name__
                 logger.error("operational store startup failed: %s", type(error).__name__)
+        if os.getenv("RERANK_MODEL_WARMUP", "").strip().lower() in {"1", "true", "on"}:
+            try:
+                await asyncio.wait_for(_warm_rerank_model(), timeout=RERANK_WARMUP_TIMEOUT_SECONDS)
+            except Exception as error:
+                application.state.rerank_warmup_error = type(error).__name__
+                logger.error("rerank model warmup failed: %s", type(error).__name__)
         try:
             yield
         finally:
@@ -436,6 +684,7 @@ def create_app(
     application.state.nonce_store = nonce_store
     application.state.metrics = InMemoryMetrics()
     handler = echo_handler or _default_echo_handler
+    rerank_handler_fn = rerank_handler or _default_rerank_handler
 
     @application.middleware("http")
     async def request_context(
@@ -493,143 +742,28 @@ def create_app(
                 ready = False
             if not ready:
                 raise _error("not_ready", 503)
+        if getattr(request.app.state, "rerank_warmup_error", None) is not None:
+            raise _error("not_ready", 503)
         return {"status": "ready"}
 
     @application.post("/internal/v1/echo")
     async def echo(request: Request) -> Response:
-        runtime_settings: Settings = request.app.state.settings
-        content_length = request.headers.get("content-length")
-        if (
-            content_length
-            and content_length.isdigit()
-            and int(content_length) > runtime_settings.max_body_bytes
-        ):
-            raise _error("body_too_large", 413)
-        raw_body = await request.body()
-        if len(raw_body) > runtime_settings.max_body_bytes:
-            raise _error("body_too_large", 413)
+        return await _handle_operational_request(
+            request,
+            operation="echo",
+            model=EchoRequest,
+            scope=current_settings.required_scope,
+            handler=cast(OperationalHandler, handler),
+        )
 
-        await _authorize(request, raw_body, runtime_settings)
-        payload = _parse_model(EchoRequest, raw_body)
-        context = payload.context
-        _validate_context(context)
-        if runtime_settings.required_scope not in context.scopes:
-            raise _error("insufficient_scope", 403)
-        timeout_seconds = _deadline_seconds(context)
-        # Idempotency covers the operation payload, not volatile transport
-        # fields such as request_id, correlation_id, or deadline_at. The
-        # adapter supplies that stable operation hash in the signed context.
-        body_sha256 = str(context.body_sha256)
-        scope = runtime_settings.required_scope
-        idempotency_key = context.idempotency_key
-        if idempotency_key is not None:
-            store = request.app.state.operational_store
-            if store is None or not callable(getattr(store, "claim", None)):
-                raise _error("idempotency_store_unavailable", 503)
-            try:
-                claim = await _await_result(
-                    store.claim(
-                        scope=scope,
-                        idempotency_key=idempotency_key,
-                        body_sha256=body_sha256,
-                        request_id=str(context.request_id),
-                        correlation_id=str(context.correlation_id),
-                    )
-                )
-            except Exception:
-                request.app.state.metrics.increment("idempotency.claim_error")
-                raise _error("idempotency_store_error", 503) from None
-            if claim.kind == "conflict":
-                request.app.state.metrics.increment("idempotency.conflict")
-                raise _error("idempotency_conflict", 409)
-            if claim.kind == "in_flight":
-                request.app.state.metrics.increment("idempotency.in_flight")
-                raise _error("idempotency_in_flight", 409)
-            if claim.kind == "replay":
-                request.app.state.metrics.increment("idempotency.replay")
-                if claim.response is None:
-                    raise _error("idempotency_store_error", 503)
-                return JSONResponse(
-                    status_code=claim.response.status,
-                    content=claim.response.body,
-                    headers=_response_headers(request, replay=True),
-                )
-
-        try:
-            result = await asyncio.wait_for(handler(payload), timeout=timeout_seconds)
-            response_body = {
-                "schema_version": SCHEMA_VERSION,
-                "request_id": str(context.request_id),
-                "correlation_id": str(context.correlation_id),
-                **result,
-            }
-        except asyncio.TimeoutError:
-            request.app.state.metrics.increment("echo.timeout")
-            if idempotency_key is not None:
-                await _store_failure(
-                    request,
-                    scope=scope,
-                    idempotency_key=idempotency_key,
-                    body_sha256=body_sha256,
-                    code="deadline_exceeded",
-                    status=408,
-                )
-            raise _error("deadline_exceeded", 408) from None
-        except asyncio.CancelledError:
-            if idempotency_key is not None:
-                await _store_failure(
-                    request,
-                    scope=scope,
-                    idempotency_key=idempotency_key,
-                    body_sha256=body_sha256,
-                    code="client_cancelled",
-                    status=499,
-                )
-            request.app.state.metrics.increment("echo.cancelled")
-            return _error_response(request, 499, "client_cancelled")
-        except HTTPException as exception:
-            if idempotency_key is not None:
-                await _store_failure(
-                    request,
-                    scope=scope,
-                    idempotency_key=idempotency_key,
-                    body_sha256=body_sha256,
-                    code=_detail_code(exception),
-                    status=exception.status_code,
-                )
-            raise
-        except Exception as error:
-            del error
-            if idempotency_key is not None:
-                await _store_failure(
-                    request,
-                    scope=scope,
-                    idempotency_key=idempotency_key,
-                    body_sha256=body_sha256,
-                    code="internal_error",
-                    status=500,
-                )
-            raise _error("internal_error", 500) from None
-
-        if idempotency_key is not None:
-            store = request.app.state.operational_store
-            try:
-                await _await_result(
-                    store.complete(
-                        scope=scope,
-                        idempotency_key=idempotency_key,
-                        body_sha256=body_sha256,
-                        response=_stored_response(response_body),
-                    )
-                )
-            except Exception:
-                request.app.state.metrics.increment("idempotency.finalize_error")
-                raise _error("idempotency_store_error", 503) from None
-        request.app.state.metrics.increment("echo.completed")
-        return JSONResponse(
-            status_code=200,
-            content=response_body,
-            headers=_response_headers(request),
+    @application.post("/internal/v1/rerank")
+    async def rerank(request: Request) -> Response:
+        return await _handle_operational_request(
+            request,
+            operation="rerank",
+            model=RerankRequest,
+            scope=current_settings.rerank_required_scope,
+            handler=cast(OperationalHandler, rerank_handler_fn),
         )
 
     return application

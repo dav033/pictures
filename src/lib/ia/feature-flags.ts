@@ -67,6 +67,16 @@ export const RAG_USE_VECTOR = process.env.RAG_USE_VECTOR === "true";
 export const RAG_USE_FULLTEXT = process.env.RAG_USE_FULLTEXT !== "false";
 /** Default: ON. Disabled only by the literal string "false" -- same inverted-polarity reasoning as RAG_USE_FULLTEXT. */
 export const RAG_USE_TRIGRAM = process.env.RAG_USE_TRIGRAM !== "false";
+/**
+ * Default: OFF (Fase 8.2, docs/migracion-python/PLAN-MAESTRO-V2.md). Gates
+ * cross-encoder reranking of the already-whitelisted candidate list via the
+ * Python service. Explicit default, not implicit: turning this on before
+ * the before/after evaluation confirms it helps would risk regressing
+ * result order in production for no measured benefit. Also requires the
+ * Python backend to be selected (seleccionarBackendMigracion) -- if it is
+ * not, retrieval silently skips reranking rather than failing the request.
+ */
+export const RAG_RERANK_ENABLED = process.env.RAG_RERANK_ENABLED === "true";
 
 // --- Plan capability flags -----------------------------------------------
 

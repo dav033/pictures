@@ -180,7 +180,12 @@ real disponible. Arreglar esto es trabajo de otra fase (Fase 3/regeneración
 RAG) — no lo hagas como parte de 8.2 salvo que el usuario lo pida
 explícitamente.
 
-### 8.2 — Reranking de candidatos (cross-encoder local) — NO INICIADO
+### 8.2 — Reranking de candidatos (cross-encoder local) — IMPLEMENTADO LOCALMENTE
+
+El estado real de esta entrega al 2026-09-09 está en
+`docs/migracion-python/rag/rerank-python-fase8-2.md`. El código está verificado
+contra el Postgres local y el despliegue productivo sigue pendiente de la
+comprobación de disco y del canario autorizado.
 
 **Entrega exacta** (plan, capítulo Fase 8): "Recibe la lista que PostgreSQL
 ya autorizó y solo puede reordenarla. No puede añadir ni quitar un
@@ -273,13 +278,13 @@ camino de la request real, no necesita el adaptador HMAC generalizado). Si
 8.2 se queda a medias por tiempo, esta es la candidata más fácil de cerrar
 aparte, sin depender de 8.2.
 
-No se investigó el detalle de esta entrega en la sesión anterior — hay que
-partir de cero: revisar cómo se generan embeddings hoy
-(`scripts/generate-embeddings.ts`, parte de `npm run rag:sync` →
-`rag:embed`) para entender qué reemplazaría o complementaría un batch job
-en Python, y si tiene sentido que viva en `services/ai-api` o en un script
-aparte.
-
+La revisión inicial de esta entrega ya se completó: el script actual usa
+`scripts/generate-embeddings.ts`, parte de `npm run rag:sync` → `rag:embed`,
+reutiliza `embedding_source_hash` y procesa cinco productos en paralelo.
+Reemplazarlo con otro modelo exigiría coordinar también el embedding de
+consulta y una reindexación completa; por eso 8.3 queda como job offline
+separado y no se implementa en esta entrega. La pregunta restante es si el job
+futuro debe vivir en `services/ai-api` o en un script aparte.
 ## Orden sugerido (a validar/ajustar al empezar)
 
 1. Releer este prompt contra el código actual — confirmar que
