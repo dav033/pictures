@@ -302,8 +302,9 @@ Es exactamente el criterio que el v2 no habría pasado, y por eso llegó a produ
 
 ### Pendiente administrativo — cerrado
 
-`FAL_KEY` factura al team **Customer Journey** (`telwilliam2012@gmail.com`, `is_personal: false`),
-el mismo donde se entrenó el LoRA. Saldo se consulta en
+`FAL_KEY` factura al team **Customer Journey** (correo del equipo de facturación
+redactado tras el hallazgo de Fase 4.2 — ver `docs/migracion-python/seguridad/`;
+`is_personal: false`), el mismo donde se entrenó el LoRA. Saldo se consulta en
 `GET https://rest.alpha.fal.ai/billing/user_balance` con la key; `billing/user_details` exige una
 key ADMIN y devuelve 403 con esta.
 
