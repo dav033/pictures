@@ -34,6 +34,8 @@ export type ConsultaRetrieval = {
   filtros?: FiltrosDuros;
   /** Embedding ya calculado; evita otra llamada cuando un turno hace varias búsquedas. */
   embeddingPrecalculado?: number[];
+  /** El proveedor de embedding opcional ya falló; no reintentar por cada rol/relajación. */
+  embeddingFallido?: boolean;
   /** Consultas enfocadas por componente; se fusionan dentro de cada rama lexical. */
   focusedQueries?: readonly string[];
   /** Event terms are ranking text, never SQL predicates. */

@@ -133,6 +133,9 @@ try {
         }
         payload = @{ message = "contract-e2e" }
     }
+    $operationBody = [ordered]@{ message = "contract-e2e" }
+    $operationBytes = [Text.Encoding]::UTF8.GetBytes(($operationBody | ConvertTo-Json -Depth 8 -Compress))
+    $payload.context.body_sha256 = Get-Sha256 $operationBytes
     $body = [Text.Encoding]::UTF8.GetBytes(($payload | ConvertTo-Json -Depth 8 -Compress))
     $now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
     $nonce = [Guid]::NewGuid()

@@ -1,10 +1,11 @@
 import type { Pool } from "pg";
-import { embeberTexto } from "../embeddings";
+import { embeddingOpcional } from "../embeddings";
+export { embeddingOpcional } from "../embeddings";
 import { interpretarConsulta } from "../query-parser/parse";
 import { parseEventSearchIntent } from "../query-parser/event-search";
 import { IntentQuerySchema, type IntentQuery } from "../query-parser/schema";
 import { buscarPorRol } from "../retrieval/por-rol";
-import { RERANK_DEADLINE_MS } from "../retrieval/search";
+import { consultaTieneSku, RERANK_DEADLINE_MS } from "../retrieval/search";
 import type { RerankStatus } from "../retrieval/search";
 import type { EventSearchIntent } from "../query-parser/event-search";
 import { puntuarYOrdenar, type CandidatoDetallado, type CandidatoPuntuado } from "../retrieval/rerank";
@@ -15,8 +16,6 @@ import type { EstadoSku } from "../retrieval/types";
 import type { EventMatchEvidence } from "../retrieval/types";
 import type { CatalogAllowlist } from "../retrieval/types";
 import type { ObservabilidadBusqueda, ResultadoBusquedaObservabilidad } from "../observability/types";
-import { RAG_USE_VECTOR } from "@/lib/ia/feature-flags";
-
 export type PoolItemPresupuesto = {
   productId: string;
   variantId: string;
@@ -122,17 +121,6 @@ function rerankStatusPorRol(resultadosPorRol: Array<{ rerankStatus?: RerankStatu
   return statuses.length > 0 ? "SKIPPED_OPTIONAL" : undefined;
 }
 
-/** Embedding is optional; lexical retrieval remains the safe fallback. */
-export async function embeddingOpcional(query: string): Promise<number[] | undefined> {
-  const vectorEnabled = RAG_USE_VECTOR && Boolean(process.env.GEMINI_API_KEY?.trim());
-  if (!vectorEnabled || !query.trim()) return undefined;
-  try {
-    return await embeberTexto(query, "RETRIEVAL_QUERY");
-  } catch {
-    return undefined;
-  }
-}
-
 /**
  * Orquesta el pipeline de franjas de presupuesto completo (§3): plan de
  * canasta → retrieval por rol → rerank + diversidad → ensamblaje con
@@ -178,10 +166,21 @@ export async function buscarCatalogoRagConPresupuesto(
   const franjaInfo = { slug: franja.slug, nombre: franja.nombre, rangoMinCop: franja.minCop, rangoMaxCop: franja.maxCop };
 
   const t1 = Date.now();
+  const rerankDeadlineAt = opciones.rerankDeadlineAt ?? Date.now() + RERANK_DEADLINE_MS;
+  let embeddingFallido = false;
   // Un solo embedding para todo el turno (§3, Etapa 2) — cada rol lo reusa.
   // Vector is opt-in; FTS/trigram remain the no-key production fallback.
-  const embeddingBase = await embeddingOpcional(intento.semantic_query);
-  const rerankDeadlineAt = opciones.rerankDeadlineAt ?? Date.now() + RERANK_DEADLINE_MS;
+  const embeddingBase = consultaTieneSku(intento.semantic_query)
+    ? undefined
+    : await embeddingOpcional(
+      intento.semantic_query,
+      opciones.rerankSignal,
+      rerankDeadlineAt,
+      () => { embeddingFallido = true; },
+      opciones.rerankRequestId
+        ? { requestId: opciones.rerankRequestId, correlationId: opciones.rerankCorrelationId ?? opciones.rerankRequestId }
+        : undefined,
+    );
 
   const resultadosPorRol = await Promise.all(
     plan.roles.map((cuota) =>
@@ -199,6 +198,7 @@ export async function buscarCatalogoRagConPresupuesto(
          rerankCorrelationId: opciones.rerankCorrelationId,
          rerankSignal: opciones.rerankSignal,
          rerankDeadlineAt,
+         embeddingFallido,
       }),
     ),
   );

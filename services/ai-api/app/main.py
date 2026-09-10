@@ -7,6 +7,7 @@ import hashlib
 import hmac
 import importlib
 import inspect
+import json
 import logging
 import os
 import re
@@ -17,7 +18,7 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from types import ModuleType
-from typing import Awaitable, Callable, TypeVar, cast
+from typing import Awaitable, Callable, Literal, TypeVar, cast
 from uuid import UUID
 
 from fastapi import FastAPI, HTTPException, Request
@@ -26,6 +27,14 @@ from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from app.generated_models import InternalRequestSignature, OperationalContext
+from app.catalog_embeddings import (
+    DEFAULT_EMBEDDING_DIMENSIONS,
+    DEFAULT_EMBEDDING_MODEL,
+    EmbeddingSettings,
+    GeminiEmbeddingProvider,
+    embed_with_retry,
+    validate_embedding_batch,
+)
 from app.operational_store import InMemoryOperationalStore, StoredHttpResponse
 from app.postgres_store import PostgresOperationalStore
 
@@ -33,6 +42,7 @@ from app.postgres_store import PostgresOperationalStore
 SCHEMA_VERSION = "operational.v1"
 DEFAULT_SCOPE = "ai.echo"
 DEFAULT_RERANK_SCOPE = "ai.rerank"
+DEFAULT_EMBEDDING_SCOPE = "ai.embedding"
 MAX_BODY_BYTES = 64 * 1024
 _SHA256_RE = re.compile(r"^[a-f0-9]{64}$")
 _SCOPE_RE = re.compile(r"^[a-zA-Z0-9._:/-]+$")
@@ -51,6 +61,7 @@ class Settings:
     hmac_secret: str | None = None
     required_scope: str = DEFAULT_SCOPE
     rerank_required_scope: str = DEFAULT_RERANK_SCOPE
+    embedding_required_scope: str = DEFAULT_EMBEDDING_SCOPE
     max_clock_skew_seconds: int = 300
     nonce_namespace: str = "ai-api"
     max_body_bytes: int = MAX_BODY_BYTES
@@ -65,6 +76,9 @@ class Settings:
             hmac_secret=secret.strip() if secret and secret.strip() else None,
             required_scope=os.getenv("INTERNAL_REQUIRED_SCOPE", DEFAULT_SCOPE),
             rerank_required_scope=os.getenv("INTERNAL_RERANK_REQUIRED_SCOPE", DEFAULT_RERANK_SCOPE),
+            embedding_required_scope=os.getenv(
+                "INTERNAL_EMBEDDING_REQUIRED_SCOPE", DEFAULT_EMBEDDING_SCOPE
+            ),
             database_url=os.getenv("DATABASE_URL"),
         )
 
@@ -118,6 +132,19 @@ class RerankRequest(OperationalRequest):
         return self
 
 
+class EmbeddingRequest(OperationalRequest):
+    text: str = Field(min_length=1, max_length=4_000)
+    task_type: Literal["RETRIEVAL_QUERY"] = "RETRIEVAL_QUERY"
+
+    @field_validator("text")
+    @classmethod
+    def reject_blank_text(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("embedding text must not be blank")
+        return stripped
+
+
 class InMemoryMetrics:
     """Small process-local counters; no payloads, secrets, or bodies stored."""
 
@@ -136,6 +163,7 @@ class InMemoryMetrics:
 
 EchoHandler = Callable[[EchoRequest], Awaitable[dict[str, object]]]
 RerankHandler = Callable[[RerankRequest], Awaitable[dict[str, object]]]
+EmbeddingHandler = Callable[[EmbeddingRequest], Awaitable[dict[str, object]]]
 OperationalHandler = Callable[[OperationalRequest], Awaitable[dict[str, object]]]
 
 
@@ -180,6 +208,73 @@ async def _default_rerank_handler(payload: RerankRequest) -> dict[str, object]:
     return await asyncio.to_thread(_run_bounded_rerank, payload)
 
 
+async def _default_embedding_handler(payload: EmbeddingRequest) -> dict[str, object]:
+    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        raise _error("embedding_provider_unavailable", 503)
+    settings = EmbeddingSettings(
+        model=DEFAULT_EMBEDDING_MODEL,
+        dimensions=DEFAULT_EMBEDDING_DIMENSIONS,
+        task_type=payload.task_type,
+    )
+    attempt_count: list[int] = []
+    attempts: list[dict[str, object]] = []
+
+    async def record_attempt(attempt: int, result: str, elapsed_ms: int) -> None:
+        logger.info(
+            "embedding provider attempt",
+            extra={
+                "request_id": str(payload.context.request_id),
+                "correlation_id": str(payload.context.correlation_id),
+                "attempt": attempt,
+                "result": result,
+                "elapsed_ms": elapsed_ms,
+            },
+        )
+        attempts.append({"attempt": attempt, "result": result, "elapsed_ms": elapsed_ms})
+
+    try:
+        provider = GeminiEmbeddingProvider(api_key)
+        values = await embed_with_retry(
+            provider,
+            [payload.text],
+            settings,
+            attempts=attempt_count,
+            on_attempt=record_attempt,
+        )
+        vector = validate_embedding_batch(values, expected_count=1, dimensions=settings.dimensions)[
+            0
+        ]
+    except HTTPException:
+        raise
+    except Exception:
+        # Keep retry metadata in the bounded error body so Next can persist
+        # every provider attempt, including terminal failures.
+        if attempts and attempts[-1]["result"] == "ok":
+            attempts[-1]["result"] = "error"
+        raise _error(
+            "embedding_provider_unavailable",
+            503,
+            {"attempts": attempts},
+        ) from None
+    return {
+        "payload": {
+            "values": list(vector),
+            "model": settings.model,
+            "dimensions": settings.dimensions,
+            "task_type": settings.task_type,
+            "attempts": attempts
+            or [
+                {
+                    "attempt": attempt_count[0] if attempt_count else 1,
+                    "result": "ok",
+                    "elapsed_ms": 0,
+                }
+            ],
+        }
+    }
+
+
 def _run_bounded_rerank(payload: RerankRequest) -> dict[str, object]:
     with _RERANK_WORKER_LIMIT:
         return _rerank_in_worker(payload)
@@ -196,8 +291,15 @@ async def _warm_rerank_model() -> None:
     await asyncio.to_thread(_run_bounded_rerank, payload)
 
 
-def _error(code: str, status_code: int) -> HTTPException:
-    return HTTPException(status_code=status_code, detail={"code": code})
+def _error(
+    code: str,
+    status_code: int,
+    details: dict[str, object] | None = None,
+) -> HTTPException:
+    detail: dict[str, object] = {"code": code}
+    if details:
+        detail.update(details)
+    return HTTPException(status_code=status_code, detail=detail)
 
 
 def _secret_is_valid(secret: object) -> bool:
@@ -233,22 +335,49 @@ def _response_headers(request: Request, *, replay: bool = False) -> dict[str, st
     return headers
 
 
-def _error_body(request: Request, code: str) -> dict[str, object]:
+def _error_body(
+    request: Request,
+    code: str,
+    details: dict[str, object] | None = None,
+) -> dict[str, object]:
+    detail: dict[str, object] = {
+        "code": code,
+        "request_id": request.state.request_id,
+        "correlation_id": request.state.correlation_id,
+    }
+    if details:
+        detail.update(details)
     return {
-        "detail": {
-            "code": code,
-            "request_id": request.state.request_id,
-            "correlation_id": request.state.correlation_id,
-        }
+        "detail": detail,
     }
 
 
-def _error_response(request: Request, status_code: int, code: str) -> JSONResponse:
+def _error_response(
+    request: Request,
+    status_code: int,
+    code: str,
+    details: dict[str, object] | None = None,
+) -> JSONResponse:
     return JSONResponse(
         status_code=status_code,
-        content=_error_body(request, code),
+        content=_error_body(request, code, details),
         headers=_response_headers(request),
     )
+
+
+def _operation_body_sha256(raw_body: bytes, payload: OperationalRequest) -> str:
+    try:
+        envelope = json.loads(raw_body)
+    except (TypeError, json.JSONDecodeError):
+        raise _invalid_request() from None
+    if not isinstance(envelope, dict):
+        raise _invalid_request()
+    if isinstance(payload, EchoRequest):
+        operation_body = envelope.get("payload")
+    else:
+        operation_body = {key: value for key, value in envelope.items() if key != "context"}
+    encoded = json.dumps(operation_body, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def _validate_context(context: OperationalContext) -> None:
@@ -453,6 +582,30 @@ def _detail_code(exception: HTTPException) -> str:
     return "internal_error"
 
 
+def _detail_metadata(exception: HTTPException) -> dict[str, object]:
+    if not isinstance(exception.detail, dict):
+        return {}
+    attempts = exception.detail.get("attempts")
+    if not isinstance(attempts, list):
+        return {}
+    safe_attempts: list[dict[str, object]] = []
+    for item in attempts:
+        if not isinstance(item, dict):
+            continue
+        attempt = item.get("attempt")
+        result = item.get("result")
+        elapsed_ms = item.get("elapsed_ms")
+        if (
+            isinstance(attempt, int)
+            and attempt > 0
+            and result in {"ok", "error"}
+            and isinstance(elapsed_ms, int)
+            and elapsed_ms >= 0
+        ):
+            safe_attempts.append({"attempt": attempt, "result": result, "elapsed_ms": elapsed_ms})
+    return {"attempts": safe_attempts} if safe_attempts else {}
+
+
 async def _store_failure(
     request: Request,
     *,
@@ -461,6 +614,7 @@ async def _store_failure(
     body_sha256: str,
     code: str,
     status: int,
+    details: dict[str, object] | None = None,
 ) -> None:
     store = request.app.state.operational_store
     if store is None:
@@ -471,7 +625,7 @@ async def _store_failure(
                 scope=scope,
                 idempotency_key=idempotency_key,
                 body_sha256=body_sha256,
-                response=_stored_response(_error_body(request, code), status),
+                response=_stored_response(_error_body(request, code, details), status),
             )
         )
     except Exception:
@@ -511,6 +665,8 @@ async def _handle_operational_request(
     payload = cast(OperationalRequest, _parse_model(model, raw_body))
     context = payload.context
     _validate_context(context)
+    if str(context.body_sha256) != _operation_body_sha256(raw_body, payload):
+        raise _invalid_request()
     if scope not in context.scopes:
         raise _error("insufficient_scope", 403)
     timeout_seconds = _deadline_seconds(context)
@@ -585,6 +741,7 @@ async def _handle_operational_request(
         request.app.state.metrics.increment(f"{operation}.cancelled")
         return _error_response(request, 499, "client_cancelled")
     except HTTPException as exception:
+        details = _detail_metadata(exception)
         if idempotency_key is not None:
             await _store_failure(
                 request,
@@ -593,6 +750,7 @@ async def _handle_operational_request(
                 body_sha256=body_sha256,
                 code=_detail_code(exception),
                 status=exception.status_code,
+                details=details,
             )
         raise
     except Exception as error:
@@ -621,6 +779,14 @@ async def _handle_operational_request(
             )
         except Exception:
             request.app.state.metrics.increment("idempotency.finalize_error")
+            await _store_failure(
+                request,
+                scope=scope,
+                idempotency_key=idempotency_key,
+                body_sha256=body_sha256,
+                code="idempotency_store_error",
+                status=503,
+            )
             raise _error("idempotency_store_error", 503) from None
     request.app.state.metrics.increment(f"{operation}.completed")
     return JSONResponse(
@@ -637,6 +803,7 @@ def create_app(
     operational_store: object | None = None,
     echo_handler: EchoHandler | None = None,
     rerank_handler: RerankHandler | None = None,
+    embedding_handler: EmbeddingHandler | None = None,
 ) -> FastAPI:
     current_settings = settings or Settings.from_env()
     default_store: object | None = None
@@ -685,6 +852,7 @@ def create_app(
     application.state.metrics = InMemoryMetrics()
     handler = echo_handler or _default_echo_handler
     rerank_handler_fn = rerank_handler or _default_rerank_handler
+    embedding_handler_fn = embedding_handler or _default_embedding_handler
 
     @application.middleware("http")
     async def request_context(
@@ -704,7 +872,7 @@ def create_app(
     async def http_exception_handler(request: Request, exception: HTTPException) -> JSONResponse:
         code = _detail_code(exception)
         request.app.state.metrics.increment(f"errors.{code}")
-        return _error_response(request, exception.status_code, code)
+        return _error_response(request, exception.status_code, code, _detail_metadata(exception))
 
     @application.exception_handler(RequestValidationError)
     async def validation_exception_handler(
@@ -764,6 +932,16 @@ def create_app(
             model=RerankRequest,
             scope=current_settings.rerank_required_scope,
             handler=cast(OperationalHandler, rerank_handler_fn),
+        )
+
+    @application.post("/internal/v1/embed")
+    async def embed(request: Request) -> Response:
+        return await _handle_operational_request(
+            request,
+            operation="embed",
+            model=EmbeddingRequest,
+            scope=current_settings.embedding_required_scope,
+            handler=cast(OperationalHandler, embedding_handler_fn),
         )
 
     return application

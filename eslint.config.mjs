@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Salida compilada de los workspaces — no es código fuente.
     "packages/*/dist/**",
+    // Entorno virtual Python generado localmente; lo cubren Ruff y mypy.
+    "services/ai-api/.venv/**",
   ]),
 ]);
 

@@ -38,6 +38,11 @@ export function resultadoTelemetria(error: unknown): EventoLlamadaIA["resultado"
   if (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError")) {
     return error.name === "TimeoutError" ? "timeout" : "cancelado";
   }
+  if (typeof error === "object" && error !== null && "code" in error) {
+    const code = (error as { code?: unknown }).code;
+    if (code === "PYTHON_BACKEND_TIMEOUT") return "timeout";
+    if (code === "PYTHON_REQUEST_CANCELLED") return "cancelado";
+  }
   return "error";
 }
 
@@ -46,6 +51,7 @@ export function registrarGemini(input: {
   capacidad: EventoLlamadaIA["capacidad"];
   modelo: string;
   inicio: number;
+  ms?: number;
   resultado: EventoLlamadaIA["resultado"];
   contexto?: ContextoTelemetriaIA;
   usage?: UsageMetadata;
@@ -63,7 +69,7 @@ export function registrarGemini(input: {
     requestId: ids.requestId,
     correlationId: ids.correlationId,
     intento: input.contexto?.intento ?? 1,
-    ms: Math.max(0, Date.now() - input.inicio),
+    ms: Math.max(0, input.ms ?? Date.now() - input.inicio),
     resultado: input.resultado,
     tokensEntrada: input.usage?.promptTokenCount,
     tokensSalida: input.usage?.candidatesTokenCount,

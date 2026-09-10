@@ -62,7 +62,10 @@ export async function POST(request: Request): Promise<Response> {
   } catch {
     payload = undefined;
   }
-  const context = leerContextoOperativo(request, sha256Body(rawBody));
+  const context = leerContextoOperativo(
+    request,
+    payload ? sha256Body(JSON.stringify(payload)) : sha256Body(rawBody),
+  );
   const headers = commonHeaders(context.request_id, context.correlation_id);
   if (!payload) {
     return Response.json(

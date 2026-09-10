@@ -7,7 +7,8 @@
  */
 
 import type { Pool } from "pg";
-import { buscarHibrido } from "./search";
+import { buscarHibrido, consultaTieneSku } from "./search";
+import { embeddingOpcional } from "../embeddings";
 import type {
   EventMatchEvidence,
   EventMatchLevel,
@@ -230,11 +231,23 @@ export async function retrieveEventComponent(
   query: ComponentQuery,
 ): Promise<EventComponentResult> {
   const relaxations: string[] = [];
+  let embeddingFallido = false;
+  const initialQuery = query.ladder[0]?.query ?? query.semantic_query;
+  const embeddingPrecalculado = consultaTieneSku(initialQuery)
+    ? undefined
+    : await embeddingOpcional(
+      initialQuery,
+      undefined,
+      undefined,
+      () => { embeddingFallido = true; },
+    );
   for (const tier of query.ladder) {
     const response = await buscarHibrido(pool, {
       semanticQuery: tier.query,
       focusedQueries: [tier.query],
       filtros: tier.hard_filters,
+      embeddingPrecalculado,
+      embeddingFallido,
       eventTerms: query.event_terms,
       eventIntent: query.event_intent,
     });

@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).parents[1]))
 from app.main import (
     MAX_BODY_BYTES,
     EchoRequest,
+    EmbeddingRequest,
     RerankRequest,
     Settings,
     build_signature,
@@ -118,6 +119,34 @@ def _rerank_body(
         "deadline_ms": deadline_ms,
         "body_sha256": payload_hash,
         "scopes": scopes or ["ai.rerank"],
+    }
+    if idempotency_key is not None:
+        context["idempotency_key"] = idempotency_key
+    return json.dumps(
+        {"context": context, **operation_payload},
+        separators=(",", ":"),
+    ).encode()
+
+
+def _embedding_body(
+    scopes: list[str] | None = None,
+    *,
+    text: str = "ramo de rosas",
+    idempotency_key: str | None = None,
+    request_id: str = "00000000-0000-0000-0000-000000000000",
+    correlation_id: str = "ffffffff-ffff-ffff-ffff-ffffffffffff",
+) -> bytes:
+    operation_payload = {"text": text, "task_type": "RETRIEVAL_QUERY"}
+    context = {
+        "schema_version": "operational.v1",
+        "request_id": request_id,
+        "correlation_id": correlation_id,
+        "deadline_at": "2030-01-01T00:00:00Z",
+        "deadline_ms": 1000,
+        "body_sha256": hashlib.sha256(
+            json.dumps(operation_payload, separators=(",", ":"), ensure_ascii=False).encode()
+        ).hexdigest(),
+        "scopes": scopes or ["ai.embedding"],
     }
     if idempotency_key is not None:
         context["idempotency_key"] = idempotency_key
@@ -338,6 +367,21 @@ def test_echo_rejects_invalid_operational_context() -> None:
     assert response.status_code == 422
 
 
+def test_operational_context_rejects_body_hash_mismatch() -> None:
+    body = json.loads(_body())
+    body["context"]["body_sha256"] = "0" * 64
+    invalid_body = json.dumps(body, separators=(",", ":")).encode()
+    client = TestClient(create_app(Settings(environment="test", hmac_secret=SECRET)))
+
+    response = client.post(
+        "/internal/v1/echo",
+        content=invalid_body,
+        headers=_headers(invalid_body),
+    )
+
+    assert response.status_code == 422
+
+
 async def _stub_rerank_handler(payload: RerankRequest) -> dict[str, object]:
     # Deterministic reversal, not the real cross-encoder: proves the shared
     # /internal/v1/* boundary wires a distinct handler/scope through
@@ -349,6 +393,95 @@ async def _stub_rerank_handler(payload: RerankRequest) -> dict[str, object]:
             "scores": {candidate.id: float(index) for index, candidate in enumerate(ordered)},
         }
     }
+
+
+async def _stub_embedding_handler(payload: EmbeddingRequest) -> dict[str, object]:
+    return {
+        "payload": {
+            "values": [0.1, 0.2],
+            "model": "gemini-embedding-2",
+            "dimensions": 2,
+            "task_type": payload.task_type,
+            "attempts": [{"attempt": 1, "result": "ok", "elapsed_ms": 0}],
+        }
+    }
+
+
+async def _failed_embedding_handler(payload: EmbeddingRequest) -> dict[str, object]:
+    del payload
+    raise main_module._error(
+        "embedding_provider_unavailable",
+        503,
+        {
+            "attempts": [
+                {"attempt": 1, "result": "error", "elapsed_ms": 4},
+                {"attempt": 2, "result": "error", "elapsed_ms": 8},
+                {"attempt": 3, "result": "error", "elapsed_ms": 12},
+            ]
+        },
+    )
+
+
+def test_embedding_requires_its_own_scope_and_returns_vector() -> None:
+    client = TestClient(
+        create_app(
+            Settings(environment="test", hmac_secret=SECRET),
+            embedding_handler=_stub_embedding_handler,
+        )
+    )
+    body = _embedding_body()
+    response = client.post(
+        "/internal/v1/embed",
+        content=body,
+        headers=_headers(body, ["ai.embedding"], path="/internal/v1/embed"),
+    )
+    assert response.status_code == 200
+    assert response.json()["payload"]["values"] == [0.1, 0.2]
+
+    bad_scope_body = _embedding_body(["ai.rerank"])
+    bad_scope = client.post(
+        "/internal/v1/embed",
+        content=bad_scope_body,
+        headers=_headers(bad_scope_body, ["ai.rerank"], path="/internal/v1/embed"),
+    )
+    assert bad_scope.status_code == 403
+
+
+def test_embedding_failure_preserves_attempts_for_idempotency_replay() -> None:
+    store = InMemoryOperationalStore()
+    client = TestClient(
+        create_app(
+            Settings(environment="test", hmac_secret=SECRET),
+            operational_store=store,
+            embedding_handler=_failed_embedding_handler,
+        )
+    )
+    body = _embedding_body(idempotency_key="failed-embedding")
+    first = client.post(
+        "/internal/v1/embed",
+        content=body,
+        headers=_headers(body, ["ai.embedding"], path="/internal/v1/embed"),
+    )
+    replay = client.post(
+        "/internal/v1/embed",
+        content=body,
+        headers=_headers(
+            body,
+            ["ai.embedding"],
+            path="/internal/v1/embed",
+            nonce=UUID("00000000-0000-4000-8000-000000000001"),
+        ),
+    )
+
+    expected_attempts = [
+        {"attempt": 1, "result": "error", "elapsed_ms": 4},
+        {"attempt": 2, "result": "error", "elapsed_ms": 8},
+        {"attempt": 3, "result": "error", "elapsed_ms": 12},
+    ]
+    assert first.status_code == 503
+    assert first.json()["detail"]["attempts"] == expected_attempts
+    assert replay.status_code == 503
+    assert replay.json()["detail"]["attempts"] == expected_attempts
 
 
 def test_rerank_requires_valid_hmac_and_its_own_scope() -> None:

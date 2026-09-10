@@ -1,5 +1,6 @@
 import type { Pool } from "pg";
-import { buscarHibrido, RERANK_DEADLINE_MS } from "../retrieval/search";
+import { buscarHibrido, consultaTieneSku, RERANK_DEADLINE_MS } from "../retrieval/search";
+import { embeddingOpcional } from "../embeddings";
 import type { EventMatchEvidence, EstadoSku, ResultadoRetrieval } from "../retrieval/types";
 import { parseEventSearchIntent, type EventSearchIntent } from "../query-parser/event-search";
 import { interpretarConsulta } from "../query-parser/parse";
@@ -160,9 +161,21 @@ export async function buscarCatalogoRag(
   };
   const ocasiones = intento.filtros_duros.ocasiones.length ? intento.filtros_duros.ocasiones : undefined;
   const colores = intento.filtros_duros.colores.length ? intento.filtros_duros.colores : undefined;
-  const rerankDeadlineAt = opciones.rerankDeadlineAt ?? Date.now() + RERANK_DEADLINE_MS;
-
   const t1 = Date.now();
+  const rerankDeadlineAt = opciones.rerankDeadlineAt ?? Date.now() + RERANK_DEADLINE_MS;
+  let embeddingFallido = false;
+  const embeddingPrecalculado = consultaTieneSku(intento.semantic_query)
+    ? undefined
+    : await embeddingOpcional(
+      intento.semantic_query,
+      opciones.rerankSignal,
+      rerankDeadlineAt,
+      () => { embeddingFallido = true; },
+      opciones.rerankRequestId
+        ? { requestId: opciones.rerankRequestId, correlationId: opciones.rerankCorrelationId ?? opciones.rerankRequestId }
+        : undefined,
+    );
+
   let respuesta = await buscarHibrido(pool, {
     semanticQuery: intento.semantic_query,
     focusedQueries: opciones.focusedQueries,
@@ -173,6 +186,8 @@ export async function buscarCatalogoRag(
     rerankCorrelationId: opciones.rerankCorrelationId,
     rerankSignal: opciones.rerankSignal,
     rerankDeadlineAt,
+    embeddingPrecalculado,
+    embeddingFallido,
     filtros: { ...filtrosBase, ocasiones, colores },
   });
   let filtroRelajado: ResultadoBusquedaRag["filtroRelajado"] = null;
@@ -214,6 +229,8 @@ export async function buscarCatalogoRag(
         rerankCorrelationId: opciones.rerankCorrelationId,
         rerankSignal: opciones.rerankSignal,
         rerankDeadlineAt,
+        embeddingPrecalculado,
+        embeddingFallido,
         filtros: { ...filtrosBase, colores },
     });
     if (respuesta.results.length > 0) filtroRelajado = "ocasiones";
@@ -229,6 +246,8 @@ export async function buscarCatalogoRag(
         rerankCorrelationId: opciones.rerankCorrelationId,
         rerankSignal: opciones.rerankSignal,
         rerankDeadlineAt,
+        embeddingPrecalculado,
+        embeddingFallido,
         filtros: { ...filtrosBase },
     });
     if (respuesta.results.length > 0) filtroRelajado = "colores";

@@ -1,6 +1,8 @@
 import { existsSync } from "node:fs";
 import { Pool } from "pg";
-import { DIMENSIONES_EMBEDDING, embeberTexto, validarEmbedding } from "../src/lib/rag/embeddings";
+
+const MODELO_EMBEDDING = "gemini-embedding-2";
+const DIMENSIONES_EMBEDDING = 768;
 
 function cargarEntornoLocal(): void {
   if (process.env.DATABASE_URL) return;
@@ -74,21 +76,24 @@ async function checkRequiredExtensions(): Promise<Resultado> {
 }
 
 function expectedDimensions(): number {
-  const value = Number(process.env.GEMINI_EMBEDDING_DIMENSIONS ?? DIMENSIONES_EMBEDDING);
-  return Number.isInteger(value) && value > 0 && value <= 4096 ? value : 0;
+  return DIMENSIONES_EMBEDDING;
 }
 
 async function checkPgvector(): Promise<Resultado> {
-  if (!process.env.GEMINI_API_KEY?.trim() || process.env.RAG_USE_VECTOR !== "true") {
+  const truthy = (value: string | undefined): boolean =>
+    value === "1" || value?.toLowerCase() === "true" || value?.toLowerCase() === "on";
+  const pythonCanaryConfigured = process.env.RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED === "true"
+    && truthy(process.env.PYTHON_BACKEND_ENABLED)
+    && !truthy(process.env.PYTHON_BACKEND_KILL_SWITCH);
+  if (
+    (!process.env.GEMINI_API_KEY?.trim() && !pythonCanaryConfigured)
+    || process.env.RAG_USE_VECTOR !== "true"
+  ) {
     return { nombre: "pgvector", estado: "SKIPPED_OPTIONAL", detalle: "sin GEMINI_API_KEY o RAG_USE_VECTOR=false; ruta determinista activa" };
   }
   const client = pool();
   if (!client) return { nombre: "pgvector", estado: "FAIL", detalle: "DATABASE_URL no configurada" };
   const dimension = expectedDimensions();
-  if (dimension === 0) {
-    await client.end();
-    return { nombre: "pgvector", estado: "FAIL", detalle: "GEMINI_EMBEDDING_DIMENSIONS inválida" };
-  }
   try {
     const extension = await client.query<{ extversion: string }>("SELECT extversion FROM pg_extension WHERE extname = 'vector'");
     if (extension.rows.length === 0) return { nombre: "pgvector", estado: "FAIL", detalle: "extensión 'vector' no está habilitada" };
@@ -112,15 +117,88 @@ async function checkGeminiEmbeddings(): Promise<Resultado> {
     return { nombre: "Gemini embeddings", estado: "SKIPPED_OPTIONAL", detalle: "sin GEMINI_API_KEY o vector deshabilitado" };
   }
   try {
+    const { embeberTexto, validarEmbedding } = await import("../src/lib/rag/embeddings");
     const valores = await embeberTexto("prueba de salud del sistema RAG", "RETRIEVAL_DOCUMENT");
     validarEmbedding(valores);
     return {
       nombre: "Gemini embeddings",
       estado: "PASS",
-      detalle: `modelo ${process.env.GEMINI_EMBEDDING_MODEL ?? "gemini-embedding-2"}, ${valores.length} dims (esperado ${DIMENSIONES_EMBEDDING})`,
+      detalle: `modelo ${MODELO_EMBEDDING}, ${valores.length} dims (esperado ${DIMENSIONES_EMBEDDING})`,
     };
   } catch (error) {
     return { nombre: "Gemini embeddings", estado: "FAIL", detalle: errorMessage(error) };
+  }
+}
+
+async function checkEmbeddingProvenance(): Promise<Resultado> {
+  const truthy = (value: string | undefined): boolean =>
+    value === "1" || value?.toLowerCase() === "true" || value?.toLowerCase() === "on";
+  const pythonCanaryConfigured = process.env.RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED === "true"
+    && truthy(process.env.PYTHON_BACKEND_ENABLED)
+    && !truthy(process.env.PYTHON_BACKEND_KILL_SWITCH);
+  if (process.env.RAG_USE_VECTOR !== "true" || (!process.env.GEMINI_API_KEY?.trim() && !pythonCanaryConfigured)) {
+    return {
+      nombre: "Provenance de embeddings",
+      estado: "SKIPPED_OPTIONAL",
+      detalle: "vector deshabilitado; no se requiere provenance en runtime",
+    };
+  }
+  const client = pool();
+  if (!client) return { nombre: "Provenance de embeddings", estado: "FAIL", detalle: "DATABASE_URL no configurada" };
+  try {
+    const columns = await client.query<{ column_name: string }>(
+      `SELECT column_name
+       FROM information_schema.columns
+       WHERE table_schema = 'public'
+         AND table_name = 'catalog_embeddings'
+         AND column_name = ANY($1::text[])`,
+      [["embedding_dimensions", "embedding_task_type"]],
+    );
+    const names = new Set(columns.rows.map((row) => row.column_name));
+    const lock = await client.query<{ lock_name: string | null }>(
+      "SELECT to_regclass('public.catalog_embedding_job_lock')::text AS lock_name",
+    );
+    const missing = [
+      ...["embedding_dimensions", "embedding_task_type"].filter((name) => !names.has(name)),
+      ...(!lock.rows[0]?.lock_name ? ["catalog_embedding_job_lock"] : []),
+    ];
+    return missing.length
+      ? { nombre: "Provenance de embeddings", estado: "FAIL", detalle: `faltan: ${missing.join(", ")}` }
+      : { nombre: "Provenance de embeddings", estado: "PASS", detalle: "migración 023 presente" };
+  } catch (error) {
+    return { nombre: "Provenance de embeddings", estado: "FAIL", detalle: errorMessage(error) };
+  } finally {
+    await client.end();
+  }
+}
+
+async function checkPythonQueryEmbeddings(): Promise<Resultado> {
+  const [{ RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED, RAG_USE_VECTOR }, { seleccionarBackendPython }] = await Promise.all([
+    import("../src/lib/ia/feature-flags"),
+    import("../src/lib/ia/python-adapter"),
+  ]);
+  if (
+    !RAG_USE_VECTOR
+    || !RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED
+    || seleccionarBackendPython().backend !== "python"
+  ) {
+    return {
+      nombre: "Python query embeddings",
+      estado: "SKIPPED_OPTIONAL",
+      detalle: "canario Python deshabilitado",
+    };
+  }
+  try {
+    const { embeberTexto, validarEmbedding } = await import("../src/lib/rag/embeddings");
+    const valores = await embeberTexto("prueba de salud del canario Python", "RETRIEVAL_QUERY");
+    validarEmbedding(valores);
+    return {
+      nombre: "Python query embeddings",
+      estado: "PASS",
+      detalle: `modelo ${MODELO_EMBEDDING}, ${valores.length} dims (esperado ${DIMENSIONES_EMBEDDING})`,
+    };
+  } catch (error) {
+    return { nombre: "Python query embeddings", estado: "FAIL", detalle: errorMessage(error) };
   }
 }
 
@@ -130,7 +208,9 @@ async function main(): Promise<void> {
     await checkPostgres(),
     await checkRequiredExtensions(),
     await checkPgvector(),
+    await checkEmbeddingProvenance(),
     await checkGeminiEmbeddings(),
+    await checkPythonQueryEmbeddings(),
   ];
 
   for (const resultado of resultados) console.log(`[${resultado.estado}] ${resultado.nombre} — ${resultado.detalle}`);

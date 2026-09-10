@@ -2,11 +2,23 @@ import { ApiError } from "@google/genai";
 import { getGeminiClient } from "@/lib/gemini";
 import { conReintento } from "@/lib/retry";
 import { registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/telemetria-llamadas";
+import { RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED, RAG_USE_VECTOR } from "@/lib/ia/feature-flags";
+import {
+  isPythonAdapterError,
+  llamarPythonEmbedding,
+  seleccionarBackendPython,
+} from "@/lib/ia/python-adapter";
+import { sha256Body } from "@/lib/ia/contracts/operational-v1";
 
-export const MODELO_EMBEDDING = process.env.GEMINI_EMBEDDING_MODEL ?? "gemini-embedding-2";
-export const DIMENSIONES_EMBEDDING = Number(process.env.GEMINI_EMBEDDING_DIMENSIONS ?? 768);
+export const MODELO_EMBEDDING = "gemini-embedding-2";
+export const DIMENSIONES_EMBEDDING = 768;
 
 export type TareaEmbedding = "RETRIEVAL_DOCUMENT" | "RETRIEVAL_QUERY";
+
+export type OpcionesEmbedding = {
+  parentSignal?: AbortSignal;
+  deadlineMs?: number;
+};
 
 /**
  * Un solo embedding de texto.
@@ -25,7 +37,82 @@ function esReintentable(error: unknown): boolean {
   return true;
 }
 
-export async function embeberTexto(texto: string, tarea: TareaEmbedding, telemetria?: ContextoTelemetriaIA): Promise<number[]> {
+export async function embeberTexto(
+  texto: string,
+  tarea: TareaEmbedding,
+  telemetria?: ContextoTelemetriaIA,
+  opciones?: OpcionesEmbedding,
+): Promise<number[]> {
+  if (
+    tarea === "RETRIEVAL_QUERY"
+    && RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED
+    && seleccionarBackendPython().backend === "python"
+  ) {
+    const requestId = telemetria?.requestId ?? crypto.randomUUID();
+    const correlationId = telemetria?.correlationId ?? requestId;
+    const contextoPython: ContextoTelemetriaIA = { ...telemetria, requestId, correlationId };
+    const inicio = Date.now();
+    let result: Awaited<ReturnType<typeof llamarPythonEmbedding>>;
+    try {
+      result = await llamarPythonEmbedding({
+        text: texto,
+        requestId,
+        correlationId,
+        deadlineMs: opciones?.deadlineMs ?? 5_000,
+        idempotencyKey: `embedding:${correlationId}:${sha256Body(texto)}`,
+        parentSignal: opciones?.parentSignal,
+      });
+    } catch (error) {
+      const attempts = isPythonAdapterError(error) ? error.attempts : undefined;
+      if (attempts?.length) {
+        for (const attempt of attempts) {
+          registrarGemini({
+            flujo: "armador_decoracion",
+            capacidad: "embedding_consulta",
+            modelo: MODELO_EMBEDDING,
+            inicio,
+            ms: attempt.elapsed_ms,
+            resultado: attempt.result === "ok" ? "ok" : resultadoTelemetria(error),
+            contexto: {
+              superficie: "python:/internal/v1/embed",
+              ...contextoPython,
+              intento: attempt.attempt,
+            },
+          });
+        }
+      } else {
+        registrarGemini({
+          flujo: "armador_decoracion",
+          capacidad: "embedding_consulta",
+          modelo: MODELO_EMBEDDING,
+            inicio,
+            resultado: resultadoTelemetria(error),
+            contexto: { superficie: "python:/internal/v1/embed", ...contextoPython, intento: 1 },
+        });
+      }
+      throw error;
+    }
+    if (!result.replayed) {
+      for (const attempt of result.attempts) {
+        registrarGemini({
+          flujo: "armador_decoracion",
+          capacidad: "embedding_consulta",
+          modelo: result.model,
+          inicio,
+          ms: attempt.elapsed_ms,
+            resultado: attempt.result === "ok" ? "ok" : "error",
+            contexto: {
+              superficie: "python:/internal/v1/embed",
+              ...contextoPython,
+              intento: attempt.attempt,
+            },
+        });
+      }
+    }
+    validarEmbedding(result.values);
+    return result.values;
+  }
+
   const cliente = getGeminiClient();
   if (!cliente) throw new Error("No hay GEMINI_API_KEY configurada.");
 
@@ -77,6 +164,30 @@ export async function embeberTexto(texto: string, tarea: TareaEmbedding, telemet
     throw new Error("Gemini no devolvió un embedding para el texto dado.");
   }
   return valores;
+}
+
+/** Computes one optional vector for a turn; lexical retrieval remains the fallback. */
+export async function embeddingOpcional(
+  query: string,
+  parentSignal?: AbortSignal,
+  deadlineAt?: number,
+  onFailure?: () => void,
+  telemetria?: ContextoTelemetriaIA,
+): Promise<number[] | undefined> {
+  const vectorEnabled = RAG_USE_VECTOR && (
+    Boolean(process.env.GEMINI_API_KEY?.trim())
+    || (RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED && seleccionarBackendPython().backend === "python")
+  );
+  if (!vectorEnabled || !query.trim()) return undefined;
+  try {
+    return await embeberTexto(query, "RETRIEVAL_QUERY", telemetria, {
+      parentSignal,
+      deadlineMs: deadlineAt ? Math.max(1, deadlineAt - Date.now()) : undefined,
+    });
+  } catch {
+    onFailure?.();
+    return undefined;
+  }
 }
 
 export function validarEmbedding(valores: number[]): void {

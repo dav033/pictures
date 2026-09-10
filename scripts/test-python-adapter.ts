@@ -7,6 +7,7 @@ import {
 import {
   PythonAdapterError,
   llamarPythonEcho,
+  llamarPythonEmbedding,
   llamarPythonRerank,
   seleccionarBackendPython,
 } from "../src/lib/ia/python-adapter";
@@ -201,6 +202,32 @@ async function testStableFailures(): Promise<void> {
     (error: unknown) => error instanceof PythonAdapterError && error.code === "PYTHON_UNAVAILABLE",
   );
   assert.equal(networkCalls, 1);
+
+  const embeddingAttempts = [
+    { attempt: 1, result: "error" as const, elapsed_ms: 4 },
+    { attempt: 2, result: "error" as const, elapsed_ms: 8 },
+    { attempt: 3, result: "error" as const, elapsed_ms: 12 },
+  ];
+  const embeddingFailureFetch: typeof fetch = async () => Response.json(
+    { detail: { code: "embedding_provider_unavailable", attempts: embeddingAttempts } },
+    { status: 503 },
+  );
+  await assert.rejects(
+    () => llamarPythonEmbedding({
+      text: "ramo",
+      requestId: REQUEST_ID,
+      correlationId: CORRELATION_ID,
+      env: BASE_ENV,
+      fetchImpl: embeddingFailureFetch,
+    }),
+    (error: unknown) => {
+      if (!(error instanceof PythonAdapterError) || error.code !== "PYTHON_UNAVAILABLE") {
+        return false;
+      }
+      assert.deepEqual(error.attempts, embeddingAttempts);
+      return true;
+    },
+  );
 }
 
 async function testRerankEnvelopeAndPermutation(): Promise<void> {
@@ -259,6 +286,64 @@ async function testRerankEnvelopeAndPermutation(): Promise<void> {
       correlationId: CORRELATION_ID,
       env: BASE_ENV,
       fetchImpl: invalidResponseFetch,
+    }),
+    (error: unknown) => error instanceof PythonAdapterError && error.code === "PYTHON_INVALID_RESPONSE",
+  );
+}
+
+async function testEmbeddingEnvelope(): Promise<void> {
+  const calls: CapturedCall[] = [];
+  const fetchImpl: typeof fetch = async (input, init) => {
+    calls.push({ input, init });
+    return successResponse({
+      values: Array.from({ length: 768 }, (_, index) => index / 768),
+      model: "gemini-embedding-2",
+      dimensions: 768,
+      task_type: "RETRIEVAL_QUERY",
+      attempts: [{ attempt: 1, result: "ok", elapsed_ms: 2 }],
+    });
+  };
+  const result = await llamarPythonEmbedding({
+    text: "ramo de rosas",
+    requestId: REQUEST_ID,
+    correlationId: CORRELATION_ID,
+    idempotencyKey: "embedding-key",
+    env: BASE_ENV,
+    fetchImpl,
+  });
+  assert.equal(result.values.length, 768);
+  assert.equal(calls.length, 1);
+  const body = JSON.parse(String(calls[0].init?.body)) as {
+    context: { body_sha256: string; scopes: string[] };
+    text: string;
+    task_type: string;
+  };
+  const operationBody = { text: "ramo de rosas", task_type: "RETRIEVAL_QUERY" };
+  assert.deepEqual({ text: body.text, task_type: body.task_type }, operationBody);
+  assert.equal(body.context.scopes[0], "ai.embedding");
+  assert.equal(new Headers(calls[0].init?.headers).get("idempotency-key"), "embedding-key");
+  assert.equal(body.context.body_sha256, sha256Body(JSON.stringify(operationBody)));
+  assert.equal(new URL(String(calls[0].input)).pathname, "/internal/v1/embed");
+
+  const mismatchedModelFetch: typeof fetch = async () => Response.json({
+    schema_version: "operational.v1",
+    request_id: REQUEST_ID,
+    correlation_id: CORRELATION_ID,
+    payload: {
+      values: Array.from({ length: 768 }, (_, index) => index / 768),
+      model: "different-model",
+      dimensions: 768,
+      task_type: "RETRIEVAL_QUERY",
+      attempts: [{ attempt: 1, result: "ok", elapsed_ms: 2 }],
+    },
+  });
+  await assert.rejects(
+    () => llamarPythonEmbedding({
+      text: "ramo",
+      requestId: REQUEST_ID,
+      correlationId: CORRELATION_ID,
+      env: BASE_ENV,
+      fetchImpl: mismatchedModelFetch,
     }),
     (error: unknown) => error instanceof PythonAdapterError && error.code === "PYTHON_INVALID_RESPONSE",
   );
@@ -327,6 +412,7 @@ async function main(): Promise<void> {
   await testEnabledHeadersAndNonce();
   await testStableFailures();
   await testRerankEnvelopeAndPermutation();
+  await testEmbeddingEnvelope();
   await testRouteEnabledAndMissingConfig();
   console.log("Python adapter: OK");
 }

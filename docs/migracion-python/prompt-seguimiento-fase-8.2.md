@@ -180,12 +180,14 @@ real disponible. Arreglar esto es trabajo de otra fase (Fase 3/regeneración
 RAG) — no lo hagas como parte de 8.2 salvo que el usuario lo pida
 explícitamente.
 
-### 8.2 — Reranking de candidatos (cross-encoder local) — IMPLEMENTADO LOCALMENTE
+### 8.2 — Reranking de candidatos (cross-encoder local) — IMPLEMENTADO Y DESPLEGADO
 
 El estado real de esta entrega al 2026-09-09 está en
 `docs/migracion-python/rag/rerank-python-fase8-2.md`. El código está verificado
-contra el Postgres local y el despliegue productivo sigue pendiente de la
-comprobación de disco y del canario autorizado.
+contra el Postgres local y el servicio Python está desplegado en EC2 con
+`RAG_RERANK_ENABLED=false`. La imagen nueva pasó canario, readiness y una
+llamada autenticada real al endpoint de rerank; el cutover funcional queda
+deliberadamente pendiente de activar el flag.
 
 **Entrega exacta** (plan, capítulo Fase 8): "Recibe la lista que PostgreSQL
 ya autorizó y solo puede reordenarla. No puede añadir ni quitar un
@@ -270,7 +272,7 @@ extendido, ver nota arriba) con el flag apagado, guardar métricas; correr
 con el flag encendido, comparar. Documentar el resultado tal cual sea,
 incluyendo si es negativo — la Salida de la Fase 8 lo exige explícitamente.
 
-### 8.3 — Embeddings en batch para reindexación del catálogo — NO INICIADO
+### 8.3 — Embeddings en batch para reindexación del catálogo — IMPLEMENTADO EN PYTHON
 
 **Entrega exacta**: "Offline, fuera del camino del request." **Límite
 duro**: "No toca el retrieval en vivo." Menor riesgo que 8.2 (no toca el
@@ -278,13 +280,17 @@ camino de la request real, no necesita el adaptador HMAC generalizado). Si
 8.2 se queda a medias por tiempo, esta es la candidata más fácil de cerrar
 aparte, sin depender de 8.2.
 
-La revisión inicial de esta entrega ya se completó: el script actual usa
-`scripts/generate-embeddings.ts`, parte de `npm run rag:sync` → `rag:embed`,
-reutiliza `embedding_source_hash` y procesa cinco productos en paralelo.
-Reemplazarlo con otro modelo exigiría coordinar también el embedding de
-consulta y una reindexación completa; por eso 8.3 queda como job offline
-separado y no se implementa en esta entrega. La pregunta restante es si el job
-futuro debe vivir en `services/ai-api` o en un script aparte.
+La revisión inicial encontró que el script TypeScript usaba Gemini directamente.
+La entrega ahora vive en `services/ai-api/scripts/embed_catalog.py` y el punto
+de entrada `npm run rag:embed` delega en Python. Mantiene el modelo, dimensión,
+task type y hash existentes; añade metadata de provenance, checkpoint,
+concurrencia acotada, lease persistente compatible con pooler, upsert protegido
+y telemetría. La corrida
+real ya fue autorizada en Neon: `023_embedding_provenance.sql` esta aplicada y
+la corrida limitada encontro cero pendientes, por lo que no consumio cuota de
+Gemini. El embedding de consulta tiene ahora un contrato online separado
+(`/internal/v1/embed`, Fase 8.4), apagado por defecto y fuera de este job
+offline.
 ## Orden sugerido (a validar/ajustar al empezar)
 
 1. Releer este prompt contra el código actual — confirmar que

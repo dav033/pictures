@@ -122,7 +122,7 @@ RETURNING scope, idempotency_key, body_sha256, request_id, correlation_id,
 CLEANUP_SQL = """
 WITH idempotency_deleted AS (
   DELETE FROM operational_idempotency
-  WHERE state <> 'in_progress' AND expires_at <= CURRENT_TIMESTAMP
+   WHERE state <> 'in_progress' AND expires_at <= CURRENT_TIMESTAMP
   RETURNING 1
 ), nonce_deleted AS (
   DELETE FROM operational_request_nonces

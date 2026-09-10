@@ -1,6 +1,6 @@
 # Reranking Python del RAG (Fase 8.2)
 
-**Corte:** 2026-09-09. **Estado:** implementado y verificado localmente; el
+**Corte:** 2026-09-09. **Estado:** implementado, verificado y desplegado; el
 flag permanece apagado por defecto.
 
 ## Diseño
@@ -87,6 +87,18 @@ también pasó. Una primera request en un proceso local sin
 `RERANK_MODEL_WARMUP` puede registrar `rerank=ERROR` y conservar el orden local
 mientras termina la carga del modelo; la prueba aislada posterior registró
 `rerank=READY`. La imagen de producción activa el warmup antes de readiness.
+
+### Despliegue
+
+- Commit desplegado: `a9cb0a1`.
+- CI de calidad y workflow de despliegue: exitosos.
+- La imagen Python se construyó en EC2 desde este `Dockerfile`, incluyendo los
+  pesos fijados del modelo.
+- El contenedor activo respondió `/healthz` y `/readyz` con HTTP 200.
+- Una llamada autenticada real a `POST /internal/v1/rerank` respondió HTTP 200
+  con orden y scores del cross-encoder.
+- `RAG_RERANK_ENABLED` sigue en `false`; por tanto, el tráfico RAG continúa con
+  el orden local y el rollback funcional no requiere cambiar la imagen.
 
 ## Rollback
 

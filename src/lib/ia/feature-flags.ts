@@ -78,6 +78,10 @@ export const RAG_USE_TRIGRAM = process.env.RAG_USE_TRIGRAM !== "false";
  */
 export const RAG_RERANK_ENABLED = process.env.RAG_RERANK_ENABLED === "true";
 
+/** Default: OFF. Routes live RETRIEVAL_QUERY embeddings through Python. */
+export const RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED =
+  process.env.RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED === "true";
+
 // --- Plan capability flags -----------------------------------------------
 
 /** Default: OFF ("1"/"true"/"on", case-insensitive). Preserved from src/lib/plan/flags.ts. */

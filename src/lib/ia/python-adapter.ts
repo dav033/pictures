@@ -15,6 +15,10 @@ export const PYTHON_ECHO_PATH = "/internal/v1/echo";
 export const PYTHON_ECHO_SCOPE = "ai.echo";
 export const PYTHON_RERANK_PATH = "/internal/v1/rerank";
 export const PYTHON_RERANK_SCOPE = "ai.rerank";
+export const PYTHON_EMBEDDING_PATH = "/internal/v1/embed";
+export const PYTHON_EMBEDDING_SCOPE = "ai.embedding";
+export const PYTHON_EMBEDDING_MODEL = "gemini-embedding-2";
+export const PYTHON_EMBEDDING_DIMENSIONS = 768;
 export const PYTHON_MAX_BODY_BYTES = 64 * 1024;
 
 type AdapterEnvironment = Record<string, string | undefined>;
@@ -69,18 +73,38 @@ const responseSchema = z.object({
   payload: z.record(z.string(), z.unknown()),
 }).strict();
 
+export interface PythonEmbeddingAttempt {
+  attempt: number;
+  result: "ok" | "error";
+  elapsed_ms: number;
+}
+
+const embeddingAttemptSchema = z.object({
+  attempt: z.number().int().positive(),
+  result: z.enum(["ok", "error"]),
+  elapsed_ms: z.number().int().nonnegative(),
+}).strict();
+
+function upstreamEmbeddingAttempts(value: unknown): PythonEmbeddingAttempt[] | undefined {
+  if (!isJsonObject(value) || !isJsonObject(value.detail)) return undefined;
+  const parsed = z.array(embeddingAttemptSchema).min(1).safeParse(value.detail.attempts);
+  return parsed.success ? parsed.data : undefined;
+}
+
 export class PythonAdapterError extends Error {
   readonly code: PythonAdapterErrorCode;
   readonly status: number;
   readonly requestId: string;
   readonly correlationId: string;
   readonly retryable: boolean;
+  readonly attempts?: PythonEmbeddingAttempt[];
 
   constructor(input: {
     code: PythonAdapterErrorCode;
     status: number;
     requestId: string;
     correlationId: string;
+    attempts?: PythonEmbeddingAttempt[];
   }) {
     super(ERROR_MESSAGES[input.code]);
     this.name = "PythonAdapterError";
@@ -89,6 +113,7 @@ export class PythonAdapterError extends Error {
     this.requestId = input.requestId;
     this.correlationId = input.correlationId;
     this.retryable = RETRYABLE_CODES.has(input.code);
+    this.attempts = input.attempts;
   }
 }
 
@@ -136,8 +161,9 @@ function errorFor(
   status: number,
   requestId: string,
   correlationId: string,
+  attempts?: PythonEmbeddingAttempt[],
 ): PythonAdapterError {
-  return new PythonAdapterError({ code, status, requestId, correlationId });
+  return new PythonAdapterError({ code, status, requestId, correlationId, attempts });
 }
 
 function normalizeDeadlineMs(value: number | undefined): number {
@@ -201,34 +227,35 @@ function mapUpstreamError(
   correlationId: string,
 ): PythonAdapterError {
   const code = upstreamCode(body);
+  const attempts = upstreamEmbeddingAttempts(body);
   if (status === 401 && (code === "nonce_replay" || code === "replay")) {
-    return errorFor("PYTHON_REPLAY", 401, requestId, correlationId);
+    return errorFor("PYTHON_REPLAY", 401, requestId, correlationId, attempts);
   }
   if (status === 408 || code === "deadline_exceeded") {
-    return errorFor("PYTHON_BACKEND_TIMEOUT", 504, requestId, correlationId);
+    return errorFor("PYTHON_BACKEND_TIMEOUT", 504, requestId, correlationId, attempts);
   }
   if (status === 499 || code === "client_cancelled") {
-    return errorFor("PYTHON_REQUEST_CANCELLED", 499, requestId, correlationId);
+    return errorFor("PYTHON_REQUEST_CANCELLED", 499, requestId, correlationId, attempts);
   }
-  if (status === 401) return errorFor("PYTHON_AUTH_FAILED", 401, requestId, correlationId);
-  if (status === 403) return errorFor("PYTHON_SCOPE_DENIED", 403, requestId, correlationId);
-  if (status === 413) return errorFor("PYTHON_PAYLOAD_TOO_LARGE", 413, requestId, correlationId);
-  if (status === 422) return errorFor("PYTHON_INVALID_REQUEST", 422, requestId, correlationId);
+  if (status === 401) return errorFor("PYTHON_AUTH_FAILED", 401, requestId, correlationId, attempts);
+  if (status === 403) return errorFor("PYTHON_SCOPE_DENIED", 403, requestId, correlationId, attempts);
+  if (status === 413) return errorFor("PYTHON_PAYLOAD_TOO_LARGE", 413, requestId, correlationId, attempts);
+  if (status === 422) return errorFor("PYTHON_INVALID_REQUEST", 422, requestId, correlationId, attempts);
   if (status === 503 && code === "auth_unavailable") {
-    return errorFor("PYTHON_AUTH_UNAVAILABLE", 503, requestId, correlationId);
+    return errorFor("PYTHON_AUTH_UNAVAILABLE", 503, requestId, correlationId, attempts);
   }
   if (status === 409) {
     if (code === "replay" || code === "nonce_replay" || code === "idempotency_replay") {
-      return errorFor("PYTHON_REPLAY", 409, requestId, correlationId);
+      return errorFor("PYTHON_REPLAY", 409, requestId, correlationId, attempts);
     }
     if (code === "conflict" || code === "idempotency_conflict") {
-      return errorFor("PYTHON_IDEMPOTENCY_CONFLICT", 409, requestId, correlationId);
+      return errorFor("PYTHON_IDEMPOTENCY_CONFLICT", 409, requestId, correlationId, attempts);
     }
     if (code === "in_flight" || code === "idempotency_in_flight") {
-      return errorFor("PYTHON_IDEMPOTENCY_IN_FLIGHT", 409, requestId, correlationId);
+      return errorFor("PYTHON_IDEMPOTENCY_IN_FLIGHT", 409, requestId, correlationId, attempts);
     }
   }
-  return errorFor("PYTHON_UNAVAILABLE", status >= 500 ? 502 : status, requestId, correlationId);
+  return errorFor("PYTHON_UNAVAILABLE", status >= 500 ? 502 : status, requestId, correlationId, attempts);
 }
 
 function readJsonObject(value: unknown): JsonObject | undefined {
@@ -388,10 +415,39 @@ export interface PythonRerankResult {
   replayed?: boolean;
 }
 
+export interface PythonEmbeddingInput {
+  text: string;
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  idempotencyKey?: string;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+export interface PythonEmbeddingResult {
+  values: number[];
+  model: string;
+  dimensions: number;
+  task_type: "RETRIEVAL_QUERY";
+  attempts: PythonEmbeddingAttempt[];
+  replayed?: boolean;
+}
+
 const rerankPayloadResultSchema = z.object({
   order: z.array(z.string().min(1)),
   scores: z.record(z.string().min(1), z.number().finite()),
 });
+
+const embeddingPayloadResultSchema = z.object({
+  values: z.array(z.number().finite()).min(1),
+  model: z.string().min(1),
+  dimensions: z.number().int().positive(),
+  task_type: z.literal("RETRIEVAL_QUERY"),
+  attempts: z.array(embeddingAttemptSchema).min(1),
+}).strict();
 
 /**
  * Reorders a candidate list PostgreSQL already authorized (see
@@ -420,6 +476,30 @@ export async function llamarPythonRerank(input: PythonRerankInput): Promise<Pyth
     && expectedIds.size === scoreIds.size
     && [...expectedIds].every((id) => returnedIds.has(id) && scoreIds.has(id));
   if (!isPermutation) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  return response.replayed
+    ? { ...parsed.data, replayed: true }
+    : parsed.data;
+}
+
+export async function llamarPythonEmbedding(
+  input: PythonEmbeddingInput,
+): Promise<PythonEmbeddingResult> {
+  const { text, ...rest } = input;
+  const operationPayload = { text, task_type: "RETRIEVAL_QUERY" as const };
+  const response = await llamarPythonOperacion(PYTHON_EMBEDDING_PATH, PYTHON_EMBEDDING_SCOPE, {
+    ...rest,
+    payload: operationPayload,
+    operationBody: operationPayload,
+  });
+  const parsed = embeddingPayloadResultSchema.safeParse(response.payload);
+  if (
+    !parsed.success
+    || parsed.data.model !== PYTHON_EMBEDDING_MODEL
+    || parsed.data.dimensions !== PYTHON_EMBEDDING_DIMENSIONS
+    || parsed.data.values.length !== PYTHON_EMBEDDING_DIMENSIONS
+  ) {
     throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
   }
   return response.replayed

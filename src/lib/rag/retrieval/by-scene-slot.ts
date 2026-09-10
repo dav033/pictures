@@ -27,9 +27,11 @@
 import type { Pool } from "pg";
 import { buscarHibrido } from "./search";
 import type { ConsultaRetrieval, FiltrosDuros } from "./types";
-import { embeberTexto, type TareaEmbedding } from "../embeddings";
+import { embeberTexto } from "../embeddings";
 import type { SlotQuery } from "./slot-query-planner";
 import type { SlotCandidate } from "@/lib/scene/tipos";
+import { RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED, RAG_USE_VECTOR } from "@/lib/ia/feature-flags";
+import { seleccionarBackendPython } from "@/lib/ia/python-adapter";
 
 // ---------------------------------------------------------------------------
 // Tipos de brecha (sección 9.3 / 9.4)
@@ -177,11 +179,17 @@ async function retrieveSingleSlot(
 
     // Determinar si necesitamos embedding semántico
     let embeddingPrecalculado: number[] | undefined;
+    let embeddingFallido = false;
     const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY?.trim());
-    if (hasGeminiKey) {
+    const hasPythonEmbedding =
+      RAG_USE_VECTOR
+      && RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED
+      && seleccionarBackendPython().backend === "python";
+    if (RAG_USE_VECTOR && (hasGeminiKey || hasPythonEmbedding)) {
       try {
         embeddingPrecalculado = await embeberTexto(semanticQuery, "RETRIEVAL_QUERY");
       } catch {
+        embeddingFallido = true;
         // Si falla el embedding, seguimos sin él — las ramas lexicales aún funcionan.
       }
     }
@@ -190,6 +198,7 @@ async function retrieveSingleSlot(
       semanticQuery,
       filtros,
       embeddingPrecalculado,
+      embeddingFallido,
     };
 
     const respuesta = await buscarHibrido(pool, consulta);

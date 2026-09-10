@@ -1,6 +1,6 @@
 import type { Pool } from "pg";
 import { getGeminiClient } from "@/lib/gemini";
-import { embeberTexto } from "../embeddings";
+import { DIMENSIONES_EMBEDDING, MODELO_EMBEDDING, embeberTexto } from "../embeddings";
 import { canonicalizeSku } from "../catalog/canonicalize";
 import { fusionarRankingsLocal, type RrfBranch, type RrfContribution } from "./rrf";
 import type {
@@ -18,6 +18,7 @@ import {
   RAG_USE_FULLTEXT as USE_FULLTEXT,
   RAG_USE_TRIGRAM as USE_TRIGRAM,
   RAG_RERANK_ENABLED as USE_RERANK,
+  RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED,
 } from "@/lib/ia/feature-flags";
 import { llamarPythonRerank, seleccionarBackendPython } from "@/lib/ia/python-adapter";
 
@@ -117,6 +118,11 @@ function extraerSku(value: string): string | null {
   const labeled = text.match(/\b(?:SKU|REF|COD(?:IGO|IGO)|CÓDIGO)\s*[:#-]?\s*([A-Z0-9][A-Z0-9._/-]{5,})\b/i);
   if (labeled?.[1]) return labeled[1];
   return /^\d{8,}$/.test(text) ? text : null;
+}
+
+/** Exact SKU retrieval never needs a paid semantic embedding. */
+export function consultaTieneSku(value: string): boolean {
+  return extraerSku(value) !== null;
 }
 
 function uniqueStrings(values: string[]): string[] {
@@ -501,8 +507,25 @@ async function queryTrigram(pool: Pool, consulta: ConsultaRetrieval): Promise<Br
 }
 
 async function queryVector(pool: Pool, consulta: ConsultaRetrieval): Promise<BranchRow[]> {
-  const embedding = consulta.embeddingPrecalculado ?? (await embeberTexto(consulta.semanticQuery, "RETRIEVAL_QUERY"));
-  const params: unknown[] = [`[${embedding.join(",")}]`];
+  const embedding = consulta.embeddingPrecalculado ?? (await embeberTexto(
+    consulta.semanticQuery,
+    "RETRIEVAL_QUERY",
+    consulta.rerankRequestId
+      ? { requestId: consulta.rerankRequestId, correlationId: consulta.rerankCorrelationId ?? consulta.rerankRequestId }
+      : undefined,
+    {
+      parentSignal: consulta.rerankSignal,
+      deadlineMs: consulta.rerankDeadlineAt
+        ? Math.max(1, consulta.rerankDeadlineAt - Date.now())
+        : RERANK_DEADLINE_MS,
+    },
+  ));
+  const params: unknown[] = [
+    `[${embedding.join(",")}]`,
+    MODELO_EMBEDDING,
+    DIMENSIONES_EMBEDDING,
+    "RETRIEVAL_DOCUMENT",
+  ];
   const filtro = construirFiltroDuro(consulta.filtros, params, DEFAULT_ALIASES, consulta.allowlist);
   params.push(safeLimit(BRANCH_LIMIT, 40));
   const { rows } = await pool.query<BranchRow>(
@@ -512,7 +535,10 @@ async function queryVector(pool: Pool, consulta: ConsultaRetrieval): Promise<Bra
         FROM catalog_embeddings e
         JOIN catalog_products p ON p.product_id = e.product_id
         JOIN catalog_variants v ON v.product_id = p.product_id
-        WHERE true ${filtro}
+         WHERE e.model = $2
+           AND e.embedding_dimensions = $3
+           AND e.embedding_task_type = $4
+           ${filtro}
         ORDER BY p.product_id, e.embedding <=> $1::vector, v.variant_id
       )
       SELECT product_id, variant_id, score
@@ -689,9 +715,16 @@ export async function buscarHibrido(pool: Pool, consulta: ConsultaRetrieval): Pr
   } else branchStatus.trigram = trigramOutcome.status === "rejected" ? "ERROR" : "SKIPPED_OPTIONAL";
 
   const hasPrecalculatedVector = Array.isArray(consulta.embeddingPrecalculado) && consulta.embeddingPrecalculado.length > 0;
-  const vectorRequested = USE_VECTOR || hasPrecalculatedVector;
+  const vectorRequested = !consulta.embeddingFallido && USE_VECTOR;
   const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY?.trim()) || Boolean(getGeminiClient());
-  if (vectorRequested && (hasPrecalculatedVector || hasGeminiKey)) {
+  const hasPythonQueryEmbedding =
+    RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED && seleccionarBackendPython().backend === "python";
+  const skipVectorForExactSku = consultaTieneSku(consulta.semanticQuery);
+  if (
+    vectorRequested
+    && !skipVectorForExactSku
+    && (hasPrecalculatedVector || hasGeminiKey || hasPythonQueryEmbedding)
+  ) {
     try {
       const rows = await queryVector(pool, consulta);
       const ranked = addBranchRows(rows, vectorScores, variantsByProduct);

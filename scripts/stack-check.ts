@@ -35,8 +35,7 @@ function errorMessage(error: unknown): string {
 }
 
 function expectedDimensions(): number {
-  const value = Number(process.env.GEMINI_EMBEDDING_DIMENSIONS ?? 768);
-  return Number.isInteger(value) && value > 0 && value <= 4096 ? value : 0;
+  return 768;
 }
 
 async function checkPostgres(): Promise<Resultado[]> {
@@ -57,16 +56,6 @@ async function checkPostgres(): Promise<Resultado[]> {
   }
 
   const dimension = expectedDimensions();
-  if (dimension === 0) {
-    return [
-      {
-        nombre: "Configuración de embeddings",
-        estado: "BLOCKED",
-        detalle: "GEMINI_EMBEDDING_DIMENSIONS debe ser un entero entre 1 y 4096",
-      },
-    ];
-  }
-
   const pool = new Pool({
     connectionString: url,
     max: 1,
@@ -104,6 +93,35 @@ async function checkPostgres(): Promise<Resultado[]> {
       nombre: "pg_trgm",
       estado: installed.has("pg_trgm") ? "READY" : "SKIPPED_OPTIONAL",
       detalle: installed.has("pg_trgm") ? `extversion ${installed.get("pg_trgm")}` : "acelerador opcional aún no instalado",
+    });
+
+    const provenanceColumns = await pool.query<{ column_name: string }>(
+      `SELECT column_name
+       FROM information_schema.columns
+       WHERE table_schema = 'public'
+         AND table_name = 'catalog_embeddings'
+         AND column_name = ANY($1::text[])`,
+      [["embedding_dimensions", "embedding_task_type"]],
+    );
+    const provenanceNames = new Set(provenanceColumns.rows.map((row) => row.column_name));
+    const lock = await pool.query<{ lock_name: string | null }>(
+      "SELECT to_regclass('public.catalog_embedding_job_lock')::text AS lock_name",
+    );
+    const missingProvenance = [
+      "embedding_dimensions",
+      "embedding_task_type",
+      "catalog_embedding_job_lock",
+    ].filter((name) => (
+      name === "catalog_embedding_job_lock"
+        ? !lock.rows[0]?.lock_name
+        : !provenanceNames.has(name)
+    ));
+    results.push({
+      nombre: "Provenance de embeddings",
+      estado: missingProvenance.length === 0 ? "READY" : "BLOCKED",
+      detalle: missingProvenance.length === 0
+        ? "columnas y lock de Fase 8.3 presentes"
+        : `faltan: ${missingProvenance.join(", ")}`,
     });
 
     if (installed.has("vector")) {

@@ -33,6 +33,7 @@ export type FiltrosBaseRol = {
   rerankCorrelationId?: string;
   rerankSignal?: AbortSignal;
   rerankDeadlineAt?: number;
+  embeddingFallido?: boolean;
 };
 
 // Frase que orienta el retrieval semántico hacia lo que ese rol necesita
@@ -167,6 +168,7 @@ export async function buscarPorRol(
     const respuesta = await buscarHibrido(pool, {
       semanticQuery,
       embeddingPrecalculado: embeddingBase,
+      embeddingFallido: filtrosBase.embeddingFallido,
       eventIntent: filtrosBase.eventIntent,
       eventTerms: filtrosBase.eventIntent?.event_terms,
       focusedQueries: filtrosBase.focusedQueries?.length

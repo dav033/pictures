@@ -1,7 +1,8 @@
 # Progreso migración Python
 
-Última actualización: 2026-09-08  
-Estado global: **Etapa 4 local cerrada; despliegue/cutover externo pendiente**
+Última actualización: 2026-09-10
+
+Estado global: **Etapa 4 local cerrada; Fases 8.2 y 8.3 implementadas; ejecución de embeddings 8.3 pendiente de autorización**
 
 > **Plan rector vigente:** [`PLAN-MAESTRO-V2.md`](PLAN-MAESTRO-V2.md).
 >
@@ -80,6 +81,15 @@ externos; no se inventan.
 - Cutover local comprobado: Next por defecto, Python con flag y kill switch
   forzando Next.
 - Rollback conserva Next como default; kill switch sigue ganando siempre.
+- Fase 8.2 desplegada en EC2: imagen Python con modelo precargado, readiness y
+  rerank autenticado verificados; `RAG_RERANK_ENABLED` permanece apagado.
+- Fase 8.3 implementada en Python: el job offline de embeddings documentales
+  usa lotes, checkpoint, lease persistente, provenance y telemetría; la
+  migración 023 ya está aplicada en Neon y la corrida encontró cero pendientes,
+  por lo que no fue necesario llamar a Gemini.
+- Fase 8.4 implementada localmente: endpoint Python autenticado para
+  `RETRIEVAL_QUERY`, adaptador HMAC, flag independiente y fallback a ramas
+  léxicas; permanece apagada y sin despliegue.
 
 ## Decisiones vigentes
 
@@ -94,13 +104,16 @@ externos; no se inventan.
 
 ## Límites para siguiente etapa
 
-- Falta desplegar el servicio Python y firmar tráfico remoto Next → Python.
-- El store SQL sólo se validó en Docker local desechable; no se ejecutó contra
-  la URL Neon ni contra una base remota.
+- El servicio Python ya está desplegado y el tráfico remoto está preparado,
+  pero el cutover funcional queda pendiente de activar el flag y observarlo.
+- Las migraciones SQL hasta `023_embedding_provenance.sql` están aplicadas y
+  verificadas en Neon; falta probar recuperación ante fallos reales de la base.
 - Las consultas PostgreSQL ya reciben la frontera de cancelación, pero el
   aborto de una query en curso requiere una revisión específica del driver y
   del pool antes de prometer cancelación física.
-- No se certificaron secretos, producción, cuentas proveedor ni base remota.
+- No se certificaron rotaciones de secretos ni una llamada real de embeddings
+  contra el proveedor. El canario online requiere imagen nueva, clave Python y
+  autorización de coste.
 
 ## Verificación de cierre
 

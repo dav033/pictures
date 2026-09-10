@@ -79,12 +79,41 @@ La imagen usa `Dockerfile`, ejecuta como usuario no root y conserva readiness
 fail-closed cuando no existe store durable en produccion. No incluye secretos;
 inyectar `INTERNAL_HMAC_SECRET` mediante el gestor autorizado del entorno.
 
+## Embeddings documentales offline
+
+La reindexacion de `catalog_embeddings` vive en Python y no es una ruta FastAPI
+ni parte del camino de retrieval. Primero aplica la migracion comercial
+`023_embedding_provenance.sql`; despues ejecuta desde la raiz:
+
+```powershell
+npm run rag:embed -- --dry-run
+npm run rag:embed -- --batch-size 8 --concurrency 2
+```
+
+El comando npm conserva el punto de entrada operativo, pero delega en
+`services/ai-api/scripts/embed_catalog.py`. El job usa `google-genai`, mantiene
+el modelo `gemini-embedding-2`, `RETRIEVAL_DOCUMENT` y 768 dimensiones, valida
+el hash de `search_text`, escribe de forma idempotente y conserva un checkpoint
+sin secretos en `data/staging/rag-embedding-checkpoint.json`. La ejecución real
+requiere `DATABASE_URL` y `GEMINI_API_KEY`; `--dry-run` no llama a Gemini ni
+escribe PostgreSQL.
+
 La capacidad de reranking esta apagada por defecto en Next (`RAG_RERANK_ENABLED=false`).
 El servicio solo procesa candidatos enviados por el caller; no consulta el catalogo
 ni puede cambiar la whitelist. La imagen de Docker descarga el modelo durante el
 build y activa un warmup antes de readiness (`RERANK_MODEL_WARMUP=1`), por lo que
 el runtime no necesita acceso saliente a Hugging Face ni inicializa Torch en la
 primera request.
+
+## Embeddings de consulta online
+
+La ruta `POST /internal/v1/embed` usa el mismo contrato HMAC y el scope
+`ai.embedding`. Next solo la selecciona cuando
+`RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED=true`, `PYTHON_BACKEND_ENABLED=true` y el
+kill switch esta apagado; el retrieval vectorial tambien debe estar activo con
+`RAG_USE_VECTOR=true`. El valor por defecto permanece apagado; el entorno
+Python necesita `GEMINI_API_KEY` o `GOOGLE_API_KEY` para llamar al proveedor.
+Si Python falla, los consumidores del retrieval conservan las ramas lexicas.
 
 ## Store PostgreSQL durable
 
