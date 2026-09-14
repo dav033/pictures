@@ -1,0 +1,7 @@
+{
+  "schema_version": "catalog-recommendations.v1",
+  "catalog_snapshot_id": "products_catalog:fixture",
+  "reference_variant_id": "var-rojo-12",
+  "lora_variant_ids": ["var-rojo-12-x50", "var-azul-12", "var-azul-12-x50"],
+  "limit": 100
+}

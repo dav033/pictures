@@ -78,7 +78,7 @@ El destino debe ser externo y vacio. Layout resultante:
 ```text
 demo-decoracion-api/
 |-- services/ai-api/
-|-- migrations/020_operational_idempotency.sql
+|-- migrations/001_operational_schema.sql
 |-- contracts/
 |-- .gitignore
 `-- extraction-manifest.json
@@ -144,7 +144,7 @@ timeout, cancelacion, auth rechazada, replay/conflict, 5xx y readiness.
 
 ## SQL operacional
 
-Se aplico `migrations/020_operational_idempotency.sql` dos veces contra el
+Se aplico `migrations/001_operational_schema.sql` dos veces contra el
 contenedor Docker local desechable `demo-decoracion-stage4-pg`, usando
 `ON_ERROR_STOP`. La segunda ejecucion fue idempotente y verifico las tablas
 `operational_idempotency` y `operational_request_nonces`. No se uso la URL

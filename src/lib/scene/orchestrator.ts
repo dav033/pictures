@@ -1,6 +1,6 @@
 /**
  * Orquestador completo del pipeline de escena V2 (Plan 06.1 —
- * `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`, sección 11, Plan 06).
+ * `docs/migracion-python/PLAN-MAESTRO-V2.md`, sección 11, Plan 06).
  *
  * `orchestrateScenePipeline(mensaje, pool)` ejecuta el pipeline completo:
  *   mensaje → EventIntentV2 → SceneProgramV1 → SlotQuery[] →

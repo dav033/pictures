@@ -1,9 +1,8 @@
 -- Fase 6, capitulo 10.4/10.5 del plan maestro: linaje operacional propio,
 -- separado del linaje comercial (Next, schema public). Copia exacta del DDL
--- de scripts/migrations/020_operational_idempotency.sql del repo Next,
--- unicamente calificada al schema `operational` en vez de `public`, para
--- que el usuario del servicio Python pueda tener permisos acotados a
--- operational.* sin poder leer public.catalog_* ni ninguna tabla comercial.
+-- autoritativo del linaje Python, calificado al schema `operational` para que
+-- el usuario del servicio pueda tener permisos acotados a operational.* sin
+-- poder leer public.catalog_* ni ninguna tabla comercial.
 -- La app (app/postgres_store.py) no califica el schema en sus queries: se
 -- apoya en que el rol de conexion tenga `search_path = operational, public`
 -- (ver GRANT/ALTER ROLE en el runbook de despliegue, no en esta migracion).

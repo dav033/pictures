@@ -11,10 +11,21 @@ export type FiltrosDuros = {
   diametrosPulgadas?: number[];
 };
 
-/** Pool de productos/variantes permitido por una especialización LoRA. */
+/** Variantes permitidas de un producto real; vacío = producto sin variantes explícitas. */
+export type CatalogAllowlistEntry = {
+  readonly productId: string;
+  readonly variantIds: readonly string[];
+};
+
+/**
+ * Pool de productos/variantes permitido por una especialización LoRA.
+ * `entries` conserva la asociación producto→variante; `productIds` y
+ * `variantIds` son derivados. Construir solo con `crearCatalogAllowlist`.
+ */
 export type CatalogAllowlist = {
-  productIds: readonly string[];
-  variantIds: readonly string[];
+  readonly entries: readonly CatalogAllowlistEntry[];
+  readonly productIds: readonly string[];
+  readonly variantIds: readonly string[];
 };
 
 /** Canonical open-event contract lives in query-parser/event-search.ts. */

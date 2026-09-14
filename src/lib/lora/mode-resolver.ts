@@ -8,11 +8,8 @@ import { LORA_V007_CATALOG_SOURCE_IDS, LORA_V007_DATASET_ID } from "./v007-catal
 import { buildLookupIndexes, resolveProductConcept } from "./product-vocabulary";
 import { PRODUCT_VOCABULARY } from "./product-vocabulary-data";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
-import { LORA_ALLOW_REJECTED_FOR_TESTING, FAL_MULTI_LORA_SUPPORTED } from "@/lib/ia/feature-flags";
-
-function allowRejectedForLocalTesting(): boolean {
-  return LORA_ALLOW_REJECTED_FOR_TESTING;
-}
+import { crearCatalogAllowlist } from "@/lib/rag/retrieval/allowlist";
+import { linkDatasetToCurrentCatalog } from "./dataset-catalog-link";
 
 export type ResolvedLoraApplication = LoraCompatibilityArtifact & {
   artifactId: string;
@@ -65,7 +62,7 @@ export type LoraModeOption = {
   lora_scale: number;
   enabled: boolean;
   updated_at: string;
-  status: "disabled" | "not_configured" | "pending" | "running" | "succeeded" | "failed" | "ready" | "experimental" | "provider_url_missing";
+  status: "disabled" | "not_configured" | "pending" | "running" | "succeeded" | "failed" | "ready" | "provider_url_missing";
   ready: boolean;
   trigger_token: string | null;
   selection: LoraSelection | null;
@@ -89,7 +86,7 @@ function modeStatus(row: ModeOptionRow): LoraModeOption["status"] {
   if (!row.enabled) return "disabled";
   if (!row.training_run_id) return "not_configured";
   if (!isCompletedRun(row.run_status)) return row.run_status === "running" ? "running" : row.run_status === "failed" ? "failed" : "pending";
-  if (row.evaluation_status === "rejected") return allowRejectedForLocalTesting() ? "experimental" : "failed";
+  if (row.evaluation_status === "rejected") return "failed";
   if (row.artifact_status !== "backed_up" || row.evaluation_status !== "approved") return "pending";
   if (!row.provider_url) return "provider_url_missing";
   return "ready";
@@ -123,7 +120,7 @@ export async function listLoraModeOptions(pool: Pool = getRagPool()): Promise<Lo
 
   return result.rows.map((row) => {
     const status = modeStatus(row);
-    const ready = (status === "ready" || status === "experimental") && Boolean(row.artifact_id && row.specialization);
+    const ready = status === "ready" && Boolean(row.artifact_id && row.specialization);
     const selection = ready && row.artifact_id && row.specialization
       ? row.specialization === "product"
         ? { product: { artifactId: row.artifact_id, scale: row.lora_scale } }
@@ -153,13 +150,12 @@ export async function resolveLoraMode(mode: LoraModeSlug, pool: Pool = getRagPoo
   if (!option.enabled) throw new Error(`LORA_MODE_DISABLED: ${parsedMode}`);
   if (!option.training_run_id) throw new Error(`LORA_MODE_NOT_CONFIGURED: ${parsedMode}`);
   if (!option.ready || !option.selection) throw new Error(`LORA_MODE_NOT_READY: ${parsedMode} (${option.status})`);
-  return resolveLoraSelection(option.selection, pool, { allowUnapprovedForTesting: option.status === "experimental" });
+  return resolveLoraSelection(option.selection, pool);
 }
 
 export async function resolveLoraSelection(
   selection: LoraSelection,
   pool: Pool = getRagPool(),
-  options: { allowUnapprovedForTesting?: boolean } = {},
 ): Promise<ResolvedLoraApplication[]> {
   const parsed = LoraSelectionSchema.parse(selection);
   const selected = Object.entries(parsed).filter((entry): entry is [LoraSpecialization, { artifactId: string; scale?: number }] => Boolean(entry[1]));
@@ -194,7 +190,7 @@ export async function resolveLoraSelection(
     if (row.specialization !== specialization) throw new Error(`LORA_SPECIALIZATION_MISMATCH: ${value.artifactId}`);
     if (!isCompletedRun(row.run_status)) throw new Error(`LORA_RUN_NOT_COMPLETED: ${row.run_id}`);
     if (row.artifact_status !== "backed_up") throw new Error(`LORA_ARTIFACT_NOT_APPROVED: ${row.artifact_id}`);
-    if (row.evaluation_status !== "approved" && !(options.allowUnapprovedForTesting && allowRejectedForLocalTesting() && row.evaluation_status === "rejected")) {
+    if (row.evaluation_status !== "approved") {
       throw new Error(`LORA_EVALUATION_REQUIRED: ${row.run_id}`);
     }
     if (!row.provider_url) throw new Error(`LORA_PROVIDER_URL_MISSING: ${row.artifact_id}`);
@@ -214,9 +210,6 @@ export async function resolveLoraSelection(
     } satisfies ResolvedLoraApplication;
   });
 
-  if (applications.length > 1 && !FAL_MULTI_LORA_SUPPORTED) {
-    throw new Error("LORA_MULTI_UNSUPPORTED: confirma el schema multi-LoRA del proveedor antes de habilitar dos pesos");
-  }
   assertLoraCompatibility(applications);
   return applications;
 }
@@ -246,17 +239,27 @@ export async function resolveLoraModeDatasetAllowlist(
     if (productIds.length || variantIds.length) return filtrarPorVocabulario(pool, { productIds, variantIds });
   }
 
-  const result = await pool.query<{ product_id: string | null; variant_id: string | null }>(
-    `SELECT DISTINCT product_id, variant_id
-       FROM lora_dataset_element_stats
-      WHERE dataset_id = $1
-        AND element_kind = 'shopify_variant'
-        AND (product_id IS NOT NULL OR variant_id IS NOT NULL)`,
-    [option.dataset_id],
-  );
-  const productIds = [...new Set(result.rows.flatMap((row) => row.product_id ? [row.product_id] : []))];
-  const variantIdsRepresentados = result.rows.flatMap((row) => row.variant_id ? [row.variant_id] : []);
-  if (productIds.length === 0 && variantIdsRepresentados.length === 0) throw new Error(`LORA_DATASET_ALLOWLIST_EMPTY: ${option.dataset_id}`);
+  // Los ids guardados en el dataset pertenecen al catálogo de cuando se
+  // construyó; se vinculan al snapshot vigente por id o SKU canónico exacto.
+  const vinculo = await linkDatasetToCurrentCatalog(pool, option.dataset_id);
+  const sinVincular = vinculo.unmatched.length + vinculo.ambiguous.length + vinculo.conflicts.length;
+  if (sinVincular > 0) {
+    console.warn("[lora-allowlist] elementos del dataset sin vínculo al catálogo vigente", {
+      datasetId: option.dataset_id,
+      linked: vinculo.linked.length,
+      unmatched: vinculo.unmatched.length,
+      ambiguous: vinculo.ambiguous.length,
+      conflicts: vinculo.conflicts.length,
+    });
+  }
+  if (vinculo.linked.length === 0) {
+    if (sinVincular === 0) throw new Error(`LORA_DATASET_ALLOWLIST_EMPTY: ${option.dataset_id}`);
+    throw new Error(
+      `LORA_DATASET_CATALOG_UNLINKED: ${option.dataset_id} (unmatched=${vinculo.unmatched.length}, ambiguous=${vinculo.ambiguous.length}, conflicts=${vinculo.conflicts.length})`,
+    );
+  }
+  const productIds = [...new Set(vinculo.linked.map((item) => item.productId))];
+  const variantIdsRepresentados = vinculo.linked.flatMap((item) => item.variantId ? [item.variantId] : []);
 
   // El tamaño de paquete (unidades_paq) no cambia el globo que el LoRA vio:
   // es la misma familia/modelo/color/diámetro empacado distinto. Restringir
@@ -294,8 +297,14 @@ export async function resolveLoraModeDatasetAllowlist(
  * ofrezca, en vez de fallar al final. La resolución replica la precedencia de
  * `resolveProductConcept`: ids (variante, producto, sku) y luego título.
  */
-async function filtrarPorVocabulario(pool: Pool, allowlist: CatalogAllowlist): Promise<CatalogAllowlist> {
-  if (!allowlist.variantIds.length) return allowlist;
+async function filtrarPorVocabulario(
+  pool: Pool,
+  allowlist: { productIds: readonly string[]; variantIds: readonly string[] },
+): Promise<CatalogAllowlist> {
+  // Without variant information the dataset only authorizes products.
+  if (!allowlist.variantIds.length) {
+    return crearCatalogAllowlist(allowlist.productIds.map((productId) => ({ productId, variantId: null })));
+  }
   const filas = await pool.query<{ variant_id: string; product_id: string; sku: string | null; titulo: string | null }>(
     `SELECT v.variant_id, v.product_id, v.sku, p.title AS titulo
        FROM catalog_variants v
@@ -312,8 +321,6 @@ async function filtrarPorVocabulario(pool: Pool, allowlist: CatalogAllowlist): P
   };
   const permitidas = filas.rows.filter(describible);
   if (!permitidas.length) throw new Error(`LORA_VOCABULARY_ALLOWLIST_EMPTY: ninguna variante del dataset tiene concepto de vocabulario.`);
-  return {
-    productIds: [...new Set(permitidas.map((fila) => fila.product_id))],
-    variantIds: [...new Set(permitidas.map((fila) => fila.variant_id))],
-  };
+  // Each row is a joined catalog row, so the product→variant pair is real.
+  return crearCatalogAllowlist(permitidas.map((fila) => ({ productId: fila.product_id, variantId: fila.variant_id })));
 }

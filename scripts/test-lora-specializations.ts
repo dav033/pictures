@@ -27,7 +27,7 @@ assert.equal(audit.duplicateKeys[0], "duplicate.jpg");
 assert.equal(audit.captionAudit.captionsWithExactTrigger, 4);
 assert.equal(audit.coverage.trainImages + audit.coverage.validationImages + audit.coverage.testImages, 2);
 
-assert.doesNotThrow(() => assertLoraCompatibility([
+assert.throws(() => assertLoraCompatibility([
   { artifactId: "product", specialization: "product", providerUrl: "https://v3b.fal.media/product.safetensors", trigger: "eventdecor_style_v2", baseModel: "FLUX.2 [dev]", tokenizerRevision: "r1", resolution: 1024, scale: 0.3 },
   { artifactId: "structure", specialization: "structure", providerUrl: "https://v3b.fal.media/structure.safetensors", trigger: "eventdecor_structure_v1", baseModel: "FLUX.2 [dev]", tokenizerRevision: "r1", resolution: 1024, scale: 0.6 },
 ]));
@@ -37,13 +37,17 @@ assert.throws(() => assertLoraCompatibility([
   { artifactId: "b", specialization: "product", providerUrl: "https://v3b.fal.media/b.safetensors", trigger: "b", baseModel: "FLUX.2 [dev]", tokenizerRevision: "r1", resolution: 1024, scale: 0.3 },
 ]), LoraCompatibilityError);
 
-const prompt = ensureLoraTriggers("eventdecor_style_v2, organic balloon arch in a venue", [
+assert.throws(() => ensureLoraTriggers("eventdecor_style_v2, organic balloon arch in a venue", [
   { path: "https://v3b.fal.media/product.safetensors", trigger: "eventdecor_style_v2", scale: 0.3, specialization: "product" },
   { path: "https://v3b.fal.media/structure.safetensors", trigger: "eventdecor_structure_v1", scale: 0.6, specialization: "structure" },
+]), /LORA_MULTI_UNSUPPORTED/);
+
+const prompt = ensureLoraTriggers("eventdecor_style_v2, organic balloon arch in a venue", [
+  { path: "https://v3b.fal.media/product.safetensors", trigger: "eventdecor_style_v2", scale: 0.3, specialization: "product" },
 ]);
 assert.equal((prompt.match(/eventdecor_style_v2/g) ?? []).length, 1);
-assert.equal((prompt.match(/eventdecor_structure_v1/g) ?? []).length, 1);
-assert.match(prompt, /^eventdecor_style_v2, eventdecor_structure_v1,/);
+assert.equal((prompt.match(/eventdecor_structure_v1/g) ?? []).length, 0);
+assert.match(prompt, /^eventdecor_style_v2, organic balloon arch/);
 
 const structureOnlyPrompt = ensureLoraTriggers("eventdecor_style_v2, organic balloon arch", [
   { path: "https://v3b.fal.media/structure.safetensors", trigger: "eventdecor_structure_v1", scale: 0.6, specialization: "structure" },

@@ -5,7 +5,10 @@ const EXTERIOR = /jard[ií]n|exterior|terraza|playa|patio|campo/i;
 
 const DEFAULTS: Record<EstructuraPlan["tipo"], { interior: Medidas; exterior: Medidas; texto: string }> = {
   arco: { interior: { ancho_m: 3, alto_m: 2.4 }, exterior: { ancho_m: 4, alto_m: 2.6 }, texto: "ancho × alto" },
-  semiarco: { interior: { ancho_m: 2.4, alto_m: 2.2 }, exterior: { ancho_m: 3, alto_m: 2.4 }, texto: "ancho × alto" },
+  // Semiarco: ancho = alcance horizontal de la curva. Con el eje de cuarto de
+  // elipse, 1,2 × 2,2 m y 1,5 × 2,4 m dan 2,73 m y 3,10 m de eje, casi los
+  // 2,4 m y 3 m que tenían los defaults anteriores (misma escala de globos).
+  semiarco: { interior: { ancho_m: 1.2, alto_m: 2.2 }, exterior: { ancho_m: 1.5, alto_m: 2.4 }, texto: "ancho × alto" },
   guirnalda: { interior: { largo_m: 2.5 }, exterior: { largo_m: 3.5 }, texto: "largo" },
   columna: { interior: { alto_m: 1.8 }, exterior: { alto_m: 2 }, texto: "alto" },
   pared: { interior: { ancho_m: 2.4, alto_m: 2.4 }, exterior: { ancho_m: 3, alto_m: 2.4 }, texto: "ancho × alto" },

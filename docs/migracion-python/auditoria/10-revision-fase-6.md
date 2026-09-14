@@ -75,3 +75,8 @@ Difiere del orden que sugeriría "seguir la numeración del prompt de etapa 5 ta
 3. **¿Aplicar 020/021 a Neon ahora, o esperar a que el código que los usa esté mergeado a `main`?** Aplicarlos antes es seguro (son aditivos) pero deja el runner de migraciones de producción por delante del código desplegado; aplicarlos después es más ortodoxo pero exige coordinar el orden exacto del despliegue.
 4. **¿El EC2 tiene límites de recursos (CPU/memoria/disco) reservados por servicio, o los cuatro proyectos compiten por lo mismo?** No verificado en esta auditoría — requeriría inspeccionar límites de Docker (`--memory`, `--cpus`) por contenedor, que ninguno de los `docker run` observados (ni el de `demo-decoracion` ni los de los otros tres proyectos) parece declarar.
 5. **¿Existe ya un plan de qué pasa con las tres copias de idempotencia** (`operational_idempotency`, `happie_webhook_requests`, el store Python sobre la primera) **cuando el schema `operational` se cree de verdad?** El capítulo 10.7 del plan lo deja para la Fase 6 sin más detalle; esta auditoría no encontró ninguna decisión adicional tomada al respecto.
+# Archivo histórico
+
+Este informe conserva evidencia de una revisión anterior de staging. Las
+operaciones remotas descritas no se vuelven a afirmar en la sesión actual y los
+prompts citados ya no son documentación operativa.

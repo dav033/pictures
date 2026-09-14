@@ -18,15 +18,16 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from types import ModuleType
-from typing import Awaitable, Callable, Literal, TypeVar, cast
+from typing import Awaitable, Callable, Literal, Protocol, TypeVar, cast
 from uuid import UUID
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
+from pydantic import Field, ValidationError, field_validator, model_validator
 
 from app.generated_models import InternalRequestSignature, OperationalContext
+from app.catalog import CATALOG_SCOPE, CatalogSearchRequest, CatalogStore
 from app.catalog_embeddings import (
     DEFAULT_EMBEDDING_DIMENSIONS,
     DEFAULT_EMBEDDING_MODEL,
@@ -35,7 +36,21 @@ from app.catalog_embeddings import (
     embed_with_retry,
     validate_embedding_batch,
 )
+from app.recommendations import (
+    CATALOG_RECOMMENDATIONS_SCOPE,
+    CatalogRecommendationError,
+    CatalogRecommendationsRequest,
+)
+from app.selection import CatalogSelectionError, CatalogSelectionRequest
 from app.operational_store import InMemoryOperationalStore, StoredHttpResponse
+from app.operational_models import ContractModel, OperationalRequest
+from app.plan import (
+    CatalogPlanStore,
+    PLAN_RESOLUTION_SCOPE,
+    PlanResolutionError,
+    PlanResolutionRequest,
+    resolve_plan,
+)
 from app.postgres_store import PostgresOperationalStore
 
 
@@ -66,6 +81,7 @@ class Settings:
     nonce_namespace: str = "ai-api"
     max_body_bytes: int = MAX_BODY_BYTES
     database_url: str | None = None
+    catalog_database_url: str | None = None
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -80,19 +96,8 @@ class Settings:
                 "INTERNAL_EMBEDDING_REQUIRED_SCOPE", DEFAULT_EMBEDDING_SCOPE
             ),
             database_url=os.getenv("DATABASE_URL"),
+            catalog_database_url=os.getenv("CATALOG_DATABASE_URL"),
         )
-
-
-class ContractModel(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class OperationalRequest(ContractModel):
-    """Shared envelope for every /internal/v1/* operation: a signed context
-    plus an operation-specific body. Each operation subclasses this with its
-    own fields instead of reusing EchoRequest's untyped `payload` dict."""
-
-    context: OperationalContext
 
 
 class EchoRequest(OperationalRequest):
@@ -165,6 +170,16 @@ EchoHandler = Callable[[EchoRequest], Awaitable[dict[str, object]]]
 RerankHandler = Callable[[RerankRequest], Awaitable[dict[str, object]]]
 EmbeddingHandler = Callable[[EmbeddingRequest], Awaitable[dict[str, object]]]
 OperationalHandler = Callable[[OperationalRequest], Awaitable[dict[str, object]]]
+
+
+class CatalogStoreBoundary(Protocol):
+    async def check_ready(self) -> bool: ...
+
+    async def search(self, operation: CatalogSearchRequest) -> dict[str, object]: ...
+
+    async def select(self, operation: CatalogSelectionRequest) -> dict[str, object]: ...
+
+    async def recommend(self, operation: CatalogRecommendationsRequest) -> dict[str, object]: ...
 
 
 async def _await_result(value: T | Awaitable[T]) -> T:
@@ -801,6 +816,7 @@ def create_app(
     nonce_store: object | None = None,
     *,
     operational_store: object | None = None,
+    catalog_store: CatalogStore | None = None,
     echo_handler: EchoHandler | None = None,
     rerank_handler: RerankHandler | None = None,
     embedding_handler: EmbeddingHandler | None = None,
@@ -814,10 +830,16 @@ def create_app(
             logger.warning("invalid DATABASE_URL configuration: %s", str(error))
     elif current_settings.environment in _LOCAL_ENVIRONMENTS:
         default_store = InMemoryOperationalStore()
+    if catalog_store is None and current_settings.catalog_database_url:
+        try:
+            catalog_store = CatalogStore(current_settings.catalog_database_url)
+        except ValueError as error:
+            logger.warning("invalid CATALOG_DATABASE_URL configuration: %s", str(error))
 
     @asynccontextmanager
     async def lifespan(application: FastAPI):
         store = application.state.operational_store
+        catalog = application.state.catalog_store
         start = getattr(store, "start", None)
         if callable(start):
             try:
@@ -825,6 +847,13 @@ def create_app(
             except Exception as error:
                 application.state.store_startup_error = type(error).__name__
                 logger.error("operational store startup failed: %s", type(error).__name__)
+        catalog_start = getattr(catalog, "start", None)
+        if callable(catalog_start):
+            try:
+                await _await_result(catalog_start())
+            except Exception as error:
+                application.state.catalog_startup_error = type(error).__name__
+                logger.error("catalog store startup failed: %s", type(error).__name__)
         if os.getenv("RERANK_MODEL_WARMUP", "").strip().lower() in {"1", "true", "on"}:
             try:
                 await asyncio.wait_for(_warm_rerank_model(), timeout=RERANK_WARMUP_TIMEOUT_SECONDS)
@@ -834,6 +863,12 @@ def create_app(
         try:
             yield
         finally:
+            catalog_close = getattr(catalog, "close", None)
+            if callable(catalog_close):
+                try:
+                    await _await_result(catalog_close())
+                except Exception as error:
+                    logger.error("catalog store shutdown failed: %s", type(error).__name__)
             close = getattr(store, "close", None)
             if callable(close):
                 try:
@@ -848,6 +883,7 @@ def create_app(
     if nonce_store is None and operational_store is not None:
         nonce_store = operational_store
     application.state.operational_store = operational_store
+    application.state.catalog_store = catalog_store
     application.state.nonce_store = nonce_store
     application.state.metrics = InMemoryMetrics()
     handler = echo_handler or _default_echo_handler
@@ -898,6 +934,9 @@ def create_app(
         store = request.app.state.operational_store
         if not _secret_is_valid(runtime_settings.hmac_secret) or store is None:
             raise _error("not_ready", 503)
+        catalog = cast(CatalogStoreBoundary | None, request.app.state.catalog_store)
+        if catalog is None:
+            raise _error("not_ready", 503)
         if runtime_settings.environment not in _LOCAL_ENVIRONMENTS and not getattr(
             store, "durable", False
         ):
@@ -910,6 +949,8 @@ def create_app(
                 ready = False
             if not ready:
                 raise _error("not_ready", 503)
+        if not await catalog.check_ready():
+            raise _error("not_ready", 503)
         if getattr(request.app.state, "rerank_warmup_error", None) is not None:
             raise _error("not_ready", 503)
         return {"status": "ready"}
@@ -942,6 +983,91 @@ def create_app(
             model=EmbeddingRequest,
             scope=current_settings.embedding_required_scope,
             handler=cast(OperationalHandler, embedding_handler_fn),
+        )
+
+    @application.post("/internal/v1/catalog/search")
+    async def catalog_search(request: Request) -> Response:
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            catalog = cast(CatalogStoreBoundary | None, request.app.state.catalog_store)
+            if catalog is None:
+                raise _error("catalog_store_unavailable", 503)
+            if not isinstance(payload, CatalogSearchRequest):
+                raise _error("invalid_request", 422)
+            result = await catalog.search(payload)
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="catalog.search",
+            model=CatalogSearchRequest,
+            scope=CATALOG_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/catalog/selection")
+    async def catalog_selection(request: Request) -> Response:
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            catalog = cast(CatalogStoreBoundary | None, request.app.state.catalog_store)
+            if catalog is None:
+                raise _error("catalog_store_unavailable", 503)
+            if not isinstance(payload, CatalogSelectionRequest):
+                raise _error("invalid_request", 422)
+            try:
+                result = await catalog.select(payload)
+            except CatalogSelectionError as error:
+                raise _error(error.code, error.status_code) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="catalog.selection",
+            model=CatalogSelectionRequest,
+            scope="catalog.selection",
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/catalog/recommendations")
+    async def catalog_recommendations(request: Request) -> Response:
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            catalog = cast(CatalogStoreBoundary | None, request.app.state.catalog_store)
+            if catalog is None:
+                raise _error("catalog_store_unavailable", 503)
+            if not isinstance(payload, CatalogRecommendationsRequest):
+                raise _error("invalid_request", 422)
+            try:
+                result = await catalog.recommend(payload)
+            except CatalogRecommendationError as error:
+                raise _error(error.code, error.status_code) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="catalog.recommendations",
+            model=CatalogRecommendationsRequest,
+            scope=CATALOG_RECOMMENDATIONS_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/resolve")
+    async def plan_resolve(request: Request) -> Response:
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            catalog = request.app.state.catalog_store
+            if catalog is None:
+                raise _error("catalog_store_unavailable", 503)
+            if not isinstance(payload, PlanResolutionRequest):
+                raise _error("invalid_request", 422)
+            try:
+                result = await resolve_plan(payload, cast(CatalogPlanStore, catalog))
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.resolve",
+            model=PlanResolutionRequest,
+            scope=PLAN_RESOLUTION_SCOPE,
+            handler=handler,
         )
 
     return application

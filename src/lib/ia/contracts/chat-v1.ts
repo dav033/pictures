@@ -56,6 +56,8 @@ export const ChatRequestV1Schema = z.object({
   imagenesReferencia: z.array(imageSchema).max(8).optional(),
   referenceBlueprint: ReferenceBlueprintV2Schema.optional(),
   loraMode: LoraModeSlugSchema.optional(),
+  /** Creativity calibration 0-5 chosen in the UI (see src/lib/ia/creatividad.ts); absent = default level. */
+  creatividad: z.number().int().min(0).max(5).optional(),
 }).strict();
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -76,6 +78,7 @@ export function parseChatRequestV1(input: unknown): ChatRequestV1 {
     imagenesReferencia: input.imagenesReferencia ?? undefined,
     referenceBlueprint: input.referenceBlueprint ?? undefined,
     loraMode: input.loraMode ?? undefined,
+    creatividad: input.creatividad ?? undefined,
   });
 }
 

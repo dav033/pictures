@@ -1,6 +1,6 @@
 /**
  * Prompt builder V2 para SceneSpec V2 (Tarea 07.2 —
- * `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`, sección 10.4-10.5).
+ * `docs/migracion-python/PLAN-MAESTRO-V2.md`, sección 10.4-10.5).
  *
  * Serializa un `SceneSpecV2` en un prompt de imagen que:
  *   - Preserva identidad de slot sin IDs internos visibles

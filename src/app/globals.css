@@ -521,8 +521,7 @@ body {
   background: currentColor;
 }
 
-.workspace-kicker,
-.workspace-stage-kicker {
+.workspace-kicker {
   color: var(--acento);
   font-size: 0.625rem;
   font-weight: 700;
@@ -591,48 +590,6 @@ body {
   content: "";
   pointer-events: none;
   transform: rotate(-15deg);
-}
-
-.workspace-stage-header {
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 1.5rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--borde) 62%, transparent);
-  padding: clamp(1.3rem, 3vw, 2.5rem) clamp(1rem, 4vw, 3.5rem) 1.25rem;
-}
-
-.workspace-stage-title {
-  max-width: 34rem;
-  margin-top: 0.55rem;
-  color: var(--texto);
-  font-size: clamp(1.6rem, 3.2vw, 2.65rem);
-  font-weight: 700;
-  letter-spacing: -0.055em;
-  line-height: 0.98;
-}
-
-.workspace-stage-copy {
-  max-width: 34rem;
-  margin-top: 0.7rem;
-  color: var(--texto-suave);
-  font-size: 0.82rem;
-  line-height: 1.55;
-}
-
-.workspace-stage-meta {
-  display: grid;
-  flex: 0 0 auto;
-  gap: 0.35rem;
-  color: var(--texto-suave);
-  font-size: 0.68rem;
-  text-align: right;
-}
-
-.workspace-stage-meta strong {
-  color: var(--texto);
-  font-size: 0.82rem;
 }
 
 .workspace-log {
@@ -859,14 +816,6 @@ body {
    1024px que usa el resto de la página para que exista un solo sistema de
    breakpoints, no dos que casi (pero no del todo) coinciden. */
 @media (max-width: 1023px) {
-  .workspace-stage-header {
-    align-items: flex-start;
-  }
-
-  .workspace-stage-meta {
-    display: none;
-  }
-
   .quick-start {
     grid-template-columns: 1fr;
   }

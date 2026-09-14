@@ -6,13 +6,13 @@ const MAX_CATALOG_ID_LENGTH = 160;
 const MAX_SIZE_CODE_LENGTH = 40;
 
 export function GET(request: Request): NextResponse {
-  if (!isAuthenticatedRequest(request)) return NextResponse.json({ error: "SesiÃ³n requerida." }, { status: 401 });
+  if (!isAuthenticatedRequest(request)) return NextResponse.json({ error: "Sesión requerida." }, { status: 401 });
 
   const url = new URL(request.url);
   const catalogId = url.searchParams.get("catalog_id")?.trim() ?? "";
   const sizeCode = url.searchParams.get("size_code")?.trim() || null;
   if (!catalogId || catalogId.length > MAX_CATALOG_ID_LENGTH || (sizeCode && sizeCode.length > MAX_SIZE_CODE_LENGTH)) {
-    return NextResponse.json({ error: "Referencia de catÃ¡logo invÃ¡lida." }, { status: 400 });
+    return NextResponse.json({ error: "Referencia de catálogo inválida." }, { status: 400 });
   }
 
   const evidence = readLoraTrainingReferenceEvidence(catalogId, sizeCode);

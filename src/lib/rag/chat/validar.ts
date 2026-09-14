@@ -1,6 +1,10 @@
 import type { Pool } from "pg";
 import type { Producto } from "@/lib/types";
 import { nombreCategoria } from "@/lib/shopify/derivar";
+import {
+  llamarPythonCatalogSelection,
+  seleccionarBackendPython,
+} from "@/lib/ia/python-adapter";
 
 /**
  * Lo único que el LLM puede mandar por cada pieza elegida (plan §4.5). A
@@ -49,6 +53,11 @@ export type ResultadoValidacion = {
   validados: ItemValidado[];
   rechazados: ItemRechazado[];
   total: number;
+};
+
+export type OpcionesValidacion = {
+  signal?: AbortSignal;
+  correlationId?: string;
 };
 
 export type WhitelistRecuperada = ReadonlyMap<string, ReadonlySet<string>>;
@@ -117,9 +126,67 @@ export async function validarSeleccion(
   pool: Pool,
   seleccion: SeleccionSolicitada[],
   idsRecuperados: WhitelistRecuperada,
+  catalogSnapshotId?: string,
+  opciones: OpcionesValidacion = {},
 ): Promise<ResultadoValidacion> {
+  if (seleccionarBackendPython().backend === "python") {
+    const requestId = crypto.randomUUID();
+    const result = await llamarPythonCatalogSelection({
+      items: seleccion.map((item) => ({
+        product_id: item.productId,
+        variant_id: item.variantId,
+        quantity: item.cantidad,
+        ...(item.razon ? { reason: item.razon } : {}),
+      })),
+      allowlist: [...idsRecuperados.entries()]
+        .map(([productId, variantIds]) => ({
+          product_id: productId,
+          variant_ids: [...variantIds],
+        }))
+        .filter((entry) => entry.variant_ids.length > 0),
+      requestId,
+      correlationId: opciones.correlationId ?? crypto.randomUUID(),
+      parentSignal: opciones.signal,
+      ...(catalogSnapshotId ? { catalogSnapshotId } : {}),
+    });
+    return {
+      validados: result.validados.map((item) => ({
+        productId: item.product_id,
+        variantId: item.variant_id,
+        sku: item.sku,
+        productoTitulo: item.product_title,
+        titulo: item.title,
+        precioUnitario: item.unit_price_cop,
+        cantidad: item.quantity,
+        subtotal: item.subtotal_cop,
+        imagen: item.image_url,
+        handle: item.handle,
+        tipoProducto: item.product_type,
+        categoria: item.category,
+        colores: item.colors,
+        descripcion: item.description,
+        unidadesPaquete: item.units_per_package,
+        codigoTamano: item.size_code,
+        forma: item.shape,
+        diamPulg: item.diameter_inches,
+      })),
+      rechazados: result.rechazados.map((item) => ({
+        productId: item.product_id,
+        variantId: item.variant_id,
+        motivo: item.reason,
+      })),
+      total: result.total_cop,
+    };
+  }
+
   const rechazados: ItemRechazado[] = [];
+  const vistos = new Set<string>();
   const candidatos = seleccion.filter((item) => {
+    if (vistos.has(item.variantId)) {
+      rechazados.push({ productId: item.productId, variantId: item.variantId, motivo: "variant_id duplicado en la selección" });
+      return false;
+    }
+    vistos.add(item.variantId);
     if (!idsRecuperados.has(item.productId)) {
       rechazados.push({
         productId: item.productId,
@@ -153,13 +220,16 @@ export async function validarSeleccion(
             p.derived->>'category' AS categoria,
             COALESCE(p.derived->'colors', '[]'::jsonb) AS colores_producto,
             COALESCE(v.derived_colors, ARRAY[]::text[]) AS colores_variante,
-            p.description_text AS descripcion,
-            NULLIF(to_jsonb(v)->>'unidades_paq', '')::integer AS unidades_paq,
-            v.codigo_tamano, v.forma, v.diam_pulg
-     FROM catalog_variants v
-     JOIN catalog_products p ON p.product_id = v.product_id
-     WHERE v.variant_id = ANY($1::text[])`,
-    [variantIds],
+             p.description_text AS descripcion,
+             NULLIF(to_jsonb(v)->>'unidades_paq', '')::integer AS unidades_paq,
+             v.codigo_tamano, v.forma, v.diam_pulg
+      FROM catalog_variants v
+      JOIN catalog_products p ON p.product_id = v.product_id
+      WHERE v.variant_id = ANY($1::text[])
+        AND p.status = 'ACTIVE'
+        AND p.available = TRUE
+        AND ($2::text IS NULL OR (v.source_snapshot_id = $2 AND p.source_snapshot_id = $2))`,
+     [variantIds, catalogSnapshotId ?? null],
   );
   const porVariantId = new Map(rows.map((r) => [r.variant_id, r]));
 

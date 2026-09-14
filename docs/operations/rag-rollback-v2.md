@@ -140,9 +140,8 @@ borran las filas de auditoría:
 
 - `PLAN_COST_OPTIMIZER_V2=false`: conserva la resolución validada y detiene la optimización experimental.
 - `PLAN_BUDGET_GATE_V2=false`: no elimina la compuerta server-side de aprobación; solo desactiva la optimización/gate experimental asociado.
-- `SCENE_PLAN_V2_SHADOW=false`: deja de ejecutar V2 en sombra sin cambiar la selección V1 visible.
-- `SCENE_PLAN_V2_ENABLED=false` y `SCENE_PLAN_V2_KILL_SWITCH=true`: mantienen la ruta V2 fuera de tráfico.
-- `IMAGE_INSTANCE_QA=false`: bloquea nuevas generaciones de planes aprobados antes de llamar al proveedor; no marca imágenes existentes como conformes.
+- `SCENE_PLAN_V2_SHADOW=false`: deja de ejecutar V2 en sombra sin cambiar la selección visible.
+- `IMAGE_QA_ENABLED=false`: desactiva la solicitud implícita de QA visual; una solicitud explícita del request sigue siendo auditable y no puede aprobarse con resultado `unknown`.
 
 Después de cambiar flags, registrar el snapshot de flags en el incidente,
 ejecutar tsc, build, E2E no-key y `rag:metrics`, y conservar la telemetría

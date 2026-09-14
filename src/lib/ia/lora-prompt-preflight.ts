@@ -1,6 +1,6 @@
 import type { SceneSpec } from "./scene-spec";
 import type { LoraVisualClause } from "./lora-caption-compiler";
-import { translateLoraColor } from "./lora-caption-compiler";
+import { LORA_PROMPT_MAX_LENGTH, translateLoraColor } from "./lora-caption-compiler";
 import type { ProductVocabulary } from "@/lib/lora/product-vocabulary";
 
 export type LoraPromptPreflightReport = {
@@ -18,6 +18,13 @@ export type LoraPromptPreflightReport = {
   triggerCount: number;
   /** Internal concept_id strings and/or commercial tokens found leaked into the prompt text. Non-empty implies `ok: false`. */
   productLeaks: string[];
+  /**
+   * True when the scene lacks the plan's canonical `visual_semantics` that the
+   * LoRA caption requires (a loose catalog selection without an approved plan).
+   * No compaction can fix it: the caller needs an approved plan or the
+   * standard image style, never a retry of the same request.
+   */
+  requiresPlanSemantics: boolean;
 };
 
 const DEFAULT_LORA_TRIGGER = "eventdecor_style_v2";
@@ -26,11 +33,11 @@ const SPANISH_TOKENS = [
   "arco", "semiarco", "guirnalda", "columna", "pared", "centro de mesa", "sobre mesa",
   "lateral", "entrada", "fondo pared", "piso frontal", "mesas invitados", "techo", "dorado",
   "rosado", "rojo", "verde", "azul", "blanco", "negro", "plateado", "fucsia", "amarillo",
-  "morado", "naranja", "marron", "cafe", "crema", "quinceaÃ±era", "quince", "aÃ±os", "evento",
-  "corporativo", "celebraciÃ³n", "jardÃ­n", "salÃ³n", "esmeralda",
+  "morado", "naranja", "marron", "cafe", "crema", "quinceañera", "quince", "años", "evento",
+  "corporativo", "celebración", "jardín", "salón", "esmeralda",
 ];
 
-const SPANISH_DIACRITICS = /[Ã¡Ã©Ã­Ã³ÃºÃ¼Ã±Â¿Â¡]/i;
+const SPANISH_DIACRITICS = /[áéíóúüñ¿¡]/i;
 
 function hasWholeToken(text: string, token: string): boolean {
   return new RegExp(`\\b${token.replace(/ /g, "\\s+")}\\b`, "i").test(text);
@@ -38,11 +45,16 @@ function hasWholeToken(text: string, token: string): boolean {
 
 export function findLoraPromptLanguageLeaks(prompt: string): string[] {
   const leaks = new Set<string>();
-  if (SPANISH_DIACRITICS.test(prompt)) leaks.add("caracteres espaÃ±oles");
+  if (SPANISH_DIACRITICS.test(prompt)) leaks.add("caracteres españoles");
   for (const token of SPANISH_TOKENS) {
     if (hasWholeToken(prompt, token)) leaks.add(token);
   }
   return [...leaks];
+}
+
+function similarApprovedHeights(a: number | undefined, b: number | undefined): boolean {
+  if (a === undefined || b === undefined) return true;
+  return Math.max(a, b) / Math.min(a, b) < 1.15;
 }
 
 function expectedBilateralPairs(sceneSpec: SceneSpec): Array<[string, string]> {
@@ -52,7 +64,11 @@ function expectedBilateralPairs(sceneSpec: SceneSpec): Array<[string, string]> {
     const rightElement = sceneSpec.elements.find((element) =>
       element.visual_semantics?.placement === "lateral_derecho"
       && element.visual_semantics.structure_type === leftElement.visual_semantics?.structure_type
-      && element.resolved_colors.map(translateLoraColor).join("|") === leftElement.resolved_colors.map(translateLoraColor).join("|"),
+      && element.resolved_colors.map(translateLoraColor).join("|") === leftElement.resolved_colors.map(translateLoraColor).join("|")
+      // Same rule as the compiler: sides the plan sized clearly differently
+      // (±15%) or gave different roles are two designed pieces, not a mirrored pair.
+      && element.visual_semantics.design_role === leftElement.visual_semantics?.design_role
+      && similarApprovedHeights(element.visual_semantics.dimensions_m?.height, leftElement.visual_semantics?.dimensions_m?.height),
     );
     if (rightElement) pairs.push([leftElement.element_id, rightElement.element_id]);
   }
@@ -60,7 +76,7 @@ function expectedBilateralPairs(sceneSpec: SceneSpec): Array<[string, string]> {
 }
 
 // A concept_id has the shape `segment.segment.segment...` (writing-block.md
-// Â§7 / product-vocabulary.ts productConceptSchema), e.g.
+// §7 / product-vocabulary.ts productConceptSchema), e.g.
 // "balloon.round.latex.reflex.rose_gold". Real prose never contains
 // lowercase, dot-joined, multi-segment tokens like this, so requiring at
 // least 3 segments (2 dots) keeps this check from false-positiving on
@@ -125,6 +141,8 @@ export function preflightLoraPrompt(input: {
   triggers?: string[];
   /** Optional vocabulary to check for verbatim concept_id leakage against real known concept_ids, in addition to the always-on structural shape check. */
   vocabulary?: ProductVocabulary;
+  /** Defaults to the text caption budget; the JSON variant passes `LORA_JSON_PROMPT_MAX_LENGTH`. */
+  maxLength?: number;
 }): LoraPromptPreflightReport {
   const { sceneSpec, clauses, prompt } = input;
   const triggers = [...new Set((input.triggers ?? [DEFAULT_LORA_TRIGGER]).map((trigger) => trigger.trim()).filter(Boolean))];
@@ -136,7 +154,7 @@ export function preflightLoraPrompt(input: {
   const discardedElementIds = expectedIds.filter((elementId) => !representedIds.has(elementId));
   const fallbacks = sceneSpec.elements.filter((element) => !element.visual_semantics).length;
   const requiresCanonicalSemantics = Boolean(sceneSpec.metadata.plan_hash) || sceneSpec.elements.some((element) => Boolean(element.visual_semantics));
-  if (requiresCanonicalSemantics && fallbacks > 0) errors.push("faltan visual_semantics canÃ³nicas en elementos aprobados");
+  if (requiresCanonicalSemantics && fallbacks > 0) errors.push("faltan visual_semantics canónicas en elementos aprobados");
   if (!requiresCanonicalSemantics && fallbacks > 0) warnings.push(`${fallbacks} elemento(s) usan inferencia legacy`);
 
   const structures = { expected: sceneSpec.elements.length, represented: representedIds.size };
@@ -169,10 +187,10 @@ export function preflightLoraPrompt(input: {
   if (invalidTriggers.length) errors.push(`trigger duplicado o ausente (${invalidTriggers.map((item) => `${item.trigger}:${item.count}`).join(", ")})`);
   if (/(?:EST_\d{2}|CATALOG_|EDIT_|SKU|package|paquete|precio|price|\b\d+\s*(?:COP|USD))/.test(prompt)) errors.push("aparecen IDs, precios o datos de compra");
   const untranslated = findLoraPromptLanguageLeaks(prompt);
-  if (untranslated.length) errors.push(`texto espaÃ±ol sin traducir: ${untranslated.join(", ")}`);
+  if (untranslated.length) errors.push(`texto español sin traducir: ${untranslated.join(", ")}`);
   // Catches the compiler contradicting itself about where the focal piece
   // sits (e.g. both "framing the venue entrance" and "centered around the
-  // stage photo area" in the same prompt, in either order) â€” NOT every
+  // stage photo area" in the same prompt, in either order) — NOT every
   // occurrence of the word "or", which shows up legitimately in unrelated
   // environment cues (e.g. "skyline or surrounding outdoor architecture")
   // and used to block every prompt that mentioned one.
@@ -183,8 +201,9 @@ export function preflightLoraPrompt(input: {
   if (ambiguities.length) warnings.push(...ambiguities);
 
   const missingAnchors = requiredAnchorMissing(sceneSpec, prompt);
-  if (missingAnchors.length) errors.push(`sin anclaje fÃ­sico: ${missingAnchors.join(", ")}`);
-  if (prompt.length > 750) errors.push(`longitud ${prompt.length} supera lÃ­mite 750`);
+  if (missingAnchors.length) errors.push(`sin anclaje físico: ${missingAnchors.join(", ")}`);
+  const maxLength = input.maxLength ?? LORA_PROMPT_MAX_LENGTH;
+  if (prompt.length > maxLength) errors.push(`longitud ${prompt.length} supera límite ${maxLength}`);
   if (prompt.length < 350) warnings.push(`caption corta (${prompt.length} caracteres)`);
 
   const productLeaks = findLoraPromptProductLeaks(prompt, input.vocabulary);
@@ -204,6 +223,9 @@ export function preflightLoraPrompt(input: {
     promptLength: prompt.length,
     triggerCount,
     productLeaks,
+    // Only a scene without an approved plan: a plan scene missing semantics is
+    // a mapping defect, and telling that client to "request a plan" is wrong.
+    requiresPlanSemantics: !sceneSpec.metadata.plan_hash && fallbacks > 0 && (knownTypeFallbacks > 0 || requiresCanonicalSemantics),
   };
 }
 

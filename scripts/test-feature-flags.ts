@@ -1,11 +1,9 @@
 import assert from "node:assert/strict";
 
-// Fase 5.3: IMAGE_INSTANCE_QA solía tener dos implementaciones independientes
-// (feature-flags.ts e image-qa.ts) que podían discrepar sobre si el QA visual
-// de un plan aprobado realmente iba a correr. Este test fija las tres
-// combinaciones de precedencia contra la ÚNICA fuente de verdad ahora vigente.
+// QA visual se ejecuta solo por solicitud explícita de la UI o por el flag
+// operativo del servidor. No hay aliases heredados ni una segunda semántica.
 
-const CLAVES = ["IMAGE_INSTANCE_QA", "IMAGE_QA_VISION", "GEMINI_API_KEY"] as const;
+const CLAVES = ["IMAGE_QA_ENABLED", "GEMINI_API_KEY"] as const;
 const originales = Object.fromEntries(CLAVES.map((k) => [k, process.env[k]])) as Record<(typeof CLAVES)[number], string | undefined>;
 
 function set(valores: Partial<Record<(typeof CLAVES)[number], string | undefined>>) {
@@ -16,7 +14,7 @@ function set(valores: Partial<Record<(typeof CLAVES)[number], string | undefined
   }
 }
 
-async function featureEnabled(name: "IMAGE_INSTANCE_QA"): Promise<boolean> {
+async function featureEnabled(name: "IMAGE_QA_ENABLED"): Promise<boolean> {
   // Import dinámico: el módulo no lee env vars a nivel de módulo, solo dentro
   // de la función, así que un solo import re-testeado con distintos
   // process.env sigue siendo válido.
@@ -25,26 +23,17 @@ async function featureEnabled(name: "IMAGE_INSTANCE_QA"): Promise<boolean> {
 }
 
 async function main() {
-  set({ IMAGE_INSTANCE_QA: "false" });
-  assert.equal(await featureEnabled("IMAGE_INSTANCE_QA"), false, "IMAGE_INSTANCE_QA explícito manda, sin importar lo demás");
+  set({ IMAGE_QA_ENABLED: "false" });
+  assert.equal(await featureEnabled("IMAGE_QA_ENABLED"), false, "IMAGE_QA_ENABLED=false desactiva el QA");
 
-  set({ IMAGE_INSTANCE_QA: "true", IMAGE_QA_VISION: "false" });
-  assert.equal(await featureEnabled("IMAGE_INSTANCE_QA"), true, "IMAGE_INSTANCE_QA explícito manda sobre el legado IMAGE_QA_VISION");
-
-  set({ IMAGE_QA_VISION: "false", GEMINI_API_KEY: "x" });
-  assert.equal(await featureEnabled("IMAGE_INSTANCE_QA"), false, "sin IMAGE_INSTANCE_QA, el legado IMAGE_QA_VISION=false gana sobre tener API key");
-
-  set({ IMAGE_QA_VISION: "true", GEMINI_API_KEY: undefined });
-  assert.equal(await featureEnabled("IMAGE_INSTANCE_QA"), true, "sin IMAGE_INSTANCE_QA, el legado IMAGE_QA_VISION=true habilita aunque no haya API key");
-
-  set({ GEMINI_API_KEY: "x" });
-  assert.equal(await featureEnabled("IMAGE_INSTANCE_QA"), true, "sin ningún flag, cae a si hay GEMINI_API_KEY configurada");
+  set({ IMAGE_QA_ENABLED: "true" });
+  assert.equal(await featureEnabled("IMAGE_QA_ENABLED"), true, "IMAGE_QA_ENABLED=true activa el QA");
 
   set({});
-  assert.equal(await featureEnabled("IMAGE_INSTANCE_QA"), false, "sin ningún flag ni API key, queda deshabilitado");
+  assert.equal(await featureEnabled("IMAGE_QA_ENABLED"), false, "sin flag, queda deshabilitado aunque exista GEMINI_API_KEY");
 
   set(originales);
-  console.log("Feature flags (IMAGE_INSTANCE_QA): OK");
+  console.log("Feature flags (IMAGE_QA_ENABLED): OK");
 }
 
 main().catch((error) => {

@@ -1,6 +1,6 @@
 /**
  * Búsqueda híbrida por slot de escena (Tarea 04.2 —
- * `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`, sección 9.2-9.3 / "Plan 04,
+ * `docs/migracion-python/PLAN-MAESTRO-V2.md`, sección 9.2-9.3 / "Plan 04,
  * Tarea 04.2" en la sección 11).
  *
  * `retrieveCandidatesBySlot` ejecuta búsqueda híbrida (full-text + trigram +

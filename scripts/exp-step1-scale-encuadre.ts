@@ -4,7 +4,7 @@ import { PROMPT_V2, PROMPT_V3, correrExperimento, flag, leerEnv, type Celda, typ
 /**
  * PASO 1 — tres preguntas que quedaron abiertas tras el paso 0, en una sola tanda.
  *
- * Contexto del paso 0 (ver HANDOFF-LORA-COMPOSICION.md): con seed 777777,
+ * Contexto del paso 0 histórico: con seed 777777,
  * guidance 3.5, 3:2 y prompt v2, el modelo BASE compuso bien (arco real + dos
  * columnas separadas + mesa) y el LoRA a scale 0.8 colapsó la escena en un solo
  * arco sobredimensionado que se sale del encuadre.

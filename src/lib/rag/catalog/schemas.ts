@@ -82,7 +82,7 @@ export type CatalogRejection = {
 };
 
 /**
- * Re-export de conveniencia (Tarea 02.2, PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md
+ * Re-export de conveniencia (Tarea 02.2, docs/migracion-python/PLAN-MAESTRO-V2.md
  * §7.3): los contratos V3 (identidad física + verdad comercial) viven en
  * `./scene-asset-schema` y `../taxonomy/v3`, pero el resto del código puede
  * importarlos desde este módulo conocido (`@/lib/rag/catalog/schemas`) sin

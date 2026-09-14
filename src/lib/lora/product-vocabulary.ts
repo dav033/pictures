@@ -124,14 +124,14 @@ function stripAccents(value: string): string {
  * Normalizes a raw title/alias into a stable lookup key.
  *
  * This function is used ONLY to build/consult lookup maps. It must never be
- * used to decide a match by itself (no substring/fuzzy acceptance) Ã¢â‚¬â€ exact
+ * used to decide a match by itself (no substring/fuzzy acceptance) — exact
  * key equality after normalization is the only accepted comparison.
  */
 export function normalizeProductText(raw: string): string {
   let value = raw.normalize("NFKC");
 
   // Registered/trademark symbols carry no visual meaning.
-  value = value.replace(/[Ã‚Â®Ã¢â€žÂ¢Ã‚Â©]/g, "");
+  value = value.replace(/[®™©]/g, "");
 
   value = stripAccents(value);
   value = value.toLowerCase();
@@ -140,7 +140,7 @@ export function normalizeProductText(raw: string): string {
   // "link-o-loon") by converting them to a single space too, since the
   // catalog itself is inconsistent about hyphenation ("Link-O-Loon" vs
   // "LINK O LOON").
-  value = value.replace(/[-_/\\.,;:!Ã‚Â¡Ã‚Â¿?"'`Ã‚Â´()[\]{}]+/g, " ");
+  value = value.replace(/[-_/\\.,;:!¡¿?"'`´()[\]{}]+/g, " ");
 
   for (const token of NON_VISUAL_TOKENS) {
     const pattern = new RegExp(`\\b${token.toLowerCase()}\\b`, "g");
@@ -317,7 +317,7 @@ function contextSatisfied(
 
 /**
  * Resolves a single input against the vocabulary using the frozen
- * precedence order from writing-block.md Ã‚Â§8:
+ * precedence order from writing-block.md §8:
  *
  * 1. Exact catalog product ID.
  * 2. Exact normalized full title (canonical_label, token-set equality).
@@ -411,7 +411,7 @@ const BANNED_COMMERCIAL_LABEL_TOKENS = [
 ];
 
 /**
- * Checks the required invariants from writing-block.md Ã‚Â§7 over a whole
+ * Checks the required invariants from writing-block.md §7 over a whole
  * vocabulary. Only "active" concepts are checked for uniqueness rules;
  * "pending"/"deprecated" concepts are exempt from collision checks but are
  * still checked for basic structural validity via the zod schema.
@@ -484,9 +484,9 @@ export function checkVocabularyInvariants(vocabulary: ProductVocabulary): Invari
     const label = concept.canonical_label.toLowerCase();
     for (const banned of BANNED_COMMERCIAL_LABEL_TOKENS) {
       // `cop` es la moneda colombiana, pero por subcadena also matchea dentro de palabras de
-      // color legÃƒÂ­timas: "copper orange" quedaba rechazado como fuga comercial. Los tokens
-      // puramente alfabÃƒÂ©ticos se buscan como palabra completa (con plural opcional); los que
-      // llevan sÃƒÂ­mbolo ("cop$", "$") siguen por subcadena, que ahÃƒÂ­ no da falsos positivos.
+      // color legítimas: "copper orange" quedaba rechazado como fuga comercial. Los tokens
+      // puramente alfabéticos se buscan como palabra completa (con plural opcional); los que
+      // llevan símbolo ("cop$", "$") siguen por subcadena, que ahí no da falsos positivos.
       const esPalabra = /^[a-z ]+$/.test(banned);
       const aparece = esPalabra
         ? new RegExp(`(^|[^a-z])${banned.replace(/ /g, "\\s+")}s?($|[^a-z])`).test(label)

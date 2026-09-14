@@ -1,15 +1,20 @@
 import { z } from "zod";
-import { cotizarPlan } from "@/lib/cotizacion/motor";
 import { buscarCatalogoRag, type ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { getRagPool } from "@/lib/rag/db";
 import { registrarPlanAudit } from "@/lib/rag/observability/log";
 import { puntuacionCromatica } from "@/lib/rag/catalog/similitud-color";
-import { crearTokenAprobacion, verificarTokenAprobacion } from "@/lib/plan/aprobacion";
-import { resolverPlan } from "@/lib/plan/resolver";
+import { isPythonAdapterError, pythonErrorBody } from "@/lib/ia/python-adapter";
+import { allowlistDesdeMapa, abrirContextoPlan, crearTokenPlan, mapaDesdeAllowlist, verificarTokenAprobacion, type ContextoPlan } from "@/lib/plan/aprobacion";
+import { PythonPlanMappingError } from "@/lib/plan/python-mapper";
+import { AllowlistProductoVarianteError } from "@/lib/plan/allowlist-producto-variante";
+import { PlanEditError } from "@/lib/plan/edicion-error";
+import { admitirVariantePython, exigirContextoPython, recomendarAlternativasPython } from "@/lib/plan/edicion-python";
+import { PlanBackendNoDisponibleError, resolverPlanConBackend } from "@/lib/plan/resolver-backend";
 import { PlanDecoracionSchema, type MaterialPlan, type PlanDecoracion } from "@/lib/plan/tipos";
 import { LoraModeSlugSchema } from "@/lib/lora/schema";
 import { resolveLoraModeDatasetAllowlist } from "@/lib/lora/mode-resolver";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
+import { registrarFalloUi, traducirErrorServidor } from "@/lib/errores-ui/traducir-error-servidor";
 
 const BaseLineaSchema = z.object({
   product_id: z.string().min(1),
@@ -55,18 +60,25 @@ const EdicionSchema = z.object({
 });
 
 const BodySchema = z.discriminatedUnion("modo", [
-  z.object({ modo: z.literal("buscar"), consulta: z.string().trim().min(2).max(240), loraMode: LoraModeSlugSchema.optional() }).strict(),
-  z.object({ modo: z.literal("recomendadas"), variant_id: z.string().trim().min(1).max(160), loraMode: LoraModeSlugSchema.optional() }).strict(),
+  z.object({ modo: z.literal("buscar"), consulta: z.string().trim().min(2).max(240), approval_token: z.string().min(1).max(256 * 1024).optional(), loraMode: LoraModeSlugSchema.optional() }).strict(),
+  z.object({ modo: z.literal("recomendadas"), variant_id: z.string().trim().min(1).max(160), approval_token: z.string().min(1), loraMode: LoraModeSlugSchema.optional() }).strict(),
   z.object({ modo: z.literal("aplicar"), base: BasePlanSchema, edicion: EdicionSchema, loraMode: LoraModeSlugSchema.optional() }).strict(),
 ]);
 
 type BasePlan = z.infer<typeof BasePlanSchema>;
 type Edicion = z.infer<typeof EdicionSchema>;
 
-class PlanEditError extends Error {
-  constructor(public readonly status: number, message: string) {
-    super(message);
-  }
+const MENSAJE_APROBACION_INVALIDA = "La aprobación base expiró o no corresponde a este plan.";
+
+function correlationDesde(candidato: string | undefined): string {
+  const parsed = z.string().uuid().safeParse(candidato);
+  return parsed.success ? parsed.data : crypto.randomUUID();
+}
+
+function abrirContextoExigido(token: string): ContextoPlan {
+  const contexto = abrirContextoPlan(token);
+  if (!contexto) throw new PlanEditError(409, MENSAJE_APROBACION_INVALIDA);
+  return contexto;
 }
 
 function normalizar(value: string): string {
@@ -139,7 +151,18 @@ async function agregarVarianteAWhitelist(
         AND p.status = 'ACTIVE'`,
     [variante.product_id, variante.variant_id],
   );
-  if (rows.length !== 1) throw new PlanEditError(409, "La variante elegida ya no está disponible en el catálogo.");
+  if (rows.length !== 1) {
+    // Legacy rollback path only: classify the failure so a variant paired with
+    // a product that does not own it gets the stable cause instead of the
+    // misleading "no longer available". No extra query on success.
+    const propietario = await pool.query<{ product_id: string }>(
+      "SELECT product_id FROM catalog_variants WHERE variant_id = $1",
+      [variante.variant_id],
+    );
+    const dueno = propietario.rows[0]?.product_id;
+    if (dueno !== undefined && dueno !== variante.product_id) throw new AllowlistProductoVarianteError();
+    throw new PlanEditError(409, "La variante elegida ya no está disponible en el catálogo.");
+  }
   const variantes = whitelist.get(variante.product_id) ?? new Set<string>();
   variantes.add(variante.variant_id);
   whitelist.set(variante.product_id, variantes);
@@ -318,6 +341,10 @@ function filtrarPorAllowlist(candidatos: ProductoCandidato[], allowlist: Catalog
   });
 }
 
+/**
+ * Legacy recommendations for plans produced by the Next backend (rollback path).
+ * Python plans never reach this SQL: they use `recomendarAlternativasPython`.
+ */
 async function buscarRecomendaciones(pool: ReturnType<typeof getRagPool>, variantId: string): Promise<ProductoCandidato[]> {
   const actual = await pool.query<{
     product_id: string;
@@ -376,9 +403,9 @@ async function buscarRecomendaciones(pool: ReturnType<typeof getRagPool>, varian
        JOIN catalog_products p ON p.product_id = v.product_id
       WHERE p.status = 'ACTIVE'
         AND p.available = true
-        AND v.available = true
-        AND v.variant_id <> $1::text
-        AND ${filtrosFisicos}
+       AND v.available = true
+       AND v.variant_id <> $1::text
+       AND ${filtrosFisicos}
         ${filtroForma}
         ${filtroFamilia}
       ORDER BY CASE WHEN p.product_id = ${productParam} THEN 0 ELSE 1 END,
@@ -406,34 +433,78 @@ export async function POST(request: Request) {
 
     // Un modo LoRA restringido (training_1/2) nunca debe poder ofrecer ni
     // aplicar una pieza fuera de su dataset — el mismo allowlist que ya
-    // filtra la búsqueda del chat (PLAN-CONTROL-ENTRENAMIENTOS-LORA-UI.md
-    // §9). Sin esto, el editor podía agregar/reemplazar cualquier producto
-    // real del catálogo y el rechazo solo aparecía al generar, ya tarde.
-    const catalogAllowlist: CatalogAllowlist | null = body.loraMode
+    // filtra la búsqueda del chat contra la allowlist del turno. Sin esto, el
+    // editor podía agregar/reemplazar cualquier producto real del catálogo y el
+    // rechazo solo aparecía al generar, ya tarde. Se resuelve después de abrir
+    // el token para que una aprobación inválida no llegue a consultar nada.
+    const resolverCatalogAllowlist = async (): Promise<CatalogAllowlist | null> => body.loraMode
       ? await resolveLoraModeDatasetAllowlist(body.loraMode, pool)
       : null;
 
     if (body.modo === "buscar") {
-      const resultado = await buscarCatalogoRag(pool, body.consulta, { allowlist: catalogAllowlist ?? undefined });
+      // Con un token de plan Python la búsqueda queda fijada al snapshot firmado;
+      // sin token (o con uno de Next) conserva el comportamiento anterior.
+      const contextoBusqueda = body.approval_token === undefined ? null : abrirContextoExigido(body.approval_token);
+      const catalogSnapshotId = contextoBusqueda?.backend === "python" ? exigirContextoPython(contextoBusqueda) : undefined;
+      const catalogAllowlist = await resolverCatalogAllowlist();
+      const resultado = await buscarCatalogoRag(pool, body.consulta, {
+        allowlist: catalogAllowlist ?? undefined,
+        ...(catalogSnapshotId === undefined ? {} : { catalogSnapshotId }),
+      });
       return Response.json({ status: resultado.status, candidatos: serializarCandidatos(resultado), filtroRelajado: resultado.filtroRelajado });
     }
 
     if (body.modo === "recomendadas") {
+      const contextoPlan = abrirContextoExigido(body.approval_token);
+      if (contextoPlan.backend === "python") {
+        exigirContextoPython(contextoPlan);
+        const candidatos = await recomendarAlternativasPython({
+          contexto: contextoPlan,
+          variantId: body.variant_id,
+          catalogAllowlist: await resolverCatalogAllowlist(),
+          correlationId: correlationDesde(contextoPlan.requestId),
+          signal: request.signal,
+        });
+        return Response.json({ candidatos });
+      }
+      const catalogAllowlist = await resolverCatalogAllowlist();
       const candidatos = filtrarPorAllowlist(await buscarRecomendaciones(pool, body.variant_id), catalogAllowlist);
       return Response.json({ candidatos: candidatos.slice(0, 12) });
     }
 
     const base = body.base;
     const aprobacionBase = verificarTokenAprobacion(base.approval_token, base.plan_hash);
-    if (!aprobacionBase) throw new PlanEditError(409, "La aprobación base expiró o no corresponde a este plan.");
+    if (!aprobacionBase) throw new PlanEditError(409, MENSAJE_APROBACION_INVALIDA);
 
-    const whitelist = await whitelistDesdeBase(pool, base);
-    // El allowlist entra en las dos resoluciones: si solo entrara en la
-    // edición, el hash del plan base se calcularía con otras reglas que las
-    // que lo produjeron y toda edición fallaría con "el plan base cambió".
-    const planBaseVerificado = await resolverPlan(pool, base.plan, whitelist, catalogAllowlist);
-    if (planBaseVerificado.plan_hash !== base.plan_hash) {
+    const contextoPlan = abrirContextoExigido(base.approval_token);
+    const backend = contextoPlan.backend;
+    // Kill switch first: a Python plan never reaches TypeScript resolution or SQL.
+    const snapshotPython = backend === "python" ? exigirContextoPython(contextoPlan) : null;
+    const catalogAllowlist = await resolverCatalogAllowlist();
+    const whitelist = backend === "next"
+      ? await whitelistDesdeBase(pool, base)
+      : mapaDesdeAllowlist(contextoPlan.allowlist);
+    const correlationId = correlationDesde(base.request_id ?? aprobacionBase.requestId);
+
+    const resolver = (plan: PlanDecoracion, allowlistPython: ContextoPlan["allowlist"]) => snapshotPython === null
+      ? resolverPlanConBackend({ backend: "next", pool, plan, whitelist, loraAllowlist: catalogAllowlist })
+      : resolverPlanConBackend({
+          backend: "python",
+          plan,
+          allowlist: allowlistPython,
+          catalogSnapshotId: snapshotPython,
+          loraAllowlist: catalogAllowlist,
+          requestId: crypto.randomUUID(),
+          correlationId,
+          signal: request.signal,
+        });
+
+    const planBaseVerificado = await resolver(base.plan, contextoPlan.allowlist);
+    if (planBaseVerificado.resuelto.plan_hash !== base.plan_hash) {
       throw new PlanEditError(409, "El plan base cambió desde que se mostró. Vuelve a solicitar la propuesta.");
+    }
+    if (!verificarTokenAprobacion(base.approval_token, planBaseVerificado.resuelto.plan_hash)) {
+      throw new PlanEditError(409, MENSAJE_APROBACION_INVALIDA);
     }
 
     if (body.edicion.accion !== "quitar") {
@@ -444,15 +515,28 @@ export async function POST(request: Request) {
       if (catalogAllowlist && !catalogAllowlist.variantIds.includes(variante.variant_id)) {
         throw new PlanEditError(409, `LORA_DATASET_ALLOWLIST_REJECTED: ${variante.variant_id}`);
       }
-      await agregarVarianteAWhitelist(pool, whitelist, variante);
+      if (snapshotPython === null) {
+        await agregarVarianteAWhitelist(pool, whitelist, variante);
+      } else {
+        // Python plans: Python admits the pair in the signed snapshot; Next never runs catalog SQL.
+        await admitirVariantePython({ variante, catalogSnapshotId: snapshotPython, whitelist, correlationId, signal: request.signal });
+      }
     }
     const planEditado = aplicarEdicion(base, body.edicion);
-    const resuelto = await resolverPlan(pool, planEditado, whitelist, catalogAllowlist);
+    const allowlistFinal = allowlistDesdeMapa(whitelist);
+    const resolucionEditada = await resolver(planEditado, allowlistFinal);
+    const resuelto = resolucionEditada.resuelto;
     if (resuelto.compras.length === 0) throw new PlanEditError(422, "El cambio dejó la estructura sin piezas disponibles.");
 
     const requestId = base.request_id ?? aprobacionBase.requestId;
     resuelto.request_id = requestId;
-    resuelto.approval_token = crearTokenAprobacion(resuelto.plan_hash, requestId);
+    resuelto.approval_token = crearTokenPlan({
+      planHash: resuelto.plan_hash,
+      requestId,
+      backend,
+      catalogSnapshotId: contextoPlan.catalogSnapshotId,
+      allowlist: allowlistFinal,
+    });
     await registrarPlanAudit(pool, {
       requestId,
       planHash: resuelto.plan_hash,
@@ -466,11 +550,24 @@ export async function POST(request: Request) {
       status: "PLAN_EDITED",
     });
 
-    return Response.json({ plan: resuelto, cotizacion: cotizarPlan(resuelto) });
+    return Response.json({ plan: resuelto, cotizacion: resolucionEditada.cotizacion });
   } catch (error) {
-    if (error instanceof z.ZodError) return Response.json({ error: "La edición del plan no tiene un formato válido.", detalles: error.issues }, { status: 400 });
-    if (error instanceof PlanEditError) return Response.json({ error: error.message }, { status: error.status });
+    // Los campos legacy (`error`, `causa`, `detalles`, sobre operational.v1) se
+    // conservan para los consumidores actuales; `ui_error` (ui-error.v1) es lo
+    // que muestra la interfaz.
+    const uiError = traducirErrorServidor(error, isPythonAdapterError(error) ? error.requestId : undefined);
+    registrarFalloUi("/api/plan-editar", uiError);
+    const responder = (cuerpo: Record<string, unknown>, status: number) => Response.json({ ...cuerpo, ui_error: uiError }, { status });
+    if (error instanceof z.ZodError) return responder({ error: "La edición del plan no tiene un formato válido.", detalles: error.issues }, 400);
+    if (error instanceof PlanEditError) return responder({ error: error.message, ...(error.causa ? { causa: error.causa } : {}) }, error.status);
+    if (error instanceof PlanBackendNoDisponibleError) return responder({ error: error.message, causa: error.motivo }, 409);
+    if (error instanceof AllowlistProductoVarianteError) return responder({ error: error.message, causa: error.causa }, 422);
+    if (error instanceof Error && /^LORA_/.test(error.message)) return responder({ error: error.message }, 409);
+    if (isPythonAdapterError(error)) {
+      return responder(pythonErrorBody(error), error.status >= 400 && error.status <= 599 ? error.status : 502);
+    }
+    if (error instanceof PythonPlanMappingError) return responder({ error: error.message }, 502);
     console.error("[plan-edit] error inesperado:", error);
-    return Response.json({ error: "No se pudo actualizar el plan contra el catálogo real." }, { status: 500 });
+    return responder({ error: "No se pudo actualizar el plan contra el catálogo real." }, 500);
   }
 }

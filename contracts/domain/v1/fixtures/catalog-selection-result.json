@@ -1,6 +1,5 @@
 {
-  "schema_version": "catalog-selection.v1",
-  "request_id": "00000000-0000-4000-8000-000000000001",
+  "operation_schema_version": "catalog-selection-result.v1",
   "status": "partial",
   "catalog_snapshot_id": "shopify-2026-09-07",
   "validados": [

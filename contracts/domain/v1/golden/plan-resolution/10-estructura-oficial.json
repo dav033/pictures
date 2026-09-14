@@ -1,0 +1,1081 @@
+{
+  "allowlist": [
+    {
+      "product_id": "P-RED",
+      "variant_ids": [
+        "V-RED-12"
+      ]
+    }
+  ],
+  "catalog_rows": [
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "rojo"
+      ],
+      "colores_variante": [
+        "rojo"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex rojo R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/red-12.jpg",
+      "inventory_quantity": 200,
+      "precio": 10000,
+      "product_id": "P-RED",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex rojo",
+      "sku": "SKU-RED-12",
+      "sku_original": "SHOP-RED-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-RED-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-RED-12",
+      "variante_titulo": "R-12"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-001",
+  "description": "Columnas declaradas como estructuras oficiales (columna asimétrica y columna): el campo entra al plan_hash y no cambia la geometría.",
+  "expected": {
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "rojo",
+          "design_quantity": 30,
+          "finish": null,
+          "product_id": "P-RED",
+          "required_quantity": 30,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_01_COLUMNA",
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 30,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rojo",
+          "design_quantity": 30,
+          "finish": null,
+          "product_id": "P-RED",
+          "required_quantity": 30,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_02_COLUMNA",
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 30,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rojo",
+          "design_quantity": 30,
+          "finish": null,
+          "product_id": "P-RED",
+          "required_quantity": 30,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_03_COLUMNA",
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 30,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 3,
+        "density": "media",
+        "dimensions_m": {
+          "height": 1.4,
+          "length": null,
+          "width": null
+        },
+        "installation_length_m": 4.199999999999999,
+        "shape": "coordinated structures",
+        "type": "composite_installation",
+        "visual_density": "medium",
+        "visual_scale": "very_large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 19600,
+          "design_quantity": 90,
+          "leftover_inventory": 2,
+          "operational_surplus": 2,
+          "package_count": 2,
+          "potential_surplus": 10,
+          "product_id": "P-RED",
+          "purchase_cost": 20000,
+          "purchase_quantity": 100,
+          "required_quantity": 98,
+          "units_per_package": 50,
+          "used": 90,
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 98,
+          "waste_reserve": 8
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 19600,
+        "covered_waste_reserve": 8,
+        "design_quantity": 90,
+        "natural_package_surplus": 10,
+        "operational_surplus": 2,
+        "potential_surplus": 10,
+        "purchase_cost": 20000,
+        "purchase_quantity": 100,
+        "required_quantity": 98,
+        "target_waste_reserve": 8,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 98,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": []
+    },
+    "plan_resuelto": {
+      "advertencias": [],
+      "alternativas": [
+        {
+          "ahorro_cop": 0,
+          "etiqueta": "economica",
+          "familia_id": "P-RED",
+          "titulo": "Globo latex rojo",
+          "total_cop": 20000
+        }
+      ],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "rojo",
+          "consumption_cost": 19600,
+          "design_quantity": 90,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_COLUMNA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA",
+            "EST_02_COLUMNA",
+            "EST_03_COLUMNA"
+          ],
+          "imagen": "https://cdn.example.test/red-12.jpg",
+          "inventory_quantity": 200,
+          "leftover_inventory": 2,
+          "paquetes": 2,
+          "precio_paquete": 10000,
+          "product_id": "P-RED",
+          "purchase_cost": 20000,
+          "purchase_quantity": 100,
+          "required_quantity": 98,
+          "sku": "SKU-RED-12",
+          "sku_original": "SHOP-RED-12",
+          "sobrante": 10,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-RED-12",
+          "subtotal": 20000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex rojo — R-12",
+          "unidades_con_merma": 98,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 90,
+          "unidades_paquete": 50,
+          "used": 90,
+          "variant_id": "V-RED-12",
+          "waste_reserve": 8
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 1.4,
+          "estructura_id": "EST_01_COLUMNA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_01_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/red-12.jpg",
+              "inventory_quantity": 200,
+              "origen": {
+                "id": "EST_01_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-RED",
+              "sku": "SKU-RED-12",
+              "sku_original": "SHOP-RED-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-RED-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rojo — R-12",
+              "unidades": 30,
+              "unidades_inferidas": false,
+              "variant_id": "V-RED-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 30
+            }
+          ],
+          "nombre": "Columna izquierda",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 30,
+          "ubicacion": "lateral_izquierdo"
+        },
+        {
+          "eje_m": 1.4,
+          "estructura_id": "EST_02_COLUMNA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_02_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/red-12.jpg",
+              "inventory_quantity": 200,
+              "origen": {
+                "id": "EST_02_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-RED",
+              "sku": "SKU-RED-12",
+              "sku_original": "SHOP-RED-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-RED-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rojo — R-12",
+              "unidades": 30,
+              "unidades_inferidas": false,
+              "variant_id": "V-RED-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 30
+            }
+          ],
+          "nombre": "Columna derecha",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 30,
+          "ubicacion": "lateral_derecho"
+        },
+        {
+          "eje_m": 1.4,
+          "estructura_id": "EST_03_COLUMNA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_03_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/red-12.jpg",
+              "inventory_quantity": 200,
+              "origen": {
+                "id": "EST_03_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-RED",
+              "sku": "SKU-RED-12",
+              "sku_original": "SHOP-RED-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-RED-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rojo — R-12",
+              "unidades": 30,
+              "unidades_inferidas": false,
+              "variant_id": "V-RED-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 30
+            }
+          ],
+          "nombre": "Columna frontal",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 30,
+          "ubicacion": "piso_frontal"
+        }
+      ],
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 90\nTarget waste reserve: 8\nNatural package surplus: 10\nUsable waste coverage: 8\nAdditional packages required for waste: 0\nGlobo latex rojo — R-12: design=90, required=98, package=50, packages=2, purchased=100, natural surplus=10, waste reserve=8, leftover inventory=2",
+      "plan": {
+        "concepto": {
+          "descripcion": "Columnas rojas para una zona de fotos.",
+          "paleta": [
+            "rojo"
+          ],
+          "titulo": "Columnas rojas"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_COLUMNA",
+            "estructura_oficial": "columna_asimetrica",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-RED",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna izquierda",
+            "porque": "Enmarca el foco fotografico.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "columna",
+            "ubicacion": "lateral_izquierdo"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_02_COLUMNA",
+            "estructura_oficial": "columna",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-RED",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna derecha",
+            "porque": "Equilibra la composicion.",
+            "repeticiones": 1,
+            "rol_escena": "soporte",
+            "tipo": "columna",
+            "ubicacion": "lateral_derecho"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_03_COLUMNA",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-RED",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna frontal",
+            "porque": "Refuerza el frente de la escena.",
+            "repeticiones": 1,
+            "rol_escena": "soporte",
+            "tipo": "columna",
+            "ubicacion": "piso_frontal"
+          }
+        ],
+        "plan_id": "11111111-1111-4111-8111-111111111111",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "9b4c5805becd4d873f8f407d83ce56628cd90242a50d5aa11095d8473f2a5a12",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 10000,
+        "consumption_cost": 19600,
+        "covered_waste_reserve": 8,
+        "design_quantity": 90,
+        "globos_por_tamano": {
+          "R-12": 90
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8,
+        "natural_package_surplus": 10,
+        "purchase_cost": 20000,
+        "target_waste_reserve": 8,
+        "total_cop": 20000,
+        "total_unidades": 90,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "complementosSoportados": false,
+      "consumptionCost": 19600,
+      "coveredWasteReserve": 8,
+      "incluyeIva": true,
+      "leftoverInventory": 2,
+      "lineas": [
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 90,
+          "color": "rojo",
+          "consumptionCost": 19600,
+          "designQuantity": 90,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_COLUMNA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA",
+            "EST_02_COLUMNA",
+            "EST_03_COLUMNA"
+          ],
+          "id": "V-RED-12",
+          "leftoverInventory": 2,
+          "nombre": "Globo latex rojo — R-12",
+          "paquetes": 2,
+          "precioPaquete": 10000,
+          "productId": "P-RED",
+          "purchaseCost": 20000,
+          "purchaseQuantity": 100,
+          "referenciaElementIds": [],
+          "requiredQuantity": 98,
+          "sobrante": 10,
+          "subtotal": 20000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 90,
+          "varianteId": "V-RED-12",
+          "wasteReserve": 8
+        }
+      ],
+      "mermaPorcentaje": 8,
+      "plan_hash": "9b4c5805becd4d873f8f407d83ce56628cd90242a50d5aa11095d8473f2a5a12",
+      "purchaseCost": 20000,
+      "targetWasteReserve": 8,
+      "total": 20000
+    }
+  },
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-001",
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "rojo",
+          "design_quantity": 30,
+          "finish": null,
+          "product_id": "P-RED",
+          "required_quantity": 30,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_COLUMNA",
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 30,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rojo",
+          "design_quantity": 30,
+          "finish": null,
+          "product_id": "P-RED",
+          "required_quantity": 30,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_02_COLUMNA",
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 30,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rojo",
+          "design_quantity": 30,
+          "finish": null,
+          "product_id": "P-RED",
+          "required_quantity": 30,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_03_COLUMNA",
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 30,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 3,
+        "density": "media",
+        "dimensions_m": {
+          "height": 1.4,
+          "length": null,
+          "width": null
+        },
+        "installation_length_m": 4.199999999999999,
+        "shape": "coordinated structures",
+        "type": "composite_installation",
+        "visual_density": "medium",
+        "visual_scale": "very_large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 19600,
+          "design_quantity": 90,
+          "leftover_inventory": 2,
+          "operational_surplus": 2,
+          "package_count": 2,
+          "potential_surplus": 10,
+          "product_id": "P-RED",
+          "purchase_cost": 20000,
+          "purchase_quantity": 100,
+          "required_quantity": 98,
+          "units_per_package": 50,
+          "used": 90,
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 98,
+          "waste_reserve": 8
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 19600,
+        "covered_waste_reserve": 8,
+        "design_quantity": 90,
+        "natural_package_surplus": 10,
+        "operational_surplus": 2,
+        "potential_surplus": 10,
+        "purchase_cost": 20000,
+        "purchase_quantity": 100,
+        "required_quantity": 98,
+        "target_waste_reserve": 8,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 98,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": []
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [],
+      "alternativas": [
+        {
+          "ahorro_cop": 0,
+          "etiqueta": "economica",
+          "familia_id": "P-RED",
+          "titulo": "Globo latex rojo",
+          "total_cop": 20000
+        }
+      ],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "rojo",
+          "consumption_cost": 19600,
+          "design_quantity": 90,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_COLUMNA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA",
+            "EST_02_COLUMNA",
+            "EST_03_COLUMNA"
+          ],
+          "imagen": "https://cdn.example.test/red-12.jpg",
+          "inventory_quantity": 200,
+          "leftover_inventory": 2,
+          "paquetes": 2,
+          "precio_paquete": 10000,
+          "product_id": "P-RED",
+          "purchase_cost": 20000,
+          "purchase_quantity": 100,
+          "required_quantity": 98,
+          "sku": "SKU-RED-12",
+          "sku_original": "SHOP-RED-12",
+          "sobrante": 10,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-RED-12",
+          "subtotal": 20000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex rojo — R-12",
+          "unidades_con_merma": 98,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 90,
+          "unidades_paquete": 50,
+          "used": 90,
+          "variant_id": "V-RED-12",
+          "waste_reserve": 8
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 1.4,
+          "estructura_id": "EST_01_COLUMNA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/red-12.jpg",
+              "inventory_quantity": 200,
+              "origen": {
+                "id": "EST_01_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-RED",
+              "sku": "SKU-RED-12",
+              "sku_original": "SHOP-RED-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-RED-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rojo — R-12",
+              "unidades": 30,
+              "unidades_inferidas": false,
+              "variant_id": "V-RED-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 30
+            }
+          ],
+          "nombre": "Columna izquierda",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 30,
+          "ubicacion": "lateral_izquierdo"
+        },
+        {
+          "eje_m": 1.4,
+          "estructura_id": "EST_02_COLUMNA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_02_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/red-12.jpg",
+              "inventory_quantity": 200,
+              "origen": {
+                "id": "EST_02_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-RED",
+              "sku": "SKU-RED-12",
+              "sku_original": "SHOP-RED-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-RED-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rojo — R-12",
+              "unidades": 30,
+              "unidades_inferidas": false,
+              "variant_id": "V-RED-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 30
+            }
+          ],
+          "nombre": "Columna derecha",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 30,
+          "ubicacion": "lateral_derecho"
+        },
+        {
+          "eje_m": 1.4,
+          "estructura_id": "EST_03_COLUMNA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_03_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/red-12.jpg",
+              "inventory_quantity": 200,
+              "origen": {
+                "id": "EST_03_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-RED",
+              "sku": "SKU-RED-12",
+              "sku_original": "SHOP-RED-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-RED-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rojo — R-12",
+              "unidades": 30,
+              "unidades_inferidas": false,
+              "variant_id": "V-RED-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 30
+            }
+          ],
+          "nombre": "Columna frontal",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 30,
+          "ubicacion": "piso_frontal"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-001.",
+      "plan": {
+        "concepto": {
+          "descripcion": "Columnas rojas para una zona de fotos.",
+          "paleta": [
+            "rojo"
+          ],
+          "titulo": "Columnas rojas"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_COLUMNA",
+            "estructura_oficial": "columna_asimetrica",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-RED",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna izquierda",
+            "porque": "Enmarca el foco fotografico.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "columna",
+            "ubicacion": "lateral_izquierdo"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_02_COLUMNA",
+            "estructura_oficial": "columna",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-RED",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna derecha",
+            "porque": "Equilibra la composicion.",
+            "repeticiones": 1,
+            "rol_escena": "soporte",
+            "tipo": "columna",
+            "ubicacion": "lateral_derecho"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_03_COLUMNA",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-RED",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna frontal",
+            "porque": "Refuerza el frente de la escena.",
+            "repeticiones": 1,
+            "rol_escena": "soporte",
+            "tipo": "columna",
+            "ubicacion": "piso_frontal"
+          }
+        ],
+        "plan_id": "11111111-1111-4111-8111-111111111111",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "a663aabf906b30819a09f26a57b1da6d882b67cf6bb922e57d8d39e250b85795",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 10000,
+        "consumption_cost": 19600,
+        "covered_waste_reserve": 8,
+        "design_quantity": 90,
+        "globos_por_tamano": {
+          "R-12": 90
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 10,
+        "purchase_cost": 20000,
+        "target_waste_reserve": 8,
+        "total_cop": 20000,
+        "total_unidades": 90,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 19600,
+      "covered_waste_reserve": 8,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 2,
+      "lines": [
+        {
+          "available": true,
+          "color": "rojo",
+          "consumption_cost_cop": 19600,
+          "design_quantity": 90,
+          "diameter_inches": 12.0,
+          "id": "V-RED-12",
+          "leftover_inventory": 2,
+          "origins": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_COLUMNA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 10000,
+          "packages": 2,
+          "product_id": "P-RED",
+          "purchase_cost_cop": 20000,
+          "purchase_quantity": 100,
+          "required_quantity": 98,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_COLUMNA",
+            "EST_02_COLUMNA",
+            "EST_03_COLUMNA"
+          ],
+          "subtotal_cop": 20000,
+          "surplus": 10,
+          "title": "Globo latex rojo — R-12",
+          "units_per_package": 50,
+          "used": 90,
+          "variant_id": "V-RED-12",
+          "waste_reserve": 8
+        }
+      ],
+      "plan_hash": "a663aabf906b30819a09f26a57b1da6d882b67cf6bb922e57d8d39e250b85795",
+      "purchase_cost_cop": 20000,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 8,
+      "total_cop": 20000,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "10-estructura-oficial",
+  "plan": {
+    "concepto": {
+      "descripcion": "Columnas rojas para una zona de fotos.",
+      "paleta": [
+        "rojo"
+      ],
+      "titulo": "Columnas rojas"
+    },
+    "espacio": {
+      "fuente": "cliente",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "densidad": "media",
+        "estructura_id": "EST_01_COLUMNA",
+        "estructura_oficial": "columna_asimetrica",
+        "materiales": [
+          {
+            "color": "rojo",
+            "participacion": 1,
+            "product_id": "P-RED",
+            "rol_material": "principal"
+          }
+        ],
+        "medidas": {
+          "alto_m": 1.4
+        },
+        "mezcla": "clasica",
+        "nombre": "Columna izquierda",
+        "porque": "Enmarca el foco fotografico.",
+        "repeticiones": 1,
+        "rol_escena": "focal",
+        "tipo": "columna",
+        "ubicacion": "lateral_izquierdo"
+      },
+      {
+        "densidad": "media",
+        "estructura_id": "EST_02_COLUMNA",
+        "estructura_oficial": "columna",
+        "materiales": [
+          {
+            "color": "rojo",
+            "participacion": 1,
+            "product_id": "P-RED",
+            "rol_material": "principal"
+          }
+        ],
+        "medidas": {
+          "alto_m": 1.4
+        },
+        "mezcla": "clasica",
+        "nombre": "Columna derecha",
+        "porque": "Equilibra la composicion.",
+        "repeticiones": 1,
+        "rol_escena": "soporte",
+        "tipo": "columna",
+        "ubicacion": "lateral_derecho"
+      },
+      {
+        "densidad": "media",
+        "estructura_id": "EST_03_COLUMNA",
+        "materiales": [
+          {
+            "color": "rojo",
+            "participacion": 1,
+            "product_id": "P-RED",
+            "rol_material": "principal"
+          }
+        ],
+        "medidas": {
+          "alto_m": 1.4
+        },
+        "mezcla": "clasica",
+        "nombre": "Columna frontal",
+        "porque": "Refuerza el frente de la escena.",
+        "repeticiones": 1,
+        "rol_escena": "soporte",
+        "tipo": "columna",
+        "ubicacion": "piso_frontal"
+      }
+    ],
+    "plan_id": "11111111-1111-4111-8111-111111111111",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "supuestos": []
+  }
+}

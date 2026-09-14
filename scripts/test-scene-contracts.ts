@@ -1,6 +1,6 @@
 /**
  * Pruebas de los contratos Zod V2 del dominio de escena (Tarea 01.1 —
- * `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`, sección 7 / "Plan 01,
+ * `docs/migracion-python/PLAN-MAESTRO-V2.md`, sección 7 / "Plan 01,
  * Tarea 01.1" en la sección 11).
  *
  * Verifica dos cosas:

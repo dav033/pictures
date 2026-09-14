@@ -1,8 +1,8 @@
 # Progreso migración Python
 
-Última actualización: 2026-09-10
+Última actualización: 2026-09-14
 
-Estado global: **Etapa 4 local cerrada; Fases 8.2 y 8.3 implementadas; ejecución de embeddings 8.3 pendiente de autorización**
+Estado global: **paridad comercial y cutover local del resolutor Python verificados; activación remota y controles E2/E3 pendientes**
 
 > **Plan rector vigente:** [`PLAN-MAESTRO-V2.md`](PLAN-MAESTRO-V2.md).
 >
@@ -11,9 +11,8 @@ Estado global: **Etapa 4 local cerrada; Fases 8.2 y 8.3 implementadas; ejecució
 > esta carpeta. Las **Fases 1 a 10** son el trabajo nuevo que define el plan
 > maestro v2: la Fase 1 es el primer trabajo nuevo, no una repetición.
 >
-> La antigua quinta etapa (staging) pasa a ser la **Fase 6**; su contenido
-> técnico en [`prompt-seguimiento-etapa-5.md`](prompt-seguimiento-etapa-5.md)
-> sigue siendo válido y se adopta tal cual.
+> La documentación histórica eliminada no forma parte de la ruta operativa
+> actual; este archivo solo enlaza a documentos presentes en el checkout.
 >
 > **El plan pasó de 6 a 10 fases** al revisar qué faltaba para que la
 > implementación quedara cubierta. Las cuatro nuevas son CI y gates (Fase 2),
@@ -22,22 +21,16 @@ Estado global: **Etapa 4 local cerrada; Fases 8.2 y 8.3 implementadas; ejecució
 > El capítulo 13 recoge las auditorías previas por fase y las reglas de
 > delegación.
 >
-> Estado: **Fases 1.1, 1.2 y 1.3 hechas.** El trabajo de las Etapas 1-4 está
-> commiteado en `migracion/python-etapas-1-4` (7 commits) y el runner de
-> migraciones ya confirma destino, verifica checksums y toma advisory lock.
-> Siguen pendientes la Fase 1.4 (arnés `ia:bench`) y la Fase 1.5 (telemetría
-> con taxonomía de flujo y capacidad).
+> Estado local: contratos, degradación RAG, paridad, B1-B3, lint, build, typecheck
+> y calidad Python pasan con el PostgreSQL loopback. La suite de webhooks y las
+> evaluaciones RAG que dependen de un fixture/catalogo coherente siguen fuera del
+> cierre de esta capacidad.
 >
-> `main` aportó los controles de los webhooks Happie —idempotencia durable,
-> rate limit, límite de body, deadline y cancelación— ya mezclados en la rama de
-> trabajo. Eso cierra el riesgo "estado webhook no durable ni deduplicado" que
-> la Etapa 1 dejó abierto, y abre dos puntos nuevos: las rutas de control
-> responden fuera del contrato Happie (capítulo 4.7, entra como Fase 3.13) y hay
-> un tercer mecanismo de idempotencia en el repo (capítulo 10.7).
+> Los controles Happie se mantienen bajo prueba local; no se afirma estado
+> remoto ni canario desplegado.
 >
-> Los planes borrados del repositorio que seguían referenciados por comentarios
-> de código vivo están recuperados en
-> [`docs/planes-recuperados/`](../planes-recuperados/).
+> RAG es la única ruta comercial. Si falla, el chat devuelve
+> `RAG_UNAVAILABLE` y no cambia a un catálogo SQLite.
 
 La preparación de Etapa 4 queda documentada en
 [`04-etapa-4-preparacion-reversible.md`](04-etapa-4-preparacion-reversible.md).
@@ -75,9 +68,9 @@ externos; no se inventan.
   validación Draft 7 en runtime y `uv.lock`.
 - Store PostgreSQL durable de idempotencia/replay y nonce, con TTL, respuesta
   guardada, reserva atómica, pool asyncpg y pruebas sin credenciales.
-- Migración `020_operational_idempotency.sql` aplicada dos veces en un
-  PostgreSQL Docker desechable local; tablas verificadas e integración Next →
-  Python comprobada con ese store durable.
+- Migración Python `001_operational_schema.sql` aplicada en la base operacional;
+  tablas verificadas e integración Next → Python comprobada con ese store
+  durable. La copia antigua del repo Next fue retirada.
 - Cutover local comprobado: Next por defecto, Python con flag y kill switch
   forzando Next.
 - Rollback conserva Next como default; kill switch sigue ganando siempre.
@@ -87,9 +80,23 @@ externos; no se inventan.
   usa lotes, checkpoint, lease persistente, provenance y telemetría; la
   migración 023 ya está aplicada en Neon y la corrida encontró cero pendientes,
   por lo que no fue necesario llamar a Gemini.
-- Fase 8.4 implementada localmente: endpoint Python autenticado para
-  `RETRIEVAL_QUERY`, adaptador HMAC, flag independiente y fallback a ramas
-  léxicas; permanece apagada y sin despliegue.
+- Fase 8.4 desplegada en EC2: endpoint Python autenticado para `RETRIEVAL_QUERY`,
+  adaptador HMAC, flag independiente y fallback a ramas léxicas. La llamada real
+  devolvió `200`, modelo `gemini-embedding-2`, 768 dimensiones y un intento.
+- El canario Next autenticado ejecutó una conversación real con eventos de
+  herramienta que incluyeron `buscar_catalogo_rag`; los flags están activos y el
+  kill switch permanece apagado.
+- Se conservaron los contenedores de rollback
+  `demo-decoracion-rollback-f2cadd3` y `demo-decoracion-ai-api-rollback-f2cadd3`.
+- Fase 9.0 cerrada sin coste adicional: la identidad cruzada de los manifiestos
+  históricos queda excluida de evidencia reutilizable y el runtime exige resolver
+  el artefacto completo desde el registro LoRA aprobado. No se reescribieron los
+  manifiestos históricos.
+- Fase 9.1 parcialmente endurecida en local, sin llamadas pagadas: se validan
+  imágenes de entrada, se limita `cargarFoto` a hosts/MIME/tamaño permitidos y
+  se propagan cancelación y deadlines totales a Gemini/fal.ai. Quedan pendientes
+  la idempotencia específica de fal.ai, el presupuesto de gasto y el límite
+  agregado de una ruta con QA/retry.
 
 ## Decisiones vigentes
 
@@ -104,16 +111,18 @@ externos; no se inventan.
 
 ## Límites para siguiente etapa
 
-- El servicio Python ya está desplegado y el tráfico remoto está preparado,
-  pero el cutover funcional queda pendiente de activar el flag y observarlo.
+- El servicio Python y el tráfico remoto están activos en canario; falta observar
+  una ventana operativa suficiente antes de ampliar el rollout.
+- La siguiente fase es 9.1: seguridad de gasto de generación. No se ejecutan
+  llamadas fal.ai hasta cerrar sus gates de idempotencia, deadline y presupuesto.
 - Las migraciones SQL hasta `023_embedding_provenance.sql` están aplicadas y
   verificadas en Neon; falta probar recuperación ante fallos reales de la base.
 - Las consultas PostgreSQL ya reciben la frontera de cancelación, pero el
   aborto de una query en curso requiere una revisión específica del driver y
   del pool antes de prometer cancelación física.
-- No se certificaron rotaciones de secretos ni una llamada real de embeddings
-  contra el proveedor. El canario online requiere imagen nueva, clave Python y
-  autorización de coste.
+- No se certificaron rotaciones de secretos. La llamada real de embeddings y el
+  flujo Next → Python ya fueron verificados con la clave provisionada y la
+  autorización de coste disponible.
 
 ## Verificación de cierre
 
@@ -129,8 +138,8 @@ externos; no se inventan.
   existentes, sin error de compilación.
 - `python services/ai-api/scripts/generate_models.py --check`: PASS.
 - `uv lock --check --system-certs` en `services/ai-api`: PASS.
-- `uv run --extra test --extra quality --system-certs python -m pytest`: PASS, 26 tests; queda
-  un warning heredado de `starlette`/AnyIO.
+- `uv run --extra test --extra quality --system-certs python -m pytest`: PASS, 48
+  tests; 3 skips esperados y un warning heredado de `starlette`/AnyIO.
 - `npx tsx scripts/test-idempotency-store.ts`: PASS.
 - `npx eslint src/lib/ia/idempotencia/store.ts scripts/test-idempotency-store.ts`:
   PASS.
@@ -148,3 +157,120 @@ Docker, contrato HTTP Next → Python local, replay/conflicto/timeout y rollback
 por flags. Tráfico remoto, secreto provisionado, observabilidad desplegada y
 conexión de staging quedan para la etapa posterior; no se inventan credenciales
 ni se activan por defecto.
+
+## Resolución comercial del plan en Python — integración (2026-09-14)
+
+El endpoint `POST /internal/v1/plan/resolve` ya existía y estaba probado, pero
+`llamarPythonPlanResolution()` no lo usaba ningún consumidor: el chat, la
+generación y la edición seguían resolviendo y cotizando en TypeScript. El
+bloqueo real no era el transporte sino la **procedencia**: el resolutor Python
+necesita el `catalog_snapshot_id` publicado y la allowlist *same-turn*, y ninguno
+de los dos puede leerse del cuerpo de la petición.
+
+### Decisión
+
+[ADR 0006](../architecture/decisions/0006-procedencia-firmada-del-plan.md): la
+procedencia viaja **firmada dentro del token de aprobación** (payload `v: 2`) con
+`backend`, `catalogSnapshotId` y `allowlist`. Un plan se re-resuelve siempre con
+el backend que lo produjo; si ese backend ya no está disponible, la petición
+falla en cerrado pidiendo volver a solicitar la propuesta. No hay fallback
+implícito a TypeScript.
+
+### Implementado
+
+- `src/lib/plan/aprobacion.ts`: token de plan v2 con procedencia firmada.
+  `verificarTokenAprobacion` mantiene su firma y su semántica (exige el hash
+  resuelto en servidor); `abrirContextoPlan` lee la procedencia antes de tener
+  ese hash y no liga el hash a propósito. Los tokens v1 en vuelo siguen siendo
+  válidos y se leen como `backend: "next"`.
+- `src/lib/plan/resolver-backend.ts`: único dueño de la decisión "qué backend
+  resuelve este plan" y de su ejecución. El camino Python nunca vuelve a ejecutar
+  `estimateFromPlan` ni `cotizarPlan`: la respuesta ya trae `material_estimate` y
+  `quote`.
+- `src/lib/plan/python-mapper.ts`: mapeo de transporte puro Python → formas de la
+  UI. No recalcula ningún valor comercial; `unidades_necesarias` y
+  `additional_package_for_waste`, que `quote.v1` no transporta, se toman de la
+  compra consolidada que viaja en la misma respuesta. Un vocabulario de `tipo`,
+  `ubicacion` o `rol_escena` desconocido es una respuesta rota, no algo que se
+  coercione en silencio.
+- `src/lib/ia/python-adapter.ts`: `PythonAdapterError` expone `domainCode` con el
+  código de dominio de Python. Antes, `catalog_snapshot_not_found` e
+  `invalid_plan` colapsaban ambos en `PYTHON_INVALID_REQUEST` y el llamador no
+  podía distinguirlos.
+- `src/lib/ia/registro-herramientas.ts` (`confirmar_plan_decoracion`): resuelve
+  por el backend seleccionado, emite el token con procedencia y devuelve la
+  cotización del backend. Sin snapshot del turno responde
+  `BACKEND_NO_DISPONIBLE` pidiéndole al modelo que busque primero en el catálogo;
+  un fallo del backend se audita y se le dice al modelo que no invente precios ni
+  confirme el plan. Todas las validaciones previas (restricciones, cardinalidad,
+  cobertura de referencia, estimación física, `SIN_COBERTURA`,
+  `PRESUPUESTO_EXCEDIDO`) siguen intactas y en el mismo orden.
+- `src/app/api/generate/route.ts` y `src/app/api/plan-editar/route.ts`: abren la
+  procedencia firmada, re-resuelven con el backend que produjo el plan y
+  conservan la puerta de aprobación contra el hash resuelto. Los errores del
+  backend Python se traducen a códigos estables en vez de a un 500 genérico.
+
+### Paridad: la puerta de activación
+
+`contracts/domain/v1/golden/plan-resolution/` contiene 9 vectores dorados con
+catálogo, allowlist y plan, y dos expectativas generadas: la de TypeScript y la
+de Python. Ninguna de las dos suites necesita base de datos ni red.
+
+- `npm run plan:test-paridad` bloquea regresiones del resolutor TypeScript (entra
+  en `npm run plan:test`).
+- `pytest tests/test_plan_parity.py` bloquea regresiones del resolutor Python.
+- `npm run plan:test-paridad-python` compara los dos backends pasando la
+  respuesta Python por el mapper de producción: **9/9 vectores pasan**.
+
+Divergencia/bug conocido que permanece fuera de la corrección de esta sesión:
+
+1. En el vector `09-a5-linea-no-geometrica`, TypeScript aplica el ahorro de
+   merma solo geométrico también a una línea no geométrica (`telón`). Python
+   reproduce la autoridad TypeScript para mantener la paridad; debe corregirse
+   primero en TypeScript con una decisión de dominio explícita.
+
+Fuera de la comparación, con razón documentada y comprobados aparte: `plan_hash`
+(el ADR 0006 lo define por backend) y `merma_log` (texto para una persona).
+
+### Fixtures de dominio
+
+`quote-ok.json`, `plan-resuelto-ok.json` y `material-estimate-ok.json` describían
+el mismo escenario con mermas distintas (12,5% frente al valor operativo
+`MERMA = 0.08`). Las tres quedan alineadas a 8% con la aritmética real del
+resolutor, y la comprobación de consistencia del adaptador vuelve a ser
+significativa.
+
+### Verificación ejecutada (2026-09-14)
+
+| Comando | Resultado |
+| --- | --- |
+| `npm run contracts:check` | PASS |
+| `npm run contracts:test` | PASS |
+| `npm run contracts:test:domain` | PASS |
+| `npm run contracts:test:operational` | PASS |
+| `npm run contracts:test:python-adapter` | PASS |
+| `npm run plan:test` | PASS (incluye paridad, contexto y rollback Python) |
+| `npm run lint` | PASS; 27 warnings heredados, 0 errores |
+| `npm run build --workspaces --if-present` | PASS |
+| `npx tsc --noEmit` | PASS |
+| `pytest` (services/ai-api) | 89 passed, 3 skipped; warning heredado de AnyIO |
+| `ruff check` / `ruff format --check` / `mypy` | PASS |
+| `npm run plan:test-paridad-python` | PASS: 9/9 vectores |
+
+El informe detallado de esta verificación está en
+[`REPORTE-CUTOVER-PYTHON-2026-09-14.md`](../../REPORTE-CUTOVER-PYTHON-2026-09-14.md).
+
+### Pendiente
+
+El plan ejecutable con criterios de aceptación por tarea está en
+[`PLAN-PARIDAD-Y-ACTIVACION.md`](PLAN-PARIDAD-Y-ACTIVACION.md).
+
+- Decidir E2 (recomendaciones del editor) y E3 (asociación tipada
+  producto-variante) antes de declarar el cutover comercial completo.
+- El flag `PYTHON_BACKEND_ENABLED=true` solo se usó temporalmente en local; no se
+  tocó ningún entorno remoto ni Neon. Fuera de esas pruebas, el kill switch
+  fuerza Next.
+- Sigue abierto el backlog fuera de esta capacidad: arnés `ia:bench` (1.4),
+  telemetría durable de coste (1.5), panel de consumo (3.12), idempotencia de
+  proveedores pagados (5.4/5.5, 9.1), presupuesto de latencia y backpressure
+  (7.2) y el cutover selectivo con runbook final (Fase 10).

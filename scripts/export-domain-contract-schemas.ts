@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import { DomainContractSchemas } from "../src/lib/ia/contracts/domain-v1";
+import { geometriaEstructurasOficiales, reglasJsonSchemaEstructuraOficial } from "../src/lib/plan/estructuras-oficiales";
 
 const outputDirectory = path.join(process.cwd(), "contracts", "domain", "v1");
 const checkOnly = process.argv.includes("--check");
@@ -21,10 +22,16 @@ const filenames: Record<string, string> = {
   "catalog-selection.v1": "catalog-selection.schema.json",
   "catalog-selection-request.v1": "catalog-selection-request.schema.json",
   "catalog-selection-result.v1": "catalog-selection-result.schema.json",
+  "catalog-search.v1": "catalog-search.schema.json",
+  "catalog-search-result.v1": "catalog-search-result.schema.json",
+  "catalog-recommendations.v1": "catalog-recommendations-request.schema.json",
+  "catalog-recommendations-result.v1": "catalog-recommendations-result.schema.json",
   "plan-decoracion.v1": "plan-decoracion.schema.json",
   "plan-resuelto.v1": "plan-resuelto.schema.json",
   "design-material-estimate.v1": "material-estimate.schema.json",
   "quote.v1": "quote.schema.json",
+  "plan-resolution.v1": "plan-resolution-request.schema.json",
+  "plan-resolution-result.v1": "plan-resolution-result.schema.json",
   "reference-blueprint.v2": "reference-blueprint.schema.json",
   "scene-spec.v1": "scene-spec.schema.json",
   "lora-selection.v1": "lora-selection.schema.json",
@@ -50,8 +57,21 @@ const schemas: Record<string, { id: string; schema: z.ZodType }> = Object.fromEn
 async function main(): Promise<void> {
   await mkdir(outputDirectory, { recursive: true });
   for (const [filename, entry] of Object.entries(schemas)) {
-    const generated = z.toJSONSchema(entry.schema, { target: "draft-7" });
-    const jsonSchema = { $id: entry.id, ...generated };
+    const generated = z.toJSONSchema(entry.schema, {
+      target: "draft-7",
+      // Cross-field coherence of `estructura_oficial` (tipo, densidad, ubicación) is not
+      // expressible in Zod's JSON output; inject the table owned by estructuras-oficiales.ts.
+      override: ({ jsonSchema }) => {
+        const properties = (jsonSchema as { properties?: Record<string, unknown> }).properties;
+        if (jsonSchema.type !== "object" || !properties?.estructura_oficial) return;
+        jsonSchema.allOf = [...(jsonSchema.allOf ?? []), ...reglasJsonSchemaEstructuraOficial()];
+      },
+    });
+    // Plan resolvers in both languages read the balloon geometry of official
+    // structure variants from this one table (estructuras-oficiales.ts).
+    const jsonSchema = entry.id === "plan-decoracion.v1"
+      ? { $id: entry.id, ...generated, "x-geometria-estructuras-oficiales": geometriaEstructurasOficiales() }
+      : { $id: entry.id, ...generated };
     const target = path.join(outputDirectory, filename);
     const expected = `${JSON.stringify(jsonSchema, null, 2)}\n`;
     if (checkOnly) {

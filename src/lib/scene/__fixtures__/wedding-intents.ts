@@ -1,6 +1,6 @@
 /**
  * Fixtures de "intención de boda" para la Tarea 00.1 del plan
- * PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md (Ola 0 — línea base).
+ * docs/migracion-python/PLAN-MAESTRO-V2.md (Ola 0 — línea base).
  *
  * IMPORTANTE — estos son tipos TS simples y explícitos, NO el contrato Zod
  * formal `EventIntentV2` de la sección 7.1 del plan (ese se crea en la

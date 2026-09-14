@@ -3,7 +3,7 @@
  *
  * Codifica en código ejecutable las decisiones de
  * `docs/adr/001-scene-program-and-provenance.md` (Tarea 00.2 del plan
- * `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`):
+ * `docs/migracion-python/PLAN-MAESTRO-V2.md`):
  *
  *   1. "Programa antes de productos"
  *   2. "Sin fuente no se renderiza"

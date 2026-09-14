@@ -17,7 +17,8 @@ function validFalUrl(value: string | null | undefined): value is string {
   if (!value) return false;
   try {
     const url = new URL(value);
-    return url.protocol === "https:" && (url.hostname === "queue.fal.run" || url.hostname === "rest.alpha.fal.ai");
+    return url.protocol === "https:" && !url.username && !url.password && !url.port
+      && (url.hostname === "queue.fal.run" || url.hostname === "rest.alpha.fal.ai");
   } catch {
     return false;
   }
@@ -27,10 +28,48 @@ function validFalStorageUrl(value: string | null | undefined): value is string {
   if (!value) return false;
   try {
     const url = new URL(value);
-    return url.protocol === "https:" && (url.hostname === "fal.media" || url.hostname.endsWith(".fal.media"));
+    return url.protocol === "https:" && !url.username && !url.password && !url.port
+      && (url.hostname === "fal.media" || url.hostname.endsWith(".fal.media"));
   } catch {
     return false;
   }
+}
+
+type StorageUpload = { upload_url: string; file_url: string };
+type QueueSubmission = { request_id: string; status_url: string; response_url: string };
+
+function parseStorageUpload(value: unknown): StorageUpload | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const upload = value as { upload_url?: unknown; file_url?: unknown };
+  return typeof upload.upload_url === "string" && typeof upload.file_url === "string"
+    ? { upload_url: upload.upload_url, file_url: upload.file_url }
+    : null;
+}
+
+function parseQueueSubmission(value: unknown): QueueSubmission | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const queue = value as { request_id?: unknown; status_url?: unknown; response_url?: unknown };
+  return typeof queue.request_id === "string" && typeof queue.status_url === "string" && typeof queue.response_url === "string"
+    ? { request_id: queue.request_id, status_url: queue.status_url, response_url: queue.response_url }
+    : null;
+}
+
+async function fetchFalAllowed(
+  url: string,
+  init: RequestInit,
+  isAllowedUrl: (value: string) => boolean,
+): Promise<Response> {
+  let currentUrl = url;
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const response = await fetch(currentUrl, { ...init, redirect: "manual" });
+    if (response.status < 300 || response.status >= 400) return response;
+    const location = response.headers.get("location");
+    if (!location) throw new Error("fal devolvió un redirect sin destino.");
+    const nextUrl = new URL(location, currentUrl).toString();
+    if (!isAllowedUrl(nextUrl)) throw new Error("fal devolvió un redirect a un host no permitido.");
+    currentUrl = nextUrl;
+  }
+  throw new Error("fal excedió el máximo de redirects permitidos.");
 }
 
 async function readBody(request: Request): Promise<unknown> {
@@ -112,25 +151,25 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   let providerSubmitted = false;
   try {
-    const initiate = await fetch(UPLOAD_INITIATE_URL, {
+    const initiate = await fetchFalAllowed(UPLOAD_INITIATE_URL, {
       method: "POST",
       headers: { Authorization: `Key ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({ content_type: "application/zip", file_name: `${run.dataset_id}.zip` }),
       signal: AbortSignal.timeout(30_000),
-    });
+    }, validFalUrl);
     if (!initiate.ok) throw new Error("fal rechazó inicio de subida");
-    const upload = await initiate.json() as { upload_url?: string; file_url?: string };
-    if (!upload.upload_url || !upload.file_url || !validFalStorageUrl(upload.file_url)) throw new Error("fal no devolvió URL de dataset");
+    const upload = parseStorageUpload(await initiate.json());
+    if (!upload || !validFalStorageUrl(upload.upload_url) || !validFalStorageUrl(upload.file_url)) throw new Error("fal no devolvió URL de dataset");
 
-    const uploadResponse = await fetch(upload.upload_url, {
+    const uploadResponse = await fetchFalAllowed(upload.upload_url, {
       method: "PUT",
       headers: { "Content-Type": "application/zip" },
       body: new Uint8Array(zip),
       signal: AbortSignal.timeout(600_000),
-    });
+    }, validFalStorageUrl);
     if (!uploadResponse.ok) throw new Error("fal rechazó ZIP");
 
-    const submit = await fetch(run.trainer_endpoint, {
+    const submit = await fetchFalAllowed(run.trainer_endpoint, {
       method: "POST",
       headers: { Authorization: `Key ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -140,10 +179,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         output_lora_format: run.output_lora_format,
       }),
       signal: AbortSignal.timeout(120_000),
-    });
+    }, validFalUrl);
     if (!submit.ok) throw new Error("fal rechazó el entrenamiento");
-    const queue = await submit.json() as { request_id?: string; status_url?: string; response_url?: string };
-    if (!queue.request_id || !validFalUrl(queue.status_url) || !validFalUrl(queue.response_url)) {
+    const queue = parseQueueSubmission(await submit.json());
+    if (!queue || !validFalUrl(queue.status_url) || !validFalUrl(queue.response_url)) {
       throw new Error("fal no devolvió una solicitud válida");
     }
     providerSubmitted = true;

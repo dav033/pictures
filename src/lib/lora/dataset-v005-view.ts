@@ -3,6 +3,7 @@ import "server-only";
 import fs from "node:fs";
 import path from "node:path";
 import type { Caption, Desglose, FeedbackFoto, LineaDesglose } from "@/lib/ordenes/tipos";
+import { directorioOrdenes } from "@/lib/ordenes/directorio";
 import { getDb } from "@/lib/db";
 
 export type LoraDatasetProductComponent = {
@@ -16,7 +17,7 @@ export type LoraDatasetGalleryRecord = {
   imageId: string;
   imageFile: string;
   caption: string | null;
-  /** QuÃ© contrato produjo el caption: v007 canÃ³nico, o el legado v1/v005. */
+  /** Qué contrato produjo el caption: v007 canónico, o el legado v1/v005. */
   captionVersion: "v007" | "legacy" | null;
   status: "order" | "web_pending";
   origin: string;
@@ -54,8 +55,6 @@ const V007_ANNOTATIONS_DIR = path.join(process.cwd(), "data", "staging", "lora-v
 const WEB_STAGING_DIR = path.join(process.cwd(), "data", "staging", "lora-v006-orders-web-v001");
 const WEB_IMAGE_DIR = path.join(WEB_STAGING_DIR, "original");
 const WEB_MANIFEST_PATH = path.join(WEB_STAGING_DIR, "manifest.json");
-const ORDERS_DIR = "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
-
 type CatalogImageRow = {
   sku: string | null;
   imagen_principal: string | null;
@@ -144,7 +143,7 @@ function readOrderComponents(
   const match = imageId.match(/^(\d+)-(\d+)$/);
   if (!match) return { components: [], componentsStatus: "not_available" };
   const [, orderNumber, photoIndex] = match;
-  const orderDir = path.join(ORDERS_DIR, orderNumber);
+  const orderDir = path.join(/*turbopackIgnore: true*/ directorioOrdenes(), orderNumber);
   const breakdown = readJson<Desglose>(path.join(orderDir, "desglose.json"));
   const feedback = readJson<FeedbackFoto>(path.join(orderDir, `feedback-${photoIndex}.json`));
   const lines = breakdown?.lineas ?? [];
@@ -212,13 +211,14 @@ function readOrderRecords(
   catalogImagesBySku: Map<string, string>,
   v007Metadata: Map<string, Pick<LoraDatasetGalleryRecord, "conceptIds" | "sourceRef">>,
 ): LoraDatasetGalleryRecord[] {
-  if (!fs.existsSync(ORDERS_DIR)) return [];
-  return fs.readdirSync(ORDERS_DIR, { withFileTypes: true })
+  const directory = directorioOrdenes();
+  if (!fs.existsSync(/*turbopackIgnore: true*/ directory)) return [];
+  return fs.readdirSync(/*turbopackIgnore: true*/ directory, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }))
     .flatMap((entry) => {
-      const orderDir = path.join(ORDERS_DIR, entry.name);
-      return fs.readdirSync(orderDir)
+      const orderDir = path.join(/*turbopackIgnore: true*/ directory, entry.name);
+      return fs.readdirSync(/*turbopackIgnore: true*/ orderDir)
         .filter((file) => /^foto-\d+\.(jpe?g|png|webp)$/i.test(file))
         .sort((a, b) => Number(a.match(/foto-(\d+)/i)?.[1] ?? 0) - Number(b.match(/foto-(\d+)/i)?.[1] ?? 0))
         .map((file) => {
@@ -228,9 +228,9 @@ function readOrderRecords(
           const stagedImage = fs.existsSync(ORDER_IMAGE_DIR)
             ? fs.readdirSync(ORDER_IMAGE_DIR).find((candidate) => candidate.replace(/\.[^.]+$/, "") === imageId && /\.(jpe?g|png|webp)$/i.test(candidate))
             : null;
-          // Precedencia de captions: v007 (compilado del contrato con nombres canÃ³nicos) gana
+          // Precedencia de captions: v007 (compilado del contrato con nombres canónicos) gana
           // sobre el recaption v005 y sobre el caption v1 guardado en la orden. Se lee del
-          // disco en cada request, asÃ­ que un refresco muestra el avance del anotador.
+          // disco en cada request, así que un refresco muestra el avance del anotador.
           const v007CaptionPath = path.join(V007_CAPTIONS_DIR, `${imageId}.txt`);
           const captionV007 = fs.existsSync(v007CaptionPath) ? fs.readFileSync(v007CaptionPath, "utf8").trim() : "";
           const stagedCaptionPath = path.join(ORDER_CAPTIONS_DIR, `${imageId}.txt`);
@@ -272,7 +272,7 @@ function readWebRecords(
         caption: typeof record.caption === "string" && record.caption.trim() ? record.caption.trim() : null,
         captionVersion: null,
         status: "web_pending" as const,
-        origin: "Sempertex.com â€” Ideas de Fiesta",
+        origin: "Sempertex.com — Ideas de Fiesta",
         conceptIds: metadata?.conceptIds ?? [],
         sourceRef: metadata?.sourceRef ?? null,
         ...readWebComponents(record.productBreakdown, catalogImagesBySku),
@@ -310,4 +310,3 @@ export function readLoraDatasetV005View(): LoraDatasetGalleryData | null {
     records,
   };
 }
-

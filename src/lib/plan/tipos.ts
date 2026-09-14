@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ESTRUCTURAS_OFICIALES_IDS, incoherenciasEstructuraOficial } from "./estructuras-oficiales";
 import {
   anclaSatisfaceRelacion,
   CATEGORIAS_SUJETO_ESCULTURA,
@@ -100,7 +101,12 @@ const EstructuraPlanSchema = z.object({
    * esta estructura — plan de integración de referencias visuales, R4. Solo tiene
    * sentido cuando el cliente adjuntó una imagen de referencia en este turno. */
   referencia_element_id: z.string().trim().min(1).max(80).optional(),
+  /** Estructura oficial que materializa (`estructuras-oficiales.ts`); coherente con tipo, densidad y ubicación. */
+  estructura_oficial: z.enum(ESTRUCTURAS_OFICIALES_IDS).optional(),
 }).strict().superRefine((value, ctx) => {
+  for (const problema of incoherenciasEstructuraOficial(value)) {
+    ctx.addIssue({ code: "custom", path: [problema.campo], message: problema.mensaje });
+  }
   const participacion = value.materiales.reduce((sum, material) => sum + material.participacion, 0);
   if (Math.abs(participacion - 1) > 0.001) {
     ctx.addIssue({ code: "custom", path: ["materiales"], message: "Las participaciones deben sumar 1 (±0,001)." });
@@ -321,8 +327,12 @@ export const EstructuraPlan1_1Schema = z.object({
   porque: z.string().trim().min(1).max(240),
   variant_overrides: z.array(VariantOverrideSchema).max(24).optional(),
   referencia_element_id: z.string().trim().min(1).max(80).optional(),
+  estructura_oficial: z.enum(ESTRUCTURAS_OFICIALES_IDS).optional(),
 }).strict().superRefine((value, ctx) => {
   validarRelacionesFisicasSchema(value.relaciones_fisicas, ctx);
+  for (const problema of incoherenciasEstructuraOficial(value)) {
+    ctx.addIssue({ code: "custom", path: [problema.campo], message: problema.mensaje });
+  }
 
   if (value.tipo === "escultura") {
     if (!value.escultura_visual) {

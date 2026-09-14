@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import React from "react";
-import { ReferencePlanCard } from "@/components/references/ReferencePlanCard";
+import { ReferenceReviewPanel } from "@/components/references/ReferenceReviewPanel";
 import { analizarReferenciasV2 } from "@/lib/ia/analizar-referencias-v2";
 import type { ChatPort, PeticionChat, TurnoChat } from "@/lib/ia/tipos";
 import { ReferenceBlueprintV2Schema } from "@/lib/ia/reference-blueprint";
@@ -177,22 +177,26 @@ async function run() {
   assert.equal(estados.get("lighting"), "fuera_de_catalogo");
   assert.equal(estados.get("signage"), "emulable_pendiente");
 
-  // Call client component directly under the RSC-compatible test runtime and
-  // walk its element tree. This validates rendered copy/groups without
-  // requiring a browser filechooser or a react-dom renderer under
-  // `--conditions=react-server`.
-  const panelText = collectText(ReferencePlanCard({ blueprint, plan }));
-  assert.match(panelText, /Lo que voy a armar/);
-  assert.match(panelText, /Puedo emularlo con globos/);
-  assert.match(panelText, /Fuera de mi catálogo/);
-  assert.doesNotMatch(panelText, /Pendiente de decisión/, "grupo vacío no debe aparecer como pendiente");
-  assert.match(panelText, /guirnalda orgánica de globos/);
-  assert.match(panelText, /cortina negra con luces/);
-  assert.match(panelText, /luces de cadena/);
-  assert.match(panelText, /letrero Happy Birthday/);
-  assert.doesNotMatch(panelText, /sin producto equivalente/i, "UI no debe usar copy de equivalente exacto");
+  // The per-element coverage panel ("Lo que voy a armar", "Puedo emularlo…",
+  // "Fuera de mi catálogo") showed English names, internal categories and raw
+  // states to the end customer; it was removed from the chat. Coverage stays
+  // enforced above (construirCoberturaReferencia) and in
+  // test-referencia-plan-cobertura.ts.
+  assert.equal(existsSync(resolve(process.cwd(), "src/components/references/ReferencePlanCard.tsx")), false, "el panel de cobertura por elemento no debe volver al chat");
+  const page = readFileSync(resolve(process.cwd(), "src/app/page.tsx"), "utf8");
+  assert.doesNotMatch(page, /ReferencePlanCard/, "page.tsx no debe renderizar el panel de cobertura por elemento");
 
-  console.log("[PASS] fixture src/descarga.jpg — selección, capas, alcance, cobertura y grupos UI");
+  // Call the client component directly under the RSC-compatible test runtime
+  // and walk its element tree: the review panel is a short Spanish status.
+  const analizando = collectText(ReferenceReviewPanel({ references: [reference], blueprint: null, status: "analyzing", error: null }));
+  assert.match(analizando, /Estoy mirando tu foto de referencia/);
+  const listo = collectText(ReferenceReviewPanel({ references: [reference], blueprint, status: "ready", error: null }));
+  assert.match(listo, /usaré tu foto como referencia/);
+  for (const jerga of [/balloon_structure|curtain|lighting|signage/, /fuera_de_catalogo|emulable|Fuera de catálogo|Emulable/i, /guirnalda orgánica de globos|letrero Happy Birthday|luces de cadena/, /REF_01/]) {
+    assert.doesNotMatch(listo, jerga, `el panel de referencia no debe mostrar ${jerga}`);
+  }
+
+  console.log("[PASS] fixture src/descarga.jpg — selección, capas, alcance, cobertura y panel de referencia sin jerga");
 }
 
 run().catch((error) => {

@@ -1,5 +1,5 @@
 /**
- * 4 franjas de presupuesto (plan PLAN_RAG_FRANJAS_PRESUPUESTO.md §2). Cada
+ * 4 franjas de presupuesto (plan docs/migracion-python/PLAN-MAESTRO-V2.md §2). Cada
  * franja es un contrato de composición, no un filtro de precio: define qué
  * roles debe tener la decoración, cuántas piezas de cada uno, y qué
  * fracción del techo puede costar una sola pieza de ese rol.

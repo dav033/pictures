@@ -80,7 +80,7 @@ async function deleteWebImages(ids: string[]): Promise<void> {
 
 export async function eliminarImagenesDataset(imageIds: string[]): Promise<string[]> {
   const ids = [...new Set(imageIds)];
-  if (ids.length === 0) throw new Error("No se recibieron imÃ¡genes para borrar.");
+  if (ids.length === 0) throw new Error("No se recibieron imágenes para borrar.");
 
   const deleted: string[] = [];
   const orderImageIds: string[] = [];
@@ -97,7 +97,7 @@ export async function eliminarImagenesDataset(imageIds: string[]): Promise<strin
       webIds.push(id);
       continue;
     }
-    throw new Error(`Identificador de imagen invÃ¡lido: ${id}`);
+    throw new Error(`Identificador de imagen inválido: ${id}`);
   }
 
   await limpiarDerivadosDeFotos(orderImageIds);

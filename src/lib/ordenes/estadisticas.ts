@@ -2,6 +2,7 @@ import "server-only";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { getDb } from "@/lib/db";
+import { directorioOrdenes } from "./directorio";
 
 /**
  * Estadísticas del dataset de órdenes.
@@ -13,10 +14,8 @@ import { getDb } from "@/lib/db";
  * pueden venir del snapshot generado en la máquina que sí las tiene.
  */
 
-const RUTA_ORDENES = process.env.ORDENES_DECORACION_DIR ?? "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
-
 export function rutaOrdenes(): string {
-  return RUTA_ORDENES;
+  return directorioOrdenes();
 }
 
 type LineaDesglose = { producto: string; variante: string | null; sku: string | null; cantidad: number; precioUnitario: number };
@@ -144,7 +143,7 @@ function mapaAConteoOrdenado(mapa: Map<string, number>): ConteoEtiqueta[] {
 export async function calcularEstadisticasOrdenes(): Promise<EstadisticasOrdenes | null> {
   let carpetas: string[];
   try {
-    carpetas = (await readdir(RUTA_ORDENES, { withFileTypes: true }))
+    carpetas = (await readdir(/*turbopackIgnore: true*/ directorioOrdenes(), { withFileTypes: true }))
       .filter((e) => e.isDirectory())
       .map((e) => e.name);
   } catch {
@@ -181,7 +180,7 @@ export async function calcularEstadisticasOrdenes(): Promise<EstadisticasOrdenes
   let conProporcionRelativa = 0;
 
   for (const numero of carpetas) {
-    const carpetaOrden = path.join(RUTA_ORDENES, numero);
+    const carpetaOrden = path.join(/*turbopackIgnore: true*/ directorioOrdenes(), numero);
 
     let desglose: Desglose;
     try {
@@ -232,7 +231,7 @@ export async function calcularEstadisticasOrdenes(): Promise<EstadisticasOrdenes
       }
     }
 
-    const archivos = await readdir(carpetaOrden).catch(() => [] as string[]);
+    const archivos = await readdir(/*turbopackIgnore: true*/ carpetaOrden).catch(() => [] as string[]);
     const indicesFoto = archivos
       .map((f) => f.match(/^foto-(\d+)\.(jpg|jpeg|png|webp)$/i)?.[1])
       .filter((x): x is string => Boolean(x))

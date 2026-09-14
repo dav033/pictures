@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * Taxonomía V3 de escena (PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md §8.1 y
+ * Taxonomía V3 de escena (docs/migracion-python/PLAN-MAESTRO-V2.md §8.1 y
  * §5.3, Tarea 02.2). Esto NO reemplaza `taxonomy/v2.ts` — ese archivo sigue
  * siendo la taxonomía de ingestión/normalización del catálogo Shopify
  * (`CatalogProduct.derived.category`, colores, ocasiones, etc.), hard data

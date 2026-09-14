@@ -14,9 +14,9 @@ lee. Cero autoridad"). Sin escrituras a la base en ningún paso.
   `scripts/eval-retrieval.ts`), 5 de "sin resultado", y SKU cuando el
   Postgres usado tiene `sku_original` poblado (ver hallazgo abajo).
   `--run` ejecuta cada caso contra `buscarHibrido()`/`buscarCatalogoRag()`
-  reales (sin proveedor: `GEMINI_API_KEY=""`, `RAG_USE_VECTOR=false`, mismo
-  patrón que `scripts/bench-rag-v2.ts --no-key`) e imprime una línea JSON
-  con métricas y casos fallidos.
+  reales (sin proveedor: `GEMINI_API_KEY=""` y
+  `PYTHON_BACKEND_KILL_SWITCH=true`, ver "Actualización 2026-09-14") e
+  imprime una línea JSON con métricas y casos fallidos.
 - `services/ai-api/tests/test_rag_eval_variance.py` — el punto de entrada
   pytest de la entrega. Corre `eval-rag-fixture.ts --run` en **3 procesos
   independientes**, exige que las 6 métricas de correctitud (recall SKU,
@@ -99,12 +99,106 @@ resincronice el Postgres local con el pipeline correcto, volver a correr
 `--generate` recupera la categoría `sku` automáticamente, sin tocar este
 código.
 
+## Actualización 2026-09-14: fixture desactualizado tras reimportar el catálogo local
+
+**Síntoma.** Con el Postgres local (`postgresql://demo:demo@127.0.0.1:5432/demo_rag`,
+contenedor `demo-decoracion-postgres-1`) la suite fallaba: los 15 casos
+`nombre-*` con `recall@5=0` y los 5 casos `filtro-*` con `precision=0`.
+
+**Causa raíz: fixture desactualizado, no regresión del retrieval.** El
+fixture versionado se generó el 2026-09-09 contra el catálogo local de
+entonces (pipeline legado, 1672 productos según la sección anterior). El
+2026-09-11 el catálogo local se reimportó desde el CDN bajo el snapshot
+publicado
+`products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42`
+(1411 productos / 3592 variantes, `source_kind=products_catalog`), con
+otros `product_id` (catálogo "B2b"). Verificado con SQL de solo lectura:
+
+- 0 de los 1346 `product_id` esperados por el fixture viejo existen hoy en
+  `catalog_products`.
+- Los 1411 productos tienen `source_snapshot_id` = ese snapshot; 0
+  variantes huérfanas, 0 productos sin variantes, 0 `search_text` vacíos:
+  el catálogo local es coherente e íntegro.
+- El retrieval no regresionó: para los títulos del fixture viejo que
+  tienen equivalente hoy (p. ej. "Lanza Confetti Niño" → "B2b Lanza
+  Confetti Niño"), el producto equivalente sale en posición 0–1. Los
+  predicados del script (recall@5, precisión en conjunto) eran correctos;
+  simplemente comparaban contra ids que ya no existen (`ids_invalidos_total=0`
+  en ambas corridas: todo lo devuelto sí pertenece al catálogo actual).
+
+**Arreglo.**
+
+1. Se regeneró `eval/rag/fixture-live-catalog.json` con el propio generador
+   (`--generate`, sin editar ids a mano) contra el Postgres local Docker
+   `demo_rag`, snapshot de arriba. El generador ahora escribe procedencia:
+   `motivo`, `origen` (`loopback`, nombre de base; nunca la URL) y
+   `catalogo` (`source_snapshot_ids`, productos, productos sin snapshot,
+   variantes). Dos generaciones seguidas produjeron casos idénticos
+   (determinismo verificado). El fixture nuevo tiene 40 casos: 15 `sku`
+   (el catálogo reimportado sí tiene `sku_original`: 3588/3592 variantes,
+   así que el Hallazgo 2 ya no aplica a este Postgres local), 15 `nombre`,
+   5 `filtro` y 5 `sin_resultado` (la combinación "guirnalda para boda"
+   no tiene productos y se omite, igual que antes).
+2. `--run` ahora falla con la causa explícita en vez de un recall=0 mudo:
+   métrica `fixture_ids_esperados_ausentes` y un fallo `id: "fixture"`
+   ("fixture desactualizado: N de M ids esperados no existen…"), además de
+   `catalogo_snapshot_ids` y `fixture_snapshot_coincide` en la salida.
+   `test_stale_fixture_is_reported_as_stale_not_as_zero_recall` cubre esa
+   regresión con un fixture sintético.
+3. Hallazgo lateral corregido en el mismo script: `process.env.RAG_USE_VECTOR = "false"`
+   no tenía efecto, porque `RAG_USE_VECTOR`/`RAG_RERANK_ENABLED`/
+   `RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED` son constantes de
+   `src/lib/ia/feature-flags.ts` evaluadas al importar (verificado con
+   `tsx`: la constante sigue en `true` tras asignar el env). Con
+   `PYTHON_BACKEND_ENABLED=true` y `RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED=true`/
+   `RAG_RERANK_ENABLED=true` en el entorno del padre, la eval intentaba el
+   embedding de consulta y el rerank vía Python (observado: `vector=ERROR`,
+   `rerank=ERROR` solo porque `PYTHON_BACKEND_URL` no estaba configurada;
+   con el backend configurado habría llamado al servicio y, para el
+   embedding, al proveedor). Ahora `--run` fija `PYTHON_BACKEND_KILL_SWITCH=true`
+   (leído en cada llamada, con precedencia absoluta) además de
+   `GEMINI_API_KEY=""`, y cada caso falla si `vector` o `rerank` quedan en
+   un estado distinto de `SKIPPED_OPTIONAL` (métrica
+   `ramas_con_proveedor_usadas`). Verificado con esos flags activos en el
+   padre: `ramas_con_proveedor_usadas=0` y PASS.
+
+**Métricas (mismo Postgres local, sin proveedor).**
+
+| Métrica | Antes (fixture 2026-09-09) | Después (fixture 2026-09-14) |
+| --- | --- | --- |
+| total_casos | 25 | 40 |
+| sku_recall_at_5 | null (sin casos) | 1 |
+| nombre_recall_at_5 | 0 | 1 |
+| filtro_precision | 0 | 1 |
+| sin_resultado_accuracy | 1 | 1 |
+| ids_invalidos_total | 0 | 0 |
+| fixture_ids_esperados_ausentes | 1346 (métrica nueva) | 0 |
+| error_count | 20 | 0 |
+| pytest `test_rag_eval_variance.py` | 1 failed, 1 passed | 3 passed (3 corridas independientes, correctitud idéntica; p50 9/8/9 ms) |
+
+**Nota sobre el Hallazgo 1.** En el Postgres local `rag_source_snapshots`
+ya no está vacía (snapshots `products_catalog` y `order_data` publicados el
+2026-09-11). No se verificó en esta actualización si el corpus v2
+(`bench-rag-v2.ts`/`eval-rag-v2.ts`) vuelve a correr: queda fuera de este
+arreglo y sigue documentado como pendiente.
+
+**Cuándo regenerar.** Cada vez que el catálogo local cambie de snapshot o
+de `product_id` (`fixture_snapshot_coincide=false` o
+`fixture_ids_esperados_ausentes>0`). El fixture sigue siendo de catálogo
+**local**: generado contra otro Postgres (p. ej. Neon) no es
+intercambiable, y la suite lo dirá con la causa en vez de con recall=0.
+
 ## Reproducción
 
 ```powershell
 $env:DATABASE_URL="postgresql://demo:demo@127.0.0.1:5432/demo_rag"
-npx tsx --conditions=react-server scripts/eval-rag-fixture.ts --generate
+npx tsx --conditions=react-server scripts/eval-rag-fixture.ts --generate --motivo "<por qué se regenera>"
 npx tsx --conditions=react-server scripts/eval-rag-fixture.ts --run
 cd services/ai-api
-uv run --extra test python -m pytest tests/test_rag_eval_variance.py -v -s
+uv run --extra test --system-certs python -m pytest tests/test_rag_eval_variance.py -v -s
 ```
+
+`scripts/eval-rag-fixture.ts` carga `.env.local` con `process.loadEnvFile`,
+que **no** sobrescribe variables ya presentes en el proceso (verificado en
+Node 24.16): definir `DATABASE_URL` en el mismo proceso garantiza el
+Postgres local.

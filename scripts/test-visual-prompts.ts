@@ -49,7 +49,7 @@ const sceneSpec = {
 // El LoRA se entrena con 154 captions en prosa llana (sin campos etiquetados);
 // un prompt con secciones "Venue:"/"Time of day:" tipo ficha resultó fuera de
 // distribución y producía globos flotando y carteles alucinados (ver
-// HANDOFF-SESION-DATASET.md, auditoría de sesión 4). El prompt debe quedarse
+// la auditoría del corpus). El prompt debe quedarse
 // en registro de caption: una oración fluida, sin etiquetas ni ALL-CAPS.
 const loraPrompt = buildLoraImagePrompt({ sceneSpec, visualContext: christmasNight });
 assert.match(loraPrompt, /^eventdecor_style_v2,/);

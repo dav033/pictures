@@ -2,8 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 /**
- * Runner compartido de los experimentos contra fal.ai del
- * HANDOFF-LORA-COMPOSICION.md.
+ * Runner compartido de experimentos históricos contra fal.ai.
  *
  * Dos invariantes que hacen que los resultados sean comparables entre tandas:
  *
@@ -26,8 +25,8 @@ export const DEFAULT_LORA = "https://v3b.fal.media/files/b/0aa80af5/Co4ylzKGOqhR
 
 /**
  * Identidad de un LoRA = tupla (artifact, corrida, dataset, trigger,
- * evaluación) — nunca una URL suelta (PLAN-CONTROL-ENTRENAMIENTOS-LORA-UI.md
- * §1, PLAN-COMPOSICION-RICA-V001.md §1.1/§5.7). Los tres experimentos
+ * evaluación) — nunca una URL suelta (PLAN-COMPOSICION-RICA-V001.md
+ * §1.1/§5.7). Los tres experimentos
  * "halloween-jardin", "halloween-referencia" y "riqueza-composicion" mezclaron
  * la URL de v004 con el trigger de v007 precisamente porque `--lora <url>`
  * dejaba escribir la URL a mano sin verificar contra su trigger real.

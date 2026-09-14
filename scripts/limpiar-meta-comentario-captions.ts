@@ -13,8 +13,9 @@
 
 import { readFile, writeFile, readdir } from "node:fs/promises";
 import path from "node:path";
+import { directorioOrdenes } from "../src/lib/ordenes/directorio";
 
-const RUTA_ORDENES = "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
+const RUTA_ORDENES = directorioOrdenes();
 const APLICAR = process.argv.includes("--aplicar");
 
 const CAMPOS = ["caption", "proporcion_relativa_descripcion"] as const;

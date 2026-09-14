@@ -48,7 +48,7 @@ const DESCRIPTORS: Record<LoraStructureType, string> = {
 
 const ORDER: LoraStructureType[] = ["arco", "semiarco", "guirnalda", "columna", "bouquet", "backdrop", "instalacion_completa"];
 const FORBIDDEN = /(?:\bSKU\b|\bcatalog\b|product\s+id|variant\s+id|\bprice\b|\bUSD\b|\bCOP\b|\bpackage\b|\bpaquete\b|\bshopify\b)/i;
-const NON_ENGLISH = /[Ã¡Ã©Ã­Ã³ÃºÃ¼Ã±Â¿Â¡]/i;
+const NON_ENGLISH = /[áéíóúüñ¿¡]/i;
 const CAPTION_CORRECTIONS: Record<string, Array<[RegExp, string]>> = {
   "10357-1.jpg": [[/paired with two fabric-wrapped cylindrical plinths nearby wrapped in a smaller balloon garland arrangement/gi, "paired with a single fabric-wrapped cylindrical plinth nearby accompanied by a smaller balloon garland arrangement"]],
   "10457-1.jpg": [[/flanked by matte blue and red balloon clusters attached on either side/gi, "flanked on one side by a tall matte blue, red, and navy balloon garland reaching toward the ceiling"]],

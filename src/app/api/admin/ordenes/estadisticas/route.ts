@@ -1,4 +1,5 @@
 import { calcularEstadisticasOrdenes, rutaOrdenes, type EstadisticasOrdenes } from "@/lib/ordenes/estadisticas";
+import { isAuthenticatedRequest } from "@/lib/auth/request";
 import { readLocalSnapshot } from "@/lib/lora/snapshot";
 
 export type { Alerta, ConteoEtiqueta, ConteoImagen, EstadisticasOrdenes, ReferenciaProducto } from "@/lib/ordenes/estadisticas";
@@ -9,7 +10,9 @@ export type { Alerta, ConteoEtiqueta, ConteoImagen, EstadisticasOrdenes, Referen
  * publicado desde el panel de administración, marcadas como tales para que
  * nadie las confunda con datos frescos.
  */
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
+  if (!isAuthenticatedRequest(request)) return Response.json({ error: "Sesión requerida." }, { status: 401 });
+
   const vivo = await calcularEstadisticasOrdenes();
   if (vivo) return Response.json(vivo);
 

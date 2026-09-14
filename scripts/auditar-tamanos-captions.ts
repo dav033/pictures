@@ -21,9 +21,10 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { decodificarTamano } from "../src/lib/shopify/derivar";
 import type { Desglose, FeedbackFoto } from "../src/lib/ordenes/tipos";
+import { directorioOrdenes } from "../src/lib/ordenes/directorio";
 import { analizarComparacion } from "./lib/comparacion-tamanos";
 
-const RUTA_ORDENES = "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
+const RUTA_ORDENES = directorioOrdenes();
 const MOSTRAR_DETALLE = process.argv.includes("--detalle");
 
 type Caption = {

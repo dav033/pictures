@@ -60,7 +60,7 @@ export async function registrarBusqueda(
     latencyRetrievalMs: number;
     latencyTotalMs: number;
     // Sólo se llenan cuando el turno resolvió una franja de presupuesto
-    // (ver PLAN_RAG_FRANJAS_PRESUPUESTO.md §5.1) — sin esto no se puede
+    // (ver docs/migracion-python/PLAN-MAESTRO-V2.md §5.1) — sin esto no se puede
     // reconstruir después "por qué esta canasta y no otra".
     franja?: string;
     planCanasta?: unknown;

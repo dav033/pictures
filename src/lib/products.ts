@@ -46,7 +46,7 @@ export function buscarProductos(filtros: Parameters<typeof filtrarProductos>[1])
 
 /**
  * Frontera de autoridad comercial (Tarea 00.3 —
- * PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md §2.2 y §6). `productosPorId`
+ * docs/migracion-python/PLAN-MAESTRO-V2.md §2.2 y §6). `productosPorId`
  * resuelve ids indistintamente desde dos fuentes que HOY comparten el mismo
  * tipo `Producto` pero tienen procedencia muy distinta:
  *

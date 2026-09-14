@@ -3,6 +3,7 @@ import "server-only";
 import fs from "node:fs";
 import path from "node:path";
 import type { LoraSnapshot } from "./snapshot";
+import { directorioOrdenes } from "@/lib/ordenes/directorio";
 
 /**
  * Junta en una sola carpeta las fotos que el servidor no tiene.
@@ -19,7 +20,8 @@ import type { LoraSnapshot } from "./snapshot";
 
 const ORIGEN_DATASET = path.join(process.cwd(), "data", "staging", "recaption-v004", "original");
 const ORIGEN_WEB = path.join(process.cwd(), "data", "staging", "lora-v006-orders-web-v001", "original");
-const ORIGEN_ORDENES = process.env.ORDENES_DECORACION_DIR ?? "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
+// The shared helper allows a runtime mount without embedding a developer path
+// into the standalone bundle.
 const DESTINO = path.join(process.cwd(), "data", "snapshot", "imagenes");
 const LADO_MAXIMO = 1400;
 const CALIDAD = 82;
@@ -55,12 +57,12 @@ function rutaEnOrdenes(archivo: string): string | null {
   const match = archivo.match(/^(\d+)-(\d+)\.(jpe?g|png|webp)$/i);
   if (!match) return null;
   const [, orden, indice] = match;
-  const carpeta = path.join(ORIGEN_ORDENES, orden);
+  const carpeta = path.join(/*turbopackIgnore: true*/ directorioOrdenes(), orden);
   try {
     const encontrado = fs
-      .readdirSync(carpeta)
+      .readdirSync(/*turbopackIgnore: true*/ carpeta)
       .find((nombre) => new RegExp(`^foto-${indice}\\.(jpe?g|png|webp)$`, "i").test(nombre));
-    return encontrado ? path.join(carpeta, encontrado) : null;
+    return encontrado ? path.join(/*turbopackIgnore: true*/ carpeta, encontrado) : null;
   } catch {
     return null;
   }
@@ -96,7 +98,7 @@ export async function prepararImagenesSnapshot(snapshot: LoraSnapshot): Promise<
     }
     const destino = path.join(DESTINO, archivo);
     try {
-      if (fs.existsSync(destino) && fs.statSync(destino).mtimeMs >= fs.statSync(origen).mtimeMs) {
+      if (fs.existsSync(destino) && fs.statSync(destino).mtimeMs >= fs.statSync(/*turbopackIgnore: true*/ origen).mtimeMs) {
         resumen.omitidas += 1;
         resumen.bytes += fs.statSync(destino).size;
         continue;

@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Search, Calculator, Ruler, PackageSearch, ClipboardCheck, NotebookPen, CheckCircle2, X, AlertCircle, Lock, Plus, Sparkles, ArrowUp, Paperclip, Home, ChartColumn, Image as ImageIcon, type LucideIcon } from "lucide-react";
+import { Search, Ruler, NotebookPen, CheckCircle2, X, AlertCircle, Lock, Plus, Sparkles, ArrowUp, Paperclip, Home, ChartColumn, Image as ImageIcon, type LucideIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LORA_PROMPT_FORMATS, type LoraPromptFormat } from "@/lib/ia/lora-prompt-format";
+import { CREATIVIDAD_POR_DEFECTO, parseNivelCreatividad, perfilCreatividad, type NivelCreatividad } from "@/lib/ia/creatividad";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DecoracionCard } from "@/components/DecoracionCard";
-import { ComparacionModelos, type ResultadoComparacion } from "@/components/ComparacionModelos";
 import { Lightbox } from "@/components/Lightbox";
 import { PromptModal } from "@/components/PromptModal";
 import { Markdown } from "@/components/Markdown";
@@ -17,7 +18,6 @@ import { TarjetaMedidas } from "@/components/TarjetaMedidas";
 import { TarjetaPlanDecoracion } from "@/components/TarjetaPlanDecoracion";
 import { GenerationQaSummary } from "@/components/references/GenerationQaSummary";
 import { ReferenceAnalysisController } from "@/components/references/ReferenceAnalysisController";
-import { ReferencePlanCard } from "@/components/references/ReferencePlanCard";
 import type { ReferenceDraft } from "@/components/references/ReferenceReviewPanel";
 import { useSeleccion } from "@/lib/estado/seleccion";
 import type { LineaBorrador } from "@/lib/estado/borrador-cotizacion";
@@ -33,9 +33,14 @@ import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
 import { classifyGenerationIds, normalizeGenerationSources } from "@/lib/generacion/provenance";
 import { ChatSseEventV1Schema } from "@/lib/ia/contracts/chat-v1";
+import { construirUiErrorV1, leerUiErrorV1, uiErrorDesdeChatV1, type AccionUiV1, type UiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
+import { AvisoError } from "@/components/errores/AvisoError";
+import { SwitchModoVista } from "@/components/modo/SwitchModoVista";
+import { useModoVista } from "@/lib/estado/modo-vista";
+import { abrirPromptAutomaticamente, qaVisualEfectivo, usarLoraEfectivo } from "@/lib/estado/modo-vista-reglas";
 
 type ProveedorId = "gemini";
-type SelectorIA = ProveedorId | "lora" | "comparar" | "comparar_lora" | "gemini_sin_referencias";
+type SelectorIA = ProveedorId | "lora";
 
 const NOMBRE_PROVEEDOR: Record<ProveedorId, string> = {
   gemini: "Gemini 3.6 Flash / Nano Banana 2",
@@ -43,17 +48,11 @@ const NOMBRE_PROVEEDOR: Record<ProveedorId, string> = {
 
 const NOMBRE_SELECTOR: Record<SelectorIA, string> = {
   ...NOMBRE_PROVEEDOR,
-  lora: "LoRA Sempertex v007",
-  comparar: "Comparar: Nano Banana 2 + LoRA",
-  comparar_lora: "Depurar LoRA: app v1 + v2 + directo",
-  /** Prueba: aísla si el problema de composición es "falta entrenamiento" o
-   * "el texto solo no alcanza ni con un modelo capaz" — mismo Gemini, cero
-   * fotos de referencia/producto adjuntas, identidad solo por texto. */
-  gemini_sin_referencias: "Gemini sin imágenes (prueba)",
+  lora: "LoRA Sempertex",
 };
 
 type GeneracionVisible = {
-  modo: "gemini" | "lora" | "comparar";
+  modo: "gemini" | "lora";
   solicitado: SelectorIA;
   etiqueta: string;
   prompts: Array<{ label: string; prompt: string }>;
@@ -125,32 +124,21 @@ const ETIQUETAS_BRIEF: Record<keyof Brief, string> = {
 };
 
 const ETIQUETA_HERRAMIENTA: Record<string, string> = {
-  buscar_catalogo: "Buscando en el catálogo…",
-  // Con RAG_ENABLED (la config actual) el modelo llama estas variantes, no
-  // las de arriba — sin esto la etiqueta nunca se mostraba, siempre caía al
-  // "Escribiendo…" genérico.
   buscar_catalogo_rag: "Buscando en el catálogo…",
-  buscar_decoraciones: "Buscando paquetes armados…",
   calcular_medidas: "Calculando medidas…",
-  cotizar: "Armando la cotización…",
-  consultar_disponibilidad: "Revisando disponibilidad…",
   guardar_brief: "Guardando datos del evento…",
-  confirmar_seleccion_ia: "Confirmando selección…",
   confirmar_seleccion_rag: "Confirmando selección…",
+  confirmar_plan_decoracion: "Armando el plan…",
 };
 
 const LIMITE_INACTIVIDAD_CHAT_MS = 90_000;
 
 const ICONO_HERRAMIENTA: Record<string, LucideIcon> = {
-  buscar_catalogo: Search,
   buscar_catalogo_rag: Search,
-  buscar_decoraciones: PackageSearch,
   calcular_medidas: Ruler,
-  cotizar: Calculator,
-  consultar_disponibilidad: ClipboardCheck,
   guardar_brief: NotebookPen,
-  confirmar_seleccion_ia: CheckCircle2,
   confirmar_seleccion_rag: CheckCircle2,
+  confirmar_plan_decoracion: CheckCircle2,
 };
 
 /** Reemplaza el swap de texto plano por un cross-fade con ícono + pulso
@@ -211,7 +199,6 @@ type GenerarOverride = {
   ragVariantIds?: string[];
   paquetes?: Record<string, number>;
   instruccion?: string;
-  automaticOnly?: boolean;
   brief?: Brief;
   solicitudUsuario?: string;
   /**
@@ -231,7 +218,34 @@ type GenerarOverride = {
   plan?: PlanResuelto;
   /** Mensaje exacto al que debe volver la cotización final de esta generación. */
   anchorMessageId?: string;
+  /**
+   * El cliente pidió explícitamente "Generar con estilo estándar" desde un
+   * aviso de error: este intento no usa LoRA. Nunca se activa solo.
+   */
+  estiloEstandar?: boolean;
 };
+
+/** Dónde ocurrió el error visible: decide qué acciones del aviso se pueden ejecutar. */
+type OrigenError = "chat" | "generacion" | "catalogo" | "plan";
+
+type ErrorVisible = { ui: UiErrorV1; origen: OrigenError };
+
+const ACCIONES_POR_ORIGEN: Readonly<Record<OrigenError, ReadonlySet<AccionUiV1>>> = {
+  chat: new Set<AccionUiV1>(["reintentar", "ajustar_propuesta", "pedir_nueva_propuesta", "revisar_adjuntos"]),
+  generacion: new Set<AccionUiV1>(["reintentar", "generar_estilo_estandar", "revisar_propuesta", "pedir_nueva_propuesta", "ajustar_propuesta", "activar_validacion_visual", "revisar_adjuntos"]),
+  catalogo: new Set<AccionUiV1>(),
+  plan: new Set<AccionUiV1>(["activar_validacion_visual", "revisar_propuesta"]),
+};
+
+function errorLocal(code: Parameters<typeof construirUiErrorV1>[0], mensaje: string): UiErrorV1 {
+  return construirUiErrorV1(code, { mensaje });
+}
+
+function campoTexto(valor: unknown, campo: string): string | undefined {
+  if (typeof valor !== "object" || valor === null || !(campo in valor)) return undefined;
+  const dato: unknown = (valor as Record<string, unknown>)[campo];
+  return typeof dato === "string" && dato.length > 0 ? dato : undefined;
+}
 
 /**
  * Streaming real (§5.4 del plan): parsea a mano los bloques
@@ -245,7 +259,7 @@ async function consumirSSE(
     onTexto: (delta: string) => void;
     onHerramienta: (nombre: string, estado: "ejecutando" | "lista") => void;
     onFin: (datos: DatosFin) => void;
-    onError: (datos: { error?: string }) => void;
+    onError: (datos: { error?: string; code?: string; causa?: string; request_id?: string }) => void;
     onActividad?: () => void;
   },
 ) {
@@ -360,7 +374,7 @@ async function redimensionarImagen(
   }
   if (bitmap.width === 0 || bitmap.height === 0) {
     bitmap.close();
-    throw new Error(`"${file.name}" se leyó vacía o corrupta — probá exportarla de nuevo como JPEG o PNG.`);
+    throw new Error(`"${file.name}" se leyó vacía o corrupta — prueba exportarla de nuevo como JPEG o PNG.`);
   }
 
   try {
@@ -372,7 +386,7 @@ async function redimensionarImagen(
     canvas.width = ancho;
     canvas.height = alto;
     const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Canvas no disponible.");
+    if (!ctx) throw new Error("Este navegador no pudo procesar la imagen. Prueba con otro navegador.");
     ctx.drawImage(bitmap, 0, 0, ancho, alto);
 
     const blob = await new Promise<Blob>((resolve, reject) => {
@@ -428,7 +442,7 @@ async function recortarAlAspecto(
     canvas.width = anchoRecorte;
     canvas.height = altoRecorte;
     const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Canvas no disponible.");
+    if (!ctx) throw new Error("Este navegador no pudo procesar la imagen. Prueba con otro navegador.");
     ctx.drawImage(bitmap, offsetX, offsetY, anchoRecorte, altoRecorte, 0, 0, anchoRecorte, altoRecorte);
 
     const blob = await new Promise<Blob>((resolve, reject) => {
@@ -460,6 +474,9 @@ let pendienteAutoGlobal: GenerarOverride | null = null;
 let colaGeneracion: Promise<void> = Promise.resolve();
 
 export default function Page() {
+  // Modo usuario/dev (B1): preferencia de presentación, no un permiso.
+  const { modo: modoVista, cambiar: cambiarModoVista } = useModoVista();
+  const esModoDev = modoVista === "dev";
   const [mensajes, setMensajes] = useState<Mensaje[]>([SALUDO]);
   const [entrada, setEntrada] = useState("");
   const [brief, setBrief] = useState<Brief>({});
@@ -486,15 +503,32 @@ export default function Page() {
   const [generando, setGenerando] = useState(false);
   const [planDecoracionActivo, setPlanDecoracionActivo] = useState(false);
   const [segundosGeneracion, setSegundosGeneracion] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorVisible | null>(null);
+  // Último intento de generación, para "Reintentar" y "Generar con estilo
+  // estándar" desde el aviso de error. `override` indefinido = clic manual.
+  const ultimoIntentoGeneracionRef = useRef<{ override?: GenerarOverride } | null>(null);
   const [proveedor, setProveedor] = useState<ProveedorId>("gemini");
   const [selectorIA, setSelectorIA] = useState<SelectorIA>("lora");
+  const [qaVisualSolicitado, setQaVisualSolicitado] = useState(false);
+  // En modo usuario la casilla no se ve y la revisión visual va siempre activa (B2).
+  const qaEfectivo = qaVisualEfectivo(modoVista, qaVisualSolicitado);
+  // Formato del prompt LoRA: texto (entrenado), JSON (experimental) o ambos (dos imágenes para comparar).
+  const [formatoPromptLora, setFormatoPromptLora] = useState<LoraPromptFormat>("texto");
+  // Calibración de creatividad 0–5 (src/lib/ia/creatividad.ts): la leen el
+  // chat (diseño) y la generación (prompt LoRA). El ref evita cierres viejos
+  // en los callbacks que arman las peticiones.
+  const [creatividad, setCreatividad] = useState<NivelCreatividad>(CREATIVIDAD_POR_DEFECTO);
+  const creatividadRef = useRef<NivelCreatividad>(CREATIVIDAD_POR_DEFECTO);
+  const cambiarCreatividad = (valor: string) => {
+    const nivel = parseNivelCreatividad(Number(valor));
+    creatividadRef.current = nivel;
+    setCreatividad(nivel);
+  };
   const loraModeRef = useRef<LoraModeSlug>("training_1");
   // Espejo en estado del ref anterior, solo para lecturas durante el render
   // (p. ej. la tarjeta del plan): un ref no puede leerse ahí sin violar las
   // reglas de React, así que este valor se actualiza junto con el ref.
   const [loraModeParaBadge, setLoraModeParaBadge] = useState<LoraModeSlug>("training_1");
-  const [seedLoraDebug, setSeedLoraDebug] = useState("42");
   const [proveedoresDisponibles, setProveedoresDisponibles] = useState<ProveedorId[]>(["gemini"]);
   // Últimas medidas calculadas en el chat: se le pasan al prompt de imagen
   // como referencia de escala (§3.6 del plan) — sin esto, un arco de 3 m
@@ -517,7 +551,6 @@ export default function Page() {
   const [referenceDraft, setReferenceDraft] = useState<ReferenceDraft | null>(null);
   const [referenceReady, setReferenceReady] = useState(true);
   const [ultimaQa, setUltimaQa] = useState<ImageQaReport | null>(null);
-  const [comparacionActual, setComparacionActual] = useState<ResultadoComparacion[]>([]);
   const [ultimaImagenGenerada, setUltimaImagenGenerada] = useState<Imagen | null>(null);
   const [ultimaGeneracion, setUltimaGeneracion] = useState<GeneracionVisible | null>(null);
   const [promptModalAbierto, setPromptModalAbierto] = useState(false);
@@ -564,7 +597,6 @@ export default function Page() {
   const referenciasInputRef = useRef<HTMLInputElement>(null);
   const menuAdjuntosRef = useRef<HTMLDivElement>(null);
   const [menuAdjuntosAbierto, setMenuAdjuntosAbierto] = useState(false);
-  const referenciaGeneradaRef = useRef<string | null>(null);
   const [planAprobadoHash, setPlanAprobadoHash] = useState<string | null>(null);
   const hayPlanEnConversacion = mensajes.some((mensaje) => mensaje.role === "assistant" && Boolean(mensaje.plan));
 
@@ -694,20 +726,13 @@ export default function Page() {
 
   async function cambiarSelector(nuevo: SelectorIA) {
     setSelectorIA(nuevo);
-    if (nuevo === "lora" || nuevo === "comparar" || nuevo === "comparar_lora" || nuevo === "gemini_sin_referencias") {
+    if (nuevo === "lora") {
       setMensajes((previos) => [
         ...previos,
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          content:
-            nuevo === "comparar"
-              ? "Modo comparativo activado: generaré dos imágenes con la misma propuesta — Nano Banana 2 (Gemini) y LoRA Sempertex."
-              : nuevo === "comparar_lora"
-                ? "Modo de depuracion activado: generare dos salidas LoRA con la misma semilla — app v1 y app v2."
-              : nuevo === "gemini_sin_referencias"
-                ? "Modo de prueba activado: Gemini generará sin ninguna imagen de referencia adjunta, solo con la descripción de texto. El chat continúa con el proveedor actual."
-                : "LoRA Sempertex v007 seleccionado para las imágenes. El chat continúa con el proveedor actual.",
+            content: "Listo: las imágenes se crearán con el estilo Sempertex. Seguimos conversando igual.",
         },
       ]);
       return;
@@ -837,7 +862,7 @@ export default function Page() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error ?? "No se pudo cargar el catálogo.");
+        setError({ ui: leerUiErrorV1(data) ?? errorLocal("SERVICIO_NO_DISPONIBLE", campoTexto(data, "error") ?? `catalogo/piezas HTTP ${res.status}`), origen: "catalogo" });
         setMensajes((previos) => previos.slice(0, -1));
         return;
       }
@@ -852,8 +877,8 @@ export default function Page() {
           productos: productos.length ? productos : undefined,
         },
       ]);
-    } catch {
-      setError("No se pudo contactar al servidor.");
+    } catch (reason) {
+      setError({ ui: errorLocal("SIN_CONEXION", reason instanceof Error ? reason.message : "fetch catalogo/piezas falló"), origen: "catalogo" });
       setMensajes((previos) => previos.slice(0, -1));
     } finally {
       setCargandoChat(false);
@@ -877,7 +902,11 @@ export default function Page() {
     });
   }
 
-  async function enviar(texto: string) {
+  /**
+   * `historialBase` permite reintentar un turno fallido: se reenvía el último
+   * mensaje del cliente sobre la conversación anterior a él, sin duplicarlo.
+   */
+  async function enviar(texto: string, historialBase?: Mensaje[]) {
     if (cargandoChat) return;
     // El chat ya ve las imágenes adjuntas (van en el body más abajo), pero
     // igual necesita algo escrito para tener un mensaje de usuario coherente
@@ -895,7 +924,7 @@ export default function Page() {
     }
     solicitudUsuarioRef.current = limpio;
 
-    const nuevos: Mensaje[] = [...mensajes, { id: crypto.randomUUID(), role: "user", content: limpio }];
+    const nuevos: Mensaje[] = [...(historialBase ?? mensajes), { id: crypto.randomUUID(), role: "user", content: limpio }];
     // Burbuja vacía del asistente desde ya: ahí se va llenando el texto que
     // llega en streaming, en vez de esperar la respuesta completa.
     setMensajes([...nuevos, { id: crypto.randomUUID(), role: "assistant", content: "" }]);
@@ -937,12 +966,17 @@ export default function Page() {
           fotoEspacio: fotoEspacioRef.current
             ? { base64: fotoEspacioRef.current.base64, mime: fotoEspacioRef.current.mime }
             : undefined,
-          imagenesReferencia: imagenesReferenciaRef.current.length ? imagenesReferenciaRef.current : undefined,
+          // El contrato chat.v1 es estricto: solo base64/mime. Las dimensiones
+          // que agrega redimensionarImagen hacían fallar la validación (400).
+          imagenesReferencia: imagenesReferenciaRef.current.length
+            ? imagenesReferenciaRef.current.map(({ base64, mime }) => ({ base64, mime }))
+            : undefined,
           // Mismo blueprint que ya produjo el panel de referencias en
           // paralelo (ver ReferenceReviewPanel) — el chat lo usa solo como
           // contexto de composición (plan de integración de referencias
           // visuales, R2); con el modo plan apagado el backend lo ignora.
           referenceBlueprint: referenceDraftRef.current?.blueprint ?? referenceDraft?.blueprint,
+          creatividad: creatividadRef.current,
         }),
       });
 
@@ -966,7 +1000,7 @@ export default function Page() {
           onFin: finalizarUltimoMensaje,
           onError: (datos) => {
             hayError = true;
-            setError(datos.error ?? "Algo salió mal.");
+            setError({ ui: uiErrorDesdeChatV1(datos), origen: "chat" });
             setMensajes((previos) => previos.slice(0, -1));
           },
           onActividad: reiniciarLimiteInactividad,
@@ -976,7 +1010,11 @@ export default function Page() {
         // Los errores de preparación (por ejemplo, falta de llave) responden JSON.
         const data = await res.json();
         if (!res.ok) {
-          setError(data.error ?? "Algo salió mal.");
+          const cuerpo: unknown = data;
+          setError({
+            ui: uiErrorDesdeChatV1({ code: campoTexto(cuerpo, "code"), error: campoTexto(cuerpo, "error") ?? `chat HTTP ${res.status}`, causa: campoTexto(cuerpo, "causa"), request_id: campoTexto(cuerpo, "request_id") }),
+            origen: "chat",
+          });
           setMensajes((previos) => previos.slice(0, -1));
           return;
         }
@@ -987,7 +1025,12 @@ export default function Page() {
         setMensajes((previos) => previos.slice(0, -1));
         return;
       }
-      setError(excedioTiempo ? "El asistente tardó demasiado en responder. Intenta enviar el mensaje otra vez." : "No se pudo contactar al servidor.");
+      setError({
+        ui: excedioTiempo
+          ? errorLocal("TIEMPO_AGOTADO", "El navegador abortó el chat por inactividad del stream.")
+          : errorLocal("SIN_CONEXION", "fetch /api/chat falló o el stream se cortó."),
+        origen: "chat",
+      });
       setMensajes((previos) => previos.slice(0, -1));
     } finally {
       if (temporizador !== undefined) window.clearTimeout(temporizador);
@@ -1022,9 +1065,7 @@ export default function Page() {
     setReferenceDraft(null);
     referenceDraftRef.current = null;
     setReferenceReady(true);
-    referenciaGeneradaRef.current = null;
     setUltimaQa(null);
-    setComparacionActual([]);
     setUltimaImagenGenerada(null);
     setUltimaGeneracion(null);
     setPromptModalAbierto(false);
@@ -1033,7 +1074,6 @@ export default function Page() {
     setSelectorIA("lora");
     loraModeRef.current = "training_1";
     setLoraModeParaBadge("training_1");
-    setSeedLoraDebug("42");
     setFotoEspacio(null);
     setImagenesReferencia([]);
     setErrorAdjuntos(null);
@@ -1059,7 +1099,6 @@ export default function Page() {
    * `generando` se libera.
    */
   async function generar(override?: GenerarOverride) {
-    const automaticIds = referenceDraftRef.current?.autoProductIds ?? referenceDraft?.autoProductIds ?? [];
     if (planDecoracionActivo && imagenesReferenciaRef.current.length > 0 && !override?.plan) return;
     const ultimaValidacion = [...mensajes]
       .reverse()
@@ -1083,9 +1122,7 @@ export default function Page() {
     // A confirmed size plan is authoritative: stale shared selections from
     // older chat turns must not re-enter as legacy productIds or extra RAG
     // variants during image generation.
-    const idsBaseLegacy = override?.plan
-      ? []
-      : override?.automaticOnly ? idsSeleccionLegacy : [...idsSeleccionLegacy, ...(override?.ids ?? [])];
+    const idsBaseLegacy = override?.plan ? [] : [...idsSeleccionLegacy, ...(override?.ids ?? [])];
     const idsBaseRag = override?.plan
       ? override.plan.compras.map((compra) => compra.variant_id)
       : [...idsDePiezasValidadas, ...(override?.ragVariantIds ?? [])];
@@ -1100,7 +1137,7 @@ export default function Page() {
       ? [...new Set(override.ids)]
       : idsBaseLegacy.length > 0
         ? [...new Set(idsBaseLegacy)]
-        : [...new Set([...(override?.ids ?? []), ...automaticIds])];
+        : [...new Set(override?.ids ?? [])];
     const ragVariantIdsAUsarSinNormalizar = override?.soloIds
       ? [...new Set(override.ragVariantIds ?? [])]
       : [...new Set(idsBaseRag)];
@@ -1122,7 +1159,7 @@ export default function Page() {
     const solicitudUsuario = override?.solicitudUsuario ?? solicitudUsuarioRef.current;
     if (imagenesReferenciaRef.current.length > 0 && !referenceReady) {
       // eslint-disable-next-line react-hooks/globals -- deliberado: cola de deduplicación de generación en curso, ver declaración de pendienteAutoGlobal.
-      pendienteAutoGlobal = { ids: productIdsGeneracion, ragVariantIds: ragVariantIdsAUsar, paquetes: paquetesAUsar, manualProducts: productosManuales, instruccion: (override?.instruccion ?? ajuste.trim()) || undefined, automaticOnly: override?.automaticOnly, brief: briefAUsar, solicitudUsuario };
+      pendienteAutoGlobal = { ids: productIdsGeneracion, ragVariantIds: ragVariantIdsAUsar, paquetes: paquetesAUsar, manualProducts: productosManuales, instruccion: (override?.instruccion ?? ajuste.trim()) || undefined, brief: briefAUsar, solicitudUsuario };
       return;
     }
     if (idsAUsar.length === 0) return;
@@ -1134,9 +1171,18 @@ export default function Page() {
         return;
       }
       generandoGlobal = true;
+      ultimoIntentoGeneracionRef.current = { override };
       setGenerando(true);
       setSegundosGeneracion(0);
       setError(null);
+      const usarLoraEnIntento = usarLoraEfectivo({
+        modo: modoVista,
+        selectorLora: selectorIA === "lora",
+        estiloEstandarExplicito: Boolean(override?.estiloEstandar),
+        hayFotoEspacio: Boolean(fotoEspacioRef.current),
+        hayReferencias: imagenesReferenciaRef.current.length > 0,
+        esAjusteDeImagen: Boolean((override?.instruccion ?? ajuste.trim()) && ultimaImagenGenerada),
+      });
 
       const controlador = new AbortController();
       generacionAbortRef.current = controlador;
@@ -1161,17 +1207,13 @@ export default function Page() {
             solicitudUsuario,
             instruccion: (override?.instruccion ?? ajuste.trim()) || undefined,
             proveedor,
-            usarLora: selectorIA === "lora",
+            imageQaRequested: qaEfectivo,
+            usarLora: usarLoraEnIntento,
             // El servidor ya no acepta una llamada LoRA sin modo resuelto
             // (PLAN-COMPOSICION-RICA-V001.md §1.1/§9.2: no hay fallback
-            // anónimo de URL/trigger). "comparar" y "comparar_lora" también
-            // llaman a LoRA Sempertex, así que necesitan el mismo modo que
-            // el selector "lora".
-            loraMode: selectorIA === "lora" || selectorIA === "comparar" || selectorIA === "comparar_lora" ? loraModeRef.current ?? undefined : undefined,
-            comparar: selectorIA === "comparar",
-            compararLora: selectorIA === "comparar_lora",
-            seedLoraDebug: selectorIA === "comparar_lora" && seedLoraDebug.trim() ? Number(seedLoraDebug) : undefined,
-            sinReferencias: selectorIA === "gemini_sin_referencias",
+            loraMode: usarLoraEnIntento ? loraModeRef.current ?? undefined : undefined,
+            promptFormat: usarLoraEnIntento ? formatoPromptLora : undefined,
+            creatividad: creatividadRef.current,
             medidas: ultimasMedidas ?? undefined,
             // Adjuntos del cliente, leídos de los refs (no del estado
             // directamente): no son de un modo en particular, van en cualquier
@@ -1182,7 +1224,13 @@ export default function Page() {
             fotoEspacio: fotoEspacioRef.current
               ? { base64: fotoEspacioRef.current.base64, mime: fotoEspacioRef.current.mime }
               : undefined,
-            imagenesReferencia: imagenesReferenciaRef.current.length ? imagenesReferenciaRef.current : undefined,
+            // Las referencias de estilo solo las analiza Gemini (panel de
+            // referencias y chat); su resultado llega aquí como `blueprint` y
+            // como plan. El LoRA genera desde texto, así que nunca recibe los
+            // píxeles: enviarlos solo provocaba el rechazo del servidor.
+            imagenesReferencia: !usarLoraEnIntento && imagenesReferenciaRef.current.length
+              ? imagenesReferenciaRef.current
+              : undefined,
             aspecto: fotoEspacioRef.current?.aspecto ?? aspectoActivoRef.current,
             blueprint: referenceDraftRef.current?.blueprint ?? referenceDraft?.blueprint,
             previousGeneratedImage:
@@ -1202,25 +1250,20 @@ export default function Page() {
           // El backend devuelve QA también en NON_CONFORME; conservarlo en
           // pantalla expone la causa real sin convertir el fallo en éxito.
           if (data.qa) setUltimaQa(data.qa);
-          setError(data.error ?? "No se pudo generar la imagen.");
+          // ui-error.v1 es lo único que se muestra al cliente. Si la respuesta
+          // no lo trae (ruta aún sin migrar), se muestra un aviso genérico y el
+          // texto técnico queda solo en los detalles de modo dev.
+          const cuerpo: unknown = data;
+          setError({
+            ui: leerUiErrorV1(cuerpo) ?? errorLocal("ERROR_INTERNO", campoTexto(cuerpo, "error") ?? campoTexto(cuerpo, "message") ?? `generate HTTP ${res.status}`),
+            origen: "generacion",
+          });
           return;
         }
         if (override?.plan) setPlanAprobadoHash(typeof data.plan?.plan_hash === "string" ? data.plan.plan_hash : override.plan.plan_hash);
 
-        const modoGeneracion: GeneracionVisible["modo"] = data.modoImagen === "comparacion"
-          ? "comparar"
-          : data.modoImagen === "comparacion_lora"
-            ? "comparar"
-          : data.modoImagen === "lora"
-            ? "lora"
-            : "gemini";
-        const etiquetaGeneracion = modoGeneracion === "comparar"
-          ? selectorIA === "comparar_lora" ? "LoRA · app v1 + v2 + directo" : "Nano Banana 2 + LoRA"
-          : modoGeneracion === "lora"
-            ? "LoRA Sempertex"
-            : selectorIA === "gemini_sin_referencias"
-              ? "Gemini sin imágenes (prueba)"
-              : "Nano Banana 2 (Gemini)";
+         const modoGeneracion: GeneracionVisible["modo"] = data.modoImagen === "lora" ? "lora" : "gemini";
+         const etiquetaGeneracion = modoGeneracion === "lora" ? "LoRA Sempertex" : "Nano Banana 2 (Gemini)";
         const prompts = typeof data.prompts === "object" && data.prompts !== null
           ? Object.entries(data.prompts as Record<string, unknown>)
               .filter((entry): entry is [string, string] => typeof entry[1] === "string" && entry[1].trim().length > 0)
@@ -1229,11 +1272,12 @@ export default function Page() {
             ? [{ label: etiquetaGeneracion, prompt: data.prompt }]
             : [];
         setUltimaGeneracion({ modo: modoGeneracion, solicitado: selectorIA, etiqueta: etiquetaGeneracion, prompts });
-        setPromptModalAbierto(prompts.length > 0);
+        setPromptModalAbierto(abrirPromptAutomaticamente(modoVista, prompts.length > 0));
         ultimaInteraccionIdRef.current = typeof data.interactionId === "string" ? data.interactionId : undefined;
-        setImagenes((previas) => [data.imagen, ...previas]);
+        // Con formato "ambos" llega una segunda imagen (prompt JSON) con la misma semilla.
+        const imagenJson = typeof data.imagenAlternativa?.imagen === "string" && data.imagenAlternativa.imagen.startsWith("data:") ? data.imagenAlternativa.imagen : undefined;
+        setImagenes((previas) => [data.imagen, ...(imagenJson ? [imagenJson] : []), ...previas]);
         setImagenAmpliada(null);
-        setComparacionActual(Array.isArray(data.comparacion) ? data.comparacion : []);
         setUltimaQa(data.qa ?? null);
         // La imagen que se acaba de generar ya refleja la selección actual.
         seleccionGeneradaRef.current = seleccionRef.current;
@@ -1273,10 +1317,10 @@ export default function Page() {
         setAjuste("");
       } catch (reason) {
         if (controlador.signal.aborted) {
-          if (paginaMontadaRef.current) setError("Generación cancelada.");
+          if (paginaMontadaRef.current) setError({ ui: errorLocal("OPERACION_CANCELADA", "El cliente canceló /api/generate."), origen: "generacion" });
           return;
         }
-        setError(reason instanceof Error ? reason.message : "No se pudo contactar al servidor.");
+        setError({ ui: errorLocal("SIN_CONEXION", reason instanceof Error ? reason.message : "fetch /api/generate falló."), origen: "generacion" });
       } finally {
         window.clearInterval(intervalo);
         if (generacionIntervalRef.current === intervalo) generacionIntervalRef.current = null;
@@ -1290,7 +1334,67 @@ export default function Page() {
     });
   }
 
+  /** Texto que se deja listo en el campo del chat; el cliente decide si lo envía. */
+  function prepararMensajeChat(texto: string): void {
+    setEntrada(texto);
+    entradaRef.current?.focus();
+  }
+
+  /**
+   * Acciones del aviso de error (ui-error.v1). Cada una responde a un clic del
+   * cliente; ninguna se dispara sola.
+   */
+  function ejecutarAccionError(accion: AccionUiV1): void {
+    const actual = error;
+    if (!actual) return;
+    setError(null);
+    switch (accion) {
+      case "reintentar": {
+        if (actual.origen === "generacion") {
+          const intento = ultimoIntentoGeneracionRef.current;
+          if (intento) generar(intento.override);
+          return;
+        }
+        if (actual.origen === "chat") {
+          const indice = mensajes.map((mensaje) => mensaje.role).lastIndexOf("user");
+          if (indice >= 0) void enviar(mensajes[indice].content, mensajes.slice(0, indice));
+        }
+        return;
+      }
+      case "generar_estilo_estandar": {
+        const intento = ultimoIntentoGeneracionRef.current;
+        if (intento) generar({ ...(intento.override ?? { ids: [] }), estiloEstandar: true });
+        return;
+      }
+      case "revisar_propuesta": {
+        const entradaPlan = [...mensajes].reverse().find((mensaje) => mensaje.role === "assistant" && mensaje.plan);
+        if (entradaPlan) document.getElementById(`mensaje-${entradaPlan.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
+      case "pedir_nueva_propuesta":
+        prepararMensajeChat(actual.ui.code === "ESTILO_REQUIERE_PROPUESTA"
+          ? "Arma una propuesta de decoración con las piezas que elegí."
+          : "¿Puedes armar de nuevo la propuesta con el catálogo actual?");
+        return;
+      case "ajustar_propuesta":
+        prepararMensajeChat(actual.ui.code === "PRESUPUESTO_EXCEDIDO"
+          ? "Ajusta la propuesta para que quede dentro de mi presupuesto."
+          : "Ajusta la propuesta, por favor.");
+        return;
+      case "activar_validacion_visual":
+        setQaVisualSolicitado(true);
+        return;
+      case "revisar_adjuntos":
+        document.getElementById("adjuntos-cliente")?.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+    }
+  }
+
   function aprobarPlan(plan: PlanResuelto, messageId?: string): void {
+    if (!qaEfectivo) {
+      setError({ ui: errorLocal("VALIDACION_VISUAL_REQUERIDA", "aprobarPlan sin qaVisualSolicitado."), origen: "plan" });
+      return;
+    }
     if (plan.comercial.estado === "PRESUPUESTO_EXCEDIDO" || plan.sin_cobertura.length > 0 || generando || generandoGlobal) return;
     generar({
       ids: [],
@@ -1373,20 +1477,6 @@ export default function Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- generar se recrea cada render; pendienteAutoGlobal ya evita relanzar dos veces.
   }, [generando, referenceReady, hayPlanEnConversacion]);
 
-  // El flujo legacy conserva su generación automática por referencias. En el
-  // modo plan el único disparador es aprobar el PlanResuelto.
-  useEffect(() => {
-    if (planDecoracionActivo || !referenceReady || !referenceDraft || !imagenesReferencia.length || generando || cargandoChat || hayPlanEnConversacion) return;
-    const key = [
-      imagenesReferencia.length,
-      ...referenceDraft.blueprint.elements.map((element) => `${element.element_id}:${element.model_decision?.catalog_product_id ?? "omit"}`),
-    ].join("|");
-    if (referenciaGeneradaRef.current === key) return;
-    referenciaGeneradaRef.current = key;
-    generar({ ids: referenceDraft.autoProductIds, automaticOnly: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- key ref evita relanzar la misma propuesta.
-  }, [planDecoracionActivo, referenceReady, referenceDraft, imagenesReferencia.length, generando, cargandoChat, hayPlanEnConversacion]);
-
   /** No hay progreso real de la API — es un indicador de fase honesto por
    * tiempo transcurrido, no un porcentaje inventado. */
   function faseGeneracion(segundos: number): string {
@@ -1446,7 +1536,7 @@ export default function Page() {
   const entradasBrief = Object.entries(brief).filter(
     ([, v]) => v !== undefined && v !== null && String(v).length > 0,
   );
-  const listoParaGenerar = (seleccion.length > 0 || Boolean(referenceDraft?.autoProductIds.length) || (imagenesReferencia.length > 0 && Boolean(referenceDraft?.blueprint))) && referenceReady;
+  const listoParaGenerar = (seleccion.length > 0 || (imagenesReferencia.length > 0 && Boolean(referenceDraft?.blueprint))) && referenceReady;
   const planActualEntry = [...mensajes].reverse().find((mensaje) => mensaje.role === "assistant" && mensaje.plan);
   const planActual = planActualEntry?.plan;
   const planActualAprobado = Boolean(planActual && planAprobadoHash === planActual.plan_hash);
@@ -1467,6 +1557,9 @@ export default function Page() {
               </div>
             </div>
             <div className="workspace-header-actions">
+              <SwitchModoVista modo={modoVista} onCambiar={cambiarModoVista} />
+              {/* Controles técnicos: solo en modo dev (B2). */}
+              {esModoDev && (<>
               <label htmlFor="selector-modelo" className="sr-only">Modelo para generar imágenes</label>
               <Select value={selectorIA} onValueChange={(v) => cambiarSelector(v as SelectorIA)}>
                 <SelectTrigger id="selector-modelo">
@@ -1483,11 +1576,34 @@ export default function Page() {
                     </SelectItem>
                   ))}
                   <SelectItem value="lora">{NOMBRE_SELECTOR.lora}</SelectItem>
-                  <SelectItem value="comparar">{NOMBRE_SELECTOR.comparar}</SelectItem>
-                  <SelectItem value="comparar_lora">{NOMBRE_SELECTOR.comparar_lora}</SelectItem>
-                  <SelectItem value="gemini_sin_referencias">{NOMBRE_SELECTOR.gemini_sin_referencias}</SelectItem>
                 </SelectContent>
               </Select>
+              {selectorIA === "lora" && (
+                <>
+                  <label htmlFor="formato-prompt-lora" className="sr-only">Formato del prompt LoRA</label>
+                  <Select value={formatoPromptLora} onValueChange={(v) => setFormatoPromptLora(v as LoraPromptFormat)}>
+                    <SelectTrigger id="formato-prompt-lora" title="Texto: prompt entrenado. JSON: experimental. Ambos: dos imágenes con la misma semilla (doble costo).">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LORA_PROMPT_FORMATS.map((formato) => (
+                        <SelectItem key={formato} value={formato}>
+                          {formato === "texto" ? "Prompt: texto" : formato === "json" ? "Prompt: JSON" : "Prompt: ambos (2 imágenes)"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
+              <label className="inline-flex items-center gap-2 text-xs font-medium text-texto" title="Hace una revisión visual adicional y puede aumentar el tiempo de respuesta">
+                <input
+                  type="checkbox"
+                  checked={qaVisualSolicitado}
+                  onChange={(event) => setQaVisualSolicitado(event.target.checked)}
+                  className="size-4 accent-acento"
+                />
+                Validar visualmente
+              </label>
               <Link
                 href="/estadisticas"
                 className="ui-button-secondary inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
@@ -1495,6 +1611,26 @@ export default function Page() {
                 <ChartColumn className="size-4" aria-hidden="true" />
                 Estadísticas
               </Link>
+              </>)}
+              <div className="flex items-center gap-2 text-xs font-medium text-texto" title={perfilCreatividad(creatividad).descripcion}>
+                <label htmlFor="nivel-creatividad">Creatividad</label>
+                <input
+                  id="nivel-creatividad"
+                  type="range"
+                  min={0}
+                  max={5}
+                  step={1}
+                  value={creatividad}
+                  onChange={(event) => cambiarCreatividad(event.target.value)}
+                  aria-valuetext={`${creatividad} de 5: ${perfilCreatividad(creatividad).nombre}`}
+                  aria-describedby="nivel-creatividad-descripcion"
+                  className="w-24 accent-acento focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"
+                />
+                <output htmlFor="nivel-creatividad" className="min-w-[6.5rem] tabular-nums">
+                  {creatividad} · {perfilCreatividad(creatividad).nombre}
+                </output>
+                <span id="nivel-creatividad-descripcion" className="sr-only">{perfilCreatividad(creatividad).descripcion}</span>
+              </div>
               <button
                 type="button"
                 onClick={limpiarTodo}
@@ -1509,15 +1645,19 @@ export default function Page() {
             <Link href="/catalogo" className="ui-nav-link hover:underline hover:underline-offset-2">
               Explorar catálogo
             </Link>
-            <Link href="/laboratorio-referencias" className="ui-nav-link hover:underline hover:underline-offset-2">
-              Laboratorio JSON
-            </Link>
-            <Link href="/admin" className="ui-nav-link hover:underline hover:underline-offset-2">
-              Panel de administración
-            </Link>
-            <Link href="/configuracion-lora" className="ui-nav-link hover:underline hover:underline-offset-2">
-              Configuración LoRA
-            </Link>
+            {esModoDev && (
+              <>
+                <Link href="/laboratorio-referencias" className="ui-nav-link hover:underline hover:underline-offset-2">
+                  Laboratorio JSON
+                </Link>
+                <Link href="/admin" className="ui-nav-link hover:underline hover:underline-offset-2">
+                  Panel de administración
+                </Link>
+                <Link href="/configuracion-lora" className="ui-nav-link hover:underline hover:underline-offset-2">
+                  Configuración LoRA
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       </header>
@@ -1525,19 +1665,6 @@ export default function Page() {
       <main className="workspace-grid material-main grid flex-1 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_25rem]">
         {/* Columna de chat */}
         <section className="workspace-stage material-chat flex min-h-[calc(100dvh-13rem)] flex-col lg:min-h-0">
-          <div className="workspace-stage-header">
-            <div>
-              <p className="workspace-stage-kicker">Dirección creativa</p>
-              <h2 className="workspace-stage-title">Diseña el ambiente de tu evento.</h2>
-              <p className="workspace-stage-copy">
-                Cuéntame la ocasión, el espacio y el estilo. Yo conecto la idea con piezas reales del catálogo.
-              </p>
-            </div>
-            <div className="workspace-stage-meta" aria-label="Estado de la conversación">
-              <strong>{entradasBrief.length ? "Brief en marcha" : "Listo para empezar"}</strong>
-              <span>Curaduría + selección manual</span>
-            </div>
-          </div>
           <div
             role="log"
             aria-live="polite"
@@ -1547,9 +1674,7 @@ export default function Page() {
           >
             {planDecoracionActivo && <ReferenceAnalysisController
                references={imagenesReferencia}
-               venue={fotoEspacio}
                proveedor={proveedor}
-               eventPalette={brief.colores}
                onDraft={(draft) => {
                  referenceDraftRef.current = draft;
                  setReferenceDraft(draft);
@@ -1559,9 +1684,12 @@ export default function Page() {
             <AnimatePresence initial={false}>
             {mensajes.map((m, i) => {
               const esUltimoStreaming = i === mensajes.length - 1 && m.role === "assistant" && cargandoChat;
+              // El mensaje con el JSON del análisis de referencias es solo de diagnóstico (B2).
+              if (!esModoDev && m.analisisReferencias != null) return null;
               return (
               <motion.div
                 key={m.id}
+                id={`mensaje-${m.id}`}
                 layout="position"
                 initial={{ opacity: 0, y: 10, filter: "blur(3px)" }}
                 animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
@@ -1646,8 +1774,7 @@ export default function Page() {
                 )}
 
                 {m.medidas && <TarjetaMedidas medidas={m.medidas} />}
-                {m.referenceBlueprint && <ReferencePlanCard blueprint={m.referenceBlueprint} plan={m.plan} />}
-                {m.plan && <TarjetaPlanDecoracion plan={m.plan} aprobado={planAprobadoHash === m.plan.plan_hash} generando={generando && m.plan.plan_hash === planActual?.plan_hash} onAprobar={m.plan.plan_hash === planActual?.plan_hash ? () => aprobarPlan(m.plan!, m.id) : undefined} onPlanActualizado={m.plan.plan_hash === planActual?.plan_hash ? (plan, cotizacion) => actualizarPlanEnMensaje(m.id, plan, cotizacion) : undefined} loraMode={loraModeParaBadge} />}
+                {m.plan && <TarjetaPlanDecoracion plan={m.plan} aprobado={planAprobadoHash === m.plan.plan_hash} referenceBlueprint={selectorIA === "lora" ? m.referenceBlueprint : undefined} generando={generando && m.plan.plan_hash === planActual?.plan_hash} qaSolicitado={qaEfectivo} modoDev={esModoDev} onAprobar={m.plan.plan_hash === planActual?.plan_hash ? () => aprobarPlan(m.plan!, m.id) : undefined} onPlanActualizado={m.plan.plan_hash === planActual?.plan_hash ? (plan, cotizacion) => actualizarPlanEnMensaje(m.id, plan, cotizacion) : undefined} loraMode={loraModeParaBadge} />}
                 {m.cotizacion && (
                   <TarjetaCotizacion
                     cotizacion={m.cotizacion}
@@ -1660,7 +1787,7 @@ export default function Page() {
                 {/* Colapsado por defecto a propósito: es info de debug, no algo que el
                     cliente necesite ver de entrada — antes se mandaba como bloque de
                     código dentro del mensaje y el JSON grande reventaba el layout. */}
-                {m.analisisReferencias != null && (
+                {esModoDev && m.analisisReferencias != null && (
                   <details className="mt-2 max-w-[85%] rounded-lg border border-borde bg-superficie px-3 py-2 text-xs text-texto-suave">
                     <summary className="cursor-pointer select-none">Ver JSON de análisis de referencias</summary>
                     <pre className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap break-all">
@@ -1694,7 +1821,7 @@ export default function Page() {
                         <span className="min-w-0 flex-1">
                           <span className="block truncate text-xs font-medium text-texto">{v.titulo}</span>
                           <span className="block text-xs text-texto-suave">
-                            {v.sku ? `SKU ${v.sku}` : "sin SKU"} / {v.cantidad} paq.
+                            {esModoDev ? `${v.sku ? `SKU ${v.sku}` : "sin SKU"} / ` : ""}{v.cantidad} {v.cantidad === 1 ? "paquete" : "paquetes"}
                           </span>
                         </span>
                         {v.handle && (
@@ -1718,10 +1845,17 @@ export default function Page() {
                     vez de que la sustitución pase en silencio. */}
                 {m.ragRechazados && m.ragRechazados.length > 0 && (
                   <div className="mt-2 max-w-[85%] space-y-1 rounded-lg border border-aviso/30 bg-aviso/10 p-2 text-xs text-aviso">
-                    <p className="font-medium">Piezas descartadas de esta propuesta:</p>
-                    {m.ragRechazados.map((r) => (
-                      <p key={`${r.productId}:${r.variantId}`}>⚠ {r.variantId}: {r.motivo}</p>
-                    ))}
+                    {esModoDev ? (
+                      <>
+                        <p className="font-medium">Piezas descartadas de esta propuesta:</p>
+                        {m.ragRechazados.map((r) => (
+                          <p key={`${r.productId}:${r.variantId}`}>⚠ {r.variantId}: {r.motivo}</p>
+                        ))}
+                      </>
+                    ) : (
+                      // Modo usuario: se avisa sin ids ni motivos técnicos (B2).
+                      <p>{m.ragRechazados.length === 1 ? "Una pieza que te propuse ya no está disponible y la quité de la propuesta." : `${m.ragRechazados.length} piezas que te propuse ya no están disponibles y las quité de la propuesta.`}</p>
+                    )}
                   </div>
                 )}
                 </div>
@@ -1749,9 +1883,15 @@ export default function Page() {
           </div>
 
           {error && (
-            <p className="ui-alert mx-4 mb-2 sm:mx-6 lg:mx-8">
-              {error}
-            </p>
+            <div className="mx-4 mb-2 sm:mx-6 lg:mx-8">
+              <AvisoError
+                error={error.ui}
+                accionesDisponibles={ACCIONES_POR_ORIGEN[error.origen]}
+                onAccion={ejecutarAccionError}
+                onCerrar={() => setError(null)}
+                mostrarDetallesDev={esModoDev}
+              />
+            </div>
           )}
 
           {errorAdjuntos && (
@@ -1761,7 +1901,7 @@ export default function Page() {
           )}
 
           {/* Adjuntos del cliente: aportan contexto en ambos modos. */}
-          <div className="workspace-attachments mx-auto flex w-full max-w-4xl flex-wrap items-center gap-2 px-4 pb-2 sm:px-6 lg:px-8">
+          <div id="adjuntos-cliente" className="workspace-attachments mx-auto flex w-full max-w-4xl flex-wrap items-center gap-2 px-4 pb-2 sm:px-6 lg:px-8">
             <input
               ref={fotoEspacioInputRef}
               type="file"
@@ -1861,11 +2001,11 @@ export default function Page() {
                    type="button"
                    data-testid="aprobar-generar-plan-sticky"
                     onClick={() => aprobarPlan(planActual, planActualEntry?.id)}
-                   disabled={planActualAprobado || generando || planActual.comercial.estado === "PRESUPUESTO_EXCEDIDO" || planActual.sin_cobertura.length > 0}
+                    disabled={planActualAprobado || generando || !qaEfectivo || planActual.comercial.estado === "PRESUPUESTO_EXCEDIDO" || planActual.sin_cobertura.length > 0}
                    aria-busy={generando}
                    className="ui-button-primary ui-pressable w-full disabled:opacity-60"
                  >
-                   {generando ? "Generando…" : planActualAprobado ? "Aprobación registrada" : planActual.sin_cobertura.length > 0 ? "Completa las piezas sin cobertura" : "Aprobar y generar imagen"}
+                    {generando ? "Generando…" : planActualAprobado ? "Aprobación registrada" : !qaEfectivo ? "Activa la validación visual" : planActual.sin_cobertura.length > 0 ? "Faltan piezas disponibles" : "Aprobar y generar imagen"}
                  </button>
                </div>
              </div>
@@ -1969,9 +2109,7 @@ export default function Page() {
         <aside aria-label="Panel de salida" className="workspace-sidebar scroll-suave space-y-5 border-t border-borde px-4 py-5 sm:px-6 lg:min-h-0 lg:border-l lg:border-t-0">
           {!planDecoracionActivo && <ReferenceAnalysisController
             references={imagenesReferencia}
-            venue={fotoEspacio}
             proveedor={proveedor}
-            eventPalette={brief.colores}
             onDraft={(draft) => {
               referenceDraftRef.current = draft;
               setReferenceDraft(draft);
@@ -2004,7 +2142,8 @@ export default function Page() {
             )}
           </section>
 
-          <section>
+          {/* C2: con una propuesta en la conversación, el plan es la selección; la lista manual solo en dev. */}
+          {(esModoDev || !hayPlanEnConversacion) && <section>
               <div className="mb-2 flex items-center justify-between gap-2">
                 <h2 className="text-xs font-semibold uppercase tracking-wide text-texto-suave">
                   Selección ({seleccionados.length})
@@ -2108,36 +2247,9 @@ export default function Page() {
                   </AnimatePresence>
                 </ul>
               )}
-          </section>
+          </section>}
 
           <section className="space-y-2">
-            {selectorIA === "comparar_lora" && (
-              <div className="material-panel space-y-3" aria-labelledby="lora-debug-title">
-                <div>
-                  <h2 id="lora-debug-title" className="text-sm font-semibold text-texto">Depuración de prompt LoRA</h2>
-                  <p className="mt-1 text-xs leading-5 text-texto-suave">
-                    Misma escena y semilla. Verás el prompt legado v1 y la caption compilada v2, generados con el mismo LoRA.
-                  </p>
-                </div>
-                <label className="flex items-center gap-2 text-xs font-medium text-texto" htmlFor="seed-lora-debug">
-                  <span>Semilla compartida</span>
-                  <input
-                    id="seed-lora-debug"
-                    type="number"
-                    min={0}
-                    step={1}
-                    value={seedLoraDebug}
-                    onChange={(e) => setSeedLoraDebug(e.target.value)}
-                    className="w-28 rounded-lg border border-borde bg-fondo px-2.5 py-1.5 text-xs font-normal text-texto outline-none focus:border-acento"
-                  />
-                </label>
-                {(fotoEspacio || imagenesReferencia.length > 0) && (
-                  <p className="rounded-lg bg-aviso-suave px-2.5 py-2 text-xs leading-5 text-aviso" role="alert">
-                    Este modo compara generación desde texto. Quita foto o referencias antes de generar.
-                  </p>
-                )}
-              </div>
-            )}
             {imagenes.length > 0 && (
               <input
                 value={ajuste}
@@ -2160,7 +2272,8 @@ export default function Page() {
                 </motion.p>
               )}
             </AnimatePresence>
-            <button
+            {/* C2: con propuesta pendiente la aprobación ya está en la tarjeta y la barra fija; en modo usuario este botón solo aparece sin propuesta o para aplicar un ajuste escrito sobre una propuesta aprobada. */}
+            {(esModoDev || !planActual || (planActualAprobado && ajuste.trim().length > 0)) && <button
               type="button"
               onClick={() => {
                 if (planDecoracionActivo && imagenesReferencia.length > 0 && !planActual) return;
@@ -2182,14 +2295,14 @@ export default function Page() {
                 }
                 aprobarPlan(planActual, planActualEntry?.id);
               }}
-              disabled={planActual ? (botonPlanBloqueado && !ajuste.trim()) || generando : !listoParaGenerar || generando || (planDecoracionActivo && imagenesReferencia.length > 0) || (selectorIA === "comparar_lora" && (fotoEspacio !== null || imagenesReferencia.length > 0))}
+               disabled={planActual ? !qaEfectivo || (botonPlanBloqueado && !ajuste.trim()) || generando : !listoParaGenerar || generando || (planDecoracionActivo && imagenesReferencia.length > 0)}
               aria-busy={generando}
               className="ui-button-primary ui-pressable w-full"
             >
               {planActual && planAprobadoHash === planActual.plan_hash
                 ? ajuste.trim() ? "Aplicar ajuste y regenerar" : "Aprobación registrada"
-                : planActual
-                  ? "Aprobar y generar imagen"
+                 : planActual
+                   ? !qaEfectivo ? "Activa la validación visual" : "Aprobar y generar imagen"
                   : planDecoracionActivo && imagenesReferencia.length > 0
                     ? "Espera el plan comercial"
                     : generando
@@ -2199,8 +2312,8 @@ export default function Page() {
                         : imagenes.length > 0
                           ? "Generar otra versión"
                           : "Generar visualización"}
-            </button>
-            {!listoParaGenerar && !generando && (
+            </button>}
+            {!listoParaGenerar && !generando && !planActual && (
               <p className="text-xs text-texto-suave">{referenceReady ? "Necesitas una pieza o referencia para generar." : "La IA está resolviendo las referencias."}</p>
             )}
             {planDecoracionActivo && imagenesReferencia.length > 0 && !planActual && referenceReady && !generando && (
@@ -2230,30 +2343,13 @@ export default function Page() {
             )}
           </AnimatePresence>
 
-          {comparacionActual.length > 0 && (
-            <>
-              {ultimaGeneracion?.prompts.length ? (
-                <div className="mb-3 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setPromptModalAbierto(true)}
-                    className="ui-button-secondary ui-pressable px-3 py-2 text-xs"
-                  >
-                    Ver prompt usado
-                  </button>
-                </div>
-              ) : null}
-              <ComparacionModelos resultados={comparacionActual} onOpen={setImagenAmpliada} />
-            </>
-          )}
-
-          {imagenes.length > 0 && comparacionActual.length === 0 && (
+          {imagenes.length > 0 && (
             <section className="space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-xs font-semibold uppercase tracking-wide text-texto-suave">
                   Visualizaciones
                 </h2>
-                {ultimaGeneracion && (
+                {esModoDev && ultimaGeneracion && (
                   <div className="flex flex-wrap items-center justify-end gap-2">
                   <span className="material-status" title="Proveedor que devolvió esta imagen">
                     Generada con {ultimaGeneracion.etiqueta}
@@ -2270,11 +2366,6 @@ export default function Page() {
                   </div>
                 )}
               </div>
-              {ultimaGeneracion?.solicitado === "comparar" && ultimaGeneracion.modo !== "comparar" && (
-                <p className="rounded-xl border border-aviso/40 bg-aviso/10 px-3 py-2 text-xs leading-5 text-aviso" role="status">
-                  Solicitaste una comparación, pero el servidor devolvió una sola salida: {ultimaGeneracion.etiqueta}.
-                </p>
-              )}
               {imagenes.map((src, i) => (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -2288,7 +2379,14 @@ export default function Page() {
               <p className="text-xs text-texto-suave">
                 Imagen referencial generada con IA. No es un render contractual.
               </p>
-              <GenerationQaSummary qa={ultimaQa} />
+              {esModoDev ? (
+                <GenerationQaSummary qa={ultimaQa} />
+              ) : ultimaQa?.pass === false ? (
+                // Modo usuario: sin razones técnicas del QA, pero sin ocultar que la imagen no quedó fiel.
+                <p className="text-xs text-texto-suave" data-testid="aviso-imagen-no-fiel">
+                  Esta imagen puede no reflejar exactamente la propuesta. Puedes generar otra versión.
+                </p>
+              ) : null}
             </section>
           )}
           </div>
@@ -2298,7 +2396,7 @@ export default function Page() {
       <Lightbox src={imagenAmpliada} open={imagenAmpliada != null} onClose={() => setImagenAmpliada(null)} />
       <PromptModal
         entries={ultimaGeneracion?.prompts ?? []}
-        open={promptModalAbierto}
+        open={esModoDev && promptModalAbierto}
         onClose={() => setPromptModalAbierto(false)}
       />
     </div>

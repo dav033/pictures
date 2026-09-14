@@ -239,7 +239,7 @@ function llamarOpencode(prompt: string, fotoPath: string): DatosGenerados | null
     fotoPath,
   ];
 
-  const resultado = spawnSync(binarioOpencode(), args, { encoding: "utf-8", maxBuffer: 20 * 1024 * 1024 });
+  const resultado = spawnSync(/*turbopackIgnore: true*/ binarioOpencode(), args, { encoding: "utf-8", maxBuffer: 20 * 1024 * 1024 });
   const raw = resultado.stdout || resultado.stderr;
   if (!raw) return null;
 

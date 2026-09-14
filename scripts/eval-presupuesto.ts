@@ -9,7 +9,7 @@ for (const archivo of [".env.local", ".env"]) {
 }
 
 /**
- * El plan (PLAN_RAG_FRANJAS_PRESUPUESTO.md §9) admite que esto nunca quedó
+ * El plan (docs/migracion-python/PLAN-MAESTRO-V2.md §9) admite que esto nunca quedó
  * como suite repetible — las métricas se verificaron manualmente una vez.
  * Este script cubre lo que sí se puede verificar de forma objetiva sin
  * juicio subjetivo: los invariantes de negocio que el propio código declara

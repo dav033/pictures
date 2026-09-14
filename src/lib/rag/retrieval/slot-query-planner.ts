@@ -1,6 +1,6 @@
 /**
  * Planificador de consultas por slot (Tarea 04.1 —
- * `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`, sección 9.2 / "Plan 04, Tarea
+ * `docs/migracion-python/PLAN-MAESTRO-V2.md`, sección 9.2 / "Plan 04, Tarea
  * 04.1" en la sección 11).
  *
  * `planSlotQueries` convierte un `SceneProgramV1` YA EXPANDIDO

@@ -1,6 +1,6 @@
 /**
  * Auditoría de brechas de catálogo por receta (Tarea 03.2 —
- * `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`, Plan 03 / sección 11).
+ * `docs/migracion-python/PLAN-MAESTRO-V2.md`, Plan 03 / sección 11).
  *
  * Para una receta registrada (`src/lib/scene/recipes.ts`) y un perfil de
  * complejidad, expande la receta a un `SceneProgramV1`

@@ -40,11 +40,34 @@ type CasoFixture = {
   esperadoIds: string[];
 };
 
+/**
+ * Procedencia del catálogo contra el que se generó el fixture. Sin esto, un
+ * fixture generado contra otro catálogo (otros product_id) solo se manifiesta
+ * como recall=0/precision=0, indistinguible de una regresión del retrieval.
+ */
+type CatalogoFixture = {
+  source_snapshot_ids: string[];
+  productos: number;
+  productos_sin_snapshot: number;
+  variantes: number;
+};
+
+type OrigenFixture = {
+  /** Nunca la URL: solo si el host era loopback y el nombre de la base. */
+  loopback: boolean;
+  base_datos: string;
+};
+
 type Fixture = {
   generado_en: string;
   nota: string;
+  motivo?: string;
+  origen?: OrigenFixture;
+  catalogo?: CatalogoFixture;
   casos: CasoFixture[];
 };
+
+const HOSTS_LOOPBACK = new Set(["127.0.0.1", "localhost", "::1", "[::1]"]);
 
 const COMBOS_FILTRO: { texto: string; categoria: string | null; color: string | null; ocasion: string | null; precioMax: number | null }[] = [
   { texto: "globo dorado", categoria: null, color: "dorado", ocasion: null, precioMax: null },
@@ -63,7 +86,30 @@ const SIN_SENTIDO = [
   "sofá reclinable de peluche para exteriores",
 ];
 
-async function construirFixture(pool: Pool): Promise<Fixture> {
+function describirOrigen(databaseUrl: string): OrigenFixture {
+  const url = new URL(databaseUrl);
+  return { loopback: HOSTS_LOOPBACK.has(url.hostname), base_datos: decodeURIComponent(url.pathname.replace(/^\//, "")) };
+}
+
+async function describirCatalogo(pool: Pool): Promise<CatalogoFixture> {
+  const { rows: snapshots } = await pool.query<{ source_snapshot_id: string }>(
+    `SELECT DISTINCT source_snapshot_id FROM catalog_products WHERE source_snapshot_id IS NOT NULL ORDER BY source_snapshot_id`,
+  );
+  const { rows: [conteo] } = await pool.query<{ productos: string; productos_sin_snapshot: string; variantes: string }>(
+    `SELECT
+       (SELECT count(*) FROM catalog_products)::text AS productos,
+       (SELECT count(*) FROM catalog_products WHERE source_snapshot_id IS NULL)::text AS productos_sin_snapshot,
+       (SELECT count(*) FROM catalog_variants)::text AS variantes`,
+  );
+  return {
+    source_snapshot_ids: snapshots.map((r) => r.source_snapshot_id),
+    productos: Number(conteo.productos),
+    productos_sin_snapshot: Number(conteo.productos_sin_snapshot),
+    variantes: Number(conteo.variantes),
+  };
+}
+
+async function construirFixture(pool: Pool, databaseUrl: string, motivo: string | undefined): Promise<Fixture> {
   const casos: CasoFixture[] = [];
 
   // Selección determinista (ORDER BY, no random()): el mismo comando
@@ -71,17 +117,12 @@ async function construirFixture(pool: Pool): Promise<Fixture> {
   //
   // sku_original (no la columna legada sku) porque es lo que queryExact()
   // busca de verdad (src/lib/rag/retrieval/search.ts:263-264, columnSql =
-  // "UPPER(v.sku_original)"). Hallazgo real encontrado al construir este
-  // fixture, no arreglado aquí por estar fuera de alcance de la Fase 8: el
-  // Postgres local sincronizado con `npm run rag:sync`
-  // (scripts/import-shopify-catalog.ts, el pipeline legado) deja
-  // sku_original/sku_canonical vacíos para las 3726 variantes -- Neon
-  // (producción) los tiene poblados correctamente en las 3723 suyas, así
-  // que la búsqueda exacta por SKU SÍ funciona en producción; es un
-  // problema de qué pipeline sincronizó este Postgres local, no de
-  // producción. Si esta consulta no encuentra filas, la categoría "sku"
-  // queda vacía en el fixture generado -- eso es correcto y esperable
-  // contra un local sin resincronizar con scripts/import-cdn-catalog.ts.
+  // "UPPER(v.sku_original)"). Un Postgres sincronizado con el pipeline
+  // legado (`npm run rag:sync`, scripts/import-shopify-catalog.ts) deja
+  // sku_original/sku_canonical vacíos; en ese caso la categoría "sku" queda
+  // vacía en el fixture generado -- correcto y esperable. Un catálogo
+  // importado con scripts/import-cdn-catalog.ts sí los puebla (ver
+  // docs/migracion-python/rag/eval-python-fase8.md).
   const { rows: variantes } = await pool.query<{ product_id: string; sku_original: string }>(
     `SELECT product_id, sku_original FROM catalog_variants
      WHERE sku_original IS NOT NULL AND sku_original <> '' AND available = true
@@ -146,9 +187,25 @@ async function construirFixture(pool: Pool): Promise<Fixture> {
 
   return {
     generado_en: new Date().toISOString(),
-    nota: "Construido en vivo contra catalog_products/catalog_variants con selección determinista (ORDER BY id, no random()). No depende de rag_source_snapshots. Regenerar con --generate si el catálogo cambia significativamente.",
+    nota: "Construido en vivo contra catalog_products/catalog_variants con selección determinista (ORDER BY id, no random()). No depende de rag_source_snapshots. Regenerar con --generate si el catálogo cambia (otro snapshot u otros product_id): --run falla con fixture_ids_esperados_ausentes > 0 cuando los ids esperados ya no existen.",
+    ...(motivo ? { motivo } : {}),
+    origen: describirOrigen(databaseUrl),
+    catalogo: await describirCatalogo(pool),
     casos,
   };
+}
+
+function snapshotsDeclarados(fixture: Fixture): string[] | null {
+  const catalogo: unknown = fixture.catalogo;
+  if (catalogo === undefined) return null;
+  if (typeof catalogo !== "object" || catalogo === null || !("source_snapshot_ids" in catalogo)) {
+    throw new Error("fixture inválido: 'catalogo' debe declarar source_snapshot_ids");
+  }
+  const ids: unknown = catalogo.source_snapshot_ids;
+  if (!Array.isArray(ids) || !ids.every((id): id is string => typeof id === "string")) {
+    throw new Error("fixture inválido: 'catalogo.source_snapshot_ids' debe ser una lista de strings");
+  }
+  return ids;
 }
 
 function recallAtK(esperado: string[], obtenido: string[], k: number): number | null {
@@ -164,12 +221,46 @@ function precisionEnConjunto(esperado: string[], obtenido: string[]): number | n
 }
 
 type ResultadoCaso = { id: string; categoria: Categoria; ok: boolean; ms: number; detalle: string };
+type FalloFixture = { id: string; detalle: string };
 
-async function correrFixture(pool: Pool, fixture: Fixture): Promise<{ resultados: ResultadoCaso[]; metrics: Record<string, unknown> }> {
+/**
+ * Ramas que, si llegaran a ejecutarse, dependen de un proveedor externo
+ * (embedding de consulta vía Gemini o Python, rerank vía Python). Esta eval
+ * debe correr sin ellas; cualquier otro estado distinto de SKIPPED_OPTIONAL
+ * (o ausente) invalida el caso.
+ */
+const RAMAS_CON_PROVEEDOR = ["vector", "rerank"] as const;
+
+async function correrFixture(
+  pool: Pool,
+  fixture: Fixture,
+): Promise<{ resultados: ResultadoCaso[]; fallosFixture: FalloFixture[]; metrics: Record<string, unknown> }> {
   const { rows: idsValidos } = await pool.query<{ product_id: string }>("SELECT product_id FROM catalog_products");
   const catalogoValido = new Set(idsValidos.map((r) => r.product_id));
 
   const resultados: ResultadoCaso[] = [];
+
+  // Un fixture cuyos ids esperados no existen en el catálogo actual no puede
+  // medir el retrieval: reportaría recall/precision 0 aunque el retrieval
+  // funcione. Se falla explícitamente con la causa, en vez de dejar que se
+  // confunda con una regresión.
+  const idsEsperados = [...new Set(fixture.casos.flatMap((caso) => caso.esperadoIds))];
+  const idsEsperadosAusentes = idsEsperados.filter((id) => !catalogoValido.has(id)).length;
+  const snapshotsFixture = snapshotsDeclarados(fixture);
+  const catalogoActual = await describirCatalogo(pool);
+  const snapshotCoincide = snapshotsFixture === null
+    ? null
+    : JSON.stringify(snapshotsFixture) === JSON.stringify(catalogoActual.source_snapshot_ids);
+  const fallosFixture: FalloFixture[] = [];
+  if (idsEsperadosAusentes > 0) {
+    fallosFixture.push({
+      id: "fixture",
+      detalle: `fixture desactualizado: ${idsEsperadosAusentes} de ${idsEsperados.length} ids esperados no existen en catalog_products `
+        + `(snapshot del fixture=${JSON.stringify(snapshotsFixture)}, catálogo actual=${JSON.stringify(catalogoActual.source_snapshot_ids)}); `
+        + "regenerar con --generate contra el mismo catálogo",
+    });
+  }
+  let ramasConProveedor = 0;
   const recallsSku: number[] = [];
   const recallsNombre: number[] = [];
   const precisionesFiltro: number[] = [];
@@ -184,24 +275,39 @@ async function correrFixture(pool: Pool, fixture: Fixture): Promise<{ resultados
     const obtenidoIds = respuesta.results.map((r) => r.productId);
     const invalidos = obtenidoIds.filter((id) => !catalogoValido.has(id));
     idsInvalidosTotal += invalidos.length;
+    const ramasUsadas = RAMAS_CON_PROVEEDOR.filter((rama) => {
+      const estado = respuesta.branchStatus?.[rama];
+      return estado !== undefined && estado !== "SKIPPED_OPTIONAL";
+    });
+    ramasConProveedor += ramasUsadas.length;
+    const registrar = (ok: boolean, detalle: string): void => {
+      const detalleProveedor = ramasUsadas.map((rama) => `rama ${rama}=${respuesta.branchStatus?.[rama]} no permitida sin proveedor`);
+      resultados.push({
+        id: caso.id,
+        categoria: caso.categoria,
+        ok: ok && ramasUsadas.length === 0,
+        ms,
+        detalle: [detalle, ...detalleProveedor].filter(Boolean).join("; "),
+      });
+    };
 
     if (caso.categoria === "sin_resultado") {
       sinResultadoTotal++;
       const ok = obtenidoIds.length === 0;
       if (ok) sinResultadoAcertados++;
-      resultados.push({ id: caso.id, categoria: caso.categoria, ok, ms, detalle: ok ? "" : `${obtenidoIds.length} resultado(s) inesperado(s)` });
+      registrar(ok, ok ? "" : `${obtenidoIds.length} resultado(s) inesperado(s)`);
       continue;
     }
     if (caso.categoria === "filtro") {
       const precision = precisionEnConjunto(caso.esperadoIds, obtenidoIds);
       if (precision !== null) precisionesFiltro.push(precision);
-      resultados.push({ id: caso.id, categoria: caso.categoria, ok: precision === null || precision >= 0.999, ms, detalle: precision === null ? "sin resultados" : `precision=${precision.toFixed(3)}` });
+      registrar(precision === null || precision >= 0.999, precision === null ? "sin resultados" : `precision=${precision.toFixed(3)}`);
       continue;
     }
     const recall = recallAtK(caso.esperadoIds, obtenidoIds, 5) ?? 0;
     if (caso.categoria === "sku") recallsSku.push(recall);
     else recallsNombre.push(recall);
-    resultados.push({ id: caso.id, categoria: caso.categoria, ok: recall >= 0.999, ms, detalle: `recall@5=${recall.toFixed(3)}` });
+    registrar(recall >= 0.999, `recall@5=${recall.toFixed(3)}`);
   }
 
   // null cuando no hay casos de esa categoría -- 0 significaría "0% de
@@ -215,11 +321,15 @@ async function correrFixture(pool: Pool, fixture: Fixture): Promise<{ resultados
     filtro_precision: mean(precisionesFiltro),
     sin_resultado_accuracy: sinResultadoTotal ? sinResultadoAcertados / sinResultadoTotal : null,
     ids_invalidos_total: idsInvalidosTotal,
+    fixture_ids_esperados_ausentes: idsEsperadosAusentes,
+    ramas_con_proveedor_usadas: ramasConProveedor,
+    catalogo_snapshot_ids: catalogoActual.source_snapshot_ids,
+    fixture_snapshot_coincide: snapshotCoincide,
     error_count: errorCount,
     error_rate: fixture.casos.length ? errorCount / fixture.casos.length : 0,
     latencia_ms: { p50: percentile(resultados.map((r) => r.ms), 50), p95: percentile(resultados.map((r) => r.ms), 95), max: Math.max(0, ...resultados.map((r) => r.ms)) },
   };
-  return { resultados, metrics };
+  return { resultados, fallosFixture, metrics };
 }
 
 function percentile(values: number[], p: number): number {
@@ -235,27 +345,38 @@ async function main(): Promise<void> {
     const index = args.indexOf("--fixture");
     return index >= 0 ? path.resolve(ROOT, args[index + 1]) : DEFAULT_FIXTURE;
   })();
-  if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL es requerido");
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) throw new Error("DATABASE_URL es requerido");
+  const pool = new Pool({ connectionString: databaseUrl });
   try {
     if (args.includes("--generate")) {
-      const fixture = await construirFixture(pool);
-      await writeFile(fixturePath, JSON.stringify(fixture, null, 2), "utf8");
-      console.log(JSON.stringify({ status: "GENERATED", fixture: path.relative(ROOT, fixturePath), casos: fixture.casos.length }));
+      const motivoIndex = args.indexOf("--motivo");
+      const motivo = motivoIndex >= 0 ? args[motivoIndex + 1]?.trim() : undefined;
+      if (motivoIndex >= 0 && !motivo) throw new Error("--motivo requiere un texto");
+      const fixture = await construirFixture(pool, databaseUrl, motivo);
+      await writeFile(fixturePath, `${JSON.stringify(fixture, null, 2)}\n`, "utf8");
+      console.log(JSON.stringify({ status: "GENERATED", fixture: path.relative(ROOT, fixturePath), casos: fixture.casos.length, catalogo: fixture.catalogo }));
       return;
     }
     if (args.includes("--run")) {
       // Sin proveedor real: mismo patrón que scripts/bench-rag-v2.ts --no-key.
+      // Solo sirven los interruptores que search.ts lee EN CADA LLAMADA: las
+      // constantes de src/lib/ia/feature-flags.ts (RAG_USE_VECTOR,
+      // RAG_RERANK_ENABLED, ...) ya se evaluaron al importar este módulo, así
+      // que asignarlas aquí no tendría efecto. GEMINI_API_KEY vacía anula el
+      // embedding de consulta vía Gemini; el kill switch (precedencia absoluta
+      // en seleccionarBackendMigracion) anula el embedding y el rerank vía
+      // Python. ramas_con_proveedor_usadas verifica que así fue.
       process.env.GEMINI_API_KEY = "";
-      process.env.RAG_USE_VECTOR = "false";
+      process.env.PYTHON_BACKEND_KILL_SWITCH = "true";
       const fixture = JSON.parse(await readFile(fixturePath, "utf8")) as Fixture;
-      const { resultados, metrics } = await correrFixture(pool, fixture);
-      const fallos = resultados.filter((r) => !r.ok);
-      console.log(JSON.stringify({ status: fallos.length ? "FAIL" : "PASS", metrics, failed_cases: fallos.map((f) => ({ id: f.id, detalle: f.detalle })) }));
+      const { resultados, fallosFixture, metrics } = await correrFixture(pool, fixture);
+      const fallos = [...fallosFixture, ...resultados.filter((r) => !r.ok).map((f) => ({ id: f.id, detalle: f.detalle }))];
+      console.log(JSON.stringify({ status: fallos.length ? "FAIL" : "PASS", metrics, failed_cases: fallos }));
       if (fallos.length) process.exitCode = 1;
       return;
     }
-    throw new Error("uso: --generate [--fixture <ruta>] | --run [--fixture <ruta>]");
+    throw new Error("uso: --generate [--fixture <ruta>] [--motivo <texto>] | --run [--fixture <ruta>]");
   } finally {
     await pool.end();
   }

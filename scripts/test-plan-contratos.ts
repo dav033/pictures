@@ -47,7 +47,8 @@ const planSatin = PlanDecoracionSchema.parse({
 });
 assert.deepEqual(validarRestriccionesPlan(planSatin, planSatin.restricciones!), []);
 const planSinSatin = PlanDecoracionSchema.parse({ ...base, restricciones: restriccionesAcabado });
-assert.match(validarRestriccionesPlan(planSinSatin, planSinSatin.restricciones!).join(" | "), /acabado explícito satin/);
+// Mensaje redactado para el cliente (A4, docs/mejoras/PLAN-ESTRUCTURAS-Y-UX.md).
+assert.match(validarRestriccionesPlan(planSinSatin, planSinSatin.restricciones!).join(" | "), /Pediste el acabado satin y la propuesta todavía no lo incluye/);
 
 console.log("[PASS] contratos de PlanDecoracion — 12 reglas de validación");
 

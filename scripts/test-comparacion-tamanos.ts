@@ -13,8 +13,9 @@
 
 import { readFile } from "node:fs/promises";
 import { analizarComparacion, type HallazgoComparacion } from "./lib/comparacion-tamanos";
+import { directorioOrdenes } from "../src/lib/ordenes/directorio";
 
-const RUTA_ORDENES = "C:/Users/davidt/Downloads/ordenes-decoracion";
+const RUTA_ORDENES = directorioOrdenes();
 
 type Regla = HallazgoComparacion["regla"];
 

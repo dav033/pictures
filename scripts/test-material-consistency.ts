@@ -2,7 +2,14 @@ import assert from "node:assert/strict";
 import { cotizarProductos } from "../src/lib/cotizacion/motor";
 import { buildImagePrompt } from "../src/lib/ia/build-image-prompt";
 import { evaluateSceneQa } from "../src/lib/ia/image-qa";
-import { estimateFromMeasuredMaterials, designQuantityForProduct, purchaseForProduct } from "../src/lib/materiales/estimacion";
+import {
+  estimateFromMeasuredMaterials,
+  designQuantityForProduct,
+  purchaseForProduct,
+  validateMaterialEstimate,
+  wasteOnlySavingsCop,
+  type DesignMaterialEstimate,
+} from "../src/lib/materiales/estimacion";
 import type { Producto } from "../src/lib/types";
 import type { SceneSpec } from "../src/lib/ia/scene-spec";
 
@@ -78,6 +85,89 @@ assert.equal(purchaseForProduct(estimate, "fashion-pink-r12")?.required_quantity
 assert.equal(purchaseForProduct(estimate, "fashion-pink-r12")?.leftover_inventory, 33);
 assert.equal(purchaseForProduct(estimate, "fashion-pink-r12")?.purchase_cost, 17_100);
 assert.ok(estimate.warnings.some((warning) => /appears too low/i.test(warning)));
+// The foil heart (1 unit, 1 per package, 5.000 COP) would need a second package
+// if merma applied to it; merma only covers balloons, so it saves nothing.
+assert.equal(estimate.totals.waste_only_savings_cop, 0);
+assert.equal(validateMaterialEstimate(estimate).ok, true);
+
+type Purchase = DesignMaterialEstimate["purchases"][number];
+type EstimateLine = DesignMaterialEstimate["balloons"][number];
+function purchase(overrides: Pick<Purchase, "product_id" | "variant_id" | "design_quantity" | "units_per_package" | "package_count" | "purchase_cost">): Purchase {
+  const purchaseQuantity = overrides.package_count * overrides.units_per_package;
+  return {
+    ...overrides,
+    waste_reserve: 0,
+    required_quantity: overrides.design_quantity,
+    waste_adjusted_quantity: overrides.design_quantity,
+    purchase_quantity: purchaseQuantity,
+    used: overrides.design_quantity,
+    leftover_inventory: purchaseQuantity - overrides.design_quantity,
+    consumption_cost: 0,
+    additional_package_for_waste: false,
+    operational_surplus: purchaseQuantity - overrides.design_quantity,
+    potential_surplus: purchaseQuantity - overrides.design_quantity,
+  };
+}
+function line(productId: string, variantId: string, designQuantity: number, sizeInches: number | null): EstimateLine {
+  return {
+    product_id: productId,
+    variant_id: variantId,
+    color: null,
+    finish: null,
+    size_inches: sizeInches,
+    shape: null,
+    design_quantity: designQuantity,
+    waste_reserve: 0,
+    required_quantity: designQuantity,
+    waste_adjusted_quantity: designQuantity,
+  };
+}
+
+// Golden vector 09: a non-geometric backdrop (design 1, 1 per package) never
+// contributes, while a balloon line whose merma crosses a package boundary does.
+const telon = purchase({ product_id: "P-TELON", variant_id: "V-TELON", design_quantity: 1, units_per_package: 1, package_count: 1, purchase_cost: 20_000 });
+const balloonCrossing = purchase({ product_id: "P-BAL", variant_id: "V-BAL-R12", design_quantity: 60, units_per_package: 7, package_count: 9, purchase_cost: 13_500 });
+assert.equal(wasteOnlySavingsCop([], [line("P-TELON", "V-TELON", 1, null)], [telon]), 0);
+assert.equal(wasteOnlySavingsCop([line("P-BAL", "V-BAL-R12", 60, 12)], [line("P-TELON", "V-TELON", 1, null)], [balloonCrossing, telon]), 1_500);
+// A purchase that no estimate line classifies as a balloon is not eligible either.
+assert.equal(wasteOnlySavingsCop([], [], [telon]), 0);
+// A special element is excluded even when it shares the balloon product.
+assert.equal(
+  wasteOnlySavingsCop([line("P-BAL", "V-BAL-R12", 60, 12)], [line("P-BAL", "V-TELON", 1, null)], [{ ...telon, product_id: "P-BAL" }]),
+  0,
+);
+
+// Two balloon lines with a fractional package price (100 / 3) round once at the
+// end: 33.33 + 33.33 = 66.67 -> 67, never 33 + 33 = 66.
+const fractionalA = purchase({ product_id: "P-BAL", variant_id: "V-BAL-A", design_quantity: 50, units_per_package: 10, package_count: 3, purchase_cost: 100 });
+const fractionalB = purchase({ product_id: "P-BAL", variant_id: "V-BAL-B", design_quantity: 50, units_per_package: 10, package_count: 3, purchase_cost: 100 });
+assert.equal(
+  wasteOnlySavingsCop([line("P-BAL", "V-BAL-A", 50, 12), line("P-BAL", "V-BAL-B", 50, 12)], [], [fractionalA, fractionalB]),
+  67,
+);
+
+// Measured path: the optimizer may buy another package presentation of the same
+// balloon family than the variant that received the demand. It is still a
+// balloon purchase and keeps its waste-only savings (47 -> 51 would need a
+// second 50-unit package).
+const familyEstimate = estimateFromMeasuredMaterials({
+  figura: "arco",
+  anchoM: 2,
+  altoM: 2,
+  ejeM: 2,
+  despiece: [{ tamano: "R-12", pulgadas: 12, cantidad: 47, color: "blanco" }],
+  totalGlobos: 47,
+  supuestos: [],
+  confianza: "preliminar",
+  aviso: "fixture",
+}, [
+  { id: "fam-r12-x12", familiaId: "fam-r12", nombre: "Globo R-12 x12", categoria: "Globo látex", colores: ["rojo", "blanco"], descripcion: "Globo redondo", precio: 5_000, unidadesPaquete: 12, paquetes: 1, diamPulg: 12 },
+  { id: "fam-r12-x50", familiaId: "fam-r12", nombre: "Globo R-12 x50", categoria: "Globo látex", colores: ["rojo"], descripcion: "Globo redondo", precio: 9_000, unidadesPaquete: 50, paquetes: 1, diamPulg: 12 },
+]);
+assert.deepEqual(familyEstimate.balloons.map((item) => item.variant_id), ["fam-r12-x12"]);
+assert.deepEqual(familyEstimate.purchases.map((item) => [item.variant_id, item.design_quantity, item.package_count]), [["fam-r12-x50", 47, 1]]);
+assert.equal(familyEstimate.totals.waste_only_savings_cop, 9_000);
+assert.equal(validateMaterialEstimate(familyEstimate).ok, true);
 
 const zeroDimensionEstimate = estimateFromMeasuredMaterials({
   figura: "pared",

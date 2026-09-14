@@ -13,6 +13,7 @@ import type { ReferenceBlueprintV2 } from "./reference-blueprint";
 import type { ChatPort, Mensaje } from "./tipos";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import type { FlujoIA } from "@sempertex/agente-core";
+import type { NivelCreatividad } from "./creatividad";
 
 type TelemetriaConversacion = {
   flujo: FlujoIA;
@@ -91,6 +92,8 @@ export async function ejecutarConversacion(opts: {
    * con su nombre y args ya parseados. No cambia el flujo. */
   onLlamada?: (nombre: string, args: Record<string, unknown>) => void;
   catalogAllowlist?: CatalogAllowlist;
+  /** `LORA_*` cause when the LoRA catalog pool is unavailable; see crearRegistroHerramientas. */
+  catalogoLoraNoDisponible?: string;
   signal?: AbortSignal;
   telemetria?: TelemetriaConversacion;
 }): Promise<ResultadoConversacion> {
@@ -101,7 +104,7 @@ export async function ejecutarConversacion(opts: {
     sistema: opts.sistema,
     historial: opts.historial,
     herramientas: herramientasActivas(),
-    registro: crearRegistroHerramientas(estado, { catalogAllowlist: opts.catalogAllowlist, correlationId: opts.telemetria?.correlationId, signal: opts.signal }),
+    registro: crearRegistroHerramientas(estado, { catalogAllowlist: opts.catalogAllowlist, catalogoLoraNoDisponible: opts.catalogoLoraNoDisponible, correlationId: opts.telemetria?.correlationId, signal: opts.signal }),
     herramientasSoloLectura: HERRAMIENTAS_SOLO_LECTURA,
     vueltasMax: VUELTAS_MAX,
     onLlamada: opts.onLlamada,
@@ -126,6 +129,10 @@ export async function* ejecutarConversacionStream(opts: {
    * `EstadoConversacion.referenceBlueprint`. */
   referenceBlueprint?: ReferenceBlueprintV2;
   catalogAllowlist?: CatalogAllowlist;
+  /** `LORA_*` cause when the LoRA catalog pool is unavailable; see crearRegistroHerramientas. */
+  catalogoLoraNoDisponible?: string;
+  /** Creativity level (creatividad.ts); the system prompt already carries its design rule. */
+  creatividad?: NivelCreatividad;
   signal?: AbortSignal;
   telemetria?: TelemetriaConversacion;
 }): AsyncGenerator<EventoConversacion> {
@@ -136,7 +143,7 @@ export async function* ejecutarConversacionStream(opts: {
     sistema: opts.sistema,
     historial: opts.historial,
     herramientas: herramientasActivas(),
-    registro: crearRegistroHerramientas(estado, { catalogAllowlist: opts.catalogAllowlist, correlationId: opts.telemetria?.correlationId, signal: opts.signal }),
+    registro: crearRegistroHerramientas(estado, { catalogAllowlist: opts.catalogAllowlist, catalogoLoraNoDisponible: opts.catalogoLoraNoDisponible, correlationId: opts.telemetria?.correlationId, signal: opts.signal, creatividad: opts.creatividad }),
     herramientasSoloLectura: HERRAMIENTAS_SOLO_LECTURA,
     vueltasMax: VUELTAS_MAX,
     alAgotarVueltas: () => textoAlAgotarVueltas(estado),

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { calcularDespieceEstructura } from "../src/lib/medidas/geometria";
+import { calcularDespieceEstructura, calcularEje } from "../src/lib/medidas/geometria";
 
 const base = {
   tipo: "arco" as const,
@@ -54,4 +54,21 @@ assert.ok((referencia.get(9) ?? 0) >= 30 && (referencia.get(9) ?? 0) <= 40);
 assert.ok((referencia.get(12) ?? 0) >= 90 && (referencia.get(12) ?? 0) <= 110);
 assert.ok((referencia.get(18) ?? 0) >= 8 && (referencia.get(18) ?? 0) <= 12);
 assert.ok((referencia.get(24) ?? 0) >= 3 && (referencia.get(24) ?? 0) <= 5);
+// Regresión: el eje del semiarco era `largo || ancho` e ignoraba el alto, así
+// que un semiarco alto de 1,2 × 2,2 m contaba menos globos que una columna de 1,8 m.
+const semiarcoAlto = calcularDespieceEstructura({ tipo: "semiarco", medidas: { anchoM: 1.2, altoM: 2.2 }, repeticiones: 1, densidad: "media", mezcla: "organica_fina", materiales: [{ participacion: 1 }] });
+const columnaMedia = calcularDespieceEstructura({ tipo: "columna", medidas: { altoM: 1.8 }, repeticiones: 1, densidad: "media", mezcla: "organica_fina", materiales: [{ participacion: 1 }] });
+assert.ok(Math.abs(calcularEje("semiarco", { anchoM: 1.2, altoM: 2.2 }) - 2.7284) < 1e-3);
+assert.ok(semiarcoAlto.ejeM > columnaMedia.ejeM && semiarcoAlto.totalGlobos > columnaMedia.totalGlobos, `${semiarcoAlto.totalGlobos} vs ${columnaMedia.totalGlobos}`);
+assert.ok(calcularEje("semiarco", { anchoM: 1.2, altoM: 3 }) > calcularEje("semiarco", { anchoM: 1.2, altoM: 2.2 }));
+// Regresión: el chat manda largo_m como profundidad; con ancho y alto manda la elipse.
+assert.ok(Math.abs(calcularEje("semiarco", { anchoM: 1.2, altoM: 2.2, largoM: 0.5 }) - 2.7284) < 1e-3);
+assert.equal(calcularEje("semiarco", { largoM: 3 }), 3);
+assert.equal(calcularEje("semiarco", { anchoM: 2.4 }), 2.4);
+assert.equal(calcularEje("guirnalda", { largoM: 2.5, altoM: 2.2 }), 2.5);
+// Regresión I12: dos materiales del mismo color son dos productos; cada línea conserva su material.
+const dosAzules = calcularDespieceEstructura({ tipo: "columna", medidas: { altoM: 1.8 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales: [{ color: "azul", participacion: 0.6 }, { color: "azul", participacion: 0.4 }] });
+const unidadesDeMaterial = (indice: number) => dosAzules.despiece.filter((linea) => linea.materialIndex === indice).reduce((suma, linea) => suma + linea.cantidad, 0);
+assert.ok(unidadesDeMaterial(0) > unidadesDeMaterial(1) && unidadesDeMaterial(1) > 0, `${unidadesDeMaterial(0)} / ${unidadesDeMaterial(1)}`);
+assert.equal(unidadesDeMaterial(0) + unidadesDeMaterial(1), dosAzules.totalGlobos);
 console.log(`[PASS] geometría tamaño × color — ${uno.totalGlobos} globos, 10 celdas y 200 combinaciones sin pérdida`);

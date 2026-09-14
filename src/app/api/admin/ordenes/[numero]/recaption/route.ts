@@ -1,18 +1,21 @@
 import { readFile, writeFile, access } from "node:fs/promises";
 import path from "node:path";
+import { isAuthenticatedRequest, isSameOriginRequest } from "@/lib/auth/request";
 import { generarCaption } from "@/lib/ordenes/generarCaption";
 import type { Desglose, FeedbackFoto } from "@/lib/ordenes/tipos";
-
-const RUTA_ORDENES = "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
+import { directorioOrdenes, nombreFotoOrden } from "@/lib/ordenes/directorio";
 
 export async function POST(request: Request, { params }: { params: Promise<{ numero: string }> }) {
+  if (!isAuthenticatedRequest(request)) return Response.json({ error: "Sesión requerida." }, { status: 401 });
+  if (!isSameOriginRequest(request)) return Response.json({ error: "Origen no permitido." }, { status: 403 });
+
   const { numero } = await params;
   if (!/^\d+$/.test(numero)) return Response.json({ error: "Número de orden inválido." }, { status: 400 });
 
   const indice = Number(new URL(request.url).searchParams.get("indice") ?? "1");
   if (!Number.isInteger(indice) || indice < 1) return Response.json({ error: "Índice inválido." }, { status: 400 });
 
-  const carpetaOrden = path.join(RUTA_ORDENES, numero);
+  const carpetaOrden = path.join(/*turbopackIgnore: true*/ directorioOrdenes(), numero);
 
   let feedback: FeedbackFoto;
   try {
@@ -35,7 +38,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ num
     return Response.json({ error: "No se encontró desglose.json para esta orden." }, { status: 404 });
   }
 
-  const archivoFoto = feedback.foto || `foto-${indice}.jpg`;
+  const archivoFoto = nombreFotoOrden(indice, feedback.foto);
+  if (!archivoFoto) return Response.json({ error: "El feedback contiene un nombre de foto inválido." }, { status: 400 });
   const rutaFoto = path.join(carpetaOrden, archivoFoto);
   try {
     await access(rutaFoto);

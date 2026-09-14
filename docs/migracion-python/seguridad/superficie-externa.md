@@ -44,7 +44,6 @@ qué credencial/proveedor usan y qué exponen.
 | `/api/chat` | POST | `DATABASE_URL`; `GEMINI_API_KEY` (chat + herramientas + embeddings de retrieval) | Turno de chat completo del armador de decoraciones, con tool-calling sobre el catálogo real |
 | `/api/generate` | POST | `DATABASE_URL`, `GEMINI_API_KEY` (imagen + QA visual), `FAL_KEY` (si el modo LoRA activo lo requiere), `PLAN_APPROVAL_SECRET` (verifica el token de aprobación) | Genera la imagen final de una propuesta ya aprobada — el gasto de imagen real de la app |
 | `/api/references/analyze` | POST | `GEMINI_API_KEY` (visión) | Analiza imágenes de referencia subidas por el cliente y devuelve el blueprint estructurado |
-| `/api/debug/lora-prompt-compare` | POST | `GEMINI_API_KEY` y/o `FAL_KEY` según el modo comparado | Herramienta de comparación de prompts LoRA — nombre "debug" pero sin gate distinto al resto de la app |
 | `/api/lora/trainings/[id]/start` | POST | `FAL_KEY` | **Dispara un entrenamiento LoRA real y facturable en fal.ai** (sube dataset, encola el job) — el endpoint de mayor costo unitario de toda la superficie |
 | `/api/plan-editar` | POST | `DATABASE_URL`; `GEMINI_API_KEY` transitivamente (embeddings de `buscarCatalogoRag` si la rama vectorial está activa) | Busca/reemplaza/agrega piezas de un plan de decoración ya resuelto |
 

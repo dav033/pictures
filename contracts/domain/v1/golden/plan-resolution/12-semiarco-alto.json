@@ -1,0 +1,1298 @@
+{
+  "allowlist": [
+    {
+      "product_id": "P-RED",
+      "variant_ids": [
+        "V-RED-12"
+      ]
+    }
+  ],
+  "catalog_rows": [
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "rojo"
+      ],
+      "colores_variante": [
+        "rojo"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex rojo R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/red-12.jpg",
+      "inventory_quantity": 200,
+      "precio": 10000,
+      "product_id": "P-RED",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex rojo",
+      "sku": "SKU-RED-12",
+      "sku_original": "SHOP-RED-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-RED-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-RED-12",
+      "variante_titulo": "R-12"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-001",
+  "description": "Semiarco alto (alto > ancho) contra columna: el eje del semiarco es un cuarto de elipse (ancho, alto), así que un semiarco de 1,2 × 2,2 m lleva más globos que una columna de 1,8 m. Incluye la variante asimétrica y un largo_m que el chat usa como profundidad: con ancho y alto no cambia el eje.",
+  "expected": {
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "rojo",
+          "design_quantity": 58,
+          "finish": null,
+          "product_id": "P-RED",
+          "required_quantity": 58,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_01_SEMIARCO",
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 58,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rojo",
+          "design_quantity": 41,
+          "finish": null,
+          "product_id": "P-RED",
+          "required_quantity": 41,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_02_SEMIARCO",
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 41,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rojo",
+          "design_quantity": 39,
+          "finish": null,
+          "product_id": "P-RED",
+          "required_quantity": 39,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_03_COLUMNA",
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 39,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rojo",
+          "design_quantity": 58,
+          "finish": null,
+          "product_id": "P-RED",
+          "required_quantity": 58,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_04_SEMIARCO",
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 58,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 4,
+        "density": "media",
+        "dimensions_m": {
+          "height": 2.2,
+          "length": null,
+          "width": 1.2
+        },
+        "installation_length_m": 9.99,
+        "shape": "coordinated structures",
+        "type": "composite_installation",
+        "visual_density": "medium",
+        "visual_scale": "large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": true,
+          "consumption_cost": 42400,
+          "design_quantity": 196,
+          "leftover_inventory": 38,
+          "operational_surplus": 38,
+          "package_count": 5,
+          "potential_surplus": 54,
+          "product_id": "P-RED",
+          "purchase_cost": 50000,
+          "purchase_quantity": 250,
+          "required_quantity": 212,
+          "units_per_package": 50,
+          "used": 196,
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 212,
+          "waste_reserve": 16
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 5,
+        "consumption_cost": 42400,
+        "covered_waste_reserve": 16,
+        "design_quantity": 196,
+        "natural_package_surplus": 54,
+        "operational_surplus": 38,
+        "potential_surplus": 54,
+        "purchase_cost": 50000,
+        "purchase_quantity": 250,
+        "required_quantity": 212,
+        "target_waste_reserve": 16,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 212,
+        "waste_only_savings_cop": 10000
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": []
+    },
+    "plan_resuelto": {
+      "advertencias": [],
+      "alternativas": [
+        {
+          "ahorro_cop": 10000,
+          "etiqueta": "economica",
+          "familia_id": "P-RED",
+          "titulo": "Globo latex rojo",
+          "total_cop": 40000
+        }
+      ],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": true,
+          "color": "rojo",
+          "consumption_cost": 42400,
+          "design_quantity": 196,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_01_SEMIARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_SEMIARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_COLUMNA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_04_SEMIARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_SEMIARCO",
+            "EST_02_SEMIARCO",
+            "EST_03_COLUMNA",
+            "EST_04_SEMIARCO"
+          ],
+          "imagen": "https://cdn.example.test/red-12.jpg",
+          "inventory_quantity": 200,
+          "leftover_inventory": 38,
+          "paquetes": 5,
+          "precio_paquete": 10000,
+          "product_id": "P-RED",
+          "purchase_cost": 50000,
+          "purchase_quantity": 250,
+          "required_quantity": 212,
+          "sku": "SKU-RED-12",
+          "sku_original": "SHOP-RED-12",
+          "sobrante": 54,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-RED-12",
+          "subtotal": 50000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex rojo — R-12",
+          "unidades_con_merma": 212,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 196,
+          "unidades_paquete": 50,
+          "used": 196,
+          "variant_id": "V-RED-12",
+          "waste_reserve": 16
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 2.73,
+          "estructura_id": "EST_01_SEMIARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_01_SEMIARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/red-12.jpg",
+              "inventory_quantity": 200,
+              "origen": {
+                "id": "EST_01_SEMIARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-RED",
+              "sku": "SKU-RED-12",
+              "sku_original": "SHOP-RED-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-RED-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rojo — R-12",
+              "unidades": 58,
+              "unidades_inferidas": false,
+              "variant_id": "V-RED-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 58
+            }
+          ],
+          "nombre": "Semiarco",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "semiarco",
+          "total_unidades": 58,
+          "ubicacion": "lateral_derecho"
+        },
+        {
+          "eje_m": 2.73,
+          "estructura_id": "EST_02_SEMIARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_02_SEMIARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/red-12.jpg",
+              "inventory_quantity": 200,
+              "origen": {
+                "id": "EST_02_SEMIARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-RED",
+              "sku": "SKU-RED-12",
+              "sku_original": "SHOP-RED-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-RED-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rojo — R-12",
+              "unidades": 41,
+              "unidades_inferidas": false,
+              "variant_id": "V-RED-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 41
+            }
+          ],
+          "nombre": "Semiarco asimétrico",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "semiarco",
+          "total_unidades": 41,
+          "ubicacion": "lateral_derecho"
+        },
+        {
+          "eje_m": 1.8,
+          "estructura_id": "EST_03_COLUMNA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_03_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/red-12.jpg",
+              "inventory_quantity": 200,
+              "origen": {
+                "id": "EST_03_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-RED",
+              "sku": "SKU-RED-12",
+              "sku_original": "SHOP-RED-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-RED-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rojo — R-12",
+              "unidades": 39,
+              "unidades_inferidas": false,
+              "variant_id": "V-RED-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 39
+            }
+          ],
+          "nombre": "Columna",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 39,
+          "ubicacion": "lateral_izquierdo"
+        },
+        {
+          "eje_m": 2.73,
+          "estructura_id": "EST_04_SEMIARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_04_SEMIARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/red-12.jpg",
+              "inventory_quantity": 200,
+              "origen": {
+                "id": "EST_04_SEMIARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-RED",
+              "sku": "SKU-RED-12",
+              "sku_original": "SHOP-RED-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-RED-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rojo — R-12",
+              "unidades": 58,
+              "unidades_inferidas": false,
+              "variant_id": "V-RED-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 58
+            }
+          ],
+          "nombre": "Semiarco con profundidad",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "semiarco",
+          "total_unidades": 58,
+          "ubicacion": "fondo_pared"
+        }
+      ],
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 196\nTarget waste reserve: 16\nNatural package surplus: 4\nUsable waste coverage: 16\nAdditional packages required for waste: 5\nGlobo latex rojo — R-12: design=196, required=212, package=50, packages=5, purchased=250, natural surplus=54, waste reserve=16, leftover inventory=38",
+      "plan": {
+        "concepto": {
+          "descripcion": "Semiarco alto y columna rojos separados.",
+          "paleta": [
+            "rojo"
+          ],
+          "titulo": "Semiarco y columna"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_SEMIARCO",
+            "estructura_oficial": "semiarco",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-RED",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.2,
+              "ancho_m": 1.2
+            },
+            "mezcla": "clasica",
+            "nombre": "Semiarco",
+            "porque": "Replica la pieza de la foto de referencia.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "semiarco",
+            "ubicacion": "lateral_derecho"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_02_SEMIARCO",
+            "estructura_oficial": "semiarco_asimetrico",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-RED",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.2,
+              "ancho_m": 1.2
+            },
+            "mezcla": "clasica",
+            "nombre": "Semiarco asimétrico",
+            "porque": "Replica la pieza de la foto de referencia.",
+            "repeticiones": 1,
+            "rol_escena": "soporte",
+            "tipo": "semiarco",
+            "ubicacion": "lateral_derecho"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_03_COLUMNA",
+            "estructura_oficial": "columna",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-RED",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.8
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna",
+            "porque": "Replica la pieza de la foto de referencia.",
+            "repeticiones": 1,
+            "rol_escena": "soporte",
+            "tipo": "columna",
+            "ubicacion": "lateral_izquierdo"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_04_SEMIARCO",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-RED",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.2,
+              "ancho_m": 1.2,
+              "largo_m": 0.5
+            },
+            "mezcla": "clasica",
+            "nombre": "Semiarco con profundidad",
+            "porque": "Replica la pieza de la foto de referencia.",
+            "repeticiones": 1,
+            "rol_escena": "soporte",
+            "tipo": "semiarco",
+            "ubicacion": "fondo_pared"
+          }
+        ],
+        "plan_id": "12121212-1212-4121-8121-121212121212",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "7ad3b3148f5a1ef65e9d247c1b7abfa06d92ee83d0e9493edfaaa6c9376cf997",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 5,
+        "ahorro_paquetes_cop": 10000,
+        "consumption_cost": 42400,
+        "covered_waste_reserve": 16,
+        "design_quantity": 196,
+        "globos_por_tamano": {
+          "R-12": 196
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8,
+        "natural_package_surplus": 4,
+        "purchase_cost": 50000,
+        "target_waste_reserve": 16,
+        "total_cop": 50000,
+        "total_unidades": 196,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "complementosSoportados": false,
+      "consumptionCost": 42400,
+      "coveredWasteReserve": 16,
+      "incluyeIva": true,
+      "leftoverInventory": 38,
+      "lineas": [
+        {
+          "additionalPackageForWaste": true,
+          "cantidadNecesaria": 196,
+          "color": "rojo",
+          "consumptionCost": 42400,
+          "designQuantity": 196,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_SEMIARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_SEMIARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_COLUMNA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_04_SEMIARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_SEMIARCO",
+            "EST_02_SEMIARCO",
+            "EST_03_COLUMNA",
+            "EST_04_SEMIARCO"
+          ],
+          "id": "V-RED-12",
+          "leftoverInventory": 38,
+          "nombre": "Globo latex rojo — R-12",
+          "paquetes": 5,
+          "precioPaquete": 10000,
+          "productId": "P-RED",
+          "purchaseCost": 50000,
+          "purchaseQuantity": 250,
+          "referenciaElementIds": [],
+          "requiredQuantity": 212,
+          "sobrante": 54,
+          "subtotal": 50000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 196,
+          "varianteId": "V-RED-12",
+          "wasteReserve": 16
+        }
+      ],
+      "mermaPorcentaje": 8,
+      "plan_hash": "7ad3b3148f5a1ef65e9d247c1b7abfa06d92ee83d0e9493edfaaa6c9376cf997",
+      "purchaseCost": 50000,
+      "targetWasteReserve": 16,
+      "total": 50000
+    }
+  },
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-001",
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "rojo",
+          "design_quantity": 58,
+          "finish": null,
+          "product_id": "P-RED",
+          "required_quantity": 58,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_SEMIARCO",
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 58,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rojo",
+          "design_quantity": 41,
+          "finish": null,
+          "product_id": "P-RED",
+          "required_quantity": 41,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_02_SEMIARCO",
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 41,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rojo",
+          "design_quantity": 39,
+          "finish": null,
+          "product_id": "P-RED",
+          "required_quantity": 39,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_03_COLUMNA",
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 39,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rojo",
+          "design_quantity": 58,
+          "finish": null,
+          "product_id": "P-RED",
+          "required_quantity": 58,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_04_SEMIARCO",
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 58,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 4,
+        "density": "media",
+        "dimensions_m": {
+          "height": 2.2,
+          "length": null,
+          "width": 1.2
+        },
+        "installation_length_m": 9.99,
+        "shape": "coordinated structures",
+        "type": "composite_installation",
+        "visual_density": "medium",
+        "visual_scale": "large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": true,
+          "consumption_cost": 42400,
+          "design_quantity": 196,
+          "leftover_inventory": 38,
+          "operational_surplus": 38,
+          "package_count": 5,
+          "potential_surplus": 54,
+          "product_id": "P-RED",
+          "purchase_cost": 50000,
+          "purchase_quantity": 250,
+          "required_quantity": 212,
+          "units_per_package": 50,
+          "used": 196,
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 212,
+          "waste_reserve": 16
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 5,
+        "consumption_cost": 42400,
+        "covered_waste_reserve": 16,
+        "design_quantity": 196,
+        "natural_package_surplus": 54,
+        "operational_surplus": 38,
+        "potential_surplus": 54,
+        "purchase_cost": 50000,
+        "purchase_quantity": 250,
+        "required_quantity": 212,
+        "target_waste_reserve": 16,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 212,
+        "waste_only_savings_cop": 10000
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": []
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [],
+      "alternativas": [
+        {
+          "ahorro_cop": 10000,
+          "etiqueta": "economica",
+          "familia_id": "P-RED",
+          "titulo": "Globo latex rojo",
+          "total_cop": 40000
+        }
+      ],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": true,
+          "color": "rojo",
+          "consumption_cost": 42400,
+          "design_quantity": 196,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_SEMIARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_SEMIARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_COLUMNA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_04_SEMIARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_SEMIARCO",
+            "EST_02_SEMIARCO",
+            "EST_03_COLUMNA",
+            "EST_04_SEMIARCO"
+          ],
+          "imagen": "https://cdn.example.test/red-12.jpg",
+          "inventory_quantity": 200,
+          "leftover_inventory": 38,
+          "paquetes": 5,
+          "precio_paquete": 10000,
+          "product_id": "P-RED",
+          "purchase_cost": 50000,
+          "purchase_quantity": 250,
+          "required_quantity": 212,
+          "sku": "SKU-RED-12",
+          "sku_original": "SHOP-RED-12",
+          "sobrante": 54,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-RED-12",
+          "subtotal": 50000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex rojo — R-12",
+          "unidades_con_merma": 212,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 196,
+          "unidades_paquete": 50,
+          "used": 196,
+          "variant_id": "V-RED-12",
+          "waste_reserve": 16
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 2.73,
+          "estructura_id": "EST_01_SEMIARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_SEMIARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/red-12.jpg",
+              "inventory_quantity": 200,
+              "origen": {
+                "id": "EST_01_SEMIARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-RED",
+              "sku": "SKU-RED-12",
+              "sku_original": "SHOP-RED-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-RED-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rojo — R-12",
+              "unidades": 58,
+              "unidades_inferidas": false,
+              "variant_id": "V-RED-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 58
+            }
+          ],
+          "nombre": "Semiarco",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "semiarco",
+          "total_unidades": 58,
+          "ubicacion": "lateral_derecho"
+        },
+        {
+          "eje_m": 2.73,
+          "estructura_id": "EST_02_SEMIARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_02_SEMIARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/red-12.jpg",
+              "inventory_quantity": 200,
+              "origen": {
+                "id": "EST_02_SEMIARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-RED",
+              "sku": "SKU-RED-12",
+              "sku_original": "SHOP-RED-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-RED-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rojo — R-12",
+              "unidades": 41,
+              "unidades_inferidas": false,
+              "variant_id": "V-RED-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 41
+            }
+          ],
+          "nombre": "Semiarco asimétrico",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "semiarco",
+          "total_unidades": 41,
+          "ubicacion": "lateral_derecho"
+        },
+        {
+          "eje_m": 1.8,
+          "estructura_id": "EST_03_COLUMNA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_03_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/red-12.jpg",
+              "inventory_quantity": 200,
+              "origen": {
+                "id": "EST_03_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-RED",
+              "sku": "SKU-RED-12",
+              "sku_original": "SHOP-RED-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-RED-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rojo — R-12",
+              "unidades": 39,
+              "unidades_inferidas": false,
+              "variant_id": "V-RED-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 39
+            }
+          ],
+          "nombre": "Columna",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 39,
+          "ubicacion": "lateral_izquierdo"
+        },
+        {
+          "eje_m": 2.73,
+          "estructura_id": "EST_04_SEMIARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_04_SEMIARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/red-12.jpg",
+              "inventory_quantity": 200,
+              "origen": {
+                "id": "EST_04_SEMIARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-RED",
+              "sku": "SKU-RED-12",
+              "sku_original": "SHOP-RED-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-RED-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rojo — R-12",
+              "unidades": 58,
+              "unidades_inferidas": false,
+              "variant_id": "V-RED-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 58
+            }
+          ],
+          "nombre": "Semiarco con profundidad",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "semiarco",
+          "total_unidades": 58,
+          "ubicacion": "fondo_pared"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-001.",
+      "plan": {
+        "concepto": {
+          "descripcion": "Semiarco alto y columna rojos separados.",
+          "paleta": [
+            "rojo"
+          ],
+          "titulo": "Semiarco y columna"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_SEMIARCO",
+            "estructura_oficial": "semiarco",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-RED",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.2,
+              "ancho_m": 1.2
+            },
+            "mezcla": "clasica",
+            "nombre": "Semiarco",
+            "porque": "Replica la pieza de la foto de referencia.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "semiarco",
+            "ubicacion": "lateral_derecho"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_02_SEMIARCO",
+            "estructura_oficial": "semiarco_asimetrico",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-RED",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.2,
+              "ancho_m": 1.2
+            },
+            "mezcla": "clasica",
+            "nombre": "Semiarco asimétrico",
+            "porque": "Replica la pieza de la foto de referencia.",
+            "repeticiones": 1,
+            "rol_escena": "soporte",
+            "tipo": "semiarco",
+            "ubicacion": "lateral_derecho"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_03_COLUMNA",
+            "estructura_oficial": "columna",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-RED",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.8
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna",
+            "porque": "Replica la pieza de la foto de referencia.",
+            "repeticiones": 1,
+            "rol_escena": "soporte",
+            "tipo": "columna",
+            "ubicacion": "lateral_izquierdo"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_04_SEMIARCO",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-RED",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.2,
+              "ancho_m": 1.2,
+              "largo_m": 0.5
+            },
+            "mezcla": "clasica",
+            "nombre": "Semiarco con profundidad",
+            "porque": "Replica la pieza de la foto de referencia.",
+            "repeticiones": 1,
+            "rol_escena": "soporte",
+            "tipo": "semiarco",
+            "ubicacion": "fondo_pared"
+          }
+        ],
+        "plan_id": "12121212-1212-4121-8121-121212121212",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "e99e2fc7f823ca3b2c9d3de273fb8d8576c98c61301523c0285c97f8e498c7e9",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 5,
+        "ahorro_paquetes_cop": 10000,
+        "consumption_cost": 42400,
+        "covered_waste_reserve": 16,
+        "design_quantity": 196,
+        "globos_por_tamano": {
+          "R-12": 196
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 4,
+        "purchase_cost": 50000,
+        "target_waste_reserve": 16,
+        "total_cop": 50000,
+        "total_unidades": 196,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 42400,
+      "covered_waste_reserve": 16,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 38,
+      "lines": [
+        {
+          "available": true,
+          "color": "rojo",
+          "consumption_cost_cop": 42400,
+          "design_quantity": 196,
+          "diameter_inches": 12.0,
+          "id": "V-RED-12",
+          "leftover_inventory": 38,
+          "origins": [
+            {
+              "id": "EST_01_SEMIARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_SEMIARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_COLUMNA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_04_SEMIARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 10000,
+          "packages": 5,
+          "product_id": "P-RED",
+          "purchase_cost_cop": 50000,
+          "purchase_quantity": 250,
+          "required_quantity": 212,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_SEMIARCO",
+            "EST_02_SEMIARCO",
+            "EST_03_COLUMNA",
+            "EST_04_SEMIARCO"
+          ],
+          "subtotal_cop": 50000,
+          "surplus": 54,
+          "title": "Globo latex rojo — R-12",
+          "units_per_package": 50,
+          "used": 196,
+          "variant_id": "V-RED-12",
+          "waste_reserve": 16
+        }
+      ],
+      "plan_hash": "e99e2fc7f823ca3b2c9d3de273fb8d8576c98c61301523c0285c97f8e498c7e9",
+      "purchase_cost_cop": 50000,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 16,
+      "total_cop": 50000,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "12-semiarco-alto",
+  "plan": {
+    "concepto": {
+      "descripcion": "Semiarco alto y columna rojos separados.",
+      "paleta": [
+        "rojo"
+      ],
+      "titulo": "Semiarco y columna"
+    },
+    "espacio": {
+      "fuente": "cliente",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "densidad": "media",
+        "estructura_id": "EST_01_SEMIARCO",
+        "estructura_oficial": "semiarco",
+        "materiales": [
+          {
+            "color": "rojo",
+            "participacion": 1,
+            "product_id": "P-RED",
+            "rol_material": "principal"
+          }
+        ],
+        "medidas": {
+          "alto_m": 2.2,
+          "ancho_m": 1.2
+        },
+        "mezcla": "clasica",
+        "nombre": "Semiarco",
+        "porque": "Replica la pieza de la foto de referencia.",
+        "repeticiones": 1,
+        "rol_escena": "focal",
+        "tipo": "semiarco",
+        "ubicacion": "lateral_derecho"
+      },
+      {
+        "densidad": "media",
+        "estructura_id": "EST_02_SEMIARCO",
+        "estructura_oficial": "semiarco_asimetrico",
+        "materiales": [
+          {
+            "color": "rojo",
+            "participacion": 1,
+            "product_id": "P-RED",
+            "rol_material": "principal"
+          }
+        ],
+        "medidas": {
+          "alto_m": 2.2,
+          "ancho_m": 1.2
+        },
+        "mezcla": "clasica",
+        "nombre": "Semiarco asimétrico",
+        "porque": "Replica la pieza de la foto de referencia.",
+        "repeticiones": 1,
+        "rol_escena": "soporte",
+        "tipo": "semiarco",
+        "ubicacion": "lateral_derecho"
+      },
+      {
+        "densidad": "media",
+        "estructura_id": "EST_03_COLUMNA",
+        "estructura_oficial": "columna",
+        "materiales": [
+          {
+            "color": "rojo",
+            "participacion": 1,
+            "product_id": "P-RED",
+            "rol_material": "principal"
+          }
+        ],
+        "medidas": {
+          "alto_m": 1.8
+        },
+        "mezcla": "clasica",
+        "nombre": "Columna",
+        "porque": "Replica la pieza de la foto de referencia.",
+        "repeticiones": 1,
+        "rol_escena": "soporte",
+        "tipo": "columna",
+        "ubicacion": "lateral_izquierdo"
+      },
+      {
+        "densidad": "media",
+        "estructura_id": "EST_04_SEMIARCO",
+        "materiales": [
+          {
+            "color": "rojo",
+            "participacion": 1,
+            "product_id": "P-RED",
+            "rol_material": "principal"
+          }
+        ],
+        "medidas": {
+          "alto_m": 2.2,
+          "ancho_m": 1.2,
+          "largo_m": 0.5
+        },
+        "mezcla": "clasica",
+        "nombre": "Semiarco con profundidad",
+        "porque": "Replica la pieza de la foto de referencia.",
+        "repeticiones": 1,
+        "rol_escena": "soporte",
+        "tipo": "semiarco",
+        "ubicacion": "fondo_pared"
+      }
+    ],
+    "plan_id": "12121212-1212-4121-8121-121212121212",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "supuestos": []
+  }
+}

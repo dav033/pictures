@@ -7,6 +7,9 @@ import { interpretarConsulta } from "../query-parser/parse";
 import { IntentQuerySchema, type IntentQuery } from "../query-parser/schema";
 import type { ObservabilidadBusqueda, ResultadoBusquedaObservabilidad } from "../observability/types";
 import type { CatalogAllowlist } from "../retrieval/types";
+import { llamarPythonCatalogSearch, seleccionarBackendPython } from "@/lib/ia/python-adapter";
+import { candidatoDesdePython } from "./candidato-python";
+import { debeAplicarPaso, escaleraRelajacion } from "./relajacion-filtros";
 
 export type OpcionesBusquedaRag = {
   /** Customer-verified filters; component wording cannot alter them. */
@@ -18,6 +21,7 @@ export type OpcionesBusquedaRag = {
   rerankCorrelationId?: string;
   rerankSignal?: AbortSignal;
   rerankDeadlineAt?: number;
+  catalogSnapshotId?: string;
 };
 
 export type VarianteCandidata = {
@@ -50,6 +54,7 @@ export type ProductoCandidato = {
 export type ResultadoBusquedaRag = {
   status: "OK" | "NO_MATCH" | "AMBIGUOUS_SKU";
   skuStatus?: EstadoSku;
+  catalogSnapshotId?: string;
   candidatos: ProductoCandidato[];
   // Para trazabilidad (plan §6.1/§6.2) — no se usan para responderle al
   // cliente, solo para poder reconstruir después "por qué salió esto".
@@ -110,10 +115,23 @@ function observabilidadBusqueda(
     componentQueries: [...new Set((focusedQueries?.length ? focusedQueries : [mensaje]).map((query) => query.trim()).filter(Boolean))],
     candidateCountsByTier,
     selectedPieces: [],
-    relaxations: filtroRelajado ? [`${filtroRelajado} pasó de filtro duro a señal de ranking`] : [],
+    relaxations: descripcionRelajacion(filtroRelajado),
     outcome,
     planningLatencyMs: 0,
   };
+}
+
+/** Catalog colors per retrieved product, for the occasion step of the ladder. */
+async function coloresDeProductos(pool: Pool, productIds: readonly string[]): Promise<Array<{ colores: string[] }>> {
+  const { rows } = await pool.query<{ colores: unknown }>(
+    `SELECT COALESCE(derived->'colors', '[]'::jsonb) AS colores FROM catalog_products WHERE product_id = ANY($1::text[])`,
+    [[...productIds]],
+  );
+  return rows.map((row) => ({ colores: Array.isArray(row.colores) ? row.colores.filter((color): color is string => typeof color === "string") : [] }));
+}
+
+function descripcionRelajacion(filtroRelajado: ResultadoBusquedaRag["filtroRelajado"]): string[] {
+  return filtroRelajado ? [`${filtroRelajado} pasó de filtro duro a señal de ranking`] : [];
 }
 
 function observabilidadConRerank(
@@ -124,6 +142,116 @@ function observabilidadConRerank(
   return status === "READY" || status === "SKIPPED_OPTIONAL" || status === "ERROR"
     ? { ...observabilidad, rerankStatus: status }
     : observabilidad;
+}
+
+async function buscarCatalogoPython(
+  mensaje: string,
+  opciones: OpcionesBusquedaRag,
+): Promise<ResultadoBusquedaRag> {
+  const filtros = opciones.filtrosDuros;
+  // Python reads an empty allowlist as "unrestricted". A restricted mode that
+  // authorizes nothing must fail closed here, never widen to the whole catalog.
+  if (opciones.allowlist && opciones.allowlist.entries.length === 0) {
+    return {
+      status: "NO_MATCH",
+      candidatos: [],
+      intent: null,
+      scores: [],
+      latencyParseMs: 0,
+      latencyRetrievalMs: 0,
+      filtroRelajado: null,
+      observabilidad: {
+        eventLabel: null,
+        closedOccasionRecognized: Boolean(filtros?.ocasiones?.length),
+        componentQueries: [mensaje],
+        candidateCountsByTier: { exact_event: 0, thematic: 0, adaptable: 0 },
+        selectedPieces: [],
+        relaxations: [],
+        outcome: "NO_MATCH",
+        planningLatencyMs: 0,
+      },
+    };
+  }
+  const deadlineAt = opciones.rerankDeadlineAt ?? Date.now() + RERANK_DEADLINE_MS;
+  const requestId = opciones.rerankRequestId ?? crypto.randomUUID();
+  const correlationId = opciones.rerankCorrelationId ?? opciones.rerankRequestId ?? requestId;
+  // Real product→variant entries; the service owns how they filter rows.
+  const allowlist = opciones.allowlist
+    ? opciones.allowlist.entries.map((entry) => ({ product_id: entry.productId, variant_ids: [...entry.variantIds] }))
+    : [];
+  const llamar = (paso: IntentQuery["filtros_duros"] | undefined) => llamarPythonCatalogSearch({
+    message: mensaje,
+    filters: {
+      available: paso?.solo_disponibles ?? true,
+      ...(paso?.precio_max === null || paso?.precio_max === undefined ? {} : { price_max: paso.precio_max }),
+      ...(paso?.categorias?.length ? { categories: paso.categorias } : {}),
+      ...(paso?.ocasiones?.length ? { occasions: paso.ocasiones } : {}),
+      ...(paso?.colores?.length ? { colors: paso.colores } : {}),
+      ...(paso?.acabados?.length ? { finishes: paso.acabados } : {}),
+      ...(paso?.formas?.length ? { shapes: paso.formas } : {}),
+      ...(paso?.diametros_pulgadas?.length ? { diameters_inches: paso.diametros_pulgadas } : {}),
+    },
+    allowlist,
+    requestId,
+    correlationId,
+    deadlineMs: Math.max(1, deadlineAt - Date.now()),
+    parentSignal: opciones.rerankSignal,
+    ...(opciones.catalogSnapshotId === undefined ? {} : { catalogSnapshotId: opciones.catalogSnapshotId }),
+  });
+  // Same ladder as the TypeScript path. Search is read-only, so repeating it
+  // with fewer verified filters duplicates no effect; the shared deadline
+  // bounds the total, and a step is skipped once that deadline has passed.
+  const pasos = filtros ? escaleraRelajacion(filtros) : [];
+  let response = await llamar(pasos[0]?.filtros ?? filtros);
+  let filtroRelajado: ResultadoBusquedaRag["filtroRelajado"] = null;
+  for (const paso of pasos.slice(1)) {
+    const coloresCandidatos = response.candidates.map((candidate) => ({ colores: candidate.colors }));
+    if (response.status === "AMBIGUOUS_SKU" || !filtros || !debeAplicarPaso(paso, filtros, coloresCandidatos) || Date.now() >= deadlineAt) break;
+    const previa = response;
+    response = await llamar(paso.filtros);
+    if (response.candidates.length > 0) filtroRelajado = paso.relajado;
+    else if (previa.candidates.length > 0) {
+      response = previa;
+      break;
+    }
+  }
+  const scores: ResultadoRetrieval[] = response.candidates.map((candidate) => ({
+    productId: candidate.product_id,
+    variantIds: candidate.variants.map((variant) => variant.variant_id),
+    vectorScore: 0,
+    textScore: candidate.score,
+    trigramScore: candidate.score,
+    finalScore: candidate.score,
+  }));
+  const candidatos: ProductoCandidato[] = response.candidates.map(candidatoDesdePython);
+  const status = response.status === "OK"
+    ? "candidatos"
+    : response.status === "AMBIGUOUS_SKU" ? "aclaracion" : "NO_MATCH";
+  return {
+    status: response.status,
+    skuStatus: response.sku_status ?? undefined,
+    catalogSnapshotId: response.catalog_snapshot_id ?? undefined,
+    candidatos,
+    intent: null,
+    scores,
+    latencyParseMs: response.latency_parse_ms,
+    latencyRetrievalMs: response.latency_retrieval_ms,
+    filtroRelajado,
+    observabilidad: {
+      eventLabel: null,
+      closedOccasionRecognized: Boolean(filtros?.ocasiones?.length),
+      componentQueries: [mensaje],
+      candidateCountsByTier: {
+        exact_event: 0,
+        thematic: 0,
+        adaptable: scores.length,
+      },
+      selectedPieces: [],
+      relaxations: descripcionRelajacion(filtroRelajado),
+      outcome: status,
+      planningLatencyMs: 0,
+    },
+  };
 }
 
 /**
@@ -137,6 +265,10 @@ export async function buscarCatalogoRag(
   mensaje: string,
   opciones: OpcionesBusquedaRag = {},
 ): Promise<ResultadoBusquedaRag> {
+  const rerankDeadlineAt = opciones.rerankDeadlineAt ?? Date.now() + RERANK_DEADLINE_MS;
+  if (seleccionarBackendPython().backend === "python") {
+    return buscarCatalogoPython(mensaje, { ...opciones, rerankDeadlineAt });
+  }
   const t0 = Date.now();
   const parseado = await interpretarConsulta(mensaje);
   // Semantic retrieval uses component text. Hard SQL filters come only from
@@ -151,18 +283,8 @@ export async function buscarCatalogoRag(
     return { status: "NO_MATCH", skuStatus: "not_sku", candidatos: [], intent: intento, scores: [], latencyParseMs, latencyRetrievalMs: 0, filtroRelajado: null, observabilidad: observabilidadBusqueda(mensaje, eventIntent, [], "NO_MATCH", null, opciones.focusedQueries) };
   }
 
-  const filtrosBase = {
-    disponible: intento.filtros_duros.solo_disponibles,
-    precioMax: intento.filtros_duros.precio_max ?? undefined,
-    categorias: intento.filtros_duros.categorias.length ? intento.filtros_duros.categorias : undefined,
-    formas: intento.filtros_duros.formas.length ? intento.filtros_duros.formas : undefined,
-    acabados: intento.filtros_duros.acabados.length ? intento.filtros_duros.acabados : undefined,
-    diametrosPulgadas: intento.filtros_duros.diametros_pulgadas.length ? intento.filtros_duros.diametros_pulgadas : undefined,
-  };
-  const ocasiones = intento.filtros_duros.ocasiones.length ? intento.filtros_duros.ocasiones : undefined;
-  const colores = intento.filtros_duros.colores.length ? intento.filtros_duros.colores : undefined;
+  const pasos = escaleraRelajacion(intento.filtros_duros);
   const t1 = Date.now();
-  const rerankDeadlineAt = opciones.rerankDeadlineAt ?? Date.now() + RERANK_DEADLINE_MS;
   let embeddingFallido = false;
   const embeddingPrecalculado = consultaTieneSku(intento.semantic_query)
     ? undefined
@@ -176,7 +298,7 @@ export async function buscarCatalogoRag(
         : undefined,
     );
 
-  let respuesta = await buscarHibrido(pool, {
+  const buscarPaso = (filtros: IntentQuery["filtros_duros"]) => buscarHibrido(pool, {
     semanticQuery: intento.semantic_query,
     focusedQueries: opciones.focusedQueries,
     eventTerms: eventIntent.event_terms,
@@ -188,8 +310,18 @@ export async function buscarCatalogoRag(
     rerankDeadlineAt,
     embeddingPrecalculado,
     embeddingFallido,
-    filtros: { ...filtrosBase, ocasiones, colores },
+    filtros: {
+      disponible: filtros.solo_disponibles,
+      precioMax: filtros.precio_max ?? undefined,
+      categorias: filtros.categorias.length ? filtros.categorias : undefined,
+      formas: filtros.formas.length ? filtros.formas : undefined,
+      acabados: filtros.acabados.length ? filtros.acabados : undefined,
+      diametrosPulgadas: filtros.diametros_pulgadas.length ? filtros.diametros_pulgadas : undefined,
+      ocasiones: filtros.ocasiones.length ? filtros.ocasiones : undefined,
+      colores: filtros.colores.length ? filtros.colores : undefined,
+    },
   });
+  let respuesta = await buscarPaso(intento.filtros_duros);
   let filtroRelajado: ResultadoBusquedaRag["filtroRelajado"] = null;
 
   // Never expose ambiguous exact SKU candidates to the model as a normal
@@ -217,40 +349,20 @@ export async function buscarCatalogoRag(
   // sueltan ANTES que el tamaño, en ese orden, solo cuando la combinación
   // completa da cero resultados. Sin esto, "globos rojos de 5 pulgadas para
   // cumpleaños" puede caer a NO_MATCH aunque sí existan globos rojos R-5
-  // (solo que ninguno tiene la etiqueta de ocasión "cumpleanos").
-  if (respuesta.results.length === 0 && ocasiones) {
-    respuesta = await buscarHibrido(pool, {
-      semanticQuery: intento.semantic_query,
-      focusedQueries: opciones.focusedQueries,
-      eventTerms: eventIntent.event_terms,
-      eventIntent,
-        allowlist: opciones.allowlist,
-        rerankRequestId: opciones.rerankRequestId,
-        rerankCorrelationId: opciones.rerankCorrelationId,
-        rerankSignal: opciones.rerankSignal,
-        rerankDeadlineAt,
-        embeddingPrecalculado,
-        embeddingFallido,
-        filtros: { ...filtrosBase, colores },
-    });
-    if (respuesta.results.length > 0) filtroRelajado = "ocasiones";
-  }
-  if (respuesta.results.length === 0 && colores) {
-    respuesta = await buscarHibrido(pool, {
-      semanticQuery: intento.semantic_query,
-      focusedQueries: opciones.focusedQueries,
-      eventTerms: eventIntent.event_terms,
-      eventIntent,
-        allowlist: opciones.allowlist,
-        rerankRequestId: opciones.rerankRequestId,
-        rerankCorrelationId: opciones.rerankCorrelationId,
-        rerankSignal: opciones.rerankSignal,
-        rerankDeadlineAt,
-        embeddingPrecalculado,
-        embeddingFallido,
-        filtros: { ...filtrosBase },
-    });
-    if (respuesta.results.length > 0) filtroRelajado = "colores";
+  // (solo que ninguno tiene la etiqueta de ocasión "cumpleanos"). El orden
+  // vive en `escaleraRelajacion`, compartido con el backend Python.
+  for (const paso of pasos.slice(1)) {
+    const coloresCandidatos = respuesta.results.length > 0 && paso.relajado === "ocasiones" && intento.filtros_duros.colores.length > 0
+      ? await coloresDeProductos(pool, respuesta.results.map((result) => result.productId))
+      : respuesta.results.map(() => ({ colores: [] }));
+    if (!debeAplicarPaso(paso, intento.filtros_duros, coloresCandidatos)) break;
+    const previa = respuesta;
+    respuesta = await buscarPaso(paso.filtros);
+    if (respuesta.results.length > 0) filtroRelajado = paso.relajado;
+    else if (previa.results.length > 0) {
+      respuesta = previa;
+      break;
+    }
   }
   const latencyRetrievalMs = Date.now() - t1;
 

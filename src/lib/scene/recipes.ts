@@ -1,6 +1,6 @@
 /**
  * Registro de recetas y expansión determinista de intención a programa
- * (Tarea 01.2 — `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`, secciones 5.1 y
+ * (Tarea 01.2 — `docs/migracion-python/PLAN-MAESTRO-V2.md`, secciones 5.1 y
  * 9.1 (paso 2), "Plan 01, Tarea 01.2" en la sección 11).
  *
  * Este módulo tiene dos responsabilidades:

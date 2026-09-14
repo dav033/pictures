@@ -26,6 +26,8 @@ type FilaVarianteGeneracion = {
 export type FuentesProductosGeneracion = {
   productIds?: unknown;
   ragVariantIds?: unknown;
+  /** Published catalog snapshot bound to an approved Python plan. */
+  catalogSnapshotId?: string;
 };
 
 export type ProductosResueltosGeneracion = {
@@ -97,8 +99,19 @@ function itemDesdeFila(fila: FilaVarianteGeneracion): ItemValidado {
 export async function resolverVariantesRagParaGeneracion(
   ids: string[],
   pool: Pick<Pool, "query"> = getRagPool(),
+  catalogSnapshotId?: string,
 ): Promise<Producto[]> {
   if (ids.length === 0) return [];
+  if (catalogSnapshotId !== undefined && !catalogSnapshotId.trim()) {
+    throw new Error("catalogSnapshotId must not be blank.");
+  }
+  const params: unknown[] = [ids];
+  const snapshotFilter = catalogSnapshotId === undefined
+    ? ""
+    : (() => {
+        params.push(catalogSnapshotId);
+        return "         AND p.source_snapshot_id = $2\n         AND v.source_snapshot_id = $2";
+      })();
   const { rows } = await pool.query<FilaVarianteGeneracion>(
     `SELECT v.product_id, v.variant_id, v.sku,
             p.title AS producto_titulo, v.title AS variante_titulo,
@@ -111,12 +124,13 @@ export async function resolverVariantesRagParaGeneracion(
             v.codigo_tamano, v.forma, v.diam_pulg
        FROM catalog_variants v
        JOIN catalog_products p ON p.product_id = v.product_id
-      WHERE v.variant_id = ANY($1::text[])
-        AND p.status = 'ACTIVE'
-        AND p.available = true
-        AND v.available = true
-        AND v.price > 0`,
-    [ids],
+       WHERE v.variant_id = ANY($1::text[])
+         AND p.status = 'ACTIVE'
+         AND p.available = true
+         AND v.available = true
+         AND v.price > 0
+${snapshotFilter}`,
+    params,
   );
   const porId = new Map(rows.map((fila) => [fila.variant_id, fila]));
   const faltantes = ids.filter((id) => !porId.has(id));
@@ -150,7 +164,7 @@ export async function resolverProductosParaGeneracion(
     throw new Error("One or more selected catalog products could not be validated.");
   }
   const rag = ragVariantIds.length
-    ? await resolverVariantesRagParaGeneracion(ragVariantIds, pool ?? getRagPool())
+    ? await resolverVariantesRagParaGeneracion(ragVariantIds, pool ?? getRagPool(), fuentes.catalogSnapshotId)
     : [];
   return { productIds, ragVariantIds, legacy, rag, productos: [...legacy, ...rag] };
 }

@@ -3,18 +3,18 @@
 import { useEffect, useState } from "react";
 import type { Imagen, ProveedorId } from "@/lib/ia/tipos";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
+import { ReferenceBlueprintV2Schema } from "@/lib/ia/reference-blueprint";
+import { CATALOGO_ERRORES_UI_V1, leerUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 import { ReferenceReviewPanel, type ReferenceDraft } from "./ReferenceReviewPanel";
 
 type Props = {
   references: Imagen[];
-  venue?: Imagen | null;
   proveedor: ProveedorId;
-  eventPalette?: string[];
   onDraft: (draft: ReferenceDraft | null) => void;
   onReady: (ready: boolean) => void;
 };
 
-export function ReferenceAnalysisController({ references, venue, proveedor, eventPalette, onDraft, onReady }: Props) {
+export function ReferenceAnalysisController({ references, proveedor, onDraft, onReady }: Props) {
   const [blueprint, setBlueprint] = useState<ReferenceBlueprintV2 | null>(null);
   const [status, setStatus] = useState<"idle" | "analyzing" | "ready" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +30,7 @@ export function ReferenceAnalysisController({ references, venue, proveedor, even
     }
 
     let cancelled = false;
+    const controller = new AbortController();
     // A new attachment must not reuse the previous turn's blueprint while the
     // server analyzes it.
     setBlueprint(null);
@@ -40,28 +41,26 @@ export function ReferenceAnalysisController({ references, venue, proveedor, even
     fetch("/api/references/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      signal: controller.signal,
       body: JSON.stringify({ images: references, proveedor }),
     })
       .then(async (response) => {
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error ?? "No se pudieron analizar las referencias.");
-        return data;
+        const data: unknown = await response.json();
+        if (!response.ok) {
+          // ui-error.v1: el cliente ve el mensaje redactado, nunca el texto técnico.
+          throw new Error(leerUiErrorV1(data)?.mensaje_usuario ?? CATALOGO_ERRORES_UI_V1.ERROR_INTERNO.mensaje_usuario);
+        }
+        const blueprint = typeof data === "object" && data !== null && "blueprint" in data
+          ? ReferenceBlueprintV2Schema.safeParse(data.blueprint)
+          : null;
+        if (!blueprint?.success) throw new Error(CATALOGO_ERRORES_UI_V1.ERROR_INTERNO.mensaje_usuario);
+        return blueprint.data;
       })
-      .then((data) => {
+      .then((next) => {
         if (cancelled) return;
-        const next: ReferenceBlueprintV2 = data.blueprint;
-        // Los IDs comerciales solo pertenecen al flujo legacy. El modo plan es
-        // perceptual y deja la resolución de variantes a buscar_catalogo_rag.
-        const autoProductIds = next.elements
-          .filter((element) => element.approved)
-          .flatMap((element) => [
-            element.model_decision?.catalog_product_id,
-            ...(element.model_decision?.bill_of_materials?.map((line) => line.catalog_product_id) ?? []),
-          ])
-          .filter((id): id is string => Boolean(id));
         setBlueprint(next);
         setStatus("ready");
-        onDraft({ blueprint: next, autoProductIds: [...new Set(autoProductIds)] });
+        onDraft({ blueprint: next });
         onReady(true);
       })
       .catch((reason) => {
@@ -74,11 +73,12 @@ export function ReferenceAnalysisController({ references, venue, proveedor, even
 
     return () => {
       cancelled = true;
+      controller.abort();
     };
     // Parent callbacks intentionally remain outside this dependency list: the
     // controller must not restart an analysis on every parent render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [references, proveedor]);
 
-  return <ReferenceReviewPanel references={references} venue={venue} eventPalette={eventPalette} blueprint={blueprint} status={status} error={error} />;
+  return <ReferenceReviewPanel references={references} blueprint={blueprint} status={status} error={error} />;
 }

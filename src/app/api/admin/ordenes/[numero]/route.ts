@@ -1,13 +1,16 @@
 import { rm } from "node:fs/promises";
 import path from "node:path";
+import { isAuthenticatedRequest, isSameOriginRequest } from "@/lib/auth/request";
+import { directorioOrdenes } from "@/lib/ordenes/directorio";
 
-const RUTA_ORDENES = "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
+export async function DELETE(request: Request, { params }: { params: Promise<{ numero: string }> }) {
+  if (!isAuthenticatedRequest(request)) return Response.json({ error: "Sesión requerida." }, { status: 401 });
+  if (!isSameOriginRequest(request)) return Response.json({ error: "Origen no permitido." }, { status: 403 });
 
-export async function DELETE(_request: Request, { params }: { params: Promise<{ numero: string }> }) {
   const { numero } = await params;
   if (!/^\d+$/.test(numero)) return Response.json({ error: "Número de orden inválido." }, { status: 400 });
 
-  const carpetaOrden = path.join(RUTA_ORDENES, numero);
+  const carpetaOrden = path.join(/*turbopackIgnore: true*/ directorioOrdenes(), numero);
   try {
     await rm(carpetaOrden, { recursive: true, force: true });
   } catch (error) {

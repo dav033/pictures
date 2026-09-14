@@ -1,0 +1,814 @@
+{
+  "allowlist": [
+    {
+      "product_id": "P-A5-BUDGET-LOW",
+      "variant_ids": [
+        "V-A5-BUDGET-LOW-R12"
+      ]
+    },
+    {
+      "product_id": "P-A5-BUDGET-MID",
+      "variant_ids": [
+        "V-A5-BUDGET-MID-R12"
+      ]
+    },
+    {
+      "product_id": "P-A5-BUDGET-HIGH",
+      "variant_ids": [
+        "V-A5-BUDGET-HIGH-R12"
+      ]
+    }
+  ],
+  "catalog_rows": [
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "rojo"
+      ],
+      "colores_variante": [
+        "rojo"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex rojo R-12 economico.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/a5-budget-low-r12.jpg",
+      "inventory_quantity": 100,
+      "precio": 8000,
+      "product_id": "P-A5-BUDGET-LOW",
+      "producto_disponible": true,
+      "producto_titulo": "Globo economico rojo",
+      "sku": "SKU-A5-LOW-R12",
+      "sku_original": "SHOP-A5-LOW-R12",
+      "source_snapshot_id": "SNAP-GOLDEN-A5-006",
+      "source_variant_id": "SOURCE-A5-LOW-R12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-A5-BUDGET-LOW-R12",
+      "variante_titulo": "R-12"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "rojo"
+      ],
+      "colores_variante": [
+        "rojo"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex rojo R-12 equilibrado.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/a5-budget-mid-r12.jpg",
+      "inventory_quantity": 100,
+      "precio": 10000,
+      "product_id": "P-A5-BUDGET-MID",
+      "producto_disponible": true,
+      "producto_titulo": "Globo equilibrado rojo",
+      "sku": "SKU-A5-MID-R12",
+      "sku_original": "SHOP-A5-MID-R12",
+      "source_snapshot_id": "SNAP-GOLDEN-A5-006",
+      "source_variant_id": "SOURCE-A5-MID-R12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-A5-BUDGET-MID-R12",
+      "variante_titulo": "R-12"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "rojo"
+      ],
+      "colores_variante": [
+        "rojo"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex rojo R-12 premium.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/a5-budget-high-r12.jpg",
+      "inventory_quantity": 100,
+      "precio": 12000,
+      "product_id": "P-A5-BUDGET-HIGH",
+      "producto_disponible": true,
+      "producto_titulo": "Globo premium rojo",
+      "sku": "SKU-A5-HIGH-R12",
+      "sku_original": "SHOP-A5-HIGH-R12",
+      "source_snapshot_id": "SNAP-GOLDEN-A5-006",
+      "source_variant_id": "SOURCE-A5-HIGH-R12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-A5-BUDGET-HIGH-R12",
+      "variante_titulo": "R-12"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-A5-006",
+  "description": "Una columna supera el techo explicito y ofrece alternativas de familia.",
+  "expected": {
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "rojo",
+          "design_quantity": 30,
+          "finish": null,
+          "product_id": "P-A5-BUDGET-MID",
+          "required_quantity": 30,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_01_PRESUPUESTO",
+          "variant_id": "V-A5-BUDGET-MID-R12",
+          "waste_adjusted_quantity": 30,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 1,
+        "density": "media",
+        "dimensions_m": {
+          "height": 1.4,
+          "length": null,
+          "width": null
+        },
+        "installation_length_m": 1.4,
+        "shape": "clasica",
+        "type": "columna",
+        "visual_density": "medium",
+        "visual_scale": "small"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 6600,
+          "design_quantity": 30,
+          "leftover_inventory": 17,
+          "operational_surplus": 17,
+          "package_count": 1,
+          "potential_surplus": 20,
+          "product_id": "P-A5-BUDGET-MID",
+          "purchase_cost": 10000,
+          "purchase_quantity": 50,
+          "required_quantity": 33,
+          "units_per_package": 50,
+          "used": 30,
+          "variant_id": "V-A5-BUDGET-MID-R12",
+          "waste_adjusted_quantity": 33,
+          "waste_reserve": 3
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 6600,
+        "covered_waste_reserve": 3,
+        "design_quantity": 30,
+        "natural_package_surplus": 20,
+        "operational_surplus": 17,
+        "potential_surplus": 20,
+        "purchase_cost": 10000,
+        "purchase_quantity": 50,
+        "required_quantity": 33,
+        "target_waste_reserve": 3,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 33,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-A5-BUDGET-MID-R12"
+      ]
+    },
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-A5-BUDGET-MID-R12"
+      ],
+      "alternativas": [
+        {
+          "ahorro_cop": 2000,
+          "etiqueta": "economica",
+          "familia_id": "P-A5-BUDGET-LOW",
+          "titulo": "Globo economico rojo",
+          "total_cop": 8000
+        },
+        {
+          "ahorro_cop": 0,
+          "etiqueta": "equilibrada",
+          "familia_id": "P-A5-BUDGET-MID",
+          "titulo": "Globo equilibrado rojo",
+          "total_cop": 10000
+        },
+        {
+          "ahorro_cop": 0,
+          "etiqueta": "premium",
+          "familia_id": "P-A5-BUDGET-HIGH",
+          "titulo": "Globo premium rojo",
+          "total_cop": 12000
+        }
+      ],
+      "comercial": {
+        "delta_cop": 5000,
+        "estado": "PRESUPUESTO_EXCEDIDO",
+        "procedencia": "explicito",
+        "techo_cop": 5000
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "rojo",
+          "consumption_cost": 6600,
+          "design_quantity": 30,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_01_PRESUPUESTO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_PRESUPUESTO"
+          ],
+          "imagen": "https://cdn.example.test/a5-budget-mid-r12.jpg",
+          "inventory_quantity": 100,
+          "leftover_inventory": 17,
+          "paquetes": 1,
+          "precio_paquete": 10000,
+          "product_id": "P-A5-BUDGET-MID",
+          "purchase_cost": 10000,
+          "purchase_quantity": 50,
+          "required_quantity": 33,
+          "sku": "SKU-A5-MID-R12",
+          "sku_original": "SHOP-A5-MID-R12",
+          "sobrante": 20,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-006",
+          "source_variant_id": "SOURCE-A5-MID-R12",
+          "subtotal": 10000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo equilibrado rojo — R-12",
+          "unidades_con_merma": 33,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 30,
+          "unidades_paquete": 50,
+          "used": 30,
+          "variant_id": "V-A5-BUDGET-MID-R12",
+          "waste_reserve": 3
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 1.4,
+          "estructura_id": "EST_01_PRESUPUESTO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_01_PRESUPUESTO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/a5-budget-mid-r12.jpg",
+              "inventory_quantity": 100,
+              "origen": {
+                "id": "EST_01_PRESUPUESTO",
+                "kind": "estructura"
+              },
+              "product_id": "P-A5-BUDGET-MID",
+              "sku": "SKU-A5-MID-R12",
+              "sku_original": "SHOP-A5-MID-R12",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-006",
+              "source_variant_id": "SOURCE-A5-MID-R12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo equilibrado rojo — R-12",
+              "unidades": 30,
+              "unidades_inferidas": false,
+              "variant_id": "V-A5-BUDGET-MID-R12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 30
+            }
+          ],
+          "nombre": "Columna presupuestada",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 30,
+          "ubicacion": "lateral_izquierdo"
+        }
+      ],
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 30\nTarget waste reserve: 3\nNatural package surplus: 20\nUsable waste coverage: 3\nAdditional packages required for waste: 0\nGlobo equilibrado rojo — R-12: design=30, required=33, package=50, packages=1, purchased=50, natural surplus=20, waste reserve=3, leftover inventory=17",
+      "plan": {
+        "concepto": {
+          "descripcion": "Una columna roja con alternativas comerciales.",
+          "paleta": [
+            "rojo"
+          ],
+          "titulo": "Columna de presupuesto excedido"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_PRESUPUESTO",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-A5-BUDGET-MID",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna presupuestada",
+            "porque": "Permite comparar familias de precio.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "columna",
+            "ubicacion": "lateral_izquierdo"
+          }
+        ],
+        "plan_id": "a5a50006-0000-4000-8000-000000000006",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "restricciones": {
+          "acabados": [],
+          "colores": [],
+          "estructuras": [],
+          "presupuesto": {
+            "procedencia": "explicito",
+            "techo_cop": 5000,
+            "texto_original": "No superar 5000 COP."
+          },
+          "tamanos": []
+        },
+        "supuestos": []
+      },
+      "plan_hash": "fbf900fc6b2220a44cabec46077d7b15ca947693d543f2f606d945a70e71b16d",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 6600,
+        "covered_waste_reserve": 3,
+        "design_quantity": 30,
+        "globos_por_tamano": {
+          "R-12": 30
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8,
+        "natural_package_surplus": 20,
+        "purchase_cost": 10000,
+        "target_waste_reserve": 3,
+        "total_cop": 10000,
+        "total_unidades": 30,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "complementosSoportados": false,
+      "consumptionCost": 6600,
+      "coveredWasteReserve": 3,
+      "incluyeIva": true,
+      "leftoverInventory": 17,
+      "lineas": [
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 30,
+          "color": "rojo",
+          "consumptionCost": 6600,
+          "designQuantity": 30,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_PRESUPUESTO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_PRESUPUESTO"
+          ],
+          "id": "V-A5-BUDGET-MID-R12",
+          "leftoverInventory": 17,
+          "nombre": "Globo equilibrado rojo — R-12",
+          "paquetes": 1,
+          "precioPaquete": 10000,
+          "productId": "P-A5-BUDGET-MID",
+          "purchaseCost": 10000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 33,
+          "sobrante": 20,
+          "subtotal": 10000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 30,
+          "varianteId": "V-A5-BUDGET-MID-R12",
+          "wasteReserve": 3
+        }
+      ],
+      "mermaPorcentaje": 8,
+      "plan_hash": "fbf900fc6b2220a44cabec46077d7b15ca947693d543f2f606d945a70e71b16d",
+      "purchaseCost": 10000,
+      "targetWasteReserve": 3,
+      "total": 10000
+    }
+  },
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-A5-006",
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "rojo",
+          "design_quantity": 30,
+          "finish": null,
+          "product_id": "P-A5-BUDGET-MID",
+          "required_quantity": 30,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_PRESUPUESTO",
+          "variant_id": "V-A5-BUDGET-MID-R12",
+          "waste_adjusted_quantity": 30,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 1,
+        "density": "media",
+        "dimensions_m": {
+          "height": 1.4,
+          "length": null,
+          "width": null
+        },
+        "installation_length_m": 1.4,
+        "shape": "clasica",
+        "type": "columna",
+        "visual_density": "medium",
+        "visual_scale": "small"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 6600,
+          "design_quantity": 30,
+          "leftover_inventory": 17,
+          "operational_surplus": 17,
+          "package_count": 1,
+          "potential_surplus": 20,
+          "product_id": "P-A5-BUDGET-MID",
+          "purchase_cost": 10000,
+          "purchase_quantity": 50,
+          "required_quantity": 33,
+          "units_per_package": 50,
+          "used": 30,
+          "variant_id": "V-A5-BUDGET-MID-R12",
+          "waste_adjusted_quantity": 33,
+          "waste_reserve": 3
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 6600,
+        "covered_waste_reserve": 3,
+        "design_quantity": 30,
+        "natural_package_surplus": 20,
+        "operational_surplus": 17,
+        "potential_surplus": 20,
+        "purchase_cost": 10000,
+        "purchase_quantity": 50,
+        "required_quantity": 33,
+        "target_waste_reserve": 3,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 33,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-A5-BUDGET-MID-R12"
+      ]
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-A5-BUDGET-MID-R12"
+      ],
+      "alternativas": [
+        {
+          "ahorro_cop": 2000,
+          "etiqueta": "economica",
+          "familia_id": "P-A5-BUDGET-LOW",
+          "titulo": "Globo economico rojo",
+          "total_cop": 8000
+        },
+        {
+          "ahorro_cop": 0,
+          "etiqueta": "equilibrada",
+          "familia_id": "P-A5-BUDGET-MID",
+          "titulo": "Globo equilibrado rojo",
+          "total_cop": 10000
+        },
+        {
+          "ahorro_cop": 0,
+          "etiqueta": "premium",
+          "familia_id": "P-A5-BUDGET-HIGH",
+          "titulo": "Globo premium rojo",
+          "total_cop": 12000
+        }
+      ],
+      "comercial": {
+        "delta_cop": 5000,
+        "estado": "PRESUPUESTO_EXCEDIDO",
+        "procedencia": "explicito",
+        "techo_cop": 5000
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "rojo",
+          "consumption_cost": 6600,
+          "design_quantity": 30,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_PRESUPUESTO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_PRESUPUESTO"
+          ],
+          "imagen": "https://cdn.example.test/a5-budget-mid-r12.jpg",
+          "inventory_quantity": 100,
+          "leftover_inventory": 17,
+          "paquetes": 1,
+          "precio_paquete": 10000,
+          "product_id": "P-A5-BUDGET-MID",
+          "purchase_cost": 10000,
+          "purchase_quantity": 50,
+          "required_quantity": 33,
+          "sku": "SKU-A5-MID-R12",
+          "sku_original": "SHOP-A5-MID-R12",
+          "sobrante": 20,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-006",
+          "source_variant_id": "SOURCE-A5-MID-R12",
+          "subtotal": 10000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo equilibrado rojo — R-12",
+          "unidades_con_merma": 33,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 30,
+          "unidades_paquete": 50,
+          "used": 30,
+          "variant_id": "V-A5-BUDGET-MID-R12",
+          "waste_reserve": 3
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 1.4,
+          "estructura_id": "EST_01_PRESUPUESTO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_PRESUPUESTO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/a5-budget-mid-r12.jpg",
+              "inventory_quantity": 100,
+              "origen": {
+                "id": "EST_01_PRESUPUESTO",
+                "kind": "estructura"
+              },
+              "product_id": "P-A5-BUDGET-MID",
+              "sku": "SKU-A5-MID-R12",
+              "sku_original": "SHOP-A5-MID-R12",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-006",
+              "source_variant_id": "SOURCE-A5-MID-R12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo equilibrado rojo — R-12",
+              "unidades": 30,
+              "unidades_inferidas": false,
+              "variant_id": "V-A5-BUDGET-MID-R12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 30
+            }
+          ],
+          "nombre": "Columna presupuestada",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 30,
+          "ubicacion": "lateral_izquierdo"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-A5-006.",
+      "plan": {
+        "concepto": {
+          "descripcion": "Una columna roja con alternativas comerciales.",
+          "paleta": [
+            "rojo"
+          ],
+          "titulo": "Columna de presupuesto excedido"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_PRESUPUESTO",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-A5-BUDGET-MID",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna presupuestada",
+            "porque": "Permite comparar familias de precio.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "columna",
+            "ubicacion": "lateral_izquierdo"
+          }
+        ],
+        "plan_id": "a5a50006-0000-4000-8000-000000000006",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "restricciones": {
+          "acabados": [],
+          "colores": [],
+          "estructuras": [],
+          "presupuesto": {
+            "procedencia": "explicito",
+            "techo_cop": 5000,
+            "texto_original": "No superar 5000 COP."
+          },
+          "tamanos": []
+        },
+        "supuestos": []
+      },
+      "plan_hash": "d597c7093e7f5a9a24602850e37f8f8c6f677060433f16526d50fe272c323614",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 6600,
+        "covered_waste_reserve": 3,
+        "design_quantity": 30,
+        "globos_por_tamano": {
+          "R-12": 30
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 20,
+        "purchase_cost": 10000,
+        "target_waste_reserve": 3,
+        "total_cop": 10000,
+        "total_unidades": 30,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 6600,
+      "covered_waste_reserve": 3,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 17,
+      "lines": [
+        {
+          "available": true,
+          "color": "rojo",
+          "consumption_cost_cop": 6600,
+          "design_quantity": 30,
+          "diameter_inches": 12.0,
+          "id": "V-A5-BUDGET-MID-R12",
+          "leftover_inventory": 17,
+          "origins": [
+            {
+              "id": "EST_01_PRESUPUESTO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 10000,
+          "packages": 1,
+          "product_id": "P-A5-BUDGET-MID",
+          "purchase_cost_cop": 10000,
+          "purchase_quantity": 50,
+          "required_quantity": 33,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_PRESUPUESTO"
+          ],
+          "subtotal_cop": 10000,
+          "surplus": 20,
+          "title": "Globo equilibrado rojo — R-12",
+          "units_per_package": 50,
+          "used": 30,
+          "variant_id": "V-A5-BUDGET-MID-R12",
+          "waste_reserve": 3
+        }
+      ],
+      "plan_hash": "d597c7093e7f5a9a24602850e37f8f8c6f677060433f16526d50fe272c323614",
+      "purchase_cost_cop": 10000,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 3,
+      "total_cop": 10000,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "a5-presupuesto-excedido",
+  "plan": {
+    "concepto": {
+      "descripcion": "Una columna roja con alternativas comerciales.",
+      "paleta": [
+        "rojo"
+      ],
+      "titulo": "Columna de presupuesto excedido"
+    },
+    "espacio": {
+      "fuente": "cliente",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "densidad": "media",
+        "estructura_id": "EST_01_PRESUPUESTO",
+        "materiales": [
+          {
+            "color": "rojo",
+            "participacion": 1,
+            "product_id": "P-A5-BUDGET-MID",
+            "rol_material": "principal"
+          }
+        ],
+        "medidas": {
+          "alto_m": 1.4
+        },
+        "mezcla": "clasica",
+        "nombre": "Columna presupuestada",
+        "porque": "Permite comparar familias de precio.",
+        "repeticiones": 1,
+        "rol_escena": "focal",
+        "tipo": "columna",
+        "ubicacion": "lateral_izquierdo"
+      }
+    ],
+    "plan_id": "a5a50006-0000-4000-8000-000000000006",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "restricciones": {
+      "acabados": [],
+      "colores": [],
+      "estructuras": [],
+      "presupuesto": {
+        "procedencia": "explicito",
+        "techo_cop": 5000,
+        "texto_original": "No superar 5000 COP."
+      },
+      "tamanos": []
+    },
+    "supuestos": []
+  }
+}

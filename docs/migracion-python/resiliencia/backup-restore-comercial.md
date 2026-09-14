@@ -3,9 +3,8 @@
 **Corte:** 2026-09-09. **Alcance:** Neon (`neondb`, rol `neondb_owner`,
 producción real) como origen de solo lectura; Postgres local Docker
 (`demo-decoracion-postgres-1`) como destino del restore de prueba. Esta
-sesión NO escribe en Neon en ningún paso. El restore real contra una copia
-(paso 2) requiere confirmación explícita antes de ejecutarse — ver "Pedido
-de confirmación" al final.
+sesión NO escribe en Neon en ningún paso. No se realizará un segundo restore
+en una branch o base remota de Neon.
 
 ## 0. Estado verificado antes de escribir el procedimiento
 
@@ -160,6 +159,18 @@ recurrente ni programado — ver "Fuera de alcance" abajo.
   herramientas nativas si las hay) en vez de sobre Postgres local. Esta
   prueba valida que el dump es íntegro y restaurable en general; no valida
   el mecanismo específico de recuperación en la plataforma de producción.
+
+## 6.1 Decisión de alcance
+
+Se descarta realizar una segunda prueba de restore dentro de Neon. La prueba
+real ya ejecutada toma el dump desde Neon y lo restaura en una base local nueva
+y desechable, con comparación exacta de las 41 tablas y comprobaciones de
+contenido. Eso satisface el criterio de aceptación de la Fase 5.2 sin escribir
+en una branch o base remota ni asumir costes o permisos adicionales de Neon.
+
+Una prueba específica de branching, PITR o restore sobre Neon podrá abrirse como
+trabajo independiente si aparece una necesidad operativa concreta o cambia el
+alcance del plan.
 
 ## Evidencia de ejecución real — 2026-09-09
 

@@ -5,7 +5,7 @@ import path from "node:path";
  * Recaptionador del dataset del LoRA Sempertex, para el reentrenamiento.
  *
  * Cada regla del prompt sale de una medición sobre los 154 captions actuales
- * (ver «ESPECIFICACIÓN DEL REENTRENAMIENTO» en HANDOFF-LORA-COMPOSICION.md):
+ * (ver la especificación de captions del dataset vigente):
  *
  *   · 93% mete cláusula de iluminación y 67% TERMINA en ella. Es constante, así
  *     que describirla en cada caption impide que el trigger se quede con el

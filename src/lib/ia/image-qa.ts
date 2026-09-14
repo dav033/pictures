@@ -3,6 +3,7 @@ import type { SceneSpec } from "./scene-spec";
 import { z } from "zod";
 import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
 import type { DesignMaterialEstimate } from "@/lib/materiales/estimacion";
+import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { featureEnabled } from "./feature-flags";
 import { bytesBase64, registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "./telemetria-llamadas";
 
@@ -78,19 +79,33 @@ const VisionObservationSchema = z.object({
   material_scale_reason: z.string().default(""),
 }).strict();
 
-export async function observarImagenGenerada(sceneSpec: SceneSpec, image: { base64: string; mime: string }, estimate?: DesignMaterialEstimate, telemetria?: ContextoTelemetriaIA): Promise<SceneQaObservation | null> {
-  // Fase 5.3: antes esta condición reimplementaba su propia versión de
-  // IMAGE_INSTANCE_QA/IMAGE_QA_VISION, distinta de la que usa el gate de
-  // planes aprobados en generate/route.ts — podían discrepar (el gate creía
-  // que el QA estaba activo mientras esta llamada se saltaba en silencio).
-  // featureEnabled() es ahora la única fuente de verdad para las dos.
-  if (!featureEnabled("IMAGE_INSTANCE_QA")) return null;
+/**
+ * One expected instance for the QA observer. The name and the official
+ * structure are included: with only "canonical type=kit" and an internal
+ * placement enum the observer could not tell that a planned figure or
+ * accessory was the object it saw, and reported it as unexpected.
+ */
+export function describeExpectedQaElement(element: SceneSpec["elements"][number]): string {
+  const semantics = element.visual_semantics;
+  const official = semantics ? identificarEstructuraOficial({ tipo: semantics.structure_type, densidad: semantics.density, ubicacion: semantics.placement, nombre: element.name }) : undefined;
+  const kind = official ? `official structure=${official.sustantivoEn}; ` : "";
+  return `${element.element_id}: ONE distinct installed structure; name=${JSON.stringify(element.name)}; ${kind}canonical type=${semantics?.structure_type ?? element.category}; canonical placement=${semantics?.placement ?? "legacy bbox placement"}; design role=${semantics?.design_role ?? "legacy"}; repetition group=${semantics?.repetition_group ?? "none"}; colors=${element.resolved_colors.join(", ") || "not specified"}; bbox=${element.target_bbox.x},${element.target_bbox.y},${element.target_bbox.width},${element.target_bbox.height}; installed material quantity=${element.quantity.min}-${element.quantity.max} (material units, not structure count)`;
+}
+
+export async function observarImagenGenerada(
+  sceneSpec: SceneSpec,
+  image: { base64: string; mime: string },
+  estimate?: DesignMaterialEstimate,
+  telemetria?: ContextoTelemetriaIA,
+  signal?: AbortSignal,
+  force = false,
+): Promise<SceneQaObservation | null> {
+  // The UI can opt into one observation for a request without turning on the
+  // global flag. The flag remains the server-side default/kill switch.
+  if (!force && !featureEnabled("IMAGE_QA_ENABLED")) return null;
   const client = getGeminiClient();
   if (!client) return null;
-  const expected = sceneSpec.elements.map((element) => {
-    const semantics = element.visual_semantics;
-    return `${element.element_id}: ONE distinct installed structure; canonical type=${semantics?.structure_type ?? element.category}; canonical placement=${semantics?.placement ?? "legacy bbox placement"}; design role=${semantics?.design_role ?? "legacy"}; repetition group=${semantics?.repetition_group ?? "none"}; colors=${element.resolved_colors.join(", ") || "not specified"}; bbox=${element.target_bbox.x},${element.target_bbox.y},${element.target_bbox.width},${element.target_bbox.height}; installed material quantity=${element.quantity.min}-${element.quantity.max} (material units, not structure count)`;
-  }).join("\n");
+  const expected = sceneSpec.elements.map(describeExpectedQaElement).join("\n");
   const materialExpectation = estimate
     ? `\nMaterial estimate: approximately ${estimate.totals.design_quantity} installed units; expected visual scale=${estimate.design.visual_scale}; density=${estimate.design.visual_density}; installed balloon sizes=${estimate.balloons.map((line) => `${line.design_quantity}x${line.size_inches ?? "special"}-inch`).join(", ") || "none"}. Purchased capacity=${estimate.totals.purchase_quantity} is not visual quantity. Assess physical scale, not exact object count.`
     : "";
@@ -103,6 +118,7 @@ export async function observarImagenGenerada(sceneSpec: SceneSpec, image: { base
         { inlineData: { mimeType: image.mime, data: image.base64 } },
       ] }],
       config: {
+        abortSignal: signal ? AbortSignal.any([signal, AbortSignal.timeout(30_000)]) : AbortSignal.timeout(30_000),
         responseMimeType: "application/json",
         responseJsonSchema: z.toJSONSchema(VisionObservationSchema, { target: "draft-7" }),
         // Fase 3.3: extracción estructurada a un schema cerrado, el mismo caso

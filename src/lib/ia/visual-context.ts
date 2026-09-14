@@ -138,6 +138,17 @@ export function buildVisualContext(input: {
   };
 }
 
+/**
+ * Whether the customer already named a venue or a time of day, with the same
+ * patterns the scene is built from. Creativity only fills what is left open.
+ */
+export function escenaEspecificada(texto: string | undefined, brief: Pick<Brief, "espacio" | "momento_dia"> = {}): { lugar: boolean; momento: boolean } {
+  return {
+    lugar: Boolean(clean(brief.espacio) || matchVenue(texto)),
+    momento: Boolean(clean(brief.momento_dia)) || detectTime(texto ?? "").lightingKind !== "unspecified",
+  };
+}
+
 export function buildPositiveEnvironmentCues(context: VisualContext): string[] {
   const cues: string[] = [];
   const venueMatch = matchVenue(context.venue);

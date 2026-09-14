@@ -39,7 +39,9 @@ import path from "node:path";
 import sharp from "sharp";
 import type { FeedbackFoto } from "../src/lib/ordenes/tipos";
 
-const RUTA_ORDENES = "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
+import { directorioOrdenes } from "../src/lib/ordenes/directorio";
+
+const RUTA_ORDENES = directorioOrdenes();
 
 function argNum(nombre: string, defecto: number): number {
   const m = process.argv.find((a) => a.startsWith(`--${nombre}=`));

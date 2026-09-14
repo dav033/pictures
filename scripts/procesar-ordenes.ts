@@ -8,8 +8,9 @@
 import { spawnSync } from "node:child_process";
 import { access } from "node:fs/promises";
 import path from "node:path";
+import { directorioOrdenes } from "../src/lib/ordenes/directorio";
 
-const RUTA_ORDENES = "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
+const RUTA_ORDENES = directorioOrdenes();
 
 async function existe(rutaArchivo: string): Promise<boolean> {
   try {

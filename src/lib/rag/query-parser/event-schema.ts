@@ -1,6 +1,6 @@
 /**
  * Esquema de entrada cruda del extractor de intención de evento (Tarea 04.1 —
- * `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`, sección 9.1 paso 1 / "Plan 04,
+ * `docs/migracion-python/PLAN-MAESTRO-V2.md`, sección 9.1 paso 1 / "Plan 04,
  * Tarea 04.1" en la sección 11).
  *
  * `EventIntentV2` (`src/lib/scene/tipos.ts`, Tarea 01.1) es el contrato FINAL

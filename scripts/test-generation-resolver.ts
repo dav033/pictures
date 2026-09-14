@@ -5,7 +5,6 @@ import { Pool } from "pg";
 import { getDb } from "../src/lib/db";
 import { classifyGenerationIds, normalizeGenerationSources } from "../src/lib/generacion/provenance";
 import { crearTokenAprobacion } from "../src/lib/plan/aprobacion";
-import { planHash } from "../src/lib/plan/hash";
 import { resolverPlan } from "../src/lib/plan/resolver";
 import { PlanDecoracionSchema } from "../src/lib/plan/tipos";
 import { resolverProductosParaGeneracion } from "../src/lib/rag/generate-products";
@@ -90,6 +89,16 @@ async function main(): Promise<void> {
   process.env.GEMINI_API_KEY = "";
 
   try {
+    const { rows: snapshotRows } = await pool.query<{ source_snapshot_id: string }>(
+      `SELECT source_snapshot_id
+         FROM rag_source_snapshots
+        WHERE source_kind = 'products_catalog'
+          AND status = 'published'
+        ORDER BY published_at DESC NULLS LAST, fetched_at DESC, source_snapshot_id DESC
+        LIMIT 1`,
+    );
+    const snapshotId = snapshotRows[0]?.source_snapshot_id;
+    assert.ok(snapshotId, "La base RAG debe tener un snapshot publicado para probar la procedencia de generación.");
     const { rows } = await pool.query<FilaReal>(
       `SELECT v.product_id, v.variant_id, v.price::text AS price,
               p.title AS producto_titulo, v.title AS variante_titulo,
@@ -97,11 +106,14 @@ async function main(): Promise<void> {
          FROM catalog_variants v
          JOIN catalog_products p ON p.product_id = v.product_id
         WHERE p.status = 'ACTIVE'
-          AND p.available = true
-          AND v.available = true
-          AND v.price > 0
-        ORDER BY v.variant_id
-        LIMIT 2`,
+           AND p.available = true
+           AND v.available = true
+           AND v.price > 0
+           AND p.source_snapshot_id = $1
+           AND v.source_snapshot_id = $1
+         ORDER BY v.variant_id
+         LIMIT 2`,
+      [snapshotId],
     );
     assert.ok(rows.length >= 1, "La base RAG debe tener al menos una variante activa disponible con precio positivo.");
 
@@ -129,6 +141,13 @@ async function main(): Promise<void> {
     assert.equal(productoRag?.descripcion, rag.descripcion ?? nombreEsperado);
     assert.equal(productoRag?.foto ?? null, rag.imagen);
     console.log(`[PASS] PG real: ${rag.variant_id} resuelve metadata confiable de la misma fila.`);
+
+    const snapshotProduct = await resolverProductosParaGeneracion(
+      { ragVariantIds: [rag.variant_id], catalogSnapshotId: snapshotId },
+      pool,
+    );
+    assert.equal(snapshotProduct.productos[0]?.id, rag.variant_id);
+    console.log(`[PASS] snapshot firmado: ${rag.variant_id} solo resuelve dentro de ${snapshotId}.`);
 
     const { rows: rejectedRows } = await pool.query<{ variant_id: string }>(
       `SELECT v.variant_id
@@ -272,13 +291,15 @@ async function main(): Promise<void> {
       }],
       supuestos: [],
     });
-    const hash = planHash(declarativePlan);
+    const planValidado = await resolverPlan(pool, declarativePlan, new Map([[r24Rows[0].product_id, new Set([r24Rows[0].variant_id])]]));
+    const hash = planValidado.plan_hash;
     const invalidSizeBoundary = await postGenerate({
       ragVariantIds: [r24Rows[0].variant_id],
       planHash: hash,
       plan: {
         plan: declarativePlan,
         plan_hash: hash,
+        approval_token: crearTokenAprobacion(hash, randomUUID()),
         compras: [{ variant_id: r24Rows[0].variant_id }],
       },
     });

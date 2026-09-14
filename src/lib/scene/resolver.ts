@@ -1,6 +1,6 @@
 /**
  * Resolver V2 de escena (Tarea 05.2 —
- * `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`, sección 05.2).
+ * `docs/migracion-python/PLAN-MAESTRO-V2.md`, sección 05.2).
  *
  * Convierte la selección del optimizador en instancias físicas resolviendo
  * tres cantidades distintas (sección 2.4 del plan):

@@ -19,8 +19,9 @@
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
+import { directorioOrdenes } from "../src/lib/ordenes/directorio";
 
-const RUTA_ORDENES = "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
+const RUTA_ORDENES = directorioOrdenes();
 
 function argNum(nombre: string, defecto: number): number {
   const m = process.argv.find((a) => a.startsWith(`--${nombre}=`));

@@ -18,9 +18,10 @@
 import { chromium, type Page } from "playwright";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { directorioOrdenes } from "../src/lib/ordenes/directorio";
 
 const CDP_URL = "http://localhost:9222";
-const RUTA_ORDENES = "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
+const RUTA_ORDENES = directorioOrdenes();
 const ORDERS_URL = "https://admin.shopify.com/store/sempertexcolombia/orders";
 
 type LineaDesglose = {

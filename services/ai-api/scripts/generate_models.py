@@ -50,8 +50,8 @@ def _load_sources() -> tuple[SchemaSource, ...]:
                 raise ValueError(f"duplicate generated model name: {model_name}")
             names.add(model_name)
             sources.append(SchemaSource(relative, model_name, schema))
-    if len(sources) != 33:
-        raise ValueError(f"expected 33 schemas, found {len(sources)}")
+    if len(sources) != 39:
+        raise ValueError(f"expected 39 schemas, found {len(sources)}")
     return tuple(sources)
 
 
@@ -114,6 +114,9 @@ def build_source() -> str:
             "        location = '.'.join(str(part) for part in first.path) or '<root>'\n",
             "        raise ValueError(f'{model_name} schema validation failed at {location}: {first.message}')\n",
             "    return value\n\n",
+            "def contract_schema(model_name: str) -> dict[str, Any]:\n",
+            "    \"\"\"Return the exported JSON Schema of a contract, including x- extension data.\"\"\"\n",
+            "    return _SCHEMAS[model_name]\n\n",
         ]
     )
 

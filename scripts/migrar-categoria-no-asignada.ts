@@ -12,8 +12,9 @@
 import { readFile, writeFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import type { FeedbackFoto } from "../src/lib/ordenes/tipos";
+import { directorioOrdenes } from "../src/lib/ordenes/directorio";
 
-const RUTA_ORDENES = "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
+const RUTA_ORDENES = directorioOrdenes();
 const NOTA_AGREGADA_A_MANO = "Agregada a mano desde el panel de admin";
 
 function fueCategoriaDeliberada(feedback: FeedbackFoto): boolean {

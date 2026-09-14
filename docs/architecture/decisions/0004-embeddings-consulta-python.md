@@ -1,6 +1,6 @@
 # Decision 0004: Embeddings de consulta por la frontera Python
 
-**Estado:** aceptada para canario, no activada por defecto
+**Estado:** aceptada para canario remoto; rollout general pendiente de observación
 **Fecha:** 2026-09-10
 
 ## Contexto
@@ -52,5 +52,16 @@ ramas lexicas; Python no puede modificar la whitelist comercial.
 - El flag apagado mantiene exactamente el camino actual.
 - El kill switch o el apagado del flag permite volver al embedding TypeScript;
   un fallo durante una solicitud degrada a retrieval lexical.
-- La llamada real al proveedor y el despliegue siguen pendientes de
-  autorizacion operativa y de coste.
+- La llamada real al proveedor y el despliegue del canario fueron autorizados y
+  verificados el 2026-09-10. El rollout general queda pendiente de observación.
+
+## Evidencia del canario
+
+- La imagen `demo-decoracion-ai-api:latest` se construyó en EC2 con el modelo
+  precargado y pasó `healthz`/`readyz`.
+- `POST /internal/v1/embed` respondió `200` con `gemini-embedding-2`, 768
+  dimensiones y `attempts=1`.
+- Una conversación autenticada en Next produjo eventos SSE de herramienta,
+  incluido `buscar_catalogo_rag`, con los flags de query Python activos.
+- El rollback conserva los contenedores anterior de Next y Python; el kill
+  switch sigue disponible para volver inmediatamente al camino TypeScript.

@@ -2,7 +2,7 @@ import path from "node:path";
 import { PROMPT_V2, PROMPT_V3, correrExperimento, flag, leerEnv, type Celda, type Defaults, DEFAULT_LORA } from "./exp-fal-lib";
 
 /**
- * PASO 0 del HANDOFF-LORA-COMPOSICION.md — el experimento que decide todo.
+ * PASO 0 del experimento histórico de LoRA — la comparación que decide todo.
  * Ya ejecutado el 2026-08-28; los resultados están en el handoff y las imágenes
  * y payloads en `reports/lora-debug/step0/`. Se conserva para poder reproducirlo.
  *

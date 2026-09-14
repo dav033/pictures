@@ -1,5 +1,5 @@
 // Verifies scripts/migrations/012_scene_catalog.sql (Tarea 02.1 de
-// PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md):
+// docs/migracion-python/PLAN-MAESTRO-V2.md):
 //   1. the raw DDL is idempotent when executed twice back to back;
 //   2. every new table exists with the expected columns;
 //   3. catalog_products / catalog_variants are untouched (same row counts,

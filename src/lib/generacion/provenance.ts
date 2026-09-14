@@ -5,7 +5,7 @@ export type GenerationIdSources = {
 
 /**
  * Frontera de autoridad comercial (Tarea 00.3 —
- * PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md §2.2 y §6). Lo de arriba separa
+ * docs/migracion-python/PLAN-MAESTRO-V2.md §2.2 y §6). Lo de arriba separa
  * RAG de productIds legacy en el borde de generación; esto separa, dentro de
  * esas fuentes, lo que tiene oferta comercial verificada (Postgres/Shopify)
  * de lo que no (seed SQLite, `manualProducts`).

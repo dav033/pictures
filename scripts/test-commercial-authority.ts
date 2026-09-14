@@ -1,6 +1,6 @@
 /**
  * Tarea 00.3 — Frontera de autoridad comercial
- * (PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md §2.2 y §6).
+ * (docs/migracion-python/PLAN-MAESTRO-V2.md §2.2 y §6).
  *
  * Prueba, sin conectar a PostgreSQL real ni llamar proveedores externos, que
  * el seed SQLite (`src/lib/catalog-data.ts` + SQLite) y `manualProducts`

@@ -6,6 +6,7 @@ import type { Pool } from "pg";
 import { getRagPool } from "@/lib/rag/db";
 import { LoraModeSlugSchema, type LoraModeSlug } from "./schema";
 import { listLoraModeOptions } from "./mode-resolver";
+import { linkDatasetToCurrentCatalog } from "./dataset-catalog-link";
 import { PRODUCT_VOCABULARY } from "./product-vocabulary-data";
 
 export type LoraTrainingReferenceCount = {
@@ -248,11 +249,13 @@ export async function readActiveLoraTrainingReferenceCounts(
   const option = (await listLoraModeOptions(pool)).find((candidate) => candidate.slug === parsedMode);
   if (!option?.dataset_id) return { mode: parsedMode, datasetId: null, datasetLabel: null, countsByCatalogId: {} };
 
+  // Same id/canonical-SKU link to the current catalog snapshot as the allowlist.
+  const vinculo = await linkDatasetToCurrentCatalog(pool, option.dataset_id);
+  const representadas = vinculo.linked.flatMap((item) => item.variantId ? [{ variantId: item.variantId, imageCount: item.imageCount }] : []);
   const { rows } = await pool.query<{ product_id: string; variant_id: string; sku: string | null; total: string }>(
     `WITH representadas AS (
-       SELECT s.variant_id, s.image_count
-         FROM lora_dataset_element_stats s
-        WHERE s.dataset_id = $1 AND s.element_kind = 'shopify_variant' AND s.variant_id IS NOT NULL
+       SELECT r.variant_id, r.image_count
+         FROM unnest($1::text[], $2::int[]) AS r(variant_id, image_count)
      ),
      familias AS (
        SELECT DISTINCT v.product_id, v.forma, v.diam_pulg, SUM(r.image_count) OVER (PARTITION BY v.product_id, v.forma, v.diam_pulg) AS total
@@ -265,7 +268,7 @@ export async function readActiveLoraTrainingReferenceCounts(
          ON f.product_id = v.product_id
         AND f.forma IS NOT DISTINCT FROM v.forma
         AND f.diam_pulg IS NOT DISTINCT FROM v.diam_pulg`,
-    [option.dataset_id],
+    [representadas.map((item) => item.variantId), representadas.map((item) => item.imageCount)],
   );
 
   const countsByCatalogId: Record<string, { total: number }> = {};

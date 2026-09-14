@@ -29,9 +29,10 @@ import { promisify } from "node:util";
 import path from "node:path";
 import sharp from "sharp";
 import { analizarComparacion } from "./lib/comparacion-tamanos";
+import { directorioOrdenes } from "../src/lib/ordenes/directorio";
 
 const ejecutar = promisify(execFile);
-const RUTA_ORDENES = "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
+const RUTA_ORDENES = directorioOrdenes();
 
 function arg(nombre: string, defecto: string): string {
   const m = process.argv.find((a) => a.startsWith(`--${nombre}=`));

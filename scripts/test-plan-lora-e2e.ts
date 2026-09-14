@@ -104,6 +104,82 @@ async function main(): Promise<void> {
 
   console.log("[PASS] PlanResuelto -> planBlueprint -> SceneSpec -> compileLoraCaption preserva tipo/ubicación/rol end-to-end");
   console.log(`caption: ${compilation.prompt}`);
+
+  await parDeColumnasLaterales();
+}
+
+/**
+ * Regresión (2026-09-14, plan real de chat con loraMode training_1): el modelo
+ * declara "dos columnas a los lados" como UNA estructura `lateral_izquierdo`
+ * con `repeticiones: 2`. Las dos instancias quedaban a la izquierda: el caption
+ * decía "standing on the left side" y el QA marcaba
+ * `placement failure EST_02_COLUMNAS#2` (5 casos en plan_audit_log).
+ */
+async function parDeColumnasLaterales(): Promise<void> {
+  const planPar = PlanDecoracionSchema.parse({
+    ...plan,
+    plan_id: "55555555-5555-4555-8555-555555555555",
+    estructuras: [
+      { ...plan.estructuras[0]!, ubicacion: "arco_central" },
+      {
+        estructura_id: "EST_02_COLUMNAS",
+        nombre: "Columnas laterales",
+        tipo: "columna",
+        rol_escena: "soporte",
+        ubicacion: "lateral_izquierdo",
+        medidas: { alto_m: 1.8 },
+        repeticiones: 2,
+        densidad: "media",
+        mezcla: "clasica",
+        materiales: [
+          { product_id: "P-GLOBOS", color: "rojo", participacion: 0.5, rol_material: "principal" },
+          { product_id: "P-GLOBOS", color: "dorado", participacion: 0.5, rol_material: "secundario" },
+        ],
+        porque: "Enmarcan el arco a ambos lados.",
+      },
+    ],
+  });
+  const resultado = await resolverPlan(pool, planPar, whitelist);
+  assert.equal(resultado.sin_cobertura.length, 0);
+
+  const blueprint = planBlueprint(resultado);
+  const columna1 = blueprint.elements.find((element) => element.element_id === "EST_02_COLUMNAS#1");
+  const columna2 = blueprint.elements.find((element) => element.element_id === "EST_02_COLUMNAS#2");
+  assert.equal(columna1?.visual_semantics?.placement, "lateral_izquierdo");
+  assert.equal(columna2?.visual_semantics?.placement, "lateral_derecho", "la segunda instancia del par va a la derecha");
+
+  const cajas = cajasDeEstructuras(resultado.plan.estructuras);
+  const izquierda = cajas["EST_02_COLUMNAS#1"]!.bbox;
+  const derecha = cajas["EST_02_COLUMNAS#2"]!.bbox;
+  assert.ok(izquierda.x + izquierda.width <= 0.5, `#1 en la mitad izquierda: ${JSON.stringify(izquierda)}`);
+  assert.ok(derecha.x >= 0.5, `#2 en la mitad derecha: ${JSON.stringify(derecha)}`);
+  assert.ok(Math.abs(izquierda.x - (1 - derecha.x - derecha.width)) < 1e-9, "las cajas del par son simétricas");
+
+  // Declarar el par como lateral_derecho produce el mismo par.
+  const cajasDerecha = cajasDeEstructuras(resultado.plan.estructuras.map((estructura) => estructura.estructura_id === "EST_02_COLUMNAS" ? { ...estructura, ubicacion: "lateral_derecho" as const } : estructura));
+  assert.deepEqual(cajasDerecha["EST_02_COLUMNAS#1"], cajas["EST_02_COLUMNAS#1"]);
+  assert.deepEqual(cajasDerecha["EST_02_COLUMNAS#2"], cajas["EST_02_COLUMNAS#2"]);
+
+  const sceneSpec = buildApprovedSceneSpec({
+    blueprint,
+    aspectRatio: "3:2",
+    targetBoxes: Object.fromEntries(Object.entries(cajas).map(([id, layout]) => [id, layout.bbox])),
+    catalogProducts: Object.fromEntries(blueprint.elements.map((element) => [element.element_id, (element.model_decision?.bill_of_materials ?? []).map((linea) => ({ id: linea.catalog_product_id, name: linea.catalog_product_id, description: "", category: "balloon", share: linea.share, role: linea.role }))])),
+    materialEstimate: estimateFromPlan(resultado),
+    generationMode: "text_to_image",
+    createdBy: "server_default",
+    planHash: resultado.plan_hash,
+    catalogOnly: true,
+  });
+  const compilation = compileLoraCaption({ sceneSpec, visualContext: buildVisualContext({ brief: { tipo_evento: "cumpleaños" } }) });
+  assert.match(compilation.prompt, /one standing on the left and one on the right/, compilation.prompt);
+  assert.doesNotMatch(compilation.prompt, /standing on the left side/);
+  const preflight = preflightLoraPrompt({ sceneSpec, clauses: compilation.clauses, prompt: compilation.prompt });
+  assert.equal(preflight.ok, true, preflight.errors.join("; "));
+  assert.deepEqual(preflight.relationships, { expected: 1, represented: 1 });
+
+  console.log("[PASS] columnas con repeticiones 2 en un lateral → par izquierda/derecha simétrico, caption bilateral y preflight 1/1");
+  console.log(`caption: ${compilation.prompt}`);
 }
 
 main().catch((error) => {

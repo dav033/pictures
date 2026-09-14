@@ -1,6 +1,6 @@
 /**
  * Verificaciones de compatibilidad entre candidatos de escena (Tarea 05.1 —
- * `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`, sección 9.4).
+ * `docs/migracion-python/PLAN-MAESTRO-V2.md`, sección 9.4).
  *
  * Restricciones duras que el optimizador debe satisfacer:
  *   - Presupuesto conocido no superior al techo.

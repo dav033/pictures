@@ -12,9 +12,9 @@ def test_all_versioned_contracts_have_generated_models() -> None:
     schema_files += sorted(Path(__file__).parents[3].glob("contracts/domain/v1/*.schema.json"))
     model_names = set(generated_models.__all__) - {"CONTRACT_MODEL_COUNT"}
 
-    assert len(schema_files) == 33
-    assert generated_models.CONTRACT_MODEL_COUNT == 33
-    assert len(model_names) == 33
+    assert len(schema_files) == 39
+    assert generated_models.CONTRACT_MODEL_COUNT == 39
+    assert len(model_names) == 39
 
 
 def test_generated_model_validates_shared_fixture_and_rejects_extra_root_field() -> None:

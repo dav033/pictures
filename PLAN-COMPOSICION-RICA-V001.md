@@ -1,13 +1,13 @@
 # Plan: composición rica, anclada y cotizable
 
-Estado: listo para implementación  
+Estado: referencia vigente para el planificador y sus contratos
 Fecha: 2026-09-04  
 Alcance: planificador V1, resolución comercial, `SceneSpec`, compilador LoRA, compatibilidad y evaluación  
 No incluye: reentrenamiento LoRA, nuevas pantallas de administración ni activación de Scene V2 en producción
 
 ## 1. Relación con los planes existentes
 
-Este documento continúa, no reemplaza, `PLAN-COMPOSICION-Y-CELEBRACIONES-V001.md`. Se toman como decisiones previas:
+Este documento concentra las decisiones vigentes del planificador. Se toman como decisiones:
 
 - La falta de variedad debe medirse antes y después; no se evalúa por longitud ni por afinidad léxica aislada.
 - La celebración sesga qué piezas convienen, pero la geometría debe obedecer al espacio, presupuesto y anclaje físico.
@@ -15,12 +15,14 @@ Este documento continúa, no reemplaza, `PLAN-COMPOSICION-Y-CELEBRACIONES-V001.m
 - Ningún cambio visual justifica romper catálogo, cotización, aprobación ni el gate previo al proveedor.
 - No se reentrena mientras un prompt correcto con el LoRA existente resuelva la composición.
 
-También continúa `PLAN-CONTROL-ENTRENAMIENTOS-LORA-UI.md` en dos puntos:
+La identidad de un LoRA es una tupla de artifact, corrida, dataset, trigger,
+evaluación y escala; el navegador nunca elige una URL arbitraria. Los modos
+restringidos bloquean antes del gasto cuando la escena usa estructuras o
+variantes fuera del dataset permitido.
 
-- La identidad de un LoRA es una tupla de artifact, corrida, dataset, trigger, evaluación y escala; el navegador nunca elige una URL arbitraria.
-- Los modos restringidos bloquean antes del gasto cuando la escena usa estructuras o variantes fuera del dataset permitido.
-
-Este plan refina el antiguo WP-3.1. En vez de añadir figuras arbitrarias con una geometría ficticia, introduce una sola clase nueva, `escultura`, con un bill of materials exacto. Los demás tipos propuestos allí (`racimo`, `marquesina`, `panel`, `aro`, `cascada`, `bouquet`) conservan su propio alcance y no son prerrequisito para esta entrega.
+Este plan introduce la clase `escultura` con un bill of materials exacto. Los
+demás tipos conservan su propio alcance y no son prerrequisito para esta
+entrega.
 
 ### 1.1 Corrección de atribución de la evidencia reciente
 
@@ -32,6 +34,17 @@ Antes de ejecutar otra prueba pagada hay que corregir una inconsistencia verific
 - `src/lib/ia/sempertex-lora.ts:6-10` contiene la misma combinación cruzada como fallback actual.
 
 La conclusión útil no cambia: los pesos probados pueden producir escenas ricas cuando reciben relaciones físicas explícitas, y por tanto reentrenar no es la primera respuesta. Sí cambia la atribución: esos resultados no pueden presentarse como validación de v007 hasta repetirlos con una identidad resuelta y coherente. La Fase 0 bloquea nuevas llamadas pagadas hasta resolverlo.
+
+**Resolución al 2026-09-10:** la inconsistencia queda confinada a evidencia
+histórica y no se reutiliza para atribuir resultados ni para construir payloads.
+La identidad autoritativa de v004 es la del recibo y procedencia
+`lora-run-v004-1000` + `eventdecor_style_v2`; la de v007 es la del manifiesto
+`eval-v007-producto` + `eventdecor_style_v3`, aunque su evaluación no habilita
+el artefacto para producción. El runtime ya no contiene URL/trigger de LoRA como
+fallback: exige un artefacto resuelto desde el registro, con corrida, dataset,
+trigger, estado de backup, evaluación aprobada y URL coherentes. Los manifiestos
+históricos no se reescriben, para conservar la evidencia del error. La Fase 9.0
+queda cerrada sin ejecutar otra llamada pagada.
 
 ## 2. Resultado esperado
 

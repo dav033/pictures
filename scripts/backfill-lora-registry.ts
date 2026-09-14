@@ -8,6 +8,7 @@ import { Pool, type PoolClient } from "pg";
 import sharp from "sharp";
 import { LoraDatasetManifestSchema, type LoraElementKind } from "../src/lib/lora/schema";
 import { createLocalLoraArtifactStore } from "../src/lib/lora/artifact-store-local";
+import { directorioOrdenes } from "../src/lib/ordenes/directorio";
 
 for (const archivo of [".env.local", ".env"]) {
   if (existsSync(archivo)) process.loadEnvFile(archivo);
@@ -23,7 +24,7 @@ const ZIP_PATH = path.join(ROOT, "data", "staging", "sempertex-general-v004-reca
 const WEIGHTS_PATH = path.join(ROOT, "data", "lora-backup", "sempertex-v004-1000.safetensors");
 const CAPTIONS_DIR = path.join(ROOT, "data", "staging", "recaption-v004", "nuevo");
 const IMAGES_DIR = path.join(ROOT, "data", "staging", "recaption-v004", "original");
-const ORDERS_DIR = process.env.ORDENES_DECORACION_DIR ?? "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
+const ORDERS_DIR = directorioOrdenes();
 
 type DatasetEntry = {
   orden: string;
@@ -76,7 +77,7 @@ function canonicalId(kind: LoraElementKind, label: string, sku?: string | null):
 }
 
 function normalizeProduct(value: string): string {
-  return value.replace(/Â®/g, "").replace(/\s+x\d+\s*$/i, "").replace(/\s+/g, " ").trim().toUpperCase();
+  return value.replace(/®/g, "").replace(/\s+x\d+\s*$/i, "").replace(/\s+/g, " ").trim().toUpperCase();
 }
 
 function lineKey(line: Linea): string {

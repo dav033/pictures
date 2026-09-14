@@ -1,0 +1,1066 @@
+{
+  "allowlist": [
+    {
+      "product_id": "P-A5-BAL",
+      "variant_ids": [
+        "V-A5-BAL-R12"
+      ]
+    },
+    {
+      "product_id": "P-A5-TELON",
+      "variant_ids": [
+        "V-A5-TELON-1"
+      ]
+    }
+  ],
+  "catalog_rows": [
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "rojo"
+      ],
+      "colores_variante": [
+        "rojo"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex rojo R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/a5-bal-r12.jpg",
+      "inventory_quantity": 100,
+      "precio": 10000,
+      "product_id": "P-A5-BAL",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex rojo",
+      "sku": "SKU-A5-BAL-R12",
+      "sku_original": "SHOP-A5-BAL-R12",
+      "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+      "source_variant_id": "SOURCE-A5-BAL-R12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-A5-BAL-R12",
+      "variante_titulo": "R-12"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": null,
+      "colores_producto": [
+        "blanco"
+      ],
+      "colores_variante": [],
+      "currency": "COP",
+      "descripcion": "Telon de tela para fondo.",
+      "diam_pulg": null,
+      "disponible": true,
+      "forma": null,
+      "imagen": "https://cdn.example.test/a5-telon-1.jpg",
+      "inventory_quantity": 20,
+      "precio": 20000,
+      "product_id": "P-A5-TELON",
+      "producto_disponible": true,
+      "producto_titulo": "Telon blanco de fondo",
+      "sku": "SKU-A5-TELON-1",
+      "sku_original": "SHOP-A5-TELON-1",
+      "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+      "source_variant_id": "SOURCE-A5-TELON-1",
+      "unidades_inferidas": false,
+      "unidades_paq": 1,
+      "variant_id": "V-A5-TELON-1",
+      "variante_titulo": "Unidad"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-A5-009",
+  "description": "Una columna de globos convive con un telon de catalogo no geometrico.",
+  "expected": {
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "rojo",
+          "design_quantity": 30,
+          "finish": null,
+          "product_id": "P-A5-BAL",
+          "required_quantity": 30,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_01_COLUMNA",
+          "variant_id": "V-A5-BAL-R12",
+          "waste_adjusted_quantity": 30,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 2,
+        "density": "media",
+        "dimensions_m": {
+          "height": 1.4,
+          "length": null,
+          "width": null
+        },
+        "installation_length_m": 1.4,
+        "shape": "coordinated structures",
+        "type": "composite_installation",
+        "visual_density": "medium",
+        "visual_scale": "small"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 6600,
+          "design_quantity": 30,
+          "leftover_inventory": 17,
+          "operational_surplus": 17,
+          "package_count": 1,
+          "potential_surplus": 20,
+          "product_id": "P-A5-BAL",
+          "purchase_cost": 10000,
+          "purchase_quantity": 50,
+          "required_quantity": 33,
+          "units_per_package": 50,
+          "used": 30,
+          "variant_id": "V-A5-BAL-R12",
+          "waste_adjusted_quantity": 33,
+          "waste_reserve": 3
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 20000,
+          "design_quantity": 1,
+          "leftover_inventory": 0,
+          "operational_surplus": 0,
+          "package_count": 1,
+          "potential_surplus": 0,
+          "product_id": "P-A5-TELON",
+          "purchase_cost": 20000,
+          "purchase_quantity": 1,
+          "required_quantity": 1,
+          "units_per_package": 1,
+          "used": 1,
+          "variant_id": "V-A5-TELON-1",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        }
+      ],
+      "special_elements": [
+        {
+          "color": "blanco",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-A5-TELON",
+          "required_quantity": 1,
+          "shape": null,
+          "size_inches": null,
+          "structure_id": "EST_02_BACKDROP",
+          "variant_id": "V-A5-TELON-1",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        }
+      ],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 26600,
+        "covered_waste_reserve": 3,
+        "design_quantity": 31,
+        "natural_package_surplus": 20,
+        "operational_surplus": 17,
+        "potential_surplus": 20,
+        "purchase_cost": 30000,
+        "purchase_quantity": 51,
+        "required_quantity": 34,
+        "target_waste_reserve": 3,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 34,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-A5-BAL-R12"
+      ]
+    },
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-A5-BAL-R12"
+      ],
+      "alternativas": [
+        {
+          "ahorro_cop": 0,
+          "etiqueta": "economica",
+          "familia_id": "P-A5-BAL",
+          "titulo": "Globo latex rojo",
+          "total_cop": 30000
+        }
+      ],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "rojo",
+          "consumption_cost": 6600,
+          "design_quantity": 30,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA"
+          ],
+          "imagen": "https://cdn.example.test/a5-bal-r12.jpg",
+          "inventory_quantity": 100,
+          "leftover_inventory": 17,
+          "paquetes": 1,
+          "precio_paquete": 10000,
+          "product_id": "P-A5-BAL",
+          "purchase_cost": 10000,
+          "purchase_quantity": 50,
+          "required_quantity": 33,
+          "sku": "SKU-A5-BAL-R12",
+          "sku_original": "SHOP-A5-BAL-R12",
+          "sobrante": 20,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-A5-BAL-R12",
+          "subtotal": 10000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex rojo — R-12",
+          "unidades_con_merma": 33,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 30,
+          "unidades_paquete": 50,
+          "used": 30,
+          "variant_id": "V-A5-BAL-R12",
+          "waste_reserve": 3
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 20000,
+          "design_quantity": 1,
+          "diam_pulg": null,
+          "elementos_origen": [
+            {
+              "id": "EST_02_BACKDROP",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_BACKDROP"
+          ],
+          "imagen": "https://cdn.example.test/a5-telon-1.jpg",
+          "inventory_quantity": 20,
+          "leftover_inventory": 0,
+          "paquetes": 1,
+          "precio_paquete": 20000,
+          "product_id": "P-A5-TELON",
+          "purchase_cost": 20000,
+          "purchase_quantity": 1,
+          "required_quantity": 1,
+          "sku": "SKU-A5-TELON-1",
+          "sku_original": "SHOP-A5-TELON-1",
+          "sobrante": 0,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-A5-TELON-1",
+          "subtotal": 20000,
+          "tamano_codigo": null,
+          "titulo": "Telon blanco de fondo — Unidad",
+          "unidades_con_merma": 1,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 1,
+          "unidades_paquete": 1,
+          "used": 1,
+          "variant_id": "V-A5-TELON-1",
+          "waste_reserve": 0
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 1.4,
+          "estructura_id": "EST_01_COLUMNA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_01_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/a5-bal-r12.jpg",
+              "inventory_quantity": 100,
+              "origen": {
+                "id": "EST_01_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-A5-BAL",
+              "sku": "SKU-A5-BAL-R12",
+              "sku_original": "SHOP-A5-BAL-R12",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-A5-BAL-R12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rojo — R-12",
+              "unidades": 30,
+              "unidades_inferidas": false,
+              "variant_id": "V-A5-BAL-R12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 30
+            }
+          ],
+          "nombre": "Columna roja",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 30,
+          "ubicacion": "lateral_izquierdo"
+        },
+        {
+          "eje_m": null,
+          "estructura_id": "EST_02_BACKDROP",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": null,
+              "diam_pulg": null,
+              "estructura_id": "EST_02_BACKDROP",
+              "forma": null,
+              "imagen": "https://cdn.example.test/a5-telon-1.jpg",
+              "inventory_quantity": 20,
+              "origen": {
+                "id": "EST_02_BACKDROP",
+                "kind": "estructura"
+              },
+              "product_id": "P-A5-TELON",
+              "sku": "SKU-A5-TELON-1",
+              "sku_original": "SHOP-A5-TELON-1",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-A5-TELON-1",
+              "sustitucion": null,
+              "tamano_codigo": null,
+              "titulo": "Telon blanco de fondo — Unidad",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-A5-TELON-1"
+            }
+          ],
+          "mezcla_real": [],
+          "nombre": "Telon de fondo",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "backdrop",
+          "total_unidades": 1,
+          "ubicacion": "fondo_pared"
+        }
+      ],
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 30\nTarget waste reserve: 3\nNatural package surplus: 20\nUsable waste coverage: 3\nAdditional packages required for waste: 0\nGlobo latex rojo — R-12: design=30, required=33, package=50, packages=1, purchased=50, natural surplus=20, waste reserve=3, leftover inventory=17\nTelon blanco de fondo — Unidad: design=1, required=1, package=1, packages=1, purchased=1, natural surplus=0, waste reserve=0, leftover inventory=0",
+      "plan": {
+        "concepto": {
+          "descripcion": "Una instalacion que mezcla globos con un telon.",
+          "paleta": [
+            "rojo",
+            "blanco"
+          ],
+          "titulo": "Columna y telon rojo"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_COLUMNA",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-A5-BAL",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna roja",
+            "porque": "Enmarca la composicion.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "columna",
+            "ubicacion": "lateral_izquierdo"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_02_BACKDROP",
+            "materiales": [
+              {
+                "color": "blanco",
+                "participacion": 1,
+                "product_id": "P-A5-TELON",
+                "rol_material": "principal",
+                "variant_id": "V-A5-TELON-1"
+              }
+            ],
+            "medidas": {},
+            "mezcla": "clasica",
+            "nombre": "Telon de fondo",
+            "porque": "Aporta un fondo no geometrico.",
+            "repeticiones": 1,
+            "rol_escena": "soporte",
+            "tipo": "backdrop",
+            "ubicacion": "fondo_pared",
+            "unidades_declaradas": 1
+          }
+        ],
+        "plan_id": "a5a50009-0000-4000-8000-000000000009",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "de152434b258082cc10cdef8ebeb2bb0096bc0f10288eabc9727685cfc55c485",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 26600,
+        "covered_waste_reserve": 3,
+        "design_quantity": 31,
+        "globos_por_tamano": {
+          "R-12": 30
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8,
+        "natural_package_surplus": 20,
+        "purchase_cost": 30000,
+        "target_waste_reserve": 3,
+        "total_cop": 30000,
+        "total_unidades": 31,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "complementosSoportados": false,
+      "consumptionCost": 26600,
+      "coveredWasteReserve": 3,
+      "incluyeIva": true,
+      "leftoverInventory": 17,
+      "lineas": [
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 30,
+          "color": "rojo",
+          "consumptionCost": 6600,
+          "designQuantity": 30,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA"
+          ],
+          "id": "V-A5-BAL-R12",
+          "leftoverInventory": 17,
+          "nombre": "Globo latex rojo — R-12",
+          "paquetes": 1,
+          "precioPaquete": 10000,
+          "productId": "P-A5-BAL",
+          "purchaseCost": 10000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 33,
+          "sobrante": 20,
+          "subtotal": 10000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 30,
+          "varianteId": "V-A5-BAL-R12",
+          "wasteReserve": 3
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 1,
+          "color": "blanco",
+          "consumptionCost": 20000,
+          "designQuantity": 1,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_02_BACKDROP",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_BACKDROP"
+          ],
+          "id": "V-A5-TELON-1",
+          "leftoverInventory": 0,
+          "nombre": "Telon blanco de fondo — Unidad",
+          "paquetes": 1,
+          "precioPaquete": 20000,
+          "productId": "P-A5-TELON",
+          "purchaseCost": 20000,
+          "purchaseQuantity": 1,
+          "referenciaElementIds": [],
+          "requiredQuantity": 1,
+          "sobrante": 0,
+          "subtotal": 20000,
+          "tamano": "sin tamaño aplicable",
+          "unidadesPaquete": 1,
+          "used": 1,
+          "varianteId": "V-A5-TELON-1",
+          "wasteReserve": 0
+        }
+      ],
+      "mermaPorcentaje": 8,
+      "plan_hash": "de152434b258082cc10cdef8ebeb2bb0096bc0f10288eabc9727685cfc55c485",
+      "purchaseCost": 30000,
+      "targetWasteReserve": 3,
+      "total": 30000
+    }
+  },
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-A5-009",
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "rojo",
+          "design_quantity": 30,
+          "finish": null,
+          "product_id": "P-A5-BAL",
+          "required_quantity": 30,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_COLUMNA",
+          "variant_id": "V-A5-BAL-R12",
+          "waste_adjusted_quantity": 30,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 2,
+        "density": "media",
+        "dimensions_m": {
+          "height": 1.4,
+          "length": null,
+          "width": null
+        },
+        "installation_length_m": 1.4,
+        "shape": "coordinated structures",
+        "type": "composite_installation",
+        "visual_density": "medium",
+        "visual_scale": "small"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 6600,
+          "design_quantity": 30,
+          "leftover_inventory": 17,
+          "operational_surplus": 17,
+          "package_count": 1,
+          "potential_surplus": 20,
+          "product_id": "P-A5-BAL",
+          "purchase_cost": 10000,
+          "purchase_quantity": 50,
+          "required_quantity": 33,
+          "units_per_package": 50,
+          "used": 30,
+          "variant_id": "V-A5-BAL-R12",
+          "waste_adjusted_quantity": 33,
+          "waste_reserve": 3
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 20000,
+          "design_quantity": 1,
+          "leftover_inventory": 0,
+          "operational_surplus": 0,
+          "package_count": 1,
+          "potential_surplus": 0,
+          "product_id": "P-A5-TELON",
+          "purchase_cost": 20000,
+          "purchase_quantity": 1,
+          "required_quantity": 1,
+          "units_per_package": 1,
+          "used": 1,
+          "variant_id": "V-A5-TELON-1",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        }
+      ],
+      "special_elements": [
+        {
+          "color": "blanco",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-A5-TELON",
+          "required_quantity": 1,
+          "shape": null,
+          "size_inches": null,
+          "structure_id": "EST_02_BACKDROP",
+          "variant_id": "V-A5-TELON-1",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        }
+      ],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 26600,
+        "covered_waste_reserve": 3,
+        "design_quantity": 31,
+        "natural_package_surplus": 20,
+        "operational_surplus": 17,
+        "potential_surplus": 20,
+        "purchase_cost": 30000,
+        "purchase_quantity": 51,
+        "required_quantity": 34,
+        "target_waste_reserve": 3,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 34,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-A5-BAL-R12"
+      ]
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-A5-BAL-R12"
+      ],
+      "alternativas": [
+        {
+          "ahorro_cop": 0,
+          "etiqueta": "economica",
+          "familia_id": "P-A5-BAL",
+          "titulo": "Globo latex rojo",
+          "total_cop": 30000
+        }
+      ],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "rojo",
+          "consumption_cost": 6600,
+          "design_quantity": 30,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA"
+          ],
+          "imagen": "https://cdn.example.test/a5-bal-r12.jpg",
+          "inventory_quantity": 100,
+          "leftover_inventory": 17,
+          "paquetes": 1,
+          "precio_paquete": 10000,
+          "product_id": "P-A5-BAL",
+          "purchase_cost": 10000,
+          "purchase_quantity": 50,
+          "required_quantity": 33,
+          "sku": "SKU-A5-BAL-R12",
+          "sku_original": "SHOP-A5-BAL-R12",
+          "sobrante": 20,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-A5-BAL-R12",
+          "subtotal": 10000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex rojo — R-12",
+          "unidades_con_merma": 33,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 30,
+          "unidades_paquete": 50,
+          "used": 30,
+          "variant_id": "V-A5-BAL-R12",
+          "waste_reserve": 3
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 20000,
+          "design_quantity": 1,
+          "diam_pulg": null,
+          "elementos_origen": [
+            {
+              "id": "EST_02_BACKDROP",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_BACKDROP"
+          ],
+          "imagen": "https://cdn.example.test/a5-telon-1.jpg",
+          "inventory_quantity": 20,
+          "leftover_inventory": 0,
+          "paquetes": 1,
+          "precio_paquete": 20000,
+          "product_id": "P-A5-TELON",
+          "purchase_cost": 20000,
+          "purchase_quantity": 1,
+          "required_quantity": 1,
+          "sku": "SKU-A5-TELON-1",
+          "sku_original": "SHOP-A5-TELON-1",
+          "sobrante": 0,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-A5-TELON-1",
+          "subtotal": 20000,
+          "tamano_codigo": null,
+          "titulo": "Telon blanco de fondo — Unidad",
+          "unidades_con_merma": 1,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 1,
+          "unidades_paquete": 1,
+          "used": 1,
+          "variant_id": "V-A5-TELON-1",
+          "waste_reserve": 0
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 1.4,
+          "estructura_id": "EST_01_COLUMNA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/a5-bal-r12.jpg",
+              "inventory_quantity": 100,
+              "origen": {
+                "id": "EST_01_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-A5-BAL",
+              "sku": "SKU-A5-BAL-R12",
+              "sku_original": "SHOP-A5-BAL-R12",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-A5-BAL-R12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rojo — R-12",
+              "unidades": 30,
+              "unidades_inferidas": false,
+              "variant_id": "V-A5-BAL-R12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 30
+            }
+          ],
+          "nombre": "Columna roja",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 30,
+          "ubicacion": "lateral_izquierdo"
+        },
+        {
+          "eje_m": null,
+          "estructura_id": "EST_02_BACKDROP",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": null,
+              "diam_pulg": null,
+              "estructura_id": "EST_02_BACKDROP",
+              "forma": null,
+              "imagen": "https://cdn.example.test/a5-telon-1.jpg",
+              "inventory_quantity": 20,
+              "origen": {
+                "id": "EST_02_BACKDROP",
+                "kind": "estructura"
+              },
+              "product_id": "P-A5-TELON",
+              "sku": "SKU-A5-TELON-1",
+              "sku_original": "SHOP-A5-TELON-1",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-A5-TELON-1",
+              "sustitucion": null,
+              "tamano_codigo": null,
+              "titulo": "Telon blanco de fondo — Unidad",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-A5-TELON-1"
+            }
+          ],
+          "mezcla_real": [],
+          "nombre": "Telon de fondo",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "backdrop",
+          "total_unidades": 1,
+          "ubicacion": "fondo_pared"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-A5-009.",
+      "plan": {
+        "concepto": {
+          "descripcion": "Una instalacion que mezcla globos con un telon.",
+          "paleta": [
+            "rojo",
+            "blanco"
+          ],
+          "titulo": "Columna y telon rojo"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_COLUMNA",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-A5-BAL",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna roja",
+            "porque": "Enmarca la composicion.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "columna",
+            "ubicacion": "lateral_izquierdo"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_02_BACKDROP",
+            "materiales": [
+              {
+                "color": "blanco",
+                "participacion": 1,
+                "product_id": "P-A5-TELON",
+                "rol_material": "principal",
+                "variant_id": "V-A5-TELON-1"
+              }
+            ],
+            "medidas": {},
+            "mezcla": "clasica",
+            "nombre": "Telon de fondo",
+            "porque": "Aporta un fondo no geometrico.",
+            "repeticiones": 1,
+            "rol_escena": "soporte",
+            "tipo": "backdrop",
+            "ubicacion": "fondo_pared",
+            "unidades_declaradas": 1
+          }
+        ],
+        "plan_id": "a5a50009-0000-4000-8000-000000000009",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "8ae68917123b47f35b2ab3c21ce08ec7b9da22ae6706c007e6d455c28b7bda55",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 26600,
+        "covered_waste_reserve": 3,
+        "design_quantity": 31,
+        "globos_por_tamano": {
+          "R-12": 30
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 20,
+        "purchase_cost": 30000,
+        "target_waste_reserve": 3,
+        "total_cop": 30000,
+        "total_unidades": 31,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 26600,
+      "covered_waste_reserve": 3,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 17,
+      "lines": [
+        {
+          "available": true,
+          "color": "rojo",
+          "consumption_cost_cop": 6600,
+          "design_quantity": 30,
+          "diameter_inches": 12.0,
+          "id": "V-A5-BAL-R12",
+          "leftover_inventory": 17,
+          "origins": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 10000,
+          "packages": 1,
+          "product_id": "P-A5-BAL",
+          "purchase_cost_cop": 10000,
+          "purchase_quantity": 50,
+          "required_quantity": 33,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_COLUMNA"
+          ],
+          "subtotal_cop": 10000,
+          "surplus": 20,
+          "title": "Globo latex rojo — R-12",
+          "units_per_package": 50,
+          "used": 30,
+          "variant_id": "V-A5-BAL-R12",
+          "waste_reserve": 3
+        },
+        {
+          "available": true,
+          "color": "blanco",
+          "consumption_cost_cop": 20000,
+          "design_quantity": 1,
+          "id": "V-A5-TELON-1",
+          "leftover_inventory": 0,
+          "origins": [
+            {
+              "id": "EST_02_BACKDROP",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 20000,
+          "packages": 1,
+          "product_id": "P-A5-TELON",
+          "purchase_cost_cop": 20000,
+          "purchase_quantity": 1,
+          "required_quantity": 1,
+          "size": "sin tamaño aplicable",
+          "structures": [
+            "EST_02_BACKDROP"
+          ],
+          "subtotal_cop": 20000,
+          "surplus": 0,
+          "title": "Telon blanco de fondo — Unidad",
+          "units_per_package": 1,
+          "used": 1,
+          "variant_id": "V-A5-TELON-1",
+          "waste_reserve": 0
+        }
+      ],
+      "plan_hash": "8ae68917123b47f35b2ab3c21ce08ec7b9da22ae6706c007e6d455c28b7bda55",
+      "purchase_cost_cop": 30000,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 3,
+      "total_cop": 30000,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "a5-linea-no-geometrica",
+  "plan": {
+    "concepto": {
+      "descripcion": "Una instalacion que mezcla globos con un telon.",
+      "paleta": [
+        "rojo",
+        "blanco"
+      ],
+      "titulo": "Columna y telon rojo"
+    },
+    "espacio": {
+      "fuente": "cliente",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "densidad": "media",
+        "estructura_id": "EST_01_COLUMNA",
+        "materiales": [
+          {
+            "color": "rojo",
+            "participacion": 1,
+            "product_id": "P-A5-BAL",
+            "rol_material": "principal"
+          }
+        ],
+        "medidas": {
+          "alto_m": 1.4
+        },
+        "mezcla": "clasica",
+        "nombre": "Columna roja",
+        "porque": "Enmarca la composicion.",
+        "repeticiones": 1,
+        "rol_escena": "focal",
+        "tipo": "columna",
+        "ubicacion": "lateral_izquierdo"
+      },
+      {
+        "densidad": "media",
+        "estructura_id": "EST_02_BACKDROP",
+        "materiales": [
+          {
+            "color": "blanco",
+            "participacion": 1,
+            "product_id": "P-A5-TELON",
+            "rol_material": "principal",
+            "variant_id": "V-A5-TELON-1"
+          }
+        ],
+        "medidas": {},
+        "mezcla": "clasica",
+        "nombre": "Telon de fondo",
+        "porque": "Aporta un fondo no geometrico.",
+        "repeticiones": 1,
+        "rol_escena": "soporte",
+        "tipo": "backdrop",
+        "ubicacion": "fondo_pared",
+        "unidades_declaradas": 1
+      }
+    ],
+    "plan_id": "a5a50009-0000-4000-8000-000000000009",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "supuestos": []
+  }
+}

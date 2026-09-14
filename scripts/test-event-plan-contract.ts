@@ -5,6 +5,11 @@ import { parseEventIntent } from "../src/lib/rag/query-parser/parse-event";
 import type { EventMatchEvidence } from "../src/lib/rag/retrieval/types";
 
 async function main(): Promise<void> {
+// Offline contract of the TypeScript plan path: the backend selection is read
+// from process.env on every call, so an ambient PYTHON_BACKEND_ENABLED=true
+// would silently route this stubbed pool through Python.
+process.env.PYTHON_BACKEND_ENABLED = "false";
+process.env.PYTHON_BACKEND_KILL_SWITCH = "true";
 const solicitud = "Festival Lunaria elegante verde y blanco para 30 personas. No es boda";
 const intent = parseEventIntent(solicitud);
 assert.equal(intent.event_label, "Festival Lunaria");

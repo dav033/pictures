@@ -1,9 +1,7 @@
 import { analizarReferenciasV2 } from "@/lib/ia/analizar-referencias-v2";
 import { chatDe, resolverProveedor } from "@/lib/ia/registro";
 import { ErrorIA, type Imagen, type ImagenEtiquetada, type ProveedorId } from "@/lib/ia/tipos";
-import { obtenerProductos } from "@/lib/products";
-import { productosParaMatchingReferencia } from "@/lib/shopify/consultas";
-import { PLAN_DECORACION_ENABLED } from "@/lib/ia/feature-flags";
+import { registrarFalloUi, traducirErrorServidor } from "@/lib/errores-ui/traducir-error-servidor";
 
 export const maxDuration = 120;
 
@@ -50,24 +48,14 @@ export async function POST(request: Request) {
       id: `REF_${String(index + 1).padStart(2, "0")}`,
       descripcion: "Reference image pending forensic analysis.",
     }));
-    // Con el plan de decoración activo, el emparejamiento con catálogo se
-    // mueve por completo al chat (buscar_catalogo_rag contra PostgreSQL
-    // validado) — este paso solo describe lo que ve, nunca decide un
-    // product_id. Evita mezclar dos catálogos que pueden divergir (el seed
-    // SQLite de demo y el espejo SQLite de Shopify) con el que de verdad
-    // valida el plan, y evita que un id de demo llegue a producción como
-    // línea comercial (ver NonCommercialSourceRejectedError).
-    const mode = PLAN_DECORACION_ENABLED ? "perceptual" as const : "legacy" as const;
-    const catalogo = mode === "legacy"
-      ? [...obtenerProductos(), ...productosParaMatchingReferencia()]
-          .filter((product, index, products) => products.findIndex((candidate) => candidate.id === product.id) === index)
-          .slice(0, 240)
-          .map(({ id, nombre, categoria, colores, descripcion }) => ({ id, nombre, categoria, colores, descripcion }))
-      : [];
-    const result = await analizarReferenciasV2(chat, references, catalogo, mode, { requestId, correlationId, superficie: "/api/references/analyze" });
+    // La descripción visual no decide productos. El chat resuelve después
+    // cada elemento mediante buscar_catalogo_rag contra PostgreSQL validado.
+    const result = await analizarReferenciasV2(chat, references, [], "perceptual", { requestId, correlationId, superficie: "/api/references/analyze" }, request.signal);
     return Response.json({ blueprint: result.blueprint, metadata: { ...result.metadata, image_dimensions: references.map((image) => ({ image_id: image.id, original: { width: image.originalAncho ?? null, height: image.originalAlto ?? null }, processed: { width: image.ancho ?? null, height: image.alto ?? null } })) }, proveedor: id });
   } catch (error) {
-    if (error instanceof ErrorIA) return Response.json({ error: error.message, causa: error.causa, proveedor: error.proveedor }, { status: statusDe(error.causa) });
-    return Response.json({ error: error instanceof Error ? error.message : "Reference analysis failed." }, { status: 400 });
+    const uiError = traducirErrorServidor(error, requestId);
+    registrarFalloUi("/api/references/analyze", uiError);
+    if (error instanceof ErrorIA) return Response.json({ error: error.message, causa: error.causa, proveedor: error.proveedor, ui_error: uiError }, { status: statusDe(error.causa) });
+    return Response.json({ error: error instanceof Error ? error.message : "Reference analysis failed.", ui_error: uiError }, { status: 400 });
   }
 }

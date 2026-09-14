@@ -6,7 +6,7 @@ import { CatalogItemV3Schema } from "../catalog/scene-asset-schema";
 import type { SceneCategoryV3, SceneFunctionV3 } from "../taxonomy/v3";
 
 /**
- * Adaptación explícita de V2 a V3 (PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md
+ * Adaptación explícita de V2 a V3 (docs/migracion-python/PLAN-MAESTRO-V2.md
  * §7.3 y Tarea 02.2, "Contratos de activos y taxonomía").
  *
  * IMPORTANTE — esto es una CAPA DE ADAPTACIÓN, no una fuente de verdad

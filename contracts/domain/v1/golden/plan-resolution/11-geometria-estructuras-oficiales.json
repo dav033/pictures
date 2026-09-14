@@ -1,0 +1,1093 @@
+{
+  "allowlist": [
+    {
+      "product_id": "P-RED",
+      "variant_ids": [
+        "V-RED-12"
+      ]
+    }
+  ],
+  "catalog_rows": [
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "rojo"
+      ],
+      "colores_variante": [
+        "rojo"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex rojo R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/red-12.jpg",
+      "inventory_quantity": 200,
+      "precio": 10000,
+      "product_id": "P-RED",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex rojo",
+      "sku": "SKU-RED-12",
+      "sku_original": "SHOP-RED-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-RED-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-RED-12",
+      "variante_titulo": "R-12"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-001",
+  "description": "Arco plano, arco asimétrico (banda afinada) y aro circular con las mismas medidas: cambia el total de globos según la geometría oficial.",
+  "expected": {
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "rojo",
+          "design_quantity": 116,
+          "finish": null,
+          "product_id": "P-RED",
+          "required_quantity": 116,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 116,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rojo",
+          "design_quantity": 82,
+          "finish": null,
+          "product_id": "P-RED",
+          "required_quantity": 82,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_02_ARCO",
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 82,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rojo",
+          "design_quantity": 147,
+          "finish": null,
+          "product_id": "P-RED",
+          "required_quantity": 147,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_03_ARCO",
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 147,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 3,
+        "density": "media",
+        "dimensions_m": {
+          "height": 2.2,
+          "length": null,
+          "width": 2.4
+        },
+        "installation_length_m": 17.83,
+        "shape": "coordinated structures",
+        "type": "composite_installation",
+        "visual_density": "medium",
+        "visual_scale": "large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": true,
+          "consumption_cost": 74600,
+          "design_quantity": 345,
+          "leftover_inventory": 27,
+          "operational_surplus": 27,
+          "package_count": 8,
+          "potential_surplus": 55,
+          "product_id": "P-RED",
+          "purchase_cost": 80000,
+          "purchase_quantity": 400,
+          "required_quantity": 373,
+          "units_per_package": 50,
+          "used": 345,
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 373,
+          "waste_reserve": 28
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 8,
+        "consumption_cost": 74600,
+        "covered_waste_reserve": 28,
+        "design_quantity": 345,
+        "natural_package_surplus": 55,
+        "operational_surplus": 27,
+        "potential_surplus": 55,
+        "purchase_cost": 80000,
+        "purchase_quantity": 400,
+        "required_quantity": 373,
+        "target_waste_reserve": 28,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 373,
+        "waste_only_savings_cop": 10000
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": []
+    },
+    "plan_resuelto": {
+      "advertencias": [],
+      "alternativas": [
+        {
+          "ahorro_cop": 10000,
+          "etiqueta": "economica",
+          "familia_id": "P-RED",
+          "titulo": "Globo latex rojo",
+          "total_cop": 70000
+        }
+      ],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": true,
+          "color": "rojo",
+          "consumption_cost": 74600,
+          "design_quantity": 345,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_ARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO",
+            "EST_02_ARCO",
+            "EST_03_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/red-12.jpg",
+          "inventory_quantity": 200,
+          "leftover_inventory": 27,
+          "paquetes": 8,
+          "precio_paquete": 10000,
+          "product_id": "P-RED",
+          "purchase_cost": 80000,
+          "purchase_quantity": 400,
+          "required_quantity": 373,
+          "sku": "SKU-RED-12",
+          "sku_original": "SHOP-RED-12",
+          "sobrante": 55,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-RED-12",
+          "subtotal": 80000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex rojo — R-12",
+          "unidades_con_merma": 373,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 345,
+          "unidades_paquete": 50,
+          "used": 345,
+          "variant_id": "V-RED-12",
+          "waste_reserve": 28
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 5.46,
+          "estructura_id": "EST_01_ARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/red-12.jpg",
+              "inventory_quantity": 200,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-RED",
+              "sku": "SKU-RED-12",
+              "sku_original": "SHOP-RED-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-RED-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rojo — R-12",
+              "unidades": 116,
+              "unidades_inferidas": false,
+              "variant_id": "V-RED-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 116
+            }
+          ],
+          "nombre": "Arco",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "arco",
+          "total_unidades": 116,
+          "ubicacion": "arco_central"
+        },
+        {
+          "eje_m": 5.46,
+          "estructura_id": "EST_02_ARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_02_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/red-12.jpg",
+              "inventory_quantity": 200,
+              "origen": {
+                "id": "EST_02_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-RED",
+              "sku": "SKU-RED-12",
+              "sku_original": "SHOP-RED-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-RED-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rojo — R-12",
+              "unidades": 82,
+              "unidades_inferidas": false,
+              "variant_id": "V-RED-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 82
+            }
+          ],
+          "nombre": "Arco asimétrico",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "arco",
+          "total_unidades": 82,
+          "ubicacion": "entrada"
+        },
+        {
+          "eje_m": 6.91,
+          "estructura_id": "EST_03_ARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_03_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/red-12.jpg",
+              "inventory_quantity": 200,
+              "origen": {
+                "id": "EST_03_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-RED",
+              "sku": "SKU-RED-12",
+              "sku_original": "SHOP-RED-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-RED-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rojo — R-12",
+              "unidades": 147,
+              "unidades_inferidas": false,
+              "variant_id": "V-RED-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 147
+            }
+          ],
+          "nombre": "Aro circular",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "arco",
+          "total_unidades": 147,
+          "ubicacion": "fondo_pared"
+        }
+      ],
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 345\nTarget waste reserve: 28\nNatural package surplus: 5\nUsable waste coverage: 28\nAdditional packages required for waste: 8\nGlobo latex rojo — R-12: design=345, required=373, package=50, packages=8, purchased=400, natural surplus=55, waste reserve=28, leftover inventory=27",
+      "plan": {
+        "concepto": {
+          "descripcion": "Columnas rojas para una zona de fotos.",
+          "paleta": [
+            "rojo"
+          ],
+          "titulo": "Columnas rojas"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_ARCO",
+            "estructura_oficial": "arco",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-RED",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.2,
+              "ancho_m": 2.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Arco",
+            "porque": "Enmarca el foco fotografico.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "arco",
+            "ubicacion": "arco_central"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_02_ARCO",
+            "estructura_oficial": "arco_asimetrico",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-RED",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.2,
+              "ancho_m": 2.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Arco asimétrico",
+            "porque": "Enmarca el foco fotografico.",
+            "repeticiones": 1,
+            "rol_escena": "soporte",
+            "tipo": "arco",
+            "ubicacion": "entrada"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_03_ARCO",
+            "estructura_oficial": "aro_circular",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-RED",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.2,
+              "ancho_m": 2.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Aro circular",
+            "porque": "Enmarca el foco fotografico.",
+            "repeticiones": 1,
+            "rol_escena": "soporte",
+            "tipo": "arco",
+            "ubicacion": "fondo_pared"
+          }
+        ],
+        "plan_id": "11111111-1111-4111-8111-111111111111",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "b0609df028e34e896887079010c34ef3b0d42e2b02242aa16de31484bae1967a",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 8,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 74600,
+        "covered_waste_reserve": 28,
+        "design_quantity": 345,
+        "globos_por_tamano": {
+          "R-12": 345
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8,
+        "natural_package_surplus": 5,
+        "purchase_cost": 80000,
+        "target_waste_reserve": 28,
+        "total_cop": 80000,
+        "total_unidades": 345,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 10000
+      }
+    },
+    "quote": {
+      "complementosSoportados": false,
+      "consumptionCost": 74600,
+      "coveredWasteReserve": 28,
+      "incluyeIva": true,
+      "leftoverInventory": 27,
+      "lineas": [
+        {
+          "additionalPackageForWaste": true,
+          "cantidadNecesaria": 345,
+          "color": "rojo",
+          "consumptionCost": 74600,
+          "designQuantity": 345,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_ARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO",
+            "EST_02_ARCO",
+            "EST_03_ARCO"
+          ],
+          "id": "V-RED-12",
+          "leftoverInventory": 27,
+          "nombre": "Globo latex rojo — R-12",
+          "paquetes": 8,
+          "precioPaquete": 10000,
+          "productId": "P-RED",
+          "purchaseCost": 80000,
+          "purchaseQuantity": 400,
+          "referenciaElementIds": [],
+          "requiredQuantity": 373,
+          "sobrante": 55,
+          "subtotal": 80000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 345,
+          "varianteId": "V-RED-12",
+          "wasteReserve": 28
+        }
+      ],
+      "mermaPorcentaje": 8,
+      "plan_hash": "b0609df028e34e896887079010c34ef3b0d42e2b02242aa16de31484bae1967a",
+      "purchaseCost": 80000,
+      "targetWasteReserve": 28,
+      "total": 80000
+    }
+  },
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-001",
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "rojo",
+          "design_quantity": 116,
+          "finish": null,
+          "product_id": "P-RED",
+          "required_quantity": 116,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 116,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rojo",
+          "design_quantity": 82,
+          "finish": null,
+          "product_id": "P-RED",
+          "required_quantity": 82,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_02_ARCO",
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 82,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rojo",
+          "design_quantity": 147,
+          "finish": null,
+          "product_id": "P-RED",
+          "required_quantity": 147,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_03_ARCO",
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 147,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 3,
+        "density": "media",
+        "dimensions_m": {
+          "height": 2.2,
+          "length": null,
+          "width": 2.4
+        },
+        "installation_length_m": 17.83,
+        "shape": "coordinated structures",
+        "type": "composite_installation",
+        "visual_density": "medium",
+        "visual_scale": "large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": true,
+          "consumption_cost": 74600,
+          "design_quantity": 345,
+          "leftover_inventory": 27,
+          "operational_surplus": 27,
+          "package_count": 8,
+          "potential_surplus": 55,
+          "product_id": "P-RED",
+          "purchase_cost": 80000,
+          "purchase_quantity": 400,
+          "required_quantity": 373,
+          "units_per_package": 50,
+          "used": 345,
+          "variant_id": "V-RED-12",
+          "waste_adjusted_quantity": 373,
+          "waste_reserve": 28
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 8,
+        "consumption_cost": 74600,
+        "covered_waste_reserve": 28,
+        "design_quantity": 345,
+        "natural_package_surplus": 55,
+        "operational_surplus": 27,
+        "potential_surplus": 55,
+        "purchase_cost": 80000,
+        "purchase_quantity": 400,
+        "required_quantity": 373,
+        "target_waste_reserve": 28,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 373,
+        "waste_only_savings_cop": 10000
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": []
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [],
+      "alternativas": [
+        {
+          "ahorro_cop": 10000,
+          "etiqueta": "economica",
+          "familia_id": "P-RED",
+          "titulo": "Globo latex rojo",
+          "total_cop": 70000
+        }
+      ],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": true,
+          "color": "rojo",
+          "consumption_cost": 74600,
+          "design_quantity": 345,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_ARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO",
+            "EST_02_ARCO",
+            "EST_03_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/red-12.jpg",
+          "inventory_quantity": 200,
+          "leftover_inventory": 27,
+          "paquetes": 8,
+          "precio_paquete": 10000,
+          "product_id": "P-RED",
+          "purchase_cost": 80000,
+          "purchase_quantity": 400,
+          "required_quantity": 373,
+          "sku": "SKU-RED-12",
+          "sku_original": "SHOP-RED-12",
+          "sobrante": 55,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-RED-12",
+          "subtotal": 80000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex rojo — R-12",
+          "unidades_con_merma": 373,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 345,
+          "unidades_paquete": 50,
+          "used": 345,
+          "variant_id": "V-RED-12",
+          "waste_reserve": 28
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 5.46,
+          "estructura_id": "EST_01_ARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/red-12.jpg",
+              "inventory_quantity": 200,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-RED",
+              "sku": "SKU-RED-12",
+              "sku_original": "SHOP-RED-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-RED-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rojo — R-12",
+              "unidades": 116,
+              "unidades_inferidas": false,
+              "variant_id": "V-RED-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 116
+            }
+          ],
+          "nombre": "Arco",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "arco",
+          "total_unidades": 116,
+          "ubicacion": "arco_central"
+        },
+        {
+          "eje_m": 5.46,
+          "estructura_id": "EST_02_ARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_02_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/red-12.jpg",
+              "inventory_quantity": 200,
+              "origen": {
+                "id": "EST_02_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-RED",
+              "sku": "SKU-RED-12",
+              "sku_original": "SHOP-RED-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-RED-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rojo — R-12",
+              "unidades": 82,
+              "unidades_inferidas": false,
+              "variant_id": "V-RED-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 82
+            }
+          ],
+          "nombre": "Arco asimétrico",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "arco",
+          "total_unidades": 82,
+          "ubicacion": "entrada"
+        },
+        {
+          "eje_m": 6.91,
+          "estructura_id": "EST_03_ARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rojo",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_03_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/red-12.jpg",
+              "inventory_quantity": 200,
+              "origen": {
+                "id": "EST_03_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-RED",
+              "sku": "SKU-RED-12",
+              "sku_original": "SHOP-RED-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-RED-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rojo — R-12",
+              "unidades": 147,
+              "unidades_inferidas": false,
+              "variant_id": "V-RED-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 147
+            }
+          ],
+          "nombre": "Aro circular",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "arco",
+          "total_unidades": 147,
+          "ubicacion": "fondo_pared"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-001.",
+      "plan": {
+        "concepto": {
+          "descripcion": "Columnas rojas para una zona de fotos.",
+          "paleta": [
+            "rojo"
+          ],
+          "titulo": "Columnas rojas"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_ARCO",
+            "estructura_oficial": "arco",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-RED",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.2,
+              "ancho_m": 2.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Arco",
+            "porque": "Enmarca el foco fotografico.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "arco",
+            "ubicacion": "arco_central"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_02_ARCO",
+            "estructura_oficial": "arco_asimetrico",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-RED",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.2,
+              "ancho_m": 2.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Arco asimétrico",
+            "porque": "Enmarca el foco fotografico.",
+            "repeticiones": 1,
+            "rol_escena": "soporte",
+            "tipo": "arco",
+            "ubicacion": "entrada"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_03_ARCO",
+            "estructura_oficial": "aro_circular",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-RED",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.2,
+              "ancho_m": 2.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Aro circular",
+            "porque": "Enmarca el foco fotografico.",
+            "repeticiones": 1,
+            "rol_escena": "soporte",
+            "tipo": "arco",
+            "ubicacion": "fondo_pared"
+          }
+        ],
+        "plan_id": "11111111-1111-4111-8111-111111111111",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "dbabec49bc4fbd66c32f07dace16e045569164035679b47a0ad8c465736e77f6",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 8,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 74600,
+        "covered_waste_reserve": 28,
+        "design_quantity": 345,
+        "globos_por_tamano": {
+          "R-12": 345
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 5,
+        "purchase_cost": 80000,
+        "target_waste_reserve": 28,
+        "total_cop": 80000,
+        "total_unidades": 345,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 10000
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 74600,
+      "covered_waste_reserve": 28,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 27,
+      "lines": [
+        {
+          "available": true,
+          "color": "rojo",
+          "consumption_cost_cop": 74600,
+          "design_quantity": 345,
+          "diameter_inches": 12.0,
+          "id": "V-RED-12",
+          "leftover_inventory": 27,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_ARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 10000,
+          "packages": 8,
+          "product_id": "P-RED",
+          "purchase_cost_cop": 80000,
+          "purchase_quantity": 400,
+          "required_quantity": 373,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_ARCO",
+            "EST_02_ARCO",
+            "EST_03_ARCO"
+          ],
+          "subtotal_cop": 80000,
+          "surplus": 55,
+          "title": "Globo latex rojo — R-12",
+          "units_per_package": 50,
+          "used": 345,
+          "variant_id": "V-RED-12",
+          "waste_reserve": 28
+        }
+      ],
+      "plan_hash": "dbabec49bc4fbd66c32f07dace16e045569164035679b47a0ad8c465736e77f6",
+      "purchase_cost_cop": 80000,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 28,
+      "total_cop": 80000,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "11-geometria-estructuras-oficiales",
+  "plan": {
+    "concepto": {
+      "descripcion": "Columnas rojas para una zona de fotos.",
+      "paleta": [
+        "rojo"
+      ],
+      "titulo": "Columnas rojas"
+    },
+    "espacio": {
+      "fuente": "cliente",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "densidad": "media",
+        "estructura_id": "EST_01_ARCO",
+        "estructura_oficial": "arco",
+        "materiales": [
+          {
+            "color": "rojo",
+            "participacion": 1,
+            "product_id": "P-RED",
+            "rol_material": "principal"
+          }
+        ],
+        "medidas": {
+          "alto_m": 2.2,
+          "ancho_m": 2.4
+        },
+        "mezcla": "clasica",
+        "nombre": "Arco",
+        "porque": "Enmarca el foco fotografico.",
+        "repeticiones": 1,
+        "rol_escena": "focal",
+        "tipo": "arco",
+        "ubicacion": "arco_central"
+      },
+      {
+        "densidad": "media",
+        "estructura_id": "EST_02_ARCO",
+        "estructura_oficial": "arco_asimetrico",
+        "materiales": [
+          {
+            "color": "rojo",
+            "participacion": 1,
+            "product_id": "P-RED",
+            "rol_material": "principal"
+          }
+        ],
+        "medidas": {
+          "alto_m": 2.2,
+          "ancho_m": 2.4
+        },
+        "mezcla": "clasica",
+        "nombre": "Arco asimétrico",
+        "porque": "Enmarca el foco fotografico.",
+        "repeticiones": 1,
+        "rol_escena": "soporte",
+        "tipo": "arco",
+        "ubicacion": "entrada"
+      },
+      {
+        "densidad": "media",
+        "estructura_id": "EST_03_ARCO",
+        "estructura_oficial": "aro_circular",
+        "materiales": [
+          {
+            "color": "rojo",
+            "participacion": 1,
+            "product_id": "P-RED",
+            "rol_material": "principal"
+          }
+        ],
+        "medidas": {
+          "alto_m": 2.2,
+          "ancho_m": 2.4
+        },
+        "mezcla": "clasica",
+        "nombre": "Aro circular",
+        "porque": "Enmarca el foco fotografico.",
+        "repeticiones": 1,
+        "rol_escena": "soporte",
+        "tipo": "arco",
+        "ubicacion": "fondo_pared"
+      }
+    ],
+    "plan_id": "11111111-1111-4111-8111-111111111111",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "supuestos": []
+  }
+}

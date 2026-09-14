@@ -1,0 +1,671 @@
+{
+  "allowlist": [
+    {
+      "product_id": "P-A5-WASTE",
+      "variant_ids": [
+        "V-A5-WASTE-R12-X7"
+      ]
+    }
+  ],
+  "catalog_rows": [
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "azul"
+      ],
+      "colores_variante": [
+        "azul"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex azul R-12 en paquete pequeno.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/a5-waste-r12-x7.jpg",
+      "inventory_quantity": 100,
+      "precio": 1500,
+      "product_id": "P-A5-WASTE",
+      "producto_disponible": true,
+      "producto_titulo": "Globo de paquete pequeno azul",
+      "sku": "SKU-A5-WASTE-R12-X7",
+      "sku_original": "SHOP-A5-WASTE-R12-X7",
+      "source_snapshot_id": "SNAP-GOLDEN-A5-008",
+      "source_variant_id": "SOURCE-A5-WASTE-R12-X7",
+      "unidades_inferidas": true,
+      "unidades_paq": 7,
+      "variant_id": "V-A5-WASTE-R12-X7",
+      "variante_titulo": "R-12 paquete x7"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-A5-008",
+  "description": "La reserva de merma no cabe en el sobrante natural y exige otro paquete.",
+  "expected": {
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "azul",
+          "design_quantity": 60,
+          "finish": null,
+          "product_id": "P-A5-WASTE",
+          "required_quantity": 60,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_01_MERMA",
+          "variant_id": "V-A5-WASTE-R12-X7",
+          "waste_adjusted_quantity": 60,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 1,
+        "density": "media",
+        "dimensions_m": {
+          "height": 2.8,
+          "length": null,
+          "width": null
+        },
+        "installation_length_m": 2.8,
+        "shape": "clasica",
+        "type": "columna",
+        "visual_density": "medium",
+        "visual_scale": "medium"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": true,
+          "consumption_cost": 13929,
+          "design_quantity": 60,
+          "leftover_inventory": 5,
+          "operational_surplus": 5,
+          "package_count": 10,
+          "potential_surplus": 10,
+          "product_id": "P-A5-WASTE",
+          "purchase_cost": 15000,
+          "purchase_quantity": 70,
+          "required_quantity": 65,
+          "units_per_package": 7,
+          "used": 60,
+          "variant_id": "V-A5-WASTE-R12-X7",
+          "waste_adjusted_quantity": 65,
+          "waste_reserve": 5
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 10,
+        "consumption_cost": 13929,
+        "covered_waste_reserve": 5,
+        "design_quantity": 60,
+        "natural_package_surplus": 10,
+        "operational_surplus": 5,
+        "potential_surplus": 10,
+        "purchase_cost": 15000,
+        "purchase_quantity": 70,
+        "required_quantity": 65,
+        "target_waste_reserve": 5,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 65,
+        "waste_only_savings_cop": 1500
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": []
+    },
+    "plan_resuelto": {
+      "advertencias": [],
+      "alternativas": [
+        {
+          "ahorro_cop": 1500,
+          "etiqueta": "economica",
+          "familia_id": "P-A5-WASTE",
+          "titulo": "Globo de paquete pequeno azul",
+          "total_cop": 13500
+        }
+      ],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": true,
+          "color": "azul",
+          "consumption_cost": 13929,
+          "design_quantity": 60,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_01_MERMA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_MERMA"
+          ],
+          "imagen": "https://cdn.example.test/a5-waste-r12-x7.jpg",
+          "inventory_quantity": 100,
+          "leftover_inventory": 5,
+          "paquetes": 10,
+          "precio_paquete": 1500,
+          "product_id": "P-A5-WASTE",
+          "purchase_cost": 15000,
+          "purchase_quantity": 70,
+          "required_quantity": 65,
+          "sku": "SKU-A5-WASTE-R12-X7",
+          "sku_original": "SHOP-A5-WASTE-R12-X7",
+          "sobrante": 10,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-008",
+          "source_variant_id": "SOURCE-A5-WASTE-R12-X7",
+          "subtotal": 15000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo de paquete pequeno azul — R-12 paquete x7",
+          "unidades_con_merma": 65,
+          "unidades_inferidas": true,
+          "unidades_necesarias": 60,
+          "unidades_paquete": 7,
+          "used": 60,
+          "variant_id": "V-A5-WASTE-R12-X7",
+          "waste_reserve": 5
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 2.8,
+          "estructura_id": "EST_01_MERMA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "azul",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_01_MERMA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/a5-waste-r12-x7.jpg",
+              "inventory_quantity": 100,
+              "origen": {
+                "id": "EST_01_MERMA",
+                "kind": "estructura"
+              },
+              "product_id": "P-A5-WASTE",
+              "sku": "SKU-A5-WASTE-R12-X7",
+              "sku_original": "SHOP-A5-WASTE-R12-X7",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-008",
+              "source_variant_id": "SOURCE-A5-WASTE-R12-X7",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo de paquete pequeno azul — R-12 paquete x7",
+              "unidades": 60,
+              "unidades_inferidas": true,
+              "variant_id": "V-A5-WASTE-R12-X7"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 60
+            }
+          ],
+          "nombre": "Columna azul",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 60,
+          "ubicacion": "lateral_izquierdo"
+        }
+      ],
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 60\nTarget waste reserve: 5\nNatural package surplus: 3\nUsable waste coverage: 5\nAdditional packages required for waste: 10\nGlobo de paquete pequeno azul — R-12 paquete x7: design=60, required=65, package=7, packages=10, purchased=70, natural surplus=10, waste reserve=5, leftover inventory=5",
+      "plan": {
+        "concepto": {
+          "descripcion": "La compra cubre la merma estadistica completa.",
+          "paleta": [
+            "azul"
+          ],
+          "titulo": "Columna azul con reserva completa"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_MERMA",
+            "materiales": [
+              {
+                "color": "azul",
+                "participacion": 1,
+                "product_id": "P-A5-WASTE",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.8
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna azul",
+            "porque": "La altura requiere una reserva de merma completa.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "columna",
+            "ubicacion": "lateral_izquierdo"
+          }
+        ],
+        "plan_id": "a5a50008-0000-4000-8000-000000000008",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "4a650a68100eb8fd6d78af73b28671973f6b656977e0571dde5d00fff85d7976",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 10,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 13929,
+        "covered_waste_reserve": 5,
+        "design_quantity": 60,
+        "globos_por_tamano": {
+          "R-12": 60
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8,
+        "natural_package_surplus": 3,
+        "purchase_cost": 15000,
+        "target_waste_reserve": 5,
+        "total_cop": 15000,
+        "total_unidades": 60,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 1500
+      }
+    },
+    "quote": {
+      "complementosSoportados": false,
+      "consumptionCost": 13929,
+      "coveredWasteReserve": 5,
+      "incluyeIva": true,
+      "leftoverInventory": 5,
+      "lineas": [
+        {
+          "additionalPackageForWaste": true,
+          "cantidadNecesaria": 60,
+          "color": "azul",
+          "consumptionCost": 13929,
+          "designQuantity": 60,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_MERMA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_MERMA"
+          ],
+          "id": "V-A5-WASTE-R12-X7",
+          "leftoverInventory": 5,
+          "nombre": "Globo de paquete pequeno azul — R-12 paquete x7",
+          "paquetes": 10,
+          "precioPaquete": 1500,
+          "productId": "P-A5-WASTE",
+          "purchaseCost": 15000,
+          "purchaseQuantity": 70,
+          "referenciaElementIds": [],
+          "requiredQuantity": 65,
+          "sobrante": 10,
+          "subtotal": 15000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 7,
+          "used": 60,
+          "varianteId": "V-A5-WASTE-R12-X7",
+          "wasteReserve": 5
+        }
+      ],
+      "mermaPorcentaje": 8,
+      "plan_hash": "4a650a68100eb8fd6d78af73b28671973f6b656977e0571dde5d00fff85d7976",
+      "purchaseCost": 15000,
+      "targetWasteReserve": 5,
+      "total": 15000
+    }
+  },
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-A5-008",
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "azul",
+          "design_quantity": 60,
+          "finish": null,
+          "product_id": "P-A5-WASTE",
+          "required_quantity": 60,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_MERMA",
+          "variant_id": "V-A5-WASTE-R12-X7",
+          "waste_adjusted_quantity": 60,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 1,
+        "density": "media",
+        "dimensions_m": {
+          "height": 2.8,
+          "length": null,
+          "width": null
+        },
+        "installation_length_m": 2.8,
+        "shape": "clasica",
+        "type": "columna",
+        "visual_density": "medium",
+        "visual_scale": "medium"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": true,
+          "consumption_cost": 13929,
+          "design_quantity": 60,
+          "leftover_inventory": 5,
+          "operational_surplus": 5,
+          "package_count": 10,
+          "potential_surplus": 10,
+          "product_id": "P-A5-WASTE",
+          "purchase_cost": 15000,
+          "purchase_quantity": 70,
+          "required_quantity": 65,
+          "units_per_package": 7,
+          "used": 60,
+          "variant_id": "V-A5-WASTE-R12-X7",
+          "waste_adjusted_quantity": 65,
+          "waste_reserve": 5
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 10,
+        "consumption_cost": 13929,
+        "covered_waste_reserve": 5,
+        "design_quantity": 60,
+        "natural_package_surplus": 10,
+        "operational_surplus": 5,
+        "potential_surplus": 10,
+        "purchase_cost": 15000,
+        "purchase_quantity": 70,
+        "required_quantity": 65,
+        "target_waste_reserve": 5,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 65,
+        "waste_only_savings_cop": 1500
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": []
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [],
+      "alternativas": [
+        {
+          "ahorro_cop": 1500,
+          "etiqueta": "economica",
+          "familia_id": "P-A5-WASTE",
+          "titulo": "Globo de paquete pequeno azul",
+          "total_cop": 13500
+        }
+      ],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": true,
+          "color": "azul",
+          "consumption_cost": 13929,
+          "design_quantity": 60,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_MERMA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_MERMA"
+          ],
+          "imagen": "https://cdn.example.test/a5-waste-r12-x7.jpg",
+          "inventory_quantity": 100,
+          "leftover_inventory": 5,
+          "paquetes": 10,
+          "precio_paquete": 1500,
+          "product_id": "P-A5-WASTE",
+          "purchase_cost": 15000,
+          "purchase_quantity": 70,
+          "required_quantity": 65,
+          "sku": "SKU-A5-WASTE-R12-X7",
+          "sku_original": "SHOP-A5-WASTE-R12-X7",
+          "sobrante": 10,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-008",
+          "source_variant_id": "SOURCE-A5-WASTE-R12-X7",
+          "subtotal": 15000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo de paquete pequeno azul — R-12 paquete x7",
+          "unidades_con_merma": 65,
+          "unidades_inferidas": true,
+          "unidades_necesarias": 60,
+          "unidades_paquete": 7,
+          "used": 60,
+          "variant_id": "V-A5-WASTE-R12-X7",
+          "waste_reserve": 5
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 2.8,
+          "estructura_id": "EST_01_MERMA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "azul",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_MERMA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/a5-waste-r12-x7.jpg",
+              "inventory_quantity": 100,
+              "origen": {
+                "id": "EST_01_MERMA",
+                "kind": "estructura"
+              },
+              "product_id": "P-A5-WASTE",
+              "sku": "SKU-A5-WASTE-R12-X7",
+              "sku_original": "SHOP-A5-WASTE-R12-X7",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-008",
+              "source_variant_id": "SOURCE-A5-WASTE-R12-X7",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo de paquete pequeno azul — R-12 paquete x7",
+              "unidades": 60,
+              "unidades_inferidas": true,
+              "variant_id": "V-A5-WASTE-R12-X7"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 60
+            }
+          ],
+          "nombre": "Columna azul",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 60,
+          "ubicacion": "lateral_izquierdo"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-A5-008.",
+      "plan": {
+        "concepto": {
+          "descripcion": "La compra cubre la merma estadistica completa.",
+          "paleta": [
+            "azul"
+          ],
+          "titulo": "Columna azul con reserva completa"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_MERMA",
+            "materiales": [
+              {
+                "color": "azul",
+                "participacion": 1,
+                "product_id": "P-A5-WASTE",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.8
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna azul",
+            "porque": "La altura requiere una reserva de merma completa.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "columna",
+            "ubicacion": "lateral_izquierdo"
+          }
+        ],
+        "plan_id": "a5a50008-0000-4000-8000-000000000008",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "2237d3e46970a5cf76db3b1c546064629cca78cb1c0958407f929af4e8859ba9",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 10,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 13929,
+        "covered_waste_reserve": 5,
+        "design_quantity": 60,
+        "globos_por_tamano": {
+          "R-12": 60
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 3,
+        "purchase_cost": 15000,
+        "target_waste_reserve": 5,
+        "total_cop": 15000,
+        "total_unidades": 60,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 1500
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 13929,
+      "covered_waste_reserve": 5,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 5,
+      "lines": [
+        {
+          "available": true,
+          "color": "azul",
+          "consumption_cost_cop": 13929,
+          "design_quantity": 60,
+          "diameter_inches": 12.0,
+          "id": "V-A5-WASTE-R12-X7",
+          "leftover_inventory": 5,
+          "origins": [
+            {
+              "id": "EST_01_MERMA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 1500,
+          "packages": 10,
+          "product_id": "P-A5-WASTE",
+          "purchase_cost_cop": 15000,
+          "purchase_quantity": 70,
+          "required_quantity": 65,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_MERMA"
+          ],
+          "subtotal_cop": 15000,
+          "surplus": 10,
+          "title": "Globo de paquete pequeno azul — R-12 paquete x7",
+          "units_per_package": 7,
+          "used": 60,
+          "variant_id": "V-A5-WASTE-R12-X7",
+          "waste_reserve": 5
+        }
+      ],
+      "plan_hash": "2237d3e46970a5cf76db3b1c546064629cca78cb1c0958407f929af4e8859ba9",
+      "purchase_cost_cop": 15000,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 5,
+      "total_cop": 15000,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "a5-paquete-extra-merma",
+  "plan": {
+    "concepto": {
+      "descripcion": "La compra cubre la merma estadistica completa.",
+      "paleta": [
+        "azul"
+      ],
+      "titulo": "Columna azul con reserva completa"
+    },
+    "espacio": {
+      "fuente": "cliente",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "densidad": "media",
+        "estructura_id": "EST_01_MERMA",
+        "materiales": [
+          {
+            "color": "azul",
+            "participacion": 1,
+            "product_id": "P-A5-WASTE",
+            "rol_material": "principal"
+          }
+        ],
+        "medidas": {
+          "alto_m": 2.8
+        },
+        "mezcla": "clasica",
+        "nombre": "Columna azul",
+        "porque": "La altura requiere una reserva de merma completa.",
+        "repeticiones": 1,
+        "rol_escena": "focal",
+        "tipo": "columna",
+        "ubicacion": "lateral_izquierdo"
+      }
+    ],
+    "plan_id": "a5a50008-0000-4000-8000-000000000008",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "supuestos": []
+  }
+}

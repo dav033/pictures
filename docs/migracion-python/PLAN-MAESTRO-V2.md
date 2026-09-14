@@ -1,33 +1,25 @@
 # Plan maestro v2 — migración Python y optimización de la interacción con los modelos
 
 Fecha: 2026-09-07
-Estado: propuesto, sustituye al plan de 10 etapas que nunca se escribió completo
-Rector sobre: `00-prompt-continuacion.md`, `prompt-seguimiento-etapa-5.md`
+Estado: referencia de migración local; no autoriza despliegues ni migraciones externas
+Rector sobre: `AGENTS.md` y las decisiones vigentes bajo `docs/architecture/decisions/`
 Subordinado a: `AGENTS.md` (raíz)
+
+> **Actualización 2026-09-11:** `docs/architecture/decisions/0005-python-authority-cutover.md`
+> reemplaza el diseño híbrido de ownership de este documento. El objetivo
+> vigente es que Python sea la autoridad única de dominio y que Next quede como
+> UI/fachada HTTP. Las secciones que describen a Next como dueño comercial son
+> históricas y no autorizan nuevos trabajos bajo ese modelo.
 
 ---
 
 ## 0. Por qué existe este documento
 
-El "plan maestro de 10 etapas" al que se refieren todos los documentos de esta
-carpeta **nunca existió por escrito**. La única mención es una frase en
-[`00-prompt-continuacion.md`](00-prompt-continuacion.md):
-
-> "siguiendo un plan maestro de 10 etapas que el usuario ya definió (ETAPA 1
-> auditoría, ETAPA 2 contratos, ETAPA 3 base del servicio Python, ... hasta
-> ETAPA 10 limpieza y entrega)"
-
-Las etapas 1 a 4 se ejecutaron y documentaron. Las etapas 5 a 10 solo existían
-como esos puntos suspensivos. Este documento las escribe, con el estado real
-verificado en disco y con el objetivo que motiva la migración puesto en el
-centro: **que la interacción con Gemini y con el LoRA sea lo más óptima
-posible sin romper nada**.
-
-Además se recuperaron nueve planes que habían sido borrados del repositorio y
-seguían siendo referenciados por comentarios de código vivo. Están en
-[`docs/planes-recuperados/`](../planes-recuperados/). El más importante para
-este trabajo es `PLAN_RENDIMIENTO_RAG.md`: contiene el trabajo de optimización
-de Gemini con **mediciones reales**, y es la base del capítulo 3.
+Este documento resume el trabajo de migración y optimización comprobado en el
+checkout local. Las decisiones antiguas que dependían de prompts, handoffs o
+planes recuperados eliminados ya no son rutas operativas. RAG/PostgreSQL,
+contratos de dominio y el selector Next/Python conservan sus documentos
+vigentes en el repositorio.
 
 ### Cómo se numera todo esto
 
@@ -62,7 +54,7 @@ Las cuatro nuevas cubren huecos que ninguna fase trataba como trabajo propio:
 |---|---|
 | **Fase 2** — CI y gates | Cualquier push a `main` despliega al EC2 **sin un solo check**, y hay varios agentes commiteando. Todo lo demás se estaba planeando sin red |
 | **Fase 4** — Seguridad y secretos | Ninguna fase trataba los secretos ni el contenido no confiable que llega al prompt. El staging necesita un secreto rotable antes de existir |
-| **Fase 5** — Resiliencia y degradación | 19 migraciones sin nota de reversión (corregido por auditoría 5.0: el conteo de 18 ya estaba mal cuando se escribió — ver `auditoria/09-revision-fase-5.md`), sin procedimiento de restore probado, y nadie ha probado qué pasa cuando un proveedor está caído |
+| **Fase 5** — Resiliencia y degradación | Fallos de proveedores y almacenamiento necesitaban contratos observables, rollback y pruebas sin fabricar éxito |
 | **Fase 7** — Carga y concurrencia | Todas las cifras son de una máquina y un momento. Nadie midió el sistema con más de una conversación a la vez |
 
 Mapa de la renumeración, para cualquier documento o rama que use los números
@@ -173,10 +165,10 @@ no cierra etapa.
    activa sin antes/después reproducible. Fue exactamente ese arnés el que
    evitó desplegar `flash-lite` con una regresión de calidad real.
 2. **Cada etapa entrega capacidad de IA o instrumento de medición.**
-3. **La autoridad comercial no se mueve.** PostgreSQL y TypeScript siguen
-   siendo dueños de catálogo, precio, disponibilidad, cantidades, geometría,
-   materiales, cotización, aprobación y allowlist. Python puede *ordenar*,
-   *evaluar* y *transportar*; no puede *decidir*.
+3. **La autoridad de dominio se mueve a Python.** Python será dueño de
+   catálogo, precio, disponibilidad, cantidades, geometría, materiales,
+   cotización, aprobación, allowlist, proveedores y efectos externos. Next
+   conserva UI y fachada HTTP, pero no decide ni persiste reglas comerciales.
 4. **Todo reversible por variable de entorno**, con el valor por defecto igual
    al comportamiento actual.
 5. **Un cambio, una medición, un criterio de aceptación.** Nada de lotes.
@@ -187,9 +179,8 @@ no cierra etapa.
 
 ## 3. Optimización de los modelos: qué ya está resuelto
 
-Extraído de `docs/planes-recuperados/PLAN_RENDIMIENTO_RAG.md`. **Son cifras
-medidas contra la API real**, no estimaciones. Esto ya está activo — no hay
-que rehacerlo, y no hay que volver a proponerlo.
+Son cifras históricas medidas contra la API real, no estimaciones. Se conservan
+como contexto y no autorizan nuevas llamadas pagadas.
 
 | Acción | Veredicto | Cifra medida |
 |---|---|---|
@@ -395,7 +386,7 @@ prohíbe. Entra en la Fase 3 como 2.13.
 | # | Entrega | Estado | Criterio de aceptación |
 |---|---|---|---|
 | Fase 1.1 | Commit del trabajo de etapas 1-4 en rama, en slices por frente. `main` intacto | **Hecha** | `git status` limpio; `main` en `c89cda1`; 7 commits; sin archivos perdidos respecto al inventario de 1.4 |
-| Fase 1.2 | Planes recuperados en `docs/planes-recuperados/` y comentarios de código apuntando a una ruta que existe | **Hecha** | Los 6 comentarios de 1.4(5) resuelven a un archivo existente |
+| Fase 1.2 | Inventario documental y comentarios de código apuntando a rutas vigentes | **Parcial** | Las referencias operativas resuelven a archivos existentes; queda revisar documentación histórica |
 | Fase 1.3 | **Migraciones seguras**, capítulo 10: confirmación de destino, checksum, advisory lock, transacción sobre un solo cliente, validación de numeración, `--dry-run`, `--target`, y la colisión 016 corregida con su reconciliación | **Hecha** | 7 pruebas contra PostgreSQL Docker desechable: gate remoto aborta sin conectar, dry-run deja 0 tablas, 19 migraciones con 19 checksums, segunda corrida 0 nuevas, checksum alterado falla, renombrado reconcilia sin re-aplicar, prefijo duplicado falla |
 | Fase 1.4 | **Arnés de medición** `npm run ia:bench`. Mide por turno: latencia de parseo, retrieval, TTFT, turno completo, vueltas del loop, tokens de entrada/salida/pensamiento/cacheados, bytes de imagen enviados, y coste estimado por modelo | Pendiente | Reproduce las cifras del capítulo 3 con ±15% |
 | Fase 1.5 | **Telemetría durable y taxonomía de IA**, capítulo 9. Migración `021_ai_call_log.sql`, tabla de precios versionada, catálogos cerrados de `flujo` y `capacidad`, y `thoughtsTokenCount` leído del SDK. Cubre las once llamadas de IA, no dos. El buffer en memoria se conserva para el panel en caliente | Pendiente | Los 8 flujos y las 12 capacidades emiten evento; la telemetría sobrevive un reinicio; un fallo al registrar no rompe un turno |
@@ -566,7 +557,7 @@ encuentra algo explotable, se arregla en esta fase y no se aplaza.
 **Estado real al 2026-09-09** (evidencia, no plan):
 
 - **4.1** — hecho. `docs/migracion-python/seguridad/inventario-secretos.md` cubre los 9 secretos propios más el rol Postgres de Fase 6, con un hallazgo nuevo (fallback no documentado de `NEXTAUTH_SECRET` en `PLAN_APPROVAL_SECRET`). Sigue pendiente asignar dueño humano a cada uno — decisión de organización, no de código.
-- **4.2** — ya estaba hecho (gitleaks en CI, histórico completo, gatea el deploy) desde antes de esta sesión de continuación. Se encontró y corrigió un hallazgo que un escáner por regex no detecta: un correo personal expuesto en `HANDOFF-LORA-COMPOSICION.md`, redactado del HEAD (sigue en el historial público de git — decisión explícita del usuario de no reescribir historial).
+- **4.2** — el estado del escaneo de secretos y cualquier hallazgo histórico queda documentado sin volver a citar archivos eliminados. No se reescribe el historial público.
 - **4.3** — análisis estático completo con evidencia de código (`docs/migracion-python/seguridad/inyeccion-prompt.md`), más una validación dinámica real autorizada por el usuario: una corrida contra Gemini con una imagen adversarial de prueba, que el modelo NO obedeció (resultado observado, no garantía de diseño). La vía 2 (catálogo Happia) queda solo con análisis estático — simular el backend real de Happia excede el alcance autorizado.
 - **4.4** — el hallazgo de `src/proxy.ts` (matcher sin excluir `/api/rag/webhooks/shopify`) ya estaba corregido de una sesión anterior. Procedimiento de rotación escrito y **probado de verdad** (`npm run test-rotacion-secretos`, en CI) para los 5 secretos que la app controla sin cuenta externa. Los otros 4 (`GEMINI_API_KEY`, `FAL_KEY`, `HAPPIA_API_KEY`, `DATABASE_URL`) tienen procedimiento escrito con prueba explícitamente pendiente de acceso a cada consola de proveedor — se decidió no rotar `DATABASE_URL` de producción sin más alcance autorizado, dado su blast radius.
 - **4.5** — inventario completo de las 51 rutas (`docs/migracion-python/seguridad/superficie-externa.md`), más dos correcciones de bajo riesgo encontradas en el proceso: comparación de credenciales en tiempo constante en `/api/login` y `HAPPIE_EXTERNO_API_KEY` (ya lo hacía bien el webhook server-to-server; se extrajo a un helper compartido), y el webhook de Shopify ya no expone `error.message` crudo en su 500. Hallazgos documentados sin corregir en esta fase (se solapan con Fase 9.1, "seguridad del gasto"): `/api/lora/trainings/[id]/start` sin rate limit para un entrenamiento LoRA facturable, y ningún límite de tasa en `/api/chat`/`/api/generate`/`/api/references/analyze`.
@@ -583,19 +574,14 @@ Fase 4 queda cerrada salvo: asignar dueño humano a cada secreto (4.1, decisión
 
 Hay tres cosas que el plan daba por hechas sin estarlo:
 
-1. **Reversión de migraciones.** 19 archivos sin nota `-- rollback:` (corregido:
-   ver `auditoria/09-revision-fase-5.md` sección 1 — el conteo de 18 ya
-   subestimaba el universo real incluso en el commit donde se fijó). El runner
-   avisa desde la Fase 1.3, pero avisar no es tener el procedimiento.
-2. **Recuperación de datos.** No hay procedimiento de backup ni de restore
-   documentado para la base comercial. `data/` está casi todo en `.gitignore` y
-   el SQLite es generado. Los artefactos LoRA viven en filesystem y se
-   sincronizan al EC2 por SSH.
-3. **Degradación.** `IMAGE_QA_ENABLED` queda activo si la variable no existe, y
-   los flags están en tres sitios con tres convenciones distintas
-   (`src/lib/ia/feature-flags.ts`, `src/lib/rag/flags.ts`, y `process.env`
-   directo). Nadie ha probado qué pasa cuando Gemini está caído, cuando fal.ai
-   no tiene saldo, o cuando PostgreSQL no responde.
+1. **Reversión de migraciones.** El runner valida destino, checksum y lock; los
+   procedimientos de rollback se mantienen junto a cada migración.
+2. **Recuperación de datos.** El procedimiento vigente está en
+   `resiliencia/backup-restore-comercial.md`; no se asume que un restore remoto
+   haya sido ejecutado.
+3. **Degradación.** RAG y plan tienen defaults explícitos en
+   `src/lib/ia/feature-flags.ts`; PostgreSQL/RAG falla cerrado y la prueba de
+   degradación local debe ejecutarse antes del cierre.
 
 El patrón correcto ya existe en el repo y sirve de precedente: cuando el
 observador de QA no está disponible, `buildQa` devuelve `pass: null` y no
@@ -608,9 +594,9 @@ hay que generalizarlo, no inventarlo.
 |---|---|---|
 | Fase 5.1 | Nota `-- rollback:` en las **19** migraciones que no la tienen (corregido por auditoría 5.0, ver `auditoria/09-revision-fase-5.md`). Cierra 10.3(g) | El aviso del runner desaparece porque el problema se resolvió, no porque se silenció el aviso |
 | Fase 5.2 | Backup y restore de la base comercial: procedimiento escrito y **ejecutado una vez** contra una copia | Un restore verificado, no una afirmación de que se podría |
-| Fase 5.3 | Registro único de capacidades de IA con default explícito por cada una (capítulo 12.3). Auditoría 5.0 encontró un cuarto archivo de flags no citado (`src/lib/plan/flags.ts`) y una reimplementación duplicada de `IMAGE_INSTANCE_QA` en dos archivos con lógica de default distinta — ver `auditoria/09-revision-fase-5.md` secciones 2 y 5 | Ningún flag queda activo por omisión sin que esa sea la decisión escrita |
-| Fase 5.4 | **Degradación probada por capacidad**: proveedor caído, sin saldo en fal.ai, PostgreSQL no disponible, embeddings fallando, store de idempotencia no alcanzable. Auditoría 5.0: las ramas FTS/trigram de retrieval no capturan la caída de Postgres (`throw` no capturado, tumba el turno) mientras la rama vectorial sí degrada correctamente — no es un solo caso, son dos con estado distinto | Cada caso degrada de forma observable, con un error estable, y **ninguno fabrica éxito** |
-| Fase 5.5 | Inventario de artefactos LoRA y cómo se recuperan si se pierde el filesystem o el volumen del EC2. **Corregido por auditoría 5.0:** los pesos `.safetensors` no viajan por la sincronización SSH al EC2 — esa solo mueve estadísticas y galería del dataset. Los pesos viven como URL de fal.ai y, si acaso, en una copia manual local (`data/lora-backup/`) de quien corrió `scripts/recibir-lora.ts`, no replicada ni versionada. Ver `auditoria/09-revision-fase-5.md` secciones 2 y 5 | Se sabe qué es irrecuperable y qué no, antes de necesitarlo |
+| Fase 5.3 | Registro único de capacidades de IA con defaults explícitos en `resiliencia/registro-flags.md` | **Hecha localmente** | Cada flag vigente tiene fuente, default y efecto de apagado documentados |
+| Fase 5.4 | Degradación probada por capacidad: proveedor caído, PostgreSQL no disponible, embeddings fallando y store de idempotencia inalcanzable | **Parcial** | RAG tiene error estable y fixture local; faltan fallos de proveedores pagados |
+| Fase 5.5 | Inventario de artefactos LoRA y recuperación | **Parcial** | El inventario existe; la replicación fuera del filesystem local sigue pendiente |
 
 #### Salida
 
@@ -619,13 +605,16 @@ está?". La que hoy no tiene respuesta es todas.
 
 **Estado real al 2026-09-09** (evidencia, no plan):
 
-- **5.1** — hecho. Las 22 migraciones (21 en `scripts/migrations/` + `services/ai-api/migrations/001_operational_schema.sql`) tienen nota `-- rollback:`. Se releyó el contenido completo de cada una, no solo que la línea existiera: los `DROP` respetan el orden seguro por FKs (p. ej. `catalog_variants`/`catalog_embeddings` antes que `catalog_products` en `001_init.sql`; `ai_call_log` antes que `ai_model_pricing` en `021_ai_call_log.sql`), las columnas listadas en cada `DROP COLUMN` coinciden con las que el propio archivo agregó, y las migraciones con pérdida de información real por un `UPDATE` (`002`, `009`, `016`, `017`) están marcadas honestamente "no reversible, requiere restore de backup" en vez de fingir un `DROP` que no reconstruye el estado previo. Ningún cambio de código fue necesario.
+- **5.1** — hecho localmente. Cada migración conserva su nota o procedimiento de rollback y el runner valida destino, checksum y lock.
 - **5.2** — hecho. Procedimiento completo escrito y ejecutado una vez con confirmación explícita del usuario (`docs/migracion-python/resiliencia/backup-restore-comercial.md`): `pg_dump` de Neon (solo lectura, formato custom, 8,2 MB) restaurado contra una base nueva y desechable en el Postgres local Docker (`demo_rag_restore_test`, nunca `demo_rag` ni Neon). Verificación por `COUNT(*)` exacto en las 41 tablas de ambos schemas (`public` y `operational`): coinciden sin excepción. Spot-check de contenido real (catálogo, corridas LoRA, slot activo, columna vectorial) también correcto. Se confirmó que `demo_rag` no cambió y que Neon no recibió ninguna escritura. Base de prueba eliminada al cerrar. Queda fuera de alcance, documentado explícitamente y no asumido como resuelto: backup recurrente automatizado con almacenamiento durable, evaluación de las funciones nativas de Neon (branching/PITR), y el mecanismo específico de restore sobre Neon mismo en un incidente real.
-- **5.3** — parcial: la fragmentación de archivos está resuelta, la decisión de negocio por flag no. Se eliminaron `src/lib/plan/flags.ts` y `src/lib/rag/flags.ts`; `src/lib/ia/feature-flags.ts` es ahora la única fuente de verdad para las 9 capacidades de IA leídas de `process.env` (`RAG_ENABLED`, `RAG_FRANJAS_ENABLED`, `RAG_USE_VECTOR`, `RAG_USE_FULLTEXT`, `RAG_USE_TRIGRAM`, `PLAN_DECORACION_ENABLED`, `LORA_ALLOW_REJECTED_FOR_TESTING`, `FAL_MULTI_LORA_SUPPORTED`, `IMAGE_DEBUG`), cada una con su default técnico explícito documentado y su convención de parseo original preservada sin normalizar (cambiar esa semántica sería una decisión de producto aparte). `PYTHON_BACKEND_ENABLED`/`PYTHON_BACKEND_KILL_SWITCH` quedan deliberadamente fuera de este registro — pertenecen al selector de linaje Next/Python (cap. 10.4/10.5) con su propia función dueña donde el kill switch tiene precedencia absoluta; meterlos aquí habría diluido esa precedencia. 13 archivos tocados, verificado con `npm run plan:test`, `npm run rag:test-validation` y `npm run happie:test-webhook` contra el Postgres local. Pero `docs/migracion-python/resiliencia/registro-flags.md` (de una sesión anterior, 2026-09-08, actualizado en esta sesión solo en los paths de archivo) ya había hecho un inventario más riguroso que distingue "default técnico documentado" de "decisión de negocio escrita" — y encontró **13 flags** (incluye `REFERENCE_BLUEPRINT_V2`, `IMAGE_QA_ENABLED`, `RAG_ENABLED`, `PLAN_DECORACION_ENABLED`, `LORA_PROMPT_VERSION` entre otros) donde el default es implícito, sin que nadie haya escrito por qué ese es el correcto. Documentar el default técnico (lo que hice) no cierra ese hueco: requiere criterio de producto sobre cada flag, no una reorganización de código.
-- **5.4** — parcial. El caso "Postgres no disponible" en las ramas FTS/trigram de `buscarHibrido()` (`src/lib/rag/retrieval/search.ts`) ya no tumba el turno: se cambió `Promise.all` por `Promise.allSettled` y ahora degrada al mismo contrato que la rama vectorial (`branchStatus` en `"ERROR"`, nunca `"READY"`, sin fabricar resultados). Se agregó `scripts/test-rag-degradation.ts`, que inyecta el fallo real envolviendo `pool.query()` contra el Postgres local (sin apagar ningún servidor) y confirmó la regresión antes del fix (3 fallos) y su ausencia después (11/11 casos). Los otros cuatro casos de la entrega — sin saldo en fal.ai, embeddings fallando (éste ya degradaba correctamente antes de esta sesión, ver `search.ts:550-558`), store de idempotencia inalcanzable, y un arnés de inyección de fallos para fal.ai/Gemini sin gastar dinero real ni duplicar cargos (riesgo de idempotencia documentado en la auditoría, sección 5, punto 6) — quedan pendientes.
-- **5.5** — ya estaba hecho de una sesión anterior a este cierre (commit `0417399`, 2026-09-08): `docs/migracion-python/resiliencia/inventario-lora.md`. Se releyó completo y se verificaron sus citas más fuertes contra el filesystem real de esta máquina (existen `data/lora-backup/*.safetensors` y `data/lora-artifacts/runs/lora-run-{v004,v007}-1000/`, ambos excluidos por `.gitignore`) y contra el código (`artifact-store-local.ts`, `snapshot.ts`, `registrar-lora-v007-fal.ts`): siguen vigentes. El documento corrige un matiz que el enunciado original de esta entrega no tenía — no es que "no exista ningún backup automatizado de pesos": `registrar-lora-v007-fal.ts` y `backfill-lora-registry.ts` sí escriben el peso en el almacén local versionado por clave (`data/lora-artifacts/runs/<run>/weights.safetensors`, con SHA-256 registrado en `lora_artifacts`) para las corridas `v004-1000` y `v007-1000` — pero ese almacén sigue siendo el mismo disco local que `data/lora-backup/`, no viaja por la sincronización SSH al EC2, y no hay un script que cruce cada fila `succeeded`/`ready` de `lora_training_runs` contra un archivo local y su hash para confirmar que el respaldo es real y no solo un estado `artifact_status = 'backed_up'` en la base. Riesgo mayor identificado: la única copia verificada fuera de fal.ai vive en un solo filesystem sin versionar ni replicar.
+- **5.3** — hecho localmente. `src/lib/ia/feature-flags.ts` es la fuente única para las capacidades de IA; los defaults y efectos de apagado están en `resiliencia/registro-flags.md`. El selector Next/Python conserva su contrato separado.
+- **5.4** — parcial. `scripts/test-rag-degradation.ts` cubre el fallo de PostgreSQL/RAG sin fabricar resultados; faltan arneses locales para fallos de proveedores pagados y del store de idempotencia.
+- **5.5** — parcial. El inventario de artefactos LoRA existe; la replicación fuera del filesystem local sigue pendiente.
 
-Pendiente de esta fase: de 5.3 la decisión de negocio escrita para los 13 flags listados en `registro-flags.md` (requiere al dueño del producto, no es una tarea de código); de 5.4 los cuatro casos restantes (fal.ai sin saldo, idempotencia inalcanzable, y el arnés de inyección de fallos para proveedores pagados); y de 5.2 lo explícitamente fuera de alcance (backup recurrente automatizado, evaluación de las funciones nativas de Neon, restore real sobre Neon en un incidente).
+Pendiente de esta fase: de 5.4 los casos de fallo de proveedores pagados y del
+store de idempotencia; y de 5.2 lo explícitamente fuera de alcance (backup
+recurrente automatizado, evaluación de las funciones nativas de Neon y restore
+real sobre Neon en un incidente).
 
 ---
 
@@ -644,17 +633,11 @@ separado** dentro de Neon, nunca mezcladas con las tablas comerciales del
 catálogo. El servicio Python no recibe permisos de lectura sobre catálogo,
 precios ni inventario en esta etapa.
 
-El contenido técnico de esta etapa ya está escrito y sigue siendo válido: es el
-cuerpo de [`prompt-seguimiento-etapa-5.md`](prompt-seguimiento-etapa-5.md),
-puntos 2 a 7 (provisionar configuración, aplicar y verificar SQL, desplegar el
-backend, validar contrato en staging, canary reversible, probar rollback). No
-se reescribe aquí; se adopta.
+El procedimiento vigente de esta etapa se mantiene en los documentos de
+resiliencia y en el contrato `operational-v1`; no se depende de prompts de
+sesiones anteriores.
 
-Lo único que cambia respecto a ese documento es el punto 1 ("confirmar
-staging"), que ya está resuelto por la decisión de arriba.
-
-**Salida:** el criterio de salida de `prompt-seguimiento-etapa-5.md`, sin
-rebajarlo. Si falta secreto, base o evidencia, la etapa queda en progreso y se
+**Salida:** si falta secreto, base o evidencia, la etapa queda en progreso y se
 documenta el siguiente paso exacto. No se afirma tráfico remoto no ejecutado.
 
 ---
@@ -737,7 +720,7 @@ tocar código, y con el resultado documentado aunque sea negativo.
 - **8.1** — hecho, sobre un fixture distinto al que el plan nombraba. `eval/rag/ground-truth-v2.jsonl` (el corpus "v2" de 416 casos que también cita la Salida de esta fase) depende de una fila publicada en `rag_source_snapshots`, que solo escribe `scripts/import-cdn-catalog.ts` — el pipeline que de verdad usa `npm run rag:sync` (`scripts/import-shopify-catalog.ts`) nunca la escribe. `rag_source_snapshots` está vacía tanto en Neon como en el Postgres local; ni `bench-rag-v2.ts` ni `eval-rag-v2.ts` pueden correr contra ninguna base real disponible hoy, y llevan así desde después del 2026-08-22 sin que nadie lo notara (no están en CI ni en `package.json`). Se documenta como hallazgo separado, sin arreglarlo (es trabajo de la Fase 3/regeneración RAG). `scripts/eval-rag-fixture.ts` construye un fixture nuevo, determinista (`ORDER BY`, nunca `random()`), directamente contra el catálogo en vivo, sin depender de esa tabla. `services/ai-api/tests/test_rag_eval_variance.py` corre ese fixture en 3 procesos independientes y exige que las métricas de correctitud sean idénticas entre corridas (determinismo real, no un umbral inventado); la latencia se reporta con su desviación estándar, sin gate. De paso se encontró que el Postgres local no tiene `sku_original`/`sku_canonical` poblados (el pipeline legado de `rag:sync` no los calcula) mientras que Neon sí — producción no está afectada, pero cualquiera que sincronice localmente con el comando de siempre reproduce el mismo hueco.
 - **8.2** — implementado, verificado localmente y desplegado en producción con el flag apagado. Modelo aprobado: `cross-encoder/ms-marco-MiniLM-L-6-v2`. `RAG_RERANK_ENABLED` queda `false` por defecto y, cuando se habilita junto con Python, solo reordena una ventana acotada por bytes de candidatos ya autorizados por PostgreSQL. El helper HMAC se generalizó sin duplicar autenticación y el endpoint usa el scope independiente `ai.rerank`. El contrato, fallback, timeout, deadline compartido, invariantes de permutación, warmup y ejecución fuera del event loop están cubiertos por `38 passed` de pytest, Ruff, `tsc` y `contracts:test:python-adapter`. La evaluación real del modelo sobre `eval/rag/rerank-fixture-v1.json` (6 casos) pasó MRR de `0.500000` a `1.000000` y nDCG@3 de `0.852494` a `0.990835`; detalle y limitación de cold start en `docs/migracion-python/rag/rerank-python-fase8-2.md`. La migración `022_rerank_observability.sql` fue aplicada y verificada en Neon. El canario y el contenedor activo respondieron `/healthz`, `/readyz` y una llamada autenticada de rerank con HTTP 200.
 - **8.3** — implementado en Python como job offline, sin tocar el retrieval en vivo. `npm run rag:embed` delega en `services/ai-api/scripts/embed_catalog.py`; usa `google-genai==1.21.1`, conserva `gemini-embedding-2`/`RETRIEVAL_DOCUMENT`/768 dimensiones, valida hashes, aplica checkpoint, lease persistente compatible con pooler, upsert protegido y telemetría `embedding_documento`. La migración `023_embedding_provenance.sql` esta aplicada en Neon; la corrida normal encontro cero pendientes y no consumio cuota Gemini.
-- **8.4** — implementado localmente y apagado por defecto. `/internal/v1/embed` usa `ai.embedding`, el adaptador HMAC valida la respuesta y los tres consumidores de retrieval pueden seleccionar Python solo con `RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED=true` junto a `PYTHON_BACKEND_ENABLED=true`. Un fallo conserva las ramas lexicas. Falta reconstruir/desplegar la imagen, provisionar la clave Python y ejecutar un canario autorizado.
+- **8.4** — desplegado en canario remoto y observado. `/internal/v1/embed` usa `ai.embedding`, el adaptador HMAC valida la respuesta y los tres consumidores de retrieval seleccionan Python con `RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED=true` junto a `PYTHON_BACKEND_ENABLED=true`. La llamada real devolvió `200`, `gemini-embedding-2`, 768 dimensiones y un intento; una conversación Next autenticada produjo `buscar_catalogo_rag`. Un fallo conserva las ramas léxicas y los contenedores de rollback siguen disponibles.
 
 ---
 
@@ -752,12 +735,14 @@ request puede pagar una generación que nadie puede reconciliar.
 
 #### Fase 9.0 — Bloqueo previo (sin coste)
 
-`PLAN-COMPOSICION-RICA-V001.md` §1.1 bloquea nuevas llamadas pagadas hasta
-resolver la inconsistencia de atribución de identidad del LoRA: la URL
-terminada en `0aa82cf2` (v004) aparece registrada junto al trigger
-`eventdecor_style_v3` en tres manifiestos de experimento y en el fallback de
-`src/lib/ia/sempertex-lora.ts:6-10`. **Esto se resuelve antes de gastar un
-dólar más.**
+`PLAN-COMPOSICION-RICA-V001.md` §1.1 registró una inconsistencia histórica de
+atribución: la URL terminada en `0aa82cf2` (v004) aparecía junto al trigger
+`eventdecor_style_v3` en tres manifiestos. La evidencia quedó marcada como no
+reutilizable y el runtime dejó de aceptar URL/trigger escritos a mano: solo
+puede usar un artefacto resuelto desde el registro, con identidad y evaluación
+coherentes. Los tests de modos y especializaciones lo verifican. **Fase 9.0
+cerrada sin otra llamada pagada; la seguridad del gasto de Fase 9.1 sigue antes
+de cualquier generación.**
 
 #### Fase 9.1 — Seguridad del gasto
 
@@ -770,6 +755,14 @@ dólar más.**
 | e | **`cargarFoto` descarga sin validar** `Content-Length`, MIME, dimensiones ni allowlist de host | `src/app/api/generate/route.ts:140-150` |
 | f | **No hay presupuesto de gasto** (capítulo 12.1). Nada impide repetir por accidente la sesión que gastó US$1.932 en 61 generaciones. Requiere el `ai_call_log` de la Fase 1; bloquea **antes** de la llamada, con umbral de aviso y umbral de corte | depende de 9.7 |
 
+**Estado al 2026-09-10:** se implementó localmente, sin llamadas pagadas, la
+validación de tamaño/MIME/dimensiones de las imágenes de entrada, la protección
+de traversal y SSRF de `cargarFoto`, y la propagación de cancelación al SDK de
+Gemini y a fal.ai. Las operaciones LoRA ahora tienen un deadline total de 105 s,
+en vez de timeouts acumulativos. La idempotencia específica que el proveedor
+acepte para `POST` sigue sin confirmarse y no se inventó ningún header; el gate
+de presupuesto y el límite agregado de una ruta con QA/retry siguen pendientes.
+
 #### Fase 9.2 — Coste y latencia
 
 | # | Cambio | Referencia | Nota |
@@ -778,18 +771,15 @@ dólar más.**
 | b | Caché de análisis de referencias compartido y persistente, con modelo, versión de prompt y modo en la clave. Hoy es un `Map` en proceso de 40 entradas que se pierde al reiniciar | `src/lib/ia/analizar-referencias-v2.ts:194-195,564-567` | Evita 2 llamadas Gemini por acierto |
 | c | Resolver en paralelo el artifact LoRA y su allowlist; hoy son dos awaits consecutivos que consultan la misma tabla de slots | `src/app/api/generate/route.ts:677-684` | Media en latencia de BD |
 | d | **`maxTokens` y `temperatura` son ignorados por el adaptador.** `analizar-referencias-v2.ts:569-584` los fija (6.000 y 4.000) pero `crearChatGemini` no los copia a la config de Gemini. Es un defecto de correctitud, no solo de coste: los límites que el código cree tener no existen | `packages/agente-core/src/gemini/chat.ts:141-153`, `packages/agente-core/src/tipos.ts:44-51` | Arreglar con fixtures de salida completa antes de fijar un número |
-| e | Medir cuándo se ejecuta el QA visual de Gemini. `IMAGE_QA_ENABLED` queda **activo por defecto si la variable no existe**, y el QA corre incluso en caminos LoRA donde no hay reintento correctivo que lo aproveche | `src/lib/ia/feature-flags.ts:14-25`, `src/app/api/generate/route.ts:1145-1147` | **No tocar el gate de planes aprobados** |
+| e | Medir cuándo se ejecuta el QA visual de Gemini. `IMAGE_QA_ENABLED` queda **apagado por defecto** y el request puede solicitarlo explícitamente | `src/lib/ia/feature-flags.ts`, `src/app/api/generate/route.ts` | El resultado `unknown` no aprueba un plan |
 
-**Peor caso inferido hoy:** camino Gemini base con QA fallido = 2 generaciones
-+ 2 observaciones de visión. `compararLora` = 2 envíos fal.ai + 2 QA Gemini.
-`/api/references/analyze` = hasta 6 intentos Gemini (2 turnos lógicos × 3
-reintentos), sin clave de idempotencia.
+**Peor caso inferido hoy:** un camino Gemini con QA correctivo puede producir
+dos generaciones y dos observaciones de visión. `/api/references/analyze` usa
+el modo perceptual y no resuelve productos ni IDs comerciales.
 
 #### Fase 9.3 — Fidelidad
 
-Documentos vivos que esta etapa retoma, hoy huérfanos:
-`PLAN-COMPOSICION-RICA-V001.md`, `PLAN-COMPOSICION-Y-CELEBRACIONES-V001.md`,
-`PLAN-CAPTIONS-DATASET-V007.md`, `HANDOFF-LORA-COMPOSICION.md`.
+Documento vigente que esta etapa retoma: `PLAN-COMPOSICION-RICA-V001.md`.
 
 Ninguna compactación del prompt de imagen entra sin evaluación A/B con los
 mismos seeds e inputs: el modelo depende de prioridad, cardinalidad, venue,
@@ -804,8 +794,8 @@ aunque no cambie ninguna regla comercial.
 |---|---|---|
 | Fase 10.1 | **Cutover por capacidad, no por ruta.** No hay cutover del handler de chat completo: se activa lo que la Fase 8 demostró que Python hace mejor y se deja en Next lo demás | Cada capacidad activada tiene su evidencia de antes/después y su flag de rollback |
 | Fase 10.2 | **Runbook operativo.** Qué hacer cuando Gemini está caído, cuando fal.ai no tiene saldo, cuando hay que usar el kill switch, cuando una migración falla a mitad, cuando el gasto se acerca al tope. Se apoya en la degradación probada de la Fase 5.4 | Alguien que no escribió el código puede seguirlo |
-| Fase 10.3 | Retirar el código temporal cuya **condición de remoción ya se cumplió** — no por antigüedad. Incluye `scripts/_tmp-populate-v004-stats.ts`, que debe promoverse a herramienta documentada o retirarse, y `AQUI.md` | Cada exención de regla que quede tiene motivo y condición de salida escritos |
-| Fase 10.4 | **Un solo documento de estado.** Hoy hay siete documentos de plan compitiendo por ser el rector, más nueve recuperados. Consolidar en un rector, un runbook y los ADRs; archivar el resto sin borrarlo | Un lector nuevo sabe en un minuto qué documento manda |
+| Fase 10.3 | Retirar temporales y artefactos no operativos cuya condición de remoción se cumplió | Cada exención que quede tiene motivo y condición de salida escritos |
+| Fase 10.4 | **Un solo documento de estado.** El plan maestro, `progreso.md`, el runbook y los ADRs son las referencias vigentes | Un lector nuevo sabe en un minuto qué documento manda |
 | Fase 10.5 | Cerrar el ciclo del capítulo 3.1: con telemetría de tráfico real, decidir el caché explícito de Gemini **con datos** | La decisión queda documentada con las cifras que la sostienen, sea sí o sea no |
 | Fase 10.6 | Cerrar 10.7: decidir si el esquema de numeración de migraciones sigue siendo un contador secuencial global | Decisión escrita, con su coste de migración si cambia |
 
@@ -1227,10 +1217,10 @@ El runner Python replica las mismas siete garantías de 10.3 y añade:
 | Comercial | Repo Next | `public.*` — catálogo, variantes, embeddings, planes, órdenes, observabilidad RAG | `npm run rag:migrate` |
 | Operacional | Repo Python | `operational.*` — idempotencia, nonces | Runner Python |
 
-`020_operational_idempotency.sql` **se retira de `scripts/migrations/`** del
-repo Next una vez el linaje Python esté operativo, y se documenta en el propio
-archivo cuál es su nuevo dueño. Mientras tanto sigue duplicado, pero con una
-nota explícita en ambos lados diciendo cuál es la copia autoritativa.
+`020_operational_idempotency.sql` **fue retirado de `scripts/migrations/`** del
+repo Next. El linaje Python ya es el dueño y su migración autoritativa es
+`services/ai-api/migrations/001_operational_schema.sql`; no se mantienen dos
+copias del DDL operacional.
 
 `ai_call_log` (capítulo 9) pertenece al **linaje comercial**: lo escribe Next
 y vive en `public`.
@@ -1456,10 +1446,9 @@ Ordenadas por relación valor/esfuerzo. Ninguna es prerrequisito de otra.
 
 ### 12.1 Presupuesto de gasto con corte duro
 
-`HANDOFF-LORA-COMPOSICION.md` documenta una sesión de experimentos que gastó
-**US$1.932 en 61 generaciones**, dejando US$21,88 de saldo. No hay nada en el
-código que impida repetirlo por accidente: ni tope diario, ni tope por
-conversación, ni corte al acercarse a un límite.
+La evidencia histórica de experimentos registra un gasto elevado en múltiples
+generaciones. No debe tratarse como límite operativo: todavía no existe un
+tope diario o por conversación que autorice nuevas llamadas automáticamente.
 
 Propuesta: presupuestos **por flujo**, usando el mismo catálogo de 9.4 que la
 pantalla de consumo. Leídos del `ai_call_log`, evaluados **antes** de la

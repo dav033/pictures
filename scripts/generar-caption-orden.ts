@@ -10,8 +10,9 @@ import { readFile, writeFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { generarCaption } from "../src/lib/ordenes/generarCaption";
 import type { Desglose } from "../src/lib/ordenes/tipos";
+import { directorioOrdenes } from "../src/lib/ordenes/directorio";
 
-const RUTA_ORDENES = "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
+const RUTA_ORDENES = directorioOrdenes();
 
 /** Una orden puede tener más de una reseña con foto (ej. #9018: dos productos distintos
  * reseñados por separado) -- crear-carpeta-orden.ts ya descarga foto-1, foto-2, etc. para

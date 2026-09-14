@@ -2,13 +2,13 @@ import { isAuthenticatedRequest } from "@/lib/auth/request";
 import { eliminarImagenesDataset } from "@/lib/lora/eliminacion-dataset-v005";
 
 export async function DELETE(request: Request): Promise<Response> {
-  if (!isAuthenticatedRequest(request)) return Response.json({ error: "SesiÃ³n requerida." }, { status: 401 });
+  if (!isAuthenticatedRequest(request)) return Response.json({ error: "Sesión requerida." }, { status: 401 });
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return Response.json({ error: "Solicitud invÃ¡lida." }, { status: 400 });
+    return Response.json({ error: "Solicitud inválida." }, { status: 400 });
   }
 
   const imageIds = body && typeof body === "object" && Array.isArray((body as { imageIds?: unknown }).imageIds)

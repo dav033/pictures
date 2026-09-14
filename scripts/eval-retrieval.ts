@@ -74,7 +74,7 @@ async function construirDataset(pool: Pool): Promise<CasoEval[]> {
       // Ground truth alineado con el fix de retrieval/search.ts: "cabe en el
       // presupuesto" significa que existe una variante DISPONIBLE dentro del
       // tope, no que la variante más barata del producto (aunque esté
-      // agotada) esté por debajo — ver PLAN_RAG_FRANJAS_PRESUPUESTO.md §1.2.
+      // agotada) esté por debajo — ver docs/migracion-python/PLAN-MAESTRO-V2.md §1.2.
       params.push(c.precioMax);
       condiciones.push(
         `EXISTS (SELECT 1 FROM catalog_variants ev WHERE ev.product_id = p.product_id AND ev.available = true AND ev.price <= $${params.length})`,

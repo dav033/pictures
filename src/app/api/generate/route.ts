@@ -1,13 +1,16 @@
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
-import { buildImagePrompt, buildLoraImagePromptV1, type PromptImageInput } from "@/lib/ia/build-image-prompt";
-import { LORA_CAPTION_COMPILER_VERSION } from "@/lib/ia/lora-caption-compiler";
-import { compileProductPrompt, LORA_PRODUCT_RUNTIME_VERSION } from "@/lib/ia/lora-product-runtime";
+import { buildImagePrompt, type PromptImageInput } from "@/lib/ia/build-image-prompt";
+import { LORA_CAPTION_COMPILER_VERSION, LORA_JSON_PROMPT_MAX_LENGTH } from "@/lib/ia/lora-caption-compiler";
+import { includesJsonPrompt, includesTextPrompt, parseLoraPromptFormat } from "@/lib/ia/lora-prompt-format";
+import { ambientDecorFromReference } from "@/lib/ia/reference-structure";
+import { parseNivelCreatividad, perfilCreatividad } from "@/lib/ia/creatividad";
+import { compileProductPrompt, LORA_PRODUCT_RUNTIME_VERSION, sizeConfirmationsFromMaterialLines } from "@/lib/ia/lora-product-runtime";
 import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
-import { findLoraPromptLanguageLeaks, preflightLoraPrompt, type LoraPromptPreflightReport } from "@/lib/ia/lora-prompt-preflight";
+import { findLoraPromptLanguageLeaks, preflightLoraPrompt } from "@/lib/ia/lora-prompt-preflight";
 import { bloqueMezclaTamanos, bloqueMezclaPorEstructura, descripcionFisicaTamano } from "@/lib/ia/tamano-fisico";
-import { cotizarPlan, cotizarProductos } from "@/lib/cotizacion/motor";
+import { cotizarProductos, type Cotizacion } from "@/lib/cotizacion/motor";
 import { featureEnabled, IMAGE_DEBUG } from "@/lib/ia/feature-flags";
 import { resolveAspectTransform } from "@/lib/ia/aspect-transform";
 import { evaluateSceneQa, buildCorrectiveRetryPrompt, observarImagenGenerada, type ImageQaReport } from "@/lib/ia/image-qa";
@@ -34,6 +37,7 @@ import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/
 import type { ResultadoMedidas } from "@/lib/medidas/geometria";
 import { resolverProductosParaGeneracion } from "@/lib/rag/generate-products";
 import { productosPorIdConFuente } from "@/lib/products";
+import { isPythonAdapterError, pythonErrorBody, seleccionarBackendPython } from "@/lib/ia/python-adapter";
 import {
   classifyNonCommercialProducts,
   NonCommercialSourceRejectedError,
@@ -42,17 +46,20 @@ import {
 } from "@/lib/generacion/provenance";
 import type { Brief, Producto } from "@/lib/types";
 import { getRagPool } from "@/lib/rag/db";
-import { resolverPlan } from "@/lib/plan/resolver";
+import { PlanBackendNoDisponibleError, resolverPlanConBackend, type ResolucionPlan } from "@/lib/plan/resolver-backend";
+import { PythonPlanMappingError } from "@/lib/plan/python-mapper";
+import { AllowlistProductoVarianteError } from "@/lib/plan/allowlist-producto-variante";
+import { construirUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
+import { registrarFalloUi, traducirErrorServidor } from "@/lib/errores-ui/traducir-error-servidor";
 import { PlanDecoracionSchema } from "@/lib/plan/tipos";
-import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
+import { cajasDeEstructuras, ubicacionDeInstancia } from "@/lib/plan/ubicaciones";
 import { verificarCoherenciaPrompt } from "@/lib/plan/coherencia";
-import { verificarTokenAprobacion } from "@/lib/plan/aprobacion";
+import { abrirContextoPlan, verificarTokenAprobacion } from "@/lib/plan/aprobacion";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import {
   blockingPhysicalWarnings,
   designQuantityForProduct,
   estimateFromMeasuredMaterials,
-  estimateFromPlan,
   formatMaterialEstimateLog,
   purchaseForProduct,
   validateMaterialEstimate,
@@ -75,16 +82,6 @@ type Body = {
   usarLora?: boolean;
   loraSelection?: unknown;
   loraMode?: unknown;
-  comparar?: boolean;
-  /** Depuración: compara el prompt legado v1 de la app contra el compilador v2. */
-  compararLora?: boolean;
-  seedLoraDebug?: number;
-  /** Prueba: fuerza al proveedor base (Gemini) a generar sin ninguna imagen
-   * de referencia adjunta (ni de producto, ni de espacio, ni de estilo) —
-   * identidad de producto solo por texto, igual que el LoRA, pero con
-   * Gemini. Sirve para aislar si el problema de composición es "falta
-   * entrenamiento" o "el texto solo no alcanza ni con un modelo capaz". */
-  sinReferencias?: boolean;
   medidas?: ResultadoMedidas;
   fotoEspacio?: Imagen;
   imagenesReferencia?: Imagen[];
@@ -103,25 +100,18 @@ type Body = {
   instruccion?: string;
   plan?: PlanResuelto;
   planHash?: string;
+  imageQaRequested?: boolean;
+  /** "texto" (default) | "json" | "ambos": LoRA prompt format; "ambos" makes two provider calls. */
+  promptFormat?: unknown;
+  /** Creativity 0-5 (creatividad.ts): LoRA styling cues and guidance scale. Invalid or absent = default. */
+  creatividad?: unknown;
 };
 
-type SalidaComparacion = {
-  id: "gemini" | "lora" | "lora-v1" | "lora-v2" | "lora-wrapper";
-  nombre: string;
-  modelo: string;
-  imagen?: string;
-  error?: string;
-  prompt?: string;
-  promptVersion?: string;
-  promptHash?: string;
-  compilerVersion?: string;
-  seed?: number;
-  qa?: ImageQaReport;
-  preflight?: LoraPromptPreflightReport;
-};
-
-function textoDeError(error: unknown): string {
-  return error instanceof Error ? error.message : "No se pudo generar este resultado.";
+/** 422 de QA visual: el cliente ve `IMAGEN_NO_FIEL`; `qa` y el plan siguen en el cuerpo. */
+function respuestaNoConforme(mensaje: string, requestId: string, extra: Record<string, unknown>): Response {
+  const uiError = construirUiErrorV1("IMAGEN_NO_FIEL", { mensaje, codigoOrigen: "NON_CONFORME", requestId });
+  registrarFalloUi("/api/generate", uiError);
+  return Response.json({ error: mensaje, ...extra, ui_error: uiError }, { status: 422 });
 }
 
 function hashPrompt(prompt: string): string {
@@ -136,17 +126,120 @@ function statusDe(causa: ErrorIA["causa"]): number {
   return 502;
 }
 
+const IMAGE_MIME_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+const MAX_INPUT_IMAGE_BASE64_CHARS = 28_000_000;
+const MAX_INPUT_IMAGES_BASE64_CHARS = 60_000_000;
+const MAX_CATALOG_IMAGE_BYTES = 8_000_000;
+const MAX_GENERATE_PAYLOAD_BYTES = 80_000_000;
+
+function validarImagenEntrada(value: unknown, label: string): asserts value is Imagen {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`${label} no es una imagen válida.`);
+  }
+  const image = value as Partial<Imagen>;
+  if (typeof image.base64 !== "string" || image.base64.length === 0 || image.base64.length > MAX_INPUT_IMAGE_BASE64_CHARS) {
+    throw new Error(`${label} supera el tamaño máximo permitido.`);
+  }
+  if (typeof image.mime !== "string" || !IMAGE_MIME_TYPES.has(image.mime)) {
+    throw new Error(`${label} debe ser PNG, JPEG o WebP.`);
+  }
+  for (const [name, dimension] of [["ancho", image.ancho], ["alto", image.alto]] as const) {
+    if (dimension !== undefined && (!Number.isInteger(dimension) || dimension < 128 || dimension > 12_000)) {
+      throw new Error(`${label}: ${name} está fuera del rango permitido.`);
+    }
+  }
+}
+
+function validarImagenesEntrada(body: Body): void {
+  const candidates: Array<[unknown, string]> = [];
+  if (body.fotoEspacio !== undefined) candidates.push([body.fotoEspacio, "fotoEspacio"]);
+  if (body.previousGeneratedImage !== undefined) candidates.push([body.previousGeneratedImage, "previousGeneratedImage"]);
+  if (body.imagenesReferencia !== undefined) {
+    if (!Array.isArray(body.imagenesReferencia)) throw new Error("imagenesReferencia debe ser una lista.");
+    body.imagenesReferencia.forEach((image, index) => candidates.push([image, `imagenesReferencia[${index}]`]));
+  }
+
+  let total = 0;
+  for (const [value, label] of candidates) {
+    validarImagenEntrada(value, label);
+    total += value.base64.length;
+  }
+  if (total > MAX_INPUT_IMAGES_BASE64_CHARS) throw new Error("El conjunto de imágenes supera el tamaño máximo permitido.");
+}
+
+function mimePrincipal(value: string | null): string | null {
+  const mime = value?.split(";", 1)[0]?.trim().toLowerCase() ?? null;
+  return mime && IMAGE_MIME_TYPES.has(mime) ? mime : null;
+}
+
+function hostImagenPermitido(hostname: string): boolean {
+  return hostname === "cdn.shopify.com"
+    || hostname.endsWith(".shopify.com")
+    || hostname.endsWith(".myshopify.com");
+}
+
+function urlImagenPermitida(url: URL): boolean {
+  return url.protocol === "https:" && !url.username && !url.password && !url.port && hostImagenPermitido(url.hostname);
+}
+
+async function fetchImagenSinRedireccionAbierta(urlInicial: URL): Promise<Response | null> {
+  const signal = AbortSignal.timeout(15_000);
+  let url = urlInicial;
+  for (let salto = 0; salto <= 3; salto += 1) {
+    const response = await fetch(url, { redirect: "manual", signal });
+    if (![301, 302, 303, 307, 308].includes(response.status)) return response;
+    const location = response.headers.get("location");
+    if (!location || salto === 3) return null;
+    url = new URL(location, url);
+    if (!urlImagenPermitida(url)) return null;
+  }
+  return null;
+}
+
+async function leerRespuestaLimitada(response: Response, maxBytes: number): Promise<Buffer | null> {
+  const contentLength = Number(response.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > maxBytes) return null;
+  const reader = response.body?.getReader();
+  if (!reader) return null;
+
+  const chunks: Buffer[] = [];
+  let total = 0;
+  while (true) {
+    const chunk = await reader.read();
+    if (chunk.done) break;
+    total += chunk.value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel();
+      return null;
+    }
+    chunks.push(Buffer.from(chunk.value));
+  }
+  return Buffer.concat(chunks, total);
+}
+
 async function cargarFoto(foto: string): Promise<Imagen | null> {
   try {
-    if (/^https?:\/\//.test(foto)) {
-      const response = await fetch(foto, { signal: AbortSignal.timeout(15_000) });
+    if (/^https?:\/\//i.test(foto)) {
+      const url = new URL(foto);
+      if (!urlImagenPermitida(url)) return null;
+      const response = await fetchImagenSinRedireccionAbierta(url);
+      if (!response) return null;
       if (!response.ok) return null;
-      return { base64: Buffer.from(await response.arrayBuffer()).toString("base64"), mime: response.headers.get("content-type") ?? "image/jpeg" };
+      const mime = mimePrincipal(response.headers.get("content-type"));
+      if (!mime) return null;
+      const bytes = await leerRespuestaLimitada(response, MAX_CATALOG_IMAGE_BYTES);
+      return bytes ? { base64: bytes.toString("base64"), mime } : null;
     }
-    const fullPath = path.join(process.cwd(), "public", foto);
+    const publicRoot = path.resolve(process.cwd(), "public");
+    const relativePath = foto.replace(/^[/\\]+/, "").replace(/\\/g, "/");
+    const fullPath = path.resolve(publicRoot, relativePath);
+    const relative = path.relative(publicRoot, fullPath);
+    if (relative.startsWith("..") || path.isAbsolute(relative)) return null;
     const bytes = await readFile(fullPath);
+    if (bytes.byteLength > MAX_CATALOG_IMAGE_BYTES) return null;
     const ext = path.extname(fullPath).toLowerCase();
-    return { base64: bytes.toString("base64"), mime: ext === ".png" ? "image/png" : ext === ".webp" ? "image/webp" : "image/jpeg" };
+    const mime = ext === ".png" ? "image/png" : ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" : ext === ".webp" ? "image/webp" : null;
+    return mime ? { base64: bytes.toString("base64"), mime } : null;
   } catch {
     return null;
   }
@@ -461,7 +554,7 @@ export function planBlueprint(plan: PlanResuelto): ReferenceBlueprintV2 {
       },
       visual_semantics: {
         structure_type: declarada.tipo,
-        placement: declarada.ubicacion,
+        placement: ubicacionDeInstancia(declarada, index),
         design_role: declarada.rol_escena === "focal" ? "focal" as const : declarada.rol_escena === "soporte" || declarada.tipo === "backdrop" ? "soporte" as const : "acento" as const,
         repetition_group: resuelta.estructura_id,
         ...(Object.keys(dimensiones).length ? { dimensions_m: dimensiones } : {}),
@@ -600,14 +693,20 @@ function buildInputs(input: {
   };
 }
 
-async function buildQa(sceneSpec: Parameters<typeof evaluateSceneQa>[0], image: Imagen, hashes: { planHash?: string; sceneSpecHash: string }, materialEstimate?: DesignMaterialEstimate, telemetria?: Parameters<typeof observarImagenGenerada>[3]): Promise<ImageQaReport> {
-  const observation = await observarImagenGenerada(sceneSpec, image, materialEstimate, telemetria);
+async function buildQa(sceneSpec: Parameters<typeof evaluateSceneQa>[0], image: Imagen, hashes: { planHash?: string; sceneSpecHash: string }, materialEstimate?: DesignMaterialEstimate, telemetria?: Parameters<typeof observarImagenGenerada>[3], signal?: AbortSignal, force = false): Promise<ImageQaReport> {
+  const observation = await observarImagenGenerada(sceneSpec, image, materialEstimate, telemetria, signal, force);
   if (!observation) return { ...evaluateSceneQa(sceneSpec, {}, materialEstimate), pass: null, confidence: "unknown", observation_confidence: null, plan_hash: hashes.planHash, scene_spec_hash: hashes.sceneSpecHash, observed_instances: null };
   return { ...evaluateSceneQa(sceneSpec, observation, materialEstimate), confidence: "vision_assisted", plan_hash: hashes.planHash, scene_spec_hash: hashes.sceneSpecHash, observed_instances: observation.presentElementIds ?? [] };
 }
 
 export async function POST(request: Request) {
-  const body = await request.json() as Body;
+  const contentLength = Number(request.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > MAX_GENERATE_PAYLOAD_BYTES) {
+    const mensaje = "El payload de generación es demasiado grande.";
+    const uiError = construirUiErrorV1("ADJUNTO_INVALIDO", { mensaje, codigoOrigen: "PAYLOAD_TOO_LARGE" });
+    registrarFalloUi("/api/generate", uiError);
+    return Response.json({ error: mensaje, ui_error: uiError }, { status: 413 });
+  }
   const generationRequestId = crypto.randomUUID();
   const correlationHeader = request.headers.get("x-correlation-id");
   const generationCorrelationId = correlationHeader && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(correlationHeader)
@@ -616,8 +715,25 @@ export async function POST(request: Request) {
   const contextoTelemetria = { requestId: generationRequestId, correlationId: generationCorrelationId, superficie: "/api/generate" };
   let proveedor: ProveedorId | undefined;
   try {
-    if (!featureEnabled("REFERENCE_BLUEPRINT_V2")) throw new Error("REFERENCE_BLUEPRINT_V2 is disabled.");
+    const body = await request.json() as Body;
+    validarImagenesEntrada(body);
+    if (body.imageQaRequested !== undefined && typeof body.imageQaRequested !== "boolean") {
+      throw new Error("imageQaRequested debe ser booleano.");
+    }
+    const imageQaRequested = body.imageQaRequested === true || featureEnabled("IMAGE_QA_ENABLED");
     const planDeclarativo = body.plan ? PlanDecoracionSchema.parse(body.plan.plan) : undefined;
+    const contextoPlan = planDeclarativo ? abrirContextoPlan(body.plan?.approval_token) : null;
+    if (planDeclarativo && !contextoPlan) {
+      throw new Error("APROBACION_REQUERIDA: el plan debe aprobarse desde la tarjeta antes de generar.");
+    }
+    if (contextoPlan?.backend === "python") {
+      if (seleccionarBackendPython().backend !== "python") {
+        throw new PlanBackendNoDisponibleError("PYTHON_NO_SELECCIONADO", "El backend que generó este plan ya no está disponible; vuelve a pedir la propuesta.");
+      }
+      if (!contextoPlan.catalogSnapshotId) {
+        throw new PlanBackendNoDisponibleError("SIN_SNAPSHOT_CATALOGO", "La propuesta aprobada no tiene un snapshot de catálogo disponible; vuelve a pedir la propuesta.");
+      }
+    }
     // Keep the generation whitelist aligned with /api/plan-editar: a
     // declarative material may carry a variant that is not yet present in the
     // resolved purchases, but it still changes which candidate the resolver
@@ -636,6 +752,9 @@ export async function POST(request: Request) {
     const productosBase = (await resolverProductosParaGeneracion({
       productIds: body.productIds,
       ragVariantIds: [...new Set([...(body.ragVariantIds ?? []), ...planVariantIds])],
+      ...(contextoPlan?.backend === "python" && contextoPlan.catalogSnapshotId
+        ? { catalogSnapshotId: contextoPlan.catalogSnapshotId }
+        : {}),
     })).productos;
     const productosManuales = (body.manualProducts ?? []).map((product) => ({
       ...product,
@@ -700,6 +819,8 @@ export async function POST(request: Request) {
       if (outsidePool.length) throw new Error(`LORA_DATASET_ALLOWLIST_REJECTED: ${outsidePool.join(", ")}`);
     }
     let planResuelto: PlanResuelto | undefined;
+    let materialEstimatePlan: DesignMaterialEstimate | undefined;
+    let cotizacionPlan: Cotizacion | undefined;
     let approvalContext: { requestId: string; expiresAt: number } | null = null;
     const auditarImagen = async (status: string, qa: ImageQaReport, scene: Parameters<typeof evaluateSceneQa>[0]) => {
       if (!planResuelto) return;
@@ -718,18 +839,51 @@ export async function POST(request: Request) {
          error: qa.pass === false ? qa.retry_reasons.join(" | ") : undefined,
          sceneSpecHash: qa.scene_spec_hash,
          qaHash: qa.scene_spec_hash ? `${qa.scene_spec_hash}:${qa.pass === true ? "pass" : qa.pass === false ? "fail" : "unknown"}` : undefined,
-         flagSnapshot: { planCostOptimizerV2: featureEnabled("PLAN_COST_OPTIMIZER_V2"), planBudgetGateV2: featureEnabled("PLAN_BUDGET_GATE_V2"), imageInstanceQa: featureEnabled("IMAGE_INSTANCE_QA") },
+         flagSnapshot: { planCostOptimizerV2: featureEnabled("PLAN_COST_OPTIMIZER_V2"), planBudgetGateV2: featureEnabled("PLAN_BUDGET_GATE_V2"), imageQaEnabled: imageQaRequested },
       });
     };
     if (planDeclarativo) {
-      const whitelist = new Map<string, Set<string>>();
-      for (const producto of productosBase) {
-        if (!producto.familiaId) continue;
-        const variantes = whitelist.get(producto.familiaId) ?? new Set<string>();
-        variantes.add(producto.id);
-        whitelist.set(producto.familiaId, variantes);
+      if (!contextoPlan) throw new Error("APROBACION_REQUERIDA: el plan debe aprobarse desde la tarjeta antes de generar.");
+      // El plan se re-resuelve con el mismo backend que lo produjo (ADR 0006):
+      // resolverlo con el otro podría dar otro hash y estaríamos aprobando un
+      // plan distinto del que vio el cliente.
+      let resolucion: ResolucionPlan;
+      if (contextoPlan.backend === "python") {
+        if (seleccionarBackendPython().backend !== "python") {
+          throw new PlanBackendNoDisponibleError("PYTHON_NO_SELECCIONADO", "El backend que generó este plan ya no está disponible; vuelve a pedir la propuesta.");
+        }
+        if (!contextoPlan.catalogSnapshotId) {
+          throw new PlanBackendNoDisponibleError("SIN_SNAPSHOT_CATALOGO", "La propuesta aprobada no tiene un snapshot de catálogo disponible; vuelve a pedir la propuesta.");
+        }
+        resolucion = await resolverPlanConBackend({
+          backend: "python",
+          plan: planDeclarativo,
+          allowlist: contextoPlan.allowlist,
+          catalogSnapshotId: contextoPlan.catalogSnapshotId,
+          loraAllowlist: loraCatalogAllowlist,
+          requestId: generationRequestId,
+          correlationId: generationCorrelationId,
+          signal: request.signal,
+        });
+      } else {
+        const whitelist = new Map<string, Set<string>>();
+        for (const producto of productosBase) {
+          if (!producto.familiaId) continue;
+          const variantes = whitelist.get(producto.familiaId) ?? new Set<string>();
+          variantes.add(producto.id);
+          whitelist.set(producto.familiaId, variantes);
+        }
+        resolucion = await resolverPlanConBackend({
+          backend: "next",
+          pool: getRagPool(),
+          plan: planDeclarativo,
+          whitelist,
+          loraAllowlist: loraCatalogAllowlist,
+        });
       }
-      planResuelto = await resolverPlan(getRagPool(), planDeclarativo, whitelist, loraCatalogAllowlist);
+      planResuelto = resolucion.resuelto;
+      materialEstimatePlan = resolucion.materialEstimate;
+      cotizacionPlan = resolucion.cotizacion;
       if (body.planHash && body.planHash !== planResuelto.plan_hash) throw new Error("Plan hash does not match the validated server plan.");
       if (body.plan?.plan_hash !== planResuelto.plan_hash) throw new Error("Plan hash does not match the validated server plan.");
       if (planResuelto.sin_cobertura.length > 0) throw new Error("El plan tiene materiales sin cobertura en la selección validada; no se generó una imagen incoherente.");
@@ -749,12 +903,16 @@ export async function POST(request: Request) {
         deltaCop: planResuelto.comercial.delta_cop,
          packages: { ahorro_paquetes_cop: planResuelto.totales.ahorro_paquetes_cop, lineas: planResuelto.compras.map((compra) => ({ variant_id: compra.variant_id, paquetes: compra.paquetes, subtotal: compra.subtotal })) },
         status: "CLIENT_APPROVED",
-        flagSnapshot: { planCostOptimizerV2: featureEnabled("PLAN_COST_OPTIMIZER_V2"), planBudgetGateV2: featureEnabled("PLAN_BUDGET_GATE_V2"), imageInstanceQa: featureEnabled("IMAGE_INSTANCE_QA") },
-      });
+        flagSnapshot: { planCostOptimizerV2: featureEnabled("PLAN_COST_OPTIMIZER_V2"), planBudgetGateV2: featureEnabled("PLAN_BUDGET_GATE_V2"), imageQaEnabled: imageQaRequested },
+       });
+     }
+    let materialEstimateForLayout: DesignMaterialEstimate;
+    if (planResuelto) {
+      if (!materialEstimatePlan) throw new Error("La resolución del plan no devolvió una estimación de materiales.");
+      materialEstimateForLayout = materialEstimatePlan;
+    } else {
+      materialEstimateForLayout = estimateFromMeasuredMaterials(body.medidas, productos);
     }
-    const materialEstimateForLayout = planResuelto
-      ? estimateFromPlan(planResuelto)
-      : estimateFromMeasuredMaterials(body.medidas, productos);
     const preflight = validateMaterialEstimate(materialEstimateForLayout);
     if (!preflight.ok) throw new Error(`La estimación de materiales no es válida: ${preflight.errors.join("; ")}`);
     const physicalWarnings = blockingPhysicalWarnings(materialEstimateForLayout);
@@ -762,7 +920,6 @@ export async function POST(request: Request) {
     if (IMAGE_DEBUG) console.info(formatMaterialEstimateLog(materialEstimateForLayout));
     const aspecto = body.aspecto ?? "3:2";
     const venue = body.fotoEspacio ? { ...body.fotoEspacio, id: "VENUE_01", descripcion: "Venue base photo. Preserve its camera, crop, architecture, perspective, and ambient lighting." } : undefined;
-    if (venue && !featureEnabled("LOCALIZED_EDIT_ENABLED")) throw new Error("Localized venue editing is disabled.");
     const previous = body.previousGeneratedImage ? { ...body.previousGeneratedImage, id: "PREVIOUS_RESULT", descripcion: "Previous generated result. Use as current revision base." } : undefined;
     const references = (body.imagenesReferencia ?? []).map((image, index) => ({ ...image, id: `REF_${String(index + 1).padStart(2, "0")}`, descripcion: "Automatic model decision defines element inclusion and catalog adaptation." }));
     // Frontera de autoridad (plan de integración de referencias, R1): con un
@@ -824,7 +981,7 @@ export async function POST(request: Request) {
       return explicita || !derivada ? producto : { ...producto, paquetes: derivada };
        });
     const materialEstimate = planResuelto
-      ? estimateFromPlan(planResuelto)
+      ? materialEstimateForLayout
       : estimateFromMeasuredMaterials(body.medidas, productosConMateriales);
     const finalPreflight = validateMaterialEstimate(materialEstimate);
     if (!finalPreflight.ok) throw new Error(`La estimación de materiales no es válida: ${finalPreflight.errors.join("; ")}`);
@@ -880,31 +1037,23 @@ export async function POST(request: Request) {
     if (sceneSpec.elements.length === 0 && productos.length === 0 && !body.revisionInstruction && !body.instruccion) throw new Error("Approve at least one element before generating.");
 
     const usarLora = body.usarLora === true || Boolean(explicitLoraSelection || explicitLoraMode);
-    const comparar = body.comparar === true;
-    const compararLora = body.compararLora === true;
-    const sinReferencias = body.sinReferencias === true;
     // Ninguna ruta que llame a fal.ai puede usar una combinación URL/trigger
     // anónima (PLAN-COMPOSICION-RICA-V001.md §1.1/§9.2). No existe un modo
     // "por defecto" seguro para adivinar aquí: qué slot está listo depende
     // del registro (hoy, por ejemplo, `unlimited` puede estar `pending` y
     // `training_1` solo `ready` bajo el override local de pruebas), así que
     // adivinar produciría un comportamiento no determinista según el estado
-    // de la base de datos. Si el turno necesita LoRA (usarLora, comparar o
-    // compararLora) y el cliente no mandó `loraMode` ni `loraSelection`
+    // de la base de datos. Si el turno necesita LoRA y el cliente no mandó
+    // `loraMode` ni `loraSelection`
     // explícitos, se falla cerrado antes de tocar la red.
-    if ((usarLora || comparar || compararLora) && !resolvedLoras) {
+    if (usarLora && !resolvedLoras) {
       throw new Error("LORA_MODE_REQUIRED: especifica loraMode (\"unlimited\" | \"training_1\" | \"training_2\") o loraSelection antes de generar con LoRA Sempertex. No existe un modo por defecto anónimo.");
     }
-    if ((usarLora || compararLora) && (venue || references.length || previous)) {
+    if (usarLora && (venue || references.length || previous)) {
       throw new Error("LoRA Sempertex genera desde texto. Para editar fotos o usar referencias, cambia a Gemini.");
     }
-    if (usarLora && (comparar || compararLora)) throw new Error("Elige un modo de comparación o LoRA individual, no ambos.");
-    if (comparar && compararLora) throw new Error("Elige una sola comparación.");
-    if (sinReferencias && (usarLora || comparar || compararLora)) {
-      throw new Error("Sin-referencias es una prueba solo para Gemini base; no se combina con LoRA ni Comparar.");
-    }
     proveedor = resolverProveedor({ override: body.proveedor, cookie: request.headers.get("cookie")?.match(/ia_proveedor=(gemini)/)?.[1] });
-    const port = usarLora || compararLora ? null : await imagenDe(comparar ? "gemini" : proveedor);
+    const port = usarLora ? null : await imagenDe(proveedor);
     const capabilities = port?.capabilities ?? {
       exactAspectRatios: ["3:2", "1:1", "2:3", "16:9"] as PeticionImagen["aspecto"][],
       totalInputImageLimit: 0,
@@ -921,14 +1070,7 @@ export async function POST(request: Request) {
     // más amplia aquí para resolver prioridades; el adaptador escoge las cuatro
     // mejores (espacio, productos y después composición).
     const inputLimit = usarLora ? Math.max(16, sceneSpec.elements.length) : capabilities.totalInputImageLimit;
-    // sinReferencias: nada de fotos entra a buildInputs (ni producto, ni
-    // espacio, ni previa, ni estilo) — así vuelve limpio {inputs: [],
-    // promptInputs: []} sin disparar el chequeo de "required > portLimit".
-    // La identidad del producto le llega a Gemini solo por el desglose de
-    // materiales en el prompt de texto (scene-spec.ts), igual que al LoRA.
-    const selected = sinReferencias
-      ? buildInputs({ portLimit: 0, blueprint, sceneElements: sceneSpec.elements, references: [], venue: undefined, previous: undefined, products: [] })
-      : buildInputs({ portLimit: inputLimit, blueprint, sceneElements: sceneSpec.elements, references, venue, previous, products: productImages });
+    const selected = buildInputs({ portLimit: inputLimit, blueprint, sceneElements: sceneSpec.elements, references, venue, previous, products: productImages });
     const visualContext = buildVisualContext({
       brief: body.brief,
       userRequest: body.solicitudUsuario,
@@ -973,29 +1115,23 @@ export async function POST(request: Request) {
     }
     // Fail closed before opening a paid provider call. An approved plan must
     // have an observable instance-QA path, not a post-generation warning.
-    if (planResuelto && !featureEnabled("IMAGE_INSTANCE_QA")) {
-      throw new Error("IMAGE_QA_REQUIRED: activa IMAGE_INSTANCE_QA para generar un plan aprobado.");
+    if (planResuelto && !imageQaRequested) {
+      throw new Error("IMAGE_QA_REQUIRED: solicita la validación visual antes de generar un plan aprobado.");
     }
     // The quote is finalized before the paid provider call. The image receives
     // the same estimate snapshot, but never gets package capacity as visual
     // quantity.
-    const cotizacion = planResuelto ? cotizarPlan(planResuelto) : cotizarProductos(productosConMateriales, materialEstimate);
+    let cotizacion: Cotizacion;
+    if (planResuelto) {
+      if (!cotizacionPlan) throw new Error("La resolución del plan no devolvió una cotización.");
+      cotizacion = cotizacionPlan;
+    } else {
+      cotizacion = cotizarProductos(productosConMateriales, materialEstimate);
+    }
     // La identidad del producto se resuelve desde el vocabulario allowlisted
     // de v007. El compilador solo recibe etiquetas ya resueltas; nunca infiere
     // una etiqueta canónica desde color, SKU o nombre libre.
-    const sizeConfirmations = materialEstimate.balloons.flatMap((line) => {
-      const elementId = line.structure_id;
-      const selectedProductId = line.variant_id ?? line.product_id;
-      if (!elementId || !selectedProductId) return [];
-      const product = productosConMateriales.find((candidate) =>
-        candidate.id === selectedProductId ||
-        candidate.familiaId === line.product_id ||
-        candidate.familiaId === selectedProductId,
-      );
-      return product?.tamanoCodigo
-        ? [{ elementId, productId: selectedProductId, sizeCode: product.tamanoCodigo, diameterInches: product.diamPulg }]
-        : [];
-    });
+    const sizeConfirmations = sizeConfirmationsFromMaterialLines(materialEstimate.balloons, productosConMateriales);
     const productIdAliases = new Map<string, string[]>();
     const productCatalogTitles = new Map<string, string>();
     for (const product of productosConMateriales) {
@@ -1010,6 +1146,17 @@ export async function POST(request: Request) {
         if (product.familiaId) productCatalogTitles.set(product.familiaId, catalogTitle);
       }
     }
+    const promptFormat = parseLoraPromptFormat(body.promptFormat);
+    const creatividad = perfilCreatividad(parseNivelCreatividad(body.creatividad));
+    // Styling seen in the reference that the catalog does not sell (lights,
+    // foliage) is drawn when the analysis kept it as relevant and no plan
+    // structure materializes it. It never reaches the quote or the plan.
+    const referenceForStyling = usarLora && body.blueprint !== undefined ? ReferenceBlueprintV2Schema.safeParse(body.blueprint) : undefined;
+    const materializedReferenceIds = new Set<string>([
+      ...transformedSceneSpec.elements.map((element) => element.element_id),
+      ...(planResuelto?.plan.estructuras.map((estructura) => estructura.referencia_element_id).filter((id): id is string => Boolean(id)) ?? []),
+    ]);
+    const ambientDecor = referenceForStyling?.success ? ambientDecorFromReference(referenceForStyling.data, materializedReferenceIds) : [];
     const productPromptCompilation = compileProductPrompt({
       sceneSpec: transformedSceneSpec,
       visualContext,
@@ -1017,6 +1164,10 @@ export async function POST(request: Request) {
       sizeConfirmations,
       productIdAliases,
       productCatalogTitles,
+      trigger: usarLora ? resolvedLoras?.[0]?.trigger : undefined,
+      ambientDecor,
+      creativeCues: creatividad.pistasPrompt,
+      officialStructures: new Map((planResuelto?.plan.estructuras ?? []).flatMap((estructura) => estructura.estructura_oficial ? [[estructura.estructura_id, estructura.estructura_oficial] as const] : [])),
     });
     const loraCompilation = {
       prompt: productPromptCompilation.prompt,
@@ -1024,15 +1175,12 @@ export async function POST(request: Request) {
       compilerVersion: productPromptCompilation.captionCompilerVersion,
     };
     const catalogBackedElementCount = transformedSceneSpec.elements.filter((element) => element.source_type === "catalog_backed").length;
-    if ((usarLora || compararLora) && (productPromptCompilation.unresolved_products.length || (catalogBackedElementCount > 0 && productPromptCompilation.legacy))) {
+    if (usarLora && (productPromptCompilation.unresolved_products.length || (catalogBackedElementCount > 0 && productPromptCompilation.legacy))) {
       const unresolved = productPromptCompilation.unresolved_products.map((product) => product.product_id ?? product.title ?? "unknown");
       throw new Error(`LORA_PRODUCT_VOCABULARY_FAILED: no se pudo resolver identidad canónica para ${unresolved.join(", ") || "uno o más productos visibles"}.`);
     }
-    const loraPromptV2 = loraCompilation.prompt;
-    const loraPromptV1 = buildLoraImagePromptV1({ sceneSpec: transformedSceneSpec, visualContext, revisionInstruction });
-    const requestedLoraVersion = process.env.LORA_PROMPT_VERSION === "v1" ? "v1" : "v2";
-    const loraPrompt = requestedLoraVersion === "v1" ? loraPromptV1 : loraPromptV2;
-    // Fuera de usarLora/comparar/compararLora no hay LoRA resuelto (ni falta
+    const loraPrompt = loraCompilation.prompt;
+    // Fuera de usarLora no hay LoRA resuelto (ni falta
     // que haga: es una generación Gemini pura). effectiveLoraPrompt/loraPreflight
     // solo se usan más abajo cuando alguno de esos tres es cierto, y en ese
     // caso resolvedLoras ya quedó garantizado arriba.
@@ -1044,116 +1192,66 @@ export async function POST(request: Request) {
       triggers: resolvedLoras?.length ? resolvedLoras.map((lora) => lora.trigger) : [DEFAULT_SEMPERTEX_LORA_TRIGGER],
       vocabulary: PRODUCT_VOCABULARY,
     });
-    const promptsGeneracion: Record<string, string> = compararLora
-      ? { "LoRA · app v1": loraPromptV1, "LoRA · app v2": loraPromptV2 }
-      : comparar
-        ? { "Gemini · Nano Banana 2": providerPrompt, "LoRA Sempertex": effectiveLoraPrompt }
-        : usarLora
-          ? { "LoRA Sempertex": effectiveLoraPrompt }
-          : { "Gemini · Nano Banana 2": providerPrompt };
-    const promptPrincipal = compararLora ? loraPromptV2 : usarLora ? effectiveLoraPrompt : providerPrompt;
-    const loraLanguageLeaks = [...new Set([
-      ...findLoraPromptLanguageLeaks(loraPromptV1),
-      ...findLoraPromptLanguageLeaks(loraPromptV2),
-    ])];
-    if ((usarLora || comparar || compararLora) && loraLanguageLeaks.length) {
+    const effectiveJsonPrompt = usarLora && includesJsonPrompt(promptFormat) && resolvedLoras?.length
+      ? ensureLoraTriggers(productPromptCompilation.jsonPrompt, resolvedLoras)
+      : undefined;
+    const jsonPreflight = effectiveJsonPrompt
+      ? preflightLoraPrompt({
+          sceneSpec: transformedSceneSpec,
+          clauses: loraCompilation.clauses,
+          prompt: effectiveJsonPrompt,
+          triggers: resolvedLoras!.map((lora) => lora.trigger),
+          vocabulary: PRODUCT_VOCABULARY,
+          maxLength: LORA_JSON_PROMPT_MAX_LENGTH,
+        })
+      : undefined;
+    const promptPrincipal = usarLora ? (promptFormat === "json" && effectiveJsonPrompt ? effectiveJsonPrompt : effectiveLoraPrompt) : providerPrompt;
+    const loraLanguageLeaks = findLoraPromptLanguageLeaks(effectiveJsonPrompt ? `${loraPrompt} ${effectiveJsonPrompt}` : loraPrompt);
+    if (usarLora && loraLanguageLeaks.length) {
       throw new Error(`LORA_LANGUAGE_FAILED: el prompt contiene texto español sin traducir (${loraLanguageLeaks.join(", ")})`);
     }
-    // `compararLora` always sends loraPromptV2 to fal.ai as its "lora-v2"
-    // variant regardless of LORA_PROMPT_VERSION, so it must be gated
-    // unconditionally — only usarLora/comparar respect the rollback flag via
-    // `loraPrompt`.
-    if (((usarLora || comparar) && requestedLoraVersion === "v2" || compararLora) && !loraPreflight.ok) {
-      throw new Error(`LORA_PREFLIGHT_FAILED: ${loraPreflight.errors.join("; ")}`);
+    if (jsonPreflight && !jsonPreflight.ok) {
+      throw new Error(`LORA_PREFLIGHT_FAILED: prompt JSON — ${jsonPreflight.errors.join("; ")}`);
     }
-    const seedLoraDebug = Number.isInteger(body.seedLoraDebug) && body.seedLoraDebug! >= 0 ? body.seedLoraDebug : undefined;
-    let result: { imagen: Imagen; interactionId?: string };
-    let comparacion: SalidaComparacion[] | undefined;
+    if (usarLora && includesTextPrompt(promptFormat) && !loraPreflight.ok) {
+      // Sin semánticas canónicas del plan (selección suelta sin propuesta
+      // aprobada) ninguna compactación ni reintento produce un prompt válido.
+      const codigo = loraPreflight.requiresPlanSemantics ? "LORA_PLAN_REQUIRED" : "LORA_PREFLIGHT_FAILED";
+      throw new Error(`${codigo}: ${loraPreflight.errors.join("; ")}`);
+    }
     // Solo tiene sentido encadenar contexto real cuando esta petición ES una
-    // revisión de una imagen previa (mismo criterio que `revisionMode`); una
-    // generación nueva de cero no debe heredar la conversación de otra.
+    // revisión de una imagen previa; una generación nueva no hereda otra.
     const previousInteractionId = previous ? body.previousInteractionId : undefined;
+    // "ambos": two independent provider calls with one shared seed, so the
+    // only difference between the images is the prompt format. QA and the
+    // audit apply to the primary (text) image.
+    const comparisonSeed = usarLora && promptFormat === "ambos" ? crypto.getRandomValues(new Uint32Array(1))[0]! % 2_147_483_647 : undefined;
+    const generarLora = (prompt: string, intento: number) => generarConSempertexLora(prompt, aspecto, selected.inputs, {
+      loras: requireResolvedLoras(resolvedLoras),
+      signal: request.signal,
+      telemetria: { ...contextoTelemetria, intento },
+      guidanceScale: creatividad.guidanceScale,
+      ...(comparisonSeed === undefined ? {} : { seed: comparisonSeed }),
+    });
+    const [loraPrimaryImage, loraJsonImage] = usarLora
+      ? await Promise.all([
+          generarLora(promptPrincipal, 1),
+          promptFormat === "ambos" && effectiveJsonPrompt ? generarLora(effectiveJsonPrompt, 2) : Promise.resolve(undefined),
+        ])
+      : [undefined, undefined];
+    const result: { imagen: Imagen; interactionId?: string } = loraPrimaryImage
+      ? { imagen: loraPrimaryImage }
+      : await port!.generar({ prompt: providerPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: previous, previousInteractionId, revisionMode: previous ? "revise_current_result" : "new_generation", signal: request.signal, telemetria: { ...contextoTelemetria, capacidad: "imagen_generacion" } });
     let qa: ImageQaReport | undefined;
-    if (compararLora) {
-      const sharedSeed = seedLoraDebug ?? Math.floor(Math.random() * 2_147_483_647);
-      const loraVariants = [
-        { id: "lora-v1" as const, nombre: "LoRA app v1", modelo: "Prompt legado de la app", prompt: loraPromptV1 },
-        { id: "lora-v2" as const, nombre: "LoRA app v2", modelo: `Caption compiler ${LORA_CAPTION_COMPILER_VERSION}`, prompt: loraPromptV2 },
-      ];
-      const compararLoraApplications = requireResolvedLoras(resolvedLoras);
-      const variantResults = await Promise.allSettled(loraVariants.map((variant, index) => generarConSempertexLora(variant.prompt, aspecto, [], { seed: sharedSeed, loras: compararLoraApplications, telemetria: { ...contextoTelemetria, intento: index + 1 } })));
-      const variantImages = variantResults.map((variantResult) => variantResult.status === "fulfilled" ? variantResult.value : undefined);
-      const variantQa = await Promise.all(variantImages.map((image, index) => image
-        ? buildQa(transformedSceneSpec, image, { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, { ...contextoTelemetria, intento: index + 1 })
-        : Promise.resolve(undefined)));
-      await Promise.all(variantQa.map((candidateQa, index) => candidateQa
-        ? auditarImagen(`IMAGEN_QA_${loraVariants[index]!.id.toUpperCase()}`, candidateQa, transformedSceneSpec)
-        : Promise.resolve()));
-      comparacion = loraVariants.map((variant, index) => {
-        const settled = variantResults[index]!;
-        const image = variantImages[index];
-        return {
-          id: variant.id,
-          nombre: variant.nombre,
-          modelo: variant.modelo,
-          prompt: variant.prompt,
-          imagen: image ? `data:${image.mime};base64,${image.base64}` : undefined,
-          error: settled.status === "rejected" ? textoDeError(settled.reason) : undefined,
-          promptVersion: variant.id === "lora-v1" ? "v1" : "v2",
-          promptHash: hashPrompt(variant.prompt),
-          compilerVersion: variant.id === "lora-v2" ? LORA_CAPTION_COMPILER_VERSION : undefined,
-          seed: sharedSeed,
-          qa: variantQa[index],
-          preflight: variant.id === "lora-v2" ? loraPreflight : preflightLoraPrompt({ sceneSpec: transformedSceneSpec, clauses: loraCompilation.clauses, prompt: loraPromptV1 }),
-        };
-      });
-      const principalIndex = variantImages[1] ? 1 : variantImages.findIndex(Boolean);
-      const imagenPrincipal = principalIndex >= 0 ? variantImages[principalIndex] : undefined;
-      if (!imagenPrincipal) throw new Error("No se pudo generar ninguna comparación LoRA.");
-      qa = principalIndex >= 0 ? variantQa[principalIndex] : undefined;
-      result = { imagen: imagenPrincipal };
-    } else if (comparar) {
-      const [gemini, lora] = await Promise.allSettled([
-        port!.generar({ prompt: providerPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: previous, previousInteractionId, revisionMode: previous ? "revise_current_result" : "new_generation", telemetria: { ...contextoTelemetria, capacidad: "imagen_generacion" } }),
-        generarConSempertexLora(effectiveLoraPrompt, aspecto, selected.inputs, { loras: requireResolvedLoras(resolvedLoras), telemetria: contextoTelemetria }),
-      ]);
-      const geminiImagen = gemini.status === "fulfilled" ? gemini.value.imagen : undefined;
-      const loraImagen = lora.status === "fulfilled" ? lora.value : undefined;
-      comparacion = [
-        {
-          id: "gemini",
-          nombre: "Gemini",
-          modelo: gemini.status === "fulfilled" ? gemini.value.modelo : "Gemini · Nano Banana 2",
-          imagen: geminiImagen ? `data:${geminiImagen.mime};base64,${geminiImagen.base64}` : undefined,
-          error: gemini.status === "rejected" ? textoDeError(gemini.reason) : undefined,
-        },
-        {
-          id: "lora",
-          nombre: "LoRA Sempertex",
-          modelo: "FLUX.2 [dev] · fal.ai",
-          imagen: loraImagen ? `data:${loraImagen.mime};base64,${loraImagen.base64}` : undefined,
-          error: lora.status === "rejected" ? textoDeError(lora.reason) : undefined,
-        },
-      ];
-      const imagenPrincipal = geminiImagen ?? loraImagen;
-      if (!imagenPrincipal) {
-        throw new Error(`No se pudo generar ninguna de las dos imágenes. Gemini: ${textoDeError(gemini.status === "rejected" ? gemini.reason : undefined)} LoRA: ${textoDeError(lora.status === "rejected" ? lora.reason : undefined)}`);
-      }
-      result = { imagen: imagenPrincipal, interactionId: gemini.status === "fulfilled" ? gemini.value.interactionId : undefined };
-    } else {
-      result = usarLora
-        ? { imagen: await generarConSempertexLora(effectiveLoraPrompt, aspecto, selected.inputs, { loras: requireResolvedLoras(resolvedLoras), telemetria: contextoTelemetria }) }
-        : await port!.generar({ prompt: providerPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: previous, previousInteractionId, revisionMode: previous ? "revise_current_result" : "new_generation", telemetria: { ...contextoTelemetria, capacidad: "imagen_generacion" } });
-    }
-    qa ??= await buildQa(transformedSceneSpec, result.imagen, { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, contextoTelemetria);
+    qa ??= await buildQa(transformedSceneSpec, result.imagen, { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, contextoTelemetria, request.signal, imageQaRequested);
     let retried = false;
-    if (!usarLora && !comparar && !compararLora && featureEnabled("IMAGE_QA_ENABLED") && qa.pass === false) {
+    if (!usarLora && imageQaRequested && qa.pass === false) {
       const retryPrompt = `${providerPrompt}\n\n${buildCorrectiveRetryPrompt(qa)}`;
-      const retry = await port!.generar({ prompt: retryPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: { ...result.imagen, id: "GENERATED_RESULT", descripcion: "Current generated result for one corrective retry." }, previousInteractionId: result.interactionId, revisionMode: "revise_current_result", telemetria: { ...contextoTelemetria, capacidad: "imagen_generacion_correctiva", intento: 2 } });
+      const retry = await port!.generar({ prompt: retryPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: { ...result.imagen, id: "GENERATED_RESULT", descripcion: "Current generated result for one corrective retry." }, previousInteractionId: result.interactionId, revisionMode: "revise_current_result", signal: request.signal, telemetria: { ...contextoTelemetria, capacidad: "imagen_generacion_correctiva", intento: 2 } });
       retried = true;
-      qa = await buildQa(transformedSceneSpec, retry.imagen, { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, { ...contextoTelemetria, intento: 2 });
+      qa = await buildQa(transformedSceneSpec, retry.imagen, { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, { ...contextoTelemetria, intento: 2 }, request.signal, imageQaRequested);
       await auditarImagen("IMAGEN_QA_RETRY", qa, transformedSceneSpec);
-      if (qa.pass !== true) return Response.json({ error: `NON_CONFORME: la imagen no cumple la cardinalidad o composición aprobada${qa.retry_reasons.length ? ` — ${qa.retry_reasons.join("; ")}` : ""}.`, qa, plan: planResuelto, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash }, { status: 422 });
+      if (qa.pass !== true) return respuestaNoConforme(`NON_CONFORME: la imagen no cumple la cardinalidad o composición aprobada${qa.retry_reasons.length ? ` — ${qa.retry_reasons.join("; ")}` : ""}.`, generationRequestId, { qa, plan: planResuelto, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash });
       return Response.json({ imagen: `data:${retry.imagen.mime};base64,${retry.imagen.base64}`, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, plan: planResuelto, qa, retried, proveedor, cotizacion, interactionId: retry.interactionId, prompt: retryPrompt, prompts: { "Gemini · Nano Banana 2": retryPrompt }, productAuthority: productAuthority.length ? productAuthority : undefined });
     }
     await auditarImagen("IMAGEN_QA", qa, transformedSceneSpec);
@@ -1161,19 +1259,36 @@ export async function POST(request: Request) {
     // Gemini), no bloqueamos con 422: se devuelve igual la imagen para poder
     // verla, con el QA en pass:false para que el frontend siga mostrando la
     // advertencia "no conforme" en vez de esconder el resultado.
-    if (planResuelto && qa.pass !== true && !usarLora && !compararLora) return Response.json({ error: `NON_CONFORME: la imagen no fue observada conforme al plan aprobado${qa.retry_reasons.length ? ` — ${qa.retry_reasons.join("; ")}` : ""}.`, qa, plan: planResuelto, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash }, { status: 422 });
+    if (planResuelto && qa.pass !== true && !usarLora) return respuestaNoConforme(`NON_CONFORME: la imagen no fue observada conforme al plan aprobado${qa.retry_reasons.length ? ` — ${qa.retry_reasons.join("; ")}` : ""}.`, generationRequestId, { qa, plan: planResuelto, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash });
     const debug = IMAGE_DEBUG;
-    return Response.json({ imagen: `data:${result.imagen.mime};base64,${result.imagen.base64}`, comparacion, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, plan: planResuelto, qa, loraPreflight: (usarLora || comparar || compararLora) ? loraPreflight : undefined, loraPromptVersion: requestedLoraVersion, loraPromptHash: hashPrompt(effectiveLoraPrompt), compilerVersion: LORA_CAPTION_COMPILER_VERSION, loraProductRuntimeVersion: LORA_PRODUCT_RUNTIME_VERSION, productPromptCompilation: { resolved_concepts: productPromptCompilation.resolved_concepts, unresolved_products: productPromptCompilation.unresolved_products, vocabulary_version: productPromptCompilation.vocabulary_version, compiler_version: productPromptCompilation.compiler_version, legacy: productPromptCompilation.legacy, diagnostics: productPromptCompilation.diagnostics }, retried, proveedor: comparar ? "gemini" : proveedor, modoImagen: compararLora ? "comparacion_lora" : comparar ? "comparacion" : usarLora ? "lora" : "proveedor_base", cotizacion, interactionId: result.interactionId, prompt: promptPrincipal, prompts: promptsGeneracion, productAuthority: productAuthority.length ? productAuthority : undefined, ...(debug ? { visualContext, droppedImageIds: selected.droppedImageIds, aspectTransform, loraSelection: resolvedLoras?.map((lora) => ({ artifactId: lora.artifactId, specialization: lora.specialization, scale: lora.scale, trigger: lora.trigger })) } : {}) });
+    return Response.json({ imagen: `data:${result.imagen.mime};base64,${result.imagen.base64}`, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, plan: planResuelto, qa, loraPreflight: usarLora ? loraPreflight : undefined, loraPromptVersion: usarLora ? "v2" : undefined, loraPromptHash: usarLora ? hashPrompt(promptPrincipal) : undefined, compilerVersion: usarLora ? LORA_CAPTION_COMPILER_VERSION : undefined, loraProductRuntimeVersion: usarLora ? LORA_PRODUCT_RUNTIME_VERSION : undefined, productPromptCompilation: { resolved_concepts: productPromptCompilation.resolved_concepts, unresolved_products: productPromptCompilation.unresolved_products, vocabulary_version: productPromptCompilation.vocabulary_version, compiler_version: productPromptCompilation.compiler_version, legacy: productPromptCompilation.legacy, diagnostics: productPromptCompilation.diagnostics }, retried, proveedor, modoImagen: usarLora ? "lora" : "proveedor_base", promptFormat: usarLora ? promptFormat : undefined, creatividad: usarLora ? { nivel: creatividad.nivel, nombre: creatividad.nombre, guidance_scale: creatividad.guidanceScale, pistas_prompt: creatividad.pistasPrompt } : undefined, loraJsonPreflight: jsonPreflight, ambientDecor: ambientDecor.length ? ambientDecor : undefined, imagenAlternativa: loraJsonImage && effectiveJsonPrompt ? { formato: "json", imagen: `data:${loraJsonImage.mime};base64,${loraJsonImage.base64}`, prompt: effectiveJsonPrompt, qa: "no_evaluada" } : undefined, cotizacion, interactionId: result.interactionId, prompt: promptPrincipal, prompts: usarLora && promptFormat === "ambos" && effectiveJsonPrompt ? { "LoRA Sempertex · texto": effectiveLoraPrompt, "LoRA Sempertex · JSON": effectiveJsonPrompt } : { [usarLora ? (promptFormat === "json" ? "LoRA Sempertex · JSON" : "LoRA Sempertex") : "Gemini · Nano Banana 2"]: promptPrincipal }, productAuthority: productAuthority.length ? productAuthority : undefined, ...(debug ? { visualContext, droppedImageIds: selected.droppedImageIds, aspectTransform, loraSelection: resolvedLoras?.map((lora) => ({ artifactId: lora.artifactId, specialization: lora.specialization, scale: lora.scale, trigger: lora.trigger })) } : {}) });
   } catch (error) {
+    // Los campos legacy (`error`, `causa`, sobre operational.v1) se conservan:
+    // el smoke los compara. `ui_error` (ui-error.v1) es lo que ve el cliente.
+    const uiError = traducirErrorServidor(error, generationRequestId);
+    registrarFalloUi("/api/generate", uiError);
+    const responder = (cuerpo: Record<string, unknown>, status: number) => Response.json({ ...cuerpo, ui_error: uiError }, { status });
     if (error instanceof Error && /^LORA_(?:MODE|SELECTION|ARTIFACT|SPECIALIZATION|RUN|EVALUATION|PROVIDER|INCOMPATIBLE|MULTI|DATASET_ALLOWLIST|PRODUCT_VOCABULARY)/.test(error.message)) {
-      return Response.json({ error: error.message }, { status: 409 });
+      return responder({ error: error.message }, 409);
     }
     if (error instanceof NonCommercialSourceRejectedError) {
-      return Response.json({ error: error.message, causa: "fuente_no_comercial", productId: error.productId, source: error.source, referenceClass: error.referenceClass }, { status: 403 });
+      return responder({ error: error.message, causa: "fuente_no_comercial", productId: error.productId, source: error.source, referenceClass: error.referenceClass }, 403);
     }
     if (error instanceof ErrorIA) {
-      return Response.json({ error: error.message, causa: error.causa, proveedor: error.proveedor }, { status: statusDe(error.causa) });
+      return responder({ error: error.message, causa: error.causa, proveedor: error.proveedor }, statusDe(error.causa));
     }
-    return Response.json({ error: error instanceof Error ? error.message : "Image generation failed." }, { status: 400 });
+    if (error instanceof AllowlistProductoVarianteError) {
+      return responder({ error: error.message, causa: error.causa }, 422);
+    }
+    if (isPythonAdapterError(error)) {
+      return responder(pythonErrorBody(error), error.status >= 400 && error.status <= 599 ? error.status : 502);
+    }
+    if (error instanceof PlanBackendNoDisponibleError) {
+      return responder({ error: error.message, causa: error.motivo }, 409);
+    }
+    if (error instanceof PythonPlanMappingError) {
+      return responder({ error: error.message }, 502);
+    }
+    return responder({ error: error instanceof Error ? error.message : "Image generation failed." }, 400);
   }
 }

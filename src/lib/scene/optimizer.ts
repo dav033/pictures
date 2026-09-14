@@ -1,6 +1,6 @@
 /**
  * Optimizador global de cobertura de escena (Tarea 05.1 —
- * `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`, sección 9.4).
+ * `docs/migracion-python/PLAN-MAESTRO-V2.md`, sección 9.4).
  *
  * Toma los candidatos recuperados por slot (ya rerankeados), aplica
  * restricciones duras (presupuesto, fuente, compatibilidad, dependencias) y

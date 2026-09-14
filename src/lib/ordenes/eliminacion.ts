@@ -3,12 +3,11 @@ import "server-only";
 import { readdir, rm } from "node:fs/promises";
 import path from "node:path";
 import { limpiarDerivadosDeFoto, limpiarDerivadosDeOrden } from "./limpiar-derivados";
-
-const RUTA_ORDENES = "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
+import { directorioOrdenes } from "./directorio";
 
 export async function eliminarFotoDeOrden(numero: string, indice: number, limpiarDerivado = true): Promise<number> {
-  const carpetaOrden = path.join(RUTA_ORDENES, numero);
-  const archivos = await readdir(carpetaOrden).catch(() => [] as string[]);
+  const carpetaOrden = path.join(/*turbopackIgnore: true*/ directorioOrdenes(), numero);
+  const archivos = await readdir(/*turbopackIgnore: true*/ carpetaOrden).catch(() => [] as string[]);
   const patron = new RegExp(`^foto-${indice}\\.(jpg|jpeg|png|webp)$`, "i");
   const foto = archivos.find((archivo) => patron.test(archivo));
   if (!foto) throw new Error("La imagen no existe.");
@@ -22,8 +21,7 @@ export async function eliminarFotoDeOrden(numero: string, indice: number, limpia
 }
 
 export async function eliminarOrden(numero: string): Promise<number> {
-  await rm(path.join(RUTA_ORDENES, numero), { recursive: true, force: true });
+  await rm(path.join(/*turbopackIgnore: true*/ directorioOrdenes(), numero), { recursive: true, force: true });
   return limpiarDerivadosDeOrden(numero);
 }
-
 

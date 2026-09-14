@@ -7,7 +7,6 @@ import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
 import { estimateFromPlan } from "@/lib/materiales/estimacion";
 import { buildVisualContext } from "@/lib/ia/visual-context";
 import { compileLoraCaption } from "@/lib/ia/lora-caption-compiler";
-import { buildLoraImagePromptV1 } from "@/lib/ia/build-image-prompt";
 import { preflightLoraPrompt } from "@/lib/ia/lora-prompt-preflight";
 import { PROMPT_V2 } from "./exp-fal-lib";
 
@@ -22,7 +21,6 @@ import { PROMPT_V2 } from "./exp-fal-lib";
  * dos columnas laterales y centro de mesa) e imprime:
  *
  *   - el prompt v2 que saldría hacia fal.ai
- *   - el prompt v1 legado, por si `LORA_PROMPT_VERSION=v1`
  *   - el resultado del preflight, que puede bloquear la generación
  *   - el diff contra el string que efectivamente se testeó
  *
@@ -85,14 +83,11 @@ async function main(): Promise<void> {
 
   const visualContext = buildVisualContext({ brief: { tipo_evento: "quinceañera" } });
   const compilation = compileLoraCaption({ sceneSpec, visualContext });
-  const v1 = buildLoraImagePromptV1({ sceneSpec, visualContext });
   const preflight = preflightLoraPrompt({ sceneSpec, clauses: compilation.clauses, prompt: compilation.prompt });
 
   const linea = "=".repeat(78);
   console.log(`\n${linea}\nPROMPT v2 QUE SALE HOY DE PRODUCCIÓN (${compilation.prompt.length} chars)\n${linea}`);
   console.log(compilation.prompt);
-  console.log(`\n${linea}\nPROMPT v1 LEGADO (${v1.length} chars)\n${linea}`);
-  console.log(v1);
   console.log(`\n${linea}\nPREFLIGHT: ${preflight.ok ? "PASA" : "BLOQUEA"}\n${linea}`);
   if (!preflight.ok) preflight.errors.forEach((e) => console.log(`  - ${e}`));
 

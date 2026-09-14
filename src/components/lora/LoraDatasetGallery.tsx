@@ -9,7 +9,7 @@ type Filter = "all" | "order" | "web";
 
 const numberFormat = new Intl.NumberFormat("es-CO");
 const SELECTION_STORAGE_PREFIX = "lora-dataset-selection:";
-/** Un solo Set vacÃ­o compartido: crear `new Set()` por tarjeta en cada render romperÃ­a el memo. */
+/** Un solo Set vacío compartido: crear `new Set()` por tarjeta en cada render rompería el memo. */
 const SIN_COMPONENTES_REMOVIDOS: ReadonlySet<string> = new Set<string>();
 
 function statusClass(record: LoraDatasetGalleryRecord): string {
@@ -43,7 +43,7 @@ const DatasetImageCard = memo(function DatasetImageCard({
 }) {
   const imageUrl = `/api/lora/dataset-v005/${encodeURIComponent(record.imageFile)}`;
   const isOrder = record.status === "order";
-  const sourceLabel = isOrder ? "Foto real de orden" : "Sempertex.com â€” Ideas de Fiesta";
+  const sourceLabel = isOrder ? "Foto real de orden" : "Sempertex.com — Ideas de Fiesta";
   const statusLabel = isOrder ? "Foto de orden" : "Web Sempertex";
   const visibleComponents = record.components.filter((component, componentIndex) => !removedComponentKeys.has(productComponentKey(component, componentIndex)));
   const removedComponentCount = record.components.length - visibleComponents.length;
@@ -55,7 +55,7 @@ const DatasetImageCard = memo(function DatasetImageCard({
         target="_blank"
         rel="noreferrer"
         className="group relative block aspect-[4/3] overflow-hidden bg-superficie-2"
-        aria-label={`Abrir imagen ${record.imageId} en tamaÃ±o completo`}
+        aria-label={`Abrir imagen ${record.imageId} en tamaño completo`}
       >
         <Image
           src={imageUrl}
@@ -151,7 +151,7 @@ const DatasetImageCard = memo(function DatasetImageCard({
                     <span className="block font-medium text-texto">{component.label}</span>
                     <span className="block text-[11px]">
                       {component.quantity != null ? `Cantidad en orden: ${component.quantity}` : "Cantidad no disponible"}
-                      {component.sku ? ` Â· SKU ${component.sku}` : ""}
+                      {component.sku ? ` · SKU ${component.sku}` : ""}
                     </span>
                   </span>
                   <button
@@ -173,8 +173,8 @@ const DatasetImageCard = memo(function DatasetImageCard({
             <p className="mt-2 border-t border-borde pt-2 text-xs leading-5 text-texto-suave">
               {record.status === "web_pending"
                 ? record.productBreakdownStatus === "not_found_in_source_blog_page"
-                  ? "La pÃ¡gina oficial de Sempertex no publica productos asociados a esta imagen."
-                  : "Esta imagen de Sempertex.com aÃºn no tiene desglose de productos confirmado."
+                  ? "La página oficial de Sempertex no publica productos asociados a esta imagen."
+                  : "Esta imagen de Sempertex.com aún no tiene desglose de productos confirmado."
                 : "No hay productos confirmados para esta imagen."}
             </p>
           )}
@@ -198,16 +198,16 @@ const DatasetImageCard = memo(function DatasetImageCard({
             </span>
             {record.captionVersion === "v007" ? (
               <span className="rounded-full bg-exito-suave px-2 py-0.5 text-[10px] font-semibold text-exito">
-                v007 Â· nombres canÃ³nicos
+                v007 · nombres canónicos
               </span>
             ) : record.captionVersion === "legacy" ? (
               <span className="rounded-full bg-superficie px-2 py-0.5 text-[10px] font-medium text-texto-suave">
-                legado Â· sin canonizar
+                legado · sin canonizar
               </span>
             ) : null}
           </summary>
           <p className="mt-2 border-t border-borde pt-2 text-xs leading-5 text-texto-suave">
-            {record.caption ?? "Caption pendiente de revisiÃ³n visual y nombres canÃ³nicos."}
+            {record.caption ?? "Caption pendiente de revisión visual y nombres canónicos."}
           </p>
         </details>
       </div>
@@ -215,13 +215,13 @@ const DatasetImageCard = memo(function DatasetImageCard({
   );
 },
 /**
- * Comparador explÃ­cito para no re-renderizar 370 tarjetas por cada click en un checkbox.
+ * Comparador explícito para no re-renderizar 370 tarjetas por cada click en un checkbox.
  *
- * Los callbacks quedan fuera de la comparaciÃ³n a propÃ³sito: los cuatro son estables
- * (`useCallback` sin dependencias, y el de borrado va contra un ref al closure mÃ¡s nuevo), asÃ­
- * que su identidad nunca cambia y compararlos no aportarÃ­a nada. Si alguno dejara de ser
- * estable, esta comparaciÃ³n lo esconderÃ­a: cualquier callback nuevo que se agregue tiene que
- * mantenerse estable o entrar acÃ¡.
+ * Los callbacks quedan fuera de la comparación a propósito: los cuatro son estables
+ * (`useCallback` sin dependencias, y el de borrado va contra un ref al closure más nuevo), así
+ * que su identidad nunca cambia y compararlos no aportaría nada. Si alguno dejara de ser
+ * estable, esta comparación lo escondería: cualquier callback nuevo que se agregue tiene que
+ * mantenerse estable o entrar acá.
  */
 (previa, siguiente) =>
   previa.record === siguiente.record &&
@@ -234,7 +234,7 @@ function Stats({ data }: { data: LoraDatasetGalleryData }) {
   return (
     <dl className="mt-5 grid grid-cols-2 gap-2 border-t border-borde pt-5 sm:grid-cols-6">
       <div className="rounded-xl bg-superficie-2 px-3 py-3">
-        <dt className="text-[11px] text-texto-suave">ImÃ¡genes</dt>
+        <dt className="text-[11px] text-texto-suave">Imágenes</dt>
         <dd className="mt-1 text-lg font-semibold tabular-nums text-texto">{numberFormat.format(data.imageCount)}</dd>
       </div>
       <div className="rounded-xl bg-superficie-2 px-3 py-3">
@@ -242,11 +242,11 @@ function Stats({ data }: { data: LoraDatasetGalleryData }) {
         <dd className="mt-1 text-lg font-semibold tabular-nums text-texto">{data.captionCount}/{data.imageCount}</dd>
       </div>
       <div className="rounded-xl bg-superficie-2 px-3 py-3">
-        <dt className="text-[11px] text-texto-suave">CanÃ³nicos v007</dt>
+        <dt className="text-[11px] text-texto-suave">Canónicos v007</dt>
         <dd className="mt-1 text-lg font-semibold tabular-nums text-acento">{data.captionV007Count}/{data.orderImageCount}</dd>
       </div>
       <div className="rounded-xl bg-exito-suave px-3 py-3">
-        <dt className="text-[11px] text-exito">Fotos de Ã³rdenes</dt>
+        <dt className="text-[11px] text-exito">Fotos de órdenes</dt>
         <dd className="mt-1 text-lg font-semibold tabular-nums text-exito">{numberFormat.format(data.orderImageCount)}</dd>
       </div>
       <div className="rounded-xl bg-superficie-2 px-3 py-3">
@@ -254,7 +254,7 @@ function Stats({ data }: { data: LoraDatasetGalleryData }) {
         <dd className="mt-1 text-lg font-semibold tabular-nums text-texto">{numberFormat.format(data.webImageCount)}</dd>
       </div>
       <div className="rounded-xl bg-superficie-2 px-3 py-3">
-        <dt className="text-[11px] text-texto-suave">CatÃ¡logo Shopify</dt>
+        <dt className="text-[11px] text-texto-suave">Catálogo Shopify</dt>
         <dd className="mt-1 text-lg font-semibold tabular-nums text-texto">{numberFormat.format(data.catalogImageCount)}</dd>
       </div>
     </dl>
@@ -279,7 +279,7 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
 
   useEffect(() => {
     // `data` puede cambiar de identidad con un refresh del Server Component; no hay que
-    // restaurar otra vez porque eso reemplazarÃ­a la selecciÃ³n viva del usuario.
+    // restaurar otra vez porque eso reemplazaría la selección viva del usuario.
     if (restoredDatasetId.current === datasetId) return;
     restoredDatasetId.current = datasetId;
     if (!data) {
@@ -335,7 +335,7 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
     window.localStorage.setItem(`${SELECTION_STORAGE_PREFIX}${datasetId}:removed-components`, JSON.stringify(serializable));
   }, [componentStateReady, data, datasetId, removedComponents]);
 
-  // Los tres usan la forma funcional del setter, asÃ­ que no capturan estado: pueden ser
+  // Los tres usan la forma funcional del setter, así que no capturan estado: pueden ser
   // estables sin dependencias y el memo de la tarjeta los ignora con seguridad.
   const toggleSelection = useCallback((imageId: string): void => {
     setSelectedIds((current) => {
@@ -362,10 +362,10 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
   }, []);
 
   /**
-   * Saca la curadurÃ­a del navegador y la deja en disco, donde el empaquetador la puede leer.
-   * Sin esto la selecciÃ³n solo existe en el `localStorage` del navegador que la hizo, asÃ­ que
-   * no se puede empaquetar el dataset desde otra mÃ¡quina ni desde un script, y limpiar el
-   * navegador borra el trabajo de revisiÃ³n sin dejar rastro.
+   * Saca la curaduría del navegador y la deja en disco, donde el empaquetador la puede leer.
+   * Sin esto la selección solo existe en el `localStorage` del navegador que la hizo, así que
+   * no se puede empaquetar el dataset desde otra máquina ni desde un script, y limpiar el
+   * navegador borra el trabajo de revisión sin dejar rastro.
    */
   async function exportarSeleccion(): Promise<void> {
     setExportError(null);
@@ -384,7 +384,7 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
         }),
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error ?? "No se pudo exportar la selecciÃ³n.");
+      if (!response.ok) throw new Error(payload.error ?? "No se pudo exportar la selección.");
       setExportOk(`${numberFormat.format(payload.total ?? selectedIds.size)} image_id en ${payload.archivo ?? "aprobadas.json"}`);
     } catch (error) {
       setExportError(error instanceof Error ? error.message : String(error));
@@ -413,7 +413,7 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
         body: JSON.stringify({ imageIds: ids }),
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error ?? "No se pudieron borrar las imÃ¡genes.");
+      if (!response.ok) throw new Error(payload.error ?? "No se pudieron borrar las imágenes.");
       const deletedIds: string[] = Array.isArray(payload.deletedIds)
         ? (payload.deletedIds as unknown[]).filter((id: unknown): id is string => typeof id === "string")
         : ids;
@@ -425,7 +425,7 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
           return next;
         });
         setSelectedIds((current) => new Set([...current, ...selectedBeforeDelete].filter((id) => !deletedIds.includes(id))));
-        setDeleteError(`El servidor no confirmÃ³ borrado de ${notDeletedIds.length} imagen${notDeletedIds.length === 1 ? "" : "es"}.`);
+        setDeleteError(`El servidor no confirmó borrado de ${notDeletedIds.length} imagen${notDeletedIds.length === 1 ? "" : "es"}.`);
       }
       setRemovedComponents((current) => {
         const next = { ...current };
@@ -440,7 +440,7 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
         return next;
       });
       setSelectedIds((current) => new Set([...current, ...selectedBeforeDelete]));
-      setDeleteError(error instanceof Error ? error.message : "No se pudieron borrar las imÃ¡genes.");
+      setDeleteError(error instanceof Error ? error.message : "No se pudieron borrar las imágenes.");
       return null;
     } finally {
       setDeletingImageIds(new Set());
@@ -455,9 +455,9 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
    * `onDelete` de la tarjeta, estable pero nunca rancio.
    *
    * Hace falta porque `deleteImageIds` lee `selectedIds` y `deletedImageIds` directo del
-   * closure, no con setters funcionales: si la tarjeta memoizada se quedara con una versiÃ³n
-   * vieja de esta funciÃ³n, borrarÃ­a consultando estado viejo â€” y ese botÃ³n borra archivos del
-   * disco. El ref se actualiza en cada render y el callback estable siempre invoca al Ãºltimo.
+   * closure, no con setters funcionales: si la tarjeta memoizada se quedara con una versión
+   * vieja de esta función, borraría consultando estado viejo — y ese botón borra archivos del
+   * disco. El ref se actualiza en cada render y el callback estable siempre invoca al último.
    */
   const borrarRef = useRef(deleteOneImage);
   useEffect(() => {
@@ -491,7 +491,7 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
     };
   }, [data, deletedImageIds]);
 
-  /** PosiciÃ³n original de cada imagen, calculada una vez. Ver `sortedRecords`. */
+  /** Posición original de cada imagen, calculada una vez. Ver `sortedRecords`. */
   const indicePorImagen = useMemo(() => {
     if (!viewData) return new Map<string, number>();
     return new Map(viewData.records.map((record, index) => [record.imageId, index] as const));
@@ -499,7 +499,7 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
 
   /**
    * El reordenamiento (seleccionadas primero) se calcula sobre una copia DIFERIDA de la
-   * selecciÃ³n: al tildar un checkbox, React pinta el tilde en el render urgente y deja el
+   * selección: al tildar un checkbox, React pinta el tilde en el render urgente y deja el
    * reacomodo de las tarjetas para un render de baja prioridad. Sin esto, el click esperaba a
    * que se reordenara la grilla entera antes de verse marcado.
    */
@@ -512,9 +512,9 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
       -1,
     );
 
-    // `indicePorImagen` en vez de `records.indexOf(record)`: ese indexOf corrÃ­a DENTRO del
-    // comparador, asÃ­ que el orden salÃ­a cuadrÃ¡tico â€” con 370 imÃ¡genes, del orden de un millÃ³n
-    // de recorridos de array por cada click en un checkbox. Era la lentitud que se sentÃ­a.
+    // `indicePorImagen` en vez de `records.indexOf(record)`: ese indexOf corría DENTRO del
+    // comparador, así que el orden salía cuadrático — con 370 imágenes, del orden de un millón
+    // de recorridos de array por cada click en un checkbox. Era la lentitud que se sentía.
     const posicion = (imageId: string) => indicePorImagen.get(imageId) ?? 0;
 
     return [...viewData.records].sort((a, b) => {
@@ -535,7 +535,7 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
     });
   }, [indicePorImagen, selectedIdsParaOrden, viewData]);
 
-  /** PosiciÃ³n de cada imagen en el orden mostrado, para la etiqueta "007 / 370" de la tarjeta. */
+  /** Posición de cada imagen en el orden mostrado, para la etiqueta "007 / 370" de la tarjeta. */
   const posicionMostrada = useMemo(
     () => new Map(sortedRecords.map((record, index) => [record.imageId, index] as const)),
     [sortedRecords],
@@ -558,7 +558,7 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
     return (
       <section className="rounded-3xl border border-error/30 bg-error-suave p-5 sm:p-7" role="alert">
         <h2 className="text-sm font-semibold text-texto">Dataset no disponible</h2>
-        <p className="mt-1 text-sm leading-6 text-texto-suave">No hay una selecciÃ³n de imÃ¡genes disponible para revisar.</p>
+        <p className="mt-1 text-sm leading-6 text-texto-suave">No hay una selección de imágenes disponible para revisar.</p>
       </section>
     );
   }
@@ -573,11 +573,11 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
                 <CheckCircle2 className="size-3.5" aria-hidden="true" />
                 Borrador para revisar
               </span>
-              <span className="text-texto-suave">v006 Â· Ã³rdenes + web Sempertex</span>
+              <span className="text-texto-suave">v006 · órdenes + web Sempertex</span>
             </div>
-            <h2 id="lora-dataset-heading" className="mt-3 text-xl font-semibold tracking-tight text-texto">ImÃ¡genes configuradas para entrenamiento</h2>
+            <h2 id="lora-dataset-heading" className="mt-3 text-xl font-semibold tracking-tight text-texto">Imágenes configuradas para entrenamiento</h2>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-texto-suave">
-              Incluye {numberFormat.format(viewData.orderImageCount)} fotos reales de Ã³rdenes y {numberFormat.format(viewData.webImageCount)} imÃ¡genes directas de Sempertex.com. No incluye Pinterest, BASE ni imÃ¡genes individuales del catÃ¡logo Shopify. Todas comienzan deseleccionadas; tu selecciÃ³n manual se conserva en este navegador. Las imÃ¡genes web siguen pendientes de captions, desglose y revisiÃ³n de licencia.
+              Incluye {numberFormat.format(viewData.orderImageCount)} fotos reales de órdenes y {numberFormat.format(viewData.webImageCount)} imágenes directas de Sempertex.com. No incluye Pinterest, BASE ni imágenes individuales del catálogo Shopify. Todas comienzan deseleccionadas; tu selección manual se conserva en este navegador. Las imágenes web siguen pendientes de captions, desglose y revisión de licencia.
             </p>
           </div>
           <ImageIcon className="size-5 text-acento" aria-hidden="true" />
@@ -588,13 +588,13 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
       <div className="rounded-2xl border border-borde bg-superficie p-4 shadow-sm sm:p-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <label className="block min-w-0 flex-1">
-            <span className="mb-1.5 block text-xs font-semibold text-texto">Buscar en las imÃ¡genes</span>
+            <span className="mb-1.5 block text-xs font-semibold text-texto">Buscar en las imágenes</span>
             <span className="relative block">
               <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-texto-suave" aria-hidden="true" />
               <input
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder="ID, origen o texto del captionâ€¦"
+                placeholder="ID, origen o texto del caption…"
                 className="min-h-11 w-full rounded-xl border border-borde bg-fondo pl-9 pr-3 text-sm text-texto outline-none transition placeholder:text-texto-suave focus:border-acento focus:ring-2 focus:ring-acento/20"
               />
             </span>
@@ -608,8 +608,8 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
                 onChange={(event) => setFilter(event.target.value as Filter)}
                 className="min-h-11 w-full appearance-none rounded-xl border border-borde bg-fondo pl-9 pr-3 text-sm text-texto outline-none transition focus:border-acento focus:ring-2 focus:ring-acento/20"
               >
-                <option value="all">Las {numberFormat.format(viewData.imageCount)} imÃ¡genes</option>
-                <option value="order">Fotos de Ã³rdenes ({numberFormat.format(viewData.orderImageCount)})</option>
+                <option value="all">Las {numberFormat.format(viewData.imageCount)} imágenes</option>
+                <option value="order">Fotos de órdenes ({numberFormat.format(viewData.orderImageCount)})</option>
                 <option value="web">Web Sempertex ({numberFormat.format(viewData.webImageCount)})</option>
               </select>
             </span>
@@ -617,7 +617,7 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
         </div>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-borde pt-4">
           <p className="text-xs text-texto-suave" aria-live="polite">
-            Seleccionadas: <span className="font-semibold text-texto">{numberFormat.format(selectedIds.size)}</span> Â· No seleccionadas: {numberFormat.format(Math.max(0, viewData.imageCount - selectedIds.size))}
+            Seleccionadas: <span className="font-semibold text-texto">{numberFormat.format(selectedIds.size)}</span> · No seleccionadas: {numberFormat.format(Math.max(0, viewData.imageCount - selectedIds.size))}
           </p>
           <div className="flex flex-wrap gap-2">
             <button
@@ -649,23 +649,23 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
               className="inline-flex items-center gap-1.5 rounded-lg border border-acento bg-acento-suave px-2.5 py-1.5 text-xs font-medium text-acento transition hover:bg-acento-suave focus-visible:outline-2 focus-visible:outline-acento disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Download className="size-3.5" aria-hidden="true" />
-              {exportando ? "Exportandoâ€¦" : `Exportar selecciÃ³n (${numberFormat.format(selectedIds.size)})`}
+              {exportando ? "Exportando…" : `Exportar selección (${numberFormat.format(selectedIds.size)})`}
             </button>
             <button
               type="button"
               disabled={viewData.imageCount - selectedIds.size === 0 || deletingImageIds.size > 0}
               onClick={() => { setDeleteError(null); void deleteAllUnselected(); }}
-              title="Borrar permanentemente todas las imÃ¡genes no seleccionadas"
+              title="Borrar permanentemente todas las imágenes no seleccionadas"
               className="inline-flex items-center gap-1.5 rounded-lg border border-error/50 px-2.5 py-1.5 text-xs font-medium text-error transition hover:bg-error-suave disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Trash2 className="size-3.5" aria-hidden="true" />
               {deletingImageIds.size > 0
-                ? `Borrando ${numberFormat.format(deletingImageIds.size)}â€¦`
+                ? `Borrando ${numberFormat.format(deletingImageIds.size)}…`
                 : `Borrar no seleccionadas (${numberFormat.format(Math.max(0, viewData.imageCount - selectedIds.size))})`}
             </button>
           </div>
         </div>
-        {exportOk && <p className="mt-3 text-xs text-acento" role="status" aria-live="polite">SelecciÃ³n exportada: {exportOk}</p>}
+        {exportOk && <p className="mt-3 text-xs text-acento" role="status" aria-live="polite">Selección exportada: {exportOk}</p>}
         {exportError && <p className="mt-3 text-xs text-error" role="alert">{exportError}</p>}
         {deleteError && <p className="mt-3 text-xs text-error" role="alert">{deleteError}</p>}
         {deletingImageIds.size > 0 && (
@@ -674,7 +674,7 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
           </p>
         )}
         <p className="mt-3 text-xs text-texto-suave" aria-live="polite">
-          Mostrando {numberFormat.format(filteredRecords.length)} de {numberFormat.format(viewData.imageCount)} imÃ¡genes. Las seleccionadas aparecen primero; al seleccionar una, las no seleccionadas anteriores pasan al fondo absoluto.
+          Mostrando {numberFormat.format(filteredRecords.length)} de {numberFormat.format(viewData.imageCount)} imágenes. Las seleccionadas aparecen primero; al seleccionar una, las no seleccionadas anteriores pasan al fondo absoluto.
           {viewData.pendingImageCount === 0 ? " No hay captions pendientes." : ` Quedan ${numberFormat.format(viewData.pendingImageCount)} pendientes.`}
         </p>
       </div>
@@ -682,8 +682,8 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
       {filteredRecords.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-borde bg-superficie px-5 py-10 text-center">
           <Search className="mx-auto size-5 text-texto-suave" aria-hidden="true" />
-          <p className="mt-2 text-sm font-medium text-texto">No hay imÃ¡genes con ese filtro</p>
-          <p className="mt-1 text-sm text-texto-suave">Prueba con otro tÃ©rmino o muestra todas las imÃ¡genes.</p>
+          <p className="mt-2 text-sm font-medium text-texto">No hay imágenes con ese filtro</p>
+          <p className="mt-1 text-sm text-texto-suave">Prueba con otro término o muestra todas las imágenes.</p>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

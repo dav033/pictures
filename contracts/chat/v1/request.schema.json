@@ -1059,6 +1059,11 @@
         "training_1",
         "training_2"
       ]
+    },
+    "creatividad": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5
     }
   },
   "required": [

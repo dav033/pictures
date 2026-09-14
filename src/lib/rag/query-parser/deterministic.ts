@@ -4,6 +4,7 @@ import {
   clasificarFormas,
   clasificarOcasiones,
   clasificarTaxonomia,
+  CONTEO_NO_TAMANO_LOOKAHEAD,
   plegarTexto,
   type TaxonomyClassification,
 } from "@/lib/rag/taxonomy/v2";
@@ -44,7 +45,9 @@ function parseDiameter(text: string): number[] {
   const explicitCode = normalized.match(/\b(?:r)\s*-?\s*(5|9|12|18|24|36|40)\b/i);
   if (explicitCode) found.add(Number(explicitCode[1]));
 
-  for (const match of normalized.matchAll(/\b(?:tamano|talla|medida|de)\s*(5|9|12|18|24|36|40)\s*(?:pulgadas?|in)?\b/gi)) {
+  // "de 40 invitados" is a guest count; the taxonomy owns that exclusion.
+  const porPalabra = new RegExp(`\\b(?:tamano|talla|medida|de)\\s*(5|9|12|18|24|36|40)\\s*(?:pulgadas?|in)?\\b${CONTEO_NO_TAMANO_LOOKAHEAD}`, "gi");
+  for (const match of normalized.matchAll(porPalabra)) {
     found.add(Number(match[1]));
   }
   for (const match of normalized.matchAll(/\b(5|9|12|18|24|36|40)\s*(?:pulgadas?|in)\b/gi)) {

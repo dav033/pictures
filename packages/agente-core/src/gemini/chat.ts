@@ -193,6 +193,8 @@ export function crearChatGemini(opts?: { apiKey?: string; modelo?: string; think
               config: {
                 systemInstruction: p.sistema,
                 abortSignal: p.signal,
+                ...(p.temperatura !== undefined ? { temperature: p.temperatura } : {}),
+                ...(p.maxTokens !== undefined ? { maxOutputTokens: p.maxTokens } : {}),
                 tools: p.herramientas.length
                   ? [{ functionDeclarations: p.herramientas.map(herramientaADeclaracion) }]
                   : undefined,
@@ -233,6 +235,8 @@ export function crearChatGemini(opts?: { apiKey?: string; modelo?: string; think
               config: {
                 systemInstruction: p.sistema,
                 abortSignal: p.signal,
+                ...(p.temperatura !== undefined ? { temperature: p.temperatura } : {}),
+                ...(p.maxTokens !== undefined ? { maxOutputTokens: p.maxTokens } : {}),
                 tools: p.herramientas.length
                   ? [{ functionDeclarations: p.herramientas.map(herramientaADeclaracion) }]
                   : undefined,

@@ -1,6 +1,6 @@
 /**
  * Reranker por slot de escena (Tarea 04.2 —
- * `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`, sección 9.2: "un reranker por
+ * `docs/migracion-python/PLAN-MAESTRO-V2.md`, sección 9.2: "un reranker por
  * slot valora función, estilo, color, escala, fuente y precio").
  *
  * A diferencia del reranker V1 (`./rerank.ts`) que opera sobre roles de

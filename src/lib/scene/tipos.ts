@@ -1,6 +1,6 @@
 /**
  * Contratos Zod V2 del dominio de escena (Tarea 01.1 —
- * `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`, sección 7).
+ * `docs/migracion-python/PLAN-MAESTRO-V2.md`, sección 7).
  *
  * Implementa, con Zod y tipos inferidos (`z.infer<...>`), los contratos
  * descritos en la sección 7 del plan: `EventIntentV2` (7.1), `SceneSlot` /

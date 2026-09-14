@@ -1,6 +1,6 @@
 /**
  * Layout espacial por zona para SceneSpec V2 (Tarea 07.1 —
- * `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`, sección 10.1-10.2).
+ * `docs/migracion-python/PLAN-MAESTRO-V2.md`, sección 10.1-10.2).
  *
  * Mapea las zonas de escena V2 (sección 5.2) a cajas de composición
  * (`BBox` + `depthLayer`) para construir la especificación de imagen sin

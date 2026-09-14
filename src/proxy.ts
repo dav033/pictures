@@ -4,7 +4,18 @@ import { SESSION_COOKIE, sessionToken } from "@/lib/auth/session";
 
 export function proxy(request: NextRequest) {
   const expected = process.env.APP_PASSWORD;
-  if (!expected) return NextResponse.next();
+  if (!expected) {
+    if (process.env.NODE_ENV !== "production") return NextResponse.next();
+    if (request.nextUrl.pathname.startsWith("/api/")) {
+      return NextResponse.json(
+        { code: "AUTH_NOT_CONFIGURED", message: "La autenticación del servicio no está configurada." },
+        { status: 503 },
+      );
+    }
+    const url = new URL("/login", request.url);
+    url.searchParams.set("error", "auth-config");
+    return NextResponse.redirect(url);
+  }
 
   const cookie = request.cookies.get(SESSION_COOKIE)?.value;
   if (cookie === sessionToken(expected)) {

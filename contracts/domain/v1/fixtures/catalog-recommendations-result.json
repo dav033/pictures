@@ -1,0 +1,72 @@
+{
+  "operation_schema_version": "catalog-recommendations-result.v1",
+  "catalog_snapshot_id": "products_catalog:fixture",
+  "reference": {
+    "product_id": "prod-rojo",
+    "variant_id": "var-rojo-12",
+    "size_code": "R-12",
+    "diameter_inches": 12,
+    "shape": "redondo",
+    "category": "globo_latex",
+    "colors": ["rojo"]
+  },
+  "candidates": [
+    {
+      "product_id": "prod-rojo",
+      "title": "Globo látex rojo",
+      "category": "globo_latex",
+      "colors": ["rojo"],
+      "finishes": ["mate"],
+      "occasions": ["cumpleanos"],
+      "available": true,
+      "image": "https://cdn.example/rojo.jpg",
+      "variants": [
+        {
+          "variant_id": "var-rojo-12-x50",
+          "sku": "ROJO-12-X50",
+          "title": "R-12 x50",
+          "price": 28977,
+          "available": true,
+          "size_code": "R-12",
+          "diameter_inches": 12,
+          "shape": "redondo",
+          "colors": ["rojo"]
+        }
+      ]
+    },
+    {
+      "product_id": "prod-azul",
+      "title": "Globo látex azul",
+      "category": "globo_latex",
+      "colors": ["azul"],
+      "finishes": [],
+      "occasions": [],
+      "available": true,
+      "image": null,
+      "variants": [
+        {
+          "variant_id": "var-azul-12",
+          "sku": "AZUL-12",
+          "title": "R-12 x12",
+          "price": 8832,
+          "available": true,
+          "size_code": "R-12",
+          "diameter_inches": 12,
+          "shape": "redondo",
+          "colors": ["azul"]
+        },
+        {
+          "variant_id": "var-azul-12-x50",
+          "sku": null,
+          "title": null,
+          "price": 29500,
+          "available": true,
+          "size_code": "R-12",
+          "diameter_inches": 12,
+          "shape": "redondo",
+          "colors": []
+        }
+      ]
+    }
+  ]
+}

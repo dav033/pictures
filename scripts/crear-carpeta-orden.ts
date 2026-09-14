@@ -9,8 +9,9 @@
 
 import { mkdir, readFile, writeFile, readdir } from "node:fs/promises";
 import path from "node:path";
+import { directorioOrdenes } from "../src/lib/ordenes/directorio";
 
-const RUTA_ORDENES = "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
+const RUTA_ORDENES = directorioOrdenes();
 const INDEX_PATH = path.resolve("data/manifests/revie-reviews-index.json");
 
 type IndiceOrden = Record<string, { fotos: string[]; cliente: string | null; producto: string | null }>;

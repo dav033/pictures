@@ -1,4 +1,5 @@
 import type { Brief } from "@/lib/types";
+import { plegarTexto } from "@/lib/rag/taxonomy/v2";
 import { interpretarConsultaDeterminista } from "./deterministic";
 import type { IntentQuery } from "./schema";
 
@@ -18,10 +19,31 @@ export function textoContextoRestricciones(solicitudOriginal: string, brief: Bri
 }
 
 /**
+ * `guirnalda_arco` is the category of ready-made garland/arch products
+ * (E-DECORS kits and packaged garlands, 13 products in the catalog). In a
+ * decoration request, "arco", "semi arco" or "guirnalda" names the figure that
+ * will be built from balloon materials (`Figura` in medidas/geometria.ts,
+ * `balloon_structure` covered by globo_latex/metalizado in
+ * taxonomy/alcance-referencia.ts). Locking the category would exclude every
+ * balloon needed to build it, so it is a hard filter only when the customer
+ * explicitly asks for a ready-made kit.
+ */
+const CATEGORIA_PRODUCTO_ESTRUCTURA = "guirnalda_arco";
+
+function pideKitPrearmado(texto: string): boolean {
+  return /\b(?:kits?|e ?decors?|predisenad\w*|prearmad\w*)\b/.test(plegarTexto(texto));
+}
+
+/**
  * Parse constraints locally. No Gemini enrichment: an AI-generated component
  * query can never contribute a hard SQL predicate.
  */
 export function extraerFiltrosDurosBusqueda(solicitudOriginal: string, brief: Brief): FiltrosDurosBusqueda {
   const contexto = textoContextoRestricciones(solicitudOriginal, brief);
-  return interpretarConsultaDeterminista(contexto).intent.filtros_duros;
+  const filtros = interpretarConsultaDeterminista(contexto).intent.filtros_duros;
+  if (!filtros.categorias.includes(CATEGORIA_PRODUCTO_ESTRUCTURA) || pideKitPrearmado(contexto)) return filtros;
+  return {
+    ...filtros,
+    categorias: filtros.categorias.filter((categoria) => categoria !== CATEGORIA_PRODUCTO_ESTRUCTURA),
+  };
 }

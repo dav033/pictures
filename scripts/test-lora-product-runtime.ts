@@ -1,5 +1,5 @@
 /**
- * Subagent G deliverable â€” runtime prompt integration and prompt-contract
+ * Subagent G deliverable — runtime prompt integration and prompt-contract
  * tests.
  *
  * Run: npx tsx scripts/test-lora-product-runtime.ts
@@ -10,13 +10,17 @@
  */
 import assert from "node:assert/strict";
 import type { SceneSpec } from "../src/lib/ia/scene-spec";
-import { compileLoraCaption } from "../src/lib/ia/lora-caption-compiler";
-import { compileProductPrompt, type ElementSizeConfirmation } from "../src/lib/ia/lora-product-runtime";
-import { findLoraPromptProductLeaks, preflightLoraPrompt } from "../src/lib/ia/lora-prompt-preflight";
+import { readFileSync } from "node:fs";
+import { compileLoraCaption, LORA_JSON_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH } from "../src/lib/ia/lora-caption-compiler";
+import { parseLoraPromptFormat } from "../src/lib/ia/lora-prompt-format";
+import { ReferenceBlueprintV2Schema } from "../src/lib/ia/reference-blueprint";
+import { ambientDecorFromReference, ambientDecorName, parseDetectedStructure, referenceStructureSemantics, shapeDescription } from "../src/lib/ia/reference-structure";
+import { compileProductPrompt, sizeConfirmationsFromMaterialLines, type ElementSizeConfirmation } from "../src/lib/ia/lora-product-runtime";
+import { findLoraPromptLanguageLeaks, findLoraPromptProductLeaks, preflightLoraPrompt } from "../src/lib/ia/lora-prompt-preflight";
 import { buildVisualContext } from "../src/lib/ia/visual-context";
 import { PRODUCT_VOCABULARY } from "../src/lib/lora/product-vocabulary-data";
 import { aDescriptorPerceptual } from "../src/lib/lora/descriptor-perceptual";
-import { VOCABULARY_VERSION, type ProductVocabulary } from "../src/lib/lora/product-vocabulary";
+import { resolveProductConcept, VOCABULARY_VERSION, type ProductVocabulary } from "../src/lib/lora/product-vocabulary";
 
 let passCount = 0;
 function pass(name: string) {
@@ -81,7 +85,7 @@ function scene(elements: SceneSpec["elements"][number][]): SceneSpec {
   } as SceneSpec;
 }
 
-const context = buildVisualContext({ userRequest: "cumpleaÃ±os en salÃ³n" });
+const context = buildVisualContext({ userRequest: "cumpleaños en salón" });
 
 const GOLD_REFLEX_ID = "7109611258049";
 const ROSE_GOLD_REFLEX_ID = "7109611323585";
@@ -93,6 +97,7 @@ const LINKOLOON_WHITE_ID = "7109565710529";
 const FOIL_FUCHSIA_ID = "7105908572353";
 const SILK_CREAM_PEARL_ID = "10467043344577";
 const METALLIZED_PINK_CURTAIN_ID = "7107494215873";
+const DUSTY_ROSE_FASHION_ID = "20010671";
 
 // ===========================================================================
 // 1. ProductPromptCompilation contract shape.
@@ -196,7 +201,7 @@ console.log("4. concept_id never leaks into the prompt");
   pass("preflightLoraPrompt passes clean for a canonical prompt with a vocabulary attached");
 
   // Simulate an accidental leak (structural shape + literal known id) and
-  // confirm the detector actually fires â€” proving it is not a no-op.
+  // confirm the detector actually fires — proving it is not a no-op.
   const leakedPrompt = `${result.prompt} debug: ${"balloon.round.latex.reflex.rose_gold"}`;
   const leakedReport = preflightLoraPrompt({ sceneSpec: spec, clauses: result.clauses, prompt: leakedPrompt, vocabulary: PRODUCT_VOCABULARY });
   assert.equal(leakedReport.ok, false);
@@ -212,7 +217,7 @@ console.log("4. concept_id never leaks into the prompt");
 
 // ===========================================================================
 // 5. Reflex stays literal; gold vs rose gold; Satin vs Matte vs Metallic;
-//    latex vs foil â€” all distinguishable in the rendered text.
+//    latex vs foil — all distinguishable in the rendered text.
 // ===========================================================================
 console.log("5. Visual/finish distinctions preserved in the rendered prompt");
 {
@@ -298,7 +303,7 @@ console.log("5. Visual/finish distinctions preserved in the rendered prompt");
 // ===========================================================================
 console.log("6. Legacy fallback is explicit, not silent");
 {
-  const spec = scene([element({ id: "ARCH", name: "Arco OrgÃ¡nico", type: "arco", placement: "arco_central", role: "focal", colors: ["rosado"] })]);
+  const spec = scene([element({ id: "ARCH", name: "Arco Orgánico", type: "arco", placement: "arco_central", role: "focal", colors: ["rosado"] })]);
 
   const noVocabResult = compileProductPrompt({ sceneSpec: spec, visualContext: context });
   assert.equal(noVocabResult.legacy, true);
@@ -311,7 +316,7 @@ console.log("6. Legacy fallback is explicit, not silent");
   assert.equal(emptyVocabResult.legacy, true);
   pass("an empty vocabulary array is also treated as an explicit legacy fallback");
 
-  const noCatalogBackedSpec = scene([element({ id: "ARCH", name: "Arco OrgÃ¡nico", type: "arco", placement: "arco_central", role: "focal", colors: ["rosado"] })]);
+  const noCatalogBackedSpec = scene([element({ id: "ARCH", name: "Arco Orgánico", type: "arco", placement: "arco_central", role: "focal", colors: ["rosado"] })]);
   const noProductResult = compileProductPrompt({ sceneSpec: noCatalogBackedSpec, visualContext: context, vocabulary: PRODUCT_VOCABULARY });
   assert.equal(noProductResult.legacy, true, "a scene with zero catalog-backed elements must also fall back explicitly, even with a valid vocabulary");
   assert.ok(noProductResult.diagnostics.some((line) => line.includes("legacy fallback")));
@@ -560,6 +565,354 @@ console.log("13. Previously failing live v007 families resolve canonically");
     assert.match(result.prompt, new RegExp(aDescriptorPerceptual(testCase.label).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
   pass("Pastel Dusk pink, Silk spring pink, and Infinity Interrogacion black variants resolve from v007 evidence");
+}
+
+// ===========================================================================
+// 14. Regression (LORA_PREFLIGHT_FAILED "cobertura de colores 2/3; longitud
+//     845 supera límite 750"): an approved XV scene in rosa/dorado/plateado
+//     must compile within the budget with every structure, placement,
+//     relation and color, including a shade whose label lacks the plan color.
+// ===========================================================================
+console.log("14. XV scene with three approved colors fits the LoRA budget");
+{
+  const xvContext = buildVisualContext({
+    brief: { tipo_evento: "XV años", estilo: "glamour", colores: ["rosa", "dorado", "plateado"], espacio: "salón" },
+    userRequest: "Quiero decorar unos XV años en un salón, estilo glamour, colores rosa, dorado y plateado",
+  });
+  const spec = scene([
+    element({ id: "EST_01_ARCO", name: "Arco orgánico central", type: "arco", placement: "arco_central", role: "focal", colors: ["rosado", "dorado", "plateado"], productIds: [DUSTY_ROSE_FASHION_ID, GOLD_REFLEX_ID, SILVER_REFLEX_ID] }),
+    element({ id: "EST_02_COLUMNA_IZQ", name: "Columna izquierda", type: "columna", placement: "lateral_izquierdo", role: "soporte", group: "cols", colors: ["rosado", "dorado"], productIds: [DUSTY_ROSE_FASHION_ID, GOLD_REFLEX_ID] }),
+    element({ id: "EST_03_COLUMNA_DER", name: "Columna derecha", type: "columna", placement: "lateral_derecho", role: "soporte", group: "cols", colors: ["rosado", "dorado"], productIds: [DUSTY_ROSE_FASHION_ID, GOLD_REFLEX_ID] }),
+    element({ id: "EST_04_CENTRO_MESA", name: "Centro de mesa principal", type: "centro_mesa", placement: "sobre_mesa_principal", role: "acento", colors: ["dorado", "plateado"], productIds: [GOLD_REFLEX_ID, SILVER_REFLEX_ID] }),
+  ]);
+  const archSizes: ElementSizeConfirmation[] = ["R-9", "R-12", "R-18"].flatMap((sizeCode) =>
+    [DUSTY_ROSE_FASHION_ID, GOLD_REFLEX_ID, SILVER_REFLEX_ID].map((productId) => ({ elementId: "EST_01_ARCO", productId, sizeCode })),
+  );
+  const sizeConfirmations: ElementSizeConfirmation[] = [
+    ...archSizes,
+    { elementId: "EST_02_COLUMNA_IZQ", productId: DUSTY_ROSE_FASHION_ID, sizeCode: "R-12" },
+    { elementId: "EST_02_COLUMNA_IZQ", productId: GOLD_REFLEX_ID, sizeCode: "R-12" },
+    { elementId: "EST_04_CENTRO_MESA", productId: SILVER_REFLEX_ID, sizeCode: "R-5" },
+  ];
+  // Product wording (v007 captions, trigger v3): this section exercises label compaction.
+  const trigger = "eventdecor_style_v3";
+  const result = compileProductPrompt({ sceneSpec: spec, visualContext: xvContext, vocabulary: PRODUCT_VOCABULARY, sizeConfirmations, trigger });
+  // The route swaps the compiler's trigger for the resolved one (ensureLoraTriggers).
+  const report = preflightLoraPrompt({ sceneSpec: spec, clauses: result.clauses, prompt: result.prompt.replace(/^eventdecor_style_v2/, trigger), triggers: [trigger], vocabulary: PRODUCT_VOCABULARY });
+
+  assert.equal(result.legacy, false);
+  assert.deepEqual(result.unresolved_products, []);
+  assert.equal(report.ok, true, `${report.errors.join("; ")}\n${result.prompt}`);
+  assert.deepEqual(report.colors, { expected: 3, represented: 3 });
+  assert.ok(result.prompt.length <= LORA_PROMPT_MAX_LENGTH, `prompt length ${result.prompt.length}`);
+  pass("three-color XV scene passes preflight (colors 3/3) within the 750-character budget");
+
+  assert.match(result.prompt, /dusty rose/, "the product's own shade stays in the prompt");
+  assert.match(result.prompt, /\bpink\b/, "the approved plan color (rosado -> pink) must still reach the model");
+  assert.match(result.prompt, /\bgold\b/);
+  assert.match(result.prompt, /\bsilver\b/);
+  assert.match(result.prompt, /organic balloon arch/);
+  assert.match(result.prompt, /two balloon columns/);
+  assert.match(result.prompt, /balloon centerpiece/);
+  assert.match(result.prompt, /centered around the stage photo area/);
+  assert.match(result.prompt, /one standing on the left and one on the right, flanking the main arch/);
+  assert.match(result.prompt, /placed on the main table/);
+  assert.deepEqual(report.structures, { expected: 4, represented: 4 });
+  assert.deepEqual(report.relationships, { expected: 1, represented: 1 });
+  assert.deepEqual(findLoraPromptLanguageLeaks(result.prompt), []);
+  pass("compaction keeps every structure, placement, bilateral relation and color, with no Spanish leak");
+
+  assert.ok(result.diagnostics.some((line) => line.includes("prompt compacted")), "a compacted prompt must be reported in diagnostics");
+  const again = compileProductPrompt({ sceneSpec: spec, visualContext: xvContext, vocabulary: PRODUCT_VOCABULARY, sizeConfirmations, trigger });
+  assert.equal(again.prompt, result.prompt);
+  pass("compaction is deterministic and observable in diagnostics");
+
+  const longTrigger = "eventdecor_structure_v12";
+  const withLongTrigger = compileProductPrompt({ sceneSpec: spec, visualContext: xvContext, vocabulary: PRODUCT_VOCABULARY, sizeConfirmations, trigger: longTrigger });
+  const effectiveLength = withLongTrigger.prompt.length - trigger.length + longTrigger.length;
+  assert.ok(effectiveLength <= LORA_PROMPT_MAX_LENGTH, `effective length with the resolved trigger: ${effectiveLength}`);
+  pass("the budget accounts for the resolved LoRA trigger that replaces the compiler's own");
+
+  const small = scene([element({ id: "ARCH", name: "Arco", type: "arco", placement: "arco_central", role: "focal", colors: ["rosado"], productId: DUSTY_ROSE_FASHION_ID })]);
+  const smallResult = compileProductPrompt({ sceneSpec: small, visualContext: context, vocabulary: PRODUCT_VOCABULARY });
+  const smallReport = preflightLoraPrompt({ sceneSpec: small, clauses: smallResult.clauses, prompt: smallResult.prompt, vocabulary: PRODUCT_VOCABULARY });
+  assert.equal(smallReport.ok, true, smallReport.errors.join("; "));
+  assert.ok(smallResult.prompt.includes("round latex balloon in dusty rose pink, solid matte finish"), "a scene that fits keeps the full label, with the plan color attached to its shade");
+  assert.doesNotMatch(smallResult.prompt, /pink tones/, "the plan color must not become a global tint (it produced pink walls and gradients)");
+  assert.ok(!smallResult.diagnostics.some((line) => line.includes("prompt compacted")));
+  pass("a scene that already fits is rendered in full, and a shade label still carries its plan color");
+}
+
+// ===========================================================================
+// 15. Regression: UTF-8 text in the vocabulary was committed as mojibake
+//     (UTF-8 bytes decoded as Windows-1252), so accented catalog titles such
+//     as "CUMPLEAÑOS" never resolved.
+// ===========================================================================
+console.log("15. Accented catalog titles resolve and sources carry no mojibake");
+{
+  for (const title of ["BANDEROLA METALIZADA FELIZ CUMPLEAÑOS FESTIVO", "CARTEL DE LETRAS CUMPLEAÑOS PARAISO TROPICAL"]) {
+    const resolved = resolveProductConcept({ text: title }, PRODUCT_VOCABULARY);
+    assert.equal(resolved.status, "resolved", `${title} must resolve by exact catalog title`);
+  }
+  pass("catalog titles with Ñ resolve by exact title");
+
+  // Sequences produced when UTF-8 bytes are decoded as Windows-1252.
+  const mojibake = /\u00c3[\u0080-\u00bf\u0152\u0153\u0160\u0161\u0178\u017d\u017e\u0192\u02c6\u02dc\u2013\u2014\u2018-\u201e\u2020-\u2022\u2026\u2030\u2039\u203a\u20ac\u2122]|\u00c2[\u00a0-\u00bf]|\u00e2\u20ac/;
+  // Deliberate alias for a catalog title variant imported with a mojibake "®".
+  const allowed = ["LINK-O-LOON\u00c2\u00ae"];
+  assert.ok(mojibake.test("quinceaÃ±era"), "the mojibake detector must flag UTF-8 decoded as Windows-1252");
+  assert.ok(!mojibake.test("quinceañera celebración ®"), "correct UTF-8 text must not be flagged");
+  const sources = [
+    "src/lib/ia/lora-prompt-preflight.ts",
+    "src/lib/ia/lora-product-runtime.ts",
+    "src/lib/ia/lora-caption-compiler.ts",
+    "src/lib/lora/product-vocabulary.ts",
+    "src/lib/lora/product-vocabulary-data.ts",
+    "src/lib/lora/product-vocabulary-catalog-data.ts",
+  ];
+  for (const source of sources) {
+    const lines = readFileSync(new URL(`../${source}`, import.meta.url), "utf8").split("\n");
+    const offending = lines
+      .map((line, index) => ({ line: allowed.reduce((text, value) => text.split(value).join(""), line), index }))
+      .filter(({ line }) => mojibake.test(line))
+      .map(({ index }) => `${source}:${index + 1}`);
+    assert.deepEqual(offending, [], "mojibake in a LoRA source file");
+  }
+  pass("LoRA prompt and vocabulary sources contain no mojibake sequences");
+}
+
+// ===========================================================================
+// 16. Regression: sizes belong to the exact selected variant and structure.
+//     The route picked the first family sibling (an R-5 label for R-24 lines)
+//     and the runtime applied a product's sizes to every structure using it.
+// ===========================================================================
+console.log("16. Confirmed sizes follow the exact variant and structure");
+{
+  const products = [
+    { id: "V-GOLD-R5", familiaId: "P-GOLD", tamanoCodigo: "R-5", diamPulg: 5 },
+    { id: "V-GOLD-R18", familiaId: "P-GOLD", tamanoCodigo: "R-18", diamPulg: 18 },
+    { id: "V-SILVER-R12", familiaId: "P-SILVER", tamanoCodigo: "R-12", diamPulg: 12 },
+  ];
+  const confirmations = sizeConfirmationsFromMaterialLines([
+    { structure_id: "ARCH", product_id: "P-GOLD", variant_id: "V-GOLD-R18" },
+    { structure_id: "ARCH", product_id: "P-GOLD" },
+    { structure_id: "ARCH", product_id: "P-SILVER" },
+  ], products);
+  assert.deepEqual(confirmations, [
+    { elementId: "ARCH", productId: "V-GOLD-R18", sizeCode: "R-18", diameterInches: 18 },
+    { elementId: "ARCH", productId: "P-SILVER", sizeCode: "R-12", diameterInches: 12 },
+  ], "exact variant wins; an ambiguous family (R-5 and R-18) yields no size; a single-size family does");
+  pass("size confirmations use the exact variant and never an arbitrary family sibling");
+
+  const spec = scene([
+    element({ id: "ARCH", name: "Arco", type: "arco", placement: "arco_central", role: "focal", colors: ["dorado"], productId: GOLD_REFLEX_ID }),
+    element({ id: "CENTER", name: "Centro", type: "centro_mesa", placement: "sobre_mesa_principal", colors: ["plateado"], productIds: [GOLD_REFLEX_ID, SILVER_REFLEX_ID] }),
+  ]);
+  const result = compileProductPrompt({
+    sceneSpec: spec,
+    visualContext: context,
+    vocabulary: PRODUCT_VOCABULARY,
+    sizeConfirmations: [
+      { elementId: "ARCH", productId: GOLD_REFLEX_ID, sizeCode: "R-18" },
+      { elementId: "CENTER", productId: GOLD_REFLEX_ID, sizeCode: "R-5" },
+    ],
+  });
+  assert.match(result.prompt, /centered around the stage photo area/);
+  assert.doesNotMatch(result.prompt, /5-inch and 18-inch/, "one structure's size must not be attached to another structure");
+  assert.match(result.prompt, /\(18-inch\) centered around the stage photo area/);
+  pass("a product used by two structures keeps each structure's own confirmed size");
+}
+
+// ===========================================================================
+// 17. The prompt follows the captions of the LoRA that reads it. training_1
+//     runs lora-run-v004-1000 (trigger eventdecor_style_v2), trained on scene
+//     captions without inches, "round latex balloon" or "stage photo area";
+//     the v007 product wording produced incoherent compositions with it.
+// ===========================================================================
+console.log("17. Caption wording follows the resolved LoRA");
+{
+  const PASTEL_DUSK_BLUE = PRODUCT_VOCABULARY.find((concept) => concept.concept_id === "balloon.round.latex.pastel_dusk.blue")!;
+  const WHITE_FASHION = PRODUCT_VOCABULARY.find((concept) => concept.concept_id === "balloon.round.latex.fashion.white")!;
+  const blueId = PASTEL_DUSK_BLUE.catalog_product_ids[0]!;
+  const whiteId = WHITE_FASHION.catalog_product_ids[0]!;
+  const spec = scene([
+    element({ id: "HALF_ARCH", name: "Semiarco", type: "semiarco", placement: "arco_central", role: "focal", colors: ["azul"], productId: blueId }),
+    element({ id: "COLUMN", name: "Columna", type: "columna", placement: "lateral_izquierdo", role: "soporte", colors: ["azul"], productId: blueId }),
+    element({ id: "GARLAND", name: "Guirnalda", type: "guirnalda", placement: "piso_frontal", role: "acento", colors: ["blanco"], productId: whiteId }),
+  ]);
+  const sizeConfirmations: ElementSizeConfirmation[] = ["R-5", "R-12", "R-24"].flatMap((sizeCode) => [
+    { elementId: "HALF_ARCH", productId: blueId, sizeCode },
+    { elementId: "COLUMN", productId: blueId, sizeCode },
+    { elementId: "GARLAND", productId: whiteId, sizeCode },
+  ]);
+
+  const v004 = compileProductPrompt({ sceneSpec: spec, visualContext: context, vocabulary: PRODUCT_VOCABULARY, sizeConfirmations, trigger: "eventdecor_style_v2" });
+  const v004Report = preflightLoraPrompt({ sceneSpec: spec, clauses: v004.clauses, prompt: v004.prompt, triggers: ["eventdecor_style_v2"], vocabulary: PRODUCT_VOCABULARY });
+  assert.equal(v004Report.ok, true, `${v004Report.errors.join("; ")}\n${v004.prompt}`);
+  assert.doesNotMatch(v004.prompt, /inch|round latex balloon|stage/i, "v004 captions never use inch sizes, catalog object labels or a stage");
+  assert.match(v004.prompt, /a one-sided curved organic balloon garland of large and small muted matte blue balloons/);
+  assert.match(v004.prompt, /organic balloon column of large and small muted matte blue balloons standing apart on the left/);
+  assert.match(v004.prompt, /organic balloon garland of small matte white balloons resting on the floor in front/, "R-24 is not an allowed white size, so only small sizes remain");
+  assert.match(v004.prompt, /\. set in an indoor event hall, birthday celebration atmosphere/, "the venue becomes the v004 \"set in/against\" setting");
+  pass("eventdecor_style_v2 prompts use the v004 scene wording and still pass preflight");
+
+  const v007 = compileProductPrompt({ sceneSpec: spec, visualContext: context, vocabulary: PRODUCT_VOCABULARY, sizeConfirmations, trigger: "eventdecor_style_v3" });
+  assert.match(v007.prompt, /round latex balloon in blue/);
+  assert.match(v007.prompt, /5-inch/);
+  assert.deepEqual(v007.resolved_concepts, v004.resolved_concepts, "wording never changes product identity");
+  pass("eventdecor_style_v3 keeps the v007 product wording with the same resolved concepts");
+
+  const pinkShade = scene([element({ id: "ARCH", name: "Arco", type: "arco", placement: "fondo_pared", role: "focal", colors: ["rosado", "blanco"], productIds: [DUSTY_ROSE_FASHION_ID, whiteId] })]);
+  const pink = compileProductPrompt({ sceneSpec: pinkShade, visualContext: context, vocabulary: PRODUCT_VOCABULARY, trigger: "eventdecor_style_v2" });
+  const pinkReport = preflightLoraPrompt({ sceneSpec: pinkShade, clauses: pink.clauses, prompt: pink.prompt, triggers: ["eventdecor_style_v2"], vocabulary: PRODUCT_VOCABULARY });
+  assert.equal(pinkReport.ok, true, pinkReport.errors.join("; "));
+  assert.match(pink.prompt, /matte dusty rose pink and matte white balloons against the rear wall/);
+  assert.doesNotMatch(pink.prompt, /tones/);
+  pass("the approved color stays attached to the product shade in the v004 wording");
+}
+
+// ===========================================================================
+// 18. Reference structures: typed detection, heights, non-catalog styling
+//     and the JSON prompt variant.
+// ===========================================================================
+console.log("18. Reference structures, relative heights, styling and JSON prompt");
+{
+  // Two asymmetrical half-arches (a short one on the left, a tall one on the
+  // right curving toward it) used to become "column + half-arch + garland".
+  const left = parseDetectedStructure({ structure_type: "half_arch", horizontal_position: "left", relative_height: "short", curves_toward: "right", grounded: true, mirrors_element: "none" });
+  const right = parseDetectedStructure({ structure_type: "Half-Arch", horizontal_position: "right", relative_height: "tall", curves_toward: "left", grounded: true });
+  assert.ok(left && right);
+  assert.equal(parseDetectedStructure({ structure_type: "spiral tower" }), undefined, "unknown structure types are discarded, never guessed");
+  assert.equal(shapeDescription(right), "tall half-arch, on the right, curving toward the left, standing on the floor");
+  const semantics = referenceStructureSemantics([
+    { elementId: "REF_01_E01", bbox: { x: 0.02, y: 0.3, width: 0.3, height: 0.6 }, structure: left },
+    { elementId: "REF_01_E02", bbox: { x: 0.4, y: 0.1, width: 0.55, height: 0.85 }, structure: right },
+    { elementId: "REF_01_E03", bbox: { x: 0.4, y: 0.7, width: 0.2, height: 0.2 } },
+  ], "dense");
+  assert.deepEqual(semantics.get("REF_01_E01"), { structure_type: "semiarco", placement: "lateral_izquierdo", design_role: "soporte", repetition_group: "REF_01_E01", density: "lujosa" });
+  assert.deepEqual(semantics.get("REF_01_E02"), { structure_type: "semiarco", placement: "lateral_derecho", design_role: "focal", repetition_group: "REF_01_E02", density: "lujosa" });
+  assert.equal(semantics.has("REF_01_E03"), false, "an element without a detected structure gets no invented semantics");
+  pass("detected half-arches map to typed semiarco semantics with side and focal role");
+
+  const pairSpec = scene([
+    { ...element({ id: "HALF_L", name: "Semiarco izquierdo", type: "semiarco", placement: "lateral_izquierdo", role: "soporte", colors: ["azul"], productId: GOLD_REFLEX_ID }), visual_semantics: { structure_type: "semiarco", placement: "lateral_izquierdo", design_role: "soporte", repetition_group: "HALF_L", density: "media", dimensions_m: { height: 1.5 } } },
+    { ...element({ id: "HALF_R", name: "Semiarco derecho", type: "semiarco", placement: "lateral_derecho", role: "soporte", colors: ["azul"], productId: GOLD_REFLEX_ID }), visual_semantics: { structure_type: "semiarco", placement: "lateral_derecho", design_role: "soporte", repetition_group: "HALF_R", density: "media", dimensions_m: { height: 2.4 } } },
+  ] as SceneSpec["elements"]);
+  const pair = compileProductPrompt({ sceneSpec: pairSpec, visualContext: context, vocabulary: PRODUCT_VOCABULARY, trigger: "eventdecor_style_v2" });
+  assert.equal(pair.clauses.length, 2, "structures with clearly different heights are not merged into a matching pair");
+  assert.match(pair.prompt, /shorter one-sided curved organic balloon garland .* on the left/);
+  assert.match(pair.prompt, /taller one-sided curved organic balloon garland .* on the right/);
+  assert.doesNotMatch(pair.prompt, /matching one another|one standing on the left and one on the right/);
+  assert.match(pair.prompt, /the two curved garlands stand apart with an open gap between them/);
+  assert.doesNotMatch(pair.prompt, /flanking/, "a separate half-arch is not described as flanking the other one");
+  const pairReport = preflightLoraPrompt({ sceneSpec: pairSpec, clauses: pair.clauses, prompt: pair.prompt, triggers: ["eventdecor_style_v2"], vocabulary: PRODUCT_VOCABULARY });
+  assert.equal(pairReport.ok, true, pairReport.errors.join("; "));
+  pass("different approved heights render as shorter/taller separate pieces, not a symmetric pair");
+
+  // Regression (2026-09-14): a tall asymmetrical half-arch on the right and a
+  // short asymmetrical column on the left rendered as one full arch. The
+  // prompt had no gap phrase (only two half-arches got one) and no relative
+  // height (only same-type structures were compared).
+  const mixedSpec = scene([
+    { ...element({ id: "EST_01_SEMIARCO", name: "Semiarco asimétrico derecho", type: "semiarco", placement: "lateral_derecho", role: "focal", colors: ["azul"], productId: GOLD_REFLEX_ID }), visual_semantics: { structure_type: "semiarco", placement: "lateral_derecho", design_role: "focal", repetition_group: "EST_01_SEMIARCO", density: "media", dimensions_m: { height: 2.2 } } },
+    { ...element({ id: "EST_02_COLUMNA", name: "Columna asimétrica izquierda", type: "columna", placement: "lateral_izquierdo", role: "soporte", colors: ["azul"], productId: GOLD_REFLEX_ID }), visual_semantics: { structure_type: "columna", placement: "lateral_izquierdo", design_role: "soporte", repetition_group: "EST_02_COLUMNA", density: "media", dimensions_m: { height: 1.8 } } },
+  ] as SceneSpec["elements"]);
+  const mixed = compileProductPrompt({
+    sceneSpec: mixedSpec,
+    visualContext: context,
+    vocabulary: PRODUCT_VOCABULARY,
+    trigger: "eventdecor_style_v2",
+    officialStructures: new Map([["EST_01_SEMIARCO", "semiarco_asimetrico"], ["EST_02_COLUMNA", "columna_asimetrica"]]),
+  });
+  assert.match(mixed.prompt, /taller asymmetrical one-sided curved organic balloon garland .* on the right/);
+  assert.match(mixed.prompt, /shorter asymmetrical organic balloon column .* on the left/);
+  assert.match(mixed.prompt, /the garland and the column stand apart with an open gap between them/);
+  assert.doesNotMatch(mixed.prompt, /matching one another|flanking/);
+  assert.ok(mixed.prompt.length <= 750, `${mixed.prompt.length} chars`);
+  const mixedReport = preflightLoraPrompt({ sceneSpec: mixedSpec, clauses: mixed.clauses, prompt: mixed.prompt, triggers: ["eventdecor_style_v2"], vocabulary: PRODUCT_VOCABULARY });
+  assert.equal(mixedReport.ok, true, mixedReport.errors.join("; "));
+  pass("a half-arch and a column on opposite sides stay two separate pieces with relative heights");
+
+  // Regression (tropical plan, 2026-09-14): a non-balloon product label was
+  // glued to the structure noun ("a balloon sculpture figure metallized foil
+  // pennant garland ..."), and a half-arch "against the rear wall" was drawn
+  // as a full arch.
+  const pennantLabel = "metallized foil pennant garland with printed tropical-leaf pattern";
+  const tropicalSpec = scene([
+    element({ id: "EST_01_SEMIARCO", name: "Semiarco asimétrico tropical", type: "semiarco", placement: "fondo_pared", role: "focal", colors: ["fucsia"], productId: "P-FUCSIA" }),
+    element({ id: "EST_04_BANDEROLA", name: "Banderola tropical", type: "accesorio", placement: "entrada", role: "acento", colors: ["verde"], productId: "P-PENNANT" }),
+    element({ id: "EST_05_FIGURA", name: "Figura con globos", type: "kit", placement: "entrada", role: "acento", colors: ["verde"], productId: "P-PENNANT-2" }),
+  ]);
+  const tropical = compileLoraCaption({
+    sceneSpec: tropicalSpec,
+    visualContext: context,
+    dialect: "scene_v004",
+    officialStructures: new Map([["EST_01_SEMIARCO", "semiarco_asimetrico"], ["EST_05_FIGURA", "figura"]]),
+    productConcepts: [
+      { elementId: "EST_01_SEMIARCO", conceptId: "balloon.fuchsia", canonicalLabel: "round latex balloon in fuchsia", sceneTerms: { descriptor: "matte fuchsia", noun: "balloons" } },
+      { elementId: "EST_04_BANDEROLA", conceptId: "banner.pennant.tropical", canonicalLabel: pennantLabel },
+      { elementId: "EST_05_FIGURA", conceptId: "banner.pennant.tropical", canonicalLabel: pennantLabel },
+    ],
+  });
+  assert.match(tropical.prompt, /one-sided curved organic balloon garland of matte fuchsia balloons at one side of the rear wall/);
+  assert.match(tropical.prompt, /with a metallized foil pennant garland with printed tropical-leaf pattern(?: \(green tones\))? framing the entrance doorway/, tropical.prompt);
+  assert.match(tropical.prompt, /a balloon sculpture figure with metallized foil pennant garland/, tropical.prompt);
+  assert.doesNotMatch(tropical.prompt, /figure metallized|decoration kit metallized/, tropical.prompt);
+  assert.ok(tropical.prompt.length <= LORA_PROMPT_MAX_LENGTH, `${tropical.prompt.length}`);
+  pass("non-balloon products are named as the piece, balloon structures say what they carry, and a half-arch stays one-sided");
+
+  const blueprint = {
+    schema_version: "2.0",
+    source_images: [{ image_id: "REF_01", approved_roles: ["composition_reference"] }],
+    elements: [
+      ["REF_01_E01", "tall half-arch", "balloon_structure", 0.9, true],
+      ["REF_01_E02", "warm fairy string lights", "lighting", 0.85, true],
+      ["REF_01_E03", "tropical palm leaves", "floral", 0.7, true],
+      ["REF_01_E04", "paper bag with printed text", "other", 0.9, true],
+      ["REF_01_E05", "wall outlet", "other", 0.9, false],
+      ["REF_01_E06", "faint candle", "tableware", 0.4, true],
+      ["REF_01_E07", "hojas de palma", "floral", 0.9, true],
+    ].map(([id, name, category, confidence, approved]) => ({
+      element_id: id, source_image_id: "REF_01", name, category, scene_role: "midground", detection_confidence: confidence,
+      visible_evidence: "visible", reference_bbox: { x: 0.1, y: 0.1, width: 0.2, height: 0.2 }, depth_layer: 2,
+      include_policy: approved ? "include" : "exclude", approved, source_type: "reference_only", quantity: { mode: "approximate", min: 1, max: 1 },
+      appearance: { observed_colors: ["white"], resolved_colors: [], color_policy: "adapt_to_event_palette", material: "m", shape: "s", composition: "c" },
+      relationships: [], uncertainties: [],
+    })),
+    composition: { focal_point: "arch", density: "dense", symmetry: "asymmetric", negative_space: [] },
+    palette: { observed: [], priority: [] },
+    unresolved_decisions: [],
+  };
+  const decor = ambientDecorFromReference(ReferenceBlueprintV2Schema.parse(blueprint), new Set(["REF_01_E01"]));
+  assert.deepEqual(decor, ["warm fairy string lights", "tropical palm leaves"], "only relevant, confident, text-free English styling that no structure materializes");
+  // Regression (C1): parenthetical details used to discard the whole element,
+  // and plural signage ("signs") slipped past the text filter.
+  assert.equal(ambientDecorName("Tropical leaves (monstera, palm)"), "tropical leaves");
+  assert.equal(ambientDecorName("a white faux fur rug"), "white faux fur rug");
+  assert.equal(ambientDecorName("kraft paper bags with plants and signs"), undefined);
+  assert.equal(ambientDecorName("small wooden signs"), undefined);
+  assert.equal(ambientDecorName("hojas tropicales (monstera)"), undefined);
+  assert.equal(ambientDecorName("Main Right Organic Half-Arch Balloon Structure"), undefined, "a misfiled balloon structure is never drawn as ambient styling");
+  pass("non-catalog styling is selected only when relevant to the composition");
+
+  const styled = compileProductPrompt({ sceneSpec: pairSpec, visualContext: context, vocabulary: PRODUCT_VOCABULARY, trigger: "eventdecor_style_v2", ambientDecor: decor });
+  assert.match(styled.prompt, /, styled with warm fairy string lights and tropical palm leaves\./);
+  assert.equal(styled.resolved_concepts.length, pair.resolved_concepts.length, "styling never adds products");
+  pass("styling is rendered in the prompt without becoming a product or structure");
+
+  const json = JSON.parse(styled.jsonPrompt) as { subjects: Array<{ description: string }>; styling?: string[]; color_palette: string[]; scene: string };
+  assert.equal(json.subjects.length, 2);
+  assert.deepEqual(json.styling, decor);
+  assert.ok(json.color_palette.includes("blue"));
+  const jsonPrompt = `eventdecor_style_v2, ${styled.jsonPrompt}`;
+  const jsonReport = preflightLoraPrompt({ sceneSpec: pairSpec, clauses: styled.clauses, prompt: jsonPrompt, triggers: ["eventdecor_style_v2"], vocabulary: PRODUCT_VOCABULARY, maxLength: LORA_JSON_PROMPT_MAX_LENGTH });
+  assert.equal(jsonReport.ok, true, jsonReport.errors.join("; "));
+  pass("the JSON prompt carries the same subjects, colors and styling and passes the same preflight");
+
+  assert.equal(parseLoraPromptFormat(undefined), "texto");
+  assert.equal(parseLoraPromptFormat("ambos"), "ambos");
+  assert.throws(() => parseLoraPromptFormat("yaml"), "an unknown prompt format is a client error");
+  pass("prompt format defaults to texto and rejects unknown values");
 }
 
 console.log(`\nAll ${passCount} assertions passed.`);

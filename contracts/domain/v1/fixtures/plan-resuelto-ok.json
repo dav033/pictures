@@ -68,7 +68,7 @@
         }
       ],
       "mezcla_real": [
-        { "diam_pulg": 12, "forma": "redondo", "unidades": 24, "pct": 1 }
+        { "diam_pulg": 12, "forma": "redondo", "unidades": 24, "pct": 100 }
       ],
       "supuestos": []
     }
@@ -84,18 +84,18 @@
       "color": "rojo",
       "unidades_necesarias": 24,
       "design_quantity": 24,
-      "waste_reserve": 3,
-      "required_quantity": 27,
-      "unidades_con_merma": 27,
+      "waste_reserve": 2,
+      "required_quantity": 26,
+      "unidades_con_merma": 26,
       "unidades_paquete": 50,
       "paquetes": 1,
       "purchase_quantity": 50,
       "used": 24,
-      "leftover_inventory": 23,
-      "consumption_cost": 6480,
+      "leftover_inventory": 24,
+      "consumption_cost": 6240,
       "purchase_cost": 12000,
       "additional_package_for_waste": false,
-      "sobrante": 23,
+      "sobrante": 26,
       "precio_paquete": 12000,
       "subtotal": 12000,
       "estructuras": ["EST_01_ARCO"],
@@ -107,17 +107,17 @@
     "total_unidades": 24,
     "total_cop": 12000,
     "design_quantity": 24,
-    "target_waste_reserve": 3,
-    "covered_waste_reserve": 3,
+    "target_waste_reserve": 2,
+    "covered_waste_reserve": 2,
     "uncovered_waste_reserve": 0,
     "natural_package_surplus": 26,
     "purchase_cost": 12000,
-    "consumption_cost": 6480,
+    "consumption_cost": 6240,
     "waste_only_savings_cop": 0,
     "additional_waste_packages": 0,
     "ahorro_paquetes_cop": 0,
     "incluye_iva": true,
-    "merma_porcentaje": 12.5
+    "merma_porcentaje": 8
   },
   "comercial": {
     "estado": "VERIFICADO",

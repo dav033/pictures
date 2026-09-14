@@ -4,7 +4,7 @@
 (mobiliario, floristería, estructuras de altar, iluminación ambiental, etc.)
 al catálogo de escenas de boda.
 
-**Referencia normativa:** `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`,
+**Referencia normativa:** `../migracion-python/PLAN-MAESTRO-V2.md`,
 secciones 6 ("Procedencia y verdad comercial"), 8.2 ("Extensión no
 destructiva de PostgreSQL") y 8.3 ("Incorporación de proveedores"). Este
 documento es la versión operativa de esa sección — la lista de requisitos de

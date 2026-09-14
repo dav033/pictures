@@ -159,6 +159,42 @@ function physicalWarnings(design: DesignMaterialEstimate["design"], total: numbe
   return warnings;
 }
 
+/**
+ * MERMA models balloons bursting while they are inflated and mounted, so only
+ * balloon purchases can avoid a waste-only package. This mirrors the waste
+ * reserve eligibility of both producers (`resolver.ts` uses `diam_pulg != null`,
+ * `purchaseLines` uses `esGlobo`), which is not stored on purchase lines in
+ * `design-material-estimate-v1`. It is derived from the estimate's own lines so
+ * `validateMaterialEstimate` recomputes the same value:
+ *
+ * - a purchase whose variant is a special element is never eligible;
+ * - otherwise it is eligible when its variant is a balloon line, or when its
+ *   product is: `purchaseLines` can buy a different package presentation of the
+ *   same balloon family than the variant that received the measured demand.
+ *
+ * Removal condition: a future estimate contract version that carries explicit
+ * per-purchase waste eligibility. Python mirrors this rule in
+ * `services/ai-api/app/plan.py` (`_material_waste_only_savings`).
+ */
+export function wasteOnlySavingsCop(
+  balloons: DesignMaterialEstimate["balloons"],
+  special: DesignMaterialEstimate["special_elements"],
+  purchases: DesignMaterialEstimate["purchases"],
+): number {
+  const specialVariants = new Set(special.map((line) => line.variant_id).filter((id) => id !== undefined));
+  const balloonVariants = new Set(balloons.map((line) => line.variant_id).filter((id) => id !== undefined));
+  const balloonProducts = new Set(balloons.map((line) => line.product_id).filter((id) => id !== undefined));
+  const savings = purchases.reduce((sum, line) => {
+    if (specialVariants.has(line.variant_id)) return sum;
+    if (!balloonVariants.has(line.variant_id) && !balloonProducts.has(line.product_id)) return sum;
+    const unitPrice = line.package_count > 0 ? line.purchase_cost / line.package_count : 0;
+    const basePackages = Math.ceil(line.design_quantity / line.units_per_package);
+    const naivePackages = Math.ceil(Math.ceil(line.design_quantity * (1 + MERMA)) / line.units_per_package);
+    return sum + Math.max(0, (naivePackages - basePackages) * unitPrice);
+  }, 0);
+  return Math.round(savings);
+}
+
 function totals(balloons: DesignMaterialEstimate["balloons"], special: DesignMaterialEstimate["special_elements"], purchases: DesignMaterialEstimate["purchases"]): DesignMaterialEstimate["totals"] {
   const designQuantity = [...balloons, ...special].reduce((sum, line) => sum + line.design_quantity, 0);
   const targetWasteReserve = Math.ceil(balloons.reduce((sum, line) => sum + line.design_quantity, 0) * MERMA);
@@ -168,12 +204,6 @@ function totals(balloons: DesignMaterialEstimate["balloons"], special: DesignMat
   const purchaseQuantity = purchases.reduce((sum, line) => sum + line.purchase_quantity, 0);
   const operationalSurplus = purchases.reduce((sum, line) => sum + line.operational_surplus, 0);
   const potentialSurplus = purchases.reduce((sum, line) => sum + line.potential_surplus, 0);
-  const wasteOnlySavingsCop = purchases.reduce((sum, line) => {
-    const unitPrice = line.package_count > 0 ? line.purchase_cost / line.package_count : 0;
-    const basePackages = Math.ceil(line.design_quantity / line.units_per_package);
-    const naivePackages = Math.ceil(Math.ceil(line.design_quantity * (1 + MERMA)) / line.units_per_package);
-    return sum + Math.max(0, (naivePackages - basePackages) * unitPrice);
-  }, 0);
   return {
     design_quantity: designQuantity,
     target_waste_reserve: targetWasteReserve,
@@ -183,7 +213,7 @@ function totals(balloons: DesignMaterialEstimate["balloons"], special: DesignMat
     required_quantity: requiredQuantity,
     consumption_cost: purchases.reduce((sum, line) => sum + line.consumption_cost, 0),
     purchase_cost: purchases.reduce((sum, line) => sum + line.purchase_cost, 0),
-    waste_only_savings_cop: Math.round(wasteOnlySavingsCop),
+    waste_only_savings_cop: wasteOnlySavingsCop(balloons, special, purchases),
     additional_waste_packages: purchases.filter((line) => line.additional_package_for_waste).reduce((sum, line) => sum + line.package_count, 0),
     waste_adjusted_quantity: wasteAdjustedQuantity,
     purchase_quantity: purchaseQuantity,

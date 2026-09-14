@@ -76,8 +76,10 @@ export const LoraArtifactSelectionSchema = z.object({
 export const LoraSelectionSchema = z.object({
   product: LoraArtifactSelectionSchema.optional(),
   structure: LoraArtifactSelectionSchema.optional(),
-}).refine((selection) => Boolean(selection.product || selection.structure), {
-  message: "Selecciona al menos un LoRA",
+}).superRefine((selection, context) => {
+  if (Boolean(selection.product) === Boolean(selection.structure)) {
+    context.addIssue({ code: "custom", message: "Selecciona exactamente un LoRA" });
+  }
 });
 export type LoraSelection = z.infer<typeof LoraSelectionSchema>;
 

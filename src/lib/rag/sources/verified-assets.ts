@@ -1,6 +1,6 @@
 /**
  * Capa de consulta "solo fuentes verificadas" (Tarea 03.2 —
- * `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`, secciones 6, 7.4, 8.2 y 9).
+ * `docs/migracion-python/PLAN-MAESTRO-V2.md`, secciones 6, 7.4, 8.2 y 9).
  *
  * Esto es lo que el RAG por slot (Plan 04, todavía no implementado) usará
  * para nunca traer un candidato sin fuente real: dado un conjunto de

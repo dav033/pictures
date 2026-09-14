@@ -1,6 +1,6 @@
 /**
  * Contrato de adaptador de fuente de escena (Tarea 03.2 —
- * `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`, secciones 6, 8.2 y 8.3).
+ * `docs/migracion-python/PLAN-MAESTRO-V2.md`, secciones 6, 8.2 y 8.3).
  *
  * ESTE ARCHIVO NO IMPLEMENTA NINGÚN PROVEEDOR REAL. Hoy no existe ningún
  * proveedor de venta/alquiler verificado para mobiliario, floristería,

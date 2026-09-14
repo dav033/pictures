@@ -55,7 +55,7 @@ export const PALETA_COLORES_V2 = [
 
 /**
  * El LoRA de estilo Sempertex se entrenó con captions 100% en inglés
- * (ver HANDOFF-SESION-DATASET.md, sesión 4) — pasarle un color en español
+ * (según el corpus de captions vigente) — pasarle un color en español
  * queda fuera de esa distribución igual que un prompt con secciones
  * etiquetadas. Este mapa es la única traducción ES→EN de color que necesita
  * ese prompt; no cubre nada fuera de `PALETA_COLORES_V2`.
@@ -316,6 +316,17 @@ export function clasificarFormas(text: string): TaxonomyMatch<(typeof FORMAS_CAT
   return explicitForm || balloonContext ? matchAliases(text, FORMS) : matchAliases("", FORMS);
 }
 
+/**
+ * Negative lookahead (folded text) for a number that counts people or age,
+ * never a balloon size: "cumpleaños de 40 invitados", "fiesta de 12 niños",
+ * "de 5 años". Every "de N" size pattern must append it; explicit size forms
+ * ("R-12", "12 pulgadas", "de 40 pulgadas") are unaffected.
+ */
+export const CONTEO_NO_TAMANO_LOOKAHEAD =
+  "(?!\\s*(?:invitad[oa]s?|personas?|asistentes?|ninos?|ninas?|adultos?|comensales?|huespedes|anos?)\\b)";
+
+const TAMANO_POR_PALABRA = new RegExp(`\\b(?:tamano|talla|medida|de)\\s*(5|9|12|18|24|36|40)\\b${CONTEO_NO_TAMANO_LOOKAHEAD}`, "gi");
+
 export function clasificarTamanos(text: string): TaxonomyMatch<number> {
   const normalized = fold(text);
   const values = new Set<number>();
@@ -323,7 +334,7 @@ export function clasificarTamanos(text: string): TaxonomyMatch<number> {
   // catalog R- code or an explicit inch unit, then handle human size words.
   for (const match of normalized.matchAll(/\br\s*-?\s*(5|9|12|18|24|36|40)\b/gi)) values.add(Number(match[1]));
   for (const match of normalized.matchAll(/\b(5|9|12|18|24|36|40)\s*(?:pulgadas?|in)\b/gi)) values.add(Number(match[1]));
-  for (const match of normalized.matchAll(/\b(?:tamano|talla|medida|de)\s*(5|9|12|18|24|36|40)\b/gi)) values.add(Number(match[1]));
+  for (const match of normalized.matchAll(TAMANO_POR_PALABRA)) values.add(Number(match[1]));
   const result = [...values];
   const ambiguous = /(?:^|\s)(?:o|u|quizas|tal vez)(?:$|\s)/.test(normalized) && result.length > 1;
   return { status: result.length === 0 ? "unknown" : ambiguous ? "ambiguous" : "known", values: result, candidates: result.map(String) };

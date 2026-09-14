@@ -1,10 +1,8 @@
 import "server-only";
 import type { RegistroHerramientas } from "@sempertex/agente-core";
 import type { Pool } from "pg";
-import { cotizar, cotizarPlan, type Cotizacion, type ItemCotizacion } from "@/lib/cotizacion/motor";
-import { buscarDecoraciones } from "@/lib/decoraciones";
+import type { Cotizacion } from "@/lib/cotizacion/motor";
 import { calcularMedidas, type Figura, type ResultadoMedidas } from "@/lib/medidas/geometria";
-import { productosPorId } from "@/lib/products";
 import { getRagPool } from "@/lib/rag/db";
 import { buscarCatalogoRag, type ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { buscarCatalogoRagConPresupuesto, type PoolItemPresupuesto, type ResultadoBusquedaPresupuesto } from "@/lib/rag/chat/buscar-presupuesto";
@@ -15,36 +13,41 @@ import { aProductoValidado, validarSeleccion, type ItemRechazado, type ItemValid
 import { actualizarResultadoBusqueda, encolarEscrituraObservabilidad, registrarBusqueda, registrarPlanAudit, registrarSeleccion } from "@/lib/rag/observability/log";
 import { resolverFranja } from "@/lib/rag/presupuesto/resolver";
 import { resolverVariantesPorDespieceBatch, type GrupoDespiece } from "@/lib/rag/tamanos/resolver";
-import { resolverPlan } from "@/lib/plan/resolver";
 import { PlanDecoracionSchema } from "@/lib/plan/tipos";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
-import { extraerRestriccionesUsuario, validarCardinalidadEventoAbierto, validarCoberturaReferencia, validarRestriccionesPlan } from "@/lib/plan/restricciones";
+import { extraerRestriccionesUsuario, validarCardinalidadEventoAbierto, validarCoberturaReferencia, validarEstructurasDeGlobosConGlobos, validarEstructurasFueraDeReferencia, validarPresenciaGlobos, validarRestriccionesPlan } from "@/lib/plan/restricciones";
+import { perfilCreatividad, type NivelCreatividad } from "@/lib/ia/creatividad";
 import { parseEventIntent } from "@/lib/rag/query-parser/parse-event";
 import type { CatalogAllowlist, EventMatchEvidence, EventMatchLevel } from "@/lib/rag/retrieval/types";
-import { crearTokenAprobacion } from "@/lib/plan/aprobacion";
-import { PLAN_DECORACION_ENABLED, RAG_ENABLED, RAG_FRANJAS_ENABLED, featureEnabled } from "@/lib/ia/feature-flags";
-import { sceneShadowPipeline } from "@/lib/scene/orchestrator";
-import { blockingPhysicalWarnings, estimateFromPlan, validateMaterialEstimate } from "@/lib/materiales/estimacion";
+import { allowlistDesdeMapa, crearTokenPlan } from "@/lib/plan/aprobacion";
+import { respuestaCatalogoLoraNoDisponible } from "@/lib/lora/catalogo-no-disponible";
 import {
-  aProducto,
-  buscarCatalogoShopify,
-  categoriasDeCatalogo,
-  variantesPorIds,
-  type Faceta,
-  type FiltrosCatalogo,
-} from "@/lib/shopify/consultas";
+  MENSAJE_CLIENTE_ESTIMACION,
+  MENSAJE_CLIENTE_PIEZAS,
+  MENSAJE_CLIENTE_PLAN_EN_AJUSTE,
+  MENSAJE_CLIENTE_REFERENCIA,
+  MENSAJE_CLIENTE_SIN_BUSQUEDA,
+  MENSAJE_CLIENTE_SIN_GLOBOS,
+  MENSAJE_CLIENTE_VERIFICACION_FALLIDA,
+  mensajeClientePresupuesto,
+  mensajeClienteRestricciones,
+  mensajeClienteSinCobertura,
+} from "@/lib/ia/mensajes-cliente";
+import { PythonPlanMappingError } from "@/lib/plan/python-mapper";
+import { resolverPlanConBackend, type ResolucionPlan } from "@/lib/plan/resolver-backend";
+import { mezclasCompatiblesConDiametros } from "@/lib/plan/resolver";
+import { canonizarColoresPlan } from "@/lib/plan/colores-catalogo";
+import { PLAN_DECORACION_ENABLED, RAG_ENABLED, RAG_FRANJAS_ENABLED, featureEnabled } from "@/lib/ia/feature-flags";
+import { isPythonAdapterError, seleccionarBackendPython } from "@/lib/ia/python-adapter";
+import { AllowlistProductoVarianteError } from "@/lib/plan/allowlist-producto-variante";
+import { sceneShadowPipeline } from "@/lib/scene/orchestrator";
+import { blockingPhysicalWarnings, validateMaterialEstimate } from "@/lib/materiales/estimacion";
+import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
-import { HERRAMIENTAS, HERRAMIENTAS_PLAN, HERRAMIENTAS_RAG } from "./herramientas";
+import { HERRAMIENTAS_PLAN, HERRAMIENTAS_RAG } from "./herramientas";
 import type { ReferenceBlueprintV2 } from "./reference-blueprint";
 import type { Herramienta } from "./tipos";
-
-// Superadas por buscar_catalogo_rag/confirmar_seleccion_rag (Fases 3B-6 ya
-// validadas contra datos reales). Si se dejan las dos rutas activas a la vez,
-// el modelo puede elegir la vieja y saltarse por completo la whitelist, el
-// tope de inventario y los datos de imagen/handle que alimentan la UI de
-// verificación — pasó en pruebas reales, no es un riesgo teórico.
-const HERRAMIENTAS_SUPERADAS_POR_RAG = new Set(["buscar_catalogo", "confirmar_seleccion_ia", "consultar_disponibilidad"]);
-const HERRAMIENTAS_SUPERADAS_POR_PLAN = new Set(["confirmar_seleccion_rag", "calcular_medidas"]);
+import { z } from "zod";
 
 /**
  * Fase 3.9: herramientas sin efectos comerciales — nunca deciden catálogo,
@@ -53,8 +56,8 @@ const HERRAMIENTAS_SUPERADAS_POR_PLAN = new Set(["confirmar_seleccion_rag", "cal
  * de todas formas se sobrescriben por completo en cada llamada nueva. Se
  * excluye deliberadamente cualquier herramienta que toque
  * `seleccionFinalIA`/`planResuelto`/`cotizacion` o que dependa del orden de
- * ejecución (`guardar_brief`, `calcular_medidas`, `cotizar`,
- * `confirmar_seleccion_ia`, `confirmar_seleccion_rag`,
+ * ejecución (`guardar_brief`, `calcular_medidas`,
+ * `confirmar_seleccion_rag`,
  * `confirmar_plan_decoracion`). `ejecutarConversacion`/`ejecutarConversacionStream`
  * solo paralelizan una vuelta si CADA llamada de esa vuelta está en este
  * set Y ningún nombre se repite (ver `puedeParalelizarse` en agente-core) —
@@ -62,40 +65,21 @@ const HERRAMIENTAS_SUPERADAS_POR_PLAN = new Set(["confirmar_seleccion_rag", "cal
  * secuencia porque compiten por el mismo campo de estado.
  */
 export const HERRAMIENTAS_SOLO_LECTURA = new Set([
-  "buscar_catalogo",
-  "consultar_disponibilidad",
   "buscar_catalogo_rag",
-  "buscar_decoraciones",
 ]);
 
 export function herramientasActivas(): Herramienta[] {
-  const herramientas = !RAG_ENABLED
-    ? HERRAMIENTAS
-    : [...HERRAMIENTAS.filter((h) => !HERRAMIENTAS_SUPERADAS_POR_RAG.has(h.nombre)), ...HERRAMIENTAS_RAG];
+  if (!RAG_ENABLED) return [];
   if (PLAN_DECORACION_ENABLED && RAG_ENABLED) {
-    return [...herramientas.filter((h) => !HERRAMIENTAS_SUPERADAS_POR_PLAN.has(h.nombre)), ...HERRAMIENTAS_PLAN].filter((h) => h.nombre !== "cotizar");
+    return [...HERRAMIENTAS_RAG, ...HERRAMIENTAS_PLAN];
   }
-  // La cotización no pertenece al razonamiento de selección en ningún modo.
-  // La app la calcula después de terminar la imagen, usando exactamente los
-  // productos que entraron en la propuesta visual.
-  return herramientas.filter((h) => h.nombre !== "cotizar");
+  return HERRAMIENTAS_RAG;
 }
 
-// El catálogo real tiene mucho más margen de ambigüedad que el mock de 14
-// productos: el modelo a veces reintenta buscar_catalogo buscando una
-// coincidencia más exacta antes de responder. Con una imagen de referencia
-// de estilo (varios colores/atributos a la vez) se vieron casos reales de
-// hasta 6 llamadas a buscar_catalogo antes de decidir — 6 se quedaba corto
-// justo para el turno en que el modelo por fin llama confirmar_seleccion_ia,
-// dejando la conversación en el mensaje de "me enredé" aunque la selección
-// ya se hubiera guardado. 10 da margen real sin dejar una conversación
+// Se permiten varias búsquedas por turno porque una referencia puede contener
+// conceptos comerciales distintos; el límite evita dejar una conversación
 // colgada indefinidamente.
 export const VUELTAS_MAX = 10;
-
-// Si buscar_catalogo trae más piezas que esto y el cliente no pidió un tipo
-// puntual, no tiene sentido tirárselas todas de una — se le ofrece elegir el
-// tipo de producto primero (§ tipo "buscar_catalogo" más abajo).
-const UMBRAL_AGRUPAR_POR_TIPO = 8;
 
 export type EstadoConversacion = {
   brief: Brief;
@@ -111,7 +95,7 @@ export type EstadoConversacion = {
   medidas?: ResultadoMedidas;
   cotizacion?: Cotizacion;
   // Piezas que la IA decidió proponer por su cuenta — solo se llenan si
-  // `confirmar_seleccion_ia` resolvió al menos un id real; el frontend usa
+  // `confirmar_seleccion_rag` resolvió al menos un id real; el frontend usa
   // esto para disparar /api/generate sin que el cliente haga clic.
   seleccionFinalIA?: Producto[];
   instruccionIA?: string;
@@ -121,6 +105,8 @@ export type EstadoConversacion = {
   ragIdsRecuperados: Set<string>;
   /** Product -> exact variant whitelist exposed by retrieval in this request. */
   ragVariantIdsRecuperados: Map<string, Set<string>>;
+  /** Published catalog snapshot used to build the current retrieval whitelist. */
+  ragCatalogSnapshotId?: string;
   ragCandidatos?: ProductoCandidato[];
   /** Event evidence is kept separately so budget retrieval (pool_por_rol) and
    * regular retrieval share the same plan/UI traceability contract. */
@@ -231,13 +217,50 @@ export function crearEstadoConversacion(brief: Brief, solicitudOriginal = "", re
 }
 
 /**
+ * Por cada producto que dejó una estructura SIN_COBERTURA: qué tamaños
+ * faltaron, cuáles tiene disponibles en los candidatos de este turno y qué
+ * mezclas sí caben con ellos. Sin esto el modelo reintentaba a ciegas (A6).
+ */
+export function coberturaPorProducto(
+  sinCobertura: ReadonlyArray<{ estructura_id: string; product_id: string; tamano: string }>,
+  candidatos: ReadonlyArray<ProductoCandidato>,
+): Array<{ estructura_id: string; product_id: string; tamanos_faltantes: string[]; tamanos_disponibles: string[]; mezclas_compatibles: string[] }> {
+  const grupos = new Map<string, { estructura_id: string; product_id: string; faltantes: Set<string> }>();
+  for (const item of sinCobertura) {
+    const clave = `${item.estructura_id}|${item.product_id}`;
+    const grupo = grupos.get(clave) ?? { estructura_id: item.estructura_id, product_id: item.product_id, faltantes: new Set<string>() };
+    grupo.faltantes.add(item.tamano);
+    grupos.set(clave, grupo);
+  }
+  return [...grupos.values()].map((grupo) => {
+    const candidato = candidatos.find((item) => item.productId === grupo.product_id || item.variantes.some((variante) => variante.variantId === grupo.product_id));
+    const diametros = [...new Set((candidato?.variantes ?? [])
+      .filter((variante) => variante.disponible && variante.forma === "redondo" && variante.diamPulg != null)
+      .map((variante) => variante.diamPulg!))].sort((a, b) => a - b);
+    return {
+      estructura_id: grupo.estructura_id,
+      product_id: grupo.product_id,
+      tamanos_faltantes: [...grupo.faltantes],
+      tamanos_disponibles: diametros.map((diametro) => `R-${diametro}`),
+      mezclas_compatibles: mezclasCompatiblesConDiametros(diametros),
+    };
+  });
+}
+
+/**
  * Al agotar VUELTAS_MAX no siempre "se enredó" de verdad: si el modelo
- * llamó confirmar_seleccion_ia justo en la última vuelta permitida, la
+ * llamó confirmar_seleccion_rag justo en la última vuelta permitida, la
  * selección ya quedó guardada y la imagen ya se está generando — decirle al
  * cliente "me enredé" ahí sería mentirle sobre algo que en realidad sí
  * funcionó, solo que no alcanzó a mandar el texto de cierre.
  */
 export function textoAlAgotarVueltas(estado: EstadoConversacion): string {
+  // Modo diseño: el plan ya quedó verificado y la tarjeta se muestra con el
+  // evento `fin`; decir "me enredé" contradice lo que el cliente ve en pantalla
+  // (caso "cardinalidad" de eval/chat/jerga-v001.json, 2026-09-14).
+  if (estado.planResuelto) {
+    return "Ya te armé la propuesta: revisa el desglose en pantalla y dime si la apruebas o qué quieres ajustar.";
+  }
   if (estado.seleccionFinalIA?.length) {
     return "¡Ya elegí las piezas y se está generando tu visualización! Dame un momento.";
   }
@@ -247,59 +270,22 @@ export function textoAlAgotarVueltas(estado: EstadoConversacion): string {
 /** Arma el registro de herramientas (nombre → handler) que el motor genérico
  * de @sempertex/agente-core despacha — cada cuerpo es el mismo que tenía el
  * if-chain de ejecutar.ts antes de esta extracción, sin cambios de lógica. */
-export function crearRegistroHerramientas(estado: EstadoConversacion, options: { pool?: Pool; catalogAllowlist?: CatalogAllowlist; correlationId?: string; signal?: AbortSignal } = {}): RegistroHerramientas {
+export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
+  pool?: Pool;
+  catalogAllowlist?: CatalogAllowlist;
+  /** `LORA_*` cause when the active LoRA mode could not resolve its catalog pool: catalog tools fail closed. */
+  catalogoLoraNoDisponible?: string;
+  correlationId?: string;
+  signal?: AbortSignal;
+  /** Creativity level chosen in the UI; decides how many extra pieces a reference plan may add. */
+  creatividad?: NivelCreatividad;
+} = {}): RegistroHerramientas {
   const ragPool = options.pool ?? getRagPool();
+  const catalogoBloqueado = options.catalogoLoraNoDisponible;
   return {
     guardar_brief: async (args) => {
       Object.assign(estado.brief, args);
       return { ok: true, brief: estado.brief };
-    },
-
-    buscar_catalogo: async (args) => {
-      const filtros = args as FiltrosCatalogo;
-      const { resultados, total, filtroRelajado } = buscarCatalogoShopify(filtros);
-
-      const debeAgruparPorTipo = !filtros.categorias?.length && total > UMBRAL_AGRUPAR_POR_TIPO;
-      if (debeAgruparPorTipo) {
-        const categorias = categoriasDeCatalogo(filtros);
-        estado.categoriasSugeridas = categorias;
-        estado.filtrosCategorias = filtros;
-        return {
-          total,
-          demasiados_resultados: true,
-          tipos_disponibles: categorias.map((c) => ({ categoria: c.valor, etiqueta: c.etiqueta, cantidad: c.total })),
-          filtro_relajado: filtroRelajado,
-        };
-      }
-
-      estado.recomendaciones = resultados.map(aProducto);
-      return {
-        total,
-        productos: resultados.map((r) => ({
-          id: r.varianteId,
-          nombre: r.nombre,
-          categoria: r.categoriaNombre,
-          colores: r.colores,
-          ocasiones: r.ocasiones,
-          tags: r.tags,
-          precio: r.precio,
-          unidades_paquete: r.unidadesPaquete,
-          disponible: r.disponible,
-        })),
-        filtro_relajado: filtroRelajado,
-      };
-    },
-
-    consultar_disponibilidad: async (args) => {
-      const ids = Array.isArray(args.ids) ? (args.ids as string[]) : [];
-      const resultados = variantesPorIds(ids);
-      return {
-        disponibilidad: resultados.map((r) => ({
-          id: r.varianteId,
-          nombre: r.nombre,
-          disponible: r.disponible,
-        })),
-      };
     },
 
     calcular_medidas: async (args) => {
@@ -333,46 +319,8 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       };
     },
 
-    cotizar: async (args) => {
-      const items = Array.isArray(args.items) ? (args.items as ItemCotizacion[]) : [];
-      const resultado = cotizar(items);
-      estado.cotizacion = resultado;
-      return {
-        lineas: resultado.lineas,
-        total: resultado.total,
-        merma_porcentaje: resultado.mermaPorcentaje,
-        incluye_iva: resultado.incluyeIva,
-      };
-    },
-
-    confirmar_seleccion_ia: async (args) => {
-      const ids = Array.isArray(args.ids) ? (args.ids as string[]) : [];
-      const productos = variantesPorIds(ids).map(aProducto);
-      if (productos.length === 0) {
-        return { ok: false, resueltos: 0 };
-      }
-      estado.seleccionFinalIA = productos;
-      estado.instruccionIA = typeof args.instruccion === "string" ? args.instruccion : undefined;
-      return {
-        ok: true,
-        resueltos: productos.length,
-        // Desglose real para que el modelo pueda describirle al cliente qué
-        // compone la propuesta, aunque las tarjetas ya lo muestren en pantalla —
-        // precio siempre por paquete, igual que en buscar_catalogo.
-        piezas: productos.map((p) => ({
-          nombre: p.nombre,
-          categoria: p.categoria,
-          // Lista TODOS los colores presentes, no cuál es el dominante — antes
-          // de describir esto como "dorado" (o el color que pidió el cliente),
-          // confirma que sea el color base y no solo un acento menor.
-          colores: p.colores,
-          unidades_paquete: p.unidadesPaquete,
-        })),
-        fase: "propuesta_visual; la cotizacion llega despues de generar la imagen",
-      };
-    },
-
     buscar_catalogo_rag: async (args) => {
+      if (catalogoBloqueado) return respuestaCatalogoLoraNoDisponible(catalogoBloqueado);
       // Component text drives lexical/semantic retrieval. Customer constraints
       // stay locked from original request + brief, so model enrichment cannot
       // turn a style term such as "glamour" into a hard catalog filter.
@@ -387,7 +335,11 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       // código, a partir de lo que el cliente ya dijo en el brief. Sin franja
       // resuelta (brief.presupuesto vacío o RAG_FRANJAS_ENABLED apagada) el
       // pipeline de hoy corre exactamente igual, sin canasta.
-      const franjaResuelta = RAG_FRANJAS_ENABLED ? resolverFranja(estado.brief.presupuesto) : null;
+      // The budget pipeline is still TypeScript-owned. Do not execute it when
+      // Python is selected; a partial canary must not silently mix authorities.
+      const franjaResuelta = RAG_FRANJAS_ENABLED && seleccionarBackendPython().backend !== "python"
+        ? resolverFranja(estado.brief.presupuesto)
+        : null;
 
       if (franjaResuelta) {
         const respuesta = await buscarCatalogoRagConPresupuesto(
@@ -499,6 +451,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         eventIntent,
         focusedQueries: [mensaje],
         allowlist: options.catalogAllowlist,
+        catalogSnapshotId: estado.ragCatalogSnapshotId,
         rerankRequestId: estado.ragRequestId,
         rerankCorrelationId: options.correlationId ?? estado.ragRequestId,
         rerankSignal: options.signal,
@@ -506,6 +459,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       estado.ragCandidatos = [...new Map(
         [...(estado.ragCandidatos ?? []), ...respuesta.candidatos].map((candidate) => [candidate.productId, candidate]),
       ).values()];
+      if (respuesta.catalogSnapshotId) estado.ragCatalogSnapshotId = respuesta.catalogSnapshotId;
       for (const candidate of respuesta.candidatos) {
         if (candidate.eventEvidence) {
           estado.ragEventEvidence?.set(candidate.productId, mergeEventEvidence(estado.ragEventEvidence.get(candidate.productId), candidate.eventEvidence));
@@ -578,6 +532,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     },
 
     confirmar_seleccion_rag: async (args) => {
+      if (catalogoBloqueado) return respuestaCatalogoLoraNoDisponible(catalogoBloqueado);
       const seleccionCruda = Array.isArray(args.seleccion) ? args.seleccion : [];
       const pool = ragPool;
 
@@ -666,7 +621,13 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       const seleccion: SeleccionSolicitada[] = porIndice.flat();
 
       const t0 = Date.now();
-      const resultado = await validarSeleccion(pool, seleccion, estado.ragVariantIdsRecuperados);
+      const resultado = await validarSeleccion(
+        pool,
+        seleccion,
+        estado.ragVariantIdsRecuperados,
+        estado.ragCatalogSnapshotId,
+        { signal: options.signal, correlationId: options.correlationId ?? estado.ragRequestId },
+      );
       resultado.rechazados = [...resultado.rechazados, ...rechazosExpansion];
       estado.ragValidados = resultado.validados;
       estado.ragRechazados = resultado.rechazados;
@@ -683,7 +644,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         if (productos.length > 0) estado.seleccionFinalIA = productos;
       }
 
-      // Fase 3.8: la fila que crea `registrarBusqueda` (tool `buscar_catalogo*`,
+      // Fase 3.8: la fila que crea `registrarBusqueda` (tool `buscar_catalogo_rag`,
       // ya awaiteada en una vuelta anterior) es durable para cuando el modelo
       // puede llegar a llamar a esta herramienta — la selección/actualización
       // de esa fila puede salir de la ruta crítica sin arriesgar el orden.
@@ -744,6 +705,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     },
 
     confirmar_plan_decoracion: async (args) => {
+      if (catalogoBloqueado) return respuestaCatalogoLoraNoDisponible(catalogoBloqueado);
       // C4: occasion is the customer's open label, not a closed taxonomy
       // value invented by the model. Keep model wording only when no label
       // was recoverable from the original request.
@@ -761,16 +723,22 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       });
       if (!parseado.success) {
         encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
-        return { ok: false, errores: parseado.error.issues.map((issue) => `${issue.path.join(".") || "plan"}: ${issue.message}`) };
+        return { ok: false, errores: parseado.error.issues.map((issue) => `${issue.path.join(".") || "plan"}: ${issue.message}`), mensaje_cliente: MENSAJE_CLIENTE_PLAN_EN_AJUSTE };
       }
-      const erroresDeIntencion = validarRestriccionesPlan(parseado.data, estado.restriccionesUsuario);
+      // Colores del material al vocabulario del catálogo antes de validar y
+      // resolver: "azul rey" → "azul", "rosa" → "rosado" (A6).
+      const { plan: planCanonico } = canonizarColoresPlan(parseado.data);
+      const erroresDeIntencion = validarRestriccionesPlan(planCanonico, estado.restriccionesUsuario);
       const erroresDeCardinalidad = validarCardinalidadEventoAbierto(
-        parseado.data,
+        planCanonico,
         eventIntent.event_type,
         estado.solicitudOriginal,
         estado.ragIdsRecuperados.size > 0,
+        estado.referenceBlueprint,
+        perfilCreatividad(options.creatividad).rangoEstructuras,
       );
-      const erroresDeContrato = [...erroresDeIntencion, ...erroresDeCardinalidad];
+      const erroresDeReferencia = validarEstructurasFueraDeReferencia(planCanonico, estado.referenceBlueprint, estado.solicitudOriginal, perfilCreatividad(options.creatividad).estructurasExtraConReferencia);
+      const erroresDeContrato = [...erroresDeIntencion, ...erroresDeCardinalidad, ...erroresDeReferencia];
       if (erroresDeContrato.length > 0) {
         estado.planResuelto = undefined;
         estado.seleccionFinalIA = [];
@@ -787,7 +755,53 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
           ok: false,
           status: "RESTRICCIONES_INCONSISTENTES",
           errores: erroresDeContrato,
-          accion_requerida: "Corrige la cardinalidad o los colores del plan antes de confirmar; no anuncies ni generes una imagen.",
+          accion_requerida: erroresDeReferencia.length > 0
+            ? "Con imagen de referencia, cada estructura de globos debe materializar un elemento de la referencia con referencia_element_id: quita las estructuras que la referencia no tiene y vuelve a confirmar; no anuncies ni generes una imagen."
+            : "Corrige la cardinalidad o los colores del plan antes de confirmar; no anuncies ni generes una imagen.",
+          mensaje_cliente: mensajeClienteRestricciones(erroresDeContrato),
+        };
+      }
+      const categoriaPorProducto = new Map((estado.ragCandidatos ?? []).map((candidato) => [candidato.productId, candidato.categoria]));
+      const erroresDeGlobos = validarPresenciaGlobos(planCanonico, categoriaPorProducto, estado.solicitudOriginal);
+      if (erroresDeGlobos.length > 0) {
+        estado.planResuelto = undefined;
+        estado.seleccionFinalIA = [];
+        encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+          requestId: estado.ragRequestId,
+          solicitudOriginal: estado.solicitudOriginal,
+          restricciones: estado.restriccionesUsuario,
+          candidateProductIds: [...estado.ragIdsRecuperados],
+          status: "PLAN_SIN_GLOBOS",
+          error: erroresDeGlobos.join(" | "),
+        }));
+        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
+        return {
+          ok: false,
+          status: "PLAN_SIN_GLOBOS",
+          errores: erroresDeGlobos,
+          accion_requerida: "El plan solo tiene accesorios. Busca globos en los colores pedidos con buscar_catalogo_rag (sin exigir la ocasión si no aparecen) y arma al menos una estructura de globos; serpentinas, velas y banderolas solo acompañan. No anuncies ni generes este plan.",
+          mensaje_cliente: MENSAJE_CLIENTE_SIN_GLOBOS,
+        };
+      }
+      const estructurasSinGlobos = validarEstructurasDeGlobosConGlobos(planCanonico, categoriaPorProducto);
+      if (estructurasSinGlobos.length > 0) {
+        estado.planResuelto = undefined;
+        estado.seleccionFinalIA = [];
+        encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+          requestId: estado.ragRequestId,
+          solicitudOriginal: estado.solicitudOriginal,
+          restricciones: estado.restriccionesUsuario,
+          candidateProductIds: [...estado.ragIdsRecuperados],
+          status: "ESTRUCTURA_SIN_GLOBOS",
+          error: estructurasSinGlobos.join(" | "),
+        }));
+        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
+        return {
+          ok: false,
+          status: "ESTRUCTURA_SIN_GLOBOS",
+          errores: estructurasSinGlobos,
+          accion_requerida: "Una estructura oficial de globos (figura, bouquet, centro de mesa, arco…) quedó materializada solo con accesorios. Arma esa estructura con globos del catálogo de este turno; una banderola, serpentina o cartel va como tipo accesorio, sin estructura_oficial y sin nombre de estructura de globos. No anuncies ni generes este plan.",
+          mensaje_cliente: MENSAJE_CLIENTE_SIN_GLOBOS,
         };
       }
       // Cobertura referencia→plan (plan de integración de referencias
@@ -796,7 +810,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       // (referencia_element_id) o declarado omitido (referencia_omitida) —
       // omitir uno en silencio es tan deshonesto como omitir un producto sin
       // decirlo (ver HONESTIDAD AL SUSTITUIR en el prompt del sistema).
-      const elementosSinCubrir = validarCoberturaReferencia(parseado.data, estado.referenceBlueprint);
+      const elementosSinCubrir = validarCoberturaReferencia(planCanonico, estado.referenceBlueprint);
       if (elementosSinCubrir.length > 0) {
         estado.planResuelto = undefined;
         estado.seleccionFinalIA = [];
@@ -814,15 +828,16 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
           status: "COBERTURA_REFERENCIA_INCOMPLETA",
           elementos_sin_cubrir: elementosSinCubrir,
           accion_requerida: "Para cada elemento sin cubrir: asígnale una estructura con referencia_element_id, o decláralo en referencia_omitida con un motivo real. No anuncies ni generes esta imagen hasta cubrir todos.",
+          mensaje_cliente: MENSAJE_CLIENTE_REFERENCIA,
         };
       }
       if (featureEnabled("SCENE_PLAN_V2_SHADOW") && estado.solicitudOriginal.trim()) {
         let shadow: Awaited<ReturnType<typeof sceneShadowPipeline>>;
         try {
-          shadow = await sceneShadowPipeline(estado.solicitudOriginal, ragPool, parseado.data.estructuras.length);
+          shadow = await sceneShadowPipeline(estado.solicitudOriginal, ragPool, planCanonico.estructuras.length);
         } catch (error) {
           shadow = {
-            v1_exists: parseado.data.estructuras.length > 0,
+            v1_exists: planCanonico.estructuras.length > 0,
             v2_ran: false,
             v2_slots_covered: 0,
             v2_total_slots: 0,
@@ -842,8 +857,88 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         }));
       }
       const planningStart = Date.now();
-      const resuelto = await resolverPlan(ragPool, parseado.data, estado.ragVariantIdsRecuperados, options.catalogAllowlist);
-      const materialEstimate = estimateFromPlan(resuelto);
+      const backendPlan = seleccionarBackendPython().backend;
+      // Same-turn allowlist: only the variants the model actually saw in this
+      // turn. It travels signed with the plan so /api/generate and
+      // /api/plan-editar can restate it without trusting the browser.
+      const allowlistTurno = allowlistDesdeMapa(estado.ragVariantIdsRecuperados);
+      const snapshotTurno = estado.ragCatalogSnapshotId ?? null;
+      const correlacionPython = z.string().uuid().safeParse(options.correlationId);
+      const fallarPorBackend = (motivo: string, detalle: string, accionRequerida: string, mensajeCliente: string) => {
+        estado.planResuelto = undefined;
+        estado.seleccionFinalIA = [];
+        encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+          requestId: estado.ragRequestId,
+          solicitudOriginal: estado.solicitudOriginal,
+          restricciones: estado.restriccionesUsuario,
+          candidateProductIds: [...estado.ragIdsRecuperados],
+          status: "BACKEND_NO_DISPONIBLE",
+          error: `${motivo}: ${detalle}`,
+        }));
+        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion", Date.now() - planningStart));
+        return { ok: false, status: "BACKEND_NO_DISPONIBLE", accion_requerida: accionRequerida, mensaje_cliente: mensajeCliente };
+      };
+      const FALLO_TECNICO = "No se pudo verificar el plan contra el catálogo comercial. Dile al cliente que hubo un problema técnico y que vuelva a intentarlo; no inventes precios, no confirmes el plan y no generes ninguna imagen.";
+      // When the Python resolver is the selected commercial authority it needs
+      // the published snapshot of this turn, and there is no implicit fallback
+      // to TypeScript: answering with a plan the operator never verified would
+      // hide a broken cutover. PYTHON_BACKEND_KILL_SWITCH is the rollback.
+      if (backendPlan === "python" && !snapshotTurno) {
+        return fallarPorBackend(
+          "SIN_SNAPSHOT_CATALOGO",
+          "el turno no tiene un snapshot de catálogo publicado",
+          "Busca primero en el catálogo con buscar_catalogo_rag: sin una búsqueda de este turno no hay catálogo verificado contra el que validar precios, stock ni variantes. No confirmes el plan ni generes una imagen hasta tenerla.",
+          MENSAJE_CLIENTE_SIN_BUSQUEDA,
+        );
+      }
+      let resolucion: ResolucionPlan;
+      try {
+        resolucion = backendPlan === "python" && snapshotTurno
+          ? await resolverPlanConBackend({
+              backend: "python",
+              plan: planCanonico,
+              allowlist: allowlistTurno,
+              catalogSnapshotId: snapshotTurno,
+              loraAllowlist: options.catalogAllowlist,
+              requestId: estado.ragRequestId,
+              correlationId: correlacionPython.success ? correlacionPython.data : estado.ragRequestId,
+              ...(options.signal ? { signal: options.signal } : {}),
+            })
+          : await resolverPlanConBackend({
+              backend: "next",
+              pool: ragPool,
+              plan: planCanonico,
+              whitelist: estado.ragVariantIdsRecuperados,
+              loraAllowlist: options.catalogAllowlist,
+            });
+      } catch (error) {
+        if (error instanceof AllowlistProductoVarianteError) {
+          // Model-correctable: the plan paired a variant with a product that
+          // does not own it. Not a technical failure, so the model can retry.
+          estado.planResuelto = undefined;
+          estado.seleccionFinalIA = [];
+          encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+            requestId: estado.ragRequestId,
+            solicitudOriginal: estado.solicitudOriginal,
+            restricciones: estado.restriccionesUsuario,
+            candidateProductIds: [...estado.ragIdsRecuperados],
+            status: "PRODUCTO_VARIANTE_INCONSISTENTE",
+            error: `${error.causa}: ${error.message}`,
+          }));
+          encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion", Date.now() - planningStart));
+          return {
+            ok: false,
+            status: "PRODUCTO_VARIANTE_INCONSISTENTE",
+            accion_requerida: "Cada material y cada variant_override debe usar un variant_id que pertenezca a su product_id según buscar_catalogo_rag. Corrige los ids y vuelve a confirmar; no anuncies ni generes imagen.",
+            mensaje_cliente: MENSAJE_CLIENTE_PIEZAS,
+          };
+        }
+        if (isPythonAdapterError(error)) return fallarPorBackend(error.code, error.domainCode ?? error.message, FALLO_TECNICO, MENSAJE_CLIENTE_VERIFICACION_FALLIDA);
+        if (error instanceof PythonPlanMappingError) return fallarPorBackend(error.code, error.message, FALLO_TECNICO, MENSAJE_CLIENTE_VERIFICACION_FALLIDA);
+        throw error;
+      }
+      const resuelto = resolucion.resuelto;
+      const materialEstimate = resolucion.materialEstimate;
       const estimateValidation = validateMaterialEstimate(materialEstimate);
       const physicalWarnings = blockingPhysicalWarnings(materialEstimate);
       const auditarResuelto = (status: string, error?: string) => encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
@@ -852,14 +947,14 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         solicitudOriginal: estado.solicitudOriginal,
         restricciones: estado.restriccionesUsuario,
         candidateProductIds: [...estado.ragIdsRecuperados],
-        selectedProductIds: parseado.data.estructuras.flatMap((estructura) => estructura.materiales.map((material) => material.product_id)),
+        selectedProductIds: planCanonico.estructuras.flatMap((estructura) => estructura.materiales.map((material) => material.product_id)),
         geometry: resuelto.estructuras.map((estructura) => ({ id: estructura.estructura_id, tipo: estructura.tipo, repeticiones: estructura.repeticiones, unidades: estructura.total_unidades })),
         costMinCop: Math.min(resuelto.totales.total_cop, ...resuelto.alternativas.map((alternativa) => alternativa.total_cop)),
         costChosenCop: resuelto.totales.total_cop,
         ceilingCop: resuelto.comercial.techo_cop,
         deltaCop: resuelto.comercial.delta_cop,
          packages: { ahorro_paquetes_cop: resuelto.totales.ahorro_paquetes_cop, lineas: resuelto.compras.map((compra) => ({ variant_id: compra.variant_id, paquetes: compra.paquetes, unidades: compra.unidades_necesarias, subtotal: compra.subtotal })) },
-        instances: parseado.data.estructuras.map((estructura) => ({ id: estructura.estructura_id, repeticiones: estructura.repeticiones })),
+        instances: planCanonico.estructuras.map((estructura) => ({ id: estructura.estructura_id, repeticiones: estructura.repeticiones })),
         status,
         error,
       }));
@@ -874,6 +969,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
           status: "ESTIMACION_INCONSISTENTE",
           advertencias: [...new Set([...estimateValidation.warnings, ...physicalWarnings])],
           accion_requerida: "Revisa las medidas, densidad, mezcla o número de estructuras; la cantidad física estimada no es compatible con la escala solicitada. No cotices ni generes la imagen hasta corregirlo.",
+          mensaje_cliente: MENSAJE_CLIENTE_ESTIMACION,
         };
       }
       if (resuelto.sin_cobertura.length > 0 || resuelto.compras.length === 0) {
@@ -886,7 +982,9 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
           status: "SIN_COBERTURA",
           sin_cobertura: resuelto.sin_cobertura,
           sustituciones_admisibles: resuelto.sustituciones,
-          accion_requerida: "Busca productos con los tamaños faltantes o cambia la mezcla a una que tenga cobertura real; no anuncies ni generes este plan.",
+          cobertura_por_producto: coberturaPorProducto(resuelto.sin_cobertura, estado.ragCandidatos ?? []),
+          accion_requerida: "Revisa cobertura_por_producto: en cada estructura usa una mezcla de mezclas_compatibles para ese producto, o elige con buscar_catalogo_rag otro producto del mismo color que tenga los tamaños faltantes. Si mezclas_compatibles está vacío, ese producto no sirve para una estructura de globos: cámbialo. No anuncies ni generes este plan.",
+          mensaje_cliente: mensajeClienteSinCobertura(resuelto.sin_cobertura, new Map(planCanonico.estructuras.map((estructura) => [estructura.estructura_id, estructura.nombre]))),
         };
       }
       if (resuelto.comercial.estado === "PRESUPUESTO_EXCEDIDO") {
@@ -902,13 +1000,20 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
           delta_cop: resuelto.comercial.delta_cop,
           alternativas: resuelto.alternativas,
           accion_requerida: "Reduce la complejidad o elige una alternativa compatible; no confirmes ni generes este plan por encima del techo.",
+          mensaje_cliente: mensajeClientePresupuesto(resuelto.totales.total_cop, resuelto.comercial.techo_cop, resuelto.comercial.delta_cop),
         };
       }
       resuelto.request_id = estado.ragRequestId;
       enriquecerPlanResueltoEvento(resuelto, eventIntent, estado.ragEventEvidence ?? new Map(), estado.ragEventRelaxations ?? []);
-      resuelto.approval_token = crearTokenAprobacion(resuelto.plan_hash, estado.ragRequestId);
+      resuelto.approval_token = crearTokenPlan({
+        planHash: resuelto.plan_hash,
+        requestId: estado.ragRequestId,
+        backend: resolucion.backend,
+        catalogSnapshotId: snapshotTurno,
+        allowlist: allowlistTurno,
+      });
       estado.planResuelto = resuelto;
-      estado.cotizacion = cotizarPlan(resuelto);
+      estado.cotizacion = resolucion.cotizacion;
       // La cotización se muestra, pero generar queda bloqueado hasta la
       // aprobación explícita del cliente en la tarjeta del plan.
       estado.seleccionFinalIA = [];
@@ -946,21 +1051,5 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       };
     },
 
-    buscar_decoraciones: async (args) => {
-      const encontradas = await buscarDecoraciones(args as { estilos?: string[] });
-      const decoracionesConProductos = await Promise.all(
-        encontradas.map(async (d) => ({ ...d, productos: await productosPorId(d.elementos) })),
-      );
-      estado.decoraciones = decoracionesConProductos;
-      return {
-        total: encontradas.length,
-        decoraciones: decoracionesConProductos.map((d) => ({
-          id: d.id,
-          nombre: d.nombre,
-          descripcion: d.descripcion,
-          elementos: d.productos.map((p) => p.nombre),
-        })),
-      };
-    },
   };
 }

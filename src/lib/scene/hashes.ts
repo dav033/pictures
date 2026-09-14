@@ -1,6 +1,6 @@
 /**
  * Hashes canónicos de la cadena de trazabilidad de escena (Tarea 01.1 —
- * `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`, sección 7.5).
+ * `docs/migracion-python/PLAN-MAESTRO-V2.md`, sección 7.5).
  *
  * Los siete hashes mínimos exigidos por el plan son:
  *

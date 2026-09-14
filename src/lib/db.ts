@@ -14,7 +14,7 @@ declare global {
   var __db: DatabaseSync | undefined;
 }
 
-// Mapeo de las 3 franjas viejas a las 4 nuevas (PLAN_RAG_FRANJAS_PRESUPUESTO.md
+// Mapeo de las 3 franjas viejas a las 4 nuevas (docs/migracion-python/PLAN-MAESTRO-V2.md
 // §5.2). "low" pierde alcance real de "escena" hacia abajo porque la franja
 // nueva `detalle` es más angosta que el "low" viejo (no incluye arco); se
 // prefiere subestimar el rango a inventar un rango que el catálogo real no
@@ -247,7 +247,7 @@ function crearConexion(): DatabaseSync {
     // ya existe
   }
 
-  // 4 franjas de presupuesto (PLAN_RAG_FRANJAS_PRESUPUESTO.md §5.2/§5.3):
+  // 4 franjas de presupuesto (docs/migracion-python/PLAN-MAESTRO-V2.md §5.2/§5.3):
   // `presupuestos_v1` guarda el valor original low/mid/high como respaldo
   // ANTES de reescribirlo — así la migración se puede auditar o revertir sin
   // necesitar un backup completo de la base. `rol_presupuesto` conecta cada

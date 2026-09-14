@@ -1,4 +1,4 @@
-// Enriquecimiento con evidencia (Tarea 03.1, PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md,
+// Enriquecimiento con evidencia (Tarea 03.1, docs/migracion-python/PLAN-MAESTRO-V2.md,
 // Plan 03). Recorre el catálogo real ya publicado en `catalog_products`
 // (Postgres, la fuente de verdad — nunca el seed SQLite ni `manualProducts`),
 // deriva funciones de escena candidatas por reglas de texto deterministas

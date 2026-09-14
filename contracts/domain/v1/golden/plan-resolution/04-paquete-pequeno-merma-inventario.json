@@ -1,0 +1,873 @@
+{
+  "allowlist": [
+    {
+      "product_id": "P-BLUE",
+      "variant_ids": [
+        "V-BLUE-12-X7"
+      ]
+    }
+  ],
+  "catalog_rows": [
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "azul"
+      ],
+      "colores_variante": [
+        "azul"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex azul R-12 en paquete pequeno.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/blue-12-x7.jpg",
+      "inventory_quantity": 2,
+      "precio": 1500,
+      "product_id": "P-BLUE",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex azul",
+      "sku": "SKU-BLUE-12-X7",
+      "sku_original": "SHOP-BLUE-12-X7",
+      "source_snapshot_id": "SNAP-GOLDEN-004",
+      "source_variant_id": "SOURCE-BLUE-12-X7",
+      "unidades_inferidas": true,
+      "unidades_paq": 7,
+      "variant_id": "V-BLUE-12-X7",
+      "variante_titulo": "R-12 paquete x7"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-004",
+  "description": "Dos columnas usan una presentacion pequena y conservan el inventario del snapshot.",
+  "expected": {
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "azul",
+          "design_quantity": 30,
+          "finish": null,
+          "product_id": "P-BLUE",
+          "required_quantity": 30,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_01_COLUMNA",
+          "variant_id": "V-BLUE-12-X7",
+          "waste_adjusted_quantity": 30,
+          "waste_reserve": 0
+        },
+        {
+          "color": "azul",
+          "design_quantity": 30,
+          "finish": null,
+          "product_id": "P-BLUE",
+          "required_quantity": 30,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_02_COLUMNA",
+          "variant_id": "V-BLUE-12-X7",
+          "waste_adjusted_quantity": 30,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 2,
+        "density": "media",
+        "dimensions_m": {
+          "height": 1.4,
+          "length": null,
+          "width": null
+        },
+        "installation_length_m": 2.8,
+        "shape": "coordinated structures",
+        "type": "composite_installation",
+        "visual_density": "medium",
+        "visual_scale": "medium"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": true,
+          "consumption_cost": 13929,
+          "design_quantity": 60,
+          "leftover_inventory": 5,
+          "operational_surplus": 5,
+          "package_count": 10,
+          "potential_surplus": 10,
+          "product_id": "P-BLUE",
+          "purchase_cost": 15000,
+          "purchase_quantity": 70,
+          "required_quantity": 65,
+          "units_per_package": 7,
+          "used": 60,
+          "variant_id": "V-BLUE-12-X7",
+          "waste_adjusted_quantity": 65,
+          "waste_reserve": 5
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 10,
+        "consumption_cost": 13929,
+        "covered_waste_reserve": 5,
+        "design_quantity": 60,
+        "natural_package_surplus": 10,
+        "operational_surplus": 5,
+        "potential_surplus": 10,
+        "purchase_cost": 15000,
+        "purchase_quantity": 70,
+        "required_quantity": 65,
+        "target_waste_reserve": 5,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 65,
+        "waste_only_savings_cop": 1500
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": []
+    },
+    "plan_resuelto": {
+      "advertencias": [],
+      "alternativas": [
+        {
+          "ahorro_cop": 1500,
+          "etiqueta": "economica",
+          "familia_id": "P-BLUE",
+          "titulo": "Globo latex azul",
+          "total_cop": 13500
+        }
+      ],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": true,
+          "color": "azul",
+          "consumption_cost": 13929,
+          "design_quantity": 60,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA",
+            "EST_02_COLUMNA"
+          ],
+          "imagen": "https://cdn.example.test/blue-12-x7.jpg",
+          "inventory_quantity": 2,
+          "leftover_inventory": 5,
+          "paquetes": 10,
+          "precio_paquete": 1500,
+          "product_id": "P-BLUE",
+          "purchase_cost": 15000,
+          "purchase_quantity": 70,
+          "required_quantity": 65,
+          "sku": "SKU-BLUE-12-X7",
+          "sku_original": "SHOP-BLUE-12-X7",
+          "sobrante": 10,
+          "source_snapshot_id": "SNAP-GOLDEN-004",
+          "source_variant_id": "SOURCE-BLUE-12-X7",
+          "subtotal": 15000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex azul — R-12 paquete x7",
+          "unidades_con_merma": 65,
+          "unidades_inferidas": true,
+          "unidades_necesarias": 60,
+          "unidades_paquete": 7,
+          "used": 60,
+          "variant_id": "V-BLUE-12-X7",
+          "waste_reserve": 5
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 1.4,
+          "estructura_id": "EST_01_COLUMNA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "azul",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_01_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/blue-12-x7.jpg",
+              "inventory_quantity": 2,
+              "origen": {
+                "id": "EST_01_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLUE",
+              "sku": "SKU-BLUE-12-X7",
+              "sku_original": "SHOP-BLUE-12-X7",
+              "source_snapshot_id": "SNAP-GOLDEN-004",
+              "source_variant_id": "SOURCE-BLUE-12-X7",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex azul — R-12 paquete x7",
+              "unidades": 30,
+              "unidades_inferidas": true,
+              "variant_id": "V-BLUE-12-X7"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 30
+            }
+          ],
+          "nombre": "Columna azul izquierda",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 30,
+          "ubicacion": "lateral_izquierdo"
+        },
+        {
+          "eje_m": 1.4,
+          "estructura_id": "EST_02_COLUMNA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "azul",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_02_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/blue-12-x7.jpg",
+              "inventory_quantity": 2,
+              "origen": {
+                "id": "EST_02_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLUE",
+              "sku": "SKU-BLUE-12-X7",
+              "sku_original": "SHOP-BLUE-12-X7",
+              "source_snapshot_id": "SNAP-GOLDEN-004",
+              "source_variant_id": "SOURCE-BLUE-12-X7",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex azul — R-12 paquete x7",
+              "unidades": 30,
+              "unidades_inferidas": true,
+              "variant_id": "V-BLUE-12-X7"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 30
+            }
+          ],
+          "nombre": "Columna azul derecha",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 30,
+          "ubicacion": "lateral_derecho"
+        }
+      ],
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 60\nTarget waste reserve: 5\nNatural package surplus: 3\nUsable waste coverage: 5\nAdditional packages required for waste: 10\nGlobo latex azul — R-12 paquete x7: design=60, required=65, package=7, packages=10, purchased=70, natural surplus=10, waste reserve=5, leftover inventory=5",
+      "plan": {
+        "concepto": {
+          "descripcion": "Dos columnas con paquetes pequenos para controlar la merma.",
+          "paleta": [
+            "azul"
+          ],
+          "titulo": "Columnas azules"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_COLUMNA",
+            "materiales": [
+              {
+                "color": "azul",
+                "participacion": 1,
+                "product_id": "P-BLUE",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna azul izquierda",
+            "porque": "Crea un marco de color.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "columna",
+            "ubicacion": "lateral_izquierdo"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_02_COLUMNA",
+            "materiales": [
+              {
+                "color": "azul",
+                "participacion": 1,
+                "product_id": "P-BLUE",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna azul derecha",
+            "porque": "Equilibra el marco de color.",
+            "repeticiones": 1,
+            "rol_escena": "soporte",
+            "tipo": "columna",
+            "ubicacion": "lateral_derecho"
+          }
+        ],
+        "plan_id": "44444444-4444-4444-8444-444444444444",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "1bc488fd8a93d55eecae213654c4d84a1c8fbc21f45a12457aea000cf7e92507",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 10,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 13929,
+        "covered_waste_reserve": 5,
+        "design_quantity": 60,
+        "globos_por_tamano": {
+          "R-12": 60
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8,
+        "natural_package_surplus": 3,
+        "purchase_cost": 15000,
+        "target_waste_reserve": 5,
+        "total_cop": 15000,
+        "total_unidades": 60,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "complementosSoportados": false,
+      "consumptionCost": 13929,
+      "coveredWasteReserve": 5,
+      "incluyeIva": true,
+      "leftoverInventory": 5,
+      "lineas": [
+        {
+          "additionalPackageForWaste": true,
+          "cantidadNecesaria": 60,
+          "color": "azul",
+          "consumptionCost": 13929,
+          "designQuantity": 60,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA",
+            "EST_02_COLUMNA"
+          ],
+          "id": "V-BLUE-12-X7",
+          "leftoverInventory": 5,
+          "nombre": "Globo latex azul — R-12 paquete x7",
+          "paquetes": 10,
+          "precioPaquete": 1500,
+          "productId": "P-BLUE",
+          "purchaseCost": 15000,
+          "purchaseQuantity": 70,
+          "referenciaElementIds": [],
+          "requiredQuantity": 65,
+          "sobrante": 10,
+          "subtotal": 15000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 7,
+          "used": 60,
+          "varianteId": "V-BLUE-12-X7",
+          "wasteReserve": 5
+        }
+      ],
+      "mermaPorcentaje": 8,
+      "plan_hash": "1bc488fd8a93d55eecae213654c4d84a1c8fbc21f45a12457aea000cf7e92507",
+      "purchaseCost": 15000,
+      "targetWasteReserve": 5,
+      "total": 15000
+    }
+  },
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-004",
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "azul",
+          "design_quantity": 30,
+          "finish": null,
+          "product_id": "P-BLUE",
+          "required_quantity": 30,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_COLUMNA",
+          "variant_id": "V-BLUE-12-X7",
+          "waste_adjusted_quantity": 30,
+          "waste_reserve": 0
+        },
+        {
+          "color": "azul",
+          "design_quantity": 30,
+          "finish": null,
+          "product_id": "P-BLUE",
+          "required_quantity": 30,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_02_COLUMNA",
+          "variant_id": "V-BLUE-12-X7",
+          "waste_adjusted_quantity": 30,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 2,
+        "density": "media",
+        "dimensions_m": {
+          "height": 1.4,
+          "length": null,
+          "width": null
+        },
+        "installation_length_m": 2.8,
+        "shape": "coordinated structures",
+        "type": "composite_installation",
+        "visual_density": "medium",
+        "visual_scale": "medium"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": true,
+          "consumption_cost": 13929,
+          "design_quantity": 60,
+          "leftover_inventory": 5,
+          "operational_surplus": 5,
+          "package_count": 10,
+          "potential_surplus": 10,
+          "product_id": "P-BLUE",
+          "purchase_cost": 15000,
+          "purchase_quantity": 70,
+          "required_quantity": 65,
+          "units_per_package": 7,
+          "used": 60,
+          "variant_id": "V-BLUE-12-X7",
+          "waste_adjusted_quantity": 65,
+          "waste_reserve": 5
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 10,
+        "consumption_cost": 13929,
+        "covered_waste_reserve": 5,
+        "design_quantity": 60,
+        "natural_package_surplus": 10,
+        "operational_surplus": 5,
+        "potential_surplus": 10,
+        "purchase_cost": 15000,
+        "purchase_quantity": 70,
+        "required_quantity": 65,
+        "target_waste_reserve": 5,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 65,
+        "waste_only_savings_cop": 1500
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": []
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [],
+      "alternativas": [
+        {
+          "ahorro_cop": 1500,
+          "etiqueta": "economica",
+          "familia_id": "P-BLUE",
+          "titulo": "Globo latex azul",
+          "total_cop": 13500
+        }
+      ],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": true,
+          "color": "azul",
+          "consumption_cost": 13929,
+          "design_quantity": 60,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA",
+            "EST_02_COLUMNA"
+          ],
+          "imagen": "https://cdn.example.test/blue-12-x7.jpg",
+          "inventory_quantity": 2,
+          "leftover_inventory": 5,
+          "paquetes": 10,
+          "precio_paquete": 1500,
+          "product_id": "P-BLUE",
+          "purchase_cost": 15000,
+          "purchase_quantity": 70,
+          "required_quantity": 65,
+          "sku": "SKU-BLUE-12-X7",
+          "sku_original": "SHOP-BLUE-12-X7",
+          "sobrante": 10,
+          "source_snapshot_id": "SNAP-GOLDEN-004",
+          "source_variant_id": "SOURCE-BLUE-12-X7",
+          "subtotal": 15000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex azul — R-12 paquete x7",
+          "unidades_con_merma": 65,
+          "unidades_inferidas": true,
+          "unidades_necesarias": 60,
+          "unidades_paquete": 7,
+          "used": 60,
+          "variant_id": "V-BLUE-12-X7",
+          "waste_reserve": 5
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 1.4,
+          "estructura_id": "EST_01_COLUMNA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "azul",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/blue-12-x7.jpg",
+              "inventory_quantity": 2,
+              "origen": {
+                "id": "EST_01_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLUE",
+              "sku": "SKU-BLUE-12-X7",
+              "sku_original": "SHOP-BLUE-12-X7",
+              "source_snapshot_id": "SNAP-GOLDEN-004",
+              "source_variant_id": "SOURCE-BLUE-12-X7",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex azul — R-12 paquete x7",
+              "unidades": 30,
+              "unidades_inferidas": true,
+              "variant_id": "V-BLUE-12-X7"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 30
+            }
+          ],
+          "nombre": "Columna azul izquierda",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 30,
+          "ubicacion": "lateral_izquierdo"
+        },
+        {
+          "eje_m": 1.4,
+          "estructura_id": "EST_02_COLUMNA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "azul",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_02_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/blue-12-x7.jpg",
+              "inventory_quantity": 2,
+              "origen": {
+                "id": "EST_02_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLUE",
+              "sku": "SKU-BLUE-12-X7",
+              "sku_original": "SHOP-BLUE-12-X7",
+              "source_snapshot_id": "SNAP-GOLDEN-004",
+              "source_variant_id": "SOURCE-BLUE-12-X7",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex azul — R-12 paquete x7",
+              "unidades": 30,
+              "unidades_inferidas": true,
+              "variant_id": "V-BLUE-12-X7"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 30
+            }
+          ],
+          "nombre": "Columna azul derecha",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 30,
+          "ubicacion": "lateral_derecho"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-004.",
+      "plan": {
+        "concepto": {
+          "descripcion": "Dos columnas con paquetes pequenos para controlar la merma.",
+          "paleta": [
+            "azul"
+          ],
+          "titulo": "Columnas azules"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_COLUMNA",
+            "materiales": [
+              {
+                "color": "azul",
+                "participacion": 1,
+                "product_id": "P-BLUE",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna azul izquierda",
+            "porque": "Crea un marco de color.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "columna",
+            "ubicacion": "lateral_izquierdo"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_02_COLUMNA",
+            "materiales": [
+              {
+                "color": "azul",
+                "participacion": 1,
+                "product_id": "P-BLUE",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna azul derecha",
+            "porque": "Equilibra el marco de color.",
+            "repeticiones": 1,
+            "rol_escena": "soporte",
+            "tipo": "columna",
+            "ubicacion": "lateral_derecho"
+          }
+        ],
+        "plan_id": "44444444-4444-4444-8444-444444444444",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "24f7279de0c7d98e228512b105ea239cc69244cd9a4cab303620c933443ced30",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 10,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 13929,
+        "covered_waste_reserve": 5,
+        "design_quantity": 60,
+        "globos_por_tamano": {
+          "R-12": 60
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 3,
+        "purchase_cost": 15000,
+        "target_waste_reserve": 5,
+        "total_cop": 15000,
+        "total_unidades": 60,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 13929,
+      "covered_waste_reserve": 5,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 5,
+      "lines": [
+        {
+          "available": true,
+          "color": "azul",
+          "consumption_cost_cop": 13929,
+          "design_quantity": 60,
+          "diameter_inches": 12.0,
+          "id": "V-BLUE-12-X7",
+          "leftover_inventory": 5,
+          "origins": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 1500,
+          "packages": 10,
+          "product_id": "P-BLUE",
+          "purchase_cost_cop": 15000,
+          "purchase_quantity": 70,
+          "required_quantity": 65,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_COLUMNA",
+            "EST_02_COLUMNA"
+          ],
+          "subtotal_cop": 15000,
+          "surplus": 10,
+          "title": "Globo latex azul — R-12 paquete x7",
+          "units_per_package": 7,
+          "used": 60,
+          "variant_id": "V-BLUE-12-X7",
+          "waste_reserve": 5
+        }
+      ],
+      "plan_hash": "24f7279de0c7d98e228512b105ea239cc69244cd9a4cab303620c933443ced30",
+      "purchase_cost_cop": 15000,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 5,
+      "total_cop": 15000,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "paquete-pequeno-merma-inventario",
+  "plan": {
+    "concepto": {
+      "descripcion": "Dos columnas con paquetes pequenos para controlar la merma.",
+      "paleta": [
+        "azul"
+      ],
+      "titulo": "Columnas azules"
+    },
+    "espacio": {
+      "fuente": "cliente",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "densidad": "media",
+        "estructura_id": "EST_01_COLUMNA",
+        "materiales": [
+          {
+            "color": "azul",
+            "participacion": 1,
+            "product_id": "P-BLUE",
+            "rol_material": "principal"
+          }
+        ],
+        "medidas": {
+          "alto_m": 1.4
+        },
+        "mezcla": "clasica",
+        "nombre": "Columna azul izquierda",
+        "porque": "Crea un marco de color.",
+        "repeticiones": 1,
+        "rol_escena": "focal",
+        "tipo": "columna",
+        "ubicacion": "lateral_izquierdo"
+      },
+      {
+        "densidad": "media",
+        "estructura_id": "EST_02_COLUMNA",
+        "materiales": [
+          {
+            "color": "azul",
+            "participacion": 1,
+            "product_id": "P-BLUE",
+            "rol_material": "principal"
+          }
+        ],
+        "medidas": {
+          "alto_m": 1.4
+        },
+        "mezcla": "clasica",
+        "nombre": "Columna azul derecha",
+        "porque": "Equilibra el marco de color.",
+        "repeticiones": 1,
+        "rol_escena": "soporte",
+        "tipo": "columna",
+        "ubicacion": "lateral_derecho"
+      }
+    ],
+    "plan_id": "44444444-4444-4444-8444-444444444444",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "supuestos": []
+  }
+}

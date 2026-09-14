@@ -4,11 +4,15 @@ import type { Imagen, Mensaje } from "@/lib/ia/tipos";
 import { ejecutarConversacionStream } from "@/lib/ia/ejecutar";
 import { limitarHistorialChat } from "@/lib/ia/historial-chat";
 import { construirSistema } from "@/lib/ia/prompt-sistema";
+import { parseNivelCreatividad, sugerenciaEscena } from "@/lib/ia/creatividad";
+import { escenaEspecificada } from "@/lib/ia/visual-context";
 import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import { RAG_ENABLED, RAG_FRANJAS_ENABLED, PLAN_DECORACION_ENABLED } from "@/lib/ia/feature-flags";
 import type { Brief, ChatMessage } from "@/lib/types";
 import { LoraModeSlugSchema } from "@/lib/lora/schema";
 import { resolveLoraModeDatasetAllowlist } from "@/lib/lora/mode-resolver";
+import { causaCatalogoLora } from "@/lib/lora/catalogo-no-disponible";
+import { RagUnavailableError } from "@/lib/rag/retrieval/search";
 import {
   CHAT_SSE_CONTRACT_VERSION,
   ERROR_CONTRACT_VERSION,
@@ -85,10 +89,19 @@ function datosDeError(error: unknown): { error: string; causa?: string; proveedo
             : "No se pudo completar la respuesta del asistente.";
     return { error: mensaje, causa: error.causa, proveedor: error.proveedor };
   }
+  // `error` es texto visible en consumidores legacy: sin nombres de
+  // infraestructura ni variables de entorno. El diagnóstico queda en el log
+  // del servidor con el request_id; la UI traduce `code` con ui-error.v1.
+  if (error instanceof RagUnavailableError) {
+    return {
+      error: "El catálogo no está disponible en este momento. Intenta nuevamente.",
+      causa: "base_datos",
+    };
+  }
   const detalle = error instanceof Error ? error.message : "Error desconocido";
   if (/ECONNREFUSED|DATABASE_URL|postgres/i.test(detalle)) {
     return {
-      error: "No se pudo conectar al catálogo RAG (PostgreSQL). Verifica DATABASE_URL y que el contenedor de base de datos esté activo.",
+      error: "El catálogo no está disponible en este momento. Intenta nuevamente.",
       causa: "base_datos",
     };
   }
@@ -114,6 +127,7 @@ function codigoDeError(error: unknown): ErrorCodeV1 {
         return "AI_PROVIDER";
     }
   }
+  if (error instanceof RagUnavailableError) return "RAG_UNAVAILABLE";
   const detalle = error instanceof Error ? error.message : "";
   if (/ECONNREFUSED|DATABASE_URL|postgres/i.test(detalle)) return "RAG_UNAVAILABLE";
   return "INTERNAL_ERROR";
@@ -171,6 +185,7 @@ export async function POST(request: Request) {
   const requestId = contextoOperativo.request_id;
   const correlationId = contextoOperativo.correlation_id;
   const { messages, brief, proveedor, fotoEspacio, imagenesReferencia, referenceBlueprint: rawReferenceBlueprint, loraMode: rawLoraMode } = body;
+  const creatividad = parseNivelCreatividad(body.creatividad);
   const cookieProveedor = request.headers
     .get("cookie")
     ?.match(/ia_proveedor=(gemini)/)?.[1];
@@ -180,8 +195,10 @@ export async function POST(request: Request) {
   let sistema: string;
   let referenceBlueprint: ReferenceBlueprintV2 | undefined;
   let catalogAllowlist: Awaited<ReturnType<typeof resolveLoraModeDatasetAllowlist>> = null;
+  let catalogoLoraNoDisponible: string | undefined;
 
   try {
+    if (!RAG_ENABLED) throw new RagUnavailableError({});
     const id = resolverProveedor({ override: proveedor, cookie: cookieProveedor });
     chat = await chatDe(id);
 
@@ -192,9 +209,26 @@ export async function POST(request: Request) {
       ? ReferenceBlueprintV2Schema.parse(rawReferenceBlueprint)
       : undefined;
     const loraMode = rawLoraMode == null ? null : LoraModeSlugSchema.parse(rawLoraMode);
-    catalogAllowlist = RAG_ENABLED && loraMode ? await resolveLoraModeDatasetAllowlist(loraMode) : null;
+    if (RAG_ENABLED && loraMode) {
+      try {
+        catalogAllowlist = await resolveLoraModeDatasetAllowlist(loraMode);
+      } catch (error) {
+        // An unusable LoRA pool must not block a conversation that does not
+        // need the catalog ("hola"). Catalog tools fail closed instead; any
+        // non-LoRA failure (e.g. database down) still aborts the request.
+        const causa = causaCatalogoLora(error);
+        if (!causa) throw error;
+        catalogoLoraNoDisponible = causa;
+        console.warn("[chat] catálogo LoRA no disponible; herramientas de catálogo bloqueadas:", { requestId, loraMode, causa });
+      }
+    }
 
-    sistema = construirSistema({ ragEnabled: RAG_ENABLED, franjasEnabled: RAG_FRANJAS_ENABLED, brief, referenceBlueprint, catalogAllowlist: catalogAllowlist ?? undefined });
+    // Only what the customer left open gets a server-picked venue/time, and only
+    // at levels that suggest one; logged so a surprising scene can be traced.
+    const textoCliente = (messages ?? []).filter((mensaje) => mensaje.role === "user").map((mensaje) => mensaje.content).join(" ");
+    const sugerencia = sugerenciaEscena(creatividad, escenaEspecificada(textoCliente, brief ?? {}));
+    if (sugerencia) console.info("[chat] sugerencia de escena por creatividad", { requestId, creatividad, ...sugerencia });
+    sistema = construirSistema({ ragEnabled: RAG_ENABLED, franjasEnabled: RAG_FRANJAS_ENABLED, brief, referenceBlueprint, catalogAllowlist: catalogAllowlist ?? undefined, catalogoLoraNoDisponible: catalogoLoraNoDisponible !== undefined, creatividad, sugerenciaEscena: sugerencia });
 
     // Las imágenes solo se adjuntan al último mensaje (el que se acaba de
     // mandar en este turno) — `historial` se reconstruye desde texto plano
@@ -231,9 +265,15 @@ export async function POST(request: Request) {
   } catch (error) {
     const datos = datosDeError(error);
     const code = codigoDeError(error);
+    // Unclassified setup failures (LoRA resolution, blueprint parsing) used to
+    // surface only as a generic 502; keep the cause observable without logging
+    // the conversation.
+    if (code === "INTERNAL_ERROR" || code === "RAG_UNAVAILABLE") {
+      console.error("[chat] fallo antes del stream:", { requestId, code, error: error instanceof Error ? `${error.name}: ${error.message}` : String(error) });
+    }
     return Response.json(
       { ...envelopeHttp(requestId, code, datos.error, reintentable(error)), causa: datos.causa, proveedor: datos.proveedor },
-      { status: statusDe(error instanceof ErrorIA ? error.causa : "desconocido"), headers: headersDeIds },
+      { status: error instanceof RagUnavailableError ? 503 : statusDe(error instanceof ErrorIA ? error.causa : "desconocido"), headers: headersDeIds },
     );
   }
 
@@ -248,6 +288,8 @@ export async function POST(request: Request) {
     brief: brief ?? {},
     referenceBlueprint,
     catalogAllowlist: catalogAllowlist ?? undefined,
+    catalogoLoraNoDisponible,
+    creatividad,
     signal: deadline.signal,
     telemetria: {
       flujo: "armador_decoracion",
@@ -342,9 +384,13 @@ export async function POST(request: Request) {
           const datos = deadlineCancelado
             ? { error: "El asistente tardó demasiado en responder. Intenta nuevamente.", causa: "timeout" }
             : datosDeError(error);
+          const code = deadlineCancelado ? "AI_TIMEOUT" : codigoDeError(error);
+          if (code === "INTERNAL_ERROR" || code === "RAG_UNAVAILABLE") {
+            console.error("[chat] fallo durante el stream:", { requestId, code, error: error instanceof Error ? `${error.name}: ${error.message}` : String(error) });
+          }
           enviar("error", {
             ...datos,
-            code: deadlineCancelado ? "AI_TIMEOUT" : codigoDeError(error),
+            code,
             retryable: deadlineCancelado || reintentable(error),
           });
         }

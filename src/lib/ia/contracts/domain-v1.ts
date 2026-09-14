@@ -27,19 +27,39 @@ import { LoraSelectionSchema } from "@/lib/lora/schema";
 import { productVocabularySchema } from "@/lib/lora/product-vocabulary";
 
 export const CATALOG_SELECTION_CONTRACT_VERSION = "catalog-selection.v1" as const;
+export const CATALOG_SEARCH_CONTRACT_VERSION = "catalog-search.v1" as const;
+export const CATALOG_SEARCH_RESULT_CONTRACT_VERSION = "catalog-search-result.v1" as const;
 export const PLAN_RESUELTO_CONTRACT_VERSION = "plan-resuelto.v1" as const;
 export const QUOTE_CONTRACT_VERSION = "quote.v1" as const;
+export const PLAN_RESOLUTION_CONTRACT_VERSION = "plan-resolution.v1" as const;
+export const PLAN_RESOLUTION_RESULT_CONTRACT_VERSION = "plan-resolution-result.v1" as const;
+export const CATALOG_RECOMMENDATIONS_CONTRACT_VERSION = "catalog-recommendations.v1" as const;
+export const CATALOG_RECOMMENDATIONS_RESULT_CONTRACT_VERSION = "catalog-recommendations-result.v1" as const;
+export const CATALOG_RECOMMENDATIONS_MAX_LIMIT = 100;
+/** 2048 ids × ~17 bytes ≈ 35 KB, below the 64 KB Python request body limit. */
+export const CATALOG_RECOMMENDATIONS_MAX_LORA_VARIANTS = 2048;
+/**
+ * The same LoRA dataset pool travels to plan resolution, so both requests
+ * accept the same bound. Budget against the 64 KB Python body limit:
+ * Shopify ids are 14 digits, so each id costs 17 bytes on the wire
+ * (`"46594221179175",`); 2048 ids ≈ 34.8 KB, leaving ≈ 30 KB for the envelope
+ * (~0.5 KB), the plan and the same-turn allowlist. 4096 ids (≈ 69.6 KB) would
+ * not fit. The count is not a byte guarantee: longer ids are still rejected by
+ * the body limit (`PYTHON_PAYLOAD_TOO_LARGE` / `body_too_large`), fail closed.
+ */
+export const PLAN_RESOLUTION_MAX_LORA_VARIANTS = CATALOG_RECOMMENDATIONS_MAX_LORA_VARIANTS;
 
 const idSchema = z.string().trim().min(1).max(160);
 /** COP is transported as whole pesos; rounding happens before this boundary. */
 const copSchema = z.number().int().nonnegative();
 const positiveIntSchema = z.number().int().positive();
+const safePositiveIntSchema = positiveIntSchema.max(Number.MAX_SAFE_INTEGER);
 const nonNegativeIntSchema = z.number().int().nonnegative();
 
 export const CatalogSelectionRequestItemV1Schema = z.object({
   product_id: idSchema,
   variant_id: idSchema,
-  quantity: positiveIntSchema,
+  quantity: safePositiveIntSchema,
   reason: z.string().trim().min(1).max(500).optional(),
 }).strict();
 
@@ -84,13 +104,125 @@ export const CatalogRejectedItemV1Schema = z.object({
 }).strict();
 
 export const CatalogSelectionResultV1Schema = z.object({
-  schema_version: z.literal(CATALOG_SELECTION_CONTRACT_VERSION),
-  request_id: z.string().uuid(),
+  operation_schema_version: z.literal("catalog-selection-result.v1"),
   status: z.enum(["ok", "partial", "empty"]),
   catalog_snapshot_id: idSchema.nullable(),
   validados: z.array(CatalogValidatedItemV1Schema),
   rechazados: z.array(CatalogRejectedItemV1Schema),
   total_cop: copSchema,
+}).strict();
+
+const CatalogSearchFiltersV1Schema = z.object({
+  available: z.boolean().optional(),
+  price_max: z.number().nonnegative().optional(),
+  categories: z.array(z.string().trim().min(1).max(120)).max(32).optional(),
+  occasions: z.array(z.string().trim().min(1).max(120)).max(32).optional(),
+  colors: z.array(z.string().trim().min(1).max(80)).max(16).optional(),
+  finishes: z.array(z.string().trim().min(1).max(80)).max(16).optional(),
+  shapes: z.array(z.string().trim().min(1).max(80)).max(16).optional(),
+  diameters_inches: z.array(z.number().nonnegative()).max(16).optional(),
+}).strict();
+
+const CatalogSearchAllowlistV1Schema = z.object({
+  product_id: idSchema,
+  variant_ids: z.array(idSchema).max(256),
+}).strict();
+
+export const CatalogSearchRequestV1Schema = z.object({
+  schema_version: z.literal(CATALOG_SEARCH_CONTRACT_VERSION),
+  message: z.string().trim().min(1).max(2000),
+  filters: CatalogSearchFiltersV1Schema,
+  allowlist: z.array(CatalogSearchAllowlistV1Schema).max(256),
+  limit: z.number().int().min(1).max(50),
+  catalog_snapshot_id: idSchema.nullable().optional(),
+}).strict();
+
+const CatalogSearchVariantV1Schema = z.object({
+  variant_id: idSchema,
+  sku: z.string().nullable(),
+  title: z.string().nullable(),
+  price: z.number().nonnegative(),
+  available: z.boolean(),
+  size_code: z.string().nullable(),
+  diameter_inches: z.number().nonnegative().nullable(),
+  shape: z.string().nullable(),
+  colors: z.array(z.string()),
+}).strict();
+
+const CatalogSearchCandidateV1Schema = z.object({
+  product_id: idSchema,
+  title: z.string().min(1),
+  category: z.string().nullable(),
+  colors: z.array(z.string()),
+  finishes: z.array(z.string()),
+  occasions: z.array(z.string()),
+  available: z.boolean(),
+  image: z.string().nullable(),
+  score: z.number(),
+  variants: z.array(CatalogSearchVariantV1Schema),
+}).strict();
+
+export const CatalogSearchResultV1Schema = z.object({
+  operation_schema_version: z.literal(CATALOG_SEARCH_RESULT_CONTRACT_VERSION),
+  status: z.enum(["OK", "NO_MATCH", "AMBIGUOUS_SKU"]),
+  sku_status: z.enum(["not_sku", "unique", "ambiguous", "not_found", "filtered_out"]).nullable(),
+  candidates: z.array(CatalogSearchCandidateV1Schema).max(50),
+  whitelist: z.array(CatalogSearchAllowlistV1Schema),
+  catalog_snapshot_id: idSchema.nullable(),
+  latency_parse_ms: z.number().int().nonnegative(),
+  latency_retrieval_ms: z.number().int().nonnegative(),
+}).strict();
+
+/**
+ * Recommendations for one reference variant inside a pinned snapshot.
+ * `lora_variant_ids` absent means unrestricted; an empty list is invalid so it
+ * can never be mistaken for "no restriction". Python enforces id uniqueness.
+ */
+export const CatalogRecommendationsRequestV1Schema = z.object({
+  schema_version: z.literal(CATALOG_RECOMMENDATIONS_CONTRACT_VERSION),
+  catalog_snapshot_id: idSchema,
+  reference_variant_id: idSchema,
+  lora_variant_ids: z.array(idSchema).min(1).max(CATALOG_RECOMMENDATIONS_MAX_LORA_VARIANTS).optional(),
+  limit: z.number().int().min(1).max(CATALOG_RECOMMENDATIONS_MAX_LIMIT),
+}).strict();
+
+const CatalogRecommendationVariantV1Schema = z.object({
+  variant_id: idSchema,
+  sku: z.string().nullable(),
+  title: z.string().nullable(),
+  price: copSchema.positive(),
+  available: z.literal(true),
+  size_code: z.string().nullable(),
+  diameter_inches: z.number().nonnegative().nullable(),
+  shape: z.string().nullable(),
+  colors: z.array(z.string()),
+}).strict();
+
+const CatalogRecommendationCandidateV1Schema = z.object({
+  product_id: idSchema,
+  title: z.string().min(1),
+  category: z.string().nullable(),
+  colors: z.array(z.string()),
+  finishes: z.array(z.string()),
+  occasions: z.array(z.string()),
+  available: z.literal(true),
+  image: z.string().nullable(),
+  variants: z.array(CatalogRecommendationVariantV1Schema).min(1).max(CATALOG_RECOMMENDATIONS_MAX_LIMIT),
+}).strict();
+
+export const CatalogRecommendationsResultV1Schema = z.object({
+  operation_schema_version: z.literal(CATALOG_RECOMMENDATIONS_RESULT_CONTRACT_VERSION),
+  catalog_snapshot_id: idSchema,
+  reference: z.object({
+    product_id: idSchema,
+    variant_id: idSchema,
+    size_code: z.string().nullable(),
+    diameter_inches: z.number().nonnegative().nullable(),
+    shape: z.string().nullable(),
+    category: z.string().nullable(),
+    colors: z.array(z.string()),
+  }).strict(),
+  candidates: z.array(CatalogRecommendationCandidateV1Schema).max(CATALOG_RECOMMENDATIONS_MAX_LIMIT),
 }).strict();
 
 const originLineSchema = z.discriminatedUnion("kind", [
@@ -134,7 +266,9 @@ const resolvedStructureSchema = z.object({
     diam_pulg: z.number().nonnegative(),
     forma: z.string().nullable(),
     unidades: nonNegativeIntSchema,
-    pct: z.number().min(0).max(1),
+    // Percentages are transported as 0..100; the plan resolver and the
+    // physical-prompt consumer both use this unit.
+    pct: z.number().min(0).max(100),
   }).strict()),
   supuestos: z.array(z.string()),
 }).strict();
@@ -276,15 +410,39 @@ export const QuoteV1Schema = z.object({
   plan_hash: z.string().min(1).optional(),
 }).strict();
 
+export const PlanResolutionRequestV1Schema = z.object({
+  schema_version: z.literal(PLAN_RESOLUTION_CONTRACT_VERSION),
+  // Plan 1.1 remains deferred until its active consumers and rollback path
+  // are ready; this endpoint currently resolves the active Plan 1.0 contract.
+  plan: PlanDecoracionSchema,
+  allowlist: z.array(CatalogAllowlistEntryV1Schema).max(256),
+  catalog_snapshot_id: idSchema,
+  lora_variant_ids: z.array(idSchema).max(PLAN_RESOLUTION_MAX_LORA_VARIANTS).optional(),
+}).strict();
+
+export const PlanResolutionResultV1Schema = z.object({
+  operation_schema_version: z.literal(PLAN_RESOLUTION_RESULT_CONTRACT_VERSION),
+  catalog_snapshot_id: idSchema,
+  plan_resuelto: PlanResueltoV1Schema,
+  material_estimate: MaterialEstimateSchema,
+  quote: QuoteV1Schema,
+}).strict();
+
 export const DomainContractSchemas = {
   "catalog-product.v1": CatalogProductSchema,
   "catalog-variant.v1": CatalogVariantSchema,
   "catalog-selection-request.v1": CatalogSelectionRequestV1Schema,
   "catalog-selection-result.v1": CatalogSelectionResultV1Schema,
+  "catalog-search.v1": CatalogSearchRequestV1Schema,
+  "catalog-search-result.v1": CatalogSearchResultV1Schema,
+  "catalog-recommendations.v1": CatalogRecommendationsRequestV1Schema,
+  "catalog-recommendations-result.v1": CatalogRecommendationsResultV1Schema,
   "plan-decoracion.v1": PlanDecoracionSchema,
   "plan-resuelto.v1": PlanResueltoV1Schema,
   "design-material-estimate.v1": MaterialEstimateSchema,
   "quote.v1": QuoteV1Schema,
+  "plan-resolution.v1": PlanResolutionRequestV1Schema,
+  "plan-resolution-result.v1": PlanResolutionResultV1Schema,
   "reference-blueprint.v2": ReferenceBlueprintV2Schema,
   "scene-spec.v1": SceneSpecSchema,
   "lora-selection.v1": LoraSelectionSchema,
@@ -305,5 +463,11 @@ export const DomainContractSchemas = {
 
 export type CatalogSelectionRequestV1 = z.infer<typeof CatalogSelectionRequestV1Schema>;
 export type CatalogSelectionResultV1 = z.infer<typeof CatalogSelectionResultV1Schema>;
+export type CatalogSearchRequestV1 = z.infer<typeof CatalogSearchRequestV1Schema>;
+export type CatalogSearchResultV1 = z.infer<typeof CatalogSearchResultV1Schema>;
+export type CatalogRecommendationsRequestV1 = z.infer<typeof CatalogRecommendationsRequestV1Schema>;
+export type CatalogRecommendationsResultV1 = z.infer<typeof CatalogRecommendationsResultV1Schema>;
 export type PlanResueltoV1 = z.infer<typeof PlanResueltoV1Schema>;
 export type QuoteV1 = z.infer<typeof QuoteV1Schema>;
+export type PlanResolutionRequestV1 = z.infer<typeof PlanResolutionRequestV1Schema>;
+export type PlanResolutionResultV1 = z.infer<typeof PlanResolutionResultV1Schema>;

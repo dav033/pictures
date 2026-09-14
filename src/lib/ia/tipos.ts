@@ -72,6 +72,8 @@ export type PeticionImagen = {
   revisionMode?: "new_generation" | "revise_current_result";
   aspecto: "3:2" | "1:1" | "2:3" | "16:9";
   calidad: "borrador" | "alta";
+  /** Cancels provider I/O when the client disconnects or the route expires. */
+  signal?: AbortSignal;
   /** Metadatos acotados para atribuir coste. Nunca contiene prompt ni imágenes. */
   telemetria?: import("./telemetria-llamadas").ContextoTelemetriaIA & {
     capacidad?: "imagen_generacion" | "imagen_generacion_correctiva";

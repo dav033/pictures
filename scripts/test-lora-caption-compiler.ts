@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import type { SceneSpec } from "../src/lib/ia/scene-spec";
 import { compileLoraCaption, translateLoraColor } from "../src/lib/ia/lora-caption-compiler";
 import { findLoraPromptLanguageLeaks, preflightLoraPrompt } from "../src/lib/ia/lora-prompt-preflight";
-import { buildLoraImagePromptV1 } from "../src/lib/ia/build-image-prompt";
 import { buildVisualContext } from "../src/lib/ia/visual-context";
 
 type ElementOptions = {
@@ -112,15 +111,11 @@ const languageContext = buildVisualContext({
   eventLabel: "evento corporativo",
 });
 const languageV2 = compileLoraCaption({ sceneSpec: languageScene, visualContext: languageContext }).prompt;
-const languageV1 = buildLoraImagePromptV1({ sceneSpec: languageScene, visualContext: languageContext, revisionInstruction: "más velas" });
 assert.match(languageV2, /fifteenth-birthday celebration atmosphere/i);
 assert.match(languageV2, /in blue/i);
 assert.match(languageV2, /recognizable event venue environment/i);
 assert.doesNotMatch(languageV2, /quince|azul|club social|evento|corporativo|años|[áéíóúüñ¿¡]/i);
-assert.doesNotMatch(languageV1, /quince|azul|club social|evento|corporativo|años|velas|[áéíóúüñ¿¡]/i);
-assert.equal((languageV1.match(/fifteenth-birthday celebration/gi) ?? []).length, 1);
 assert.deepEqual(findLoraPromptLanguageLeaks(languageV2), []);
-assert.deepEqual(findLoraPromptLanguageLeaks(languageV1), []);
 
 const directQuincePrompt = compileLoraCaption({
   sceneSpec: languageScene,
@@ -209,5 +204,21 @@ const sevenStructures = check({ spec: scene([
 ]) });
 assert.equal(sevenStructures.report.structures.represented, 7);
 assert.equal(sevenStructures.report.discardedElementIds.length, 0);
+
+// Regression: the Spanish-leak tokens and the diacritics class were stored as
+// mojibake ("quinceaÃ±era", "[Ã¡Ã©...]"), so real accented Spanish text never
+// matched and reached fal.ai untranslated.
+const accentedLeaks = findLoraPromptLanguageLeaks("eventdecor_style_v2, a quinceañera arch for XV años in the jardín.");
+assert.ok(accentedLeaks.includes("quinceañera"), `quinceañera must be detected: ${accentedLeaks.join(", ")}`);
+assert.ok(accentedLeaks.includes("años"), `años must be detected: ${accentedLeaks.join(", ")}`);
+assert.ok(accentedLeaks.includes("jardín"), `jardín must be detected: ${accentedLeaks.join(", ")}`);
+assert.ok(accentedLeaks.includes("caracteres españoles"), "accented characters must be flagged on their own");
+assert.deepEqual(findLoraPromptLanguageLeaks("eventdecor_style_v2, celebración"), ["caracteres españoles", "celebración"]);
+assert.deepEqual(findLoraPromptLanguageLeaks("eventdecor_style_v2, ¿salón?"), ["caracteres españoles", "salón"]);
+const leakScene = scene([element({ id: "LEAK", name: "Arco", type: "arco", placement: "arco_central", role: "focal" })]);
+const leakCompilation = compileLoraCaption({ sceneSpec: leakScene, visualContext: buildVisualContext({ userRequest: "cumpleaños en salón" }) });
+const leakReport = preflightLoraPrompt({ sceneSpec: leakScene, clauses: leakCompilation.clauses, prompt: `${leakCompilation.prompt} Quinceañera.` });
+assert.equal(leakReport.ok, false);
+assert.ok(leakReport.errors.some((error) => error.startsWith("texto español sin traducir") && error.includes("quinceañera")), leakReport.errors.join("; "));
 
 console.log("LoRA caption compiler: OK");

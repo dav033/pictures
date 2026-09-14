@@ -100,3 +100,8 @@ Alternativa documentada explícitamente (13.2.4): si el criterio de quien coordi
 - `src/lib/lora/snapshot.ts`
 - `scripts/recibir-lora.ts`
 - `docs/operations/rag-rollback-v2.md`
+# Archivo histórico
+
+Este informe conserva evidencia de una revisión anterior. El inventario de
+flags fue reemplazado por `resiliencia/registro-flags.md`; sus defaults y rutas
+ya no deben usarse para operar el sistema.

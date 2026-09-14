@@ -2,7 +2,7 @@
 
 Estado: `aceptado, en implementación (Ola 0 — Tarea 00.2)`
 Fecha: 2026-08-22
-Plan de referencia: `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`
+Plan de referencia: `../migracion-python/PLAN-MAESTRO-V2.md`
 
 ## Contexto
 

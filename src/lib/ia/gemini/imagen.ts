@@ -95,6 +95,9 @@ export function crearImagenGemini(): ImagenPort {
             aspect_ratio: p.aspecto,
             image_size: p.calidad === "alta" ? "2K" : "1K",
           },
+        }, {
+          signal: p.signal ? AbortSignal.any([p.signal, AbortSignal.timeout(105_000)]) : AbortSignal.timeout(105_000),
+          retries: { strategy: "none" },
         });
 
         const b64 = extraerImagen(respuesta);

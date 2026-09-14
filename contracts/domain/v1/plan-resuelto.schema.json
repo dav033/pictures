@@ -297,6 +297,27 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 80
+                  },
+                  "estructura_oficial": {
+                    "type": "string",
+                    "enum": [
+                      "arco",
+                      "arco_asimetrico",
+                      "arco_no_denso",
+                      "semiarco",
+                      "semiarco_asimetrico",
+                      "columna",
+                      "columna_asimetrica",
+                      "columna_no_densa",
+                      "pared_densa",
+                      "pared_no_densa",
+                      "guirnalda",
+                      "centro_mesa",
+                      "bouquet",
+                      "figura",
+                      "aro_circular",
+                      "techo_globos"
+                    ]
                   }
                 },
                 "required": [
@@ -312,7 +333,737 @@
                   "materiales",
                   "porque"
                 ],
-                "additionalProperties": false
+                "additionalProperties": false,
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "arco"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "arco"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "arco_asimetrico"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "arco"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "arco_no_denso"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "arco"
+                          ]
+                        },
+                        "densidad": {
+                          "enum": [
+                            "sencilla"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "semiarco"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "semiarco"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "semiarco_asimetrico"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "semiarco"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "columna"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "columna"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "columna_asimetrica"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "columna"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "columna_no_densa"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "columna"
+                          ]
+                        },
+                        "densidad": {
+                          "enum": [
+                            "sencilla"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "pared_densa"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "pared"
+                          ]
+                        },
+                        "densidad": {
+                          "enum": [
+                            "media",
+                            "lujosa"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "pared_no_densa"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "pared"
+                          ]
+                        },
+                        "densidad": {
+                          "enum": [
+                            "sencilla"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "guirnalda"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "guirnalda"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "centro_mesa"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "centro_mesa"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "bouquet"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "kit"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "figura"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "kit",
+                            "escultura"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "aro_circular"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "arco"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "techo_globos"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "guirnalda"
+                          ]
+                        },
+                        "ubicacion": {
+                          "enum": [
+                            "techo",
+                            "techo_multipunto"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "arco"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "arco"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "arco_asimetrico"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "arco"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "arco_no_denso"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "arco"
+                          ]
+                        },
+                        "densidad": {
+                          "enum": [
+                            "sencilla"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "semiarco"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "semiarco"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "semiarco_asimetrico"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "semiarco"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "columna"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "columna"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "columna_asimetrica"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "columna"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "columna_no_densa"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "columna"
+                          ]
+                        },
+                        "densidad": {
+                          "enum": [
+                            "sencilla"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "pared_densa"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "pared"
+                          ]
+                        },
+                        "densidad": {
+                          "enum": [
+                            "media",
+                            "lujosa"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "pared_no_densa"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "pared"
+                          ]
+                        },
+                        "densidad": {
+                          "enum": [
+                            "sencilla"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "guirnalda"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "guirnalda"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "centro_mesa"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "centro_mesa"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "bouquet"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "kit"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "figura"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "kit",
+                            "escultura"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "aro_circular"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "arco"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "techo_globos"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "guirnalda"
+                          ]
+                        },
+                        "ubicacion": {
+                          "enum": [
+                            "techo",
+                            "techo_multipunto"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ]
               }
             },
             "supuestos": {
@@ -1164,6 +1915,27 @@
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 80
+                  },
+                  "estructura_oficial": {
+                    "type": "string",
+                    "enum": [
+                      "arco",
+                      "arco_asimetrico",
+                      "arco_no_denso",
+                      "semiarco",
+                      "semiarco_asimetrico",
+                      "columna",
+                      "columna_asimetrica",
+                      "columna_no_densa",
+                      "pared_densa",
+                      "pared_no_densa",
+                      "guirnalda",
+                      "centro_mesa",
+                      "bouquet",
+                      "figura",
+                      "aro_circular",
+                      "techo_globos"
+                    ]
                   }
                 },
                 "required": [
@@ -1180,7 +1952,737 @@
                   "relaciones_fisicas",
                   "porque"
                 ],
-                "additionalProperties": false
+                "additionalProperties": false,
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "arco"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "arco"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "arco_asimetrico"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "arco"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "arco_no_denso"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "arco"
+                          ]
+                        },
+                        "densidad": {
+                          "enum": [
+                            "sencilla"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "semiarco"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "semiarco"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "semiarco_asimetrico"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "semiarco"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "columna"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "columna"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "columna_asimetrica"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "columna"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "columna_no_densa"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "columna"
+                          ]
+                        },
+                        "densidad": {
+                          "enum": [
+                            "sencilla"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "pared_densa"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "pared"
+                          ]
+                        },
+                        "densidad": {
+                          "enum": [
+                            "media",
+                            "lujosa"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "pared_no_densa"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "pared"
+                          ]
+                        },
+                        "densidad": {
+                          "enum": [
+                            "sencilla"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "guirnalda"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "guirnalda"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "centro_mesa"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "centro_mesa"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "bouquet"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "kit"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "figura"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "kit",
+                            "escultura"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "aro_circular"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "arco"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "techo_globos"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "guirnalda"
+                          ]
+                        },
+                        "ubicacion": {
+                          "enum": [
+                            "techo",
+                            "techo_multipunto"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "arco"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "arco"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "arco_asimetrico"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "arco"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "arco_no_denso"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "arco"
+                          ]
+                        },
+                        "densidad": {
+                          "enum": [
+                            "sencilla"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "semiarco"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "semiarco"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "semiarco_asimetrico"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "semiarco"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "columna"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "columna"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "columna_asimetrica"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "columna"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "columna_no_densa"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "columna"
+                          ]
+                        },
+                        "densidad": {
+                          "enum": [
+                            "sencilla"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "pared_densa"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "pared"
+                          ]
+                        },
+                        "densidad": {
+                          "enum": [
+                            "media",
+                            "lujosa"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "pared_no_densa"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "pared"
+                          ]
+                        },
+                        "densidad": {
+                          "enum": [
+                            "sencilla"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "guirnalda"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "guirnalda"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "centro_mesa"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "centro_mesa"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "bouquet"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "kit"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "figura"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "kit",
+                            "escultura"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "aro_circular"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "arco"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "if": {
+                      "properties": {
+                        "estructura_oficial": {
+                          "const": "techo_globos"
+                        }
+                      },
+                      "required": [
+                        "estructura_oficial"
+                      ]
+                    },
+                    "then": {
+                      "properties": {
+                        "tipo": {
+                          "enum": [
+                            "guirnalda"
+                          ]
+                        },
+                        "ubicacion": {
+                          "enum": [
+                            "techo",
+                            "techo_multipunto"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ]
               }
             },
             "props_catalogo": {
@@ -2314,7 +3816,7 @@
                 "pct": {
                   "type": "number",
                   "minimum": 0,
-                  "maximum": 1
+                  "maximum": 100
                 }
               },
               "required": [

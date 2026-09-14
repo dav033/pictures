@@ -1,6 +1,6 @@
 /**
  * Receta inicial `wedding_ceremony_garden@1` (Tarea 01.2 —
- * `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`, sección 5.4 / "Plan 01,
+ * `docs/migracion-python/PLAN-MAESTRO-V2.md`, sección 5.4 / "Plan 01,
  * Tarea 01.2" en la sección 11).
  *
  * Implementa la tabla de la sección 5.4: 8 slots para la vista de ceremonia

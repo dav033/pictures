@@ -1,7 +1,7 @@
 import { writeFile, access } from "node:fs/promises";
 import path from "node:path";
-
-const RUTA_ORDENES = "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
+import { isAuthenticatedRequest, isSameOriginRequest } from "@/lib/auth/request";
+import { directorioOrdenes, nombreFotoOrden } from "@/lib/ordenes/directorio";
 
 type CuerpoCaption = {
   foto: string;
@@ -16,13 +16,16 @@ type CuerpoCaption = {
 };
 
 export async function PUT(request: Request, { params }: { params: Promise<{ numero: string }> }) {
+  if (!isAuthenticatedRequest(request)) return Response.json({ error: "Sesión requerida." }, { status: 401 });
+  if (!isSameOriginRequest(request)) return Response.json({ error: "Origen no permitido." }, { status: 403 });
+
   const { numero } = await params;
   if (!/^\d+$/.test(numero)) return Response.json({ error: "Número de orden inválido." }, { status: 400 });
 
   const indice = Number(new URL(request.url).searchParams.get("indice") ?? "1");
   if (!Number.isInteger(indice) || indice < 1) return Response.json({ error: "Índice inválido." }, { status: 400 });
 
-  const carpetaOrden = path.join(RUTA_ORDENES, numero);
+  const carpetaOrden = path.join(/*turbopackIgnore: true*/ directorioOrdenes(), numero);
   try {
     await access(carpetaOrden);
   } catch {
@@ -33,9 +36,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ nume
   if (typeof cuerpo.caption !== "string" || cuerpo.caption.trim().length === 0) {
     return Response.json({ error: "El caption no puede quedar vacío." }, { status: 400 });
   }
+  const archivoFoto = nombreFotoOrden(indice, cuerpo.foto);
+  if (!archivoFoto) return Response.json({ error: "Nombre de foto inválido." }, { status: 400 });
 
   const entrada: CuerpoCaption = {
-    foto: cuerpo.foto ?? `foto-${indice}.jpg`,
+    foto: archivoFoto,
     trigger_token: cuerpo.trigger_token ?? "eventdecor_style_v1",
     tipo_estructura: cuerpo.tipo_estructura ?? "",
     elementos_no_comprados: Array.isArray(cuerpo.elementos_no_comprados) ? cuerpo.elementos_no_comprados : [],

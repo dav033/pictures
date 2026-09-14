@@ -13,12 +13,13 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { generarCaption } from "../src/lib/ordenes/generarCaption";
 import type { CategoriaEntrenamiento, Desglose, FeedbackFoto, LineaDesglose } from "../src/lib/ordenes/tipos";
+import { directorioOrdenes } from "../src/lib/ordenes/directorio";
 
-const RUTA_ORDENES = "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
+const RUTA_ORDENES = directorioOrdenes();
 const BASE_URL = "https://sempertex.com";
 const LISTADO_URL = `${BASE_URL}/blogs/idea-de-fiesta`;
 // Rango numérico reservado para no chocar con números de orden reales (4-6 dígitos) ni con IDs
-// de "Agregar imagen" manual (timestamps de 13 dígitos, siempre arrancan en "17...").
+// de "Agregar imagen" manual (identificadores largos generados en runtime).
 const ID_BASE = 950_000_000;
 
 const db = new DatabaseSync(path.join(process.cwd(), "data", "demo.sqlite"));

@@ -1,6 +1,6 @@
 /**
  * Extractor determinista de `EventIntentV2` desde un mensaje en español
- * (Tarea 04.1 — `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`, sección 9.1 paso
+ * (Tarea 04.1 — `docs/migracion-python/PLAN-MAESTRO-V2.md`, sección 9.1 paso
  * 1 / "Plan 04, Tarea 04.1" en la sección 11).
  *
  * `parseEventIntent(mensaje, contexto?)` es una función PURA y determinista:

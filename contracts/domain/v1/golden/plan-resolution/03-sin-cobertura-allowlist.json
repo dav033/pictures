@@ -1,0 +1,379 @@
+{
+  "allowlist": [],
+  "catalog_rows": [
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "rojo"
+      ],
+      "colores_variante": [
+        "rojo"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex rojo R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/red-12.jpg",
+      "inventory_quantity": 100,
+      "precio": 10000,
+      "product_id": "P-RED",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex rojo",
+      "sku": "SKU-RED-12",
+      "sku_original": "SHOP-RED-12",
+      "source_snapshot_id": "SNAP-GOLDEN-003",
+      "source_variant_id": "SOURCE-RED-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-RED-12",
+      "variante_titulo": "R-12"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-003",
+  "description": "El catalogo contiene R-12, pero la allowlist del turno no contiene ninguna variante.",
+  "expected": {
+    "material_estimate": {
+      "balloons": [],
+      "design": {
+        "cluster_count": 1,
+        "density": "media",
+        "dimensions_m": {
+          "height": 1.4,
+          "length": null,
+          "width": null
+        },
+        "installation_length_m": 1.4,
+        "shape": "clasica",
+        "type": "columna",
+        "visual_density": "medium",
+        "visual_scale": "small"
+      },
+      "purchases": [],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 0,
+        "covered_waste_reserve": 0,
+        "design_quantity": 0,
+        "natural_package_surplus": 0,
+        "operational_surplus": 0,
+        "potential_surplus": 0,
+        "purchase_cost": 0,
+        "purchase_quantity": 0,
+        "required_quantity": 0,
+        "target_waste_reserve": 0,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 0,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "estructura_sin_cobertura:EST_01_COLUMNA"
+      ]
+    },
+    "plan_resuelto": {
+      "advertencias": [
+        "estructura_sin_cobertura:EST_01_COLUMNA"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [],
+      "estructuras": [
+        {
+          "eje_m": 1.4,
+          "estructura_id": "EST_01_COLUMNA",
+          "lineas": [],
+          "mezcla_real": [],
+          "nombre": "Columna sin cobertura",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 0,
+          "ubicacion": "lateral_izquierdo"
+        }
+      ],
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 0\nTarget waste reserve: 0\nNatural package surplus: 0\nUsable waste coverage: 0\nAdditional packages required for waste: 0",
+      "plan": {
+        "concepto": {
+          "descripcion": "Columna cuyo material no fue publicado en la allowlist.",
+          "paleta": [
+            "rojo"
+          ],
+          "titulo": "Columna sin cobertura"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_COLUMNA",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-RED",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna sin cobertura",
+            "porque": "Expone la falta de cobertura sin inventar una compra.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "columna",
+            "ubicacion": "lateral_izquierdo"
+          }
+        ],
+        "plan_id": "33333333-3333-4333-8333-333333333333",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "5e8bd0671dc6e8fb5b58496150c8a06c77b9e8f732285b21a3f282fd6ffcc0eb",
+      "sin_cobertura": [
+        {
+          "estructura_id": "EST_01_COLUMNA",
+          "product_id": "P-RED",
+          "tamano": "R-12"
+        }
+      ],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 0,
+        "covered_waste_reserve": 0,
+        "design_quantity": 0,
+        "globos_por_tamano": {},
+        "incluye_iva": true,
+        "merma_porcentaje": 8,
+        "natural_package_surplus": 0,
+        "purchase_cost": 0,
+        "target_waste_reserve": 0,
+        "total_cop": 0,
+        "total_unidades": 0,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "complementosSoportados": false,
+      "consumptionCost": 0,
+      "coveredWasteReserve": 0,
+      "incluyeIva": true,
+      "leftoverInventory": 0,
+      "lineas": [],
+      "mermaPorcentaje": 8,
+      "plan_hash": "5e8bd0671dc6e8fb5b58496150c8a06c77b9e8f732285b21a3f282fd6ffcc0eb",
+      "purchaseCost": 0,
+      "targetWasteReserve": 0,
+      "total": 0
+    }
+  },
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-003",
+    "material_estimate": {
+      "balloons": [],
+      "design": {
+        "cluster_count": 1,
+        "density": "media",
+        "dimensions_m": {
+          "height": 1.4,
+          "length": null,
+          "width": null
+        },
+        "installation_length_m": 1.4,
+        "shape": "clasica",
+        "type": "columna",
+        "visual_density": "medium",
+        "visual_scale": "small"
+      },
+      "purchases": [],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 0,
+        "covered_waste_reserve": 0,
+        "design_quantity": 0,
+        "natural_package_surplus": 0,
+        "operational_surplus": 0,
+        "potential_surplus": 0,
+        "purchase_cost": 0,
+        "purchase_quantity": 0,
+        "required_quantity": 0,
+        "target_waste_reserve": 0,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 0,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "estructura_sin_cobertura:EST_01_COLUMNA"
+      ]
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [
+        "estructura_sin_cobertura:EST_01_COLUMNA"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [],
+      "estructuras": [
+        {
+          "eje_m": 1.4,
+          "estructura_id": "EST_01_COLUMNA",
+          "lineas": [],
+          "mezcla_real": [],
+          "nombre": "Columna sin cobertura",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 0,
+          "ubicacion": "lateral_izquierdo"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-003.",
+      "plan": {
+        "concepto": {
+          "descripcion": "Columna cuyo material no fue publicado en la allowlist.",
+          "paleta": [
+            "rojo"
+          ],
+          "titulo": "Columna sin cobertura"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_COLUMNA",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-RED",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna sin cobertura",
+            "porque": "Expone la falta de cobertura sin inventar una compra.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "columna",
+            "ubicacion": "lateral_izquierdo"
+          }
+        ],
+        "plan_id": "33333333-3333-4333-8333-333333333333",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "7765b9ccc1ef60b57f9641203bc53bd847a4310d2623c1bbf5a618f48d81a7a9",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [
+        {
+          "estructura_id": "EST_01_COLUMNA",
+          "product_id": "P-RED",
+          "tamano": "R-12"
+        }
+      ],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 0,
+        "covered_waste_reserve": 0,
+        "design_quantity": 0,
+        "globos_por_tamano": {},
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 0,
+        "purchase_cost": 0,
+        "target_waste_reserve": 0,
+        "total_cop": 0,
+        "total_unidades": 0,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 0,
+      "covered_waste_reserve": 0,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 0,
+      "lines": [],
+      "plan_hash": "7765b9ccc1ef60b57f9641203bc53bd847a4310d2623c1bbf5a618f48d81a7a9",
+      "purchase_cost_cop": 0,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 0,
+      "total_cop": 0,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "sin-cobertura-allowlist",
+  "plan": {
+    "concepto": {
+      "descripcion": "Columna cuyo material no fue publicado en la allowlist.",
+      "paleta": [
+        "rojo"
+      ],
+      "titulo": "Columna sin cobertura"
+    },
+    "espacio": {
+      "fuente": "cliente",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "densidad": "media",
+        "estructura_id": "EST_01_COLUMNA",
+        "materiales": [
+          {
+            "color": "rojo",
+            "participacion": 1,
+            "product_id": "P-RED",
+            "rol_material": "principal"
+          }
+        ],
+        "medidas": {
+          "alto_m": 1.4
+        },
+        "mezcla": "clasica",
+        "nombre": "Columna sin cobertura",
+        "porque": "Expone la falta de cobertura sin inventar una compra.",
+        "repeticiones": 1,
+        "rol_escena": "focal",
+        "tipo": "columna",
+        "ubicacion": "lateral_izquierdo"
+      }
+    ],
+    "plan_id": "33333333-3333-4333-8333-333333333333",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "supuestos": []
+  }
+}

@@ -1,6 +1,6 @@
 /**
  * Fixtures de "capacidad de catálogo" para la Tarea 00.1 del plan
- * PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md (Ola 0 — línea base).
+ * docs/migracion-python/PLAN-MAESTRO-V2.md (Ola 0 — línea base).
  *
  * IMPORTANTE — estos son tipos TS simples y explícitos, NO los contratos Zod
  * formales `CatalogItemV3` / `CommercialOfferV1` descritos en la sección 7.3

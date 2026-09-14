@@ -103,3 +103,8 @@ Difiere del orden implícito del plan:
 6. **¿Hay aprobación para instalar gitleaks/trufflehog en `checks.yml` y correrlo contra el histórico completo?**
 7. **¿La vía de contenido hacia clientes de Happia se considera dentro del alcance de "seguridad" de este plan, dado que el afectado es un tercero y no un invariante del capítulo 6?** Si no, ¿en qué fase se atiende?
 8. **¿Alguien validó alguna vez con una llamada real controlada que un catálogo o imagen con texto adversarial de verdad logra el comportamiento descrito en la sección 3, o es hasta ahora análisis puramente estático?** El criterio de aceptación de 4.3 pide "el resultado real, no una afirmación de que está acotado" — esta auditoría entrega el análisis estático más fuerte posible sin gastar en proveedor; la validación dinámica queda pendiente por diseño de las reglas de la propia auditoría.
+# Archivo histórico
+
+Este informe conserva evidencia de una revisión anterior. Sus nombres de rutas,
+flags y hallazgos no representan la superficie operativa actual; consultar la
+documentación vigente antes de actuar.

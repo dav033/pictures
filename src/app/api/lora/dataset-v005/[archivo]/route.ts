@@ -1,6 +1,7 @@
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { isAuthenticatedRequest } from "@/lib/auth/request";
+import { directorioOrdenes } from "@/lib/ordenes/directorio";
 
 const ORDER_DATASET_DIR = path.join(
   process.cwd(),
@@ -20,7 +21,6 @@ const V007_ANNOTATIONS_DIR = path.join(process.cwd(), "data", "staging", "lora-v
 // En el servidor no existen ni las carpetas de staging ni la de órdenes, así que
 // las fotos salen de las que se publicaron con el snapshot.
 const SNAPSHOT_DIR = path.join(process.cwd(), "data", "snapshot", "imagenes");
-const ORDERS_DIR = "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
 const IMAGE = /\.(jpe?g|png|webp)$/i;
 const WEB_IMAGE = /^web-\d+\.(jpe?g|png|webp)$/i;
 const MAX_REMOTE_IMAGE_BYTES = 12 * 1024 * 1024;
@@ -39,9 +39,9 @@ async function resolveOrderImage(archivo: string): Promise<{ buffer: Buffer; ext
   const match = archivo.match(/^(\d+)-(\d+)\.(jpe?g|png|webp)$/i);
   if (!match) return null;
   const [, orderNumber, photoIndex] = match;
-  const orderDir = path.join(ORDERS_DIR, orderNumber);
+  const orderDir = path.join(/*turbopackIgnore: true*/ directorioOrdenes(), orderNumber);
   try {
-    const sourceName = (await readdir(orderDir)).find((name) => new RegExp(`^foto-${photoIndex}\\.(jpe?g|png|webp)$`, "i").test(name));
+    const sourceName = (await readdir(/*turbopackIgnore: true*/ orderDir)).find((name) => new RegExp(`^foto-${photoIndex}\\.(jpe?g|png|webp)$`, "i").test(name));
     if (!sourceName) return null;
     return { buffer: await readFile(path.join(orderDir, sourceName)), extension: path.extname(sourceName).slice(1).toLowerCase() };
   } catch {
@@ -114,7 +114,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ archivo: string }> },
 ): Promise<Response> {
-  if (!isAuthenticatedRequest(request)) return new Response("SesiÃ³n requerida", { status: 401 });
+  if (!isAuthenticatedRequest(request)) return new Response("Sesión requerida", { status: 401 });
 
   const { archivo } = await params;
   if (archivo !== path.basename(archivo) || !IMAGE.test(archivo)) {
@@ -151,4 +151,3 @@ export async function GET(
     return new Response("Imagen no encontrada", { status: 404 });
   }
 }
-

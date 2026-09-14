@@ -1,6 +1,6 @@
 /**
  * Cálculo de cobertura de un `SceneProgramV1` (Tarea 01.2 —
- * `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`, secciones 5.1, 7.4 y 9.4,
+ * `docs/migracion-python/PLAN-MAESTRO-V2.md`, secciones 5.1, 7.4 y 9.4,
  * "Plan 01, Tarea 01.2" en la sección 11).
  *
  * `computeCoverageReport` es la versión real y con criterio que reemplaza,

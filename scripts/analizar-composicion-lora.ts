@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { directorioOrdenes } from "../src/lib/ordenes/directorio";
 
 /**
  * Extrae de qué está hecho el dataset del LoRA v004 y con qué peso.
@@ -23,7 +24,7 @@ const CAPTIONS = path.join(process.cwd(), "data/staging/recaption-v004/nuevo");
 const ORIGINAL = path.join(process.cwd(), "data/staging/recaption-v004/original");
 const DATASET = path.join(process.cwd(), "data/processed/export-general-2026-08-27.json");
 const PROCEDENCIA = path.join(process.cwd(), "data/lora-backup/PROCEDENCIA-v004-1000.json");
-const ORDENES = process.env.ORDENES_DECORACION_DIR ?? "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
+const ORDENES = directorioOrdenes();
 const SALIDA = path.join(process.cwd(), "data/processed/lora-v004-composicion.json");
 
 type Termino = { nombre: string; patron: RegExp };

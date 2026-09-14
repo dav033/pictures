@@ -2,7 +2,7 @@ import "server-only";
 import type { Pool } from "pg";
 import { featureEnabled } from "@/lib/ia/feature-flags";
 import { MERMA } from "@/lib/cotizacion/constantes";
-import { calcularDespieceEstructura } from "@/lib/medidas/geometria";
+import { calcularDespieceEstructura, MEZCLAS_DISPONIBLES, pulgadasDeMezcla, type Mezcla } from "@/lib/medidas/geometria";
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "./composicion";
 import { planHashResuelto } from "./hash";
 import { completarMedidas, completarMedidas1_1 } from "./medidas-defecto";
@@ -107,6 +107,19 @@ function sustitucionAdmisible(pedido: number, disponible: number): boolean {
   const disponibleIndex = DIAMETROS_ESTANDAR.indexOf(disponible as (typeof DIAMETROS_ESTANDAR)[number]);
   if (pedidoIndex < 0 || disponibleIndex < 0 || Math.abs(pedidoIndex - disponibleIndex) !== 1) return false;
   return Math.max(pedido, disponible) / Math.min(pedido, disponible) <= 1.5;
+}
+
+/**
+ * Mezclas que un producto puede cubrir con sus diámetros redondos disponibles,
+ * aplicando la misma sustitución admisible que usa la resolución. Sirve para
+ * decirle al modelo qué mezcla sí cabe cuando un plan queda SIN_COBERTURA:
+ * en el catálogo local solo el 18 % de los productos redondos cubre
+ * `organica_fina` (A6, docs/mejoras/PLAN-ESTRUCTURAS-Y-UX.md).
+ */
+export function mezclasCompatiblesConDiametros(diametros: readonly number[]): Mezcla[] {
+  return MEZCLAS_DISPONIBLES.filter((mezcla) =>
+    pulgadasDeMezcla(mezcla).every((pedido) => diametros.some((disponible) => sustitucionAdmisible(pedido, disponible))),
+  );
 }
 
 function costoPaquetes(candidato: Candidato, unidades: number, merma = 0): number {
@@ -431,12 +444,15 @@ export async function resolverPlan(
         mezcla: estructura.mezcla,
         tamanos: plan.restricciones?.tamanos.filter((item) => item.polaridad === "obligatorio").map((item) => Number(item.valor.replace(/^R-/i, ""))).filter(Number.isFinite),
         materiales: estructura.materiales.map((material) => ({ color: material.color, participacion: material.participacion ?? 0 })),
+        estructuraOficial: estructura.estructura_oficial,
       });
       ejeM = geometria.ejeM;
       const candidatos = candidatosPorProducto;
       for (const despiece of geometria.despiece) {
         if (despiece.cantidad <= 0) continue;
-        const materialId = estructura.materiales.find((material) => normalizar(material.color ?? "") === normalizar(despiece.color ?? ""))?.product_id ?? estructura.materiales[0]!.product_id;
+        // By position, not by color: two materials of the same color are two products.
+        const material = estructura.materiales[despiece.materialIndex] ?? estructura.materiales[0]!;
+        const materialId = material.product_id;
         // Algunos modelos confunden product_id con variant_id porque ambos
         // aparecen juntos en los resultados RAG. Recuperar por variante y
         // canonicalizar al producto permite resolver la selección sin abrir la
@@ -445,7 +461,6 @@ export async function resolverPlan(
         const permitidasProducto = whitelist.get(productoCanonico) ?? whitelist.get(materialId) ?? new Set<string>();
         const opciones = (candidatos.get(productoCanonico) ?? []).filter((candidato) => permitidasProducto.has(candidato.variantId));
         const tamanosExplicitos = plan.restricciones?.tamanos.filter((item) => item.polaridad === "obligatorio") ?? [];
-        const material = estructura.materiales.find((item) => normalizar(item.color ?? "") === normalizar(despiece.color ?? ""));
         const opcionesConAcabado = material?.acabado
           ? opciones.filter((candidato) => candidato.acabados.includes(normalizar(material.acabado!)))
           : opciones;
@@ -602,6 +617,25 @@ export async function resolverPlan(
     })),
     MERMA,
   );
+  // Si el sobrante natural no alcanza, se compran los paquetes mínimos que
+  // faltan para cubrir la reserva y se identifica la línea que los ocasionó.
+  let reservaPendiente = reserva.uncoveredWasteReserve;
+  for (const compra of compras) {
+    if (reservaPendiente <= 0 || compra.diam_pulg == null || compra.unidades_necesarias <= 0) continue;
+    const paquetesAdicionales = Math.ceil(reservaPendiente / compra.unidades_paquete);
+    const coberturaAdicional = paquetesAdicionales * compra.unidades_paquete;
+    compra.paquetes += paquetesAdicionales;
+    compra.additional_package_for_waste = true;
+    compra.purchase_quantity = compra.paquetes * compra.unidades_paquete;
+    compra.purchase_cost = compra.paquetes * compra.precio_paquete;
+    compra.subtotal = compra.purchase_cost;
+    compra.sobrante = compra.purchase_quantity - compra.unidades_necesarias;
+    const reservaAsignada = Math.min(reservaPendiente, coberturaAdicional);
+    reserva.allocations.set(compra.variant_id, (reserva.allocations.get(compra.variant_id) ?? 0) + reservaAsignada);
+    reservaPendiente -= reservaAsignada;
+  }
+  reserva.coveredWasteReserve = [...reserva.allocations.values()].reduce((sum, value) => sum + value, 0);
+  reserva.uncoveredWasteReserve = Math.max(0, reserva.targetWasteReserve - reserva.coveredWasteReserve);
   for (const compra of compras) {
     compra.design_quantity = compra.unidades_necesarias;
     compra.waste_reserve = reserva.allocations.get(compra.variant_id) ?? 0;
@@ -612,7 +646,6 @@ export async function resolverPlan(
     compra.consumption_cost = compra.purchase_quantity > 0
       ? Math.round(compra.purchase_cost * compra.required_quantity / compra.purchase_quantity)
       : 0;
-    compra.additional_package_for_waste = false;
   }
   if (reserva.uncoveredWasteReserve > 0) advertencias.push(`reserva_merma_no_cubierta:${reserva.uncoveredWasteReserve}`);
   const globosPorTamano: Record<string, number> = {};

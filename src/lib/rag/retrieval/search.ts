@@ -66,12 +66,30 @@ type RerankTextRow = {
 
 export type RerankStatus = "READY" | "SKIPPED_OPTIONAL" | "ERROR";
 
+export class RagUnavailableError extends Error {
+  readonly code = "RAG_UNAVAILABLE";
+
+  constructor(readonly branchStatus: Record<string, BranchStatus>) {
+    super("El catálogo RAG no está disponible temporalmente.");
+    this.name = "RagUnavailableError";
+  }
+}
+
 function safeLimit(value: number, fallback: number): number {
   return Number.isInteger(value) && value > 0 && value <= 500 ? value : fallback;
 }
 
 function safeDeadline(value: number, fallback = 5_000): number {
   return Number.isInteger(value) && value > 0 && value <= 75_000 ? value : fallback;
+}
+
+function allConfiguredBranchesFailed(branchStatus: Record<string, BranchStatus>): boolean {
+  const configured = [
+    USE_FULLTEXT ? branchStatus.fts : undefined,
+    USE_TRIGRAM ? branchStatus.trigram : undefined,
+    USE_VECTOR && branchStatus.vector !== "SKIPPED_OPTIONAL" ? branchStatus.vector : undefined,
+  ].filter((status): status is BranchStatus => status !== undefined);
+  return configured.length > 0 && configured.every((status) => status === "ERROR");
 }
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, parentSignal?: AbortSignal): Promise<T> {
@@ -689,10 +707,9 @@ export async function buscarHibrido(pool: Pool, consulta: ConsultaRetrieval): Pr
   const branches: RrfBranch[] = [];
 
   // Independent lexical branches can share one round-trip window. They still
-  // apply exactly the same hard predicates before their own ranking.
-  // allSettled (not all): a Postgres failure on one branch must not throw
-  // away a result the other branch already got — same degrade-in-place
-  // contract as the vector branch below, never a thrown, unhandled turn.
+  // apply exactly the same hard predicates before their own ranking. One
+  // optional branch may degrade, but returning NO_MATCH when every configured
+  // branch failed would fabricate a valid catalog answer.
   const [ftsOutcome, trigramOutcome] = await Promise.allSettled([
     USE_FULLTEXT ? queryFullText(pool, consulta) : Promise.resolve(null),
     USE_TRIGRAM ? queryTrigram(pool, consulta) : Promise.resolve(null),
@@ -737,14 +754,23 @@ export async function buscarHibrido(pool: Pool, consulta: ConsultaRetrieval): Pr
 
   let fused: FusedEntry[] = fusionarRankingsLocal(branches);
   if (!fused.length && tieneFiltrosNavegables(consulta.filtros)) {
-    const browseRows = await queryFilterBrowse(pool, consulta.filtros!, consulta.allowlist);
-    const browseScores = new Map<string, number>();
-    const browseVariants = new Map<string, Set<string>>();
-    const browseRanked = addBranchRows(browseRows, browseScores, browseVariants);
-    fused = browseRanked.map((productId) => ({ productId, score: browseScores.get(productId) ?? 0, contributions: [] }));
-    branchStatus.filter_browse = browseRanked.length ? "READY" : "EMPTY";
+    try {
+      const browseRows = await queryFilterBrowse(pool, consulta.filtros!, consulta.allowlist);
+      const browseScores = new Map<string, number>();
+      const browseVariants = new Map<string, Set<string>>();
+      const browseRanked = addBranchRows(browseRows, browseScores, browseVariants);
+      fused = browseRanked.map((productId) => ({ productId, score: browseScores.get(productId) ?? 0, contributions: [] }));
+      branchStatus.filter_browse = browseRanked.length ? "READY" : "EMPTY";
+    } catch (error) {
+      branchStatus.filter_browse = "ERROR";
+      if (allConfiguredBranchesFailed(branchStatus)) throw new RagUnavailableError(branchStatus);
+      throw error;
+    }
   }
-  if (!fused.length) return { query: consulta, results: [], skuStatus: "not_sku", branchStatus };
+  if (!fused.length) {
+    if (allConfiguredBranchesFailed(branchStatus)) throw new RagUnavailableError(branchStatus);
+    return { query: consulta, results: [], skuStatus: "not_sku", branchStatus };
+  }
 
   const productIds = fused.map((entry) => entry.productId);
   const whitelist = await finalVariantWhitelist(pool, productIds, consulta.filtros, consulta.allowlist);

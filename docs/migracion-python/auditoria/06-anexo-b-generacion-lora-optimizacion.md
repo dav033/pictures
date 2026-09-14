@@ -143,3 +143,8 @@ Las ganancias de latencia/tokens/dinero son **esperadas y no medidas** salvo que
 - **Venue y edición localizada:** preservar cámara, arquitectura, regiones protegidas y áreas no editables; el `SceneSpec` y el prompt lo tratan como contrato, `src/lib/ia/scene-spec.ts:135-168,401-445` y `src/lib/ia/build-image-prompt.ts:281-288,325-328`.
 - **QA como evidencia, no como éxito fabricado:** si el observador falla debe quedar `pass:null`, no `pass:true`; para un plan aprobado la ruta debe conservar el rechazo cuando no hay conformidad, `src/app/api/generate/route.ts:604-607,1156-1161`.
 - **Reglas de texto y objetos no seleccionados:** no introducir carteles, logos, muebles, flores, luces, props ni excedentes no aprobados; esas prohibiciones están en el prompt y en el `SceneSpec`, `src/lib/ia/build-image-prompt.ts:264-265,350-365` y `src/lib/ia/scene-spec.ts:435-445`.
+# Archivo histórico
+
+Las referencias a rutas, flags y procesos antiguos en este anexo describen el
+estado observado en su fecha de corte. No son instrucciones operativas; para el
+estado actual consultar `PLAN-MAESTRO-V2.md`, `progreso.md` y el runbook vigente.

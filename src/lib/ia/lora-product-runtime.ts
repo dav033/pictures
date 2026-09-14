@@ -1,10 +1,12 @@
 import type { SceneElement, SceneSpec } from "./scene-spec";
 import type { VisualContext } from "./visual-context";
 import {
+  captionDialectForTrigger,
   compileLoraCaption,
   type LoraVisualClause,
   type ProductConceptClauseInput,
 } from "./lora-caption-compiler";
+import type { ProductConcept } from "@/lib/lora/product-vocabulary";
 import {
   buildLookupIndexes,
   resolveProductConcept,
@@ -14,16 +16,16 @@ import {
 import { aDescriptorPerceptual } from "@/lib/lora/descriptor-perceptual";
 
 /**
- * Subagent G deliverable â€” runtime prompt integration.
+ * Subagent G deliverable — runtime prompt integration.
  *
  * Design gate: docs/decisions/product-vocabulary-v001.md
- * Spec: writing-block.md Â§11 ("Runtime prompt integration")
+ * Spec: writing-block.md §11 ("Runtime prompt integration")
  *
  * This module is the ONLY place that turns a SceneSpec's `catalog_product_id`
  * / `catalog_product_ids` into resolved canonical product concepts for the
  * production LoRA prompt. It never redefines structure, placement, or
  * bilateral relationships (owned by lora-caption-compiler.ts / lora-semantics.ts)
- * and never sends a `concept_id` to the image model â€” only the frozen
+ * and never sends a `concept_id` to the image model — only the frozen
  * `canonical_label` text, via lora-caption-compiler's `productConcepts` input.
  */
 export const LORA_PRODUCT_RUNTIME_VERSION = "lora-product-runtime.v1" as const;
@@ -37,7 +39,7 @@ export type UnresolvedProduct = {
 };
 
 /**
- * Runtime prompt integration contract, per writing-block.md Â§11.
+ * Runtime prompt integration contract, per writing-block.md §11.
  */
 export type ProductPromptCompilation = {
   prompt: string;
@@ -50,7 +52,7 @@ export type ProductPromptCompilation = {
 /**
  * A physical size confirmed for one product on one scene element (e.g. from
  * order breakdown quantities). Sizes are never inferred; only sizes passed
- * here â€” and validated against the resolved concept's `allowed_codes` â€” can
+ * here — and validated against the resolved concept's `allowed_codes` — can
  * appear in the rendered prompt.
  */
 export type ElementSizeConfirmation = {
@@ -65,7 +67,7 @@ export type ElementSizeConfirmation = {
  * Superset of `ProductPromptCompilation` with explicit legacy diagnostics.
  * `legacy` MUST be checked by any caller that needs to claim canonical
  * fidelity (training export / dataset packaging / admin validation per
- * writing-block.md Â§11) â€” a `legacy: true` result must never be presented as
+ * writing-block.md §11) — a `legacy: true` result must never be presented as
  * canonical, even though `prompt` is always populated so production
  * generation is never silently blocked.
  */
@@ -74,8 +76,35 @@ export type ProductPromptRuntimeResult = ProductPromptCompilation & {
   legacyReason?: string;
   captionCompilerVersion: string;
   clauses: LoraVisualClause[];
+  /** Same scene as a structured JSON prompt; see `compileLoraCaption`. */
+  jsonPrompt: string;
   diagnostics: string[];
 };
+
+/**
+ * Builds size confirmations from the material estimate lines of an approved
+ * scene. The exact selected variant owns the size; a family match is used
+ * only when every candidate sibling shares one size code, so a line is never
+ * labelled with the size of an arbitrary sibling variant.
+ */
+export function sizeConfirmationsFromMaterialLines(
+  lines: ReadonlyArray<{ structure_id?: string; product_id?: string; variant_id?: string }>,
+  products: ReadonlyArray<{ id: string; familiaId?: string; tamanoCodigo?: string; diamPulg?: number }>,
+): ElementSizeConfirmation[] {
+  return lines.flatMap((line) => {
+    const elementId = line.structure_id;
+    const selectedProductId = line.variant_id ?? line.product_id;
+    if (!elementId || !selectedProductId) return [];
+    const exact = products.find((candidate) => candidate.id === selectedProductId);
+    const siblings = exact ? [] : products.filter((candidate) =>
+      candidate.familiaId === line.product_id || candidate.familiaId === selectedProductId,
+    );
+    const product = exact ?? (new Set(siblings.map((candidate) => candidate.tamanoCodigo)).size === 1 ? siblings[0] : undefined);
+    return product?.tamanoCodigo
+      ? [{ elementId, productId: selectedProductId, sizeCode: product.tamanoCodigo, diameterInches: product.diamPulg }]
+      : [];
+  });
+}
 
 function elementProductIds(element: SceneElement): string[] {
   if (element.source_type !== "catalog_backed") return [];
@@ -92,7 +121,7 @@ type ElementResolution = {
 
 /**
  * Resolves every product id declared on one element. Returns entries ONLY
- * when every declared product id for that element resolved successfully â€”
+ * when every declared product id for that element resolved successfully —
  * a partial match (one resolved material + one unknown material on the same
  * multi-material element) is never rendered as a canonical phrase, since
  * doing so would silently drop the unresolved material from the prompt
@@ -144,7 +173,12 @@ function resolveElement(
     }
     if (result.status === "resolved") {
       resolvedConceptIds.push(result.concept.concept_id);
-      const rawSizes = sizesByProductId.get(productId) ?? [];
+      // Sizes are confirmed per structure: a product used at R-24 in the arch
+      // must not add 24-inch to the columns that use it at R-12. Plan lines
+      // carry the structure id, repeated instances are `<structure>#<n>`.
+      const rawSizes = (sizesByProductId.get(productId) ?? []).filter(({ elementId }) =>
+        elementId === element.element_id || element.element_id.startsWith(`${elementId}#`),
+      );
       const allowed = new Set(result.concept.sizes.allowed_codes);
       const confirmedSizes = rawSizes
         .filter(({ sizeCode }) => allowed.has(sizeCode))
@@ -160,6 +194,8 @@ function resolveElement(
         conceptId: result.concept.concept_id,
         canonicalLabel: aDescriptorPerceptual(result.concept.canonical_label),
         sizeCodes: confirmedSizes.length ? confirmedSizes : undefined,
+        colorName: referenceColorName(result.concept.visual.color),
+        sceneTerms: sceneTermsFor(result.concept),
       });
     } else if (result.status === "ambiguous") {
       unresolved.push({ product_id: productId, reason: "ambiguous" });
@@ -184,6 +220,49 @@ function resolveElement(
   return { entries, unresolved, resolvedConceptIds, diagnostics };
 }
 
+/**
+ * The product in the wording of the v004 scene captions ("glossy chrome gold"
+ * + "balloons"). Only solid, single-color balloons are expressed this way;
+ * printed, assorted and non-balloon products keep their canonical label.
+ */
+function sceneTermsFor(concept: ProductConcept): { descriptor: string; noun: string } | undefined {
+  const { shape, material, color, finish, pattern } = concept.visual;
+  const colorName = referenceColorName(color);
+  if (!colorName || /\b(?:assorted|and)\b/i.test(colorName) || pattern.kind.trim().toLowerCase() !== "solid") return undefined;
+  const nounByShape: Record<string, string> = {
+    round: "balloons",
+    modeling: "twisting balloons",
+    heart: "heart balloons",
+    star: "star balloons",
+    number: "number balloons",
+    link: "link balloons",
+    "link-o-loon": "link balloons",
+  };
+  const noun = nounByShape[shape.trim().toLowerCase()];
+  if (!noun) return undefined;
+  const materialKey = material.trim().toLowerCase();
+  if (materialKey.includes("foil")) return { descriptor: `metallic foil ${colorName}`, noun };
+  if (!materialKey.includes("latex")) return undefined;
+  const finishKey = finish.trim().toLowerCase();
+  const finishWord = /reflex|chrome/.test(finishKey) ? "glossy chrome"
+    : /pastel dusk/.test(finishKey) ? "muted matte"
+      : /pastel/.test(finishKey) ? "pastel matte"
+        : /silk|satin|pearl/.test(finishKey) ? "pearl"
+          : /crystal|translucent/.test(finishKey) ? "clear"
+            : /neon/.test(finishKey) ? "neon"
+              : /metal/.test(finishKey) ? "metallic"
+                : /fashion|matte/.test(finishKey) ? "matte"
+                  : undefined;
+  if (!finishWord) return undefined;
+  return { descriptor: `${finishWord} ${colorName}`, noun };
+}
+
+/** Observable color used to refer back to an already-described concept; none for unspecified colors. */
+function referenceColorName(color: string): string | undefined {
+  const value = aDescriptorPerceptual(color.trim());
+  return value && !/^unspecified$/i.test(value) ? value : undefined;
+}
+
 function diameterFromSizeCode(sizeCode: string): number | undefined {
   const match = sizeCode.match(/(?:^|[-_\s])(\d+(?:\.\d+)?)\s*(?:inch|inches|in)?$/i);
   const diameter = match ? Number(match[1]) : Number.NaN;
@@ -199,7 +278,7 @@ function renderSize(diameterInches: number | undefined, fallback: string): strin
 /**
  * Compiles the production LoRA prompt with canonical product concepts
  * resolved from `vocabulary`, when available. Falls back to the legacy
- * generic color/finish compiler â€” explicitly, never silently â€” when no
+ * generic color/finish compiler — explicitly, never silently — when no
  * vocabulary is supplied, when the vocabulary has no active concepts, or
  * when no catalog-backed element resolves a concept. Structure, placement,
  * and bilateral relationships are always produced by
@@ -215,12 +294,20 @@ export function compileProductPrompt(input: {
   productIdAliases?: ReadonlyMap<string, string | readonly string[]>;
   /** Maps selected ids to factual Shopify parent titles for exact vocabulary lookup. */
   productCatalogTitles?: ReadonlyMap<string, string | readonly string[]>;
+  /** Resolved LoRA trigger that `ensureLoraTriggers` will write; counts against the prompt budget. */
+  trigger?: string;
+  /** Relevant non-catalog styling from the reference; rendered only, never resolved or quoted. */
+  ambientDecor?: readonly string[];
+  /** `estructura_oficial` per plan `estructura_id`. */
+  officialStructures?: ReadonlyMap<string, string>;
+  /** Styling cues of the creativity level (creatividad.ts); rendered only, dropped first when compacting. */
+  creativeCues?: readonly string[];
 }): ProductPromptRuntimeResult {
   const vocabulary = input.vocabulary ?? [];
   const activeConcept = vocabulary.find((concept) => concept.status === "active");
 
   if (!activeConcept) {
-    const legacy = compileLoraCaption({ sceneSpec: input.sceneSpec, visualContext: input.visualContext });
+    const legacy = compileLoraCaption({ sceneSpec: input.sceneSpec, visualContext: input.visualContext, trigger: input.trigger, dialect: captionDialectForTrigger(input.trigger), ambientDecor: input.ambientDecor, officialStructures: input.officialStructures, creativeCues: input.creativeCues });
     return {
       prompt: legacy.prompt,
       resolved_concepts: [],
@@ -231,6 +318,7 @@ export function compileProductPrompt(input: {
       legacyReason: input.vocabulary ? "supplied vocabulary has no active concepts" : "no vocabulary supplied to the runtime compiler",
       captionCompilerVersion: legacy.compilerVersion,
       clauses: legacy.clauses,
+      jsonPrompt: legacy.jsonPrompt,
       diagnostics: [
         "legacy fallback: canonical product vocabulary unavailable for this request; colors/finishes rendered generically, no product identity claimed",
       ],
@@ -269,7 +357,16 @@ export function compileProductPrompt(input: {
     sceneSpec: input.sceneSpec,
     visualContext: input.visualContext,
     productConcepts,
+    trigger: input.trigger,
+    // The resolved LoRA decides the wording: each LoRA follows its own captions.
+    dialect: captionDialectForTrigger(input.trigger),
+    ambientDecor: input.ambientDecor,
+    officialStructures: input.officialStructures,
+    creativeCues: input.creativeCues,
   });
+  if (compilation.compactionStep > 0) {
+    diagnostics.push(`prompt compacted to render step ${compilation.compactionStep} to fit the LoRA prompt budget; every structure, placement, relation and color is kept`);
+  }
 
   const legacy = !compilation.usedProductVocabulary;
   if (legacy) {
@@ -288,6 +385,7 @@ export function compileProductPrompt(input: {
     legacyReason: legacy ? "no catalog-backed element resolved a canonical concept" : undefined,
     captionCompilerVersion: compilation.compilerVersion,
     clauses: compilation.clauses,
+    jsonPrompt: compilation.jsonPrompt,
     diagnostics,
   };
 }

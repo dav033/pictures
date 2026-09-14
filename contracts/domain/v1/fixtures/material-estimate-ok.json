@@ -23,9 +23,9 @@
       "size_inches": 12,
       "shape": "redondo",
       "design_quantity": 24,
-      "waste_reserve": 3,
-      "required_quantity": 27,
-      "waste_adjusted_quantity": 27
+      "waste_reserve": 2,
+      "required_quantity": 26,
+      "waste_adjusted_quantity": 26
     }
   ],
   "special_elements": [],
@@ -34,36 +34,36 @@
       "product_id": "prod-rojo",
       "variant_id": "var-rojo-12",
       "design_quantity": 24,
-      "waste_reserve": 3,
-      "required_quantity": 27,
-      "waste_adjusted_quantity": 27,
+      "waste_reserve": 2,
+      "required_quantity": 26,
+      "waste_adjusted_quantity": 26,
       "units_per_package": 50,
       "package_count": 1,
       "purchase_quantity": 50,
       "used": 24,
-      "leftover_inventory": 23,
-      "consumption_cost": 6480,
+      "leftover_inventory": 24,
+      "consumption_cost": 6240,
       "purchase_cost": 12000,
       "additional_package_for_waste": false,
-      "operational_surplus": 23,
-      "potential_surplus": 23
+      "operational_surplus": 24,
+      "potential_surplus": 24
     }
   ],
   "totals": {
     "design_quantity": 24,
-    "target_waste_reserve": 3,
-    "covered_waste_reserve": 3,
+    "target_waste_reserve": 2,
+    "covered_waste_reserve": 2,
     "uncovered_waste_reserve": 0,
     "natural_package_surplus": 26,
-    "required_quantity": 27,
-    "consumption_cost": 6480,
+    "required_quantity": 26,
+    "consumption_cost": 6240,
     "purchase_cost": 12000,
     "waste_only_savings_cop": 0,
     "additional_waste_packages": 0,
-    "waste_adjusted_quantity": 27,
+    "waste_adjusted_quantity": 26,
     "purchase_quantity": 50,
-    "operational_surplus": 23,
-    "potential_surplus": 23
+    "operational_surplus": 24,
+    "potential_surplus": 24
   },
   "warnings": []
 }

@@ -22,12 +22,7 @@ export class LoraCompatibilityError extends Error {
 
 export function assertLoraCompatibility(artifacts: LoraCompatibilityArtifact[]): void {
   if (!artifacts.length) throw new LoraCompatibilityError(["No hay LoRAs seleccionados"]);
-  if (artifacts.length > 2) throw new LoraCompatibilityError(["Solo se permiten LoRA producto y LoRA estructura"]);
-
-  const specializations = new Set(artifacts.map((artifact) => artifact.specialization));
-  if (specializations.size !== artifacts.length) {
-    throw new LoraCompatibilityError(["No se puede seleccionar más de un artifact de la misma especialización"]);
-  }
+  if (artifacts.length > 1) throw new LoraCompatibilityError(["Solo se permite un LoRA por generación"]);
 
   const baseModels = new Set(artifacts.map((artifact) => artifact.baseModel));
   const tokenizerRevisions = new Set(artifacts.map((artifact) => artifact.tokenizerRevision));
@@ -41,4 +36,3 @@ export function assertLoraCompatibility(artifacts: LoraCompatibilityArtifact[]):
   if (artifacts.some((artifact) => artifact.scale < 0 || artifact.scale > 1.5)) errors.push("Alguna escala está fuera de 0 a 1.5");
   if (errors.length) throw new LoraCompatibilityError(errors);
 }
-

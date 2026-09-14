@@ -4,7 +4,7 @@ import { PlanDecoracionSchema, type PlanDecoracion, type EstructuraPlan } from "
 
 /**
  * Evaluador de variedad composicional (PLAN-COMPOSICION-RICA-V001.md §3.1,
- * §11.7; continúa WP-0.1 de PLAN-COMPOSICION-Y-CELEBRACIONES-V001.md).
+ * §11.7).
  *
  * Modos:
  *   --fixtures         Sin red. Corre sobre los fixtures de este archivo.
@@ -19,8 +19,8 @@ import { PlanDecoracionSchema, type PlanDecoracion, type EstructuraPlan } from "
  * cuando cambie el planificador.
  *
  * Los fixtures de abajo son ESCRITOS A MANO para aproximar el patrón
- * documentado en PLAN-COMPOSICION-Y-CELEBRACIONES-V001.md (arco + dos
- * columnas dominante, ver B1-B7). No son salida real capturada de Gemini:
+ * documentado en la línea base de composición (arco + dos columnas
+ * dominante, ver B1-B7). No son salida real capturada de Gemini:
  * eso es exactamente lo que `--replay` reemplaza en cuanto exista un
  * manifiesto de planes reales.
  *

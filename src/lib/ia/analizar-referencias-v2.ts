@@ -1,6 +1,6 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import type { ChatPort, Herramienta, ImagenEtiquetada } from "./tipos";
+import { ErrorIA, type ChatPort, type Herramienta, type ImagenEtiquetada } from "./tipos";
 import type { Producto } from "@/lib/types";
 import { bytesBase64, registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "./telemetria-llamadas";
 import {
@@ -11,6 +11,17 @@ import {
   type ReferenceBlueprintV2,
   type ReferenceBBox,
 } from "./reference-blueprint";
+import {
+  DETECTED_STRUCTURE_TOOL_SCHEMA,
+  COMPOSITION_RELEVANCE,
+  parseCompositionRelevance,
+  parseDetectedStructure,
+  referenceStructureSemantics,
+  shapeDescription,
+  STRUCTURE_DETECTION_RULES,
+  type CompositionRelevance,
+  type DetectedStructure,
+} from "./reference-structure";
 
 type AnalisisV2Resultado = {
   blueprint: ReferenceBlueprintV2;
@@ -42,6 +53,8 @@ type Candidate = {
   composition: string;
   relationships: Array<{ type: "behind" | "in_front_of" | "overlaps" | "aligned_with" | "supports"; target_element_id: string }>;
   uncertainties: string[];
+  structure?: DetectedStructure;
+  relevance?: CompositionRelevance;
   model_decision: {
     action: "include" | "omit";
     catalog_product_id?: string;
@@ -55,9 +68,8 @@ type Candidate = {
 export type ReferenceCatalogItem = Pick<Producto, "id" | "nombre" | "categoria" | "colores" | "descripcion">;
 
 /**
- * `legacy`: matches elements against a supplied catalog and emits
- * `model_decision.catalog_product_id`/`bill_of_materials` — the original
- * behavior, used when no decoration plan bridges the reference into RAG.
+ * `legacy` is retained only for the historical fixture that validates the
+ * old catalog-matching behavior; no production route may select it.
  *
  * `perceptual`: never matches or invents a catalog id. Used when
  * PLAN_DECORACION_ENABLED is on (plan de integración de referencias visuales,
@@ -90,13 +102,15 @@ const INVENTORY_SYSTEM_PERCEPTUAL = `You are a forensic event-design image analy
 Inventory every visible decorative or background design element. Explicitly inspect the rear layer for curtains, fabric drapes, shimmer walls, printed backdrops, panels, frames, balloon structures, plinths, furniture, florals, signage, and lighting.
 Describe only visible evidence. Use low confidence when uncertain. Each item needs a normalized reference_bbox with x/y/width/height from 0 to 1.
 For every detected element, set model_decision.action to "include" when it is a meaningful, decorator-relevant part of the composition, or "omit" when it is negligible background clutter (e.g. an unrelated wall outlet, a stray chair leg) — base this purely on visual relevance, never on whether a matching product might exist. Always set model_decision.match_type to "none" and leave catalog_product_id and bill_of_materials unset.
-For every element, also detect its color mix and physical composition: what proportion of it is each observed color, and how those parts are arranged (base vs. tip, background vs. accent, size gradient, clustering pattern). Put this in \`composition\` as one short sentence, for example "60% red round balloons at the base, 30% green climbing the sides, 10% gold metallic accents near the top".`;
+For every element, also detect its color mix and physical composition: what proportion of it is each observed color, and how those parts are arranged (base vs. tip, background vs. accent, size gradient, clustering pattern). Put this in \`composition\` as one short sentence, for example "60% red round balloons at the base, 30% green climbing the sides, 10% gold metallic accents near the top".
+${STRUCTURE_DETECTION_RULES}`;
 
 const REAR_LAYER_RULE = "Rear-layer rule: any visible curtain, telon, drape, fabric backdrop, black cloth background, shimmer wall, or panel must be classified as curtain/drape/backdrop/panel and scene_role backdrop, never other or midground. If string lights are separately visible, classify them as lighting behind the decoration; do not move them to the ceiling.";
 
 const AUDIT_SYSTEM = `You are a strict verifier and catalog-resolution reviewer of an event-design reference inventory. Inspect the image and draft inventory. Report only visible event-design elements that were missed, misclassified, or lack evidence. For every new finding, decide include or omit and select the closest valid catalog product when useful. Do not ask the customer. Include normalized reference_bbox, visible_evidence, and the complete model_decision object.`;
-const AUDIT_SYSTEM_PERCEPTUAL = `You are a strict verifier of an event-design reference inventory. Inspect the image and draft inventory. Report only visible event-design elements that were missed, misclassified, or lack evidence. You have no catalog access — never propose a catalog_product_id or bill_of_materials; set match_type to "none" and decide include/omit purely on visual relevance. Do not ask the customer. Include normalized reference_bbox, visible_evidence, and the complete model_decision object.`;
-const ANALYSIS_PARSER_VERSION = "semantic-layers-v7-bill-of-materials";
+const AUDIT_SYSTEM_PERCEPTUAL = `You are a strict verifier of an event-design reference inventory. Inspect the image and draft inventory. Report only visible event-design elements that were missed, misclassified, or lack evidence. You have no catalog access — never propose a catalog_product_id or bill_of_materials; set match_type to "none" and decide include/omit purely on visual relevance. Do not ask the customer. Include normalized reference_bbox, visible_evidence, and the complete model_decision object. Also correct structure when a balloon structure type, side, height or curve was misread.
+${STRUCTURE_DETECTION_RULES}`;
+const ANALYSIS_PARSER_VERSION = "semantic-layers-v10-overhang-balloon-category";
 
 const TOOL: Herramienta = {
   nombre: "return_reference_inventory",
@@ -136,6 +150,10 @@ const TOOL: Herramienta = {
                   },
                 },
                 composition: { type: "string" },
+                observed_colors: { type: "array", items: { type: "string" }, description: "Plain English color names seen on this element, most dominant first (e.g. royal blue, white, chrome gold)." },
+                material: { type: "string" },
+                structure: DETECTED_STRUCTURE_TOOL_SCHEMA,
+                composition_relevance: { type: "string", enum: [...COMPOSITION_RELEVANCE] },
                 model_decision: {
                     type: "object",
                     required: ["action", "match_type", "reason", "adaptation"],
@@ -194,6 +212,8 @@ const AUDIT_TOOL: Herramienta = {
 
 const cache = new Map<string, AnalisisV2Resultado>();
 const MAX_CACHE = 40;
+/** Attempts per analysis pass when the model answers with malformed tool output. */
+const MAX_INTENTOS_FORMATO_ANALISIS = 2;
 
 function object(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
@@ -264,10 +284,20 @@ function sceneRole(value: unknown): Candidate["scene_role"] {
 export function inferReferenceLayer(input: { explicitCategory?: unknown; explicitSceneRole?: unknown; name: string; evidence: string; material: string; shape: string }): { category: Candidate["category"]; scene_role: Candidate["scene_role"] } {
   const rawCategory = category(input.explicitCategory ?? input.name);
   const semanticText = [input.name, input.evidence, input.material, input.shape].join(" ");
-  const inferredCategory = rawCategory === "other" ? category(semanticText) : rawCategory;
+  const fallbackCategory = rawCategory === "other" ? category(semanticText) : rawCategory;
+  // Evidence often mentions neighbouring balloons ("paper bag in front of the
+  // balloon arch"); that alone must not turn a named prop into a balloon
+  // structure the plan would then have to build.
+  const namedProp = input.name !== "unidentified decorative element" && category(input.name) !== "balloon_structure";
+  const inferredCategory = rawCategory === "other" && fallbackCategory === "balloon_structure" && namedProp ? "other" : fallbackCategory;
   const text = normalize(semanticText);
   const nameText = normalize(input.name);
-  const hasLighting = /luz|luces|led|foquito|ilumin/.test(text);
+  // Whole words only: "led" used to match "confetti-filled" or "curled" and
+  // demote a balloon structure to lighting.
+  const hasLighting = /\b(?:luz|luces|leds?|foquitos?|iluminacion|iluminado)\b/.test(text);
+  // Balloons wrapped in string lights are still a balloon structure: the
+  // declared category wins over lighting cues in the evidence.
+  if (rawCategory === "balloon_structure") return { category: rawCategory, scene_role: sceneRole(input.explicitSceneRole) };
   // A backdrop can carry string lights. Treating any lighting cue as the
   // whole element used to demote "cortina con luces" to lighting and lose
   // the rear surface from the plan. A named rear surface wins; lights stay a
@@ -303,8 +333,18 @@ function parseCandidates(imageId: string, raw: unknown): Candidate[] {
     const material = firstString(value, ["material", "material_texture", "texture", "materiales", "textura"], "material not determinable", 160);
     const shape = firstString(value, ["shape", "form", "silhouette", "forma"], "shape not determinable", 160);
     const composition = firstString(value, ["composition", "composicion", "color_mix", "mix"], "single uniform material", 240);
-    const layer = inferReferenceLayer({ explicitCategory: value.category ?? value.element_category ?? value.tipo ?? value.tipo_elemento, explicitSceneRole: value.scene_role, name: detectedName, evidence: visibleEvidence, material, shape });
-    const detectedCategory = layer.category;
+    // A typed balloon `structure` on an element named as balloons is a balloon
+    // structure even if the model wrote another category (a half-arch wrapped in
+    // fairy lights came back as "lighting" and vanished from the plan).
+    const typedBalloonStructure = parseDetectedStructure(value.structure) !== undefined && /\b(?:balloons?|globos?)\b/.test(normalize(detectedName));
+    const layer = inferReferenceLayer({ explicitCategory: typedBalloonStructure ? "balloon_structure" : value.category ?? value.element_category ?? value.tipo ?? value.tipo_elemento, explicitSceneRole: value.scene_role, name: detectedName, evidence: visibleEvidence, material, shape });
+    // Every balloon structure must come with its typed `structure`; one without it
+    // whose name is a non-balloon prop ("paper bag with plants") is misfiled.
+    const misfiledProp = layer.category === "balloon_structure"
+      && parseDetectedStructure(value.structure) === undefined
+      && /\b(?:bags?|boxe?s?|bolsas?|cajas?|plants?|planters?|pots?|signs?|rugs?|carpets?|runners?|lights?|leaves|foliage|candles?)\b/.test(normalize(detectedName))
+      && !/\b(?:balloons?|globos?|arch|arco|garland|guirnalda|column|columna)\b/.test(normalize(detectedName));
+    const detectedCategory = misfiledProp ? "other" : layer.category;
     const defaultInclude = ["curtain", "drape", "backdrop"].includes(detectedCategory) && confidence >= 0.5;
     const quantity = object(value.quantity);
     const min = Math.round(numberValue(quantity.min, 1, 0, 999));
@@ -315,7 +355,10 @@ function parseCandidates(imageId: string, raw: unknown): Candidate[] {
     }) : [];
     const rawDecision = object(value.model_decision ?? value.decision);
     const explicitAction = rawDecision.action ?? value.action;
-    const action = explicitAction === "omit" ? "omit" : explicitAction === "include" ? "include" : defaultInclude ? "include" : "omit";
+    const relevance = parseCompositionRelevance(value.composition_relevance ?? value.relevance);
+    const structure = detectedCategory === "balloon_structure" ? parseDetectedStructure(value.structure) : undefined;
+    // A negligible element never enters the composition, whatever action the model wrote.
+    const action = relevance === "minor" ? "omit" : explicitAction === "omit" ? "omit" : explicitAction === "include" ? "include" : defaultInclude ? "include" : "omit";
     const matchType = rawDecision.match_type === "exact" || rawDecision.match_type === "closest" || rawDecision.match_type === "none"
       ? rawDecision.match_type
       : "none";
@@ -343,10 +386,12 @@ function parseCandidates(imageId: string, raw: unknown): Candidate[] {
       quantity: { mode: quantity.mode === "exact" ? "exact" : quantity.mode === "range" ? "range" : "approximate", min, max },
       observed_colors: stringList(value.observed_colors ?? value.colors ?? value.colours ?? value.colores ?? value.palette, 8),
       material,
-      shape,
+      shape: structure ? shapeDescription(structure) : shape,
       composition,
       relationships,
       uncertainties: stringList(value.uncertainties, 8),
+      structure,
+      relevance,
       model_decision: {
         action,
         catalog_product_id: catalogProductId,
@@ -376,7 +421,7 @@ function mergeCandidates(inventory: Candidate[], audit: Candidate[]): Candidate[
       const current = merged[match];
       const strongerCategory = current.category === "other" && finding.category !== "other" ? finding.category : current.category;
       const strongerRole = current.scene_role === "midground" && finding.scene_role !== "midground" ? finding.scene_role : current.scene_role;
-      merged[match] = { ...current, category: strongerCategory, scene_role: strongerRole, name: current.name === "unidentified decorative element" ? finding.name : current.name, visible_evidence: finding.visible_evidence, uncertainties: [...new Set([...current.uncertainties, ...finding.uncertainties])].slice(0, 8) };
+      merged[match] = { ...current, structure: finding.structure ?? current.structure, shape: finding.structure ? finding.shape : current.shape, category: strongerCategory, scene_role: strongerRole, name: current.name === "unidentified decorative element" ? finding.name : current.name, visible_evidence: finding.visible_evidence, uncertainties: [...new Set([...current.uncertainties, ...finding.uncertainties])].slice(0, 8) };
     } else {
       merged.push({ ...finding, detection_confidence: Math.min(finding.detection_confidence, 0.49), include_policy: finding.model_decision.action === "include" ? "include" : "exclude", uncertainties: [...finding.uncertainties, "Verifier-only finding resolved automatically."].slice(0, 8) });
     }
@@ -521,6 +566,20 @@ function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string,
       },
     };
   });
+  const compositionDensity = inventoryImages.map((value) => object(object(value).composition).density).find((value) => ["sparse", "moderate", "dense"].includes(String(value))) as "sparse" | "moderate" | "dense" | undefined;
+  const semanticsById = referenceStructureSemantics(
+    elements.map((element, index) => ({
+      elementId: element.element_id,
+      bbox: element.reference_bbox,
+      structure: element.approved ? allCandidates[index]!.structure : undefined,
+    })),
+    compositionDensity ?? "unknown",
+  );
+  const elementsWithSemantics = elements.map((element) => {
+    const semantics = semanticsById.get(element.element_id);
+    return semantics ? { ...element, visual_semantics: semantics } : element;
+  });
+  elements.splice(0, elements.length, ...elementsWithSemantics);
   const elementIdsByName = new Map(elements.map((element) => [element.name.toLowerCase(), element.element_id]));
   const elementIds = new Set(elements.map((element) => element.element_id));
   for (const element of elements) {
@@ -551,7 +610,7 @@ function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string,
   });
 }
 
-export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenEtiquetada[], catalogo: ReferenceCatalogItem[] = [], mode: AnalysisMode = "legacy", telemetria?: ContextoTelemetriaIA): Promise<AnalisisV2Resultado> {
+export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenEtiquetada[], catalogo: ReferenceCatalogItem[] = [], mode: AnalysisMode = "perceptual", telemetria?: ContextoTelemetriaIA, signal?: AbortSignal): Promise<AnalisisV2Resultado> {
   if (!referencias.length) throw new Error("At least one reference image is required.");
   const inventorySystem = mode === "perceptual" ? INVENTORY_SYSTEM_PERCEPTUAL : INVENTORY_SYSTEM;
   const auditSystem = mode === "perceptual" ? AUDIT_SYSTEM_PERCEPTUAL : AUDIT_SYSTEM;
@@ -599,23 +658,42 @@ export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenE
       throw error;
     }
   };
-  const inventoryTurn = await ejecutarPaso("analisis_referencia_inventario", {
+  // The model sometimes answers with malformed text instead of the tool call.
+  // The analysis has no side effects, so one bounded retry is safe; a second
+  // malformed answer is a retryable provider failure, not a client error.
+  const pasoConHerramienta = async (
+    capacidad: "analisis_referencia_inventario" | "analisis_referencia_auditoria",
+    peticion: Parameters<ChatPort["turno"]>[0],
+    toolName: string,
+  ): Promise<Record<string, unknown>> => {
+    for (let intento = 1; ; intento += 1) {
+      const turno = await ejecutarPaso(capacidad, peticion, intento);
+      try {
+        return toolArgs(turno, toolName);
+      } catch (error) {
+        if (!(error instanceof SyntaxError) || intento >= MAX_INTENTOS_FORMATO_ANALISIS || signal?.aborted) {
+          throw new ErrorIA("desconocido", chat.id, `The reference analysis returned malformed output (${capacidad}).`, true);
+        }
+      }
+    }
+  };
+  const inventoryRaw = await pasoConHerramienta("analisis_referencia_inventario", {
     sistema: mode === "perceptual" ? `${inventorySystem}\n${REAR_LAYER_RULE}` : `${inventorySystem}\n${REAR_LAYER_RULE}\n\nVALID CATALOG PRODUCTS\n${catalogText}`,
-    historial: [{ rol: "usuario", texto: `Inventory these references and resolve every element automatically. Preserve exact image IDs in this order: ${ids.join(", ")}. Return one model_decision per element.`, imagenes: referencias }],
-    herramientas: [TOOL],
-    temperatura: 0,
-    maxTokens: 6000,
-  }, 1);
-  const inventoryRaw = toolArgs(inventoryTurn, TOOL.nombre);
+      historial: [{ rol: "usuario", texto: `Inventory these references and resolve every element automatically. Preserve exact image IDs in this order: ${ids.join(", ")}. Return one model_decision per element.`, imagenes: referencias }],
+      herramientas: [TOOL],
+      temperatura: 0,
+      maxTokens: 6000,
+      signal,
+  }, TOOL.nombre);
   const draftJson = JSON.stringify(inventoryRaw).slice(0, 24000);
-  const auditTurn = await ejecutarPaso("analisis_referencia_auditoria", {
+  const auditRaw = await pasoConHerramienta("analisis_referencia_auditoria", {
     sistema: mode === "perceptual" ? `${auditSystem}\n${REAR_LAYER_RULE}` : `${auditSystem}\n${REAR_LAYER_RULE}\n\nVALID CATALOG PRODUCTS\n${catalogText}`,
-    historial: [{ rol: "usuario", texto: `Audit the draft inventory below against the same references. Keep exact image IDs. Resolve every finding automatically.\n<DRAFT_INVENTORY>${draftJson}</DRAFT_INVENTORY>`, imagenes: referencias }],
-    herramientas: [AUDIT_TOOL],
-    temperatura: 0,
-    maxTokens: 4000,
-  }, 1);
-  const auditRaw = toolArgs(auditTurn, AUDIT_TOOL.nombre);
+      historial: [{ rol: "usuario", texto: `Audit the draft inventory below against the same references. Keep exact image IDs. Resolve every finding automatically.\n<DRAFT_INVENTORY>${draftJson}</DRAFT_INVENTORY>`, imagenes: referencias }],
+      herramientas: [AUDIT_TOOL],
+      temperatura: 0,
+      maxTokens: 4000,
+      signal,
+  }, AUDIT_TOOL.nombre);
   const blueprint = buildBlueprint(referencias, inventoryRaw, auditRaw, mode === "perceptual" ? [] : catalogo, mode);
   const result: AnalisisV2Resultado = {
     blueprint,

@@ -75,8 +75,8 @@ siguen.
    a Python — esa decisión de cutover, por capacidad y con evidencia, es
    explícitamente el alcance de la Fase 10.
 
-**Con esto, el criterio de salida completo de
-`prompt-seguimiento-etapa-5.md` queda satisfecho con evidencia real:**
+**Con esto, el criterio de salida documentado para la fase queda satisfecho con
+evidencia real:**
 backend desplegado, PostgreSQL de staging migrado (schema `operational`),
 secreto HMAC provisionado, contrato Next → Python validado, canario
 controlado, y rollback comprobado. Ningún punto de estos se afirma sin la

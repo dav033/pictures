@@ -10,8 +10,9 @@ import { existsSync } from "node:fs";
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
+import { directorioOrdenes } from "../src/lib/ordenes/directorio";
 
-const RUTA_ORDENES = process.env.ORDENES_DECORACION_DIR ?? "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
+const RUTA_ORDENES = directorioOrdenes();
 // Abre el sqlite directo con node:sqlite en vez de importar src/lib/db.ts: ese módulo trae
 // `import "server-only"`, que revienta fuera del build de Next -- este script de exportación es
 // de solo lectura y no necesita nada más de esa capa.

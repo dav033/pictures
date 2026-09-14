@@ -54,7 +54,7 @@ async function main(): Promise<void> {
     { ...imagen, id: "REF_01", descripcion: "Reference image pending forensic analysis." },
   ];
   const chat = crearChatGemini();
-  const resultado = await analizarReferenciasV2(chat, referencias, [], "legacy", {
+  const resultado = await analizarReferenciasV2(chat, referencias, [], "perceptual", {
     superficie: "test-inyeccion-prompt-fase-4.3",
   });
 

@@ -19,30 +19,6 @@ const CLAVE_LOCK = 1836345458;
 /** Hosts que se consideran locales y no exigen `--allow-remote`. */
 const HOSTS_LOCALES = new Set(["localhost", "127.0.0.1", "::1", "0.0.0.0"]);
 
-/**
- * Renombrados históricos de archivos de migración.
- *
- * `schema_migrations` usa `filename` como clave, así que renombrar un archivo
- * ya aplicado haría que se volviera a aplicar en cualquier entorno donde ya
- * estaba. Antes de decidir qué falta, el runner reconcilia el registro: si
- * existe una fila con el nombre viejo y ninguna con el nuevo, la actualiza.
- *
- * Una entrada solo se retira cuando se pueda afirmar que ningún entorno
- * conserva el nombre viejo. Mientras haya duda, se queda.
- */
-const RENOMBRADOS: Array<{ antes: string; despues: string }> = [
-  // Primera colisión: existían dos archivos `016_`. El de LoRA ya estaba
-  // aplicado en bases reales y conserva su número; el operacional solo se
-  // había aplicado a un PostgreSQL Docker desechable, y se movió a 019.
-  //
-  // Segunda colisión, al mezclar `main`: allí se creó `019_happie_webhook.sql`,
-  // que puede estar aplicada en una base real. El operacional se mueve otra vez,
-  // ahora a 020. Se conservan las dos entradas porque cualquiera de los dos
-  // nombres viejos puede estar registrado en algún entorno.
-  { antes: "016_operational_idempotency.sql", despues: "020_operational_idempotency.sql" },
-  { antes: "019_operational_idempotency.sql", despues: "020_operational_idempotency.sql" },
-];
-
 type Opciones = {
   dryRun: boolean;
   allowRemote: boolean;
@@ -106,7 +82,7 @@ function validarNumeracion(archivos: string[]): void {
     const detalle = colisiones.map(([numero, lista]) => `  ${numero}: ${lista.join(", ")}`).join("\n");
     throw new Error(
       "Colisión de número de migración. Renumera uno de los archivos y añade su\n" +
-        `entrada a RENOMBRADOS en este script para que no se vuelva a aplicar:\n${detalle}`,
+        `reconciliación explícita antes de continuar:\n${detalle}`,
     );
   }
 }
@@ -140,20 +116,6 @@ function describirDestino(dsn: string): { etiqueta: string; host: string; esLoca
     host,
     esLocal: HOSTS_LOCALES.has(host),
   };
-}
-
-async function reconciliarRenombrados(cliente: Client): Promise<void> {
-  for (const { antes, despues } of RENOMBRADOS) {
-    const { rowCount } = await cliente.query(
-      `UPDATE schema_migrations SET filename = $2
-        WHERE filename = $1
-          AND NOT EXISTS (SELECT 1 FROM schema_migrations WHERE filename = $2)`,
-      [antes, despues],
-    );
-    if (rowCount && rowCount > 0) {
-      console.log(`[RECONCILIADO] ${antes} -> ${despues} (ya estaba aplicada, no se re-aplica)`);
-    }
-  }
 }
 
 type FilaAplicada = { filename: string; checksum: string | null };
@@ -253,13 +215,6 @@ async function main() {
       } else {
         console.log("[DRY-RUN] schema_migrations no existe todavía: la base está sin migrar.");
       }
-      for (const { antes, despues } of RENOMBRADOS) {
-        if (yaAplicadas.has(antes) && !yaAplicadas.has(despues)) {
-          console.log(`[RECONCILIARÍA] ${antes} -> ${despues}`);
-          yaAplicadas.delete(antes);
-          yaAplicadas.add(despues);
-        }
-      }
       const pendientes = archivos.filter((a) => !yaAplicadas.has(a));
       const hasta = opciones.target ? pendientes.slice(0, pendientes.indexOf(opciones.target) + 1) : pendientes;
       if (hasta.length === 0) {
@@ -278,7 +233,6 @@ async function main() {
        )`,
     );
     await cliente.query("ALTER TABLE schema_migrations ADD COLUMN IF NOT EXISTS checksum TEXT");
-    await reconciliarRenombrados(cliente);
 
     const { rows: aplicadas } = await cliente.query<FilaAplicada>(
       "SELECT filename, checksum FROM schema_migrations ORDER BY filename",

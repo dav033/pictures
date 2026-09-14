@@ -415,7 +415,7 @@ export const CATALOG_PRODUCT_CONCEPTS: ProductVocabulary = [
     "concept_id": "banner.letters.cardstock.pastel_multicolor",
     "canonical_label": "die-cut letter garland banner in pastel multicolor with a striped pennant accent",
     "catalog_titles": [
-      "CARTEL DE LETRAS FELIZ CUMPLEAÃ‘O FESTIVAL PASTEL"
+      "CARTEL DE LETRAS FELIZ CUMPLEAÑO FESTIVAL PASTEL"
     ],
     "visual": {
       "family": "banderola_cartel",
@@ -450,7 +450,7 @@ export const CATALOG_PRODUCT_CONCEPTS: ProductVocabulary = [
     "concept_id": "banner.letters.cardstock.tropical.orange_pink",
     "canonical_label": "die-cut letter garland banner with a tropical floral pattern in orange and pink",
     "catalog_titles": [
-      "CARTEL DE LETRAS CUMPLEAÃ‘OS PARAISO TROPICAL"
+      "CARTEL DE LETRAS CUMPLEAÑOS PARAISO TROPICAL"
     ],
     "visual": {
       "family": "banderola_cartel",
@@ -485,10 +485,10 @@ export const CATALOG_PRODUCT_CONCEPTS: ProductVocabulary = [
     "concept_id": "banner.pennant_garland.metallized_paper.rainbow",
     "canonical_label": "rainbow-striped metallized-paper pennant garland with printed confetti and text panels",
     "catalog_titles": [
-      "BANDEROLA METALIZADA FELIZ CUMPLEAÃ‘OS FESTIVO"
+      "BANDEROLA METALIZADA FELIZ CUMPLEAÑOS FESTIVO"
     ],
     "visual": {
-      "family": "CumpleaÃ±os",
+      "family": "Cumpleaños",
       "shape": "triangular pennant garland",
       "material": "metallized paper",
       "color": "multicolor rainbow (red, yellow, green, blue, purple)",
@@ -518,10 +518,10 @@ export const CATALOG_PRODUCT_CONCEPTS: ProductVocabulary = [
     "concept_id": "banner.pennant_garland.metallized_paper.white_pink_gold",
     "canonical_label": "white and pink metallized-paper pennant garland with gold star accents and printed confetti-dot pattern",
     "catalog_titles": [
-      "BANDEROLA METALIZADA FELIZ CUMPLEAÃ‘OS DESTELLOS"
+      "BANDEROLA METALIZADA FELIZ CUMPLEAÑOS DESTELLOS"
     ],
     "visual": {
-      "family": "CumpleaÃ±os",
+      "family": "Cumpleaños",
       "shape": "triangular pennant garland",
       "material": "metallized paper",
       "color": "white and pink with gold accents",
@@ -586,7 +586,7 @@ export const CATALOG_PRODUCT_CONCEPTS: ProductVocabulary = [
     "concept_id": "decor.balloon_kit.boy_blue_marble",
     "canonical_label": "blue-toned balloon decoration kit in matte light blue and navy blue with glossy chrome silver accents and marbled or printed blue balloons",
     "catalog_titles": [
-      "E-DECOR NIÃ‘O"
+      "E-DECOR NIÑO"
     ],
     "visual": {
       "family": "balloon garland and arch decoration kit",
@@ -606,10 +606,10 @@ export const CATALOG_PRODUCT_CONCEPTS: ProductVocabulary = [
       "contextual": []
     },
     "catalog_product_ids": [
-      "NIÃ‘O1",
-      "NIÃ‘O2",
-      "NIÃ‘O3",
-      "NIÃ‘O4"
+      "NIÑO1",
+      "NIÑO2",
+      "NIÑO3",
+      "NIÑO4"
     ],
     "sizes": {
       "separate": true,
@@ -622,7 +622,7 @@ export const CATALOG_PRODUCT_CONCEPTS: ProductVocabulary = [
     "concept_id": "decor.balloon_kit.boy_mustache_blue",
     "canonical_label": "blue-toned balloon decoration kit in matte light blue and navy blue with glossy chrome silver accents and printed white pattern balloons",
     "catalog_titles": [
-      "E-DECOR NIÃ‘O BIGOTES"
+      "E-DECOR NIÑO BIGOTES"
     ],
     "visual": {
       "family": "balloon garland and arch decoration kit",
@@ -692,7 +692,7 @@ export const CATALOG_PRODUCT_CONCEPTS: ProductVocabulary = [
     "concept_id": "decor.balloon_kit.dad_mustache_blue_brown_gold",
     "canonical_label": "blue, brown, and gold balloon decoration kit with yellow accents and printed graphic balloons",
     "catalog_titles": [
-      "E-DECOR PAPÃ BIGOTES"
+      "E-DECOR PAPÁ BIGOTES"
     ],
     "visual": {
       "family": "balloon garland and arch decoration kit",
@@ -762,7 +762,7 @@ export const CATALOG_PRODUCT_CONCEPTS: ProductVocabulary = [
     "concept_id": "decor.balloon_kit.first_communion_pearl_white_gold",
     "canonical_label": "pearl white and glossy chrome gold balloon decoration kit for First Communion with printed white accent balloons",
     "catalog_titles": [
-      "E-DECOR PRIMERA COMUNIÃ“N PERLA"
+      "E-DECOR PRIMERA COMUNIÓN PERLA"
     ],
     "visual": {
       "family": "balloon garland and arch decoration kit",
@@ -797,7 +797,7 @@ export const CATALOG_PRODUCT_CONCEPTS: ProductVocabulary = [
     "concept_id": "decor.balloon_kit.girl_pink_confetti",
     "canonical_label": "pink-toned balloon decoration kit in matte light pink, hot pink, and magenta with glossy chrome mauve accents and confetti or marble printed balloons",
     "catalog_titles": [
-      "E-DECOR NIÃ‘A"
+      "E-DECOR NIÑA"
     ],
     "visual": {
       "family": "balloon garland and arch decoration kit",
@@ -817,10 +817,10 @@ export const CATALOG_PRODUCT_CONCEPTS: ProductVocabulary = [
       "contextual": []
     },
     "catalog_product_ids": [
-      "NIÃ‘A1",
-      "NIÃ‘A2",
-      "NIÃ‘A3",
-      "NIÃ‘A4"
+      "NIÑA1",
+      "NIÑA2",
+      "NIÑA3",
+      "NIÑA4"
     ],
     "sizes": {
       "separate": true,
@@ -903,7 +903,7 @@ export const CATALOG_PRODUCT_CONCEPTS: ProductVocabulary = [
     "concept_id": "decor.balloon_kit.mothers_day_gold_red",
     "canonical_label": "red, white, and glossy chrome gold balloon decoration kit for Mother's Day with printed accent balloons",
     "catalog_titles": [
-      "E-DECOR MAMÃ FLORES"
+      "E-DECOR MAMÁ FLORES"
     ],
     "visual": {
       "family": "balloon garland and arch decoration kit",
@@ -1044,7 +1044,7 @@ export const CATALOG_PRODUCT_CONCEPTS: ProductVocabulary = [
     "concept_id": "decor.balloon_kit.valentines_purple_pink_heart",
     "canonical_label": "purple and pink balloon decoration kit for Valentine's Day with heart-patterned accent balloons",
     "catalog_titles": [
-      "E-DECOR SAN VALENTÃN"
+      "E-DECOR SAN VALENTÍN"
     ],
     "visual": {
       "family": "balloon garland and arch decoration kit",
@@ -1115,7 +1115,7 @@ export const CATALOG_PRODUCT_CONCEPTS: ProductVocabulary = [
     "concept_id": "garland.spiderweb.metallic_paper.iridescent",
     "canonical_label": "iridescent metallic-paper garland with spiderweb and spider cutout motifs",
     "catalog_titles": [
-      "FESTON METALIZADO TELARAÃ‘A PLATA"
+      "FESTON METALIZADO TELARAÑA PLATA"
     ],
     "visual": {
       "family": "Metalizado",
@@ -1730,7 +1730,7 @@ export const CATALOG_PRODUCT_CONCEPTS: ProductVocabulary = [
     "concept_id": "kit.garland_arch.feliz_cumpleanos",
     "canonical_label": "assorted balloon garland, arch, and bouquet kit in a yellow, orange, and green palette with silver-chrome accents",
     "catalog_titles": [
-      "E-DECOR FELIZ CUMPLEAÃ‘OS"
+      "E-DECOR FELIZ CUMPLEAÑOS"
     ],
     "visual": {
       "family": "balloon decoration kit",
@@ -1749,10 +1749,10 @@ export const CATALOG_PRODUCT_CONCEPTS: ProductVocabulary = [
       "contextual": []
     },
     "catalog_product_ids": [
-      "FELIZCUMPLEAÃ‘OS1",
-      "FELIZCUMPLEAÃ‘OS2",
-      "FELIZCUMPLEAÃ‘OS3",
-      "FELIZCUMPLEAÃ‘OS4"
+      "FELIZCUMPLEAÑOS1",
+      "FELIZCUMPLEAÑOS2",
+      "FELIZCUMPLEAÑOS3",
+      "FELIZCUMPLEAÑOS4"
     ],
     "sizes": {
       "separate": true,
@@ -1938,9 +1938,9 @@ export const CATALOG_PRODUCT_CONCEPTS: ProductVocabulary = [
   },
   {
     "concept_id": "prop.fan.paper.black.spider_applique",
-    "canonical_label": "black paper honeycomb fan decoration with a spider face appliquÃ©",
+    "canonical_label": "black paper honeycomb fan decoration with a spider face appliqué",
     "catalog_titles": [
-      "ABANICO DECORATIVO ARAÃ‘A"
+      "ABANICO DECORATIVO ARAÑA"
     ],
     "visual": {
       "family": "decorative_fan",
@@ -1950,7 +1950,7 @@ export const CATALOG_PRODUCT_CONCEPTS: ProductVocabulary = [
       "finish": "matte",
       "pattern": {
         "kind": "printed",
-        "motif": "cartoon spider face appliquÃ©",
+        "motif": "cartoon spider face appliqué",
         "contains_text": false
       }
     },
@@ -1975,7 +1975,7 @@ export const CATALOG_PRODUCT_CONCEPTS: ProductVocabulary = [
     "concept_id": "prop.fringe_swag.paper.orange.spider_medallion",
     "canonical_label": "hanging fringe swag decoration in orange with a spider medallion topper",
     "catalog_titles": [
-      "ARAÃ‘A CON FLECOS"
+      "ARAÑA CON FLECOS"
     ],
     "visual": {
       "family": "fringe_hanging_decor",

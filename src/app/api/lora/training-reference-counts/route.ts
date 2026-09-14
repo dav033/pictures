@@ -4,7 +4,7 @@ import { LoraModeSlugSchema } from "@/lib/lora/schema";
 import { readActiveLoraTrainingReferenceCounts } from "@/lib/lora/training-reference-counts";
 
 export async function GET(request: Request): Promise<NextResponse> {
-  if (!isAuthenticatedRequest(request)) return NextResponse.json({ error: "SesiÃ³n requerida." }, { status: 401 });
+  if (!isAuthenticatedRequest(request)) return NextResponse.json({ error: "Sesión requerida." }, { status: 401 });
   const { searchParams } = new URL(request.url);
   // El badge debe reflejar el modelo que realmente genera, no un dataset fijo:
   // sin ?loraMode, se asume el modo por defecto del selector principal.

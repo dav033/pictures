@@ -1,6 +1,6 @@
 /**
  * Pruebas de la Tarea 01.2 (Registro de recetas) —
- * `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`, "Plan 01, Tarea 01.2" en la
+ * `docs/migracion-python/PLAN-MAESTRO-V2.md`, "Plan 01, Tarea 01.2" en la
  * sección 11.
  *
  * Verifica, contra los contratos Zod reales (`src/lib/scene/tipos.ts`) y la

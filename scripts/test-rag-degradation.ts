@@ -1,14 +1,9 @@
-import { existsSync } from "node:fs";
 import { Pool } from "pg";
-import { buscarHibrido } from "../src/lib/rag/retrieval/search";
+import { buscarHibrido, RagUnavailableError } from "../src/lib/rag/retrieval/search";
 import type { ConsultaRetrieval } from "../src/lib/rag/retrieval/types";
 
-for (const archivo of [".env.local", ".env"]) {
-  if (existsSync(archivo)) process.loadEnvFile(archivo);
-}
-
 /**
- * Fase 5.4 (plan §Fase 5, auditoria/09-revision-fase-5.md secciones 2 y 5):
+ * Fase 5.4 del plan de resiliencia:
  * "Postgres no disponible" tenía dos comportamientos distintos en
  * buscarHibrido() -- la rama vectorial degradaba (try/catch -> ERROR ->
  * sigue con las demás ramas), pero queryFullText/queryTrigram no tenían
@@ -16,9 +11,9 @@ for (const archivo of [".env.local", ".env"]) {
  * el turno completo. Este test inyecta el fallo real (sin apagar ningún
  * Postgres real) envolviendo pool.query para que rechace solo las consultas
  * que coinciden con el texto SQL de la rama que se quiere derribar --
- * confirma que el turno ya no truena y que branchStatus reporta "ERROR",
- * nunca "READY", para la rama caída. No fabrica éxito: si todas las ramas
- * fallan, resultado es [] con status estable, no un throw.
+ * confirma que una rama caída no oculta resultados de las otras. No fabrica
+ * éxito: si todas las ramas configuradas fallan, lanza un error estable que la
+ * ruta de chat traduce a RAG_UNAVAILABLE.
  */
 
 function envolverPoolConFallo(poolReal: Pool, patronSqlAFallar: RegExp | null, mensaje: string): Pool {
@@ -30,13 +25,32 @@ function envolverPoolConFallo(poolReal: Pool, patronSqlAFallar: RegExp | null, m
   wrapper.query = (async (textoOConfig: unknown, params?: unknown) => {
     const sql = typeof textoOConfig === "string" ? textoOConfig : ((textoOConfig as { text?: string })?.text ?? "");
     if (patronSqlAFallar === null || patronSqlAFallar.test(sql)) throw new Error(mensaje);
-    return (poolReal.query as (a: unknown, b?: unknown) => Promise<unknown>)(textoOConfig, params);
+    const queryReal = poolReal.query.bind(poolReal) as (a: unknown, b?: unknown) => Promise<unknown>;
+    return queryReal(textoOConfig, params);
   }) as Pool["query"];
   return wrapper;
 }
 
+function leerDsnLocal(): string {
+  const dsn = process.env.RAG_DEGRADATION_DATABASE_URL?.trim();
+  if (!dsn) throw new Error("RAG_DEGRADATION_DATABASE_URL es obligatoria y debe apuntar a PostgreSQL local.");
+  let parsed: URL;
+  try {
+    parsed = new URL(dsn);
+  } catch {
+    throw new Error("RAG_DEGRADATION_DATABASE_URL no es una URL PostgreSQL válida.");
+  }
+  if (!['postgres:', 'postgresql:'].includes(parsed.protocol)) {
+    throw new Error("RAG_DEGRADATION_DATABASE_URL debe usar el protocolo PostgreSQL.");
+  }
+  if (!['127.0.0.1', 'localhost', '::1'].includes(parsed.hostname)) {
+    throw new Error("El arnés de degradación solo permite una base PostgreSQL loopback.");
+  }
+  return dsn;
+}
+
 async function main() {
-  const poolReal = new Pool({ connectionString: process.env.DATABASE_URL });
+  const poolReal = new Pool({ connectionString: leerDsnLocal() });
   let fallos = 0;
   const reportar = (ok: boolean, nombre: string, detalle: string) => {
     console.log(`[${ok ? "PASS" : "FAIL"}] ${nombre} — ${detalle}`);
@@ -49,33 +63,27 @@ async function main() {
     // una excepción no capturada desde queryFullText/queryTrigram.
     const poolCaido = envolverPoolConFallo(poolReal, null, "simulated total postgres outage");
     const consultaSimple: ConsultaRetrieval = { semanticQuery: "globos plateados para cumpleaños" };
-    let respuesta1: Awaited<ReturnType<typeof buscarHibrido>> | null = null;
-    let lanzoExcepcion1 = false;
+    let error1: unknown = null;
     try {
-      respuesta1 = await buscarHibrido(poolCaido, consultaSimple);
-    } catch {
-      lanzoExcepcion1 = true;
+      await buscarHibrido(poolCaido, consultaSimple);
+    } catch (error) {
+      error1 = error;
     }
     reportar(
-      !lanzoExcepcion1 && respuesta1 !== null,
-      "Test 1: Postgres totalmente caído no tumba el turno",
-      lanzoExcepcion1 ? "lanzó excepción no capturada" : `resultó en ${respuesta1?.results.length ?? "?"} resultados, branchStatus=${JSON.stringify(respuesta1?.branchStatus)}`,
+      error1 instanceof RagUnavailableError,
+      "Test 1: Postgres totalmente caído no fabrica NO_MATCH",
+      error1 instanceof Error ? `${error1.name}: ${error1.message}` : "no lanzó el error estable",
     );
-    if (respuesta1) {
+    if (error1 instanceof RagUnavailableError) {
       reportar(
-        respuesta1.branchStatus?.fts === "ERROR",
+        error1.branchStatus.fts === "ERROR",
         "Test 1b: branchStatus.fts queda en ERROR, nunca READY, cuando la consulta FTS falla",
-        `fts=${respuesta1.branchStatus?.fts}`,
+        `fts=${error1.branchStatus.fts}`,
       );
       reportar(
-        respuesta1.branchStatus?.trigram === "ERROR",
+        error1.branchStatus.trigram === "ERROR",
         "Test 1c: branchStatus.trigram queda en ERROR, nunca READY, cuando la consulta trigram falla",
-        `trigram=${respuesta1.branchStatus?.trigram}`,
-      );
-      reportar(
-        respuesta1.results.length === 0,
-        "Test 1d: sin ramas disponibles, resultado es [] -- no fabrica candidatos",
-        `results.length=${respuesta1.results.length}`,
+        `trigram=${error1.branchStatus.trigram}`,
       );
     }
 

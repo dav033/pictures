@@ -4,6 +4,8 @@
  * sección visual todavía necesita validarse con más montajes reales.
  */
 
+import { esEstructuraOficialId, ESTRUCTURAS_OFICIALES, type GeometriaEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
+
 export type Figura = "arco" | "semiarco" | "guirnalda" | "columna" | "pared" | "centro_mesa";
 export type Densidad = "sencilla" | "media" | "lujosa";
 export type Mezcla = "clasica" | "organica_fina" | "organica_gruesa" | "solo_grandes";
@@ -51,6 +53,13 @@ const MEZCLAS: Record<Mezcla, ProporcionTamano[]> = {
   ],
 };
 
+/** Diámetros (pulgadas) que pide cada mezcla, de menor a mayor. */
+export function pulgadasDeMezcla(mezcla: Mezcla): number[] {
+  return MEZCLAS[mezcla].map((tamano) => tamano.pulgadas);
+}
+
+export const MEZCLAS_DISPONIBLES = Object.keys(MEZCLAS) as Mezcla[];
+
 /**
  * La banda 1.3×R-12 asumía una guirnalda completamente forrada. El orgánico
  * fino de referencia deja soporte y espacio negativo visibles, por eso mide
@@ -72,15 +81,29 @@ function diametroEfectivoCm(pulgadas: number): number {
  * al perímetro de una elipse (a = ancho/2, b = alto) — es lo que hace que un
  * arco de "3 metros" salga con ~6,38 m de eje real, no 3.
  */
-export function calcularEje(figura: Figura, medidas: { anchoM?: number; altoM?: number; largoM?: number }): number {
+export function calcularEje(figura: Figura, medidas: { anchoM?: number; altoM?: number; largoM?: number }, geometria?: GeometriaEstructuraOficial): number {
   const ancho = medidas.anchoM ?? 0;
   const alto = medidas.altoM ?? 0;
   const largo = medidas.largoM ?? 0;
+  if (geometria?.eje === "circunferencia") {
+    // Aro circular: círculo completo inscrito en la caja ancho × alto.
+    const diametro = ancho && alto ? Math.min(ancho, alto) : ancho || alto;
+    return Math.PI * diametro;
+  }
 
   switch (figura) {
     case "guirnalda":
-    case "semiarco":
       return largo || ancho;
+    case "semiarco": {
+      // Un semiarco sube `alto` y avanza `ancho` en horizontal: su eje es un
+      // cuarto de elipse (a = ancho, b = alto), no el ancho. El chat manda
+      // `largo_m` como profundidad (0,5 m daba un semiarco de 9 globos), así
+      // que el largo solo cuenta cuando faltan ancho y alto.
+      if (!ancho && !alto) return largo;
+      if (!ancho || !alto) return ancho || alto;
+      const perimetro = Math.PI * (3 * (ancho + alto) - Math.sqrt((3 * ancho + alto) * (ancho + 3 * alto)));
+      return perimetro / 4;
+    }
     case "columna":
       return alto;
     case "arco": {
@@ -142,22 +165,29 @@ export function calcularDespieceEstructura(input: {
   mezcla: Mezcla;
   tamanos?: number[];
   materiales: Array<{ color?: string; participacion: number }>;
-}): { ejeM: number; totalGlobos: number; despiece: Array<{ tamano: string; pulgadas: number; color?: string; cantidad: number }> } {
+  /** `estructura_oficial` del plan; cambia la geometría solo en las variantes que la definen. */
+  estructuraOficial?: string;
+}): { ejeM: number; totalGlobos: number; despiece: Array<{ tamano: string; pulgadas: number; color?: string; cantidad: number; materialIndex: number }> } {
   const resultado = calcularMedidas({
     figura: input.tipo,
     ...input.medidas,
     densidad: input.densidad,
     mezcla: input.mezcla,
+    estructuraOficial: input.estructuraOficial,
   });
   const materiales = input.materiales.length ? input.materiales : [{ participacion: 1 }];
   const celdas: CeldaDespiece[] = [];
+  // Material de cada celda por posición: dos materiales del mismo color
+  // (reflex y pastel) son dos productos, no uno (antes se unían por color).
+  const materialDeCelda: number[] = [];
   const tamanosPermitidos = input.tamanos?.length ? new Set(input.tamanos) : null;
   const proporciones = tamanosPermitidos
     ? MEZCLAS[input.mezcla].filter((tamano) => tamanosPermitidos.has(tamano.pulgadas))
     : MEZCLAS[input.mezcla];
   const tamanosEfectivos = proporciones.length ? proporciones : input.tamanos?.map((pulgadas) => ({ pulgadas, proporcion: 1 })) ?? MEZCLAS[input.mezcla];
   for (const tamano of tamanosEfectivos) {
-    for (const material of materiales) {
+    for (const [indice, material] of materiales.entries()) {
+      materialDeCelda.push(indice);
       celdas.push({
         pulgadas: tamano.pulgadas,
         color: material.color,
@@ -168,11 +198,12 @@ export function calcularDespieceEstructura(input: {
   }
   const repartido = repartirHamilton(resultado.totalGlobos, celdas);
   const repeticiones = Math.max(1, Math.round(input.repeticiones));
-  const despiece = repartido.map((linea) => ({
+  const despiece = repartido.map((linea, indice) => ({
     tamano: `R-${linea.pulgadas}`,
     pulgadas: linea.pulgadas,
     color: linea.color,
     cantidad: linea.cantidad * repeticiones,
+    materialIndex: materialDeCelda[indice]!,
   }));
   return {
     ejeM: resultado.ejeM,
@@ -189,14 +220,17 @@ export function calcularMedidas(opts: {
   densidad?: Densidad;
   colores?: string[];
   mezcla?: Mezcla;
+  estructuraOficial?: string;
 }): ResultadoMedidas {
   const densidad = opts.densidad ?? "media";
+  const geometria = esEstructuraOficialId(opts.estructuraOficial) ? ESTRUCTURAS_OFICIALES[opts.estructuraOficial].geometria : undefined;
+  const factorPerfilBanda = geometria?.anchoFinalBanda === undefined ? 1 : (1 + geometria.anchoFinalBanda) / 2;
   const mezcla = opts.mezcla ?? "organica_fina";
   const lambda = LAMBDA_POR_DENSIDAD[densidad];
   const proporciones = MEZCLAS[mezcla];
   const anchoBanda = ANCHO_BANDA_POR_MEZCLA[mezcla];
 
-  const ejeM = calcularEje(opts.figura, opts);
+  const ejeM = calcularEje(opts.figura, opts, geometria);
   const dominante = proporciones.reduce((a, b) => (b.proporcion > a.proporcion ? b : a));
   const dDominanteCm = diametroEfectivoCm(dominante.pulgadas);
 
@@ -206,7 +240,7 @@ export function calcularMedidas(opts: {
   const area =
     opts.figura === "pared"
       ? (opts.anchoM ?? 0) * (opts.altoM ?? 0)
-      : ejeM * ((anchoBanda * dDominanteCm) / 100);
+      : ejeM * ((anchoBanda * dDominanteCm) / 100) * factorPerfilBanda;
 
   const areaGloboPonderada = proporciones.reduce((suma, m) => {
     const dCm = diametroEfectivoCm(m.pulgadas);
@@ -238,7 +272,13 @@ export function calcularMedidas(opts: {
     ejeM: Math.round(ejeM * 100) / 100,
     despiece,
     totalGlobos: despiece.reduce((suma, d) => suma + d.cantidad, 0),
-    supuestos: [`densidad ${densidad} (λ=${lambda})`, "inflado al 92%", `mezcla ${mezcla}`],
+    supuestos: [
+      `densidad ${densidad} (λ=${lambda})`,
+      "inflado al 92%",
+      `mezcla ${mezcla}`,
+      ...(geometria?.eje === "circunferencia" ? ["aro circular: eje = circunferencia inscrita en ancho × alto"] : []),
+      ...(geometria?.anchoFinalBanda !== undefined ? [`asimétrico: banda afinada al ${Math.round(geometria.anchoFinalBanda * 100)}% (volumen ×${factorPerfilBanda})`] : []),
+    ],
     confianza: "preliminar",
     aviso:
       "Estimado sin calibrar con montajes reales — confírmalo con el equipo de decoración antes de cotizar en firme.",

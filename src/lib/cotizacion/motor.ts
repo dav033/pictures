@@ -258,6 +258,7 @@ export function cotizarPlan(plan: PlanResuelto): Cotizacion {
     referenciaElementIds: [...new Set(compra.estructuras
       .map((estructuraId) => estructurasPlanPorId.get(estructuraId)?.referencia_element_id)
       .filter((id): id is string => Boolean(id)))],
+    color: compra.color ?? undefined,
     cantidadNecesaria: compra.unidades_necesarias,
     designQuantity: compra.design_quantity,
     wasteReserve: compra.waste_reserve,

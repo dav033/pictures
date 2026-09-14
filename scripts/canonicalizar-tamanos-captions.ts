@@ -24,8 +24,9 @@
 import { readFile, writeFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { decodificarTamano } from "../src/lib/shopify/derivar";
+import { directorioOrdenes } from "../src/lib/ordenes/directorio";
 
-const RUTA_ORDENES = "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
+const RUTA_ORDENES = directorioOrdenes();
 const APLICAR = process.argv.includes("--aplicar");
 const DETALLE = process.argv.includes("--detalle");
 

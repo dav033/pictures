@@ -4,7 +4,7 @@ import { SceneCategoryV3Schema, SceneFunctionV3Schema } from "../taxonomy/v3";
 
 /**
  * Contratos Zod de "identidad física + verdad comercial" para activos de
- * escena (PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md §6 y §7.3, Tarea 02.2).
+ * escena (docs/migracion-python/PLAN-MAESTRO-V2.md §6 y §7.3, Tarea 02.2).
  *
  * Principio central del plan: la identidad física de un objeto
  * (`CatalogItemV3`) NUNCA se acopla a su proveedor o precio

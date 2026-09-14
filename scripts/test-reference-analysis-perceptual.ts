@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import type { ChatPort, PeticionChat, TurnoChat } from "@/lib/ia/tipos";
+import { ErrorIA, type ChatPort, type PeticionChat, type TurnoChat } from "@/lib/ia/tipos";
 import { analizarReferenciasV2, type ReferenceCatalogItem } from "@/lib/ia/analizar-referencias-v2";
 
 /**
@@ -85,6 +85,85 @@ async function run() {
   assert.equal(legacyElement.model_decision?.catalog_product_id, "var-real-1");
 
   console.log("[PASS] modo perceptual (R3) — nunca emite catalog_product_id ni bill_of_materials");
+
+  // Regresión (I11): el semiarco derecho de la referencia volvió como
+  // "lighting" porque su evidencia decía "confetti-filled ... fairy lights"
+  // ("filled" contenía "led") y desapareció del plan.
+  const semiarcoConLuces = {
+    images: [{
+      image_id: "REF_01",
+      elements: [
+        {
+          name: "Right Organic Balloon Half-Arch", category: "lighting", scene_role: "midground", detection_confidence: 0.95,
+          visible_evidence: "chrome blue, white and clear confetti-filled balloons wrapped in warm fairy lights, curled ribbons",
+          reference_bbox: { x: 0.38, y: 0.09, width: 0.55, height: 0.83 },
+          structure: { structure_type: "half_arch", horizontal_position: "right", relative_height: "tall", curves_toward: "left", top_overhang: "strong", outline: "asymmetric", density: "dense" },
+          composition_relevance: "essential", model_decision: { action: "include" },
+        },
+        {
+          name: "Left balloon column", category: "balloon_structure", scene_role: "midground", detection_confidence: 0.95,
+          visible_evidence: "curled balloons", reference_bbox: { x: 0.02, y: 0.31, width: 0.32, height: 0.6 },
+          structure: { structure_type: "half_arch", horizontal_position: "left", relative_height: "short", curves_toward: "right", top_overhang: "slight", outline: "symmetric", density: "dense" },
+          composition_relevance: "essential", model_decision: { action: "include" },
+        },
+        {
+          name: "Warm fairy string lights", category: "lighting", scene_role: "lighting", detection_confidence: 0.9,
+          visible_evidence: "LED string lights on the floor", reference_bbox: { x: 0.01, y: 0.87, width: 0.98, height: 0.12 },
+          composition_relevance: "supporting", model_decision: { action: "include" },
+        },
+      ],
+    }],
+  };
+  const conLuces = await analizarReferenciasV2(mockChat([semiarcoConLuces, auditVacio]), [{ ...referencia, base64: "BBBB" }], [], "perceptual");
+  const [derecho, izquierdo, luces] = conLuces.blueprint.elements;
+  assert.equal(derecho?.category, "balloon_structure", "una estructura de globos con luces sigue siendo estructura de globos");
+  assert.equal(derecho?.visual_semantics?.structure_type, "semiarco");
+  assert.equal(izquierdo?.visual_semantics?.structure_type, "columna", "la pieza izquierda apenas inclinada es columna");
+  assert.equal(luces?.category, "lighting");
+  console.log("[PASS] estructuras de globos con luces no se degradan a iluminación");
+
+  // Regresión: una bolsa de papel junto al semiarco volvió como estructura de
+  // globos (sin `structure`) y el plan habría tenido que construirla.
+  const bolsas = {
+    images: [{
+      image_id: "REF_01",
+      elements: [
+        { name: "Le Sac en Papier Bag with Plants", category: "balloon_structure", detection_confidence: 0.92, visible_evidence: "kraft paper bag with plants in front of the balloon arch", reference_bbox: { x: 0.38, y: 0.65, width: 0.13, height: 0.22 }, model_decision: { action: "include" } },
+        { name: "Small paper box with plant", category: "prop", detection_confidence: 0.88, visible_evidence: "small box next to the balloons", reference_bbox: { x: 0.46, y: 0.76, width: 0.12, height: 0.12 }, model_decision: { action: "include" } },
+      ],
+    }],
+  };
+  const conBolsas = await analizarReferenciasV2(mockChat([bolsas, auditVacio]), [{ ...referencia, base64: "EEEE" }], [], "perceptual");
+  assert.deepEqual(conBolsas.blueprint.elements.map((element) => element.category), ["other", "other"], "los accesorios junto a los globos no son estructuras de globos");
+  console.log("[PASS] accesorios junto a los globos no se vuelven estructuras de globos");
+
+  // Regresión: Gemini devolvió texto malformado en vez de la herramienta y la
+  // ruta respondió 400 "Recarga la página". Un reintento acotado lo absorbe.
+  let llamadas = 0;
+  const chatMalformado: ChatPort = {
+    ...mockChat([inventoryConIdColado, auditVacio]),
+    async turno(): Promise<TurnoChat> {
+      llamadas += 1;
+      if (llamadas === 1) return { texto: '{"images": [ :=default_ }', llamadas: [], uso: { entrada: 0, salida: 0 }, modelo: "mock-model" };
+      const args = llamadas === 2 ? inventoryConIdColado : auditVacio;
+      return { texto: "", llamadas: [{ nombre: llamadas === 2 ? "return_reference_inventory" : "return_reference_audit", args }], uso: { entrada: 0, salida: 0 }, modelo: "mock-model" };
+    },
+  };
+  const recuperado = await analizarReferenciasV2(chatMalformado, [{ ...referencia, base64: "CCCC" }], [], "perceptual");
+  assert.equal(llamadas, 3, "un reintento del inventario y una auditoría");
+  assert.equal(recuperado.blueprint.elements.length, 1);
+  const siempreMalformado: ChatPort = {
+    ...mockChat([inventoryConIdColado]),
+    async turno(): Promise<TurnoChat> {
+      return { texto: "not json", llamadas: [], uso: { entrada: 0, salida: 0 }, modelo: "mock-model" };
+    },
+  };
+  await assert.rejects(
+    analizarReferenciasV2(siempreMalformado, [{ ...referencia, base64: "DDDD" }], [], "perceptual"),
+    (error: unknown) => error instanceof ErrorIA && error.reintentable && error.causa === "desconocido",
+    "dos respuestas malformadas son un fallo reintentable del proveedor, no un error del cliente",
+  );
+  console.log("[PASS] salida malformada del análisis: un reintento y luego error reintentable del proveedor");
 }
 
 run().catch((error) => {

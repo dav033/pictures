@@ -10,7 +10,7 @@ import { V007_DATASET_PRODUCT_CONCEPTS } from "./v007-dataset-product-vocabulary
  *   catalog SKU + title + variant rows observed across the v004 dataset.
  * - docs/decisions/product-vocabulary-v001.md: frozen scope, Reflex-stays-Reflex
  *   rule, gold/rose gold must stay distinct.
- * - writing-block.md Â§Â§3,7,8: schema shape, canonical label style, resolver
+ * - writing-block.md §§3,7,8: schema shape, canonical label style, resolver
  *   precedence, and required invariants.
  *
  * Scope: only concepts with multiple corroborating SKU rows (or a single row
@@ -184,11 +184,11 @@ export const PRODUCT_VOCABULARY: ProductVocabulary = [
       finish: "Fashion matte",
       pattern: { kind: "solid" },
     },
-    // "Rosa" y "Rosado" son el mismo color re-listado tras un renombre del catÃ¡logo, no dos
-    // rosas distintos: el catÃ¡logo trae los dos tÃ­tulos en paralelo para cada forma (redondo,
-    // tubito, Link-O-Loon), ambos con `colores: ["rosado"]` y la misma escalera de tamaÃ±os, y
-    // los ids del par viejo empiezan en 71095â€¦ contra 10719â€¦ del nuevo. Confirmado y
-    // fusionado acÃ¡ para que no queden dos conceptos compitiendo por el mismo alias.
+    // "Rosa" y "Rosado" son el mismo color re-listado tras un renombre del catálogo, no dos
+    // rosas distintos: el catálogo trae los dos títulos en paralelo para cada forma (redondo,
+    // tubito, Link-O-Loon), ambos con `colores: ["rosado"]` y la misma escalera de tamaños, y
+    // los ids del par viejo empiezan en 71095… contra 10719… del nuevo. Confirmado y
+    // fusionado acá para que no queden dos conceptos compitiendo por el mismo alias.
     aliases: {
       es: [
         "globo latex redondo fashion rosado",
@@ -202,7 +202,7 @@ export const PRODUCT_VOCABULARY: ProductVocabulary = [
     catalog_titles: ["GLOBO LATEX REDONDO FASHION ROSADO", "GLOBO REDONDO FASHION ROSADO", "Globo Redondo Fashion Rosa"],
     catalog_product_ids: [
       "20000438", "20000578", "20000440", "20000725", "20000726", "20000577", "20000439", "20000576", "20000904", "20009574", "20012054",
-      // Variantes del tÃ­tulo "Rosa" (producto 10719259132097), fusionadas.
+      // Variantes del título "Rosa" (producto 10719259132097), fusionadas.
       "20019697", "20019698", "20019700", "20019701", "20019702", "20019704", "20019705", "20019708", "20019711", "20019845", "10719259132097",
     ],
     sizes: { separate: true, allowed_codes: ["R-5", "R-9", "R-12", "R-18", "R-24", "R-36"] },
@@ -464,7 +464,7 @@ export const PRODUCT_VOCABULARY: ProductVocabulary = [
   {
     concept_id: "balloon.linkoloon.latex.fashion.white",
     canonical_label: "chain-link Link-O-Loon latex balloon in white, solid Fashion finish",
-    catalog_titles: ["GLOBO LINK-O-LOONÂ® FASHION BLANCO", "GLOBO LINK-O-LOONÃ‚Â® FASHION BLANCO"],
+    catalog_titles: ["GLOBO LINK-O-LOON® FASHION BLANCO", "GLOBO LINK-O-LOONÂ® FASHION BLANCO"],
     visual: {
       family: "Fashion",
       shape: "link-o-loon",
@@ -483,12 +483,12 @@ export const PRODUCT_VOCABULARY: ProductVocabulary = [
     status: "active",
     vocabulary_version: VOCABULARY_VERSION,
   },
-  // AcÃ¡ vivÃ­a un segundo corazÃ³n foil rosado impreso (`balloon.foil.heart.pink`, SKU 30005545,
-  // 16 IN, "with printed text"). Se fusionÃ³ en `balloon.heart.foil.pink.printed_text`, que es
-  // el mismo objeto visual: dos SKUs de corazÃ³n rosado con texto impreso, y el texto no puede
-  // entrar en el caption, asÃ­ que para captionar son un solo concepto. Su alias
-  // "globo metalizado corazon rosado" era ademÃ¡s el tÃ­tulo del corazÃ³n LISO (SKU 30005444) y
-  // se quitÃ³: ese id ahora le corresponde al liso.
+  // Acá vivía un segundo corazón foil rosado impreso (`balloon.foil.heart.pink`, SKU 30005545,
+  // 16 IN, "with printed text"). Se fusionó en `balloon.heart.foil.pink.printed_text`, que es
+  // el mismo objeto visual: dos SKUs de corazón rosado con texto impreso, y el texto no puede
+  // entrar en el caption, así que para captionar son un solo concepto. Su alias
+  // "globo metalizado corazon rosado" era además el título del corazón LISO (SKU 30005444) y
+  // se quitó: ese id ahora le corresponde al liso.
   {
     concept_id: "balloon.heart.foil.silver",
     canonical_label: "heart-shaped foil balloon in silver",
@@ -557,7 +557,7 @@ export const PRODUCT_VOCABULARY: ProductVocabulary = [
     concept_id: "balloon.heart.foil.pink.printed_text",
     canonical_label: "heart-shaped foil balloon in pink with a metallic sheen printed-text pattern",
     // Absorbe el SKU 30005545, que estaba como un concepto aparte con id `foil.heart.pink`:
-    // otro corazÃ³n rosado con texto impreso. El texto literal no entra al caption, asÃ­ que
+    // otro corazón rosado con texto impreso. El texto literal no entra al caption, así que
     // los dos SKUs son el mismo objeto visual.
     catalog_titles: ["GLOBO METALIZADO CORAZON ROSADO I LOVE YOU", "GLOBO METALIZADO CORAZON ROSADO CON TEXTO"],
     visual: {

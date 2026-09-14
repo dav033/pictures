@@ -1,5 +1,5 @@
 /**
- * Tarea 00.1 (Ola 0 — línea base) de PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md.
+ * Tarea 00.1 (Ola 0 — línea base) de docs/migracion-python/PLAN-MAESTRO-V2.md.
  *
  * Lee los fixtures deterministas de intención (`src/lib/scene/__fixtures__/wedding-intents.ts`)
  * y de capacidad de catálogo (`src/lib/scene/__fixtures__/catalog-capability-snapshots.ts`) y
@@ -407,7 +407,7 @@ function main(): void {
 
   const report = {
     schema: "scene-baseline-eval-v1",
-    plan: "PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md",
+    plan: "docs/migracion-python/PLAN-MAESTRO-V2.md",
     task: "00.1 — Fixtures de intención y catálogo",
     fixturesEvaluated: scenarios.length,
     catalogSnapshotsRegistered: CATALOG_CAPABILITY_SNAPSHOTS.map((snapshot) => ({

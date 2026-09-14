@@ -1,12 +1,16 @@
 import { mkdir, writeFile } from "node:fs/promises";
+import { randomInt } from "node:crypto";
 import path from "node:path";
 import { z } from "zod";
+import { isAuthenticatedRequest, isSameOriginRequest } from "@/lib/auth/request";
+import { resolverElementosCatalogoOrden, type ElementoCatalogoOrden } from "@/lib/ordenes/catalogo";
 import { generarCaption } from "@/lib/ordenes/generarCaption";
 import type { Desglose, FeedbackFoto } from "@/lib/ordenes/tipos";
-
-const RUTA_ORDENES = "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
+import { directorioOrdenes } from "@/lib/ordenes/directorio";
 
 const TIPOS_ESTRUCTURA = ["arco", "semiarco", "guirnalda", "columna", "pared", "bouquet", "centro_mesa", "otro"] as const;
+const TIPOS_IMAGEN = new Set(["image/jpeg", "image/png", "image/webp"]);
+const MAX_FOTO_MANUAL_BYTES = 8_000_000;
 
 const ElementoSchema = z.object({
   sku: z.string().min(1),
@@ -20,20 +24,41 @@ const ElementosSchema = z.array(ElementoSchema).min(1, "Elegí al menos un eleme
 /** Entradas manuales reusan el mismo esquema de carpeta que las órdenes reales (foto-N.jpg,
  * desglose.json, feedback-N.json, caption-N.json) para heredar gratis toda la UI y las demás
  * rutas de /api/admin/ordenes/[numero]/* -- pero esas rutas exigen `numero` puramente numérico
- * (guarda contra path traversal). Un timestamp en ms es numérico, único, y nunca choca con un
- * número de orden real de Shopify (esos son de 4-6 dígitos, un timestamp actual tiene 13).
+ * (guarda contra path traversal). Un timestamp en ms más un sufijo aleatorio es numérico y no
+ * choca con un número de orden real de Shopify (esos son de 4-6 dígitos).
  */
 function nuevoNumeroManual(): string {
-  return String(Date.now());
+  return `${Date.now()}${randomInt(0, 1_000_000).toString().padStart(6, "0")}`;
+}
+
+async function crearCarpetaManual(): Promise<{ numero: string; carpeta: string }> {
+  const raiz = directorioOrdenes();
+  await mkdir(raiz, { recursive: true });
+  for (let intento = 0; intento < 5; intento += 1) {
+    const numero = nuevoNumeroManual();
+    const carpeta = path.join(raiz, numero);
+    try {
+      await mkdir(carpeta);
+      return { numero, carpeta };
+    } catch (error) {
+      if (!(error instanceof Error) || !("code" in error) || error.code !== "EEXIST") throw error;
+    }
+  }
+  throw new Error("No se pudo reservar un identificador único para la orden manual.");
 }
 
 export async function POST(request: Request) {
+  if (!isAuthenticatedRequest(request)) return Response.json({ error: "Sesión requerida." }, { status: 401 });
+  if (!isSameOriginRequest(request)) return Response.json({ error: "Origen no permitido." }, { status: 403 });
+
   const formData = await request.formData();
 
   const foto = formData.get("foto");
   if (!(foto instanceof File) || foto.size === 0) {
     return Response.json({ error: "Falta la imagen." }, { status: 400 });
   }
+  if (!TIPOS_IMAGEN.has(foto.type)) return Response.json({ error: "La imagen debe ser JPEG, PNG o WebP." }, { status: 415 });
+  if (foto.size > MAX_FOTO_MANUAL_BYTES) return Response.json({ error: "La imagen no puede pesar más de 8 MB." }, { status: 413 });
 
   const tipoEstructura = String(formData.get("tipoEstructura") ?? "");
   if (!TIPOS_ESTRUCTURA.includes(tipoEstructura as (typeof TIPOS_ESTRUCTURA)[number])) {
@@ -48,9 +73,14 @@ export async function POST(request: Request) {
     return Response.json({ error: message ?? "Elementos inválidos." }, { status: 400 });
   }
 
-  const numero = nuevoNumeroManual();
-  const carpetaOrden = path.join(RUTA_ORDENES, numero);
-  await mkdir(carpetaOrden, { recursive: true });
+  let elementosAutoritativos: ElementoCatalogoOrden[];
+  try {
+    elementosAutoritativos = await resolverElementosCatalogoOrden(elementos);
+  } catch (error) {
+    return Response.json({ error: error instanceof Error ? error.message : "Los elementos no pertenecen al catálogo vigente." }, { status: 400 });
+  }
+
+  const { numero, carpeta: carpetaOrden } = await crearCarpetaManual();
 
   const extension = foto.type === "image/png" ? "png" : foto.type === "image/webp" ? "webp" : "jpg";
   const archivoFoto = `foto-1.${extension}`;
@@ -61,11 +91,11 @@ export async function POST(request: Request) {
     orden: numero,
     cliente: null,
     fecha: new Date().toISOString(),
-    lineas: elementos.map((e) => ({
+    lineas: elementosAutoritativos.map((e) => ({
       producto: e.producto,
       variante: e.variante,
       sku: e.sku,
-      cantidad: e.cantidad,
+      cantidad: e.cantidad ?? 1,
       precioUnitario: e.precioUnitario,
     })),
   };

@@ -1,14 +1,11 @@
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
+import { isAuthenticatedRequest } from "@/lib/auth/request";
 import { getDb } from "@/lib/db";
+import { directorioOrdenes } from "@/lib/ordenes/directorio";
 import type { FeedbackFoto } from "@/lib/ordenes/tipos";
 
 export type { FeedbackFoto };
-
-// Carpeta externa al repo donde vive el pipeline de fotos reales de órdenes (Fase 1/2 del
-// dataset de entrenamiento) — ver scripts/procesar-ordenes.ts. Esta ruta solo lee para
-// visualización en el panel de admin, no modifica nada.
-const RUTA_ORDENES = "C:\\Users\\davidt\\Downloads\\ordenes-decoracion";
 
 export type ProductoCatalogo = {
   titulo: string;
@@ -114,21 +111,29 @@ async function fotosDeLaCarpeta(carpetaOrden: string, archivos: string[]): Promi
   );
 }
 
-export async function GET() {
+function ordenarNumerosDesc(a: string, b: string): number {
+  if (a.length !== b.length) return b.length - a.length;
+  return b.localeCompare(a);
+}
+
+export async function GET(request: Request) {
+  if (!isAuthenticatedRequest(request)) return Response.json({ error: "Sesión requerida." }, { status: 401 });
+
+  const rutaOrdenes = directorioOrdenes();
   let carpetas: string[];
   try {
-    carpetas = (await readdir(RUTA_ORDENES, { withFileTypes: true }))
+    carpetas = (await readdir(/*turbopackIgnore: true*/ rutaOrdenes, { withFileTypes: true }))
       .filter((entrada) => entrada.isDirectory())
       .map((entrada) => entrada.name)
-      .sort((a, b) => Number(b) - Number(a));
+      .sort(ordenarNumerosDesc);
   } catch {
-    return Response.json({ ordenes: [], error: `No se encontró la carpeta ${RUTA_ORDENES}` });
+    return Response.json({ ordenes: [], error: `No se encontró la carpeta ${rutaOrdenes}` });
   }
 
   const ordenes: OrdenRevision[] = await Promise.all(
     carpetas.map(async (numero) => {
-      const carpetaOrden = path.join(RUTA_ORDENES, numero);
-      const archivos = await readdir(carpetaOrden).catch(() => [] as string[]);
+      const carpetaOrden = path.join(/*turbopackIgnore: true*/ rutaOrdenes, numero);
+      const archivos = await readdir(/*turbopackIgnore: true*/ carpetaOrden).catch(() => [] as string[]);
       const [desglose, fotos] = await Promise.all([
         leerJsonSiExiste<Desglose>(path.join(carpetaOrden, "desglose.json")),
         fotosDeLaCarpeta(carpetaOrden, archivos),

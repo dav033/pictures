@@ -1,0 +1,1226 @@
+{
+  "plan": {
+    "plan_version": "1.0",
+    "plan_id": "2e11adb3-8ea4-434d-85a1-5740639dbc58",
+    "concepto": {
+      "titulo": "Entrada Real XV Años Blanco y Dorado",
+      "descripcion": "Elegante enmarcado para XV años en salón, combinando un arco orgánico principal blanco con destellos dorados reflex y dos columnas laterales a juego.",
+      "paleta": [
+        "blanco",
+        "dorado"
+      ],
+      "estilo": "elegante",
+      "ocasion": "XV años",
+      "momento_dia": "noche"
+    },
+    "espacio": {
+      "tipo": "salón",
+      "ancho_m": 5,
+      "alto_m": 3,
+      "largo_m": 5,
+      "fuente": "supuesto"
+    },
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_ARCO",
+        "nombre": "Arco Orgánico Principal",
+        "tipo": "arco",
+        "rol_escena": "focal",
+        "ubicacion": "arco_central",
+        "medidas": {
+          "ancho_m": 3,
+          "alto_m": 2.5,
+          "largo_m": 0.5
+        },
+        "repeticiones": 1,
+        "densidad": "media",
+        "mezcla": "organica_fina",
+        "materiales": [
+          {
+            "product_id": "8634235781415",
+            "color": "blanco",
+            "participacion": 0.6,
+            "rol_material": "principal"
+          },
+          {
+            "product_id": "8634255638823",
+            "color": "dorado",
+            "participacion": 0.4,
+            "rol_material": "secundario"
+          }
+        ],
+        "porque": "Marco focal impactante para la entrada o mesa de la quinceañera."
+      },
+      {
+        "estructura_id": "EST_02_COLUMNAS",
+        "nombre": "Columnas Laterales Coordinadas",
+        "tipo": "columna",
+        "rol_escena": "soporte",
+        "ubicacion": "lateral_izquierdo",
+        "medidas": {
+          "ancho_m": 0.6,
+          "alto_m": 2,
+          "largo_m": 0.6
+        },
+        "repeticiones": 2,
+        "densidad": "media",
+        "mezcla": "organica_fina",
+        "materiales": [
+          {
+            "product_id": "8634235781415",
+            "color": "blanco",
+            "participacion": 0.6,
+            "rol_material": "principal"
+          },
+          {
+            "product_id": "8634255638823",
+            "color": "dorado",
+            "participacion": 0.4,
+            "rol_material": "secundario"
+          }
+        ],
+        "porque": "Flanquean el espacio y amplían la presencia visual de la decoración."
+      }
+    ],
+    "supuestos": [],
+    "restricciones": {
+      "presupuesto": {
+        "techo_cop": 1500000,
+        "procedencia": "explicito",
+        "texto_original": "Quiero decorar unos XV años en un salón: un arco orgánico de globos de 3 metros de ancho en blanco y dorado, y dos columnas a los lados. Presupuesto hasta 1.500.000 pesos. Arma la propuesta."
+      },
+      "estructuras": [
+        {
+          "tipo": "arco",
+          "repeticiones": 1,
+          "procedencia": "explicito",
+          "texto_original": "Quiero decorar unos XV años en un salón: un arco orgánico de globos de 3 metros de ancho en blanco y dorado, y dos columnas a los lados. Presupuesto hasta 1.500.000 pesos. Arma la propuesta.",
+          "polaridad": "obligatorio"
+        },
+        {
+          "tipo": "columna",
+          "repeticiones": 2,
+          "procedencia": "explicito",
+          "texto_original": "Quiero decorar unos XV años en un salón: un arco orgánico de globos de 3 metros de ancho en blanco y dorado, y dos columnas a los lados. Presupuesto hasta 1.500.000 pesos. Arma la propuesta.",
+          "polaridad": "obligatorio"
+        }
+      ],
+      "colores": [
+        {
+          "valor": "dorado",
+          "procedencia": "explicito",
+          "texto_original": "Quiero decorar unos XV años en un salón: un arco orgánico de globos de 3 metros de ancho en blanco y dorado, y dos columnas a los lados. Presupuesto hasta 1.500.000 pesos. Arma la propuesta.",
+          "polaridad": "obligatorio"
+        },
+        {
+          "valor": "blanco",
+          "procedencia": "explicito",
+          "texto_original": "Quiero decorar unos XV años en un salón: un arco orgánico de globos de 3 metros de ancho en blanco y dorado, y dos columnas a los lados. Presupuesto hasta 1.500.000 pesos. Arma la propuesta.",
+          "polaridad": "obligatorio"
+        }
+      ],
+      "tamanos": [],
+      "acabados": []
+    },
+    "referencia_omitida": []
+  },
+  "plan_hash": "61cc58b6baf8e84ee30f2f2ccdda455efa0f7cea34ce07d24a4607dc46e7f2ae",
+  "request_id": "d6e6ce8c-c5da-4d97-bb48-681a9b6f28b6",
+  "compras": [
+    {
+      "variant_id": "46594221080871",
+      "product_id": "8634235781415",
+      "sku": "B2B-20000435",
+      "sku_original": "B2B-20000435",
+      "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+      "source_variant_id": "gid://shopify/ProductVariant/46594221080871",
+      "inventory_quantity": 997036,
+      "unidades_inferidas": false,
+      "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 12",
+      "tamano_codigo": "R-5",
+      "diam_pulg": 5,
+      "color": "blanco",
+      "unidades_necesarias": 10,
+      "design_quantity": 10,
+      "waste_reserve": 0,
+      "required_quantity": 10,
+      "unidades_con_merma": 10,
+      "unidades_paquete": 12,
+      "paquetes": 1,
+      "purchase_quantity": 12,
+      "used": 10,
+      "leftover_inventory": 2,
+      "consumption_cost": 1522,
+      "purchase_cost": 1826,
+      "additional_package_for_waste": false,
+      "sobrante": 2,
+      "precio_paquete": 1826,
+      "subtotal": 1826,
+      "estructuras": [
+        "EST_02_COLUMNAS"
+      ],
+      "elementos_origen": [
+        {
+          "kind": "estructura",
+          "id": "EST_02_COLUMNAS"
+        }
+      ],
+      "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650"
+    },
+    {
+      "variant_id": "46594221113639",
+      "product_id": "8634235781415",
+      "sku": "B2B-20000436",
+      "sku_original": "B2B-20000436",
+      "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+      "source_variant_id": "gid://shopify/ProductVariant/46594221113639",
+      "inventory_quantity": 992590,
+      "unidades_inferidas": false,
+      "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 20",
+      "tamano_codigo": "R-5",
+      "diam_pulg": 5,
+      "color": "blanco",
+      "unidades_necesarias": 16,
+      "design_quantity": 16,
+      "waste_reserve": 0,
+      "required_quantity": 16,
+      "unidades_con_merma": 16,
+      "unidades_paquete": 20,
+      "paquetes": 1,
+      "purchase_quantity": 20,
+      "used": 16,
+      "leftover_inventory": 4,
+      "consumption_cost": 2207,
+      "purchase_cost": 2759,
+      "additional_package_for_waste": false,
+      "sobrante": 4,
+      "precio_paquete": 2759,
+      "subtotal": 2759,
+      "estructuras": [
+        "EST_01_ARCO"
+      ],
+      "elementos_origen": [
+        {
+          "kind": "estructura",
+          "id": "EST_01_ARCO"
+        }
+      ],
+      "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650"
+    },
+    {
+      "variant_id": "46594221179175",
+      "product_id": "8634235781415",
+      "sku": "B2B-20000573",
+      "sku_original": "B2B-20000573",
+      "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+      "source_variant_id": "gid://shopify/ProductVariant/46594221179175",
+      "inventory_quantity": 983497,
+      "unidades_inferidas": false,
+      "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-9 / PAQUETE X 12",
+      "tamano_codigo": "R-9",
+      "diam_pulg": 9,
+      "color": "blanco",
+      "unidades_necesarias": 8,
+      "design_quantity": 8,
+      "waste_reserve": 4,
+      "required_quantity": 12,
+      "unidades_con_merma": 12,
+      "unidades_paquete": 12,
+      "paquetes": 1,
+      "purchase_quantity": 12,
+      "used": 8,
+      "leftover_inventory": 0,
+      "consumption_cost": 2427,
+      "purchase_cost": 2427,
+      "additional_package_for_waste": false,
+      "sobrante": 4,
+      "precio_paquete": 2427,
+      "subtotal": 2427,
+      "estructuras": [
+        "EST_02_COLUMNAS"
+      ],
+      "elementos_origen": [
+        {
+          "kind": "estructura",
+          "id": "EST_02_COLUMNAS"
+        }
+      ],
+      "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650"
+    },
+    {
+      "variant_id": "46594221211943",
+      "product_id": "8634235781415",
+      "sku": "B2B-20000574",
+      "sku_original": "B2B-20000574",
+      "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+      "source_variant_id": "gid://shopify/ProductVariant/46594221211943",
+      "inventory_quantity": 998740,
+      "unidades_inferidas": false,
+      "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-9 / PAQUETE X 20",
+      "tamano_codigo": "R-9",
+      "diam_pulg": 9,
+      "color": "blanco",
+      "unidades_necesarias": 13,
+      "design_quantity": 13,
+      "waste_reserve": 7,
+      "required_quantity": 20,
+      "unidades_con_merma": 20,
+      "unidades_paquete": 20,
+      "paquetes": 1,
+      "purchase_quantity": 20,
+      "used": 13,
+      "leftover_inventory": 0,
+      "consumption_cost": 3638,
+      "purchase_cost": 3638,
+      "additional_package_for_waste": false,
+      "sobrante": 7,
+      "precio_paquete": 3638,
+      "subtotal": 3638,
+      "estructuras": [
+        "EST_01_ARCO"
+      ],
+      "elementos_origen": [
+        {
+          "kind": "estructura",
+          "id": "EST_01_ARCO"
+        }
+      ],
+      "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650"
+    },
+    {
+      "variant_id": "46594221277479",
+      "product_id": "8634235781415",
+      "sku": "B2B-20000721",
+      "sku_original": "B2B-20000721",
+      "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+      "source_variant_id": "gid://shopify/ProductVariant/46594221277479",
+      "inventory_quantity": 963065,
+      "unidades_inferidas": false,
+      "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 12",
+      "tamano_codigo": "R-12",
+      "diam_pulg": 12,
+      "color": "blanco",
+      "unidades_necesarias": 26,
+      "design_quantity": 26,
+      "waste_reserve": 6,
+      "required_quantity": 32,
+      "unidades_con_merma": 32,
+      "unidades_paquete": 12,
+      "paquetes": 3,
+      "purchase_quantity": 36,
+      "used": 26,
+      "leftover_inventory": 4,
+      "consumption_cost": 10568,
+      "purchase_cost": 11889,
+      "additional_package_for_waste": false,
+      "sobrante": 10,
+      "precio_paquete": 3963,
+      "subtotal": 11889,
+      "estructuras": [
+        "EST_02_COLUMNAS"
+      ],
+      "elementos_origen": [
+        {
+          "kind": "estructura",
+          "id": "EST_02_COLUMNAS"
+        }
+      ],
+      "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650"
+    },
+    {
+      "variant_id": "46594221310247",
+      "product_id": "8634235781415",
+      "sku": "B2B-20000722",
+      "sku_original": "B2B-20000722",
+      "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+      "source_variant_id": "gid://shopify/ProductVariant/46594221310247",
+      "inventory_quantity": 996371,
+      "unidades_inferidas": false,
+      "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 20",
+      "tamano_codigo": "R-12",
+      "diam_pulg": 12,
+      "color": "blanco",
+      "unidades_necesarias": 40,
+      "design_quantity": 40,
+      "waste_reserve": 0,
+      "required_quantity": 40,
+      "unidades_con_merma": 40,
+      "unidades_paquete": 20,
+      "paquetes": 2,
+      "purchase_quantity": 40,
+      "used": 40,
+      "leftover_inventory": 0,
+      "consumption_cost": 12058,
+      "purchase_cost": 12058,
+      "additional_package_for_waste": false,
+      "sobrante": 0,
+      "precio_paquete": 6029,
+      "subtotal": 12058,
+      "estructuras": [
+        "EST_01_ARCO"
+      ],
+      "elementos_origen": [
+        {
+          "kind": "estructura",
+          "id": "EST_01_ARCO"
+        }
+      ],
+      "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650"
+    },
+    {
+      "variant_id": "46594221474087",
+      "product_id": "8634235781415",
+      "sku": "B2B-20000902",
+      "sku_original": "B2B-20000902",
+      "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+      "source_variant_id": "gid://shopify/ProductVariant/46594221474087",
+      "inventory_quantity": 995957,
+      "unidades_inferidas": false,
+      "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-18 / PAQUETE X 6",
+      "tamano_codigo": "R-18",
+      "diam_pulg": 18,
+      "color": "blanco",
+      "unidades_necesarias": 9,
+      "design_quantity": 9,
+      "waste_reserve": 0,
+      "required_quantity": 9,
+      "unidades_con_merma": 9,
+      "unidades_paquete": 6,
+      "paquetes": 2,
+      "purchase_quantity": 12,
+      "used": 9,
+      "leftover_inventory": 3,
+      "consumption_cost": 10799,
+      "purchase_cost": 14398,
+      "additional_package_for_waste": false,
+      "sobrante": 3,
+      "precio_paquete": 7199,
+      "subtotal": 14398,
+      "estructuras": [
+        "EST_01_ARCO",
+        "EST_02_COLUMNAS"
+      ],
+      "elementos_origen": [
+        {
+          "kind": "estructura",
+          "id": "EST_01_ARCO"
+        },
+        {
+          "kind": "estructura",
+          "id": "EST_02_COLUMNAS"
+        }
+      ],
+      "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650"
+    },
+    {
+      "variant_id": "46594264596775",
+      "product_id": "8634255638823",
+      "sku": "B2B-20014242",
+      "sku_original": "B2B-20014242",
+      "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+      "source_variant_id": "gid://shopify/ProductVariant/46594264596775",
+      "inventory_quantity": 986112,
+      "unidades_inferidas": false,
+      "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-5 / PAQUETE X 20",
+      "tamano_codigo": "R-5",
+      "diam_pulg": 5,
+      "color": "dorado",
+      "unidades_necesarias": 16,
+      "design_quantity": 16,
+      "waste_reserve": 0,
+      "required_quantity": 16,
+      "unidades_con_merma": 16,
+      "unidades_paquete": 20,
+      "paquetes": 1,
+      "purchase_quantity": 20,
+      "used": 16,
+      "leftover_inventory": 4,
+      "consumption_cost": 4811,
+      "purchase_cost": 6014,
+      "additional_package_for_waste": false,
+      "sobrante": 4,
+      "precio_paquete": 6014,
+      "subtotal": 6014,
+      "estructuras": [
+        "EST_01_ARCO",
+        "EST_02_COLUMNAS"
+      ],
+      "elementos_origen": [
+        {
+          "kind": "estructura",
+          "id": "EST_01_ARCO"
+        },
+        {
+          "kind": "estructura",
+          "id": "EST_02_COLUMNAS"
+        }
+      ],
+      "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702"
+    },
+    {
+      "variant_id": "46594264662311",
+      "product_id": "8634255638823",
+      "sku": "B2B-20014155",
+      "sku_original": "B2B-20014155",
+      "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+      "source_variant_id": "gid://shopify/ProductVariant/46594264662311",
+      "inventory_quantity": 979572,
+      "unidades_inferidas": false,
+      "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 12",
+      "tamano_codigo": "R-12",
+      "diam_pulg": 12,
+      "color": "dorado",
+      "unidades_necesarias": 43,
+      "design_quantity": 43,
+      "waste_reserve": 0,
+      "required_quantity": 43,
+      "unidades_con_merma": 43,
+      "unidades_paquete": 12,
+      "paquetes": 4,
+      "purchase_quantity": 48,
+      "used": 43,
+      "leftover_inventory": 5,
+      "consumption_cost": 31648,
+      "purchase_cost": 35328,
+      "additional_package_for_waste": false,
+      "sobrante": 5,
+      "precio_paquete": 8832,
+      "subtotal": 35328,
+      "estructuras": [
+        "EST_01_ARCO",
+        "EST_02_COLUMNAS"
+      ],
+      "elementos_origen": [
+        {
+          "kind": "estructura",
+          "id": "EST_01_ARCO"
+        },
+        {
+          "kind": "estructura",
+          "id": "EST_02_COLUMNAS"
+        }
+      ],
+      "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702"
+    },
+    {
+      "variant_id": "46594264727847",
+      "product_id": "8634255638823",
+      "sku": "B2B-20015523",
+      "sku_original": "B2B-20015523",
+      "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+      "source_variant_id": "gid://shopify/ProductVariant/46594264727847",
+      "inventory_quantity": 995905,
+      "unidades_inferidas": false,
+      "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-18 / PAQUETE X 6",
+      "tamano_codigo": "R-18",
+      "diam_pulg": 18,
+      "color": "dorado",
+      "unidades_necesarias": 5,
+      "design_quantity": 5,
+      "waste_reserve": 0,
+      "required_quantity": 5,
+      "unidades_con_merma": 5,
+      "unidades_paquete": 6,
+      "paquetes": 1,
+      "purchase_quantity": 6,
+      "used": 5,
+      "leftover_inventory": 1,
+      "consumption_cost": 14753,
+      "purchase_cost": 17704,
+      "additional_package_for_waste": false,
+      "sobrante": 1,
+      "precio_paquete": 17704,
+      "subtotal": 17704,
+      "estructuras": [
+        "EST_01_ARCO",
+        "EST_02_COLUMNAS"
+      ],
+      "elementos_origen": [
+        {
+          "kind": "estructura",
+          "id": "EST_01_ARCO"
+        },
+        {
+          "kind": "estructura",
+          "id": "EST_02_COLUMNAS"
+        }
+      ],
+      "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702"
+    },
+    {
+      "variant_id": "46594264858919",
+      "product_id": "8634255638823",
+      "sku": "B2B-20017754",
+      "sku_original": "B2B-20017754",
+      "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+      "source_variant_id": "gid://shopify/ProductVariant/46594264858919",
+      "inventory_quantity": 992883,
+      "unidades_inferidas": false,
+      "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-9 / PAQUETE X 20",
+      "tamano_codigo": "R-9",
+      "diam_pulg": 9,
+      "color": "dorado",
+      "unidades_necesarias": 15,
+      "design_quantity": 15,
+      "waste_reserve": 0,
+      "required_quantity": 15,
+      "unidades_con_merma": 15,
+      "unidades_paquete": 20,
+      "paquetes": 1,
+      "purchase_quantity": 20,
+      "used": 15,
+      "leftover_inventory": 5,
+      "consumption_cost": 6624,
+      "purchase_cost": 8832,
+      "additional_package_for_waste": false,
+      "sobrante": 5,
+      "precio_paquete": 8832,
+      "subtotal": 8832,
+      "estructuras": [
+        "EST_01_ARCO",
+        "EST_02_COLUMNAS"
+      ],
+      "elementos_origen": [
+        {
+          "kind": "estructura",
+          "id": "EST_01_ARCO"
+        },
+        {
+          "kind": "estructura",
+          "id": "EST_02_COLUMNAS"
+        }
+      ],
+      "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702"
+    }
+  ],
+  "totales": {
+    "globos_por_tamano": {
+      "R-5": 42,
+      "R-9": 36,
+      "R-12": 109,
+      "R-18": 14
+    },
+    "total_unidades": 201,
+    "total_cop": 116873,
+    "design_quantity": 201,
+    "target_waste_reserve": 17,
+    "covered_waste_reserve": 17,
+    "uncovered_waste_reserve": 0,
+    "natural_package_surplus": 45,
+    "purchase_cost": 116873,
+    "consumption_cost": 101055,
+    "waste_only_savings_cop": 6029,
+    "additional_waste_packages": 0,
+    "ahorro_paquetes_cop": 73484,
+    "incluye_iva": true,
+    "merma_porcentaje": 8
+  },
+  "comercial": {
+    "estado": "VERIFICADO",
+    "techo_cop": 1500000,
+    "delta_cop": 0,
+    "procedencia": "explicito"
+  },
+  "alternativas": [],
+  "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42.",
+  "sustituciones": [
+    {
+      "estructura_id": "EST_01_ARCO",
+      "pedido": "R-24",
+      "entregado": "R-18",
+      "motivo": "La whitelist no tiene R-24; se usó el diámetro más cercano disponible para blanco."
+    },
+    {
+      "estructura_id": "EST_01_ARCO",
+      "pedido": "R-24",
+      "entregado": "R-18",
+      "motivo": "La whitelist no tiene R-24; se usó el diámetro más cercano disponible para dorado."
+    },
+    {
+      "estructura_id": "EST_02_COLUMNAS",
+      "pedido": "R-24",
+      "entregado": "R-18",
+      "motivo": "La whitelist no tiene R-24; se usó el diámetro más cercano disponible para blanco."
+    }
+  ],
+  "sin_cobertura": [],
+  "advertencias": [
+    "sobrante_alto:46594221179175",
+    "sobrante_alto:46594221211943"
+  ],
+  "estructuras": [
+    {
+      "estructura_id": "EST_01_ARCO",
+      "nombre": "Arco Orgánico Principal",
+      "tipo": "arco",
+      "ubicacion": "arco_central",
+      "repeticiones": 1,
+      "eje_m": 6.38,
+      "total_unidades": 123,
+      "lineas": [
+        {
+          "estructura_id": "EST_01_ARCO",
+          "origen": {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          },
+          "product_id": "8634235781415",
+          "variant_id": "46594221113639",
+          "sku": "B2B-20000436",
+          "sku_original": "B2B-20000436",
+          "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+          "source_variant_id": "gid://shopify/ProductVariant/46594221113639",
+          "inventory_quantity": 992590,
+          "unidades_inferidas": false,
+          "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 20",
+          "color": "blanco",
+          "tamano_codigo": "R-5",
+          "diam_pulg": 5,
+          "diam_cm": 12.7,
+          "forma": "redondo",
+          "acabado": "fashion",
+          "unidades": 16,
+          "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650",
+          "sustitucion": null
+        },
+        {
+          "estructura_id": "EST_01_ARCO",
+          "origen": {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          },
+          "product_id": "8634255638823",
+          "variant_id": "46594264596775",
+          "sku": "B2B-20014242",
+          "sku_original": "B2B-20014242",
+          "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+          "source_variant_id": "gid://shopify/ProductVariant/46594264596775",
+          "inventory_quantity": 986112,
+          "unidades_inferidas": false,
+          "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-5 / PAQUETE X 20",
+          "color": "dorado",
+          "tamano_codigo": "R-5",
+          "diam_pulg": 5,
+          "diam_cm": 12.7,
+          "forma": "redondo",
+          "acabado": "reflex",
+          "unidades": 10,
+          "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702",
+          "sustitucion": null
+        },
+        {
+          "estructura_id": "EST_01_ARCO",
+          "origen": {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          },
+          "product_id": "8634235781415",
+          "variant_id": "46594221211943",
+          "sku": "B2B-20000574",
+          "sku_original": "B2B-20000574",
+          "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+          "source_variant_id": "gid://shopify/ProductVariant/46594221211943",
+          "inventory_quantity": 998740,
+          "unidades_inferidas": false,
+          "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-9 / PAQUETE X 20",
+          "color": "blanco",
+          "tamano_codigo": "R-9",
+          "diam_pulg": 9,
+          "diam_cm": 22.9,
+          "forma": "redondo",
+          "acabado": "fashion",
+          "unidades": 13,
+          "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650",
+          "sustitucion": null
+        },
+        {
+          "estructura_id": "EST_01_ARCO",
+          "origen": {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          },
+          "product_id": "8634255638823",
+          "variant_id": "46594264858919",
+          "sku": "B2B-20017754",
+          "sku_original": "B2B-20017754",
+          "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+          "source_variant_id": "gid://shopify/ProductVariant/46594264858919",
+          "inventory_quantity": 992883,
+          "unidades_inferidas": false,
+          "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-9 / PAQUETE X 20",
+          "color": "dorado",
+          "tamano_codigo": "R-9",
+          "diam_pulg": 9,
+          "diam_cm": 22.9,
+          "forma": "redondo",
+          "acabado": "reflex",
+          "unidades": 9,
+          "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702",
+          "sustitucion": null
+        },
+        {
+          "estructura_id": "EST_01_ARCO",
+          "origen": {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          },
+          "product_id": "8634235781415",
+          "variant_id": "46594221310247",
+          "sku": "B2B-20000722",
+          "sku_original": "B2B-20000722",
+          "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+          "source_variant_id": "gid://shopify/ProductVariant/46594221310247",
+          "inventory_quantity": 996371,
+          "unidades_inferidas": false,
+          "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 20",
+          "color": "blanco",
+          "tamano_codigo": "R-12",
+          "diam_pulg": 12,
+          "diam_cm": 30.5,
+          "forma": "redondo",
+          "acabado": "fashion",
+          "unidades": 40,
+          "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650",
+          "sustitucion": null
+        },
+        {
+          "estructura_id": "EST_01_ARCO",
+          "origen": {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          },
+          "product_id": "8634255638823",
+          "variant_id": "46594264662311",
+          "sku": "B2B-20014155",
+          "sku_original": "B2B-20014155",
+          "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+          "source_variant_id": "gid://shopify/ProductVariant/46594264662311",
+          "inventory_quantity": 979572,
+          "unidades_inferidas": false,
+          "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 12",
+          "color": "dorado",
+          "tamano_codigo": "R-12",
+          "diam_pulg": 12,
+          "diam_cm": 30.5,
+          "forma": "redondo",
+          "acabado": "reflex",
+          "unidades": 27,
+          "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702",
+          "sustitucion": null
+        },
+        {
+          "estructura_id": "EST_01_ARCO",
+          "origen": {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          },
+          "product_id": "8634235781415",
+          "variant_id": "46594221474087",
+          "sku": "B2B-20000902",
+          "sku_original": "B2B-20000902",
+          "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+          "source_variant_id": "gid://shopify/ProductVariant/46594221474087",
+          "inventory_quantity": 995957,
+          "unidades_inferidas": false,
+          "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-18 / PAQUETE X 6",
+          "color": "blanco",
+          "tamano_codigo": "R-18",
+          "diam_pulg": 18,
+          "diam_cm": 45.7,
+          "forma": "redondo",
+          "acabado": "fashion",
+          "unidades": 4,
+          "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650",
+          "sustitucion": null
+        },
+        {
+          "estructura_id": "EST_01_ARCO",
+          "origen": {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          },
+          "product_id": "8634255638823",
+          "variant_id": "46594264727847",
+          "sku": "B2B-20015523",
+          "sku_original": "B2B-20015523",
+          "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+          "source_variant_id": "gid://shopify/ProductVariant/46594264727847",
+          "inventory_quantity": 995905,
+          "unidades_inferidas": false,
+          "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-18 / PAQUETE X 6",
+          "color": "dorado",
+          "tamano_codigo": "R-18",
+          "diam_pulg": 18,
+          "diam_cm": 45.7,
+          "forma": "redondo",
+          "acabado": "reflex",
+          "unidades": 2,
+          "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702",
+          "sustitucion": null
+        },
+        {
+          "estructura_id": "EST_01_ARCO",
+          "origen": {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          },
+          "product_id": "8634235781415",
+          "variant_id": "46594221474087",
+          "sku": "B2B-20000902",
+          "sku_original": "B2B-20000902",
+          "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+          "source_variant_id": "gid://shopify/ProductVariant/46594221474087",
+          "inventory_quantity": 995957,
+          "unidades_inferidas": false,
+          "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-18 / PAQUETE X 6",
+          "color": "blanco",
+          "tamano_codigo": "R-18",
+          "diam_pulg": 18,
+          "diam_cm": 45.7,
+          "forma": "redondo",
+          "acabado": "fashion",
+          "unidades": 1,
+          "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650",
+          "sustitucion": {
+            "pedido": "R-24",
+            "entregado": "R-18",
+            "motivo": "La whitelist no tiene R-24; se usó el diámetro más cercano disponible para blanco."
+          }
+        },
+        {
+          "estructura_id": "EST_01_ARCO",
+          "origen": {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          },
+          "product_id": "8634255638823",
+          "variant_id": "46594264727847",
+          "sku": "B2B-20015523",
+          "sku_original": "B2B-20015523",
+          "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+          "source_variant_id": "gid://shopify/ProductVariant/46594264727847",
+          "inventory_quantity": 995905,
+          "unidades_inferidas": false,
+          "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-18 / PAQUETE X 6",
+          "color": "dorado",
+          "tamano_codigo": "R-18",
+          "diam_pulg": 18,
+          "diam_cm": 45.7,
+          "forma": "redondo",
+          "acabado": "reflex",
+          "unidades": 1,
+          "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702",
+          "sustitucion": {
+            "pedido": "R-24",
+            "entregado": "R-18",
+            "motivo": "La whitelist no tiene R-24; se usó el diámetro más cercano disponible para dorado."
+          }
+        }
+      ],
+      "mezcla_real": [
+        {
+          "diam_pulg": 12,
+          "forma": "redondo",
+          "unidades": 67,
+          "pct": 54.47
+        },
+        {
+          "diam_pulg": 5,
+          "forma": "redondo",
+          "unidades": 26,
+          "pct": 21.14
+        },
+        {
+          "diam_pulg": 9,
+          "forma": "redondo",
+          "unidades": 22,
+          "pct": 17.89
+        },
+        {
+          "diam_pulg": 18,
+          "forma": "redondo",
+          "unidades": 8,
+          "pct": 6.5
+        }
+      ],
+      "supuestos": []
+    },
+    {
+      "estructura_id": "EST_02_COLUMNAS",
+      "nombre": "Columnas Laterales Coordinadas",
+      "tipo": "columna",
+      "ubicacion": "lateral_izquierdo",
+      "repeticiones": 2,
+      "eje_m": 2,
+      "total_unidades": 78,
+      "lineas": [
+        {
+          "estructura_id": "EST_02_COLUMNAS",
+          "origen": {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNAS"
+          },
+          "product_id": "8634235781415",
+          "variant_id": "46594221080871",
+          "sku": "B2B-20000435",
+          "sku_original": "B2B-20000435",
+          "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+          "source_variant_id": "gid://shopify/ProductVariant/46594221080871",
+          "inventory_quantity": 997036,
+          "unidades_inferidas": false,
+          "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 12",
+          "color": "blanco",
+          "tamano_codigo": "R-5",
+          "diam_pulg": 5,
+          "diam_cm": 12.7,
+          "forma": "redondo",
+          "acabado": "fashion",
+          "unidades": 10,
+          "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650",
+          "sustitucion": null
+        },
+        {
+          "estructura_id": "EST_02_COLUMNAS",
+          "origen": {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNAS"
+          },
+          "product_id": "8634255638823",
+          "variant_id": "46594264596775",
+          "sku": "B2B-20014242",
+          "sku_original": "B2B-20014242",
+          "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+          "source_variant_id": "gid://shopify/ProductVariant/46594264596775",
+          "inventory_quantity": 986112,
+          "unidades_inferidas": false,
+          "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-5 / PAQUETE X 20",
+          "color": "dorado",
+          "tamano_codigo": "R-5",
+          "diam_pulg": 5,
+          "diam_cm": 12.7,
+          "forma": "redondo",
+          "acabado": "reflex",
+          "unidades": 6,
+          "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702",
+          "sustitucion": null
+        },
+        {
+          "estructura_id": "EST_02_COLUMNAS",
+          "origen": {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNAS"
+          },
+          "product_id": "8634235781415",
+          "variant_id": "46594221179175",
+          "sku": "B2B-20000573",
+          "sku_original": "B2B-20000573",
+          "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+          "source_variant_id": "gid://shopify/ProductVariant/46594221179175",
+          "inventory_quantity": 983497,
+          "unidades_inferidas": false,
+          "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-9 / PAQUETE X 12",
+          "color": "blanco",
+          "tamano_codigo": "R-9",
+          "diam_pulg": 9,
+          "diam_cm": 22.9,
+          "forma": "redondo",
+          "acabado": "fashion",
+          "unidades": 8,
+          "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650",
+          "sustitucion": null
+        },
+        {
+          "estructura_id": "EST_02_COLUMNAS",
+          "origen": {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNAS"
+          },
+          "product_id": "8634255638823",
+          "variant_id": "46594264858919",
+          "sku": "B2B-20017754",
+          "sku_original": "B2B-20017754",
+          "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+          "source_variant_id": "gid://shopify/ProductVariant/46594264858919",
+          "inventory_quantity": 992883,
+          "unidades_inferidas": false,
+          "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-9 / PAQUETE X 20",
+          "color": "dorado",
+          "tamano_codigo": "R-9",
+          "diam_pulg": 9,
+          "diam_cm": 22.9,
+          "forma": "redondo",
+          "acabado": "reflex",
+          "unidades": 6,
+          "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702",
+          "sustitucion": null
+        },
+        {
+          "estructura_id": "EST_02_COLUMNAS",
+          "origen": {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNAS"
+          },
+          "product_id": "8634235781415",
+          "variant_id": "46594221277479",
+          "sku": "B2B-20000721",
+          "sku_original": "B2B-20000721",
+          "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+          "source_variant_id": "gid://shopify/ProductVariant/46594221277479",
+          "inventory_quantity": 963065,
+          "unidades_inferidas": false,
+          "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 12",
+          "color": "blanco",
+          "tamano_codigo": "R-12",
+          "diam_pulg": 12,
+          "diam_cm": 30.5,
+          "forma": "redondo",
+          "acabado": "fashion",
+          "unidades": 26,
+          "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650",
+          "sustitucion": null
+        },
+        {
+          "estructura_id": "EST_02_COLUMNAS",
+          "origen": {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNAS"
+          },
+          "product_id": "8634255638823",
+          "variant_id": "46594264662311",
+          "sku": "B2B-20014155",
+          "sku_original": "B2B-20014155",
+          "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+          "source_variant_id": "gid://shopify/ProductVariant/46594264662311",
+          "inventory_quantity": 979572,
+          "unidades_inferidas": false,
+          "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 12",
+          "color": "dorado",
+          "tamano_codigo": "R-12",
+          "diam_pulg": 12,
+          "diam_cm": 30.5,
+          "forma": "redondo",
+          "acabado": "reflex",
+          "unidades": 16,
+          "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702",
+          "sustitucion": null
+        },
+        {
+          "estructura_id": "EST_02_COLUMNAS",
+          "origen": {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNAS"
+          },
+          "product_id": "8634235781415",
+          "variant_id": "46594221474087",
+          "sku": "B2B-20000902",
+          "sku_original": "B2B-20000902",
+          "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+          "source_variant_id": "gid://shopify/ProductVariant/46594221474087",
+          "inventory_quantity": 995957,
+          "unidades_inferidas": false,
+          "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-18 / PAQUETE X 6",
+          "color": "blanco",
+          "tamano_codigo": "R-18",
+          "diam_pulg": 18,
+          "diam_cm": 45.7,
+          "forma": "redondo",
+          "acabado": "fashion",
+          "unidades": 2,
+          "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650",
+          "sustitucion": null
+        },
+        {
+          "estructura_id": "EST_02_COLUMNAS",
+          "origen": {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNAS"
+          },
+          "product_id": "8634255638823",
+          "variant_id": "46594264727847",
+          "sku": "B2B-20015523",
+          "sku_original": "B2B-20015523",
+          "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+          "source_variant_id": "gid://shopify/ProductVariant/46594264727847",
+          "inventory_quantity": 995905,
+          "unidades_inferidas": false,
+          "titulo": "B2b Globo Latex Redondo Reflex Dorado — R-18 / PAQUETE X 6",
+          "color": "dorado",
+          "tamano_codigo": "R-18",
+          "diam_pulg": 18,
+          "diam_cm": 45.7,
+          "forma": "redondo",
+          "acabado": "reflex",
+          "unidades": 2,
+          "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Dorado_-_Gold_970.jpg?v=1763581702",
+          "sustitucion": null
+        },
+        {
+          "estructura_id": "EST_02_COLUMNAS",
+          "origen": {
+            "kind": "estructura",
+            "id": "EST_02_COLUMNAS"
+          },
+          "product_id": "8634235781415",
+          "variant_id": "46594221474087",
+          "sku": "B2B-20000902",
+          "sku_original": "B2B-20000902",
+          "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+          "source_variant_id": "gid://shopify/ProductVariant/46594221474087",
+          "inventory_quantity": 995957,
+          "unidades_inferidas": false,
+          "titulo": "B2b Globo Latex Redondo Fashion Blanco — R-18 / PAQUETE X 6",
+          "color": "blanco",
+          "tamano_codigo": "R-18",
+          "diam_pulg": 18,
+          "diam_cm": 45.7,
+          "forma": "redondo",
+          "acabado": "fashion",
+          "unidades": 2,
+          "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Blanco_-_White_005.jpg?v=1762965650",
+          "sustitucion": {
+            "pedido": "R-24",
+            "entregado": "R-18",
+            "motivo": "La whitelist no tiene R-24; se usó el diámetro más cercano disponible para blanco."
+          }
+        }
+      ],
+      "mezcla_real": [
+        {
+          "diam_pulg": 12,
+          "forma": "redondo",
+          "unidades": 42,
+          "pct": 53.85
+        },
+        {
+          "diam_pulg": 5,
+          "forma": "redondo",
+          "unidades": 16,
+          "pct": 20.51
+        },
+        {
+          "diam_pulg": 9,
+          "forma": "redondo",
+          "unidades": 14,
+          "pct": 17.95
+        },
+        {
+          "diam_pulg": 18,
+          "forma": "redondo",
+          "unidades": 6,
+          "pct": 7.69
+        }
+      ],
+      "supuestos": []
+    }
+  ],
+  "event_label": "XV años",
+  "original_request": "Quiero decorar unos XV años en un salón: un arco orgánico de globos de 3 metros de ancho en blanco y dorado, y dos columnas a los lados. Presupuesto hasta 1.500.000 pesos. Arma la propuesta.",
+  "event_match_levels": [
+    "thematic",
+    "adaptable"
+  ],
+  "event_relaxations": [
+    "evento sin señal verificable en título, descripción o tags"
+  ],
+  "approval_token": "fixture-sin-firma-no-aprobable"
+}

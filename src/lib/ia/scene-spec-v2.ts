@@ -1,6 +1,6 @@
 /**
  * SceneSpec V2 — especificación de imagen para escenas V2 (Tarea 07.1 —
- * `PLAN_ARQUITECTURA_ESCENA_COMPLETA_RAG.md`, sección 10).
+ * `docs/migracion-python/PLAN-MAESTRO-V2.md`, sección 10).
  *
  * A diferencia del SceneSpec V1 que colapsa categorías a `balloon_structure`,
  * el V2 preserva:

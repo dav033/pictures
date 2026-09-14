@@ -11,6 +11,7 @@ import {
   guardarElemento,
   obtenerArquitectura,
 } from "@/lib/arquitectura";
+import { isAuthenticatedRequest, isSameOriginRequest } from "@/lib/auth/request";
 
 const NivelSchema = z.enum(["component", "module", "composition"]);
 const PresupuestoSchema = z.enum(["low", "mid", "high"]);
@@ -37,6 +38,8 @@ const ActionSchema = z.discriminatedUnion("action", [
 ]);
 
 export async function GET(request: Request) {
+  if (!isAuthenticatedRequest(request)) return Response.json({ error: "Sesión requerida." }, { status: 401 });
+
   const url = new URL(request.url);
   if (url.searchParams.get("view") === "shopify") {
     const texto = url.searchParams.get("q") ?? "";
@@ -46,6 +49,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (!isAuthenticatedRequest(request)) return Response.json({ error: "Sesión requerida." }, { status: 401 });
+  if (!isSameOriginRequest(request)) return Response.json({ error: "Origen no permitido." }, { status: 403 });
+
   try {
     const input = ActionSchema.parse(await request.json());
     switch (input.action) {

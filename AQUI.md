@@ -2,6 +2,14 @@
 
 Estado: cerrada localmente.
 
+> **Alcance de este documento.** Describe el resolutor **TypeScript**. El
+> resolutor Python (`POST /internal/v1/plan/resolve`, `services/ai-api/app/plan.py`)
+> resuelve **solo Plan 1.0**: Plan 1.1 queda diferido hasta que sus consumidores
+> y su ruta de rollback estén listos. La autoridad vigente sobre el corte es el
+> [ADR 0005](docs/architecture/decisions/0005-python-authority-cutover.md) y,
+> sobre la procedencia comercial del plan entre chat, edición y generación, el
+> [ADR 0006](docs/architecture/decisions/0006-procedencia-firmada-del-plan.md).
+
 ## Entregado
 
 - `resolverPlan` acepta Plan 1.0 y Plan 1.1.
