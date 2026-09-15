@@ -10,14 +10,14 @@ import { nivelCreatividadParaGenerar, perfilCreatividad } from "@/lib/ia/creativ
 import { compileProductPrompt, LORA_PRODUCT_RUNTIME_VERSION, sizeConfirmationsFromMaterialLines } from "@/lib/ia/lora-product-runtime";
 import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
 import { findLoraPromptLanguageLeaks, preflightLoraPrompt } from "@/lib/ia/lora-prompt-preflight";
-import { bloqueMezclaTamanos, bloqueMezclaPorEstructura, descripcionFisicaTamano } from "@/lib/ia/tamano-fisico";
+import { bloqueMezclaTamanos, bloqueMezclaPorEstructura, descripcionFisicaTamano, porcentajesMayorResto } from "@/lib/ia/tamano-fisico";
 import { cotizarProductos, type Cotizacion } from "@/lib/cotizacion/motor";
 import { featureEnabled, IMAGE_DEBUG, IMAGE_QA_NON_BLOCKING } from "@/lib/ia/feature-flags";
 import { resolveAspectTransform } from "@/lib/ia/aspect-transform";
 import { evaluateSceneQa, buildCorrectiveRetryPrompt, type ImageQaReport } from "@/lib/ia/image-qa";
 import { approvedPlanQaInputs, buildGenerationQa } from "@/lib/ia/generation-qa";
 import { imagenDe, resolverProveedor } from "@/lib/ia/registro";
-import { buildApprovedSceneSpec, SceneSpecSchema, sceneSpecHash } from "@/lib/ia/scene-spec";
+import { buildApprovedSceneSpec, joinWithinLimit, SceneSpecSchema, sceneSpecHash } from "@/lib/ia/scene-spec";
 import { registrarPlanAudit } from "@/lib/rag/observability/log";
 import { DEFAULT_SEMPERTEX_LORA_TRIGGER, ensureLoraTriggers, generarConSempertexLora, loraEditApagado } from "@/lib/ia/sempertex-lora";
 import { LoraModeSlugSchema, LoraSelectionSchema } from "@/lib/lora/schema";
@@ -512,6 +512,15 @@ function catalogBlueprint(productos: Producto[], materialEstimate?: DesignMateri
   return addCreativeCatalogRelationships(blueprint, productos);
 }
 
+function plegarColor(color: string): string {
+  return color.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
+}
+
+/** Orden por punto de código: un desempate no puede depender del locale del servidor. */
+function comparar(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 export function planBlueprint(plan: PlanResuelto): ReferenceBlueprintV2 {
   const cajas = cajasDeEstructuras(plan.plan.estructuras);
   const focal = plan.plan.estructuras.find((estructura) => estructura.rol_escena === "focal")?.estructura_id;
@@ -535,6 +544,33 @@ export function planBlueprint(plan: PlanResuelto): ReferenceBlueprintV2 {
       });
     }
     const materiales = [...materialPorVariante.values()];
+    // Mezcla de color de la estructura para el prompt de imagen: se agrega por
+    // color plegado Y producto (dos productos distintos del mismo color siguen
+    // separados), nunca por variante. Una variante es un TAMAÑO, así que el
+    // reparto por variante partía un mismo color en trozos y ninguno parecía
+    // dominante; el `bill_of_materials` sigue siendo por variante porque de él
+    // salen las cantidades compradas.
+    const mezclaPorColor = new Map<string, { color: string; productId: string; unidades: number; rol: string }>();
+    for (const linea of resuelta.lineas) {
+      if (!linea.color) continue;
+      const clave = `${plegarColor(linea.color)} ${linea.product_id}`;
+      const previo = mezclaPorColor.get(clave);
+      mezclaPorColor.set(clave, {
+        color: previo?.color ?? linea.color,
+        productId: linea.product_id,
+        unidades: (previo?.unidades ?? 0) + linea.unidades,
+        rol: previo?.rol ?? declarada.materiales.find((material) => material.product_id === linea.product_id)?.rol_material ?? "principal",
+      });
+    }
+    // Dominancia primero; los empates se rompen por color plegado y luego por
+    // producto (comparación por punto de código, no por locale) para que el
+    // orden no dependa del idioma del servidor.
+    const mezclaOrdenada = [...mezclaPorColor.values()].sort((a, b) =>
+      b.unidades - a.unidades
+      || comparar(plegarColor(a.color), plegarColor(b.color))
+      || comparar(a.productId, b.productId));
+    const coloresPorDominancia = [...new Set(mezclaOrdenada.map((material) => material.color))].slice(0, 8);
+    const porcentajesColor = porcentajesMayorResto(mezclaOrdenada.map((material) => material.unidades));
     const medidas = [declarada.medidas.ancho_m, declarada.medidas.alto_m, declarada.medidas.largo_m].filter((value): value is number => value != null).map((value) => `${value} m`).join(" × ");
     const nombreBase = medidas ? `${declarada.nombre} (${medidas})` : declarada.nombre;
     const dimensiones = {
@@ -569,12 +605,15 @@ export function planBlueprint(plan: PlanResuelto): ReferenceBlueprintV2 {
       source_type: "catalog_backed" as const,
       quantity: { mode: "exact" as const, min: instanceUnits, max: instanceUnits },
       appearance: {
-        observed_colors: [...new Set(resuelta.lineas.map((linea) => linea.color).filter((color): color is string => Boolean(color)))].slice(0, 8),
-        resolved_colors: [...new Set(resuelta.lineas.map((linea) => linea.color).filter((color): color is string => Boolean(color)))].slice(0, 8),
+        observed_colors: coloresPorDominancia,
+        resolved_colors: coloresPorDominancia,
         color_policy: "match_reference" as const,
         material: "Materiales reales del catálogo resueltos por variante.",
         shape: nombre.slice(0, 160),
-        composition: materiales.map((material) => `${Math.round(material.share * 100)}% ${material.role} (${material.color ?? "color de catálogo"})`).join("; ").slice(0, 240) || "pieza de catálogo",
+        // Fragmentos completos dentro de los 180 caracteres que admite cada
+        // identity_constraint (scene-spec.ts): el corte crudo a 240 partía el
+        // último material justo donde importaba.
+        composition: joinWithinLimit(mezclaOrdenada.map((material, indice) => `${porcentajesColor[indice]}% ${material.rol} (${material.color})`), 180) || "pieza de catálogo",
       },
       visual_semantics: {
         structure_type: declarada.tipo,

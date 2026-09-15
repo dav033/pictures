@@ -44,11 +44,12 @@ export function descripcionFisicaTamano(diamPulg: number | null | undefined, for
 export type LineaMezclaTamanos = { diamPulg: number; forma: string | null; cantidad: number };
 
 /**
- * Porcentajes enteros que suman exactamente 100 (mayor resto). Redondear cada
- * fila por separado daba 99 % o 101 % junto a la frase "EXACTLY these
- * proportions" (ej. 64/25/21/6/3 de 119 globos daba 101 %).
+ * Porcentajes enteros que suman exactamente 100 (mayor resto). Único dueño del
+ * redondeo de las proporciones que se le muestran al modelo de imagen:
+ * redondear cada fila por separado daba 99 % o 101 % junto a la frase "EXACTLY
+ * these proportions" (ej. 64/25/21/6/3 de 119 globos daba 101 %).
  */
-function porcentajesMayorResto(unidades: number[]): number[] {
+export function porcentajesMayorResto(unidades: number[]): number[] {
   const total = unidades.reduce((suma, valor) => suma + valor, 0);
   if (total <= 0) return unidades.map(() => 0);
   const exactos = unidades.map((valor) => (valor / total) * 100);
