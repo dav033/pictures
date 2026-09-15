@@ -6,10 +6,10 @@ Estado global: EN_CURSO
 |---|---|---|
 | T0 | COMPLETADA | Árbol limpio en `2026-09-14` (HEAD `8590d90`); rama creada; `.gitignore` e inventario revisados (abajo) |
 | T1 | COMPLETADA | Parte 3: lista explícita de cajas por defecto (`ejemplo-10/REF_01_E03`, retiro "A7 fusionado") y vectores `box_2d` (fuera de rango, invertidos, área mínima, inválida→caja por defecto F10) en `ia:test-analisis-ejemplos`; `plan:test` exit 0 (182). A0.2 tarea 5 (laboratorio F18) queda en `REVISION` por requerir confirmación de uso. Parte 1: las 8 pruebas de A0.2 pasan en la base (exit 0 cada una, sin `process.env`/`fetch`) y se agregaron a `plan:test`; `npm run plan:test` exit 0 (178 casos). Parte 2 hecha: fixture `eval/fixtures/exif/orientacion-6.jpg` + 2 casos en `ia:test-referencias-ruta` (caracterización: el servidor no normaliza; la UI sí). Falta: lista explícita de cajas por defecto |
-| T2 | PENDIENTE | |
-| T3 | PENDIENTE | Depende de T2 |
-| T4 | PENDIENTE | Depende de T3 |
-| T5 | PENDIENTE | Depende de T4 |
+| T2 | OMITIDA | Protocolo (sección "Convivencia con el loop recolector", cambio local del usuario detectado 2026-09-15): la hace el loop recolector en `demo-decoracion-recolector` / `datos/recolector-estructuras`; la fase A no escribe en `DATA_ROOT` |
+| T3 | OMITIDA | Ídem (recolector) |
+| T4 | OMITIDA | Ídem (recolector) |
+| T5 | BLOQUEADA | Esperando imágenes aceptadas del recolector: `DATA_ROOT\manifests\snapshots\aceptadas-latest.json` no existe (verificado 2026-09-15) |
 | T6 | PENDIENTE | |
 | T7 | PENDIENTE | |
 | T8 | PENDIENTE | Depende de T5, T6, T7 |
@@ -38,6 +38,7 @@ Candidatas por clase (licencia verificada): 0 · descargas usadas: 0 / 800 · cu
 Gemini estimado acumulado: US$0 · reportado: US$0 · tope: US$15
 
 ## Bitácora (más reciente arriba)
+- 2026-09-15 Protocolo actualizado por el usuario (sin commit en `prompts/fase-a-loop.md`; no lo commitea este loop): T2–T4 pasan al recolector, T5 bloqueada hasta que exista la instantánea `aceptadas-latest.json`; `show-toplevel` y rama verificados · siguiente: T6 (A0.1 instrumentación).
 - 2026-09-15 T1 (parte 3, cierre) · 1 caja por defecto en el análisis fijo (73 cajas revisadas), lista de excepciones exacta; 6 vectores `box_2d` vía `analizarReferenciasV2` con puerto simulado · verificación: `npm run ia:test-analisis-ejemplos` exit 0 (7 casos), `npx eslint` del archivo exit 0, `npx tsc --noEmit` exit 0, `npm run plan:test` exit 0 (182 casos) · siguiente: T2 (herramienta de recolección Commons, `--dry-run` por defecto).
 - 2026-09-15 T1 (parte 2) · fixture EXIF orientación 6 (sintético, 1,2 KB) con README; 2 casos en `scripts/test-reference-analyze-route.ts` · verificación: `npm run ia:test-referencias-ruta` exit 0 (12 casos), `npx eslint` del archivo exit 0, `npx tsc --noEmit` exit 0; no se corrió `npm run lint` completo ni build (sin cambios de app ni paquetes) · siguiente: lista explícita de excepciones de cajas por defecto (E03 del análisis fijo) con condición de retiro "A7 fusionado"; con eso T1 queda completa.
 - 2026-09-15 T1 (parte 1) · 8 pruebas fuera de CI corridas en la base: todas exit 0; agregadas al final de `plan:test` · verificación: `npm run plan:test` exit 0; solo cambia `package.json` (sin TS nuevo, no se corrió lint/tsc/build) · siguiente: fixture EXIF orientación 6 en `eval/fixtures/exif/` contra `/api/references/analyze` con puerto simulado, luego lista de excepciones de cajas por defecto.
