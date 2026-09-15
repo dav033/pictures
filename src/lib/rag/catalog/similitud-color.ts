@@ -31,16 +31,44 @@ function distanciaCircular(a: number, b: number): number {
   return Math.min(distancia, 360 - distancia) / 180;
 }
 
-/** Lower scores mean a closer visual color. Unknown/neutral colors stay usable. */
+/**
+ * Colors with no hue that still read as one family. Without them every neutral
+ * scored 0.7, the same as an unknown color, so a grey alternative for a silver
+ * piece ranked behind an orange one.
+ */
+const FAMILIAS_NEUTRAS: ReadonlyArray<ReadonlySet<string>> = [
+  new Set(["blanco", "crema", "beige", "nude", "transparente"]),
+  new Set(["plateado", "gris", "negro"]),
+  new Set(["dorado", "champagne"]),
+];
+/** Closer than an unknown color (0.7), farther than any hue distance (≤ 1). */
+const PUNTUACION_FAMILIA = 0.35;
+
+function mismaFamiliaNeutra(actual: string, candidata: string): boolean {
+  return FAMILIAS_NEUTRAS.some((familia) => familia.has(actual) && familia.has(candidata));
+}
+
+/**
+ * Lower scores mean a closer visual color. Unknown/neutral colors stay usable.
+ *
+ * An exact match scores 0: it used to return 1, the worst possible score, so
+ * the same-color alternatives of a piece (Reflex Rojo for a Fashion Rojo) ranked
+ * behind every other hue and fell out of the 12 the card shows.
+ */
 export function puntuacionCromatica(actuales: string[], candidatas: string[]): number {
   const base = actuales.map(normalizarColor).filter(Boolean);
   const opciones = candidatas.map(normalizarColor).filter(Boolean);
   if (!base.length || !opciones.length) return 0.7;
-  if (opciones.some((color) => base.includes(color))) return 1;
+  if (opciones.some((color) => base.includes(color))) return 0;
 
-  const huesBase = base.map((color) => HUES[color]).filter((hue): hue is number => hue != null);
-  const huesOpciones = opciones.map((color) => HUES[color]).filter((hue): hue is number => hue != null);
-  if (!huesBase.length || !huesOpciones.length) return 0.7;
-
-  return Math.min(...huesBase.flatMap((baseHue) => huesOpciones.map((optionHue) => distanciaCircular(baseHue, optionHue))));
+  const puntuaciones: number[] = [];
+  for (const actual of base) {
+    for (const candidata of opciones) {
+      const hueActual = HUES[actual];
+      const hueCandidata = HUES[candidata];
+      if (hueActual != null && hueCandidata != null) puntuaciones.push(distanciaCircular(hueActual, hueCandidata));
+      else if (mismaFamiliaNeutra(actual, candidata)) puntuaciones.push(PUNTUACION_FAMILIA);
+    }
+  }
+  return puntuaciones.length ? Math.min(...puntuaciones) : 0.7;
 }
