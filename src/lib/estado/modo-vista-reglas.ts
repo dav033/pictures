@@ -27,16 +27,14 @@ export type EntradaEstiloImagen = {
 };
 
 /**
- * Si este intento usa LoRA. Opción (a) del bloqueo de producto de B2 (conserva
- * el comportamiento actual): LoRA por defecto, y en modo usuario el estilo
- * estándar cuando la petición trae fotos, referencias o un ajuste, que LoRA no
- * puede procesar. No es un fallback tras un fallo: se decide antes de pedir la
- * imagen, por capacidad. En modo dev manda el selector.
+ * Si este intento usa LoRA. Decisión del usuario (2026-09-15): LoRA por defecto
+ * también con foto del espacio, referencias o ajuste de imagen, que el servidor
+ * envía a FLUX.2 `/edit` (sempertex-lora.ts). Antes el modo usuario pasaba a
+ * estilo estándar (Gemini) en esos casos. El pedido explícito de estilo estándar
+ * y el selector apagado siguen ganando.
  */
 export function usarLoraEfectivo(entrada: EntradaEstiloImagen): boolean {
-  if (!entrada.selectorLora || entrada.estiloEstandarExplicito) return false;
-  if (entrada.modo === "dev") return true;
-  return !(entrada.hayFotoEspacio || entrada.hayReferencias || entrada.esAjusteDeImagen);
+  return entrada.selectorLora && !entrada.estiloEstandarExplicito;
 }
 
 /** El modal con el prompt técnico solo se abre solo en modo dev. */

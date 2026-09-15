@@ -19,7 +19,7 @@ import { approvedPlanQaInputs, buildGenerationQa } from "@/lib/ia/generation-qa"
 import { imagenDe, resolverProveedor } from "@/lib/ia/registro";
 import { buildApprovedSceneSpec, SceneSpecSchema, sceneSpecHash } from "@/lib/ia/scene-spec";
 import { registrarPlanAudit } from "@/lib/rag/observability/log";
-import { DEFAULT_SEMPERTEX_LORA_TRIGGER, ensureLoraTriggers, generarConSempertexLora } from "@/lib/ia/sempertex-lora";
+import { DEFAULT_SEMPERTEX_LORA_TRIGGER, ensureLoraTriggers, generarConSempertexLora, loraEditApagado } from "@/lib/ia/sempertex-lora";
 import { LoraModeSlugSchema, LoraSelectionSchema } from "@/lib/lora/schema";
 import { resolveLoraMode, resolveLoraModeDatasetAllowlist, resolveLoraSelection, type ResolvedLoraApplication } from "@/lib/lora/mode-resolver";
 
@@ -1095,7 +1095,9 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     if (usarLora && !resolvedLoras) {
       throw new Error("LORA_MODE_REQUIRED: especifica loraMode (\"unlimited\" | \"training_1\" | \"training_2\") o loraSelection antes de generar con LoRA Sempertex. No existe un modo por defecto anónimo.");
     }
-    if (usarLora && (venue || references.length || previous)) {
+    // Photos go to FLUX.2 /edit with the LoRA (sempertex-lora.ts); only the
+    // SEMPERTEX_LORA_EDIT=false switch restores the old rejection.
+    if (usarLora && loraEditApagado() && (venue || references.length || previous)) {
       throw new Error("LoRA Sempertex genera desde texto. Para editar fotos o usar referencias, cambia a Gemini.");
     }
     proveedor = resolverProveedor({ override: body.proveedor, cookie: request.headers.get("cookie")?.match(/ia_proveedor=(gemini)/)?.[1] });

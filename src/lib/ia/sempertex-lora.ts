@@ -218,16 +218,29 @@ const imageSizeFor = (aspecto: PeticionImagen["aspecto"]) => {
  * La identidad de producto no se pierde: color, acabado y tamaño ya viajan como
  * texto en el caption compilado.
  *
- * `SEMPERTEX_LORA_EDIT=true` reactiva el condicionamiento por imagen. Existe
- * para el condicionamiento experimental por layout —renderizar las cajas
- * del SceneSpec y pasarlas como referencia—, no para producción: si se
- * enciende, hay que volver a correr el panel de 6 seeds antes de confiar en él.
+ * Decisión del usuario (2026-09-15): con foto del espacio, referencia del
+ * cliente o ajuste de una imagen previa, el LoRA va por `/edit` siempre, para
+ * que esos flujos usen el estilo Sempertex en vez de caer a Gemini. Sigue sin
+ * validar (el panel de 6 seeds es solo de texto a imagen) y hoy fal no tiene
+ * saldo, así que esas generaciones fallan hasta recargar; el error ya se
+ * traduce a un mensaje de saldo en la UI.
+ * Sin ninguna de esas imágenes, las fotos de producto solas NO cambian el
+ * endpoint: el camino validado de texto a imagen queda igual.
+ * `SEMPERTEX_LORA_EDIT=false` apaga `/edit` por completo (interruptor de retiro).
  */
-function prepararReferencias(inputs: ImageInput[]): ImageInput[] {
-  if (process.env.SEMPERTEX_LORA_EDIT !== "true") return [];
+const ROLES_QUE_ACTIVAN_EDIT = new Set<ImageInput["role"]>(["venue_base", "composition_reference", "previous_generated_result"]);
+
+export function referenciasParaLoraEdit(inputs: readonly ImageInput[], interruptor = process.env.SEMPERTEX_LORA_EDIT): ImageInput[] {
+  if (interruptor === "false") return [];
+  if (!inputs.some((input) => ROLES_QUE_ACTIVAN_EDIT.has(input.role))) return [];
   return [...inputs]
     .sort((a, b) => a.priority - b.priority)
     .slice(0, MAX_EDIT_IMAGES);
+}
+
+/** Whether a request with these images must be rejected for LoRA (only when /edit is switched off). */
+export function loraEditApagado(interruptor = process.env.SEMPERTEX_LORA_EDIT): boolean {
+  return interruptor === "false";
 }
 
 function validarUnaAplicacion(loras: LoraApplication[]): void {
@@ -275,7 +288,7 @@ export async function generarConSempertexLora(
   const key = process.env.FAL_KEY;
   if (!key) throw new Error("LoRA Sempertex no está conectado todavía: falta FAL_KEY en .env.local.");
 
-  const references = prepararReferencias(inputs);
+  const references = referenciasParaLoraEdit(inputs);
   const endpoint = references.length ? EDIT_ENDPOINT : TEXT_ENDPOINT;
 
   const inicio = Date.now();

@@ -28,9 +28,9 @@ assert.equal(qaVisualEfectivo("dev", true), true);
 
 const base = { selectorLora: true, estiloEstandarExplicito: false, hayFotoEspacio: false, hayReferencias: false, esAjusteDeImagen: false };
 assert.equal(usarLoraEfectivo({ ...base, modo: "usuario" }), true, "sin adjuntos ni ajuste: LoRA por defecto");
-assert.equal(usarLoraEfectivo({ ...base, modo: "usuario", hayFotoEspacio: true }), false, "foto del espacio: estilo estándar");
-assert.equal(usarLoraEfectivo({ ...base, modo: "usuario", hayReferencias: true }), false, "referencias: estilo estándar");
-assert.equal(usarLoraEfectivo({ ...base, modo: "usuario", esAjusteDeImagen: true }), false, "ajuste sobre la imagen previa: estilo estándar");
+assert.equal(usarLoraEfectivo({ ...base, modo: "usuario", hayFotoEspacio: true }), true, "foto del espacio: LoRA por /edit (decisión 2026-09-15)");
+assert.equal(usarLoraEfectivo({ ...base, modo: "usuario", hayReferencias: true }), true, "referencias: LoRA por /edit");
+assert.equal(usarLoraEfectivo({ ...base, modo: "usuario", esAjusteDeImagen: true }), true, "ajuste sobre la imagen previa: LoRA por /edit");
 assert.equal(usarLoraEfectivo({ ...base, modo: "dev", hayFotoEspacio: true }), true, "modo dev: manda el selector");
 assert.equal(usarLoraEfectivo({ ...base, modo: "dev", estiloEstandarExplicito: true }), false, "el pedido explícito del cliente siempre gana");
 assert.equal(usarLoraEfectivo({ ...base, modo: "usuario", selectorLora: false }), false);
