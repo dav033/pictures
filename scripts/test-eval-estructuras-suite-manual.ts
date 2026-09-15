@@ -25,8 +25,9 @@ caso("CSV: coma con comillas y BOM, y punto y coma de Excel en español", () => 
   assert.deepEqual(leerCsv(excel), [{ archivo: "arco\\a.jpg", titulo: "Pin, con coma", permiso: "cc0" }]);
 });
 
-caso("clases: las 13 vigentes (sin denso/no denso) tienen familia y la carpeta manual las cubre más negativo y no_se", () => {
-  assert.equal(CLASES_OFICIALES.length, 13);
+caso("clases: las 12 vigentes (sin denso/no denso ni semiarco regular) tienen familia y la carpeta manual las cubre más negativo y no_se", () => {
+  assert.equal(CLASES_OFICIALES.length, 12);
+  assert.ok(!CLASES_OFICIALES.includes("semiarco"), "regular half-arch retired");
   assert.ok(!CLASES_OFICIALES.some((clase) => /densa?$/.test(clase)), "no dense / non-dense class remains");
   assert.equal(familiaDesdeClaseOficial("pared"), "pared");
   assert.deepEqual([...CLASES_MANUALES].filter((c) => c !== "negativo" && c !== "no_se").sort(), [...CLASES_OFICIALES].sort());
@@ -40,8 +41,8 @@ caso("permisos: solo cc0, cc-by, dominio-publico y escrito:<id>; el resto queda 
     { archivo: "arco\\1.jpg", clase_candidata: "arco", permiso: "cc-by" },
     { archivo: "arco\\2.jpg", clase_candidata: "arco", permiso: "" },
     { archivo: "columna\\3.jpg", clase_candidata: "columna", permiso: "BY-SA" },
-    { archivo: "semiarco\\4.jpg", clase_candidata: "semiarco", permiso: "escrito:decorador-07" },
-    { archivo: "semiarco\\5.jpg", clase_candidata: "semiarco", permiso: "lo tengo" },
+    { archivo: "semiarco\\4.jpg", clase_candidata: "semiarco_organico", permiso: "escrito:decorador-07" },
+    { archivo: "semiarco\\5.jpg", clase_candidata: "semiarco_organico", permiso: "lo tengo" },
     { archivo: "aro_circular\\6.jpg", clase_candidata: "aro_circular", permiso: "Dominio-Publico" },
     { archivo: "negativo\\7.jpg", clase_candidata: "negativo", permiso: "cc0" },
     { archivo: "arco\\copia.jpg", clase_candidata: "arco", permiso: "cc0" },
@@ -61,7 +62,7 @@ caso("permisos: solo cc0, cc-by, dominio-publico y escrito:<id>; el resto queda 
 
 caso("selección: tope estratificado por familia, determinista, y suite válida para el runner", () => {
   const item = (clase: string, n: number): ItemManual => ({ sha256: n.toString(16).padStart(64, "0"), archivo: `${clase}\\${n}.jpg`, clase: clase as ItemManual["clase"], permiso: "cc0" });
-  const items = [...Array.from({ length: 10 }, (_, i) => item("arco", i + 1)), item("semiarco", 20), item("semiarco_organico", 21), item("techo_globos", 30)];
+  const items = [...Array.from({ length: 10 }, (_, i) => item("arco", i + 1)), item("semiarco_organico", 20), item("semiarco_organico", 21), item("techo_globos", 30)];
   const elegidas = seleccionEstratificada(items, 6);
   assert.equal(elegidas.length, 6);
   assert.deepEqual(elegidas.map((e) => familiaDesdeClaseOficial(e.clase)).sort(), ["arco", "arco", "arco", "semiarco", "semiarco", "techo"]);

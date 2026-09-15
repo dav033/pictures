@@ -1,0 +1,31 @@
+{
+  "run_id": "validacion-completa-v13-low-20260915",
+  "imagenes": 155,
+  "corridas_por_imagen": 3,
+  "analisis_totales": 465,
+  "analisis_pendientes": 465,
+  "estimacion": {
+    "moneda": "USD",
+    "es_estimado": true,
+    "precio_version": "precios-2026-09-15",
+    "supuesto_version": "tokens-analisis-2026-09-15",
+    "llamadas_analisis": 465,
+    "esperado_usd": 4.798800000000001,
+    "cota_superior_usd": 17.8162425
+  },
+  "cabe_en_presupuesto": false,
+  "suite": {
+    "id": "validacion-completa-v13-low-20260915",
+    "manifiesto_sha256": "bb29f54a942e670096aa4cfa5eeaaf6ab48a28720ae318d42bb0d531ce22c5f6"
+  },
+  "sistema": {
+    "id": "v13",
+    "modelo": "gemini-3.6-flash",
+    "parser_version": "semantic-layers-v13-box-2d",
+    "system_prompt_sha256": "5d956a13c38007baad72c3c045960a005a812f8cabfd8d257f970221ab418ce9",
+    "config_hash": "6962f8bbdd304f3e5a622e8df11329c6dea0252568fd264b20b017e69f7297ec",
+    "thinking_level": "low",
+    "taxonomy_version": "estructuras-2.0.0",
+    "commit": "5627de54b117"
+  }
+}

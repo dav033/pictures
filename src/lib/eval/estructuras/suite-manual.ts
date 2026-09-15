@@ -13,9 +13,9 @@ import { familiaDesdeClaseOficial } from "./familia-clase";
  * never ground truth. No personal data (author, page URL, title) is copied.
  */
 
-/** Folder classes after the user retired the dense / non-dense split (2026-09-15). */
+/** Folder classes after the user retired the dense / non-dense split and the regular half-arch (2026-09-15). */
 export const CLASES_MANUALES = [
-  "arco", "arco_organico", "semiarco", "semiarco_organico", "columna", "columna_organica", "guirnalda", "aro_circular",
+  "arco", "arco_organico", "semiarco_organico", "columna", "columna_organica", "guirnalda", "aro_circular",
   "pared", "centro_mesa", "bouquet", "figura", "techo_globos", "negativo", "no_se",
 ] as const;
 export type ClaseManual = (typeof CLASES_MANUALES)[number];
