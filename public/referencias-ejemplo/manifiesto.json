@@ -5,7 +5,7 @@
   "fotos": [
     {
       "id": "ejemplo-01",
-      "titulo": "Semiarcos rosa y plata",
+      "titulo": "Columnas rosa y plata",
       "evento": "Cumpleaños",
       "archivo": "ejemplo-01.jpg",
       "miniatura": "ejemplo-01-mini.jpg",
@@ -31,7 +31,7 @@
     },
     {
       "id": "ejemplo-03",
-      "titulo": "Semiarco blanco y dorado",
+      "titulo": "Columna blanca y dorada",
       "evento": "Baby shower",
       "archivo": "ejemplo-03.jpg",
       "miniatura": "ejemplo-03-mini.jpg",
@@ -57,7 +57,7 @@
     },
     {
       "id": "ejemplo-05",
-      "titulo": "Semiarco rosa y rojo",
+      "titulo": "Columna rosa y roja",
       "evento": "20 años",
       "archivo": "ejemplo-05.jpg",
       "miniatura": "ejemplo-05-mini.jpg",

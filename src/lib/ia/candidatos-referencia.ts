@@ -86,7 +86,24 @@ function numberValue(value: unknown, fallback: number, min = 0, max = 1): number
   return Number.isFinite(numeric) ? Math.min(max, Math.max(min, numeric)) : fallback;
 }
 
+/** `box_2d` is [ymin, xmin, ymax, xmax] in 0-1000; null when it is not a usable box. */
+function bboxDesdeBox2d(value: unknown): ReferenceBBox | null {
+  if (!Array.isArray(value) || value.length !== 4) return null;
+  const [ymin, xmin, ymax, xmax] = value.map((item) => numberValue(item, NaN, 0, 1000) / 1000);
+  if (![ymin, xmin, ymax, xmax].every((item) => Number.isFinite(item))) return null;
+  const x = Math.min(xmin!, xmax!, 0.99);
+  const y = Math.min(ymin!, ymax!, 0.99);
+  return {
+    x,
+    y,
+    width: Math.min(Math.max(Math.abs(xmax! - xmin!), 0.01), 1 - x),
+    height: Math.min(Math.max(Math.abs(ymax! - ymin!), 0.01), 1 - y),
+  };
+}
+
 function bbox(value: unknown): ReferenceBBox {
+  const desdeBox2d = bboxDesdeBox2d(value);
+  if (desdeBox2d) return desdeBox2d;
   const source = object(value);
   const x = numberValue(source.x, 0.1, 0, 0.99);
   const y = numberValue(source.y, 0.1, 0, 0.99);
@@ -218,7 +235,7 @@ export function parseCandidates(imageId: string, raw: unknown): Candidate[] {
     const material = firstString(value, ["material", "material_texture", "texture", "materiales", "textura"], "material not determinable", 160);
     const shape = firstString(value, ["shape", "form", "silhouette", "forma"], "shape not determinable", 160);
     const composition = firstString(value, ["composition", "composicion", "color_mix", "mix"], "single uniform material", 240);
-    const referenceBox = bbox(value.reference_bbox ?? value.bbox ?? value.bounding_box ?? value.box ?? value.location);
+    const referenceBox = bbox(value.box_2d ?? value.reference_bbox ?? value.bbox ?? value.bounding_box ?? value.box ?? value.location);
     // A typed balloon `structure` on an element named as balloons is a balloon
     // structure even if the model wrote another category (a half-arch wrapped in
     // fairy lights came back as "lighting" and vanished from the plan).

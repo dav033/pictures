@@ -18,6 +18,7 @@ import {
   tieneElementosAprobados,
   tieneEstructurasDeGlobos,
 } from "./reference-structure";
+import { analisisFijoDeEjemplo } from "./analisis-ejemplos";
 import { category, mergeCandidates, normalize, object, parseCandidates, stringList, stringValue, toolArgs, type Candidate } from "./candidatos-referencia";
 
 export { inferReferenceLayer, VERIFIER_MIN_CONFIDENCE } from "./candidatos-referencia";
@@ -61,7 +62,7 @@ export type AnalysisMode = "legacy" | "perceptual";
 
 const INVENTORY_SYSTEM = `You are a forensic event-design image analyst and catalog matching director. Return only structured data through the tool.
 Inventory every visible decorative or background design element. Explicitly inspect the rear layer for curtains, fabric drapes, shimmer walls, printed backdrops, panels, frames, balloon structures, plinths, furniture, florals, signage, and lighting.
-Describe only visible evidence. Use low confidence when uncertain. Each item needs a normalized reference_bbox with x/y/width/height from 0 to 1.
+Describe only visible evidence. Use low confidence when uncertain. Each item needs box_2d: [ymin, xmin, ymax, xmax] as integers from 0 to 1000 relative to its own image, tightly enclosing only that element (for a balloon piece, its outermost balloons; each separate piece gets its own box).
 For every detected element, make the final decision yourself: include it, omit it, or include it with the closest catalog product. Never ask the customer. Prefer a same-function catalog substitute over an unrelated exact color. A dark-blue curtain may use the closest available curtain/drape color and must explain the adaptation. If no relevant product exists, omit the element. Never invent catalog ids.
 If the closest catalog match's own product photo shows a different sample assembly than the detected element (for example, a DIY balloon kit photographed as a small bouquet when the detected element is a full arch, or a single unit photographed alone when the detected element is a cluster), say so explicitly in \`adaptation\`: name the required final shape and state that the catalog photo is a material/color reference only, not the target arrangement.
 For any \`balloon_structure\` element (arch, tree, column, cluster, garland, or similar balloon sculpture), do not require a product literally named or photographed as that shape. Loose latex balloon packages and generic balloon kits sold by color are valid raw material for any balloon sculpture shape — the shape is built by hand from many individual balloons, not printed on the product. Match on balloon type, size, and color only, then describe the required shape yourself in \`adaptation\`. Only omit a \`balloon_structure\` element when no compatible loose or packaged balloon product exists in the matching color at all.
@@ -75,17 +76,17 @@ When one element's composition needs more than one distinct color or material an
 // (incluir/omitir de la composición), no una decisión comercial.
 const INVENTORY_SYSTEM_PERCEPTUAL = `You are a forensic event-design image analyst. Return only structured data through the tool. You have no catalog access in this pass — never propose, guess, or invent a catalog_product_id or bill_of_materials.
 Inventory every visible decorative or background design element. Explicitly inspect the rear layer for curtains, fabric drapes, shimmer walls, printed backdrops, panels, frames, balloon structures, plinths, furniture, florals, signage, and lighting.
-Describe only visible evidence. Use low confidence when uncertain. Each item needs a normalized reference_bbox with x/y/width/height from 0 to 1.
+Describe only visible evidence. Use low confidence when uncertain. Each item needs box_2d: [ymin, xmin, ymax, xmax] as integers from 0 to 1000 relative to its own image, tightly enclosing only that element (for a balloon piece, its outermost balloons; each separate piece gets its own box).
 For every detected element, set model_decision.action to "include" when it is a meaningful, decorator-relevant part of the composition, or "omit" when it is negligible background clutter (e.g. an unrelated wall outlet, a stray chair leg) — base this purely on visual relevance, never on whether a matching product might exist. Always set model_decision.match_type to "none" and leave catalog_product_id and bill_of_materials unset.
 For every element, also detect its color mix and physical composition: what proportion of it is each observed color, and how those parts are arranged (base vs. tip, background vs. accent, size gradient, clustering pattern). Put this in \`composition\` as one short sentence, for example "60% red round balloons at the base, 30% green climbing the sides, 10% gold metallic accents near the top".
 ${STRUCTURE_DETECTION_RULES}`;
 
 const REAR_LAYER_RULE = "Rear-layer rule: any visible curtain, telon, drape, fabric backdrop, black cloth background, shimmer wall, or panel must be classified as curtain/drape/backdrop/panel and scene_role backdrop, never other or midground. If string lights are separately visible, classify them as lighting behind the decoration; do not move them to the ceiling.";
 
-const AUDIT_SYSTEM = `You are a strict verifier and catalog-resolution reviewer of an event-design reference inventory. Inspect the image and draft inventory. Report only visible event-design elements that were missed, misclassified, or lack evidence. For every new finding, decide include or omit and select the closest valid catalog product when useful. Do not ask the customer. Include normalized reference_bbox, visible_evidence, and the complete model_decision object.`;
-const AUDIT_SYSTEM_PERCEPTUAL = `You are a strict verifier of an event-design reference inventory. Inspect the image and draft inventory. Report only visible event-design elements that were missed, misclassified, or lack evidence. You have no catalog access — never propose a catalog_product_id or bill_of_materials; set match_type to "none" and decide include/omit purely on visual relevance. Do not ask the customer. Include normalized reference_bbox, visible_evidence, and the complete model_decision object. Also correct structure when a balloon structure type, side, height or curve was misread.
+const AUDIT_SYSTEM = `You are a strict verifier and catalog-resolution reviewer of an event-design reference inventory. Inspect the image and draft inventory. Report only visible event-design elements that were missed, misclassified, or lack evidence. For every new finding, decide include or omit and select the closest valid catalog product when useful. Do not ask the customer. Include box_2d ([ymin, xmin, ymax, xmax], integers 0-1000), visible_evidence, and the complete model_decision object.`;
+const AUDIT_SYSTEM_PERCEPTUAL = `You are a strict verifier of an event-design reference inventory. Inspect the image and draft inventory. Report only visible event-design elements that were missed, misclassified, or lack evidence. You have no catalog access — never propose a catalog_product_id or bill_of_materials; set match_type to "none" and decide include/omit purely on visual relevance. Do not ask the customer. Include box_2d ([ymin, xmin, ymax, xmax], integers 0-1000), visible_evidence, and the complete model_decision object. Also correct structure when a balloon structure type, side, height or curve was misread.
 ${STRUCTURE_DETECTION_RULES}`;
-const ANALYSIS_PARSER_VERSION = "semantic-layers-v12-own-plural-typed-approval";
+export const ANALYSIS_PARSER_VERSION = "semantic-layers-v13-box-2d";
 
 const TOOL: Herramienta = {
   nombre: "return_reference_inventory",
@@ -107,22 +108,18 @@ const TOOL: Herramienta = {
             items: {
               type: "object",
               additionalProperties: true,
-              required: ["name", "category", "scene_role", "detection_confidence", "visible_evidence", "reference_bbox", "model_decision"],
+              required: ["name", "category", "scene_role", "detection_confidence", "visible_evidence", "box_2d", "model_decision"],
               properties: {
                 name: { type: "string" },
                 category: { type: "string" },
                 scene_role: { type: "string" },
                 detection_confidence: { type: "number" },
                 visible_evidence: { type: "string" },
-                reference_bbox: {
-                  type: "object",
-                  required: ["x", "y", "width", "height"],
-                  properties: {
-                    x: { type: "number" },
-                    y: { type: "number" },
-                    width: { type: "number" },
-                    height: { type: "number" },
-                  },
+                // Gemini's native detection format: tighter boxes than x/y/width/height in 0-1.
+                box_2d: {
+                  type: "array",
+                  description: "[ymin, xmin, ymax, xmax], integers from 0 to 1000 relative to the image.",
+                  items: { type: "integer" },
                 },
                 composition: { type: "string", description: "One sentence: proportion of each color and how the parts are arranged." },
                 observed_colors: { type: "array", items: { type: "string" }, description: "Plain English color names seen on this element, most dominant first, each prefixed with its finish when visible: pearl (soft satin sheen), chrome (mirror-like), metallic, matte or clear (e.g. royal blue, pearl white, chrome gold)." },
@@ -493,6 +490,10 @@ export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenE
       : "No catalog products supplied.";
   const systemPromptHash = createHash("sha256").update(ANALYSIS_PARSER_VERSION).update(mode).update(inventorySystem).update(auditSystem).update(REAR_LAYER_RULE).update(catalogText).digest("hex");
   const key = analysisCacheKey({ model: chat.modelo, systemPromptHash, images: referencias.map((image) => ({ image_id: image.id, mime: image.mime, base64: image.base64 })) });
+  if (!opciones.forzarNuevoAnalisis && mode === "perceptual") {
+    const fijo = analisisFijoDeEjemplo(referencias, ANALYSIS_PARSER_VERSION);
+    if (fijo) return fijo;
+  }
   const cached = opciones.forzarNuevoAnalisis ? undefined : cache.get(key);
   if (cached) return { ...cached, metadata: { ...cached.metadata, cached: true } };
   let entry = enVuelo.get(key);
@@ -593,6 +594,8 @@ async function ejecutarAnalisis(input: {
       signal,
   }, TOOL.nombre);
   const draftJson = JSON.stringify(inventoryRaw).slice(0, 24000);
+  // The audit only adds or corrects findings: when it keeps answering with
+  // malformed output the inventory alone is still a valid analysis.
   const auditRaw = await pasoConHerramienta("analisis_referencia_auditoria", {
     sistema: mode === "perceptual" ? `${auditSystem}\n${REAR_LAYER_RULE}` : `${auditSystem}\n${REAR_LAYER_RULE}\n\nVALID CATALOG PRODUCTS\n${catalogText}`,
       historial: [{ rol: "usuario", texto: `Audit the draft inventory below against the same references. Keep exact image IDs. Resolve every finding automatically.\n<DRAFT_INVENTORY>${draftJson}</DRAFT_INVENTORY>`, imagenes: referencias }],
@@ -600,7 +603,11 @@ async function ejecutarAnalisis(input: {
       temperatura: 0,
       maxTokens: 4000,
       signal,
-  }, AUDIT_TOOL.nombre);
+  }, AUDIT_TOOL.nombre).catch((error: unknown) => {
+    if (signal?.aborted || !(error instanceof ErrorIA) || !error.message.includes("malformed output")) throw error;
+    console.warn("[references/analyze] audit skipped after malformed output", { request_id: telemetria?.requestId });
+    return { images: [] } as Record<string, unknown>;
+  });
   const blueprint = buildBlueprint(referencias, inventoryRaw, auditRaw, mode === "perceptual" ? [] : catalogo, mode);
   return {
     blueprint,

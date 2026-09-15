@@ -110,6 +110,14 @@ No hace falta una base de datos local: todo apunta a Neon. Los tests que usan Po
   - creatividad, propuesta aprobada, imagen y adjuntos persisten tras recargar;
   - pool de Neon con keepAlive y reintento ante cortes.
 
+### Iteración 5 (2026-09-15)
+- **Recuadros de la foto de referencia:** Gemini devolvía a veces cajas desplazadas (una columna izquierda dibujada sobre la mesa). Ahora el análisis pide las cajas en el formato nativo de Gemini, `box_2d` [ymin, xmin, ymax, xmax] de 0 a 1000, y las convierte a `reference_bbox`. En la foto 1, con el formato anterior, 1 de 3 corridas salió desplazada; con `box_2d`, 6 de 6 bien. También probado con 13 fotos de Wikimedia Commons fuera de la galería. Versión del parser: `semantic-layers-v13-box-2d`.
+- **Fotos de ejemplo con análisis fijo** (`src/lib/ia/analisis-ejemplos.json`): la galería envía el archivo sin recomprimir y el servidor lo reconoce por SHA-256. Así devuelve un análisis revisado al instante, igual en todos los navegadores y sin llamar a Gemini. «Reintentar» sí pide un análisis nuevo. Se regenera con `npx tsx --conditions=react-server scripts/generar-analisis-ejemplos.ts` cuando cambia la versión del parser; `ia:test-analisis-ejemplos` falla si queda desactualizado.
+- **Verificación del análisis:** si el paso de verificación devuelve una salida mal formada, se usa el inventario en vez de fallar con 502.
+- **Flujo:** elegir una foto de la galería, o subir una en la pantalla inicial, envía el turno solo; el análisis y la propuesta llegan sin otro clic.
+- **Propuesta:** el número de veces que cada producto salió en el entrenamiento del LoRA vuelve a verse en modo usuario (antes de la iteración 4 era visible), junto a «Modificar», «Quitar» y «Cambiar» para reemplazar globos. La validación visual queda marcada por defecto.
+- Títulos de la galería alineados con lo que detecta el análisis (columnas en vez de semiarcos en las fotos 1, 3 y 5).
+
 ## Decisiones tomadas
 
 - **Neon es la única fuente de verdad**; no se usa base local para la app.

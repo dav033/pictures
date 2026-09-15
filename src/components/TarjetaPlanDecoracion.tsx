@@ -669,9 +669,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   }, [solicitudImagenes]);
 
   useEffect(() => {
-    // Las referencias de entrenamiento solo se muestran en modo dev: en modo
-    // usuario no se consultan.
-    if (!modoDev) return;
+    // Cuántas veces salió cada producto en el entrenamiento del LoRA (visible en ambos modos).
     const controlador = new AbortController();
     const parametros = loraMode ? `?loraMode=${encodeURIComponent(loraMode)}` : "";
     fetch(`/api/lora/training-reference-counts${parametros}`, { signal: controlador.signal, cache: "no-store" })
@@ -682,7 +680,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
         setReferenciasEntrenamiento({});
       });
     return () => controlador.abort();
-  }, [loraMode, modoDev]);
+  }, [loraMode]);
 
   useEffect(() => () => peticionEvidenciaRef.current?.abort(), []);
 
@@ -848,10 +846,10 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
                 puedeQuitar={(linea) => lineaQuitable(linea, lineasVisiblesPorVariante(estructura.lineas), declarada?.materiales)}
                 onVerProducto={(linea, disparador) => { disparadorModalRef.current = disparador; setSeleccionCatalogo({ linea, estructuraId: estructura.estructura_id, estructura: estructura.nombre }); setIntercambioAbierto(false); setRecomendaciones([]); setResultadosCatalogo([]); setErrorEdicion(null); }}
                 modoDev={modoDev}
-                extraLinea={modoDev ? (linea) => {
+                extraLinea={(linea) => {
                   const referencias = referenciaEntrenamiento(linea);
                   return referencias && <button type="button" data-testid="linea-referencias-entrenamiento" onClick={() => abrirEvidencia(linea, referencias)} className="ui-pressable shrink-0 rounded-lg border border-acento/35 bg-acento-suave px-2 py-1.5 text-left text-[11px] font-semibold leading-4 text-acento hover:bg-acento/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento" aria-label={`Ver ${referencias.count} ${referencias.count === 1 ? "referencia" : "referencias"} de entrenamiento para ${linea.titulo}`}><span className="block tabular-nums">{referencias.count} {referencias.count === 1 ? "referencia" : "referencias"}</span><span className="block font-normal">en entrenamiento</span></button>;
-                } : undefined}
+                }}
               />
             ))}
           </ol>

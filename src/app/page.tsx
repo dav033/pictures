@@ -54,7 +54,7 @@ import {
   sinImagenes,
 } from "@/lib/estado/persistencia-generacion";
 import { creatividadGuardada } from "@/lib/estado/persistencia-creatividad";
-import { archivoDeFotoEjemplo, type FotoEjemplo } from "@/lib/referencias-ejemplo/manifiesto";
+import { imagenDeFotoEjemplo, type FotoEjemplo } from "@/lib/referencias-ejemplo/manifiesto";
 import { CabeceraApp } from "@/components/ui/shell/CabeceraApp";
 import { Compositor } from "@/components/ui/shell/Compositor";
 import { EsperaAsistente } from "@/components/ui/shell/EsperaAsistente";
@@ -497,6 +497,8 @@ export default function Page() {
   // Foto de ejemplo adjunta ahora (id del manifiesto + clave de su imagen procesada).
   const [ejemploElegido, setEjemploElegido] = useState<{ id: string; clave: string } | null>(null);
   const [cargandoEjemplo, setCargandoEjemplo] = useState(false);
+  // Claves de las fotos que deben enviar el turno solas al llegar al compositor.
+  const envioAutomaticoRef = useRef<string[] | null>(null);
   const [galeriaAbierta, setGaleriaAbierta] = useState(false);
   const {
     ids: seleccion,
@@ -522,7 +524,8 @@ export default function Page() {
   const ultimoIntentoGeneracionRef = useRef<{ override?: GenerarOverride } | null>(null);
   const [proveedor, setProveedor] = useState<ProveedorId>("gemini");
   const [selectorIA, setSelectorIA] = useState<SelectorIA>("lora");
-  const [qaVisualSolicitado, setQaVisualSolicitado] = useState(false);
+  // Validación visual activa por defecto también en modo dev: sin ella no se puede aprobar.
+  const [qaVisualSolicitado, setQaVisualSolicitado] = useState(true);
   // En modo usuario la casilla no se ve y la revisión visual va siempre activa (B2).
   const qaEfectivo = qaVisualEfectivo(modoVista, qaVisualSolicitado);
   // Formato del prompt LoRA: automático (lo resuelve el servidor por el trigger
@@ -652,6 +655,7 @@ export default function Page() {
   useEffect(() => {
     imagenesReferenciaRef.current = imagenesReferencia;
   }, [imagenesReferencia]);
+
 
   useEffect(() => {
     referenceDraftRef.current = referenceDraft;
@@ -1084,6 +1088,18 @@ export default function Page() {
       entradaRef.current?.focus();
     }
   }
+
+  // Foto elegida o subida en la pantalla inicial: el turno sale solo en cuanto
+  // la foto está en el compositor. `enviar` espera el análisis detrás de la
+  // burbuja del cliente y la propuesta llega sin otro clic (maqueta FotoAnalisis).
+  useEffect(() => {
+    const pendientes = envioAutomaticoRef.current;
+    if (!pendientes || cargandoChat) return;
+    if (!pendientes.every((clave) => imagenesReferencia.some((imagen) => claveImagen(imagen) === clave))) return;
+    envioAutomaticoRef.current = null;
+    void enviar(entrada);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- enviar y entrada se leen al momento de disparar; el ref evita enviar dos veces.
+  }, [imagenesReferencia, cargandoChat]);
 
   /** Recupera tu último mensaje en el input y borra todo lo que vino después, para corregirlo y reenviarlo. */
   function cancelarChat() {
@@ -1644,6 +1660,7 @@ export default function Page() {
     try {
       const procesadas = await Promise.all(aProcesar.map((f) => redimensionarImagen(f, 1800, 0.9)));
       setEtiquetasAdjuntos((previas) => ({ ...previas, ...Object.fromEntries(procesadas.map((imagen, indice) => [claveImagen(imagen), aProcesar[indice]!.name])) }));
+      if (!mensajes.some((mensaje) => mensaje.id !== SALUDO.id)) envioAutomaticoRef.current = procesadas.map(claveImagen);
       setImagenesReferencia((previas) => [...previas, ...procesadas]);
     } catch (e) {
       setErrorAdjuntos(mensajeErrorCliente(e, "No se pudo procesar alguna imagen de referencia."));
@@ -1667,8 +1684,7 @@ export default function Page() {
     setErrorAdjuntos(null);
     setCargandoEjemplo(true);
     try {
-      const archivo = await archivoDeFotoEjemplo(foto);
-      const imagen = await redimensionarImagen(archivo, 1800, 0.9);
+      const imagen = await imagenDeFotoEjemplo(foto);
       const clave = claveImagen(imagen);
       setEtiquetasAdjuntos((previas) => ({ ...previas, [clave]: foto.titulo }));
       const claveAnterior = ejemploElegido?.clave;
@@ -1677,6 +1693,7 @@ export default function Page() {
         return [...sinEjemploAnterior, imagen].slice(-LIMITE_REFERENCIAS_CLIENTE);
       });
       setEjemploElegido({ id: foto.id, clave });
+      if (!mensajes.some((mensaje) => mensaje.id !== SALUDO.id)) envioAutomaticoRef.current = [clave];
       setGaleriaAbierta(false);
       window.requestAnimationFrame(() => {
         const chips = document.querySelectorAll("[data-adjunto='referencia'] img");

@@ -49,7 +49,7 @@ type Props = {
   /** "Quitar" only where the structure keeps a material afterwards (`lineaQuitable`); default: every line. */
   puedeQuitar?: (linea: LineaMaterial) => boolean;
   onVerProducto: (linea: LineaMaterial, disparador: HTMLButtonElement) => void;
-  /** Dev-only extras per line (training references). */
+  /** Extras per line (training reference count). */
   extraLinea?: (linea: LineaMaterial) => ReactNode;
   modoDev?: boolean;
 };

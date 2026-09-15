@@ -53,3 +53,19 @@ export async function archivoDeFotoEjemplo(foto: FotoEjemplo, signal?: AbortSign
   const blob = await respuesta.blob();
   return new File([blob], foto.archivo, { type: blob.type || "image/jpeg" });
 }
+
+/**
+ * La foto de ejemplo tal cual está en `public/`, sin recomprimir: ya viene a
+ * 1200 px, y con los mismos bytes en todos los navegadores el servidor
+ * reconoce la foto y responde con su análisis revisado (`analisis-ejemplos`).
+ */
+export async function imagenDeFotoEjemplo(foto: FotoEjemplo, signal?: AbortSignal): Promise<{ base64: string; mime: string; ancho: number; alto: number; originalAncho: number; originalAlto: number }> {
+  const archivo = await archivoDeFotoEjemplo(foto, signal);
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const lector = new FileReader();
+    lector.onload = () => resolve(String(lector.result));
+    lector.onerror = () => reject(new Error(`No se pudo leer la foto de ejemplo "${foto.titulo}".`));
+    lector.readAsDataURL(archivo);
+  });
+  return { base64: dataUrl.slice(dataUrl.indexOf(",") + 1), mime: "image/jpeg", ancho: foto.ancho, alto: foto.alto, originalAncho: foto.ancho, originalAlto: foto.alto };
+}
