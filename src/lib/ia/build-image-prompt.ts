@@ -377,10 +377,17 @@ function cardinalityContract(sceneSpec: SceneSpec, officialStructures?: Readonly
   return `CARDINALITY CONTRACT: render exactly ${summary || "zero approved physical instances"}, meaning exactly ${sceneSpec.elements.length} distinct installed structure(s). Each listed element is one visible structure, not one balloon or one package. The quantity inside an element is its installed material quantity; never turn it into extra structures. Keep every listed structure separate, positioned separately, and neither merge, duplicate, nor omit any one.${separateSidePiecesSentence(sceneSpec, officialStructures)}`;
 }
 
+/**
+ * Elementos para los que el prompt emite una línea de color propia. Único
+ * dueño de esa condición: `verificarCoherenciaPrompt` comprueba justo esas
+ * líneas y no puede tener su propia copia de la regla.
+ */
+export function tieneContratoDeColor(element: SceneSpec["elements"][number]): boolean {
+  return element.category === "balloon_structure" || /\b(?:arco|columna|guirnalda|balloon)\b/i.test(element.name);
+}
+
 function colorVarietyContract(sceneSpec: SceneSpec): string[] {
-  const balloonStructures = sceneSpec.elements.filter((element) =>
-    element.category === "balloon_structure" || /\b(?:arco|columna|guirnalda|balloon)\b/i.test(element.name),
-  );
+  const balloonStructures = sceneSpec.elements.filter(tieneContratoDeColor);
   if (balloonStructures.length === 0) {
     return ["No balloon color mix is approved; do not add balloon structures or colors as atmosphere."];
   }

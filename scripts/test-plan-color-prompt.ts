@@ -7,9 +7,10 @@ import { planBlueprint } from "@/app/api/generate/route";
 import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/scene-spec";
 import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
 import { estimateFromPlan } from "@/lib/materiales/estimacion";
-import { buildImagePrompt } from "@/lib/ia/build-image-prompt";
+import { buildImagePrompt, promptElementName, tieneContratoDeColor } from "@/lib/ia/build-image-prompt";
 import { buildQaObserverPrompt, qaPlanInputsFromPlan } from "@/lib/ia/image-qa";
-import { verificarCoherenciaPrompt } from "@/lib/plan/coherencia";
+import { compileLoraCaption, GROUPING_ONLY_CONTEXT, translateLoraColor } from "@/lib/ia/lora-caption-compiler";
+import { verificarCoherenciaPrompt, verificarColoresCaptionLora, type EscenaParaCoherencia } from "@/lib/plan/coherencia";
 import { bloqueMezclaPorEstructura } from "@/lib/ia/tamano-fisico";
 
 /**
@@ -99,6 +100,19 @@ function escenaDe(plan: PlanResuelto): SceneSpec {
     planHash: plan.plan_hash,
     catalogOnly: true,
   });
+}
+
+/** Lo mismo que arma route.ts para la comprobación estructural de color. */
+function escenaParaCoherencia(escena: SceneSpec): EscenaParaCoherencia {
+  return {
+    elementos: escena.elements.map((element) => ({
+      element_id: element.element_id,
+      nombre_en_prompt: promptElementName(element.name),
+      estructura_id: element.visual_semantics?.repetition_group ?? element.element_id.split("#")[0]!,
+      resolved_colors: element.resolved_colors,
+      espera_linea_de_color: tieneContratoDeColor(element),
+    })),
+  };
 }
 
 /** El mismo bloque de tamaños que arma route.ts, necesario para la coherencia. */
@@ -211,6 +225,38 @@ async function main(): Promise<void> {
   // Una estructura monocolor no inventa una mezcla.
   assert.match(qa, /EST_02_COLUMNAS#1: [^\n]*colors=dorado; bbox=/, qa);
   console.log("[PASS] colorVarietyContract y QA describen la misma mezcla por estructura, con acabado y dominancia");
+
+  // 4b. `verificarCoherenciaPrompt` comprueba el color por estructura de forma
+  //     estructural. Una búsqueda de subcadenas no sirve: el bloque global
+  //     "Installed color distribution" nombra todos los colores de la escena,
+  //     así que se cumpliría aunque una estructura perdiera el suyo.
+  const escenaCoherencia = escenaParaCoherencia(escenaColumnas);
+  assert.equal(verificarCoherenciaPrompt(prompt, conColumnas, escenaCoherencia).ok, true);
+  const recoloreado = prompt.replace(/use exactly these catalog colors: blanco, dorado\./, "use exactly these catalog colors: blanco, plateado.");
+  assert.notEqual(recoloreado, prompt);
+  const fallo = verificarCoherenciaPrompt(recoloreado, conColumnas, escenaCoherencia);
+  assert.equal(fallo.ok, false, "un color cambiado en la línea del arco tiene que fallar");
+  assert.match(fallo.errores.join(" | "), /Arco principal[^|]*no lista sus colores/, fallo.errores.join(" | "));
+  // Sin la escena, el mismo prompt recoloreado pasa: es justo el hueco que se cierra.
+  assert.equal(verificarCoherenciaPrompt(recoloreado, conColumnas).ok, true);
+  // Una escena que perdió un color comprado tampoco pasa.
+  const escenaSinDorado: EscenaParaCoherencia = {
+    elementos: escenaCoherencia.elementos.map((elemento) => elemento.estructura_id === "EST_01_ARCO" ? { ...elemento, resolved_colors: ["blanco"] } : elemento),
+  };
+  const sinDorado = verificarCoherenciaPrompt(prompt, conColumnas, escenaSinDorado);
+  assert.equal(sinDorado.ok, false);
+  assert.match(sinDorado.errores.join(" | "), /los colores de EST_01_ARCO en la escena no son los comprados \(faltan dorado\)/, sinDorado.errores.join(" | "));
+
+  // 4c. El caption del LoRA nunca pasa por el prompt de imagen: se comprueba
+  //     sobre las cláusulas compiladas, con el mismo traductor de color.
+  const clausulas = compileLoraCaption({ sceneSpec: escenaColumnas, visualContext: GROUPING_ONLY_CONTEXT, officialStructures: qaPlanInputsFromPlan(conColumnas.plan.estructuras).officialStructures }).clauses;
+  const captionOk = verificarColoresCaptionLora(conColumnas, escenaCoherencia, { clausulas, traducirColor: translateLoraColor });
+  assert.equal(captionOk.ok, true, JSON.stringify(captionOk.errores));
+  const clausulasSinDorado = clausulas.map((clausula) => clausula.elementIds.includes("EST_01_ARCO") ? { ...clausula, colors: clausula.colors.filter((color) => color !== "gold") } : clausula);
+  const captionFallo = verificarColoresCaptionLora(conColumnas, escenaCoherencia, { clausulas: clausulasSinDorado, traducirColor: translateLoraColor });
+  assert.equal(captionFallo.ok, false, "un color perdido en el caption tiene que fallar");
+  assert.match(captionFallo.errores.join(" | "), /EST_01_ARCO en el caption LoRA no son los comprados \(faltan gold\)/, captionFallo.errores.join(" | "));
+  console.log("[PASS] coherencia: los colores de cada estructura se comprueban en la escena, en el prompt y en el caption LoRA");
 
   // 5. Sin estimado por estructura (catálogo suelto, sin plan) se conserva el
   //    texto sin proporciones en vez de inventar una.

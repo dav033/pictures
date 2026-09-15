@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
-import { buildImagePrompt, type PromptImageInput } from "@/lib/ia/build-image-prompt";
-import { LORA_CAPTION_COMPILER_VERSION, LORA_JSON_PROMPT_MAX_LENGTH } from "@/lib/ia/lora-caption-compiler";
+import { buildImagePrompt, promptElementName, tieneContratoDeColor, type PromptImageInput } from "@/lib/ia/build-image-prompt";
+import { LORA_CAPTION_COMPILER_VERSION, LORA_JSON_PROMPT_MAX_LENGTH, translateLoraColor } from "@/lib/ia/lora-caption-compiler";
 import { includesJsonPrompt, includesTextPrompt, resolveLoraPromptFormat } from "@/lib/ia/lora-prompt-format";
 import { parseLoraSeed, resolveLoraSeed } from "@/lib/ia/lora-seed";
 import { ambientDecorFromReference } from "@/lib/ia/reference-structure";
@@ -56,7 +56,7 @@ import { construirUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 import { registrarFalloUi, traducirErrorServidor } from "@/lib/errores-ui/traducir-error-servidor";
 import { PlanDecoracionSchema } from "@/lib/plan/tipos";
 import { cajasDeEstructuras, ubicacionDeInstancia } from "@/lib/plan/ubicaciones";
-import { verificarCoherenciaPrompt } from "@/lib/plan/coherencia";
+import { verificarCoherenciaPrompt, verificarColoresCaptionLora, type EscenaParaCoherencia } from "@/lib/plan/coherencia";
 import { abrirContextoPlan, verificarTokenAprobacion } from "@/lib/plan/aprobacion";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import {
@@ -1208,10 +1208,21 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // With a reference or venue photo its own setting (backdrop, curtains, furniture, lighting) is expected context for the QA.
     const planQaBase = approvedPlanQaInputs(planResuelto);
     const qaPlan = planQaBase && (references.length > 0 || venue) ? { ...planQaBase, photoSetting: true } : planQaBase;
+    // Lo que la escena aprobada dice de cada estructura, para la comprobación
+    // estructural de color de `verificarCoherenciaPrompt`.
+    const escenaParaCoherencia: EscenaParaCoherencia = {
+      elementos: transformedSceneSpec.elements.map((element) => ({
+        element_id: element.element_id,
+        nombre_en_prompt: promptElementName(element.name),
+        estructura_id: element.visual_semantics?.repetition_group ?? element.element_id.split("#")[0]!,
+        resolved_colors: element.resolved_colors,
+        espera_linea_de_color: tieneContratoDeColor(element),
+      })),
+    };
     const promptBase = { sceneSpec: transformedSceneSpec, inputs: selected.promptInputs, revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount: selected.droppedCatalogProductIds.length, droppedCompositionReferenceCount: selected.droppedReferenceCount, creatividad: creatividad.nivel, officialStructures: qaPlan?.officialStructures };
     const providerPrompt = buildImagePrompt(promptBase);
     if (planResuelto) {
-      const coherencia = verificarCoherenciaPrompt(providerPrompt, planResuelto);
+      const coherencia = verificarCoherenciaPrompt(providerPrompt, planResuelto, escenaParaCoherencia);
       if (!coherencia.ok) throw new Error(`El prompt no coincide con el plan resuelto: ${coherencia.errores.join("; ")}`);
     }
     // Fail closed before opening a paid provider call. An approved plan must
@@ -1312,6 +1323,13 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     }
     if (jsonPreflight && !jsonPreflight.ok) {
       throw new Error(`LORA_PREFLIGHT_FAILED: prompt JSON — ${jsonPreflight.errors.join("; ")}`);
+    }
+    // El caption del LoRA nunca pasa por verificarCoherenciaPrompt (no lleva
+    // diámetros ni nombres del plan), así que sus colores por estructura se
+    // comprueban sobre las cláusulas compiladas, con el mismo traductor.
+    if (usarLora && planResuelto) {
+      const coherenciaLora = verificarColoresCaptionLora(planResuelto, escenaParaCoherencia, { clausulas: loraCompilation.clauses, traducirColor: translateLoraColor });
+      if (!coherenciaLora.ok) throw new Error(`El caption LoRA no coincide con el plan resuelto: ${coherenciaLora.errores.join("; ")}`);
     }
     if (usarLora && includesTextPrompt(promptFormat) && !loraPreflight.ok) {
       // Sin semánticas canónicas del plan (selección suelta sin propuesta
