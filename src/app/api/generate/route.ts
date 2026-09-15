@@ -555,7 +555,7 @@ export function planBlueprint(plan: PlanResuelto): ReferenceBlueprintV2 {
     const mezclaPorColor = new Map<string, { color: string; productId: string; unidades: number; rol: string }>();
     for (const linea of resuelta.lineas) {
       if (!linea.color) continue;
-      const clave = `${plegarColor(linea.color)} ${linea.product_id}`;
+      const clave = JSON.stringify([plegarColor(linea.color), linea.product_id]);
       const previo = mezclaPorColor.get(clave);
       mezclaPorColor.set(clave, {
         color: previo?.color ?? linea.color,
