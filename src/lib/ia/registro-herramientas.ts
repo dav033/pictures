@@ -427,8 +427,18 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       restricciones: estado.restriccionesUsuario,
     });
     if (!parseado.success) {
+      const erroresEsquema = parseado.error.issues.map((issue) => `${issue.path.join(".") || "plan"}: ${issue.message}`);
+      // Plan A §A0.1: schema refusals were only visible as "aclaracion" in rag_query_log.
+      // Only paths and validator messages are stored, never the model's arguments.
+      encolarEscrituraObservabilidad(auditarPlan({
+        requestId: estado.ragRequestId,
+        restricciones: estado.restriccionesUsuario,
+        candidateProductIds: [...estado.ragIdsRecuperados],
+        status: "PLAN_ESQUEMA_INVALIDO",
+        error: erroresEsquema.join(" | "),
+      }));
       encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
-      return { ok: false, errores: parseado.error.issues.map((issue) => `${issue.path.join(".") || "plan"}: ${issue.message}`), mensaje_cliente: MENSAJE_CLIENTE_PLAN_EN_AJUSTE };
+      return { ok: false, errores: erroresEsquema, mensaje_cliente: MENSAJE_CLIENTE_PLAN_EN_AJUSTE };
     }
     const perfil = perfilCreatividad(options.creatividad);
     // Photo without balloons and no named pieces: ask before designing

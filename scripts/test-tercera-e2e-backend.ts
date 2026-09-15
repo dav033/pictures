@@ -218,6 +218,18 @@ async function main(): Promise<void> {
   }
   ok("A0.1: PLAN_NO_CONVERGE auditado; filas de plan_audit_log con hechos de la petición y rechazos del turno");
 
+  // A0.1: a plan the schema rejects is audited too, with validator paths only.
+  const esquema = turno({ colores: ["light pink"], candidatos: ["P-ROSADO"] });
+  const argsSensibles = { concepto: { titulo: "texto-del-modelo-no-auditable" }, estructuras: "no es una lista" };
+  const rechazoEsquema = await esquema.confirmar(argsSensibles);
+  assert.equal(rechazoEsquema.ok, false);
+  await esperarObservabilidadPendiente();
+  const filaEsquema = esquema.auditorias.find((fila) => fila[COL.status] === "PLAN_ESQUEMA_INVALIDO");
+  assert.ok(filaEsquema, `schema refusal audited: ${esquema.auditorias.map((fila) => String(fila[COL.status])).join(", ")}`);
+  assert.match(String(filaEsquema[16]), /estructuras/, "error keeps the validator path");
+  assert.doesNotMatch(JSON.stringify(filaEsquema), /texto-del-modelo-no-auditable/, "model arguments are not stored");
+  ok("A0.1: el rechazo de esquema de confirmar_plan_decoracion queda en plan_audit_log sin los argumentos del modelo");
+
   // The turn closes itself before the deadline, without another model call.
   assert.equal(convergencia.cierreAnticipado({ transcurridoMs: 20_000, hayPlan: false, coloresPedidos: ["rosado"], coloresDisponibles: ["rosado"] }), null);
   const pregunta = convergencia.cierreAnticipado({ transcurridoMs: 41_000, hayPlan: false, coloresPedidos: ["rosado", "plateado", "transparente"], coloresDisponibles: ["rosado", "plateado"] });
