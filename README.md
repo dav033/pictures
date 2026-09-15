@@ -44,12 +44,13 @@ No hace falta una base de datos local: todo apunta a Neon. Los tests que usan Po
   - Python: `ruff check`, `ruff format --check`, `mypy app scripts`, `generate_models --check`, `pytest`;
   - escaneo de secretos.
 - **Sin gasto en local** (vacía las claves: `env GEMINI_API_KEY= FAL_KEY= …`): `npm run plan:test`, `npm run ia:test`, `npm run ui:test-propuesta`, `npm run ui:test-armazon`, `npm run ia:test-referencias-reglas` y el resto de scripts `*:test*` de `package.json`.
-- **E2E de interfaz:** `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/usr/bin/chromium npx tsx scripts/e2e-modo-vista.ts --base http://localhost:3010`.
+- **E2E de interfaz (simulado, sin gasto):** `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/usr/bin/chromium npx tsx scripts/e2e-modo-vista.ts --base http://localhost:3010`.
+- **Pruebas E2E del backend con Gemini real (con gasto):** `npm run plan:test-segunda-e2e` y `npm run plan:test-tercera-e2e` validan sin red; las corridas reales se hicieron contra `/api/chat` con la foto `ejemplo-01`.
 
 ## Despliegue
 
 - **Next** (`demo-decoracion`): push a `main` → `checks.yml` → `deploy.yml`. Este último ejecuta por SSH `~/deploy-demo-decoracion.sh <sha>` en el servidor (EC2), que construye la imagen y reemplaza el contenedor. Solo acepta commits de `origin/main`.
-- **Backend Python** (`demo-decoracion-ai-api`): el pipeline no lo despliega. Se construye en el servidor desde el mismo commit: `docker build services/ai-api`, y se reemplaza el contenedor con `--network stack_web` y `--env-file ~/ai-api.env`. **Si cambia el contrato del plan, despliega ai-api antes que Next.**
+- **Backend Python** (`demo-decoracion-ai-api`): el pipeline no lo despliega. Se construye en el servidor desde el mismo commit: `docker build services/ai-api`, y se reemplaza el contenedor con `--network stack_web` y `--env-file ~/ai-api.env`. **Si cambia el contrato del plan, despliega ai-api antes que Next.** Desde la iteración 4 ai-api también necesita `CATALOG_DATABASE_URL` (catálogo y `/readyz`), y el `plan_hash` cambia en planes con compras consolidadas o medidas de foto: un plan firmado antes del despliegue puede pedir confirmarse de nuevo (409).
 - **URL pública:** https://52-54-205-188.sslip.io (Caddy → `demo-decoracion:3000`).
 
 ## Flujo del cliente
@@ -97,6 +98,17 @@ No hace falta una base de datos local: todo apunta a Neon. Los tests que usan Po
   - reanálisis sin caché y deduplicación en vuelo;
   - errores de imagen no reintentables;
   - `request_id` en las respuestas.
+- **Verificación E2E real (tres rondas con Gemini real)** y sus correcciones:
+  - los colores de la foto se conservan aunque la ocasión (p. ej. cumpleaños) no los filtre; los últimos mensajes del cliente mandan sobre colores y piezas (`restricciones-conversacion.ts`);
+  - las medidas estimadas desde una foto quedan como supuesto, no como dato;
+  - compras consolidadas por producto, tamaño y color (una fila por paquete, sin duplicados);
+  - el plan converge: tras 2 rechazos del validador se relajan reglas no críticas, tras 4 se responde `PLAN_NO_CONVERGE` con una pregunta, y el turno se cierra a los 40 s;
+  - el brief de la herramienta se sanea (claves desconocidas ya no tumban el turno);
+  - el filtro de tamaños por turno solo usa tamaños que pidió el cliente; gris y plateado son colores distintos;
+  - números por dígito (`NUMERO_INCORRECTO`), marcas registradas, un solo material por pieza cuando aplica;
+  - nunca hay turnos vacíos y el asistente no afirma cambios que no aplicó («Todavía no pude aplicar ese cambio»);
+  - creatividad, propuesta aprobada, imagen y adjuntos persisten tras recargar;
+  - pool de Neon con keepAlive y reintento ante cortes.
 
 ## Decisiones tomadas
 
@@ -115,7 +127,8 @@ No hace falta una base de datos local: todo apunta a Neon. Los tests que usan Po
 
 ## Limitaciones conocidas
 
-- La **generación de imagen con fal.ai está detenida por saldo agotado** de la cuenta. La calibración visual de creatividad (niveles 0–5 con semilla fija) queda pendiente de recargar saldo.
+- La **generación de imagen con fal.ai** estuvo detenida por saldo agotado durante la iteración 4; si vuelve a faltar saldo la interfaz lo dice (`VISTA_PREVIA_NO_DISPONIBLE`) y conserva la propuesta. La calibración visual de creatividad (niveles 0–5 con semilla fija) sigue pendiente.
+- El número foil «4» en dorado o plata no está en la lista de productos entrenados; el asistente ofrece el disponible (latte).
 - Los niveles de creatividad y las bandas de conteo de globos son supuestos de diseño, no están calibrados con montajes reales.
 - El análisis de fotos con Gemini no es totalmente estable entre corridas; «Reintentar» fuerza un análisis nuevo.
 - El rol de solo lectura para `CATALOG_DATABASE_URL` no está provisionado; hoy usa la misma URL que `DATABASE_URL`.
