@@ -5,6 +5,7 @@ import { parseDetectedStructure } from "../src/lib/ia/reference-structure";
 import { SupuestoTokensSchema, TablaPreciosSchema } from "../src/lib/eval/estructuras/costo";
 import { claveCorrida, ejecutarCorrida, planificarCorrida, type Analizador, type ConfiguracionRunner, type ItemSuite } from "../src/lib/eval/estructuras/runner";
 import type { PrediccionEstructurasV1 } from "../src/lib/eval/estructuras/prediccion";
+import { firmaFamilias, flipRate, percentil, resumirCorrida } from "../src/lib/eval/estructuras/resumen-corrida";
 
 /**
  * Plan A §A0.3: recognition runner core with simulated analyzers — preview
@@ -123,6 +124,39 @@ async function run(): Promise<void> {
     const resultado = await ejecutarCorrida({ config: config(), items: [item(1)], analizar, yaHechas, alEscribir: () => undefined });
     assert.equal(llamadas, 2);
     assert.deepEqual(resultado.lineas.map((linea) => linea.corrida), [4, 5]);
+  });
+
+  await caso("run.json: percentiles por rango más cercano y flip rate por firma de familias", () => {
+    assert.equal(percentil([], 50), null);
+    assert.deepEqual([percentil([5], 95), percentil([1, 2, 3, 4], 50), percentil([1, 2, 3, 4], 95), percentil([10, 1, 7], 50)], [5, 2, 4, 7]);
+    const base = { schema: "prediccion-estructuras.v1" as const, run_id: "r", sistema: config().sistema, raw_output_sha256: "c".repeat(64), uso_reportado: { tokens_entrada: 0, tokens_salida: 0, tokens_pensamiento: 0, tokens_cacheados: 0, llamadas: 0, finish_reasons: [] }, latencia_ms: { total: 1, inventario: null, auditoria: null } };
+    const instancia = (familia: "arco" | "aro") => ({ instance_id: "E", bbox: { x: 0, y: 0, width: 1, height: 1 }, familia, candidatos: [familia], estado: "determinada" as const, atributos_v1: { structure_type: familia === "arco" ? "arch" as const : "hoop" as const, outline: "symmetric" as const, density: "dense" as const, horizontal_position: "center" as const, top_overhang: null, grounded: true } });
+    const linea = (imagen: number, corrida: number, familias: Array<"arco" | "aro">, resultado: "ok" | "error" = "ok"): PrediccionEstructurasV1 => ({ ...base, image_sha256: hash(imagen), corrida, resultado, instancias: resultado === "ok" ? familias.map(instancia) : [] });
+    const lineas = [
+      linea(1, 1, ["arco", "aro"]), linea(1, 2, ["aro", "arco"]), linea(1, 3, ["arco"]), linea(1, 4, ["arco", "aro"]), linea(1, 5, [], "error"),
+      linea(2, 1, ["arco"]), linea(2, 2, ["arco"]),
+      linea(3, 1, ["aro"]),
+    ];
+    assert.equal(firmaFamilias(lineas[0]!), firmaFamilias(lineas[1]!), "order does not matter");
+    const flip = flipRate(lineas);
+    // Image 1: 4 ok runs, mode 3 → 0.25; image 2: 0; image 3: one ok run, not evaluated.
+    assert.deepEqual([flip.imagenes_evaluadas, flip.por_imagen[hash(1)], flip.por_imagen[hash(2)], flip.media], [2, 0.25, 0, 0.125]);
+  });
+
+  await caso("run.json: conteos, latencias, formato y costo sin métricas de exactitud", async () => {
+    const pasesMalformados: Analizador = async () => ({ resultado: "ok", detecciones: [], rawOutputSha256: "d".repeat(64), msTotal: 90, pases: [{ ...pasesOk[0]!, malformado: true, finishReason: "MAX_TOKENS" }, { ...pasesOk[0]!, intento: 2, ms: 50 }, pasesOk[1]!] });
+    const corrida = await ejecutarCorrida({ config: config({ corridasPorImagen: 2 }), items: [item(1), item(2)], analizar: pasesMalformados, alEscribir: () => undefined });
+    const runJson = resumirCorrida({ corrida, generadoEn: new Date("2026-09-15T13:00:00Z"), suite: { id: "prueba", manifiesto_sha256: "e".repeat(64) }, todasLasLineas: corrida.lineas });
+    assert.equal(runJson.metricas_de_exactitud, "no_calculadas_sin_verdad_humana");
+    assert.deepEqual(runJson.conteos.por_resultado, { ok: 4 });
+    assert.deepEqual(runJson.latencia_ms.inventario, { n: 8, p50: 40, p95: 50 });
+    assert.deepEqual(runJson.latencia_ms.punta_a_punta, { n: 4, p50: 90, p95: 90 });
+    assert.deepEqual([runJson.formato.intentos, runJson.formato.intentos_malformados, runJson.formato.tasa_malformada], [12, 4, 4 / 12]);
+    assert.deepEqual(runJson.formato.finish_reasons, { MAX_TOKENS: 4, STOP: 8 });
+    assert.ok(runJson.costo.desviacion_vs_esperado !== null && runJson.costo.reportado_es_estimado_desde_tokens_reportados);
+    assert.doesNotMatch(JSON.stringify(runJson), /privado\//, "private image paths never reach run.json");
+    const otroSistema = { ...corrida.lineas[0]!, sistema: { ...corrida.lineas[0]!.sistema, commit: "0000000" } };
+    assert.throws(() => resumirCorrida({ corrida, generadoEn: new Date(), suite: { id: "x", manifiesto_sha256: "e".repeat(64) }, todasLasLineas: [...corrida.lineas, otroSistema] }), /mezclan versiones/);
   });
 
   console.log(`[PASS] ${casos} casos del runner de reconocimiento`);
