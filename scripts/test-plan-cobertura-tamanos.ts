@@ -130,6 +130,69 @@ async function main(): Promise<void> {
   assert.equal(estadoAzul.planResuelto.plan.estructuras[0]!.materiales[0]!.color, "azul");
   ok("colores del cliente al vocabulario del catálogo: 'azul rey' resuelve contra variantes 'azul'");
 
+  // 5. W3.2: ruido de redondeo de las participaciones y rol principal coherente
+  //    con la participación, antes de que el esquema gaste un rechazo.
+  const { normalizarParticipacionesPlan } = await import("../src/lib/ia/registro-herramientas");
+  const conMateriales = (materiales: Array<Record<string, unknown>>) => ({
+    estructuras: [{ estructura_id: "EST_01_ARCO", materiales }],
+  });
+  const tercios = normalizarParticipacionesPlan(conMateriales([
+    { product_id: "A", participacion: 0.33, rol_material: "principal" },
+    { product_id: "B", participacion: 0.33, rol_material: "secundario" },
+    { product_id: "C", participacion: 0.33, rol_material: "acento" },
+  ]));
+  const cuotasTercios = (tercios.args.estructuras as Array<{ materiales: Array<{ participacion: number }> }>)[0]!.materiales.map((material) => material.participacion);
+  assert.ok(Math.abs(cuotasTercios.reduce((suma, cuota) => suma + cuota, 0) - 1) < 1e-9, cuotasTercios.join(", "));
+  assert.deepEqual(tercios.ajustes, [{ tipo: "participacion_reescalada", estructura_id: "EST_01_ARCO", suma_declarada: 0.33 * 3 }]);
+  assert.ok(PlanDecoracionSchema.safeParse({ plan_version: "1.0", plan_id: "99999999-9999-4999-8999-999999999999", ...plan("clasica"), estructuras: [{ ...plan("clasica").estructuras[0]!, materiales: (tercios.args.estructuras as Array<{ materiales: unknown[] }>)[0]!.materiales }] }).success, "el plan reescalado pasa el esquema");
+  assert.ok(!PlanDecoracionSchema.safeParse({ plan_version: "1.0", plan_id: "99999999-9999-4999-8999-999999999999", ...plan("clasica"), estructuras: [{ ...plan("clasica").estructuras[0]!, materiales: [{ product_id: "A", participacion: 0.33, rol_material: "principal" }, { product_id: "B", participacion: 0.33, rol_material: "secundario" }, { product_id: "C", participacion: 0.33, rol_material: "acento" }] }] }).success, "sin normalizar, 0,33 × 3 es un rechazo del esquema");
+
+  const desviado = conMateriales([{ product_id: "A", participacion: 0.5, rol_material: "principal" }, { product_id: "B", participacion: 0.3, rol_material: "acento" }]);
+  assert.deepEqual(normalizarParticipacionesPlan(desviado), { args: desviado, ajustes: [] }, "una desviación mayor a 0,02 la sigue rechazando el esquema");
+  const exacto = conMateriales([{ product_id: "A", participacion: 0.6, rol_material: "principal" }, { product_id: "B", participacion: 0.4, rol_material: "acento" }]);
+  assert.deepEqual(normalizarParticipacionesPlan(exacto), { args: exacto, ajustes: [] }, "un plan coherente no se toca");
+  assert.deepEqual(normalizarParticipacionesPlan({ estructuras: "no es una lista" }).ajustes, [], "argumentos con otra forma quedan para zod");
+
+  const rolInvertido = normalizarParticipacionesPlan(conMateriales([
+    { product_id: "A", participacion: 0.2, rol_material: "principal" },
+    { product_id: "B", participacion: 0.8, rol_material: "acento" },
+  ]));
+  assert.deepEqual((rolInvertido.args.estructuras as Array<{ materiales: Array<{ rol_material: string }> }>)[0]!.materiales.map((material) => material.rol_material), ["secundario", "principal"]);
+  assert.deepEqual(rolInvertido.ajustes, [{ tipo: "rol_principal_reasignado", estructura_id: "EST_01_ARCO", product_id: "B" }]);
+  const { HERRAMIENTAS_PLAN } = await import("../src/lib/ia/herramientas");
+  const materialPlan = (HERRAMIENTAS_PLAN[0]!.esquema as { properties: { estructuras: { items: { properties: { materiales: { items: { properties: Record<string, { description?: string; minimum?: number }> } } } } } } }).properties.estructuras.items.properties.materiales.items.properties;
+  assert.match(String(materialPlan.participacion!.description), /suman exactamente 1/);
+  assert.match(String(materialPlan.rol_material!.description), /principal = el material con mayor participacion/);
+  assert.equal(materialPlan.participacion!.minimum, 0, "el mínimo del esquema de herramienta no cambia");
+  ok("participaciones: 0,33 × 3 se reescala a 1 y el rol principal pasa al material de mayor participación");
+
+  // 6. W3.2: al quitar el principal, la regla 3 de cobertura lo reasigna al de
+  //    mayor participación reescalada, no al primero de la lista.
+  const { ajustarCoberturaPlan } = await import("../src/lib/plan/cobertura-materiales");
+  const disponibilidad = new Map([
+    ["P-MENOR", { titulo: "Globo blanco", colores: ["blanco"], mezclas: ["organica_fina", "organica_gruesa"] as const, acabados: [] }],
+    ["P-SIN-COBERTURA", { titulo: "Globo dorado", colores: ["dorado"], mezclas: ["clasica"] as const, acabados: [] }],
+    ["P-MAYOR", { titulo: "Globo rosado", colores: ["rosado"], mezclas: ["organica_fina", "organica_gruesa"] as const, acabados: [] }],
+  ]);
+  const planSinPrincipal = PlanDecoracionSchema.parse({
+    plan_version: "1.0",
+    plan_id: "88888888-8888-4888-8888-888888888888",
+    ...plan("organica_fina"),
+    estructuras: [{
+      ...plan("organica_fina").estructuras[0]!,
+      materiales: [
+        { product_id: "P-MENOR", color: "blanco", participacion: 0.2, rol_material: "secundario" },
+        { product_id: "P-SIN-COBERTURA", color: "dorado", participacion: 0.1, rol_material: "acento" },
+        { product_id: "P-MAYOR", color: "rosado", participacion: 0.7, rol_material: "acento" },
+      ],
+    }],
+  });
+  const ajustado = ajustarCoberturaPlan(planSinPrincipal, disponibilidad);
+  const materialesAjustados = ajustado.plan.estructuras[0]!.materiales;
+  assert.deepEqual(materialesAjustados.map((material) => material.product_id), ["P-MENOR", "P-MAYOR"], JSON.stringify(materialesAjustados));
+  assert.equal(materialesAjustados.find((material) => material.rol_material === "principal")?.product_id, "P-MAYOR", JSON.stringify(materialesAjustados));
+  ok("cobertura regla 3: el principal quitado deja el rol al material de mayor participación reescalada");
+
   console.log(`\n${casos} casos OK (A6)`);
 }
 

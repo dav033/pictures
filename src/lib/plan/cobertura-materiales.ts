@@ -25,7 +25,8 @@ import type { PlanDecoracion } from "./tipos";
  * 3. If no close mix fits every material, the main material (first
  *    `principal`, else the largest share) decides the mix, and the materials
  *    that cannot cover it are removed with a customer notice; the remaining
- *    shares are rescaled to add up to 1.
+ *    shares are rescaled to add up to 1 and, when the `principal` left, the
+ *    role goes to the largest rescaled share (ties by declared order).
  * 4. A structure whose main material covers no close mix, or with a material
  *    this turn's search did not return, is left as it is: the resolver reports
  *    it.
@@ -139,7 +140,13 @@ export function ajustarCoberturaPlan(
     // Shares must add up to exactly 1 for the plan schema.
     const desfase = 1 - reescaladas.reduce((suma, material) => suma + material.participacion, 0);
     reescaladas[0] = { ...reescaladas[0]!, participacion: reescaladas[0]!.participacion + desfase };
-    if (!reescaladas.some((material) => material.rol_material === "principal")) reescaladas[0] = { ...reescaladas[0]!, rol_material: "principal" };
+    // El material que decide la mezcla es el `principal`: si el que lo era se
+    // fue, el rol pasa al de mayor participación reescalada (empates: el
+    // primero declarado), no al primero de la lista.
+    if (!reescaladas.some((material) => material.rol_material === "principal")) {
+      const mayor = reescaladas.reduce((mejor, material, indice) => (material.participacion > reescaladas[mejor]!.participacion ? indice : mejor), 0);
+      reescaladas[mayor] = { ...reescaladas[mayor]!, rol_material: "principal" };
+    }
     const coloresQuedan = [...new Set(reescaladas.map((material) => material.color).filter((color): color is string => Boolean(color)))];
     for (const material of salen) {
       const nombre = material.color ? `globos ${material.color}` : "uno de los globos";
