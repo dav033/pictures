@@ -11,7 +11,7 @@ import { avisoFiltrosBusqueda, filtrosDurosDeBusqueda } from "@/lib/rag/chat/fil
 import type { FiltrosDurosBusqueda } from "@/lib/rag/query-parser/hard-filters";
 import { parseEventSearchIntent } from "@/lib/rag/query-parser/event-search";
 import { aProductoValidado, validarSeleccion, type ItemRechazado, type ItemValidado, type SeleccionSolicitada } from "@/lib/rag/chat/validar";
-import { actualizarResultadoBusqueda, encolarEscrituraObservabilidad, registrarBusqueda, registrarPlanAudit, registrarSeleccion } from "@/lib/rag/observability/log";
+import { actualizarResultadoBusqueda, encolarEscrituraObservabilidad, registrarBusqueda, registrarPlanAudit, registrarSeleccion, type HechosPeticionPlan } from "@/lib/rag/observability/log";
 import { resolverFranja } from "@/lib/rag/presupuesto/resolver";
 import { resolverVariantesPorDespieceBatch, type GrupoDespiece } from "@/lib/rag/tamanos/resolver";
 import { PlanDecoracionSchema, type PlanDecoracion } from "@/lib/plan/tipos";
@@ -399,8 +399,14 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
   signal?: AbortSignal;
   /** Creativity level chosen in the UI; decides how many extra pieces a reference plan may add. */
   creatividad?: NivelCreatividad;
+  /** Request facts for plan_audit_log columns (Plan A §A0.1); observability only. */
+  hechosPeticion?: Omit<HechosPeticionPlan, "rechazosTurno" | "claseRechazo">;
 } = {}): RegistroHerramientas {
   const ragPool = options.pool ?? getRagPool();
+  // Every plan audit row of this turn carries the request facts and the
+  // refusals counted so far; clase_rechazo waits for the A4.1 classes.
+  const auditarPlan = (datos: Omit<Parameters<typeof registrarPlanAudit>[1], "hechos">) =>
+    registrarPlanAudit(ragPool, { ...datos, hechos: { ...options.hechosPeticion, rechazosTurno: estado.rechazosPlan } });
   const catalogoBloqueado = options.catalogoLoraNoDisponible;
 
   const confirmarPlan = async (args: Record<string, unknown>): Promise<Record<string, unknown>> => {
@@ -431,7 +437,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     if (erroresReferenciaSinGlobos.length > 0) {
       estado.planResuelto = undefined;
       estado.seleccionFinalIA = [];
-      encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+      encolarEscrituraObservabilidad(auditarPlan({
         requestId: estado.ragRequestId,
         solicitudOriginal: estado.solicitudOriginal,
         restricciones: estado.restriccionesUsuario,
@@ -489,7 +495,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     if (erroresDeContrato.length > 0) {
       estado.planResuelto = undefined;
       estado.seleccionFinalIA = [];
-      encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+      encolarEscrituraObservabilidad(auditarPlan({
         requestId: estado.ragRequestId,
         solicitudOriginal: estado.solicitudOriginal,
         restricciones: estado.restriccionesUsuario,
@@ -513,7 +519,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     if (erroresDeNumero.length > 0) {
       estado.planResuelto = undefined;
       estado.seleccionFinalIA = [];
-      encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+      encolarEscrituraObservabilidad(auditarPlan({
         requestId: estado.ragRequestId,
         solicitudOriginal: estado.solicitudOriginal,
         restricciones: estado.restriccionesUsuario,
@@ -535,7 +541,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     if (erroresDeGlobos.length > 0) {
       estado.planResuelto = undefined;
       estado.seleccionFinalIA = [];
-      encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+      encolarEscrituraObservabilidad(auditarPlan({
         requestId: estado.ragRequestId,
         solicitudOriginal: estado.solicitudOriginal,
         restricciones: estado.restriccionesUsuario,
@@ -556,7 +562,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     if (estructurasSinGlobos.length > 0) {
       estado.planResuelto = undefined;
       estado.seleccionFinalIA = [];
-      encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+      encolarEscrituraObservabilidad(auditarPlan({
         requestId: estado.ragRequestId,
         solicitudOriginal: estado.solicitudOriginal,
         restricciones: estado.restriccionesUsuario,
@@ -577,7 +583,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     if (erroresDeUnidades.length > 0) {
       estado.planResuelto = undefined;
       estado.seleccionFinalIA = [];
-      encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+      encolarEscrituraObservabilidad(auditarPlan({
         requestId: estado.ragRequestId,
         solicitudOriginal: estado.solicitudOriginal,
         restricciones: estado.restriccionesUsuario,
@@ -604,7 +610,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     if (elementosSinCubrir.length > 0) {
       estado.planResuelto = undefined;
       estado.seleccionFinalIA = [];
-      encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+      encolarEscrituraObservabilidad(auditarPlan({
         requestId: estado.ragRequestId,
         solicitudOriginal: estado.solicitudOriginal,
         restricciones: estado.restriccionesUsuario,
@@ -626,7 +632,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       for (const item of coloresOmitidos) estado.coloresReferenciaReclamados.add(`${item.estructura_id}|${item.color}`);
       estado.planResuelto = undefined;
       estado.seleccionFinalIA = [];
-      encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+      encolarEscrituraObservabilidad(auditarPlan({
         requestId: estado.ragRequestId,
         solicitudOriginal: estado.solicitudOriginal,
         restricciones: estado.restriccionesUsuario,
@@ -659,7 +665,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
           error: error instanceof Error ? error.message : String(error),
         };
       }
-      encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+      encolarEscrituraObservabilidad(auditarPlan({
         requestId: estado.ragRequestId,
         solicitudOriginal: estado.solicitudOriginal,
         geometry: shadow,
@@ -679,7 +685,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     const fallarPorBackend = (motivo: string, detalle: string, accionRequerida: string, mensajeCliente: string) => {
       estado.planResuelto = undefined;
       estado.seleccionFinalIA = [];
-      encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+      encolarEscrituraObservabilidad(auditarPlan({
         requestId: estado.ragRequestId,
         solicitudOriginal: estado.solicitudOriginal,
         restricciones: estado.restriccionesUsuario,
@@ -745,7 +751,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         // does not own it. Not a technical failure, so the model can retry.
         estado.planResuelto = undefined;
         estado.seleccionFinalIA = [];
-        encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+        encolarEscrituraObservabilidad(auditarPlan({
           requestId: estado.ragRequestId,
           solicitudOriginal: estado.solicitudOriginal,
           restricciones: estado.restriccionesUsuario,
@@ -769,7 +775,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     const materialEstimate = resolucion.materialEstimate;
     const estimateValidation = validateMaterialEstimate(materialEstimate);
     const physicalWarnings = blockingPhysicalWarnings(materialEstimate);
-    const auditarResuelto = (status: string, error?: string) => encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+    const auditarResuelto = (status: string, error?: string) => encolarEscrituraObservabilidad(auditarPlan({
       requestId: estado.ragRequestId,
       planHash: resuelto.plan_hash,
       solicitudOriginal: estado.solicitudOriginal,
@@ -1346,12 +1352,15 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       // Bounded retries: after RECHAZOS_MAXIMOS refusals the model must answer
       // the customer instead of confirming again (convergencia-plan.ts).
       if (estado.rechazosPlan >= RECHAZOS_MAXIMOS) {
+        encolarEscrituraObservabilidad(auditarPlan({ requestId: estado.ragRequestId, status: "PLAN_NO_CONVERGE", candidateProductIds: [...estado.ragIdsRecuperados] }));
         return { ok: false, status: "PLAN_NO_CONVERGE", accion_requerida: ACCION_PLAN_NO_CONVERGE, mensaje_cliente: MENSAJE_CLIENTE_PLAN_EN_AJUSTE };
       }
       const respuesta = await confirmarPlan(args);
       if (respuesta.ok !== false) return respuesta;
       estado.rechazosPlan += 1;
-      return estado.rechazosPlan >= RECHAZOS_MAXIMOS ? { ...respuesta, accion_requerida: ACCION_PLAN_NO_CONVERGE } : respuesta;
+      if (estado.rechazosPlan < RECHAZOS_MAXIMOS) return respuesta;
+      encolarEscrituraObservabilidad(auditarPlan({ requestId: estado.ragRequestId, status: "PLAN_NO_CONVERGE", candidateProductIds: [...estado.ragIdsRecuperados] }));
+      return { ...respuesta, accion_requerida: ACCION_PLAN_NO_CONVERGE };
     },
 
   };

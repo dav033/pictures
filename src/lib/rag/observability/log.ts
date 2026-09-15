@@ -164,6 +164,17 @@ export async function registrarSeleccion(
  * puede reconstruir sin convertir la tabla de observabilidad en un almacén
  * de contenido sensible.
  */
+/** Request facts stored in their own plan_audit_log columns (migration 024, Plan A §A0.1). */
+export type HechosPeticionPlan = {
+  tieneReferencia?: boolean;
+  tieneFotoEspacio?: boolean;
+  loraMode?: string;
+  motorImagenPrevisto?: string;
+  claseRechazo?: string;
+  rechazosTurno?: number;
+  superficie?: string;
+};
+
 export async function registrarPlanAudit(
   pool: Pool,
   datos: {
@@ -187,16 +198,20 @@ export async function registrarPlanAudit(
     sceneSpecHash?: string;
     qaHash?: string;
     flagSnapshot?: unknown;
+    hechos?: HechosPeticionPlan;
   },
 ): Promise<void> {
+  const hechos = datos.hechos ?? {};
   try {
     await pool.query(
       `INSERT INTO plan_audit_log
          (request_id, plan_hash, solicitud_original, restricciones, rag_query_ids,
            rag_query_refs, candidate_product_ids, selected_product_ids, geometry, cost_min_cop,
            cost_chosen_cop, ceiling_cop, delta_cop, packages, instances, status, error,
-           quote_hash, scene_spec_hash, qa_hash, flag_snapshot)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)`,
+           quote_hash, scene_spec_hash, qa_hash, flag_snapshot,
+           tiene_referencia, tiene_foto_espacio, lora_mode, motor_imagen_previsto, clase_rechazo, rechazos_turno, superficie)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21,
+          $22, $23, $24, $25, $26, $27, $28)`,
       [
         datos.requestId,
         datos.planHash ?? null,
@@ -219,6 +234,13 @@ export async function registrarPlanAudit(
          datos.sceneSpecHash ?? null,
          datos.qaHash ?? null,
          datos.flagSnapshot != null ? JSON.stringify(metadataAuditable(datos.flagSnapshot)) : null,
+         hechos.tieneReferencia ?? null,
+         hechos.tieneFotoEspacio ?? null,
+         hechos.loraMode?.slice(0, 64) || null,
+         hechos.motorImagenPrevisto?.slice(0, 64) || null,
+         hechos.claseRechazo?.slice(0, 64) || null,
+         hechos.rechazosTurno !== undefined && Number.isInteger(hechos.rechazosTurno) ? Math.min(99, Math.max(0, hechos.rechazosTurno)) : null,
+         hechos.superficie?.slice(0, 200) ?? null,
       ],
     );
   } catch (error) {

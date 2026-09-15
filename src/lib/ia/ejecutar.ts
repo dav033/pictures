@@ -30,6 +30,21 @@ type TelemetriaConversacion = {
   promptVersion?: string;
 };
 
+/** What the HTTP route knows about the request (Plan A §A0.1 audit columns). */
+type HechosRegistro = { tieneFotoEspacio?: boolean; tieneImagenesReferencia?: boolean; loraMode?: string };
+
+function hechosDelTurno(opts: { referenceBlueprint?: ReferenceBlueprintV2; telemetria?: TelemetriaConversacion; hechosPeticion?: HechosRegistro }) {
+  const hechos = opts.hechosPeticion ?? {};
+  // Unknown stays unknown: without a blueprint and no route facts nothing is claimed.
+  const tieneReferencia = opts.referenceBlueprint ? true : hechos.tieneImagenesReferencia;
+  return {
+    ...(tieneReferencia !== undefined ? { tieneReferencia } : {}),
+    ...(hechos.tieneFotoEspacio !== undefined ? { tieneFotoEspacio: hechos.tieneFotoEspacio } : {}),
+    ...(hechos.loraMode ? { loraMode: hechos.loraMode } : {}),
+    superficie: opts.telemetria?.superficie ?? "/api/chat",
+  };
+}
+
 /**
  * Este archivo es un wrapper delgado sobre el motor genérico de
  * @sempertex/agente-core: conserva la firma pública exacta que tenía antes
@@ -140,6 +155,7 @@ export async function ejecutarConversacion(opts: {
   catalogoLoraNoDisponible?: string;
   signal?: AbortSignal;
   telemetria?: TelemetriaConversacion;
+  hechosPeticion?: HechosRegistro;
 }): Promise<ResultadoConversacion> {
   const estado = estadoDelTurno(opts.historial, opts.brief, opts.referenceBlueprint);
   const resultado = await core({
@@ -147,7 +163,7 @@ export async function ejecutarConversacion(opts: {
     sistema: opts.sistema,
     historial: opts.historial,
     herramientas: herramientasActivas(),
-    registro: crearRegistroHerramientas(estado, { catalogAllowlist: opts.catalogAllowlist, catalogoLoraNoDisponible: opts.catalogoLoraNoDisponible, correlationId: opts.telemetria?.correlationId, signal: opts.signal }),
+    registro: crearRegistroHerramientas(estado, { catalogAllowlist: opts.catalogAllowlist, catalogoLoraNoDisponible: opts.catalogoLoraNoDisponible, correlationId: opts.telemetria?.correlationId, signal: opts.signal, hechosPeticion: hechosDelTurno(opts) }),
     herramientasSoloLectura: HERRAMIENTAS_SOLO_LECTURA,
     vueltasMax: VUELTAS_MAX,
     onLlamada: opts.onLlamada,
@@ -179,6 +195,7 @@ export async function* ejecutarConversacionStream(opts: {
   creatividad?: NivelCreatividad;
   signal?: AbortSignal;
   telemetria?: TelemetriaConversacion;
+  hechosPeticion?: HechosRegistro;
 }): AsyncGenerator<EventoConversacion> {
   const estado = estadoDelTurno(opts.historial, opts.brief, opts.referenceBlueprint);
   const generador = coreStream({
@@ -186,7 +203,7 @@ export async function* ejecutarConversacionStream(opts: {
     sistema: opts.sistema,
     historial: opts.historial,
     herramientas: herramientasActivas(),
-    registro: crearRegistroHerramientas(estado, { catalogAllowlist: opts.catalogAllowlist, catalogoLoraNoDisponible: opts.catalogoLoraNoDisponible, correlationId: opts.telemetria?.correlationId, signal: opts.signal, creatividad: opts.creatividad }),
+    registro: crearRegistroHerramientas(estado, { catalogAllowlist: opts.catalogAllowlist, catalogoLoraNoDisponible: opts.catalogoLoraNoDisponible, correlationId: opts.telemetria?.correlationId, signal: opts.signal, creatividad: opts.creatividad, hechosPeticion: hechosDelTurno(opts) }),
     herramientasSoloLectura: HERRAMIENTAS_SOLO_LECTURA,
     vueltasMax: VUELTAS_MAX,
     alAgotarVueltas: () => textoAlAgotarVueltas(estado),

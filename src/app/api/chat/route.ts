@@ -196,6 +196,7 @@ export async function POST(request: Request) {
   let referenceBlueprint: ReferenceBlueprintV2 | undefined;
   let catalogAllowlist: Awaited<ReturnType<typeof resolveLoraModeDatasetAllowlist>> = null;
   let catalogoLoraNoDisponible: string | undefined;
+  let loraModeSlug: string | undefined;
 
   try {
     if (!RAG_ENABLED) throw new RagUnavailableError({});
@@ -209,6 +210,7 @@ export async function POST(request: Request) {
       ? ReferenceBlueprintV2Schema.parse(rawReferenceBlueprint)
       : undefined;
     const loraMode = rawLoraMode == null ? null : LoraModeSlugSchema.parse(rawLoraMode);
+    loraModeSlug = loraMode ?? undefined;
     if (RAG_ENABLED && loraMode) {
       try {
         catalogAllowlist = await resolveLoraModeDatasetAllowlist(loraMode);
@@ -291,6 +293,7 @@ export async function POST(request: Request) {
     catalogoLoraNoDisponible,
     creatividad,
     signal: deadline.signal,
+    hechosPeticion: { tieneFotoEspacio: Boolean(fotoEspacio), tieneImagenesReferencia: (imagenesReferencia?.length ?? 0) > 0, loraMode: loraModeSlug },
     telemetria: {
       flujo: "armador_decoracion",
       requestId,

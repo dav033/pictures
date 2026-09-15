@@ -42,6 +42,7 @@ async function main(): Promise<void> {
   const { candidatoDesdePython } = await import("../src/lib/rag/chat/candidato-python");
   const { buscarNumerosPorDigito, digitosBuscados } = await import("../src/lib/rag/catalog/numeros-por-digito");
   const { buscarGlobosPorColor } = await import("../src/lib/rag/catalog/globos-por-color");
+  const { esperarObservabilidadPendiente } = await import("../src/lib/rag/observability/log");
   const { construirSistema } = await import("../src/lib/ia/prompt-sistema");
   const { ejecutarConversacionStream } = await import("@sempertex/agente-core");
   type ProductoCandidato = import("../src/lib/rag/chat/buscar").ProductoCandidato;
@@ -127,8 +128,12 @@ async function main(): Promise<void> {
     referencia_omitida: [],
   });
   const llamada = { nombre: "confirmar_plan_decoracion", args: {} };
-  const turno = (opciones: { colores: string[]; candidatos: string[]; whitelistExtra?: Record<string, string[]> }) => {
-    const pool = { query: async (sql: string) => (/unnest\(\$1::text\[\]\) AS color/.test(sql) ? { rows: [] } : { rows: filas }) } as unknown as Pool;
+  const turno = (opciones: { colores: string[]; candidatos: string[]; whitelistExtra?: Record<string, string[]>; hechosPeticion?: { tieneReferencia?: boolean; tieneFotoEspacio?: boolean; loraMode?: string; superficie?: string } }) => {
+    const auditorias: unknown[][] = [];
+    const pool = { query: async (sql: string, params: unknown[] = []) => {
+      if (/INSERT INTO plan_audit_log/.test(sql)) auditorias.push(params);
+      return /unnest\(\$1::text\[\]\) AS color/.test(sql) ? { rows: [] } : { rows: filas };
+    } } as unknown as Pool;
     const estado = crearEstadoConversacion({}, "Quiero algo así para un cumpleaños", blueprint(opciones.colores));
     estado.ragCandidatos = opciones.candidatos.map(candidato);
     for (const c of estado.ragCandidatos) {
@@ -139,8 +144,8 @@ async function main(): Promise<void> {
       estado.ragIdsRecuperados.add(productId);
       estado.ragVariantIdsRecuperados.set(productId, new Set(variantes));
     }
-    const registro = crearRegistroHerramientas(estado, { pool, creatividad: 2 });
-    return { estado, confirmar: (args: Record<string, unknown>) => registro.confirmar_plan_decoracion!(args, llamada) as Promise<Record<string, unknown>> };
+    const registro = crearRegistroHerramientas(estado, { pool, creatividad: 2, hechosPeticion: opciones.hechosPeticion });
+    return { estado, auditorias, confirmar: (args: Record<string, unknown>) => registro.confirmar_plan_decoracion!(args, llamada) as Promise<Record<string, unknown>> };
   };
   const tamanos = (respuesta: Record<string, unknown>) => (respuesta.estructuras as Array<{ tamanos: string[] }>).flatMap((estructura) => estructura.tamanos.map((tamano) => tamano.split("×")[0]));
 
@@ -189,13 +194,29 @@ async function main(): Promise<void> {
   assert.equal(tercero.ok, true, `third attempt converges: ${JSON.stringify(tercero).slice(0, 400)}`);
   assert.ok((tercero.avisos_cliente as string[]).some((aviso) => /No tengo globos lila en todos los tamaños/.test(aviso)), JSON.stringify(tercero.avisos_cliente));
   // Unrepairable refusals stop after RECHAZOS_MAXIMOS: the model must answer the customer.
-  const sinSalida = turno({ colores: ["light pink", "chrome silver", "white"], candidatos: [], whitelistExtra: lila });
+  const sinSalida = turno({ colores: ["light pink", "chrome silver", "white"], candidatos: [], whitelistExtra: lila, hechosPeticion: { tieneReferencia: true, tieneFotoEspacio: false, loraMode: "training_1", superficie: "/api/chat" } });
   const soloLila = plan("organica_fina", [["P-LILA", "lila", 1]]);
   const estados: unknown[] = [];
   for (let intento = 0; intento < convergencia.RECHAZOS_MAXIMOS + 1; intento += 1) estados.push((await sinSalida.confirmar(soloLila)).status);
   assert.deepEqual(estados.slice(0, convergencia.RECHAZOS_MAXIMOS - 1), Array(convergencia.RECHAZOS_MAXIMOS - 1).fill("SIN_COBERTURA"));
   assert.equal(estados.at(-1), "PLAN_NO_CONVERGE", JSON.stringify(estados));
   ok("D2: salvaguarda de convergencia (acepta con avisos tras 2 rechazos; corta tras 4)");
+
+  // A0.1: PLAN_NO_CONVERGE is audited, and every audit row carries the request
+  // facts and the refusals counted so far (columns of migration 024).
+  await esperarObservabilidadPendiente();
+  const COL = { status: 15, tieneReferencia: 21, tieneFotoEspacio: 22, loraMode: 23, motor: 24, claseRechazo: 25, rechazosTurno: 26, superficie: 27 };
+  const statusAuditados = sinSalida.auditorias.map((fila) => `${String(fila[COL.status])}@${String(fila[COL.rechazosTurno])}`);
+  const noConverge = sinSalida.auditorias.filter((fila) => fila[COL.status] === "PLAN_NO_CONVERGE");
+  assert.ok(noConverge.length >= 1, `PLAN_NO_CONVERGE audited: ${statusAuditados.join(", ")}`);
+  assert.ok(noConverge.every((fila) => fila[COL.rechazosTurno] === convergencia.RECHAZOS_MAXIMOS), statusAuditados.join(", "));
+  for (const fila of sinSalida.auditorias) {
+    assert.equal(fila.length, 28);
+    assert.deepEqual([fila[COL.tieneReferencia], fila[COL.tieneFotoEspacio], fila[COL.loraMode], fila[COL.superficie]], [true, false, "training_1", "/api/chat"]);
+    assert.equal(fila[COL.motor], null, "motor_imagen_previsto has no server-side owner yet");
+    assert.equal(fila[COL.claseRechazo], null, "clase_rechazo waits for the A4.1 classes");
+  }
+  ok("A0.1: PLAN_NO_CONVERGE auditado; filas de plan_audit_log con hechos de la petición y rechazos del turno");
 
   // The turn closes itself before the deadline, without another model call.
   assert.equal(convergencia.cierreAnticipado({ transcurridoMs: 20_000, hayPlan: false, coloresPedidos: ["rosado"], coloresDisponibles: ["rosado"] }), null);
