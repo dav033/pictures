@@ -5,7 +5,7 @@ import { PlanDecoracionSchema } from "@/lib/plan/tipos";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { planBlueprint } from "@/app/api/generate/route";
 import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/scene-spec";
-import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
+import { cajasDeEstructuras, ubicacionDeInstancia } from "@/lib/plan/ubicaciones";
 import { estimateFromPlan } from "@/lib/materiales/estimacion";
 import { buildCorrectiveRetryPrompt, buildQaObserverPrompt, type SceneQaObservation } from "@/lib/ia/image-qa";
 import { buildImagePrompt, FINAL_OUTPUT_REMINDER } from "@/lib/ia/build-image-prompt";
@@ -144,7 +144,65 @@ async function main(): Promise<void> {
   assert.equal(buildCorrectiveRetryPrompt(passed, scene), "", "una imagen conforme no lleva instrucción correctiva");
   console.log("[PASS] corrective retry: nombres legibles, sin ids y antes del recordatorio final");
 
-  // 5. One owner: the prompt compiled with the same plan map asks the image model for the gap.
+  // 5. Ubicación de las instancias repetidas (ubicaciones.ts). Solo se
+  //    reflejaban las laterales repetidas exactamente dos veces; cualquier
+  //    otra repartía la caja en tajadas horizontales estrechas del mismo lado,
+  //    y el QA marcaba como fallo de ubicación un render simétrico correcto.
+  const estructura = (ubicacion: string, repeticiones: number) => ({
+    estructura_id: "EST_01", nombre: "Columnas", tipo: "columna", rol_escena: "soporte",
+    ubicacion, repeticiones, medidas: { alto_m: 1.8 }, densidad: "media", mezcla: "clasica", materiales, porque: "x",
+  } as unknown as Parameters<typeof cajasDeEstructuras>[0][number]);
+  const centro = (caja: { x: number; width: number }) => Number((caja.x + caja.width / 2).toFixed(6));
+
+  // Dos laterales: exactamente igual que antes, declarando cualquiera de los dos lados.
+  const parIzquierda = cajasDeEstructuras([estructura("lateral_izquierdo", 2)]);
+  const parDerecha = cajasDeEstructuras([estructura("lateral_derecho", 2)]);
+  for (const instancia of ["EST_01#1", "EST_01#2"]) {
+    assert.deepEqual(parIzquierda[instancia], parDerecha[instancia], "declarar cualquier lateral produce la misma geometría (entra en el plan_hash)");
+  }
+  assert.deepEqual(parIzquierda["EST_01#1"]!.bbox, { x: 0.04, y: 0.28, width: 0.24, height: 0.62 });
+  assert.deepEqual(parIzquierda["EST_01#2"]!.bbox, { x: 0.72, y: 0.28, width: 0.24, height: 0.62 });
+
+  // Cuatro laterales: dos por lado, en espejo, separadas en profundidad y altura.
+  const cuatro = cajasDeEstructuras([estructura("lateral_izquierdo", 4)]);
+  const lados = [1, 2, 3, 4].map((n) => centro(cuatro[`EST_01#${n}`]!.bbox));
+  assert.deepEqual(lados.map((cx) => cx < 0.5 ? "izq" : "der"), ["izq", "der", "izq", "der"]);
+  assert.equal(lados[0]! + lados[1]!, 1, "la primera pareja es simétrica");
+  assert.equal(lados[2]! + lados[3]!, 1, "la segunda pareja también");
+  assert.ok(cuatro["EST_01#1"]!.bbox.width > 0.2, `sin tajadas horizontales estrechas: ${cuatro["EST_01#1"]!.bbox.width}`);
+  assert.notDeepEqual(cuatro["EST_01#3"]!.bbox, cuatro["EST_01#1"]!.bbox, "las dos del mismo lado se separan");
+  assert.equal(cuatro["EST_01#3"]!.bbox.x, cuatro["EST_01#1"]!.bbox.x, "se separan en profundidad y altura, no de lado");
+  assert.ok(cuatro["EST_01#3"]!.depthLayer > cuatro["EST_01#1"]!.depthLayer);
+  assert.deepEqual([0, 1, 2, 3].map((indice) => ubicacionDeInstancia(estructura("lateral_izquierdo", 4), indice)), ["lateral_izquierdo", "lateral_derecho", "lateral_izquierdo", "lateral_derecho"]);
+
+  // Impares: sin par que repartir, se conserva el comportamiento actual.
+  const tres = cajasDeEstructuras([estructura("lateral_izquierdo", 3)]);
+  assert.ok([1, 2, 3].every((n) => centro(tres[`EST_01#${n}`]!.bbox) < 0.5));
+  assert.deepEqual([0, 1, 2].map((indice) => ubicacionDeInstancia(estructura("lateral_izquierdo", 3), indice)), ["lateral_izquierdo", "lateral_izquierdo", "lateral_izquierdo"]);
+
+  // Ubicaciones centradas ×2: en espejo alrededor de x = 0,5 (piso_frontal daba "left" y "center").
+  for (const ubicacion of ["piso_frontal", "arco_central", "fondo_pared", "mesas_invitados", "zona_central", "recorrido_suelo"]) {
+    const cajas = cajasDeEstructuras([estructura(ubicacion, 2)]);
+    const izquierda = centro(cajas["EST_01#1"]!.bbox);
+    const derecha = centro(cajas["EST_01#2"]!.bbox);
+    assert.equal(Number((izquierda + derecha).toFixed(6)), 1, `${ubicacion}: las dos instancias son simétricas`);
+    assert.ok(izquierda < derecha, `${ubicacion}: la #1 va a la izquierda de la #2`);
+  }
+  // El caso citado: piso_frontal ×2 daba "left" y "center" (0.324 y 0.644).
+  const frontal = cajasDeEstructuras([estructura("piso_frontal", 2)]);
+  assert.ok(centro(frontal["EST_01#1"]!.bbox) < 0.34 && centro(frontal["EST_01#2"]!.bbox) > 0.66, JSON.stringify(frontal));
+
+  // Cajas de un solo lado por definición: no se tocan.
+  for (const ubicacion of ["entrada", "esquina", "vegetacion", "pared_lateral"]) {
+    const cajas = cajasDeEstructuras([estructura(ubicacion, 2)]);
+    const base = cajas.EST_01!.bbox;
+    assert.equal(cajas["EST_01#1"]!.bbox.x, base.x, `${ubicacion} conserva el reparto actual`);
+    assert.equal(cajas["EST_01#1"]!.bbox.width, base.width / 2 * 0.9, `${ubicacion} conserva el reparto actual`);
+    assert.ok(centro(cajas["EST_01#2"]!.bbox) < 0.5, `${ubicacion} sigue siendo una ubicación de un solo lado`);
+  }
+  console.log("[PASS] ubicaciones: laterales pares reparten a los dos lados y las centradas ×2 van en espejo");
+
+  // 6. One owner: the prompt compiled with the same plan map asks the image model for the gap.
   const compiled = compileProductPrompt({ sceneSpec: scene, visualContext: CONTEXT, vocabulary: PRODUCT_VOCABULARY, trigger: "eventdecor_style_v2", officialStructures: qaPlan.officialStructures });
   assert.match(compiled.prompt, /stand apart with an open gap between them/, compiled.prompt);
   console.log("[PASS] the LoRA prompt compiled with the same plan inputs requests the separation QA checks");
