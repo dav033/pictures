@@ -1,0 +1,78 @@
+{
+  "schema": "run-reconocimiento-estructuras.v1",
+  "run_id": "ajuste-v16-control-20260915",
+  "generado_en": "2026-09-15T22:10:02.315Z",
+  "sistema": {
+    "id": "v16-candidato",
+    "modelo": "gemini-3.6-flash",
+    "parser_version": "semantic-layers-v13-box-2d",
+    "system_prompt_sha256": "b2c8aa853d2cd96bfbeb802363d6fb0318505c709336183cebcbc3a48750d439",
+    "config_hash": "fd71e1508a66434879867ef0f65733ddbc1d2af622f5b47979bc3e6698cb9f4b",
+    "thinking_level": "low",
+    "taxonomy_version": "estructuras-2.0.0",
+    "commit": "125e929038fb"
+  },
+  "suite": {
+    "id": "ajuste-v16-control",
+    "manifiesto_sha256": "d2f7ebfc2fe724d3ca3672f70ac1dc799bf235ae1b6862629b371e3fe1fb2676"
+  },
+  "metricas_de_exactitud": "no_calculadas_sin_verdad_humana",
+  "conteos": {
+    "imagenes": 34,
+    "corridas_por_imagen": 1,
+    "analisis_totales": 34,
+    "lineas": 34,
+    "por_resultado": {
+      "ok": 34
+    },
+    "instancias_ok": 58
+  },
+  "latencia_ms": {
+    "punta_a_punta": {
+      "n": 34,
+      "p50": 8391,
+      "p95": 13210
+    },
+    "inventario": {
+      "n": 34,
+      "p50": 6079,
+      "p95": 8623
+    },
+    "auditoria": {
+      "n": 36,
+      "p50": 1308,
+      "p95": 7055
+    }
+  },
+  "formato": {
+    "intentos": 70,
+    "intentos_malformados": 2,
+    "tasa_malformada": 0.02857142857142857,
+    "finish_reasons": {
+      "STOP": 70
+    }
+  },
+  "estabilidad": {
+    "flip_rate_familias": {
+      "imagenes_evaluadas": 0,
+      "media": null,
+      "por_imagen": {}
+    }
+  },
+  "costo": {
+    "moneda": "USD",
+    "estimado_previo": {
+      "moneda": "USD",
+      "es_estimado": true,
+      "precio_version": "precios-2026-09-15",
+      "supuesto_version": "tokens-analisis-2026-09-15",
+      "llamadas_analisis": 34,
+      "esperado_usd": 0.35088,
+      "cota_superior_usd": 1.302693
+    },
+    "reportado_usd": 0.26606025,
+    "reportado_es_estimado_desde_tokens_reportados": true,
+    "omitidas_por_presupuesto": 0,
+    "desviacion_vs_esperado": -0.24173435362517104
+  }
+}
