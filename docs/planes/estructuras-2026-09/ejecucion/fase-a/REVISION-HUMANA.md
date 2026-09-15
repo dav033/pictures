@@ -24,7 +24,8 @@ _Vacío. Solo nombre comercial y URL pública; nadie del loop contacta a nadie._
 
 ## Migraciones sin aplicar
 
-_La migración `024` de A0.1 (T6) se anotará aquí cuando exista: se prueba en base desechable y la aplica una persona._
+- **`scripts/migrations/024_telemetria_plan_a.sql` — pendiente de aplicar por una persona.** Agrega `ai_call_log.finish_reason` y `config_hash`, y siete columnas de `plan_audit_log`. Todas son nulables y tienen restricciones. Se verificó en PGlite desechable (aplica, es idempotente, rollback y re-aplicación). No se aplicó a Neon. Rollback en la cabecera del archivo.
+- **Filas de `ai_model_pricing` (Plan A §A0.1 tarea 4).** Faltan `gemini-3.6-flash` y `gemini-3.1-flash-image` con `fuente` y vigencias 2026/2027. El loop no inventa precios: hace falta la tabla de precios estándar (no batch) verificada en la página oficial, con fecha.
 
 - **Orden obligatorio:** `.github/workflows/deploy.yml` no aplica migraciones. La migración `024` tiene que aplicarse en Neon **antes** de desplegar el código que escribe `finish_reason`/`config_hash`. Si no, cada `INSERT` en `ai_call_log` falla y la telemetría se pierde sin error visible, porque la persistencia absorbe los fallos.
 

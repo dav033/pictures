@@ -100,3 +100,22 @@ test("persistencia SQL guarda metadatos pero no contenido ni error crudo", async
   assert.ok(!parametros.includes("texto sensible que solo vive en buffer"));
   assert.equal(ultimosEventos()[0]?.error, "texto sensible que solo vive en buffer");
 });
+
+test("A0.1: el INSERT durable escribe finish_reason y config_hash con un parámetro por columna", async () => {
+  let sql = "";
+  let parametros: readonly unknown[] = [];
+  configurarPersistenciaTelemetria(crearPersistenciaPostgres(async (consulta, valores) => {
+    sql = consulta;
+    parametros = valores;
+  }));
+  const configHash = "c".repeat(64);
+  registrarLlamadaIA({ ...eventoBase, finishReason: "MAX_TOKENS", configHash });
+  await esperarPersistenciaTelemetria();
+
+  const columnas = /INSERT INTO ai_call_log \(([^)]*)\)/.exec(sql)?.[1]?.split(",").map((columna) => columna.trim()) ?? [];
+  const marcadores = sql.match(/\$\d+/g) ?? [];
+  assert.equal(columnas.length, parametros.length);
+  assert.equal(marcadores.length, parametros.length);
+  assert.equal(parametros[columnas.indexOf("finish_reason")], "MAX_TOKENS");
+  assert.equal(parametros[columnas.indexOf("config_hash")], configHash);
+});

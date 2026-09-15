@@ -125,10 +125,11 @@ export function crearPersistenciaPostgres(ejecutar: EjecutorSql): PersistenciaTe
           modelo, superficie, vuelta, herramienta, thinking_level, prompt_version,
           tokens_entrada, tokens_salida, tokens_pensamiento, tokens_cacheados,
           tokens_prompt_herramientas, bytes_imagen_entrada, intento,
-          proveedor_request_id, unidades_facturadas, ms, resultado, pricing_id, coste_estimado, moneda
+          proveedor_request_id, unidades_facturadas, ms, resultado, pricing_id, coste_estimado, moneda,
+          finish_reason, config_hash
         ) VALUES (
           $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-          $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26
+          $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28
         )`,
         [evento.cuando, evento.flujo, evento.capacidad, evento.requestId ?? null,
           evento.correlationId ?? null, evento.proveedor, evento.modelo,
@@ -140,7 +141,7 @@ export function crearPersistenciaPostgres(ejecutar: EjecutorSql): PersistenciaTe
           numeroValido(evento.intento), evento.proveedorRequestId ?? null,
           numeroValido(evento.unidadesFacturadas), evento.ms,
           evento.resultado, evento.pricingId ?? null, numeroValido(evento.costeEstimado),
-          evento.moneda ?? null],
+          evento.moneda ?? null, evento.finishReason ?? null, evento.configHash ?? null],
       );
     },
   };
