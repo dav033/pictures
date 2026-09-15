@@ -97,6 +97,12 @@ function unirColores(colores: readonly string[]): string {
  * mandatory is refused earlier by `validarRestriccionesPlan`, so repeating it
  * here would duplicate the notice.
  *
+ * A material the plan no longer buys gets no finish or color notice either:
+ * rule 3 rewrites the finish of a material it then removes, and convergence
+ * (`quitarMaterialesSinCobertura`) removes more later, so the quote promised
+ * "los dorados van en su acabado normal" without a single gold balloon in it.
+ * The `material_quitado` notice already tells that story.
+ *
  * Pure: customer wording only, no ids, codes or internal field names.
  */
 export function avisosClienteAjustes(
@@ -108,20 +114,28 @@ export function avisosClienteAjustes(
     coloresReportados?: ReadonlyArray<{ estructura_id: string; color: string }>;
     /** Colores que el cliente exigió (los valida `validarRestriccionesPlan`). */
     coloresDelCliente?: readonly string[];
+    /** Materiales que ya no están en el plan cotizado (los quitó la convergencia). */
+    materialesFuera?: ReadonlyArray<{ estructura_id: string; product_id: string }>;
   },
 ): string[] {
   const nombreDe = (estructuraId: string) => (contexto.nombres.get(estructuraId) ?? "la decoración").toLowerCase();
   const reportados = new Set((contexto.coloresReportados ?? []).map((item) => `${item.estructura_id}|${plegar(item.color)}`));
   const delCliente = new Set((contexto.coloresDelCliente ?? []).map(plegar));
+  const fuera = new Set([
+    ...ajustes.flatMap((ajuste) => (ajuste.tipo === "material_quitado" ? [`${ajuste.estructura_id}|${ajuste.product_id}`] : [])),
+    ...(contexto.materialesFuera ?? []).map((item) => `${item.estructura_id}|${item.product_id}`),
+  ]);
   return [...new Set(ajustes.flatMap((ajuste) => {
+    if (ajuste.tipo === "mezcla" || ajuste.tipo === "material_quitado") return [];
+    if (fuera.has(`${ajuste.estructura_id}|${ajuste.product_id}`)) return [];
+    const nombre = nombreDe(ajuste.estructura_id);
     if (ajuste.tipo === "acabado_material") {
-      const globos = ajuste.color ? `Los globos ${ajuste.color}` : "Los globos";
-      return [`${globos} de ${nombreDe(ajuste.estructura_id)} no vienen en acabado ${ajuste.antes} en el catálogo: van en su acabado normal.`];
+      const globos = ajuste.color ? `los globos de color ${ajuste.color}` : "los globos";
+      return [`En ${nombre} ${globos} no vienen en acabado ${ajuste.antes} en el catálogo: van en su acabado normal.`];
     }
-    if (ajuste.tipo !== "color_material") return [];
     const color = plegar(ajuste.antes);
     if (reportados.has(`${ajuste.estructura_id}|${color}`) || delCliente.has(color)) return [];
-    return [`En ${nombreDe(ajuste.estructura_id)} los globos ${ajuste.antes} van en ${ajuste.despues}, que es el color real de ese producto.`];
+    return [`En ${nombre} los globos de color ${ajuste.antes} van en ${ajuste.despues}, que es el color real de ese producto.`];
   }))];
 }
 

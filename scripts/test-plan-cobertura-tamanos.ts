@@ -227,14 +227,29 @@ async function main(): Promise<void> {
     { tipo: "color_material" as const, estructura_id: "EST_01_ARCO", product_id: "P-ROJO", antes: "plateado", despues: "gris" },
   ];
   const avisos = avisosClienteAjustes(ajustesAviso, { nombres: nombresEstructura });
+  // Revisión W3-4: el color va como "globos de color X", no "globos X" dentro
+  // de una frase en plural.
   assert.deepEqual(avisos, [
-    "Los globos dorado de arco rojo no vienen en acabado reflex en el catálogo: van en su acabado normal.",
-    "En arco rojo los globos plateado van en gris, que es el color real de ese producto.",
+    "En arco rojo los globos de color dorado no vienen en acabado reflex en el catálogo: van en su acabado normal.",
+    "En arco rojo los globos de color plateado van en gris, que es el color real de ese producto.",
   ]);
   for (const aviso of avisos) assert.deepEqual(detectarJergaInterna(aviso), [], aviso);
+  assert.deepEqual(avisosClienteAjustes([{ tipo: "acabado_material", estructura_id: "EST_01_ARCO", product_id: "P-ROJO", antes: "reflex", color: null }], { nombres: nombresEstructura }), [
+    "En arco rojo los globos no vienen en acabado reflex en el catálogo: van en su acabado normal.",
+  ], "sin color declarado el aviso no fuerza la concordancia");
   assert.deepEqual(avisosClienteAjustes(ajustesAviso, { nombres: nombresEstructura, coloresReportados: [{ estructura_id: "EST_01_ARCO", color: "Plateado" }] }), [avisos[0]], "el color ya reportado por una sustitución de la foto no se repite");
   assert.deepEqual(avisosClienteAjustes(ajustesAviso, { nombres: nombresEstructura, coloresDelCliente: ["plateado"] }), [avisos[0]], "un color exigido por el cliente lo reporta la validación de restricciones");
   assert.deepEqual(avisosClienteAjustes([{ tipo: "mezcla", estructura_id: "EST_01_ARCO", antes: "organica_fina", despues: "clasica" }], { nombres: nombresEstructura }), [], "un cambio de mezcla no es un aviso para el cliente");
+  // Revisión W3-1: un material que la cobertura o la convergencia sacaron del
+  // plan no lleva aviso de acabado ni de color; el de material quitado ya basta.
+  assert.deepEqual(avisosClienteAjustes([...ajustesAviso, {
+    tipo: "material_quitado" as const,
+    estructura_id: "EST_01_ARCO",
+    product_id: "P-ROJO",
+    color: "dorado",
+    aviso_cliente: "No tengo globos dorado en los tamaños que necesita arco rojo: la armé con rosado.",
+  }], { nombres: nombresEstructura }), [], "el material que salió del plan no arrastra sus avisos de acabado y color");
+  assert.deepEqual(avisosClienteAjustes(ajustesAviso, { nombres: nombresEstructura, materialesFuera: [{ estructura_id: "EST_01_ARCO", product_id: "P-ROJO" }] }), [], "lo que quitó la convergencia tampoco se avisa");
 
   const conAcabado = confirmar();
   const planAcabado = plan("clasica");
@@ -247,6 +262,40 @@ async function main(): Promise<void> {
   assert.ok(avisosRespuesta.some((aviso) => /no vienen en acabado reflex/.test(aviso)), JSON.stringify(avisosRespuesta));
   for (const aviso of avisosRespuesta) assert.deepEqual(detectarJergaInterna(aviso), [], aviso);
   ok("ok:true avisa el acabado que el catálogo no tiene en vez de dejar que el resumen lo prometa");
+
+  // 8. Revisión W3-1: la regla 1 le quita el acabado a un material que la regla
+  //    3 saca de la estructura. La cotización no lleva ni un globo de ese color,
+  //    así que el único aviso es el del material quitado.
+  const fila = (productId: string, diametro: number, color: string) => ({
+    product_id: productId, variant_id: `${productId}-R${diametro}`, sku: `SKU-${productId}-R${diametro}`, producto_titulo: `Globo ${color}`, variante_titulo: `R-${diametro}`,
+    precio: 10000, unidades_paq: 50, disponible: true, producto_disponible: true, codigo_tamano: `R-${diametro}`, forma: "redondo", diam_pulg: diametro,
+    colores_producto: [color], colores_variante: [color], acabados_producto: [] as string[], descripcion: `Globo ${color} R-${diametro}`, imagen: null,
+  });
+  const poolDosProductos = { query: async (sql: string) => (sql.includes("catalog_variants") ? { rows: [fila("P-ROSADO", 12, "rosado"), fila("P-DORADO", 24, "dorado")] } : { rows: [] }) } as unknown as Pool;
+  const estadoQuitado = crearEstadoConversacion({}, "un arco para un cumpleaños");
+  estadoQuitado.ragCandidatos = [candidato("P-ROSADO", [12], "rosado"), candidato("P-DORADO", [24], "dorado")];
+  estadoQuitado.ragIdsRecuperados.add("P-ROSADO").add("P-DORADO");
+  estadoQuitado.ragVariantIdsRecuperados.set("P-ROSADO", new Set(["P-ROSADO-R12"]));
+  estadoQuitado.ragVariantIdsRecuperados.set("P-DORADO", new Set(["P-DORADO-R24"]));
+  const planQuitado = plan("clasica");
+  const respuestaQuitado = await crearRegistroHerramientas(estadoQuitado, { pool: poolDosProductos }).confirmar_plan_decoracion!({
+    ...planQuitado,
+    concepto: { titulo: "Arco de cumpleaños", descripcion: "Arco", paleta: ["rosado", "dorado"] },
+    estructuras: [{
+      ...planQuitado.estructuras[0]!,
+      nombre: "Arco principal",
+      materiales: [
+        { product_id: "P-ROSADO", color: "rosado", participacion: 0.6, rol_material: "principal" },
+        { product_id: "P-DORADO", color: "dorado", acabado: "reflex", participacion: 0.4, rol_material: "acento" },
+      ],
+    }],
+  }, llamada) as Record<string, unknown>;
+  assert.equal(respuestaQuitado.ok, true, JSON.stringify(respuestaQuitado).slice(0, 400));
+  assert.deepEqual(estadoQuitado.ajustesCobertura.map((ajuste) => ajuste.tipo).sort(), ["acabado_material", "material_quitado"], JSON.stringify(estadoQuitado.ajustesCobertura));
+  const avisosQuitado = respuestaQuitado.avisos_cliente as string[];
+  assert.ok(avisosQuitado.some((aviso) => /No tengo globos dorado/.test(aviso)), JSON.stringify(avisosQuitado));
+  assert.ok(!avisosQuitado.some((aviso) => /acabado reflex/.test(aviso)), JSON.stringify(avisosQuitado));
+  ok("el material que sale del plan no deja un aviso de acabado sobre globos que la cotización no compra");
 
   console.log(`\n${casos} casos OK (A6)`);
 }

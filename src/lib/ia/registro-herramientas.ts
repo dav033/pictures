@@ -969,12 +969,21 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     // are the finishes and colors the server rewrote before resolving: sin eso
     // el resumen prometía un acabado o un color que la cotización no lleva.
     const sustitucionesDeColor = resuelto.sustituciones.filter(esSustitucionDeColor);
+    // Un material que la cobertura o la convergencia sacaron del plan no lleva
+    // aviso de acabado ni de color: la cotización no lo compra y el aviso de
+    // material quitado ya lo cuenta. `planCanonico` es el plan que se resolvió.
+    const materialesEnPlan = new Set(planCanonico.estructuras.flatMap((estructura) => estructura.materiales.map((material) => `${estructura.estructura_id}|${material.product_id}`)));
     const avisosCliente = [...new Set([
       ...estado.ajustesCobertura.flatMap((ajuste) => (ajuste.tipo === "material_quitado" ? [ajuste.aviso_cliente] : [])),
       ...avisosClienteAjustes(estado.ajustesCobertura, {
         nombres: new Map(planCanonico.estructuras.map((estructura) => [estructura.estructura_id, estructura.nombre])),
         coloresReportados: sustitucionesDeColor.map((item) => ({ estructura_id: item.estructura_id, color: item.pedido })),
         coloresDelCliente: estado.restriccionesUsuario.colores.map((color) => color.valor),
+        materialesFuera: estado.ajustesCobertura.flatMap((ajuste) => (
+          ajuste.tipo !== "mezcla" && !materialesEnPlan.has(`${ajuste.estructura_id}|${ajuste.product_id}`)
+            ? [{ estructura_id: ajuste.estructura_id, product_id: ajuste.product_id }]
+            : []
+        )),
       }),
       ...avisosConvergencia,
       ...sustitucionesDeColor.map((item) => item.motivo),
