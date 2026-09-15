@@ -3,7 +3,8 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import { buildImagePrompt, type PromptImageInput } from "@/lib/ia/build-image-prompt";
 import { LORA_CAPTION_COMPILER_VERSION, LORA_JSON_PROMPT_MAX_LENGTH } from "@/lib/ia/lora-caption-compiler";
-import { includesJsonPrompt, includesTextPrompt, parseLoraPromptFormat } from "@/lib/ia/lora-prompt-format";
+import { includesJsonPrompt, includesTextPrompt, resolveLoraPromptFormat } from "@/lib/ia/lora-prompt-format";
+import { parseLoraSeed, resolveLoraSeed } from "@/lib/ia/lora-seed";
 import { ambientDecorFromReference } from "@/lib/ia/reference-structure";
 import { parseNivelCreatividad, perfilCreatividad } from "@/lib/ia/creatividad";
 import { compileProductPrompt, LORA_PRODUCT_RUNTIME_VERSION, sizeConfirmationsFromMaterialLines } from "@/lib/ia/lora-product-runtime";
@@ -13,7 +14,8 @@ import { bloqueMezclaTamanos, bloqueMezclaPorEstructura, descripcionFisicaTamano
 import { cotizarProductos, type Cotizacion } from "@/lib/cotizacion/motor";
 import { featureEnabled, IMAGE_DEBUG } from "@/lib/ia/feature-flags";
 import { resolveAspectTransform } from "@/lib/ia/aspect-transform";
-import { evaluateSceneQa, buildCorrectiveRetryPrompt, observarImagenGenerada, type ImageQaReport } from "@/lib/ia/image-qa";
+import { evaluateSceneQa, buildCorrectiveRetryPrompt, type ImageQaReport } from "@/lib/ia/image-qa";
+import { approvedPlanQaInputs, buildGenerationQa } from "@/lib/ia/generation-qa";
 import { imagenDe, resolverProveedor } from "@/lib/ia/registro";
 import { buildApprovedSceneSpec, SceneSpecSchema, sceneSpecHash } from "@/lib/ia/scene-spec";
 import { registrarPlanAudit } from "@/lib/rag/observability/log";
@@ -31,7 +33,7 @@ function requireResolvedLoras(loras: ResolvedLoraApplication[] | undefined): Res
   if (!loras?.length) throw new Error("LORA_MODE_REQUIRED: no se pudo resolver un artifact LoRA registrado para esta generación.");
   return loras;
 }
-import { buildVisualContext } from "@/lib/ia/visual-context";
+import { buildVisualContext, completarEscenaConPlan } from "@/lib/ia/visual-context";
 import { ErrorIA, type ImageInput, type Imagen, type ImagenEtiquetada, type PeticionImagen, type ProveedorId } from "@/lib/ia/tipos";
 import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import type { ResultadoMedidas } from "@/lib/medidas/geometria";
@@ -101,8 +103,19 @@ type Body = {
   plan?: PlanResuelto;
   planHash?: string;
   imageQaRequested?: boolean;
-  /** "texto" (default) | "json" | "ambos": LoRA prompt format; "ambos" makes two provider calls. */
+  /**
+   * "texto" | "json" | "ambos": LoRA prompt format; "ambos" makes two provider
+   * calls. Omitted = by the selected LoRA trigger (resolveLoraPromptFormat).
+   */
   promptFormat?: unknown;
+  /**
+   * Optional integer 0..2^32-1 (lora-seed.ts), for calibrating with the same
+   * seed. LoRA path only: it is passed to fal and the effective seed (a random
+   * one fixed up front when omitted) is returned as `seed`. The Gemini image
+   * path has no seed control: a valid seed is ignored there and no `seed` is
+   * returned; an invalid one is still a 400.
+   */
+  seed?: unknown;
   /** Creativity 0-5 (creatividad.ts): LoRA styling cues and guidance scale. Invalid or absent = default. */
   creatividad?: unknown;
 };
@@ -693,12 +706,6 @@ function buildInputs(input: {
   };
 }
 
-async function buildQa(sceneSpec: Parameters<typeof evaluateSceneQa>[0], image: Imagen, hashes: { planHash?: string; sceneSpecHash: string }, materialEstimate?: DesignMaterialEstimate, telemetria?: Parameters<typeof observarImagenGenerada>[3], signal?: AbortSignal, force = false): Promise<ImageQaReport> {
-  const observation = await observarImagenGenerada(sceneSpec, image, materialEstimate, telemetria, signal, force);
-  if (!observation) return { ...evaluateSceneQa(sceneSpec, {}, materialEstimate), pass: null, confidence: "unknown", observation_confidence: null, plan_hash: hashes.planHash, scene_spec_hash: hashes.sceneSpecHash, observed_instances: null };
-  return { ...evaluateSceneQa(sceneSpec, observation, materialEstimate), confidence: "vision_assisted", plan_hash: hashes.planHash, scene_spec_hash: hashes.sceneSpecHash, observed_instances: observation.presentElementIds ?? [] };
-}
-
 export async function POST(request: Request) {
   const contentLength = Number(request.headers.get("content-length"));
   if (Number.isFinite(contentLength) && contentLength > MAX_GENERATE_PAYLOAD_BYTES) {
@@ -719,6 +726,12 @@ export async function POST(request: Request) {
     validarImagenesEntrada(body);
     if (body.imageQaRequested !== undefined && typeof body.imageQaRequested !== "boolean") {
       throw new Error("imageQaRequested debe ser booleano.");
+    }
+    const seedParse = parseLoraSeed(body.seed);
+    if (!seedParse.ok) {
+      const uiError = construirUiErrorV1("SOLICITUD_INVALIDA", { mensaje: seedParse.message, codigoOrigen: "LORA_SEED_INVALID", requestId: generationRequestId });
+      registrarFalloUi("/api/generate", uiError);
+      return Response.json({ error: seedParse.message, ui_error: uiError }, { status: 400 });
     }
     const imageQaRequested = body.imageQaRequested === true || featureEnabled("IMAGE_QA_ENABLED");
     const planDeclarativo = body.plan ? PlanDecoracionSchema.parse(body.plan.plan) : undefined;
@@ -1071,8 +1084,12 @@ export async function POST(request: Request) {
     // mejores (espacio, productos y después composición).
     const inputLimit = usarLora ? Math.max(16, sceneSpec.elements.length) : capabilities.totalInputImageLimit;
     const selected = buildInputs({ portLimit: inputLimit, blueprint, sceneElements: sceneSpec.elements, references, venue, previous, products: productImages });
+    const creatividad = perfilCreatividad(parseNivelCreatividad(body.creatividad));
+    // The venue and time of day the chat recorded in the approved (signed) plan
+    // fill only what the customer left open (a venue photo is the venue); see
+    // completarEscenaConPlan.
     const visualContext = buildVisualContext({
-      brief: body.brief,
+      brief: completarEscenaConPlan({ brief: body.brief, userRequest: body.solicitudUsuario, plan: planResuelto?.plan, nivel: creatividad.nivel, fotoEspacio: Boolean(venue) }),
       userRequest: body.solicitudUsuario,
       approvedPlan: planResuelto?.plan.estructuras.map((estructura) => `${estructura.nombre} (${estructura.tipo}, ${estructura.ubicacion})`),
       approvedMaterials: planResuelto?.compras.map((compra) => {
@@ -1146,8 +1163,9 @@ export async function POST(request: Request) {
         if (product.familiaId) productCatalogTitles.set(product.familiaId, catalogTitle);
       }
     }
-    const promptFormat = parseLoraPromptFormat(body.promptFormat);
-    const creatividad = perfilCreatividad(parseNivelCreatividad(body.creatividad));
+    const promptFormat = resolveLoraPromptFormat(body.promptFormat, usarLora ? resolvedLoras?.[0]?.trigger : undefined);
+    // Same plan map for the prompt below and for the QA, so both pair the side pieces alike.
+    const qaPlan = approvedPlanQaInputs(planResuelto);
     // Styling seen in the reference that the catalog does not sell (lights,
     // foliage) is drawn when the analysis kept it as relevant and no plan
     // structure materializes it. It never reaches the quote or the plan.
@@ -1167,7 +1185,7 @@ export async function POST(request: Request) {
       trigger: usarLora ? resolvedLoras?.[0]?.trigger : undefined,
       ambientDecor,
       creativeCues: creatividad.pistasPrompt,
-      officialStructures: new Map((planResuelto?.plan.estructuras ?? []).flatMap((estructura) => estructura.estructura_oficial ? [[estructura.estructura_id, estructura.estructura_oficial] as const] : [])),
+      officialStructures: qaPlan?.officialStructures ?? new Map<string, string>(),
     });
     const loraCompilation = {
       prompt: productPromptCompilation.prompt,
@@ -1222,16 +1240,17 @@ export async function POST(request: Request) {
     // Solo tiene sentido encadenar contexto real cuando esta petición ES una
     // revisión de una imagen previa; una generación nueva no hereda otra.
     const previousInteractionId = previous ? body.previousInteractionId : undefined;
-    // "ambos": two independent provider calls with one shared seed, so the
-    // only difference between the images is the prompt format. QA and the
-    // audit apply to the primary (text) image.
-    const comparisonSeed = usarLora && promptFormat === "ambos" ? crypto.getRandomValues(new Uint32Array(1))[0]! % 2_147_483_647 : undefined;
+    // One seed per LoRA request, fixed before calling so it can be returned:
+    // the requested one, or a random draw. With "ambos" both provider calls
+    // share it, so the only difference between the images is the prompt
+    // format. QA and the audit apply to the primary (text) image.
+    const loraSeed = usarLora ? resolveLoraSeed(seedParse.seed) : undefined;
     const generarLora = (prompt: string, intento: number) => generarConSempertexLora(prompt, aspecto, selected.inputs, {
       loras: requireResolvedLoras(resolvedLoras),
       signal: request.signal,
       telemetria: { ...contextoTelemetria, intento },
       guidanceScale: creatividad.guidanceScale,
-      ...(comparisonSeed === undefined ? {} : { seed: comparisonSeed }),
+      ...(loraSeed === undefined ? {} : { seed: loraSeed }),
     });
     const [loraPrimaryImage, loraJsonImage] = usarLora
       ? await Promise.all([
@@ -1243,13 +1262,13 @@ export async function POST(request: Request) {
       ? { imagen: loraPrimaryImage }
       : await port!.generar({ prompt: providerPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: previous, previousInteractionId, revisionMode: previous ? "revise_current_result" : "new_generation", signal: request.signal, telemetria: { ...contextoTelemetria, capacidad: "imagen_generacion" } });
     let qa: ImageQaReport | undefined;
-    qa ??= await buildQa(transformedSceneSpec, result.imagen, { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, contextoTelemetria, request.signal, imageQaRequested);
+    qa ??= await buildGenerationQa({ sceneSpec: transformedSceneSpec, image: result.imagen, hashes: { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, telemetria: contextoTelemetria, signal: request.signal, force: imageQaRequested, plan: qaPlan });
     let retried = false;
     if (!usarLora && imageQaRequested && qa.pass === false) {
       const retryPrompt = `${providerPrompt}\n\n${buildCorrectiveRetryPrompt(qa)}`;
       const retry = await port!.generar({ prompt: retryPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: { ...result.imagen, id: "GENERATED_RESULT", descripcion: "Current generated result for one corrective retry." }, previousInteractionId: result.interactionId, revisionMode: "revise_current_result", signal: request.signal, telemetria: { ...contextoTelemetria, capacidad: "imagen_generacion_correctiva", intento: 2 } });
       retried = true;
-      qa = await buildQa(transformedSceneSpec, retry.imagen, { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, { ...contextoTelemetria, intento: 2 }, request.signal, imageQaRequested);
+      qa = await buildGenerationQa({ sceneSpec: transformedSceneSpec, image: retry.imagen, hashes: { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, telemetria: { ...contextoTelemetria, intento: 2 }, signal: request.signal, force: imageQaRequested, plan: qaPlan });
       await auditarImagen("IMAGEN_QA_RETRY", qa, transformedSceneSpec);
       if (qa.pass !== true) return respuestaNoConforme(`NON_CONFORME: la imagen no cumple la cardinalidad o composición aprobada${qa.retry_reasons.length ? ` — ${qa.retry_reasons.join("; ")}` : ""}.`, generationRequestId, { qa, plan: planResuelto, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash });
       return Response.json({ imagen: `data:${retry.imagen.mime};base64,${retry.imagen.base64}`, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, plan: planResuelto, qa, retried, proveedor, cotizacion, interactionId: retry.interactionId, prompt: retryPrompt, prompts: { "Gemini · Nano Banana 2": retryPrompt }, productAuthority: productAuthority.length ? productAuthority : undefined });
@@ -1261,7 +1280,7 @@ export async function POST(request: Request) {
     // advertencia "no conforme" en vez de esconder el resultado.
     if (planResuelto && qa.pass !== true && !usarLora) return respuestaNoConforme(`NON_CONFORME: la imagen no fue observada conforme al plan aprobado${qa.retry_reasons.length ? ` — ${qa.retry_reasons.join("; ")}` : ""}.`, generationRequestId, { qa, plan: planResuelto, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash });
     const debug = IMAGE_DEBUG;
-    return Response.json({ imagen: `data:${result.imagen.mime};base64,${result.imagen.base64}`, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, plan: planResuelto, qa, loraPreflight: usarLora ? loraPreflight : undefined, loraPromptVersion: usarLora ? "v2" : undefined, loraPromptHash: usarLora ? hashPrompt(promptPrincipal) : undefined, compilerVersion: usarLora ? LORA_CAPTION_COMPILER_VERSION : undefined, loraProductRuntimeVersion: usarLora ? LORA_PRODUCT_RUNTIME_VERSION : undefined, productPromptCompilation: { resolved_concepts: productPromptCompilation.resolved_concepts, unresolved_products: productPromptCompilation.unresolved_products, vocabulary_version: productPromptCompilation.vocabulary_version, compiler_version: productPromptCompilation.compiler_version, legacy: productPromptCompilation.legacy, diagnostics: productPromptCompilation.diagnostics }, retried, proveedor, modoImagen: usarLora ? "lora" : "proveedor_base", promptFormat: usarLora ? promptFormat : undefined, creatividad: usarLora ? { nivel: creatividad.nivel, nombre: creatividad.nombre, guidance_scale: creatividad.guidanceScale, pistas_prompt: creatividad.pistasPrompt } : undefined, loraJsonPreflight: jsonPreflight, ambientDecor: ambientDecor.length ? ambientDecor : undefined, imagenAlternativa: loraJsonImage && effectiveJsonPrompt ? { formato: "json", imagen: `data:${loraJsonImage.mime};base64,${loraJsonImage.base64}`, prompt: effectiveJsonPrompt, qa: "no_evaluada" } : undefined, cotizacion, interactionId: result.interactionId, prompt: promptPrincipal, prompts: usarLora && promptFormat === "ambos" && effectiveJsonPrompt ? { "LoRA Sempertex · texto": effectiveLoraPrompt, "LoRA Sempertex · JSON": effectiveJsonPrompt } : { [usarLora ? (promptFormat === "json" ? "LoRA Sempertex · JSON" : "LoRA Sempertex") : "Gemini · Nano Banana 2"]: promptPrincipal }, productAuthority: productAuthority.length ? productAuthority : undefined, ...(debug ? { visualContext, droppedImageIds: selected.droppedImageIds, aspectTransform, loraSelection: resolvedLoras?.map((lora) => ({ artifactId: lora.artifactId, specialization: lora.specialization, scale: lora.scale, trigger: lora.trigger })) } : {}) });
+    return Response.json({ imagen: `data:${result.imagen.mime};base64,${result.imagen.base64}`, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, plan: planResuelto, qa, loraPreflight: usarLora ? loraPreflight : undefined, loraPromptVersion: usarLora ? "v2" : undefined, loraPromptHash: usarLora ? hashPrompt(promptPrincipal) : undefined, compilerVersion: usarLora ? LORA_CAPTION_COMPILER_VERSION : undefined, loraProductRuntimeVersion: usarLora ? LORA_PRODUCT_RUNTIME_VERSION : undefined, productPromptCompilation: { resolved_concepts: productPromptCompilation.resolved_concepts, unresolved_products: productPromptCompilation.unresolved_products, vocabulary_version: productPromptCompilation.vocabulary_version, compiler_version: productPromptCompilation.compiler_version, legacy: productPromptCompilation.legacy, diagnostics: productPromptCompilation.diagnostics }, retried, proveedor, modoImagen: usarLora ? "lora" : "proveedor_base", promptFormat: usarLora ? promptFormat : undefined, seed: loraSeed, creatividad: usarLora ? { nivel: creatividad.nivel, nombre: creatividad.nombre, guidance_scale: creatividad.guidanceScale, pistas_prompt: creatividad.pistasPrompt } : undefined, loraJsonPreflight: jsonPreflight, ambientDecor: ambientDecor.length ? ambientDecor : undefined, imagenAlternativa: loraJsonImage && effectiveJsonPrompt ? { formato: "json", imagen: `data:${loraJsonImage.mime};base64,${loraJsonImage.base64}`, prompt: effectiveJsonPrompt, qa: "no_evaluada" } : undefined, cotizacion, interactionId: result.interactionId, prompt: promptPrincipal, prompts: usarLora && promptFormat === "ambos" && effectiveJsonPrompt ? { "LoRA Sempertex · texto": effectiveLoraPrompt, "LoRA Sempertex · JSON": effectiveJsonPrompt } : { [usarLora ? (promptFormat === "json" ? "LoRA Sempertex · JSON" : "LoRA Sempertex") : "Gemini · Nano Banana 2"]: promptPrincipal }, productAuthority: productAuthority.length ? productAuthority : undefined, ...(debug ? { visualContext, droppedImageIds: selected.droppedImageIds, aspectTransform, loraSelection: resolvedLoras?.map((lora) => ({ artifactId: lora.artifactId, specialization: lora.specialization, scale: lora.scale, trigger: lora.trigger })) } : {}) });
   } catch (error) {
     // Los campos legacy (`error`, `causa`, sobre operational.v1) se conservan:
     // el smoke los compara. `ui_error` (ui-error.v1) es lo que ve el cliente.

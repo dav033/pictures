@@ -5,7 +5,7 @@ import type { LoraDensity, LoraDesignRole, LoraPlacement, LoraStructureType, Vis
 import type { PhysicalForm, PhysicalRelation, SceneElementKind, QuantitySemantics } from "./scene-visual-contract";
 import { identificarEstructuraOficial, type EstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 
-export const LORA_CAPTION_COMPILER_VERSION = "lora-caption-v2.5-compact-budget" as const;
+export const LORA_CAPTION_COMPILER_VERSION = "lora-caption-v2.6-compact-budget" as const;
 
 /**
  * Budget for the experimental JSON prompt variant (trigger included). The
@@ -783,18 +783,26 @@ type CaptionRenderStep = {
    * Object type and every approved color stay.
    */
   shortLabels: boolean;
+  /**
+   * scene_v004 only, after `shortLabels`: drop the "set in/against <venue>"
+   * setting too. `dropEnvironment` keeps it, because it is what tells a garden
+   * from a hall; product_v007 has no such setting, so this step renders like
+   * the one before it.
+   */
+  dropSetting: boolean;
 };
 
 const CAPTION_RENDER_STEPS: readonly CaptionRenderStep[] = [
-  { referenceRepeatedConcepts: false, factorLabels: false, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false },
-  { referenceRepeatedConcepts: true, factorLabels: false, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "range", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "range", compactEnvironment: true, minimalTail: false, dropEnvironment: false, shortLabels: false },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: false, dropEnvironment: false, shortLabels: false },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: false, shortLabels: false },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: true, shortLabels: false },
-  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: true, shortLabels: true },
+  { referenceRepeatedConcepts: false, factorLabels: false, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false, dropSetting: false },
+  { referenceRepeatedConcepts: true, factorLabels: false, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false, dropSetting: false },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "all", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false, dropSetting: false },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "range", compactEnvironment: false, minimalTail: false, dropEnvironment: false, shortLabels: false, dropSetting: false },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "range", compactEnvironment: true, minimalTail: false, dropEnvironment: false, shortLabels: false, dropSetting: false },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: false, dropEnvironment: false, shortLabels: false, dropSetting: false },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: false, shortLabels: false, dropSetting: false },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: true, shortLabels: false, dropSetting: false },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: true, shortLabels: true, dropSetting: false },
+  { referenceRepeatedConcepts: true, factorLabels: true, sizes: "none", compactEnvironment: true, minimalTail: true, dropEnvironment: true, shortLabels: true, dropSetting: true },
 ];
 
 /** "round foil balloon in fuchsia with a metallic sheen hearts pattern" -> "round foil balloon in fuchsia". */
@@ -855,22 +863,45 @@ function sceneSizeWords(sizes: string[]): string {
 }
 
 /**
+ * Scene counterpart of `shortProductLabel`: "glossy chrome gold" -> "gold".
+ * The finish goes; a foil balloon keeps its material ("foil gold") the way the
+ * short product label keeps its object.
+ */
+function shortSceneDescriptor(descriptor: string, colorName: string | undefined): string {
+  if (!colorName || !descriptor.endsWith(` ${colorName}`)) return descriptor;
+  return /\bfoil\b/.test(descriptor) ? `foil ${colorName}` : colorName;
+}
+
+/**
  * "of large and small matte dusty rose and glossy chrome gold balloons", in the
  * v004 caption wording. Returns undefined when any product of the clause has
  * no scene terms, so the canonical label is used instead.
+ *
+ * Follows the same render step as `buildCanonicalPhrase`: once
+ * `referenceRepeatedConcepts` is on, a concept already described earlier in
+ * the caption is referred to by its color ("in matching white and silver"),
+ * so every approved color stays while the repeated material wording goes;
+ * `shortLabels` drops the finish words.
  */
 function sceneMaterialPhrase(entries: ProductConceptClauseInput[], render: CaptionRenderState): string | undefined {
   if (!entries.every((entry) => entry.sceneTerms)) return undefined;
-  const byConcept = new Map<string, { terms: { descriptor: string; noun: string }; sizes: string[] }>();
+  const byConcept = new Map<string, { terms: { descriptor: string; noun: string }; colorName?: string; sizes: string[] }>();
   for (const entry of entries) {
     const existing = byConcept.get(entry.conceptId);
-    byConcept.set(entry.conceptId, { terms: entry.sceneTerms!, sizes: [...(existing?.sizes ?? []), ...(entry.sizeCodes ?? [])] });
+    byConcept.set(entry.conceptId, { terms: entry.sceneTerms!, colorName: existing?.colorName ?? entry.colorName, sizes: [...(existing?.sizes ?? []), ...(entry.sizeCodes ?? [])] });
   }
   const byNoun = new Map<string, { descriptors: string[]; sizes: string[] }>();
+  const references: string[] = [];
   for (const conceptId of [...byConcept.keys()].sort()) {
-    const { terms, sizes } = byConcept.get(conceptId)!;
+    const { terms, colorName, sizes } = byConcept.get(conceptId)!;
+    if (render.step.referenceRepeatedConcepts && colorName && render.describedConceptIds.has(conceptId)) {
+      if (!references.includes(colorName)) references.push(colorName);
+      continue;
+    }
+    render.describedConceptIds.add(conceptId);
+    const descriptor = render.step.shortLabels ? shortSceneDescriptor(terms.descriptor, colorName) : terms.descriptor;
     const group = byNoun.get(terms.noun) ?? { descriptors: [], sizes: [] };
-    if (!group.descriptors.includes(terms.descriptor)) group.descriptors.push(terms.descriptor);
+    if (!group.descriptors.includes(descriptor)) group.descriptors.push(descriptor);
     group.sizes.push(...sizes);
     byNoun.set(terms.noun, group);
   }
@@ -878,7 +909,9 @@ function sceneMaterialPhrase(entries: ProductConceptClauseInput[], render: Capti
     const sizeWords = render.step.sizes === "none" ? "" : sceneSizeWords(group.sizes);
     return [sizeWords, joinNatural(group.descriptors), noun].filter(Boolean).join(" ");
   });
-  return `of ${joinNatural(parts)}`;
+  const matching = references.length ? `matching ${joinNatural(references)}` : "";
+  if (!parts.length) return `in ${matching}`;
+  return matching ? `of ${joinNatural(parts)} with ${matching}` : `of ${joinNatural(parts)}`;
 }
 
 /**
@@ -965,9 +998,13 @@ function renderClauseText(clause: LoraVisualClause, render?: CaptionRenderState)
   // balloon structure keeps its noun and says what it carries ("with ...").
   const bareSceneLabel = sceneDialect && hasCanonicalProduct && Boolean(clause.canonicalEntries?.length) && !clause.canonicalEntries!.every((entry) => entry.sceneTerms);
   const productIsThePiece = bareSceneLabel && !clause.officialStructure && ["kit", "accesorio"].includes(clause.structureType);
-  const rawMaterial = clause.productDescriptors.length && !hasCanonicalProduct ? "" : colorFinishPhrase(clause, render);
+  // The product label is the only name of such a piece: a compacted reference
+  // ("an in matching fuchsia") would leave the structure unnamed.
+  const materialRender = productIsThePiece && render ? { ...render, step: { ...render.step, referenceRepeatedConcepts: false } } : render;
+  const rawMaterial = clause.productDescriptors.length && !hasCanonicalProduct ? "" : colorFinishPhrase(clause, materialRender);
   const noun = productIsThePiece ? rawMaterial : qualifier ? `${qualifier} ${sizedNoun}` : sizedNoun;
-  const material = productIsThePiece ? "" : bareSceneLabel && rawMaterial ? `with ${rawMaterial}` : rawMaterial;
+  // A compacted reference already reads "in matching white" ("with in matching" was ungrammatical).
+  const material = productIsThePiece ? "" : bareSceneLabel && rawMaterial && !rawMaterial.startsWith("in matching ") ? `with ${rawMaterial}` : rawMaterial;
   const article = /^[aeiou]/i.test(noun) && !/^one\b/i.test(noun) ? "an" : "a";
   const core = descriptor
     ? renderedCount === 1 ? descriptor : `${numberWord(renderedCount)} ${descriptor}`
@@ -1062,8 +1099,11 @@ function compactEnvironmentCue(cue: string): string {
 /**
  * Every v004 caption ends in "set against <wall> and <floor>" (154/154). The
  * venue cue becomes that setting; event and lighting cues follow it.
+ * `dropEnvironment` removes those other cues but keeps the setting; only the
+ * last step (`dropSetting`) removes it, when not even short labels fit with it.
  */
 function sceneSettingCues(context: VisualContext, eventPhrase: string | undefined, step: CaptionRenderStep): string[] {
+  if (step.dropSetting) return [];
   const cues = dedupeEnvironment(context, eventPhrase);
   const venueCue = cues.find((cue) => cue === matchVenueCue(context));
   const others = cues.filter((cue) => cue !== venueCue).map((cue) => step.compactEnvironment ? compactEnvironmentCue(cue) : cue);
@@ -1205,6 +1245,8 @@ export function compileLoraCaption(input: {
   // If no step fits, the most compact rendering is returned unchanged and the
   // preflight rejects it: the compiler never truncates structures or colors.
   for (const [index, step] of CAPTION_RENDER_STEPS.entries()) {
+    // product_v007 has no setting to drop: its last step would repeat the previous one.
+    if (step.dropSetting && input.dialect !== "scene_v004") break;
     prompt = buildCaption(input.sceneSpec, input.visualContext, clauses, step, input.dialect, input.ambientDecor, input.creativeCues);
     compactionStep = index;
     if (prompt.length <= budget) break;

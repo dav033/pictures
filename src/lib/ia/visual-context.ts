@@ -1,5 +1,7 @@
 import type { Brief } from "@/lib/types";
+import type { PlanDecoracion } from "@/lib/plan/tipos";
 import { parseEventSearchIntent } from "@/lib/rag/query-parser/event-search";
+import { perfilCreatividad, type NivelCreatividad } from "./creatividad";
 
 export type VenueKind = "indoor" | "outdoor" | "unknown";
 export type LightingKind = "day" | "afternoon" | "sunset" | "night" | "unspecified";
@@ -57,13 +59,53 @@ function matchVenue(value: string | undefined): VenuePattern | undefined {
   return VENUE_PATTERNS.find((candidate) => candidate.pattern.test(text));
 }
 
+/** Legacy open "en <...>" phrase, kept verbatim as the venue when no place phrase is found. */
+const FREE_VENUE_PATTERN = /\ben\s+(?:un|una|el|la)?\s*([^,.;]+?)(?=\s+(?:de|por)\s+(?:la\s+)?(?:noche|d[i\u00ed]a|tarde|ma[\u00f1n]ana|atardecer)|$)/i;
+/** A place phrase never spans punctuation. */
+const CLAUSE_SEPARATOR = /[,.;:!?\u00a1\u00bf()\n]+/;
+/**
+ * Every "en <determiner> <head> ..." of a clause. The phrase ends before the
+ * next complement ("en", "para", "con", ...), a time ("de noche") or the clause
+ * end, so "en la noche de gala en el club" yields both "noche de gala" and "club".
+ */
+const PLACE_PHRASE = /\ben\s+(?:el|la|los|las|un|una|unos|unas|mi|mis|tu|tus|su|sus|nuestro|nuestra|nuestros|nuestras|este|esta|estos|estas|ese|esa|esos|esas|aquel|aquella)\s+(\S+(?:\s+\S+)*?)(?=\s+(?:en|para|con|porque|que|donde|y|pero)\s|\s+(?:de|por)\s+(?:la\s+)?(?:noche|d[i\u00ed]a|tarde|ma[\u00f1n]ana|atardecer)\b|\s*$)/gi;
+/**
+ * Heads that name a place where an event is held. A positive list: an open
+ * complement with a determiner ("en el estilo boho", "en mi opinión") is not a
+ * venue, and an unlisted place is not counted (the chat may then suggest one).
+ */
+const PLACE_HEAD = /^(?:piscina|iglesia|capilla|parroquia|catedral|templo|club|colegio|escuela|universidad|conjunto|edificio|urbanizacion|condominio|casa|apartamento|apto|finca|hacienda|quinta|granja|rancho|cabana|chalet|villa|hotel|restaurante|bar|discoteca|gastrobar|cafe|cafeteria|oficina|empresa|local|tienda|bodega|auditorio|teatro|gimnasio|coliseo|estadio|cancha|salon|sala|terraza|azotea|balcon|patio|jardin|parque|playa|lago|bosque|campo|mirador|hospital|clinica|carpa|kiosco|quiosco|sede|recinto)(?:s|es)?$/;
+
+/** First place phrase of the request, without its determiner ("piscina del conjunto"). */
+function findPlacePhrase(request: string | undefined): string | undefined {
+  for (const clause of clean(request)?.split(CLAUSE_SEPARATOR) ?? []) {
+    for (const match of clause.matchAll(PLACE_PHRASE)) {
+      const phrase = clean(match[1], 100);
+      const head = normalized(phrase?.split(" ")[0]);
+      if (phrase && PLACE_HEAD.test(head)) return phrase;
+    }
+  }
+  return undefined;
+}
+
 function extractVenueFromRequest(request: string | undefined): string | undefined {
   const known = matchVenue(request);
   if (known) return known.label;
   const source = clean(request);
   if (!source) return undefined;
-  const match = source.match(/\ben\s+(?:un|una|el|la)?\s*([^,.;]+?)(?=\s+(?:de|por)\s+(?:la\s+)?(?:noche|d[i\u00ed]a|tarde|ma[\u00f1n]ana|atardecer)|$)/i);
-  return clean(match?.[1], 100);
+  return findPlacePhrase(source) ?? clean(source.match(FREE_VENUE_PATTERN)?.[1], 100);
+}
+
+/**
+ * Whether the request names a place: a known venue, or an "en <determiner>
+ * <place>" phrase in any clause. A bare complement ("en tonos pastel", "en
+ * diciembre"), a spot, decoration, event or time ("en la entrada", "en la
+ * fiesta", "en la noche") and an open complement ("en el estilo boho") are not
+ * a venue. Bounded heuristic: a city without a determiner ("en Bogotá") and a
+ * place outside PLACE_HEAD are not counted.
+ */
+function requestNamesVenue(request: string | undefined): boolean {
+  return Boolean(matchVenue(request) || findPlacePhrase(request));
 }
 
 function detectTime(value: string): { timeOfDay?: string; lightingKind: LightingKind } {
@@ -141,11 +183,73 @@ export function buildVisualContext(input: {
 /**
  * Whether the customer already named a venue or a time of day, with the same
  * patterns the scene is built from. Creativity only fills what is left open.
+ * The text/brief reading is shared by the chat (scene suggestion) and the
+ * generation (completarEscenaConPlan). A venue photo is the venue and its
+ * ambient light (the edit preserves both), so `fotoEspacio` specifies both
+ * dimensions; the generation and the chat (sugerenciaEscenaDelTurno) both
+ * pass it, so the chat never suggests a venue the generation would ignore.
  */
-export function escenaEspecificada(texto: string | undefined, brief: Pick<Brief, "espacio" | "momento_dia"> = {}): { lugar: boolean; momento: boolean } {
+export function escenaEspecificada(
+  texto: string | undefined,
+  brief: Pick<Brief, "espacio" | "momento_dia"> = {},
+  opciones: { fotoEspacio?: boolean } = {},
+): { lugar: boolean; momento: boolean } {
+  const foto = opciones.fotoEspacio === true;
   return {
-    lugar: Boolean(clean(brief.espacio) || matchVenue(texto)),
-    momento: Boolean(clean(brief.momento_dia)) || detectTime(texto ?? "").lightingKind !== "unspecified",
+    lugar: foto || Boolean(clean(brief.espacio)) || requestNamesVenue(texto),
+    momento: foto || Boolean(clean(brief.momento_dia)) || detectTime(texto ?? "").lightingKind !== "unspecified",
+  };
+}
+
+/** Scene fields of an approved plan; Plan 1.0 and 1.1 share them. */
+export type EscenaDelPlan = {
+  espacio: Pick<PlanDecoracion["espacio"], "tipo" | "fuente">;
+  concepto: Pick<PlanDecoracion["concepto"], "momento_dia">;
+};
+
+/**
+ * Completes the brief with the venue and time of day recorded in the approved
+ * plan, only for the dimension the customer left open. "Specified" is read with
+ * the same fields buildVisualContext reads, so anything the customer said (in
+ * the brief or in the request) keeps winning over the plan.
+ *
+ * - `espacio.fuente === "cliente"` is the customer's own statement (maybe from
+ *   an earlier chat turn missing from this request) and applies at every level.
+ * - An assumed venue ("supuesto", or "foto": inferred from an attached image
+ *   that may be an inspiration reference) and `momento_dia` (no provenance)
+ *   apply only at levels whose design rule tells the chat to fill the scene,
+ *   read from the creativity table exactly as the chat reads it
+ *   (prompt-sistema.ts bloqueCreatividad: no design rule, no scene rule). The
+ *   default level gives the chat no scene rule and does not show the plan scene
+ *   to the customer, so its forced guess keeps the pre-calibration prompt.
+ * - With a venue photo (`fotoEspacio`) the photo is the venue and its light:
+ *   the plan never forces a place or a time on it.
+ *
+ * Known limitation: `nivel` is the slider value when generating, not the level
+ * the plan was designed with; the signed approval context (plan/aprobacion.ts)
+ * does not record it. Remove this note once the approval context carries the
+ * design level and /api/generate passes that instead.
+ */
+export function completarEscenaConPlan(input: {
+  brief?: Brief;
+  userRequest?: string;
+  plan?: EscenaDelPlan;
+  nivel: NivelCreatividad;
+  fotoEspacio?: boolean;
+}): Brief | undefined {
+  if (!input.plan) return input.brief;
+  const brief = input.brief ?? {};
+  const completaEscena = perfilCreatividad(input.nivel).instruccionDiseno !== "";
+  const { espacio, concepto } = input.plan;
+  const lugar = clean(espacio.tipo, 120);
+  const momento = clean(concepto.momento_dia, 60);
+  const opciones = { fotoEspacio: input.fotoEspacio };
+  const lugarDelCliente = escenaEspecificada(input.userRequest, brief, opciones).lugar;
+  const momentoDelCliente = escenaEspecificada([input.userRequest, brief.tipo_evento, brief.espacio, brief.estilo, brief.fecha].filter(Boolean).join("; "), brief, opciones).momento;
+  return {
+    ...brief,
+    ...(lugar && !lugarDelCliente && (espacio.fuente === "cliente" || completaEscena) ? { espacio: lugar } : {}),
+    ...(momento && !momentoDelCliente && completaEscena ? { momento_dia: momento } : {}),
   };
 }
 

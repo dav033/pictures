@@ -4,8 +4,8 @@ import type { Imagen, Mensaje } from "@/lib/ia/tipos";
 import { ejecutarConversacionStream } from "@/lib/ia/ejecutar";
 import { limitarHistorialChat } from "@/lib/ia/historial-chat";
 import { construirSistema } from "@/lib/ia/prompt-sistema";
-import { parseNivelCreatividad, sugerenciaEscena } from "@/lib/ia/creatividad";
-import { escenaEspecificada } from "@/lib/ia/visual-context";
+import { parseNivelCreatividad } from "@/lib/ia/creatividad";
+import { sugerenciaEscenaDelTurno } from "@/lib/ia/sugerencia-escena-chat";
 import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import { RAG_ENABLED, RAG_FRANJAS_ENABLED, PLAN_DECORACION_ENABLED } from "@/lib/ia/feature-flags";
 import type { Brief, ChatMessage } from "@/lib/types";
@@ -224,9 +224,9 @@ export async function POST(request: Request) {
     }
 
     // Only what the customer left open gets a server-picked venue/time, and only
-    // at levels that suggest one; logged so a surprising scene can be traced.
-    const textoCliente = (messages ?? []).filter((mensaje) => mensaje.role === "user").map((mensaje) => mensaje.content).join(" ");
-    const sugerencia = sugerenciaEscena(creatividad, escenaEspecificada(textoCliente, brief ?? {}));
+    // at levels that suggest one (a venue photo leaves nothing open); logged so
+    // a surprising scene can be traced.
+    const sugerencia = sugerenciaEscenaDelTurno({ nivel: creatividad, mensajes: messages ?? [], brief, fotoEspacio: Boolean(fotoEspacio) });
     if (sugerencia) console.info("[chat] sugerencia de escena por creatividad", { requestId, creatividad, ...sugerencia });
     sistema = construirSistema({ ragEnabled: RAG_ENABLED, franjasEnabled: RAG_FRANJAS_ENABLED, brief, referenceBlueprint, catalogAllowlist: catalogAllowlist ?? undefined, catalogoLoraNoDisponible: catalogoLoraNoDisponible !== undefined, creatividad, sugerenciaEscena: sugerencia });
 

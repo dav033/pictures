@@ -12,7 +12,7 @@ import type { ProductoCandidato, VarianteCandidata } from "@/lib/rag/chat/buscar
 import { puntuacionCromatica } from "@/lib/rag/catalog/similitud-color";
 import { ReferenciasEntrenamientoModal, type ReferenciasEvidenciaData } from "@/components/ReferenciasEntrenamientoModal";
 import type { LoraModeSlug } from "@/lib/lora/schema";
-import { leerUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
+import { esCancelacion, FalloPlanEditar, mensajeErrorRespuesta, mensajeFalloPlanEditar, pedirPlanEditar } from "@/lib/plan/peticion-plan-editar";
 import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { IconoEstructura } from "@/components/plan/IconoEstructura";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
@@ -26,7 +26,9 @@ import {
   faltantesCliente,
   medidasCliente,
   productoCliente,
+  productoConTamanoCliente,
   pulgadasCliente,
+  pulgadasConCentimetrosCliente,
   resumenPlanCliente,
   supuestoCliente,
   sustitucionesCliente,
@@ -34,13 +36,7 @@ import {
   ubicacionCliente,
 } from "@/lib/plan/presentacion-cliente";
 
-/**
- * Mensaje de cliente de una respuesta fallida de /api/plan-editar (ui-error.v1).
- * Sin `ui_error` válido se usa el texto de respaldo local, nunca `error` crudo.
- */
-function mensajeErrorRespuesta(datos: unknown, respaldo: string): string {
-  return leerUiErrorV1(datos)?.mensaje_usuario ?? respaldo;
-}
+const RESPALDO_RECOMENDACIONES = "No pudimos cargar opciones parecidas. Intenta de nuevo o busca en todo el catálogo.";
 
 const pesos = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
@@ -345,13 +341,11 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     setBuscandoEdicion(true);
     setErrorEdicion(null);
     try {
-      const respuesta = await fetch("/api/plan-editar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ modo: "buscar", consulta, approval_token: plan.approval_token, loraMode }) });
-      const datos = await respuesta.json() as { candidatos?: ProductoCandidato[]; error?: string };
-      if (!respuesta.ok) throw new Error(mensajeErrorRespuesta(datos, "No se pudo buscar en el catálogo."));
+      const datos = await pedirPlanEditar({ modo: "buscar", consulta, approval_token: plan.approval_token, loraMode }, "No se pudo buscar en el catálogo.") as { candidatos?: ProductoCandidato[] };
       setCandidatosEdicion(datos.candidatos ?? []);
       if (!datos.candidatos?.length) setErrorEdicion("No encontré una variante disponible. Prueba con el tamaño y el color, por ejemplo: globo rojo de 5 pulgadas.");
     } catch (error) {
-      setErrorEdicion(error instanceof Error ? error.message : "No se pudo buscar en el catálogo.");
+      setErrorEdicion(mensajeFalloPlanEditar(error, "No se pudo buscar en el catálogo."));
     } finally {
       setBuscandoEdicion(false);
     }
@@ -407,17 +401,15 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     setGuardandoEdicion(true);
     setErrorEdicion(null);
     try {
-      const respuesta = await fetch("/api/plan-editar", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ modo: "aplicar", base: plan, edicion: { accion: modoEdicion, estructura_id: estructuraEdicion, objetivo_variant_id: objetivoEdicion ?? undefined, variante: { product_id: varianteEdicion.productId, variant_id: varianteEdicion.variantId, color: colorEdicion.trim() || undefined }, participacion: modoEdicion === "agregar" ? participacion : undefined }, loraMode }),
-      });
-       const datos = await respuesta.json() as { plan?: PlanResuelto; cotizacion?: Cotizacion; error?: string };
-       if (!respuesta.ok || !datos.plan) throw new Error(mensajeErrorRespuesta(datos, "No se pudo actualizar el plan."));
+      const datos = await pedirPlanEditar(
+        { modo: "aplicar", base: plan, edicion: { accion: modoEdicion, estructura_id: estructuraEdicion, objetivo_variant_id: objetivoEdicion ?? undefined, variante: { product_id: varianteEdicion.productId, variant_id: varianteEdicion.variantId, color: colorEdicion.trim() || undefined }, participacion: modoEdicion === "agregar" ? participacion : undefined }, loraMode },
+        "No se pudo actualizar el plan.",
+      ) as { plan?: PlanResuelto; cotizacion?: Cotizacion };
+       if (!datos.plan) throw new FalloPlanEditar(mensajeErrorRespuesta(datos, "No se pudo actualizar el plan."));
        onPlanActualizado(datos.plan, datos.cotizacion);
       cerrarEditor();
     } catch (error) {
-      setErrorEdicion(error instanceof Error ? error.message : "No se pudo actualizar el plan.");
+      setErrorEdicion(mensajeFalloPlanEditar(error, "No se pudo actualizar el plan."));
     } finally {
       setGuardandoEdicion(false);
     }
@@ -428,15 +420,14 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     setGuardandoEdicion(true);
     setErrorEdicion(null);
     try {
-      const respuesta = await fetch("/api/plan-editar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ modo: "aplicar", base: plan, edicion: { accion: "reemplazar", estructura_id: seleccionCatalogo.estructuraId, objetivo_variant_id: seleccionCatalogo.linea.variant_id, variante: { product_id: opcion.candidato.productId, variant_id: opcion.variante.variantId, color: opcion.variante.colores[0] ?? undefined } }, loraMode }) });
-       const datos = await respuesta.json() as { plan?: PlanResuelto; cotizacion?: Cotizacion; error?: string };
-       if (!respuesta.ok || !datos.plan) throw new Error(mensajeErrorRespuesta(datos, "No se pudo cambiar la pieza."));
+      const datos = await pedirPlanEditar({ modo: "aplicar", base: plan, edicion: { accion: "reemplazar", estructura_id: seleccionCatalogo.estructuraId, objetivo_variant_id: seleccionCatalogo.linea.variant_id, variante: { product_id: opcion.candidato.productId, variant_id: opcion.variante.variantId, color: opcion.variante.colores[0] ?? undefined } }, loraMode }, "No se pudo cambiar la pieza.") as { plan?: PlanResuelto; cotizacion?: Cotizacion };
+       if (!datos.plan) throw new FalloPlanEditar(mensajeErrorRespuesta(datos, "No se pudo cambiar la pieza."));
        onPlanActualizado(datos.plan, datos.cotizacion);
        setIntercambioAbierto(false);
        setSeleccionCatalogo(null);
        requestAnimationFrame(() => disparadorModalRef.current?.focus());
     } catch (error) {
-      setErrorEdicion(error instanceof Error ? error.message : "No se pudo cambiar la pieza.");
+      setErrorEdicion(mensajeFalloPlanEditar(error, "No se pudo cambiar la pieza."));
     } finally {
       setGuardandoEdicion(false);
     }
@@ -448,12 +439,11 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     setGuardandoEdicion(true);
     setErrorEdicion(null);
     try {
-      const respuesta = await fetch("/api/plan-editar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ modo: "aplicar", base: plan, edicion: { accion: "quitar", estructura_id: estructuraId, objetivo_variant_id: linea.variant_id }, loraMode }) });
-       const datos = await respuesta.json() as { plan?: PlanResuelto; cotizacion?: Cotizacion; error?: string };
-       if (!respuesta.ok || !datos.plan) throw new Error(mensajeErrorRespuesta(datos, "No se pudo quitar la pieza."));
+      const datos = await pedirPlanEditar({ modo: "aplicar", base: plan, edicion: { accion: "quitar", estructura_id: estructuraId, objetivo_variant_id: linea.variant_id }, loraMode }, "No se pudo quitar la pieza.") as { plan?: PlanResuelto; cotizacion?: Cotizacion };
+       if (!datos.plan) throw new FalloPlanEditar(mensajeErrorRespuesta(datos, "No se pudo quitar la pieza."));
        onPlanActualizado(datos.plan, datos.cotizacion);
     } catch (error) {
-      setErrorEdicion(error instanceof Error ? error.message : "No se pudo quitar la pieza.");
+      setErrorEdicion(mensajeFalloPlanEditar(error, "No se pudo quitar la pieza."));
       setEditorAbierto(true);
     } finally {
       setGuardandoEdicion(false);
@@ -473,14 +463,12 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     setBuscandoCatalogo(true);
     setErrorEdicion(null);
     try {
-      const respuesta = await fetch("/api/plan-editar", { method: "POST", headers: { "Content-Type": "application/json" }, signal: controlador.signal, body: JSON.stringify({ modo: "recomendadas", variant_id: seleccionCatalogo.linea.variant_id, approval_token: plan.approval_token, loraMode }) });
-      const datos = await respuesta.json() as { candidatos?: ProductoCandidato[]; error?: string };
-      if (!respuesta.ok) throw new Error(mensajeErrorRespuesta(datos, "No se pudieron cargar recomendaciones."));
+      const datos = await pedirPlanEditar({ modo: "recomendadas", variant_id: seleccionCatalogo.linea.variant_id, approval_token: plan.approval_token, loraMode }, RESPALDO_RECOMENDACIONES, { signal: controlador.signal }) as { candidatos?: ProductoCandidato[] };
       if (secuencia !== secuenciaCatalogoRef.current) return;
       setRecomendaciones(datos.candidatos ?? []);
     } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return;
-      setErrorEdicion(error instanceof Error ? error.message : "No se pudieron cargar recomendaciones.");
+      if (esCancelacion(error)) return;
+      setErrorEdicion(mensajeFalloPlanEditar(error, RESPALDO_RECOMENDACIONES));
     } finally {
       if (secuencia === secuenciaCatalogoRef.current) setBuscandoCatalogo(false);
     }
@@ -496,14 +484,12 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     setBuscandoCatalogo(true);
     setErrorEdicion(null);
     try {
-      const respuesta = await fetch("/api/plan-editar", { method: "POST", headers: { "Content-Type": "application/json" }, signal: controlador.signal, body: JSON.stringify({ modo: "buscar", consulta, approval_token: plan.approval_token, loraMode }) });
-      const datos = await respuesta.json() as { candidatos?: ProductoCandidato[]; error?: string };
-      if (!respuesta.ok) throw new Error(mensajeErrorRespuesta(datos, "No se pudo buscar en el catálogo."));
+      const datos = await pedirPlanEditar({ modo: "buscar", consulta, approval_token: plan.approval_token, loraMode }, "No se pudo buscar en el catálogo.", { signal: controlador.signal }) as { candidatos?: ProductoCandidato[] };
       if (secuencia !== secuenciaCatalogoRef.current) return;
       setResultadosCatalogo(datos.candidatos ?? []);
     } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return;
-      setErrorEdicion(error instanceof Error ? error.message : "No se pudo buscar en el catálogo.");
+      if (esCancelacion(error)) return;
+      setErrorEdicion(mensajeFalloPlanEditar(error, "No se pudo buscar en el catálogo."));
     } finally {
       if (secuencia === secuenciaCatalogoRef.current) setBuscandoCatalogo(false);
     }
@@ -577,8 +563,9 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
 
   return (
     <section data-testid="plan-desglose" className="mt-3 max-w-[92%] space-y-3 rounded-xl border border-acento/30 bg-superficie p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+      {/* Wraps by the card's own width: on narrow cards the badges move below the text instead of squeezing it. */}
+      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+        <div className="min-w-0 flex-1 basis-64">
           <p className="text-xs font-medium text-texto-suave">Tu propuesta de decoración</p>
           <h3 className="text-base font-semibold leading-snug text-texto">{plan.plan.concepto.titulo}</h3>
           {resumenPlan && <p data-testid="plan-resumen" className="mt-1 text-sm text-texto">{resumenPlan}</p>}
@@ -593,7 +580,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
             </div>
           )}
         </div>
-        <div className="flex shrink-0 flex-wrap justify-end gap-2">
+        <div className="flex max-w-full flex-wrap items-center gap-2">
           {editorDisponible && <button type="button" data-testid="editar-plan" aria-expanded={editorAbierto} aria-controls={editorId} onClick={() => setEditorAbierto((abierto) => !abierto)} className="ui-pressable inline-flex items-center gap-1 rounded-full border border-acento/40 px-2 py-1 text-[10px] font-semibold text-acento hover:bg-acento-suave focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"><Plus className="size-3" aria-hidden="true" />Ajustar plan</button>}
           <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${plan.comercial.estado === "PRESUPUESTO_EXCEDIDO" ? "bg-red-100 text-red-700" : "bg-acento-suave text-acento"}`}>
             {plan.comercial.estado === "APROBACION_REQUERIDA" ? "Revisión pendiente" : plan.comercial.estado === "VERIFICADO" ? "Dentro del presupuesto" : "Excede el presupuesto"}
@@ -645,8 +632,8 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
           const nombreVisible = oficial?.nombre ?? productoCliente(estructura.nombre);
           return (
           <li key={estructura.estructura_id}>
-            <details className="group overflow-hidden rounded-lg bg-fondo/60">
-              <summary className="cursor-pointer list-none rounded-lg p-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento [&::-webkit-details-marker]:hidden">
+            <details className="plan-pieza group overflow-hidden rounded-lg bg-fondo/60">
+              <summary className="cursor-pointer list-none rounded-lg p-3 focus-visible:outline-2 focus-visible:outline-acento [&::-webkit-details-marker]:hidden">
                 <div className="flex items-start gap-3">
                   <span className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-superficie text-acento" title={oficial?.descripcion}>
                     {oficial ? <IconoEstructura id={oficial.id} espejo={estructura.ubicacion === "lateral_derecho"} className="size-9" /> : <span aria-hidden className="size-3 rounded-full bg-acento/60" />}
@@ -690,7 +677,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
                         {modoDev && referencias && <button type="button" data-testid="linea-referencias-entrenamiento" onClick={() => abrirEvidencia(linea, referencias)} className="ui-pressable shrink-0 rounded-lg border border-acento/35 bg-acento-suave px-2 py-1.5 text-left text-[11px] font-semibold leading-4 text-acento hover:bg-acento/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento" aria-label={`Ver ${referencias.count} ${referencias.count === 1 ? "referencia" : "referencias"} de entrenamiento para ${linea.titulo}`}>
                           <span className="block tabular-nums">{referencias.count} {referencias.count === 1 ? "referencia" : "referencias"}</span><span className="block font-normal">en entrenamiento</span>
                         </button>}
-                        {editorDisponible && <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-borde/70 bg-superficie/50 p-0.5"><button type="button" title={`Modificar ${linea.titulo}`} aria-label={`Modificar ${linea.titulo}`} onClick={() => abrirEditor("reemplazar", estructura.estructura_id, linea)} className="flex size-7 items-center justify-center rounded-md text-texto-suave hover:bg-acento-suave hover:text-acento focus-visible:outline-2 focus-visible:outline-acento"><Pencil className="size-3.5" aria-hidden="true" /></button><button type="button" title={`Quitar ${linea.titulo}`} aria-label={`Quitar ${linea.titulo}`} onClick={() => void quitarVariante(estructura.estructura_id, linea)} className="flex size-7 items-center justify-center rounded-md text-texto-suave hover:bg-error-suave hover:text-error focus-visible:outline-2 focus-visible:outline-acento"><Trash2 className="size-3.5" aria-hidden="true" /></button></div>}
+                        {editorDisponible && <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-borde/70 bg-superficie/50 p-0.5"><button type="button" title={`Modificar ${productoConTamanoCliente(linea.titulo, linea.tamano_codigo)}`} aria-label={`Modificar ${productoConTamanoCliente(linea.titulo, linea.tamano_codigo)}`} onClick={() => abrirEditor("reemplazar", estructura.estructura_id, linea)} className="flex size-7 items-center justify-center rounded-md text-texto-suave hover:bg-acento-suave hover:text-acento focus-visible:outline-2 focus-visible:outline-acento"><Pencil className="size-3.5" aria-hidden="true" /></button><button type="button" title={`Quitar ${productoConTamanoCliente(linea.titulo, linea.tamano_codigo)}`} aria-label={`Quitar ${productoConTamanoCliente(linea.titulo, linea.tamano_codigo)}`} onClick={() => void quitarVariante(estructura.estructura_id, linea)} className="flex size-7 items-center justify-center rounded-md text-texto-suave hover:bg-error-suave hover:text-error focus-visible:outline-2 focus-visible:outline-acento"><Trash2 className="size-3.5" aria-hidden="true" /></button></div>}
                       </li>
                     );
                   })}
@@ -720,7 +707,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
           <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-borde bg-superficie p-4 shadow-lg">
             <Dialog.Title className="text-base font-semibold text-texto">{seleccionCatalogo ? productoCliente(seleccionCatalogo.linea.titulo) : "Detalle del producto"}</Dialog.Title>
             <Dialog.Description className="mt-1 text-xs text-texto-suave">Se usa en {seleccionCatalogo ? descripcionesPorId.get(seleccionCatalogo.estructuraId) ?? "la decoración" : "la decoración"}.</Dialog.Description>
-            {seleccionCatalogo && <div className="mt-4 space-y-4"><div className="relative">{imagenSeleccionada ? <img src={imagenSeleccionada} alt={seleccionCatalogo.linea.titulo} width={400} height={400} className="aspect-square w-full rounded-lg bg-superficie-2 object-contain" /> : <div className="flex aspect-square items-center justify-center rounded-lg bg-superficie-2 text-sm text-texto-suave">{imagenesAusentes[seleccionCatalogo.linea.variant_id] ? "Foto no disponible en el catálogo" : "Cargando foto…"}</div>}{editorDisponible && <button type="button" title="Cambiar elemento" aria-label="Cambiar elemento del catálogo" aria-expanded={intercambioAbierto} aria-controls={`intercambio-${plan.plan.plan_id}`} onClick={() => void abrirIntercambio()} className="absolute right-2 top-2 inline-flex items-center gap-1.5 rounded-lg border border-borde bg-superficie/90 px-2.5 py-2 text-xs font-semibold text-texto shadow-sm backdrop-blur hover:bg-acento-suave hover:text-acento focus-visible:outline-2 focus-visible:outline-acento"><ArrowLeftRight className="size-3.5" aria-hidden="true" />Cambiar</button>}</div><dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm"><div><dt className="text-xs text-texto-suave">Tamaño</dt><dd className="font-medium text-texto">{seleccionCatalogo.linea.tamano_codigo ? pulgadasCliente(seleccionCatalogo.linea.tamano_codigo) : "No especificado"}{seleccionCatalogo.linea.diam_cm != null ? ` (${seleccionCatalogo.linea.diam_cm} cm)` : ""}</dd></div><div><dt className="text-xs text-texto-suave">Color</dt><dd className="font-medium text-texto">{seleccionCatalogo.linea.color ?? "Según catálogo"}</dd></div><div><dt className="text-xs text-texto-suave">Unidades en esta estructura</dt><dd className="font-medium tabular-nums text-texto">{seleccionCatalogo.linea.unidades}</dd></div>{compraSeleccionada && <><div><dt className="text-xs text-texto-suave">Presentación cotizada</dt><dd className="font-medium text-texto">{compraSeleccionada.paquetes} paquete{compraSeleccionada.paquetes === 1 ? "" : "s"} × {compraSeleccionada.unidades_paquete}</dd></div><div><dt className="text-xs text-texto-suave">Sobrante total</dt><dd className="font-medium tabular-nums text-texto">{compraSeleccionada.sobrante}</dd></div><div><dt className="text-xs text-texto-suave">Subtotal cotizado</dt><dd className="font-medium tabular-nums text-texto">{pesos.format(compraSeleccionada.subtotal)}</dd></div></>}</dl>
+            {seleccionCatalogo && <div className="mt-4 space-y-4"><div className="relative">{imagenSeleccionada ? <img src={imagenSeleccionada} alt={productoConTamanoCliente(seleccionCatalogo.linea.titulo, seleccionCatalogo.linea.tamano_codigo)} width={400} height={400} className="aspect-square w-full rounded-lg bg-superficie-2 object-contain" /> : <div className="flex aspect-square items-center justify-center rounded-lg bg-superficie-2 text-sm text-texto-suave">{imagenesAusentes[seleccionCatalogo.linea.variant_id] ? "Foto no disponible en el catálogo" : "Cargando foto…"}</div>}{editorDisponible && <button type="button" title="Cambiar elemento" aria-label="Cambiar elemento del catálogo" aria-expanded={intercambioAbierto} aria-controls={`intercambio-${plan.plan.plan_id}`} onClick={() => void abrirIntercambio()} className="absolute right-2 top-2 inline-flex items-center gap-1.5 rounded-lg border border-borde bg-superficie/90 px-2.5 py-2 text-xs font-semibold text-texto shadow-sm backdrop-blur hover:bg-acento-suave hover:text-acento focus-visible:outline-2 focus-visible:outline-acento"><ArrowLeftRight className="size-3.5" aria-hidden="true" />Cambiar</button>}</div><dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm"><div><dt className="text-xs text-texto-suave">Tamaño</dt><dd className="font-medium text-texto">{seleccionCatalogo.linea.tamano_codigo ? pulgadasConCentimetrosCliente(seleccionCatalogo.linea.tamano_codigo, seleccionCatalogo.linea.diam_cm) : "No especificado"}</dd></div><div><dt className="text-xs text-texto-suave">Color</dt><dd className="font-medium text-texto">{seleccionCatalogo.linea.color ?? "Según catálogo"}</dd></div><div><dt className="text-xs text-texto-suave">Unidades en esta estructura</dt><dd className="font-medium tabular-nums text-texto">{seleccionCatalogo.linea.unidades}</dd></div>{compraSeleccionada && <><div><dt className="text-xs text-texto-suave">Se compra en</dt><dd className="font-medium text-texto">{contar(compraSeleccionada.paquetes, "paquete", "paquetes")} de {contar(compraSeleccionada.unidades_paquete, "unidad", "unidades")}</dd></div><div><dt className="text-xs text-texto-suave">Unidades que sobran</dt><dd className="font-medium tabular-nums text-texto">{compraSeleccionada.sobrante}</dd></div><div><dt className="text-xs text-texto-suave">Precio de los paquetes</dt><dd className="font-medium tabular-nums text-texto">{pesos.format(compraSeleccionada.subtotal)}</dd></div></>}</dl>
               {editorDisponible && intercambioAbierto && <section id={`intercambio-${plan.plan.plan_id}`} aria-labelledby={`intercambio-${plan.plan.plan_id}-titulo`} className="space-y-3 rounded-lg border border-acento/30 bg-fondo/60 p-3"><div><h3 id={`intercambio-${plan.plan.plan_id}-titulo`} className="text-sm font-semibold text-texto">Cambia esta pieza</h3><p className="mt-0.5 text-xs text-texto-suave">Primero te muestro opciones del mismo tamaño y forma, priorizando colores cercanos y la misma familia; también puedes buscar cualquier pieza del catálogo.</p></div><div className="space-y-2"><p className="text-[11px] font-semibold uppercase tracking-wide text-texto-suave">Recomendados</p>{buscandoCatalogo && recomendaciones.length === 0 ? <p className="rounded-md bg-superficie px-2.5 py-2 text-xs text-texto-suave" role="status">Buscando opciones compatibles…</p> : opcionesRecomendadas.length > 0 ? <ListaOpciones opciones={opcionesRecomendadas} guardando={guardandoEdicion} onCambiar={(opcion) => void reemplazarDesdeCatalogo(opcion)} ariaLabel="Elementos recomendados" /> : <p className="rounded-md bg-superficie px-2.5 py-2 text-xs text-texto-suave">No encontré otra variante compatible. Prueba la búsqueda completa.</p>}</div><div className="space-y-2 border-t border-borde pt-3"><p className="text-[11px] font-semibold uppercase tracking-wide text-texto-suave">Todo el catálogo</p><form onSubmit={buscarEnCatalogo} className="flex gap-2"><label htmlFor={`buscar-intercambio-${plan.plan.plan_id}`} className="sr-only">Buscar en todo el catálogo</label><input id={`buscar-intercambio-${plan.plan.plan_id}`} name="buscar-intercambio-catalogo" autoComplete="off" value={consultaCatalogo} onChange={(evento) => setConsultaCatalogo(evento.target.value)} placeholder="Busca por nombre, tamaño o color…" className="min-w-0 flex-1 rounded-md border border-borde bg-superficie px-2.5 py-2 text-sm text-texto outline-none placeholder:text-texto-suave focus-visible:border-acento focus-visible:outline-2 focus-visible:outline-acento" /><button type="submit" disabled={buscandoCatalogo || consultaCatalogo.trim().length < 2} className="ui-pressable inline-flex shrink-0 items-center gap-1 rounded-md bg-acento px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"><Search className="size-3.5" aria-hidden="true" />{buscandoCatalogo ? "Buscando…" : "Buscar"}</button></form>{opcionesBusqueda.length > 0 && <ListaOpciones opciones={opcionesBusqueda} guardando={guardandoEdicion} onCambiar={(opcion) => void reemplazarDesdeCatalogo(opcion)} ariaLabel="Resultados de todo el catálogo" />}</div></section>}
             </div>}
              {errorEdicion && <p role="alert" aria-live="polite" className="rounded-md border border-error/30 bg-error/10 px-3 py-2 text-xs font-medium text-error">{errorEdicion}</p>}
@@ -732,11 +719,11 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60" />
           <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-y-auto overscroll-contain rounded-xl border border-borde bg-superficie p-4 shadow-lg">
-            <Dialog.Title className="text-base font-semibold text-texto">Cambiar {seleccionCatalogo?.linea.titulo ?? "elemento"}</Dialog.Title>
-            <Dialog.Description className="mt-1 text-xs text-texto-suave">Elige una variante real del catálogo para mantener el plan y la cotización trazables.</Dialog.Description>
+            <Dialog.Title className="text-base font-semibold text-texto">Cambiar {seleccionCatalogo ? productoConTamanoCliente(seleccionCatalogo.linea.titulo, seleccionCatalogo.linea.tamano_codigo) : "elemento"}</Dialog.Title>
+            <Dialog.Description className="mt-1 text-xs text-texto-suave">Elige otra pieza disponible del catálogo. El total de tu propuesta se actualiza con el cambio.</Dialog.Description>
             {seleccionCatalogo && (
               <div className="mt-4 flex min-h-0 flex-1 flex-col gap-3">
-                <button ref={volverDetalleRef} type="button" onClick={() => setIntercambioAbierto(false)} className="self-start text-xs font-semibold text-acento underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-acento">Volver al detalle</button>
+                <button ref={volverDetalleRef} type="button" onClick={() => { setIntercambioAbierto(false); setErrorEdicion(null); }} className="self-start text-xs font-semibold text-acento underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-acento">Volver al detalle</button>
                 <label htmlFor={`buscar-intercambio-${plan.plan.plan_id}`} className="sr-only">Buscar en todo el catálogo</label>
                 <input
                   ref={busquedaCatalogoRef}
@@ -788,11 +775,17 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
                     <p className="rounded-md bg-fondo px-2.5 py-2 text-xs text-texto-suave" role="status">Buscando opciones compatibles…</p>
                   ) : opcionesRecomendadas.length > 0 ? (
                     <ListaOpciones opciones={opcionesRecomendadas} guardando={guardandoEdicion} onCambiar={(opcion) => void reemplazarDesdeCatalogo(opcion)} ariaLabel="Elementos recomendados" />
-                  ) : (
+                  ) : errorEdicion ? null : (
+                    // A failed request is not "no compatible variants": that case shows only the error below.
                     <p className="rounded-md bg-fondo px-2.5 py-2 text-xs text-texto-suave">No encontré otra variante compatible. Escribe al menos dos caracteres para buscar.</p>
                   )}
                 </div>
-                {errorEdicion && consultaCatalogo.trim().length < 2 && <p role="alert" className="rounded-md border border-error/30 bg-error/10 px-3 py-2 text-xs font-medium text-error">{errorEdicion}</p>}
+                {errorEdicion && consultaCatalogo.trim().length < 2 && (
+                  <div role="alert" className="space-y-1.5 rounded-md border border-error/30 bg-error/10 px-3 py-2 text-xs font-medium text-error">
+                    <p>{errorEdicion}</p>
+                    {recomendaciones.length === 0 && <button type="button" disabled={buscandoCatalogo} onClick={() => void abrirIntercambio()} className="font-semibold underline underline-offset-2 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-acento">Reintentar</button>}
+                  </div>
+                )}
               </div>
             )}
           </Dialog.Content>

@@ -49,6 +49,20 @@ export function metrosCliente(valor: number): string {
   return `${NUMERO.format(valor)} m`;
 }
 
+/** "12,7 cm". */
+export function centimetrosCliente(valor: number): string {
+  return `${NUMERO.format(valor)} cm`;
+}
+
+/** "R-5" y 12,7 → "5 pulgadas (12,7 cm)"; sin centímetros, solo las pulgadas. */
+export function pulgadasConCentimetrosCliente(tamano: string, diamCm: number | null | undefined): string {
+  const pulgadas = pulgadasCliente(tamano);
+  return diamCm != null ? `${pulgadas} (${centimetrosCliente(diamCm)})` : pulgadas;
+}
+
+/** En arcos, semiarcos y columnas `largo_m` es la profundidad de la estructura, no un largo. */
+const TIPOS_LARGO_ES_FONDO = new Set(["arco", "semiarco", "columna"]);
+
 /** Medidas con su dimensión en palabras: "2,4 m de ancho × 2,2 m de alto". */
 export function medidasCliente(tipo: string, medidas: { ancho_m?: number; alto_m?: number; largo_m?: number } | undefined): string | null {
   if (!medidas) return null;
@@ -60,7 +74,7 @@ export function medidasCliente(tipo: string, medidas: { ancho_m?: number; alto_m
   }
   const partes: string[] = [];
   if (medidas.ancho_m != null) partes.push(`${metrosCliente(medidas.ancho_m)} de ${tipo === "centro_mesa" ? "diámetro" : "ancho"}`);
-  if (medidas.largo_m != null) partes.push(`${metrosCliente(medidas.largo_m)} de largo`);
+  if (medidas.largo_m != null) partes.push(`${metrosCliente(medidas.largo_m)} de ${TIPOS_LARGO_ES_FONDO.has(tipo) ? "fondo" : "largo"}`);
   if (medidas.alto_m != null) partes.push(`${metrosCliente(medidas.alto_m)} de alto`);
   return partes.length ? partes.join(" × ") : null;
 }
@@ -358,6 +372,16 @@ export function productoCliente(titulo: string): string {
     .replace(/\s*\/\s*paquete\s*x\s*\d+\s*$/i, "")
     .trim();
   return limpio || titulo.trim();
+}
+
+/**
+ * Producto con su tamaño, para nombres accesibles, títulos y textos
+ * alternativos: distingue dos líneas del mismo producto en tamaños distintos
+ * sin mostrar códigos. "Globo Latex Redondo Fashion Blanco de 5 pulgadas".
+ */
+export function productoConTamanoCliente(titulo: string, tamano: string | null | undefined): string {
+  const producto = productoCliente(titulo);
+  return tamano ? `${producto} de ${pulgadasCliente(tamano)}` : producto;
 }
 
 const AMBIENTACION_POR_PALABRA: ReadonlyArray<readonly [RegExp, string]> = [

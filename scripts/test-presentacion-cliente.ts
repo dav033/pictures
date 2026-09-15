@@ -11,6 +11,8 @@ import {
   describirEstructuraCliente,
   medidasCliente,
   productoCliente,
+  productoConTamanoCliente,
+  pulgadasConCentimetrosCliente,
   resumenPlanCliente,
   resumenReferenciaCliente,
   supuestoCliente,
@@ -290,6 +292,35 @@ ok("modo dev conserva los datos crudos");
   assert.equal(medidasCliente("guirnalda", { ancho_m: 1.5, largo_m: 3.5, alto_m: 0.4 }), "3,5 m de largo");
   assert.equal(medidasCliente("guirnalda", { ancho_m: 2 }), "2 m de largo");
   ok("la tarjeta distingue tonos del mismo color y describe la guirnalda por su largo");
+}
+
+// Regresión (iteración 3b, 2026-09-14): en arcos, semiarcos y columnas
+// `largo_m` es la profundidad ("0,5 m de largo" en un arco confundía), y los
+// centímetros salían con punto decimal ("12.7 cm").
+{
+  assert.equal(medidasCliente("arco", { ancho_m: 3, largo_m: 0.5, alto_m: 2.5 }), "3 m de ancho × 0,5 m de fondo × 2,5 m de alto");
+  assert.equal(medidasCliente("semiarco", { ancho_m: 1.2, largo_m: 0.4, alto_m: 2.2 }), "1,2 m de ancho × 0,4 m de fondo × 2,2 m de alto");
+  assert.equal(medidasCliente("columna", { ancho_m: 0.6, largo_m: 0.6, alto_m: 2 }), "0,6 m de ancho × 0,6 m de fondo × 2 m de alto");
+  assert.equal(medidasCliente("pared", { ancho_m: 2, largo_m: 0.3, alto_m: 2 }), "2 m de ancho × 0,3 m de largo × 2 m de alto", "otros tipos conservan 'de largo'");
+  assert.equal(pulgadasConCentimetrosCliente("R-5", 12.7), "5 pulgadas (12,7 cm)");
+  assert.equal(pulgadasConCentimetrosCliente("R-12", null), "12 pulgadas");
+  ok("arcos y columnas miden el fondo; centímetros con coma decimal");
+}
+
+// Regresión (iteración 3b): los botones Modificar/Quitar, la foto del detalle y
+// el diálogo "Cambiar" usaban el título crudo del catálogo ("B2b … — R-5 / PAQUETE X 20").
+{
+  assert.equal(productoConTamanoCliente("B2b Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 20", "R-5"), "Globo Latex Redondo Fashion Blanco de 5 pulgadas");
+  assert.equal(productoConTamanoCliente("Telón dorado", null), "Telón dorado");
+  const htmlEditable = renderToStaticMarkup(React.createElement(TarjetaPlanDecoracion, { plan, onPlanActualizado: () => undefined }));
+  const atributos = [...htmlEditable.matchAll(/\s(title|aria-label|alt)="([^"]*)"/g)].map((m) => `${m[1]}="${m[2]}"`);
+  const botones = atributos.filter((atributo) => /^(title|aria-label)="(Modificar|Quitar) /.test(atributo));
+  assert.ok(botones.length >= 8, `se esperaban botones Modificar/Quitar con nombre accesible, hay ${botones.length}`);
+  assert.ok(botones.includes(`aria-label="Modificar Globo Latex Redondo Fashion Azul Rey de 5 pulgadas"`), botones.join(" | "));
+  for (const atributo of atributos) {
+    assert.doesNotMatch(atributo, /\bB2b\b|R-\d|PAQUETE/i, `atributo con código de catálogo: ${atributo}`);
+  }
+  ok("nombres accesibles de Modificar/Quitar sin códigos del catálogo");
 }
 
 console.log(`\n${casos} casos OK (presentación de la tarjeta del plan)`);

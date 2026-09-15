@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Search, Ruler, NotebookPen, CheckCircle2, X, AlertCircle, Lock, Plus, Sparkles, ArrowUp, Paperclip, Home, ChartColumn, Image as ImageIcon, type LucideIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LORA_PROMPT_FORMATS, type LoraPromptFormat } from "@/lib/ia/lora-prompt-format";
+import { ETIQUETA_FORMATO_PROMPT, esSeleccionFormatoPrompt, FORMATO_PROMPT_AUTOMATICO, OPCIONES_FORMATO_PROMPT, promptFormatParaGenerar, type SeleccionFormatoPrompt } from "@/lib/lora/formato-prompt-cliente";
 import { CREATIVIDAD_POR_DEFECTO, parseNivelCreatividad, perfilCreatividad, type NivelCreatividad } from "@/lib/ia/creatividad";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DecoracionCard } from "@/components/DecoracionCard";
@@ -512,8 +512,9 @@ export default function Page() {
   const [qaVisualSolicitado, setQaVisualSolicitado] = useState(false);
   // En modo usuario la casilla no se ve y la revisión visual va siempre activa (B2).
   const qaEfectivo = qaVisualEfectivo(modoVista, qaVisualSolicitado);
-  // Formato del prompt LoRA: texto (entrenado), JSON (experimental) o ambos (dos imágenes para comparar).
-  const [formatoPromptLora, setFormatoPromptLora] = useState<LoraPromptFormat>("texto");
+  // Formato del prompt LoRA: automático (lo resuelve el servidor por el trigger
+  // y no se envía), texto (entrenado), JSON o ambos (dos imágenes para comparar).
+  const [formatoPromptLora, setFormatoPromptLora] = useState<SeleccionFormatoPrompt>(FORMATO_PROMPT_AUTOMATICO);
   // Calibración de creatividad 0–5 (src/lib/ia/creatividad.ts): la leen el
   // chat (diseño) y la generación (prompt LoRA). El ref evita cierres viejos
   // en los callbacks que arman las peticiones.
@@ -1212,7 +1213,7 @@ export default function Page() {
             // El servidor ya no acepta una llamada LoRA sin modo resuelto
             // (PLAN-COMPOSICION-RICA-V001.md §1.1/§9.2: no hay fallback
             loraMode: usarLoraEnIntento ? loraModeRef.current ?? undefined : undefined,
-            promptFormat: usarLoraEnIntento ? formatoPromptLora : undefined,
+            promptFormat: promptFormatParaGenerar(formatoPromptLora, usarLoraEnIntento),
             creatividad: creatividadRef.current,
             medidas: ultimasMedidas ?? undefined,
             // Adjuntos del cliente, leídos de los refs (no del estado
@@ -1581,14 +1582,14 @@ export default function Page() {
               {selectorIA === "lora" && (
                 <>
                   <label htmlFor="formato-prompt-lora" className="sr-only">Formato del prompt LoRA</label>
-                  <Select value={formatoPromptLora} onValueChange={(v) => setFormatoPromptLora(v as LoraPromptFormat)}>
-                    <SelectTrigger id="formato-prompt-lora" title="Texto: prompt entrenado. JSON: experimental. Ambos: dos imágenes con la misma semilla (doble costo).">
+                  <Select value={formatoPromptLora} onValueChange={(v) => { if (esSeleccionFormatoPrompt(v)) setFormatoPromptLora(v); }}>
+                    <SelectTrigger id="formato-prompt-lora" title="Automático: el servidor elige el formato según el estilo LoRA. Texto: prompt entrenado. JSON: prompt estructurado. Ambos: dos imágenes con la misma semilla (doble costo).">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {LORA_PROMPT_FORMATS.map((formato) => (
+                      {OPCIONES_FORMATO_PROMPT.map((formato) => (
                         <SelectItem key={formato} value={formato}>
-                          {formato === "texto" ? "Prompt: texto" : formato === "json" ? "Prompt: JSON" : "Prompt: ambos (2 imágenes)"}
+                          {ETIQUETA_FORMATO_PROMPT[formato]}
                         </SelectItem>
                       ))}
                     </SelectContent>

@@ -7,6 +7,8 @@
  * no hay llamadas pagadas. No forma parte de las pruebas rápidas.
  *
  * Uso: npx tsx scripts/e2e-modo-vista.ts [--base http://127.0.0.1:3100]
+ * Sin el Chromium de Playwright instalado, apunta a otro navegador con
+ * PLAYWRIGHT_CHROMIUM_EXECUTABLE=/usr/bin/chromium.
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -133,7 +135,8 @@ async function contenidoPorModo(browser: Browser, cookie: { name: string; value:
 
 async function main(): Promise<void> {
   const cookie = await cookieDeSesion();
-  const browser = await chromium.launch({ args: ["--disable-gpu", "--disable-dev-shm-usage"] });
+  const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE?.trim() || undefined;
+  const browser = await chromium.launch({ executablePath, args: ["--disable-gpu", "--disable-dev-shm-usage"] });
   try {
     await switchYPersistencia(browser, cookie);
     await contenidoPorModo(browser, cookie, "usuario");

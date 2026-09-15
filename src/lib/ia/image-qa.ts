@@ -3,9 +3,12 @@ import type { SceneSpec } from "./scene-spec";
 import { z } from "zod";
 import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
 import type { DesignMaterialEstimate } from "@/lib/materiales/estimacion";
-import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
+import { identificarEstructuraOficial, type EstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { featureEnabled } from "./feature-flags";
+import { compileLoraCaption, type LoraVisualClause } from "./lora-caption-compiler";
+import { findSeparateSidePieces, type SeparateSidePieces } from "./separate-side-pieces";
 import { bytesBase64, registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "./telemetria-llamadas";
+import type { VisualContext } from "./visual-context";
 
 export type ImageQaReport = {
   required_elements: Array<{ element_id: string; present: boolean; placement_ok: boolean; appearance_ok: boolean; confidence: number | null }>;
@@ -13,7 +16,16 @@ export type ImageQaReport = {
   text_artifacts: string[];
   annotation_artifacts: string[];
   venue_preservation: { camera_ok: boolean; architecture_ok: boolean; outside_region_similarity: number | null };
-  composition: { layering_ok: boolean; reference_relationships_ok: boolean };
+  composition: {
+    layering_ok: boolean;
+    reference_relationships_ok: boolean;
+    /**
+     * Present only when the plan has separate side pieces (see
+     * separate-side-pieces.ts) and the observer gave a verdict: false when it
+     * saw them merged into one arch. Absent means not evaluated or not applicable.
+     */
+    separate_side_pieces_ok?: boolean;
+  };
   integration: { lighting_ok: boolean; perspective_ok: boolean; contact_shadows_ok: boolean; pasted_artifacts: string[] };
   pass: boolean | null;
   retry_reasons: string[];
@@ -53,6 +65,8 @@ export type SceneQaObservation = {
   observedBalloonCountRange?: { min: number; max: number } | null;
   materialScaleConsistent?: boolean | null;
   materialScaleReason?: string;
+  /** Whether separate side pieces stayed apart; null or absent means not evaluated. */
+  sidePiecesSeparation?: "separate" | "merged" | null;
 };
 
 const VisionObservationSchema = z.object({
@@ -77,19 +91,117 @@ const VisionObservationSchema = z.object({
   observed_balloon_count_max: z.number().int().nonnegative().nullable().default(null),
   material_scale_consistent: z.boolean().nullable().default(null),
   material_scale_reason: z.string().default(""),
+  // Observations stored before this field existed parse as null: not evaluated, never a pass or a failure.
+  separate_side_pieces: z.enum(["separate", "merged"]).nullable().default(null),
 }).strict();
+
+/**
+ * Validates the observer's JSON at the provider boundary. Throws on malformed
+ * fields; the caller treats that as an unavailable observation.
+ */
+export function parseVisionObservation(raw: unknown): SceneQaObservation {
+  const observado = VisionObservationSchema.parse(raw);
+  return {
+    presentElementIds: observado.present_element_ids,
+    unexpectedElements: observado.unexpected_elements,
+    textArtifacts: observado.text_artifacts,
+    annotationArtifacts: observado.annotation_artifacts,
+    placementFailures: observado.placement_failures,
+    appearanceFailures: observado.appearance_failures,
+    cameraOk: observado.camera_ok,
+    architectureOk: observado.architecture_ok,
+    layeringOk: observado.layering_ok,
+    relationshipsOk: observado.relationships_ok,
+    lightingOk: observado.lighting_ok,
+    perspectiveOk: observado.perspective_ok,
+    contactShadowsOk: observado.contact_shadows_ok,
+    pastedArtifacts: observado.pasted_artifacts,
+    outsideRegionSimilarity: observado.outside_region_similarity,
+    confidence: observado.confidence,
+    renderedVisualScale: observado.rendered_visual_scale,
+    observedBalloonCountRange: observado.observed_balloon_count_min != null && observado.observed_balloon_count_max != null
+      ? { min: observado.observed_balloon_count_min, max: observado.observed_balloon_count_max }
+      : null,
+    materialScaleConsistent: observado.material_scale_consistent,
+    materialScaleReason: observado.material_scale_reason,
+    sidePiecesSeparation: observado.separate_side_pieces,
+  };
+}
+
+/**
+ * Approved-plan data the caption compiler reads besides the scene. Callers pass
+ * the same values the prompt was compiled with (the `officialStructures` map
+ * route.ts builds from the plan's `estructura_oficial` for compileProductPrompt),
+ * so QA asks for and checks exactly what the prompt described: a declared
+ * variant outranks the name and decides which left/right structures form a
+ * mirrored pair. Build it with `qaPlanInputsFromPlan`.
+ *
+ * It is optional only so that callers without plan data keep compiling; when
+ * it is omitted QA cannot know whether the prompt asked for separate side
+ * pieces, so it neither asks the observer nor evaluates that criterion. Guessing
+ * from names instead diverged from the prompt in both directions: a missed
+ * separation, or an invented one whose false failure triggered a paid
+ * corrective retry and NON_CONFORME.
+ */
+export type QaPlanInputs = { officialStructures: ReadonlyMap<string, string> };
+
+/**
+ * The plan inputs for QA and for the caption compiler, built once from the
+ * approved plan's structures: each declared `estructura_oficial` by
+ * `estructura_id`. Without an approved plan the map is empty and names stand in.
+ */
+export function qaPlanInputsFromPlan(estructuras: ReadonlyArray<{ estructura_id: string; estructura_oficial?: string }> = []): QaPlanInputs {
+  return { officialStructures: new Map(estructuras.flatMap((estructura) => estructura.estructura_oficial ? [[estructura.estructura_id, estructura.estructura_oficial] as const] : [])) };
+}
+
+/**
+ * The caption compiler owns which left/right structures form a mirrored pair
+ * and which official structure each element is; its grouping reads only the
+ * scene and the plan inputs, so the context here is neutral and the compiled
+ * wording is discarded.
+ */
+const GROUPING_ONLY_CONTEXT: VisualContext = { venueKind: "unknown", lightingKind: "unspecified", palette: [] };
+
+function compiledClauses(sceneSpec: SceneSpec, plan: QaPlanInputs | undefined): LoraVisualClause[] {
+  return compileLoraCaption({ sceneSpec, visualContext: GROUPING_ONLY_CONTEXT, officialStructures: plan?.officialStructures }).clauses;
+}
+
+function sidePiecesList(pieces: readonly LoraVisualClause[], withNoun: boolean): string {
+  return pieces.map((piece) => {
+    const ids = piece.elementIds.join(" and ");
+    return withNoun ? `${ids} (${piece.structureType === "semiarco" ? "one-sided half-arch" : "column"})` : ids;
+  }).join(", ");
+}
+
+function separateSidePiecesInstruction(pieces: SeparateSidePieces<LoraVisualClause> | undefined): string {
+  if (!pieces) return "";
+  return `\nSeparate side pieces: the approved plan places ${sidePiecesList(pieces.left, true)} on the left and ${sidePiecesList(pieces.right, true)} on the right as separate installations with an open gap between them. Set separate_side_pieces to "merged" when they are visibly joined into one continuous arch, frame, or garland across that gap, even if each expected id is still recognizable; set it to "separate" when each piece stands on its own and the gap between them stays open.`;
+}
 
 /**
  * One expected instance for the QA observer. The name and the official
  * structure are included: with only "canonical type=kit" and an internal
  * placement enum the observer could not tell that a planned figure or
  * accessory was the object it saw, and reported it as unexpected.
+ * `compiledOfficial` is the official structure the caption compiler resolved
+ * for the element (declared variant first); without it, it is inferred.
  */
-export function describeExpectedQaElement(element: SceneSpec["elements"][number]): string {
+export function describeExpectedQaElement(element: SceneSpec["elements"][number], compiledOfficial?: EstructuraOficial): string {
   const semantics = element.visual_semantics;
-  const official = semantics ? identificarEstructuraOficial({ tipo: semantics.structure_type, densidad: semantics.density, ubicacion: semantics.placement, nombre: element.name }) : undefined;
+  const official = semantics ? compiledOfficial ?? identificarEstructuraOficial({ tipo: semantics.structure_type, densidad: semantics.density, ubicacion: semantics.placement, nombre: element.name }) : undefined;
   const kind = official ? `official structure=${official.sustantivoEn}; ` : "";
   return `${element.element_id}: ONE distinct installed structure; name=${JSON.stringify(element.name)}; ${kind}canonical type=${semantics?.structure_type ?? element.category}; canonical placement=${semantics?.placement ?? "legacy bbox placement"}; design role=${semantics?.design_role ?? "legacy"}; repetition group=${semantics?.repetition_group ?? "none"}; colors=${element.resolved_colors.join(", ") || "not specified"}; bbox=${element.target_bbox.x},${element.target_bbox.y},${element.target_bbox.width},${element.target_bbox.height}; installed material quantity=${element.quantity.min}-${element.quantity.max} (material units, not structure count)`;
+}
+
+export function buildQaObserverPrompt(sceneSpec: SceneSpec, estimate?: DesignMaterialEstimate, plan?: QaPlanInputs): string {
+  const clauses = compiledClauses(sceneSpec, plan);
+  const officialByElementId = new Map(clauses.flatMap((clause) => clause.officialStructure ? clause.elementIds.map((id) => [id, clause.officialStructure] as const) : []));
+  const expected = sceneSpec.elements.map((element) => describeExpectedQaElement(element, officialByElementId.get(element.element_id))).join("\n");
+  const materialExpectation = estimate
+    ? `\nMaterial estimate: approximately ${estimate.totals.design_quantity} installed units; expected visual scale=${estimate.design.visual_scale}; density=${estimate.design.visual_density}; installed balloon sizes=${estimate.balloons.map((line) => `${line.design_quantity}x${line.size_inches ?? "special"}-inch`).join(", ") || "none"}. Purchased capacity=${estimate.totals.purchase_quantity} is not visual quantity. Assess physical scale, not exact object count.`
+    : "";
+  const separation = plan ? separateSidePiecesInstruction(findSeparateSidePieces(clauses)) : "";
+  return `You are a strict visual QA observer. Inspect the generated image and return only JSON. Do not infer presence from this prompt: decide from visible pixels. Expected physical instances:\n${expected}${materialExpectation}${separation}\nEach expected element_id represents one distinct installed structure, even when its material quantity is large; list that id once when its structure is visibly present. Do not list one id per balloon, material unit, package, or repeated visual detail. Mark an instance missing when its distinct structure is not visibly present. Mark placement failure when its canonical placement or bbox region is wrong. Mark appearance failure when the visible palette, material, or size differs from the required catalog colors and material description above. List unexpected decorative objects not in the expected list. For the material estimate, use a broad perceptual range and visual scale: a result is inconsistent when it is clearly several times denser/larger than the installed estimate, not merely because an exact count is difficult. Treat any visible free-floating text, heading, number, measurement, element ID, caption, callout, arrow, watermark, invented logo, or label as a text_artifact or annotation_artifact. Only lettering physically printed on an explicitly approved signage product is allowed; all other visible writing is a failure.`;
 }
 
 export async function observarImagenGenerada(
@@ -99,22 +211,20 @@ export async function observarImagenGenerada(
   telemetria?: ContextoTelemetriaIA,
   signal?: AbortSignal,
   force = false,
+  plan?: QaPlanInputs,
 ): Promise<SceneQaObservation | null> {
   // The UI can opt into one observation for a request without turning on the
   // global flag. The flag remains the server-side default/kill switch.
   if (!force && !featureEnabled("IMAGE_QA_ENABLED")) return null;
   const client = getGeminiClient();
   if (!client) return null;
-  const expected = sceneSpec.elements.map(describeExpectedQaElement).join("\n");
-  const materialExpectation = estimate
-    ? `\nMaterial estimate: approximately ${estimate.totals.design_quantity} installed units; expected visual scale=${estimate.design.visual_scale}; density=${estimate.design.visual_density}; installed balloon sizes=${estimate.balloons.map((line) => `${line.design_quantity}x${line.size_inches ?? "special"}-inch`).join(", ") || "none"}. Purchased capacity=${estimate.totals.purchase_quantity} is not visual quantity. Assess physical scale, not exact object count.`
-    : "";
+  const instruction = buildQaObserverPrompt(sceneSpec, estimate, plan);
   const inicio = Date.now();
   try {
     const response = await client.models.generateContent({
       model: MODELO_CHAT,
       contents: [{ role: "user", parts: [
-         { text: `You are a strict visual QA observer. Inspect the generated image and return only JSON. Do not infer presence from this prompt: decide from visible pixels. Expected physical instances:\n${expected}${materialExpectation}\nEach expected element_id represents one distinct installed structure, even when its material quantity is large; list that id once when its structure is visibly present. Do not list one id per balloon, material unit, package, or repeated visual detail. Mark an instance missing when its distinct structure is not visibly present. Mark placement failure when its canonical placement or bbox region is wrong. Mark appearance failure when the visible palette, material, or size differs from the required catalog colors and material description above. List unexpected decorative objects not in the expected list. For the material estimate, use a broad perceptual range and visual scale: a result is inconsistent when it is clearly several times denser/larger than the installed estimate, not merely because an exact count is difficult. Treat any visible free-floating text, heading, number, measurement, element ID, caption, callout, arrow, watermark, invented logo, or label as a text_artifact or annotation_artifact. Only lettering physically printed on an explicitly approved signage product is allowed; all other visible writing is a failure.` },
+        { text: instruction },
         { inlineData: { mimeType: image.mime, data: image.base64 } },
       ] }],
       config: {
@@ -129,31 +239,8 @@ export async function observarImagenGenerada(
       },
     });
     registrarGemini({ flujo: "generador_imagen", capacidad: "qa_visual", modelo: MODELO_CHAT, inicio, resultado: "ok", contexto: { superficie: "/api/generate", ...telemetria }, usage: response.usageMetadata, bytesImagenEntrada: bytesBase64(image.base64), thinkingLevel: "minimal" });
-    const observado = VisionObservationSchema.parse(JSON.parse(response.text ?? "{}"));
-    return {
-      presentElementIds: observado.present_element_ids,
-      unexpectedElements: observado.unexpected_elements,
-      textArtifacts: observado.text_artifacts,
-      annotationArtifacts: observado.annotation_artifacts,
-      placementFailures: observado.placement_failures,
-      appearanceFailures: observado.appearance_failures,
-      cameraOk: observado.camera_ok,
-      architectureOk: observado.architecture_ok,
-      layeringOk: observado.layering_ok,
-      relationshipsOk: observado.relationships_ok,
-      lightingOk: observado.lighting_ok,
-      perspectiveOk: observado.perspective_ok,
-      contactShadowsOk: observado.contact_shadows_ok,
-      pastedArtifacts: observado.pasted_artifacts,
-      outsideRegionSimilarity: observado.outside_region_similarity,
-      confidence: observado.confidence,
-      renderedVisualScale: observado.rendered_visual_scale,
-      observedBalloonCountRange: observado.observed_balloon_count_min != null && observado.observed_balloon_count_max != null
-        ? { min: observado.observed_balloon_count_min, max: observado.observed_balloon_count_max }
-        : null,
-      materialScaleConsistent: observado.material_scale_consistent,
-      materialScaleReason: observado.material_scale_reason,
-    };
+    const raw: unknown = JSON.parse(response.text ?? "{}");
+    return parseVisionObservation(raw);
   } catch (error) {
     registrarGemini({ flujo: "generador_imagen", capacidad: "qa_visual", modelo: MODELO_CHAT, inicio, resultado: resultadoTelemetria(error), contexto: { superficie: "/api/generate", ...telemetria }, bytesImagenEntrada: bytesBase64(image.base64), thinkingLevel: "minimal" });
     return null;
@@ -172,7 +259,20 @@ export function outsideRegionSimilarity(original: Uint8Array, generated: Uint8Ar
   return compared ? Number((equal / compared).toFixed(4)) : 1;
 }
 
-export function evaluateSceneQa(sceneSpec: SceneSpec, observation: SceneQaObservation = {}, estimate?: DesignMaterialEstimate): ImageQaReport {
+/**
+ * Only a verdict from the observer is checked against the plan: without one
+ * the separation was not evaluated and the scene is not compiled (QA often runs
+ * with an empty observation). Without plan inputs it is not evaluated either
+ * (see QaPlanInputs). A verdict on a plan without separate side pieces adds no
+ * criterion.
+ */
+function separateSidePiecesOutcome(sceneSpec: SceneSpec, separation: SceneQaObservation["sidePiecesSeparation"], plan: QaPlanInputs | undefined): { ok: boolean; pieces: SeparateSidePieces<LoraVisualClause> } | undefined {
+  if (!plan || (separation !== "merged" && separation !== "separate")) return undefined;
+  const pieces = findSeparateSidePieces(compiledClauses(sceneSpec, plan));
+  return pieces ? { ok: separation === "separate", pieces } : undefined;
+}
+
+export function evaluateSceneQa(sceneSpec: SceneSpec, observation: SceneQaObservation = {}, estimate?: DesignMaterialEstimate, plan?: QaPlanInputs): ImageQaReport {
   const present = new Set(observation.presentElementIds ?? []);
   const observedIds = observation.presentElementIds ?? [];
   const expectedIds = new Set(sceneSpec.elements.map((element) => element.element_id));
@@ -192,10 +292,12 @@ export function evaluateSceneQa(sceneSpec: SceneSpec, observation: SceneQaObserv
   const annotationArtifacts = observation.annotationArtifacts ?? [];
   const pastedArtifacts = observation.pastedArtifacts ?? [];
   const materialConsistent = estimate ? observation.materialScaleConsistent ?? null : null;
+  const sidePieces = separateSidePiecesOutcome(sceneSpec, observation.sidePiecesSeparation, plan);
   const retryReasons = [
     ...requiredElements.filter((element) => !element.present).map((element) => `missing required element ${element.element_id}`),
     ...requiredElements.filter((element) => !element.placement_ok).map((element) => `placement failure ${element.element_id}`),
     ...requiredElements.filter((element) => !element.appearance_ok).map((element) => `appearance failure ${element.element_id}`),
+    ...(sidePieces && !sidePieces.ok ? [`separate side pieces merged into one arch: ${sidePiecesList(sidePieces.pieces.left, false)} on the left and ${sidePiecesList(sidePieces.pieces.right, false)} on the right must stand apart with an open gap`] : []),
     ...unexpected.map((item) => `unexpected element: ${item}`),
     ...textArtifacts.map((item) => `unapproved text or logo: ${item}`),
     ...annotationArtifacts.map((item) => `annotation artifact: ${item}`),
@@ -222,7 +324,11 @@ export function evaluateSceneQa(sceneSpec: SceneSpec, observation: SceneQaObserv
       architecture_ok: observation.architectureOk ?? true,
       outside_region_similarity: observation.outsideRegionSimilarity ?? null,
     },
-    composition: { layering_ok: observation.layeringOk ?? true, reference_relationships_ok: observation.relationshipsOk ?? true },
+    composition: {
+      layering_ok: observation.layeringOk ?? true,
+      reference_relationships_ok: observation.relationshipsOk ?? true,
+      ...(sidePieces ? { separate_side_pieces_ok: sidePieces.ok } : {}),
+    },
     integration: {
       lighting_ok: observation.lightingOk ?? true,
       perspective_ok: observation.perspectiveOk ?? true,

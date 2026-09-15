@@ -173,6 +173,12 @@ body {
   outline-offset: 3px;
 }
 
+/* The plan card's pieces clip their content (overflow hidden, rounded corners),
+   which also clips an outline drawn outside the summary: draw it inside. */
+.plan-pieza > summary:focus-visible {
+  outline-offset: -2px;
+}
+
 :where(button, a, select) {
   -webkit-tap-highlight-color: transparent;
 }

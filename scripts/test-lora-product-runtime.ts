@@ -12,7 +12,7 @@ import assert from "node:assert/strict";
 import type { SceneSpec } from "../src/lib/ia/scene-spec";
 import { readFileSync } from "node:fs";
 import { compileLoraCaption, LORA_JSON_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH } from "../src/lib/ia/lora-caption-compiler";
-import { parseLoraPromptFormat } from "../src/lib/ia/lora-prompt-format";
+import { resolveLoraPromptFormat } from "../src/lib/ia/lora-prompt-format";
 import { ReferenceBlueprintV2Schema } from "../src/lib/ia/reference-blueprint";
 import { ambientDecorFromReference, ambientDecorName, parseDetectedStructure, referenceStructureSemantics, shapeDescription } from "../src/lib/ia/reference-structure";
 import { compileProductPrompt, sizeConfirmationsFromMaterialLines, type ElementSizeConfirmation } from "../src/lib/ia/lora-product-runtime";
@@ -909,10 +909,19 @@ console.log("18. Reference structures, relative heights, styling and JSON prompt
   assert.equal(jsonReport.ok, true, jsonReport.errors.join("; "));
   pass("the JSON prompt carries the same subjects, colors and styling and passes the same preflight");
 
-  assert.equal(parseLoraPromptFormat(undefined), "texto");
-  assert.equal(parseLoraPromptFormat("ambos"), "ambos");
-  assert.throws(() => parseLoraPromptFormat("yaml"), "an unknown prompt format is a client error");
-  pass("prompt format defaults to texto and rejects unknown values");
+  // Product decision (2026-09-14): JSON by default only for eventdecor_style_v2;
+  // every other trigger keeps text; an explicit choice always wins.
+  assert.equal(resolveLoraPromptFormat(undefined, "eventdecor_style_v2"), "json");
+  assert.equal(resolveLoraPromptFormat(null, "eventdecor_style_v2"), "json");
+  assert.equal(resolveLoraPromptFormat(undefined, "eventdecor_style_v3"), "texto");
+  assert.equal(resolveLoraPromptFormat(undefined, "eventdecor_structure_v1"), "texto");
+  assert.equal(resolveLoraPromptFormat(undefined, undefined), "texto", "no resolved LoRA keeps text");
+  assert.equal(resolveLoraPromptFormat("texto", "eventdecor_style_v2"), "texto", "explicit text wins over the style_v2 default");
+  assert.equal(resolveLoraPromptFormat("ambos", "eventdecor_style_v2"), "ambos");
+  assert.equal(resolveLoraPromptFormat("json", "eventdecor_style_v3"), "json", "explicit json wins on any trigger");
+  assert.throws(() => resolveLoraPromptFormat("yaml", "eventdecor_style_v2"), "an unknown prompt format is a client error");
+  assert.throws(() => resolveLoraPromptFormat("", "eventdecor_style_v3"), "an empty prompt format is not an omission");
+  pass("prompt format defaults by trigger (style_v2 json, others texto), explicit wins, unknown values are rejected");
 }
 
 console.log(`\nAll ${passCount} assertions passed.`);

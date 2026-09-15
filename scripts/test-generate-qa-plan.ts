@@ -1,0 +1,128 @@
+import assert from "node:assert/strict";
+import type { Pool } from "pg";
+import { resolverPlan } from "@/lib/plan/resolver";
+import { PlanDecoracionSchema } from "@/lib/plan/tipos";
+import type { PlanResuelto } from "@/lib/plan/resuelto";
+import { planBlueprint } from "@/app/api/generate/route";
+import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/scene-spec";
+import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
+import { estimateFromPlan } from "@/lib/materiales/estimacion";
+import { buildQaObserverPrompt, type SceneQaObservation } from "@/lib/ia/image-qa";
+import { approvedPlanQaInputs, buildGenerationQa, type QaObserver } from "@/lib/ia/generation-qa";
+import { compileProductPrompt } from "@/lib/ia/lora-product-runtime";
+import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
+import type { VisualContext } from "@/lib/ia/visual-context";
+
+/**
+ * Iteration 3, step 3 wiring: /api/generate must hand the approved plan to the
+ * visual QA (observer instruction and evaluation) and compile the LoRA prompt
+ * with the same plan map, or the separate-side-pieces question is never asked
+ * in production. Deterministic, no network: the observer is injected.
+ * Run: npx tsx --conditions=react-server scripts/test-generate-qa-plan.ts
+ */
+
+const rows = [
+  { product_id: "P-GLOBOS", variant_id: "V-R-12-ROJO", sku: "SKU-R-12-ROJO", producto_titulo: "Globo rojo", variante_titulo: "R-12", precio: 10000, unidades_paq: 50, disponible: true, producto_disponible: true, codigo_tamano: "R-12", forma: "redondo", diam_pulg: 12, colores_producto: ["rojo"], colores_variante: ["rojo"], descripcion: "Globo látex rojo R-12." },
+  { product_id: "P-GLOBOS", variant_id: "V-R-12-DORADO", sku: "SKU-R-12-DORADO", producto_titulo: "Globo dorado", variante_titulo: "R-12", precio: 10500, unidades_paq: 50, disponible: true, producto_disponible: true, codigo_tamano: "R-12", forma: "redondo", diam_pulg: 12, colores_producto: ["dorado"], colores_variante: ["dorado"], descripcion: "Globo látex dorado metalizado R-12." },
+];
+// Same mocked pool shape as scripts/test-image-qa-piezas-separadas.ts: the resolver only reads `rows`.
+const pool = { query: async () => ({ rows }) } as unknown as Pool;
+const whitelist = new Map<string, ReadonlySet<string>>([["P-GLOBOS", new Set(rows.map((row) => row.variant_id))]]);
+const materiales = [
+  { product_id: "P-GLOBOS", color: "rojo", participacion: 0.6, rol_material: "principal" },
+  { product_id: "P-GLOBOS", color: "dorado", participacion: 0.4, rol_material: "secundario" },
+];
+const IMAGE = { base64: "iVBORw0KGgo=", mime: "image/png" };
+const HASHES = { planHash: "plan-hash", sceneSpecHash: "scene-hash" };
+const CONTEXT: VisualContext = { venueKind: "indoor", lightingKind: "night", palette: ["rojo", "dorado"] };
+
+async function approvedScene(): Promise<{ plan: PlanResuelto; scene: SceneSpec }> {
+  const declared = PlanDecoracionSchema.parse({
+    plan_version: "1.0",
+    plan_id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+    concepto: { titulo: "Cumpleaños rojo y dorado", descripcion: "Piezas de globos en el salón.", paleta: ["rojo", "dorado"] },
+    espacio: { tipo: "salón", fuente: "supuesto" },
+    estructuras: [
+      { estructura_id: "EST_01_SEMIARCO", nombre: "Semiarco derecho", tipo: "semiarco", rol_escena: "focal", ubicacion: "lateral_derecho", medidas: { ancho_m: 1.2, alto_m: 2.2 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales, porque: "Pieza principal a un lado." },
+      { estructura_id: "EST_02_COLUMNA", nombre: "Columna izquierda", tipo: "columna", rol_escena: "soporte", ubicacion: "lateral_izquierdo", medidas: { alto_m: 1.8 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales, porque: "Pieza baja al otro lado, separada." },
+    ],
+    supuestos: [],
+  });
+  const plan = await resolverPlan(pool, declared, whitelist);
+  assert.equal(plan.sin_cobertura.length, 0);
+  const blueprint = planBlueprint(plan);
+  const scene = buildApprovedSceneSpec({
+    blueprint,
+    aspectRatio: "3:2",
+    targetBoxes: Object.fromEntries(Object.entries(cajasDeEstructuras(plan.plan.estructuras)).map(([id, layout]) => [id, layout.bbox])),
+    catalogProducts: Object.fromEntries(blueprint.elements.map((element) => [element.element_id, (element.model_decision?.bill_of_materials ?? []).map((line) => ({ id: line.catalog_product_id, name: line.catalog_product_id, description: "", category: "balloon", share: line.share, role: line.role }))])),
+    materialEstimate: estimateFromPlan(plan),
+    generationMode: "text_to_image",
+    createdBy: "server_default",
+    planHash: plan.plan_hash,
+    catalogOnly: true,
+  });
+  return { plan, scene };
+}
+
+/** Observer double: records the instruction built from exactly what the generation QA handed it. */
+function recordingObserver(verdict: SceneQaObservation["sidePiecesSeparation"]): { observe: QaObserver; instructions: string[] } {
+  const instructions: string[] = [];
+  const observe: QaObserver = async (sceneSpec, _image, estimate, _telemetria, _signal, _force, plan) => {
+    instructions.push(buildQaObserverPrompt(sceneSpec, estimate, plan));
+    return { presentElementIds: sceneSpec.elements.map((element) => element.element_id), sidePiecesSeparation: verdict };
+  };
+  return { observe, instructions };
+}
+
+async function main(): Promise<void> {
+  const { plan, scene } = await approvedScene();
+  const qaPlan = approvedPlanQaInputs(plan);
+  assert.ok(qaPlan, "an approved plan yields QA plan inputs");
+
+  // 1. With the approved plan, the observer is asked about the separation and "merged" fails.
+  const merged = recordingObserver("merged");
+  const failed = await buildGenerationQa({ sceneSpec: scene, image: IMAGE, hashes: HASHES, plan: qaPlan, force: true, observe: merged.observe });
+  assert.equal(merged.instructions.length, 1);
+  assert.match(merged.instructions[0]!, /separate_side_pieces/, "the generation QA asks the observer about separate side pieces");
+  assert.match(merged.instructions[0]!, /EST_01_SEMIARCO/);
+  assert.match(merged.instructions[0]!, /EST_02_COLUMNA/);
+  assert.equal(failed.pass, false, JSON.stringify(failed.retry_reasons));
+  assert.ok(failed.retry_reasons.some((reason) => /merged into one arch/.test(reason)), JSON.stringify(failed.retry_reasons));
+  assert.equal(failed.composition.separate_side_pieces_ok, false);
+  assert.equal(failed.confidence, "vision_assisted");
+  assert.equal(failed.plan_hash, HASHES.planHash);
+  assert.equal(failed.scene_spec_hash, HASHES.sceneSpecHash);
+  console.log("[PASS] generation QA: approved semiarco+columna plan asks about separation and 'merged' -> pass=false");
+
+  const separate = recordingObserver("separate");
+  const passed = await buildGenerationQa({ sceneSpec: scene, image: IMAGE, hashes: HASHES, plan: qaPlan, force: true, observe: separate.observe });
+  assert.equal(passed.pass, true, JSON.stringify(passed.retry_reasons));
+  assert.equal(passed.composition.separate_side_pieces_ok, true);
+  console.log("[PASS] generation QA: 'separate' -> pass=true");
+
+  // 2. Without an approved plan there is nothing to pair: no question, no criterion.
+  assert.equal(approvedPlanQaInputs(undefined), undefined);
+  const noPlan = recordingObserver("merged");
+  const unplanned = await buildGenerationQa({ sceneSpec: scene, image: IMAGE, hashes: { sceneSpecHash: "scene-hash" }, plan: approvedPlanQaInputs(undefined), force: true, observe: noPlan.observe });
+  assert.doesNotMatch(noPlan.instructions[0]!, /separate_side_pieces/);
+  assert.equal(unplanned.pass, true, JSON.stringify(unplanned.retry_reasons));
+  console.log("[PASS] generation QA: no approved plan -> separation neither asked nor evaluated");
+
+  // 3. No observation (QA disabled or provider unavailable): unknown, never a fabricated pass.
+  const unobserved = await buildGenerationQa({ sceneSpec: scene, image: IMAGE, hashes: HASHES, plan: qaPlan, force: false, observe: async () => null });
+  assert.equal(unobserved.pass, null);
+  assert.equal(unobserved.confidence, "unknown");
+  assert.equal(unobserved.observed_instances, null);
+  console.log("[PASS] generation QA: no observation -> pass=null, confidence=unknown");
+
+  // 4. One owner: the prompt compiled with the same plan map asks the image model for the gap.
+  const compiled = compileProductPrompt({ sceneSpec: scene, visualContext: CONTEXT, vocabulary: PRODUCT_VOCABULARY, trigger: "eventdecor_style_v2", officialStructures: qaPlan.officialStructures });
+  assert.match(compiled.prompt, /stand apart with an open gap between them/, compiled.prompt);
+  console.log("[PASS] the LoRA prompt compiled with the same plan inputs requests the separation QA checks");
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
