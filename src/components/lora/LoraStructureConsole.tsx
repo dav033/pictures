@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Database, RefreshCw, ShieldCheck } from "lucide-react";
 import LoraTrainingWizard from "./LoraTrainingWizard";
+import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
 
 type StructureDataset = {
   id: string;
@@ -85,7 +86,7 @@ export default function LoraStructureConsole() {
       setTrainings(trainingsPayload.trainings ?? []);
       setArtifacts(artifactsPayload.artifacts ?? []);
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "No se pudo leer el registro de estructuras.");
+      setError(mensajeErrorCliente(loadError, "No se pudo leer el registro de estructuras."));
     } finally {
       setLoading(false);
     }

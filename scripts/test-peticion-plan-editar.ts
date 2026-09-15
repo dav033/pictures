@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { CATALOGO_ERRORES_UI_V1, construirUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
-import { esCancelacion, FalloPlanEditar, mensajeFalloPlanEditar, pedirPlanEditar } from "@/lib/plan/peticion-plan-editar";
+import { esCancelacion, FalloPlanEditar, MENSAJE_UNICO_MATERIAL, mensajeErrorRespuesta, mensajeFalloPlanEditar, pedirPlanEditar } from "@/lib/plan/peticion-plan-editar";
 
 /**
  * Errores de /api/plan-editar en el navegador (iteración 3b, punto D): el
@@ -87,6 +87,22 @@ async function main(): Promise<void> {
     assert.equal(init?.method, "POST");
     assert.deepEqual(JSON.parse(String(init?.body)), { modo: "buscar", consulta: "rojo" });
     ok("éxito → cuerpo JSON de la respuesta");
+  }
+
+  // 6b. D7 del E2E real: quitar el único material muestra su motivo, no el genérico de PROPUESTA_INCOMPLETA.
+  {
+    const ui = construirUiErrorV1("PROPUESTA_INCOMPLETA", { mensaje: "PlanEditError 400" });
+    const legacy = await fallo(pedirPlanEditar({}, RESPALDO, { fetcher: async () => respuestaJson(400, { error: "No puedes quitar el único material de una estructura; reemplázalo o elimina la estructura completa.", ui_error: ui }) }));
+    assert.equal(mensajeFalloPlanEditar(legacy, RESPALDO), MENSAJE_UNICO_MATERIAL);
+    const conCodigo = await fallo(pedirPlanEditar({}, RESPALDO, { fetcher: async () => respuestaJson(400, { error: "x", causa: "UNICO_MATERIAL", ui_error: ui }) }));
+    assert.equal(mensajeFalloPlanEditar(conCodigo, RESPALDO), MENSAJE_UNICO_MATERIAL);
+    const nuevo = construirUiErrorV1("PIEZA_UNICO_MATERIAL", { mensaje: "PlanEditError 400 UNICO_MATERIAL" });
+    const contrato = await fallo(pedirPlanEditar({}, RESPALDO, { fetcher: async () => respuestaJson(400, { error: "No se puede quitar el único globo de esta pieza; cámbialo por otro.", causa: "UNICO_MATERIAL", ui_error: nuevo }) }));
+    assert.equal(mensajeFalloPlanEditar(contrato, RESPALDO), CATALOGO_ERRORES_UI_V1.PIEZA_UNICO_MATERIAL.mensaje_usuario, "contrato de fix-backend: PIEZA_UNICO_MATERIAL");
+    const generico = await fallo(pedirPlanEditar({}, RESPALDO, { fetcher: async () => respuestaJson(400, { error: "otra cosa", ui_error: ui }) }));
+    assert.equal(mensajeFalloPlanEditar(generico, RESPALDO), RESPALDO, "el texto de catálogo sobre crear la imagen no se usa al editar");
+    assert.doesNotMatch(mensajeErrorRespuesta({ ui_error: ui }, RESPALDO), /Hay que ajustar la propuesta/);
+    ok("único material → mensaje específico; PROPUESTA_INCOMPLETA genérico → respaldo");
   }
 
   // 7. Un error cualquiera (p. ej. de programación) nunca muestra su texto.

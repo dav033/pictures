@@ -20,9 +20,56 @@ export function esCancelacion(error: unknown): boolean {
   return error instanceof DOMException && error.name === "AbortError";
 }
 
-/** Mensaje de cliente de un cuerpo de respuesta fallido: `ui_error` válido o el respaldo. */
+/**
+ * Quitar el único material de una estructura (D7 del E2E real). La UI ya no
+ * ofrece "Quitar" en ese caso, pero si el servidor lo rechaza igual el
+ * cliente ve por qué, no el genérico de PROPUESTA_INCOMPLETA. Contrato de
+ * `fix-backend`: 400 con `causa: "UNICO_MATERIAL"` y ui-error
+ * `PIEZA_UNICO_MATERIAL`; un servidor anterior solo mandaba el texto legacy.
+ */
+export const MENSAJE_UNICO_MATERIAL = CATALOGO_ERRORES_UI_V1.PIEZA_UNICO_MATERIAL.mensaje_usuario;
+
+const PATRON_UNICO_MATERIAL = /unico[_ ]material|ultimo[_ ]material|sin[_ ]materia(l|les)|unique[_ ]material|last[_ ]material/i;
+
+function campoTexto(valor: unknown, ...ruta: string[]): string | undefined {
+  let actual: unknown = valor;
+  for (const clave of ruta) {
+    if (typeof actual !== "object" || actual === null || !(clave in actual)) return undefined;
+    actual = (actual as Record<string, unknown>)[clave];
+  }
+  return typeof actual === "string" ? actual : undefined;
+}
+
+function sinTildes(texto: string): string {
+  return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+/** El rechazo es "no puedes quitar el único material": por código estable o, sin él, por el texto legacy. */
+export function esRechazoUnicoMaterial(datos: unknown): boolean {
+  const codigos = [
+    campoTexto(datos, "code"),
+    campoTexto(datos, "codigo"),
+    campoTexto(datos, "causa"),
+    campoTexto(datos, "ui_error", "detalles_dev", "codigo_origen"),
+    campoTexto(datos, "ui_error", "detalles_dev", "causa"),
+  ];
+  if (codigos.some((codigo) => codigo !== undefined && PATRON_UNICO_MATERIAL.test(codigo))) return true;
+  const error = campoTexto(datos, "error");
+  return error !== undefined && /unico material/i.test(sinTildes(error));
+}
+
+/**
+ * Mensaje de cliente de un cuerpo de respuesta fallido: el del rechazo por
+ * único material, el `ui_error` válido o el respaldo. El texto de catálogo de
+ * PROPUESTA_INCOMPLETA habla de crear la imagen; al editar la propuesta
+ * confunde, así que ahí se usa el respaldo de quien llama.
+ */
 export function mensajeErrorRespuesta(datos: unknown, respaldo: string): string {
-  return leerUiErrorV1(datos)?.mensaje_usuario ?? respaldo;
+  const ui = leerUiErrorV1(datos);
+  const generico = ui?.code === "PROPUESTA_INCOMPLETA" && ui.mensaje_usuario === CATALOGO_ERRORES_UI_V1.PROPUESTA_INCOMPLETA.mensaje_usuario;
+  if (ui && !generico) return ui.mensaje_usuario;
+  if (esRechazoUnicoMaterial(datos)) return MENSAJE_UNICO_MATERIAL;
+  return respaldo;
 }
 
 /**

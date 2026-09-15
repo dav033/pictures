@@ -59,6 +59,9 @@ const PARES: ReadonlyArray<readonly [texto: string, fondo: string]> = [
   ["exito", "superficie"], ["exito", "exito-suave"],
   ["error", "superficie"], ["error", "error-suave"],
   ["aviso", "superficie"], ["aviso", "aviso-suave"],
+  // Texto secundario dentro de avisos y chips suaves (D9: lista de alertas de /configuracion-lora en oscuro, 4,41).
+  ["texto-suave", "aviso-suave"], ["texto-suave", "error-suave"], ["texto-suave", "exito-suave"], ["texto-suave", "acento-suave"],
+  ["texto", "aviso-suave"], ["texto", "error-suave"], ["texto", "exito-suave"], ["texto", "acento-suave"],
 ];
 
 for (const [nombre, tema] of [["claro", claro], ["oscuro", oscuroElegido]] as const) {

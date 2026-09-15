@@ -563,10 +563,12 @@ export async function resolverPlan(
     }
   }
 
+  // Consolidating one product+size+color across structures is not gated by
+  // PLAN_COST_OPTIMIZER_V2: "each package is bought once" is what the customer
+  // is quoted (E2E 2026-09-14: Azul Rey R-12 bought as x12 and x20). The flag
+  // only gates the commercial alternatives. Mirror: `_reoptimize_presentations`.
   const optimizerEnabled = featureEnabled("PLAN_COST_OPTIMIZER_V2");
-  const paquetesOptimos = optimizerEnabled
-    ? reoptimizarPresentaciones(estructuras, candidatosPorProducto, whitelist)
-    : new Map<string, number>();
+  const paquetesOptimos = reoptimizarPresentaciones(estructuras, candidatosPorProducto, whitelist);
   const comprasPorVariante = new Map<string, CompraConsolidada>();
   const lineasResueltas = [
     ...estructuras.flatMap((estructura) => estructura.lineas),

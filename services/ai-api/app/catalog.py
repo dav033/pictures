@@ -8,10 +8,11 @@ it must not reimplement these checks.
 from __future__ import annotations
 
 import json
+import logging
 import re
 import time
-from collections.abc import Mapping, Sequence
-from contextlib import AbstractAsyncContextManager
+from collections.abc import AsyncIterator, Mapping, Sequence
+from contextlib import AbstractAsyncContextManager, AsyncExitStack, asynccontextmanager
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from math import isfinite
 from typing import Annotated, Literal, Protocol, cast
@@ -29,6 +30,13 @@ from app.recommendations import (
 )
 from app.selection import CatalogSelectionError, CatalogSelectionRequest, MAX_SAFE_INTEGER
 
+
+logger = logging.getLogger(__name__)
+
+# Neon closes idle connections and suspends compute after about five minutes,
+# which is also asyncpg's default idle lifetime (300 s). Idle connections are
+# closed well before that cut (E2E 2026-09-14: "Connection terminated").
+POOL_MAX_INACTIVE_CONNECTION_LIFETIME_SECONDS = 60.0
 
 CATALOG_SCOPE = "catalog.search"
 CATALOG_SCHEMA_VERSION = "catalog-search.v1"
@@ -137,6 +145,60 @@ class CatalogPool(Protocol):
     async def close(self) -> None: ...
 
 
+def is_terminated_connection(error: BaseException) -> bool:
+    """A connection the server or the network already closed; the statement never ran to completion."""
+    if isinstance(
+        error,
+        (
+            asyncpg.exceptions.PostgresConnectionError,
+            asyncpg.exceptions.AdminShutdownError,
+            ConnectionResetError,
+            BrokenPipeError,
+        ),
+    ):
+        return True
+    return isinstance(error, asyncpg.exceptions.InterfaceError) and "closed" in str(error).lower()
+
+
+class _ReconnectingConnection:
+    """Runs a read-only catalog statement once more on a fresh connection if its connection was terminated.
+
+    Every statement of this store is a single read without a transaction, so a
+    replay has no effect beyond the read itself. The retry is bounded to one per
+    statement, and the fresh connection stays held until the caller's block ends.
+    """
+
+    def __init__(
+        self, pool: "CatalogPool", connection: CatalogConnection, stack: AsyncExitStack
+    ) -> None:
+        self._pool = pool
+        self._connection = connection
+        self._stack = stack
+
+    async def _reconnect(self, error: Exception) -> CatalogConnection:
+        if not is_terminated_connection(error):
+            raise error
+        logger.warning(
+            "catalog read retried after a terminated connection: %s", type(error).__name__
+        )
+        self._connection = await self._stack.enter_async_context(self._pool.acquire())
+        return self._connection
+
+    async def fetch(self, query: str, *args: object) -> Sequence[Mapping[str, object]]:
+        try:
+            return await self._connection.fetch(query, *args)
+        except Exception as error:
+            connection = await self._reconnect(error)
+        return await connection.fetch(query, *args)
+
+    async def fetchval(self, query: str, *args: object) -> object:
+        try:
+            return await self._connection.fetchval(query, *args)
+        except Exception as error:
+            connection = await self._reconnect(error)
+        return await connection.fetchval(query, *args)
+
+
 class CatalogStore:
     """Async PostgreSQL store for the published commercial catalog."""
 
@@ -167,6 +229,7 @@ class CatalogStore:
                     min_size=self._pool_min_size,
                     max_size=self._pool_max_size,
                     command_timeout=5.0,
+                    max_inactive_connection_lifetime=POOL_MAX_INACTIVE_CONNECTION_LIFETIME_SECONDS,
                 ),
             )
 
@@ -230,12 +293,18 @@ class CatalogStore:
         except Exception:
             return False
 
+    @asynccontextmanager
+    async def _reading(self, pool: CatalogPool) -> AsyncIterator[CatalogConnection]:
+        async with AsyncExitStack() as stack:
+            connection = await stack.enter_async_context(pool.acquire())
+            yield _ReconnectingConnection(pool, connection, stack)
+
     async def published_snapshot(self, snapshot_id: str) -> str | None:
         """Return the requested published snapshot, without selecting a fallback."""
         pool = self._pool
         if pool is None:
             raise RuntimeError("CATALOG_STORE_NOT_STARTED")
-        async with pool.acquire() as connection:
+        async with self._reading(pool) as connection:
             value = await connection.fetchval(
                 """
                 SELECT source_snapshot_id
@@ -264,7 +333,7 @@ class CatalogStore:
         pool = self._pool
         if pool is None:
             raise RuntimeError("CATALOG_STORE_NOT_STARTED")
-        async with pool.acquire() as connection:
+        async with self._reading(pool) as connection:
             return await connection.fetch(
                 """
                 SELECT p.product_id,
@@ -327,7 +396,7 @@ class CatalogStore:
         pool = self._pool
         if pool is None:
             raise RuntimeError("CATALOG_STORE_NOT_STARTED")
-        async with pool.acquire() as connection:
+        async with self._reading(pool) as connection:
             return await connection.fetch(
                 """
                 SELECT v.product_id, v.variant_id
@@ -357,7 +426,7 @@ class CatalogStore:
         pool = self._pool
         if pool is None:
             raise RuntimeError("CATALOG_STORE_NOT_STARTED")
-        async with pool.acquire() as connection:
+        async with self._reading(pool) as connection:
             snapshot = await self._selection_snapshot(connection, operation.catalog_snapshot_id)
             if snapshot is None:
                 raise CatalogRecommendationError("catalog_snapshot_not_found")
@@ -415,7 +484,7 @@ class CatalogStore:
         retrieval_started = time.perf_counter()
         sku_status = "not_sku"
 
-        async with pool.acquire() as connection:
+        async with self._reading(pool) as connection:
             snapshot_id = await self._selection_snapshot(connection, operation.catalog_snapshot_id)
             if snapshot_id is None:
                 return _empty_result(
@@ -503,7 +572,7 @@ class CatalogStore:
             else:
                 eligible_indices.append(index)
 
-        async with pool.acquire() as connection:
+        async with self._reading(pool) as connection:
             snapshot_id = await self._selection_snapshot(connection, operation.catalog_snapshot_id)
             rows: Sequence[Mapping[str, object]] = []
             if snapshot_id is not None and eligible_indices:

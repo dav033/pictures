@@ -38,9 +38,22 @@ function pideKitPrearmado(texto: string): boolean {
  * Parse constraints locally. No Gemini enrichment: an AI-generated component
  * query can never contribute a hard SQL predicate.
  */
+/**
+ * "transparente" (and "crystal") is both a catalog color and a catalog finish.
+ * Named as a color it already filters by color, where several colors are
+ * alternatives; as a finish it is a hard filter the relaxation ladder never
+ * loosens, so a palette such as "rosado, plateado, transparente" returned only
+ * the clear balloon (E2E 2026-09-14, photo "Semiarcos rosa y plata"). The
+ * finish is kept only when it is not also one of the requested colors.
+ */
+const ACABADO_QUE_TAMBIEN_ES_COLOR = "transparente";
+
 export function extraerFiltrosDurosBusqueda(solicitudOriginal: string, brief: Brief): FiltrosDurosBusqueda {
   const contexto = textoContextoRestricciones(solicitudOriginal, brief);
-  const filtros = interpretarConsultaDeterminista(contexto).intent.filtros_duros;
+  const interpretados = interpretarConsultaDeterminista(contexto).intent.filtros_duros;
+  const filtros = interpretados.colores.includes(ACABADO_QUE_TAMBIEN_ES_COLOR)
+    ? { ...interpretados, acabados: interpretados.acabados.filter((acabado) => acabado !== ACABADO_QUE_TAMBIEN_ES_COLOR) }
+    : interpretados;
   if (!filtros.categorias.includes(CATEGORIA_PRODUCTO_ESTRUCTURA) || pideKitPrearmado(contexto)) return filtros;
   return {
     ...filtros,

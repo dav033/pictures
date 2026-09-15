@@ -4,6 +4,7 @@ import Image from "next/image";
 import { CheckCircle2, Download, ImageIcon, RotateCcw, Search, Tag, Trash2 } from "lucide-react";
 import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { LoraDatasetGalleryData, LoraDatasetGalleryRecord } from "@/lib/lora/dataset-v005-view";
+import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
 
 type Filter = "all" | "order" | "web";
 
@@ -387,7 +388,7 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
       if (!response.ok) throw new Error(payload.error ?? "No se pudo exportar la selección.");
       setExportOk(`${numberFormat.format(payload.total ?? selectedIds.size)} image_id en ${payload.archivo ?? "aprobadas.json"}`);
     } catch (error) {
-      setExportError(error instanceof Error ? error.message : String(error));
+      setExportError(mensajeErrorCliente(error, "No se pudo completar la exportación."));
     } finally {
       setExportando(false);
     }
@@ -440,7 +441,7 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
         return next;
       });
       setSelectedIds((current) => new Set([...current, ...selectedBeforeDelete]));
-      setDeleteError(error instanceof Error ? error.message : "No se pudieron borrar las imágenes.");
+      setDeleteError(mensajeErrorCliente(error, "No se pudieron borrar las imágenes."));
       return null;
     } finally {
       setDeletingImageIds(new Set());

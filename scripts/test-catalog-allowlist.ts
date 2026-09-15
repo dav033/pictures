@@ -229,6 +229,15 @@ async function main(): Promise<void> {
       latency_retrieval_ms: 1,
     },
   });
+  // E2E 2026-09-14 (photo "Semiarcos rosa y plata"): "transparente" in the
+  // palette is a color, not a mandatory finish. As a finish it is a hard filter
+  // that never relaxes, and every search of the turn returned only the clear
+  // balloon, so the plan came out 100 % transparent.
+  const filtrosFoto = extraerFiltrosDurosBusqueda("Quiero algo así para un cumpleaños", { colores: ["rosado", "plateado", "gris", "transparente"] });
+  assert.deepEqual([...filtrosFoto.colores].sort(), ["plateado", "rosado", "transparente"]);
+  assert.deepEqual(filtrosFoto.acabados, [], "a palette color never becomes a finish filter");
+  assert.deepEqual(extraerFiltrosDurosBusqueda("globos crystal y dorados", {}).acabados, [], "crystal names the clear color too");
+  assert.deepEqual(extraerFiltrosDurosBusqueda("globos satin transparentes", {}).acabados, ["satin"], "other finishes stay hard");
   const filtrosPaleta = extraerFiltrosDurosBusqueda("Quiero esta decoración para un cumpleaños en azul, blanco y dorado", {});
   assert.deepEqual([filtrosPaleta.ocasiones, [...filtrosPaleta.colores].sort()], [["cumpleanos"], ["azul", "blanco", "dorado"]]);
   const llamadasPaleta = instalarFetch((llamada) => respuestaColores(llamada, filtrosDe(llamada).occasions ? ["dorado"] : ["azul", "blanco", "dorado"]));

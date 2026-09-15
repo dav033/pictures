@@ -7,6 +7,7 @@ import { ReferenceBlueprintV2Schema } from "@/lib/ia/reference-blueprint";
 import { CATALOGO_ERRORES_UI_V1, leerUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 import { tieneElementosAprobados, tieneEstructurasDeGlobos } from "@/lib/ia/reference-structure";
 import type { EstadoAnalisisReferencia } from "@/lib/estado/espera-analisis";
+import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
 import { ReferenceReviewPanel, type ReferenceDraft } from "./ReferenceReviewPanel";
 
 type Props = {
@@ -106,7 +107,8 @@ export function ReferenceAnalysisController({ references, proveedor, onDraft, on
       .catch((reason) => {
         if (cancelled) return;
         setStatus("error");
-        setError(reason instanceof Error ? reason.message : "No se pudo analizar.");
+        // Sin red el navegador rechaza con "Failed to fetch": el cliente ve el mensaje de conexión (D4).
+        setError(mensajeErrorCliente(reason, "No se pudo analizar tu foto. Inténtalo de nuevo."));
         onDraft(null);
         onEstado("error");
       });

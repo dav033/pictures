@@ -82,6 +82,33 @@ assert.equal(
   "Dos semiarcos, uno a cada lado, en rosado.",
   "un par de piezas iguales a cada lado no se repite (#10)",
 );
+// D6 (E2E real, ejemplo-07): la misma pieza repetida en el mismo lugar se agrupa también fuera del par lateral.
+assert.equal(
+  resumenPlanCliente([
+    { oficialId: "arco_asimetrico", nombre: "Arco", ubicacion: "arco_central", repeticiones: 1 },
+    { oficialId: "bouquet", nombre: "Bouquet", ubicacion: "piso_frontal", repeticiones: 1 },
+    { oficialId: "bouquet", nombre: "Bouquet 2", ubicacion: "piso_frontal", repeticiones: 1 },
+  ], ["plateado"]),
+  "Un arco asimétrico al centro y dos bouquets de globos en el piso, al frente, en plateado.",
+  "dos bouquets iguales en el mismo lugar no se repiten",
+);
+assert.equal(
+  resumenPlanCliente([
+    { oficialId: "columna", nombre: "Columna", ubicacion: "lateral_izquierdo", repeticiones: 1 },
+    { oficialId: "columna", nombre: "Columna", ubicacion: "lateral_izquierdo", repeticiones: 1 },
+  ], []),
+  "Dos columnas a la izquierda.",
+  "dos piezas del mismo lado no se leen como \"a ambos lados\"",
+);
+assert.equal(
+  resumenPlanCliente([
+    { oficialId: "bouquet", nombre: "Bouquet", ubicacion: "piso_frontal", repeticiones: 2 },
+    { oficialId: "bouquet", nombre: "Bouquet", ubicacion: "piso_frontal", repeticiones: 1 },
+    { oficialId: "bouquet", nombre: "Bouquet", ubicacion: "sobre_mesa_principal", repeticiones: 1 },
+  ], []),
+  "Tres bouquets de globos en el piso, al frente y un bouquet de globos sobre la mesa principal.",
+  "suma repeticiones y no mezcla lugares distintos",
+);
 ok("resumen derivado de las estructuras reales");
 
 const descripciones = new Map([["EST_01_SEMIARCO", "el semiarco a la derecha"], ["EST_02_COLUMNA", "la columna a la izquierda"]]);

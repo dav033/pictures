@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { AlertTriangle, CheckCircle2, ChevronLeft, CircleDollarSign, Database, LockKeyhole, X } from "lucide-react";
+import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
 
 type Dataset = {
   id: string;
@@ -78,7 +79,7 @@ export default function LoraTrainingWizard({ onClose, onStarted, specialization 
       })
       .catch((loadError) => {
         if (!active) return;
-        setDatasetsError(loadError instanceof Error ? loadError.message : "No se pudieron cargar datasets.");
+        setDatasetsError(mensajeErrorCliente(loadError, "No se pudieron cargar datasets."));
         setDatasetsLoading(false);
       });
 
@@ -117,7 +118,7 @@ export default function LoraTrainingWizard({ onClose, onStarted, specialization 
       setDraft(payload.training);
       setStage("confirm");
     } catch (createError) {
-      setError(createError instanceof Error ? createError.message : "No se pudo preparar la corrida.");
+      setError(mensajeErrorCliente(createError, "No se pudo preparar la corrida."));
       setStage("configure");
     }
   }
@@ -138,7 +139,7 @@ export default function LoraTrainingWizard({ onClose, onStarted, specialization 
       setStage("sent");
       onStarted();
     } catch (startError) {
-      setError(startError instanceof Error ? startError.message : "No se pudo enviar el entrenamiento.");
+      setError(mensajeErrorCliente(startError, "No se pudo enviar el entrenamiento."));
       setStage("confirm");
     }
   }

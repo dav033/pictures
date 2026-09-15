@@ -5,7 +5,13 @@
  * It lives outside the route file so plan-editing helpers can raise it without
  * importing route modules.
  */
-export type CausaEdicionPlan = "VARIANTE_NO_ADMITIDA" | "VARIANTE_REFERENCIA_NO_ENCONTRADA";
+export type CausaEdicionPlan =
+  | "VARIANTE_NO_ADMITIDA"
+  | "VARIANTE_REFERENCIA_NO_ENCONTRADA"
+  /** "Quitar" on the only material of a structure: it can be replaced, not removed. */
+  | "UNICO_MATERIAL"
+  /** A balloon line replaced by a product that is not a balloon of the same shape. */
+  | "REEMPLAZO_INCOMPATIBLE";
 
 export class PlanEditError extends Error {
   readonly status: number;

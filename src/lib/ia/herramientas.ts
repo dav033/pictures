@@ -109,7 +109,7 @@ export const HERRAMIENTAS_PLAN: Herramienta[] = [
             ancho_m: { type: "number" },
             alto_m: { type: "number" },
             largo_m: { type: "number" },
-            fuente: { type: "string", enum: ["cliente", "supuesto", "foto"] },
+            fuente: { type: "string", enum: ["cliente", "supuesto", "foto"], description: "cliente: el cliente dio el tipo o las medidas. foto: solo el TIPO de espacio se vio en una foto; nunca uses foto para medidas. No mandes ancho_m, alto_m ni largo_m del espacio si el cliente no las dio: no se miden desde una foto." },
           },
         },
         estructuras: {
@@ -147,7 +147,7 @@ export const HERRAMIENTAS_PLAN: Herramienta[] = [
                   },
                 },
               },
-              porque: { type: "string" },
+              porque: { type: "string", description: "Una frase corta para el cliente, en español y sin jerga, sobre para qué sirve la pieza en su evento (ej.: \"Enmarca la mesa del pastel\"). No menciones la imagen de referencia ni la foto analizada, identificadores ni verbos técnicos como \"materializa\"." },
               referencia_element_id: { type: "string", description: "Elemento REF de una imagen de referencia que esta estructura materializa." },
               estructura_oficial: { type: "string", enum: [...ESTRUCTURAS_OFICIALES_IDS], description: "Estructura oficial que materializa; debe ser coherente con tipo, densidad y ubicación (ver ESTRUCTURAS OFICIALES)." },
             },

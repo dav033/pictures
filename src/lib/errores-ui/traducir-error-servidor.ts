@@ -156,6 +156,9 @@ export function clasificarErrorServidor(error: unknown): ClasificacionError {
     if (PREFIJO_LORA.test(prefijo)) return { code: "ESTILO_NO_PREPARADO", codigoOrigen: prefijo };
   }
   if (error instanceof PlanEditError) {
+    // Causas con código propio: el cliente puede corregir la edición sin pedir otra propuesta.
+    if (error.causa === "UNICO_MATERIAL") return { code: "PIEZA_UNICO_MATERIAL", codigoOrigen: error.causa, causa: error.causa };
+    if (error.causa === "REEMPLAZO_INCOMPATIBLE") return { code: "REEMPLAZO_NO_COMPATIBLE", codigoOrigen: error.causa, causa: error.causa };
     // Mensajes de PlanEditError ya están redactados para el cliente; el estado
     // decide la acción. 404/409 son cambios de catálogo o de plan base.
     if (error.status === 400 || error.status === 422) {

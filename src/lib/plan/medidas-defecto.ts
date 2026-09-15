@@ -18,6 +18,53 @@ const DEFAULTS: Record<EstructuraPlan["tipo"], { interior: Medidas; exterior: Me
   accesorio: { interior: {}, exterior: {}, texto: "" },
 };
 
+type EspacioPlan = PlanDecoracion["espacio"] | PlanDecoracion1_1["espacio"];
+
+function tieneMedidasEspacio(espacio: EspacioPlan): boolean {
+  return espacio.ancho_m != null || espacio.alto_m != null || espacio.largo_m != null;
+}
+
+/**
+ * The model does not measure photos (E2E 2026-09-14: a venue with a ceiling
+ * above 5 m came back as `{ancho_m: 3, largo_m: 3, alto_m: 2.5, fuente: "foto"}`
+ * and the UI said "I measured your space from the photo"). `fuente: "foto"`
+ * only states that the TYPE of space was seen in a photo; any numeric space
+ * measure without customer data is an estimate. Rule, applied by both
+ * resolvers when completing the plan (mirror: `_normalize_space_source` in
+ * services/ai-api/app/plan.py): `fuente: "foto"` with any of
+ * `ancho_m`/`alto_m`/`largo_m` becomes `fuente: "supuesto"`, keeping the
+ * numbers. Contract for the UI:
+ * - `fuente: "foto"` never carries measures (type seen in the photo);
+ * - measures with `fuente: "supuesto"` are estimates the customer should confirm;
+ * - measures with `fuente: "cliente"` came from the customer
+ *   (`aplicarFuenteMedidasEspacio` checks that evidence before signing).
+ */
+export function normalizarFuenteEspacio<T extends EspacioPlan>(espacio: T): T {
+  return espacio.fuente === "foto" && tieneMedidasEspacio(espacio) ? { ...espacio, fuente: "supuesto" } : espacio;
+}
+
+/** A length in meters or centimeters, or "3x4" / "3 por 4", in the customer's words. */
+const MEDIDA_EN_TEXTO = /\b\d+(?:[.,]\d+)?\s*(?:m|mts?|metros?|cm|cent[ií]metros?)\b|\b\d+(?:[.,]\d+)?\s*(?:x|×|por)\s*\d+(?:[.,]\d+)?\b/i;
+
+/** Whether the customer stated a physical size in the request or the brief. */
+export function clienteDioMedidasEspacio(solicitudOriginal: string, espacioBrief?: unknown): boolean {
+  // The brief is written by a tool call: its field is not guaranteed to be text.
+  return MEDIDA_EN_TEXTO.test(solicitudOriginal) || (typeof espacioBrief === "string" && MEDIDA_EN_TEXTO.test(espacioBrief));
+}
+
+/**
+ * Before signing, the server decides the source of the space measures from the
+ * customer's evidence, not from the model: measures the customer gave are
+ * `cliente` (even if the model wrote `foto`); measures without that evidence are
+ * `supuesto` (even if the model wrote `foto` or `cliente`). Without measures the
+ * model's source stays (a `foto` type is legitimate).
+ */
+export function aplicarFuenteMedidasEspacio<T extends PlanDecoracion>(plan: T, clienteDioMedidas: boolean): T {
+  if (!tieneMedidasEspacio(plan.espacio)) return plan;
+  const fuente = clienteDioMedidas ? "cliente" : "supuesto";
+  return plan.espacio.fuente === fuente ? plan : { ...plan, espacio: { ...plan.espacio, fuente } };
+}
+
 export function completarMedidas(plan: PlanDecoracion): PlanDecoracion {
   const exterior = EXTERIOR.test(plan.espacio.tipo);
   const supuestos = [...plan.supuestos];
@@ -33,7 +80,7 @@ export function completarMedidas(plan: PlanDecoracion): PlanDecoracion {
     }
     return { ...estructura, medidas };
   });
-  return { ...plan, estructuras, supuestos: [...new Set(supuestos)] };
+  return { ...plan, espacio: normalizarFuenteEspacio(plan.espacio), estructuras, supuestos: [...new Set(supuestos)] };
 }
 
 /**
@@ -58,5 +105,5 @@ export function completarMedidas1_1(plan: PlanDecoracion1_1): PlanDecoracion1_1 
     }
     return { ...estructura, medidas };
   });
-  return { ...plan, estructuras, supuestos: [...new Set(supuestos)] };
+  return { ...plan, espacio: normalizarFuenteEspacio(plan.espacio), estructuras, supuestos: [...new Set(supuestos)] };
 }

@@ -121,3 +121,29 @@ en los dos backends y el vector `09` espera `0`. Decisión en `decision-log.md`
   el servidor desde el blueprint) y los dos resolutores registran en
   `sustituciones` los que no compra, tanto en una estructura geométrica como en
   una sin geometría (casos F03+F06).
+
+## Compras consolidadas entre estructuras (2026-09-15)
+
+- `16-compras-consolidadas-presentaciones.json`: un semiarco y dos columnas
+  comparten Azul Rey R-12 y Reflex Plata R-12 (datos del E2E real del
+  2026-09-14). Antes cada estructura elegía su propio paquete (x12 para el
+  semiarco, x20/x50 para las columnas) y el Python nunca consolidaba entre
+  presentaciones: 72 310 COP. Ahora los dos resolutores suman la necesidad por
+  producto + tamaño + color y la cubren con la combinación de presentaciones más
+  barata del allowlist (`reoptimizarPresentaciones` / `_reoptimize_presentations`):
+  65 515 COP con el paquete extra de merma. Cada línea de estructura se
+  reconstruye contra esas compras, así que `compras[].estructuras` sigue diciendo
+  qué estructuras cubre cada compra.
+- La consolidación ya no depende de `PLAN_COST_OPTIMIZER_V2`; esa bandera solo
+  apaga `alternativas`. Los vectores 01-15 no cambian (no tienen el mismo
+  producto + tamaño + color repartido en presentaciones distintas). El
+  `plan_hash` cambia solo para planes que sí lo tenían: todos los resueltos por
+  Python y los de TypeScript con la bandera apagada.
+
+## Medidas del espacio (2026-09-15)
+
+- `17-espacio-foto-medidas-estimadas.json`: el plan trae `espacio {ancho_m: 3,
+  largo_m: 3, alto_m: 2.5, fuente: "foto"}` (E2E del 2026-09-14, un salón con
+  techo de más de 5 m). El modelo no mide fotos: `fuente: "foto"` solo vale para
+  el tipo de espacio, así que los dos resolutores (`normalizarFuenteEspacio` /
+  `_normalize_space_source`) devuelven esas medidas con `fuente: "supuesto"`.

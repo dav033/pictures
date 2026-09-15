@@ -12,6 +12,7 @@ import {
   XCircle,
 } from "lucide-react";
 import LoraTrainingWizard from "./LoraTrainingWizard";
+import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
 
 type Slot = {
   slug: string;
@@ -222,7 +223,7 @@ export default function LoraRegistryPanel() {
       setUpdatedAt(new Date().toISOString());
       setState("ready");
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "No se pudo leer el registro LoRA");
+      setError(mensajeErrorCliente(loadError, "No se pudo leer el registro LoRA"));
       setState("error");
     }
   }, []);

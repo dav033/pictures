@@ -116,3 +116,66 @@ export function sustitucionesColorReferencia(
 export function esSustitucionDeColor(sustitucion: { pedido: string }): boolean {
   return !/^R-\d/i.test(sustitucion.pedido.trim());
 }
+
+/** A catalog product that offers a photo color, and whether this turn's search already returned it. */
+export type ProductoColorDisponible = { product_id: string; titulo: string; en_busqueda: boolean };
+
+export type ColorReferenciaOmitido = {
+  estructura_id: string;
+  nombre: string;
+  color: string;
+  productos: ProductoColorDisponible[];
+};
+
+/** Catalog categories whose products can build a balloon structure in a photo color. */
+const CATEGORIAS_GLOBO_COLOR = new Set(["globo_latex"]);
+
+/**
+ * Photo colors each candidate of this turn's search offers as a round latex
+ * balloon (the material a photo's balloon structure is built with). Pure.
+ */
+export function productosGloboPorColor(
+  candidatos: ReadonlyArray<{ productId: string; titulo: string; categoria: string | null; colores: readonly string[]; variantes: ReadonlyArray<{ forma: string | null; colores: readonly string[]; disponible: boolean }> }>,
+  colores: readonly string[],
+): Map<string, ProductoColorDisponible[]> {
+  const buscados = new Set(colores.map(normalizarColor));
+  const resultado = new Map<string, ProductoColorDisponible[]>();
+  for (const candidato of candidatos) {
+    if (!candidato.categoria || !CATEGORIAS_GLOBO_COLOR.has(candidato.categoria)) continue;
+    const redondas = candidato.variantes.filter((variante) => variante.disponible && variante.forma === "redondo");
+    if (redondas.length === 0) continue;
+    const coloresProducto = new Set([...candidato.colores, ...redondas.flatMap((variante) => variante.colores)].map(normalizarColor));
+    for (const color of buscados) {
+      if (!coloresProducto.has(color)) continue;
+      const lista = resultado.get(color) ?? [];
+      if (!lista.some((item) => item.product_id === candidato.productId)) lista.push({ product_id: candidato.productId, titulo: candidato.titulo, en_busqueda: true });
+      resultado.set(color, lista);
+    }
+  }
+  return resultado;
+}
+
+/**
+ * Dominant photo colors a structure dropped although the catalog offers them
+ * (E2E 2026-09-14: "Semiarcos rosa y plata" was quoted 100 % transparent with
+ * three color notices while the active catalog had pink and silver balloons).
+ * `sustitucionesColorReferencia` only reports the loss; this lets
+ * `confirmar_plan_decoracion` refuse it while a real alternative exists. A color
+ * the catalog does not offer (`disponibles` has no entry) is not returned: the
+ * plan goes on and the resolver records the notice. Pure.
+ */
+export function coloresReferenciaOmitidos(
+  estructuras: ReadonlyArray<{ estructura_id: string; nombre: string; colores_referencia?: readonly string[]; materiales: ReadonlyArray<{ color?: string }> }>,
+  disponibles: ReadonlyMap<string, readonly ProductoColorDisponible[]>,
+): ColorReferenciaOmitido[] {
+  const omitidos: ColorReferenciaOmitido[] = [];
+  for (const estructura of estructuras) {
+    const usados = new Set(estructura.materiales.map((material) => normalizarColor(material.color ?? "")).filter(Boolean));
+    for (const color of new Set((estructura.colores_referencia ?? []).map(normalizarColor))) {
+      const productos = disponibles.get(color) ?? [];
+      if (!color || usados.has(color) || productos.length === 0) continue;
+      omitidos.push({ estructura_id: estructura.estructura_id, nombre: estructura.nombre, color, productos: [...productos] });
+    }
+  }
+  return omitidos;
+}

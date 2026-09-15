@@ -46,6 +46,8 @@ type Props = {
   onAgregar: () => void;
   onEditar: (linea: LineaMaterial) => void;
   onQuitar: (linea: LineaMaterial) => void;
+  /** "Quitar" only where the structure keeps a material afterwards (`lineaQuitable`); default: every line. */
+  puedeQuitar?: (linea: LineaMaterial) => boolean;
   onVerProducto: (linea: LineaMaterial, disparador: HTMLButtonElement) => void;
   /** Dev-only extras per line (training references). */
   extraLinea?: (linea: LineaMaterial) => ReactNode;
@@ -81,7 +83,7 @@ function CantidadTexto({ texto }: { texto: string }) {
  */
 export function DetalleEstructura({
   idBase, estructura, declarada, oficial, abierto, onAlternar, recorte, lineas, imagenDe, fotoAusente, sumaCop,
-  editable, onAgregar, onEditar, onQuitar, onVerProducto, extraLinea, modoDev = false,
+  editable, onAgregar, onEditar, onQuitar, puedeQuitar, onVerProducto, extraLinea, modoDev = false,
 }: Props) {
   const reducir = useReducedMotion();
   const nombreVisible = oficial?.nombre ?? productoCliente(estructura.nombre);
@@ -186,9 +188,11 @@ export function DetalleEstructura({
                         <button type="button" title={`Modificar ${nombreAccesible}`} aria-label={`Modificar ${nombreAccesible}`} onClick={() => onEditar(linea)} className="grid size-8 place-items-center rounded-lg text-texto-suave hover:bg-acento-suave hover:text-acento focus-visible:outline-2 focus-visible:outline-acento">
                           <Pencil className="size-3.5" aria-hidden="true" />
                         </button>
-                        <button type="button" title={`Quitar ${nombreAccesible}`} aria-label={`Quitar ${nombreAccesible}`} onClick={() => onQuitar(linea)} className="grid size-8 place-items-center rounded-lg text-texto-suave hover:bg-error-suave hover:text-error focus-visible:outline-2 focus-visible:outline-acento">
-                          <Trash2 className="size-3.5" aria-hidden="true" />
-                        </button>
+                        {(puedeQuitar?.(linea) ?? true) && (
+                          <button type="button" title={`Quitar ${nombreAccesible}`} aria-label={`Quitar ${nombreAccesible}`} onClick={() => onQuitar(linea)} className="grid size-8 place-items-center rounded-lg text-texto-suave hover:bg-error-suave hover:text-error focus-visible:outline-2 focus-visible:outline-acento">
+                            <Trash2 className="size-3.5" aria-hidden="true" />
+                          </button>
+                        )}
                       </span>
                     )}
                   </li>

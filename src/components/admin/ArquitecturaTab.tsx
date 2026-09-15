@@ -18,6 +18,7 @@ import type {
   ProductoShopifyArquitectura,
   TipoArquitectura,
 } from "@/lib/arquitectura";
+import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
 
 type Arquitectura = {
   categorias: CategoriaArquitectura[];
@@ -71,7 +72,7 @@ export function ArquitecturaTab() {
     fetch("/api/admin/arquitectura")
       .then(leerJson)
       .then((next) => { if (vigente) setData(next); })
-      .catch((cause) => { if (vigente) setError(cause instanceof Error ? cause.message : "No se pudo cargar la biblioteca."); })
+      .catch((cause) => { if (vigente) setError(mensajeErrorCliente(cause, "No se pudo cargar la biblioteca.")); })
       .finally(() => { if (vigente) setCargando(false); });
     return () => { vigente = false; };
   }, []);
@@ -84,7 +85,7 @@ export function ArquitecturaTab() {
         const result = await leerJson(await fetch(`/api/admin/arquitectura?view=shopify&q=${encodeURIComponent(consulta)}`));
         if (vigente) setShopify(result.productos ?? []);
       } catch (cause) {
-        if (vigente) setError(cause instanceof Error ? cause.message : "No se pudo consultar Shopify.");
+        if (vigente) setError(mensajeErrorCliente(cause, "No se pudo consultar Shopify."));
       } finally {
         if (vigente) setBuscando(false);
       }
@@ -108,7 +109,7 @@ export function ArquitecturaTab() {
       setTipoActivo(null);
       return true;
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "No se pudo guardar el cambio.");
+      setError(mensajeErrorCliente(cause, "No se pudo guardar el cambio."));
       return false;
     } finally {
       setGuardando(false);

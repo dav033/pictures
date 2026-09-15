@@ -15,6 +15,8 @@ import { LoraModeSlugSchema } from "@/lib/lora/schema";
 import { resolveLoraModeDatasetAllowlist } from "@/lib/lora/mode-resolver";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import { registrarFalloUi, traducirErrorServidor } from "@/lib/errores-ui/traducir-error-servidor";
+import { conFotosDeCatalogo } from "@/lib/plan/cotizacion-fotos";
+import { filtrarCandidatosCompatibles, MENSAJE_REEMPLAZO_INCOMPATIBLE, MENSAJE_UNICO_MATERIAL, reemplazoIncompatible } from "@/lib/plan/edicion-compatibilidad";
 
 const BaseLineaSchema = z.object({
   product_id: z.string().min(1),
@@ -60,7 +62,17 @@ const EdicionSchema = z.object({
 });
 
 const BodySchema = z.discriminatedUnion("modo", [
-  z.object({ modo: z.literal("buscar"), consulta: z.string().trim().min(2).max(240), approval_token: z.string().min(1).max(256 * 1024).optional(), loraMode: LoraModeSlugSchema.optional() }).strict(),
+  z.object({
+    modo: z.literal("buscar"),
+    consulta: z.string().trim().min(2).max(240),
+    approval_token: z.string().min(1).max(256 * 1024).optional(),
+    loraMode: LoraModeSlugSchema.optional(),
+    /** Line the search would replace ("Modificar"): a balloon only accepts balloons of the same shape. */
+    linea_objetivo: z.object({
+      forma: z.string().trim().min(1).max(40).nullable().optional(),
+      diam_pulg: z.number().positive().max(100).nullable().optional(),
+    }).strict().optional(),
+  }).strict(),
   z.object({ modo: z.literal("recomendadas"), variant_id: z.string().trim().min(1).max(160), approval_token: z.string().min(1), loraMode: LoraModeSlugSchema.optional() }).strict(),
   z.object({ modo: z.literal("aplicar"), base: BasePlanSchema, edicion: EdicionSchema, loraMode: LoraModeSlugSchema.optional() }).strict(),
 ]);
@@ -236,7 +248,7 @@ function aplicarEdicion(base: BasePlan, edicion: Edicion): PlanDecoracion {
     if (indice < 0) throw new PlanEditError(409, "La variante visible no corresponde a un material editable.");
 
     if (edicion.accion === "quitar") {
-      if (materiales.length === 1) throw new PlanEditError(400, "No puedes quitar el único material de una estructura; reemplázalo o elimina la estructura completa.");
+      if (materiales.length === 1) throw new PlanEditError(400, MENSAJE_UNICO_MATERIAL, "UNICO_MATERIAL");
       materiales.splice(indice, 1);
       materiales.splice(0, materiales.length, ...normalizarParticipaciones(materiales));
     } else {
@@ -258,8 +270,8 @@ function aplicarEdicion(base: BasePlan, edicion: Edicion): PlanDecoracion {
   return PlanDecoracionSchema.parse(planEditado);
 }
 
-function serializarCandidatos(resultado: Awaited<ReturnType<typeof buscarCatalogoRag>>) {
-  return resultado.candidatos.slice(0, 8).map((candidato) => ({
+function serializarCandidatos(candidatos: readonly ProductoCandidato[]) {
+  return candidatos.slice(0, 8).map((candidato) => ({
     productId: candidato.productId,
     titulo: candidato.titulo,
     categoria: candidato.categoria,
@@ -426,7 +438,15 @@ async function buscarRecomendaciones(pool: ReturnType<typeof getRagPool>, varian
   return agruparRecomendaciones(rows);
 }
 
+function requestIdDe(request: Request): string {
+  const cabecera = request.headers.get("x-request-id");
+  return z.string().uuid().safeParse(cabecera).success ? cabecera! : crypto.randomUUID();
+}
+
 export async function POST(request: Request) {
+  // Every response carries X-Request-ID, so a failed edit can be traced (E2E 2026-09-14).
+  const requestIdHttp = requestIdDe(request);
+  const cabeceras = { "X-Request-ID": requestIdHttp };
   try {
     const body = BodySchema.parse(await request.json());
     const pool = getRagPool();
@@ -451,7 +471,10 @@ export async function POST(request: Request) {
         allowlist: catalogAllowlist ?? undefined,
         ...(catalogSnapshotId === undefined ? {} : { catalogSnapshotId }),
       });
-      return Response.json({ status: resultado.status, candidatos: serializarCandidatos(resultado), filtroRelajado: resultado.filtroRelajado });
+      return Response.json(
+        { status: resultado.status, candidatos: serializarCandidatos(filtrarCandidatosCompatibles(resultado.candidatos, body.linea_objetivo)), filtroRelajado: resultado.filtroRelajado },
+        { headers: cabeceras },
+      );
     }
 
     if (body.modo === "recomendadas") {
@@ -465,11 +488,11 @@ export async function POST(request: Request) {
           correlationId: correlationDesde(contextoPlan.requestId),
           signal: request.signal,
         });
-        return Response.json({ candidatos });
+        return Response.json({ candidatos }, { headers: cabeceras });
       }
       const catalogAllowlist = await resolverCatalogAllowlist();
       const candidatos = filtrarPorAllowlist(await buscarRecomendaciones(pool, body.variant_id), catalogAllowlist);
-      return Response.json({ candidatos: candidatos.slice(0, 12) });
+      return Response.json({ candidatos: candidatos.slice(0, 12) }, { headers: cabeceras });
     }
 
     const base = body.base;
@@ -527,6 +550,18 @@ export async function POST(request: Request) {
     const resolucionEditada = await resolver(planEditado, allowlistFinal);
     const resuelto = resolucionEditada.resuelto;
     if (resuelto.compras.length === 0) throw new PlanEditError(422, "El cambio dejó la estructura sin piezas disponibles.");
+    if (body.edicion.accion === "reemplazar") {
+      // Server-verified lines on both sides: the base plan was just re-resolved.
+      const objetivo = planBaseVerificado.resuelto.estructuras
+        .find((item) => item.estructura_id === body.edicion.estructura_id)
+        ?.lineas.find((linea) => linea.variant_id === body.edicion.objetivo_variant_id);
+      const lineasNuevas = resuelto.estructuras
+        .find((item) => item.estructura_id === body.edicion.estructura_id)
+        ?.lineas.filter((linea) => linea.variant_id === body.edicion.variante?.variant_id) ?? [];
+      if (objetivo && reemplazoIncompatible(objetivo, lineasNuevas)) {
+        throw new PlanEditError(422, MENSAJE_REEMPLAZO_INCOMPATIBLE, "REEMPLAZO_INCOMPATIBLE");
+      }
+    }
 
     const requestId = base.request_id ?? aprobacionBase.requestId;
     resuelto.request_id = requestId;
@@ -551,14 +586,14 @@ export async function POST(request: Request) {
       status: "PLAN_EDITED",
     });
 
-    return Response.json({ plan: resuelto, cotizacion: resolucionEditada.cotizacion });
+    return Response.json({ plan: resuelto, cotizacion: conFotosDeCatalogo(resolucionEditada.cotizacion, resuelto.compras) }, { headers: cabeceras });
   } catch (error) {
     // Los campos legacy (`error`, `causa`, `detalles`, sobre operational.v1) se
     // conservan para los consumidores actuales; `ui_error` (ui-error.v1) es lo
     // que muestra la interfaz.
-    const uiError = traducirErrorServidor(error, isPythonAdapterError(error) ? error.requestId : undefined);
+    const uiError = traducirErrorServidor(error, isPythonAdapterError(error) ? error.requestId : requestIdHttp);
     registrarFalloUi("/api/plan-editar", uiError);
-    const responder = (cuerpo: Record<string, unknown>, status: number) => Response.json({ ...cuerpo, ui_error: uiError }, { status });
+    const responder = (cuerpo: Record<string, unknown>, status: number) => Response.json({ ...cuerpo, ui_error: uiError }, { status, headers: cabeceras });
     if (error instanceof z.ZodError) return responder({ error: "La edición del plan no tiene un formato válido.", detalles: error.issues }, 400);
     if (error instanceof PlanEditError) return responder({ error: error.message, ...(error.causa ? { causa: error.causa } : {}) }, error.status);
     if (error instanceof PlanBackendNoDisponibleError) return responder({ error: error.message, causa: error.motivo }, 409);

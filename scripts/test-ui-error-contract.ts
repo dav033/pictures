@@ -169,6 +169,16 @@ caso("errores tipados se clasifican por clase, no por texto", () => {
   assert.equal(clasificarErrorServidor(new NonCommercialSourceRejectedError("p1", "seed_demo", "editorial_reference")).code, "PRODUCTO_NO_DISPONIBLE");
   assert.equal(clasificarErrorServidor(new PlanEditError(409, "El catálogo cambió.")).code, "PROPUESTA_DESACTUALIZADA");
   assert.equal(clasificarErrorServidor(new PlanEditError(400, "No puedes quitar el único material.")).code, "PROPUESTA_INCOMPLETA");
+  // E2E 2026-09-14: "Quitar" on a one-balloon piece said "Hay que ajustar la propuesta…".
+  const unico = traducirErrorServidor(new PlanEditError(400, "No se puede quitar el único globo de esta pieza; cámbialo por otro.", "UNICO_MATERIAL"), "00000000-0000-4000-8000-0000000000aa");
+  assert.equal(unico.code, "PIEZA_UNICO_MATERIAL");
+  assert.equal(unico.mensaje_usuario, "No se puede quitar el único globo de esta pieza; cámbialo por otro.");
+  assert.equal(unico.retryable, false);
+  assert.equal(unico.detalles_dev.codigo_origen, "UNICO_MATERIAL");
+  assert.equal(unico.request_id, "00000000-0000-4000-8000-0000000000aa");
+  const incompatible = traducirErrorServidor(new PlanEditError(422, "Esa pieza no puede reemplazar un globo. Elige otro globo.", "REEMPLAZO_INCOMPATIBLE"));
+  assert.equal(incompatible.code, "REEMPLAZO_NO_COMPATIBLE");
+  assert.match(incompatible.mensaje_usuario, /Elige otro globo/);
   // plan-editar lanza PlanEditError(409, "LORA_DATASET_ALLOWLIST_REJECTED: <variant>"): gana el código del mensaje.
   assert.equal(clasificarErrorServidor(new PlanEditError(409, "LORA_DATASET_ALLOWLIST_REJECTED: 998877")).code, "ESTILO_SIN_PRODUCTOS");
   const zod = z.object({ a: z.string() }).safeParse({});

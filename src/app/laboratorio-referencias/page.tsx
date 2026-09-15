@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { InterruptorTema } from "@/components/ui/interruptor-tema";
 import type { Imagen, PeticionImagen, ProveedorId } from "@/lib/ia/tipos";
+import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
 
 type Prueba = {
   id: number;
@@ -86,7 +87,7 @@ export default function LaboratorioReferenciasPage() {
       setImagenes(preparadas);
       setNombres(lista.map((f) => f.name));
     } catch (error) {
-      setErrorEntrada(error instanceof Error ? error.message : "No se pudieron procesar las imágenes.");
+      setErrorEntrada(mensajeErrorCliente(error, "No se pudieron procesar las imágenes."));
     }
   }
 
@@ -110,7 +111,7 @@ export default function LaboratorioReferenciasPage() {
         throw new Error(`JSON tiene ${ids.length} referencias y adjuntaste ${imagenes.length} imágenes.`);
       }
     } catch (error) {
-      setErrorEntrada(error instanceof Error ? error.message : "JSON inválido.");
+      setErrorEntrada(mensajeErrorCliente(error, "JSON inválido."));
       return;
     }
 

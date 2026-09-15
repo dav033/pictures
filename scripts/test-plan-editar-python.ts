@@ -124,15 +124,15 @@ async function main(): Promise<void> {
   const tokenPython = crearTokenPlan({ planHash: PLAN_HASH, requestId: REQUEST_ID, backend: "python", catalogSnapshotId: SNAPSHOT, allowlist: allowlistFirmada });
   const base = { ...leerFixture("plan-resuelto-ok.json"), plan_hash: PLAN_HASH, request_id: REQUEST_ID, approval_token: tokenPython };
 
-  async function editar(body: Json): Promise<{ status: number; cuerpo: Json }> {
+  async function editar(body: Json, cabeceras: Record<string, string> = {}): Promise<{ status: number; cuerpo: Json; requestId: string | null }> {
     const respuesta = await POST(new Request("http://127.0.0.1/api/plan-editar", {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", ...cabeceras },
       body: JSON.stringify(body),
     }));
     const cuerpo: unknown = await respuesta.json();
     assert.ok(esObjeto(cuerpo));
-    return { status: respuesta.status, cuerpo };
+    return { status: respuesta.status, cuerpo, requestId: respuesta.headers.get("x-request-id") };
   }
 
   const reemplazo = (variante: { product_id: string; variant_id: string }, approval_token = tokenPython) => ({
@@ -298,6 +298,84 @@ async function main(): Promise<void> {
   assert.equal(r.cuerpo.causa, "ALLOWLIST_PRODUCTO_VARIANTE");
   assert.equal(llamadas.length, 1);
   console.log("[PASS] aplicar Python: mismatch en la re-resolución base → 422 ALLOWLIST_PRODUCTO_VARIANTE");
+
+  // --- 6b. E2E 2026-09-14 (D7): "Quitar" on the only material has its own code and every response has X-Request-ID.
+  llamadas = instalarFetch((llamada) => sobre(llamada, payloadResolucion()));
+  const requestIdCliente = "00000000-0000-4000-8000-0000000000d7";
+  r = await editar({ modo: "aplicar", base, edicion: { accion: "quitar", estructura_id: "EST_01_ARCO", objetivo_variant_id: "var-rojo-12" } }, { "x-request-id": requestIdCliente });
+  assert.equal(r.status, 400);
+  assert.equal(r.cuerpo.causa, "UNICO_MATERIAL");
+  const uiUnico = UiErrorV1Schema.parse(r.cuerpo.ui_error);
+  assert.equal(uiUnico.code, "PIEZA_UNICO_MATERIAL");
+  assert.equal(uiUnico.mensaje_usuario, "No se puede quitar el único globo de esta pieza; cámbialo por otro.");
+  assert.equal(uiUnico.request_id, requestIdCliente);
+  assert.equal(r.requestId, requestIdCliente, "the request id header is echoed");
+  llamadas = instalarFetch((llamada) => sobre(llamada, payloadBusqueda(SNAPSHOT)));
+  r = await editar({ modo: "buscar", consulta: "globo rojo", approval_token: tokenPython });
+  assert.match(r.requestId ?? "", /^[0-9a-f-]{36}$/, "a generated request id when the client sends none");
+  console.log("[PASS] quitar el único material → 400 UNICO_MATERIAL / PIEZA_UNICO_MATERIAL y X-Request-ID en las respuestas");
+
+  // --- 6c. D9c: "Modificar" only offers balloons for a balloon line, and the editor refuses a streamer.
+  const candidatoPython = (productId: string, category: string, variante: { variant_id: string; size_code: string | null; diameter_inches: number | null; shape: string | null }) => ({
+    product_id: productId, title: productId, category, colors: ["rojo"], finishes: [], occasions: [], available: true, image: null, score: 1,
+    variants: [{ ...variante, sku: null, title: null, price: 1000, available: true, colors: ["rojo"] }],
+  });
+  llamadas = instalarFetch((llamada) => sobre(llamada, {
+    ...payloadBusqueda(SNAPSHOT),
+    status: "OK",
+    candidates: [
+      candidatoPython("prod-serpentina", "complemento", { variant_id: "var-serpentina", size_code: null, diameter_inches: null, shape: null }),
+      candidatoPython("prod-rojo-satin", "globo_latex", { variant_id: "var-satin-9", size_code: "R-9", diameter_inches: 9, shape: "redondo" }),
+    ],
+    whitelist: [{ product_id: "prod-serpentina", variant_ids: ["var-serpentina"] }, { product_id: "prod-rojo-satin", variant_ids: ["var-satin-9"] }],
+  }));
+  r = await editar({ modo: "buscar", consulta: "rojo", approval_token: tokenPython, linea_objetivo: { forma: "redondo", diam_pulg: 9 } });
+  assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 300));
+  assert.deepEqual((r.cuerpo.candidatos as Array<{ productId: string }>).map((item) => item.productId), ["prod-rojo-satin"], "a streamer is not offered for a balloon");
+  r = await editar({ modo: "buscar", consulta: "rojo", approval_token: tokenPython });
+  assert.equal((r.cuerpo.candidatos as unknown[]).length, 2, "without a target line nothing is filtered");
+
+  const seleccionAdmitida = (cambios: Json): Json => {
+    const seleccionFixture = leerFixture("catalog-selection-result.json");
+    const validado = { ...(seleccionFixture.validados as Json[])[0]!, ...cambios, quantity: 1, unit_price_cop: 12000, subtotal_cop: 12000 };
+    return { ...seleccionFixture, status: "ok", catalog_snapshot_id: SNAPSHOT, rechazados: [], validados: [validado], total_cop: 12000 };
+  };
+  const resolucionConSerpentina = (): Json => {
+    const payload = payloadResolucion();
+    const planResuelto = payload.plan_resuelto as Json;
+    const estructuras = planResuelto.estructuras as Array<Json & { lineas: Json[] }>;
+    const serpentina = { product_id: "prod-serpentina", variant_id: "var-serpentina", diam_pulg: null, diam_cm: null, forma: null, tamano_codigo: null };
+    return { ...payload, plan_resuelto: { ...planResuelto, estructuras: estructuras.map((estructura) => ({ ...estructura, lineas: estructura.lineas.map((linea) => ({ ...linea, ...serpentina })) })) } };
+  };
+  let resoluciones = 0;
+  llamadas = instalarFetch((llamada) => {
+    if (llamada.path === "/internal/v1/plan/resolve") {
+      resoluciones += 1;
+      return sobre(llamada, resoluciones === 1 ? payloadResolucion() : resolucionConSerpentina());
+    }
+    return sobre(llamada, seleccionAdmitida({ product_id: "prod-serpentina", variant_id: "var-serpentina", size_code: null, shape: null, diameter_inches: null }));
+  });
+  r = await editar(reemplazo({ product_id: "prod-serpentina", variant_id: "var-serpentina" }));
+  assert.equal(r.status, 422, JSON.stringify(r.cuerpo).slice(0, 400));
+  assert.equal(r.cuerpo.causa, "REEMPLAZO_INCOMPATIBLE");
+  assert.equal(UiErrorV1Schema.parse(r.cuerpo.ui_error).code, "REEMPLAZO_NO_COMPATIBLE");
+  console.log("[PASS] Modificar: la búsqueda filtra por la línea objetivo y aplicar rechaza un globo cambiado por una serpentina");
+
+  // --- 6d. D9a: the edited quote carries the catalog photo of each purchase.
+  const FOTO = "https://cdn.shopify.test/globo-rojo-12.jpg";
+  const resolucionConFoto = (): Json => {
+    const payload = payloadResolucion();
+    const planResuelto = payload.plan_resuelto as Json;
+    return { ...payload, plan_resuelto: { ...planResuelto, compras: (planResuelto.compras as Json[]).map((compra) => ({ ...compra, imagen: FOTO })) } };
+  };
+  llamadas = instalarFetch((llamada) => llamada.path === "/internal/v1/plan/resolve"
+    ? sobre(llamada, resolucionConFoto())
+    : sobre(llamada, seleccionAdmitida({})));
+  r = await editar(reemplazo({ product_id: "prod-rojo", variant_id: "var-rojo-12" }));
+  assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 400));
+  const lineaCotizada = ((r.cuerpo.cotizacion as Json).lineas as Json[])[0]!;
+  assert.equal(lineaCotizada.foto, FOTO, "photo from the consolidated purchase");
+  console.log("[PASS] la cotización editada trae la foto de catálogo de cada compra");
 
   // --- 7. Kill switch: a Python token never falls back to TypeScript, in any mode.
   process.env.PYTHON_BACKEND_KILL_SWITCH = "true";

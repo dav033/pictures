@@ -62,8 +62,13 @@ function suscribir(avisar: () => void): () => void {
   };
 }
 
-/** Painted theme (for the sun/moon icon) plus a setter. The server snapshot is light. */
-export function useTema(): { tema: TemaElegido; cambiar: (preferencia: PreferenciaTema) => void } {
+/**
+ * Painted theme (for the sun/moon icon), the stored preference (for the
+ * Claro / Oscuro / Sistema menu) and a setter. Server snapshots: light and
+ * "sistema".
+ */
+export function useTema(): { tema: TemaElegido; preferencia: PreferenciaTema; cambiar: (preferencia: PreferenciaTema) => void } {
   const tema = useSyncExternalStore(suscribir, leerTemaPintado, () => "light" as const);
-  return { tema, cambiar: guardarPreferenciaTema };
+  const preferencia = useSyncExternalStore(suscribir, leerPreferencia, () => "sistema" as const);
+  return { tema, preferencia, cambiar: guardarPreferenciaTema };
 }

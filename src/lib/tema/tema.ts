@@ -26,6 +26,13 @@ export function resolverTema(preferencia: PreferenciaTema, sistemaOscuro: boolea
   return preferencia;
 }
 
+/** Choices of the theme menu (D10): the quick switch stores light/dark; "Sistema" goes back to following the OS. */
+export const OPCIONES_TEMA: ReadonlyArray<{ valor: PreferenciaTema; etiqueta: string }> = [
+  { valor: "light", etiqueta: "Claro" },
+  { valor: "dark", etiqueta: "Oscuro" },
+  { valor: "sistema", etiqueta: "Sistema" },
+];
+
 /** The switch toggles against what is painted now, so one click always changes the look. */
 export function siguienteTema(actual: TemaElegido): TemaElegido {
   return actual === "dark" ? "light" : "dark";

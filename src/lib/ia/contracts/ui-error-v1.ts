@@ -36,6 +36,8 @@ export const UiErrorCodeV1Schema = z.enum([
   "OPERACION_CANCELADA",
   "ERROR_INTERNO",
   "VISTA_PREVIA_NO_DISPONIBLE",
+  "PIEZA_UNICO_MATERIAL",
+  "REEMPLAZO_NO_COMPATIBLE",
 ]);
 export type UiErrorCodeV1 = z.infer<typeof UiErrorCodeV1Schema>;
 
@@ -215,6 +217,21 @@ export const CATALOGO_ERRORES_UI_V1: Readonly<Record<UiErrorCodeV1, EntradaCatal
   VISTA_PREVIA_NO_DISPONIBLE: {
     mensaje_usuario: "La vista previa de la imagen no está disponible por ahora. Tu propuesta y su precio quedan guardados.",
     accion_sugerida: null,
+    acciones_alternativas: [],
+    retryable: false,
+  },
+  // Plan editor (E2E 2026-09-14). New ui-error.v1 codes, backward compatible
+  // like VISTA_PREVIA_NO_DISPONIBLE. The editor hides "Quitar" when the
+  // structure has a single material; this is the answer if it is sent anyway.
+  PIEZA_UNICO_MATERIAL: {
+    mensaje_usuario: "No se puede quitar el único globo de esta pieza; cámbialo por otro.",
+    accion_sugerida: "ajustar_propuesta",
+    acciones_alternativas: [],
+    retryable: false,
+  },
+  REEMPLAZO_NO_COMPATIBLE: {
+    mensaje_usuario: "Esa pieza no puede reemplazar un globo. Elige otro globo.",
+    accion_sugerida: "ajustar_propuesta",
     acciones_alternativas: [],
     retryable: false,
   },

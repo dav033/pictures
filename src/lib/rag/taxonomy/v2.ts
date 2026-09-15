@@ -155,7 +155,9 @@ const COLORS: readonly Alias<(typeof PALETA_COLORES_V2)[number]>[] = [
   { value: "plateado", aliases: ["plateado", "plateados", "plateada", "plateadas", "plata", "silver"] },
   { value: "rojo", aliases: ["rojo", "rojos", "roja", "rojas", "red"] },
   { value: "azul", aliases: ["azul", "azules", "azul rey", "azul caribe", "azul naval", "blue"] },
-  { value: "rosado", aliases: ["rosado", "rosados", "rosada", "rosadas", "rosa", "pink"] },
+  // "rose"/"dusty rose" are how a photo analysis names old pink ("rose gold" is
+  // longer and wins at the same span).
+  { value: "rosado", aliases: ["rosado", "rosados", "rosada", "rosadas", "rosa", "pink", "rose", "dusty rose", "blush"] },
   { value: "verde", aliases: ["verde", "verdes", "lima", "esmeralda", "green"] },
   { value: "blanco", aliases: ["blanco", "blancos", "blanca", "blancas", "white"] },
   { value: "negro", aliases: ["negro", "negros", "negra", "negras", "black"] },
@@ -175,7 +177,9 @@ const COLORS: readonly Alias<(typeof PALETA_COLORES_V2)[number]>[] = [
   { value: "menta", aliases: ["menta", "mint"] },
   { value: "crema", aliases: ["crema", "crudo", "ivory"] },
   { value: "nude", aliases: ["nude", "piel"] },
-  { value: "burdeos", aliases: ["burdeos", "vino", "borgona", "burgundy"] },
+  // Wine shades in Spanish and English. Multi-word aliases ("rojo vino", "wine
+  // red") are longer than "rojo"/"red" at the same span, so they stay one color.
+  { value: "burdeos", aliases: ["burdeos", "vino", "borgona", "burgundy", "rojo vino", "vino tinto", "vinotinto", "granate", "marsala", "wine", "wine red", "maroon", "bordeaux", "oxblood"] },
 ];
 
 const FINISHES: readonly Alias<(typeof ACABADOS_CATALOGO_V2)[number]>[] = [

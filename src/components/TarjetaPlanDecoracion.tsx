@@ -14,6 +14,7 @@ import { puntuacionCromatica } from "@/lib/rag/catalog/similitud-color";
 import { ReferenciasEntrenamientoModal, type ReferenciasEvidenciaData } from "@/components/ReferenciasEntrenamientoModal";
 import type { LoraModeSlug } from "@/lib/lora/schema";
 import { esCancelacion, FalloPlanEditar, mensajeErrorRespuesta, mensajeFalloPlanEditar, pedirPlanEditar } from "@/lib/plan/peticion-plan-editar";
+import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
 import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { esSustitucionDeColor } from "@/lib/plan/colores-referencia";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
@@ -31,6 +32,7 @@ import {
   productoConTamanoCliente,
   pulgadasCliente,
   pulgadasConCentimetrosCliente,
+  lineaQuitable,
   resumenPlanCliente,
   supuestoCliente,
   sustitucionesCliente,
@@ -406,7 +408,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === "AbortError") return;
         if (secuencia !== secuenciaEvidenciaRef.current) return;
-        setErrorEvidencia(error instanceof Error ? error.message : "No se pudieron cargar las fotos de entrenamiento.");
+        setErrorEvidencia(mensajeErrorCliente(error, "No se pudieron cargar las fotos de entrenamiento."));
         setEstadoEvidencia("error");
       });
   }
@@ -449,6 +451,13 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     setErrorEdicion(null);
   }
 
+  /** Shape and size of the line a search would replace, so the server only offers compatible balloons. */
+  function lineaObjetivoDe(variantId: string | null | undefined): { forma: string | null; diam_pulg: number | null } | undefined {
+    if (!variantId) return undefined;
+    const linea = plan.estructuras.flatMap((estructura) => estructura.lineas).find((item) => item.variant_id === variantId);
+    return linea ? { forma: linea.forma ?? null, diam_pulg: linea.diam_pulg ?? null } : undefined;
+  }
+
   async function buscarVariantes(evento: FormEvent<HTMLFormElement>) {
     evento.preventDefault();
     const consulta = consultaEdicion.trim();
@@ -456,7 +465,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     setBuscandoEdicion(true);
     setErrorEdicion(null);
     try {
-      const datos = await pedirPlanEditar({ modo: "buscar", consulta, approval_token: plan.approval_token, loraMode }, "No se pudo buscar en el catálogo.") as { candidatos?: ProductoCandidato[] };
+      const datos = await pedirPlanEditar({ modo: "buscar", consulta, approval_token: plan.approval_token, loraMode, ...(modoEdicion === "reemplazar" && lineaObjetivoDe(objetivoEdicion) ? { linea_objetivo: lineaObjetivoDe(objetivoEdicion) } : {}) }, "No se pudo buscar en el catálogo.") as { candidatos?: ProductoCandidato[] };
       setCandidatosEdicion(datos.candidatos ?? []);
       if (!datos.candidatos?.length) setErrorEdicion("No encontré una variante disponible. Prueba con el tamaño y el color, por ejemplo: globo rojo de 5 pulgadas.");
     } catch (error) {
@@ -599,7 +608,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     setBuscandoCatalogo(true);
     setErrorEdicion(null);
     try {
-      const datos = await pedirPlanEditar({ modo: "buscar", consulta, approval_token: plan.approval_token, loraMode }, "No se pudo buscar en el catálogo.", { signal: controlador.signal }) as { candidatos?: ProductoCandidato[] };
+      const datos = await pedirPlanEditar({ modo: "buscar", consulta, approval_token: plan.approval_token, loraMode, ...(lineaObjetivoDe(seleccionCatalogo?.linea.variant_id) ? { linea_objetivo: lineaObjetivoDe(seleccionCatalogo?.linea.variant_id) } : {}) }, "No se pudo buscar en el catálogo.", { signal: controlador.signal }) as { candidatos?: ProductoCandidato[] };
       if (secuencia !== secuenciaCatalogoRef.current) return;
       setResultadosCatalogo(datos.candidatos ?? []);
     } catch (error) {
@@ -825,6 +834,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
                 onAgregar={() => abrirEditor("agregar", estructura.estructura_id)}
                 onEditar={(linea) => abrirEditor("reemplazar", estructura.estructura_id, linea)}
                 onQuitar={(linea) => void quitarVariante(estructura.estructura_id, linea)}
+                puedeQuitar={(linea) => lineaQuitable(linea, lineasVisiblesPorVariante(estructura.lineas), declarada?.materiales)}
                 onVerProducto={(linea, disparador) => { disparadorModalRef.current = disparador; setSeleccionCatalogo({ linea, estructuraId: estructura.estructura_id, estructura: estructura.nombre }); setIntercambioAbierto(false); setRecomendaciones([]); setResultadosCatalogo([]); setErrorEdicion(null); }}
                 modoDev={modoDev}
                 extraLinea={modoDev ? (linea) => {

@@ -3,7 +3,7 @@
 /* Reference photos are local data URLs of the customer's attachment. */
 /* eslint-disable @next/next/no-img-element */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import type { PiezaVistaEnReferencia } from "@/lib/plan/presentacion-cliente";
@@ -11,6 +11,7 @@ import { MuestrasColor } from "@/components/propuesta/MuestrasColor";
 import { EstadoError } from "@/components/propuesta/EstadoError";
 import { imagenDeReferencia, urlImagen } from "./recorte";
 import { vistaAnalisisFoto, type EstadoAnalisisFoto } from "./textos-analisis";
+import { ubicarEtiquetas, type PosicionEtiqueta, type TamanoFoto } from "./etiquetas-analisis";
 
 export type { EstadoAnalisisFoto } from "./textos-analisis";
 
@@ -50,10 +51,9 @@ function PuntosEspera() {
   );
 }
 
-function RecuadroPieza({ pieza, numero, orden }: { pieza: PiezaVistaEnReferencia; numero: number; orden: number }) {
+function RecuadroPieza({ pieza, numero, orden, posicion }: { pieza: PiezaVistaEnReferencia; numero: number; orden: number; posicion: PosicionEtiqueta }) {
   const reducir = useReducedMotion();
   const { x, y, width, height } = pieza.bbox;
-  const anchoEtiqueta = Math.min(1, Math.max(width, 0.46));
   const retraso = reducir ? 0 : 0.15 + orden * 0.4;
   return (
     <>
@@ -66,11 +66,13 @@ function RecuadroPieza({ pieza, numero, orden }: { pieza: PiezaVistaEnReferencia
         transition={{ duration: 0.8, delay: retraso, ease: [0.65, 0, 0.35, 1] }}
       />
       <motion.p
-        className="absolute flex max-w-full -translate-y-full items-center gap-1.5 rounded-full bg-superficie py-1 pl-1 pr-2.5 text-xs shadow-[0_8px_24px_rgb(0_0_0/0.25)] sm:gap-2 sm:py-1.5 sm:pl-1.5 sm:pr-3 sm:text-[13px]"
+        className="absolute z-10 flex max-w-full -translate-y-full items-center gap-1.5 rounded-full bg-superficie py-1 pl-1 pr-2.5 text-xs shadow-[0_8px_24px_rgb(0_0_0/0.25)] sm:gap-2 sm:py-1.5 sm:pl-1.5 sm:pr-3 sm:text-[13px]"
+        data-etiqueta-pieza={numero}
         style={{
-          left: `calc(${Math.min(x, 1 - anchoEtiqueta) * 100}% + 6px)`,
-          top: `calc(${Math.min(y + height, 1) * 100}% - 8px)`,
-          maxWidth: `calc(${anchoEtiqueta * 100}% - 12px)`,
+          // Overlapping boxes stack their labels instead of covering each other (etiquetas-analisis.ts).
+          left: `calc(${posicion.izquierda * 100}% + 6px)`,
+          top: `calc(${posicion.inferior * 100}% - 8px)`,
+          maxWidth: `calc(${posicion.anchoMaximo * 100}% - 12px)`,
         }}
         initial={reducir ? false : { opacity: 0, y: 10, scale: 0.85 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -94,6 +96,19 @@ function RecuadroPieza({ pieza, numero, orden }: { pieza: PiezaVistaEnReferencia
 export function AnalisisFoto({ imagenes, estado, blueprint, error, onReintentar, reintentando = false, onElegirEjemplo, className = "" }: Props) {
   const reducir = useReducedMotion();
   const [seleccion, setSeleccion] = useState(0);
+  const fotoRef = useRef<HTMLImageElement>(null);
+  const [tamanoFoto, setTamanoFoto] = useState<TamanoFoto | undefined>(undefined);
+  useEffect(() => {
+    const foto = fotoRef.current;
+    if (!foto || typeof ResizeObserver === "undefined") return;
+    const medir = () => {
+      if (foto.clientWidth > 0 && foto.clientHeight > 0) setTamanoFoto((previo) => previo?.ancho === foto.clientWidth && previo.alto === foto.clientHeight ? previo : { ancho: foto.clientWidth, alto: foto.clientHeight });
+    };
+    const observador = new ResizeObserver(medir);
+    observador.observe(foto);
+    medir();
+    return () => observador.disconnect();
+  }, [seleccion, imagenes.length]);
   const indice = Math.min(seleccion, Math.max(0, imagenes.length - 1));
   const imagen = imagenes[indice];
   if (!imagen) return null;
@@ -102,6 +117,7 @@ export function AnalisisFoto({ imagenes, estado, blueprint, error, onReintentar,
   const piezasImagen = (vista.caso === "listo" ? vista.piezas : [])
     .map((pieza, orden) => ({ pieza, numero: orden + 1 }))
     .filter(({ pieza }) => imagenDeReferencia(imagenes, pieza.sourceImageId) === imagen);
+  const posiciones = ubicarEtiquetas(piezasImagen.map(({ pieza }) => ({ bbox: pieza.bbox, caracteres: pieza.nombre.length + (pieza.ubicacionCorta ? pieza.ubicacionCorta.length + 2 : 0) })), tamanoFoto);
   const colores = vista.caso === "listo" || vista.caso === "sin_globos" ? vista.colores : [];
   const ambientacion = vista.caso === "listo" ? vista.ambientacion : [];
   const conVelo = vista.caso === "analizando" || vista.caso === "error" || vista.caso === "sin_elementos";
@@ -118,7 +134,7 @@ export function AnalisisFoto({ imagenes, estado, blueprint, error, onReintentar,
         {/* Blurred copy fills the sides of narrow photos; the boxes sit on the sharp one. */}
         <img src={src} alt="" aria-hidden="true" draggable={false} className="absolute inset-0 size-full scale-110 object-cover opacity-70 blur-2xl" />
         <div className="relative inline-block max-w-full overflow-hidden">
-          <img src={src} alt="Tu foto de referencia" draggable={false} className="block h-auto max-h-[min(480px,60vh)] w-auto max-w-full" />
+          <img ref={fotoRef} src={src} alt="Tu foto de referencia" draggable={false} className="block h-auto max-h-[min(480px,60vh)] w-auto max-w-full" />
           <AnimatePresence>
             {conVelo && (
               <motion.div key="velo" aria-hidden="true" className="absolute inset-0 bg-overlay" initial={{ opacity: 0 }} animate={{ opacity: vista.caso === "analizando" ? 0.75 : 0.55 }} exit={{ opacity: 0, transition: { duration: 0.6 } }} />
@@ -136,7 +152,7 @@ export function AnalisisFoto({ imagenes, estado, blueprint, error, onReintentar,
               />
             )}
           </AnimatePresence>
-          {piezasImagen.map(({ pieza, numero }, orden) => <RecuadroPieza key={pieza.elementId} pieza={pieza} numero={numero} orden={orden} />)}
+          {piezasImagen.map(({ pieza, numero }, orden) => <RecuadroPieza key={pieza.elementId} pieza={pieza} numero={numero} orden={orden} posicion={posiciones[orden]!} />)}
         </div>
         {imagenes.length > 1 && (
           <div className="absolute bottom-2 right-2 flex gap-1.5" role="group" aria-label="Fotos de referencia">

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ArrowUp, Loader2, Sparkles } from "lucide-react";
 import type { HappiaPackage } from "@sempertex/happie-package-ia";
 import { ListaRecomendaciones } from "./PaqueteCard";
+import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
 
 type Recomendacion = {
   paquete: HappiaPackage;
@@ -53,7 +54,7 @@ export function ChatFlow({
       setResumen(datos.resumen ?? null);
       setDescripcionEvento("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error desconocido");
+      setError(mensajeErrorCliente(err, "No pudimos traer recomendaciones. Inténtalo de nuevo."));
     } finally {
       setCargando(false);
     }

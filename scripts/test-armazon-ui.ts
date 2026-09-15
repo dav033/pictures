@@ -9,6 +9,8 @@ import { contextoEvento } from "../src/lib/estado/contexto-evento";
 import { presentarError } from "../src/lib/estado/estado-error";
 import { construirUiErrorV1, type AccionUiV1 } from "../src/lib/ia/contracts/ui-error-v1";
 import { crearEsperaAnalisis } from "../src/lib/estado/espera-analisis";
+import { MENSAJE_SIN_CONEXION, mensajeErrorCliente } from "../src/lib/estado/mensaje-error-cliente";
+import { interpretarPreferenciaTema, OPCIONES_TEMA, resolverTema, siguienteTema } from "../src/lib/tema/tema";
 
 // Pasos del asistente.
 let pasos = aplicarEventoHerramienta([], "guardar_brief", "ejecutando");
@@ -56,6 +58,26 @@ const soloDisponibles = presentarError(construirUiErrorV1("ESTILO_REQUIERE_PROPU
 assert.deepEqual(soloDisponibles.acciones, [], "solo acciones que el origen sabe ejecutar");
 assert.equal(presentarError(construirUiErrorV1("ERROR_INTERNO", { mensaje: "x" }), "chat", todas).titulo, "No pude responder");
 console.log("[PASS] estados de error: mensaje redactado, acciones filtradas y fal sin saldo no reintentable");
+
+// D4 del E2E real: sin red el análisis de la foto mostraba «Failed to fetch».
+for (const tecnico of [new TypeError("Failed to fetch"), new TypeError("NetworkError when attempting to fetch resource."), new TypeError("Load failed")]) {
+  assert.equal(mensajeErrorCliente(tecnico, "No se pudo analizar tu foto."), MENSAJE_SIN_CONEXION, `${tecnico.message} → mensaje de conexión`);
+}
+assert.equal(MENSAJE_SIN_CONEXION, "No pudimos conectarnos. Revisa tu conexión e intenta de nuevo.");
+assert.equal(mensajeErrorCliente(new SyntaxError("Unexpected token '<', \"<html>\" is not valid JSON"), "No se pudo analizar tu foto."), "No se pudo analizar tu foto.", "HTML de un proxy: respaldo");
+assert.equal(mensajeErrorCliente(new Error("La foto pesa demasiado."), "respaldo"), "La foto pesa demasiado.", "un mensaje ya redactado pasa tal cual");
+assert.equal(mensajeErrorCliente("boom", "respaldo"), "respaldo");
+assert.equal(mensajeErrorCliente(new Error("  "), "respaldo"), "respaldo");
+console.log("[PASS] errores del navegador: sin «Failed to fetch» ni textos técnicos para el cliente");
+
+// D10 del E2E real: tras tocar el interruptor había que poder volver a seguir al sistema.
+assert.deepEqual(OPCIONES_TEMA.map((opcion) => [opcion.valor, opcion.etiqueta]), [["light", "Claro"], ["dark", "Oscuro"], ["sistema", "Sistema"]], "menú de tema con tres opciones");
+assert.equal(interpretarPreferenciaTema(null), "sistema", "sin elección guardada se sigue al sistema");
+assert.equal(resolverTema("sistema", true), "dark");
+assert.equal(resolverTema("sistema", false), "light");
+assert.equal(resolverTema("light", true), "light", "una elección explícita manda sobre el sistema");
+assert.equal(siguienteTema(resolverTema("sistema", true)), "light", "el cambio rápido sigue alternando lo que se ve");
+console.log("[PASS] tema: Claro / Oscuro / Sistema y cambio rápido");
 
 // Espera del análisis de la foto antes de enviar el turno (revisión iteración 4).
 void (async () => {

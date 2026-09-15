@@ -13,7 +13,7 @@ import { aProductoValidado, validarSeleccion, type ItemRechazado, type ItemValid
 import { actualizarResultadoBusqueda, encolarEscrituraObservabilidad, registrarBusqueda, registrarPlanAudit, registrarSeleccion } from "@/lib/rag/observability/log";
 import { resolverFranja } from "@/lib/rag/presupuesto/resolver";
 import { resolverVariantesPorDespieceBatch, type GrupoDespiece } from "@/lib/rag/tamanos/resolver";
-import { PlanDecoracionSchema } from "@/lib/plan/tipos";
+import { PlanDecoracionSchema, type PlanDecoracion } from "@/lib/plan/tipos";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { aplicarColoresReferencia, extraerRestriccionesUsuario, validarCardinalidadEventoAbierto, validarCoberturaReferencia, validarEstructurasDeGlobosConGlobos, validarEstructurasFueraDeReferencia, validarPresenciaGlobos, validarRangoCreatividad, validarReferenciaSinGlobos, validarRestriccionesPlan, validarUnidadesDeclaradas, MENSAJE_CLIENTE_REFERENCIA_SIN_GLOBOS } from "@/lib/plan/restricciones";
 import { CREATIVIDAD_POR_DEFECTO, perfilCreatividad, type NivelCreatividad } from "@/lib/ia/creatividad";
@@ -37,7 +37,11 @@ import { PythonPlanMappingError } from "@/lib/plan/python-mapper";
 import { resolverPlanConBackend, type ResolucionPlan } from "@/lib/plan/resolver-backend";
 import { mezclasCompatiblesConDiametros } from "@/lib/plan/resolver";
 import { canonizarColoresPlan } from "@/lib/plan/colores-catalogo";
-import { esSustitucionDeColor } from "@/lib/plan/colores-referencia";
+import { conFotosDeCatalogo } from "@/lib/plan/cotizacion-fotos";
+import { sanearPorquesPlan } from "@/lib/plan/porque-cliente";
+import { aplicarFuenteMedidasEspacio, clienteDioMedidasEspacio } from "@/lib/plan/medidas-defecto";
+import { coloresReferenciaOmitidos, esSustitucionDeColor, productosGloboPorColor, type ProductoColorDisponible } from "@/lib/plan/colores-referencia";
+import { buscarGlobosPorColor } from "@/lib/rag/catalog/globos-por-color";
 import { PLAN_DECORACION_ENABLED, RAG_ENABLED, RAG_FRANJAS_ENABLED, featureEnabled } from "@/lib/ia/feature-flags";
 import { isPythonAdapterError, seleccionarBackendPython } from "@/lib/ia/python-adapter";
 import { AllowlistProductoVarianteError } from "@/lib/plan/allowlist-producto-variante";
@@ -88,6 +92,10 @@ export type EstadoConversacion = {
   /** The assistant already told the customer the photo has no balloons and the
    * customer replied (`referenciaSinGlobosYaPreguntada`): do not ask again. */
   referenciaSinGlobosPreguntada: boolean;
+  /** Photo colors `confirmar_plan_decoracion` already sent back once this turn
+   * (COLORES_REFERENCIA_OMITIDOS): a second omission goes on with a notice, so a
+   * search that cannot find the color never loops. */
+  coloresReferenciaReclamados: Set<string>;
   restriccionesUsuario: ReturnType<typeof extraerRestriccionesUsuario>;
   recomendaciones: Producto[];
   decoraciones: DecoracionConProductos[];
@@ -208,6 +216,7 @@ export function crearEstadoConversacion(brief: Brief, solicitudOriginal = "", re
     brief: { ...brief },
     solicitudOriginal,
     referenciaSinGlobosPreguntada: opciones.referenciaSinGlobosPreguntada ?? false,
+    coloresReferenciaReclamados: new Set(),
     restriccionesUsuario: extraerRestriccionesUsuario(solicitudOriginal, brief),
     recomendaciones: [],
     decoraciones: [],
@@ -270,6 +279,46 @@ export function textoAlAgotarVueltas(estado: EstadoConversacion): string {
     return "¡Ya elegí las piezas y se está generando tu visualización! Dame un momento.";
   }
   return "Perdón, me enredé un poco. ¿Me lo repites de otra forma?";
+}
+
+export const ACCION_COLORES_REFERENCIA_OMITIDOS = "La foto de referencia muestra colores dominantes que estas estructuras no usan y el catálogo sí tiene (colores_omitidos). Arma cada estructura con sus colores de la foto: si un producto de la lista tiene en_busqueda true, úsalo en materiales con ese color; si no, búscalo primero con buscar_catalogo_rag usando una consulta de un solo color (por ejemplo \"globo latex redondo rosado\") y usa lo que devuelva. Luego vuelve a confirmar. No cambies los colores de la foto por otros ni anuncies o generes una imagen.";
+export const MENSAJE_CLIENTE_COLORES_REFERENCIA = "Estoy ajustando la propuesta para que lleve los colores de tu foto.";
+
+/**
+ * Photo colors the plan dropped while the catalog offers them (E2E 2026-09-14).
+ * Availability comes from this turn's search first and, for colors it did not
+ * return, from a read-only lookup inside the active catalog pool (the LoRA
+ * dataset when present). A color the customer chose explicitly overrides the
+ * photo, and each structure+color is sent back at most once per turn. A lookup
+ * failure never blocks the plan: the resolver still records the notice.
+ */
+async function coloresReferenciaOmitidosDelTurno(
+  plan: PlanDecoracion,
+  estado: EstadoConversacion,
+  pool: Pool,
+  catalogAllowlist: CatalogAllowlist | undefined,
+) {
+  if (!estado.referenceBlueprint || estado.restriccionesUsuario.colores.length > 0) return [];
+  const pendientes = plan.estructuras.map((estructura) => ({
+    ...estructura,
+    colores_referencia: (estructura.colores_referencia ?? []).filter((color) => !estado.coloresReferenciaReclamados.has(`${estructura.estructura_id}|${color}`)),
+  }));
+  const faltantes = [...new Set(pendientes.flatMap((estructura) => {
+    const usados = new Set(estructura.materiales.map((material) => material.color?.trim().toLowerCase()).filter(Boolean));
+    return estructura.colores_referencia.filter((color) => !usados.has(color.trim().toLowerCase()));
+  }))];
+  if (faltantes.length === 0) return [];
+  const disponibles = new Map<string, ProductoColorDisponible[]>(productosGloboPorColor(estado.ragCandidatos ?? [], faltantes));
+  const sinBusqueda = faltantes.filter((color) => !disponibles.has(color));
+  if (sinBusqueda.length > 0) {
+    try {
+      const catalogo = await buscarGlobosPorColor(pool, sinBusqueda, { variantIds: catalogAllowlist?.variantIds ?? null, catalogSnapshotId: estado.ragCatalogSnapshotId ?? null });
+      for (const [color, productos] of catalogo) disponibles.set(color, productos);
+    } catch (error) {
+      console.warn("[plan] no se pudo consultar colores de la foto en el catálogo", { requestId: estado.ragRequestId, error: error instanceof Error ? error.message : String(error) });
+    }
+  }
+  return coloresReferenciaOmitidos(pendientes, disponibles);
 }
 
 /** Arma el registro de herramientas (nombre → handler) que el motor genérico
@@ -759,7 +808,13 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       // The server, not the model, records the dominant colors of the photo
       // element each structure materializes; the resolver reports the ones the
       // plan does not buy (audit Alta #3, colores-referencia.ts).
-      const planCanonico = aplicarColoresReferencia(canonizarColoresPlan(parseado.data).plan, estado.referenceBlueprint);
+      // Space measures are the customer's or an estimate, never the model's
+      // reading of a photo (E2E 2026-09-14, medidas-defecto.ts).
+      // `porque` is shown to the customer: internal wording is removed before signing.
+      const planCanonico = sanearPorquesPlan(aplicarFuenteMedidasEspacio(
+        aplicarColoresReferencia(canonizarColoresPlan(parseado.data).plan, estado.referenceBlueprint),
+        clienteDioMedidasEspacio(estado.solicitudOriginal, estado.brief.espacio),
+      ));
       const erroresDeIntencion = validarRestriccionesPlan(planCanonico, estado.restriccionesUsuario);
       // Default level: historical rule (open events). Any other level the
       // customer chose: its structure range for every event type.
@@ -891,6 +946,28 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
           elementos_sin_cubrir: elementosSinCubrir,
           accion_requerida: "Para cada elemento sin cubrir: asígnale una estructura con referencia_element_id, o decláralo en referencia_omitida con un motivo real. No anuncies ni generes esta imagen hasta cubrir todos.",
           mensaje_cliente: MENSAJE_CLIENTE_REFERENCIA,
+        };
+      }
+      const coloresOmitidos = await coloresReferenciaOmitidosDelTurno(planCanonico, estado, ragPool, options.catalogAllowlist);
+      if (coloresOmitidos.length > 0) {
+        for (const item of coloresOmitidos) estado.coloresReferenciaReclamados.add(`${item.estructura_id}|${item.color}`);
+        estado.planResuelto = undefined;
+        estado.seleccionFinalIA = [];
+        encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+          requestId: estado.ragRequestId,
+          solicitudOriginal: estado.solicitudOriginal,
+          restricciones: estado.restriccionesUsuario,
+          candidateProductIds: [...estado.ragIdsRecuperados],
+          status: "COLORES_REFERENCIA_OMITIDOS",
+          error: coloresOmitidos.map((item) => `${item.estructura_id}:${item.color}`).join(" | "),
+        }));
+        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
+        return {
+          ok: false,
+          status: "COLORES_REFERENCIA_OMITIDOS",
+          colores_omitidos: coloresOmitidos,
+          accion_requerida: ACCION_COLORES_REFERENCIA_OMITIDOS,
+          mensaje_cliente: MENSAJE_CLIENTE_COLORES_REFERENCIA,
         };
       }
       if (featureEnabled("SCENE_PLAN_V2_SHADOW") && estado.solicitudOriginal.trim()) {
@@ -1077,7 +1154,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         creatividad: perfilCreatividad(options.creatividad).nivel,
       });
       estado.planResuelto = resuelto;
-      estado.cotizacion = resolucion.cotizacion;
+      estado.cotizacion = conFotosDeCatalogo(resolucion.cotizacion, resuelto.compras);
       // La cotización se muestra, pero generar queda bloqueado hasta la
       // aprobación explícita del cliente en la tarjeta del plan.
       estado.seleccionFinalIA = [];

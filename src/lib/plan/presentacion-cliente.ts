@@ -333,6 +333,29 @@ export function coloresCliente(lineas: ReadonlyArray<{ color: string | null; aca
  * descripción libre del concepto): "Un semiarco asimétrico a la derecha y una
  * columna a la izquierda, en azul, blanco y dorado."
  */
+function clavePieza(estructura: EstructuraParaDescribir): string {
+  return estructura.oficialId ?? `nombre:${sinTildes(estructura.nombre.trim())}`;
+}
+
+/** Same official piece (or same free name) declared again in the same place; never a lateral pair. */
+function mismaPiezaYLugar(a: EstructuraParaDescribir, b: EstructuraParaDescribir): boolean {
+  if (clavePieza(a) !== clavePieza(b) || a.ubicacion !== b.ubicacion) return false;
+  return !esParLateral(b as { ubicacion: Ubicacion; repeticiones: number });
+}
+
+/**
+ * "dos bouquets de globos en el piso, al frente", "dos columnas a la
+ * izquierda": `veces` pieces in one single place (never "a ambos lados",
+ * because they all share the same `ubicacion`).
+ */
+function describirVariasEnLugar(estructura: EstructuraParaDescribir, veces: number): string {
+  const ubicacion = UBICACION_PARA_CLIENTE[estructura.ubicacion] ?? "en el espacio";
+  if (!estructura.oficialId) return `${NUMERO.format(veces)} × ${minusculaInicial(estructura.nombre.trim())} ${ubicacion}`;
+  const gramatica = GRAMATICA_OFICIAL[estructura.oficialId];
+  const sufijo = ubicacionRedundante(estructura.oficialId, estructura.ubicacion) ? "" : ` ${ubicacion}`;
+  return `${CARDINALES[veces] ?? NUMERO.format(veces)} ${gramatica.plural}${sufijo}`;
+}
+
 export function resumenPlanCliente(estructuras: readonly EstructuraParaDescribir[], colores: readonly string[]): string {
   // Two single pieces of the same official structure on opposite sides read as
   // a pair (hallazgo #10): "dos semiarcos, uno a cada lado".
@@ -347,6 +370,18 @@ export function resumenPlanCliente(estructuras: readonly EstructuraParaDescribir
       usadas.add(pareja);
       const gramatica = GRAMATICA_OFICIAL[estructura.oficialId];
       piezas.push(`dos ${gramatica.plural}, ${gramatica.genero === "f" ? "una" : "uno"} a cada lado`);
+      return;
+    }
+    // The same piece repeated in the same place (D6 del E2E real): "un bouquet
+    // de globos en el piso, al frente y un bouquet de globos en el piso, al
+    // frente" → "dos bouquets de globos en el piso, al frente".
+    const iguales = esParLateral(estructura as { ubicacion: Ubicacion; repeticiones: number })
+      ? []
+      : estructuras.flatMap((otra, otroIndice) => otroIndice > indice && !usadas.has(otroIndice) && mismaPiezaYLugar(estructura, otra) ? [otroIndice] : []);
+    if (iguales.length) {
+      for (const otroIndice of iguales) usadas.add(otroIndice);
+      const veces = [estructura, ...iguales.map((otroIndice) => estructuras[otroIndice]!)].reduce((suma, pieza) => suma + Math.max(1, pieza.repeticiones), 0);
+      piezas.push(describirVariasEnLugar(estructura, veces));
       return;
     }
     piezas.push(describirEstructuraCliente(estructura, "indefinido"));
@@ -617,4 +652,30 @@ export function coloresObservadosCliente(blueprint: ReferenceBlueprintV2, maximo
     if (muestras.size >= maximo) break;
   }
   return [...muestras.values()];
+}
+
+type MaterialParaQuitar = { product_id: string; variant_id?: string; color?: string };
+type LineaParaQuitar = { product_id: string; variant_id: string; color: string | null; quitable?: boolean };
+
+/**
+ * Whether "Quitar" can be offered on a visible line of a structure (D7 del
+ * E2E real). /api/plan-editar removes the line's whole material and rejects
+ * removing the only one ("único material"), so the button is hidden when the
+ * structure would be left without material: a single visible line, a single
+ * declared material, or a line that matches no declared material (the server
+ * answers 409). An explicit `quitable` from the backend wins.
+ */
+export function lineaQuitable(
+  linea: LineaParaQuitar,
+  lineasVisibles: readonly LineaParaQuitar[],
+  materiales: readonly MaterialParaQuitar[] | undefined,
+): boolean {
+  if (typeof linea.quitable === "boolean") return linea.quitable;
+  if (lineasVisibles.length <= 1) return false;
+  if (!materiales) return true;
+  if (materiales.length <= 1) return false;
+  const color = sinTildes(linea.color ?? "").trim();
+  const propio = materiales.findIndex((material) => material.product_id === linea.product_id && material.variant_id === linea.variant_id);
+  const indice = propio >= 0 ? propio : materiales.findIndex((material) => material.product_id === linea.product_id && sinTildes(material.color ?? "").trim() === color);
+  return indice >= 0;
 }

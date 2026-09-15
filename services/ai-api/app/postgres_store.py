@@ -263,6 +263,10 @@ class PostgresOperationalStore:
             min_size=self._pool_min_size,
             max_size=self._pool_max_size,
             command_timeout=self._command_timeout_seconds,
+            # Below Neon's ~5 minute idle cut (asyncpg's default is exactly 300 s).
+            # This store writes, so it closes idle connections early but never
+            # replays a statement.
+            max_inactive_connection_lifetime=60.0,
         )
         self._pool = cast(AsyncPool, created_pool)
 

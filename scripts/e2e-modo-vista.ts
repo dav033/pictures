@@ -154,6 +154,18 @@ async function temaYGaleria(browser: Browser, cookie: { name: string; value: str
   check("tema: la elección persiste al recargar (script antes de pintar)", (await tema()) === "dark");
   await page.getByTestId("interruptor-tema").click();
   check("tema: volver a claro", (await tema()) === "light");
+  // D10: el menú ⋯ permite volver a seguir al sistema sin romper el cambio rápido.
+  await page.getByTestId("menu-app").click();
+  await page.getByRole("menuitemradio", { name: "Claro" }).waitFor();
+  check("tema: el menú marca Claro como elección actual", (await page.getByRole("menuitemradio", { name: "Claro" }).getAttribute("aria-checked")) === "true" && (await page.getByRole("menuitemradio", { name: "Sistema" }).getAttribute("aria-checked")) === "false");
+  await page.getByRole("menuitemradio", { name: "Sistema" }).click();
+  const guardadoTema = await page.evaluate(() => localStorage.getItem("demo-decoracion:tema"));
+  check("tema: «Sistema» quita la elección y vuelve a seguir al sistema", (await tema()) === null && guardadoTema === null, String(guardadoTema));
+  check("tema: al elegir, el foco vuelve al botón del menú", await page.getByTestId("menu-app").evaluate((boton) => boton === document.activeElement));
+  await page.emulateMedia({ colorScheme: "dark" });
+  const fondoOscuro = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  await page.emulateMedia({ colorScheme: "light" });
+  check("tema: con «Sistema» sigue al esquema del sistema", fondoOscuro !== (await page.evaluate(() => getComputedStyle(document.body).backgroundColor)), fondoOscuro);
   check("galería: 10 fotos de ejemplo con crédito", (await page.locator("[data-testid^='ejemplo-ejemplo-']").count()) === 10 && (await page.getByText("Fotos de ejemplo · Pexels").count()) === 1);
   await page.getByTestId("ejemplo-ejemplo-01").click();
   await page.locator("[data-adjunto='referencia']").first().waitFor({ timeout: 20_000 });
@@ -189,6 +201,21 @@ async function temaYGaleria(browser: Browser, cookie: { name: string; value: str
   const miniaturaTrasRecargar = await page.locator(".msg-usuario-foto").first().getAttribute("src").catch(() => null);
   const guardado = await page.evaluate(() => sessionStorage.getItem("demo_chat_v4")?.length ?? 0);
   check("recargar conserva la miniatura de la foto del turno", Boolean(miniaturaTrasRecargar?.startsWith("data:image/jpeg")) && guardado < 400_000, `${guardado} caracteres guardados`);
+  // D5: la imagen aprobada y la aprobación sobreviven a la recarga; no se ofrece aprobar (pagar) otra vez.
+  const imagenTrasRecargar = await page.locator("img[alt^='Visualización']").first().getAttribute("src", { timeout: 10_000 }).catch(() => null);
+  check("recargar conserva la imagen aprobada (versión reducida)", Boolean(imagenTrasRecargar?.startsWith("data:image/jpeg")), imagenTrasRecargar?.slice(0, 30) ?? "sin imagen");
+  const aprobarTrasRecargar = page.getByTestId("aprobar-generar-plan");
+  check("recargar no vuelve a ofrecer «Aprobar»", (await aprobarTrasRecargar.innerText()).trim() === "Aprobación registrada" && await aprobarTrasRecargar.isDisabled(), (await aprobarTrasRecargar.innerText()).trim());
+  // Sin espacio para la imagen: aviso «Ya generaste esta imagen» con opción explícita de volver a crearla.
+  await page.evaluate(() => {
+    const clave = "demo_generaciones_v1";
+    const datos = JSON.parse(sessionStorage.getItem(clave) ?? "{}") as { generaciones?: Array<{ imagen: string | null }> };
+    sessionStorage.setItem(clave, JSON.stringify({ ...datos, generaciones: (datos.generaciones ?? []).map((generacion) => ({ ...generacion, imagen: null })) }));
+  });
+  await abrir(page);
+  await page.getByTestId("aviso-imagen-ya-generada").waitFor({ timeout: 20_000 }).catch(() => undefined);
+  check("sin imagen guardada: «Ya generaste esta imagen» y «Volver a crear la imagen»", (await page.getByText("Ya generaste esta imagen").count()) === 1 && (await page.getByRole("button", { name: "Volver a crear la imagen" }).count()) === 1);
+  check("sin imagen guardada: tampoco se ofrece «Aprobar»", (await page.getByTestId("aprobar-generar-plan").innerText()).trim() === "Aprobación registrada" && cuerposGenerate.length === 1, `${cuerposGenerate.length} llamadas a /api/generate`);
   check("tema y galería: sin errores de runtime", errores.length === 0, errores.join(" | "));
   await cerrar();
 }

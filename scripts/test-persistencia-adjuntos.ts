@@ -14,6 +14,17 @@ import {
   MAX_IMAGENES_GUARDADAS,
   type AdjuntosTurno,
 } from "../src/lib/estado/persistencia-adjuntos";
+import {
+  elegirImagenReducida,
+  generacionParaRestaurar,
+  leerGeneraciones,
+  MAX_CARACTERES_IMAGEN_GENERADA,
+  MAX_GENERACIONES_GUARDADAS,
+  MAX_IMAGENES_GENERADAS_GUARDADAS,
+  registrarGeneracion,
+  serializarGeneraciones,
+  sinImagenes,
+} from "../src/lib/estado/persistencia-generacion";
 
 type Mensaje = { id: string; adjuntos?: AdjuntosTurno };
 
@@ -58,3 +69,41 @@ assert.equal(imagenesSinMiniatura(muchos, new Map()).length, MAX_IMAGENES_GUARDA
 const enorme = new Map([[claveImagen(referencia), `data:image/jpeg;base64,${"A".repeat(MAX_CARACTERES_MINIATURA + 1)}`]]);
 assert.equal(aligerarAdjuntos([mensajes[0]!], enorme)[0]!.adjuntos?.referencias.length ?? 0, 0);
 console.log("[PASS] persistencia de adjuntos: miniaturas livianas, ids estables y topes de tamaño");
+
+// D5 del E2E real: la propuesta aprobada y su imagen reducida sobreviven a la recarga, por plan_hash.
+{
+  const imagen = (semilla: string, largo = 2_000) => `data:image/jpeg;base64,${semilla.repeat(largo)}`;
+  let guardadas = registrarGeneracion([], "hash-a", null, 1);
+  assert.deepEqual(guardadas, [{ planHash: "hash-a", imagen: null, guardadaEn: 1 }], "la aprobación se guarda aunque la imagen aún no esté");
+  guardadas = registrarGeneracion(guardadas, "hash-a", imagen("a"), 2);
+  assert.equal(guardadas.length, 1, "el mismo plan no se duplica");
+  assert.equal(guardadas[0]!.imagen, imagen("a"));
+  assert.equal(registrarGeneracion(guardadas, "hash-a", undefined, 3)[0]!.imagen, imagen("a"), "undefined conserva la imagen ya guardada");
+
+  // Recargar: se restaura la aprobación más reciente cuyo plan sigue en la conversación.
+  const texto = serializarGeneraciones(registrarGeneracion(guardadas, "hash-b", imagen("b"), 5));
+  const leidas = leerGeneraciones(texto);
+  assert.equal(generacionParaRestaurar(leidas, new Set(["hash-a", "hash-b"]))!.planHash, "hash-b");
+  assert.equal(generacionParaRestaurar(leidas, new Set(["hash-a"]))!.imagen, imagen("a"));
+  assert.equal(generacionParaRestaurar(leidas, new Set(["otro"])), null, "un plan que ya no está no se restaura");
+
+  // Presupuesto: una imagen reducida demasiado grande no se guarda, pero la aprobación sí.
+  const enorme = `data:image/jpeg;base64,${"Z".repeat(MAX_CARACTERES_IMAGEN_GENERADA)}`;
+  assert.equal(elegirImagenReducida([enorme, imagen("m"), imagen("s", 10)]), imagen("m"), "se usa la primera reducción que cabe");
+  assert.equal(elegirImagenReducida([enorme]), null);
+  const sinCaber = registrarGeneracion([], "hash-c", enorme, 6);
+  assert.deepEqual(sinCaber, [{ planHash: "hash-c", imagen: null, guardadaEn: 6 }], "sin imagen que quepa → «Ya generaste esta imagen»");
+
+  // Tope de imágenes: solo las aprobaciones más recientes conservan la suya; el total queda acotado.
+  let muchas: ReturnType<typeof registrarGeneracion> = [];
+  for (let indice = 0; indice < MAX_GENERACIONES_GUARDADAS + 2; indice += 1) muchas = registrarGeneracion(muchas, `h${indice}`, imagen(String(indice), 40_000), indice);
+  assert.equal(muchas.length, MAX_GENERACIONES_GUARDADAS);
+  assert.equal(muchas.filter((generacion) => generacion.imagen).length, MAX_IMAGENES_GENERADAS_GUARDADAS);
+  assert.ok(serializarGeneraciones(muchas).length <= MAX_IMAGENES_GENERADAS_GUARDADAS * MAX_CARACTERES_IMAGEN_GENERADA + 2_000, "presupuesto total acotado");
+  assert.deepEqual(sinImagenes(muchas).filter((generacion) => generacion.imagen), [], "degradación si sessionStorage rechaza la escritura");
+
+  // Datos corruptos o manipulados no rompen la carga.
+  assert.deepEqual(leerGeneraciones("{no json"), []);
+  assert.deepEqual(leerGeneraciones(JSON.stringify({ generaciones: [{ planHash: "x", imagen: "javascript:alert(1)", guardadaEn: 1 }, { planHash: 3 }] })), []);
+  console.log("[PASS] persistencia de la generación aprobada: por plan_hash, imagen reducida con presupuesto y degradación");
+}

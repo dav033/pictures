@@ -9,6 +9,7 @@ import { RotateCcw, Trash2 } from "lucide-react";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import { useBorradorCotizacion, type LineaBorrador } from "@/lib/estado/borrador-cotizacion";
+import { idsSinFoto, useImagenesCatalogo } from "@/lib/estado/imagenes-catalogo";
 import { contar, productoCliente, pulgadasCliente } from "@/lib/plan/presentacion-cliente";
 import { NumeroAnimado } from "@/components/propuesta/NumeroAnimado";
 
@@ -55,6 +56,8 @@ export function TarjetaCotizacion({ cotizacion, editable = false, onAplicar, ref
   const [editando, setEditando] = useState(false);
   const reducir = useReducedMotion();
   const puedeEditar = editable && Boolean(onAplicar);
+  // Lines from a plan quote carry no photo: load it from the catalog like the proposal card does (D9).
+  const { imagenes: imagenesCatalogo } = useImagenesCatalogo(idsSinFoto(cotizacion.lineas));
   const elementosReferencia = new Set((referenceBlueprint?.elements ?? []).map((elemento) => elemento.element_id));
 
   function aplicar(): void {
@@ -103,6 +106,7 @@ export function TarjetaCotizacion({ cotizacion, editable = false, onAplicar, ref
           const compra = compraLinea(linea);
           const comprado = (linea.paquetes ?? 0) * (linea.unidadesPaquete ?? 0);
           const proporcion = comprado > 0 ? Math.min(1, linea.cantidadNecesaria / comprado) : 0;
+          const foto = linea.foto ?? (linea.varianteId ? imagenesCatalogo[linea.varianteId] : undefined);
           const deLaFoto = linea.referenciaElementIds?.some((id) => elementosReferencia.has(id)) ?? false;
           return (
             <motion.li
@@ -113,7 +117,7 @@ export function TarjetaCotizacion({ cotizacion, editable = false, onAplicar, ref
               className="grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 border-b border-borde-suave py-3 last:border-b-0 @xl:grid-cols-[3rem_minmax(0,1fr)_9.5rem_8rem_5.5rem]"
             >
               <span className="row-span-2 grid size-12 place-items-center overflow-hidden rounded-xl border border-borde-suave bg-white @xl:row-span-1">
-                {linea.foto ? <img src={linea.foto} alt="" width={48} height={48} loading="lazy" className="size-full object-contain" /> : <span aria-hidden className="size-full bg-superficie-2" />}
+                {foto ? <img src={foto} alt="" width={48} height={48} loading="lazy" className="size-full object-contain" /> : <span aria-hidden className="size-full bg-superficie-2" />}
               </span>
               <span className="min-w-0">
                 <span className={`block truncate text-sm font-medium text-texto ${linea.excluida ? "line-through" : ""}`}>{nombre}</span>

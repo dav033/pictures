@@ -370,9 +370,24 @@ def _candidate(row: Mapping[str, object], snapshot_id: str) -> Candidate | None:
     )
 
 
+def _normalize_space_source(space: Mapping[str, object]) -> dict[str, object]:
+    """A space measured "from the photo" is an estimate; mirror of ``normalizarFuenteEspacio``.
+
+    The model does not measure photos: ``fuente: "foto"`` only states that the
+    type of space was seen in a photo. Any of ``ancho_m``/``alto_m``/``largo_m``
+    with that source becomes ``fuente: "supuesto"`` and keeps its numbers.
+    """
+    normalized = dict(space)
+    has_measures = any(normalized.get(key) is not None for key in ("ancho_m", "alto_m", "largo_m"))
+    if normalized.get("fuente") == "foto" and has_measures:
+        normalized["fuente"] = "supuesto"
+    return normalized
+
+
 def _complete_plan(raw_plan: Mapping[str, object]) -> dict[str, object]:
     plan = {key: value for key, value in raw_plan.items()}
-    space = _mapping(plan.get("espacio"))
+    space = _normalize_space_source(_mapping(plan.get("espacio")))
+    plan["espacio"] = space
     exterior = _EXTERIOR.search(_text(space.get("tipo")) or "") is not None
     raw_assumptions = plan.get("supuestos", [])
     assumptions = (
@@ -1265,9 +1280,124 @@ def _resolve_structures(
     return structures, substitutions, uncovered, warnings
 
 
+def _presentation_key(line: Mapping[str, object]) -> str:
+    raw_shape = line.get("forma")
+    shape = raw_shape if isinstance(raw_shape, str) else ""
+    return "|".join(
+        (
+            str(line.get("product_id")),
+            _normalize(_text(line.get("color")) or ""),
+            shape,
+            _format_number(float(cast(float, _number(line.get("diam_pulg"))))),
+        )
+    )
+
+
+def _reoptimize_presentations(
+    structures: Sequence[dict[str, object]],
+    candidates_by_product: Mapping[str, Sequence[Candidate]],
+    allowlist: Mapping[str, set[str]],
+) -> dict[str, int]:
+    """Buy each product+size+color once for the whole plan; mirror of ``reoptimizarPresentaciones``.
+
+    The need of every structure is added up and covered with the cheapest
+    combination of allowlisted presentations (x12, x20, x50...). Each structure
+    line is then rebuilt against the chosen purchases, in structure order, so
+    every purchase keeps the structures it covers. Regression (E2E 2026-09-14):
+    the same Azul Rey R-12 was bought as x12 for the arch and x20 for the
+    columns, about 15 % more than one consolidated purchase. Returns the
+    packages chosen per variant.
+    """
+    groups: dict[str, list[Mapping[str, object]]] = {}
+    for structure in structures:
+        for line in _mappings(structure.get("lineas")):
+            if _number(line.get("diam_pulg")) is None:
+                continue
+            groups.setdefault(_presentation_key(line), []).append(line)
+    packages: dict[str, int] = {}
+    optimizations: dict[str, tuple[list[dict[str, object]], dict[str, Candidate]]] = {}
+    for key, lines in groups.items():
+        first = lines[0]
+        product_id = str(first.get("product_id"))
+        color = _text(first.get("color"))
+        permitted = allowlist.get(product_id) or set()
+        product_candidates = candidates_by_product.get(product_id, ())
+        options = [
+            candidate
+            for candidate in product_candidates
+            if candidate.variant_id in permitted
+            and candidate.diameter_inches == _number(first.get("diam_pulg"))
+            and candidate.shape == first.get("forma")
+            and (not color or _normalize(color) in candidate.colors)
+        ]
+        coverage = _optimizar_cobertura(
+            sum(_integer(line.get("unidades")) or 0 for line in lines),
+            [
+                {
+                    "variant_id": candidate.variant_id,
+                    "unidades_paquete": candidate.units_per_package,
+                    "precio": candidate.price,
+                }
+                for candidate in options
+            ],
+        )
+        if coverage is None:
+            continue
+        purchases = [dict(item) for item in cast(list[dict[str, object]], coverage["compras"])]
+        for purchase in purchases:
+            variant_id = str(purchase["variant_id"])
+            packages[variant_id] = packages.get(variant_id, 0) + int(
+                cast(int, purchase["paquetes"])
+            )
+        optimizations[key] = (
+            purchases,
+            {candidate.variant_id: candidate for candidate in product_candidates},
+        )
+
+    for structure in structures:
+        new_lines: list[dict[str, object]] = []
+        for line in _mappings(structure.get("lineas")):
+            if _number(line.get("diam_pulg")) is None:
+                new_lines.append(dict(line))
+                continue
+            optimization = optimizations.get(_presentation_key(line))
+            if optimization is None:
+                new_lines.append(dict(line))
+                continue
+            purchases, candidates = optimization
+            remaining = _integer(line.get("unidades")) or 0
+            for purchase in purchases:
+                assigned = min(remaining, int(cast(int, purchase["capacidad"])))
+                if assigned <= 0:
+                    continue
+                candidate = candidates.get(str(purchase["variant_id"]))
+                if candidate is None:
+                    continue
+                rebuilt = _line(
+                    str(structure.get("estructura_id")),
+                    candidate,
+                    assigned,
+                    _text(line.get("color")),
+                    _number(line.get("diam_pulg")),
+                )
+                rebuilt["sustitucion"] = line.get("sustitucion")
+                new_lines.append(rebuilt)
+                purchase["capacidad"] = int(cast(int, purchase["capacidad"])) - assigned
+                remaining -= assigned
+                if remaining <= 0:
+                    break
+            if remaining > 0:
+                new_lines.append({**line, "unidades": remaining})
+        structure["lineas"] = new_lines
+        structure["total_unidades"] = sum(_integer(line.get("unidades")) or 0 for line in new_lines)
+        structure["mezcla_real"] = _mix_real(new_lines)
+    return packages
+
+
 def _consolidate(
     structures: Sequence[Mapping[str, object]],
     candidate_by_variant: Mapping[str, Candidate],
+    packages_by_variant: Mapping[str, int] | None = None,
 ) -> tuple[list[dict[str, object]], dict[str, int], dict[str, int]]:
     grouped: dict[str, dict[str, object]] = {}
     for structure in structures:
@@ -1329,8 +1459,16 @@ def _consolidate(
     purchases = sorted(grouped.values(), key=lambda item: str(item["variant_id"]))
     for purchase in purchases:
         candidate = candidate_by_variant[str(purchase["variant_id"])]
-        packages = max(
-            1, math.ceil(int(cast(int, purchase["design_quantity"])) / candidate.units_per_package)
+        optimized = (packages_by_variant or {}).get(str(purchase["variant_id"]))
+        packages = (
+            optimized
+            if optimized is not None
+            else max(
+                1,
+                math.ceil(
+                    int(cast(int, purchase["design_quantity"])) / candidate.units_per_package
+                ),
+            )
         )
         capacity = packages * candidate.units_per_package
         cost = packages * candidate.price
@@ -1682,7 +1820,11 @@ def _build_resolved(
     structures, substitutions, uncovered, warnings = _resolve_structures(
         plan, candidates_by_product, candidate_by_variant, allowlist
     )
-    purchases, reserve, _allocations = _consolidate(structures, candidate_by_variant)
+    # Consolidating one product+size+color across structures is not gated by
+    # PLAN_COST_OPTIMIZER_V2: "each package is bought once" is the quote the
+    # customer sees. The flag only gates the commercial alternatives.
+    packages = _reoptimize_presentations(structures, candidates_by_product, allowlist)
+    purchases, reserve, _allocations = _consolidate(structures, candidate_by_variant, packages)
     for purchase in purchases:
         design = int(cast(int, purchase["design_quantity"]))
         if design > 0 and int(cast(int, purchase["sobrante"])) / design > 0.4:

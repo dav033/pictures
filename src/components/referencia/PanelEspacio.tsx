@@ -49,21 +49,46 @@ function unir(partes: string[]): string {
 }
 
 /**
+ * Where the venue measurements come from, for the customer (contract of
+ * `fix-backend`, iteración 4, D2): the backend normalizes `fuente: "foto"`
+ * with numbers to `"supuesto"` and only uses `"cliente"` when the customer's
+ * text or brief gave them. The UI applies the same rule defensively, so an
+ * older plan with "3 × 3 × 2,5 m" and `fuente: "foto"` on a huge hall is
+ * never presented as measured.
+ * - "cliente": the customer gave them (the only real measurements).
+ * - "estimadas": any other number, an estimate for the proposal.
+ * - "ninguna": no numbers at all.
+ */
+export type OrigenMedidasEspacio = "cliente" | "estimadas" | "ninguna";
+
+export function origenMedidasEspacio(espacio: Espacio | undefined): OrigenMedidasEspacio {
+  if (!espacio || medidasEspacioCliente(espacio).length === 0) return "ninguna";
+  return espacio.fuente === "cliente" ? "cliente" : "estimadas";
+}
+
+/** Sentence under the venue photo. It never claims the assistant measured anything. */
+export function textoEspacioCliente(espacio: Espacio | undefined): string {
+  const medidas = unir(medidasEspacioCliente(espacio));
+  switch (origenMedidasEspacio(espacio)) {
+    case "cliente":
+      return `Usé las medidas que me diste: ${medidas}.`;
+    case "estimadas":
+      return `Medidas estimadas para la propuesta: unos ${medidas}. Confírmalas o dime las reales.`;
+    default:
+      return "Usaré esta foto como tu espacio. La propuesta usa medidas estándar; si sabes el ancho de la pared, dímelo y la ajusto.";
+  }
+}
+
+/**
  * The customer's venue photo (maqueta EspacioAnalisis). Zones and
- * measurements appear only when they are real data: anchors detected on this
- * photo and `espacio` measured from the photo. Otherwise it shows the photo
- * with an honest sentence and no invented numbers.
+ * measurements are never drawn as if they were measured: zones are anchors
+ * detected on this photo, and numbers stay in the sentence, labeled as the
+ * customer's or as estimates.
  */
 export function PanelEspacio({ foto, espacio, className = "" }: Props) {
   const reducir = useReducedMotion();
   const zonas = anclasDe(espacio);
-  const medidas = medidasEspacioCliente(espacio);
-  const medidasDeFoto = espacio?.fuente === "foto" && medidas.length > 0;
-  const texto = medidasDeFoto
-    ? `Medí tu espacio desde la foto: unos ${unir(medidas)}.`
-    : espacio?.fuente === "cliente" && medidas.length > 0
-      ? `Usé las medidas que me diste: ${unir(medidas)}.`
-      : "Usaré esta foto como tu espacio. No saqué medidas de la foto, así que la propuesta usa medidas estándar; si sabes el ancho de la pared, dímelo y la ajusto.";
+  const texto = textoEspacioCliente(espacio);
 
   return (
     <motion.section
@@ -89,21 +114,6 @@ export function PanelEspacio({ foto, espacio, className = "" }: Props) {
               <span className="absolute left-1.5 top-1.5 rounded-full bg-superficie px-2 py-0.5 text-[11px] font-semibold text-texto shadow-sm">{NOMBRE_ANCLA[zona.tipo] ?? "Zona"}</span>
             </motion.div>
           ))}
-          {medidasDeFoto && (
-            <ul className="absolute bottom-2.5 left-2.5 flex flex-wrap gap-1.5" aria-label="Medidas tomadas de la foto">
-              {medidas.map((medida, indice) => (
-                <motion.li
-                  key={medida}
-                  initial={reducir ? false : { opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.35, delay: reducir ? 0 : 0.6 + indice * 0.2 }}
-                  className="rounded-full bg-superficie px-2.5 py-1 text-xs font-semibold text-texto shadow-[0_6px_18px_rgb(0_0_0/0.25)]"
-                >
-                  ≈ {medida}
-                </motion.li>
-              ))}
-            </ul>
-          )}
         </div>
       </div>
       <p className="px-4 pb-5 pt-4 text-[15px] leading-snug text-texto sm:px-5.5">{texto}</p>

@@ -2,11 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { MoreHorizontal } from "lucide-react";
+import { Check, MoreHorizontal } from "lucide-react";
 
 export type ItemMenu =
   | { tipo: "enlace"; id: string; etiqueta: string; href: string; icono?: ReactNode }
   | { tipo: "accion"; id: string; etiqueta: string; onSeleccionar: () => void; deshabilitado?: boolean; icono?: ReactNode }
+  /** One choice of a group (e.g. the theme): `role="menuitemradio"` with `aria-checked`. */
+  | { tipo: "opcion"; id: string; etiqueta: string; marcado: boolean; onSeleccionar: () => void; icono?: ReactNode }
+  /** Visible, non-focusable label of the group that follows. */
+  | { tipo: "titulo"; id: string; etiqueta: string }
   | { tipo: "separador"; id: string };
 
 type Props = {
@@ -22,7 +26,7 @@ type Props = {
 };
 
 function itemsEnfocables(contenedor: HTMLElement | null): HTMLElement[] {
-  return Array.from(contenedor?.querySelectorAll<HTMLElement>("[role='menuitem']:not([aria-disabled='true'])") ?? []);
+  return Array.from(contenedor?.querySelectorAll<HTMLElement>("[role='menuitem']:not([aria-disabled='true']), [role='menuitemradio']") ?? []);
 }
 
 /**
@@ -106,6 +110,28 @@ export function MenuApp({ items, etiqueta = "Más opciones", icono, claseBoton =
         >
           {items.map((item) => {
             if (item.tipo === "separador") return <div key={item.id} role="separator" className="app-menu-separador" />;
+            if (item.tipo === "titulo") return <div key={item.id} role="presentation" className="app-menu-titulo">{item.etiqueta}</div>;
+            if (item.tipo === "opcion") {
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={item.marcado}
+                  tabIndex={-1}
+                  data-testid={`${testId}-${item.id}`}
+                  className="app-menu-item"
+                  onClick={() => {
+                    cerrar(true);
+                    item.onSeleccionar();
+                  }}
+                >
+                  {item.icono && <span className="text-texto-suave" aria-hidden="true">{item.icono}</span>}
+                  <span className="flex-1">{item.etiqueta}</span>
+                  <Check className={`size-4 text-acento ${item.marcado ? "" : "invisible"}`} aria-hidden="true" />
+                </button>
+              );
+            }
             const contenido = (
               <>
                 {item.icono && <span className="text-texto-suave" aria-hidden="true">{item.icono}</span>}

@@ -19,6 +19,7 @@ import {
 import type { HappiaPackage } from "@sempertex/happie-package-ia";
 import { ArteTipoEvento } from "./Tema";
 import { ListaRecomendaciones } from "./PaqueteCard";
+import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
 
 type Opciones = {
   tipos: { etiqueta: string; clave: string; cantidad: number }[];
@@ -156,7 +157,7 @@ export function WizardFlow({
         setOpciones(datos);
         if (datos.invitadosSugeridos) setInvitados(datos.invitadosSugeridos.min);
       })
-      .catch((err) => setErrorOpciones(err instanceof Error ? err.message : "Error desconocido"))
+      .catch((err) => setErrorOpciones(mensajeErrorCliente(err, "No pudimos cargar las opciones. Inténtalo de nuevo.")))
       .finally(() => setCargandoOpciones(false));
   }, []);
 
@@ -187,7 +188,7 @@ export function WizardFlow({
       setResumen(datos.resumen ?? null);
       setPaso(5);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error desconocido");
+      setError(mensajeErrorCliente(err, "No pudimos traer recomendaciones. Inténtalo de nuevo."));
     } finally {
       setCargando(false);
     }
