@@ -31,6 +31,27 @@ async function main(): Promise<void> {
   assert.deepEqual(mezclasCompatiblesConDiametros([]), []);
   ok("mezclas compatibles: R-5 exacto para organica_fina; vecinos admisibles para el resto");
 
+  // 1b. W3.5: lo que la descripción de `mezcla` le recomienda al modelo tiene
+  //     que ser lo que el resolver puede cubrir (sustitucionAdmisible), o el
+  //     plan sale directo a SIN_COBERTURA.
+  const { HERRAMIENTAS_PLAN: herramientasPlan } = await import("../src/lib/ia/herramientas");
+  const descripcionMezcla = String((herramientasPlan[0]!.esquema as { properties: { estructuras: { items: { properties: Record<string, { description?: string }> } } } }).properties.estructuras.items.properties.mezcla!.description);
+  const recomendaciones = [
+    { diametros: [5, 9, 12, 18], mezcla: "organica_fina" as const },
+    { diametros: [5, 9, 12, 24], mezcla: "organica_fina" as const },
+    { diametros: [5, 9, 12], mezcla: "clasica" as const },
+    { diametros: [9, 12], mezcla: "clasica" as const },
+  ];
+  for (const caso of recomendaciones) {
+    const compatibles = mezclasCompatiblesConDiametros(caso.diametros);
+    assert.ok(compatibles.includes(caso.mezcla), `${caso.diametros.join("/")} debería admitir ${caso.mezcla}: ${compatibles.join(", ")}`);
+    if (caso.mezcla === "clasica") assert.ok(!compatibles.includes("organica_fina"), `${caso.diametros.join("/")} no admite organica_fina: ${compatibles.join(", ")}`);
+  }
+  assert.doesNotMatch(descripcionMezcla, /aunque falten 18 o 24/, "el texto ya no recomienda una mezcla que el resolver no cubre");
+  assert.match(descripcionMezcla, /5 pulgadas exactas y al menos una de 18 o 24/);
+  assert.match(descripcionMezcla, /solo tiene 5, 9 y 12 pulgadas \(o solo 9 y 12\) no cabe en organica_fina/);
+  ok("descripción de mezcla alineada con sustitucionAdmisible (tabla de conjuntos de tamaños)");
+
   // 2. Cobertura por producto desde los candidatos del turno.
   const candidato = (productId: string, diametros: number[], color: string): ProductoCandidato => ({
     productId,
