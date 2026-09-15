@@ -517,8 +517,8 @@ function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string,
   });
 }
 
-export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenEtiquetada[], catalogo: ReferenceCatalogItem[] = [], mode: AnalysisMode = "perceptual", telemetria?: ContextoTelemetriaIA, signal?: AbortSignal, opciones: OpcionesAnalisisReferencias = {}): Promise<AnalisisV2Resultado> {
-  if (!referencias.length) throw new Error("At least one reference image is required.");
+/** Prompts and their hash for a mode and catalog; the evaluation runner records the same hash. */
+export function sistemaAnalisis(catalogo: ReferenceCatalogItem[], mode: AnalysisMode) {
   const inventorySystem = mode === "perceptual" ? INVENTORY_SYSTEM_PERCEPTUAL : INVENTORY_SYSTEM;
   const auditSystem = mode === "perceptual" ? AUDIT_SYSTEM_PERCEPTUAL : AUDIT_SYSTEM;
   // En modo perceptual nunca se manda el catálogo al modelo: no hay nada
@@ -529,6 +529,12 @@ export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenE
       ? catalogo.map((item) => JSON.stringify({ id: item.id, name: item.nombre, category: item.categoria, colors: item.colores, description: item.descripcion.slice(0, 180) })).join("\n")
       : "No catalog products supplied.";
   const systemPromptHash = createHash("sha256").update(ANALYSIS_PARSER_VERSION).update(mode).update(inventorySystem).update(auditSystem).update(REAR_LAYER_RULE).update(catalogText).digest("hex");
+  return { inventorySystem, auditSystem, catalogText, systemPromptHash };
+}
+
+export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenEtiquetada[], catalogo: ReferenceCatalogItem[] = [], mode: AnalysisMode = "perceptual", telemetria?: ContextoTelemetriaIA, signal?: AbortSignal, opciones: OpcionesAnalisisReferencias = {}): Promise<AnalisisV2Resultado> {
+  if (!referencias.length) throw new Error("At least one reference image is required.");
+  const { inventorySystem, auditSystem, catalogText, systemPromptHash } = sistemaAnalisis(catalogo, mode);
   const key = analysisCacheKey({ model: chat.modelo, systemPromptHash, images: referencias.map((image) => ({ image_id: image.id, mime: image.mime, base64: image.base64 })) });
   if (!opciones.forzarNuevoAnalisis && mode === "perceptual") {
     const fijo = analisisFijoDeEjemplo(referencias, ANALYSIS_PARSER_VERSION);
