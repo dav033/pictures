@@ -24,7 +24,9 @@ _Vacío. Solo nombre comercial y URL pública; nadie del loop contacta a nadie._
 
 ## Migraciones sin aplicar
 
-_Vacío. La migración `024` de A0.1 (T6) se anotará aquí: se prueba en base desechable y la aplica una persona._
+_La migración `024` de A0.1 (T6) se anotará aquí cuando exista: se prueba en base desechable y la aplica una persona._
+
+- **Orden obligatorio:** `.github/workflows/deploy.yml` no aplica migraciones. La migración `024` tiene que aplicarse en Neon **antes** de desplegar el código que escribe `finish_reason`/`config_hash`. Si no, cada `INSERT` en `ai_call_log` falla y la telemetría se pierde sin error visible, porque la persistencia absorbe los fallos.
 
 ## Decisiones que bloquean A1
 

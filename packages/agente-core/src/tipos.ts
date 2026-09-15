@@ -96,6 +96,9 @@ export type FragmentoChat = { tipo: "texto"; delta: string } | ({ tipo: "fin" } 
 export interface ChatPort {
   readonly id: ProveedorId;
   readonly modelo: string;
+  /** Nivel de pensamiento que el adaptador envía de verdad (`default` = no se
+   * envía). Solo telemetría; ausente si el adaptador no lo conoce. */
+  readonly thinkingLevel?: string;
   turno(p: PeticionChat): Promise<TurnoChat>;
   turnoStream(p: PeticionChat): AsyncIterable<FragmentoChat>;
 }

@@ -267,6 +267,28 @@ function esperarAnalisisCompartido(key: string, entry: AnalisisEnVuelo, signal: 
 }
 /** Attempts per analysis pass when the model answers with malformed tool output. */
 const MAX_INTENTOS_FORMATO_ANALISIS = 2;
+const PARAMETROS_INVENTARIO = { temperatura: 0, maxTokens: 6000 } as const;
+const PARAMETROS_AUDITORIA = { temperatura: 0, maxTokens: 4000 } as const;
+
+/**
+ * Hash of the effective analysis configuration, recorded per pass in telemetry
+ * (Plan A §A0.1). Covers the fields that exist today from the A1.3 definition:
+ * parser version, mode, prompts and catalog (via `systemPromptHash`), tool
+ * schemas, model, thinking level and per-pass temperature/maxOutputTokens.
+ * Not used by the cache key yet (that is A1.3).
+ */
+export function analysisConfigHash(input: { model: string; thinkingLevel: string | undefined; mode: AnalysisMode; systemPromptHash: string }): string {
+  return createHash("sha256").update(JSON.stringify({
+    parser_version: ANALYSIS_PARSER_VERSION,
+    mode: input.mode,
+    system_prompt_hash: input.systemPromptHash,
+    tools: [TOOL, AUDIT_TOOL],
+    model: input.model,
+    thinking_level: input.thinkingLevel ?? "desconocido",
+    inventory: PARAMETROS_INVENTARIO,
+    audit: PARAMETROS_AUDITORIA,
+  })).digest("hex");
+}
 
 
 function catalogFallback(candidate: Candidate, catalogo: ReferenceCatalogItem[]): { id?: string; type: "exact" | "closest" | "none"; reason: string; adaptation: string } {
@@ -535,6 +557,8 @@ async function ejecutarAnalisis(input: {
   const { chat, referencias, catalogo, mode, telemetria, signal, key, systemPromptHash, inventorySystem, auditSystem, catalogText } = input;
   const ids = referencias.map((reference) => reference.id);
   const bytesImagenEntrada = referencias.reduce((total, image) => total + bytesBase64(image.base64), 0);
+  const configHash = analysisConfigHash({ model: chat.modelo, thinkingLevel: chat.thinkingLevel, mode, systemPromptHash });
+  const promptVersion = systemPromptHash.slice(0, 16);
   const ejecutarPaso = async (
     capacidad: "analisis_referencia_inventario" | "analisis_referencia_auditoria",
     peticion: Parameters<ChatPort["turno"]>[0],
@@ -558,11 +582,14 @@ async function ejecutarAnalisis(input: {
           toolUsePromptTokenCount: turno.uso.promptHerramientas,
         },
         bytesImagenEntrada,
-        promptVersion: systemPromptHash.slice(0, 16),
+        promptVersion,
+        thinkingLevel: chat.thinkingLevel,
+        finishReason: turno.finishReason,
+        configHash,
       });
       return turno;
     } catch (error) {
-      registrarGemini({ flujo: "analisis_referencia", capacidad, modelo: chat.modelo, inicio, resultado: resultadoTelemetria(error), contexto: { superficie: "/api/references/analyze", ...telemetria, intento }, bytesImagenEntrada, promptVersion: systemPromptHash.slice(0, 16) });
+      registrarGemini({ flujo: "analisis_referencia", capacidad, modelo: chat.modelo, inicio, resultado: resultadoTelemetria(error), contexto: { superficie: "/api/references/analyze", ...telemetria, intento }, bytesImagenEntrada, promptVersion, thinkingLevel: chat.thinkingLevel, configHash });
       throw error;
     }
   };
@@ -589,8 +616,7 @@ async function ejecutarAnalisis(input: {
     sistema: mode === "perceptual" ? `${inventorySystem}\n${REAR_LAYER_RULE}` : `${inventorySystem}\n${REAR_LAYER_RULE}\n\nVALID CATALOG PRODUCTS\n${catalogText}`,
       historial: [{ rol: "usuario", texto: `Inventory these references and resolve every element automatically. Preserve exact image IDs in this order: ${ids.join(", ")}. Return one model_decision per element.`, imagenes: referencias }],
       herramientas: [TOOL],
-      temperatura: 0,
-      maxTokens: 6000,
+      ...PARAMETROS_INVENTARIO,
       signal,
   }, TOOL.nombre);
   const draftJson = JSON.stringify(inventoryRaw).slice(0, 24000);
@@ -600,8 +626,7 @@ async function ejecutarAnalisis(input: {
     sistema: mode === "perceptual" ? `${auditSystem}\n${REAR_LAYER_RULE}` : `${auditSystem}\n${REAR_LAYER_RULE}\n\nVALID CATALOG PRODUCTS\n${catalogText}`,
       historial: [{ rol: "usuario", texto: `Audit the draft inventory below against the same references. Keep exact image IDs. Resolve every finding automatically.\n<DRAFT_INVENTORY>${draftJson}</DRAFT_INVENTORY>`, imagenes: referencias }],
       herramientas: [AUDIT_TOOL],
-      temperatura: 0,
-      maxTokens: 4000,
+      ...PARAMETROS_AUDITORIA,
       signal,
   }, AUDIT_TOOL.nombre).catch((error: unknown) => {
     if (signal?.aborted || !(error instanceof ErrorIA) || !error.message.includes("malformed output")) throw error;

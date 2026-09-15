@@ -54,6 +54,10 @@ export type EventoLlamadaIA = {
   herramienta?: string;
   thinkingLevel?: string;
   promptVersion?: string;
+  /** Proveedor: por qué terminó la respuesta (p. ej. `STOP`, `MAX_TOKENS`). */
+  finishReason?: string;
+  /** Hash de la configuración efectiva de la llamada (Plan A §A0.1/A1.3). */
+  configHash?: string;
   tokensEntrada?: number;
   tokensSalida?: number;
   tokensPensamiento?: number;

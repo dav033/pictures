@@ -58,6 +58,8 @@ export function registrarGemini(input: {
   bytesImagenEntrada?: number;
   thinkingLevel?: string;
   promptVersion?: string;
+  finishReason?: string;
+  configHash?: string;
 }): void {
   const ids = idsTelemetria(input.contexto);
   registrarLlamadaIA({
@@ -79,6 +81,8 @@ export function registrarGemini(input: {
     bytesImagenEntrada: input.bytesImagenEntrada,
     thinkingLevel: input.thinkingLevel,
     promptVersion: input.promptVersion,
+    finishReason: input.finishReason,
+    configHash: input.configHash,
   });
 }
 

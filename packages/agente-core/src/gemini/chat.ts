@@ -65,6 +65,15 @@ export function extraerCierreGemini(respuesta: RespuestaConCierre | undefined): 
   };
 }
 
+const NIVELES_PENSAMIENTO_TELEMETRIA = new Set(["minimal", "low", "medium", "high"]);
+
+/** Effective thinking level as `ai_call_log.thinking_level` accepts it: the
+ * SDK enum in lowercase, or `default` when none (or an unspecified one) is sent. */
+export function nivelPensamientoTelemetria(nivel: ThinkingLevel | undefined): string {
+  const valor = String(nivel ?? "").toLowerCase();
+  return NIVELES_PENSAMIENTO_TELEMETRIA.has(valor) ? valor : "default";
+}
+
 export function historialAContents(
   historial: Mensaje[],
   imagenesEnviadas: WeakSet<ImagenAdjunta>,
@@ -211,6 +220,7 @@ export function crearChatGemini(opts?: { apiKey?: string; modelo?: string; think
   return {
     id: "gemini",
     modelo,
+    thinkingLevel: nivelPensamientoTelemetria(opts?.thinkingLevel),
 
     async turno(p: PeticionChat): Promise<TurnoChat> {
       const client = cliente();
