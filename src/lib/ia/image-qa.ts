@@ -144,7 +144,16 @@ export function parseVisionObservation(raw: unknown): SceneQaObservation {
  * separation, or an invented one whose false failure triggered a paid
  * corrective retry and NON_CONFORME.
  */
-export type QaPlanInputs = { officialStructures: ReadonlyMap<string, string> };
+export type QaPlanInputs = {
+  officialStructures: ReadonlyMap<string, string>;
+  /**
+   * The image was generated from a reference or venue photo: that photo's own
+   * setting (backdrop, curtains, walls, furniture, flowers, lighting) is
+   * expected context, not an unexpected element. Extra balloons, balloon
+   * structures, signs and text still fail.
+   */
+  photoSetting?: boolean;
+};
 
 /**
  * The plan inputs for QA and for the caption compiler, built once from the
@@ -213,6 +222,17 @@ function tableSupportInstruction(sceneSpec: SceneSpec): string {
     : "";
 }
 
+function photoSettingInstruction(plan: QaPlanInputs | undefined): string {
+  return plan?.photoSetting
+    ? "\nThis image recreates a customer photo: the setting from that photo (backdrop or panel walls, curtains, drapes, windows, walls, furniture, tables, chairs, flowers, plants, candles, lighting, people) is expected context. Do not list that setting as unexpected; still list any extra balloons, balloon structures, hoops made of balloons, signs, or text."
+    : "";
+}
+
+/** Photo-setting items an observer may still list: anything that names no balloon, sign or writing. */
+function isPhotoSettingItem(plan: QaPlanInputs | undefined, observed: string): boolean {
+  return Boolean(plan?.photoSetting) && !/\b(?:balloons?|signs?|signage|text|letters?|lettering|numbers?|words?|logos?|labels?|neon)\b/i.test(observed.replace(/_/g, " "));
+}
+
 /** A plain supporting table, never one carrying balloons, signs or text of its own. */
 function isSupportTable(sceneSpec: SceneSpec, observed: string): boolean {
   const item = observed.replace(/_/g, " ");
@@ -229,7 +249,7 @@ export function buildQaObserverPrompt(sceneSpec: SceneSpec, estimate?: DesignMat
     ? `\nMaterial estimate: approximately ${estimate.totals.design_quantity} installed units; expected visual scale=${estimate.design.visual_scale}; density=${estimate.design.visual_density}; installed balloon sizes=${estimate.balloons.map((line) => `${line.design_quantity}x${line.size_inches ?? "special"}-inch`).join(", ") || "none"}. Purchased capacity=${estimate.totals.purchase_quantity} is not visual quantity. Assess physical scale, not exact object count.`
     : "";
   const separation = plan ? separateSidePiecesInstruction(findSeparateSidePieces(clauses)) : "";
-  return `You are a strict visual QA observer. Inspect the generated image and return only JSON. Do not infer presence from this prompt: decide from visible pixels. Expected physical instances:\n${expected}${materialExpectation}${separation}${tableSupportInstruction(sceneSpec)}${allowedStylingInstruction(creatividad)}\nEach expected element_id represents one distinct installed structure, even when its material quantity is large; list that id once when its structure is visibly present. Do not list one id per balloon, material unit, package, or repeated visual detail. Mark an instance missing when its distinct structure is not visibly present. Mark placement failure when its canonical placement or bbox region is wrong. Mark appearance failure when the visible palette, material, or size differs from the required catalog colors and material description above. List unexpected decorative objects not in the expected list, including any backdrop, curtain, drape, fabric or panel wall, hoop or ring frame, pedestal, crate or stand used instead of the expected support, loose or floating balloons, sign, flowers, candles, furniture, props, or people. Mark appearance failure when a structure has a different form than its official structure (for example a round hoop instead of an arch), or when a hanging structure floats without visible support. For the material estimate, use a broad perceptual range and visual scale: a result is inconsistent when it is clearly several times denser/larger than the installed estimate, not merely because an exact count is difficult. Treat any visible free-floating text, heading, number, measurement, element ID, caption, callout, arrow, watermark, invented logo, or label as a text_artifact or annotation_artifact. Only lettering physically printed on an explicitly approved signage product is allowed; all other visible writing is a failure.`;
+  return `You are a strict visual QA observer. Inspect the generated image and return only JSON. Do not infer presence from this prompt: decide from visible pixels. Expected physical instances:\n${expected}${materialExpectation}${separation}${tableSupportInstruction(sceneSpec)}${allowedStylingInstruction(creatividad)}${photoSettingInstruction(plan)}\nEach expected element_id represents one distinct installed structure, even when its material quantity is large; list that id once when its structure is visibly present. Do not list one id per balloon, material unit, package, or repeated visual detail. Mark an instance missing when its distinct structure is not visibly present. Mark placement failure when its canonical placement or bbox region is wrong. Mark appearance failure when the visible palette, material, or size differs from the required catalog colors and material description above. List unexpected decorative objects not in the expected list, including any backdrop, curtain, drape, fabric or panel wall, hoop or ring frame, pedestal, crate or stand used instead of the expected support, loose or floating balloons, sign, flowers, candles, furniture, props, or people. Mark appearance failure when a structure has a different form than its official structure (for example a round hoop instead of an arch), or when a hanging structure floats without visible support. For the material estimate, use a broad perceptual range and visual scale: a result is inconsistent when it is clearly several times denser/larger than the installed estimate, not merely because an exact count is difficult. Treat any visible free-floating text, heading, number, measurement, element ID, caption, callout, arrow, watermark, invented logo, or label as a text_artifact or annotation_artifact. Only lettering physically printed on an explicitly approved signage product is allowed; all other visible writing is a failure.`;
 }
 
 export async function observarImagenGenerada(
@@ -319,7 +339,7 @@ export function evaluateSceneQa(sceneSpec: SceneSpec, observation: SceneQaObserv
   // Backstop for an observer that lists requested supports or allowed styling
   // anyway: only plain centerpiece tables and items the level allows that name
   // no balloon, structure, sign or text are dropped.
-  const unexpected = (observation.unexpectedElements ?? []).filter((item) => !isSupportTable(sceneSpec, item) && (creatividad === undefined || !esAmbientacionPermitida(creatividad, item)));
+  const unexpected = (observation.unexpectedElements ?? []).filter((item) => !isSupportTable(sceneSpec, item) && !isPhotoSettingItem(plan, item) && (creatividad === undefined || !esAmbientacionPermitida(creatividad, item)));
   const textArtifacts = observation.textArtifacts ?? [];
   const annotationArtifacts = observation.annotationArtifacts ?? [];
   const pastedArtifacts = observation.pastedArtifacts ?? [];

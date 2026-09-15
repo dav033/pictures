@@ -130,6 +130,15 @@ async function main(): Promise<void> {
   assert.doesNotMatch(buildQaObserverPrompt(escena.sceneSpec, escena.materialEstimate, escena.qaPlan, 0), /Plain tables that hold/);
   ok("QA: la ambientación del nivel y las mesas de los centros no son extras; cortinas, globos sueltos y letreros siguen fallando");
 
+  // 5. With a reference or venue photo its setting is context, not an extra (prod 2026-09-15: 422 for "pink arch backdrop wall").
+  const conFoto = { ...escena.qaPlan!, photoSetting: true };
+  const deLaFoto = { ...observacion, unexpectedElements: ["pink arch backdrop wall", "white sheer curtain backdrop", "floor spotlights", "white lattice window frame", "loose balloons on the floor", "happy birthday neon sign", "extra balloon column on the right"] };
+  assert.deepEqual(evaluateSceneQa(escena.sceneSpec, deLaFoto, undefined, conFoto, 2).unexpected_elements, ["loose balloons on the floor", "happy birthday neon sign", "extra balloon column on the right"]);
+  assert.equal(evaluateSceneQa(escena.sceneSpec, deLaFoto, undefined, escena.qaPlan, 2).unexpected_elements.length, 7, "without a photo the setting is still an extra");
+  assert.match(buildQaObserverPrompt(escena.sceneSpec, escena.materialEstimate, conFoto, 2), /recreates a customer photo/);
+  assert.doesNotMatch(buildQaObserverPrompt(escena.sceneSpec, escena.materialEstimate, escena.qaPlan, 2), /recreates a customer photo/);
+  ok("QA: con foto de referencia o del espacio, su ambientación no es un extra; globos, estructuras y letreros extra siguen fallando");
+
   console.log(`${casos} casos`);
 }
 

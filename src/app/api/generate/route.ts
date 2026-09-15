@@ -1149,7 +1149,9 @@ async function generar(request: Request, generationRequestId: string): Promise<R
         }))) ?? undefined
       : bloqueMezclaTamanos([...unidadesPorTamano.values()]) ?? undefined;
     // Same plan map for the prompts below and for the QA, so all read the declared official structures alike.
-    const qaPlan = approvedPlanQaInputs(planResuelto);
+    // With a reference or venue photo its own setting (backdrop, curtains, furniture, lighting) is expected context for the QA.
+    const planQaBase = approvedPlanQaInputs(planResuelto);
+    const qaPlan = planQaBase && (references.length > 0 || venue) ? { ...planQaBase, photoSetting: true } : planQaBase;
     const providerPrompt = buildImagePrompt({ sceneSpec: transformedSceneSpec, inputs: selected.promptInputs, revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount: selected.droppedCatalogProductIds.length, droppedCompositionReferenceCount: selected.droppedReferenceCount, creatividad: creatividad.nivel, officialStructures: qaPlan?.officialStructures });
     if (planResuelto) {
       const coherencia = verificarCoherenciaPrompt(providerPrompt, planResuelto);

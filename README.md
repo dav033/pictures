@@ -136,6 +136,8 @@ No hace falta una base de datos local: todo apunta a Neon. Los tests que usan Po
     - La validación visual no detecta guirnaldas flotando ni la columna sobrante. Falló la observación en 2 de 48, y en el nivel 5 puede marcar como extra el pedestal de la mesa de postres.
     - La calidad de generación fue 1K; producción usa 2K.
 
+- **Validación visual con foto:** la calibración, hecha sin fotos, hizo que la QA contara como extras el fondo, las cortinas y la iluminación de la foto de referencia. En producción, 1 de 2 aprobaciones terminó en «La imagen no quedó fiel». Con foto de referencia o del espacio, el entorno de esa foto ya no cuenta como extra; los globos, las estructuras y los letreros de más siguen fallando (`photoSetting` en `QaPlanInputs`).
+
 ## Decisiones tomadas
 
 - **Neon es la única fuente de verdad**; no se usa base local para la app.
