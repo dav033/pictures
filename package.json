@@ -109,6 +109,7 @@
     "eval:suite-manual": "tsx scripts/eval/estructuras/suite-desde-manual.ts",
     "eval:test-estructuras-analisis-carpeta": "tsx scripts/test-eval-estructuras-analisis-carpeta.ts",
     "eval:comparar-carpeta": "tsx scripts/eval/estructuras/comparar-carpeta.ts",
+    "eval:dibujar-cajas": "tsx scripts/eval/estructuras/dibujar-cajas.ts",
     "eval:reconocimiento": "tsx --conditions=react-server scripts/eval/estructuras/reconocimiento.ts",
     "ia:test-qa-esperados": "tsx --conditions=react-server scripts/test-image-qa-esperados.ts",
     "ia:test-qa-piezas-separadas": "tsx --conditions=react-server scripts/test-image-qa-piezas-separadas.ts",
