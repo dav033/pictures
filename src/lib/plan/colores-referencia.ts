@@ -29,39 +29,64 @@ export const MAX_COLORES_REFERENCIA = 3;
 /**
  * English photo words the catalog taxonomy does not alias. "gris" is not a
  * catalog color: it is kept so a grey/graphite photo is reported as lost
- * instead of silently ignored.
+ * instead of silently ignored. Names with no clear catalog color (copper,
+ * bronze, taupe, terracotta) stay out on purpose: mapping them needs a product
+ * decision, and inventing one would buy the wrong balloon.
  */
 const SINONIMOS_FOTO: ReadonlyArray<readonly [RegExp, string]> = [
+  // Before the generic "pink" alias: the catalog sells these as fucsia.
+  [/\b(?:hot|neon|shocking)\s+pink\b/g, "fucsia"],
   [/\boff white\b/g, "crema"],
-  [/\b(?:lilac|lavender)\b/g, "lila"],
+  [/\b(?:lilac|lavender|mauve)\b/g, "lila"],
   [/\bviolet\b/g, "violeta"],
   [/\b(?:maroon|wine|bordeaux|oxblood)\b/g, "burdeos"],
   [/\b(?:ivory|cream)\b/g, "crema"],
   [/\b(?:teal|aqua|turquoise|cyan)\b/g, "turquesa"],
   [/\b(?:peach|salmon)\b/g, "coral"],
   [/\b(?:tan|sand|khaki)\b/g, "beige"],
-  [/\b(?:clear|transparent)\b/g, "transparente"],
+  [/\bnavy\b/g, "azul"],
+  [/\b(?:sage|emerald|lime|olive)\b/g, "verde"],
+  [/\bplum\b/g, "morado"],
 ];
 const GRIS = /\b(?:gr[ae]y|graphite|charcoal|gris|grafito)\b/;
 
+/**
+ * Transparency is a finish, not a hue: the analyzer is told to prefix it
+ * ("clear pink", "crystal blue") and the catalog sells the Cristal line in
+ * several hues. Alone it is the color "transparente".
+ */
+const TRANSPARENCIA = /\b(?:clear|transparent|transparente|transparentes|crystal|cristal)\b/g;
+
+/** Punctuation that joins several colors in one label ("white/gold"); the fold turns it into a space, so it has to be split first. */
+const SEPARADOR_PUNTUACION = /[,;/&+]/;
 /** Words that join several colors inside one observed label ("white and gold"). */
-const SEPARADOR_COLORES = /\s*(?:[,;/&+]|\b(?:and|with|plus|y|e|con)\b)\s*/;
+const SEPARADOR_COLORES = /\s*\b(?:and|with|plus|y|e|con)\b\s*/;
 
 /**
- * Catalog-vocabulary colors of one observed label, in reading order. Each part
- * of the label is ONE color: a shade written with two color words ("mint
- * green", "wine red", "silver grey") keeps its first, more specific word, so
- * it does not report a second color the photo never had.
+ * Catalog-vocabulary color of one part of an observed label. A part is ONE
+ * color: a shade written with two color words ("mint green", "wine red",
+ * "silver grey") keeps its first, more specific word, so it does not report a
+ * second color the photo never had.
  */
+function colorDeParte(parte: string): string | undefined {
+  let texto = parte;
+  for (const [patron, color] of SINONIMOS_FOTO) texto = texto.replace(patron, color);
+  const sinTransparencia = texto.replace(TRANSPARENCIA, " ");
+  const transparente = sinTransparencia !== texto;
+  texto = sinTransparencia;
+  const clasificacion = clasificarColores(texto);
+  const conocido = clasificacion.status === "unknown" ? undefined : clasificacion.values.find((color) => color !== "multicolor");
+  return conocido ?? (GRIS.test(texto) ? "gris" : transparente ? "transparente" : undefined);
+}
+
+/** Catalog-vocabulary colors of one observed label, in reading order. */
 function coloresDeEtiqueta(etiqueta: string): string[] {
   const colores: string[] = [];
-  for (const parte of plegarTexto(etiqueta).split(SEPARADOR_COLORES)) {
-    let texto = parte;
-    for (const [patron, color] of SINONIMOS_FOTO) texto = texto.replace(patron, color);
-    const clasificacion = clasificarColores(texto);
-    const conocido = clasificacion.status === "unknown" ? undefined : clasificacion.values.find((color) => color !== "multicolor");
-    const color = conocido ?? (GRIS.test(texto) ? "gris" : undefined);
-    if (color) colores.push(color);
+  for (const bruto of etiqueta.split(SEPARADOR_PUNTUACION)) {
+    for (const parte of plegarTexto(bruto).split(SEPARADOR_COLORES)) {
+      const color = colorDeParte(parte);
+      if (color) colores.push(color);
+    }
   }
   return colores;
 }
