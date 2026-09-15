@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { resolve } from "node:path";
 import { familiaDesdeClaseOficial, CLASES_OFICIALES } from "../src/lib/eval/estructuras/familia-clase";
-import { CLASES_MANUALES, importarRegistro, leerCsv, seleccionEstratificada, suiteDesdeManual, type ItemManual } from "../src/lib/eval/estructuras/suite-manual";
+import { CLASES_MANUALES, etiquetasCarpeta, importarRegistro, leerCsv, seleccionEstratificada, suiteDesdeManual, type ItemManual } from "../src/lib/eval/estructuras/suite-manual";
 
 /**
  * Suite from the manually collected folder: CSV parsing (comma or Excel
@@ -25,8 +25,10 @@ caso("CSV: coma con comillas y BOM, y punto y coma de Excel en español", () => 
   assert.deepEqual(leerCsv(excel), [{ archivo: "arco\\a.jpg", titulo: "Pin, con coma", permiso: "cc0" }]);
 });
 
-caso("clases: las 16 oficiales tienen familia y la carpeta manual cubre las 16 más negativo y no_se", () => {
-  assert.equal(CLASES_OFICIALES.length, 16);
+caso("clases: las 13 vigentes (sin denso/no denso) tienen familia y la carpeta manual las cubre más negativo y no_se", () => {
+  assert.equal(CLASES_OFICIALES.length, 13);
+  assert.ok(!CLASES_OFICIALES.some((clase) => /densa?$/.test(clase)), "no dense / non-dense class remains");
+  assert.equal(familiaDesdeClaseOficial("pared"), "pared");
   assert.deepEqual([...CLASES_MANUALES].filter((c) => c !== "negativo" && c !== "no_se").sort(), [...CLASES_OFICIALES].sort());
   assert.deepEqual([familiaDesdeClaseOficial("semiarco_organico"), familiaDesdeClaseOficial("aro_circular"), familiaDesdeClaseOficial("techo_globos")], ["semiarco", "aro", "techo"]);
   assert.throws(() => familiaDesdeClaseOficial("kit"), /desconocida/);
@@ -69,6 +71,26 @@ caso("selección: tope estratificado por familia, determinista, y suite válida 
   assert.equal(suite.items.length, 6);
   assert.ok(suite.items.every((i) => i.evaluacion_con_proveedor_externo && i.envio_proveedores_ia_permitido));
   assert.doesNotMatch(JSON.stringify(suite), /pinterest|autor|url_pagina/i);
+});
+
+caso("excepción del dueño: permiso vacío entra como excepcion:<id>, registrada en la suite; BY-SA sigue fuera", () => {
+  const archivos = new Map([[resolve(RAIZ, "arco\\1.jpg"), jpeg(1)], [resolve(RAIZ, "columna\\2.jpg"), jpeg(2)], [resolve(RAIZ, "arco\\3.jpg"), jpeg(3)]]);
+  const filas = [
+    { archivo: "arco\\1.jpg", clase_candidata: "arco", permiso: "" },
+    { archivo: "columna\\2.jpg", clase_candidata: "columna", permiso: "by-sa" },
+    { archivo: "arco\\3.jpg", clase_candidata: "arco", permiso: "cc0" },
+  ];
+  const excepcion = { id: "dt7-excepcion-interna-20260915", aprobadaEn: "2026-09-15", registro: "REVISION-HUMANA.md" };
+  const sin = importarRegistro(filas, RAIZ, (ruta) => archivos.get(ruta) ?? null);
+  assert.equal(sin.aceptadas.length, 1, "without the exception only the cc0 row passes");
+  const con = importarRegistro(filas, RAIZ, (ruta) => archivos.get(ruta) ?? null, excepcion);
+  assert.deepEqual(con.aceptadas.map((item) => item.permiso).sort(), ["cc0", "excepcion:dt7-excepcion-interna-20260915"]);
+  assert.deepEqual(con.excluidas, [{ archivo: "columna\\2.jpg", motivo: "by_sa_revision_legal" }]);
+  const suite = suiteDesdeManual(con.aceptadas, "validacion", excepcion);
+  assert.deepEqual(suite.excepcion_permiso, { id: excepcion.id, aprobada_en: "2026-09-15", alcance: "evaluacion_interna_orientativa", registro: "REVISION-HUMANA.md" });
+  assert.throws(() => suiteDesdeManual(con.aceptadas, "validacion"), /sin la excepción registrada/);
+  assert.equal(suiteDesdeManual(sin.aceptadas, "limpia").excepcion_permiso, undefined);
+  assert.deepEqual(etiquetasCarpeta(con.aceptadas), Object.fromEntries(con.aceptadas.map((item) => [item.sha256, "arco"])));
 });
 
 console.log(`[PASS] ${casos} casos de la suite desde la carpeta manual`);

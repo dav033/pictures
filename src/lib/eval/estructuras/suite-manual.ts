@@ -13,9 +13,10 @@ import { familiaDesdeClaseOficial } from "./familia-clase";
  * never ground truth. No personal data (author, page URL, title) is copied.
  */
 
+/** Folder classes after the user retired the dense / non-dense split (2026-09-15). */
 export const CLASES_MANUALES = [
-  "arco", "arco_organico", "arco_no_denso", "semiarco", "semiarco_organico", "columna", "columna_organica", "guirnalda", "aro_circular",
-  "columna_no_densa", "pared_densa", "pared_no_densa", "centro_mesa", "bouquet", "figura", "techo_globos", "negativo", "no_se",
+  "arco", "arco_organico", "semiarco", "semiarco_organico", "columna", "columna_organica", "guirnalda", "aro_circular",
+  "pared", "centro_mesa", "bouquet", "figura", "techo_globos", "negativo", "no_se",
 ] as const;
 export type ClaseManual = (typeof CLASES_MANUALES)[number];
 
@@ -72,7 +73,14 @@ function formatoImagen(bytes: Uint8Array): boolean {
 }
 
 /** Pure selection over the registry rows; file access is injected. */
-export function importarRegistro(filas: readonly Record<string, string>[], raiz: string, leerBytes: (ruta: string) => Uint8Array | null): ResultadoImportacion {
+export type ExcepcionPermiso = { id: string; aprobadaEn: string; registro: string };
+
+/**
+ * `excepcion`: owner-approved exception for rows with an empty permission. They
+ * are accepted as `excepcion:<id>` (internal evaluation only); BY-SA and
+ * unrecognized permissions stay excluded even then.
+ */
+export function importarRegistro(filas: readonly Record<string, string>[], raiz: string, leerBytes: (ruta: string) => Uint8Array | null, excepcion?: ExcepcionPermiso): ResultadoImportacion {
   const aceptadas: ItemManual[] = [];
   const excluidas: ResultadoImportacion["excluidas"] = [];
   const vistos = new Set<string>();
@@ -82,10 +90,11 @@ export function importarRegistro(filas: readonly Record<string, string>[], raiz:
     const clase = (fila.clase_candidata || archivo.split("\\")[0] || "") as ClaseManual;
     if (!(CLASES_MANUALES as readonly string[]).includes(clase)) { excluir("clase_desconocida"); continue; }
     if (clase === "negativo" || clase === "no_se") { excluir("negativo_o_no_se"); continue; }
-    const permiso = (fila.permiso ?? "").trim().toLowerCase();
-    if (!permiso) { excluir("sin_permiso"); continue; }
+    const declarado = (fila.permiso ?? "").trim().toLowerCase();
+    if (!declarado && !excepcion) { excluir("sin_permiso"); continue; }
+    const permiso = declarado || `excepcion:${excepcion!.id}`;
     if (permiso === "by-sa" || permiso === "cc-by-sa") { excluir("by_sa_revision_legal"); continue; }
-    if (!PERMISO_VALIDO.test(permiso)) { excluir("permiso_no_reconocido"); continue; }
+    if (!declarado ? false : !PERMISO_VALIDO.test(permiso)) { excluir("permiso_no_reconocido"); continue; }
     const ruta = resolve(raiz, archivo);
     const rel = relative(resolve(raiz), ruta);
     if (rel.startsWith("..") || isAbsolute(rel)) { excluir("fuera_de_la_carpeta"); continue; }
@@ -129,16 +138,24 @@ export function seleccionEstratificada(items: readonly ItemManual[], maximo: num
   return elegidas;
 }
 
-export function suiteDesdeManual(items: readonly ItemManual[], suiteId: string) {
+export function suiteDesdeManual(items: readonly ItemManual[], suiteId: string, excepcion?: ExcepcionPermiso) {
+  const usaExcepcion = items.some((item) => item.permiso.startsWith("excepcion:"));
+  if (usaExcepcion && !excepcion) throw new Error("hay ítems con excepción de permiso sin la excepción registrada");
   return SuiteSchema.parse({
     suite_id: suiteId,
     taxonomy_version: "estructuras-2.0.0",
+    ...(usaExcepcion ? { excepcion_permiso: { id: excepcion!.id, aprobada_en: excepcion!.aprobadaEn, alcance: "evaluacion_interna_orientativa", registro: excepcion!.registro } } : {}),
     items: items.map((item) => ({
       image_sha256: item.sha256,
       ruta_privada: item.archivo,
-      // Every accepted row carries cc0, cc-by, public domain or a written permission covering AI providers.
+      // Accepted rows carry cc0, cc-by, public domain, a written permission, or the recorded owner exception above.
       evaluacion_con_proveedor_externo: true,
       envio_proveedores_ia_permitido: true,
     })),
   });
+}
+
+/** Folder class per image (one person's curation hint, not reviewed ground truth). */
+export function etiquetasCarpeta(items: readonly ItemManual[]): Record<string, ClaseManual> {
+  return Object.fromEntries(items.map((item) => [item.sha256, item.clase]));
 }

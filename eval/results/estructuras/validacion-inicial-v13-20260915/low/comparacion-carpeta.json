@@ -1,0 +1,231 @@
+{
+  "advertencia": "Comparación direccional contra la carpeta elegida por una persona al capturar; no es exactitud contra verdad revisada.",
+  "imagenes": 68,
+  "corridas_ok": 204,
+  "global": {
+    "tasa_sin_estructura": 0,
+    "tasa_familia_presente": 0.8676470588235294,
+    "tasa_familia_principal": 0.8676470588235294,
+    "organico_detectado_en_carpetas_organicas": 0.8205128205128205,
+    "asimetrico_en_carpetas_regulares": 0.030303030303030304,
+    "imagenes_con_familia_principal_inestable": 11
+  },
+  "por_clase": [
+    {
+      "clase": "arco",
+      "familia": "arco",
+      "imagenes": 12,
+      "corridas": 36,
+      "tasa_sin_estructura": 0,
+      "tasa_familia_presente": 0.9166666666666666,
+      "tasa_familia_principal": 0.9166666666666666,
+      "tasa_contorno_asimetrico": 0.030303030303030304,
+      "tasa_densidad_airy": 0,
+      "se_espera_organica": false
+    },
+    {
+      "clase": "arco_organico",
+      "familia": "arco",
+      "imagenes": 7,
+      "corridas": 21,
+      "tasa_sin_estructura": 0,
+      "tasa_familia_presente": 0.42857142857142855,
+      "tasa_familia_principal": 0.42857142857142855,
+      "tasa_contorno_asimetrico": 0.7777777777777778,
+      "tasa_densidad_airy": 0,
+      "se_espera_organica": true
+    },
+    {
+      "clase": "columna",
+      "familia": "columna",
+      "imagenes": 22,
+      "corridas": 66,
+      "tasa_sin_estructura": 0,
+      "tasa_familia_presente": 1,
+      "tasa_familia_principal": 1,
+      "tasa_contorno_asimetrico": 0.030303030303030304,
+      "tasa_densidad_airy": 0,
+      "se_espera_organica": false
+    },
+    {
+      "clase": "columna_organica",
+      "familia": "columna",
+      "imagenes": 19,
+      "corridas": 57,
+      "tasa_sin_estructura": 0,
+      "tasa_familia_presente": 0.9122807017543859,
+      "tasa_familia_principal": 0.9122807017543859,
+      "tasa_contorno_asimetrico": 0.7692307692307693,
+      "tasa_densidad_airy": 0,
+      "se_espera_organica": true
+    },
+    {
+      "clase": "semiarco_organico",
+      "familia": "semiarco",
+      "imagenes": 8,
+      "corridas": 24,
+      "tasa_sin_estructura": 0,
+      "tasa_familia_presente": 0.7083333333333334,
+      "tasa_familia_principal": 0.7083333333333334,
+      "tasa_contorno_asimetrico": 1,
+      "tasa_densidad_airy": 0,
+      "se_espera_organica": true
+    }
+  ],
+  "confusion_familia_carpeta_vs_principal": {
+    "arco": {
+      "arco": 42,
+      "semiarco": 13,
+      "guirnalda": 1,
+      "aro": 1
+    },
+    "columna": {
+      "columna": 118,
+      "figura": 2,
+      "semiarco": 2,
+      "guirnalda": 1
+    },
+    "semiarco": {
+      "semiarco": 17,
+      "arco": 1,
+      "columna": 5,
+      "aro": 1
+    }
+  },
+  "tipos_detector_por_clase": {
+    "arco": {
+      "arch": 33,
+      "half_arch": 3,
+      "sculpture": 3,
+      "column": 3,
+      "cluster": 2
+    },
+    "columna_organica": {
+      "column": 68,
+      "cluster": 3,
+      "ceiling_installation": 3,
+      "sculpture": 2,
+      "half_arch": 3,
+      "garland": 1
+    },
+    "semiarco_organico": {
+      "half_arch": 17,
+      "arch": 1,
+      "column": 5,
+      "cluster": 10,
+      "bouquet": 5,
+      "hoop": 1
+    },
+    "columna": {
+      "column": 135
+    },
+    "arco_organico": {
+      "garland": 2,
+      "half_arch": 10,
+      "arch": 9,
+      "cluster": 2,
+      "hoop": 1
+    }
+  },
+  "imagenes_inestables": [
+    {
+      "image_sha256": "0e940006fe7c4ca24703c4b8dded2aafa5e1dcd1bfd7de9d49b5ac63597c5b38",
+      "clase": "semiarco_organico",
+      "principales": [
+        "semiarco",
+        "semiarco",
+        "arco"
+      ]
+    },
+    {
+      "image_sha256": "7b6d4c8aca74707bb80cbe51c2986c3fcc60d76bc3c90af428241dc5c22db556",
+      "clase": "semiarco_organico",
+      "principales": [
+        "columna",
+        "semiarco",
+        "semiarco"
+      ]
+    },
+    {
+      "image_sha256": "32abb1d02a5fd7ccded995513591d827ca3f338e8890b28544c334feada2fc13",
+      "clase": "arco_organico",
+      "principales": [
+        "guirnalda",
+        "semiarco",
+        "semiarco"
+      ]
+    },
+    {
+      "image_sha256": "d8ff6432f86b437cf78a8c659f7b3a5aa9dafdab0dc0967bbcf727bba3253e36",
+      "clase": "semiarco_organico",
+      "principales": [
+        "semiarco",
+        "semiarco",
+        "columna"
+      ]
+    },
+    {
+      "image_sha256": "fd22975d360e8ba06050b7abf10a4a312dcf9a9e0672e417a4fb092b3e499c76",
+      "clase": "semiarco_organico",
+      "principales": [
+        "aro",
+        "semiarco",
+        "semiarco"
+      ]
+    },
+    {
+      "image_sha256": "3bf84867d53ff5798b79ce1711e83906949ab7c1c018d0578679aac02fb47e49",
+      "clase": "columna_organica",
+      "principales": [
+        "columna",
+        "figura",
+        "figura"
+      ]
+    },
+    {
+      "image_sha256": "b9b180c845a71347fa8ac600220a70acca3020be4e5c57b1d0c07d5bfe6116a8",
+      "clase": "arco_organico",
+      "principales": [
+        "arco",
+        "arco",
+        "aro"
+      ]
+    },
+    {
+      "image_sha256": "5adf7bcea6cdafae0f8051a9b0a12c17d5a5fc1ed9194b62facfb579874e1453",
+      "clase": "columna_organica",
+      "principales": [
+        "columna",
+        "semiarco",
+        "columna"
+      ]
+    },
+    {
+      "image_sha256": "eb14530991add93266cef8273dc078e6209981ae19506fb66fa6ee36ef21159e",
+      "clase": "arco_organico",
+      "principales": [
+        "arco",
+        "arco",
+        "semiarco"
+      ]
+    },
+    {
+      "image_sha256": "6294569eb6ffb154f1e99f75668786149fd26f87b3c30bccb99a598437337c65",
+      "clase": "columna_organica",
+      "principales": [
+        "guirnalda",
+        "semiarco",
+        "columna"
+      ]
+    },
+    {
+      "image_sha256": "fcb5ba2a4ee386ea3f33cb26014c92950f6f3abfef3189a19ef12728b4f63baf",
+      "clase": "arco_organico",
+      "principales": [
+        "arco",
+        "arco",
+        "semiarco"
+      ]
+    }
+  ]
+}

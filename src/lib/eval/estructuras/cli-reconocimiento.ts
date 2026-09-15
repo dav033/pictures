@@ -15,6 +15,17 @@ import { claveCorrida, ejecutarCorrida, ItemSuiteSchema, planificarCorrida, type
 export const SuiteSchema = z.object({
   suite_id: z.string().regex(/^[A-Za-z0-9._-]{1,80}$/),
   taxonomy_version: z.string().min(1).max(60),
+  /**
+   * Explicit, recorded owner decision that lets items without a verified
+   * permission be sent to the provider for internal evaluation only. The runner
+   * never infers it; results carrying it can never feed gold, training or demos.
+   */
+  excepcion_permiso: z.object({
+    id: z.string().regex(/^[A-Za-z0-9._-]{1,80}$/),
+    aprobada_en: z.iso.date(),
+    alcance: z.literal("evaluacion_interna_orientativa"),
+    registro: z.string().min(1).max(300),
+  }).strict().optional(),
   items: z.array(ItemSuiteSchema).min(1).max(500),
 }).strict();
 

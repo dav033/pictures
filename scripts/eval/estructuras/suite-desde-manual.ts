@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { dentroDe } from "../../../src/lib/eval/estructuras/cli-reconocimiento";
-import { importarRegistro, leerCsv, seleccionEstratificada, suiteDesdeManual } from "../../../src/lib/eval/estructuras/suite-manual";
+import { etiquetasCarpeta, importarRegistro, leerCsv, seleccionEstratificada, suiteDesdeManual } from "../../../src/lib/eval/estructuras/suite-manual";
 
 /**
  * CLI: builds the dev-seed-v0 suite from the manual folder. Preview by default;
@@ -21,11 +21,15 @@ function main(): void {
   if (!Number.isInteger(maximo) || maximo < 1 || maximo > 500) throw new Error("--maximo debe ser un entero 1-500");
   const salida = valor("--salida") ?? "datasets/estructuras/manifests/dev-seed-v0.suite.json";
   if (!dentroDe(process.cwd(), salida)) throw new Error("--salida debe quedar dentro del repositorio");
+  const suiteId = valor("--suite-id") ?? "dev-seed-v0";
+  // Owner-approved exception id for rows without permission (internal evaluation only).
+  const idExcepcion = valor("--excepcion");
+  const excepcion = idExcepcion ? { id: idExcepcion, aprobadaEn: new Date().toISOString().slice(0, 10), registro: "docs/planes/estructuras-2026-09/ejecucion/fase-a/REVISION-HUMANA.md" } : undefined;
 
   const registro = resolve(raiz, "_registro.csv");
   if (!existsSync(registro)) throw new Error(`no existe ${registro}`);
   const filas = leerCsv(readFileSync(registro, "utf8"));
-  const resultado = importarRegistro(filas, raiz, (ruta) => (existsSync(ruta) ? readFileSync(ruta) : null));
+  const resultado = importarRegistro(filas, raiz, (ruta) => (existsSync(ruta) ? readFileSync(ruta) : null), excepcion);
   const elegidas = seleccionEstratificada(resultado.aceptadas, maximo);
 
   const motivos = resultado.excluidas.reduce<Record<string, number>>((acumulado, { motivo }) => ({ ...acumulado, [motivo]: (acumulado[motivo] ?? 0) + 1 }), {});
@@ -40,10 +44,12 @@ function main(): void {
     return;
   }
   if (elegidas.length === 0) throw new Error("no hay imágenes con permiso: no se escribe una suite vacía");
-  const suite = suiteDesdeManual(elegidas, "dev-seed-v0");
+  const suite = suiteDesdeManual(elegidas, suiteId, excepcion);
   mkdirSync(dirname(resolve(salida)), { recursive: true });
   writeFileSync(resolve(salida), `${JSON.stringify(suite, null, 2)}\n`);
-  console.log(`[suite-manual] escrita ${salida}`);
+  const rutaEtiquetas = resolve(dirname(resolve(salida)), `${suiteId}.etiquetas-carpeta.json`);
+  writeFileSync(rutaEtiquetas, `${JSON.stringify({ nota: "Clase de la carpeta elegida por una persona al capturar; pista de curación, no verdad terreno revisada.", etiquetas: etiquetasCarpeta(elegidas) }, null, 2)}\n`);
+  console.log(`[suite-manual] escrita ${salida} y ${rutaEtiquetas}`);
 }
 
 try {

@@ -1,0 +1,176 @@
+{
+  "advertencia": "Comparación direccional contra la carpeta elegida por una persona al capturar; no es exactitud contra verdad revisada.",
+  "imagenes": 68,
+  "corridas_ok": 136,
+  "global": {
+    "tasa_sin_estructura": 0,
+    "tasa_familia_presente": 0.8823529411764706,
+    "tasa_familia_principal": 0.875,
+    "organico_detectado_en_carpetas_organicas": 0.8888888888888888,
+    "asimetrico_en_carpetas_regulares": 0.030303030303030304,
+    "imagenes_con_familia_principal_inestable": 7
+  },
+  "por_clase": [
+    {
+      "clase": "arco",
+      "familia": "arco",
+      "imagenes": 12,
+      "corridas": 24,
+      "tasa_sin_estructura": 0,
+      "tasa_familia_presente": 0.9166666666666666,
+      "tasa_familia_principal": 0.9166666666666666,
+      "tasa_contorno_asimetrico": 0,
+      "tasa_densidad_airy": 0,
+      "se_espera_organica": false
+    },
+    {
+      "clase": "arco_organico",
+      "familia": "arco",
+      "imagenes": 7,
+      "corridas": 14,
+      "tasa_sin_estructura": 0,
+      "tasa_familia_presente": 0.5,
+      "tasa_familia_principal": 0.5,
+      "tasa_contorno_asimetrico": 0.8571428571428571,
+      "tasa_densidad_airy": 0,
+      "se_espera_organica": true
+    },
+    {
+      "clase": "columna",
+      "familia": "columna",
+      "imagenes": 22,
+      "corridas": 44,
+      "tasa_sin_estructura": 0,
+      "tasa_familia_presente": 1,
+      "tasa_familia_principal": 1,
+      "tasa_contorno_asimetrico": 0.045454545454545456,
+      "tasa_densidad_airy": 0,
+      "se_espera_organica": false
+    },
+    {
+      "clase": "columna_organica",
+      "familia": "columna",
+      "imagenes": 19,
+      "corridas": 38,
+      "tasa_sin_estructura": 0,
+      "tasa_familia_presente": 0.9210526315789473,
+      "tasa_familia_principal": 0.8947368421052632,
+      "tasa_contorno_asimetrico": 0.8571428571428571,
+      "tasa_densidad_airy": 0,
+      "se_espera_organica": true
+    },
+    {
+      "clase": "semiarco_organico",
+      "familia": "semiarco",
+      "imagenes": 8,
+      "corridas": 16,
+      "tasa_sin_estructura": 0,
+      "tasa_familia_presente": 0.75,
+      "tasa_familia_principal": 0.75,
+      "tasa_contorno_asimetrico": 1,
+      "tasa_densidad_airy": 0,
+      "se_espera_organica": true
+    }
+  ],
+  "confusion_familia_carpeta_vs_principal": {
+    "columna": {
+      "columna": 78,
+      "semiarco": 4
+    },
+    "arco": {
+      "arco": 29,
+      "semiarco": 9
+    },
+    "semiarco": {
+      "semiarco": 12,
+      "arco": 1,
+      "columna": 3
+    }
+  },
+  "tipos_detector_por_clase": {
+    "columna_organica": {
+      "column": 46,
+      "ceiling_installation": 5,
+      "half_arch": 5,
+      "cluster": 2
+    },
+    "arco": {
+      "arch": 22,
+      "half_arch": 2,
+      "sculpture": 2,
+      "column": 2
+    },
+    "semiarco_organico": {
+      "half_arch": 12,
+      "arch": 1,
+      "column": 3,
+      "cluster": 8,
+      "bouquet": 4
+    },
+    "columna": {
+      "column": 89
+    },
+    "arco_organico": {
+      "half_arch": 7,
+      "arch": 7
+    }
+  },
+  "imagenes_inestables": [
+    {
+      "image_sha256": "7b6d4c8aca74707bb80cbe51c2986c3fcc60d76bc3c90af428241dc5c22db556",
+      "clase": "semiarco_organico",
+      "principales": [
+        "semiarco",
+        "arco"
+      ]
+    },
+    {
+      "image_sha256": "a1999b142a3dcac897dd68d795049bdad28e6dde16641b38c5c20e346f4eabff",
+      "clase": "semiarco_organico",
+      "principales": [
+        "columna",
+        "semiarco"
+      ]
+    },
+    {
+      "image_sha256": "2453c36509b1211b5ec42cb4aa735c4d9afd80c54a685646233e892668487f8a",
+      "clase": "columna_organica",
+      "principales": [
+        "semiarco",
+        "columna"
+      ]
+    },
+    {
+      "image_sha256": "d8ff6432f86b437cf78a8c659f7b3a5aa9dafdab0dc0967bbcf727bba3253e36",
+      "clase": "semiarco_organico",
+      "principales": [
+        "columna",
+        "semiarco"
+      ]
+    },
+    {
+      "image_sha256": "ef8336b47f3bfec04de21fd9e6506e450ac6c16e0f09f38ae3673967ab43aff0",
+      "clase": "semiarco_organico",
+      "principales": [
+        "semiarco",
+        "columna"
+      ]
+    },
+    {
+      "image_sha256": "eb14530991add93266cef8273dc078e6209981ae19506fb66fa6ee36ef21159e",
+      "clase": "arco_organico",
+      "principales": [
+        "semiarco",
+        "arco"
+      ]
+    },
+    {
+      "image_sha256": "eeb5df6e6de5f37077713ad17f2cb8b367bc845e122eb0e276ea8e31b47a8682",
+      "clase": "columna_organica",
+      "principales": [
+        "columna",
+        "semiarco"
+      ]
+    }
+  ]
+}
