@@ -8,6 +8,7 @@ import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
 import { estimateFromPlan } from "@/lib/materiales/estimacion";
 import { buildQaObserverPrompt, evaluateSceneQa, parseVisionObservation, qaPlanInputsFromPlan, type QaPlanInputs } from "@/lib/ia/image-qa";
 import { compileLoraCaption } from "@/lib/ia/lora-caption-compiler";
+import { buildImagePrompt } from "@/lib/ia/build-image-prompt";
 import type { VisualContext } from "@/lib/ia/visual-context";
 
 /**
@@ -81,6 +82,10 @@ function paridadConPrompt(caso: string, { escena, officialStructures }: PlanApro
     const prompt = compileLoraCaption({ sceneSpec: escena, visualContext: CONTEXTO, officialStructures, dialect }).prompt;
     assert.equal(PROMPT_PIDE_SEPARACION.test(prompt), pideSeparacion, `${caso} (${dialect}): el prompt LoRA ${pideSeparacion ? "debe" : "no debe"} pedir separación: ${prompt}`);
   }
+  // Mismo dueño de la regla en el camino Gemini: la cláusula del hueco abierto
+  // aparece exactamente cuando el QA la va a exigir.
+  const promptGemini = buildImagePrompt({ sceneSpec: escena, officialStructures });
+  assert.equal(/SEPARATE SIDE PIECES:/.test(promptGemini), pideSeparacion, `${caso}: el prompt de imagen ${pideSeparacion ? "debe" : "no debe"} pedir el hueco abierto`);
   const plan = { officialStructures };
   const instruccion = buildQaObserverPrompt(escena, undefined, plan);
   assert.equal(/separate_side_pieces/.test(instruccion), pideSeparacion, `${caso}: el observador pregunta por la separación igual que el prompt`);
@@ -215,7 +220,34 @@ async function main(): Promise<void> {
   }
   console.log("[PASS] paridad: el QA pide y evalúa la separación justo cuando el prompt LoRA la pidió, con las variantes declaradas del plan");
 
-  // 7. Parseo en la frontera: campo validado en runtime y compatible con respuestas antiguas.
+  // 7. Cardinalidad por tipo de estructura, no por subcadena del nombre:
+  // "Semiarco…" y "Marco circular…" se contaban como arcos completos ("render
+  // exactly 2 arches") y el resto de tipos salían como el token interno.
+  const cardinalidad = await planAprobado("dddddddd-dddd-4ddd-8ddd-dddddddddddd", [
+    { estructura_id: "EST_01_SEMIARCO", nombre: "Semiarco izquierdo", tipo: "semiarco", rol_escena: "focal", ubicacion: "lateral_izquierdo", medidas: { ancho_m: 1.2, alto_m: 2.2 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales, porque: "Pieza principal a un lado." },
+    { estructura_id: "EST_02_MARCO", nombre: "Marco circular de globos", tipo: "arco", rol_escena: "soporte", ubicacion: "arco_central", medidas: { ancho_m: 1.6, alto_m: 1.6 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales, porque: "Aro al centro." },
+    { estructura_id: "EST_03_COLUMNA", nombre: "Columna derecha", tipo: "columna", rol_escena: "soporte", ubicacion: "lateral_derecho", medidas: { alto_m: 1.8 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales, porque: "Columna al otro lado." },
+  ]);
+  const promptCardinalidad = buildImagePrompt({ sceneSpec: cardinalidad.escena, officialStructures: cardinalidad.officialStructures });
+  const contrato = promptCardinalidad.split("\n").find((linea) => linea.startsWith("CARDINALITY CONTRACT"))!;
+  assert.doesNotMatch(contrato, /\d+ arches/, contrato);
+  assert.match(contrato, /1 half-arch/, contrato);
+  assert.match(contrato, /1 circular hoop/, contrato);
+  assert.match(contrato, /1 column/, contrato);
+  assert.doesNotMatch(contrato, /balloon_structure/, "ningún token interno llega al modelo");
+  // La forma abierta del semiarco viaja con la instancia, igual que la del arco.
+  assert.match(promptCardinalidad, /one-sided half-arch rising from the floor on one side and ending in open air; never closed into a full arch/);
+  // Y el semiarco a la izquierda con la columna a la derecha piden el hueco.
+  assert.match(promptCardinalidad, /SEPARATE SIDE PIECES: Semiarco izquierdo on the left and Columna derecha on the right/);
+  assert.doesNotMatch(promptCardinalidad, /SEPARATE SIDE PIECES:[^\n]*EST_\d/, "la cláusula usa nombres legibles, no ids");
+  // Varias instancias del mismo tipo se pluralizan bien.
+  const parDeSemiarcos = await planAprobado("eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", [
+    { estructura_id: "EST_01_SEMIARCOS", nombre: "Semiarcos laterales", tipo: "semiarco", rol_escena: "focal", ubicacion: "lateral_izquierdo", medidas: { ancho_m: 1.2, alto_m: 2.2 }, repeticiones: 2, densidad: "media", mezcla: "clasica", materiales, porque: "Uno a cada lado." },
+  ]);
+  assert.match(buildImagePrompt({ sceneSpec: parDeSemiarcos.escena, officialStructures: parDeSemiarcos.officialStructures }), /render exactly 2 half-arches/);
+  console.log("[PASS] cardinalidad: semiarco, aro y columna se cuentan por tipo declarado, no por el nombre");
+
+  // 8. Parseo en la frontera: campo validado en runtime y compatible con respuestas antiguas.
   assert.equal(parseVisionObservation({ separate_side_pieces: "merged" }).sidePiecesSeparation, "merged");
   assert.equal(parseVisionObservation({ separate_side_pieces: "separate" }).sidePiecesSeparation, "separate");
   assert.equal(parseVisionObservation({ separate_side_pieces: null }).sidePiecesSeparation, null);

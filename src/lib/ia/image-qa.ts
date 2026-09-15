@@ -6,11 +6,10 @@ import type { DesignMaterialEstimate } from "@/lib/materiales/estimacion";
 import { identificarEstructuraOficial, type EstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { AMBIENTACION_IMAGEN, esAmbientacionPermitida, perfilCreatividad, type NivelCreatividad } from "./creatividad";
 import { featureEnabled } from "./feature-flags";
-import { compileLoraCaption, type LoraVisualClause } from "./lora-caption-compiler";
+import { compileLoraCaption, GROUPING_ONLY_CONTEXT, type LoraVisualClause } from "./lora-caption-compiler";
 import { describirMezclaDeColor, mezclaDeColorDeEstructura } from "./mezcla-color-escena";
 import { findSeparateSidePieces, type SeparateSidePieces } from "./separate-side-pieces";
 import { bytesBase64, registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "./telemetria-llamadas";
-import type { VisualContext } from "./visual-context";
 
 export type ImageQaReport = {
   required_elements: Array<{ element_id: string; present: boolean; placement_ok: boolean; appearance_ok: boolean; confidence: number | null }>;
@@ -168,11 +167,9 @@ export function qaPlanInputsFromPlan(estructuras: ReadonlyArray<{ estructura_id:
 /**
  * The caption compiler owns which left/right structures form a mirrored pair
  * and which official structure each element is; its grouping reads only the
- * scene and the plan inputs, so the context here is neutral and the compiled
- * wording is discarded.
+ * scene and the plan inputs, so the context is neutral (GROUPING_ONLY_CONTEXT,
+ * shared with the image prompt) and the compiled wording is discarded.
  */
-const GROUPING_ONLY_CONTEXT: VisualContext = { venueKind: "unknown", lightingKind: "unspecified", palette: [] };
-
 function compiledClauses(sceneSpec: SceneSpec, plan: QaPlanInputs | undefined): LoraVisualClause[] {
   return compileLoraCaption({ sceneSpec, visualContext: GROUPING_ONLY_CONTEXT, officialStructures: plan?.officialStructures }).clauses;
 }

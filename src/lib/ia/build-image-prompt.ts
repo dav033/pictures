@@ -2,7 +2,8 @@ import { AMBIENTACION_IMAGEN, perfilCreatividad, type AmbientacionImagen, type N
 import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { describirMezclaDeColor, mezclaDeColorDeEstructura } from "./mezcla-color-escena";
 import { tableSupportedElements, type SceneSpec } from "./scene-spec";
-import { buildLoraImagePromptV2 } from "./lora-caption-compiler";
+import { buildLoraImagePromptV2, compileLoraCaption, GROUPING_ONLY_CONTEXT, type LoraVisualClause } from "./lora-caption-compiler";
+import { findSeparateSidePieces } from "./separate-side-pieces";
 import {
   buildPositiveEnvironmentCues,
   buildVisualFailureConditions,
@@ -99,6 +100,12 @@ function shapeClause(element: SceneSpec["elements"][number], officialStructures?
   });
   if (semantics.structure_type === "arco" && official?.forma !== "circular") {
     return " Form: a free-standing inverted-U arch, both legs standing on the floor and joined by one continuous curve over the top; never a round hoop, a ring, or a closed square frame.";
+  }
+  // Un semiarco dibujado como arco completo (o cerrado contra la pieza del
+  // otro lado) es el fallo que el QA marca como piezas unidas: su forma
+  // abierta tiene que estar en el prompt, igual que la del arco.
+  if (semantics.structure_type === "semiarco") {
+    return " Form: a one-sided half-arch rising from the floor on one side and ending in open air; never closed into a full arch, a hoop, or a frame.";
   }
   if (semantics.structure_type === "guirnalda" && semantics.placement === "fondo_pared") {
     return " Support: mounted flat against the wall along its whole length with visible anchoring; it never floats away from the wall.";
@@ -263,15 +270,103 @@ function decorationCompositionContract(sceneSpec: SceneSpec, visualContext?: Vis
   return layers;
 }
 
-function cardinalityContract(sceneSpec: SceneSpec): string {
+/**
+ * Sustantivo en inglés de cada estructura oficial para contarla. `sustantivoEn`
+ * es la descripción larga que el caption necesita ("organic balloon garland
+ * arch"); aquí hace falta el sustantivo corto, porque esta es la instrucción
+ * numérica más prominente del prompt.
+ */
+const SUSTANTIVO_CARDINALIDAD: Readonly<Record<string, string>> = {
+  arco: "arch",
+  arco_asimetrico: "arch",
+  arco_no_denso: "arch",
+  semiarco: "half-arch",
+  semiarco_asimetrico: "half-arch",
+  columna: "column",
+  columna_asimetrica: "column",
+  columna_no_densa: "column",
+  pared_densa: "balloon wall",
+  pared_no_densa: "balloon wall",
+  guirnalda: "garland",
+  centro_mesa: "table centerpiece",
+  bouquet: "balloon bouquet",
+  figura: "balloon figure",
+  aro_circular: "circular hoop",
+  techo_globos: "ceiling balloon installation",
+};
+
+/** Por tipo del plan cuando la estructura oficial no se puede identificar (backdrop, kit, accesorio). */
+const SUSTANTIVO_POR_TIPO: Readonly<Record<string, string>> = {
+  arco: "arch",
+  semiarco: "half-arch",
+  columna: "column",
+  guirnalda: "garland",
+  pared: "balloon wall",
+  centro_mesa: "table centerpiece",
+  backdrop: "backdrop",
+  kit: "balloon kit",
+  accesorio: "balloon accent",
+  escultura: "balloon figure",
+};
+
+function pluralizarEstructura(noun: string): string {
+  return noun.endsWith("arch") ? `${noun}es` : `${noun}s`;
+}
+
+/**
+ * Tipo contable de un elemento. Antes se decidía con `name.includes("arco")`,
+ * así que "Semiarco…" y "Marco circular…" se contaban como arcos completos y
+ * cualquier otro tipo salía como el token interno (`balloon_structure`). La
+ * semántica declarada manda; el nombre solo sirve para escenas sin ella.
+ */
+function cardinalityKind(element: SceneSpec["elements"][number], officialStructures?: ReadonlyMap<string, string>): string {
+  const semantics = element.visual_semantics;
+  if (semantics) {
+    const official = identificarEstructuraOficial({
+      tipo: semantics.structure_type,
+      densidad: semantics.density,
+      ubicacion: semantics.placement,
+      nombre: element.name,
+      estructura_oficial: officialStructures?.get(semantics.repetition_group) ?? officialStructures?.get(element.element_id),
+    });
+    const noun = (official && SUSTANTIVO_CARDINALIDAD[official.id]) ?? SUSTANTIVO_POR_TIPO[semantics.structure_type];
+    if (noun) return noun;
+  }
+  const normalized = element.name.toLowerCase();
+  if (/\bsemiarcos?\b/.test(normalized)) return "half-arch";
+  if (/\bmarcos?\b/.test(normalized)) return "frame";
+  if (normalized.includes("arco")) return "arch";
+  if (normalized.includes("columna")) return "column";
+  return element.category;
+}
+
+/**
+ * Piezas laterales separadas: misma regla y mismo dueño que el QA
+ * (separate-side-pieces.ts sobre las cláusulas del compilador, con un contexto
+ * visual neutro porque solo interesa la agrupación). El prompt tenía una
+ * separación genérica, pero no el hueco abierto entre la pieza izquierda y la
+ * derecha que el QA sí exige y por el que dispara un reintento pagado.
+ */
+function separateSidePiecesSentence(sceneSpec: SceneSpec, officialStructures?: ReadonlyMap<string, string>): string {
+  const clauses = compileLoraCaption({ sceneSpec, visualContext: GROUPING_ONLY_CONTEXT, officialStructures }).clauses;
+  const pieces = findSeparateSidePieces(clauses);
+  if (!pieces) return "";
+  const nombres = (grupo: readonly LoraVisualClause[]) => grupo
+    .flatMap((clause) => clause.elementIds)
+    .map((id) => promptElementName(sceneSpec.elements.find((element) => element.element_id === id)?.name ?? id))
+    .join(" and ");
+  return ` SEPARATE SIDE PIECES: ${nombres(pieces.left)} on the left and ${nombres(pieces.right)} on the right are separate installations with an open gap between them; never join them into one continuous arch, frame, or garland across that gap.`;
+}
+
+function cardinalityContract(sceneSpec: SceneSpec, officialStructures?: ReadonlyMap<string, string>): string {
   const counts = new Map<string, number>();
   for (const element of sceneSpec.elements) {
-    const normalized = element.name.toLowerCase();
-    const kind = normalized.includes("arco") ? "arches" : normalized.includes("columna") ? "columns" : element.category;
+    const kind = cardinalityKind(element, officialStructures);
     counts.set(kind, (counts.get(kind) ?? 0) + 1);
   }
-  const summary = [...counts.entries()].map(([kind, count]) => `${count} ${kind}`).join(" and ");
-  return `CARDINALITY CONTRACT: render exactly ${summary || "zero approved physical instances"}, meaning exactly ${sceneSpec.elements.length} distinct installed structure(s). Each listed element is one visible structure, not one balloon or one package. The quantity inside an element is its installed material quantity; never turn it into extra structures. Keep every listed structure separate, positioned separately, and neither merge, duplicate, nor omit any one.`;
+  const partes = [...counts.entries()].map(([kind, count]) => `${count} ${count === 1 ? kind : pluralizarEstructura(kind)}`);
+  const summary = partes.length > 2 ? `${partes.slice(0, -1).join(", ")} and ${partes[partes.length - 1]}` : partes.join(" and ");
+  return `CARDINALITY CONTRACT: render exactly ${summary || "zero approved physical instances"}, meaning exactly ${sceneSpec.elements.length} distinct installed structure(s). Each listed element is one visible structure, not one balloon or one package. The quantity inside an element is its installed material quantity; never turn it into extra structures. Keep every listed structure separate, positioned separately, and neither merge, duplicate, nor omit any one.${separateSidePiecesSentence(sceneSpec, officialStructures)}`;
 }
 
 function colorVarietyContract(sceneSpec: SceneSpec): string[] {
@@ -342,7 +437,7 @@ export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, 
   const instanceContract = sceneSpec.elements.length
     ? sceneSpec.elements.map((element, index) => `- EXACTLY ONE physical installed structure ${index + 1}: render the approved ${element.category} described by “${promptElementName(element.name)}”; use only its assigned placement and installed quantity.${physicalScale(element)}${shapeClause(element, officialStructures)} Quantity means material units inside this one structure, not additional structures. This description is invisible metadata; never print or turn it into a sign.`).join("\n")
     : "- No physical decoration instances are approved.";
-  const physicalCardinality = cardinalityContract(sceneSpec);
+  const physicalCardinality = cardinalityContract(sceneSpec, officialStructures);
   const colorVariety = colorVarietyContract(sceneSpec);
   const eventAuthority = eventAuthorityContract(visualContext, styling);
   const referenceCapacityNotice = droppedCatalogReferenceCount > 0
