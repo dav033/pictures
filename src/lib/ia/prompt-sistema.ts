@@ -137,6 +137,7 @@ DISEÑO DE LA DECORACIÓN (activo)
 - FOTO SIN GLOBOS: si ANALISIS_REFERENCIA_VISUAL no trae ninguna estructura de globos (balloon_structure) y el cliente no nombró piezas (arco, columnas, centros de mesa, bouquet…), PREGUNTA antes de armar: dile en una frase que su foto no tiene decoración con globos y pregúntale qué piezas quiere, o sugiérele elegir una de las fotos de ejemplo. No inventes estructuras ni llames confirmar_plan_decoracion hasta que responda; con un nivel de CREATIVIDAD DEL DISEÑO que permita acentos extra sobre la foto sí puedes proponerlos. Si confirmar_plan_decoracion devuelve REFERENCIA_SIN_GLOBOS, haz esa pregunta.
 - Respeta alcance comercial de cada elemento: un elemento fuera_de_catalogo no dispara buscar_catalogo_rag ni una propuesta de emulación; decláralo con motivo_tipo "fuera_de_catalogo". Un elemento emulable solo puede quedar como propuesta pendiente con motivo_tipo "emulacion_propuesta" y propuesta explícita; no lo asignes a una estructura en el primer plan.
 - La respuesta de confirmar_plan_decoracion incluye \`evento.event_label\`, \`evento.original_request\`, \`evento.match_levels\` y \`evento.relaxations\`; consérvalos en el resumen. Si aparece \`thematic\` o \`adaptable\`, dilo como propuesta temática/adaptable, nunca como coincidencia exacta.
+- PROPORCIONES DE LA FOTO: cuando un elemento trae "mezcla de color observada", esa mezcla es el punto de partida de materiales[].participacion (múltiplos de 0,05 que sumen 1) y el material de mayor participación va con rol_material "principal". Es una guía, no una orden: los colores que el cliente pidió explícitamente y lo que el catálogo de verdad cubre mandan sobre ella; si un color de la mezcla no se puede comprar, reparte su participación entre los que sí y cuéntaselo al cliente.
 - COLORES DE LA FOTO: usa en cada estructura los colores observados de SU elemento de referencia (con varias fotos, cada estructura sigue la paleta de su propia foto, no la de otra). Nunca armes una estructura con un color que la foto no tiene (por ejemplo, todo transparente para una foto rosa y plata) mientras el catálogo tenga los colores de la foto: si una búsqueda no te trae uno de esos colores, búscalo aparte con una consulta de un solo color ("globo latex redondo rosado") antes de confirmar. Si confirmar_plan_decoracion devuelve COLORES_REFERENCIA_OMITIDOS, arma esas estructuras con los colores de "colores_omitidos" y vuelve a confirmar; si una búsqueda de un color no lo trae, no la repitas: confirma con lo que tengas y el sistema avisará al cliente. Si devuelve "avisos_cliente", son colores dominantes de la foto que el catálogo no tiene o que la propuesta no lleva: díselos al cliente en tu resumen, sin omitir ninguno, y ofrécele buscar esos colores.
 - MEDIDAS DEL ESPACIO: no mides fotos. espacio.fuente "foto" solo dice que el TIPO de espacio (salón, jardín, terraza…) lo viste en la foto; no pongas ancho_m, alto_m ni largo_m del espacio salvo que el cliente te haya dado esas medidas (entonces fuente "cliente"). Si no las dio, omítelas: el sistema marca cualquier medida sin dato del cliente como estimada y le pide confirmarla.
 - "porque" de cada estructura: una frase corta para el cliente, en español y sin jerga, sobre para qué sirve la pieza en su evento ("Enmarca la mesa del pastel"). No menciones la imagen de referencia, la foto analizada, identificadores ni verbos como "materializa".
@@ -153,6 +154,18 @@ const REFERENCE_ROLE_LABELS: Record<string, string> = {
   aligned_with: "alineado con",
   supports: "sostiene a",
 };
+
+/** Valor por defecto de `appearance.composition` (reference-blueprint.ts): no aporta proporciones. */
+const COMPOSICION_UNIFORME = "single uniform material";
+
+/**
+ * Texto libre del modelo de visión listo para ir entre comillas en el prompt:
+ * una sola línea, sin comillas dobles y con el mismo tope de 240 caracteres del
+ * blueprint, para que no pueda salirse del campo citado (test-inyeccion-prompt.ts).
+ */
+function sanearTextoObservado(texto: string): string {
+  return texto.replace(/\s+/g, " ").replace(/"/g, "").trim().slice(0, 240);
+}
 
 /**
  * Serializa el blueprint de referencia (analizado por
@@ -173,6 +186,13 @@ export function serializeReferenceBlueprint(blueprint: ReferenceBlueprintV2): st
       const bbox = element.reference_bbox;
       const posicion = `x${bbox.x.toFixed(2)} y${bbox.y.toFixed(2)} w${bbox.width.toFixed(2)} h${bbox.height.toFixed(2)}`;
       const colores = element.appearance.observed_colors.join(", ") || "no determinable";
+      // La proporción de cada color ya la extrajo el análisis de la foto: sin
+      // ella el plan inventa las participaciones (BLOQUE_PLAN, PROPORCIONES DE
+      // LA FOTO). El valor por defecto no dice nada, así que no se manda.
+      const composicion = sanearTextoObservado(element.appearance.composition);
+      const mezclaObservada = composicion && composicion.toLowerCase() !== COMPOSICION_UNIFORME
+        ? `; mezcla de color observada: "${composicion}"`
+        : "";
       const relaciones = element.relationships
         .map((relation) => `${REFERENCE_ROLE_LABELS[relation.type] ?? relation.type} ${relation.target_element_id}`)
         .join("; ") || "ninguna";
@@ -187,7 +207,7 @@ export function serializeReferenceBlueprint(blueprint: ReferenceBlueprintV2): st
       const estructura = semantica
         ? ` Estructura detectada: ${oficial ? `estructura oficial "${oficial.nombre}", ` : ""}tipo ${semantica.structure_type}, densidad ${semantica.density}, ubicación ${semantica.placement}, rol ${semantica.design_role}; forma: ${element.appearance.shape}. Usa exactamente esa estructura oficial (su etiqueta al inicio del nombre y en estructura_oficial), ese tipo y esa ubicación en la estructura del plan que lo materialice, con materiales que cubran sus colores y acabados observados (chrome/metallic = reflex, pearl = satin, clear = transparente: elige el producto con ese acabado y regístralo en materiales[].acabado) y alturas que respeten su forma relativa; dos piezas separadas son dos estructuras. Si el catálogo no tiene un color, acabado o tamaño grande observado, díselo al cliente en una frase.`
         : "";
-      return `- ${element.element_id} (${element.category}, alcance ${alcance.alcance}, capa ${element.scene_role}): "${element.name}"${estructura ? ` —${estructura}` : ""} — colores observados: ${colores}; posición en la referencia: ${posicion}; piezas iguales en la foto: ${element.quantity.mode === "exact" ? element.quantity.min : `${element.quantity.min}-${element.quantity.max}`}; relaciones: ${relaciones}. Nota comercial: ${alcance.nota}${emulacion}`;
+      return `- ${element.element_id} (${element.category}, alcance ${alcance.alcance}, capa ${element.scene_role}): "${element.name}"${estructura ? ` —${estructura}` : ""} — colores observados: ${colores}${mezclaObservada}; posición en la referencia: ${posicion}; piezas iguales en la foto: ${element.quantity.mode === "exact" ? element.quantity.min : `${element.quantity.min}-${element.quantity.max}`}; relaciones: ${relaciones}. Nota comercial: ${alcance.nota}${emulacion}`;
     })
     .join("\n");
   return elementos || "- Ningún elemento relevante detectado.";

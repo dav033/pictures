@@ -81,6 +81,26 @@ function run() {
   assert.ok(serializado1.includes("REF_01_E02"), "debe listar el elemento aprobado 2");
   assert.ok(!serializado1.includes("REF_01_E03"), "no debe listar elementos no aprobados");
 
+  // W3.1: la proporción de color que ya extrajo el análisis de la foto llega al
+  // plan; el valor por defecto del esquema no aporta nada y no se manda.
+  assert.ok(serializado1.includes('mezcla de color observada: "70% rojo, 30% dorado"'), serializado1);
+  const lineaCortina = serializado1.split("\n").find((linea) => linea.includes("REF_01_E01")) ?? "";
+  assert.ok(!lineaCortina.includes("mezcla de color observada"), lineaCortina);
+
+  // El texto viene del modelo de visión: una sola línea, sin comillas dobles y
+  // acotado, para que no pueda salirse del campo citado.
+  const blueprintTextoLibre = ReferenceBlueprintV2Schema.parse({
+    ...blueprint,
+    elements: blueprint.elements.map((element) => element.element_id === "REF_01_E02"
+      ? { ...element, appearance: { ...element.appearance, composition: `60% "rosado" en la base\n  40% dorado arriba` } }
+      : element),
+  });
+  const lineaArco = serializeReferenceBlueprint(blueprintTextoLibre).split("\n").find((linea) => linea.includes("REF_01_E02")) ?? "";
+  const citado = /mezcla de color observada: "([^"]*)"/.exec(lineaArco);
+  assert.ok(citado, lineaArco);
+  assert.equal(citado[1], "60% rosado en la base 40% dorado arriba");
+  assert.ok(citado[1]!.length <= 240, String(citado[1]!.length));
+
   // BLOQUE_PLAN menciona "ANALISIS_REFERENCIA_VISUAL" de pasada (explicando
   // cuándo aplica referencia_element_id) — el encabezado completo con
   // "(presente en este turno)" solo lo agrega bloqueReferencia() de verdad.
@@ -89,6 +109,7 @@ function run() {
   const sistemaConPlanYReferencia = construirSistema({ ragEnabled: true, franjasEnabled: false, planEnabled: true, referenceBlueprint: blueprint });
   assert.ok(sistemaConPlanYReferencia.includes(encabezadoBloque), "el bloque debe aparecer con plan activo + blueprint");
   assert.ok(sistemaConPlanYReferencia.includes("REF_01_E02"), "el bloque debe incluir los element_id reales");
+  assert.match(sistemaConPlanYReferencia, /PROPORCIONES DE LA FOTO[\s\S]*participacion[\s\S]*principal/, "la regla que usa la mezcla observada debe estar en el prompt");
 
   const sistemaSinPlan = construirSistema({ ragEnabled: true, franjasEnabled: false, planEnabled: false, referenceBlueprint: blueprint });
   assert.ok(!sistemaSinPlan.includes(encabezadoBloque), "sin modo plan, el bloque nunca debe aparecer (auto-gateado)");
