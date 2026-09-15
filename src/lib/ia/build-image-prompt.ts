@@ -192,7 +192,9 @@ function materialEstimateContract(sceneSpec: SceneSpec): string {
     const color = line.color ?? "catalog color";
     colorLines.set(color, (colorLines.get(color) ?? 0) + line.design_quantity);
   }
-  const sizes = [...sizeLines.entries()].map(([size, quantity]) => `${quantity} ${size}`).join(", ");
+  // "78 balloons of 12-inch", no "78 12-inch": el modelo leía el diámetro
+  // pegado a la cantidad como una sola cifra.
+  const sizes = [...sizeLines.entries()].map(([size, quantity]) => `${quantity} balloons of ${size}`).join(", ");
   const colors = [...colorLines.entries()].map(([color, quantity]) => `${quantity} ${color}`).join(", ");
   const specials = estimate.special_elements.reduce((sum, line) => sum + line.design_quantity, 0);
   return [

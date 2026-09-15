@@ -210,10 +210,10 @@ export async function resolverEscenario(escenario: EscenarioCalibracion): Promis
     catalogOnly: true,
   }));
   const sizeMixBlock = bloqueMezclaPorEstructura(plan.estructuras.map((estructura) => ({
-    estructura_id: estructura.estructura_id,
     nombre: estructura.nombre,
     total_unidades: estructura.total_unidades,
-    mezcla_real: estructura.mezcla_real.map((linea) => ({ diamPulg: linea.diam_pulg, forma: linea.forma, unidades: linea.unidades, pct: linea.pct })),
+    repeticiones: estructura.repeticiones,
+    mezcla_real: estructura.mezcla_real.map((linea) => ({ diamPulg: linea.diam_pulg, forma: linea.forma, unidades: linea.unidades })),
   }))) ?? undefined;
   return { plan, sceneSpec, materialEstimate, qaPlan: approvedPlanQaInputs(plan), sizeMixBlock };
 }

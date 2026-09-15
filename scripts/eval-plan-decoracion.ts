@@ -50,10 +50,10 @@ async function main(): Promise<void> {
       }) as PlanDecoracion;
       const resuelto = await resolverPlan(pool, plan, whitelist);
       const sizeBlock = bloqueMezclaPorEstructura(resuelto.estructuras.map((estructura) => ({
-        estructura_id: estructura.estructura_id,
         nombre: estructura.nombre,
         total_unidades: estructura.total_unidades,
-        mezcla_real: estructura.mezcla_real.map((linea) => ({ diamPulg: linea.diam_pulg, forma: linea.forma, unidades: linea.unidades, pct: linea.pct })),
+        repeticiones: estructura.repeticiones,
+        mezcla_real: estructura.mezcla_real.map((linea) => ({ diamPulg: linea.diam_pulg, forma: linea.forma, unidades: linea.unidades })),
       })));
       const prompt = `${sizeBlock ?? ""}\n${resuelto.estructuras.map((estructura) => estructura.nombre).join("\n")}\n${resuelto.compras.map((compra) => descripcionFisicaTamano(compra.diam_pulg, "redondo") ?? "").join("\n")}`;
       const coherencia = verificarCoherenciaPrompt(prompt, resuelto).ok;

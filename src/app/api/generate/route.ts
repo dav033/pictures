@@ -1155,10 +1155,10 @@ async function generar(request: Request, generationRequestId: string): Promise<R
      }
     const sizeMixBlock = planResuelto
       ? bloqueMezclaPorEstructura(planResuelto.estructuras.map((estructura) => ({
-          estructura_id: estructura.estructura_id,
           nombre: estructura.nombre,
           total_unidades: estructura.total_unidades,
-          mezcla_real: estructura.mezcla_real.map((linea) => ({ diamPulg: linea.diam_pulg, forma: linea.forma, unidades: linea.unidades, pct: linea.pct })),
+          repeticiones: estructura.repeticiones,
+          mezcla_real: estructura.mezcla_real.map((linea) => ({ diamPulg: linea.diam_pulg, forma: linea.forma, unidades: linea.unidades })),
         }))) ?? undefined
       : bloqueMezclaTamanos([...unidadesPorTamano.values()]) ?? undefined;
     // Same plan map for the prompts below and for the QA, so all read the declared official structures alike.
