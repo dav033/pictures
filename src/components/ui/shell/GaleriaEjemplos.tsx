@@ -3,6 +3,7 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import { useId } from "react";
 import { Check, X } from "lucide-react";
+import { useFocoDeRetorno } from "@/components/ui/foco-retorno";
 import { MANIFIESTO_REFERENCIAS_EJEMPLO, urlMiniaturaEjemplo, type FotoEjemplo } from "@/lib/referencias-ejemplo/manifiesto";
 
 type Props = {
@@ -73,12 +74,14 @@ export function GaleriaEjemplos({ onElegir, elegidaId = null, deshabilitado = fa
  * "no pude mirar tu foto" cuando la conversación ya empezó.
  */
 export function DialogoEjemplos({ abierto, onCerrar, ...galeria }: Props & { abierto: boolean; onCerrar: () => void }) {
+  const focoRetorno = useFocoDeRetorno();
   return (
     <Dialog.Root open={abierto} onOpenChange={(valor) => { if (!valor) onCerrar(); }}>
       <Dialog.Portal>
         <Dialog.Overlay className="hoja-fondo" />
         <Dialog.Content
           aria-describedby={undefined}
+          {...focoRetorno}
           className="fixed left-1/2 top-1/2 z-[41] max-h-[calc(100dvh-2rem)] w-[min(52rem,calc(100vw-1.5rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-[1.25rem] border border-borde-suave bg-superficie p-5 shadow-[0_24px_60px_var(--sombra)] outline-none"
         >
           <div className="mb-3 flex items-center justify-between gap-3">

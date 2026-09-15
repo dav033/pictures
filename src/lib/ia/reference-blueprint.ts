@@ -242,6 +242,17 @@ function bboxIntersection(a: ReferenceBBox, b: ReferenceBBox): number {
   return Math.max(0, right - left) * Math.max(0, bottom - top);
 }
 
+/**
+ * Installed material units an element declares, or `undefined` when its
+ * quantity counts identical pieces (`physical_instances`: the reference
+ * analysis, "2 columns") instead of balloons. Plan and catalog blueprints omit
+ * `quantity_semantics` and keep material units.
+ */
+export function unidadesMaterialDeElemento(element: Pick<ReferenceBlueprintV2["elements"][number], "quantity" | "quantity_semantics">): number | undefined {
+  if (element.quantity_semantics === "physical_instances") return undefined;
+  return element.quantity.max || element.quantity.min || undefined;
+}
+
 export function bboxOverlap(a: ReferenceBBox, b: ReferenceBBox): number {
   const intersection = bboxIntersection(a, b);
   const union = a.width * a.height + b.width * b.height - intersection;

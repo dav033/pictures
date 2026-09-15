@@ -38,6 +38,8 @@ import { useModoVista } from "@/lib/estado/modo-vista";
 import { abrirPromptAutomaticamente, qaVisualEfectivo, usarLoraEfectivo } from "@/lib/estado/modo-vista-reglas";
 import { aplicarEventoHerramienta, cerrarPasos, type PasoAsistente } from "@/lib/estado/pasos-asistente";
 import { contextoEvento } from "@/lib/estado/contexto-evento";
+import { crearEsperaAnalisis, type EstadoAnalisisReferencia } from "@/lib/estado/espera-analisis";
+import { aligerarAdjuntos, claveImagen, imagenesSinMiniatura, type AdjuntosTurno } from "@/lib/estado/persistencia-adjuntos";
 import type { OrigenError } from "@/lib/estado/estado-error";
 import { archivoDeFotoEjemplo, type FotoEjemplo } from "@/lib/referencias-ejemplo/manifiesto";
 import { CabeceraApp } from "@/components/ui/shell/CabeceraApp";
@@ -99,23 +101,17 @@ type Mensaje = {
    * Fotos del turno que produjo este mensaje (iteración 4): miniatura en el
    * mensaje del cliente y recortes por pieza en la propuesta. El estado de
    * adjuntos del compositor puede cambiar después, así que se copian aquí al
-   * enviar. No se guardan en sessionStorage (base64 pesado).
+   * enviar. En sessionStorage solo va una miniatura liviana de las más
+   * recientes (src/lib/estado/persistencia-adjuntos.ts).
    */
   adjuntos?: AdjuntosTurno;
   /** Pasos en vivo del asistente para este turno (eventos SSE `herramienta`). */
   pasos?: PasoAsistente[];
 };
 
-type ImagenTurno = { id?: string; base64: string; mime: string };
-type AdjuntosTurno = { referencias: ImagenTurno[]; fotoEspacio?: ImagenTurno };
-
+/** Una foto restaurada de sessionStorage ya viene como data URL (su miniatura). */
 function dataUrl(imagen: { base64: string; mime: string }): string {
-  return `data:${imagen.mime};base64,${imagen.base64}`;
-}
-
-/** Clave estable de un adjunto para su etiqueta visible (título del ejemplo o nombre del archivo). */
-function claveImagen(imagen: { base64: string }): string {
-  return `${imagen.base64.length}:${imagen.base64.slice(-48)}`;
+  return imagen.base64.startsWith("data:") ? imagen.base64 : `data:${imagen.mime};base64,${imagen.base64}`;
 }
 
 /** Copia liviana de los adjuntos del turno; los ids siguen el orden que usa /api/references/analyze (REF_01…). */
@@ -148,7 +144,7 @@ const SUGERENCIAS = [
 ];
 
 const LIMITE_INACTIVIDAD_CHAT_MS = 90_000;
-/** Espera máxima del análisis de la foto antes de enviar el turno sin él (p95 medido: 20 s). */
+/** Espera máxima de un análisis de la foto que no responde antes de enviar el turno sin él (p95 medido: 20 s). Si falla, no se espera. */
 const LIMITE_ESPERA_ANALISIS_MS = 45_000;
 
 /** `order` de flexbox para lo que va después de toda la conversación (visualización, errores, análisis sin enviar). */
@@ -436,6 +432,23 @@ async function recortarAlAspecto(
   }
 }
 
+/** Miniatura JPEG liviana (data URL) de una foto del turno, para guardarla con la conversación. */
+async function miniaturaImagen(imagen: { base64: string; mime: string }, maxDim = 480, calidad = 0.72): Promise<string> {
+  const bitmap = await createImageBitmap(await (await fetch(dataUrl(imagen))).blob());
+  try {
+    const escala = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * escala));
+    canvas.height = Math.max(1, Math.round(bitmap.height * escala));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Sin canvas 2D.");
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", calidad);
+  } finally {
+    bitmap.close();
+  }
+}
+
 // Guard de generación, a nivel de módulo (una sola vez por pestaña, no por
 // instancia de componente). Bug real: adjuntar una referencia y mandar un
 // mensaje de chat casi a la vez puede hacer que DOS rutas independientes
@@ -527,7 +540,11 @@ export default function Page() {
   const [fotoEspacio, setFotoEspacio] = useState<(Imagen & { aspecto: PeticionImagen["aspecto"] }) | null>(null);
   const [imagenesReferencia, setImagenesReferencia] = useState<Imagen[]>([]);
   const [referenceDraft, setReferenceDraft] = useState<ReferenceDraft | null>(null);
-  const [referenceReady, setReferenceReady] = useState(true);
+  // Ciclo del análisis de la foto (onEstado del controlador): el estado pinta
+  // las ayudas; `esperaAnalisis` lo lee sin cierres viejos al enviar y generar.
+  const [estadoAnalisis, setEstadoAnalisis] = useState<EstadoAnalisisReferencia>("idle");
+  const [esperaAnalisis] = useState(() => crearEsperaAnalisis());
+  const analizandoFoto = estadoAnalisis === "analyzing";
   const [ultimaQa, setUltimaQa] = useState<ImageQaReport | null>(null);
   const [ultimaImagenGenerada, setUltimaImagenGenerada] = useState<Imagen | null>(null);
   const [ultimaGeneracion, setUltimaGeneracion] = useState<GeneracionVisible | null>(null);
@@ -543,7 +560,6 @@ export default function Page() {
   // último que se le asignó.
   const fotoEspacioRef = useRef<(Imagen & { aspecto: PeticionImagen["aspecto"] }) | null>(null);
   const imagenesReferenciaRef = useRef<Imagen[]>([]);
-  const referenceReadyRef = useRef(true);
   const referenceDraftRef = useRef<ReferenceDraft | null>(null);
   const briefRef = useRef<Brief>({});
   const solicitudUsuarioRef = useRef("");
@@ -609,10 +625,6 @@ export default function Page() {
   }, [imagenesReferencia]);
 
   useEffect(() => {
-    referenceReadyRef.current = referenceReady;
-  }, [referenceReady]);
-
-  useEffect(() => {
     referenceDraftRef.current = referenceDraft;
   }, [referenceDraft]);
 
@@ -656,16 +668,38 @@ export default function Page() {
     setCargadoDeStorage(true);
   }, []);
 
+  // Miniaturas ya generadas de las fotos de los turnos (clave → data URL; "" si falló).
+  const miniaturasRef = useRef(new Map<string, string>());
+  // Última escritura de la conversación: una miniatura que termina tarde vuelve a guardar el estado más nuevo.
+  const guardarChatRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     if (!cargadoDeStorage) return;
-    try {
-      // Sin los base64 de las fotos del turno: sessionStorage tiene un límite de
-      // pocos MB y un fallo aquí dejaría la conversación sin persistir.
-      const mensajesLivianos = mensajes.map((mensaje) => ({ ...mensaje, adjuntos: undefined }));
-      sessionStorage.setItem(CLAVE_CHAT, JSON.stringify({ mensajes: mensajesLivianos, brief, ultimasMedidas }));
-    } catch {
-      // idem
-    }
+    const guardar = () => {
+      try {
+        // Las fotos van como miniaturas livianas y con tope: sessionStorage tiene
+        // un límite de pocos MB y un fallo aquí dejaría la conversación sin persistir.
+        sessionStorage.setItem(CLAVE_CHAT, JSON.stringify({ mensajes: aligerarAdjuntos(mensajes, miniaturasRef.current), brief, ultimasMedidas }));
+      } catch {
+        try {
+          sessionStorage.setItem(CLAVE_CHAT, JSON.stringify({ mensajes: mensajes.map((mensaje) => ({ ...mensaje, adjuntos: undefined })), brief, ultimasMedidas }));
+        } catch {
+          // sessionStorage no disponible — se sigue sin persistencia.
+        }
+      }
+    };
+    guardarChatRef.current = guardar;
+    guardar();
+    const faltantes = imagenesSinMiniatura(mensajes, miniaturasRef.current);
+    if (!faltantes.length) return;
+    void Promise.all(faltantes.map(async (imagen) => {
+      const clave = claveImagen(imagen);
+      miniaturasRef.current.set(clave, "");
+      try {
+        miniaturasRef.current.set(clave, await miniaturaImagen(imagen));
+      } catch {
+        // Sin miniatura esa foto no se guarda; la conversación sí.
+      }
+    })).then(() => guardarChatRef.current?.());
   }, [mensajes, brief, ultimasMedidas, cargadoDeStorage]);
 
   useEffect(() => {
@@ -846,28 +880,6 @@ export default function Page() {
     }
   }
 
-  /** El análisis de referencias corre en paralelo y normalmente termina en
-   * segundos; en vez de bloquear el envío con un error, el turno se encola
-   * aquí mismo y sale apenas `referenceReady` pase a true — al cliente le
-   * llega la impresión de que su mensaje ya se está procesando, no de que
-   * la app está lenta o rota. */
-  function esperarReferenciasListas(): Promise<void> {
-    if (referenceReadyRef.current) return Promise.resolve();
-    let esperadoMs = 0;
-    return new Promise((resolve) => {
-      const intervalo = window.setInterval(() => {
-        esperadoMs += 150;
-        // Si el análisis falló, el controlador nunca vuelve a "listo": pasado el
-        // límite el turno sale igual, sin plano de la foto, en vez de quedarse
-        // "pensando" para siempre. El cliente ve el error del análisis aparte.
-        if (referenceReadyRef.current || esperadoMs > LIMITE_ESPERA_ANALISIS_MS) {
-          window.clearInterval(intervalo);
-          resolve();
-        }
-      }, 150);
-    });
-  }
-
   /**
    * `historialBase` permite reintentar un turno fallido: se reenvía el último
    * mensaje del cliente sobre la conversación anterior a él, sin duplicarlo.
@@ -905,8 +917,10 @@ export default function Page() {
     // El mensaje ya se ve enviado (burbuja + input limpio + "pensando"); si
     // el análisis de referencias sigue en curso, la espera ocurre aquí,
     // detrás de esa misma burbuja, en vez de con un error que obligue a
-    // reenviar el turno.
-    if (imagenesReferenciaRef.current.length > 0 && !referenceReadyRef.current) await esperarReferenciasListas();
+    // reenviar el turno. Termina en cuanto el análisis acaba o falla (el turno
+    // sale sin plano de la foto y el cliente ve el error del análisis aparte);
+    // el límite solo cubre un análisis que no responde.
+    if (imagenesReferenciaRef.current.length > 0) await esperaAnalisis.esperar(LIMITE_ESPERA_ANALISIS_MS);
     // Fotos que realmente viajan en este turno (leídas de los refs, igual que el cuerpo).
     const adjuntosTurno = adjuntosDelTurno(imagenesReferenciaRef.current, fotoEspacioRef.current);
     const controlador = new AbortController();
@@ -1041,7 +1055,8 @@ export default function Page() {
     setImagenes([]);
     setReferenceDraft(null);
     referenceDraftRef.current = null;
-    setReferenceReady(true);
+    setEstadoAnalisis("idle");
+    esperaAnalisis.notificar("idle");
     setUltimaQa(null);
     setUltimaImagenGenerada(null);
     setUltimaGeneracion(null);
@@ -1137,7 +1152,9 @@ export default function Page() {
       : seleccionados.filter((producto) => producto.id.startsWith("manual-") && idsAUsar.includes(producto.id));
     const briefAUsar = override?.brief ?? briefRef.current;
     const solicitudUsuario = override?.solicitudUsuario ?? solicitudUsuarioRef.current;
-    if (imagenesReferenciaRef.current.length > 0 && !referenceReady) {
+    // Una generación automática espera al análisis en curso; una propuesta
+    // aprobada no (su plan ya está firmado), y un análisis fallido no bloquea nada.
+    if (imagenesReferenciaRef.current.length > 0 && esperaAnalisis.estado === "analyzing" && !override?.plan) {
       // eslint-disable-next-line react-hooks/globals -- deliberado: cola de deduplicación de generación en curso, ver declaración de pendienteAutoGlobal.
       pendienteAutoGlobal = { ids: productIdsGeneracion, ragVariantIds: ragVariantIdsAUsar, paquetes: paquetesAUsar, manualProducts: productosManuales, instruccion: (override?.instruccion ?? ajuste.trim()) || undefined, brief: briefAUsar, solicitudUsuario };
       return;
@@ -1448,14 +1465,14 @@ export default function Page() {
   // Dispara la generación automática que quedó encolada mientras otra seguía
   // en curso (ver el guard de `generando` dentro de `generar`).
   useEffect(() => {
-    if (generando || !referenceReady || hayPlanEnConversacion) return;
+    if (generando || analizandoFoto || hayPlanEnConversacion) return;
     const pendiente = pendienteAutoGlobal;
     if (!pendiente) return;
     // eslint-disable-next-line react-hooks/globals -- deliberado: consumir la cola encolada por generar(), ver declaración de pendienteAutoGlobal.
     pendienteAutoGlobal = null;
     generar(pendiente);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- generar se recrea cada render; pendienteAutoGlobal ya evita relanzar dos veces.
-  }, [generando, referenceReady, hayPlanEnConversacion]);
+  }, [generando, analizandoFoto, hayPlanEnConversacion]);
 
   /** No hay progreso real de la API — es un indicador de fase honesto por
    * tiempo transcurrido, no un porcentaje inventado. */
@@ -1550,7 +1567,7 @@ export default function Page() {
     }
   }
 
-  const listoParaGenerar = (seleccion.length > 0 || (imagenesReferencia.length > 0 && Boolean(referenceDraft?.blueprint))) && referenceReady;
+  const listoParaGenerar = (seleccion.length > 0 || (imagenesReferencia.length > 0 && Boolean(referenceDraft?.blueprint))) && !analizandoFoto;
   const planActualEntry = [...mensajes].reverse().find((mensaje) => mensaje.role === "assistant" && mensaje.plan);
   const planActual = planActualEntry?.plan;
   const planActualAprobado = Boolean(planActual && planAprobadoHash === planActual.plan_hash);
@@ -1575,9 +1592,9 @@ export default function Page() {
                 : "Generar visualización",
         deshabilitado: !listoParaGenerar || generando || esperandoPlanConReferencias,
         ayuda: esperandoPlanConReferencias
-          ? referenceReady && !generando ? "La imagen se habilita después de aprobar la propuesta que relaciona tu foto con productos reales." : null
+          ? !analizandoFoto && !generando ? "La imagen se habilita después de aprobar la propuesta que relaciona tu foto con productos reales." : null
           : !listoParaGenerar && !generando
-            ? referenceReady ? "Necesitas una pieza o una foto de referencia para generar." : "Estoy terminando de mirar tu foto."
+            ? analizandoFoto ? "Estoy terminando de mirar tu foto." : "Necesitas una pieza o una foto de referencia para generar."
             : null,
       };
   function generarDesdeSeleccion() {
@@ -1621,7 +1638,10 @@ export default function Page() {
           referenceDraftRef.current = draft;
           setReferenceDraft(draft);
         }}
-        onReady={setReferenceReady}
+        onEstado={(estado) => {
+          esperaAnalisis.notificar(estado);
+          setEstadoAnalisis(estado);
+        }}
         onElegirEjemplo={() => setGaleriaAbierta(true)}
       />
     </div>

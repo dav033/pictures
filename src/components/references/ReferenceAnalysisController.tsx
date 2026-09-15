@@ -6,13 +6,13 @@ import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import { ReferenceBlueprintV2Schema } from "@/lib/ia/reference-blueprint";
 import { CATALOGO_ERRORES_UI_V1, leerUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 import { tieneElementosAprobados, tieneEstructurasDeGlobos } from "@/lib/ia/reference-structure";
+import type { EstadoAnalisisReferencia } from "@/lib/estado/espera-analisis";
 import { ReferenceReviewPanel, type ReferenceDraft } from "./ReferenceReviewPanel";
 
 type Props = {
   references: Imagen[];
   proveedor: ProveedorId;
   onDraft: (draft: ReferenceDraft | null) => void;
-  onReady: (ready: boolean) => void;
   /**
    * Notified when the customer presses "Reintentar". The retry itself is
    * handled here: it re-sends the photo asking the server to skip its analysis
@@ -22,15 +22,17 @@ type Props = {
   /** Opens the example gallery from the "no balloons" and error states. */
   onElegirEjemplo?: () => void;
   /**
-   * Analysis lifecycle for the page (e.g. to tell "analyzing" from "failed").
-   * `info` comes with "ready": whether anything usable and any balloon
-   * structure were seen (server flags, or the same pure rules on the blueprint).
+   * Analysis lifecycle for the page: "analyzing" while it looks, then "ready"
+   * or "error" ("idle" without attachments), so a failed analysis never keeps
+   * a chat turn or an approval waiting. `info` comes with "ready": whether
+   * anything usable and any balloon structure were seen (server flags, or the
+   * same pure rules on the blueprint).
    */
-  onEstado?: (estado: EstadoAnalisisReferencia, info?: InfoAnalisisReferencia) => void;
+  onEstado: (estado: EstadoAnalisisReferencia, info?: InfoAnalisisReferencia) => void;
   className?: string;
 };
 
-export type EstadoAnalisisReferencia = "idle" | "analyzing" | "ready" | "error";
+export type { EstadoAnalisisReferencia } from "@/lib/estado/espera-analisis";
 export type InfoAnalisisReferencia = { tieneElementos: boolean; tieneEstructurasDeGlobos: boolean };
 
 /**
@@ -39,9 +41,9 @@ export type InfoAnalisisReferencia = { tieneElementos: boolean; tieneEstructuras
  */
 const CAMPO_SIN_CACHE = "sin_cache";
 
-export function ReferenceAnalysisController({ references, proveedor, onDraft, onReady, onReintentar, onElegirEjemplo, onEstado, className }: Props) {
+export function ReferenceAnalysisController({ references, proveedor, onDraft, onReintentar, onElegirEjemplo, onEstado, className }: Props) {
   const [blueprint, setBlueprint] = useState<ReferenceBlueprintV2 | null>(null);
-  const [status, setStatus] = useState<"idle" | "analyzing" | "ready" | "error">("idle");
+  const [status, setStatus] = useState<EstadoAnalisisReferencia>("idle");
   const [error, setError] = useState<string | null>(null);
   // Each retry bumps the attempt; the effect below re-runs and skips the cache.
   const [intento, setIntento] = useState(0);
@@ -58,8 +60,7 @@ export function ReferenceAnalysisController({ references, proveedor, onDraft, on
       setBlueprint(null);
       setStatus("idle");
       onDraft(null);
-      onReady(true);
-      onEstado?.("idle");
+      onEstado("idle");
       return;
     }
 
@@ -69,10 +70,9 @@ export function ReferenceAnalysisController({ references, proveedor, onDraft, on
     // server analyzes it.
     setBlueprint(null);
     setStatus("analyzing");
-    onEstado?.("analyzing");
+    onEstado("analyzing");
     setError(null);
     onDraft(null);
-    onReady(false);
     fetch("/api/references/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -101,16 +101,14 @@ export function ReferenceAnalysisController({ references, proveedor, onDraft, on
         setBlueprint(next);
         setStatus("ready");
         onDraft({ blueprint: next });
-        onReady(true);
-        onEstado?.("ready", info);
+        onEstado("ready", info);
       })
       .catch((reason) => {
         if (cancelled) return;
         setStatus("error");
         setError(reason instanceof Error ? reason.message : "No se pudo analizar.");
         onDraft(null);
-        onReady(false);
-        onEstado?.("error");
+        onEstado("error");
       });
 
     return () => {

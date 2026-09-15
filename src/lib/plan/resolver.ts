@@ -192,24 +192,35 @@ function lineaDesdeCandidato(origen: OrigenLineaPlan, candidato: Candidato, unid
 
 /**
  * Splits `unidades_declaradas` by `participacion` (mirror of `_distribute_units`
- * in services/ai-api/app/plan.py). Every declared material is a purchase, so
- * each one first gets one unit and only the rest is split by largest remainder
- * (ties by position). Regression: a figure with 4 materials declared with 1 unit
- * was quoted as one balloon of the first material.
+ * in services/ai-api/app/plan.py) by largest remainder (ties by position), as
+ * before the reference audit: a plan that already bought every material
+ * resolves to the same lines and keeps its signed `plan_hash`. Every declared
+ * material is a purchase, so a material left at zero takes one unit from the
+ * material with the most units (ties by position). A total below the number of
+ * materials resolves to one unit each (`validarUnidadesDeclaradas` rejects it at
+ * confirmation). Regression: a figure with 4 materials declared with 1 unit was
+ * quoted as one balloon of the first material.
  */
 function repartirUnidades(total: number, materiales: ReadonlyArray<{ participacion?: number }>): number[] {
   if (materiales.length === 0) return [];
-  const resto = Math.max(0, total - materiales.length);
-  const cuotas = materiales.map((material) => resto * (material.participacion ?? 0));
+  if (total < materiales.length) return materiales.map(() => 1);
+  const cuotas = materiales.map((material) => total * (material.participacion ?? 0));
   const unidades = cuotas.map(Math.floor);
-  let faltan = resto - unidades.reduce((sum, value) => sum + value, 0);
+  let faltan = total - unidades.reduce((sum, value) => sum + value, 0);
   const orden = cuotas.map((cuota, index) => ({ index, resto: cuota - unidades[index]! })).sort((a, b) => b.resto - a.resto || a.index - b.index);
   for (const item of orden) {
     if (faltan <= 0) break;
     unidades[item.index]! += 1;
     faltan -= 1;
   }
-  return unidades.map((cantidad) => cantidad + 1);
+  for (const [index, cantidad] of unidades.entries()) {
+    if (cantidad > 0) continue;
+    const donante = unidades.reduce((mejor, valor, posicion) => (valor > unidades[mejor]! ? posicion : mejor), 0);
+    if (unidades[donante]! <= 1) break;
+    unidades[donante]! -= 1;
+    unidades[index] = 1;
+  }
+  return unidades;
 }
 
 function mezclaReal(lineas: LineaMaterial[]): EstructuraResuelta["mezcla_real"] {

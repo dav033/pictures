@@ -21,7 +21,7 @@
   --texto: #1c1425;
   --texto-suave: #6b6178;
   /* Placeholders y metadatos terciarios. */
-  --texto-tenue: #9a90a8;
+  --texto-tenue: #766c85;
   --acento: #6d3fe0;
   --acento-hover: #5530b8;
   --acento-suave: #ece3fb;
@@ -30,11 +30,11 @@
   --acento-2: #d6216f;
   --acento-2-suave: #fbdfec;
   --salvia: #2f8f6b;
-  --exito: #2e9b6f;
+  --exito: #1f7a55;
   --exito-suave: #dcf5e9;
-  --error: #c84f59;
+  --error: #b23a45;
   --error-suave: #ffeaec;
-  --aviso: #b47b22;
+  --aviso: #8f5f12;
   --aviso-suave: #fff3d8;
   --sombra: rgb(28 20 37 / 0.08);
   --sombra-acento: rgb(109 63 224 / 0.22);
@@ -79,11 +79,13 @@
     --borde-suave: #2a2d38;
     --texto: #f4f5f7;
     --texto-suave: #9aa1ad;
-    --texto-tenue: #737a88;
-    --acento: #8b6cff;
+    --texto-tenue: #8a91a0;
+    --acento: #9479ff;
     --acento-hover: #a58dff;
     --acento-suave: #241f3d;
-    --sobre-acento: #ffffff;
+    /* Texto oscuro sobre el acento: el blanco no llega a AA (4,5:1) sobre un violeta
+       que también debe leerse como texto sobre la superficie (scripts/test-contraste-tema.ts). */
+    --sobre-acento: #120b24;
     --acento-2: #ff3d68;
     --acento-2-suave: #3a1522;
     --salvia: #5fd9a0;
@@ -110,11 +112,13 @@
   --borde-suave: #2a2d38;
   --texto: #f4f5f7;
   --texto-suave: #9aa1ad;
-  --texto-tenue: #737a88;
-  --acento: #8b6cff;
+  --texto-tenue: #8a91a0;
+  --acento: #9479ff;
   --acento-hover: #a58dff;
   --acento-suave: #241f3d;
-  --sobre-acento: #ffffff;
+  /* Texto oscuro sobre el acento: el blanco no llega a AA (4,5:1) sobre un violeta
+     que también debe leerse como texto sobre la superficie (scripts/test-contraste-tema.ts). */
+  --sobre-acento: #120b24;
   --acento-2: #ff3d68;
   --acento-2-suave: #3a1522;
   --salvia: #5fd9a0;

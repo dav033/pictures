@@ -14,6 +14,9 @@ The TypeScript resolver implements the same rules; the golden vectors
 from __future__ import annotations
 
 import json
+import math
+import random
+from collections.abc import Sequence
 from pathlib import Path
 from typing import cast
 
@@ -51,12 +54,45 @@ def test_distribute_units_never_leaves_a_declared_material_at_zero() -> None:
         (48, (0.25, 0.25, 0.25, 0.25), [12, 12, 12, 12]),
         (1, (1.0,), [1]),
         (0, (), []),
+        # Ties and small totals: the pre-audit split already bought both materials.
+        (10, (0.55, 0.45), [6, 4]),
     ],
 )
 def test_distribute_units_keeps_the_largest_remainder_split(
     total: int, shares: tuple[float, ...], expected: list[int]
 ) -> None:
     assert _distribute_units(total, _materials(*shares)) == expected
+
+
+def _pre_audit_split(total: int, shares: Sequence[float]) -> list[int]:
+    quotas = [total * share for share in shares]
+    floors = [math.floor(quota) for quota in quotas]
+    remaining = total - sum(floors)
+    for index in sorted(
+        range(len(quotas)), key=lambda item: (-(quotas[item] - floors[item]), item)
+    ):
+        if remaining <= 0:
+            break
+        floors[index] += 1
+        remaining -= 1
+    return floors
+
+
+def test_distribute_units_only_changes_plans_that_left_a_material_at_zero() -> None:
+    # plan_hash covers the resolved lines: a different split of a plan that
+    # already bought every material breaks approved plans at generation time.
+    rng = random.Random(20260914)
+    for _ in range(5000):
+        count = rng.randint(1, 4)
+        raw = [rng.randint(1, 20) for _ in range(count)]
+        shares = [round(value / sum(raw), 2) for value in raw]
+        total = rng.randint(count, 60)
+        before = _pre_audit_split(total, shares)
+        after = _distribute_units(total, _materials(*shares))
+        assert all(units >= 1 for units in after), (total, shares, after)
+        assert sum(after) == sum(before), (total, shares, before, after)
+        if min(before) >= 1:
+            assert after == before, (total, shares, before, after)
 
 
 def test_reference_colors_missing_from_the_lines_are_substitutions() -> None:

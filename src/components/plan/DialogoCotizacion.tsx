@@ -10,6 +10,7 @@ import type { CompraConsolidada, PlanResuelto } from "@/lib/plan/resuelto";
 import { acabadoCliente, contar, esEstructuraDeGlobos, productoCliente, pulgadasCliente, tonoCliente } from "@/lib/plan/presentacion-cliente";
 import { NumeroAnimado } from "@/components/propuesta/NumeroAnimado";
 import { BotonAprobar } from "@/components/propuesta/BotonAprobar";
+import { useFocoDeRetorno } from "@/components/ui/foco-retorno";
 
 const pesos = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 const numero = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 });
@@ -44,7 +45,8 @@ function fraseCompra(plan: PlanResuelto): string {
  * packages bought (`paquetes`, `unidades_paquete`), the leftovers
  * (`sobrante`), the subtotal, the total and the budget ceiling.
  */
-export function DialogoCotizacion({ plan, abierto, onAbiertoChange, imagenDe, onAprobar, aprobarDeshabilitado = false, textoAprobar = "Aprobar y generar imagen", generando = false }: Props) {
+export function DialogoCotizacion({ plan, abierto, onAbiertoChange, imagenDe, onAprobar, aprobarDeshabilitado = false, textoAprobar = "Aprobar y ver cómo queda", generando = false }: Props) {
+  const focoRetorno = useFocoDeRetorno();
   const reducir = useReducedMotion();
   const techo = plan.comercial.techo_cop;
   const total = plan.totales.total_cop;
@@ -57,7 +59,11 @@ export function DialogoCotizacion({ plan, abierto, onAbiertoChange, imagenDe, on
     <Dialog.Root open={abierto} onOpenChange={onAbiertoChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-overlay backdrop-blur-[2px]" />
-        <Dialog.Content asChild aria-describedby={undefined}>
+        <Dialog.Content
+          asChild
+          aria-describedby={undefined}
+          {...focoRetorno}
+        >
           <motion.div
             initial={reducir ? false : { opacity: 0, y: 16, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -75,7 +81,8 @@ export function DialogoCotizacion({ plan, abierto, onAbiertoChange, imagenDe, on
               </Dialog.Close>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-5 sm:px-7">
+            {/* Focusable so the list can be scrolled with the keyboard (axe: scrollable-region-focusable). */}
+            <div tabIndex={0} aria-label="Productos de la cotización" className="min-h-0 flex-1 overflow-y-auto rounded-lg px-5 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-acento sm:px-7">
               <div role="table" aria-label="Productos de la cotización" className="text-sm">
                 <div role="rowgroup" className="hidden border-b border-borde-suave pb-2 text-xs text-texto-suave sm:block">
                   <div role="row" className="grid grid-cols-[3.25rem_minmax(0,1fr)_10.5rem_8.5rem_6rem] gap-x-3">

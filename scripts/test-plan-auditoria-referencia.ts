@@ -104,6 +104,22 @@ async function main(): Promise<void> {
   assert.equal(pregunta.mensaje_cliente, restricciones.MENSAJE_CLIENTE_REFERENCIA_SIN_GLOBOS);
   const nombrado = await herramienta(`${pedidoFlores}. Quiero un arco blanco`, blancos, soloFlores, 0).confirmar(argsArco, llamada) as Record<string, unknown>;
   assert.notEqual(nombrado.status, "REFERENCIA_SIN_GLOBOS", "after the customer names the pieces the plan goes on");
+  // Deadlock regression: once the assistant said the photo has no balloons, the
+  // customer's reply is the answer even without naming a piece ("lo que recomiendes").
+  const historialRespondido = [
+    { rol: "usuario" as const, texto: pedidoFlores },
+    { rol: "asistente" as const, texto: "Tu foto no tiene decoración con globos. ¿Qué piezas te gustaría?" },
+    { rol: "usuario" as const, texto: "No sé, lo que tú me recomiendes en blanco" },
+  ];
+  assert.equal(restricciones.referenciaSinGlobosYaPreguntada(historialRespondido), true);
+  assert.equal(restricciones.referenciaSinGlobosYaPreguntada(historialRespondido.slice(0, 2)), false, "asked but not answered yet");
+  assert.equal(restricciones.referenciaSinGlobosYaPreguntada([{ rol: "usuario", texto: pedidoFlores }, { rol: "asistente", texto: "Claro, ¿para cuántas personas es?" }, { rol: "usuario", texto: "50" }]), false, "an unrelated question does not count");
+  assert.equal(restricciones.referenciaSinGlobosYaPreguntada([{ rol: "usuario", texto: pedidoFlores }, { rol: "asistente", texto: "No veo globos en tu foto, ¿qué piezas quieres?" }, { rol: "usuario", texto: "sorpréndeme" }]), true, "paraphrase");
+  assert.deepEqual(restricciones.validarReferenciaSinGlobos(soloFlores, `${pedidoFlores} No sé, lo que tú me recomiendes en blanco`, 0, true), [], "answered: the plan goes on");
+  const { estado: estadoRespondido, confirmar: confirmarRespondido } = herramienta(`${pedidoFlores} No sé, lo que tú me recomiendes en blanco`, blancos, soloFlores, 0);
+  estadoRespondido.referenciaSinGlobosPreguntada = true;
+  const respondido = await confirmarRespondido(argsArco, llamada) as Record<string, unknown>;
+  assert.notEqual(respondido.status, "REFERENCIA_SIN_GLOBOS", "the tool does not ask twice");
   assert.match(construirSistema({ ragEnabled: true, franjasEnabled: false, planEnabled: true }), /FOTO SIN GLOBOS/, "the system prompt states the rule");
   assert.match(construirSistema({ ragEnabled: true, franjasEnabled: false, planEnabled: true }), /piezas iguales en la foto" [\s\S]*repeticiones[\s\S]*nunca un número de globos/, "blueprint quantity is pieces, never balloons");
   const repeticionesSchema = (HERRAMIENTAS_PLAN[0]!.esquema as { properties: { estructuras: { items: { properties: { repeticiones: { description?: string } } } } } }).properties.estructuras.items.properties.repeticiones;
@@ -175,6 +191,18 @@ async function main(): Promise<void> {
   assert.deepEqual(resueltoFigura.estructuras[0]!.lineas.map((linea) => [linea.color, linea.unidades]), [["negro", 1], ["amarillo", 1], ["naranja", 1], ["blanco", 1]], "F13: every material of the figure is bought");
   ok("resolver: ningún material declarado queda en 0 al repartir");
 
+  // plan_hash covers the resolved lines: a plan that already bought every
+  // material must keep the pre-audit largest-remainder split, or plans approved
+  // before the change fail at generation ("Plan hash does not match").
+  const figuraDosColores = { ...figura(10, 1, 2), rol_escena: "focal", materiales: figura(10, 1, 2).materiales.map((material, index) => ({ ...material, participacion: index === 0 ? 0.55 : 0.45 })) };
+  const planDosColores = PlanDecoracionSchema.parse({ ...planSoloFigura, estructuras: [figuraDosColores] });
+  const resueltoDosColores = await resolverPlan(poolFigura, planDosColores, whitelistFigura);
+  assert.deepEqual(resueltoDosColores.estructuras[0]!.lineas.map((linea) => linea.unidades), [6, 4], "0.55/0.45 of 10 stays 6/4");
+  const figuraCasiUnColor = { ...figura(10, 1, 3), rol_escena: "focal", materiales: figura(10, 1, 3).materiales.map((material, index) => ({ ...material, participacion: [0.9, 0.05, 0.05][index]! })) };
+  const resueltoCasiUnColor = await resolverPlan(poolFigura, PlanDecoracionSchema.parse({ ...planSoloFigura, estructuras: [figuraCasiUnColor] }), whitelistFigura);
+  assert.deepEqual(resueltoCasiUnColor.estructuras[0]!.lineas.map((linea) => linea.unidades), [8, 1, 1], "a material left at 0 takes one unit from the largest");
+  ok("resolver: el reparto de planes que ya compraban cada material no cambia (plan_hash estable)");
+
   // ---------------------------------------------------------------------------
   // Alta #3: dominant colors of the photo.
   const f03 = elemento("REF_01_E01", "REF_01", "Lilac balloon arch", "balloon_structure", ["lilac", "white", "silver"]);
@@ -197,7 +225,16 @@ async function main(): Promise<void> {
   assert.equal(restricciones.aplicarColoresReferencia(planDosFotos, undefined).estructuras[0]!.colores_referencia, undefined, "no blueprint, no colors");
   ok("colores de la foto: cada estructura toma la paleta de la foto de su referencia");
 
-  const { sustitucionesColorReferencia } = await import("../src/lib/plan/colores-referencia");
+  const { coloresDominantesReferencia, sustitucionesColorReferencia } = await import("../src/lib/plan/colores-referencia");
+  // One observed label is one color: a shade named with two color words must not
+  // become two photo colors (false "the photo shows green" notices for mint).
+  assert.deepEqual(coloresDominantesReferencia(["mint green"]), ["menta"]);
+  assert.deepEqual(coloresDominantesReferencia(["wine red", "silver grey"]), ["burdeos", "plateado"]);
+  assert.deepEqual(coloresDominantesReferencia(["salmon pink", "champagne gold", "ivory white"]), ["coral", "champagne", "crema"]);
+  assert.deepEqual(coloresDominantesReferencia(["white and gold", "royal blue/silver"]), ["blanco", "dorado", "azul"], "a label that joins colors keeps each of them");
+  assert.deepEqual(coloresDominantesReferencia(["transparent with gold confetti"]), ["transparente", "dorado"]);
+  assert.deepEqual(coloresDominantesReferencia(["charcoal grey", "rose gold"]), ["gris", "dorado rosa"]);
+  assert.deepEqual(sustitucionesColorReferencia("EST_01", coloresDominantesReferencia(["mint green"]), ["menta"]), [], "a mint photo quoted in mint loses nothing");
   const faltantes = sustitucionesColorReferencia("EST_02_COLUMNA", ["cafe", "azul", "plateado"], ["lila", "lila", "Plateado"]);
   assert.deepEqual(faltantes.map((item) => item.pedido), ["cafe", "azul"], "silver is covered, brown and blue are lost");
   assert.equal(faltantes[0]!.entregado, "lila, plateado");

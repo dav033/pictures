@@ -356,7 +356,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       ? "revisión pendiente"
       : techo != null ? "dentro de tu presupuesto" : null;
   const aprobarDeshabilitado = aprobado || generando || !qaSolicitado || plan.comercial.estado === "PRESUPUESTO_EXCEDIDO" || plan.sin_cobertura.length > 0;
-  const textoAprobar = generando ? "Generando…" : aprobado ? "Aprobación registrada" : !qaSolicitado ? "Activa la validación visual" : plan.sin_cobertura.length > 0 ? "Faltan piezas disponibles" : "Aprobar y generar imagen";
+  const textoAprobar = generando ? "Generando…" : aprobado ? "Aprobación registrada" : !qaSolicitado ? "Activa la validación visual" : plan.sin_cobertura.length > 0 ? "Faltan piezas disponibles" : "Aprobar y ver cómo queda";
 
   function abrirPieza(estructuraId: string): void {
     setDetalleAbierto(true);

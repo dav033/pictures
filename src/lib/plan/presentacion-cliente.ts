@@ -172,7 +172,7 @@ function ubicacionRedundante(oficialId: EstructuraOficialId, ubicacion: string):
 /** "a la izquierda" → "izquierda"; etiqueta corta para recuadros sobre la foto. Un par lateral va a "ambos lados". */
 export function ubicacionCortaCliente(ubicacion: string, repeticiones = 1): string {
   const larga = repeticiones > 1 ? ubicacionCliente({ ubicacion, repeticiones }) : UBICACION_PARA_CLIENTE[ubicacion] ?? "en el espacio";
-  return larga.replace(/^(?:a la|al|a|en el|en la|en las|en los|en una|a lo largo del|contra la)\s+/, "");
+  return larga.replace(/^(?:a la|al|a(?! lo largo)|en el|en la|en las|en los|en una|contra la)\s+/, "");
 }
 
 /** "1,6 × 2,4 m", "2 m de alto", "3,5 m de largo"; null sin medidas. */

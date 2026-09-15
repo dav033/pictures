@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { analizarReferenciasV2 } from "@/lib/ia/analizar-referencias-v2";
-import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
+import { ReferenceBlueprintV2Schema, unidadesMaterialDeElemento, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import { normalizeFinishColors, tieneElementosAprobados, tieneEstructurasDeGlobos } from "@/lib/ia/reference-structure";
 import type { ChatPort, Herramienta, PeticionChat, TurnoChat } from "@/lib/ia/tipos";
 
@@ -178,6 +178,43 @@ async function run(): Promise<void> {
     assert.deepEqual(Object.keys(imagen.composition!.properties ?? {}).sort(), ["density", "focal_point", "symmetry"]);
     const columnas = por(result.blueprint, "Left Balloon Columns");
     assert.ok(columnas.quantity.min > 1, JSON.stringify(columnas.quantity));
+  });
+
+  await caso("revisión: el plural de OTRA pieza no multiplica una estructura; la evidencia de vecinas no la parte", async () => {
+    const blueprint = await analizar([
+      elemento("Balloon garland with columns", {
+        category: "balloon_structure",
+        visible_evidence: "Organic garland running across the backdrop, with balloon columns on both sides",
+        reference_bbox: { x: 0.02, y: 0.05, width: 0.96, height: 0.4 },
+        structure: { structure_type: "garland", horizontal_position: "full_width" },
+      }),
+      elemento("Arch with bouquets", { category: "balloon_structure", reference_bbox: { x: 0.3, y: 0.1, width: 0.4, height: 0.8 }, structure: { structure_type: "arch" } }),
+    ]);
+    const guirnalda = por(blueprint, "Balloon garland with columns");
+    assert.equal(guirnalda.quantity.max, 1, "a garland named next to columns is one garland");
+    assert.equal(blueprint.elements.filter((element) => element.name.startsWith("Balloon garland with columns")).length, 1, "neighbouring columns on both sides do not split the garland");
+    assert.equal(por(blueprint, "Arch with bouquets").quantity.max, 1, "an arch with bouquets is one arch");
+    const columnas = await analizar([elemento("Two balloon columns", { category: "balloon_structure", structure: { structure_type: "column", horizontal_position: "left" } })]);
+    assert.equal(por(columnas, "Two balloon columns").quantity.min, 2, "its own plural still counts");
+  });
+
+  await caso("revisión: el merge del verificador no deja una estructura de globos aprobada sin tipo", async () => {
+    const caja = { x: 0.2, y: 0.2, width: 0.4, height: 0.5 };
+    const blueprint = await analizar(
+      [elemento("Colorful decoration", { category: "other", reference_bbox: caja })],
+      [elemento("Balloon decoration", { category: "balloon_structure", reference_bbox: caja })],
+    );
+    const pieza = blueprint.elements[0]!;
+    assert.ok(!(pieza.approved && pieza.category === "balloon_structure" && !pieza.visual_semantics), JSON.stringify({ approved: pieza.approved, category: pieza.category }));
+    assert.equal(tieneEstructurasDeGlobos(blueprint), false);
+  });
+
+  await caso("revisión: quantity del análisis son piezas iguales (physical_instances), nunca unidades de material", async () => {
+    const blueprint = await analizar([elemento("Two balloon columns", { category: "balloon_structure", structure: { structure_type: "column", horizontal_position: "left" } })]);
+    const columnas = por(blueprint, "Two balloon columns");
+    assert.equal(columnas.quantity_semantics, "physical_instances");
+    assert.equal(unidadesMaterialDeElemento(columnas), undefined, "piece count is not a material quantity");
+    assert.equal(unidadesMaterialDeElemento({ ...columnas, quantity_semantics: undefined, quantity: { mode: "exact", min: 60, max: 60 } }), 60, "plan and catalog blueprints keep material units");
   });
 
   await caso("#14 acabado perla: sinónimos y evidencia llegan a los colores observados", async () => {

@@ -85,6 +85,9 @@ export const VUELTAS_MAX = 10;
 export type EstadoConversacion = {
   brief: Brief;
   solicitudOriginal: string;
+  /** The assistant already told the customer the photo has no balloons and the
+   * customer replied (`referenciaSinGlobosYaPreguntada`): do not ask again. */
+  referenciaSinGlobosPreguntada: boolean;
   restriccionesUsuario: ReturnType<typeof extraerRestriccionesUsuario>;
   recomendaciones: Producto[];
   decoraciones: DecoracionConProductos[];
@@ -198,12 +201,13 @@ export function enriquecerPlanResueltoEvento(
   return resuelto;
 }
 
-export function crearEstadoConversacion(brief: Brief, solicitudOriginal = "", referenceBlueprint?: ReferenceBlueprintV2): EstadoConversacion {
+export function crearEstadoConversacion(brief: Brief, solicitudOriginal = "", referenceBlueprint?: ReferenceBlueprintV2, opciones: { referenciaSinGlobosPreguntada?: boolean } = {}): EstadoConversacion {
   // The wrapper in ejecutar.ts calls this once per request/turn, so these
   // sets cannot carry a prior conversation's retrieval whitelist.
   return {
     brief: { ...brief },
     solicitudOriginal,
+    referenciaSinGlobosPreguntada: opciones.referenciaSinGlobosPreguntada ?? false,
     restriccionesUsuario: extraerRestriccionesUsuario(solicitudOriginal, brief),
     recomendaciones: [],
     decoraciones: [],
@@ -729,7 +733,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       const perfil = perfilCreatividad(options.creatividad);
       // Photo without balloons and no named pieces: ask before designing
       // anything (user decision, audit Media #4).
-      const erroresReferenciaSinGlobos = validarReferenciaSinGlobos(estado.referenceBlueprint, estado.solicitudOriginal, perfil.estructurasExtraConReferencia);
+      const erroresReferenciaSinGlobos = validarReferenciaSinGlobos(estado.referenceBlueprint, estado.solicitudOriginal, perfil.estructurasExtraConReferencia, estado.referenciaSinGlobosPreguntada);
       if (erroresReferenciaSinGlobos.length > 0) {
         estado.planResuelto = undefined;
         estado.seleccionFinalIA = [];

@@ -7,6 +7,7 @@ import type { ProductoCandidato } from "@/lib/rag/chat/buscar";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
+import { referenciaSinGlobosYaPreguntada } from "@/lib/plan/restricciones";
 import { crearEstadoConversacion, crearRegistroHerramientas, HERRAMIENTAS_SOLO_LECTURA, herramientasActivas, textoAlAgotarVueltas, VUELTAS_MAX } from "./registro-herramientas";
 import type { EstadoConversacion } from "./registro-herramientas";
 import type { ReferenceBlueprintV2 } from "./reference-blueprint";
@@ -98,7 +99,7 @@ export async function ejecutarConversacion(opts: {
   telemetria?: TelemetriaConversacion;
 }): Promise<ResultadoConversacion> {
   const solicitud = opts.historial.filter((mensaje) => mensaje.rol === "usuario").map((mensaje) => mensaje.texto).join(" ");
-  const estado = crearEstadoConversacion(opts.brief, solicitud, opts.referenceBlueprint);
+  const estado = crearEstadoConversacion(opts.brief, solicitud, opts.referenceBlueprint, { referenciaSinGlobosPreguntada: referenciaSinGlobosYaPreguntada(opts.historial) });
   const resultado = await core({
     chat: opts.chat,
     sistema: opts.sistema,
@@ -137,7 +138,7 @@ export async function* ejecutarConversacionStream(opts: {
   telemetria?: TelemetriaConversacion;
 }): AsyncGenerator<EventoConversacion> {
   const solicitud = opts.historial.filter((mensaje) => mensaje.rol === "usuario").map((mensaje) => mensaje.texto).join(" ");
-  const estado = crearEstadoConversacion(opts.brief, solicitud, opts.referenceBlueprint);
+  const estado = crearEstadoConversacion(opts.brief, solicitud, opts.referenceBlueprint, { referenciaSinGlobosPreguntada: referenciaSinGlobosYaPreguntada(opts.historial) });
   const generador = coreStream({
     chat: opts.chat,
     sistema: opts.sistema,

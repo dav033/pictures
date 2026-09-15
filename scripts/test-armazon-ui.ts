@@ -8,6 +8,7 @@ import { aplicarEventoHerramienta, cerrarPasos, textoPaso } from "../src/lib/est
 import { contextoEvento } from "../src/lib/estado/contexto-evento";
 import { presentarError } from "../src/lib/estado/estado-error";
 import { construirUiErrorV1, type AccionUiV1 } from "../src/lib/ia/contracts/ui-error-v1";
+import { crearEsperaAnalisis } from "../src/lib/estado/espera-analisis";
 
 // Pasos del asistente.
 let pasos = aplicarEventoHerramienta([], "guardar_brief", "ejecutando");
@@ -55,3 +56,32 @@ const soloDisponibles = presentarError(construirUiErrorV1("ESTILO_REQUIERE_PROPU
 assert.deepEqual(soloDisponibles.acciones, [], "solo acciones que el origen sabe ejecutar");
 assert.equal(presentarError(construirUiErrorV1("ERROR_INTERNO", { mensaje: "x" }), "chat", todas).titulo, "No pude responder");
 console.log("[PASS] estados de error: mensaje redactado, acciones filtradas y fal sin saldo no reintentable");
+
+// Espera del análisis de la foto antes de enviar el turno (revisión iteración 4).
+void (async () => {
+  const temporizadores: Array<{ fn: () => void; ms: number; activo: boolean }> = [];
+  const reloj = {
+    programar: (fn: () => void, ms: number) => temporizadores.push({ fn, ms, activo: true }) - 1,
+    cancelar: (id: number) => { temporizadores[id]!.activo = false; },
+  };
+  const espera = crearEsperaAnalisis(reloj);
+  assert.equal(await espera.esperar(45_000), "sin_analisis", "sin foto analizándose no se espera");
+  espera.notificar("analyzing");
+  const fallida = espera.esperar(45_000);
+  espera.notificar("error");
+  assert.equal(await fallida, "fallo", "un análisis fallido libera el envío al instante, sin agotar el límite");
+  assert.ok(temporizadores.every((t) => !t.activo), "el límite se cancela al resolver");
+  assert.equal(await espera.esperar(45_000), "fallo", "tras el fallo no se vuelve a esperar");
+  espera.notificar("analyzing");
+  const lista = espera.esperar(45_000);
+  espera.notificar("ready");
+  assert.equal(await lista, "listo");
+  espera.notificar("analyzing");
+  const colgada = espera.esperar(45_000);
+  temporizadores.at(-1)!.fn();
+  assert.equal(await colgada, "limite", "un análisis que no responde tiene límite");
+  console.log("[PASS] espera del análisis: sale al terminar, al fallar o al límite");
+})().catch((error: unknown) => {
+  console.error(error);
+  process.exitCode = 1;
+});

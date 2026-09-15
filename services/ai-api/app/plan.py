@@ -856,17 +856,21 @@ def _line(
 def _distribute_units(total: int, materials: Sequence[Mapping[str, object]]) -> list[int]:
     """Split ``unidades_declaradas`` by ``participacion``; mirror of ``repartirUnidades``.
 
-    Every declared material is a purchase, so each one first gets one unit and
-    only the rest is split by largest remainder (ties by position). A declared
-    total below the number of materials therefore resolves to one unit per
-    material; ``validarUnidadesDeclaradas`` rejects that plan at confirmation.
+    Largest remainder (ties by position), as before the reference audit, so a
+    plan that already bought every material resolves to the same lines and
+    keeps its signed ``plan_hash``. Every declared material is a purchase:
+    a material left at zero takes one unit from the material with the most
+    units (ties by position). A declared total below the number of materials
+    resolves to one unit per material; ``validarUnidadesDeclaradas`` rejects
+    that plan at confirmation.
     """
     if not materials:
         return []
-    rest = max(0, total - len(materials))
-    quotas = [rest * (_number(material.get("participacion")) or 0.0) for material in materials]
+    if total < len(materials):
+        return [1] * len(materials)
+    quotas = [total * (_number(material.get("participacion")) or 0.0) for material in materials]
     floors = [math.floor(quota) for quota in quotas]
-    remaining = rest - sum(floors)
+    remaining = total - sum(floors)
     for index in sorted(
         range(len(quotas)), key=lambda item: (-(quotas[item] - floors[item]), item)
     ):
@@ -874,7 +878,15 @@ def _distribute_units(total: int, materials: Sequence[Mapping[str, object]]) -> 
             break
         floors[index] += 1
         remaining -= 1
-    return [1 + units for units in floors]
+    for index, units in enumerate(floors):
+        if units > 0:
+            continue
+        donor = max(range(len(floors)), key=lambda item: (floors[item], -item))
+        if floors[donor] <= 1:
+            break
+        floors[donor] -= 1
+        floors[index] = 1
+    return floors
 
 
 def _join_colors(colors: Sequence[str]) -> str:

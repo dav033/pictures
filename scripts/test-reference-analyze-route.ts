@@ -9,6 +9,8 @@ import {
   respuestaError,
   validarCuerpo,
 } from "../src/app/api/references/analyze/analisis-http";
+import { ApiError } from "@google/genai";
+import { categorizarError } from "@sempertex/agente-core/gemini";
 import { ErrorIA } from "../src/lib/ia/tipos";
 import { UiErrorV1Schema } from "../src/lib/ia/contracts/ui-error-v1";
 import type { AnalisisV2Resultado } from "../src/lib/ia/analizar-referencias-v2";
@@ -109,6 +111,14 @@ async function run(): Promise<void> {
   await caso("#5 rechazo de imagen del proveedor → ADJUNTO_INVALIDO no reintentable (422)", () => {
     const crudo = 'AI_IMAGE_REJECTED: {"error":{"code":400,"message":"Unable to process input image.","status":"INVALID_ARGUMENT"}}';
     adjunto(new ErrorIA("desconocido", "gemini", crudo, false), /No pude leer esa foto\. Prueba con otra imagen \(JPG, PNG o WebP\)/, 422);
+  });
+
+  await caso("#5 contrato entre paquetes: el rechazo que produce el adaptador de Gemini se traduce a ADJUNTO_INVALIDO", () => {
+    // traducir-error-servidor.ts repeats the adapter prefix as a literal; this
+    // binds both sides so renaming it in agente-core cannot silently turn a
+    // rejected photo back into a retryable outage.
+    const rechazo = categorizarError(new ApiError({ message: '{"error":{"code":400,"message":"Unable to process input image.","status":"INVALID_ARGUMENT"}}', status: 400 }), true);
+    adjunto(rechazo, /No pude leer esa foto/, 422);
   });
 
   await caso("#5 un fallo desconocido del proveedor sigue siendo reintentable", () => {

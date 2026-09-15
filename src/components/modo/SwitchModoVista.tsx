@@ -25,9 +25,9 @@ export function SwitchModoVista({ modo, onCambiar }: Props) {
     >
       <span
         aria-hidden="true"
-        className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors ${esDev ? "bg-acento" : "bg-superficie-2"}`}
+        className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors ${esDev ? "bg-acento" : "bg-superficie-2 ring-1 ring-borde ring-inset"}`}
       >
-        <span className={`inline-block size-3 rounded-full transition-transform ${esDev ? "translate-x-3.5 bg-sobre-acento" : "translate-x-0.5 bg-superficie"}`} />
+        <span className={`inline-block size-3 rounded-full transition-transform ${esDev ? "translate-x-3.5 bg-sobre-acento" : "translate-x-0.5 bg-texto-tenue"}`} />
       </span>
       {/* En pantallas angostas el texto queda solo para lectores de pantalla:
           el nombre accesible sigue siendo "Modo dev". */}

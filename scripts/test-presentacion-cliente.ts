@@ -237,6 +237,7 @@ ok("referencia: estructuras vistas y ambientación en español");
   assert.equal(ubicacionCortaCliente("lateral_izquierdo"), "izquierda");
   assert.equal(ubicacionCortaCliente("lateral_izquierdo", 2), "ambos lados");
   assert.equal(ubicacionCortaCliente("fondo_pared"), "pared del fondo");
+  assert.equal(ubicacionCortaCliente("recorrido_suelo"), "a lo largo del piso", "no recorta solo la \"a\" de \"a lo largo del\"");
   ok("medidas cortas, nombre con cantidad y ubicación corta");
 }
 

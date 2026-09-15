@@ -39,14 +39,26 @@ const SINONIMOS_FOTO: ReadonlyArray<readonly [RegExp, string]> = [
 ];
 const GRIS = /\b(?:gr[ae]y|graphite|charcoal|gris|grafito)\b/;
 
-/** Catalog-vocabulary colors of one observed color label, in reading order. */
+/** Words that join several colors inside one observed label ("white and gold"). */
+const SEPARADOR_COLORES = /\s*(?:[,;/&+]|\b(?:and|with|plus|y|e|con)\b)\s*/;
+
+/**
+ * Catalog-vocabulary colors of one observed label, in reading order. Each part
+ * of the label is ONE color: a shade written with two color words ("mint
+ * green", "wine red", "silver grey") keeps its first, more specific word, so
+ * it does not report a second color the photo never had.
+ */
 function coloresDeEtiqueta(etiqueta: string): string[] {
-  let texto = plegarTexto(etiqueta);
-  for (const [patron, color] of SINONIMOS_FOTO) texto = texto.replace(patron, color);
-  const clasificacion = clasificarColores(texto);
-  const colores: string[] = clasificacion.status === "unknown" ? [] : [...clasificacion.values];
-  if (GRIS.test(texto)) colores.push("gris");
-  return colores.filter((color) => color !== "multicolor");
+  const colores: string[] = [];
+  for (const parte of plegarTexto(etiqueta).split(SEPARADOR_COLORES)) {
+    let texto = parte;
+    for (const [patron, color] of SINONIMOS_FOTO) texto = texto.replace(patron, color);
+    const clasificacion = clasificarColores(texto);
+    const conocido = clasificacion.status === "unknown" ? undefined : clasificacion.values.find((color) => color !== "multicolor");
+    const color = conocido ?? (GRIS.test(texto) ? "gris" : undefined);
+    if (color) colores.push(color);
+  }
+  return colores;
 }
 
 export function coloresDominantesReferencia(observados: readonly string[]): string[] {

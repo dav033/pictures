@@ -92,7 +92,7 @@ const blueprint = blueprintDe([
   assert.match(texto, /En la imagen también pondré Flores · no se cotizan/);
   assert.match(texto, /\$ 116\.873/);
   assert.match(texto, /COP · dentro de tu presupuesto/);
-  assert.match(texto, /Aprobar y generar imagen/);
+  assert.match(texto, /Aprobar y ver cómo queda/, "texto del botón de la maqueta Main");
   assert.doesNotMatch(texto, /Globos que usaré/, "con fotos de la referencia no se repite la grilla de productos");
   // Detalle de estructura (maqueta DetallePieza).
   assert.match(texto, /Arco al centro 3 m de ancho × 0,5 m de fondo × 2,5 m de alto · unos 123 globos/);

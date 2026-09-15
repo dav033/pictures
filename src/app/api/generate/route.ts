@@ -35,7 +35,7 @@ function requireResolvedLoras(loras: ResolvedLoraApplication[] | undefined): Res
 }
 import { buildVisualContext, completarEscenaConPlan } from "@/lib/ia/visual-context";
 import { ErrorIA, type ImageInput, type Imagen, type ImagenEtiquetada, type PeticionImagen, type ProveedorId } from "@/lib/ia/tipos";
-import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
+import { ReferenceBlueprintV2Schema, unidadesMaterialDeElemento, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import type { ResultadoMedidas } from "@/lib/medidas/geometria";
 import { resolverProductosParaGeneracion } from "@/lib/rag/generate-products";
 import { productosPorIdConFuente } from "@/lib/products";
@@ -970,7 +970,8 @@ export async function POST(request: Request) {
         : element.model_decision?.catalog_product_id
           ? [{ catalog_product_id: element.model_decision.catalog_product_id, role: "material principal", share: 1 }]
           : [];
-      const cantidadTotal = element.quantity.max || element.quantity.min || 1;
+      // A piece count from the reference analysis is not a material quantity.
+      const cantidadTotal = unidadesMaterialDeElemento(element) ?? 1;
       for (const linea of lineas) {
         const producto = productos.find((candidate) => candidate.id === linea.catalog_product_id);
         if (!producto) continue;
@@ -1013,7 +1014,7 @@ export async function POST(request: Request) {
           const materiales = lineas
             .map((linea) => {
               const producto = productosConMateriales.find((candidate) => candidate.id === linea.catalog_product_id);
-               return producto ? { id: producto.id, name: producto.nombre, description: producto.descripcion, category: producto.categoria, colors: producto.colores, unitsPerPackage: producto.unidadesPaquete, packageCount: producto.paquetes, installedUnits: Math.max(0, Math.round((element.quantity.max || element.quantity.min || 0) * linea.share)), share: linea.share, role: linea.role } : undefined;
+               return producto ? { id: producto.id, name: producto.nombre, description: producto.descripcion, category: producto.categoria, colors: producto.colores, unitsPerPackage: producto.unidadesPaquete, packageCount: producto.paquetes, installedUnits: Math.max(0, Math.round((unidadesMaterialDeElemento(element) ?? 0) * linea.share)), share: linea.share, role: linea.role } : undefined;
             })
              .filter((material): material is { id: string; name: string; description: string; category: string; colors: string[]; unitsPerPackage: number | undefined; packageCount: number; installedUnits: number; share: number; role: string } => Boolean(material));
           return [element.element_id, materiales] as const;

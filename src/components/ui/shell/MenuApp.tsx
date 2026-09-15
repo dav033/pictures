@@ -129,7 +129,8 @@ export function MenuApp({ items, etiqueta = "Más opciones", icono, claseBoton =
                 aria-disabled={item.deshabilitado || undefined}
                 className="app-menu-item"
                 onClick={() => {
-                  cerrar(false);
+                  // Focus goes back to the menu button, so a dialog the action opens returns there on close.
+                  cerrar(true);
                   item.onSeleccionar();
                 }}
               >

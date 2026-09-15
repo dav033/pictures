@@ -4,6 +4,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { useState, type FormEvent } from "react";
 import { Plus, X } from "lucide-react";
 import type { Producto } from "@/lib/types";
+import { useFocoDeRetorno } from "@/components/ui/foco-retorno";
 
 type Props = {
   abierta: boolean;
@@ -22,6 +23,7 @@ type Props = {
  * /catalogo o agregadas a mano — y `generar()` la manda a la imagen.
  */
 export function HojaSeleccion({ abierta, onCerrar, seleccionados, onQuitar, onAgregarManual, generar, onGenerar }: Props) {
+  const focoRetorno = useFocoDeRetorno();
   const [agregando, setAgregando] = useState(false);
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
@@ -42,7 +44,7 @@ export function HojaSeleccion({ abierta, onCerrar, seleccionados, onQuitar, onAg
     <Dialog.Root open={abierta} onOpenChange={(valor) => { if (!valor) onCerrar(); }}>
       <Dialog.Portal>
         <Dialog.Overlay className="hoja-fondo" />
-        <Dialog.Content className="hoja outline-none" data-testid="hoja-seleccion" aria-describedby="hoja-seleccion-ayuda">
+        <Dialog.Content className="hoja outline-none" data-testid="hoja-seleccion" aria-describedby="hoja-seleccion-ayuda" {...focoRetorno}>
           <div className="flex items-center justify-between gap-3 border-b border-borde-suave px-5 py-4">
             <Dialog.Title className="text-base font-semibold">Tu selección ({seleccionados.length})</Dialog.Title>
             <Dialog.Close className="ui-icon-button" aria-label="Cerrar selección">

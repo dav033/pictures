@@ -146,6 +146,7 @@ function ModeCard({ slot, run }: { slot: Slot; run: TrainingRun | undefined }) {
         </div>
         <span
           className={`mt-0.5 size-2.5 shrink-0 rounded-full ${isReady ? "bg-exito" : slot.enabled ? "bg-aviso" : "bg-texto-suave"}`}
+          role="img"
           aria-label={isReady ? "Activo" : status}
         />
       </div>

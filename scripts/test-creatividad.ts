@@ -179,6 +179,7 @@ assert.deepEqual(rango(4, plan(2)), [], "level 4 accepts 4 structures");
 assert.match(rango(0, plan(2))[0] ?? "", /entre 1 y 3[\s\S]*más de tres/, "level 0 rejects more than 3 structures");
 assert.deepEqual(rango(2, plan(0)), [], "level 2 keeps the historical behavior outside open events");
 assert.deepEqual(rango(4, plan(1), { referencia: blueprint }), [], "with a reference photo the photo decides");
+assert.deepEqual(rango(0, plan(2), { referencia: blueprint }), [], "with a reference photo the photo decides the maximum too: Fiel keeps every piece of the photo (extras are validarEstructurasFueraDeReferencia's job)");
 assert.deepEqual(rango(4, plan(1), { solicitud: "Boda en jardín, solo un arco blanco" }), [], "a single piece is not padded");
 const conTecho = PlanDecoracionSchema.parse({ ...plan(0), restricciones: { presupuesto: { techo_cop: 90000, procedencia: "explicito", texto_original: "hasta 90 mil" }, estructuras: [], colores: [], tamanos: [], acabados: [] } });
 assert.deepEqual(rango(5, conTecho), [], "an explicit budget decides how many pieces fit");

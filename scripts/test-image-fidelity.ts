@@ -97,17 +97,18 @@ const treeScene = buildApprovedSceneSpec({
 assert.equal(treeScene.elements.length, 1);
 assert.deepEqual(treeScene.elements[0].catalog_product_ids, ["cat-red", "cat-green", "cat-gold", "cat-red-r9", "cat-green-r12", "cat-red-r18", "cat-green-r24"]);
 assert.deepEqual(new Set(treeScene.elements[0].resolved_colors), new Set(["rojo", "verde", "dorado"]));
+// Since 1a69d77 (scene-visual-contract) the identity constraints that reach the
+// image model are perceptual and commercial-name free: catalog titles, roles and
+// percentages stay in the quote/material estimate, never in the prompt. The
+// seven materials still travel as ids and as the approved color variety.
 const treeIdentity = treeScene.elements[0].identity_constraints.join(" | ");
-assert.match(treeIdentity, /60% base balloons = "Globo Redondo Rojo"/);
-assert.match(treeIdentity, /30% side balloons = "Globo Redondo Verde"/);
-assert.match(treeIdentity, /10% top accents = "Globo Metalizado Dorado"/);
-assert.match(treeIdentity, /never render only one of them alone/);
+assert.match(treeIdentity, /Required final arrangement and appearance/);
+assert.doesNotMatch(treeIdentity, /Globo Redondo|Globo Metalizado|\d+%|base balloons/);
 assert.ok(treeScene.elements[0].identity_constraints.every((constraint) => constraint.length <= 220), "no identity_constraint should be truncated mid-word past the schema limit");
 const treePrompt = buildImagePrompt({ sceneSpec: treeScene, inputs: [{ image_id: "CATALOG_01", role: "catalog_product_reference", allowed_use: "material identity" }] });
 assert.match(treePrompt, /balloon Christmas tree/);
-assert.match(treePrompt, /Globo Redondo Rojo/);
-assert.match(treePrompt, /Globo Redondo Verde/);
-assert.match(treePrompt, /Globo Metalizado Dorado/);
+assert.match(treePrompt, /APPROVED COLOR VARIETY — use exactly these catalog colors: rojo, verde, dorado/);
+assert.doesNotMatch(treePrompt, /Globo Redondo|Globo Metalizado/);
 assert.match(treeScene.positive_prompt.composition.join(" "), /complete installed event scene/);
 assert.match(treeScene.positive_prompt.photorealistic_integration.join(" "), /selected catalog allowlist/);
 assert.match(treeScene.negative_prompt.forbidden_elements.join(" "), /isolated balloon arches/);

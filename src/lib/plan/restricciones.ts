@@ -414,6 +414,10 @@ export function validarRangoCreatividad(
 ): string[] {
   const perfil = perfilCreatividad(opciones.nivel);
   if (perfil.nivel === CREATIVIDAD_POR_DEFECTO || !opciones.hayCandidatosCatalogo) return [];
+  // The photo decides the composition, maximum included: "Fiel" with a photo
+  // of four pieces must keep the four. Extra pieces over the photo are bounded
+  // by `validarEstructurasFueraDeReferencia` (estructurasExtraConReferencia).
+  if (referenciaDefineComposicion(opciones.referenceBlueprint)) return [];
   return validarRangoEstructuras(plan, opciones.solicitudOriginal, opciones.referenceBlueprint, perfil.rangoEstructuras);
 }
 
@@ -450,12 +454,33 @@ export function validarReferenciaSinGlobos(
   blueprint: ReferenceBlueprintV2 | undefined,
   solicitudOriginal: string,
   extrasPermitidas: number,
+  yaPreguntada = false,
 ): string[] {
+  // The assistant asks once: the customer's reply is the answer even when it
+  // names no piece ("lo que me recomiendes"); asking again would loop forever.
+  if (yaPreguntada) return [];
   if (!blueprint || extrasPermitidas > 0 || tieneEstructurasDeGlobos(blueprint)) return [];
   // A photo of the customer's own venue is where to decorate, not a design to copy.
   if (blueprint.source_images.every((imagen) => imagen.approved_roles.every((rol) => rol === "venue_base"))) return [];
   if (PIEZAS_NOMBRADAS.test(normalizar(solicitudOriginal))) return [];
   return ["La foto de referencia no tiene piezas de globos y todavía no sabemos qué piezas quieres."];
+}
+
+/** An assistant sentence telling the customer the photo has no balloons (MENSAJE_CLIENTE_REFERENCIA_SIN_GLOBOS or a paraphrase). */
+const AVISO_FOTO_SIN_GLOBOS = /\b(?:no (?:tiene|tienen|muestra|muestran|lleva|trae|incluye|hay|veo|aparece|aparecen|se ven?)|sin)\b[^.?!]{0,40}\bglobos\b/;
+
+/**
+ * True when an assistant message already told the customer the photo has no
+ * balloons and the customer replied after it. `validarReferenciaSinGlobos` then
+ * lets the plan through: the question was asked and answered.
+ */
+export function referenciaSinGlobosYaPreguntada(historial: ReadonlyArray<{ rol: string; texto?: string }>): boolean {
+  let preguntada = false;
+  for (const mensaje of historial) {
+    if (mensaje.rol === "asistente" && typeof mensaje.texto === "string" && AVISO_FOTO_SIN_GLOBOS.test(normalizar(mensaje.texto))) preguntada = true;
+    else if (preguntada && mensaje.rol === "usuario") return true;
+  }
+  return false;
 }
 
 const TIPOS_CON_GLOBOS_REFERENCIA = new Set<TipoEstructura>(["arco", "semiarco", "guirnalda", "columna", "pared", "centro_mesa"]);

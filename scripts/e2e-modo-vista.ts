@@ -121,7 +121,7 @@ async function contenidoPorModo(browser: Browser, cookie: { name: string; value:
   check(t("id de pieza descartada solo en dev"), (await hay(page.getByText("46594221277479"))) === esDev);
   if (!esDev) check(t("aviso humano de pieza descartada"), await hay(page.getByText("Una pieza que te propuse ya no está disponible")));
   const textoAprobar = (await page.getByTestId("aprobar-generar-plan").innerText()).trim();
-  check(t("aprobar: dev exige la casilla, usuario no"), esDev ? textoAprobar === "Activa la validación visual" : textoAprobar === "Aprobar y generar imagen", textoAprobar);
+  check(t("aprobar: dev exige la casilla, usuario no"), esDev ? textoAprobar === "Activa la validación visual" : textoAprobar === "Aprobar y ver cómo queda", textoAprobar);
 
   if (!esDev) {
     // Sin dock duplicado: aprobar vive dentro de la tarjeta de la propuesta.
@@ -142,7 +142,7 @@ async function contenidoPorModo(browser: Browser, cookie: { name: string; value:
 
 /** Iteración 4: interruptor de tema persistente y foto de ejemplo adjunta al compositor. */
 async function temaYGaleria(browser: Browser, cookie: { name: string; value: string }): Promise<void> {
-  const { page, errores, cerrar } = await nuevaPagina(browser, cookie);
+  const { page, errores, cuerposGenerate, cerrar } = await nuevaPagina(browser, cookie);
   await page.route("**/api/references/analyze", (route) => route.fulfill({ status: 503, headers: { "content-type": "application/json" }, body: JSON.stringify({ error: "simulado" }) }));
   await page.emulateMedia({ colorScheme: "light" });
   await abrir(page);
@@ -164,6 +164,31 @@ async function temaYGaleria(browser: Browser, cookie: { name: string; value: str
   await page.waitForTimeout(400);
   const desbordeMovil = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   check("sin desborde horizontal a 400 px", desbordeMovil <= 0, String(desbordeMovil));
+
+  // El análisis de la foto falló (503): el turno sale enseguida, sin agotar el
+  // límite de espera, y aprobar la propuesta sí crea la imagen.
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.getByRole("button", { name: "Reintentar" }).first().waitFor({ timeout: 20_000 });
+  let chatEnviadoEn = 0;
+  page.on("request", (peticion) => {
+    if (!chatEnviadoEn && new URL(peticion.url()).pathname === "/api/chat") chatEnviadoEn = Date.now();
+  });
+  const envioEn = Date.now();
+  const entrada = page.getByRole("textbox", { name: "Escribe tu mensaje" });
+  await entrada.fill("Quiero algo así");
+  await entrada.press("Enter");
+  await page.getByTestId("plan-desglose").waitFor({ timeout: 60_000 });
+  check("análisis fallido: el turno no espera el límite", chatEnviadoEn > 0 && chatEnviadoEn - envioEn < 5_000, `${chatEnviadoEn - envioEn} ms`);
+  await page.getByTestId("aprobar-generar-plan").click();
+  const hayImagen = await page.locator("img[alt^='Visualización']").first().waitFor({ timeout: 15_000 }).then(() => true, () => false);
+  check("análisis fallido: aprobar la propuesta crea la imagen", hayImagen && cuerposGenerate.length === 1, `${cuerposGenerate.length} llamadas a /api/generate`);
+  // Recargar conserva la miniatura de la foto del turno (guardada liviana en sessionStorage).
+  await page.waitForTimeout(1_000);
+  await abrir(page);
+  await page.locator(".msg-usuario-foto").first().waitFor({ timeout: 20_000 }).catch(() => undefined);
+  const miniaturaTrasRecargar = await page.locator(".msg-usuario-foto").first().getAttribute("src").catch(() => null);
+  const guardado = await page.evaluate(() => sessionStorage.getItem("demo_chat_v4")?.length ?? 0);
+  check("recargar conserva la miniatura de la foto del turno", Boolean(miniaturaTrasRecargar?.startsWith("data:image/jpeg")) && guardado < 400_000, `${guardado} caracteres guardados`);
   check("tema y galería: sin errores de runtime", errores.length === 0, errores.join(" | "));
   await cerrar();
 }

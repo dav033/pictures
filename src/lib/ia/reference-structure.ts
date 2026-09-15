@@ -351,7 +351,10 @@ const BOTH_SIDES = /\b(?:left and right|right and left|on both sides|both sides|
 export function shouldSplitSidePieces(structure: DetectedStructure, bbox: ReferenceBBox, name: string, evidence: string): boolean {
   if (!SPLITTABLE_TYPES.has(structure.type)) return false;
   if (structure.position !== "full_width" && bbox.width < 0.6) return false;
-  return BOTH_SIDES.test(plain(`${name} ${evidence}`));
+  const text = plain(`${name} ${evidence}`);
+  // The side words must be about this piece: "a garland with columns on both
+  // sides" is one garland flanked by other pieces, not two garlands.
+  return BOTH_SIDES.test(text) && OWN_PLURAL[structure.type].test(text);
 }
 
 export function splitSidePieces(structure: DetectedStructure, bbox: ReferenceBBox): Array<{ side: "left" | "right"; structure: DetectedStructure; bbox: ReferenceBBox }> {
@@ -364,15 +367,30 @@ export function splitSidePieces(structure: DetectedStructure, bbox: ReferenceBBo
 }
 
 const COUNT_WORDS: Readonly<Record<string, number>> = { two: 2, pair: 2, dos: 2, par: 2, three: 3, tres: 3, four: 4, cuatro: 4, five: 5, cinco: 5, six: 6, seis: 6 };
-const PLURAL_STRUCTURE = /\b(?:half[- ]?arches|semi[- ]?arches|arches|columns|pillars|towers|garlands|centerpieces|bouquets|clusters|hoops|sculptures|semiarcos|arcos|columnas|torres|guirnaldas|centros de mesa|ramilletes|racimos|aros|esculturas)\b/;
+/** Plural nouns of each structure type (folded text). */
+const OWN_PLURAL: Readonly<Record<DetectedStructure["type"], RegExp>> = {
+  arch: /(?<!half[- ]?)(?<!semi[- ]?)\b(?:arches|archways|arcos)\b/,
+  half_arch: /\b(?:half[- ]?arches|semi[- ]?arches|semiarcos|medios arcos)\b/,
+  column: /\b(?:columns|pillars|towers|columnas|torres)\b/,
+  garland: /\b(?:garlands|guirnaldas)\b/,
+  balloon_wall: /\b(?:balloon walls|walls of balloons|paredes de globos|muros de globos)\b/,
+  centerpiece: /\b(?:centerpieces|centros de mesa)\b/,
+  ceiling_installation: /\b(?:ceiling installations|balloon clouds|clouds of balloons|techos de globos)\b/,
+  cluster: /\b(?:clusters|racimos)\b/,
+  sculpture: /\b(?:sculptures|esculturas)\b/,
+  bouquet: /\b(?:bouquets|ramilletes|ramos de globos)\b/,
+  hoop: /\b(?:hoops|aros)\b/,
+};
 
 /**
  * Number of identical pieces a structure name declares ("Left Balloon
- * Columns" → 2, "three bouquets" → 3). Undefined for a singular name.
+ * Columns" → 2, "three bouquets" → 3). Only the plural of the element's own
+ * type counts: "Balloon garland with columns" is one garland. Undefined for a
+ * singular name.
  */
-export function structureCountFromName(name: string): { count: number; exact: boolean } | undefined {
+export function structureCountFromName(name: string, type: DetectedStructure["type"]): { count: number; exact: boolean } | undefined {
   const text = plain(name);
-  if (!PLURAL_STRUCTURE.test(text)) return undefined;
+  if (!OWN_PLURAL[type].test(text)) return undefined;
   const word = /\b(two|pair|dos|par|three|tres|four|cuatro|five|cinco|six|seis|[2-9])\b/.exec(text)?.[1];
   if (word) return { count: COUNT_WORDS[word] ?? Number(word), exact: true };
   return { count: 2, exact: false };
