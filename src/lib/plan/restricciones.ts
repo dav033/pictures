@@ -1,7 +1,7 @@
 import type { Brief } from "@/lib/types";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import { ALCANCE_POR_CATEGORIA_REFERENCIA } from "@/lib/rag/taxonomy/alcance-referencia";
-import type { ACABADOS_CATALOGO_V2 } from "@/lib/rag/taxonomy/v2";
+import { ALIAS_COLORES_V2, type ACABADOS_CATALOGO_V2 } from "@/lib/rag/taxonomy/v2";
 import { CREATIVIDAD_POR_DEFECTO, perfilCreatividad, type NivelCreatividad } from "@/lib/ia/creatividad";
 import { tieneEstructurasDeGlobos } from "@/lib/ia/reference-structure";
 import { coloresDominantesReferencia, coloresFotoCliente } from "./colores-referencia";
@@ -100,33 +100,85 @@ function indiceOriginal(texto: string, coincidencia: Coincidencia): { inicio: nu
   return { inicio: origen[coincidencia.indice]!, fin: fin === normalizado.length ? texto.length : origen[fin]! };
 }
 
+/**
+ * Valor de restricción que no es el valor de la taxonomía. La taxonomía llama
+ * "rosado" a ese color y la restricción del cliente siempre fue "rosa": los
+ * planes firmados, `validarRestriccionesPlan` (compara con `includes`) y
+ * `ejecutar.ts` (traduce con `colorDeCatalogo`) ya trabajan con ese valor.
+ */
+const VALOR_CLIENTE_POR_TAXONOMIA: Readonly<Record<string, string>> = { rosado: "rosa" };
+
+/**
+ * Plural y femenino de un alias de una sola palabra ("amarillo" → amarillos,
+ * amarilla, amarillas), que es como los escribe el cliente. Los alias de varias
+ * palabras ("oro rosa", "rojo vino") se quedan como están: su plural en español
+ * no cambia la palabra que importa.
+ */
+function formasDeAlias(alias: string): string[] {
+  const base = normalizar(alias).trim();
+  if (!base || base.includes(" ")) return base ? [base] : [];
+  const formas = new Set([base, /[aeiou]$/.test(base) ? `${base}s` : `${base}es`]);
+  if (base.endsWith("o")) {
+    formas.add(`${base.slice(0, -1)}a`);
+    formas.add(`${base.slice(0, -1)}as`);
+  }
+  return [...formas];
+}
+
+/**
+ * Vocabulario de colores del cliente, derivado de la taxonomía del catálogo
+ * (`ALIAS_COLORES_V2`), que es la dueña de los sinónimos de color. Antes era una
+ * lista de 13 palabras escrita a mano: "amarillo", "fucsia", "turquesa",
+ * "coral" o "vino" nunca llegaban a ser restricción obligatoria, así que
+ * `validarRestriccionesPlan` no podía reclamarlos, la conversación no detectaba
+ * que se retiraran y la foto terminaba mandando sobre el color que pidió el
+ * cliente. "multicolor" queda fuera: es surtido, no un color exigible.
+ */
+const COLOR_POR_ALIAS_CLIENTE: ReadonlyMap<string, string> = new Map(
+  ALIAS_COLORES_V2
+    .filter((color) => color.value !== "multicolor")
+    .flatMap((color) => {
+      const valor = VALOR_CLIENTE_POR_TAXONOMIA[color.value] ?? color.value;
+      return color.aliases.flatMap(formasDeAlias).map((alias): [string, string] => [alias, valor]);
+    }),
+);
+
 /** Color words a customer request can make mandatory (normalized, no accents). */
-export const ALIAS_COLORES_CLIENTE: readonly string[] = [
-  "dorado", "dorada", "dorados", "doradas", "plateado", "plateada", "plateados", "plateadas", "plata",
-  "rosado", "rosada", "rosados", "rosadas", "rosa", "rojo", "roja", "rojos", "rojas", "negro", "negra", "negros", "negras",
-  "blanco", "blanca", "blancos", "blancas", "azul", "azules", "verde", "verdes", "morado", "morada", "morados", "moradas", "lila", "nude",
+export const ALIAS_COLORES_CLIENTE: readonly string[] = [...COLOR_POR_ALIAS_CLIENTE.keys()];
+
+/**
+ * Usos que no son color y que, sin esta guarda, se volverían una restricción
+ * obligatoria imposible de cumplir ("Pediste el color crema y la propuesta
+ * todavía no lo incluye" por una torta de crema). Cada patrón tapa solo la
+ * palabra de color (grupo 1) y conserva el largo del texto, porque los índices
+ * alimentan la evidencia `texto_original`.
+ */
+const USOS_NO_COLOR: readonly RegExp[] = [
+  /\b(?:torta|tortas|pastel|pasteles|ponque|ponques|postre|postres|helado|helados)\s+(?:de\s+)?(crema)\b/g,
+  /\b(?:copa|copas|botella|botellas|vaso|vasos|caja|cajas|bolsa|bolsas|barra|cava)\s+(?:de\s+)?(vino)\b/g,
+  /\bpara\s+(vino)\b/g,
+  /\b(rosas?)\s+(?:naturales?|frescas?|preservadas?|artificiales|secas?|de\s+tela)\b/g,
+  /\b(?:flor|flores|ramo|ramos|ramillete|ramilletes|bouquet|bouquets)\s+de\s+(rosas?)\b/g,
 ];
+
+function taparUsosNoColor(normalizado: string): string {
+  let texto = normalizado;
+  for (const patron of USOS_NO_COLOR) {
+    texto = texto.replace(patron, (coincidencia: string, palabra: string) => {
+      const inicio = coincidencia.lastIndexOf(palabra);
+      return `${coincidencia.slice(0, inicio)}${" ".repeat(palabra.length)}${coincidencia.slice(inicio + palabra.length)}`;
+    });
+  }
+  return texto;
+}
 
 /** Structure words a customer request can count ("2 columnas"), by plan type. */
 export const ALIAS_ESTRUCTURAS_CLIENTE: ReadonlyArray<{ tipo: TipoEstructura; aliases: readonly string[] }> = ESTRUCTURAS;
 
-/** The restriction value of one color word: "plateadas" → "plateado", "rosada" → "rosa". */
+/** The restriction value of one color word: "plateadas" → "plateado", "oro rosa" → "dorado rosa". */
 export function canonizarColorCliente(alias: string): string {
   const valor = normalizar(alias).trim();
-  return colorCanonico(valor === "rosado" || valor === "rosa" ? "rosa" : valor === "plata" || valor === "plateado" ? "plateado" : valor);
-}
-
-function colorCanonico(valor: string): string {
-  if (/^dorad/.test(valor)) return "dorado";
-  if (/^platead|^plata$/.test(valor)) return "plateado";
-  if (/^rosad|^rosa$/.test(valor)) return "rosa";
-  if (/^roj/.test(valor)) return "rojo";
-  if (/^negr/.test(valor)) return "negro";
-  if (/^blanc/.test(valor)) return "blanco";
-  if (/^azul/.test(valor)) return "azul";
-  if (/^verd/.test(valor)) return "verde";
-  if (/^morad/.test(valor)) return "morado";
-  return valor;
+  return COLOR_POR_ALIAS_CLIENTE.get(valor) ?? valor;
 }
 
 function numero(raw: string): number | null {
@@ -162,15 +214,29 @@ function extraerTecho(texto: string): { valor: number; coincidencia: Coincidenci
   return null;
 }
 
-function extraerLista(texto: string, aliases: string[], limite = 8): Array<{ valor: string; coincidencia: Coincidencia }> {
+/**
+ * Alias encontrados en el texto, del más largo al más corto y sin repetir
+ * valor. `taparAlias` cubre el trozo ya emparejado, así que un alias corto
+ * dentro de uno largo ("rosa" dentro de "oro rosa", "rojo" dentro de "rojo
+ * vino") no agrega un segundo valor.
+ */
+function extraerLista(
+  texto: string,
+  aliases: readonly string[],
+  opciones: { canonizar?: (alias: string) => string; excluir?: (normalizado: string) => string; limite?: number } = {},
+): Array<{ valor: string; coincidencia: Coincidencia }> {
+  const { canonizar = (alias: string) => alias, excluir, limite = 8 } = opciones;
   const normalized = normalizar(texto);
+  let restante = excluir ? excluir(normalized) : normalized;
   const resultado: Array<{ valor: string; coincidencia: Coincidencia }> = [];
-  for (const alias of aliases.slice().sort((a, b) => b.length - a.length)) {
+  for (const alias of [...aliases].sort((a, b) => b.length - a.length)) {
     const valor = normalizar(alias);
-    const encontrado = new RegExp(`(?:^|[\\s,;])${valor}(?:$|[\\s,;.!?])`, "i").exec(normalized);
+    const encontrado = new RegExp(`(?:^|[\\s,;])${valor}(?:$|[\\s,;.!?])`, "i").exec(restante);
     const prohibido = normalized.includes(`sin ${valor}`) || normalized.includes(`no ${valor}`) || normalized.includes(`sin color ${valor}`);
     if (!encontrado || prohibido) continue;
-    const canonico = valor === "rosado" || valor === "rosa" ? "rosa" : valor === "plata" || valor === "plateado" ? "plateado" : valor;
+    const inicio = encontrado.index + encontrado[0].indexOf(valor);
+    restante = `${restante.slice(0, inicio)}${" ".repeat(valor.length)}${restante.slice(inicio + valor.length)}`;
+    const canonico = canonizar(valor);
     if (!resultado.some((item) => item.valor === canonico)) {
       resultado.push({ valor: canonico, coincidencia: { indice: encontrado.index, largo: encontrado[0].length } });
     }
@@ -196,9 +262,7 @@ export function extraerRestriccionesUsuario(texto: string, brief: Brief = {}): R
   const presupuestoEnTexto = extraerTecho(texto);
   const presupuesto = presupuestoEnTexto?.valor ?? (typeof brief.presupuesto === "number" ? brief.presupuesto : extraerTecho(String(brief.presupuesto ?? ""))?.valor);
   const presupuestoExplicito = presupuestoEnTexto !== null;
-  const colores = extraerLista(texto, [...ALIAS_COLORES_CLIENTE])
-    .map(({ valor, coincidencia }) => ({ valor: colorCanonico(valor), coincidencia }))
-    .filter((item, index, values) => values.findIndex((otro) => otro.valor === item.valor) === index)
+  const colores = extraerLista(texto, ALIAS_COLORES_CLIENTE, { canonizar: canonizarColorCliente, excluir: taparUsosNoColor })
     .map(({ valor, coincidencia }) => ({ valor, procedencia: "explicito" as const, texto_original: evidenciaTextoOriginal(texto, coincidencia), polaridad: "obligatorio" as const }));
   const tamanos = [...normalizar(texto).matchAll(/\br[- ]?(5|9|12|18|24|36|40)\b|\b(5|9|12|18|24|36|40)\s*(?:pulgadas?|in)\b/gi)]
     .flatMap((match) => {
@@ -207,7 +271,7 @@ export function extraerRestriccionesUsuario(texto: string, brief: Brief = {}): R
       const textoOriginal = evidenciaTextoOriginal(texto, { indice: match.index ?? 0, largo: match[0].length });
       return [{ valor: `R-${valor}`, procedencia: "explicito" as const, texto_original: textoOriginal, polaridad: "obligatorio" as const }];
     });
-  const acabados = extraerLista(texto, [...ACABADOS_EXPLICITOS])
+  const acabados = extraerLista(texto, ACABADOS_EXPLICITOS)
     .map(({ valor, coincidencia }) => ({ valor, procedencia: "explicito" as const, texto_original: evidenciaTextoOriginal(texto, coincidencia), polaridad: "obligatorio" as const }));
   // Budget inferred from the brief has no fragment in the text; its evidence
   // falls back to the leading excerpt, as documented in evidenciaTextoOriginal.
