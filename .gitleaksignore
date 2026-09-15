@@ -1,3 +1,14 @@
 # False positives: placeholder text (not secrets) in .env.local.example, replaced by empty values afterwards.
 d239467488cc1d4c063083067624765e7a06711e:.env.local.example:generic-api-key:14
 c7facf3bf6d054f14d2937e3085ea2e4931af74a:.env.local.example:generic-api-key:31
+# False positives: analysis cache keys (sha256 of prompts/images, not secrets) in the first commit of analisis-ejemplos.json.
+4bdb5c5eff79fe4474572207ca5bac27a7b4994f:src/lib/ia/analisis-ejemplos.json:generic-api-key:511
+4bdb5c5eff79fe4474572207ca5bac27a7b4994f:src/lib/ia/analisis-ejemplos.json:generic-api-key:856
+4bdb5c5eff79fe4474572207ca5bac27a7b4994f:src/lib/ia/analisis-ejemplos.json:generic-api-key:1282
+4bdb5c5eff79fe4474572207ca5bac27a7b4994f:src/lib/ia/analisis-ejemplos.json:generic-api-key:1579
+4bdb5c5eff79fe4474572207ca5bac27a7b4994f:src/lib/ia/analisis-ejemplos.json:generic-api-key:2054
+4bdb5c5eff79fe4474572207ca5bac27a7b4994f:src/lib/ia/analisis-ejemplos.json:generic-api-key:2588
+4bdb5c5eff79fe4474572207ca5bac27a7b4994f:src/lib/ia/analisis-ejemplos.json:generic-api-key:2989
+4bdb5c5eff79fe4474572207ca5bac27a7b4994f:src/lib/ia/analisis-ejemplos.json:generic-api-key:3566
+4bdb5c5eff79fe4474572207ca5bac27a7b4994f:src/lib/ia/analisis-ejemplos.json:generic-api-key:3834
+4bdb5c5eff79fe4474572207ca5bac27a7b4994f:src/lib/ia/analisis-ejemplos.json:generic-api-key:4057

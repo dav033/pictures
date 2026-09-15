@@ -45,7 +45,7 @@ async function main(): Promise<void> {
     });
     if (!respuesta.ok) throw new Error(`${foto.id}: HTTP ${respuesta.status} ${await respuesta.text()}`);
     const { blueprint, tieneEstructurasDeGlobos, tieneElementos, metadata } = await respuesta.json();
-    ejemplos.push({ id: foto.id, sha256, resultado: { blueprint, tieneEstructurasDeGlobos, tieneElementos, metadata: { ...metadata, cached: false } } });
+    ejemplos.push({ id: foto.id, sha256, resultado: { blueprint, tieneEstructurasDeGlobos, tieneElementos, metadata: { ...metadata, cached: false, cache_key: `analisis-fijo:${foto.id}` } } });
     console.log(`${foto.id}: ${blueprint.elements.length} elementos, globos=${tieneEstructurasDeGlobos}`);
   }
   const archivo: ArchivoAnalisisEjemplos = { parser_version: ANALYSIS_PARSER_VERSION, ejemplos };
