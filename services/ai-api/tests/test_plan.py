@@ -15,14 +15,20 @@ from app.main import MAX_BODY_BYTES, Settings, build_signature, create_app
 from app.operational_store import InMemoryOperationalStore
 from app.plan import (
     MAX_PLAN_LORA_VARIANTS,
+    BalloonApportionmentError,
     PlanResolutionError,
     PlanResolutionRequest,
     _candidate,
     _alternatives,
+    _apportion_margins,
     _declared_pairs,
+    _despiece_with_plan_sizes,
+    _effective_proportions,
     _eje,
+    _hamilton,
     _product_variant_mismatches,
     _material_waste_only_savings,
+    _MIXES,
     _optimizar_cobertura,
     _plan_cost_optimizer_enabled,
     resolve_plan,
@@ -781,6 +787,120 @@ def test_half_arch_axis_is_a_quarter_ellipse_that_uses_the_height() -> None:
     assert _eje("semiarco", {"largo_m": 3.0}) == 3.0
     assert _eje("semiarco", {"ancho_m": 2.4}) == 2.4
     assert _eje("guirnalda", {"largo_m": 2.5, "alto_m": 2.2}) == 2.5
+
+
+def _plan_with_sizes(*sizes: int) -> dict[str, object]:
+    return {
+        "restricciones": {
+            "tamanos": [
+                {"valor": f"R-{size}", "polaridad": "obligatorio", "procedencia": "explicito"}
+                for size in sizes
+            ]
+        }
+    }
+
+
+def _arch(mix: str, materials: Sequence[dict[str, object]], repeats: int = 1) -> dict[str, object]:
+    return {
+        "tipo": "arco",
+        "medidas": {"ancho_m": 3, "alto_m": 2.4},
+        "densidad": "media",
+        "mezcla": mix,
+        "repeticiones": repeats,
+        "materiales": list(materials),
+    }
+
+
+def test_mandatory_sizes_renormalize_the_mix_and_the_total() -> None:
+    # Mirror of scripts/test-geometria-plan.ts (ADR 0022). The effective mix
+    # used to be filtered without renormalizing while the total still came from
+    # the full mix, so "solo R-12" quoted 65 balloons instead of 104 and a size
+    # outside the mix multiplied the count.
+    one = [{"participacion": 1.0}]
+
+    def total(mix: str, *sizes: int) -> int:
+        _axis, demands, _unplaced = _despiece_with_plan_sizes(
+            _plan_with_sizes(*sizes), _arch(mix, one)
+        )
+        return sum(cast(int, demand["cantidad"]) for demand in demands)
+
+    assert total("organica_fina") == 119
+    assert total("organica_fina", 12) == 104
+    assert total("organica_fina", 12, 18) == 94
+    assert total("clasica", 18, 24) == 64
+    assert total("organica_fina", 36) == 35
+    _axis, demands, unplaced = _despiece_with_plan_sizes(
+        _plan_with_sizes(12, 36), _arch("organica_fina", one)
+    )
+    assert unplaced == (36,)
+    assert {demand["pulgadas"] for demand in demands} == {12}
+    assert _despiece_with_plan_sizes(_plan_with_sizes(36), _arch("organica_fina", one))[2] == ()
+    sizes = (5, 9, 12, 18, 24, 36)
+    for mix in _MIXES:
+        for mask in range(1, 2**len(sizes)):
+            requested = [size for index, size in enumerate(sizes) if (mask >> index) & 1]
+            proportions, missing = _effective_proportions(mix, set(requested))
+            assert abs(sum(share for _diameter, share in proportions) - 1) < 1e-9
+            assert all(diameter in requested for diameter, _share in proportions)
+            in_mix = [diameter for diameter, _share in _MIXES[mix] if diameter in requested]
+            assert list(missing) == (
+                [size for size in requested if size not in in_mix] if in_mix else []
+            )
+
+
+def test_hamilton_refuses_quotas_that_do_not_add_up_to_the_total() -> None:
+    # The guard is what turns the old silent undercount into a failure.
+    with pytest.raises(BalloonApportionmentError):
+        _hamilton(10, [3.0, 3.0], [0.0, 0.0])
+    assert _hamilton(10, [5.5, 4.5], [0.0, 0.0]) == [6, 4]
+
+
+def test_both_margins_keep_size_totals_independent_of_the_number_of_colors() -> None:
+    # Mirror of the sweep in scripts/test-geometria-plan.ts: a single Hamilton
+    # over size x material cells dropped the R-24 accent as soon as a second
+    # color appeared, and the color split drifted on repeated pieces.
+    splits: list[list[float]] = [
+        [1.0],
+        [0.5, 0.5],
+        [0.6, 0.4],
+        [0.7, 0.2, 0.1],
+        [0.34, 0.33, 0.33],
+        [0.4, 0.3, 0.2, 0.1],
+    ]
+    for mix in _MIXES:
+        reference = _despiece_with_plan_sizes({}, _arch(mix, [{"participacion": 1.0}]))[1]
+        by_size = {
+            cast(int, demand["pulgadas"]): cast(int, demand["cantidad"]) for demand in reference
+        }
+        base_total = sum(by_size.values())
+        for split in splits:
+            materials = [
+                {"color": f"color-{index}", "participacion": share}
+                for index, share in enumerate(split)
+            ]
+            _axis, demands, _unplaced = _despiece_with_plan_sizes({}, _arch(mix, materials, 3))
+            totals_by_size: dict[int, int] = {}
+            totals_by_material: dict[int, int] = {}
+            for demand in demands:
+                diameter = cast(int, demand["pulgadas"])
+                index = cast(int, demand["material_index"])
+                totals_by_size[diameter] = totals_by_size.get(diameter, 0) + cast(
+                    int, demand["cantidad"]
+                )
+                totals_by_material[index] = totals_by_material.get(index, 0) + cast(
+                    int, demand["cantidad"]
+                )
+            assert sum(totals_by_size.values()) == base_total * 3
+            for diameter, units in totals_by_size.items():
+                assert units == by_size[diameter] * 3
+            for index, units in totals_by_material.items():
+                assert abs(units / 3 - base_total * split[index]) < 1
+
+
+def test_margin_matrix_closes_both_margins() -> None:
+    matrix = _apportion_margins(10, ((12, 0.5), (18, 0.5)), [0.7, 0.3])
+    assert [sum(row) for row in matrix] == [5, 5]
+    assert [sum(row[column] for row in matrix) for column in range(2)] == [7, 3]
 
 
 @pytest.mark.parametrize(

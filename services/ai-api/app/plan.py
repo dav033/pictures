@@ -559,9 +559,20 @@ def _band_profile_factor(official: str | None) -> float:
 
 
 def _total_globos(
-    tipo: str, measures: Mapping[str, object], density: str, mix: str, official: str | None = None
+    tipo: str,
+    measures: Mapping[str, object],
+    density: str,
+    mix: str,
+    official: str | None = None,
+    proportions: Sequence[tuple[int, float]] | None = None,
 ) -> tuple[float, int]:
-    proportions = _MIXES[mix]
+    """Mirror of ``calcularMedidas`` in ``src/lib/medidas/geometria.ts``.
+
+    ``proportions`` is the effective mix when the customer fixed sizes: it
+    decides the weighted balloon area and the dominant diameter, while the band
+    width and the official structure profile still come from the plan mix.
+    """
+    proportions = tuple(proportions) if proportions else _MIXES[mix]
     dominant = max(proportions, key=lambda item: item[1])
     dominant_diameter_cm = dominant[0] * 2.54 * 0.92
     axis = _eje(tipo, measures, official)
@@ -580,27 +591,117 @@ def _total_globos(
     return axis, max(0, total)
 
 
-def _hamilton(
-    total: int, cells: Sequence[tuple[int, str | None, float]]
-) -> list[tuple[int, str | None, int]]:
-    if total <= 0 or not cells:
-        return [(diameter, color, 0) for diameter, color, _quota in cells]
-    floors = [math.floor(quota) for _diameter, _color, quota in cells]
+class BalloonApportionmentError(RuntimeError):
+    """Broken invariant in the integer split: no made-up count is returned."""
+
+
+# Quota invariant tolerance (ADR 0022); it only absorbs floating point error.
+_QUOTA_TOLERANCE = 1e-6
+
+
+def _hamilton(total: int, quotas: Sequence[float], tiebreaks: Sequence[float]) -> list[int]:
+    """Largest remainder split, mirror of ``repartirHamilton`` in geometria.ts.
+
+    Ties are broken by larger remainder, larger ``tiebreak`` (the diameter on
+    the size margin, 0 on the material margin) and finally lower index. The
+    color name no longer takes part: ``localeCompare`` in TypeScript and
+    codepoint order in Python split the same plan differently.
+
+    The quotas must add up to the total; otherwise the split would be a made-up
+    count (the unrenormalized mandatory sizes case).
+    """
+    if not quotas:
+        return []
+    quota_sum = sum(quotas)
+    if abs(quota_sum - total) > _QUOTA_TOLERANCE:
+        raise BalloonApportionmentError(
+            f"quotas add up to {quota_sum} and the total to split is {total}"
+        )
+    if total <= 0:
+        return [0 for _quota in quotas]
+    floors = [math.floor(quota) for quota in quotas]
     remaining = total - sum(floors)
     order = sorted(
-        range(len(cells)),
-        key=lambda index: (
-            -cells[index][2] + floors[index],
-            -cells[index][0],
-            cells[index][1] or "",
-        ),
+        range(len(quotas)),
+        key=lambda index: (-(quotas[index] - floors[index]), -tiebreaks[index], index),
     )
     for index in order:
         if remaining <= 0:
             break
         floors[index] += 1
         remaining -= 1
-    return [(cells[index][0], cells[index][1], floors[index]) for index in range(len(cells))]
+    return floors
+
+
+def _apportion_margins(
+    total: int, proportions: Sequence[tuple[int, float]], shares: Sequence[float]
+) -> list[list[int]]:
+    """Both-margin integer split of one instance, mirror of ``repartirPorMargenes``.
+
+    The size totals come from the effective mix and the material totals from
+    ``participacion``; the size x material matrix respects both. A single
+    Hamilton over the cells kept the total but not the margins: the R-18/R-24
+    accents vanished when a second color was added and the color split drifted
+    on small repeated pieces.
+
+    The matrix is complete (every size x material cell exists) and no cell has a
+    cap, so while a row and a column are both short there is a cell that can
+    take the unit; both deficits, which add up to the same amount, run out
+    together. The greedy sweep is therefore enough and no augmenting path is
+    needed; if a deficit survived it fails instead of returning a matrix whose
+    margins do not close.
+    """
+    if not proportions or not shares:
+        return []
+    share_sum = sum(shares)
+    # The plan schema already requires participaciones adding up to 1 (+-0.001).
+    # Renormalizing here keeps the margin invariant if they arrive otherwise.
+    material_quotas = (
+        [share / share_sum for share in shares]
+        if share_sum > 0
+        else [1 / len(shares) for _share in shares]
+    )
+    size_totals = _hamilton(
+        total,
+        [total * proportion for _diameter, proportion in proportions],
+        [float(diameter) for diameter, _proportion in proportions],
+    )
+    material_totals = _hamilton(
+        total, [total * quota for quota in material_quotas], [0.0 for _quota in material_quotas]
+    )
+    matrix = [[math.floor(units * quota) for quota in material_quotas] for units in size_totals]
+    missing_rows = [units - sum(matrix[row]) for row, units in enumerate(size_totals)]
+    missing_columns = [
+        units - sum(row[column] for row in matrix) for column, units in enumerate(material_totals)
+    ]
+    cells = sorted(
+        (
+            (row, column)
+            for row in range(len(size_totals))
+            for column in range(len(material_quotas))
+        ),
+        key=lambda cell: (
+            -(
+                size_totals[cell[0]] * material_quotas[cell[1]]
+                - math.floor(size_totals[cell[0]] * material_quotas[cell[1]])
+            ),
+            -proportions[cell[0]][0],
+            cell[1],
+        ),
+    )
+    progress = True
+    while progress:
+        progress = False
+        for row, column in cells:
+            if missing_rows[row] <= 0 or missing_columns[column] <= 0:
+                continue
+            matrix[row][column] += 1
+            missing_rows[row] -= 1
+            missing_columns[column] -= 1
+            progress = True
+    if any(missing_rows) or any(missing_columns):
+        raise BalloonApportionmentError(f"the split matrix did not close the margins of {total}")
+    return matrix
 
 
 def _required_sizes(plan: Mapping[str, object]) -> set[int]:
@@ -626,49 +727,72 @@ def _required_sizes(plan: Mapping[str, object]) -> set[int]:
     return result
 
 
+def _effective_proportions(
+    mix: str, sizes: set[int]
+) -> tuple[tuple[tuple[int, float], ...], tuple[int, ...]]:
+    """Effective mix when the customer fixes sizes, mirror of ``proporcionesEfectivas``.
+
+    The customer's size restriction belongs to the whole plan, not to one
+    structure: the mix sizes inside the required set, renormalized to 1, and
+    equal shares between the required sizes when none of them is in the mix.
+    Returns the effective mix and the required sizes it could not place.
+
+    It used to filter without renormalizing while the total still came from the
+    full mix, so an arch "solo R-12" quoted half the balloons and a size outside
+    the mix multiplied the total.
+    """
+    proportions = _MIXES[mix]
+    if not sizes:
+        return proportions, ()
+    filtered = tuple(item for item in proportions if item[0] in sizes)
+    filtered_sum = sum(proportion for _diameter, proportion in filtered)
+    if filtered and filtered_sum > 0:
+        placed = {diameter for diameter, _proportion in filtered}
+        unplaced = tuple(sorted(size for size in sizes if size not in placed))
+        return (
+            tuple((diameter, proportion / filtered_sum) for diameter, proportion in filtered),
+            unplaced,
+        )
+    ordered = tuple(sorted(sizes))
+    return tuple((size, 1.0 / len(ordered)) for size in ordered), ()
+
+
 def _despiece_with_plan_sizes(
     plan: Mapping[str, object], structure: Mapping[str, object]
-) -> tuple[float, list[dict[str, object]]]:
+) -> tuple[float, list[dict[str, object]], tuple[int, ...]]:
     tipo = _text(structure.get("tipo")) or ""
     density = _text(structure.get("densidad")) or "media"
     mix = _text(structure.get("mezcla")) or "organica_fina"
     measures = _mapping(structure.get("medidas"))
+    proportions, unplaced = _effective_proportions(mix, _required_sizes(plan))
     axis, base_total = _total_globos(
-        tipo, measures, density, mix, _text(structure.get("estructura_oficial"))
+        tipo, measures, density, mix, _text(structure.get("estructura_oficial")), proportions
     )
     materials = _mappings(structure.get("materiales"))
-    proportions = _MIXES[mix]
-    sizes = _required_sizes(plan)
-    if sizes:
-        filtered = tuple(item for item in proportions if item[0] in sizes)
-        proportions = filtered or tuple((size, 1.0) for size in sorted(sizes))
+    matrix = _apportion_margins(
+        base_total,
+        proportions,
+        [_number(material.get("participacion")) or 0.0 for material in materials],
+    )
+    repeats = max(1, _integer(structure.get("repeticiones")) or 1)
     # Each cell keeps its material position: two materials of the same color
     # (reflex and pastel) are two products, not one (they used to merge by color).
-    indexed_cells = [
-        (
-            index,
-            (
-                diameter,
-                _text(material.get("color")),
-                base_total * proportion * (_number(material.get("participacion")) or 0.0),
-            ),
-        )
-        for diameter, proportion in proportions
-        for index, material in enumerate(materials)
-    ]
-    repeats = max(1, _integer(structure.get("repeticiones")) or 1)
-    distributed = _hamilton(base_total, [cell for _index, cell in indexed_cells])
-    return round(axis, 2), [
-        {
-            "tamano": f"R-{diameter}",
-            "pulgadas": diameter,
-            "color": color,
-            "cantidad": quantity * repeats,
-            "material_index": material_index,
-        }
-        for (material_index, _cell), (diameter, color, quantity) in zip(indexed_cells, distributed)
-        if quantity * repeats > 0
-    ]
+    return (
+        round(axis, 2),
+        [
+            {
+                "tamano": f"R-{diameter}",
+                "pulgadas": diameter,
+                "color": _text(material.get("color")),
+                "cantidad": matrix[row][column] * repeats,
+                "material_index": column,
+            }
+            for row, (diameter, _proportion) in enumerate(proportions)
+            for column, material in enumerate(materials)
+            if matrix[row][column] * repeats > 0
+        ],
+        unplaced,
+    )
 
 
 def _admissible_substitution(requested: float, available: float) -> bool:
@@ -1151,7 +1275,13 @@ def _resolve_structures(
         before_missing = len(uncovered)
         materials = _mappings(raw_structure.get("materiales"))
         if structure_type in _GEOMETRIC_TYPES:
-            axis, demands = _despiece_with_plan_sizes(plan, raw_structure)
+            axis, demands, unplaced_sizes = _despiece_with_plan_sizes(plan, raw_structure)
+            # The customer's size restriction belongs to the whole plan, not to
+            # one structure: a mandatory size this mix cannot place stays as a
+            # visible warning (validarRestriccionesPlan does not check sizes, so
+            # this is the only notice).
+            for size in unplaced_sizes:
+                warnings.append(f"tamano_obligatorio_sin_ubicar:{structure_id}:R-{size}")
             exact_sizes = bool(_required_sizes(plan))
             for demand in demands:
                 requested_color = _text(demand.get("color"))

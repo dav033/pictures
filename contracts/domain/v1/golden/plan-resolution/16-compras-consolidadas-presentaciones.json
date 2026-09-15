@@ -187,15 +187,15 @@
         },
         {
           "color": "plateado",
-          "design_quantity": 38,
+          "design_quantity": 40,
           "finish": "reflex",
           "product_id": "P-PLATA-REFLEX",
-          "required_quantity": 38,
+          "required_quantity": 40,
           "shape": "redondo",
           "size_inches": 12,
           "structure_id": "EST_02_COLUMNAS",
           "variant_id": "V-PLATA-12-X50",
-          "waste_adjusted_quantity": 38,
+          "waste_adjusted_quantity": 40,
           "waste_reserve": 0
         },
         {
@@ -213,15 +213,15 @@
         },
         {
           "color": "azul",
-          "design_quantity": 20,
+          "design_quantity": 18,
           "finish": "fashion",
           "product_id": "P-AZUL-REY",
-          "required_quantity": 20,
+          "required_quantity": 18,
           "shape": "redondo",
           "size_inches": 12,
           "structure_id": "EST_02_COLUMNAS",
           "variant_id": "V-AZUL-12-X20",
-          "waste_adjusted_quantity": 20,
+          "waste_adjusted_quantity": 18,
           "waste_reserve": 0
         }
       ],
@@ -261,20 +261,20 @@
         {
           "additional_package_for_waste": false,
           "consumption_cost": 6461,
-          "design_quantity": 20,
+          "design_quantity": 18,
           "leftover_inventory": 0,
           "operational_surplus": 0,
           "package_count": 1,
-          "potential_surplus": 0,
+          "potential_surplus": 2,
           "product_id": "P-AZUL-REY",
           "purchase_cost": 6461,
           "purchase_quantity": 20,
           "required_quantity": 20,
           "units_per_package": 20,
-          "used": 20,
+          "used": 18,
           "variant_id": "V-AZUL-12-X20",
           "waste_adjusted_quantity": 20,
-          "waste_reserve": 0
+          "waste_reserve": 2
         },
         {
           "additional_package_for_waste": false,
@@ -297,20 +297,20 @@
         {
           "additional_package_for_waste": false,
           "consumption_cost": 28977,
-          "design_quantity": 45,
+          "design_quantity": 47,
           "leftover_inventory": 0,
           "operational_surplus": 0,
           "package_count": 1,
-          "potential_surplus": 5,
+          "potential_surplus": 3,
           "product_id": "P-PLATA-REFLEX",
           "purchase_cost": 28977,
           "purchase_quantity": 50,
           "required_quantity": 50,
           "units_per_package": 50,
-          "used": 45,
+          "used": 47,
           "variant_id": "V-PLATA-12-X50",
           "waste_adjusted_quantity": 50,
-          "waste_reserve": 5
+          "waste_reserve": 3
         }
       ],
       "special_elements": [],
@@ -328,7 +328,7 @@
         "target_waste_reserve": 10,
         "uncovered_waste_reserve": 0,
         "waste_adjusted_quantity": 135,
-        "waste_only_savings_cop": 19542
+        "waste_only_savings_cop": 42058
       },
       "version": "design-material-estimate-v1",
       "warnings": []
@@ -390,7 +390,7 @@
           "additional_package_for_waste": false,
           "color": "azul",
           "consumption_cost": 6461,
-          "design_quantity": 20,
+          "design_quantity": 18,
           "diam_pulg": 12,
           "elementos_origen": [
             {
@@ -412,7 +412,7 @@
           "required_quantity": 20,
           "sku": "SKU-V-AZUL-12-X20",
           "sku_original": "SHOP-V-AZUL-12-X20",
-          "sobrante": 0,
+          "sobrante": 2,
           "source_snapshot_id": "SNAP-GOLDEN-016",
           "source_variant_id": "SOURCE-V-AZUL-12-X20",
           "subtotal": 6461,
@@ -420,11 +420,11 @@
           "titulo": "Globo latex redondo fashion azul rey — R-12 / PAQUETE X 20",
           "unidades_con_merma": 20,
           "unidades_inferidas": false,
-          "unidades_necesarias": 20,
+          "unidades_necesarias": 18,
           "unidades_paquete": 20,
-          "used": 20,
+          "used": 18,
           "variant_id": "V-AZUL-12-X20",
-          "waste_reserve": 0
+          "waste_reserve": 2
         },
         {
           "additional_package_for_waste": false,
@@ -470,7 +470,7 @@
           "additional_package_for_waste": false,
           "color": "plateado",
           "consumption_cost": 28977,
-          "design_quantity": 45,
+          "design_quantity": 47,
           "diam_pulg": 12,
           "elementos_origen": [
             {
@@ -497,7 +497,7 @@
           "required_quantity": 50,
           "sku": "SKU-V-PLATA-12-X50",
           "sku_original": "SHOP-V-PLATA-12-X50",
-          "sobrante": 5,
+          "sobrante": 3,
           "source_snapshot_id": "SNAP-GOLDEN-016",
           "source_variant_id": "SOURCE-V-PLATA-12-X50",
           "subtotal": 28977,
@@ -505,11 +505,11 @@
           "titulo": "Globo latex redondo reflex plata — R-12 / PAQUETE X 50",
           "unidades_con_merma": 50,
           "unidades_inferidas": false,
-          "unidades_necesarias": 45,
+          "unidades_necesarias": 47,
           "unidades_paquete": 50,
-          "used": 45,
+          "used": 47,
           "variant_id": "V-PLATA-12-X50",
-          "waste_reserve": 5
+          "waste_reserve": 3
         }
       ],
       "estructuras": [
@@ -633,7 +633,7 @@
               "sustitucion": null,
               "tamano_codigo": "R-12",
               "titulo": "Globo latex redondo reflex plata — R-12 / PAQUETE X 50",
-              "unidades": 38,
+              "unidades": 40,
               "unidades_inferidas": false,
               "variant_id": "V-PLATA-12-X50"
             },
@@ -683,7 +683,7 @@
               "sustitucion": null,
               "tamano_codigo": "R-12",
               "titulo": "Globo latex redondo fashion azul rey — R-12 / PAQUETE X 20",
-              "unidades": 20,
+              "unidades": 18,
               "unidades_inferidas": false,
               "variant_id": "V-AZUL-12-X20"
             }
@@ -704,7 +704,7 @@
           "ubicacion": "entrada"
         }
       ],
-      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 125\nTarget waste reserve: 10\nNatural package surplus: 5\nUsable waste coverage: 10\nAdditional packages required for waste: 5\nGlobo latex redondo fashion azul rey — R-12 / PAQUETE X 12: design=48, required=53, package=12, packages=5, purchased=60, natural surplus=12, waste reserve=5, leftover inventory=7\nGlobo latex redondo fashion azul rey — R-12 / PAQUETE X 20: design=20, required=20, package=20, packages=1, purchased=20, natural surplus=0, waste reserve=0, leftover inventory=0\nGlobo latex redondo reflex plata — R-12 / PAQUETE X 12: design=12, required=12, package=12, packages=1, purchased=12, natural surplus=0, waste reserve=0, leftover inventory=0\nGlobo latex redondo reflex plata — R-12 / PAQUETE X 50: design=45, required=50, package=50, packages=1, purchased=50, natural surplus=5, waste reserve=5, leftover inventory=0",
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 125\nTarget waste reserve: 10\nNatural package surplus: 5\nUsable waste coverage: 10\nAdditional packages required for waste: 5\nGlobo latex redondo fashion azul rey — R-12 / PAQUETE X 12: design=48, required=53, package=12, packages=5, purchased=60, natural surplus=12, waste reserve=5, leftover inventory=7\nGlobo latex redondo fashion azul rey — R-12 / PAQUETE X 20: design=18, required=20, package=20, packages=1, purchased=20, natural surplus=2, waste reserve=2, leftover inventory=0\nGlobo latex redondo reflex plata — R-12 / PAQUETE X 12: design=12, required=12, package=12, packages=1, purchased=12, natural surplus=0, waste reserve=0, leftover inventory=0\nGlobo latex redondo reflex plata — R-12 / PAQUETE X 50: design=47, required=50, package=50, packages=1, purchased=50, natural surplus=3, waste reserve=3, leftover inventory=0",
       "plan": {
         "concepto": {
           "descripcion": "Semiarco y columnas de entrada en azul rey y plata.",
@@ -791,7 +791,7 @@
         "referencia_omitida": [],
         "supuestos": []
       },
-      "plan_hash": "fe9c12a48c31546bc8cabe2c1d550cc1b8e2c1c61789042f6796f5d4825e62e4",
+      "plan_hash": "cba08673d00fba8fbbbdc067d6cd75f1d972839c705c3f11798cdf3b8678fdf3",
       "sin_cobertura": [],
       "sustituciones": [],
       "totales": {
@@ -811,7 +811,7 @@
         "total_cop": 65515,
         "total_unidades": 125,
         "uncovered_waste_reserve": 0,
-        "waste_only_savings_cop": 15293
+        "waste_only_savings_cop": 8832
       }
     },
     "quote": {
@@ -864,10 +864,10 @@
         },
         {
           "additionalPackageForWaste": false,
-          "cantidadNecesaria": 20,
+          "cantidadNecesaria": 18,
           "color": "azul",
           "consumptionCost": 6461,
-          "designQuantity": 20,
+          "designQuantity": 18,
           "diamPulg": 12,
           "disponible": true,
           "elementosOrigen": [
@@ -889,14 +889,14 @@
           "purchaseQuantity": 20,
           "referenciaElementIds": [],
           "requiredQuantity": 20,
-          "sobrante": 0,
+          "sobrante": 2,
           "subtotal": 6461,
           "tamano": "R-12",
           "tamanoCodigo": "R-12",
           "unidadesPaquete": 20,
-          "used": 20,
+          "used": 18,
           "varianteId": "V-AZUL-12-X20",
-          "wasteReserve": 0
+          "wasteReserve": 2
         },
         {
           "additionalPackageForWaste": false,
@@ -936,10 +936,10 @@
         },
         {
           "additionalPackageForWaste": false,
-          "cantidadNecesaria": 45,
+          "cantidadNecesaria": 47,
           "color": "plateado",
           "consumptionCost": 28977,
-          "designQuantity": 45,
+          "designQuantity": 47,
           "diamPulg": 12,
           "disponible": true,
           "elementosOrigen": [
@@ -966,18 +966,18 @@
           "purchaseQuantity": 50,
           "referenciaElementIds": [],
           "requiredQuantity": 50,
-          "sobrante": 5,
+          "sobrante": 3,
           "subtotal": 28977,
           "tamano": "R-12",
           "tamanoCodigo": "R-12",
           "unidadesPaquete": 50,
-          "used": 45,
+          "used": 47,
           "varianteId": "V-PLATA-12-X50",
-          "wasteReserve": 5
+          "wasteReserve": 3
         }
       ],
       "mermaPorcentaje": 8,
-      "plan_hash": "fe9c12a48c31546bc8cabe2c1d550cc1b8e2c1c61789042f6796f5d4825e62e4",
+      "plan_hash": "cba08673d00fba8fbbbdc067d6cd75f1d972839c705c3f11798cdf3b8678fdf3",
       "purchaseCost": 65515,
       "targetWasteReserve": 10,
       "total": 65515
@@ -1028,15 +1028,15 @@
         },
         {
           "color": "plateado",
-          "design_quantity": 38,
+          "design_quantity": 40,
           "finish": "reflex",
           "product_id": "P-PLATA-REFLEX",
-          "required_quantity": 38,
+          "required_quantity": 40,
           "shape": "redondo",
           "size_inches": 12.0,
           "structure_id": "EST_02_COLUMNAS",
           "variant_id": "V-PLATA-12-X50",
-          "waste_adjusted_quantity": 38,
+          "waste_adjusted_quantity": 40,
           "waste_reserve": 0
         },
         {
@@ -1054,15 +1054,15 @@
         },
         {
           "color": "azul",
-          "design_quantity": 20,
+          "design_quantity": 18,
           "finish": "fashion",
           "product_id": "P-AZUL-REY",
-          "required_quantity": 20,
+          "required_quantity": 18,
           "shape": "redondo",
           "size_inches": 12.0,
           "structure_id": "EST_02_COLUMNAS",
           "variant_id": "V-AZUL-12-X20",
-          "waste_adjusted_quantity": 20,
+          "waste_adjusted_quantity": 18,
           "waste_reserve": 0
         }
       ],
@@ -1102,20 +1102,20 @@
         {
           "additional_package_for_waste": false,
           "consumption_cost": 6461,
-          "design_quantity": 20,
+          "design_quantity": 18,
           "leftover_inventory": 0,
           "operational_surplus": 0,
           "package_count": 1,
-          "potential_surplus": 0,
+          "potential_surplus": 2,
           "product_id": "P-AZUL-REY",
           "purchase_cost": 6461,
           "purchase_quantity": 20,
           "required_quantity": 20,
           "units_per_package": 20,
-          "used": 20,
+          "used": 18,
           "variant_id": "V-AZUL-12-X20",
           "waste_adjusted_quantity": 20,
-          "waste_reserve": 0
+          "waste_reserve": 2
         },
         {
           "additional_package_for_waste": false,
@@ -1138,20 +1138,20 @@
         {
           "additional_package_for_waste": false,
           "consumption_cost": 28977,
-          "design_quantity": 45,
+          "design_quantity": 47,
           "leftover_inventory": 0,
           "operational_surplus": 0,
           "package_count": 1,
-          "potential_surplus": 5,
+          "potential_surplus": 3,
           "product_id": "P-PLATA-REFLEX",
           "purchase_cost": 28977,
           "purchase_quantity": 50,
           "required_quantity": 50,
           "units_per_package": 50,
-          "used": 45,
+          "used": 47,
           "variant_id": "V-PLATA-12-X50",
           "waste_adjusted_quantity": 50,
-          "waste_reserve": 5
+          "waste_reserve": 3
         }
       ],
       "special_elements": [],
@@ -1169,7 +1169,7 @@
         "target_waste_reserve": 10,
         "uncovered_waste_reserve": 0,
         "waste_adjusted_quantity": 135,
-        "waste_only_savings_cop": 19542
+        "waste_only_savings_cop": 42058
       },
       "version": "design-material-estimate-v1",
       "warnings": []
@@ -1232,7 +1232,7 @@
           "additional_package_for_waste": false,
           "color": "azul",
           "consumption_cost": 6461,
-          "design_quantity": 20,
+          "design_quantity": 18,
           "diam_pulg": 12.0,
           "elementos_origen": [
             {
@@ -1254,7 +1254,7 @@
           "required_quantity": 20,
           "sku": "SKU-V-AZUL-12-X20",
           "sku_original": "SHOP-V-AZUL-12-X20",
-          "sobrante": 0,
+          "sobrante": 2,
           "source_snapshot_id": "SNAP-GOLDEN-016",
           "source_variant_id": "SOURCE-V-AZUL-12-X20",
           "subtotal": 6461,
@@ -1262,11 +1262,11 @@
           "titulo": "Globo latex redondo fashion azul rey — R-12 / PAQUETE X 20",
           "unidades_con_merma": 20,
           "unidades_inferidas": false,
-          "unidades_necesarias": 20,
+          "unidades_necesarias": 18,
           "unidades_paquete": 20,
-          "used": 20,
+          "used": 18,
           "variant_id": "V-AZUL-12-X20",
-          "waste_reserve": 0
+          "waste_reserve": 2
         },
         {
           "additional_package_for_waste": false,
@@ -1312,7 +1312,7 @@
           "additional_package_for_waste": false,
           "color": "plateado",
           "consumption_cost": 28977,
-          "design_quantity": 45,
+          "design_quantity": 47,
           "diam_pulg": 12.0,
           "elementos_origen": [
             {
@@ -1339,7 +1339,7 @@
           "required_quantity": 50,
           "sku": "SKU-V-PLATA-12-X50",
           "sku_original": "SHOP-V-PLATA-12-X50",
-          "sobrante": 5,
+          "sobrante": 3,
           "source_snapshot_id": "SNAP-GOLDEN-016",
           "source_variant_id": "SOURCE-V-PLATA-12-X50",
           "subtotal": 28977,
@@ -1347,11 +1347,11 @@
           "titulo": "Globo latex redondo reflex plata — R-12 / PAQUETE X 50",
           "unidades_con_merma": 50,
           "unidades_inferidas": false,
-          "unidades_necesarias": 45,
+          "unidades_necesarias": 47,
           "unidades_paquete": 50,
-          "used": 45,
+          "used": 47,
           "variant_id": "V-PLATA-12-X50",
-          "waste_reserve": 5
+          "waste_reserve": 3
         }
       ],
       "estructuras": [
@@ -1475,7 +1475,7 @@
               "sustitucion": null,
               "tamano_codigo": "R-12",
               "titulo": "Globo latex redondo reflex plata — R-12 / PAQUETE X 50",
-              "unidades": 38,
+              "unidades": 40,
               "unidades_inferidas": false,
               "variant_id": "V-PLATA-12-X50"
             },
@@ -1525,7 +1525,7 @@
               "sustitucion": null,
               "tamano_codigo": "R-12",
               "titulo": "Globo latex redondo fashion azul rey — R-12 / PAQUETE X 20",
-              "unidades": 20,
+              "unidades": 18,
               "unidades_inferidas": false,
               "variant_id": "V-AZUL-12-X20"
             }
@@ -1633,7 +1633,7 @@
         "referencia_omitida": [],
         "supuestos": []
       },
-      "plan_hash": "adccb49ccee58cc8cc35f888d7fd6dbb850041d512a0919a6022aff40b00db3c",
+      "plan_hash": "4013ce5ee169c274aa8c21c714bba44b5bb8ce7c75803320c1811c79ddefe98d",
       "request_id": "00000000-0000-4000-8000-000000000101",
       "schema_version": "plan-resuelto.v1",
       "sin_cobertura": [],
@@ -1655,7 +1655,7 @@
         "total_cop": 65515,
         "total_unidades": 125,
         "uncovered_waste_reserve": 0,
-        "waste_only_savings_cop": 15293
+        "waste_only_savings_cop": 8832
       }
     },
     "quote": {
@@ -1707,7 +1707,7 @@
           "available": true,
           "color": "azul",
           "consumption_cost_cop": 6461,
-          "design_quantity": 20,
+          "design_quantity": 18,
           "diameter_inches": 12.0,
           "id": "V-AZUL-12-X20",
           "leftover_inventory": 0,
@@ -1729,12 +1729,12 @@
             "EST_02_COLUMNAS"
           ],
           "subtotal_cop": 6461,
-          "surplus": 0,
+          "surplus": 2,
           "title": "Globo latex redondo fashion azul rey — R-12 / PAQUETE X 20",
           "units_per_package": 20,
-          "used": 20,
+          "used": 18,
           "variant_id": "V-AZUL-12-X20",
-          "waste_reserve": 0
+          "waste_reserve": 2
         },
         {
           "available": true,
@@ -1773,7 +1773,7 @@
           "available": true,
           "color": "plateado",
           "consumption_cost_cop": 28977,
-          "design_quantity": 45,
+          "design_quantity": 47,
           "diameter_inches": 12.0,
           "id": "V-PLATA-12-X50",
           "leftover_inventory": 0,
@@ -1800,15 +1800,15 @@
             "EST_02_COLUMNAS"
           ],
           "subtotal_cop": 28977,
-          "surplus": 5,
+          "surplus": 3,
           "title": "Globo latex redondo reflex plata — R-12 / PAQUETE X 50",
           "units_per_package": 50,
-          "used": 45,
+          "used": 47,
           "variant_id": "V-PLATA-12-X50",
-          "waste_reserve": 5
+          "waste_reserve": 3
         }
       ],
-      "plan_hash": "adccb49ccee58cc8cc35f888d7fd6dbb850041d512a0919a6022aff40b00db3c",
+      "plan_hash": "4013ce5ee169c274aa8c21c714bba44b5bb8ce7c75803320c1811c79ddefe98d",
       "purchase_cost_cop": 65515,
       "schema_version": "quote.v1",
       "supported_complements": false,

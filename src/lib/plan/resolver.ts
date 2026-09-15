@@ -469,6 +469,13 @@ export async function resolverPlan(
         estructuraOficial: estructura.estructura_oficial,
       });
       ejeM = geometria.ejeM;
+      // La restricción de tamaños del cliente es de todo el plan, no por
+      // estructura: si la mezcla de esta estructura no puede ubicar un tamaño
+      // obligatorio queda como advertencia visible (`validarRestriccionesPlan`
+      // no revisa tamaños, así que este es el único aviso).
+      for (const pulgadas of geometria.tamanosSinUbicar) {
+        advertencias.push(`tamano_obligatorio_sin_ubicar:${estructura.estructura_id}:R-${pulgadas}`);
+      }
       const candidatos = candidatosPorProducto;
       for (const despiece of geometria.despiece) {
         if (despiece.cantidad <= 0) continue;
