@@ -5,7 +5,7 @@ Estado global: EN_CURSO
 | Id | Estado | Evidencia / notas |
 |---|---|---|
 | T0 | COMPLETADA | Árbol limpio en `2026-09-14` (HEAD `8590d90`); rama creada; `.gitignore` e inventario revisados (abajo) |
-| T1 | PENDIENTE | Las 8 pruebas de A0.2 están **fuera** de `plan:test` (verificado); fixture EXIF inexistente |
+| T1 | EN_CURSO | Parte 1 hecha: las 8 pruebas de A0.2 pasan en la base (exit 0 cada una, sin `process.env`/`fetch`) y se agregaron a `plan:test`; `npm run plan:test` exit 0 (178 casos). Falta: fixture EXIF (orientación 6) y lista explícita de cajas por defecto |
 | T2 | PENDIENTE | |
 | T3 | PENDIENTE | Depende de T2 |
 | T4 | PENDIENTE | Depende de T3 |
@@ -36,4 +36,5 @@ Candidatas por clase (licencia verificada): 0 · descargas usadas: 0 / 800 · cu
 Gemini estimado acumulado: US$0 · reportado: US$0 · tope: US$15
 
 ## Bitácora (más reciente arriba)
+- 2026-09-15 T1 (parte 1) · 8 pruebas fuera de CI corridas en la base: todas exit 0; agregadas al final de `plan:test` · verificación: `npm run plan:test` exit 0; solo cambia `package.json` (sin TS nuevo, no se corrió lint/tsc/build) · siguiente: fixture EXIF orientación 6 en `eval/fixtures/exif/` contra `/api/references/analyze` con puerto simulado, luego lista de excepciones de cajas por defecto.
 - 2026-09-15 T0 · rama `fase-a/a0-linea-base` creada desde `2026-09-14` limpio; ESTADO y REVISION creados; inventario · verificación: `git status` limpio antes de crear la rama; solo documentación (sin checks de aplicación, según `AGENTS.md`) · siguiente: T1 (correr en la base las 8 pruebas fuera de CI).
