@@ -9,8 +9,9 @@ import { ambientDecorFromReference } from "@/lib/ia/reference-structure";
 import { nivelCreatividadParaGenerar, perfilCreatividad } from "@/lib/ia/creatividad";
 import { compileProductPrompt, LORA_PRODUCT_RUNTIME_VERSION, sizeConfirmationsFromMaterialLines } from "@/lib/ia/lora-product-runtime";
 import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
-import { findLoraPromptLanguageLeaks, preflightLoraPrompt } from "@/lib/ia/lora-prompt-preflight";
+import { findLoraPromptLanguageLeaks, findLoraPromptProductLeaks, preflightLoraPrompt } from "@/lib/ia/lora-prompt-preflight";
 import { bloqueMezclaTamanos, bloqueMezclaPorEstructura, descripcionFisicaTamano, porcentajesMayorResto } from "@/lib/ia/tamano-fisico";
+import { descripcionProductoParaImagen, nombreProductoParaImagen } from "@/lib/ia/producto-para-imagen";
 import { cotizarProductos, type Cotizacion } from "@/lib/cotizacion/motor";
 import { featureEnabled, IMAGE_DEBUG, IMAGE_QA_NON_BLOCKING } from "@/lib/ia/feature-flags";
 import { resolveAspectTransform } from "@/lib/ia/aspect-transform";
@@ -19,7 +20,7 @@ import { approvedPlanQaInputs, buildGenerationQa } from "@/lib/ia/generation-qa"
 import { imagenDe, resolverProveedor } from "@/lib/ia/registro";
 import { buildApprovedSceneSpec, joinWithinLimit, SceneSpecSchema, sceneSpecHash } from "@/lib/ia/scene-spec";
 import { registrarPlanAudit } from "@/lib/rag/observability/log";
-import { DEFAULT_SEMPERTEX_LORA_TRIGGER, ensureLoraTriggers, generarConSempertexLora, loraEditApagado } from "@/lib/ia/sempertex-lora";
+import { buildLoraEditPrompt, DEFAULT_SEMPERTEX_LORA_TRIGGER, ensureLoraTriggers, generarConSempertexLora, loraEditApagado, LORA_EDIT_PROMPT_MAX_LENGTH, referenciasParaLoraEdit } from "@/lib/ia/sempertex-lora";
 import { LoraModeSlugSchema, LoraSelectionSchema } from "@/lib/lora/schema";
 import { resolveLoraMode, resolveLoraModeDatasetAllowlist, resolveLoraSelection, type ResolvedLoraApplication } from "@/lib/lora/mode-resolver";
 
@@ -269,12 +270,13 @@ async function cargarFoto(foto: string): Promise<Imagen | null> {
   }
 }
 
-async function cargarFotosProducto(productos: Producto[]): Promise<Array<ImagenEtiquetada & { productoId: string }>> {
+async function cargarFotosProducto(productos: Producto[], materialEstimate?: DesignMaterialEstimate): Promise<Array<ImagenEtiquetada & { productoId: string }>> {
   const results = await Promise.all(productos.filter((product) => product.foto).map(async (product, index) => {
     const image = await cargarFoto(product.foto!);
     if (!image) return null;
-    const packageNote = product.paquetes && product.unidadesPaquete ? ` Cotización: ${product.paquetes} paquete(s) de ${product.unidadesPaquete} unidades.` : "";
-    return { ...image, id: `CATALOG_${String(index + 1).padStart(2, "0")}`, productoId: product.id, descripcion: `${product.nombre}. ${product.descripcion}.${packageNote}` };
+    // Sin paquetes cotizados ni sufijo de variante: la foto va pegada a esta
+    // descripción, así que la capacidad de compra se leía como cantidad visual.
+    return { ...image, id: `CATALOG_${String(index + 1).padStart(2, "0")}`, productoId: product.id, descripcion: descripcionProductoParaImagen(product, materialEstimate ? designQuantityForProduct(materialEstimate, product.id) : undefined) };
   }));
   return results.filter((item): item is ImagenEtiquetada & { productoId: string } => item !== null);
 }
@@ -1152,7 +1154,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     const transformedSceneSpec = SceneSpecSchema.parse({ ...sceneSpec, canvas: { ...sceneSpec.canvas, content_rect: aspectTransform.contentRect } });
     const resolvedSceneSpecHash = sceneSpecHash(transformedSceneSpec);
     if (body.sceneSpecHash && body.sceneSpecHash !== resolvedSceneSpecHash) throw new Error("Scene specification hash does not match the validated scene.");
-    const productImages = await cargarFotosProducto(productosConMateriales);
+    const productImages = await cargarFotosProducto(productosConMateriales, materialEstimate);
     // LoRA Edit recibe hasta cuatro referencias visuales. Mantenemos una lista
     // más amplia aquí para resolver prioridades; el adaptador escoge las cuatro
     // mejores (espacio, productos y después composición).
@@ -1169,7 +1171,9 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       approvedPlan: planResuelto?.plan.estructuras.map((estructura) => `${estructura.nombre} (${estructura.tipo}, ${estructura.ubicacion})`),
       approvedMaterials: planResuelto?.compras.map((compra) => {
         const product = productosConMateriales.find((candidate) => candidate.id === compra.variant_id);
-        return product ? `${product.nombre}${product.colores.length ? ` — ${product.colores.join(", ")}` : ""}` : undefined;
+        // Mismo nombre que ve el modelo junto a la foto: sin el sufijo de
+        // variante, que arrastra el empaque ("R-12 / PAQUETE X 50").
+        return product ? `${nombreProductoParaImagen(product)}${product.colores.length ? ` — ${product.colores.join(", ")}` : ""}` : undefined;
       }).filter((material): material is string => Boolean(material)),
       pieceMatchLevels: blueprint.elements
         .filter((element) => element.model_decision?.catalog_product_id && element.model_decision.match_type !== "none")
@@ -1314,6 +1318,23 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       // aprobada) ninguna compactación ni reintento produce un prompt válido.
       const codigo = loraPreflight.requiresPlanSemantics ? "LORA_PLAN_REQUIRED" : "LORA_PREFLIGHT_FAILED";
       throw new Error(`${codigo}: ${loraPreflight.errors.join("; ")}`);
+    }
+    // Preflight del prompt FINAL que recibe fal: con foto del espacio o
+    // referencias, el adaptador le añade la guía de imágenes de entrada
+    // DESPUÉS de todas las comprobaciones anteriores, que solo ven el caption.
+    // Fallar cerrado aquí es lo que impide mandar español, ids o datos
+    // comerciales al proveedor.
+    if (usarLora) {
+      const referenciasEdit = referenciasParaLoraEdit(selected.inputs);
+      for (const [etiqueta, prompt] of [["texto", promptPrincipal], ["JSON", effectiveJsonPrompt]] as const) {
+        if (!prompt) continue;
+        const promptFinal = buildLoraEditPrompt(prompt, referenciasEdit);
+        const fugas = [...findLoraPromptLanguageLeaks(promptFinal), ...findLoraPromptProductLeaks(promptFinal, PRODUCT_VOCABULARY)];
+        if (fugas.length) throw new Error(`LORA_EDIT_PREFLIGHT_FAILED: el prompt ${etiqueta} enviado al proveedor filtra ${fugas.join(", ")}`);
+        if (promptFinal.length > LORA_EDIT_PROMPT_MAX_LENGTH) {
+          throw new Error(`LORA_EDIT_PREFLIGHT_FAILED: el prompt ${etiqueta} enviado al proveedor mide ${promptFinal.length} y supera el límite ${LORA_EDIT_PROMPT_MAX_LENGTH}`);
+        }
+      }
     }
     // Solo tiene sentido encadenar contexto real cuando esta petición ES una
     // revisión de una imagen previa; una generación nueva no hereda otra.
