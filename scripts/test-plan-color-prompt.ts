@@ -7,6 +7,10 @@ import { planBlueprint } from "@/app/api/generate/route";
 import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/scene-spec";
 import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
 import { estimateFromPlan } from "@/lib/materiales/estimacion";
+import { buildImagePrompt } from "@/lib/ia/build-image-prompt";
+import { buildQaObserverPrompt, qaPlanInputsFromPlan } from "@/lib/ia/image-qa";
+import { verificarCoherenciaPrompt } from "@/lib/plan/coherencia";
+import { bloqueMezclaPorEstructura } from "@/lib/ia/tamano-fisico";
 
 /**
  * La proporción de color por estructura tiene que llegar al prompt de imagen.
@@ -49,7 +53,7 @@ const rows = PRODUCTOS.flatMap((producto) => TAMANOS.map((tamano) => ({
   diam_pulg: tamano.diam,
   colores_producto: [producto.color],
   colores_variante: [producto.color],
-  acabado: producto.acabado,
+  acabados_producto: [producto.acabado],
   descripcion: `Globo látex ${producto.color} ${tamano.codigo}.`,
 })));
 // Pool simulado con la misma forma que scripts/test-generate-qa-plan.ts: el resolver solo lee `rows`.
@@ -95,6 +99,16 @@ function escenaDe(plan: PlanResuelto): SceneSpec {
     planHash: plan.plan_hash,
     catalogOnly: true,
   });
+}
+
+/** El mismo bloque de tamaños que arma route.ts, necesario para la coherencia. */
+function sizeMixDe(plan: PlanResuelto): string | undefined {
+  return bloqueMezclaPorEstructura(plan.estructuras.map((estructura) => ({
+    nombre: estructura.nombre,
+    total_unidades: estructura.total_unidades,
+    repeticiones: estructura.repeticiones,
+    mezcla_real: estructura.mezcla_real.map((linea) => ({ diamPulg: linea.diam_pulg, forma: linea.forma, unidades: linea.unidades })),
+  }))) ?? undefined;
 }
 
 const materiales: Material[] = [
@@ -160,6 +174,51 @@ async function main(): Promise<void> {
   assert.match(arcoDosColores.appearance.composition, /^80% principal \(blanco\); 20% acento \(dorado\)$/, arcoDosColores.appearance.composition);
   assert.deepEqual(escenaDe(acentoPrimero).elements[0]!.resolved_colors, ["blanco", "dorado"]);
   console.log("[PASS] planBlueprint: 80/20 se lee como 80/20 y el dominante encabeza aunque el acento se declare primero");
+
+  // 4. La proporción y el acabado de ESTA estructura llegan al prompt de
+  //    imagen y al QA. El conteo global de la escena sumaba las columnas
+  //    doradas al arco, así que el dorado parecía dominante, y el prompt
+  //    prometía "material percentages in the scene spec" que no existían.
+  const conColumnas = await planResuelto("33333333-3333-4333-8333-333333333333", [
+    { estructura_id: "EST_01_ARCO", nombre: "Arco principal", tipo: "arco", rol_escena: "focal", ubicacion: "arco_central", medidas: { ancho_m: 2.4, alto_m: 2.2 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales: [
+      { product_id: "P-BLANCO", color: "blanco", participacion: 0.85, rol_material: "principal" },
+      { product_id: "P-DORADO", color: "dorado", participacion: 0.15, rol_material: "acento" },
+    ], porque: "Arco mayormente blanco." },
+    { estructura_id: "EST_02_COLUMNAS", nombre: "Columnas laterales", tipo: "columna", rol_escena: "soporte", ubicacion: "lateral_izquierdo", medidas: { alto_m: 1.8 }, repeticiones: 2, densidad: "media", mezcla: "clasica", materiales: [
+      { product_id: "P-DORADO", color: "dorado", participacion: 1, rol_material: "principal" },
+    ], porque: "Columnas doradas a los lados." },
+  ]);
+  const escenaColumnas = escenaDe(conColumnas);
+  const prompt = buildImagePrompt({ sceneSpec: escenaColumnas, sizeMixBlock: sizeMixDe(conColumnas) });
+  const lineaArco = prompt.split("\n").find((linea) => linea.includes("APPROVED COLOR VARIETY"))!;
+  assert.ok(lineaArco.indexOf("blanco (~85%") < lineaArco.indexOf("dorado (~15%"), lineaArco);
+  assert.match(lineaArco, /mostly blanco \(~85%, matte\)/, lineaArco);
+  assert.match(lineaArco, /dorado \(~15%, high-shine chrome\)/, lineaArco);
+  assert.doesNotMatch(prompt, /material percentages in the scene spec/, "se elimina la frase que apuntaba a datos inexistentes");
+  // El estimado global sigue estando, pero ya no es el único dato de color.
+  assert.match(prompt, /Installed color distribution: /);
+  // Una estructura de un solo color conserva el MONOCHROME LOCK, sin porcentajes.
+  const lineasColumnas = prompt.split("\n").filter((linea) => linea.includes("MONOCHROME LOCK"));
+  assert.equal(lineasColumnas.length, 2, prompt);
+  for (const linea of lineasColumnas) assert.doesNotMatch(linea, /~\d+%/, linea);
+  assert.equal(verificarCoherenciaPrompt(prompt, conColumnas).ok, true, JSON.stringify(verificarCoherenciaPrompt(prompt, conColumnas).errores));
+
+  // El observador recibe exactamente la misma mezcla.
+  const qa = buildQaObserverPrompt(escenaColumnas, estimateFromPlan(conColumnas), qaPlanInputsFromPlan(conColumnas.plan.estructuras));
+  assert.match(qa, /EST_01_ARCO: [^\n]*color mix=mostly blanco \(~85%, matte\) with dorado \(~15%, high-shine chrome\) as accents;/, qa);
+  assert.doesNotMatch(qa, /material description above/, "la instrucción ya no apunta a una descripción inexistente");
+  assert.match(qa, /inverted dominant\/accent share/);
+  // Una estructura monocolor no inventa una mezcla.
+  assert.match(qa, /EST_02_COLUMNAS#1: [^\n]*colors=dorado; bbox=/, qa);
+  console.log("[PASS] colorVarietyContract y QA describen la misma mezcla por estructura, con acabado y dominancia");
+
+  // 5. Sin estimado por estructura (catálogo suelto, sin plan) se conserva el
+  //    texto sin proporciones en vez de inventar una.
+  const sinEstimado = buildImagePrompt({ sceneSpec: { ...escenaColumnas, material_estimate: undefined } as SceneSpec });
+  const lineaSinEstimado = sinEstimado.split("\n").find((linea) => linea.includes("APPROVED COLOR VARIETY"))!;
+  assert.doesNotMatch(lineaSinEstimado, /~\d+%/, lineaSinEstimado);
+  assert.match(lineaSinEstimado, /use exactly these catalog colors: blanco, dorado\./, lineaSinEstimado);
+  console.log("[PASS] sin líneas del estimado para la estructura, el prompt no inventa proporciones");
 }
 
 main().catch((error) => {

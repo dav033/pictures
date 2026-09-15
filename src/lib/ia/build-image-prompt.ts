@@ -1,5 +1,6 @@
 import { AMBIENTACION_IMAGEN, perfilCreatividad, type AmbientacionImagen, type NivelCreatividad } from "./creatividad";
 import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
+import { describirMezclaDeColor, mezclaDeColorDeEstructura } from "./mezcla-color-escena";
 import { tableSupportedElements, type SceneSpec } from "./scene-spec";
 import { buildLoraImagePromptV2 } from "./lora-caption-compiler";
 import {
@@ -285,7 +286,12 @@ function colorVarietyContract(sceneSpec: SceneSpec): string[] {
     if (colors.length < 2) {
       return `${promptElementName(element.name)}: MONOCHROME LOCK — use only ${colors[0] ?? "the supplied catalog color"}; do not introduce color variety.`;
     }
-    return `${promptElementName(element.name)}: APPROVED COLOR VARIETY — use exactly these catalog colors: ${colors.join(", ")}. Distribute them through intentional organic clusters and transitions, preserving any material percentages in the scene spec; avoid flat stripes, random speckles, or one color replacing another. Do not invent, recolor, or borrow any additional color.`;
+    // La proporción sale del estimado de esta estructura. Sin líneas suyas
+    // (camino de catálogo sin plan) se conserva el texto sin porcentajes: el
+    // prompt prometía "preserve any material percentages in the scene spec",
+    // que nunca existieron en ninguna parte del prompt.
+    const mezcla = describirMezclaDeColor(mezclaDeColorDeEstructura(sceneSpec, element));
+    return `${promptElementName(element.name)}: APPROVED COLOR VARIETY — use exactly these catalog colors: ${colors.join(", ")}.${mezcla ? ` Approximate share of this structure's own balloons: ${mezcla}. Keep that balance visible; the dominant color must read as dominant.` : ""} Distribute them through intentional organic clusters and transitions; avoid flat stripes, random speckles, or one color replacing another. Do not invent, recolor, or borrow any additional color.`;
   });
 }
 
