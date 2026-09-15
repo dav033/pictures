@@ -15,6 +15,8 @@ import {
   COMPOSITION_RELEVANCE,
   referenceStructureSemantics,
   STRUCTURE_DETECTION_RULES,
+  STRUCTURE_RULES_V14_CANDIDATE,
+  type VarianteReconocedor,
   tieneElementosAprobados,
   tieneEstructurasDeGlobos,
 } from "./reference-structure";
@@ -233,6 +235,8 @@ export type OpcionesAnalisisReferencias = {
    * do not analyze the same photos concurrently). Errors it throws propagate.
    */
   observarPase?: (pase: PaseObservado) => void;
+  /** Evaluation only: prompt variant. Omitted means production v13. */
+  variante?: VarianteReconocedor;
 };
 
 export type PaseObservado = {
@@ -518,9 +522,11 @@ function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string,
 }
 
 /** Prompts and their hash for a mode and catalog; the evaluation runner records the same hash. */
-export function sistemaAnalisis(catalogo: ReferenceCatalogItem[], mode: AnalysisMode) {
-  const inventorySystem = mode === "perceptual" ? INVENTORY_SYSTEM_PERCEPTUAL : INVENTORY_SYSTEM;
-  const auditSystem = mode === "perceptual" ? AUDIT_SYSTEM_PERCEPTUAL : AUDIT_SYSTEM;
+export function sistemaAnalisis(catalogo: ReferenceCatalogItem[], mode: AnalysisMode, variante: VarianteReconocedor = "v13") {
+  // Candidate rules are appended only on request, so v13 prompts and hashes stay byte-identical.
+  const extra = variante === "v14-candidato" ? `\n${STRUCTURE_RULES_V14_CANDIDATE}` : "";
+  const inventorySystem = (mode === "perceptual" ? INVENTORY_SYSTEM_PERCEPTUAL : INVENTORY_SYSTEM) + extra;
+  const auditSystem = (mode === "perceptual" ? AUDIT_SYSTEM_PERCEPTUAL : AUDIT_SYSTEM) + extra;
   // En modo perceptual nunca se manda el catálogo al modelo: no hay nada
   // válido que pueda elegir, y mandarlo solo lo tentaría a inventar un id.
   const catalogText = mode === "perceptual"
@@ -534,9 +540,11 @@ export function sistemaAnalisis(catalogo: ReferenceCatalogItem[], mode: Analysis
 
 export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenEtiquetada[], catalogo: ReferenceCatalogItem[] = [], mode: AnalysisMode = "perceptual", telemetria?: ContextoTelemetriaIA, signal?: AbortSignal, opciones: OpcionesAnalisisReferencias = {}): Promise<AnalisisV2Resultado> {
   if (!referencias.length) throw new Error("At least one reference image is required.");
-  const { inventorySystem, auditSystem, catalogText, systemPromptHash } = sistemaAnalisis(catalogo, mode);
+  const variante = opciones.variante ?? "v13";
+  const { inventorySystem, auditSystem, catalogText, systemPromptHash } = sistemaAnalisis(catalogo, mode, variante);
   const key = analysisCacheKey({ model: chat.modelo, systemPromptHash, images: referencias.map((image) => ({ image_id: image.id, mime: image.mime, base64: image.base64 })) });
-  if (!opciones.forzarNuevoAnalisis && mode === "perceptual") {
+  // The stored gallery analyses are v13 results; a candidate variant never reuses them.
+  if (!opciones.forzarNuevoAnalisis && mode === "perceptual" && variante === "v13") {
     const fijo = analisisFijoDeEjemplo(referencias, ANALYSIS_PARSER_VERSION);
     if (fijo) return fijo;
   }

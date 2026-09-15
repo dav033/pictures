@@ -64,6 +64,25 @@ export const DETECTED_STRUCTURE_TOOL_SCHEMA = {
 export const STRUCTURE_DETECTION_RULES = `For every balloon structure also return \`structure\`: structure_type (arch = one continuous curve with two feet on the floor; half_arch = a single rising side whose top clearly bends sideways, open at the top or with only one foot; column = vertical stack whose top stays roughly above its base, even if the outline is lumpy or leans slightly; always return top_overhang for vertical pieces, it decides between half_arch and column); garland = loose organic run along a surface or the floor; balloon_wall; centerpiece; ceiling_installation; cluster; sculpture = a figure built from balloons such as an animal, number or character; bouquet = balloons tied together floating or on a weight; hoop = circular frame covered in balloons), outline (symmetric or asymmetric), density (dense, medium or airy), horizontal_position, relative_height compared with the other balloon structures, curves_toward, top_overhang, grounded, and mirrors_element. Two separate pieces that leave a visible gap between them are two elements, never one arch: for example a short leaning column on the left and a tall half-arch on the right curving toward it. horizontal_position full_width is only for one continuous piece (a balloon wall, an arch, a garland that runs unbroken across the scene); two columns, half-arches, garlands or bouquets on opposite sides are two elements, one left and one right. Balloons lying loose or scattered on the floor are not a garland or any other structure: name them "loose balloons" and omit structure. Foil balloons, figures, numbers or letters fixed onto a balloon wall or another balloon structure belong to that structure: mention them in its composition instead of returning a separate structure. Only real event balloon decoration is a balloon structure; a hot air balloon, a kite or a soap bubble is not. When one element groups several identical separate pieces (for example two columns side by side), set quantity to that count.
 For every element return composition_relevance: essential (defines the composition), supporting (clearly visible styling such as string lights, foliage or props next to the decoration), or minor (negligible). Minor elements must use model_decision.action "omit".`;
 
+/** Recognizer prompt variants. "v13" is production; any other value is an evaluation candidate. */
+export const VARIANTES_RECONOCEDOR = ["v13", "v14-candidato"] as const;
+export type VarianteReconocedor = (typeof VARIANTES_RECONOCEDOR)[number];
+
+/**
+ * Candidate rules appended to the detection rules only when a caller asks for
+ * "v14-candidato" (Plan A validation, 2026-09-15). They address the confusions
+ * measured on 155 photos: gift-style bouquets read as centerpieces or sculptures,
+ * half-arches wrapped over a backdrop read as columns, and accent clusters or
+ * foil pieces returned as separate structures. Production stays on v13 until an
+ * evaluation promotes this text.
+ */
+export const STRUCTURE_RULES_V14_CANDIDATE = `Clarifications that override the definitions above when they conflict:
+- bouquet = one compact, freestanding balloon arrangement built as a single gift or accent piece: usually a stacked base of round balloons with a foil, bubble or number balloon on top and optional twisted or spiral long balloons; it can stand on the floor or on any table. Return bouquet for that whole piece, including any foil numbers, letters or bubble balloons on it. Floating helium balloons tied together are also a bouquet.
+- centerpiece = a small, low arrangement that decorates a dining or guest table as part of the table setting, usually repeated on several tables or surrounded by plates, glasses or table linen. A single standalone gift-style arrangement is a bouquet, not a centerpiece, even when it sits on a table.
+- sculpture = a recognizable figure whose shape is built from the balloons themselves (an animal, a character, a car, a flower, a number made of latex balloons). Foil number or letter balloons placed on top of a balloon base do not make a sculpture: that piece is a bouquet.
+- arch requires both ends to reach the floor or a base. A garland that rises on one side of a backdrop, panel or frame and wraps over its top edge, ending in the air or on top of the backdrop, is a half_arch even when the sideways reach looks short; use column only when the top ends without bending over anything.
+- small balloon clusters touching or right next to a larger balloon structure (at its base, its ends or along it) and balloons hanging inside a ceiling installation are part of that structure: describe them in its composition and never return them as separate cluster or bouquet elements.`;
+
 function oneOf<T extends readonly string[]>(values: T, value: unknown): T[number] | undefined {
   const text = typeof value === "string" ? value.trim().toLowerCase().replace(/[\s-]+/g, "_") : "";
   return (values as readonly string[]).includes(text) ? text as T[number] : undefined;

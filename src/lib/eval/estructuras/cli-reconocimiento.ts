@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { isAbsolute, relative, resolve } from "node:path";
 import { z } from "zod";
+import { VARIANTES_RECONOCEDOR, type VarianteReconocedor } from "@/lib/ia/reference-structure";
 import { SupuestoTokensSchema, TablaPreciosSchema } from "./costo";
 import { leerPrediccionesJsonl, lineaJsonl, type PrediccionEstructurasV1 } from "./prediccion";
 import { resumirCorrida } from "./resumen-corrida";
@@ -42,12 +43,13 @@ export type OpcionesCli = {
   ejecutar: boolean;
   precios: string;
   supuesto: string;
+  variante: VarianteReconocedor;
 };
 
 export function leerArgumentos(argv: readonly string[]): OpcionesCli {
   const opciones: OpcionesCli = {
     suite: "", runId: "", corridas: 5, maxUsd: null, concurrencia: 2, plazoMs: 120_000, salida: "", crudos: null, raizImagenes: "",
-    ejecutar: false, precios: "eval/estructuras/precios/2026-09-15.json", supuesto: "eval/estructuras/supuestos/tokens-analisis-2026-09-15.json",
+    ejecutar: false, variante: "v13", precios: "eval/estructuras/precios/2026-09-15.json", supuesto: "eval/estructuras/supuestos/tokens-analisis-2026-09-15.json",
   };
   const numeros = new Set(["--corridas", "--max-usd", "--concurrencia", "--plazo-ms"]);
   for (let i = 0; i < argv.length; i += 1) {
@@ -71,6 +73,10 @@ export function leerArgumentos(argv: readonly string[]): OpcionesCli {
       case "--raiz-imagenes": opciones.raizImagenes = valor; break;
       case "--precios": opciones.precios = valor; break;
       case "--supuesto": opciones.supuesto = valor; break;
+      case "--variante":
+        if (!(VARIANTES_RECONOCEDOR as readonly string[]).includes(valor)) throw new Error(`--variante debe ser una de: ${VARIANTES_RECONOCEDOR.join(", ")}`);
+        opciones.variante = valor as VarianteReconocedor;
+        break;
       default: throw new Error(`opción desconocida: ${arg}`);
     }
   }
@@ -100,9 +106,9 @@ export type DependenciasCli = {
   ahora: () => Date;
   /** Must stop durable telemetry (ai_call_log) and drop DATABASE_URL: evaluation never writes to the production database. */
   desactivarTelemetriaDurable: () => void;
-  crearAnalizador: (opciones: { raizImagenes: string; crudos: string }) => Promise<{ analizar: Analizador; modelo: string; thinkingLevel: string | null; systemPromptSha256: string; configHash: string; parserVersion: string }>;
+  crearAnalizador: (opciones: { raizImagenes: string; crudos: string; variante: VarianteReconocedor }) => Promise<{ analizar: Analizador; modelo: string; thinkingLevel: string | null; systemPromptSha256: string; configHash: string; parserVersion: string }>;
   /** Values for preview, where no analyzer (and no provider client) is created. */
-  sistemaSinProveedor: () => { modelo: string; thinkingLevel: string | null; systemPromptSha256: string; configHash: string; parserVersion: string };
+  sistemaSinProveedor: (variante: VarianteReconocedor) => { modelo: string; thinkingLevel: string | null; systemPromptSha256: string; configHash: string; parserVersion: string };
   log: (mensaje: string) => void;
 };
 
@@ -128,8 +134,8 @@ export async function ejecutarCli(argv: readonly string[], deps: DependenciasCli
 
   if (opciones.ejecutar) deps.desactivarTelemetriaDurable();
   const sistemaBase = opciones.ejecutar
-    ? await deps.crearAnalizador({ raizImagenes: opciones.raizImagenes, crudos: opciones.crudos! })
-    : { ...deps.sistemaSinProveedor(), analizar: null };
+    ? await deps.crearAnalizador({ raizImagenes: opciones.raizImagenes, crudos: opciones.crudos!, variante: opciones.variante })
+    : { ...deps.sistemaSinProveedor(opciones.variante), analizar: null };
   const config: ConfiguracionRunner = {
     runId: opciones.runId,
     corridasPorImagen: opciones.corridas,
@@ -141,7 +147,7 @@ export async function ejecutarCli(argv: readonly string[], deps: DependenciasCli
     supuesto,
     instante: deps.ahora(),
     sistema: {
-      id: "v13", modelo: sistemaBase.modelo, parser_version: sistemaBase.parserVersion, system_prompt_sha256: sistemaBase.systemPromptSha256,
+      id: opciones.variante, modelo: sistemaBase.modelo, parser_version: sistemaBase.parserVersion, system_prompt_sha256: sistemaBase.systemPromptSha256,
       config_hash: sistemaBase.configHash, thinking_level: sistemaBase.thinkingLevel, taxonomy_version: suite.taxonomy_version, commit: deps.commit(),
     },
   };

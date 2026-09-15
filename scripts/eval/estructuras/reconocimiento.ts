@@ -28,12 +28,12 @@ function cargarEntorno(): void {
   delete process.env.DATABASE_URL;
 }
 
-async function sistemaActual() {
+async function sistemaActual(variante: "v13" | "v14-candidato") {
   const { chatDe } = await import("../../../src/lib/ia/registro");
   const { analysisConfigHash, ANALYSIS_PARSER_VERSION, sistemaAnalisis } = await import("../../../src/lib/ia/analizar-referencias-v2");
   // Creating the port makes no request; it only reads model and thinking settings.
   const chat = await chatDe("gemini");
-  const { systemPromptHash } = sistemaAnalisis([], "perceptual");
+  const { systemPromptHash } = sistemaAnalisis([], "perceptual", variante);
   return {
     chat,
     modelo: chat.modelo,
@@ -46,7 +46,9 @@ async function sistemaActual() {
 
 async function main(): Promise<void> {
   cargarEntorno();
-  const inicial = await sistemaActual();
+  const argVariante = process.argv[process.argv.indexOf("--variante") + 1];
+  const variante = process.argv.includes("--variante") && argVariante === "v14-candidato" ? "v14-candidato" : "v13";
+  const inicial = await sistemaActual(variante);
   await ejecutarCli(process.argv.slice(2), {
     repo: REPO,
     leerTexto: (ruta) => (existsSync(ruta) ? readFileSync(ruta, "utf8") : null),
@@ -60,7 +62,7 @@ async function main(): Promise<void> {
       if (process.env.DATABASE_URL) throw new Error("DATABASE_URL sigue definida: la evaluación no escribe en la base");
     },
     sistemaSinProveedor: () => inicial,
-    crearAnalizador: async ({ raizImagenes, crudos }) => {
+    crearAnalizador: async ({ raizImagenes, crudos, variante: varianteAnalizador }) => {
       // telemetria-llamadas configures Postgres persistence when imported: import it first, then disable.
       await import("../../../src/lib/ia/telemetria-llamadas");
       const { configurarPersistenciaTelemetria } = await import("@sempertex/agente-core");
@@ -68,6 +70,7 @@ async function main(): Promise<void> {
       const { crearAnalizadorV13 } = await import("../../../src/lib/eval/estructuras/adaptador-v13");
       const analizar = crearAnalizadorV13({
         chat: inicial.chat,
+        variante: varianteAnalizador,
         leerImagen: async (item) => {
           const ruta = resolve(raizImagenes, item.ruta_privada);
           if (!dentroDe(raizImagenes, ruta)) throw new Error("ruta_privada fuera de --raiz-imagenes");

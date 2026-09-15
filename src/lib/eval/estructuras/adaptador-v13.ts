@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { analizarReferenciasV2, type PaseObservado } from "@/lib/ia/analizar-referencias-v2";
 import { mergeCandidates, object, parseCandidates } from "@/lib/ia/candidatos-referencia";
 import { stableElementId } from "@/lib/ia/reference-blueprint";
+import type { VarianteReconocedor } from "@/lib/ia/reference-structure";
 import type { ChatPort } from "@/lib/ia/tipos";
 import type { DeteccionV1 } from "./prediccion";
 import type { Analizador, ItemSuite, PaseResultado, ResultadoAnalisis } from "./runner";
@@ -53,6 +54,8 @@ export function crearAnalizadorV13(dependencias: {
   leerImagen: (item: ItemSuite) => Promise<ImagenLeida>;
   /** Stores the raw provider output privately (never in git) and returns its sha256. */
   guardarSalidaCruda: (contenido: string) => Promise<string>;
+  /** Prompt variant to evaluate; omitted means production v13. */
+  variante?: VarianteReconocedor;
 }): Analizador {
   return async (item, signal): Promise<ResultadoAnalisis> => {
     const imagen = await dependencias.leerImagen(item);
@@ -77,7 +80,7 @@ export function crearAnalizadorV13(dependencias: {
         "perceptual",
         { superficie: "evaluacion/estructuras" },
         signal,
-        { forzarNuevoAnalisis: true, observarPase: (pase) => { observados.push(pase); } },
+        { forzarNuevoAnalisis: true, variante: dependencias.variante ?? "v13", observarPase: (pase) => { observados.push(pase); } },
       );
     } catch (error) {
       const nombre = error instanceof Error ? error.name : "";

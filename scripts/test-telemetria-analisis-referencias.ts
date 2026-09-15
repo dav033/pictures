@@ -3,7 +3,11 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { configurarPersistenciaTelemetria, esperarPersistenciaTelemetria, ultimosEventos, type EventoTelemetria } from "@sempertex/agente-core";
 import { nivelPensamientoTelemetria } from "@sempertex/agente-core/gemini";
 import { ThinkingLevel } from "@google/genai";
-import { analizarReferenciasV2, analysisConfigHash, type PaseObservado } from "@/lib/ia/analizar-referencias-v2";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { analizarReferenciasV2, analysisConfigHash, sistemaAnalisis, type PaseObservado } from "@/lib/ia/analizar-referencias-v2";
+import { STRUCTURE_RULES_V14_CANDIDATE } from "@/lib/ia/reference-structure";
+import { MANIFIESTO_REFERENCIAS_EJEMPLO } from "@/lib/referencias-ejemplo/manifiesto";
 import type { ChatPort, PeticionChat, TurnoChat } from "@/lib/ia/tipos";
 
 /**
@@ -128,6 +132,31 @@ async function run(): Promise<void> {
     assert.equal(nivelPensamientoTelemetria(ThinkingLevel.LOW), "low");
     assert.equal(nivelPensamientoTelemetria(ThinkingLevel.MINIMAL), "minimal");
     assert.equal(nivelPensamientoTelemetria(ThinkingLevel.THINKING_LEVEL_UNSPECIFIED), "default");
+  });
+
+  await caso("variante v14-candidato: el prompt de producción v13 no cambia y la candidata agrega sus reglas", () => {
+    const v13 = sistemaAnalisis([], "perceptual");
+    // Hash recorded for the v13 runs of 2026-09-15 (eval/results/estructuras/*/low): production prompt unchanged.
+    assert.equal(v13.systemPromptHash, "5d956a13c38007baad72c3c045960a005a812f8cabfd8d257f970221ab418ce9");
+    assert.equal(sistemaAnalisis([], "perceptual", "v13").systemPromptHash, v13.systemPromptHash);
+    const v14 = sistemaAnalisis([], "perceptual", "v14-candidato");
+    assert.notEqual(v14.systemPromptHash, v13.systemPromptHash);
+    assert.ok(v14.inventorySystem.startsWith(v13.inventorySystem) && v14.inventorySystem.endsWith(STRUCTURE_RULES_V14_CANDIDATE));
+    assert.ok(v14.auditSystem.endsWith(STRUCTURE_RULES_V14_CANDIDATE));
+  });
+
+  await caso("variante v14-candidato: nunca reutiliza el análisis fijo de la galería (resultados v13)", async () => {
+    const foto = MANIFIESTO_REFERENCIAS_EJEMPLO.fotos[0]!;
+    const base64 = readFileSync(resolve(process.cwd(), "public", "referencias-ejemplo", foto.archivo)).toString("base64");
+    let llamadas = 0;
+    const chat = chatSimulado({ thinkingLevel: "low" });
+    const turno = chat.turno.bind(chat);
+    chat.turno = async (p) => { llamadas += 1; return turno(p); };
+    const v13 = await analizarReferenciasV2(chat, [{ id: "REF_01", mime: "image/jpeg", base64, descripcion: "x" }], [], "perceptual");
+    assert.equal(llamadas, 0, "v13 keeps serving the stored gallery analysis");
+    assert.equal(v13.metadata.cached, true);
+    await analizarReferenciasV2(chat, [{ id: "REF_01", mime: "image/jpeg", base64, descripcion: "x" }], [], "perceptual", undefined, undefined, { variante: "v14-candidato" });
+    assert.ok(llamadas >= 2, "the candidate calls the provider instead of reusing v13 results");
   });
 
   console.log(`[PASS] ${casos} casos de telemetría del análisis de referencias`);
