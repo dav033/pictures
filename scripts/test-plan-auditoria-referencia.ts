@@ -258,10 +258,12 @@ async function main(): Promise<void> {
   const confirmada = await confirmarColumna(argsColumna, llamada) as Record<string, unknown>;
   assert.equal(confirmada.ok, true, JSON.stringify(confirmada).slice(0, 500));
   const sustituciones = confirmada.sustituciones as Array<{ pedido: string }>;
-  assert.deepEqual(sustituciones.map((item) => item.pedido), ["cafe", "azul", "plateado"], "the lost photo colors are recorded as substitutions");
-  assert.deepEqual(estadoColumna.planResuelto?.plan.estructuras[0]?.colores_referencia, ["cafe", "azul", "plateado"], "the signed plan carries the photo colors, not the model's");
+  // The 4th color of the column (gold) is shown to the customer as a photo color
+  // too, so it is a notice as well (E2E 2026-09-15 D5: no silent loss past the 3 dominant ones).
+  assert.deepEqual(sustituciones.map((item) => item.pedido), ["cafe", "azul", "plateado", "dorado"], "the lost photo colors are recorded as substitutions");
+  assert.deepEqual(estadoColumna.planResuelto?.plan.estructuras[0]?.colores_referencia, ["cafe", "azul", "plateado", "dorado"], "the signed plan carries the photo colors, not the model's");
   const avisos = confirmada.avisos_cliente as string[];
-  assert.equal(avisos.length, 3, "the chat receives one notice per lost color");
+  assert.equal(avisos.length, 4, "the chat receives one notice per lost color");
   assert.match(String(confirmada.accion_requerida ?? ""), /avisos_cliente/, "the model is told it must tell the customer");
   ok("confirmar_plan_decoracion registra los colores perdidos y obliga a avisar");
 
@@ -270,9 +272,13 @@ async function main(): Promise<void> {
   // three color notices while the catalog had pink and silver balloons.
   const { coloresReferenciaOmitidos, productosGloboPorColor } = await import("../src/lib/plan/colores-referencia");
   const { ACCION_COLORES_REFERENCIA_OMITIDOS, MENSAJE_CLIENTE_COLORES_REFERENCIA } = await import("../src/lib/ia/registro-herramientas");
-  const semiarcosFoto = blueprintDe(["REF_01"], [
-    elemento("REF_01_E03", "REF_01", "left balloon garland", "balloon_structure", ["light pink", "chrome silver", "light grey", "clear"]),
-  ]);
+  // Palette as the analyzer reported it for that photo (it does not list the clear accents).
+  const semiarcosFoto = ReferenceBlueprintV2Schema.parse({
+    ...blueprintDe(["REF_01"], [
+      elemento("REF_01_E03", "REF_01", "left balloon garland", "balloon_structure", ["light pink", "chrome silver", "light grey", "clear"]),
+    ]),
+    palette: { observed: ["light pink", "chrome silver", "light grey"], priority: ["light pink", "chrome silver", "light grey"] },
+  });
   assert.deepEqual(restricciones.aplicarColoresReferencia(PlanDecoracionSchema.parse({
     plan_version: "1.0", plan_id: "01010101-0101-4010-8010-010101010101", concepto: { titulo: "x", descripcion: "x", paleta: [] },
     espacio: { tipo: "salón", fuente: "foto" }, supuestos: [],

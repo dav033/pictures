@@ -1,0 +1,1368 @@
+{
+  "allowlist": [
+    {
+      "product_id": "P-F15-LILA",
+      "variant_ids": [
+        "V-F15-LILA-12"
+      ]
+    },
+    {
+      "product_id": "P-F15-BLANCO",
+      "variant_ids": [
+        "V-F15-BLANCO-12"
+      ]
+    },
+    {
+      "product_id": "P-F15-PLATEADO",
+      "variant_ids": [
+        "V-F15-PLATEADO-12"
+      ]
+    }
+  ],
+  "catalog_rows": [
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "lila"
+      ],
+      "colores_variante": [
+        "lila"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex lila R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/lila-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 9000,
+      "product_id": "P-F15-LILA",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex lila",
+      "sku": "SKU-F15-LILA-12",
+      "sku_original": "SHOP-F15-LILA-12",
+      "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+      "source_variant_id": "SOURCE-F15-LILA-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-F15-LILA-12",
+      "variante_titulo": "R-12"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "blanco"
+      ],
+      "colores_variante": [
+        "blanco"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex blanco R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/blanco-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 9000,
+      "product_id": "P-F15-BLANCO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex blanco",
+      "sku": "SKU-F15-BLANCO-12",
+      "sku_original": "SHOP-F15-BLANCO-12",
+      "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+      "source_variant_id": "SOURCE-F15-BLANCO-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-F15-BLANCO-12",
+      "variante_titulo": "R-12"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "plateado"
+      ],
+      "colores_variante": [
+        "plateado"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex plateado R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/plateado-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 9000,
+      "product_id": "P-F15-PLATEADO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex plateado",
+      "sku": "SKU-F15-PLATEADO-12",
+      "sku_original": "SHOP-F15-PLATEADO-12",
+      "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+      "source_variant_id": "SOURCE-F15-PLATEADO-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-F15-PLATEADO-12",
+      "variante_titulo": "R-12"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-A5-009",
+  "description": "Marco vino y plata (E2E 2026-09-15 D5): el arco lleva sus colores dominantes y los demas colores que el analisis muestra de la foto (gris, 4.o color del arco; rosado, de las sillas). Los dos resolutores registran en sustituciones todos los que la pieza no compra.",
+  "expected": {
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "plateado",
+          "design_quantity": 47,
+          "finish": null,
+          "product_id": "P-F15-PLATEADO",
+          "required_quantity": 47,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-F15-PLATEADO-12",
+          "waste_adjusted_quantity": 47,
+          "waste_reserve": 0
+        },
+        {
+          "color": "lila",
+          "design_quantity": 35,
+          "finish": null,
+          "product_id": "P-F15-LILA",
+          "required_quantity": 35,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-F15-LILA-12",
+          "waste_adjusted_quantity": 35,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 36,
+          "finish": null,
+          "product_id": "P-F15-BLANCO",
+          "required_quantity": 36,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-F15-BLANCO-12",
+          "waste_adjusted_quantity": 36,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 1,
+        "density": "media",
+        "dimensions_m": {
+          "height": 2.2,
+          "length": null,
+          "width": 2.5
+        },
+        "installation_length_m": 5.52,
+        "shape": "clasica",
+        "type": "arco",
+        "visual_density": "medium",
+        "visual_scale": "very_large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 6480,
+          "design_quantity": 36,
+          "leftover_inventory": 14,
+          "operational_surplus": 14,
+          "package_count": 1,
+          "potential_surplus": 14,
+          "product_id": "P-F15-BLANCO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 36,
+          "units_per_package": 50,
+          "used": 36,
+          "variant_id": "V-F15-BLANCO-12",
+          "waste_adjusted_quantity": 36,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 8100,
+          "design_quantity": 35,
+          "leftover_inventory": 5,
+          "operational_surplus": 5,
+          "package_count": 1,
+          "potential_surplus": 15,
+          "product_id": "P-F15-LILA",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 45,
+          "units_per_package": 50,
+          "used": 35,
+          "variant_id": "V-F15-LILA-12",
+          "waste_adjusted_quantity": 45,
+          "waste_reserve": 10
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 8460,
+          "design_quantity": 47,
+          "leftover_inventory": 3,
+          "operational_surplus": 3,
+          "package_count": 1,
+          "potential_surplus": 3,
+          "product_id": "P-F15-PLATEADO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "units_per_package": 50,
+          "used": 47,
+          "variant_id": "V-F15-PLATEADO-12",
+          "waste_adjusted_quantity": 47,
+          "waste_reserve": 0
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 23040,
+        "covered_waste_reserve": 10,
+        "design_quantity": 118,
+        "natural_package_surplus": 32,
+        "operational_surplus": 22,
+        "potential_surplus": 32,
+        "purchase_cost": 27000,
+        "purchase_quantity": 150,
+        "required_quantity": 128,
+        "target_waste_reserve": 10,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 128,
+        "waste_only_savings_cop": 9000
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-F15-LILA-12"
+      ]
+    },
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-F15-LILA-12"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 6480,
+          "design_quantity": 36,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/blanco-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 14,
+          "paquetes": 1,
+          "precio_paquete": 9000,
+          "product_id": "P-F15-BLANCO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 36,
+          "sku": "SKU-F15-BLANCO-12",
+          "sku_original": "SHOP-F15-BLANCO-12",
+          "sobrante": 14,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-F15-BLANCO-12",
+          "subtotal": 9000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex blanco — R-12",
+          "unidades_con_merma": 36,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 36,
+          "unidades_paquete": 50,
+          "used": 36,
+          "variant_id": "V-F15-BLANCO-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "lila",
+          "consumption_cost": 8100,
+          "design_quantity": 35,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/lila-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 5,
+          "paquetes": 1,
+          "precio_paquete": 9000,
+          "product_id": "P-F15-LILA",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 45,
+          "sku": "SKU-F15-LILA-12",
+          "sku_original": "SHOP-F15-LILA-12",
+          "sobrante": 15,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-F15-LILA-12",
+          "subtotal": 9000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex lila — R-12",
+          "unidades_con_merma": 45,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 35,
+          "unidades_paquete": 50,
+          "used": 35,
+          "variant_id": "V-F15-LILA-12",
+          "waste_reserve": 10
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "plateado",
+          "consumption_cost": 8460,
+          "design_quantity": 47,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/plateado-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 3,
+          "paquetes": 1,
+          "precio_paquete": 9000,
+          "product_id": "P-F15-PLATEADO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "sku": "SKU-F15-PLATEADO-12",
+          "sku_original": "SHOP-F15-PLATEADO-12",
+          "sobrante": 3,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-F15-PLATEADO-12",
+          "subtotal": 9000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex plateado — R-12",
+          "unidades_con_merma": 47,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 47,
+          "unidades_paquete": 50,
+          "used": 47,
+          "variant_id": "V-F15-PLATEADO-12",
+          "waste_reserve": 0
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 5.52,
+          "estructura_id": "EST_01_ARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "plateado",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/plateado-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-F15-PLATEADO",
+              "sku": "SKU-F15-PLATEADO-12",
+              "sku_original": "SHOP-F15-PLATEADO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-F15-PLATEADO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex plateado — R-12",
+              "unidades": 47,
+              "unidades_inferidas": false,
+              "variant_id": "V-F15-PLATEADO-12"
+            },
+            {
+              "acabado": null,
+              "color": "lila",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/lila-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-F15-LILA",
+              "sku": "SKU-F15-LILA-12",
+              "sku_original": "SHOP-F15-LILA-12",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-F15-LILA-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex lila — R-12",
+              "unidades": 35,
+              "unidades_inferidas": false,
+              "variant_id": "V-F15-LILA-12"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/blanco-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-F15-BLANCO",
+              "sku": "SKU-F15-BLANCO-12",
+              "sku_original": "SHOP-F15-BLANCO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-F15-BLANCO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex blanco — R-12",
+              "unidades": 36,
+              "unidades_inferidas": false,
+              "variant_id": "V-F15-BLANCO-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 118
+            }
+          ],
+          "nombre": "Arco asimetrico",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "arco",
+          "total_unidades": 118,
+          "ubicacion": "arco_central"
+        }
+      ],
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 118\nTarget waste reserve: 10\nNatural package surplus: 32\nUsable waste coverage: 10\nAdditional packages required for waste: 0\nGlobo latex blanco — R-12: design=36, required=36, package=50, packages=1, purchased=50, natural surplus=14, waste reserve=0, leftover inventory=14\nGlobo latex lila — R-12: design=35, required=45, package=50, packages=1, purchased=50, natural surplus=15, waste reserve=10, leftover inventory=5\nGlobo latex plateado — R-12: design=47, required=47, package=50, packages=1, purchased=50, natural surplus=3, waste reserve=0, leftover inventory=3",
+      "plan": {
+        "concepto": {
+          "descripcion": "Arco de la foto en plata, lila y blanco.",
+          "paleta": [
+            "plateado",
+            "lila",
+            "blanco"
+          ],
+          "titulo": "Marco vino y plata"
+        },
+        "espacio": {
+          "fuente": "foto",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "colores_referencia": [
+              "burdeos",
+              "blanco",
+              "plateado",
+              "gris",
+              "rosado"
+            ],
+            "densidad": "media",
+            "estructura_id": "EST_01_ARCO",
+            "materiales": [
+              {
+                "color": "plateado",
+                "participacion": 0.4,
+                "product_id": "P-F15-PLATEADO",
+                "rol_material": "principal"
+              },
+              {
+                "color": "lila",
+                "participacion": 0.3,
+                "product_id": "P-F15-LILA",
+                "rol_material": "secundario"
+              },
+              {
+                "color": "blanco",
+                "participacion": 0.3,
+                "product_id": "P-F15-BLANCO",
+                "rol_material": "secundario"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.2,
+              "ancho_m": 2.5
+            },
+            "mezcla": "clasica",
+            "nombre": "Arco asimetrico",
+            "porque": "Enmarca la escena principal.",
+            "referencia_element_id": "REF_01_E03",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "arco",
+            "ubicacion": "arco_central"
+          }
+        ],
+        "plan_id": "f18f1818-0000-4000-8000-000000000018",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "4b3e3610dc48f2a81c50543a56e9783f39db876aea6c7ae1d85319209e287fde",
+      "sin_cobertura": [],
+      "sustituciones": [
+        {
+          "entregado": "plateado, lila, blanco",
+          "estructura_id": "EST_01_ARCO",
+          "motivo": "La foto de referencia muestra burdeos y esta pieza no lo lleva: se armó con plateado, lila y blanco.",
+          "pedido": "burdeos"
+        },
+        {
+          "entregado": "plateado, lila, blanco",
+          "estructura_id": "EST_01_ARCO",
+          "motivo": "La foto de referencia muestra gris y esta pieza no lo lleva: se armó con plateado, lila y blanco.",
+          "pedido": "gris"
+        },
+        {
+          "entregado": "plateado, lila, blanco",
+          "estructura_id": "EST_01_ARCO",
+          "motivo": "La foto de referencia muestra rosado y esta pieza no lo lleva: se armó con plateado, lila y blanco.",
+          "pedido": "rosado"
+        }
+      ],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 23040,
+        "covered_waste_reserve": 10,
+        "design_quantity": 118,
+        "globos_por_tamano": {
+          "R-12": 118
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8,
+        "natural_package_surplus": 32,
+        "purchase_cost": 27000,
+        "target_waste_reserve": 10,
+        "total_cop": 27000,
+        "total_unidades": 118,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 9000
+      }
+    },
+    "quote": {
+      "complementosSoportados": false,
+      "consumptionCost": 23040,
+      "coveredWasteReserve": 10,
+      "incluyeIva": true,
+      "leftoverInventory": 22,
+      "lineas": [
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 36,
+          "color": "blanco",
+          "consumptionCost": 6480,
+          "designQuantity": 36,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-F15-BLANCO-12",
+          "leftoverInventory": 14,
+          "nombre": "Globo latex blanco — R-12",
+          "paquetes": 1,
+          "precioPaquete": 9000,
+          "productId": "P-F15-BLANCO",
+          "purchaseCost": 9000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [
+            "REF_01_E03"
+          ],
+          "requiredQuantity": 36,
+          "sobrante": 14,
+          "subtotal": 9000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 36,
+          "varianteId": "V-F15-BLANCO-12",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 35,
+          "color": "lila",
+          "consumptionCost": 8100,
+          "designQuantity": 35,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-F15-LILA-12",
+          "leftoverInventory": 5,
+          "nombre": "Globo latex lila — R-12",
+          "paquetes": 1,
+          "precioPaquete": 9000,
+          "productId": "P-F15-LILA",
+          "purchaseCost": 9000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [
+            "REF_01_E03"
+          ],
+          "requiredQuantity": 45,
+          "sobrante": 15,
+          "subtotal": 9000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 35,
+          "varianteId": "V-F15-LILA-12",
+          "wasteReserve": 10
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 47,
+          "color": "plateado",
+          "consumptionCost": 8460,
+          "designQuantity": 47,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-F15-PLATEADO-12",
+          "leftoverInventory": 3,
+          "nombre": "Globo latex plateado — R-12",
+          "paquetes": 1,
+          "precioPaquete": 9000,
+          "productId": "P-F15-PLATEADO",
+          "purchaseCost": 9000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [
+            "REF_01_E03"
+          ],
+          "requiredQuantity": 47,
+          "sobrante": 3,
+          "subtotal": 9000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 47,
+          "varianteId": "V-F15-PLATEADO-12",
+          "wasteReserve": 0
+        }
+      ],
+      "mermaPorcentaje": 8,
+      "plan_hash": "4b3e3610dc48f2a81c50543a56e9783f39db876aea6c7ae1d85319209e287fde",
+      "purchaseCost": 27000,
+      "targetWasteReserve": 10,
+      "total": 27000
+    }
+  },
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-A5-009",
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "plateado",
+          "design_quantity": 47,
+          "finish": null,
+          "product_id": "P-F15-PLATEADO",
+          "required_quantity": 47,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-F15-PLATEADO-12",
+          "waste_adjusted_quantity": 47,
+          "waste_reserve": 0
+        },
+        {
+          "color": "lila",
+          "design_quantity": 35,
+          "finish": null,
+          "product_id": "P-F15-LILA",
+          "required_quantity": 35,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-F15-LILA-12",
+          "waste_adjusted_quantity": 35,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 36,
+          "finish": null,
+          "product_id": "P-F15-BLANCO",
+          "required_quantity": 36,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-F15-BLANCO-12",
+          "waste_adjusted_quantity": 36,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 1,
+        "density": "media",
+        "dimensions_m": {
+          "height": 2.2,
+          "length": null,
+          "width": 2.5
+        },
+        "installation_length_m": 5.52,
+        "shape": "clasica",
+        "type": "arco",
+        "visual_density": "medium",
+        "visual_scale": "very_large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 6480,
+          "design_quantity": 36,
+          "leftover_inventory": 14,
+          "operational_surplus": 14,
+          "package_count": 1,
+          "potential_surplus": 14,
+          "product_id": "P-F15-BLANCO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 36,
+          "units_per_package": 50,
+          "used": 36,
+          "variant_id": "V-F15-BLANCO-12",
+          "waste_adjusted_quantity": 36,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 8100,
+          "design_quantity": 35,
+          "leftover_inventory": 5,
+          "operational_surplus": 5,
+          "package_count": 1,
+          "potential_surplus": 15,
+          "product_id": "P-F15-LILA",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 45,
+          "units_per_package": 50,
+          "used": 35,
+          "variant_id": "V-F15-LILA-12",
+          "waste_adjusted_quantity": 45,
+          "waste_reserve": 10
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 8460,
+          "design_quantity": 47,
+          "leftover_inventory": 3,
+          "operational_surplus": 3,
+          "package_count": 1,
+          "potential_surplus": 3,
+          "product_id": "P-F15-PLATEADO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "units_per_package": 50,
+          "used": 47,
+          "variant_id": "V-F15-PLATEADO-12",
+          "waste_adjusted_quantity": 47,
+          "waste_reserve": 0
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 23040,
+        "covered_waste_reserve": 10,
+        "design_quantity": 118,
+        "natural_package_surplus": 32,
+        "operational_surplus": 22,
+        "potential_surplus": 32,
+        "purchase_cost": 27000,
+        "purchase_quantity": 150,
+        "required_quantity": 128,
+        "target_waste_reserve": 10,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 128,
+        "waste_only_savings_cop": 9000
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-F15-LILA-12"
+      ]
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-F15-LILA-12"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 6480,
+          "design_quantity": 36,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/blanco-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 14,
+          "paquetes": 1,
+          "precio_paquete": 9000,
+          "product_id": "P-F15-BLANCO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 36,
+          "sku": "SKU-F15-BLANCO-12",
+          "sku_original": "SHOP-F15-BLANCO-12",
+          "sobrante": 14,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-F15-BLANCO-12",
+          "subtotal": 9000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex blanco — R-12",
+          "unidades_con_merma": 36,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 36,
+          "unidades_paquete": 50,
+          "used": 36,
+          "variant_id": "V-F15-BLANCO-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "lila",
+          "consumption_cost": 8100,
+          "design_quantity": 35,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/lila-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 5,
+          "paquetes": 1,
+          "precio_paquete": 9000,
+          "product_id": "P-F15-LILA",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 45,
+          "sku": "SKU-F15-LILA-12",
+          "sku_original": "SHOP-F15-LILA-12",
+          "sobrante": 15,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-F15-LILA-12",
+          "subtotal": 9000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex lila — R-12",
+          "unidades_con_merma": 45,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 35,
+          "unidades_paquete": 50,
+          "used": 35,
+          "variant_id": "V-F15-LILA-12",
+          "waste_reserve": 10
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "plateado",
+          "consumption_cost": 8460,
+          "design_quantity": 47,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/plateado-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 3,
+          "paquetes": 1,
+          "precio_paquete": 9000,
+          "product_id": "P-F15-PLATEADO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "sku": "SKU-F15-PLATEADO-12",
+          "sku_original": "SHOP-F15-PLATEADO-12",
+          "sobrante": 3,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-F15-PLATEADO-12",
+          "subtotal": 9000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex plateado — R-12",
+          "unidades_con_merma": 47,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 47,
+          "unidades_paquete": 50,
+          "used": 47,
+          "variant_id": "V-F15-PLATEADO-12",
+          "waste_reserve": 0
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 5.52,
+          "estructura_id": "EST_01_ARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "plateado",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/plateado-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-F15-PLATEADO",
+              "sku": "SKU-F15-PLATEADO-12",
+              "sku_original": "SHOP-F15-PLATEADO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-F15-PLATEADO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex plateado — R-12",
+              "unidades": 47,
+              "unidades_inferidas": false,
+              "variant_id": "V-F15-PLATEADO-12"
+            },
+            {
+              "acabado": null,
+              "color": "lila",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/lila-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-F15-LILA",
+              "sku": "SKU-F15-LILA-12",
+              "sku_original": "SHOP-F15-LILA-12",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-F15-LILA-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex lila — R-12",
+              "unidades": 35,
+              "unidades_inferidas": false,
+              "variant_id": "V-F15-LILA-12"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/blanco-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-F15-BLANCO",
+              "sku": "SKU-F15-BLANCO-12",
+              "sku_original": "SHOP-F15-BLANCO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-F15-BLANCO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex blanco — R-12",
+              "unidades": 36,
+              "unidades_inferidas": false,
+              "variant_id": "V-F15-BLANCO-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 118
+            }
+          ],
+          "nombre": "Arco asimetrico",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "arco",
+          "total_unidades": 118,
+          "ubicacion": "arco_central"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-A5-009.",
+      "plan": {
+        "concepto": {
+          "descripcion": "Arco de la foto en plata, lila y blanco.",
+          "paleta": [
+            "plateado",
+            "lila",
+            "blanco"
+          ],
+          "titulo": "Marco vino y plata"
+        },
+        "espacio": {
+          "fuente": "foto",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "colores_referencia": [
+              "burdeos",
+              "blanco",
+              "plateado",
+              "gris",
+              "rosado"
+            ],
+            "densidad": "media",
+            "estructura_id": "EST_01_ARCO",
+            "materiales": [
+              {
+                "color": "plateado",
+                "participacion": 0.4,
+                "product_id": "P-F15-PLATEADO",
+                "rol_material": "principal"
+              },
+              {
+                "color": "lila",
+                "participacion": 0.3,
+                "product_id": "P-F15-LILA",
+                "rol_material": "secundario"
+              },
+              {
+                "color": "blanco",
+                "participacion": 0.3,
+                "product_id": "P-F15-BLANCO",
+                "rol_material": "secundario"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.2,
+              "ancho_m": 2.5
+            },
+            "mezcla": "clasica",
+            "nombre": "Arco asimetrico",
+            "porque": "Enmarca la escena principal.",
+            "referencia_element_id": "REF_01_E03",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "arco",
+            "ubicacion": "arco_central"
+          }
+        ],
+        "plan_id": "f18f1818-0000-4000-8000-000000000018",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "6e5769018cd61bb1267a40d5aeee23b2c8ef651e5add02037af11ec8fec61e4f",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [],
+      "sustituciones": [
+        {
+          "entregado": "plateado, lila, blanco",
+          "estructura_id": "EST_01_ARCO",
+          "motivo": "La foto de referencia muestra burdeos y esta pieza no lo lleva: se armó con plateado, lila y blanco.",
+          "pedido": "burdeos"
+        },
+        {
+          "entregado": "plateado, lila, blanco",
+          "estructura_id": "EST_01_ARCO",
+          "motivo": "La foto de referencia muestra gris y esta pieza no lo lleva: se armó con plateado, lila y blanco.",
+          "pedido": "gris"
+        },
+        {
+          "entregado": "plateado, lila, blanco",
+          "estructura_id": "EST_01_ARCO",
+          "motivo": "La foto de referencia muestra rosado y esta pieza no lo lleva: se armó con plateado, lila y blanco.",
+          "pedido": "rosado"
+        }
+      ],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 23040,
+        "covered_waste_reserve": 10,
+        "design_quantity": 118,
+        "globos_por_tamano": {
+          "R-12": 118
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 32,
+        "purchase_cost": 27000,
+        "target_waste_reserve": 10,
+        "total_cop": 27000,
+        "total_unidades": 118,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 9000
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 23040,
+      "covered_waste_reserve": 10,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 22,
+      "lines": [
+        {
+          "available": true,
+          "color": "blanco",
+          "consumption_cost_cop": 6480,
+          "design_quantity": 36,
+          "diameter_inches": 12.0,
+          "id": "V-F15-BLANCO-12",
+          "leftover_inventory": 14,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 9000,
+          "packages": 1,
+          "product_id": "P-F15-BLANCO",
+          "purchase_cost_cop": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 36,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 9000,
+          "surplus": 14,
+          "title": "Globo latex blanco — R-12",
+          "units_per_package": 50,
+          "used": 36,
+          "variant_id": "V-F15-BLANCO-12",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "lila",
+          "consumption_cost_cop": 8100,
+          "design_quantity": 35,
+          "diameter_inches": 12.0,
+          "id": "V-F15-LILA-12",
+          "leftover_inventory": 5,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 9000,
+          "packages": 1,
+          "product_id": "P-F15-LILA",
+          "purchase_cost_cop": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 45,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 9000,
+          "surplus": 15,
+          "title": "Globo latex lila — R-12",
+          "units_per_package": 50,
+          "used": 35,
+          "variant_id": "V-F15-LILA-12",
+          "waste_reserve": 10
+        },
+        {
+          "available": true,
+          "color": "plateado",
+          "consumption_cost_cop": 8460,
+          "design_quantity": 47,
+          "diameter_inches": 12.0,
+          "id": "V-F15-PLATEADO-12",
+          "leftover_inventory": 3,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 9000,
+          "packages": 1,
+          "product_id": "P-F15-PLATEADO",
+          "purchase_cost_cop": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 9000,
+          "surplus": 3,
+          "title": "Globo latex plateado — R-12",
+          "units_per_package": 50,
+          "used": 47,
+          "variant_id": "V-F15-PLATEADO-12",
+          "waste_reserve": 0
+        }
+      ],
+      "plan_hash": "6e5769018cd61bb1267a40d5aeee23b2c8ef651e5add02037af11ec8fec61e4f",
+      "purchase_cost_cop": 27000,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 10,
+      "total_cop": 27000,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "18-colores-foto-paleta",
+  "plan": {
+    "concepto": {
+      "descripcion": "Arco de la foto en plata, lila y blanco.",
+      "paleta": [
+        "plateado",
+        "lila",
+        "blanco"
+      ],
+      "titulo": "Marco vino y plata"
+    },
+    "espacio": {
+      "fuente": "foto",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "colores_referencia": [
+          "burdeos",
+          "blanco",
+          "plateado",
+          "gris",
+          "rosado"
+        ],
+        "densidad": "media",
+        "estructura_id": "EST_01_ARCO",
+        "materiales": [
+          {
+            "color": "plateado",
+            "participacion": 0.4,
+            "product_id": "P-F15-PLATEADO",
+            "rol_material": "principal"
+          },
+          {
+            "color": "lila",
+            "participacion": 0.3,
+            "product_id": "P-F15-LILA",
+            "rol_material": "secundario"
+          },
+          {
+            "color": "blanco",
+            "participacion": 0.3,
+            "product_id": "P-F15-BLANCO",
+            "rol_material": "secundario"
+          }
+        ],
+        "medidas": {
+          "alto_m": 2.2,
+          "ancho_m": 2.5
+        },
+        "mezcla": "clasica",
+        "nombre": "Arco asimetrico",
+        "porque": "Enmarca la escena principal.",
+        "referencia_element_id": "REF_01_E03",
+        "repeticiones": 1,
+        "rol_escena": "focal",
+        "tipo": "arco",
+        "ubicacion": "arco_central"
+      }
+    ],
+    "plan_id": "f18f1818-0000-4000-8000-000000000018",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "supuestos": []
+  }
+}

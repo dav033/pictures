@@ -36,11 +36,14 @@ import {
 import { PythonPlanMappingError } from "@/lib/plan/python-mapper";
 import { resolverPlanConBackend, type ResolucionPlan } from "@/lib/plan/resolver-backend";
 import { mezclasCompatiblesConDiametros } from "@/lib/plan/resolver";
-import { canonizarColoresPlan } from "@/lib/plan/colores-catalogo";
+import { canonizarColoresPlan, colorDeCatalogo } from "@/lib/plan/colores-catalogo";
+import { coloresVigentes, extraerRestriccionesConversacion } from "@/lib/plan/restricciones-conversacion";
+import { numerosPedidos, validarNumerosPedidos } from "@/lib/plan/numeros-pedidos";
 import { conFotosDeCatalogo } from "@/lib/plan/cotizacion-fotos";
 import { sanearPorquesPlan } from "@/lib/plan/porque-cliente";
+import { sanearMarcasPlan } from "@/lib/plan/marcas-registradas";
 import { aplicarFuenteMedidasEspacio, clienteDioMedidasEspacio } from "@/lib/plan/medidas-defecto";
-import { coloresReferenciaOmitidos, esSustitucionDeColor, productosGloboPorColor, type ProductoColorDisponible } from "@/lib/plan/colores-referencia";
+import { coloresElementoReferencia, coloresFotoParaBusqueda, coloresReferenciaOmitidos, esSustitucionDeColor, productosGloboPorColor, type ProductoColorDisponible } from "@/lib/plan/colores-referencia";
 import { buscarGlobosPorColor } from "@/lib/rag/catalog/globos-por-color";
 import { PLAN_DECORACION_ENABLED, RAG_ENABLED, RAG_FRANJAS_ENABLED, featureEnabled } from "@/lib/ia/feature-flags";
 import { isPythonAdapterError, seleccionarBackendPython } from "@/lib/ia/python-adapter";
@@ -92,11 +95,15 @@ export type EstadoConversacion = {
   /** The assistant already told the customer the photo has no balloons and the
    * customer replied (`referenciaSinGlobosYaPreguntada`): do not ask again. */
   referenciaSinGlobosPreguntada: boolean;
-  /** Photo colors `confirmar_plan_decoracion` already sent back once this turn
-   * (COLORES_REFERENCIA_OMITIDOS): a second omission goes on with a notice, so a
-   * search that cannot find the color never loops. */
+  /** Photo colors `confirmar_plan_decoracion` already sent back this turn
+   * (COLORES_REFERENCIA_OMITIDOS). The refusal is sent at most once per turn:
+   * any later omission goes on with a notice, so a search that cannot find the
+   * color never loops. */
   coloresReferenciaReclamados: Set<string>;
   restriccionesUsuario: ReturnType<typeof extraerRestriccionesUsuario>;
+  /** Colors a later customer message withdrew ("cambia el plateado por blanco"):
+   * they are no longer a search filter either. */
+  coloresRetiradosCliente: string[];
   recomendaciones: Producto[];
   decoraciones: DecoracionConProductos[];
   categoriasSugeridas: Faceta[];
@@ -209,15 +216,22 @@ export function enriquecerPlanResueltoEvento(
   return resuelto;
 }
 
-export function crearEstadoConversacion(brief: Brief, solicitudOriginal = "", referenceBlueprint?: ReferenceBlueprintV2, opciones: { referenciaSinGlobosPreguntada?: boolean } = {}): EstadoConversacion {
+export function crearEstadoConversacion(brief: Brief, solicitudOriginal = "", referenceBlueprint?: ReferenceBlueprintV2, opciones: {
+  referenciaSinGlobosPreguntada?: boolean;
+  /** The customer messages of the conversation, in order. With them the latest
+   * messages win for colors and structures (restricciones-conversacion.ts). */
+  mensajesCliente?: readonly string[];
+} = {}): EstadoConversacion {
   // The wrapper in ejecutar.ts calls this once per request/turn, so these
   // sets cannot carry a prior conversation's retrieval whitelist.
+  const mensajes = opciones.mensajesCliente;
   return {
     brief: { ...brief },
     solicitudOriginal,
     referenciaSinGlobosPreguntada: opciones.referenciaSinGlobosPreguntada ?? false,
     coloresReferenciaReclamados: new Set(),
-    restriccionesUsuario: extraerRestriccionesUsuario(solicitudOriginal, brief),
+    restriccionesUsuario: mensajes?.length ? extraerRestriccionesConversacion(mensajes, brief) : extraerRestriccionesUsuario(solicitudOriginal, brief),
+    coloresRetiradosCliente: mensajes?.length ? coloresVigentes(mensajes).retirados : [],
     recomendaciones: [],
     decoraciones: [],
     categoriasSugeridas: [],
@@ -281,16 +295,37 @@ export function textoAlAgotarVueltas(estado: EstadoConversacion): string {
   return "Perdón, me enredé un poco. ¿Me lo repites de otra forma?";
 }
 
-export const ACCION_COLORES_REFERENCIA_OMITIDOS = "La foto de referencia muestra colores dominantes que estas estructuras no usan y el catálogo sí tiene (colores_omitidos). Arma cada estructura con sus colores de la foto: si un producto de la lista tiene en_busqueda true, úsalo en materiales con ese color; si no, búscalo primero con buscar_catalogo_rag usando una consulta de un solo color (por ejemplo \"globo latex redondo rosado\") y usa lo que devuelva. Luego vuelve a confirmar. No cambies los colores de la foto por otros ni anuncies o generes una imagen.";
+export const ACCION_COLORES_REFERENCIA_OMITIDOS = "La foto de referencia muestra colores dominantes que estas estructuras no usan y el catálogo sí tiene (colores_omitidos). Arma cada estructura con sus colores de la foto: si un producto de la lista tiene en_busqueda true, úsalo en materiales con ese color; si no, búscalo una sola vez con buscar_catalogo_rag usando una consulta de un solo color (por ejemplo \"globo latex redondo rosado\"): la búsqueda deja de exigir la ocasión cuando esta esconde los colores de la foto. Luego vuelve a confirmar con lo que tengas; si la búsqueda no devolvió un color, confirma igual y el sistema se lo avisará al cliente. Este aviso llega una sola vez por mensaje. No cambies los colores de la foto por otros ni anuncies o generes una imagen.";
+export const ACCION_NUMERO_INCORRECTO = "Los globos de número deben formar exactamente el número que pidió el cliente, un globo por dígito. Busca cada dígito por separado con buscar_catalogo_rag (por ejemplo \"globo metalizado numero 4 plata\" y \"globo metalizado numero 0 plata\"), usa esos productos en la figura y vuelve a confirmar. Si el catálogo no tiene uno de los dígitos, quita la figura de número y díselo al cliente. No anuncies ni generes una imagen.";
 export const MENSAJE_CLIENTE_COLORES_REFERENCIA = "Estoy ajustando la propuesta para que lleve los colores de tu foto.";
+
+/** Search filters without the colors a later customer message withdrew. */
+function sinColoresRetirados(filtros: ReturnType<typeof extraerFiltrosDurosBusqueda>, retirados: readonly string[]): ReturnType<typeof extraerFiltrosDurosBusqueda> {
+  if (retirados.length === 0) return filtros;
+  const fuera = new Set(retirados.map(colorDeCatalogo));
+  return { ...filtros, colores: filtros.colores.filter((color) => !fuera.has(colorDeCatalogo(color))) };
+}
+
+/** Hard filters the relaxation ladder never loosens (relajacion-filtros.ts). */
+function tieneFiltrosNoRelajables(filtros: ReturnType<typeof extraerFiltrosDurosBusqueda>): boolean {
+  return filtros.categorias.length > 0 || filtros.formas.length > 0 || filtros.acabados.length > 0 || filtros.diametros_pulgadas.length > 0 || filtros.precio_max != null;
+}
 
 /**
  * Photo colors the plan dropped while the catalog offers them (E2E 2026-09-14).
  * Availability comes from this turn's search first and, for colors it did not
  * return, from a read-only lookup inside the active catalog pool (the LoRA
  * dataset when present). A color the customer chose explicitly overrides the
- * photo, and each structure+color is sent back at most once per turn. A lookup
- * failure never blocks the plan: the resolver still records the notice.
+ * photo. A lookup failure never blocks the plan: the resolver still records the
+ * notice.
+ *
+ * No loop (E2E 2026-09-15, "Semiarcos rosa y plata" + "para un cumpleaños" ran
+ * out of turns): only the dominant colors of the referenced element are claimed
+ * (never the palette extras `aplicarColoresReferencia` adds for the notice), the
+ * refusal is sent at most once per turn, and a catalog product found only by the
+ * lookup counts when this turn's search can actually return it — i.e. the turn
+ * has no hard filter the ladder never relaxes (category, shape, finish, size,
+ * price). Otherwise the plan goes on and the customer gets the notice.
  */
 async function coloresReferenciaOmitidosDelTurno(
   plan: PlanDecoracion,
@@ -298,10 +333,10 @@ async function coloresReferenciaOmitidosDelTurno(
   pool: Pool,
   catalogAllowlist: CatalogAllowlist | undefined,
 ) {
-  if (!estado.referenceBlueprint || estado.restriccionesUsuario.colores.length > 0) return [];
+  if (!estado.referenceBlueprint || estado.restriccionesUsuario.colores.length > 0 || estado.coloresReferenciaReclamados.size > 0) return [];
   const pendientes = plan.estructuras.map((estructura) => ({
     ...estructura,
-    colores_referencia: (estructura.colores_referencia ?? []).filter((color) => !estado.coloresReferenciaReclamados.has(`${estructura.estructura_id}|${color}`)),
+    colores_referencia: coloresElementoReferencia(estado.referenceBlueprint, estructura.referencia_element_id),
   }));
   const faltantes = [...new Set(pendientes.flatMap((estructura) => {
     const usados = new Set(estructura.materiales.map((material) => material.color?.trim().toLowerCase()).filter(Boolean));
@@ -310,7 +345,8 @@ async function coloresReferenciaOmitidosDelTurno(
   if (faltantes.length === 0) return [];
   const disponibles = new Map<string, ProductoColorDisponible[]>(productosGloboPorColor(estado.ragCandidatos ?? [], faltantes));
   const sinBusqueda = faltantes.filter((color) => !disponibles.has(color));
-  if (sinBusqueda.length > 0) {
+  const busquedaLosPuedeDevolver = !tieneFiltrosNoRelajables(extraerFiltrosDurosBusqueda(estado.solicitudOriginal, estado.brief));
+  if (sinBusqueda.length > 0 && busquedaLosPuedeDevolver) {
     try {
       const catalogo = await buscarGlobosPorColor(pool, sinBusqueda, { variantIds: catalogAllowlist?.variantIds ?? null, catalogSnapshotId: estado.ragCatalogSnapshotId ?? null });
       for (const [color, productos] of catalogo) disponibles.set(color, productos);
@@ -380,8 +416,11 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       // turn a style term such as "glamour" into a hard catalog filter.
       const mensaje = typeof args.mensaje === "string" ? args.mensaje : "";
       const solicitudParaFiltros = estado.solicitudOriginal.trim() || mensaje;
-      const filtrosDuros = extraerFiltrosDurosBusqueda(solicitudParaFiltros, estado.brief);
+      const filtrosDuros = sinColoresRetirados(extraerFiltrosDurosBusqueda(solicitudParaFiltros, estado.brief), estado.coloresRetiradosCliente);
       const eventIntent = parseEventSearchIntent(solicitudParaFiltros);
+      // Photo colors are not filters, but the occasion must not hide them
+      // (relajacion-filtros.ts). The customer's own colors replace the photo's.
+      const coloresContexto = estado.restriccionesUsuario.colores.length > 0 ? [] : coloresFotoParaBusqueda(estado.referenceBlueprint);
       const pool = ragPool;
       const t0 = Date.now();
 
@@ -506,6 +545,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         focusedQueries: [mensaje],
         allowlist: options.catalogAllowlist,
         catalogSnapshotId: estado.ragCatalogSnapshotId,
+        coloresContexto,
         rerankRequestId: estado.ragRequestId,
         rerankCorrelationId: options.correlationId ?? estado.ragRequestId,
         rerankSignal: options.signal,
@@ -811,10 +851,11 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       // Space measures are the customer's or an estimate, never the model's
       // reading of a photo (E2E 2026-09-14, medidas-defecto.ts).
       // `porque` is shown to the customer: internal wording is removed before signing.
-      const planCanonico = sanearPorquesPlan(aplicarFuenteMedidasEspacio(
+      // Character and brand names never title a proposal (marcas-registradas.ts).
+      const planCanonico = sanearMarcasPlan(sanearPorquesPlan(aplicarFuenteMedidasEspacio(
         aplicarColoresReferencia(canonizarColoresPlan(parseado.data).plan, estado.referenceBlueprint),
         clienteDioMedidasEspacio(estado.solicitudOriginal, estado.brief.espacio),
-      ));
+      )));
       const erroresDeIntencion = validarRestriccionesPlan(planCanonico, estado.restriccionesUsuario);
       // Default level: historical rule (open events). Any other level the
       // customer chose: its structure range for every event type.
@@ -855,6 +896,28 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
             ? "Con imagen de referencia, cada estructura de globos debe materializar un elemento de la referencia con referencia_element_id: quita las estructuras que la referencia no tiene y vuelve a confirmar; no anuncies ni generes una imagen."
             : "Corrige el número de estructuras (respeta el rango de CREATIVIDAD DEL DISEÑO si está presente) o los colores del plan antes de confirmar; no anuncies ni generes una imagen.",
           mensaje_cliente: mensajeClienteRestricciones(erroresDeContrato),
+        };
+      }
+      // Number figures spell the customer's number (numeros-pedidos.ts, E2E 2026-09-15 D4).
+      const erroresDeNumero = validarNumerosPedidos(planCanonico, new Map((estado.ragCandidatos ?? []).map((candidato) => [candidato.productId, candidato])), numerosPedidos(estado.solicitudOriginal));
+      if (erroresDeNumero.length > 0) {
+        estado.planResuelto = undefined;
+        estado.seleccionFinalIA = [];
+        encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+          requestId: estado.ragRequestId,
+          solicitudOriginal: estado.solicitudOriginal,
+          restricciones: estado.restriccionesUsuario,
+          candidateProductIds: [...estado.ragIdsRecuperados],
+          status: "NUMERO_INCORRECTO",
+          error: erroresDeNumero.join(" | "),
+        }));
+        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
+        return {
+          ok: false,
+          status: "NUMERO_INCORRECTO",
+          errores: erroresDeNumero,
+          accion_requerida: ACCION_NUMERO_INCORRECTO,
+          mensaje_cliente: mensajeClienteRestricciones(erroresDeNumero),
         };
       }
       const categoriaPorProducto = new Map((estado.ragCandidatos ?? []).map((candidato) => [candidato.productId, candidato.categoria]));

@@ -22,9 +22,11 @@ import {
   MAX_GENERACIONES_GUARDADAS,
   MAX_IMAGENES_GENERADAS_GUARDADAS,
   registrarGeneracion,
+  registrarVistaPreviaNoDisponible,
   serializarGeneraciones,
   sinImagenes,
 } from "../src/lib/estado/persistencia-generacion";
+import { creatividadGuardada } from "../src/lib/estado/persistencia-creatividad";
 
 type Mensaje = { id: string; adjuntos?: AdjuntosTurno };
 
@@ -106,4 +108,37 @@ console.log("[PASS] persistencia de adjuntos: miniaturas livianas, ids estables 
   assert.deepEqual(leerGeneraciones("{no json"), []);
   assert.deepEqual(leerGeneraciones(JSON.stringify({ generaciones: [{ planHash: "x", imagen: "javascript:alert(1)", guardadaEn: 1 }, { planHash: 3 }] })), []);
   console.log("[PASS] persistencia de la generación aprobada: por plan_hash, imagen reducida con presupuesto y degradación");
+}
+
+// D5 sin foto (E2E real 2): fal sin saldo responde VISTA_PREVIA_NO_DISPONIBLE. La
+// aprobación se registra con ese aviso por plan_hash y sobrevive a la recarga; un
+// intento posterior con imagen quita la marca.
+{
+  const imagen = `data:image/jpeg;base64,${"q".repeat(2_000)}`;
+  let guardadas = registrarVistaPreviaNoDisponible(registrarGeneracion([], "hash-viejo", null, 1), "hash-fiel", 2);
+  assert.deepEqual(guardadas[0], { planHash: "hash-fiel", imagen: null, guardadaEn: 2, sinVistaPrevia: true });
+  const restaurada = generacionParaRestaurar(leerGeneraciones(serializarGeneraciones(guardadas)), new Set(["hash-fiel", "hash-viejo"]));
+  assert.equal(restaurada?.planHash, "hash-fiel", "tras recargar la propuesta sigue aprobada");
+  assert.equal(restaurada?.sinVistaPrevia, true, "tras recargar se muestra el aviso de vista previa no disponible");
+  assert.equal(leerGeneraciones(serializarGeneraciones(sinImagenes(guardadas)))[0]?.sinVistaPrevia, true, "la degradación conserva el aviso");
+  guardadas = registrarVistaPreviaNoDisponible(guardadas, "hash-fiel", 3);
+  assert.equal(guardadas.filter((generacion) => generacion.planHash === "hash-fiel").length, 1, "reintentos fallidos no duplican");
+  guardadas = registrarGeneracion(guardadas, "hash-fiel", imagen, 4);
+  assert.equal(guardadas[0]!.sinVistaPrevia, undefined, "una imagen creada después quita el aviso");
+  assert.equal(guardadas[0]!.imagen, imagen);
+  assert.deepEqual(leerGeneraciones(JSON.stringify({ generaciones: [{ planHash: "x", imagen: null, guardadaEn: 1, sinVistaPrevia: "si" }] })), [], "marca manipulada se ignora");
+  console.log("[PASS] D5 sin foto: aprobación con aviso de vista previa no disponible persiste por plan_hash");
+}
+
+// Creatividad tras recargar (E2E real 2): el nivel viaja con la conversación guardada.
+{
+  const guardado = JSON.parse(JSON.stringify({ mensajes: [{ id: "m1" }], brief: null, ultimasMedidas: null, creatividad: 0 })) as unknown;
+  assert.equal(creatividadGuardada(guardado), 0, "«Fiel» (0) se restaura aunque sea falsy");
+  assert.equal(creatividadGuardada({ creatividad: 4 }), 4);
+  assert.equal(creatividadGuardada({ mensajes: [] }), null, "conversación anterior sin nivel → por defecto");
+  assert.equal(creatividadGuardada({ creatividad: 9 }), null);
+  assert.equal(creatividadGuardada({ creatividad: "0" }), null);
+  assert.equal(creatividadGuardada({ creatividad: 2.5 }), null);
+  assert.equal(creatividadGuardada(null), null);
+  console.log("[PASS] creatividad: el nivel de la conversación se guarda y se restaura validado");
 }

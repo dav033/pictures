@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import React from "react";
+import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
+import { TarjetaCotizacion, filasBorrador } from "@/components/TarjetaCotizacion";
+import { FilasCotizacion, gruposCotizacionPlan } from "@/components/plan/DialogoCotizacion";
+import type { Cotizacion } from "@/lib/cotizacion/motor";
 import { TarjetaPlanDecoracion } from "@/components/TarjetaPlanDecoracion";
 import { ReferenceBlueprintV2Schema } from "@/lib/ia/reference-blueprint";
 import {
@@ -13,7 +17,9 @@ import {
   medidasCliente,
   medidasCortasCliente,
   nombreConCantidadCliente,
+  paquetesCliente,
   piezasVistasEnReferencia,
+  sobranteCliente,
   ubicacionCortaCliente,
   productoCliente,
   productoConTamanoCliente,
@@ -24,7 +30,7 @@ import {
   sustitucionesCliente,
   tamanosCliente,
 } from "@/lib/plan/presentacion-cliente";
-import type { LineaMaterial, PlanResuelto } from "@/lib/plan/resuelto";
+import type { CompraConsolidada, LineaMaterial, PlanResuelto } from "@/lib/plan/resuelto";
 import { PlanDecoracionSchema } from "@/lib/plan/tipos";
 
 /**
@@ -449,6 +455,71 @@ ok("modo dev conserva los datos crudos");
     assert.doesNotMatch(atributo, /\bB2b\b|R-\d|PAQUETE/i, `atributo con código de catálogo: ${atributo}`);
   }
   ok("nombres accesibles de Modificar/Quitar sin códigos del catálogo");
+}
+
+// D3 (E2E real 2, «Muy creativo», rid 8983d75b): la mezcla más barata compra
+// Fashion Azul Rey R-12 en ×20 y ×50 y Reflex Plata R-12 en ×12 y ×50. El
+// cliente ve una fila por producto + tamaño + color con la necesidad total,
+// los paquetes combinados, los sobrantes totales y el precio sumado; el total
+// no cambia. Fixture: `PlanResuelto` real de esa corrida.
+{
+  const planReal = JSON.parse(readFileSync(new URL("./fixtures/plan-d3-paquetes-combinados.json", import.meta.url), "utf8")) as PlanResuelto;
+  assert.equal(planReal.compras.length, 7);
+  const grupos = gruposCotizacionPlan(planReal.compras);
+  assert.equal(grupos.length, 5, grupos.map((grupo) => grupo.clave).join(" | "));
+  const azulRey = grupos.find((grupo) => /Fashion Azul Rey/.test(grupo.items[0]!.titulo))!;
+  assert.deepEqual(azulRey.items.map((compra) => compra.unidades_paquete), [20, 50]);
+  assert.equal(azulRey.necesitas, 69);
+  assert.equal(paquetesCliente(azulRey.paquetes), "1 paquete de 50 + 2 paquetes de 20");
+  assert.equal(azulRey.sobrante, 21);
+  assert.equal(azulRey.subtotal, 12922 + 13974);
+  const plata = grupos.find((grupo) => /Reflex Plata/.test(grupo.items[0]!.titulo))!;
+  assert.equal(plata.necesitas, 60);
+  assert.equal(paquetesCliente(plata.paquetes), "1 paquete de 50 + 1 paquete de 12");
+  assert.equal(plata.sobrante, 2);
+  assert.equal(plata.subtotal, 8832 + 28977);
+  assert.equal(grupos.reduce((suma, grupo) => suma + grupo.subtotal, 0), planReal.totales.total_cop, "el total general no cambia");
+  assert.equal(sobranteCliente(-4), "faltan 4");
+  assert.equal(productoCliente("B2b Globo Metalizado Numero 0 Plata — 32 IN / PAQUETE X 1"), "Globo Metalizado Numero 0 Plata", "sin «32 IN» del catálogo");
+  assert.equal(sobranteCliente(0), "sin sobrantes");
+
+  const filas = renderToStaticMarkup(React.createElement(FilasCotizacion, { compras: planReal.compras, imagenDe: (compra: CompraConsolidada) => compra.imagen ?? undefined }));
+  assert.equal([...filas.matchAll(/role="row"/g)].length, 5, "diálogo: una fila por producto + tamaño + color");
+  const textoFilas = textoVisible(filas);
+  assert.equal([...textoFilas.matchAll(/Fashion Azul Rey/g)].length, 1, textoFilas);
+  assert.equal([...textoFilas.matchAll(/Reflex Plata/g)].length, 1, textoFilas);
+  assert.match(textoFilas, /Necesitas 69 1 paquete de 50 \+ 2 paquetes de 20 sobran 21/);
+  assert.match(textoFilas, /\$ 26\.896/);
+  assert.match(textoFilas, /Necesitas 60 1 paquete de 50 \+ 1 paquete de 12 sobran 2/);
+  assert.match(textoFilas, /\$ 37\.809/);
+  assert.doesNotMatch(textoFilas, /Necesitas 12\b|Necesitas 48\b|Necesitas 49\b/, "sin necesidad partida");
+
+  // Tarjeta de cotización con las mismas líneas (como las entrega `cotizarPlan`).
+  const cotizacion: Cotizacion = {
+    lineas: planReal.compras.map((compra) => ({
+      id: compra.variant_id, productId: compra.product_id, tamano: compra.tamano_codigo ?? "sin tamaño aplicable", tamanoCodigo: compra.tamano_codigo ?? undefined,
+      diamPulg: compra.diam_pulg ?? undefined, color: compra.color ?? undefined, cantidadNecesaria: compra.unidades_necesarias, disponible: true, varianteId: compra.variant_id,
+      nombre: compra.titulo, precioPaquete: compra.precio_paquete, unidadesPaquete: compra.unidades_paquete, paquetes: compra.paquetes, subtotal: compra.subtotal, sobrante: compra.sobrante, foto: compra.imagen ?? undefined,
+    })),
+    total: planReal.totales.total_cop, mermaPorcentaje: planReal.totales.merma_porcentaje, incluyeIva: true, complementosSoportados: false, plan_hash: planReal.plan_hash,
+  };
+  const tarjeta = renderToStaticMarkup(React.createElement(TarjetaCotizacion, { cotizacion }));
+  const textoTarjeta = textoVisible(tarjeta);
+  assert.equal([...tarjeta.matchAll(/<li\b/g)].length, 5, "tarjeta: una fila por producto + tamaño + color");
+  assert.match(textoTarjeta, /Necesitas 69 1 paquete de 50 \+ 2 paquetes de 20 sobran 21/);
+  assert.match(textoTarjeta, /Necesitas 60 1 paquete de 50 \+ 1 paquete de 12 sobran 2/);
+  assert.match(textoTarjeta, /\$ 95\.309/);
+  assert.doesNotMatch(textoTarjeta, /sin tamaño aplicable|\bIN\b/, "sin textos internos del catálogo");
+  // Editando, cada tamaño de paquete conserva su fila para ajustar paquetes.
+  const editable = { ...cotizacion, plan_hash: undefined };
+  assert.equal(filasBorrador(editable.lineas.map((linea) => ({ ...linea, excluida: false })), true).length, 7);
+
+  // Detalle de la pieza y modal: Reflex Plata aparece una vez con sus 24 globos.
+  const detalle = textoVisible(renderToStaticMarkup(React.createElement(TarjetaPlanDecoracion, { plan: planReal })));
+  const semiarco = detalle.slice(detalle.indexOf("Globos que lleva"), detalle.indexOf("Globos que lleva", detalle.indexOf("Globos que lleva") + 1));
+  assert.equal([...semiarco.matchAll(/Reflex Plata/g)].length, 1, semiarco);
+  assert.match(semiarco, /Reflex Plata 12 pulgadas · [^0-9]+ 24 unidades/);
+  ok("D3: una fila por producto, tamaño y color con paquetes combinados (plan real)");
 }
 
 console.log(`\n${casos} casos OK (presentación de la tarjeta del plan)`);

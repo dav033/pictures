@@ -32,7 +32,7 @@ import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
 import { classifyGenerationIds, normalizeGenerationSources } from "@/lib/generacion/provenance";
 import { ChatSseEventV1Schema } from "@/lib/ia/contracts/chat-v1";
-import { construirUiErrorV1, leerUiErrorV1, uiErrorDesdeChatV1, type AccionUiV1, type UiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
+import { CATALOGO_ERRORES_UI_V1, construirUiErrorV1, leerUiErrorV1, uiErrorDesdeChatV1, type AccionUiV1, type UiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 import { AvisoError } from "@/components/errores/AvisoError";
 import { useModoVista } from "@/lib/estado/modo-vista";
 import { abrirPromptAutomaticamente, qaVisualEfectivo, usarLoraEfectivo } from "@/lib/estado/modo-vista-reglas";
@@ -49,9 +49,11 @@ import {
   REDUCCIONES_IMAGEN_GENERADA,
   elegirImagenReducida,
   registrarGeneracion,
+  registrarVistaPreviaNoDisponible,
   serializarGeneraciones,
   sinImagenes,
 } from "@/lib/estado/persistencia-generacion";
+import { creatividadGuardada } from "@/lib/estado/persistencia-creatividad";
 import { archivoDeFotoEjemplo, type FotoEjemplo } from "@/lib/referencias-ejemplo/manifiesto";
 import { CabeceraApp } from "@/components/ui/shell/CabeceraApp";
 import { Compositor } from "@/components/ui/shell/Compositor";
@@ -602,6 +604,10 @@ export default function Page() {
   // Propuesta aprobada restaurada al recargar cuya imagen no cupo en sessionStorage (D5):
   // se avisa «Ya generaste esta imagen» en vez de volver a ofrecer «Aprobar».
   const [imagenNoGuardadaHash, setImagenNoGuardadaHash] = useState<string | null>(null);
+  // Propuesta aprobada cuya imagen no se pudo crear porque la vista previa no está
+  // disponible (VISTA_PREVIA_NO_DISPONIBLE, D5 sin foto): tras recargar se muestra
+  // ese aviso con la opción de volver a intentarlo, no «Aprobar» otra vez.
+  const [vistaPreviaNoDisponibleHash, setVistaPreviaNoDisponibleHash] = useState<string | null>(null);
   const hayPlanEnConversacion = mensajes.some((mensaje) => mensaje.role === "assistant" && Boolean(mensaje.plan));
 
   useEffect(() => {
@@ -675,6 +681,12 @@ export default function Page() {
           setBrief(datos.brief);
         }
         if (datos.ultimasMedidas) setUltimasMedidas(datos.ultimasMedidas);
+        // El siguiente turno se valida con el mismo nivel con el que se armó la conversación.
+        const nivelGuardado = creatividadGuardada(datos);
+        if (nivelGuardado !== null) {
+          creatividadRef.current = nivelGuardado;
+          setCreatividad(nivelGuardado);
+        }
         // D5: la propuesta aprobada y su imagen (reducida) sobreviven a la recarga.
         const hashes = new Set<string>((Array.isArray(datos.mensajes) ? datos.mensajes : [])
           .map((mensaje: { plan?: { plan_hash?: unknown } }) => mensaje?.plan?.plan_hash)
@@ -682,7 +694,9 @@ export default function Page() {
         const generacion = generacionParaRestaurar(leerGeneraciones(sessionStorage.getItem(CLAVE_GENERACIONES)), hashes);
         if (generacion) {
           setPlanAprobadoHash(generacion.planHash);
-          if (generacion.imagen) {
+          if (generacion.sinVistaPrevia) {
+            setVistaPreviaNoDisponibleHash(generacion.planHash);
+          } else if (generacion.imagen) {
             setImagenes([generacion.imagen]);
             const [cabecera, base64] = generacion.imagen.split(",", 2);
             setUltimaImagenGenerada({ base64: base64 ?? "", mime: cabecera!.slice(5, cabecera!.indexOf(";")) || "image/jpeg", id: "PREVIOUS_RESULT", descripcion: "Previous generated result." });
@@ -707,10 +721,10 @@ export default function Page() {
       try {
         // Las fotos van como miniaturas livianas y con tope: sessionStorage tiene
         // un límite de pocos MB y un fallo aquí dejaría la conversación sin persistir.
-        sessionStorage.setItem(CLAVE_CHAT, JSON.stringify({ mensajes: aligerarAdjuntos(mensajes, miniaturasRef.current), brief, ultimasMedidas }));
+        sessionStorage.setItem(CLAVE_CHAT, JSON.stringify({ mensajes: aligerarAdjuntos(mensajes, miniaturasRef.current), brief, ultimasMedidas, creatividad }));
       } catch {
         try {
-          sessionStorage.setItem(CLAVE_CHAT, JSON.stringify({ mensajes: mensajes.map((mensaje) => ({ ...mensaje, adjuntos: undefined })), brief, ultimasMedidas }));
+          sessionStorage.setItem(CLAVE_CHAT, JSON.stringify({ mensajes: mensajes.map((mensaje) => ({ ...mensaje, adjuntos: undefined })), brief, ultimasMedidas, creatividad }));
         } catch {
           // sessionStorage no disponible — se sigue sin persistencia.
         }
@@ -729,7 +743,7 @@ export default function Page() {
         // Sin miniatura esa foto no se guarda; la conversación sí.
       }
     })).then(() => guardarChatRef.current?.());
-  }, [mensajes, brief, ultimasMedidas, cargadoDeStorage]);
+  }, [mensajes, brief, ultimasMedidas, creatividad, cargadoDeStorage]);
 
   useEffect(() => {
     fetch("/api/ia/salud")
@@ -1107,6 +1121,7 @@ export default function Page() {
     limpiarSeleccion();
     setPlanAprobadoHash(null);
     setImagenNoGuardadaHash(null);
+    setVistaPreviaNoDisponibleHash(null);
     try {
       sessionStorage.removeItem(CLAVE_CHAT);
       sessionStorage.removeItem(CLAVE_CHAT_LEGACY);
@@ -1283,8 +1298,17 @@ export default function Page() {
           // no lo trae (ruta aún sin migrar), se muestra un aviso genérico y el
           // texto técnico queda solo en los detalles de modo dev.
           const cuerpo: unknown = data;
+          const uiError = leerUiErrorV1(cuerpo);
+          // D5 sin foto: la propuesta sí quedó aprobada; se registra con su aviso para que
+          // al recargar no vuelva «Aprobar y ver cómo queda» como si nunca se hubiera aprobado.
+          if (override?.plan && uiError?.code === "VISTA_PREVIA_NO_DISPONIBLE") {
+            setPlanAprobadoHash(override.plan.plan_hash);
+            setImagenNoGuardadaHash(null);
+            setVistaPreviaNoDisponibleHash(override.plan.plan_hash);
+            guardarVistaPreviaNoDisponible(override.plan.plan_hash);
+          }
           setError({
-            ui: leerUiErrorV1(cuerpo) ?? errorLocal("ERROR_INTERNO", campoTexto(cuerpo, "error") ?? campoTexto(cuerpo, "message") ?? `generate HTTP ${res.status}`),
+            ui: uiError ?? errorLocal("ERROR_INTERNO", campoTexto(cuerpo, "error") ?? campoTexto(cuerpo, "message") ?? `generate HTTP ${res.status}`),
             origen: "generacion",
           });
           return;
@@ -1293,6 +1317,7 @@ export default function Page() {
           const hashAprobado = typeof data.plan?.plan_hash === "string" ? data.plan.plan_hash : override.plan.plan_hash;
           setPlanAprobadoHash(hashAprobado);
           setImagenNoGuardadaHash(null);
+          setVistaPreviaNoDisponibleHash(null);
           if (typeof data.imagen === "string") void guardarGeneracionAprobada(hashAprobado, data.imagen);
         }
 
@@ -1458,9 +1483,19 @@ export default function Page() {
     if (reducida) escribir(reducida);
   }
 
-  /** «Ya generaste esta imagen»: el cliente decide volver a crearla (nueva generación). */
-  function regenerarImagenAprobada(): void {
-    const entrada = [...mensajes].reverse().find((mensaje) => mensaje.role === "assistant" && mensaje.plan?.plan_hash === imagenNoGuardadaHash);
+  /** D5 sin foto: aprobación registrada con el aviso de vista previa no disponible, por plan_hash. */
+  function guardarVistaPreviaNoDisponible(planHash: string): void {
+    try {
+      const previas = leerGeneraciones(sessionStorage.getItem(CLAVE_GENERACIONES));
+      sessionStorage.setItem(CLAVE_GENERACIONES, serializarGeneraciones(registrarVistaPreviaNoDisponible(previas, planHash)));
+    } catch {
+      // sessionStorage no disponible — la aprobación vive solo en memoria.
+    }
+  }
+
+  /** «Ya generaste esta imagen» o «vista previa no disponible»: el cliente decide volver a intentarlo (nueva generación). */
+  function regenerarImagenAprobada(planHash: string | null): void {
+    const entrada = [...mensajes].reverse().find((mensaje) => mensaje.role === "assistant" && mensaje.plan?.plan_hash === planHash);
     if (!entrada?.plan) return;
     aprobarPlan(entrada.plan, entrada.id);
   }
@@ -2042,8 +2077,18 @@ export default function Page() {
                   <p className="text-sm text-texto-suave">
                     Aprobaste esta propuesta y su imagen se creó, pero no se pudo guardar en este navegador al recargar la página. Si quieres verla otra vez, puedes volver a crearla.
                   </p>
-                  <button type="button" onClick={regenerarImagenAprobada} disabled={cargandoChat || !qaEfectivo} className="ui-button-secondary ui-pressable">
+                  <button type="button" onClick={() => regenerarImagenAprobada(imagenNoGuardadaHash)} disabled={cargandoChat || !qaEfectivo} className="ui-button-secondary ui-pressable">
                     Volver a crear la imagen
+                  </button>
+                </section>
+              )}
+
+              {imagenes.length === 0 && !generando && vistaPreviaNoDisponibleHash !== null && vistaPreviaNoDisponibleHash === planAprobadoHash && error?.ui.code !== "VISTA_PREVIA_NO_DISPONIBLE" && (
+                <section aria-label="Visualización" style={{ order: ORDEN_AL_FINAL }} className="ui-card space-y-2 p-4" data-testid="aviso-vista-previa-no-disponible">
+                  <h2 className="text-sm font-semibold">Aprobaste esta propuesta</h2>
+                  <p className="text-sm text-texto-suave">{CATALOGO_ERRORES_UI_V1.VISTA_PREVIA_NO_DISPONIBLE.mensaje_usuario} Puedes volver a intentar la imagen más tarde.</p>
+                  <button type="button" onClick={() => regenerarImagenAprobada(vistaPreviaNoDisponibleHash)} disabled={cargandoChat || !qaEfectivo} className="ui-button-secondary ui-pressable">
+                    Volver a intentar la imagen
                   </button>
                 </section>
               )}

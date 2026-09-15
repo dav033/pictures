@@ -3,11 +3,12 @@
 /* Catalog images come from runtime URLs and already carry explicit dimensions. */
 /* eslint-disable @next/next/no-img-element */
 
+import { Fragment } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion, useReducedMotion } from "motion/react";
 import { Check, TriangleAlert, X } from "lucide-react";
 import type { CompraConsolidada, PlanResuelto } from "@/lib/plan/resuelto";
-import { acabadoCliente, contar, esEstructuraDeGlobos, productoCliente, pulgadasCliente, tonoCliente } from "@/lib/plan/presentacion-cliente";
+import { acabadoCliente, agruparComprasCliente, esEstructuraDeGlobos, partesPaquetesCliente, productoCliente, pulgadasCliente, sobranteCliente, tonoCliente, type GrupoCompraCliente } from "@/lib/plan/presentacion-cliente";
 import { NumeroAnimado } from "@/components/propuesta/NumeroAnimado";
 import { BotonAprobar } from "@/components/propuesta/BotonAprobar";
 import { useFocoDeRetorno } from "@/components/ui/foco-retorno";
@@ -40,6 +41,80 @@ function fraseCompra(plan: PlanResuelto): string {
 }
 
 /**
+ * Purchase lines grouped for the customer: one row per product + size + color
+ * even when the cheapest mix buys two package sizes (D3). Sorted by color and size.
+ */
+export function gruposCotizacionPlan(compras: readonly CompraConsolidada[]): GrupoCompraCliente<CompraConsolidada>[] {
+  return agruparComprasCliente(compras, (compra) => ({
+    product_id: compra.product_id,
+    titulo: compra.titulo,
+    tamano_codigo: compra.tamano_codigo,
+    diam_pulg: compra.diam_pulg,
+    color: compra.color,
+    necesitas: compra.design_quantity,
+    paquetes: compra.paquetes,
+    unidades_paquete: compra.unidades_paquete,
+    sobrante: compra.sobrante,
+    subtotal: compra.subtotal,
+  })).sort((a, b) => (a.items[0]!.color ?? "").localeCompare(b.items[0]!.color ?? "") || (a.items[0]!.diam_pulg ?? 0) - (b.items[0]!.diam_pulg ?? 0));
+}
+
+type PropsFilas = {
+  compras: readonly CompraConsolidada[];
+  imagenDe: (compra: CompraConsolidada) => string | undefined;
+};
+
+/** Rows of the quote table (rendered inside the dialog; exported for static tests). */
+export function FilasCotizacion({ compras, imagenDe }: PropsFilas) {
+  const reducir = useReducedMotion();
+  return (
+    <div role="rowgroup">
+      {gruposCotizacionPlan(compras).map((grupo, indice) => {
+        const compra = grupo.items[0]!;
+        const imagen = grupo.items.map(imagenDe).find(Boolean);
+        const proporcion = grupo.compradas > 0 ? Math.min(1, grupo.necesitas / grupo.compradas) : 0;
+        return (
+          <motion.div
+            role="row"
+            key={grupo.clave}
+            data-variantes={grupo.items.map((item) => item.variant_id).join(" ")}
+            initial={reducir ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: reducir ? 0 : 0.08 + indice * 0.05 }}
+            className="grid grid-cols-[3.25rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 border-b border-borde-suave py-3 last:border-b-0 sm:grid-cols-[3.25rem_minmax(0,1fr)_10.5rem_8.5rem_6rem]"
+          >
+            <span role="cell" className="row-span-2 grid size-13 place-items-center overflow-hidden rounded-xl border border-borde-suave bg-white sm:row-span-1">
+              {imagen ? <img src={imagen} alt="" width={52} height={52} loading="lazy" className="size-full object-contain" /> : <span aria-hidden className="size-full bg-superficie-2" />}
+            </span>
+            <span role="cell" className="min-w-0">
+              <span className="block truncate font-medium text-texto">{productoCliente(compra.titulo)}</span>
+              <span className="mt-0.5 block truncate text-xs text-texto-suave">{detalleCompra(compra)}</span>
+            </span>
+            <span role="cell" className="text-right font-semibold tabular-nums text-texto sm:order-last">{pesos.format(grupo.subtotal)}</span>
+            <span role="cell" className="col-start-2 sm:col-start-auto">
+              <span className="block text-[13px] text-texto">Necesitas <strong className="font-semibold tabular-nums">{numero.format(grupo.necesitas)}</strong></span>
+              <span aria-hidden="true" className="mt-1.5 block h-1 overflow-hidden rounded-full bg-superficie-2">
+                <motion.span
+                  className="block h-full origin-left rounded-full bg-acento/80"
+                  style={{ width: `${proporcion * 100}%` }}
+                  initial={reducir ? false : { scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 0.7, delay: reducir ? 0 : 0.25 + indice * 0.05, ease: [0.23, 1, 0.32, 1] }}
+                />
+              </span>
+            </span>
+            <span role="cell" className="col-span-2 col-start-2 text-[13px] text-texto sm:col-span-1 sm:col-start-auto">
+              {partesPaquetesCliente(grupo.paquetes).map((parte, posicion) => <Fragment key={parte}>{posicion > 0 && " + "}<span className="whitespace-nowrap">{parte}</span></Fragment>)}
+              <span className="block text-xs text-texto-suave">{sobranteCliente(grupo.sobrante)}</span>
+            </span>
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
  * Quote of a resolved plan (maqueta Cotizacion). Every figure comes from
  * `PlanResuelto`: what the design needs (`design_quantity`), the closed
  * packages bought (`paquetes`, `unidades_paquete`), the leftovers
@@ -53,7 +128,6 @@ export function DialogoCotizacion({ plan, abierto, onAbiertoChange, imagenDe, on
   const excede = plan.comercial.estado === "PRESUPUESTO_EXCEDIDO" || (techo != null && total > techo);
   const comprados = plan.compras.reduce((suma, compra) => suma + compra.purchase_quantity, 0);
   const enDecoracion = plan.totales.design_quantity;
-  const compras = [...plan.compras].sort((a, b) => (a.color ?? "").localeCompare(b.color ?? "") || (a.diam_pulg ?? 0) - (b.diam_pulg ?? 0));
 
   return (
     <Dialog.Root open={abierto} onOpenChange={onAbiertoChange}>
@@ -92,48 +166,7 @@ export function DialogoCotizacion({ plan, abierto, onAbiertoChange, imagenDe, on
                     <span role="columnheader" className="text-right">Precio</span>
                   </div>
                 </div>
-                <div role="rowgroup">
-                  {compras.map((compra, indice) => {
-                    const imagen = imagenDe(compra);
-                    const necesitas = compra.design_quantity;
-                    const proporcion = compra.purchase_quantity > 0 ? Math.min(1, necesitas / compra.purchase_quantity) : 0;
-                    return (
-                      <motion.div
-                        role="row"
-                        key={compra.variant_id}
-                        initial={reducir ? false : { opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: reducir ? 0 : 0.08 + indice * 0.05 }}
-                        className="grid grid-cols-[3.25rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 border-b border-borde-suave py-3 last:border-b-0 sm:grid-cols-[3.25rem_minmax(0,1fr)_10.5rem_8.5rem_6rem]"
-                      >
-                        <span role="cell" className="row-span-2 grid size-13 place-items-center overflow-hidden rounded-xl border border-borde-suave bg-white sm:row-span-1">
-                          {imagen ? <img src={imagen} alt="" width={52} height={52} loading="lazy" className="size-full object-contain" /> : <span aria-hidden className="size-full bg-superficie-2" />}
-                        </span>
-                        <span role="cell" className="min-w-0">
-                          <span className="block truncate font-medium text-texto">{productoCliente(compra.titulo)}</span>
-                          <span className="mt-0.5 block truncate text-xs text-texto-suave">{detalleCompra(compra)}</span>
-                        </span>
-                        <span role="cell" className="text-right font-semibold tabular-nums text-texto sm:order-last">{pesos.format(compra.subtotal)}</span>
-                        <span role="cell" className="col-start-2 sm:col-start-auto">
-                          <span className="block text-[13px] text-texto">Necesitas <strong className="font-semibold tabular-nums">{numero.format(necesitas)}</strong></span>
-                          <span aria-hidden="true" className="mt-1.5 block h-1 overflow-hidden rounded-full bg-superficie-2">
-                            <motion.span
-                              className="block h-full origin-left rounded-full bg-acento/80"
-                              style={{ width: `${proporcion * 100}%` }}
-                              initial={reducir ? false : { scaleX: 0 }}
-                              animate={{ scaleX: 1 }}
-                              transition={{ duration: 0.7, delay: reducir ? 0 : 0.25 + indice * 0.05, ease: [0.23, 1, 0.32, 1] }}
-                            />
-                          </span>
-                        </span>
-                        <span role="cell" className="col-span-2 col-start-2 text-[13px] text-texto sm:col-span-1 sm:col-start-auto">
-                          {contar(compra.paquetes, "paquete", "paquetes")} de {numero.format(compra.unidades_paquete)}
-                          <span className="block text-xs text-texto-suave">{compra.sobrante > 0 ? `sobran ${numero.format(compra.sobrante)}` : "sin sobrantes"}</span>
-                        </span>
-                      </motion.div>
-                    );
-                  })}
-                </div>
+                <FilasCotizacion compras={plan.compras} imagenDe={imagenDe} />
               </div>
             </div>
 

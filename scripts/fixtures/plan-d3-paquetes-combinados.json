@@ -1,0 +1,834 @@
+{
+ "plan": {
+  "plan_version": "1.0",
+  "plan_id": "adde4f5e-7642-44af-8f05-fcb520261291",
+  "concepto": {
+   "titulo": "Noche de Gala - 40 Anos",
+   "descripcion": "Propuesta elegante y sobria para la celebracion de los 40 anos en tonos azul rey y detalles metalizados reflex plata, aprovechando un ambiente nocturno tipo hotel.",
+   "paleta": [
+    "azul",
+    "plateado"
+   ],
+   "estilo": "elegante",
+   "ocasion": "cumpleanos 40",
+   "momento_dia": "noche"
+  },
+  "espacio": {
+   "tipo": "hotel",
+   "fuente": "supuesto"
+  },
+  "estructuras": [
+   {
+    "estructura_id": "EST_01_SEMIARCO_PRINCIPAL",
+    "nombre": "Semiarco asimetrico principal",
+    "tipo": "semiarco",
+    "rol_escena": "focal",
+    "ubicacion": "fondo_pared",
+    "medidas": {
+     "ancho_m": 1.8,
+     "alto_m": 2.2,
+     "largo_m": 0.5
+    },
+    "repeticiones": 1,
+    "densidad": "lujosa",
+    "mezcla": "clasica",
+    "materiales": [
+     {
+      "product_id": "8634249543975",
+      "color": "azul",
+      "acabado": "reflex",
+      "participacion": 0.6,
+      "rol_material": "principal"
+     },
+     {
+      "product_id": "8634257211687",
+      "color": "plateado",
+      "acabado": "reflex",
+      "participacion": 0.4,
+      "rol_material": "secundario"
+     }
+    ],
+    "porque": "Enmarca el espacio central de fotos y la mesa principal.",
+    "estructura_oficial": "semiarco_asimetrico"
+   },
+   {
+    "estructura_id": "EST_02_COLUMNAS_ENTRADA",
+    "nombre": "Columnas de bienvenida",
+    "tipo": "columna",
+    "rol_escena": "soporte",
+    "ubicacion": "entrada",
+    "medidas": {
+     "ancho_m": 0.5,
+     "alto_m": 1.8,
+     "largo_m": 0.5
+    },
+    "repeticiones": 2,
+    "densidad": "media",
+    "mezcla": "clasica",
+    "materiales": [
+     {
+      "product_id": "8634239320359",
+      "color": "azul",
+      "participacion": 0.7,
+      "rol_material": "principal"
+     },
+     {
+      "product_id": "8634257211687",
+      "color": "plateado",
+      "acabado": "reflex",
+      "participacion": 0.3,
+      "rol_material": "acento"
+     }
+    ],
+    "porque": "Dan la bienvenida a los invitados a la entrada del evento.",
+    "estructura_oficial": "columna"
+   },
+   {
+    "estructura_id": "EST_03_CENTROS_MESA",
+    "nombre": "Centros de mesa elegantes",
+    "tipo": "centro_mesa",
+    "rol_escena": "relleno",
+    "ubicacion": "mesas_invitados",
+    "medidas": {
+     "ancho_m": 0.3,
+     "alto_m": 0.4,
+     "largo_m": 0.3
+    },
+    "repeticiones": 3,
+    "densidad": "media",
+    "mezcla": "clasica",
+    "materiales": [
+     {
+      "product_id": "8634257211687",
+      "color": "plateado",
+      "acabado": "reflex",
+      "participacion": 0.5,
+      "rol_material": "principal"
+     },
+     {
+      "product_id": "8634239320359",
+      "color": "azul",
+      "participacion": 0.5,
+      "rol_material": "secundario"
+     }
+    ],
+    "porque": "Visten las mesas de los 30 invitados manteniendo el estilo.",
+    "estructura_oficial": "centro_mesa"
+   },
+   {
+    "estructura_id": "EST_04_FIGURA_NUMERO",
+    "nombre": "Figura del numero 40 metalizado",
+    "tipo": "kit",
+    "rol_escena": "acento",
+    "ubicacion": "sobre_mesa_principal",
+    "medidas": {
+     "ancho_m": 0.8,
+     "alto_m": 0.8,
+     "largo_m": 0.2
+    },
+    "repeticiones": 1,
+    "densidad": "sencilla",
+    "mezcla": "clasica",
+    "materiales": [
+     {
+      "product_id": "8869942886695",
+      "variant_id": "47230955454759",
+      "color": "plateado",
+      "participacion": 0.5,
+      "rol_material": "principal"
+     },
+     {
+      "product_id": "8869943017767",
+      "variant_id": "47230957191463",
+      "color": "plateado",
+      "participacion": 0.5,
+      "rol_material": "secundario"
+     }
+    ],
+    "unidades_declaradas": 2,
+    "porque": "Destaca la edad del homenajeado junto a la mesa del pastel.",
+    "estructura_oficial": "figura"
+   }
+  ],
+  "supuestos": [],
+  "restricciones": {
+   "estructuras": [],
+   "colores": [
+    {
+     "valor": "plateado",
+     "procedencia": "explicito",
+     "texto_original": "Quiero decorar los 40 de mi esposo en azul y plateado, algo elegante para 30 personas",
+     "polaridad": "obligatorio"
+    },
+    {
+     "valor": "azul",
+     "procedencia": "explicito",
+     "texto_original": "Quiero decorar los 40 de mi esposo en azul y plateado, algo elegante para 30 personas",
+     "polaridad": "obligatorio"
+    }
+   ],
+   "tamanos": [],
+   "acabados": []
+  },
+  "referencia_omitida": []
+ },
+ "plan_hash": "f966395022296a035468763e54bf62879dd47a01ee843dffbfe8a78e248ebb4f",
+ "compras": [
+  {
+   "variant_id": "46594232516903",
+   "product_id": "8634239320359",
+   "sku": "B2B-20000760",
+   "sku_original": "B2B-20000760",
+   "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+   "source_variant_id": "gid://shopify/ProductVariant/46594232516903",
+   "inventory_quantity": 998712,
+   "unidades_inferidas": false,
+   "titulo": "B2b Globo Latex Redondo Fashion Azul Rey — R-12 / PAQUETE X 20",
+   "tamano_codigo": "R-12",
+   "diam_pulg": 12,
+   "color": "azul",
+   "unidades_necesarias": 20,
+   "design_quantity": 20,
+   "waste_reserve": 10,
+   "required_quantity": 30,
+   "unidades_con_merma": 30,
+   "unidades_paquete": 20,
+   "paquetes": 2,
+   "purchase_quantity": 40,
+   "used": 20,
+   "leftover_inventory": 10,
+   "consumption_cost": 9692,
+   "purchase_cost": 12922,
+   "additional_package_for_waste": true,
+   "sobrante": 20,
+   "precio_paquete": 6461,
+   "subtotal": 12922,
+   "estructuras": [
+    "EST_02_COLUMNAS_ENTRADA"
+   ],
+   "elementos_origen": [
+    {
+     "kind": "estructura",
+     "id": "EST_02_COLUMNAS_ENTRADA"
+    }
+   ],
+   "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_Rey_-_Royal_Blue_041.jpg?v=1763140355"
+  },
+  {
+   "variant_id": "46594232582439",
+   "product_id": "8634239320359",
+   "sku": "B2B-20000761",
+   "sku_original": "B2B-20000761",
+   "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+   "source_variant_id": "gid://shopify/ProductVariant/46594232582439",
+   "inventory_quantity": 967776,
+   "unidades_inferidas": false,
+   "titulo": "B2b Globo Latex Redondo Fashion Azul Rey — R-12 / PAQUETE X 50",
+   "tamano_codigo": "R-12",
+   "diam_pulg": 12,
+   "color": "azul",
+   "unidades_necesarias": 49,
+   "design_quantity": 49,
+   "waste_reserve": 1,
+   "required_quantity": 50,
+   "unidades_con_merma": 50,
+   "unidades_paquete": 50,
+   "paquetes": 1,
+   "purchase_quantity": 50,
+   "used": 49,
+   "leftover_inventory": 0,
+   "consumption_cost": 13974,
+   "purchase_cost": 13974,
+   "additional_package_for_waste": false,
+   "sobrante": 1,
+   "precio_paquete": 13974,
+   "subtotal": 13974,
+   "estructuras": [
+    "EST_02_COLUMNAS_ENTRADA",
+    "EST_03_CENTROS_MESA"
+   ],
+   "elementos_origen": [
+    {
+     "kind": "estructura",
+     "id": "EST_02_COLUMNAS_ENTRADA"
+    },
+    {
+     "kind": "estructura",
+     "id": "EST_03_CENTROS_MESA"
+    }
+   ],
+   "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_Rey_-_Royal_Blue_041.jpg?v=1763140355"
+  },
+  {
+   "variant_id": "46594250408231",
+   "product_id": "8634249543975",
+   "sku": "B2B-20014151",
+   "sku_original": "B2B-20014151",
+   "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+   "source_variant_id": "gid://shopify/ProductVariant/46594250408231",
+   "inventory_quantity": 996882,
+   "unidades_inferidas": false,
+   "titulo": "B2b Globo Latex Redondo Reflex Azul — R-12 / PAQUETE X 12",
+   "tamano_codigo": "R-12",
+   "diam_pulg": 12,
+   "color": "azul",
+   "unidades_necesarias": 35,
+   "design_quantity": 35,
+   "waste_reserve": 1,
+   "required_quantity": 36,
+   "unidades_con_merma": 36,
+   "unidades_paquete": 12,
+   "paquetes": 3,
+   "purchase_quantity": 36,
+   "used": 35,
+   "leftover_inventory": 0,
+   "consumption_cost": 26496,
+   "purchase_cost": 26496,
+   "additional_package_for_waste": false,
+   "sobrante": 1,
+   "precio_paquete": 8832,
+   "subtotal": 26496,
+   "estructuras": [
+    "EST_01_SEMIARCO_PRINCIPAL"
+   ],
+   "elementos_origen": [
+    {
+     "kind": "estructura",
+     "id": "EST_01_SEMIARCO_PRINCIPAL"
+    }
+   ],
+   "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_940.jpg?v=1763581702"
+  },
+  {
+   "variant_id": "46594267676967",
+   "product_id": "8634257211687",
+   "sku": "B2B-20014159",
+   "sku_original": "B2B-20014159",
+   "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+   "source_variant_id": "gid://shopify/ProductVariant/46594267676967",
+   "inventory_quantity": 985301,
+   "unidades_inferidas": false,
+   "titulo": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 12",
+   "tamano_codigo": "R-12",
+   "diam_pulg": 12,
+   "color": "plateado",
+   "unidades_necesarias": 12,
+   "design_quantity": 12,
+   "waste_reserve": 0,
+   "required_quantity": 12,
+   "unidades_con_merma": 12,
+   "unidades_paquete": 12,
+   "paquetes": 1,
+   "purchase_quantity": 12,
+   "used": 12,
+   "leftover_inventory": 0,
+   "consumption_cost": 8832,
+   "purchase_cost": 8832,
+   "additional_package_for_waste": false,
+   "sobrante": 0,
+   "precio_paquete": 8832,
+   "subtotal": 8832,
+   "estructuras": [
+    "EST_01_SEMIARCO_PRINCIPAL"
+   ],
+   "elementos_origen": [
+    {
+     "kind": "estructura",
+     "id": "EST_01_SEMIARCO_PRINCIPAL"
+    }
+   ],
+   "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391"
+  },
+  {
+   "variant_id": "46594267709735",
+   "product_id": "8634257211687",
+   "sku": "B2B-20014160",
+   "sku_original": "B2B-20014160",
+   "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+   "source_variant_id": "gid://shopify/ProductVariant/46594267709735",
+   "inventory_quantity": 980461,
+   "unidades_inferidas": false,
+   "titulo": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50",
+   "tamano_codigo": "R-12",
+   "diam_pulg": 12,
+   "color": "plateado",
+   "unidades_necesarias": 48,
+   "design_quantity": 48,
+   "waste_reserve": 2,
+   "required_quantity": 50,
+   "unidades_con_merma": 50,
+   "unidades_paquete": 50,
+   "paquetes": 1,
+   "purchase_quantity": 50,
+   "used": 48,
+   "leftover_inventory": 0,
+   "consumption_cost": 28977,
+   "purchase_cost": 28977,
+   "additional_package_for_waste": false,
+   "sobrante": 2,
+   "precio_paquete": 28977,
+   "subtotal": 28977,
+   "estructuras": [
+    "EST_01_SEMIARCO_PRINCIPAL",
+    "EST_02_COLUMNAS_ENTRADA",
+    "EST_03_CENTROS_MESA"
+   ],
+   "elementos_origen": [
+    {
+     "kind": "estructura",
+     "id": "EST_01_SEMIARCO_PRINCIPAL"
+    },
+    {
+     "kind": "estructura",
+     "id": "EST_02_COLUMNAS_ENTRADA"
+    },
+    {
+     "kind": "estructura",
+     "id": "EST_03_CENTROS_MESA"
+    }
+   ],
+   "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391"
+  },
+  {
+   "variant_id": "47230955454759",
+   "product_id": "8869942886695",
+   "sku": "B2B-30005503",
+   "sku_original": "B2B-30005503",
+   "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+   "source_variant_id": "gid://shopify/ProductVariant/47230955454759",
+   "inventory_quantity": 999321,
+   "unidades_inferidas": false,
+   "titulo": "B2b Globo Metalizado Numero 0 Plata — 32 IN / PAQUETE X 1",
+   "tamano_codigo": null,
+   "diam_pulg": null,
+   "color": "plateado",
+   "unidades_necesarias": 1,
+   "design_quantity": 1,
+   "waste_reserve": 0,
+   "required_quantity": 1,
+   "unidades_con_merma": 1,
+   "unidades_paquete": 1,
+   "paquetes": 1,
+   "purchase_quantity": 1,
+   "used": 1,
+   "leftover_inventory": 0,
+   "consumption_cost": 2054,
+   "purchase_cost": 2054,
+   "additional_package_for_waste": false,
+   "sobrante": 0,
+   "precio_paquete": 2054,
+   "subtotal": 2054,
+   "estructuras": [
+    "EST_04_FIGURA_NUMERO"
+   ],
+   "elementos_origen": [
+    {
+     "kind": "estructura",
+     "id": "EST_04_FIGURA_NUMERO"
+    }
+   ],
+   "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/foil-numerico-0-plateado-WEB_c0b2061f-ef8c-4fde-ad48-6d660197c70d.jpg?v=1701674446"
+  },
+  {
+   "variant_id": "47230957191463",
+   "product_id": "8869943017767",
+   "sku": "B2B-30005504",
+   "sku_original": "B2B-30005504",
+   "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+   "source_variant_id": "gid://shopify/ProductVariant/47230957191463",
+   "inventory_quantity": 998608,
+   "unidades_inferidas": false,
+   "titulo": "B2b Globo Metalizado Numero 1 Plata — 32 IN / PAQUETE X 1",
+   "tamano_codigo": null,
+   "diam_pulg": null,
+   "color": "plateado",
+   "unidades_necesarias": 1,
+   "design_quantity": 1,
+   "waste_reserve": 0,
+   "required_quantity": 1,
+   "unidades_con_merma": 1,
+   "unidades_paquete": 1,
+   "paquetes": 1,
+   "purchase_quantity": 1,
+   "used": 1,
+   "leftover_inventory": 0,
+   "consumption_cost": 2054,
+   "purchase_cost": 2054,
+   "additional_package_for_waste": false,
+   "sobrante": 0,
+   "precio_paquete": 2054,
+   "subtotal": 2054,
+   "estructuras": [
+    "EST_04_FIGURA_NUMERO"
+   ],
+   "elementos_origen": [
+    {
+     "kind": "estructura",
+     "id": "EST_04_FIGURA_NUMERO"
+    }
+   ],
+   "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/foil-numerico-1-plateado-WEB_55ff02d0-e855-4d8c-b322-caf6beb4c337.jpg?v=1701674461"
+  }
+ ],
+ "totales": {
+  "globos_por_tamano": {
+   "R-12": 164
+  },
+  "total_unidades": 166,
+  "total_cop": 95309,
+  "design_quantity": 166,
+  "target_waste_reserve": 14,
+  "covered_waste_reserve": 14,
+  "uncovered_waste_reserve": 0,
+  "natural_package_surplus": 4,
+  "purchase_cost": 95309,
+  "consumption_cost": 92079,
+  "waste_only_savings_cop": 20017,
+  "additional_waste_packages": 2,
+  "ahorro_paquetes_cop": 65467,
+  "incluye_iva": true,
+  "merma_porcentaje": 8
+ },
+ "comercial": {
+  "estado": "APROBACION_REQUERIDA",
+  "delta_cop": 0
+ },
+ "alternativas": [],
+ "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42.",
+ "sustituciones": [],
+ "sin_cobertura": [],
+ "advertencias": [
+  "sobrante_alto:46594232516903"
+ ],
+ "estructuras": [
+  {
+   "estructura_id": "EST_01_SEMIARCO_PRINCIPAL",
+   "nombre": "Semiarco asimetrico principal",
+   "tipo": "semiarco",
+   "ubicacion": "fondo_pared",
+   "repeticiones": 1,
+   "eje_m": 3.15,
+   "total_unidades": 59,
+   "lineas": [
+    {
+     "estructura_id": "EST_01_SEMIARCO_PRINCIPAL",
+     "origen": {
+      "kind": "estructura",
+      "id": "EST_01_SEMIARCO_PRINCIPAL"
+     },
+     "product_id": "8634249543975",
+     "variant_id": "46594250408231",
+     "sku": "B2B-20014151",
+     "sku_original": "B2B-20014151",
+     "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+     "source_variant_id": "gid://shopify/ProductVariant/46594250408231",
+     "inventory_quantity": 996882,
+     "unidades_inferidas": false,
+     "titulo": "B2b Globo Latex Redondo Reflex Azul — R-12 / PAQUETE X 12",
+     "color": "azul",
+     "tamano_codigo": "R-12",
+     "diam_pulg": 12,
+     "diam_cm": 30.5,
+     "forma": "redondo",
+     "acabado": "reflex",
+     "unidades": 35,
+     "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_-_Blue_940.jpg?v=1763581702",
+     "sustitucion": null
+    },
+    {
+     "estructura_id": "EST_01_SEMIARCO_PRINCIPAL",
+     "origen": {
+      "kind": "estructura",
+      "id": "EST_01_SEMIARCO_PRINCIPAL"
+     },
+     "product_id": "8634257211687",
+     "variant_id": "46594267676967",
+     "sku": "B2B-20014159",
+     "sku_original": "B2B-20014159",
+     "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+     "source_variant_id": "gid://shopify/ProductVariant/46594267676967",
+     "inventory_quantity": 985301,
+     "unidades_inferidas": false,
+     "titulo": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 12",
+     "color": "plateado",
+     "tamano_codigo": "R-12",
+     "diam_pulg": 12,
+     "diam_cm": 30.5,
+     "forma": "redondo",
+     "acabado": "reflex",
+     "unidades": 12,
+     "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391",
+     "sustitucion": null
+    },
+    {
+     "estructura_id": "EST_01_SEMIARCO_PRINCIPAL",
+     "origen": {
+      "kind": "estructura",
+      "id": "EST_01_SEMIARCO_PRINCIPAL"
+     },
+     "product_id": "8634257211687",
+     "variant_id": "46594267709735",
+     "sku": "B2B-20014160",
+     "sku_original": "B2B-20014160",
+     "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+     "source_variant_id": "gid://shopify/ProductVariant/46594267709735",
+     "inventory_quantity": 980461,
+     "unidades_inferidas": false,
+     "titulo": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50",
+     "color": "plateado",
+     "tamano_codigo": "R-12",
+     "diam_pulg": 12,
+     "diam_cm": 30.5,
+     "forma": "redondo",
+     "acabado": "reflex",
+     "unidades": 12,
+     "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391",
+     "sustitucion": null
+    }
+   ],
+   "mezcla_real": [
+    {
+     "diam_pulg": 12,
+     "forma": "redondo",
+     "unidades": 59,
+     "pct": 100
+    }
+   ],
+   "supuestos": []
+  },
+  {
+   "estructura_id": "EST_02_COLUMNAS_ENTRADA",
+   "nombre": "Columnas de bienvenida",
+   "tipo": "columna",
+   "ubicacion": "entrada",
+   "repeticiones": 2,
+   "eje_m": 1.8,
+   "total_unidades": 78,
+   "lineas": [
+    {
+     "estructura_id": "EST_02_COLUMNAS_ENTRADA",
+     "origen": {
+      "kind": "estructura",
+      "id": "EST_02_COLUMNAS_ENTRADA"
+     },
+     "product_id": "8634239320359",
+     "variant_id": "46594232516903",
+     "sku": "B2B-20000760",
+     "sku_original": "B2B-20000760",
+     "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+     "source_variant_id": "gid://shopify/ProductVariant/46594232516903",
+     "inventory_quantity": 998712,
+     "unidades_inferidas": false,
+     "titulo": "B2b Globo Latex Redondo Fashion Azul Rey — R-12 / PAQUETE X 20",
+     "color": "azul",
+     "tamano_codigo": "R-12",
+     "diam_pulg": 12,
+     "diam_cm": 30.5,
+     "forma": "redondo",
+     "acabado": "fashion",
+     "unidades": 20,
+     "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_Rey_-_Royal_Blue_041.jpg?v=1763140355",
+     "sustitucion": null
+    },
+    {
+     "estructura_id": "EST_02_COLUMNAS_ENTRADA",
+     "origen": {
+      "kind": "estructura",
+      "id": "EST_02_COLUMNAS_ENTRADA"
+     },
+     "product_id": "8634239320359",
+     "variant_id": "46594232582439",
+     "sku": "B2B-20000761",
+     "sku_original": "B2B-20000761",
+     "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+     "source_variant_id": "gid://shopify/ProductVariant/46594232582439",
+     "inventory_quantity": 967776,
+     "unidades_inferidas": false,
+     "titulo": "B2b Globo Latex Redondo Fashion Azul Rey — R-12 / PAQUETE X 50",
+     "color": "azul",
+     "tamano_codigo": "R-12",
+     "diam_pulg": 12,
+     "diam_cm": 30.5,
+     "forma": "redondo",
+     "acabado": "fashion",
+     "unidades": 34,
+     "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_Rey_-_Royal_Blue_041.jpg?v=1763140355",
+     "sustitucion": null
+    },
+    {
+     "estructura_id": "EST_02_COLUMNAS_ENTRADA",
+     "origen": {
+      "kind": "estructura",
+      "id": "EST_02_COLUMNAS_ENTRADA"
+     },
+     "product_id": "8634257211687",
+     "variant_id": "46594267709735",
+     "sku": "B2B-20014160",
+     "sku_original": "B2B-20014160",
+     "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+     "source_variant_id": "gid://shopify/ProductVariant/46594267709735",
+     "inventory_quantity": 980461,
+     "unidades_inferidas": false,
+     "titulo": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50",
+     "color": "plateado",
+     "tamano_codigo": "R-12",
+     "diam_pulg": 12,
+     "diam_cm": 30.5,
+     "forma": "redondo",
+     "acabado": "reflex",
+     "unidades": 24,
+     "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391",
+     "sustitucion": null
+    }
+   ],
+   "mezcla_real": [
+    {
+     "diam_pulg": 12,
+     "forma": "redondo",
+     "unidades": 78,
+     "pct": 100
+    }
+   ],
+   "supuestos": []
+  },
+  {
+   "estructura_id": "EST_03_CENTROS_MESA",
+   "nombre": "Centros de mesa elegantes",
+   "tipo": "centro_mesa",
+   "ubicacion": "mesas_invitados",
+   "repeticiones": 3,
+   "eje_m": 0.4,
+   "total_unidades": 27,
+   "lineas": [
+    {
+     "estructura_id": "EST_03_CENTROS_MESA",
+     "origen": {
+      "kind": "estructura",
+      "id": "EST_03_CENTROS_MESA"
+     },
+     "product_id": "8634257211687",
+     "variant_id": "46594267709735",
+     "sku": "B2B-20014160",
+     "sku_original": "B2B-20014160",
+     "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+     "source_variant_id": "gid://shopify/ProductVariant/46594267709735",
+     "inventory_quantity": 980461,
+     "unidades_inferidas": false,
+     "titulo": "B2b Globo Latex Redondo Reflex Plata — R-12 / PAQUETE X 50",
+     "color": "plateado",
+     "tamano_codigo": "R-12",
+     "diam_pulg": 12,
+     "diam_cm": 30.5,
+     "forma": "redondo",
+     "acabado": "reflex",
+     "unidades": 12,
+     "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Plata_-_Silver_981.jpg?v=1763581391",
+     "sustitucion": null
+    },
+    {
+     "estructura_id": "EST_03_CENTROS_MESA",
+     "origen": {
+      "kind": "estructura",
+      "id": "EST_03_CENTROS_MESA"
+     },
+     "product_id": "8634239320359",
+     "variant_id": "46594232582439",
+     "sku": "B2B-20000761",
+     "sku_original": "B2B-20000761",
+     "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+     "source_variant_id": "gid://shopify/ProductVariant/46594232582439",
+     "inventory_quantity": 967776,
+     "unidades_inferidas": false,
+     "titulo": "B2b Globo Latex Redondo Fashion Azul Rey — R-12 / PAQUETE X 50",
+     "color": "azul",
+     "tamano_codigo": "R-12",
+     "diam_pulg": 12,
+     "diam_cm": 30.5,
+     "forma": "redondo",
+     "acabado": "fashion",
+     "unidades": 15,
+     "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/R12_Azul_Rey_-_Royal_Blue_041.jpg?v=1763140355",
+     "sustitucion": null
+    }
+   ],
+   "mezcla_real": [
+    {
+     "diam_pulg": 12,
+     "forma": "redondo",
+     "unidades": 27,
+     "pct": 100
+    }
+   ],
+   "supuestos": []
+  },
+  {
+   "estructura_id": "EST_04_FIGURA_NUMERO",
+   "nombre": "Figura del numero 40 metalizado",
+   "tipo": "kit",
+   "ubicacion": "sobre_mesa_principal",
+   "repeticiones": 1,
+   "eje_m": null,
+   "total_unidades": 2,
+   "lineas": [
+    {
+     "estructura_id": "EST_04_FIGURA_NUMERO",
+     "origen": {
+      "kind": "estructura",
+      "id": "EST_04_FIGURA_NUMERO"
+     },
+     "product_id": "8869942886695",
+     "variant_id": "47230955454759",
+     "sku": "B2B-30005503",
+     "sku_original": "B2B-30005503",
+     "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+     "source_variant_id": "gid://shopify/ProductVariant/47230955454759",
+     "inventory_quantity": 999321,
+     "unidades_inferidas": false,
+     "titulo": "B2b Globo Metalizado Numero 0 Plata — 32 IN / PAQUETE X 1",
+     "color": "plateado",
+     "tamano_codigo": null,
+     "diam_pulg": null,
+     "diam_cm": null,
+     "forma": null,
+     "acabado": "metalizado",
+     "unidades": 1,
+     "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/foil-numerico-0-plateado-WEB_c0b2061f-ef8c-4fde-ad48-6d660197c70d.jpg?v=1701674446",
+     "sustitucion": null
+    },
+    {
+     "estructura_id": "EST_04_FIGURA_NUMERO",
+     "origen": {
+      "kind": "estructura",
+      "id": "EST_04_FIGURA_NUMERO"
+     },
+     "product_id": "8869943017767",
+     "variant_id": "47230957191463",
+     "sku": "B2B-30005504",
+     "sku_original": "B2B-30005504",
+     "source_snapshot_id": "products_catalog:13a9033d8c72f30fa60f75c825358c21537fd869bf0e666d659d7be047f0ce42",
+     "source_variant_id": "gid://shopify/ProductVariant/47230957191463",
+     "inventory_quantity": 998608,
+     "unidades_inferidas": false,
+     "titulo": "B2b Globo Metalizado Numero 1 Plata — 32 IN / PAQUETE X 1",
+     "color": "plateado",
+     "tamano_codigo": null,
+     "diam_pulg": null,
+     "diam_cm": null,
+     "forma": null,
+     "acabado": "metalizado",
+     "unidades": 1,
+     "imagen": "https://cdn.shopify.com/s/files/1/0825/6100/7911/files/foil-numerico-1-plateado-WEB_55ff02d0-e855-4d8c-b322-caf6beb4c337.jpg?v=1701674461",
+     "sustitucion": null
+    }
+   ],
+   "mezcla_real": [],
+   "supuestos": []
+  }
+ ],
+ "event_label": null,
+ "original_request": "Quiero decorar los 40 de mi esposo en azul y plateado, algo elegante para 30 personas",
+ "event_match_levels": [],
+ "event_relaxations": [
+  "ocasiones pasó de filtro duro a señal de ranking"
+ ]
+}

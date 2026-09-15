@@ -20,6 +20,8 @@ const argumento = (nombre: string) => {
 };
 const BASE = argumento("--base") ?? "http://127.0.0.1:3100";
 const PLAN: unknown = JSON.parse(readFileSync(path.join(process.cwd(), "eval", "ui", "plan-resuelto-arco-columnas.json"), "utf8"));
+// D3 (E2E real 2): PlanResuelto real con el mismo globo comprado en dos tamaños de paquete.
+const PLAN_D3: unknown = JSON.parse(readFileSync(path.join(process.cwd(), "scripts", "fixtures", "plan-d3-paquetes-combinados.json"), "utf8"));
 const PNG_1PX = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
 const REQUEST_ID = "4b6a3c38-5a59-4a57-9d8e-2f4f3c0a1b2c";
 
@@ -220,6 +222,69 @@ async function temaYGaleria(browser: Browser, cookie: { name: string; value: str
   await cerrar();
 }
 
+/**
+ * Segunda E2E real: la cotización agrupa paquetes combinados (D3), la
+ * creatividad sobrevive a la recarga y una aprobación sin vista previa (fal sin
+ * saldo, 400 VISTA_PREVIA_NO_DISPONIBLE) queda registrada con su aviso.
+ */
+async function creatividadYVistaPrevia(browser: Browser, cookie: { name: string; value: string }): Promise<void> {
+  const { page, errores, cerrar } = await nuevaPagina(browser, cookie);
+  const cuerposChat: Array<{ creatividad?: unknown }> = [];
+  const llamadasGenerate: number[] = [];
+  await page.route("**/api/chat", async (route) => {
+    cuerposChat.push(JSON.parse(route.request().postData() ?? "{}"));
+    const fin = { schema_version: "chat.sse.v1", type: "fin", request_id: REQUEST_ID, correlation_id: REQUEST_ID, reply: "Te armé la propuesta.", brief: {}, proveedor: "gemini", modelo: "simulado", plan: PLAN_D3 };
+    await route.fulfill({ status: 200, headers: { "content-type": "text/event-stream" }, body: `event: fin\ndata: ${JSON.stringify(fin)}\n\n` });
+  });
+  await page.route("**/api/generate", async (route) => {
+    llamadasGenerate.push(Date.now());
+    const uiError = { schema_version: "ui-error.v1", code: "VISTA_PREVIA_NO_DISPONIBLE", mensaje_usuario: "La vista previa de la imagen no está disponible por ahora. Tu propuesta y su precio quedan guardados.", accion_sugerida: null, acciones_alternativas: [], retryable: false, detalles_dev: { mensaje: "fal 403 simulado" } };
+    await route.fulfill({ status: 400, headers: { "content-type": "application/json" }, body: JSON.stringify({ error: "fal 403 simulado", ui_error: uiError }) });
+  });
+  await abrir(page, "?dev=0");
+  await page.getByTestId("selector-creatividad").click();
+  await page.getByRole("option", { name: /^Fiel/ }).click();
+  const entrada = page.getByRole("textbox", { name: "Escribe tu mensaje" });
+  await entrada.fill("Decoración de gala para 40 años en azul y plata");
+  await entrada.press("Enter");
+  await page.getByTestId("plan-desglose").waitFor({ timeout: 30_000 });
+  check("creatividad: el turno va con «Fiel» (0)", cuerposChat[0]?.creatividad === 0, String(cuerposChat[0]?.creatividad));
+
+  // D3: una fila por producto + tamaño + color en el diálogo de la cotización.
+  await page.getByRole("button", { name: "Ver cotización" }).first().click();
+  const dialogo = page.getByRole("dialog");
+  await dialogo.waitFor();
+  const filas = dialogo.getByRole("row");
+  await page.waitForTimeout(2_000);
+  const textoDialogo = await dialogo.innerText();
+  check("D3: cotización con una fila por producto, tamaño y color", (await filas.count()) === 6, `${await filas.count()} filas (con cabecera)`);
+  check("D3: paquetes combinados en una fila", textoDialogo.includes("1 paquete de 50 + 2 paquetes de 20") && textoDialogo.includes("1 paquete de 50 + 1 paquete de 12"));
+  check("D3: el total no cambia", /95\.309/.test(textoDialogo));
+  await page.keyboard.press("Escape");
+
+  await page.getByTestId("aprobar-generar-plan").click();
+  await page.getByText("La vista previa de la imagen no está disponible por ahora").first().waitFor({ timeout: 20_000 });
+  check("D5 sin foto: la aprobación queda registrada en la sesión", (await page.getByTestId("aprobar-generar-plan").innerText()).trim() === "Aprobación registrada");
+  await page.waitForTimeout(800);
+  await abrir(page);
+  await page.getByTestId("plan-desglose").waitFor({ timeout: 20_000 });
+  check("creatividad: tras recargar sigue «Fiel»", (await page.getByTestId("selector-creatividad").getAttribute("aria-label")) === "Creatividad: Fiel", String(await page.getByTestId("selector-creatividad").getAttribute("aria-label")));
+  const aviso = page.getByTestId("aviso-vista-previa-no-disponible");
+  await aviso.waitFor({ timeout: 10_000 }).catch(() => undefined);
+  check("D5 sin foto: tras recargar muestra el aviso de vista previa no disponible", (await aviso.count()) === 1 && (await aviso.innerText()).includes("La vista previa de la imagen no está disponible por ahora"));
+  check("D5 sin foto: tras recargar no vuelve «Aprobar y ver cómo queda»", (await page.getByTestId("aprobar-generar-plan").innerText()).trim() === "Aprobación registrada" && llamadasGenerate.length === 1, `${llamadasGenerate.length} llamadas a /api/generate`);
+  check("D5 sin foto: opción explícita de volver a intentar la imagen", (await aviso.getByRole("button", { name: "Volver a intentar la imagen" }).count()) === 1);
+  await aviso.getByRole("button", { name: "Volver a intentar la imagen" }).click().catch(() => undefined);
+  await page.waitForTimeout(1_500);
+  check("D5 sin foto: «Volver a intentar la imagen» pide la imagen otra vez", llamadasGenerate.length === 2, `${llamadasGenerate.length} llamadas a /api/generate`);
+  await entrada.fill("Cambia el plateado por blanco");
+  await entrada.press("Enter");
+  await page.waitForTimeout(1_500);
+  check("creatividad: el turno tras recargar se valida con «Fiel»", cuerposChat.length === 2 && cuerposChat[1]?.creatividad === 0, String(cuerposChat[1]?.creatividad));
+  check("creatividad y vista previa: sin errores de runtime", errores.length === 0, errores.join(" | "));
+  await cerrar();
+}
+
 async function main(): Promise<void> {
   const cookie = await cookieDeSesion();
   const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE?.trim() || undefined;
@@ -227,6 +292,7 @@ async function main(): Promise<void> {
   try {
     await switchYPersistencia(browser, cookie);
     await temaYGaleria(browser, cookie);
+    await creatividadYVistaPrevia(browser, cookie);
     await contenidoPorModo(browser, cookie, "usuario");
     await contenidoPorModo(browser, cookie, "dev");
   } finally {

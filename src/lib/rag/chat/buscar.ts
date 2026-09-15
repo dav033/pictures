@@ -9,7 +9,7 @@ import type { ObservabilidadBusqueda, ResultadoBusquedaObservabilidad } from "..
 import type { CatalogAllowlist } from "../retrieval/types";
 import { llamarPythonCatalogSearch, seleccionarBackendPython } from "@/lib/ia/python-adapter";
 import { candidatoDesdePython } from "./candidato-python";
-import { debeAplicarPaso, escaleraRelajacion } from "./relajacion-filtros";
+import { recorrerEscalera } from "./relajacion-filtros";
 
 export type OpcionesBusquedaRag = {
   /** Customer-verified filters; component wording cannot alter them. */
@@ -22,6 +22,10 @@ export type OpcionesBusquedaRag = {
   rerankSignal?: AbortSignal;
   rerankDeadlineAt?: number;
   catalogSnapshotId?: string;
+  /** Colors the design must reproduce that are not hard filters (the dominant
+   * colors of a reference photo). They only let the ladder relax the occasion
+   * when its hits leave one uncovered (`debeAplicarPaso`). */
+  coloresContexto?: readonly string[];
 };
 
 export type VarianteCandidata = {
@@ -201,20 +205,16 @@ async function buscarCatalogoPython(
   // Same ladder as the TypeScript path. Search is read-only, so repeating it
   // with fewer verified filters duplicates no effect; the shared deadline
   // bounds the total, and a step is skipped once that deadline has passed.
-  const pasos = filtros ? escaleraRelajacion(filtros) : [];
-  let response = await llamar(pasos[0]?.filtros ?? filtros);
-  let filtroRelajado: ResultadoBusquedaRag["filtroRelajado"] = null;
-  for (const paso of pasos.slice(1)) {
-    const coloresCandidatos = response.candidates.map((candidate) => ({ colores: candidate.colors }));
-    if (response.status === "AMBIGUOUS_SKU" || !filtros || !debeAplicarPaso(paso, filtros, coloresCandidatos) || Date.now() >= deadlineAt) break;
-    const previa = response;
-    response = await llamar(paso.filtros);
-    if (response.candidates.length > 0) filtroRelajado = paso.relajado;
-    else if (previa.candidates.length > 0) {
-      response = previa;
-      break;
-    }
-  }
+  const primera = await llamar(filtros);
+  const { respuesta: response, relajado: filtroRelajado } = filtros
+    ? await recorrerEscalera(filtros, primera, {
+        buscar: llamar,
+        cantidad: (respuesta) => respuesta.candidates.length,
+        colores: (respuesta) => respuesta.candidates.map((candidate) => ({ colores: candidate.colors })),
+        coloresContexto: opciones.coloresContexto,
+        puedeSeguir: (respuesta) => respuesta.status !== "AMBIGUOUS_SKU" && Date.now() < deadlineAt,
+      })
+    : { respuesta: primera, relajado: null };
   const scores: ResultadoRetrieval[] = response.candidates.map((candidate) => ({
     productId: candidate.product_id,
     variantIds: candidate.variants.map((variant) => variant.variant_id),
@@ -283,7 +283,6 @@ export async function buscarCatalogoRag(
     return { status: "NO_MATCH", skuStatus: "not_sku", candidatos: [], intent: intento, scores: [], latencyParseMs, latencyRetrievalMs: 0, filtroRelajado: null, observabilidad: observabilidadBusqueda(mensaje, eventIntent, [], "NO_MATCH", null, opciones.focusedQueries) };
   }
 
-  const pasos = escaleraRelajacion(intento.filtros_duros);
   const t1 = Date.now();
   let embeddingFallido = false;
   const embeddingPrecalculado = consultaTieneSku(intento.semantic_query)
@@ -322,7 +321,6 @@ export async function buscarCatalogoRag(
     },
   });
   let respuesta = await buscarPaso(intento.filtros_duros);
-  let filtroRelajado: ResultadoBusquedaRag["filtroRelajado"] = null;
 
   // Never expose ambiguous exact SKU candidates to the model as a normal
   // selectable pool. The client must clarify which exact variant it means.
@@ -351,19 +349,14 @@ export async function buscarCatalogoRag(
   // cumpleaños" puede caer a NO_MATCH aunque sí existan globos rojos R-5
   // (solo que ninguno tiene la etiqueta de ocasión "cumpleanos"). El orden
   // vive en `escaleraRelajacion`, compartido con el backend Python.
-  for (const paso of pasos.slice(1)) {
-    const coloresCandidatos = respuesta.results.length > 0 && paso.relajado === "ocasiones" && intento.filtros_duros.colores.length > 0
-      ? await coloresDeProductos(pool, respuesta.results.map((result) => result.productId))
-      : respuesta.results.map(() => ({ colores: [] }));
-    if (!debeAplicarPaso(paso, intento.filtros_duros, coloresCandidatos)) break;
-    const previa = respuesta;
-    respuesta = await buscarPaso(paso.filtros);
-    if (respuesta.results.length > 0) filtroRelajado = paso.relajado;
-    else if (previa.results.length > 0) {
-      respuesta = previa;
-      break;
-    }
-  }
+  const escalera = await recorrerEscalera(intento.filtros_duros, respuesta, {
+    buscar: buscarPaso,
+    cantidad: (resultado) => resultado.results.length,
+    colores: (resultado) => coloresDeProductos(pool, resultado.results.map((result) => result.productId)),
+    coloresContexto: opciones.coloresContexto,
+  });
+  respuesta = escalera.respuesta;
+  const filtroRelajado: ResultadoBusquedaRag["filtroRelajado"] = escalera.relajado;
   const latencyRetrievalMs = Date.now() - t1;
 
   if (respuesta.results.length === 0) {

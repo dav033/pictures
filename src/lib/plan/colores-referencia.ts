@@ -1,4 +1,5 @@
-import { clasificarColores, plegarTexto } from "@/lib/rag/taxonomy/v2";
+import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
+import { clasificarColores, PALETA_COLORES_V2, plegarTexto } from "@/lib/rag/taxonomy/v2";
 
 /**
  * Dominant colors of a reference photo versus the colors a plan actually buys
@@ -12,6 +13,10 @@ import { clasificarColores, plegarTexto } from "@/lib/rag/taxonomy/v2";
  *   `MAX_COLORES_REFERENCIA` known colors of `appearance.observed_colors`, in the
  *   catalog vocabulary. With several photos each structure keeps the palette of
  *   its own photo. The model never writes the field.
+ * - The other colors the analysis shows the customer (`coloresFotoCliente`) that
+ *   no structure buys are appended to the first such structure, so no photo
+ *   color is lost without a notice (E2E 2026-09-15; `aplicarColoresReferencia`).
+ *   Only the element colors can make `confirmar_plan_decoracion` refuse a plan.
  * - Both resolvers (TypeScript here and `_reference_color_substitutions` in
  *   services/ai-api/app/plan.py) compare those colors with the colors of the
  *   structure's resolved lines and record every missing one in `sustituciones`,
@@ -69,6 +74,51 @@ export function coloresDominantesReferencia(observados: readonly string[]): stri
     }
   }
   return colores.slice(0, MAX_COLORES_REFERENCIA);
+}
+
+/**
+ * Colors the analysis shows the customer as "the colors of your photo": the
+ * first `MAX_COLORES_FOTO_CLIENTE` known colors of `palette.observed` (the
+ * approved elements when the palette is empty), the same source and bound as
+ * the analysis card (`coloresObservadosCliente`, presentacion-cliente.ts).
+ */
+export const MAX_COLORES_FOTO_CLIENTE = 5;
+
+export function coloresFotoCliente(blueprint: Pick<ReferenceBlueprintV2, "palette" | "elements"> | undefined): string[] {
+  if (!blueprint) return [];
+  const observados = blueprint.palette.observed.length
+    ? blueprint.palette.observed
+    : blueprint.elements.filter((elemento) => elemento.approved).flatMap((elemento) => elemento.appearance.observed_colors);
+  const colores: string[] = [];
+  for (const etiqueta of observados) {
+    for (const color of coloresDeEtiqueta(etiqueta)) {
+      if (!colores.includes(color)) colores.push(color);
+    }
+  }
+  return colores.slice(0, MAX_COLORES_FOTO_CLIENTE);
+}
+
+/** Dominant colors of one approved reference element (what `colores_referencia` starts with). */
+export function coloresElementoReferencia(blueprint: Pick<ReferenceBlueprintV2, "elements"> | undefined, elementId: string | undefined): string[] {
+  const elemento = elementId ? blueprint?.elements.find((item) => item.approved && item.element_id === elementId) : undefined;
+  return elemento ? coloresDominantesReferencia(elemento.appearance.observed_colors) : [];
+}
+
+const COLORES_CATALOGO: ReadonlySet<string> = new Set(PALETA_COLORES_V2);
+
+/**
+ * Catalog colors a search must be able to return for a reference photo: the
+ * dominant colors of its approved balloon structures, or of the photo palette
+ * when it has none. A color the catalog does not sell ("gris") is left out, so
+ * it never forces the relaxation ladder to drop the occasion for nothing.
+ */
+export function coloresFotoParaBusqueda(blueprint: Pick<ReferenceBlueprintV2, "palette" | "elements"> | undefined): string[] {
+  if (!blueprint) return [];
+  const estructuras = blueprint.elements.filter((elemento) => elemento.approved && elemento.category === "balloon_structure");
+  const colores = estructuras.length
+    ? [...new Set(estructuras.flatMap((elemento) => coloresDominantesReferencia(elemento.appearance.observed_colors)))]
+    : coloresFotoCliente(blueprint).slice(0, MAX_COLORES_REFERENCIA);
+  return colores.filter((color) => COLORES_CATALOGO.has(color));
 }
 
 function normalizarColor(color: string): string {

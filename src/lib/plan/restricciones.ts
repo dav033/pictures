@@ -4,7 +4,7 @@ import { ALCANCE_POR_CATEGORIA_REFERENCIA } from "@/lib/rag/taxonomy/alcance-ref
 import type { ACABADOS_CATALOGO_V2 } from "@/lib/rag/taxonomy/v2";
 import { CREATIVIDAD_POR_DEFECTO, perfilCreatividad, type NivelCreatividad } from "@/lib/ia/creatividad";
 import { tieneEstructurasDeGlobos } from "@/lib/ia/reference-structure";
-import { coloresDominantesReferencia } from "./colores-referencia";
+import { coloresDominantesReferencia, coloresFotoCliente } from "./colores-referencia";
 import { identificarEstructuraOficial } from "./estructuras-oficiales";
 import type { PlanDecoracion, RestriccionesUsuario, TipoEstructura } from "./tipos";
 
@@ -100,6 +100,22 @@ function indiceOriginal(texto: string, coincidencia: Coincidencia): { inicio: nu
   return { inicio: origen[coincidencia.indice]!, fin: fin === normalizado.length ? texto.length : origen[fin]! };
 }
 
+/** Color words a customer request can make mandatory (normalized, no accents). */
+export const ALIAS_COLORES_CLIENTE: readonly string[] = [
+  "dorado", "dorada", "dorados", "doradas", "plateado", "plateada", "plateados", "plateadas", "plata",
+  "rosado", "rosada", "rosados", "rosadas", "rosa", "rojo", "roja", "rojos", "rojas", "negro", "negra", "negros", "negras",
+  "blanco", "blanca", "blancos", "blancas", "azul", "azules", "verde", "verdes", "morado", "morada", "morados", "moradas", "lila", "nude",
+];
+
+/** Structure words a customer request can count ("2 columnas"), by plan type. */
+export const ALIAS_ESTRUCTURAS_CLIENTE: ReadonlyArray<{ tipo: TipoEstructura; aliases: readonly string[] }> = ESTRUCTURAS;
+
+/** The restriction value of one color word: "plateadas" → "plateado", "rosada" → "rosa". */
+export function canonizarColorCliente(alias: string): string {
+  const valor = normalizar(alias).trim();
+  return colorCanonico(valor === "rosado" || valor === "rosa" ? "rosa" : valor === "plata" || valor === "plateado" ? "plateado" : valor);
+}
+
 function colorCanonico(valor: string): string {
   if (/^dorad/.test(valor)) return "dorado";
   if (/^platead|^plata$/.test(valor)) return "plateado";
@@ -180,11 +196,7 @@ export function extraerRestriccionesUsuario(texto: string, brief: Brief = {}): R
   const presupuestoEnTexto = extraerTecho(texto);
   const presupuesto = presupuestoEnTexto?.valor ?? (typeof brief.presupuesto === "number" ? brief.presupuesto : extraerTecho(String(brief.presupuesto ?? ""))?.valor);
   const presupuestoExplicito = presupuestoEnTexto !== null;
-  const colores = extraerLista(texto, [
-    "dorado", "dorada", "dorados", "doradas", "plateado", "plateada", "plateados", "plateadas", "plata",
-    "rosado", "rosada", "rosados", "rosadas", "rosa", "rojo", "roja", "rojos", "rojas", "negro", "negra", "negros", "negras",
-    "blanco", "blanca", "blancos", "blancas", "azul", "azules", "verde", "verdes", "morado", "morada", "morados", "moradas", "lila", "nude",
-  ])
+  const colores = extraerLista(texto, [...ALIAS_COLORES_CLIENTE])
     .map(({ valor, coincidencia }) => ({ valor: colorCanonico(valor), coincidencia }))
     .filter((item, index, values) => values.findIndex((otro) => otro.valor === item.valor) === index)
     .map(({ valor, coincidencia }) => ({ valor, procedencia: "explicito" as const, texto_original: evidenciaTextoOriginal(texto, coincidencia), polaridad: "obligatorio" as const }));
@@ -319,20 +331,39 @@ export function validarCoberturaReferencia(plan: PlanDecoracion, blueprint: Refe
  * materializes (audit finding Alta #3, rule in colores-referencia.ts). With
  * several photos each structure takes the palette of its own element. Any value
  * the model sent is discarded: the field is server-owned.
+ *
+ * Photo colors outside the balloon elements (E2E 2026-09-15, "Marco vino y
+ * plata": the analysis showed "Rosado" from the chairs and the 4th arch color
+ * "gris", and the plan dropped both without a notice): every color the analysis
+ * shows the customer (`coloresFotoCliente`) that no structure buys and no
+ * structure already lists is appended to the first structure that materializes
+ * a photo element, so the resolvers record it as a notice. Those extras are
+ * notices only: `confirmar_plan_decoracion` claims just the element colors
+ * (`coloresElementoReferencia`).
  */
 export function aplicarColoresReferencia<T extends PlanDecoracion>(plan: T, blueprint: ReferenceBlueprintV2 | undefined): T {
   const elementos = new Map((blueprint?.elements ?? []).filter((element) => element.approved).map((element) => [element.element_id, element]));
+  const porEstructura = plan.estructuras.map((estructura) => {
+    const elemento = estructura.referencia_element_id ? elementos.get(estructura.referencia_element_id) : undefined;
+    return elemento ? coloresDominantesReferencia(elemento.appearance.observed_colors) : [];
+  });
+  const listados = new Set(porEstructura.flat());
+  const comprados = new Set(plan.estructuras.flatMap((estructura) => estructura.materiales.map((material) => normalizar(material.color ?? "").trim())).filter(Boolean));
+  const extras = coloresFotoCliente(blueprint).filter((color) => !listados.has(color) && !comprados.has(normalizar(color)));
+  const primera = porEstructura.findIndex((colores) => colores.length > 0);
   return {
     ...plan,
-    estructuras: plan.estructuras.map((estructura) => {
-      const elemento = estructura.referencia_element_id ? elementos.get(estructura.referencia_element_id) : undefined;
-      const colores = elemento ? coloresDominantesReferencia(elemento.appearance.observed_colors) : [];
+    estructuras: plan.estructuras.map((estructura, indice) => {
+      const colores = indice === primera ? [...porEstructura[indice]!, ...extras].slice(0, MAX_COLORES_REFERENCIA_PLAN) : porEstructura[indice]!;
       const resto = { ...estructura };
       delete resto.colores_referencia;
       return colores.length ? { ...resto, colores_referencia: colores } : resto;
     }),
   };
 }
+
+/** Bound of `estructuras[].colores_referencia` in the plan contract (tipos.ts). */
+const MAX_COLORES_REFERENCIA_PLAN = 8;
 
 /**
  * Evento abierto necesita composición mínima para no cotizar un único

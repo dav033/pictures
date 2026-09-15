@@ -706,15 +706,36 @@ function buildInputs(input: {
   };
 }
 
+/**
+ * Every /api/generate response carries X-Request-ID (E2E 2026-09-15: a 200 came
+ * back without it), the same id as `ui_error.request_id` and the telemetry of the
+ * generation, so any outcome can be traced.
+ */
 export async function POST(request: Request) {
+  const generationRequestId = crypto.randomUUID();
+  return conRequestId(await generar(request, generationRequestId), generationRequestId);
+}
+
+function conRequestId(respuesta: Response, requestId: string): Response {
+  try {
+    respuesta.headers.set("X-Request-ID", requestId);
+    return respuesta;
+  } catch {
+    // Immutable headers (a proxied response): copy it with the header.
+    const headers = new Headers(respuesta.headers);
+    headers.set("X-Request-ID", requestId);
+    return new Response(respuesta.body, { status: respuesta.status, statusText: respuesta.statusText, headers });
+  }
+}
+
+async function generar(request: Request, generationRequestId: string): Promise<Response> {
   const contentLength = Number(request.headers.get("content-length"));
   if (Number.isFinite(contentLength) && contentLength > MAX_GENERATE_PAYLOAD_BYTES) {
     const mensaje = "El payload de generación es demasiado grande.";
-    const uiError = construirUiErrorV1("ADJUNTO_INVALIDO", { mensaje, codigoOrigen: "PAYLOAD_TOO_LARGE" });
+    const uiError = construirUiErrorV1("ADJUNTO_INVALIDO", { mensaje, codigoOrigen: "PAYLOAD_TOO_LARGE", requestId: generationRequestId });
     registrarFalloUi("/api/generate", uiError);
     return Response.json({ error: mensaje, ui_error: uiError }, { status: 413 });
   }
-  const generationRequestId = crypto.randomUUID();
   const correlationHeader = request.headers.get("x-correlation-id");
   const generationCorrelationId = correlationHeader && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(correlationHeader)
     ? correlationHeader

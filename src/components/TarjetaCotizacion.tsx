@@ -3,14 +3,14 @@
 /* Catalog photos come from runtime URLs and already carry explicit dimensions. */
 /* eslint-disable @next/next/no-img-element */
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { RotateCcw, Trash2 } from "lucide-react";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import { useBorradorCotizacion, type LineaBorrador } from "@/lib/estado/borrador-cotizacion";
 import { idsSinFoto, useImagenesCatalogo } from "@/lib/estado/imagenes-catalogo";
-import { contar, productoCliente, pulgadasCliente } from "@/lib/plan/presentacion-cliente";
+import { agruparComprasCliente, paquetesCliente, partesPaquetesCliente, productoCliente, pulgadasCliente, sobranteCliente } from "@/lib/plan/presentacion-cliente";
 import { NumeroAnimado } from "@/components/propuesta/NumeroAnimado";
 
 const pesos = new Intl.NumberFormat("es-CO", {
@@ -32,17 +32,29 @@ type Props = {
 function tamanoLinea(linea: LineaBorrador): string | null {
   if (linea.tamanoCodigo) return pulgadasCliente(linea.tamanoCodigo);
   if (linea.diamPulg) return `${numero.format(linea.diamPulg)} pulgadas`;
-  return linea.tamano ? pulgadasCliente(linea.tamano) : null;
+  // Plan quotes use "sin tamaño aplicable" for items without a size (number balloons, backdrops).
+  return linea.tamano && !/^sin tama/i.test(linea.tamano) ? pulgadasCliente(linea.tamano) : null;
 }
 
-/** "2 paquetes de 50" and "sobran 36" / "faltan 4" (a negative leftover is never hidden). */
-function compraLinea(linea: LineaBorrador): { paquetes: string; resto: string } {
-  const paquetes = linea.paquetes ?? 0;
-  const sobrante = linea.sobrante ?? 0;
-  return {
-    paquetes: `${contar(paquetes, "paquete", "paquetes")} de ${numero.format(linea.unidadesPaquete ?? 0)}`,
-    resto: sobrante < 0 ? `faltan ${numero.format(-sobrante)}` : sobrante > 0 ? `sobran ${numero.format(sobrante)}` : "sin sobrantes",
-  };
+/**
+ * Rows shown for the draft: outside editing, one row per product + size + color
+ * even when the cheapest mix buys two package sizes (D3). While editing, each
+ * line keeps its own row because packages are adjusted per package size.
+ * Lines without a catalog match or removed from the draft never merge.
+ */
+export function filasBorrador(lineas: readonly LineaBorrador[], editando: boolean) {
+  return agruparComprasCliente(lineas, (linea) => ({
+    product_id: editando || linea.sinReferencia || linea.excluida ? `${linea.id}|${linea.excluida ? "x" : ""}` : linea.productId ?? null,
+    titulo: linea.nombre ?? linea.id,
+    tamano_codigo: linea.tamanoCodigo ?? linea.tamano,
+    diam_pulg: linea.diamPulg ?? null,
+    color: linea.color ?? null,
+    necesitas: linea.cantidadNecesaria,
+    paquetes: linea.paquetes ?? 0,
+    unidades_paquete: linea.unidadesPaquete ?? 0,
+    sobrante: linea.sobrante ?? 0,
+    subtotal: linea.subtotal ?? 0,
+  }));
 }
 
 /**
@@ -91,7 +103,8 @@ export function TarjetaCotizacion({ cotizacion, editable = false, onAplicar, ref
       </div>
 
       <ul className="mt-2 px-4 @xl:px-5.5" aria-label="Productos de la cotización">
-        {borrador.lineas.map((linea, indice) => {
+        {filasBorrador(borrador.lineas, editando).map((fila, indice) => {
+          const linea = fila.items[0]!;
           const identificador = `${linea.id}-${indice}`;
           const tamano = tamanoLinea(linea);
           const detalle = [tamano, linea.color].filter(Boolean).join(" · ");
@@ -103,11 +116,10 @@ export function TarjetaCotizacion({ cotizacion, editable = false, onAplicar, ref
             );
           }
           const nombre = linea.nombre ? productoCliente(linea.nombre) : detalle || "Producto";
-          const compra = compraLinea(linea);
-          const comprado = (linea.paquetes ?? 0) * (linea.unidadesPaquete ?? 0);
-          const proporcion = comprado > 0 ? Math.min(1, linea.cantidadNecesaria / comprado) : 0;
-          const foto = linea.foto ?? (linea.varianteId ? imagenesCatalogo[linea.varianteId] : undefined);
-          const deLaFoto = linea.referenciaElementIds?.some((id) => elementosReferencia.has(id)) ?? false;
+          const compra = { paquetes: paquetesCliente(fila.paquetes), resto: sobranteCliente(fila.sobrante) };
+          const proporcion = fila.compradas > 0 ? Math.min(1, fila.necesitas / fila.compradas) : 0;
+          const foto = fila.items.map((item) => item.foto ?? (item.varianteId ? imagenesCatalogo[item.varianteId] : undefined)).find(Boolean);
+          const deLaFoto = fila.items.some((item) => item.referenciaElementIds?.some((id) => elementosReferencia.has(id)) ?? false);
           return (
             <motion.li
               key={identificador}
@@ -124,12 +136,12 @@ export function TarjetaCotizacion({ cotizacion, editable = false, onAplicar, ref
                 <span className="mt-0.5 block truncate text-xs text-texto-suave">
                   {detalle}
                   {deLaFoto && <span className="ml-1.5 rounded-full bg-acento-suave px-1.5 py-px text-[11px] text-acento">de tu foto</span>}
-                  {!linea.disponible && <span className="ml-1.5 text-aviso">agotado</span>}
+                  {fila.items.some((item) => !item.disponible) && <span className="ml-1.5 text-aviso">agotado</span>}
                 </span>
               </span>
-              <span className="text-right text-sm font-semibold tabular-nums text-texto @xl:order-last">{pesos.format(linea.subtotal ?? 0)}</span>
+              <span className="text-right text-sm font-semibold tabular-nums text-texto @xl:order-last">{pesos.format(fila.subtotal)}</span>
               <span className="col-start-2 @xl:col-start-auto">
-                <span className="block text-[13px] text-texto">Necesitas <strong className="font-semibold tabular-nums">{numero.format(linea.cantidadNecesaria)}</strong></span>
+                <span className="block text-[13px] text-texto">Necesitas <strong className="font-semibold tabular-nums">{numero.format(fila.necesitas)}</strong></span>
                 <span aria-hidden="true" className="mt-1.5 block h-1 overflow-hidden rounded-full bg-superficie-2">
                   <motion.span
                     className="block h-full origin-left rounded-full bg-acento/80"
@@ -171,8 +183,8 @@ export function TarjetaCotizacion({ cotizacion, editable = false, onAplicar, ref
                   </span>
                 ) : (
                   <>
-                    {compra.paquetes}
-                    <span className={`block text-xs ${(linea.sobrante ?? 0) < 0 ? "text-aviso" : "text-texto-suave"}`}>{compra.resto}</span>
+                    {partesPaquetesCliente(fila.paquetes).map((parte, posicion) => <Fragment key={parte}>{posicion > 0 && " + "}<span className="whitespace-nowrap">{parte}</span></Fragment>)}
+                    <span className={`block text-xs ${fila.sobrante < 0 ? "text-aviso" : "text-texto-suave"}`}>{compra.resto}</span>
                   </>
                 )}
               </span>

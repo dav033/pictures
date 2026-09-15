@@ -465,6 +465,7 @@ export function productoCliente(titulo: string): string {
   const limpio = titulo
     .replace(/^\s*b2b\s+/i, "")
     .replace(/\s*[—–-]\s*R-\d+\b.*$/i, "")
+    .replace(/\s*[—–-]\s*\d+(?:[.,]\d+)?\s*(?:IN|PULG(?:ADAS)?)\b.*$/i, "")
     .replace(/\s*\/\s*paquete\s*x\s*\d+\s*$/i, "")
     .trim();
   return limpio || titulo.trim();
@@ -678,4 +679,82 @@ export function lineaQuitable(
   const propio = materiales.findIndex((material) => material.product_id === linea.product_id && material.variant_id === linea.variant_id);
   const indice = propio >= 0 ? propio : materiales.findIndex((material) => material.product_id === linea.product_id && sinTildes(material.color ?? "").trim() === color);
   return indice >= 0;
+}
+
+/** What a purchase line needs to be shown to the customer (plan purchase or quote line). */
+export type CompraParaAgrupar = {
+  product_id?: string | null;
+  titulo: string;
+  tamano_codigo?: string | null;
+  diam_pulg?: number | null;
+  color?: string | null;
+  /** Units the design uses ("Necesitas N"). */
+  necesitas: number;
+  paquetes: number;
+  unidades_paquete: number;
+  sobrante: number;
+  subtotal: number;
+};
+
+export type GrupoCompraCliente<T> = {
+  clave: string;
+  /** Source lines in the group, in their original order. */
+  items: T[];
+  necesitas: number;
+  compradas: number;
+  sobrante: number;
+  subtotal: number;
+  /** Packages by size, largest first: [{ paquetes: 1, unidades_paquete: 50 }, { paquetes: 1, unidades_paquete: 20 }]. */
+  paquetes: Array<{ paquetes: number; unidades_paquete: number }>;
+};
+
+function clavePresentacionCompra(compra: CompraParaAgrupar): string {
+  const producto = compra.product_id || sinTildes(productoCliente(compra.titulo)).toLowerCase();
+  const tamano = compra.tamano_codigo ?? (compra.diam_pulg != null ? String(compra.diam_pulg) : "");
+  return `${producto}|${tamano}|${sinTildes(compra.color ?? "").toLowerCase()}`;
+}
+
+/**
+ * One row per product + size + color (D3 del E2E real). The backend buys the
+ * cheapest mix of closed packages, so the same balloon can come as a pack of
+ * 50 plus a pack of 20 in two purchase lines; the customer sees a single row
+ * with the total need, the combined packages, the total leftovers and the
+ * summed price. Totals never change: the rows only add up the lines.
+ */
+export function agruparComprasCliente<T>(items: readonly T[], leer: (item: T) => CompraParaAgrupar): GrupoCompraCliente<T>[] {
+  const grupos = new Map<string, GrupoCompraCliente<T>>();
+  for (const item of items) {
+    const compra = leer(item);
+    const clave = clavePresentacionCompra(compra);
+    let grupo = grupos.get(clave);
+    if (!grupo) {
+      grupo = { clave, items: [], necesitas: 0, compradas: 0, sobrante: 0, subtotal: 0, paquetes: [] };
+      grupos.set(clave, grupo);
+    }
+    grupo.items.push(item);
+    grupo.necesitas += compra.necesitas;
+    grupo.compradas += compra.paquetes * compra.unidades_paquete;
+    grupo.sobrante += compra.sobrante;
+    grupo.subtotal += compra.subtotal;
+    const mismoTamano = grupo.paquetes.find((paquete) => paquete.unidades_paquete === compra.unidades_paquete);
+    if (mismoTamano) mismoTamano.paquetes += compra.paquetes;
+    else grupo.paquetes.push({ paquetes: compra.paquetes, unidades_paquete: compra.unidades_paquete });
+  }
+  for (const grupo of grupos.values()) grupo.paquetes.sort((a, b) => b.unidades_paquete - a.unidades_paquete);
+  return [...grupos.values()];
+}
+
+/** ["1 paquete de 50", "1 paquete de 20"]: one part per package size, to render without breaking inside a part. */
+export function partesPaquetesCliente(paquetes: ReadonlyArray<{ paquetes: number; unidades_paquete: number }>): string[] {
+  return paquetes.map((paquete) => `${contar(paquete.paquetes, "paquete", "paquetes")} de ${NUMERO.format(paquete.unidades_paquete)}`);
+}
+
+/** "2 paquetes de 50" or "1 paquete de 50 + 1 paquete de 20". */
+export function paquetesCliente(paquetes: ReadonlyArray<{ paquetes: number; unidades_paquete: number }>): string {
+  return partesPaquetesCliente(paquetes).join(" + ");
+}
+
+/** "sobran 21" / "faltan 4" / "sin sobrantes" (a negative leftover is never hidden). */
+export function sobranteCliente(sobrante: number): string {
+  return sobrante < 0 ? `faltan ${NUMERO.format(-sobrante)}` : sobrante > 0 ? `sobran ${NUMERO.format(sobrante)}` : "sin sobrantes";
 }

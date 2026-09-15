@@ -11,6 +11,7 @@ import { referenciaSinGlobosYaPreguntada } from "@/lib/plan/restricciones";
 import { crearEstadoConversacion, crearRegistroHerramientas, HERRAMIENTAS_SOLO_LECTURA, herramientasActivas, textoAlAgotarVueltas, VUELTAS_MAX } from "./registro-herramientas";
 import type { EstadoConversacion } from "./registro-herramientas";
 import type { ReferenceBlueprintV2 } from "./reference-blueprint";
+import { textoFinalTurno } from "./texto-final-turno";
 import type { ChatPort, Mensaje } from "./tipos";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import type { FlujoIA } from "@sempertex/agente-core";
@@ -58,6 +59,24 @@ export type ResultadoConversacion = {
   referenceBlueprint?: ReferenceBlueprintV2;
 };
 
+/**
+ * One state per turn. The request joins every customer message (event label,
+ * named pieces, budget), while colors and structures follow the latest messages
+ * (restricciones-conversacion.ts, E2E 2026-09-15 D3).
+ */
+function estadoDelTurno(historial: Mensaje[], brief: Brief, referenceBlueprint: ReferenceBlueprintV2 | undefined): EstadoConversacion {
+  const mensajesCliente = historial.flatMap((mensaje) => (mensaje.rol === "usuario" ? [mensaje.texto] : []));
+  return crearEstadoConversacion(brief, mensajesCliente.join(" "), referenceBlueprint, {
+    referenciaSinGlobosPreguntada: referenciaSinGlobosYaPreguntada(historial),
+    mensajesCliente,
+  });
+}
+
+/** Never an empty turn, never a claimed change without a plan (texto-final-turno.ts). */
+function textoDelTurno(estado: EstadoConversacion, texto: string, historial: Mensaje[]): string {
+  return textoFinalTurno(texto, { planConfirmado: Boolean(estado.planResuelto), seleccionConfirmada: Boolean(estado.seleccionFinalIA?.length) }, historial);
+}
+
 function empaquetar(estado: EstadoConversacion, texto: string, proveedor: ChatPort["id"], modelo: string): ResultadoConversacion {
   return {
     texto,
@@ -98,8 +117,7 @@ export async function ejecutarConversacion(opts: {
   signal?: AbortSignal;
   telemetria?: TelemetriaConversacion;
 }): Promise<ResultadoConversacion> {
-  const solicitud = opts.historial.filter((mensaje) => mensaje.rol === "usuario").map((mensaje) => mensaje.texto).join(" ");
-  const estado = crearEstadoConversacion(opts.brief, solicitud, opts.referenceBlueprint, { referenciaSinGlobosPreguntada: referenciaSinGlobosYaPreguntada(opts.historial) });
+  const estado = estadoDelTurno(opts.historial, opts.brief, opts.referenceBlueprint);
   const resultado = await core({
     chat: opts.chat,
     sistema: opts.sistema,
@@ -113,7 +131,7 @@ export async function ejecutarConversacion(opts: {
     signal: opts.signal,
     telemetria: opts.telemetria ?? { flujo: "armador_decoracion", superficie: "/api/chat" },
   });
-  return empaquetar(estado, resultado.texto, resultado.proveedor, resultado.modelo);
+  return empaquetar(estado, textoDelTurno(estado, resultado.texto, resultado.historial), resultado.proveedor, resultado.modelo);
 }
 
 export type EventoConversacion =
@@ -137,8 +155,7 @@ export async function* ejecutarConversacionStream(opts: {
   signal?: AbortSignal;
   telemetria?: TelemetriaConversacion;
 }): AsyncGenerator<EventoConversacion> {
-  const solicitud = opts.historial.filter((mensaje) => mensaje.rol === "usuario").map((mensaje) => mensaje.texto).join(" ");
-  const estado = crearEstadoConversacion(opts.brief, solicitud, opts.referenceBlueprint, { referenciaSinGlobosPreguntada: referenciaSinGlobosYaPreguntada(opts.historial) });
+  const estado = estadoDelTurno(opts.historial, opts.brief, opts.referenceBlueprint);
   const generador = coreStream({
     chat: opts.chat,
     sistema: opts.sistema,
@@ -154,7 +171,7 @@ export async function* ejecutarConversacionStream(opts: {
 
   for await (const evento of generador) {
     if (evento.tipo === "fin") {
-      yield { tipo: "fin", resultado: empaquetar(estado, evento.resultado.texto, evento.resultado.proveedor, evento.resultado.modelo) };
+      yield { tipo: "fin", resultado: empaquetar(estado, textoDelTurno(estado, evento.resultado.texto, evento.resultado.historial), evento.resultado.proveedor, evento.resultado.modelo) };
     } else {
       yield evento;
     }

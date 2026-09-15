@@ -33,12 +33,20 @@ export type GeneracionGuardada = {
   /** Data URL JPEG reducida, o null si no cupo (o aún no está lista). */
   imagen: string | null;
   guardadaEn: number;
+  /**
+   * La aprobación quedó registrada pero el servicio de imagen respondió
+   * VISTA_PREVIA_NO_DISPONIBLE (fal sin saldo): al recargar se muestra ese
+   * aviso con la opción de volver a intentar la imagen, no «Aprobar» otra vez.
+   * Solo presente cuando es true.
+   */
+  sinVistaPrevia?: true;
 };
 
 function esGeneracion(valor: unknown): valor is GeneracionGuardada {
   if (typeof valor !== "object" || valor === null) return false;
-  const { planHash, imagen, guardadaEn } = valor as Record<string, unknown>;
+  const { planHash, imagen, guardadaEn, sinVistaPrevia } = valor as Record<string, unknown>;
   return typeof planHash === "string" && planHash.length > 0 && planHash.length <= 200
+    && (sinVistaPrevia === undefined || sinVistaPrevia === true)
     && (imagen === null || (typeof imagen === "string" && imagen.startsWith("data:image/") && imagen.length <= MAX_CARACTERES_IMAGEN_GENERADA))
     && typeof guardadaEn === "number" && Number.isFinite(guardadaEn);
 }
@@ -86,6 +94,15 @@ export function registrarGeneracion(
     conImagen += 1;
     return conImagen <= MAX_IMAGENES_GENERADAS_GUARDADAS ? generacion : { ...generacion, imagen: null };
   });
+}
+
+/**
+ * Registra la aprobación de `planHash` cuya imagen no se pudo crear porque la
+ * vista previa no está disponible (D5 sin foto). Sin imagen; una generación
+ * posterior con éxito (`registrarGeneracion`) quita la marca.
+ */
+export function registrarVistaPreviaNoDisponible(previas: readonly GeneracionGuardada[], planHash: string, ahora: number = Date.now()): GeneracionGuardada[] {
+  return [{ planHash, imagen: null, guardadaEn: ahora, sinVistaPrevia: true as const }, ...previas.filter((generacion) => generacion.planHash !== planHash)].slice(0, MAX_GENERACIONES_GUARDADAS);
 }
 
 /** Degradación si sessionStorage rechaza la escritura: se conservan las aprobaciones sin imágenes. */
