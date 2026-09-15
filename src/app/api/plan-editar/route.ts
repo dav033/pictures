@@ -7,6 +7,8 @@ import { isPythonAdapterError, pythonErrorBody } from "@/lib/ia/python-adapter";
 import { allowlistDesdeMapa, abrirContextoPlan, crearTokenPlan, mapaDesdeAllowlist, verificarTokenAprobacion, type ContextoPlan } from "@/lib/plan/aprobacion";
 import { PythonPlanMappingError } from "@/lib/plan/python-mapper";
 import { AllowlistProductoVarianteError } from "@/lib/plan/allowlist-producto-variante";
+import { colorDeCatalogo } from "@/lib/plan/colores-catalogo";
+import { coloresRealesVariante } from "@/lib/plan/colores-producto";
 import { PlanEditError } from "@/lib/plan/edicion-error";
 import { admitirVariantePython, exigirContextoPython, recomendarAlternativasPython } from "@/lib/plan/edicion-python";
 import { PlanBackendNoDisponibleError, resolverPlanConBackend } from "@/lib/plan/resolver-backend";
@@ -151,9 +153,11 @@ async function agregarVarianteAWhitelist(
   pool: ReturnType<typeof getRagPool>,
   whitelist: Map<string, Set<string>>,
   variante: NonNullable<Edicion["variante"]>,
-): Promise<void> {
-  const { rows } = await pool.query<{ product_id: string; variant_id: string }>(
-    `SELECT v.product_id, v.variant_id
+): Promise<string[]> {
+  const { rows } = await pool.query<{ product_id: string; variant_id: string; producto_titulo: string; colores_producto: unknown; colores_variante: unknown }>(
+    `SELECT v.product_id, v.variant_id, p.title AS producto_titulo,
+            COALESCE(p.derived->'colors', '[]'::jsonb) AS colores_producto,
+            COALESCE(v.derived_colors, ARRAY[]::text[]) AS colores_variante
        FROM catalog_variants v
        JOIN catalog_products p ON p.product_id = v.product_id
       WHERE v.product_id = $1
@@ -178,6 +182,12 @@ async function agregarVarianteAWhitelist(
   const variantes = whitelist.get(variante.product_id) ?? new Set<string>();
   variantes.add(variante.variant_id);
   whitelist.set(variante.product_id, variantes);
+  const fila = rows[0]!;
+  return coloresRealesVariante(fila.producto_titulo, textos(fila.colores_variante), textos(fila.colores_producto));
+}
+
+function textos(valor: unknown): string[] {
+  return Array.isArray(valor) ? valor.filter((item): item is string => typeof item === "string") : [];
 }
 
 function indiceMaterialParaLinea(
@@ -190,9 +200,31 @@ function indiceMaterialParaLinea(
   return materiales.findIndex((material) => material.product_id === linea.product_id && normalizar(material.color ?? "") === color);
 }
 
-function aplicarEdicion(base: BasePlan, edicion: Edicion): PlanDecoracion {
+/**
+ * Color the edit writes for the variant the customer picked ("agregar" and
+ * "reemplazar"). The editor sends free text, and until now it reached the plan
+ * untouched:
+ * - it goes through the catalog vocabulary (`colorDeCatalogo`), because the
+ *   geometric resolver filters variants by the literal color and a typed "azul
+ *   rey" came back SIN_COBERTURA (A6 again);
+ * - without a color, the variant's own color is used: the card pre-filled the
+ *   color of the piece being replaced, so blue balloons were quoted as "rosado";
+ * - a color the variant does not have is replaced by its single real color,
+ *   because the label must say what is bought. A variant with no known colors
+ *   (or with several) keeps what the customer wrote: rejecting it would block
+ *   an edit the catalog does allow.
+ */
+function colorDeEdicion(color: string | undefined, coloresVariante: readonly string[]): string | undefined {
+  const pedido = color?.trim() ? colorDeCatalogo(color.trim()) : undefined;
+  if (coloresVariante.length !== 1) return pedido;
+  const unico = coloresVariante[0]!;
+  return pedido && normalizar(pedido) === normalizar(unico) ? pedido : unico;
+}
+
+function aplicarEdicion(base: BasePlan, edicion: Edicion, coloresVariante: readonly string[]): PlanDecoracion {
   const estructura = base.plan.estructuras.find((item) => item.estructura_id === edicion.estructura_id);
   if (!estructura) throw new PlanEditError(404, "No se encontró la estructura seleccionada.");
+  const colorVariante = edicion.accion === "quitar" ? undefined : colorDeEdicion(edicion.variante?.color, coloresVariante);
 
   const materiales = estructura.materiales.map((material) => ({ ...material }));
   if (edicion.accion === "agregar") {
@@ -208,7 +240,7 @@ function aplicarEdicion(base: BasePlan, edicion: Edicion): PlanDecoracion {
       {
         product_id: variante.product_id,
         variant_id: variante.variant_id,
-        color: variante.color,
+        color: colorVariante,
         acabado: variante.acabado,
         participacion,
         rol_material: "acento",
@@ -233,7 +265,7 @@ function aplicarEdicion(base: BasePlan, edicion: Edicion): PlanDecoracion {
         objetivo_variant_id: overrideAnterior?.objetivo_variant_id ?? edicion.objetivo_variant_id!,
         product_id: variante.product_id,
         variant_id: variante.variant_id,
-        color: variante.color,
+        color: colorVariante,
       };
       const planEditado: PlanDecoracion = {
         ...base.plan,
@@ -257,7 +289,7 @@ function aplicarEdicion(base: BasePlan, edicion: Edicion): PlanDecoracion {
         ...materiales[indice]!,
         product_id: variante.product_id,
         variant_id: variante.variant_id,
-        color: variante.color ?? materiales[indice]!.color,
+        color: colorVariante ?? materiales[indice]!.color,
         acabado: variante.acabado ?? materiales[indice]!.acabado,
       };
     }
@@ -530,6 +562,7 @@ export async function POST(request: Request) {
       throw new PlanEditError(409, MENSAJE_APROBACION_INVALIDA);
     }
 
+    let coloresVariante: string[] = [];
     if (body.edicion.accion !== "quitar") {
       const variante = body.edicion.variante!;
       // Se exige la variante exacta: que el producto esté entrenado no dice
@@ -539,13 +572,13 @@ export async function POST(request: Request) {
         throw new PlanEditError(409, `LORA_DATASET_ALLOWLIST_REJECTED: ${variante.variant_id}`);
       }
       if (snapshotPython === null) {
-        await agregarVarianteAWhitelist(pool, whitelist, variante);
+        coloresVariante = await agregarVarianteAWhitelist(pool, whitelist, variante);
       } else {
         // Python plans: Python admits the pair in the signed snapshot; Next never runs catalog SQL.
-        await admitirVariantePython({ variante, catalogSnapshotId: snapshotPython, whitelist, correlationId, signal: request.signal });
+        coloresVariante = await admitirVariantePython({ variante, catalogSnapshotId: snapshotPython, whitelist, correlationId, signal: request.signal });
       }
     }
-    const planEditado = aplicarEdicion(base, body.edicion);
+    const planEditado = aplicarEdicion(base, body.edicion, coloresVariante);
     const allowlistFinal = allowlistDesdeMapa(whitelist);
     const resolucionEditada = await resolver(planEditado, allowlistFinal);
     const resuelto = resolucionEditada.resuelto;

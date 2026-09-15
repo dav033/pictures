@@ -532,7 +532,11 @@ export async function resolverPlan(
           sinCobertura.push({ estructura_id: estructura.estructura_id, product_id: materialId, tamano: despiece.tamano });
           continue;
         }
-        const colorPedido = override?.color ?? despiece.color;
+        // Un override sin color toma el color de la variante que lo reemplaza
+        // (`colorDeLinea`), no el del material sustituido: etiquetar globos
+        // azules con el "rosado" de la pieza anterior era el defecto, y así los
+        // dos backends coinciden (plan.py: `_line_color(candidate, None)`).
+        const colorPedido = override ? override.color : despiece.color;
         const linea = agregarLinea(lineaDesdeCandidato({ kind: "estructura", id: estructura.estructura_id }, elegido, despiece.cantidad, colorPedido, despiece.pulgadas), colorPedido);
         if (linea.sustitucion) sustituciones.push({ estructura_id: estructura.estructura_id, ...linea.sustitucion });
       }

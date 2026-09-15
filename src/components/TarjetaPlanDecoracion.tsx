@@ -488,7 +488,11 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
 
   function elegirVariante(candidato: ProductoCandidato, variante: VarianteCandidata) {
     setVarianteEdicion({ ...variante, productId: candidato.productId });
-    if (!colorEdicion && variante.colores.length === 1) setColorEdicion(variante.colores[0]);
+    // El color sigue a la variante elegida, siempre. Antes solo se rellenaba
+    // cuando estaba vacío, y al abrir el editor ya venía con el color de la
+    // pieza que se reemplaza: cambiar de variante dejaba globos azules
+    // cotizados como "rosado".
+    setColorEdicion(variante.colores.length === 1 ? variante.colores[0]! : "");
     setErrorEdicion(null);
   }
 

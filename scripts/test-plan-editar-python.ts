@@ -412,6 +412,56 @@ async function main(): Promise<void> {
   assert.equal(lineaCotizada.foto, FOTO, "photo from the consolidated purchase");
   console.log("[PASS] la cotización editada trae la foto de catálogo de cada compra");
 
+  // --- 6e. W2.5 (D8): el color que escribe la edición.
+  // El editor manda texto libre y llegaba al plan sin tocar: "azul rey" no
+  // coincidía con ninguna variante del resolver geométrico (SIN_COBERTURA), y
+  // la tarjeta conservaba el color de la pieza reemplazada, así que unos globos
+  // azules se cotizaban como "rosado".
+  const AZUL = { product_id: "prod-azul", variant_id: "var-azul-12", product_title: "Globo Latex Redondo Fashion Azul", colors: ["azul"] };
+  const planEnviado = (registro: Llamada[]): Json => {
+    const resueltas = registro.filter((llamada) => llamada.path === "/internal/v1/plan/resolve");
+    assert.equal(resueltas.length, 2, "se resuelve el plan base y el editado");
+    const plan = resueltas[1]!.body.plan;
+    assert.ok(esObjeto(plan));
+    return plan;
+  };
+  const colorDelOverride = (plan: Json): unknown => {
+    const estructuras = plan.estructuras as Array<Json & { variant_overrides?: Json[] }>;
+    const overrides = estructuras[0]!.variant_overrides ?? [];
+    assert.equal(overrides.length, 1, JSON.stringify(overrides));
+    return overrides[0]!.color;
+  };
+  const editarConColor = async (color: string | undefined): Promise<Llamada[]> => {
+    const registro = instalarFetch((llamada) => llamada.path === "/internal/v1/plan/resolve"
+      ? sobre(llamada, payloadResolucion())
+      : sobre(llamada, seleccionAdmitida(AZUL)));
+    const respuesta = await editar({
+      modo: "aplicar",
+      base: { ...base, approval_token: tokenPython },
+      edicion: { accion: "reemplazar", estructura_id: "EST_01_ARCO", objetivo_variant_id: "var-rojo-12", variante: { product_id: AZUL.product_id, variant_id: AZUL.variant_id, ...(color === undefined ? {} : { color }) } },
+    });
+    assert.equal(respuesta.status, 200, JSON.stringify(respuesta.cuerpo).slice(0, 300));
+    return registro;
+  };
+  assert.equal(colorDelOverride(planEnviado(await editarConColor("rosado"))), "azul", "el color viejo de la tarjeta no puede etiquetar la variante nueva");
+  assert.equal(colorDelOverride(planEnviado(await editarConColor("azul rey"))), "azul", "el texto libre pasa por el vocabulario del catálogo");
+  assert.equal(colorDelOverride(planEnviado(await editarConColor(undefined))), "azul", "sin color se usa el único color de la variante");
+
+  // Una variante con varios colores conserva lo que escribió el cliente,
+  // canonizado: rechazarla bloquearía una edición que el catálogo sí permite.
+  const llamadasVarios = instalarFetch((llamada) => llamada.path === "/internal/v1/plan/resolve"
+    ? sobre(llamada, payloadResolucion())
+    : sobre(llamada, seleccionAdmitida({ ...AZUL, colors: ["azul", "turquesa"] })));
+  r = await editar({
+    modo: "aplicar",
+    base: { ...base, approval_token: tokenPython },
+    edicion: { accion: "agregar", estructura_id: "EST_01_ARCO", participacion: 0.2, variante: { product_id: AZUL.product_id, variant_id: AZUL.variant_id, color: "azul rey" } },
+  });
+  assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 300));
+  const materialesAgregados = (planEnviado(llamadasVarios).estructuras as Array<Json & { materiales: Json[] }>)[0]!.materiales;
+  assert.equal(materialesAgregados.at(-1)!.color, "azul", "agregar canoniza el color del cliente");
+  console.log("[PASS] edición: el color sale del catálogo y de la variante elegida, nunca de la pieza anterior");
+
   // --- 7. Kill switch: a Python token never falls back to TypeScript, in any mode.
   process.env.PYTHON_BACKEND_KILL_SWITCH = "true";
   llamadas = instalarFetch(() => { throw new Error("con kill switch no debe llamarse a Python"); });

@@ -10,6 +10,7 @@ import { candidatoDesdePython } from "@/lib/rag/chat/candidato-python";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import { errorAllowlistDesdePython } from "./allowlist-producto-variante";
 import type { ContextoPlan } from "./aprobacion";
+import { coloresRealesProducto } from "./colores-producto";
 import { PlanEditError } from "./edicion-error";
 import { ordenarRecomendacionesPorColor } from "./recomendaciones-orden";
 import { PlanBackendNoDisponibleError } from "./resolver-backend";
@@ -42,6 +43,10 @@ export function exigirContextoPython(contexto: ContextoPlan): string {
  * after Python validates the exact pair in the signed snapshot. The selection
  * allowlist is intentionally that single pair: the editor choice is not a model
  * pick, and the pair is checked again when the edited plan is resolved.
+ *
+ * Returns the admitted variant's real colors (Python already answers with the
+ * variant's own colors, or the product's when it has exactly one), so the edit
+ * can label the material with what it actually buys.
  */
 export async function admitirVariantePython(input: {
   variante: { product_id: string; variant_id: string };
@@ -49,7 +54,7 @@ export async function admitirVariantePython(input: {
   whitelist: Map<string, Set<string>>;
   correlationId: string;
   signal?: AbortSignal;
-}): Promise<void> {
+}): Promise<string[]> {
   const { variante } = input;
   let seleccion: Awaited<ReturnType<typeof llamarPythonCatalogSelection>>;
   try {
@@ -74,6 +79,8 @@ export async function admitirVariantePython(input: {
   const variantes = input.whitelist.get(variante.product_id) ?? new Set<string>();
   variantes.add(variante.variant_id);
   input.whitelist.set(variante.product_id, variantes);
+  const validado = seleccion.validados[0]!;
+  return coloresRealesProducto(validado.product_title, validado.colors);
 }
 
 /**

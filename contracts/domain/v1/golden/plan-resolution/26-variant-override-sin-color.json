@@ -1,0 +1,736 @@
+{
+  "allowlist": [
+    {
+      "product_id": "P-26-ROJO",
+      "variant_ids": [
+        "V-26-ROJO-12"
+      ]
+    },
+    {
+      "product_id": "P-26-AZUL",
+      "variant_ids": [
+        "V-26-AZUL-12"
+      ]
+    }
+  ],
+  "catalog_rows": [
+    {
+      "acabados_producto": [
+        "fashion"
+      ],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "rojo"
+      ],
+      "colores_variante": [
+        "rojo"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo Latex Redondo Fashion Rojo R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-26-rojo-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 9000,
+      "product_id": "P-26-ROJO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo Latex Redondo Fashion Rojo",
+      "sku": "SKU-V-26-ROJO-12",
+      "sku_original": "SHOP-V-26-ROJO-12",
+      "source_snapshot_id": "SNAP-GOLDEN-26",
+      "source_variant_id": "SOURCE-V-26-ROJO-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-26-ROJO-12",
+      "variante_titulo": "R-12"
+    },
+    {
+      "acabados_producto": [
+        "reflex"
+      ],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "azul",
+        "turquesa"
+      ],
+      "colores_variante": [],
+      "currency": "COP",
+      "descripcion": "Globo Latex Redondo Reflex Azul R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-26-azul-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 11000,
+      "product_id": "P-26-AZUL",
+      "producto_disponible": true,
+      "producto_titulo": "Globo Latex Redondo Reflex Azul",
+      "sku": "SKU-V-26-AZUL-12",
+      "sku_original": "SHOP-V-26-AZUL-12",
+      "source_snapshot_id": "SNAP-GOLDEN-26",
+      "source_variant_id": "SOURCE-V-26-AZUL-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-26-AZUL-12",
+      "variante_titulo": "R-12"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-26",
+  "description": "Un variant_override sin color etiqueta la linea con el color de la variante que lo reemplaza (azul, el primero de sus colores reales), no con el del material sustituido (rojo): es la regla que ya aplicaba Python y ahora tambien TypeScript.",
+  "expected": {
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "azul",
+          "design_quantity": 118,
+          "finish": "reflex",
+          "product_id": "P-26-AZUL",
+          "required_quantity": 118,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-26-AZUL-12",
+          "waste_adjusted_quantity": 118,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 1,
+        "density": "media",
+        "dimensions_m": {
+          "height": 2.2,
+          "length": null,
+          "width": 2.5
+        },
+        "installation_length_m": 5.52,
+        "shape": "clasica",
+        "type": "arco",
+        "visual_density": "medium",
+        "visual_scale": "very_large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 28160,
+          "design_quantity": 118,
+          "leftover_inventory": 22,
+          "operational_surplus": 22,
+          "package_count": 3,
+          "potential_surplus": 32,
+          "product_id": "P-26-AZUL",
+          "purchase_cost": 33000,
+          "purchase_quantity": 150,
+          "required_quantity": 128,
+          "units_per_package": 50,
+          "used": 118,
+          "variant_id": "V-26-AZUL-12",
+          "waste_adjusted_quantity": 128,
+          "waste_reserve": 10
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 28160,
+        "covered_waste_reserve": 10,
+        "design_quantity": 118,
+        "natural_package_surplus": 32,
+        "operational_surplus": 22,
+        "potential_surplus": 32,
+        "purchase_cost": 33000,
+        "purchase_quantity": 150,
+        "required_quantity": 128,
+        "target_waste_reserve": 10,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 128,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": []
+    },
+    "plan_resuelto": {
+      "advertencias": [],
+      "alternativas": [
+        {
+          "ahorro_cop": 0,
+          "etiqueta": "economica",
+          "familia_id": "P-26-AZUL",
+          "titulo": "Globo Latex Redondo Reflex Azul",
+          "total_cop": 33000
+        }
+      ],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "azul",
+          "consumption_cost": 28160,
+          "design_quantity": 118,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-26-azul-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 22,
+          "paquetes": 3,
+          "precio_paquete": 11000,
+          "product_id": "P-26-AZUL",
+          "purchase_cost": 33000,
+          "purchase_quantity": 150,
+          "required_quantity": 128,
+          "sku": "SKU-V-26-AZUL-12",
+          "sku_original": "SHOP-V-26-AZUL-12",
+          "sobrante": 32,
+          "source_snapshot_id": "SNAP-GOLDEN-26",
+          "source_variant_id": "SOURCE-V-26-AZUL-12",
+          "subtotal": 33000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo Latex Redondo Reflex Azul — R-12",
+          "unidades_con_merma": 128,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 118,
+          "unidades_paquete": 50,
+          "used": 118,
+          "variant_id": "V-26-AZUL-12",
+          "waste_reserve": 10
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 5.52,
+          "estructura_id": "EST_01_ARCO",
+          "lineas": [
+            {
+              "acabado": "reflex",
+              "color": "azul",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-26-azul-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-26-AZUL",
+              "sku": "SKU-V-26-AZUL-12",
+              "sku_original": "SHOP-V-26-AZUL-12",
+              "source_snapshot_id": "SNAP-GOLDEN-26",
+              "source_variant_id": "SOURCE-V-26-AZUL-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo Latex Redondo Reflex Azul — R-12",
+              "unidades": 118,
+              "unidades_inferidas": false,
+              "variant_id": "V-26-AZUL-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 118
+            }
+          ],
+          "nombre": "Arco focal",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "arco",
+          "total_unidades": 118,
+          "ubicacion": "arco_central"
+        }
+      ],
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 118\nTarget waste reserve: 10\nNatural package surplus: 32\nUsable waste coverage: 10\nAdditional packages required for waste: 0\nGlobo Latex Redondo Reflex Azul — R-12: design=118, required=128, package=50, packages=3, purchased=150, natural surplus=32, waste reserve=10, leftover inventory=22",
+      "plan": {
+        "concepto": {
+          "descripcion": "Arco rojo con una pieza cambiada a azul desde la tarjeta.",
+          "paleta": [
+            "rojo",
+            "azul"
+          ],
+          "titulo": "Arco rojo editado"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_ARCO",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-26-ROJO",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.2,
+              "ancho_m": 2.5
+            },
+            "mezcla": "clasica",
+            "nombre": "Arco focal",
+            "porque": "Enmarca la escena principal.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "arco",
+            "ubicacion": "arco_central",
+            "variant_overrides": [
+              {
+                "objetivo_variant_id": "V-26-ROJO-12",
+                "product_id": "P-26-AZUL",
+                "variant_id": "V-26-AZUL-12"
+              }
+            ]
+          }
+        ],
+        "plan_id": "c0102626-0000-4000-8000-000000000026",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "1d0114942717886a0822b3cc0f5c5af3573a94091aa0cb5d3b8c41ebfa510807",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 28160,
+        "covered_waste_reserve": 10,
+        "design_quantity": 118,
+        "globos_por_tamano": {
+          "R-12": 118
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8,
+        "natural_package_surplus": 32,
+        "purchase_cost": 33000,
+        "target_waste_reserve": 10,
+        "total_cop": 33000,
+        "total_unidades": 118,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "complementosSoportados": false,
+      "consumptionCost": 28160,
+      "coveredWasteReserve": 10,
+      "incluyeIva": true,
+      "leftoverInventory": 22,
+      "lineas": [
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 118,
+          "color": "azul",
+          "consumptionCost": 28160,
+          "designQuantity": 118,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-26-AZUL-12",
+          "leftoverInventory": 22,
+          "nombre": "Globo Latex Redondo Reflex Azul — R-12",
+          "paquetes": 3,
+          "precioPaquete": 11000,
+          "productId": "P-26-AZUL",
+          "purchaseCost": 33000,
+          "purchaseQuantity": 150,
+          "referenciaElementIds": [],
+          "requiredQuantity": 128,
+          "sobrante": 32,
+          "subtotal": 33000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 118,
+          "varianteId": "V-26-AZUL-12",
+          "wasteReserve": 10
+        }
+      ],
+      "mermaPorcentaje": 8,
+      "plan_hash": "1d0114942717886a0822b3cc0f5c5af3573a94091aa0cb5d3b8c41ebfa510807",
+      "purchaseCost": 33000,
+      "targetWasteReserve": 10,
+      "total": 33000
+    }
+  },
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-26",
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "azul",
+          "design_quantity": 118,
+          "finish": "reflex",
+          "product_id": "P-26-AZUL",
+          "required_quantity": 118,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-26-AZUL-12",
+          "waste_adjusted_quantity": 118,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 1,
+        "density": "media",
+        "dimensions_m": {
+          "height": 2.2,
+          "length": null,
+          "width": 2.5
+        },
+        "installation_length_m": 5.52,
+        "shape": "clasica",
+        "type": "arco",
+        "visual_density": "medium",
+        "visual_scale": "very_large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 28160,
+          "design_quantity": 118,
+          "leftover_inventory": 22,
+          "operational_surplus": 22,
+          "package_count": 3,
+          "potential_surplus": 32,
+          "product_id": "P-26-AZUL",
+          "purchase_cost": 33000,
+          "purchase_quantity": 150,
+          "required_quantity": 128,
+          "units_per_package": 50,
+          "used": 118,
+          "variant_id": "V-26-AZUL-12",
+          "waste_adjusted_quantity": 128,
+          "waste_reserve": 10
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 28160,
+        "covered_waste_reserve": 10,
+        "design_quantity": 118,
+        "natural_package_surplus": 32,
+        "operational_surplus": 22,
+        "potential_surplus": 32,
+        "purchase_cost": 33000,
+        "purchase_quantity": 150,
+        "required_quantity": 128,
+        "target_waste_reserve": 10,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 128,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": []
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [],
+      "alternativas": [
+        {
+          "ahorro_cop": 0,
+          "etiqueta": "economica",
+          "familia_id": "P-26-AZUL",
+          "titulo": "Globo Latex Redondo Reflex Azul",
+          "total_cop": 33000
+        }
+      ],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "azul",
+          "consumption_cost": 28160,
+          "design_quantity": 118,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-26-azul-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 22,
+          "paquetes": 3,
+          "precio_paquete": 11000,
+          "product_id": "P-26-AZUL",
+          "purchase_cost": 33000,
+          "purchase_quantity": 150,
+          "required_quantity": 128,
+          "sku": "SKU-V-26-AZUL-12",
+          "sku_original": "SHOP-V-26-AZUL-12",
+          "sobrante": 32,
+          "source_snapshot_id": "SNAP-GOLDEN-26",
+          "source_variant_id": "SOURCE-V-26-AZUL-12",
+          "subtotal": 33000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo Latex Redondo Reflex Azul — R-12",
+          "unidades_con_merma": 128,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 118,
+          "unidades_paquete": 50,
+          "used": 118,
+          "variant_id": "V-26-AZUL-12",
+          "waste_reserve": 10
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 5.52,
+          "estructura_id": "EST_01_ARCO",
+          "lineas": [
+            {
+              "acabado": "reflex",
+              "color": "azul",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-26-azul-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-26-AZUL",
+              "sku": "SKU-V-26-AZUL-12",
+              "sku_original": "SHOP-V-26-AZUL-12",
+              "source_snapshot_id": "SNAP-GOLDEN-26",
+              "source_variant_id": "SOURCE-V-26-AZUL-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo Latex Redondo Reflex Azul — R-12",
+              "unidades": 118,
+              "unidades_inferidas": false,
+              "variant_id": "V-26-AZUL-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 118
+            }
+          ],
+          "nombre": "Arco focal",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "arco",
+          "total_unidades": 118,
+          "ubicacion": "arco_central"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-26.",
+      "plan": {
+        "concepto": {
+          "descripcion": "Arco rojo con una pieza cambiada a azul desde la tarjeta.",
+          "paleta": [
+            "rojo",
+            "azul"
+          ],
+          "titulo": "Arco rojo editado"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_ARCO",
+            "materiales": [
+              {
+                "color": "rojo",
+                "participacion": 1,
+                "product_id": "P-26-ROJO",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.2,
+              "ancho_m": 2.5
+            },
+            "mezcla": "clasica",
+            "nombre": "Arco focal",
+            "porque": "Enmarca la escena principal.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "arco",
+            "ubicacion": "arco_central",
+            "variant_overrides": [
+              {
+                "objetivo_variant_id": "V-26-ROJO-12",
+                "product_id": "P-26-AZUL",
+                "variant_id": "V-26-AZUL-12"
+              }
+            ]
+          }
+        ],
+        "plan_id": "c0102626-0000-4000-8000-000000000026",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "5f55690b021b3270f3c5e1a68f9e9c1cd6359b2307bdcd78d1f989a9d3e3deaf",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 28160,
+        "covered_waste_reserve": 10,
+        "design_quantity": 118,
+        "globos_por_tamano": {
+          "R-12": 118
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 32,
+        "purchase_cost": 33000,
+        "target_waste_reserve": 10,
+        "total_cop": 33000,
+        "total_unidades": 118,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 28160,
+      "covered_waste_reserve": 10,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 22,
+      "lines": [
+        {
+          "available": true,
+          "color": "azul",
+          "consumption_cost_cop": 28160,
+          "design_quantity": 118,
+          "diameter_inches": 12.0,
+          "id": "V-26-AZUL-12",
+          "leftover_inventory": 22,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 11000,
+          "packages": 3,
+          "product_id": "P-26-AZUL",
+          "purchase_cost_cop": 33000,
+          "purchase_quantity": 150,
+          "required_quantity": 128,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 33000,
+          "surplus": 32,
+          "title": "Globo Latex Redondo Reflex Azul — R-12",
+          "units_per_package": 50,
+          "used": 118,
+          "variant_id": "V-26-AZUL-12",
+          "waste_reserve": 10
+        }
+      ],
+      "plan_hash": "5f55690b021b3270f3c5e1a68f9e9c1cd6359b2307bdcd78d1f989a9d3e3deaf",
+      "purchase_cost_cop": 33000,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 10,
+      "total_cop": 33000,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "variant-override-sin-color",
+  "plan": {
+    "concepto": {
+      "descripcion": "Arco rojo con una pieza cambiada a azul desde la tarjeta.",
+      "paleta": [
+        "rojo",
+        "azul"
+      ],
+      "titulo": "Arco rojo editado"
+    },
+    "espacio": {
+      "fuente": "cliente",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "densidad": "media",
+        "estructura_id": "EST_01_ARCO",
+        "materiales": [
+          {
+            "color": "rojo",
+            "participacion": 1,
+            "product_id": "P-26-ROJO",
+            "rol_material": "principal"
+          }
+        ],
+        "medidas": {
+          "alto_m": 2.2,
+          "ancho_m": 2.5
+        },
+        "mezcla": "clasica",
+        "nombre": "Arco focal",
+        "porque": "Enmarca la escena principal.",
+        "repeticiones": 1,
+        "rol_escena": "focal",
+        "tipo": "arco",
+        "ubicacion": "arco_central",
+        "variant_overrides": [
+          {
+            "objetivo_variant_id": "V-26-ROJO-12",
+            "product_id": "P-26-AZUL",
+            "variant_id": "V-26-AZUL-12"
+          }
+        ]
+      }
+    ],
+    "plan_id": "c0102626-0000-4000-8000-000000000026",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "supuestos": []
+  }
+}
