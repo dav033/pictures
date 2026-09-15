@@ -104,12 +104,29 @@ function positivoONull(value: number | null | undefined): number | null {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null;
 }
 
-function colorCoincide(demandColor: string | undefined, productColors: string[]): boolean {
-  if (!demandColor) return true;
+/**
+ * Ruta heredada sin plan: el color de la demanda se comparaba por subcadena en
+ * los dos sentidos, así que "rosa" casaba con "rosado" y con "dorado rosa" y la
+ * demanda se repartía por igual entre colores distintos. Ahora solo cuenta la
+ * igualdad normalizada exacta y, si no hay ninguna, la igualdad del conjunto de
+ * palabras ("dorado rosa" = "rosa dorado"), que es el mismo color escrito al
+ * revés y no un color vecino.
+ */
+function coincidenciaExacta(demandColor: string, productColors: string[]): boolean {
   const demand = normalizar(demandColor);
+  return productColors.some((color) => normalizar(color) === demand);
+}
+
+function palabras(value: string): Set<string> {
+  return new Set(normalizar(value).split(/[\s/,-]+/).filter(Boolean));
+}
+
+function mismasPalabras(demandColor: string, productColors: string[]): boolean {
+  const demand = palabras(demandColor);
+  if (demand.size === 0) return false;
   return productColors.some((color) => {
-    const candidate = normalizar(color);
-    return candidate === demand || candidate.includes(demand) || demand.includes(candidate);
+    const candidate = palabras(color);
+    return candidate.size === demand.size && [...demand].every((palabra) => candidate.has(palabra));
   });
 }
 
@@ -444,14 +461,26 @@ export function estimateFromMeasuredMaterials(measures: ResultadoMedidas | undef
   const warnings: string[] = [];
 
   for (const demand of demands) {
-    let candidates = balloons.filter((product) => product.diamPulg === demand.pulgadas && colorCoincide(demand.color, product.colores));
-    if (candidates.length === 0) {
-      candidates = balloons.filter((product) => product.diamPulg === demand.pulgadas);
-      if (candidates.length > 0) warnings.push(`color demand '${demand.color ?? "unspecified"}' for R-${demand.pulgadas} was assigned to the available catalog color`);
-    }
-    if (candidates.length === 0) {
+    const sameSize = balloons.filter((product) => product.diamPulg === demand.pulgadas);
+    if (sameSize.length === 0) {
       warnings.push(`no selected catalog material covers R-${demand.pulgadas}${demand.color ? ` ${demand.color}` : ""}`);
       continue;
+    }
+    let candidates = sameSize;
+    if (demand.color) {
+      candidates = sameSize.filter((product) => coincidenciaExacta(demand.color!, product.colores));
+      if (candidates.length === 0) candidates = sameSize.filter((product) => mismasPalabras(demand.color!, product.colores));
+      if (candidates.length === 0) {
+        // Reasignar a otro color solo es defendible cuando no hay elección: con
+        // varios productos del mismo tamaño se avisa y la demanda no se asigna,
+        // en vez de repartirla entre colores que el cliente no pidió.
+        if (sameSize.length > 1) {
+          warnings.push(`color demand '${demand.color}' for R-${demand.pulgadas} matches no selected catalog color; its units were not assigned`);
+          continue;
+        }
+        candidates = sameSize;
+        warnings.push(`color demand '${demand.color}' for R-${demand.pulgadas} was assigned to the available catalog color`);
+      }
     }
     const base = Math.floor(demand.remaining / candidates.length);
     let remainder = demand.remaining - base * candidates.length;

@@ -178,6 +178,61 @@ assert.deepEqual(familyEstimate.purchases.map((item) => [item.variant_id, item.d
 assert.equal(familyEstimate.totals.waste_only_savings_cop, 9_000);
 assert.equal(validateMaterialEstimate(familyEstimate).ok, true);
 
+// Ruta heredada sin plan: el color de la demanda casaba por subcadena en los
+// dos sentidos, así que la demanda "dorado" se repartía 16/16 entre "dorado" y
+// "dorado rosa", y "rosa" se repartía entre "rosado" y "dorado rosa".
+const globo = (id: string, color: string): Parameters<typeof estimateFromMeasuredMaterials>[1][number] => ({
+  id,
+  nombre: `Globo ${color} R-12`,
+  categoria: "Globo látex",
+  colores: [color],
+  descripcion: "Globo redondo.",
+  precio: 10_000,
+  unidadesPaquete: 50,
+  paquetes: 1,
+  tamanoCodigo: "R-12",
+  forma: "redondo",
+  diamPulg: 12,
+});
+const productosColores = [globo("p-rosado", "rosado"), globo("p-dorado-rosa", "dorado rosa"), globo("p-dorado", "dorado")];
+const coloresAmbiguos = estimateFromMeasuredMaterials({
+  figura: "arco",
+  anchoM: 3,
+  altoM: 2.4,
+  ejeM: 6.21,
+  despiece: [
+    { tamano: "R-12", pulgadas: 12, cantidad: 32, color: "rosado" },
+    { tamano: "R-12", pulgadas: 12, cantidad: 32, color: "dorado" },
+    { tamano: "R-12", pulgadas: 12, cantidad: 10, color: "rosa dorado" },
+    { tamano: "R-12", pulgadas: 12, cantidad: 8, color: "rosa" },
+  ],
+  totalGlobos: 82,
+  supuestos: [],
+  confianza: "preliminar",
+  aviso: "fixture",
+}, productosColores);
+assert.equal(designQuantityForProduct(coloresAmbiguos, "p-rosado"), 32, "igualdad exacta antes que cualquier otra cosa");
+assert.equal(designQuantityForProduct(coloresAmbiguos, "p-dorado"), 32, "antes 16: 'dorado rosa' contenía 'dorado'");
+assert.equal(designQuantityForProduct(coloresAmbiguos, "p-dorado-rosa"), 10, "mismo color escrito al revés sí cuenta");
+// "rosa" no es "rosado" ni "dorado rosa": con varios productos del tamaño se
+// avisa y la demanda no se reasigna a un color que el cliente no pidió.
+assert.ok(coloresAmbiguos.warnings.some((warning) => /color demand 'rosa' for R-12 matches no selected catalog color/.test(warning)));
+assert.equal(coloresAmbiguos.balloons.reduce((sum, item) => sum + item.design_quantity, 0), 74);
+// Con un solo producto del tamaño sí se reasigna, con el aviso de siempre.
+const colorUnico = estimateFromMeasuredMaterials({
+  figura: "arco",
+  anchoM: 2,
+  altoM: 2,
+  ejeM: 2,
+  despiece: [{ tamano: "R-12", pulgadas: 12, cantidad: 20, color: "blanco" }],
+  totalGlobos: 20,
+  supuestos: [],
+  confianza: "preliminar",
+  aviso: "fixture",
+}, [globo("p-rosado", "rosado")]);
+assert.equal(designQuantityForProduct(colorUnico, "p-rosado"), 20);
+assert.ok(colorUnico.warnings.some((warning) => /was assigned to the available catalog color/.test(warning)));
+
 const zeroDimensionEstimate = estimateFromMeasuredMaterials({
   figura: "pared",
   anchoM: 0,
