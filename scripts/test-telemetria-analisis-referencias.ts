@@ -3,7 +3,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { configurarPersistenciaTelemetria, esperarPersistenciaTelemetria, ultimosEventos, type EventoTelemetria } from "@sempertex/agente-core";
 import { nivelPensamientoTelemetria } from "@sempertex/agente-core/gemini";
 import { ThinkingLevel } from "@google/genai";
-import { analizarReferenciasV2, analysisConfigHash } from "@/lib/ia/analizar-referencias-v2";
+import { analizarReferenciasV2, analysisConfigHash, type PaseObservado } from "@/lib/ia/analizar-referencias-v2";
 import type { ChatPort, PeticionChat, TurnoChat } from "@/lib/ia/tipos";
 
 /**
@@ -84,7 +84,37 @@ async function run(): Promise<void> {
     assert.doesNotMatch(serializado, /Inventory these references|DRAFT_INVENTORY|VALID CATALOG/, "texto de prompts");
   });
 
-  await caso("config_hash cambia con modelo, pensamiento, modo o prompt y es estable con los mismos datos", () => {
+  await caso("A0.3 observarPase: cada intento de cada pase con sus argumentos crudos (null si fue malformado)", async () => {
+    const pases: PaseObservado[] = [];
+    const base64 = randomBytes(64).toString("base64");
+    await analizarReferenciasV2(chatSimulado({ inventarioMalformadoPrimero: true, finishReason: "STOP" }), [{ id: "REF_01", mime: "image/jpeg", base64, descripcion: "x" }], [], "perceptual", undefined, undefined, { forzarNuevoAnalisis: true, observarPase: (pase) => pases.push(pase) });
+    assert.deepEqual(pases.map((pase) => [pase.capacidad, pase.intento, pase.args === null]), [
+      ["analisis_referencia_inventario", 1, true],
+      ["analisis_referencia_inventario", 2, false],
+      ["analisis_referencia_auditoria", 1, false],
+    ]);
+    assert.ok(pases.every((pase) => pase.ms >= 0 && pase.finishReason === "STOP" && pase.uso.entrada === 10));
+    assert.deepEqual(pases[1]!.args, { images: [{ image_id: "REF_01", elements: [] }] });
+    // Same photos again without forcing: served from cache, nothing observed.
+    const cacheados: PaseObservado[] = [];
+    const resultado = await analizarReferenciasV2(chatSimulado({}), [{ id: "REF_01", mime: "image/jpeg", base64, descripcion: "x" }], [], "perceptual", undefined, undefined, { observarPase: (pase) => cacheados.push(pase) });
+    assert.equal(resultado.metadata.cached, true);
+    assert.equal(cacheados.length, 0);
+  });
+
+  await caso("A0.3 observarPase: un error del observador se propaga y no se confunde con salida malformada", async () => {
+    const llamadas: number[] = [];
+    const chat = chatSimulado({});
+    const turnoOriginal = chat.turno.bind(chat);
+    chat.turno = async (peticion) => { llamadas.push(1); return turnoOriginal(peticion); };
+    await assert.rejects(
+      analizarReferenciasV2(chat, [{ id: "REF_01", mime: "image/jpeg", base64: randomBytes(64).toString("base64"), descripcion: "x" }], [], "perceptual", undefined, undefined, { forzarNuevoAnalisis: true, observarPase: () => { throw new SyntaxError("observador roto"); } }),
+      /observador roto/,
+    );
+    assert.equal(llamadas.length, 1, "no retry was triggered by the observer error");
+  });
+
+  await caso("config_hash cambia con modelo, pensamiento, modo o prompt y es estable con los mismos datos", async () => {
     const base = { model: "m", thinkingLevel: "low", mode: "perceptual" as const, systemPromptHash: "a".repeat(64) };
     const hash = analysisConfigHash(base);
     assert.equal(analysisConfigHash({ ...base }), hash);

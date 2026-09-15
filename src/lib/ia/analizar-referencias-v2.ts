@@ -1,6 +1,6 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import { ErrorIA, type ChatPort, type Herramienta, type ImagenEtiquetada } from "./tipos";
+import { ErrorIA, type ChatPort, type Herramienta, type ImagenEtiquetada, type TurnoChat } from "./tipos";
 import type { Producto } from "@/lib/types";
 import { bytesBase64, registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "./telemetria-llamadas";
 import {
@@ -225,6 +225,24 @@ export type OpcionesAnalisisReferencias = {
    * same photos already in flight is still shared: it is already a new call.
    */
   forzarNuevoAnalisis?: boolean;
+  /**
+   * Evaluation only (Plan A §A0.3): called after every provider attempt of each
+   * pass with its raw tool arguments, so a runner can map the detector's own
+   * structure types, which the blueprint merges. Never called for a cached,
+   * fixed-example or already in-flight analysis (use `forzarNuevoAnalisis` and
+   * do not analyze the same photos concurrently). Errors it throws propagate.
+   */
+  observarPase?: (pase: PaseObservado) => void;
+};
+
+export type PaseObservado = {
+  capacidad: "analisis_referencia_inventario" | "analisis_referencia_auditoria";
+  intento: number;
+  ms: number;
+  uso: TurnoChat["uso"];
+  finishReason?: string;
+  /** Parsed tool arguments, or null when the answer was malformed. */
+  args: Record<string, unknown> | null;
 };
 
 function abortReason(signal: AbortSignal): unknown {
@@ -524,7 +542,7 @@ export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenE
     const nueva: AnalisisEnVuelo = {
       controller,
       waiters: 0,
-      promise: ejecutarAnalisis({ chat, referencias, catalogo, mode, telemetria, signal: controller.signal, key, systemPromptHash, inventorySystem, auditSystem, catalogText })
+      promise: ejecutarAnalisis({ chat, referencias, catalogo, mode, telemetria, signal: controller.signal, key, systemPromptHash, inventorySystem, auditSystem, catalogText, observarPase: opciones.observarPase })
         .then((result) => {
           if (cache.has(key)) cache.delete(key);
           if (cache.size >= MAX_CACHE) cache.delete(cache.keys().next().value!);
@@ -553,8 +571,9 @@ async function ejecutarAnalisis(input: {
   inventorySystem: string;
   auditSystem: string;
   catalogText: string;
+  observarPase?: OpcionesAnalisisReferencias["observarPase"];
 }): Promise<AnalisisV2Resultado> {
-  const { chat, referencias, catalogo, mode, telemetria, signal, key, systemPromptHash, inventorySystem, auditSystem, catalogText } = input;
+  const { chat, referencias, catalogo, mode, telemetria, signal, key, systemPromptHash, inventorySystem, auditSystem, catalogText, observarPase } = input;
   const ids = referencias.map((reference) => reference.id);
   const bytesImagenEntrada = referencias.reduce((total, image) => total + bytesBase64(image.base64), 0);
   const configHash = analysisConfigHash({ model: chat.modelo, thinkingLevel: chat.thinkingLevel, mode, systemPromptHash });
@@ -602,13 +621,21 @@ async function ejecutarAnalisis(input: {
     toolName: string,
   ): Promise<Record<string, unknown>> => {
     for (let intento = 1; ; intento += 1) {
+      const inicio = Date.now();
       const turno = await ejecutarPaso(capacidad, peticion, intento);
+      const ms = Date.now() - inicio;
+      let args: Record<string, unknown> | null = null;
+      let fallo: unknown;
       try {
-        return toolArgs(turno, toolName);
+        args = toolArgs(turno, toolName);
       } catch (error) {
-        if (!(error instanceof SyntaxError) || intento >= MAX_INTENTOS_FORMATO_ANALISIS || signal?.aborted) {
-          throw new ErrorIA("desconocido", chat.id, `The reference analysis returned malformed output (${capacidad}).`, true);
-        }
+        fallo = error;
+      }
+      // Outside the parse try: an observer error is not a malformed answer.
+      observarPase?.({ capacidad, intento, ms, uso: turno.uso, ...(turno.finishReason ? { finishReason: turno.finishReason } : {}), args });
+      if (args) return args;
+      if (!(fallo instanceof SyntaxError) || intento >= MAX_INTENTOS_FORMATO_ANALISIS || signal?.aborted) {
+        throw new ErrorIA("desconocido", chat.id, `The reference analysis returned malformed output (${capacidad}).`, true);
       }
     }
   };
