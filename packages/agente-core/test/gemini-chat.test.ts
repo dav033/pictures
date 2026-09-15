@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { historialAContents } from "../src/gemini/chat";
+import { extraerCierreGemini, historialAContents } from "../src/gemini/chat";
 import type { ImagenAdjunta, Mensaje } from "../src/tipos";
 
 // Base64 corto pero real (no depende de tamaño para el assert de "se envió o no").
@@ -60,4 +60,13 @@ test("Fase 3.1: una imagen nueva en una vuelta posterior sí se envía", () => {
   assert.ok(partesNuevoMensaje.some((p) => "inlineData" in p), "una imagen nunca vista sí se envía");
   assert.ok(bytesImagenEnviados > 0, "cuenta los bytes de la imagen nueva, no de la ya vista");
   assert.notEqual(imagen.id, imagenNueva.id);
+});
+
+test("A0.1: finishReason y blockReason salen de la respuesta solo cuando existen", () => {
+  assert.deepEqual(extraerCierreGemini({ candidates: [{ finishReason: "STOP" }, { finishReason: "SAFETY" }] }), { finishReason: "STOP" });
+  assert.deepEqual(extraerCierreGemini({ candidates: [{ finishReason: "MAX_TOKENS" }], promptFeedback: { blockReason: "OTHER" } }), { finishReason: "MAX_TOKENS", blockReason: "OTHER" });
+  assert.deepEqual(extraerCierreGemini({ promptFeedback: { blockReason: "SAFETY" } }), { blockReason: "SAFETY" });
+  assert.deepEqual(extraerCierreGemini({ candidates: [{ finishReason: "" }] }), {});
+  assert.deepEqual(extraerCierreGemini({ candidates: [] }), {});
+  assert.deepEqual(extraerCierreGemini(undefined), {});
 });

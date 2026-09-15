@@ -49,6 +49,22 @@ function herramientaADeclaracion(h: Herramienta): FunctionDeclaration {
  * base64 no se vuelve a subir. Devuelve además cuántos bytes de imagen se
  * transmitieron de verdad en esta llamada, para telemetría honesta.
  */
+type RespuestaConCierre = {
+  candidates?: Array<{ finishReason?: string }>;
+  promptFeedback?: { blockReason?: string };
+};
+
+/** Why the response ended (Plan A §A0.1): first candidate's `finishReason` and
+ * the prompt `blockReason`, only when present and non-empty. */
+export function extraerCierreGemini(respuesta: RespuestaConCierre | undefined): Pick<TurnoChat, "finishReason" | "blockReason"> {
+  const finishReason = respuesta?.candidates?.[0]?.finishReason;
+  const blockReason = respuesta?.promptFeedback?.blockReason;
+  return {
+    ...(typeof finishReason === "string" && finishReason ? { finishReason } : {}),
+    ...(typeof blockReason === "string" && blockReason ? { blockReason } : {}),
+  };
+}
+
 export function historialAContents(
   historial: Mensaje[],
   imagenesEnviadas: WeakSet<ImagenAdjunta>,
@@ -228,6 +244,7 @@ export function crearChatGemini(opts?: { apiKey?: string; modelo?: string; think
           uso: extraerUsoGemini(respuesta.usageMetadata),
           modelo,
           bytesImagenEnviados,
+          ...extraerCierreGemini(respuesta),
         };
       } catch (error) {
         throw categorizarError(error, bytesImagenEnviados > 0);
@@ -273,6 +290,7 @@ export function crearChatGemini(opts?: { apiKey?: string; modelo?: string; think
         // en la llamada que quedó pisada.
         const llamadasPorClave = new Map<string, LlamadaHerramienta>();
         let uso: TurnoChat["uso"] = extraerUsoGemini(undefined);
+        let cierre: Pick<TurnoChat, "finishReason" | "blockReason"> = {};
 
         for await (const chunk of stream) {
           const delta = chunk.text ?? "";
@@ -288,9 +306,11 @@ export function crearChatGemini(opts?: { apiKey?: string; modelo?: string; think
           if (chunk.usageMetadata) {
             uso = extraerUsoGemini(chunk.usageMetadata);
           }
+          // The reason arrives on the last chunk; keep the latest one seen.
+          cierre = { ...cierre, ...extraerCierreGemini(chunk) };
         }
 
-        yield { tipo: "fin", texto, llamadas: [...llamadasPorClave.values()], uso, modelo, bytesImagenEnviados };
+        yield { tipo: "fin", texto, llamadas: [...llamadasPorClave.values()], uso, modelo, bytesImagenEnviados, ...cierre };
       } catch (error) {
         throw categorizarError(error, bytesImagenEnviados > 0);
       }

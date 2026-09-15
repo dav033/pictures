@@ -76,6 +76,12 @@ export type TurnoChat = {
     promptHerramientas?: number;
   };
   modelo: string;
+  /** `finishReason` del primer candidato tal como lo reporta el proveedor
+   * (p. ej. `STOP`, `MAX_TOKENS`, `SAFETY`). Ausente si el proveedor no lo
+   * envía. Solo telemetría: no cambia cómo se interpreta la respuesta. */
+  finishReason?: string;
+  /** `promptFeedback.blockReason`: el proveedor bloqueó el prompt completo. */
+  blockReason?: string;
   /** Bytes de imagen realmente transmitidos en ESTA llamada (Fase 3.1): un
    * adaptador que evita reenviar `inlineData` ya visto en una vuelta anterior
    * reporta aquí solo lo nuevo, no lo que hay en todo el historial. Si el

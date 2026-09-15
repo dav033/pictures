@@ -10,7 +10,7 @@ Estado global: EN_CURSO
 | T3 | OMITIDA | Ídem (recolector) |
 | T4 | OMITIDA | Ídem (recolector) |
 | T5 | BLOQUEADA | Esperando imágenes aceptadas del recolector: `DATA_ROOT\manifests\snapshots\aceptadas-latest.json` no existe (verificado 2026-09-15) |
-| T6 | PENDIENTE | |
+| T6 | EN_CURSO | Parte 1 hecha: `TurnoChat.finishReason`/`blockReason` opcionales en `agente-core` (`extraerCierreGemini`, `turno` y `turnoStream`); prueba en `gemini-chat.test.ts`; `agente-core:test-gemini-chat` y `-errores` (antes fuera de CI) agregadas a `plan:test`. Falta: telemetría por pase en `analizar-referencias-v2.ts`/`telemetria-llamadas.ts` (`finish_reason`, `thinking_level`, `prompt_version`, `config_hash`), migración `024` con rollback probada en base desechable, filas de `ai_model_pricing`, auditoría `PLAN_NO_CONVERGE`, consulta de volumen, prueba de ausencia de contenido sensible |
 | T7 | PENDIENTE | |
 | T8 | PENDIENTE | Depende de T5, T6, T7 |
 | T9 | PENDIENTE | Depende de T8 |
@@ -38,6 +38,7 @@ Candidatas por clase (licencia verificada): 0 · descargas usadas: 0 / 800 · cu
 Gemini estimado acumulado: US$0 · reportado: US$0 · tope: US$15
 
 ## Bitácora (más reciente arriba)
+- 2026-09-15 T6 (parte 1) · `finishReason`/`blockReason` en el puerto Gemini (campo opcional, sin cambio de comportamiento) · verificación: `npm run lint` exit 0 (0 errores, 30 warnings idénticos a la base), `npm run build --workspaces --if-present` exit 0, `npx tsc --noEmit` exit 0, `npm run plan:test` exit 0 (incluye las 2 pruebas de agente-core: 4 + 4 casos) · siguiente: telemetría por pase en el análisis de referencias.
 - 2026-09-15 Protocolo actualizado por el usuario (sin commit en `prompts/fase-a-loop.md`; no lo commitea este loop): T2–T4 pasan al recolector, T5 bloqueada hasta que exista la instantánea `aceptadas-latest.json`; `show-toplevel` y rama verificados · siguiente: T6 (A0.1 instrumentación).
 - 2026-09-15 T1 (parte 3, cierre) · 1 caja por defecto en el análisis fijo (73 cajas revisadas), lista de excepciones exacta; 6 vectores `box_2d` vía `analizarReferenciasV2` con puerto simulado · verificación: `npm run ia:test-analisis-ejemplos` exit 0 (7 casos), `npx eslint` del archivo exit 0, `npx tsc --noEmit` exit 0, `npm run plan:test` exit 0 (182 casos) · siguiente: T2 (herramienta de recolección Commons, `--dry-run` por defecto).
 - 2026-09-15 T1 (parte 2) · fixture EXIF orientación 6 (sintético, 1,2 KB) con README; 2 casos en `scripts/test-reference-analyze-route.ts` · verificación: `npm run ia:test-referencias-ruta` exit 0 (12 casos), `npx eslint` del archivo exit 0, `npx tsc --noEmit` exit 0; no se corrió `npm run lint` completo ni build (sin cambios de app ni paquetes) · siguiente: lista explícita de excepciones de cajas por defecto (E03 del análisis fijo) con condición de retiro "A7 fusionado"; con eso T1 queda completa.
