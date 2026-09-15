@@ -16,6 +16,7 @@ import {
   referenceStructureSemantics,
   STRUCTURE_DETECTION_RULES,
   STRUCTURE_RULES_V14_CANDIDATE,
+  STRUCTURE_RULES_V15_CANDIDATE,
   type VarianteReconocedor,
   tieneElementosAprobados,
   tieneEstructurasDeGlobos,
@@ -524,7 +525,7 @@ function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string,
 /** Prompts and their hash for a mode and catalog; the evaluation runner records the same hash. */
 export function sistemaAnalisis(catalogo: ReferenceCatalogItem[], mode: AnalysisMode, variante: VarianteReconocedor = "v13") {
   // Candidate rules are appended only on request, so v13 prompts and hashes stay byte-identical.
-  const extra = variante === "v14-candidato" ? `\n${STRUCTURE_RULES_V14_CANDIDATE}` : "";
+  const extra = variante === "v14-candidato" ? `\n${STRUCTURE_RULES_V14_CANDIDATE}` : variante === "v15-candidato" ? `\n${STRUCTURE_RULES_V15_CANDIDATE}` : "";
   const inventorySystem = (mode === "perceptual" ? INVENTORY_SYSTEM_PERCEPTUAL : INVENTORY_SYSTEM) + extra;
   const auditSystem = (mode === "perceptual" ? AUDIT_SYSTEM_PERCEPTUAL : AUDIT_SYSTEM) + extra;
   // En modo perceptual nunca se manda el catálogo al modelo: no hay nada

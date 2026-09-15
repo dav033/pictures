@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { dentroDe, ejecutarCli } from "../../../src/lib/eval/estructuras/cli-reconocimiento";
+import { VARIANTES_RECONOCEDOR, type VarianteReconocedor } from "../../../src/lib/ia/reference-structure";
 
 /**
  * Recognition runner CLI (Plan A §A0.3). Preview by default; spending requires
@@ -28,7 +29,7 @@ function cargarEntorno(): void {
   delete process.env.DATABASE_URL;
 }
 
-async function sistemaActual(variante: "v13" | "v14-candidato") {
+async function sistemaActual(variante: VarianteReconocedor) {
   const { chatDe } = await import("../../../src/lib/ia/registro");
   const { analysisConfigHash, ANALYSIS_PARSER_VERSION, sistemaAnalisis } = await import("../../../src/lib/ia/analizar-referencias-v2");
   // Creating the port makes no request; it only reads model and thinking settings.
@@ -47,7 +48,7 @@ async function sistemaActual(variante: "v13" | "v14-candidato") {
 async function main(): Promise<void> {
   cargarEntorno();
   const argVariante = process.argv[process.argv.indexOf("--variante") + 1];
-  const variante = process.argv.includes("--variante") && argVariante === "v14-candidato" ? "v14-candidato" : "v13";
+  const variante: VarianteReconocedor = process.argv.includes("--variante") && (VARIANTES_RECONOCEDOR as readonly string[]).includes(argVariante ?? "") ? (argVariante as VarianteReconocedor) : "v13";
   const inicial = await sistemaActual(variante);
   await ejecutarCli(process.argv.slice(2), {
     repo: REPO,

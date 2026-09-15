@@ -6,7 +6,7 @@ import { ThinkingLevel } from "@google/genai";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { analizarReferenciasV2, analysisConfigHash, sistemaAnalisis, type PaseObservado } from "@/lib/ia/analizar-referencias-v2";
-import { STRUCTURE_RULES_V14_CANDIDATE } from "@/lib/ia/reference-structure";
+import { STRUCTURE_RULES_V14_CANDIDATE, STRUCTURE_RULES_V15_CANDIDATE } from "@/lib/ia/reference-structure";
 import { MANIFIESTO_REFERENCIAS_EJEMPLO } from "@/lib/referencias-ejemplo/manifiesto";
 import type { ChatPort, PeticionChat, TurnoChat } from "@/lib/ia/tipos";
 
@@ -143,6 +143,9 @@ async function run(): Promise<void> {
     assert.notEqual(v14.systemPromptHash, v13.systemPromptHash);
     assert.ok(v14.inventorySystem.startsWith(v13.inventorySystem) && v14.inventorySystem.endsWith(STRUCTURE_RULES_V14_CANDIDATE));
     assert.ok(v14.auditSystem.endsWith(STRUCTURE_RULES_V14_CANDIDATE));
+    const v15 = sistemaAnalisis([], "perceptual", "v15-candidato");
+    assert.ok(v15.inventorySystem.startsWith(v13.inventorySystem) && v15.inventorySystem.endsWith(STRUCTURE_RULES_V15_CANDIDATE));
+    assert.equal(new Set([v13.systemPromptHash, v14.systemPromptHash, v15.systemPromptHash]).size, 3);
   });
 
   await caso("variante v14-candidato: nunca reutiliza el análisis fijo de la galería (resultados v13)", async () => {

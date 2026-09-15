@@ -65,7 +65,7 @@ export const STRUCTURE_DETECTION_RULES = `For every balloon structure also retur
 For every element return composition_relevance: essential (defines the composition), supporting (clearly visible styling such as string lights, foliage or props next to the decoration), or minor (negligible). Minor elements must use model_decision.action "omit".`;
 
 /** Recognizer prompt variants. "v13" is production; any other value is an evaluation candidate. */
-export const VARIANTES_RECONOCEDOR = ["v13", "v14-candidato"] as const;
+export const VARIANTES_RECONOCEDOR = ["v13", "v14-candidato", "v15-candidato"] as const;
 export type VarianteReconocedor = (typeof VARIANTES_RECONOCEDOR)[number];
 
 /**
@@ -82,6 +82,20 @@ export const STRUCTURE_RULES_V14_CANDIDATE = `Clarifications that override the d
 - sculpture = a recognizable figure whose shape is built from the balloons themselves (an animal, a character, a car, a flower, a number made of latex balloons). Foil number or letter balloons placed on top of a balloon base do not make a sculpture: that piece is a bouquet.
 - arch requires both ends to reach the floor or a base. A garland that rises on one side of a backdrop, panel or frame and wraps over its top edge, ending in the air or on top of the backdrop, is a half_arch even when the sideways reach looks short; use column only when the top ends without bending over anything.
 - small balloon clusters touching or right next to a larger balloon structure (at its base, its ends or along it) and balloons hanging inside a ceiling installation are part of that structure: describe them in its composition and never return them as separate cluster or bouquet elements.`;
+
+/**
+ * v15 candidate: only the bouquet / centerpiece boundary, with the business rule
+ * given by the user (2026-09-15) — a centerpiece is more compact and holds
+ * fewer balloons; a bouquet is a larger, balloon-heavy arrangement. v14 showed
+ * that placement-based wording and "foil on a base" rules turned centerpieces
+ * and topped columns into bouquets, so this text keeps columns explicitly out.
+ */
+export const STRUCTURE_RULES_V15_CANDIDATE = `Clarification for compact balloon arrangements (it overrides the bouquet and centerpiece definitions above):
+- Decide between centerpiece and bouquet by size and balloon load, not by where the piece stands.
+- centerpiece = a compact arrangement with a low balloon load: few balloons in total (roughly up to a dozen), for example a single bubble or foil balloon on a small base, or a handful of helium balloons tied to a weight. It stays small relative to the table or furniture it sits on.
+- bouquet = a larger, balloon-heavy arrangement: many balloons packed together (a full stacked base of several round balloons, several toppers or twisted accents, or a big cloud of helium balloons). It reads as a statement piece on its own.
+- When unsure between the two, prefer centerpiece for a small piece with visible gaps or few balloons, and bouquet for a large dense piece.
+- A tall vertical stack of balloons whose top stays above its base is a column, even with a foil balloon on top; never call it a bouquet or centerpiece.`;
 
 function oneOf<T extends readonly string[]>(values: T, value: unknown): T[number] | undefined {
   const text = typeof value === "string" ? value.trim().toLowerCase().replace(/[\s-]+/g, "_") : "";
