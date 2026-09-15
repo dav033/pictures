@@ -82,7 +82,7 @@ export function ProductoForm({
 
       <div>
         <label className="mb-1 block text-xs font-medium text-texto-suave">Nombre</label>
-        <input
+        <input aria-label="Nombre"
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
           required
@@ -108,7 +108,7 @@ export function ProductoForm({
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-texto-suave">Precio (COP)</label>
-          <input
+          <input aria-label="Precio (COP)"
             type="number"
             min={0}
             step="1"
@@ -124,7 +124,7 @@ export function ProductoForm({
         <label className="mb-1 block text-xs font-medium text-texto-suave">
           Descripción visual
         </label>
-        <textarea
+        <textarea aria-label="Descripción visual"
           value={descripcion}
           onChange={(e) => setDescripcion(e.target.value)}
           required
@@ -142,7 +142,7 @@ export function ProductoForm({
           <label className="mb-1 block text-xs font-medium text-texto-suave">
             Estilos (separados por coma)
           </label>
-          <input
+          <input aria-label="Estilos"
             value={estilos}
             onChange={(e) => setEstilos(e.target.value)}
             placeholder="boho, rustico"
@@ -153,7 +153,7 @@ export function ProductoForm({
           <label className="mb-1 block text-xs font-medium text-texto-suave">
             Colores (separados por coma)
           </label>
-          <input
+          <input aria-label="Colores"
             value={colores}
             onChange={(e) => setColores(e.target.value)}
             placeholder="tierra, beige"
@@ -179,7 +179,7 @@ export function ProductoForm({
         <button
           type="submit"
           disabled={guardando}
-          className="rounded-lg bg-acento px-4 py-2 text-sm font-medium text-white transition disabled:opacity-40"
+          className="rounded-lg bg-acento px-4 py-2 text-sm font-medium text-sobre-acento transition hover:bg-acento-hover disabled:opacity-40"
         >
           {guardando ? "Guardando…" : "Guardar"}
         </button>

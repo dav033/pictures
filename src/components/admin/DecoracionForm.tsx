@@ -93,7 +93,7 @@ export function DecoracionForm({
 
       <div>
         <label className="mb-1 block text-xs font-medium text-texto-suave">Nombre</label>
-        <input
+        <input aria-label="Nombre"
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
           required
@@ -106,7 +106,7 @@ export function DecoracionForm({
         <label className="mb-1 block text-xs font-medium text-texto-suave">
           Descripción (opcional)
         </label>
-        <textarea
+        <textarea aria-label="Descripción"
           value={descripcion}
           onChange={(e) => setDescripcion(e.target.value)}
           rows={2}
@@ -181,7 +181,7 @@ export function DecoracionForm({
         <button
           type="submit"
           disabled={guardando}
-          className="rounded-lg bg-acento px-4 py-2 text-sm font-medium text-white transition disabled:opacity-40"
+          className="rounded-lg bg-acento px-4 py-2 text-sm font-medium text-sobre-acento transition hover:bg-acento-hover disabled:opacity-40"
         >
           {guardando ? "Guardando…" : "Guardar"}
         </button>

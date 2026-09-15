@@ -2,6 +2,9 @@ import type { Brief } from "@/lib/types";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import { ALCANCE_POR_CATEGORIA_REFERENCIA } from "@/lib/rag/taxonomy/alcance-referencia";
 import type { ACABADOS_CATALOGO_V2 } from "@/lib/rag/taxonomy/v2";
+import { CREATIVIDAD_POR_DEFECTO, perfilCreatividad, type NivelCreatividad } from "@/lib/ia/creatividad";
+import { tieneEstructurasDeGlobos } from "@/lib/ia/reference-structure";
+import { coloresDominantesReferencia } from "./colores-referencia";
 import { identificarEstructuraOficial } from "./estructuras-oficiales";
 import type { PlanDecoracion, RestriccionesUsuario, TipoEstructura } from "./tipos";
 
@@ -312,6 +315,26 @@ export function validarCoberturaReferencia(plan: PlanDecoracion, blueprint: Refe
 }
 
 /**
+ * Copies into each structure the dominant colors of the reference element it
+ * materializes (audit finding Alta #3, rule in colores-referencia.ts). With
+ * several photos each structure takes the palette of its own element. Any value
+ * the model sent is discarded: the field is server-owned.
+ */
+export function aplicarColoresReferencia<T extends PlanDecoracion>(plan: T, blueprint: ReferenceBlueprintV2 | undefined): T {
+  const elementos = new Map((blueprint?.elements ?? []).filter((element) => element.approved).map((element) => [element.element_id, element]));
+  return {
+    ...plan,
+    estructuras: plan.estructuras.map((estructura) => {
+      const elemento = estructura.referencia_element_id ? elementos.get(estructura.referencia_element_id) : undefined;
+      const colores = elemento ? coloresDominantesReferencia(elemento.appearance.observed_colors) : [];
+      const resto = { ...estructura };
+      delete resto.colores_referencia;
+      return colores.length ? { ...resto, colores_referencia: colores } : resto;
+    }),
+  };
+}
+
+/**
  * Evento abierto necesita composición mínima para no cotizar un único
  * elemento genérico. El mínimo se cuenta en instancias (un par de columnas
  * con `repeticiones: 2` son dos piezas) y no aplica cuando el cliente pidió
@@ -333,6 +356,21 @@ export function validarCardinalidadEventoAbierto(
   rango: { min: number; max: number } = { min: 3, max: 5 },
 ): string[] {
   if (eventType !== "open" || !hayCandidatosCatalogo) return [];
+  return validarRangoEstructuras(plan, solicitudOriginal, referenceBlueprint, rango);
+}
+
+/**
+ * Shared range rule. The minimum counts instances (a pair of columns with
+ * `repeticiones: 2` is two pieces) and the maximum counts structures. A single
+ * piece, an explicit composition, an explicit budget or a photo with balloons
+ * only keep the maximum.
+ */
+function validarRangoEstructuras(
+  plan: PlanDecoracion,
+  solicitudOriginal: string,
+  referenceBlueprint: ReferenceBlueprintV2 | undefined,
+  rango: { min: number; max: number },
+): string[] {
   const palabra = (numero: number) => NUMERO_EN_PALABRAS[numero] ?? String(numero);
   const demasiadas = `Para decorar el evento completo conviene armar entre ${rango.min} y ${rango.max} decoraciones coordinadas, y la propuesta tiene más de ${palabra(rango.max)}.`;
   const source = normalizar(solicitudOriginal);
@@ -353,11 +391,71 @@ export function validarCardinalidadEventoAbierto(
   return [];
 }
 
+/**
+ * Structure range of the creativity level on the confirmed plan (creatividad.ts).
+ * Regression (2026-09-14): level 4 (4–7 structures) confirmed a wedding with 3,
+ * because the range was only checked for open events.
+ *
+ * Decision: a rejection the model can correct (not a warning), for every event
+ * type, whenever the customer picked a level other than the default. Level 2
+ * keeps the historical rule (`validarCardinalidadEventoAbierto`, open events
+ * only). A reference photo with balloons decides the composition instead, and a
+ * single piece, an explicit composition or an explicit budget only keep the
+ * maximum. Without catalog candidates there is nothing to design yet.
+ */
+export function validarRangoCreatividad(
+  plan: PlanDecoracion,
+  opciones: {
+    nivel: NivelCreatividad | undefined;
+    solicitudOriginal: string;
+    hayCandidatosCatalogo: boolean;
+    referenceBlueprint?: ReferenceBlueprintV2;
+  },
+): string[] {
+  const perfil = perfilCreatividad(opciones.nivel);
+  if (perfil.nivel === CREATIVIDAD_POR_DEFECTO || !opciones.hayCandidatosCatalogo) return [];
+  return validarRangoEstructuras(plan, opciones.solicitudOriginal, opciones.referenceBlueprint, perfil.rangoEstructuras);
+}
+
 const NUMERO_EN_PALABRAS: Record<number, string> = { 1: "una", 2: "dos", 3: "tres", 4: "cuatro", 5: "cinco", 6: "seis", 7: "siete", 8: "ocho" };
 
-/** Una referencia fija la composición cuando tiene alguna estructura de globos aprobada. */
+/**
+ * Una referencia fija la composición cuando tiene alguna estructura de globos
+ * aprobada. The rule has one owner (`tieneEstructurasDeGlobos` in
+ * reference-structure.ts, also read by the UI); this name stays for plan callers.
+ */
 export function referenciaDefineComposicion(blueprint: ReferenceBlueprintV2 | undefined): boolean {
-  return Boolean(blueprint?.elements.some((element) => element.approved && element.category === "balloon_structure"));
+  return tieneEstructurasDeGlobos(blueprint);
+}
+
+/** Pieces a customer can name; "pared" alone is usually the room wall, so only "pared de globos" counts. */
+const PIEZAS_NOMBRADAS = /\b(?:arcos?|semiarcos?|columnas?|guirnaldas?|paredes? de globos|centros? de mesa|backdrops?|telon(?:es)?|bouquets?|ramilletes?|figuras?|esculturas?|techos? de globos|aros?|kits?)\b/;
+
+export const MENSAJE_CLIENTE_REFERENCIA_SIN_GLOBOS = "Tu foto no tiene decoración con globos. ¿Qué piezas te gustaría, por ejemplo un arco, columnas o centros de mesa? También puedes elegir una de las fotos de ejemplo para empezar.";
+
+/**
+ * Photo without balloon structures (audit finding Media #4). Regression: a
+ * flowers-only photo at creativity "Fiel" became a half arch nobody asked for,
+ * without saying the photo had no balloons.
+ *
+ * Decision (user): the assistant asks before building. It applies when a
+ * reference photo is present, none of its approved elements is a balloon
+ * structure, the customer did not name any piece, and the creativity level
+ * allows no extra pieces over the photo (levels 0–2). A venue-only photo
+ * (`venue_base`) is where to decorate, not a design, so it does not count. Levels that allow extras
+ * may propose their own pieces. The tool refuses with this error so the model
+ * asks which pieces or suggests picking an example photo.
+ */
+export function validarReferenciaSinGlobos(
+  blueprint: ReferenceBlueprintV2 | undefined,
+  solicitudOriginal: string,
+  extrasPermitidas: number,
+): string[] {
+  if (!blueprint || extrasPermitidas > 0 || tieneEstructurasDeGlobos(blueprint)) return [];
+  // A photo of the customer's own venue is where to decorate, not a design to copy.
+  if (blueprint.source_images.every((imagen) => imagen.approved_roles.every((rol) => rol === "venue_base"))) return [];
+  if (PIEZAS_NOMBRADAS.test(normalizar(solicitudOriginal))) return [];
+  return ["La foto de referencia no tiene piezas de globos y todavía no sabemos qué piezas quieres."];
 }
 
 const TIPOS_CON_GLOBOS_REFERENCIA = new Set<TipoEstructura>(["arco", "semiarco", "guirnalda", "columna", "pared", "centro_mesa"]);
@@ -430,6 +528,55 @@ export function validarPresenciaGlobos(
   const categorias = plan.estructuras.flatMap((estructura) => estructura.materiales.map((material) => categoriaPorProducto.get(material.product_id) ?? null));
   if (categorias.length === 0 || categorias.some((categoria) => categoria === null || CATEGORIAS_CON_GLOBOS.has(categoria))) return [];
   return ["La propuesta no tiene globos: solo lleva accesorios. Para esta decoración hace falta al menos una pieza de globos en los colores que pediste."];
+}
+
+/** Catalog category of balloons sold loose by the package: the only one whose units are balloons. */
+const CATEGORIA_GLOBOS_SUELTOS = "globo_latex";
+
+/**
+ * Declared units of pieces without geometry (audit finding Alta #1). Regression:
+ * two ~2 m figures with 4 materials were declared with `unidades_declaradas: 1`
+ * and quoted as one black balloon.
+ *
+ * Meaning (tool schema in herramientas.ts): catalog sale units for the whole
+ * piece, all repetitions included — balloons when the piece is built with loose
+ * balloons, pieces for a packaged kit, a backdrop or an accessory.
+ * - Every declared material is a purchase, so the units must reach the number
+ *   of materials (the resolvers also give each material at least 1).
+ * - An official structure with `unidadesMinimasPorInstancia` needs that many
+ *   balloons per repetition when all its materials are loose latex balloons.
+ *   A packaged kit, a foil or number balloon, or an unknown category counts in
+ *   pieces and does not block, like the other catalog-category rules here.
+ */
+export function validarUnidadesDeclaradas(
+  plan: PlanDecoracion,
+  categoriaPorProducto: ReadonlyMap<string, string | null>,
+): string[] {
+  const errores: string[] = [];
+  for (const estructura of plan.estructuras) {
+    if (estructura.unidades_declaradas === undefined) continue;
+    const unidades = estructura.unidades_declaradas;
+    const oficial = identificarEstructuraOficial(estructura);
+    const nombre = oficial?.nombre ?? NOMBRE_ESTRUCTURA[estructura.tipo][0];
+    const materiales = estructura.materiales.length;
+    if (unidades < materiales) {
+      errores.push(`${primeraMayuscula(nombre)} lleva ${materiales} productos distintos y la propuesta compra ${unidades === 1 ? "una sola unidad" : `solo ${unidades} unidades`}: cada producto necesita al menos una.`);
+      continue;
+    }
+    const minimo = oficial?.unidadesMinimasPorInstancia;
+    if (!minimo) continue;
+    const soloGlobosSueltos = estructura.materiales.every((material) => categoriaPorProducto.get(material.product_id) === CATEGORIA_GLOBOS_SUELTOS);
+    const repeticiones = Math.max(1, estructura.repeticiones);
+    const requeridas = minimo * repeticiones;
+    if (soloGlobosSueltos && unidades < requeridas) {
+      errores.push(`${oficial.nombre} necesita al menos ${minimo} globos por pieza: para ${repeticiones === 1 ? "una pieza" : `${repeticiones} piezas`} son ${requeridas} y la propuesta cuenta ${unidades}.`);
+    }
+  }
+  return [...new Set(errores)];
+}
+
+function primeraMayuscula(texto: string): string {
+  return `${texto.charAt(0).toUpperCase()}${texto.slice(1)}`;
 }
 
 /**

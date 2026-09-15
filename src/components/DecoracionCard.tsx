@@ -10,7 +10,7 @@ export function DecoracionCard({
   onElegir: (decoracion: DecoracionConProductos) => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-borde bg-superficie shadow-[0_8px_20px_var(--sombra)]">
+    <div className="overflow-hidden rounded-2xl border border-borde bg-superficie">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={decoracion.imagen}

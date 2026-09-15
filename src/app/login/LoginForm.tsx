@@ -41,23 +41,27 @@ export function LoginForm() {
       onSubmit={onSubmit}
       action="/api/login"
       method="post"
-      className="w-full max-w-sm space-y-4 rounded-lg border border-neutral-200 bg-white p-6 shadow-sm"
+      className="ui-card w-full max-w-sm space-y-4 p-6"
     >
-      <h1 className="text-lg font-semibold text-neutral-900">Iniciar sesión</h1>
+      <h1 className="text-lg font-semibold text-texto">Iniciar sesión</h1>
       <input type="hidden" name="from" value={searchParams.get("from") || "/"} />
+      <label htmlFor="login-password" className="sr-only">
+        Contraseña
+      </label>
       <input
+        id="login-password"
         name="password"
         type="password"
         autoFocus
         autoComplete="current-password"
         placeholder="Contraseña"
-        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-neutral-500"
+        className="ui-input"
       />
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p role="alert" className="text-sm text-error">{error}</p>}
       <button
         type="submit"
         disabled={cargando}
-        className="w-full rounded-md bg-neutral-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+        className="ui-button-primary w-full"
       >
         {cargando ? "Ingresando…" : "Entrar"}
       </button>

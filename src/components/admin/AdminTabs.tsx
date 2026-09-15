@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { InterruptorTema } from "@/components/ui/interruptor-tema";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { LoraDatasetGalleryData } from "@/lib/lora/dataset-v005-view";
 import type { Decoracion, Producto } from "@/lib/types";
@@ -29,20 +30,20 @@ export function AdminTabs({
   const [decoraciones, setDecoraciones] = useState<Decoracion[]>(decoracionesIniciales);
 
   return (
-    <div className="mx-auto w-full max-w-7xl flex-1 px-5 py-6">
-      <header className="mb-6 flex items-baseline justify-between">
-        <div>
+    <div className="mx-auto w-full min-w-0 max-w-7xl flex-1 px-4 py-6 sm:px-5">
+      <header className="mb-6 flex items-center justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-base font-semibold text-texto">Panel de administración</h1>
           <p className="text-xs text-texto-suave">
             Sube referencias reales y arma decoraciones a partir del catálogo
           </p>
         </div>
-        <Link
-          href="/"
-          className="text-xs text-texto-suave underline underline-offset-2 hover:text-acento"
-        >
-          ← Volver al chat
-        </Link>
+        <div className="flex shrink-0 items-center gap-1">
+          <Link href="/" className="ui-button-ghost rounded-lg px-2 py-1.5">
+            ← Volver al chat
+          </Link>
+          <InterruptorTema />
+        </div>
       </header>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} className="mb-5">

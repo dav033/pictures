@@ -6,7 +6,7 @@ import { LORA_CAPTION_COMPILER_VERSION, LORA_JSON_PROMPT_MAX_LENGTH } from "@/li
 import { includesJsonPrompt, includesTextPrompt, resolveLoraPromptFormat } from "@/lib/ia/lora-prompt-format";
 import { parseLoraSeed, resolveLoraSeed } from "@/lib/ia/lora-seed";
 import { ambientDecorFromReference } from "@/lib/ia/reference-structure";
-import { parseNivelCreatividad, perfilCreatividad } from "@/lib/ia/creatividad";
+import { nivelCreatividadParaGenerar, perfilCreatividad } from "@/lib/ia/creatividad";
 import { compileProductPrompt, LORA_PRODUCT_RUNTIME_VERSION, sizeConfirmationsFromMaterialLines } from "@/lib/ia/lora-product-runtime";
 import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
 import { findLoraPromptLanguageLeaks, preflightLoraPrompt } from "@/lib/ia/lora-prompt-preflight";
@@ -1084,7 +1084,8 @@ export async function POST(request: Request) {
     // mejores (espacio, productos y después composición).
     const inputLimit = usarLora ? Math.max(16, sceneSpec.elements.length) : capabilities.totalInputImageLimit;
     const selected = buildInputs({ portLimit: inputLimit, blueprint, sceneElements: sceneSpec.elements, references, venue, previous, products: productImages });
-    const creatividad = perfilCreatividad(parseNivelCreatividad(body.creatividad));
+    // The level signed into the approved plan wins over the slider at generation time.
+    const creatividad = perfilCreatividad(nivelCreatividadParaGenerar(contextoPlan?.creatividad, body.creatividad));
     // The venue and time of day the chat recorded in the approved (signed) plan
     // fill only what the customer left open (a venue photo is the venue); see
     // completarEscenaConPlan.

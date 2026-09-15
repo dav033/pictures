@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { EstadisticasOrdenes } from "@/components/admin/EstadisticasOrdenes";
+import { InterruptorTema } from "@/components/ui/interruptor-tema";
 
 /**
  * Acceso directo a las estadísticas del dataset, sin pasar por las pestañas del
@@ -12,19 +13,20 @@ export const instant = false;
 
 export default function EstadisticasPage() {
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <div className="mb-6 flex flex-wrap items-baseline justify-between gap-3">
+    <main className="mx-auto w-full min-w-0 max-w-6xl px-4 py-8 sm:px-6">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-texto">Estadísticas del dataset</h1>
           <p className="text-sm text-texto-suave">Cobertura del catálogo, fotos, captions y alertas de entrenamiento.</p>
         </div>
-        <div className="flex items-center gap-4 text-sm">
-          <Link href="/admin" className="text-texto-suave underline-offset-4 hover:underline">
+        <div className="flex flex-wrap items-center gap-1">
+          <Link href="/admin" className="ui-button-ghost rounded-lg px-2 py-1.5">
             Panel de administración
           </Link>
-          <Link href="/" className="text-texto-suave underline-offset-4 hover:underline">
+          <Link href="/" className="ui-button-ghost rounded-lg px-2 py-1.5">
             ← Volver al chat
           </Link>
+          <InterruptorTema />
         </div>
       </div>
       <EstadisticasOrdenes />

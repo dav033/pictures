@@ -35,6 +35,7 @@ export const UiErrorCodeV1Schema = z.enum([
   "SIN_CONEXION",
   "OPERACION_CANCELADA",
   "ERROR_INTERNO",
+  "VISTA_PREVIA_NO_DISPONIBLE",
 ]);
 export type UiErrorCodeV1 = z.infer<typeof UiErrorCodeV1Schema>;
 
@@ -207,6 +208,15 @@ export const CATALOGO_ERRORES_UI_V1: Readonly<Record<UiErrorCodeV1, EntradaCatal
     accion_sugerida: "reintentar",
     acciones_alternativas: [],
     retryable: true,
+  },
+  // The image provider refused the account (no balance or no access). Added to
+  // ui-error.v1 as a new code: consumers that do not know it fall back to their
+  // local message via `leerUiErrorV1`, so the change is backward compatible.
+  VISTA_PREVIA_NO_DISPONIBLE: {
+    mensaje_usuario: "La vista previa de la imagen no está disponible por ahora. Tu propuesta y su precio quedan guardados.",
+    accion_sugerida: null,
+    acciones_alternativas: [],
+    retryable: false,
   },
 };
 

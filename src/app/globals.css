@@ -1,14 +1,32 @@
 @import "tailwindcss";
 
+/* ==========================================================================
+   TOKENS — única fuente de color de la app (iteración 4, estilo limpio).
+   Claro por defecto; el oscuro se aplica con [data-theme="dark"] (elección
+   guardada, ver src/lib/tema) o con prefers-color-scheme cuando no hay
+   elección. Los componentes usan solo estas variables o sus clases de
+   Tailwind (bg-superficie, text-texto-suave, border-borde-suave…).
+   ========================================================================== */
+
 :root {
-  --fondo: #f7f5fb;
+  color-scheme: light;
+  --fondo: #faf9fc;
   --superficie: #ffffff;
+  /* Fondo tenue dentro de una tarjeta (pie, filas, chips). */
+  --superficie-suave: #faf8fd;
   --superficie-2: #efe9f8;
-  --borde: #ddd0f0;
+  --borde: #e3daef;
+  /* Separadores y bordes de tarjeta, más discretos que `borde`. */
+  --borde-suave: #efe9f8;
   --texto: #1c1425;
   --texto-suave: #6b6178;
+  /* Placeholders y metadatos terciarios. */
+  --texto-tenue: #9a90a8;
   --acento: #6d3fe0;
+  --acento-hover: #5530b8;
   --acento-suave: #ece3fb;
+  /* Texto sobre `acento`. */
+  --sobre-acento: #ffffff;
   --acento-2: #d6216f;
   --acento-2-suave: #fbdfec;
   --salvia: #2f8f6b;
@@ -18,15 +36,14 @@
   --error-suave: #ffeaec;
   --aviso: #b47b22;
   --aviso-suave: #fff3d8;
-  --sombra: rgb(28 20 37 / 0.1);
+  --sombra: rgb(28 20 37 / 0.08);
   --sombra-acento: rgb(109 63 224 / 0.22);
+  --overlay: rgb(28 20 37 / 0.4);
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-rebote: cubic-bezier(0.34, 1.4, 0.64, 1);
 
-  /* Alias hacia los tokens de marca de arriba — no son colores nuevos.
-     Existen para que los componentes estilo shadcn/Radix (Dialog, Select,
-     Tabs, Tooltip, Checkbox) hereden la paleta violeta/magenta de marca sin
-     necesitar su propia configuración de color por componente. */
+  /* Alias para los componentes estilo shadcn/Radix: mismos tokens de marca. */
   --background: var(--fondo);
   --foreground: var(--texto);
   --card: var(--superficie);
@@ -34,7 +51,7 @@
   --popover: var(--superficie);
   --popover-foreground: var(--texto);
   --primary: var(--acento);
-  --primary-foreground: #ffffff;
+  --primary-foreground: var(--sobre-acento);
   --secondary: var(--superficie-2);
   --secondary-foreground: var(--texto);
   --muted: var(--superficie-2);
@@ -49,21 +66,24 @@
   --radius: 0.8rem;
 }
 
+/* Oscuro (maqueta PropuestaOscuro): el mismo bloque dos veces porque CSS no
+   tiene mixins — por sistema sin elección y por elección explícita. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    /* `superficie` está deliberadamente MUY por encima de `fondo` en
-       luminosidad (antes #17131f sobre #0e0b14 — casi el mismo tono: los
-       globos de chat, que pintan su fondo mezclando `superficie` al 86%,
-       quedaban casi invisibles contra el fondo). El salto real de aquí es
-       lo que arregla ese contraste — no un ajuste cosmético del acento. */
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
     --fondo: #0b0c10;
-    --superficie: #1c1e26;
+    --superficie: #16181f;
+    --superficie-suave: #1c1e26;
     --superficie-2: #242733;
     --borde: #383c48;
+    --borde-suave: #2a2d38;
     --texto: #f4f5f7;
     --texto-suave: #9aa1ad;
+    --texto-tenue: #737a88;
     --acento: #8b6cff;
+    --acento-hover: #a58dff;
     --acento-suave: #241f3d;
+    --sobre-acento: #ffffff;
     --acento-2: #ff3d68;
     --acento-2-suave: #3a1522;
     --salvia: #5fd9a0;
@@ -75,43 +95,55 @@
     --aviso-suave: #463720;
     --sombra: rgb(0 0 0 / 0.4);
     --sombra-acento: rgb(139 108 255 / 0.25);
-
-    --background: var(--fondo);
-    --foreground: var(--texto);
-    --card: var(--superficie);
-    --card-foreground: var(--texto);
-    --popover: var(--superficie);
-    --popover-foreground: var(--texto);
-    --primary: var(--acento);
-    /* `acento` en oscuro ya no es un lavanda claro (#b78fe0, necesitaba
-       texto oscuro encima) — es un violeta vívido de luminosidad media:
-       texto blanco es la lectura correcta ahí. */
-    --primary-foreground: #ffffff;
-    --secondary: var(--superficie-2);
-    --secondary-foreground: var(--texto);
-    --muted: var(--superficie-2);
-    --muted-foreground: var(--texto-suave);
-    --accent: var(--acento-suave);
-    --accent-foreground: var(--acento);
-    --destructive: var(--error);
-    /* --error en oscuro es un rosa claro (#ff979f) — texto blanco no
-       contrasta ahí, a diferencia del rojo oscuro (#c84f59) del tema claro. */
+    --overlay: rgb(0 0 0 / 0.6);
     --destructive-foreground: #3a0f13;
-    --border: var(--borde);
-    --input: var(--borde);
-    --ring: var(--acento);
   }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --fondo: #0b0c10;
+  --superficie: #16181f;
+  --superficie-suave: #1c1e26;
+  --superficie-2: #242733;
+  --borde: #383c48;
+  --borde-suave: #2a2d38;
+  --texto: #f4f5f7;
+  --texto-suave: #9aa1ad;
+  --texto-tenue: #737a88;
+  --acento: #8b6cff;
+  --acento-hover: #a58dff;
+  --acento-suave: #241f3d;
+  --sobre-acento: #ffffff;
+  --acento-2: #ff3d68;
+  --acento-2-suave: #3a1522;
+  --salvia: #5fd9a0;
+  --exito: #78d6a8;
+  --exito-suave: #173b31;
+  --error: #ff979f;
+  --error-suave: #43252a;
+  --aviso: #f7c46b;
+  --aviso-suave: #463720;
+  --sombra: rgb(0 0 0 / 0.4);
+  --sombra-acento: rgb(139 108 255 / 0.25);
+  --overlay: rgb(0 0 0 / 0.6);
+  --destructive-foreground: #3a0f13;
 }
 
 @theme inline {
   --color-fondo: var(--fondo);
   --color-superficie: var(--superficie);
+  --color-superficie-suave: var(--superficie-suave);
   --color-superficie-2: var(--superficie-2);
   --color-borde: var(--borde);
+  --color-borde-suave: var(--borde-suave);
   --color-texto: var(--texto);
   --color-texto-suave: var(--texto-suave);
+  --color-texto-tenue: var(--texto-tenue);
   --color-acento: var(--acento);
+  --color-acento-hover: var(--acento-hover);
   --color-acento-suave: var(--acento-suave);
+  --color-sobre-acento: var(--sobre-acento);
   --color-acento-2: var(--acento-2);
   --color-acento-2-suave: var(--acento-2-suave);
   --color-salvia: var(--salvia);
@@ -121,11 +153,10 @@
   --color-error-suave: var(--error-suave);
   --color-aviso: var(--aviso);
   --color-aviso-suave: var(--aviso-suave);
+  --color-overlay: var(--overlay);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  /* Utilidades tipo shadcn (bg-primary, text-foreground, rounded-md...) —
-     alimentadas por los alias definidos arriba, mismos tokens de marca. */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -151,9 +182,12 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* ==========================================================================
+   BASE
+   ========================================================================== */
+
 html {
   background: var(--fondo);
-  color-scheme: light dark;
 }
 
 body {
@@ -161,6 +195,7 @@ body {
   background: var(--fondo);
   color: var(--texto);
   text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
@@ -168,13 +203,17 @@ body {
   color: var(--texto);
 }
 
-:where(a, button, select, input, textarea, summary):focus-visible {
-  outline: 2px solid var(--acento);
-  outline-offset: 3px;
+::placeholder {
+  color: var(--texto-tenue);
 }
 
-/* The plan card's pieces clip their content (overflow hidden, rounded corners),
-   which also clips an outline drawn outside the summary: draw it inside. */
+:where(a, button, select, input, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--acento);
+  outline-offset: 2px;
+}
+
+/* Las piezas de la tarjeta del plan recortan su contenido (overflow hidden):
+   el contorno se dibuja por dentro para que no se corte. */
 .plan-pieza > summary:focus-visible {
   outline-offset: -2px;
 }
@@ -197,236 +236,903 @@ body {
   transform: scale(0.98);
 }
 
-.ui-button-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.5rem;
-  border-radius: 0.8rem;
-  background: var(--acento);
-  padding: 0.625rem 1rem;
-  color: #fff;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  box-shadow: 0 6px 16px var(--sombra-acento);
+/* Íconos del interruptor de tema: CSS elige el correcto también antes de
+   hidratar, sin depender del estado de React. */
+.tema-icono-sol {
+  display: none;
 }
 
-.ui-button-primary:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--acento) 88%, var(--texto));
-  box-shadow: 0 8px 20px var(--sombra-acento);
+:root[data-theme="dark"] .tema-icono-sol {
+  display: block;
 }
 
-.ui-button-primary:disabled {
-  cursor: not-allowed;
-  opacity: 0.42;
-  box-shadow: none;
+:root[data-theme="dark"] .tema-icono-luna {
+  display: none;
 }
 
-.ui-button-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.5rem;
-  border: 1px solid var(--borde);
-  border-radius: 0.8rem;
-  background: var(--superficie);
-  padding: 0.625rem 1rem;
-  color: var(--acento);
-  font-size: 0.8125rem;
-  font-weight: 600;
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tema-icono-sol {
+    display: block;
+  }
+
+  :root:not([data-theme="light"]) .tema-icono-luna {
+    display: none;
+  }
 }
 
-.ui-button-secondary:hover {
-  border-color: var(--acento);
-  background: var(--acento-suave);
+/* Clases de componente en la capa `components` de Tailwind: así una utilidad
+   (size-7, px-3, rounded-lg…) puede ajustarlas en el sitio donde se usan. */
+@layer components {
+  /* ==========================================================================
+     CONTROLES COMPARTIDOS (los usan también catálogo, admin, LoRA, plan…)
+     ========================================================================== */
+
+  .ui-button-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.5rem;
+    border-radius: 0.8rem;
+    background: var(--acento);
+    padding: 0.625rem 1rem;
+    color: var(--sobre-acento);
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  .ui-button-primary:hover:not(:disabled) {
+    background: var(--acento-hover);
+  }
+
+  .ui-button-primary:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  .ui-button-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.5rem;
+    border: 1px solid var(--borde);
+    border-radius: 0.8rem;
+    background: var(--superficie);
+    padding: 0.625rem 1rem;
+    color: var(--acento);
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+
+  .ui-button-secondary:hover:not(:disabled) {
+    border-color: var(--acento);
+    background: var(--acento-suave);
+  }
+
+  .ui-button-secondary:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .ui-button-ghost,
+  .ui-nav-link {
+    color: var(--texto-suave);
+    font-size: 0.8125rem;
+  }
+
+  .ui-button-ghost:hover,
+  .ui-nav-link:hover {
+    color: var(--acento);
+  }
+
+  /* Botón cuadrado solo-ícono de la cabecera y el compositor (32–44 px). */
+  .ui-icon-button {
+    display: inline-grid;
+    width: 2.25rem;
+    height: 2.25rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 0.7rem;
+    color: var(--texto-suave);
+  }
+
+  .ui-icon-button:hover:not(:disabled) {
+    background: var(--superficie-2);
+    color: var(--texto);
+  }
+
+  .ui-icon-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  .ui-chip {
+    border: 1px solid var(--borde);
+    border-radius: 999px;
+    background: var(--superficie);
+    padding: 0.4rem 0.75rem;
+    color: var(--texto-suave);
+    font-size: 0.8125rem;
+  }
+
+  .ui-chip:hover:not(:disabled) {
+    border-color: var(--acento);
+    color: var(--acento);
+  }
+
+  .ui-alert {
+    border: 1px solid color-mix(in srgb, var(--acento) 30%, var(--borde));
+    border-radius: 0.8rem;
+    background: var(--acento-suave);
+    padding: 0.625rem 0.75rem;
+    color: var(--texto);
+    font-size: 0.875rem;
+  }
+
+  /* Tarjeta limpia: la base de propuesta, estados y paneles de las vistas. */
+  .ui-card {
+    border: 1px solid var(--borde-suave);
+    border-radius: 1.25rem;
+    background: var(--superficie);
+    box-shadow: 0 1px 2px var(--sombra);
+  }
+
+  .ui-input {
+    width: 100%;
+    border: 1px solid var(--borde);
+    border-radius: 0.7rem;
+    background: var(--superficie);
+    padding: 0.5rem 0.75rem;
+    color: var(--texto);
+    font-size: 0.875rem;
+  }
+
+  .ui-input:focus {
+    border-color: var(--acento);
+  }
+
+  /* Nombres históricos que siguen usando otros componentes: ahora son
+     tarjetas planas, sin vidrio ni desenfoque. */
+  .material-panel {
+    border: 1px solid var(--borde-suave);
+    border-radius: 1rem;
+    background: var(--superficie);
+    padding: 1rem;
+  }
+
+  .material-subpanel {
+    border: 1px solid var(--borde-suave);
+    border-radius: 0.9rem;
+    background: var(--superficie-suave);
+  }
+
+  .material-comparison-card {
+    overflow: hidden;
+    border: 1px solid var(--borde-suave);
+    border-radius: 1rem;
+    background: var(--superficie);
+  }
+
+  .material-kicker {
+    color: var(--acento);
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .material-status {
+    border-radius: 999px;
+    background: var(--acento-suave);
+    color: var(--acento);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    padding: 0.3rem 0.55rem;
+    white-space: nowrap;
+  }
+
+  .material-dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 999px;
+    background: var(--salvia);
+    box-shadow: 0 0 0 4px var(--exito-suave);
+  }
+
+  /* Barra de scroll discreta. */
+  .scroll-suave {
+    scrollbar-width: thin;
+    scrollbar-color: var(--borde) transparent;
+  }
+
+  .scroll-suave::-webkit-scrollbar {
+    width: 0.5rem;
+  }
+
+  .scroll-suave::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: var(--borde);
+    background-clip: padding-box;
+  }
+
+  /* Markdown de las respuestas del asistente. */
+  .prose-chat > :first-child {
+    margin-top: 0;
+  }
+  .prose-chat > :last-child {
+    margin-bottom: 0;
+  }
+  .prose-chat p {
+    margin: 0.5em 0;
+  }
+  .prose-chat ul,
+  .prose-chat ol {
+    margin: 0.5em 0;
+    padding-left: 1.25em;
+  }
+  .prose-chat ul {
+    list-style-type: disc;
+  }
+  .prose-chat ol {
+    list-style-type: decimal;
+  }
+  .prose-chat li {
+    margin: 0.15em 0;
+  }
+  .prose-chat strong {
+    font-weight: 600;
+  }
+  .prose-chat a {
+    color: var(--acento);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .prose-chat code {
+    background: var(--superficie-2);
+    border-radius: 0.25em;
+    padding: 0.1em 0.35em;
+    font-size: 0.9em;
+  }
+  .prose-chat table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+    margin: 0.5em 0;
+    font-size: 0.9em;
+  }
+  .prose-chat th,
+  .prose-chat td {
+    border: 1px solid var(--borde);
+    padding: 0.3em 0.5em;
+    text-align: left;
+  }
+
+  /* Radix expone data-state=open/closed en popovers, selects y tooltips. */
+  @keyframes radix-pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(-2px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  @keyframes radix-pop-out {
+    from {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.96) translateY(-2px);
+    }
+  }
+
+  .radix-pop[data-state="open"] {
+    animation: radix-pop-in 140ms var(--ease-out) both;
+  }
+
+  .radix-pop[data-state="closed"] {
+    animation: radix-pop-out 100ms var(--ease-in-out) both;
+  }
+
+  /* ==========================================================================
+     ARMAZÓN DE LA APP (page.tsx): cabecera de una línea, chat centrado y
+     compositor. Maquetas EstadoInicial, Main, ChatNormal y PropuestaMovil.
+     ========================================================================== */
+
+  .app-shell {
+    display: flex;
+    min-height: 100dvh;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow-x: clip;
+    background: var(--fondo);
+  }
+
+  @media (min-width: 1024px) {
+    .app-shell {
+      height: 100dvh;
+    }
+  }
+
+  .app-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: grid;
+    min-height: 3.5rem;
+    flex: 0 0 auto;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--borde-suave);
+    background: var(--fondo);
+    padding: 0.25rem 0.75rem 0.25rem 1rem;
+  }
+
+  @media (min-width: 1024px) {
+    .app-header {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr);
+      padding-inline: 1.25rem;
+    }
+  }
+
+  .app-marca {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.625rem;
+  }
+
+  .app-marca-icono {
+    display: grid;
+    width: 1.75rem;
+    height: 1.75rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 0.5rem;
+    background: var(--acento);
+    color: var(--sobre-acento);
+  }
+
+  .app-contexto {
+    display: none;
+    min-width: 0;
+    justify-content: center;
+    color: var(--texto-suave);
+    font-size: 0.8125rem;
+  }
+
+  @media (min-width: 1024px) {
+    .app-contexto {
+      display: flex;
+    }
+  }
+
+  .app-acciones {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.125rem;
+  }
+
+  /* Contexto del evento bajo la cabecera en pantallas angostas. */
+  .app-contexto-movil {
+    border-bottom: 1px solid var(--borde-suave);
+    padding: 0.375rem 1rem;
+    color: var(--texto-suave);
+    font-size: 0.75rem;
+  }
+
+  @media (min-width: 1024px) {
+    .app-contexto-movil {
+      display: none;
+    }
+  }
+
+  .app-barra-dev {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    border-bottom: 1px dashed var(--borde);
+    background: var(--superficie-suave);
+    padding: 0.375rem 1rem;
+    font-size: 0.75rem;
+  }
+
+  /* Menú desplegable (⋯) y selector de creatividad. */
+  .app-menu {
+    position: absolute;
+    top: calc(100% + 0.375rem);
+    right: 0;
+    z-index: 30;
+    min-width: 14rem;
+    overflow: hidden;
+    border: 1px solid var(--borde-suave);
+    border-radius: 0.9rem;
+    background: var(--superficie);
+    padding: 0.25rem;
+    box-shadow: 0 16px 40px var(--sombra);
+    animation: radix-pop-in 140ms var(--ease-out) both;
+  }
+
+  .app-menu-item {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 0.625rem;
+    border-radius: 0.6rem;
+    padding: 0.5rem 0.625rem;
+    color: var(--texto);
+    font-size: 0.875rem;
+    text-align: left;
+  }
+
+  .app-menu-item:hover:not(:disabled),
+  .app-menu-item:focus-visible {
+    background: var(--superficie-2);
+  }
+
+  .app-menu-item:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  .app-menu-separador {
+    margin: 0.25rem 0.5rem;
+    border-top: 1px solid var(--borde-suave);
+  }
+
+  .app-main {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+  }
+
+  .app-log {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 1.5rem 1rem 1rem;
+  }
+
+  .app-columna {
+    width: 100%;
+    max-width: 47.5rem;
+    margin-inline: auto;
+  }
+
+  /* --- Estado inicial -------------------------------------------------------- */
+
+  /* En el inicio no hay conversación que fijar abajo: toda la columna (título,
+     compositor grande, ideas y galería) desplaza junta. Los tres bloques son
+     los mismos nodos que en el chat, así el compositor no se vuelve a montar
+     (y el análisis de una foto recién elegida no se reinicia). */
+  .app-main.en-inicio {
+    overflow-y: auto;
+  }
+
+  .app-main.en-inicio .app-log {
+    flex: 0 0 auto;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+
+  .app-inicio-compositor {
+    flex: 0 0 auto;
+    padding: 1.75rem 1rem 0;
+  }
+
+  .app-inicio-extra {
+    flex: 0 0 auto;
+    padding: 1.25rem 1rem 3rem;
+  }
+
+  @media (min-width: 820px) {
+    .app-inicio-extra .app-columna {
+      max-width: 50rem;
+    }
+  }
+
+  .inicio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: clamp(1.5rem, 8vh, 6rem);
+    text-align: center;
+  }
+
+  .inicio-titulo {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+  }
+
+  .inicio-subtitulo {
+    margin-top: 0.5rem;
+    color: var(--texto-suave);
+    font-size: 1rem;
+  }
+
+  .entra {
+    animation: entra 0.9s var(--ease-out) both;
+  }
+
+  @keyframes entra {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+      filter: blur(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+      filter: none;
+    }
+  }
+
+  .galeria {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  @media (min-width: 560px) {
+    .galeria {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 820px) {
+    .galeria {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 1.25rem;
+    }
+  }
+
+  .galeria-item {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 0.5rem;
+    border-radius: 1rem;
+    text-align: left;
+    animation: galeria-entra 0.8s var(--ease-rebote) both;
+  }
+
+  @keyframes galeria-entra {
+    from {
+      opacity: 0;
+      transform: translateY(22px) scale(0.92);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .galeria-foto {
+    position: relative;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: 1rem;
+    background: var(--superficie-2);
+    transition: box-shadow 220ms var(--ease-out), transform 220ms var(--ease-out);
+  }
+
+  .galeria-foto img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 600ms var(--ease-out);
+  }
+
+  .galeria-item:hover .galeria-foto img {
+    transform: scale(1.06);
+  }
+
+  .galeria-item:hover .galeria-foto,
+  .galeria-item[aria-pressed="true"] .galeria-foto {
+    transform: translateY(-2px);
+    box-shadow: 0 0 0 3px var(--acento), 0 10px 24px var(--sombra-acento);
+  }
+
+  .galeria-item:focus-visible {
+    outline-offset: 4px;
+  }
+
+  .galeria-check {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    display: grid;
+    width: 1.5rem;
+    height: 1.5rem;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--acento);
+    color: var(--sobre-acento);
+    animation: aparece-rebote 0.4s var(--ease-rebote) both;
+  }
+
+  @keyframes aparece-rebote {
+    from {
+      opacity: 0;
+      transform: scale(0.3);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Foto que "vuela" de la galería al chip del compositor. */
+  .foto-en-vuelo {
+    position: fixed;
+    z-index: 60;
+    border-radius: 0.5rem;
+    object-fit: cover;
+    box-shadow: 0 10px 24px var(--sombra);
+    pointer-events: none;
+  }
+
+  /* --- Mensajes ------------------------------------------------------------ */
+
+  .msg-usuario {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .msg-usuario-burbuja {
+    display: flex;
+    max-width: min(34rem, 88%);
+    align-items: center;
+    gap: 0.625rem;
+    border-radius: 1.125rem;
+    background: var(--acento-suave);
+    padding: 0.625rem 0.875rem;
+    color: var(--texto);
+    font-size: 0.9375rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+
+  .msg-usuario-burbuja.con-foto {
+    padding-left: 0.375rem;
+  }
+
+  .msg-usuario-foto {
+    width: 2.75rem;
+    height: 2rem;
+    flex: 0 0 auto;
+    border-radius: 0.625rem;
+    object-fit: cover;
+  }
+
+  .msg-asistente {
+    min-width: 0;
+    color: var(--texto);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+
+  /* --- Esperas --------------------------------------------------------------- */
+
+  .puntos {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .puntos span {
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--acento);
+    animation: punto 1.2s ease-in-out infinite;
+  }
+
+  .puntos span:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+
+  .puntos span:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+
+  @keyframes punto {
+    0%,
+    100% {
+      opacity: 0.25;
+      transform: none;
+    }
+    40% {
+      opacity: 1;
+      transform: translateY(-3px);
+    }
+  }
+
+  .brillo-carga {
+    background: linear-gradient(90deg, var(--superficie-2) 0%, var(--superficie-suave) 40%, var(--superficie-2) 80%);
+    background-size: 200% 100%;
+    animation: brillo-carga 1.6s linear infinite;
+  }
+
+  @keyframes brillo-carga {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+
+  /* --- Compositor ------------------------------------------------------------ */
+
+  .app-compositor-zona {
+    flex: 0 0 auto;
+    padding: 0.5rem 0.75rem calc(1rem + env(safe-area-inset-bottom, 0px));
+    background: var(--fondo);
+  }
+
+  @media (min-width: 640px) {
+    .app-compositor-zona {
+      padding-inline: 1rem;
+      padding-bottom: 1.375rem;
+    }
+  }
+
+  .compositor {
+    display: flex;
+    min-height: 3.25rem;
+    align-items: center;
+    gap: 0.375rem;
+    border: 1px solid var(--borde);
+    border-radius: 1rem;
+    background: var(--superficie);
+    padding: 0.25rem 0.25rem 0.25rem 0.25rem;
+    transition: border-color 160ms var(--ease-out);
+  }
+
+  .compositor:focus-within {
+    border-color: var(--acento);
+  }
+
+  .compositor.grande {
+    min-height: 3.75rem;
+    border-radius: 1.125rem;
+    padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+    box-shadow: 0 8px 28px var(--sombra);
+  }
+
+  .compositor-input {
+    min-width: 0;
+    flex: 1 1 auto;
+    border: 0;
+    background: transparent;
+    padding: 0.5rem 0.25rem;
+    color: var(--texto);
+    font-size: 1rem;
+    outline: none;
+  }
+
+
+  .compositor-adjuntar {
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 0.75rem;
+    color: var(--acento);
+  }
+
+  .compositor.grande .compositor-adjuntar {
+    background: var(--superficie-2);
+  }
+
+  .compositor-adjuntar:hover:not(:disabled) {
+    background: var(--acento-suave);
+  }
+
+  .compositor-enviar {
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 0.8rem;
+    background: var(--acento);
+    color: var(--sobre-acento);
+  }
+
+  .compositor-enviar:hover:not(:disabled) {
+    background: var(--acento-hover);
+  }
+
+  .compositor-enviar:disabled {
+    cursor: not-allowed;
+    background: var(--acento-suave);
+    color: var(--acento);
+  }
+
+  .adjunto-chip {
+    display: inline-flex;
+    max-width: 100%;
+    align-items: center;
+    gap: 0.5rem;
+    border-radius: 0.75rem;
+    background: var(--superficie-2);
+    padding: 0.25rem 0.25rem 0.25rem 0.25rem;
+    color: var(--texto);
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+
+  .adjunto-chip img {
+    width: 2rem;
+    height: 2rem;
+    flex: 0 0 auto;
+    border-radius: 0.5rem;
+    object-fit: cover;
+  }
+
+  /* --- Hoja lateral (selección manual) -------------------------------------- */
+
+  .hoja-fondo {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: var(--overlay);
+    animation: aparece 160ms var(--ease-out) both;
+  }
+
+  .hoja {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 41;
+    display: flex;
+    width: min(24rem, 100%);
+    flex-direction: column;
+    border-left: 1px solid var(--borde-suave);
+    background: var(--superficie);
+    box-shadow: -16px 0 40px var(--sombra);
+    animation: hoja-entra 260ms var(--ease-out) both;
+  }
+
+  @keyframes aparece {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes hoja-entra {
+    from {
+      transform: translateX(100%);
+    }
+  }
 }
 
-.ui-button-ghost,
-.ui-nav-link {
-  color: var(--texto-suave);
-  font-size: 0.75rem;
+/* Excepciones de foco fuera de capa: deben ganarle a la regla global de
+   :focus-visible, que también está fuera de capa a propósito. */
+.compositor-input:focus-visible,
+.app-menu-item:focus-visible {
+  outline: none;
 }
 
-.ui-button-ghost:hover,
-.ui-nav-link:hover {
-  color: var(--acento);
-}
-
-.ui-chip {
-  border: 1px solid var(--borde);
-  border-radius: 999px;
-  background: var(--superficie);
-  padding: 0.5rem 0.75rem;
-  color: var(--texto-suave);
-  font-size: 0.75rem;
-}
-
-.ui-chip:hover:not(:disabled),
-.ui-chip:focus-visible {
-  border-color: var(--acento);
-  color: var(--acento);
-  box-shadow: 0 4px 12px var(--sombra-acento);
-}
-
-.ui-alert {
-  border: 1px solid color-mix(in srgb, var(--acento) 42%, var(--borde));
-  border-radius: 0.75rem;
-  background: var(--acento-suave);
-  padding: 0.625rem 0.75rem;
-  color: var(--acento);
-}
-
-/* Capas Material ligeras: elevación, superficie tonal y estados claros sin
-   meter una librería UI pesada en una demo que ya usa Tailwind. */
-.material-main {
-  background:
-    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--acento-suave) 74%, transparent), transparent 30rem),
-    linear-gradient(135deg, color-mix(in srgb, var(--fondo) 92%, var(--superficie-2)), var(--fondo));
-}
-
-.material-topbar {
-  background: color-mix(in srgb, var(--superficie) 94%, transparent);
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--texto) 8%, transparent), 0 10px 24px color-mix(in srgb, var(--texto) 5%, transparent);
-  position: relative;
-  z-index: 1;
-}
-
-.material-chat {
-  background: color-mix(in srgb, var(--superficie) 72%, transparent);
-}
-
-.material-sidebar {
-  background: color-mix(in srgb, var(--superficie-2) 88%, var(--fondo));
-}
-
-/* .material-message(-user) vivían aquí: las reemplazó .chat-bubble(-user) al
-   final del archivo (globos con borde de gradiente, avatar y estado de
-   streaming). Se borraron en vez de dejarlas muertas — ningún .tsx las usa. */
-
-.material-panel {
-  border: 1px solid color-mix(in srgb, var(--borde) 88%, transparent);
-  border-radius: 1.25rem;
-  background: color-mix(in srgb, var(--superficie) 78%, transparent);
-  padding: 1rem;
-  box-shadow: 0 16px 34px color-mix(in srgb, var(--texto) 8%, transparent);
-  backdrop-filter: blur(14px) saturate(120%);
-}
-
-.material-subpanel {
-  border: 1px solid color-mix(in srgb, var(--borde) 70%, transparent);
-  border-radius: 0.9rem;
-  background: color-mix(in srgb, var(--superficie-2) 64%, var(--superficie));
-}
-
-.material-comparison-card {
-  overflow: hidden;
-  border: 1px solid var(--borde);
-  border-radius: 1rem;
-  background: var(--superficie);
-  box-shadow: 0 6px 16px var(--sombra);
-}
-
-.material-kicker {
-  color: var(--acento);
-  font-size: 0.625rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.material-status {
-  border-radius: 999px;
-  background: var(--acento-suave);
-  color: var(--acento);
-  font-size: 0.625rem;
-  font-weight: 700;
-  padding: 0.35rem 0.55rem;
-  white-space: nowrap;
-}
-
-.material-dot {
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 999px;
-  background: var(--salvia);
-  box-shadow: 0 0 0 4px var(--exito-suave);
-}
-
-.material-generating {
-  border: 1px solid color-mix(in srgb, var(--acento) 25%, var(--borde));
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--acento-suave) 74%, transparent);
-  padding: 0.5rem 0.75rem;
-  color: var(--acento);
-}
-
-/* Barra de scroll discreta para las columnas del chat y el panel. */
-.scroll-suave {
-  scrollbar-width: thin;
-  scrollbar-color: var(--borde) transparent;
-}
-
-.scroll-suave::-webkit-scrollbar {
-  width: 0.5rem;
-}
-
-.scroll-suave::-webkit-scrollbar-thumb {
-  border: 2px solid transparent;
-  border-radius: 999px;
-  background: var(--borde);
-  background-clip: padding-box;
-}
-
-/* Markdown de las respuestas del asistente — sin @tailwindcss/typography,
-   estilos mínimos a mano acordes a los tokens del resto de la app. */
-.prose-chat > :first-child {
-  margin-top: 0;
-}
-.prose-chat > :last-child {
-  margin-bottom: 0;
-}
-.prose-chat p {
-  margin: 0.5em 0;
-}
-.prose-chat ul,
-.prose-chat ol {
-  margin: 0.5em 0;
-  padding-left: 1.25em;
-}
-.prose-chat ul {
-  list-style-type: disc;
-}
-.prose-chat ol {
-  list-style-type: decimal;
-}
-.prose-chat li {
-  margin: 0.15em 0;
-}
-.prose-chat strong {
-  font-weight: 600;
-}
-.prose-chat a {
-  color: var(--acento);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-.prose-chat code {
-  background: var(--superficie-2);
-  border-radius: 0.25em;
-  padding: 0.1em 0.35em;
-  font-size: 0.9em;
-}
-.prose-chat table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 0.5em 0;
-  font-size: 0.9em;
-}
-.prose-chat th,
-.prose-chat td {
-  border: 1px solid var(--borde);
-  padding: 0.3em 0.5em;
-  text-align: left;
+.app-menu-item:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--acento);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -438,848 +1144,18 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
-}
 
-/* Nueva capa visual: workspace de estudio, con profundidad y movimiento sutil. */
-.workspace-shell {
-  position: relative;
-  isolation: isolate;
-  overflow-x: clip;
-  background:
-    radial-gradient(circle at 4% 0%, color-mix(in srgb, var(--acento) 15%, transparent), transparent 34rem),
-    radial-gradient(circle at 96% 100%, color-mix(in srgb, var(--acento-2) 10%, transparent), transparent 30rem),
-    var(--fondo);
-  animation: workspace-in 520ms var(--ease-out) both;
-}
-
-.workspace-shell::before {
-  position: fixed;
-  inset: -10rem -8rem auto auto;
-  z-index: -1;
-  width: 28rem;
-  height: 28rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--acento) 12%, transparent);
-  content: "";
-  filter: blur(48px);
-  pointer-events: none;
-  animation: ambient-drift 14s ease-in-out infinite;
-}
-
-.workspace-header {
-  position: relative;
-  background: color-mix(in srgb, var(--superficie) 86%, transparent);
-  border-bottom-color: color-mix(in srgb, var(--borde) 72%, transparent);
-  backdrop-filter: blur(20px) saturate(130%);
-}
-
-.workspace-header::after {
-  position: absolute;
-  right: 0;
-  bottom: -1px;
-  left: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--acento), transparent);
-  content: "";
-  opacity: 0.55;
-}
-
-.workspace-brand {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 0.8rem;
-}
-
-.workspace-mark {
-  position: relative;
-  display: grid;
-  width: 2.7rem;
-  height: 2.7rem;
-  flex: 0 0 auto;
-  place-items: center;
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--acento) 46%, var(--borde));
-  border-radius: 0.95rem;
-  background: linear-gradient(145deg, var(--acento), color-mix(in srgb, var(--acento-2) 72%, var(--acento)));
-  color: var(--fondo);
-  box-shadow: 0 10px 24px var(--sombra-acento);
-  animation: mark-breathe 5s ease-in-out infinite;
-}
-
-.workspace-mark::before,
-.workspace-mark::after {
-  position: absolute;
-  border: 1px solid currentColor;
-  border-radius: 999px;
-  content: "";
-  opacity: 0.55;
-}
-
-.workspace-mark::before {
-  width: 1.35rem;
-  height: 1.35rem;
-}
-
-.workspace-mark::after {
-  width: 0.45rem;
-  height: 0.45rem;
-  background: currentColor;
-}
-
-.workspace-kicker {
-  color: var(--acento);
-  font-size: 0.625rem;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  line-height: 1.2;
-  text-transform: uppercase;
-}
-
-.workspace-title {
-  margin-top: 0.15rem;
-  color: var(--texto);
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: -0.025em;
-}
-
-.workspace-subtitle {
-  margin-top: 0.2rem;
-  color: var(--texto-suave);
-  font-size: 0.72rem;
-}
-
-.workspace-header-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.5rem;
-}
-
-.workspace-mode {
-  border: 1px solid color-mix(in srgb, var(--acento) 28%, var(--borde));
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--acento-suave) 72%, transparent);
-  padding: 0.5rem 0.7rem;
-  color: var(--acento);
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-
-.workspace-nav {
-  border-top-color: color-mix(in srgb, var(--borde) 76%, transparent);
-}
-
-.workspace-grid {
-  position: relative;
-  z-index: 0;
-  min-height: 0;
-}
-
-.workspace-stage {
-  position: relative;
-  min-width: 0;
-  overflow: hidden;
-  background: color-mix(in srgb, var(--superficie) 54%, transparent);
-}
-
-.workspace-stage::before {
-  position: absolute;
-  top: -12rem;
-  right: -8rem;
-  width: 34rem;
-  height: 34rem;
-  border: 1px solid color-mix(in srgb, var(--acento) 12%, transparent);
-  border-radius: 999px;
-  content: "";
-  pointer-events: none;
-  transform: rotate(-15deg);
-}
-
-.workspace-log {
-  position: relative;
-  z-index: 1;
-}
-
-.quick-start {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.7rem;
-}
-
-.quick-action {
-  position: relative;
-  min-height: 5.25rem;
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--borde) 82%, transparent);
-  border-radius: 1rem;
-  background: color-mix(in srgb, var(--superficie) 76%, transparent);
-  padding: 0.8rem;
-  color: var(--texto);
-  font-size: 0.75rem;
-  font-weight: 600;
-  line-height: 1.35;
-  text-align: left;
-  box-shadow: 0 8px 20px color-mix(in srgb, var(--texto) 5%, transparent);
-  backdrop-filter: blur(10px);
-}
-
-.quick-action::before {
-  position: absolute;
-  right: -1.25rem;
-  bottom: -1.25rem;
-  width: 4rem;
-  height: 4rem;
-  border-radius: 999px;
-  background: var(--acento-suave);
-  content: "";
-  opacity: 0.75;
-  transition: transform 220ms var(--ease-out);
-}
-
-.quick-action:hover {
-  border-color: var(--acento);
-  box-shadow: 0 14px 28px var(--sombra-acento);
-  transform: translateY(-3px);
-}
-
-.quick-action:hover::before {
-  transform: scale(1.45);
-}
-
-.workspace-attachments {
-  position: relative;
-  z-index: 1;
-}
-
-.workspace-composer {
-  position: relative;
-  z-index: 2;
-  background: color-mix(in srgb, var(--superficie) 88%, transparent);
-  box-shadow: 0 -14px 32px color-mix(in srgb, var(--texto) 7%, transparent);
-  backdrop-filter: blur(18px) saturate(130%);
-}
-
-.workspace-composer input {
-  border-color: color-mix(in srgb, var(--borde) 88%, transparent);
-  background: color-mix(in srgb, var(--fondo) 72%, var(--superficie));
-  transition: border-color 180ms ease-out, box-shadow 180ms ease-out, background-color 180ms ease-out;
-}
-
-.workspace-composer input:focus {
-  border-color: var(--acento);
-  background: var(--superficie);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--acento) 16%, transparent);
-}
-
-.workspace-plan-action-dock {
-  display: none;
-}
-
-.plan-card-approval-action {
-  margin-top: 0.25rem;
-}
-
-@media (min-width: 1024px) {
-  .workspace-plan-action-dock {
-    display: block;
-    flex: 0 0 auto;
-    z-index: 4;
-    border-top: 1px solid color-mix(in srgb, var(--borde) 84%, transparent);
-    background: linear-gradient(to bottom, color-mix(in srgb, var(--superficie) 74%, transparent), color-mix(in srgb, var(--superficie) 96%, var(--fondo)));
-    padding: 0.75rem 2rem;
-    backdrop-filter: blur(18px) saturate(125%);
-  }
-
-  .plan-card-approval-action {
-    display: none;
-  }
-}
-
-.workspace-sidebar {
-  position: relative;
-  background: color-mix(in srgb, var(--superficie-2) 76%, transparent);
-  backdrop-filter: blur(18px);
-}
-
-.workspace-sidebar-pinned {
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  height: auto;
-  margin-inline: -1rem;
-  padding: 1rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--borde) 84%, transparent);
-  background: color-mix(in srgb, var(--superficie-2) 94%, var(--fondo));
-  backdrop-filter: blur(18px) saturate(125%);
-}
-
-@media (min-width: 640px) {
-  .workspace-sidebar-pinned {
-    margin-inline: -1.5rem;
-    padding-inline: 1.5rem;
-  }
-}
-
-.workspace-sidebar > * {
-  animation: sidebar-in 480ms var(--ease-out) both;
-}
-
-.workspace-sidebar > *:nth-child(2) {
-  animation-delay: 70ms;
-}
-
-.workspace-sidebar > *:nth-child(3) {
-  animation-delay: 120ms;
-}
-
-@keyframes workspace-in {
-  from {
-    opacity: 0;
-    filter: blur(5px);
-    transform: translateY(12px) scale(0.99);
-  }
-  to {
-    opacity: 1;
-    filter: blur(0);
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes sidebar-in {
-  from {
-    opacity: 0;
-    transform: translateX(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes ambient-drift {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(-4rem, 2rem, 0) scale(1.08);
-  }
-}
-
-@keyframes mark-breathe {
-  0%,
-  100% {
-    box-shadow: 0 10px 24px var(--sombra-acento);
-  }
-  50% {
-    box-shadow: 0 14px 34px color-mix(in srgb, var(--acento-2) 28%, transparent);
-  }
-}
-
-/* Radix expone data-state=open/closed en su contenido de popover/select/etc.
-   — se anima con CSS puro (no Motion) porque animar un elemento portal con
-   AnimatePresence exige forceMount + más código, y esto ya es información
-   suficiente para una transición de apertura/cierre simple. */
-@keyframes radix-pop-in {
-  from {
-    opacity: 0;
-    transform: scale(0.96) translateY(-2px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-@keyframes radix-pop-out {
-  from {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: scale(0.96) translateY(-2px);
-  }
-}
-
-.radix-pop[data-state="open"] {
-  animation: radix-pop-in 140ms var(--ease-out) both;
-}
-
-.radix-pop[data-state="closed"] {
-  animation: radix-pop-out 100ms var(--ease-in-out) both;
-}
-
-/* Antes este breakpoint era 767px, mientras que el resto del layout (grid
-   de dos columnas, sidebar, etc.) cambia a `lg:` (1024px, page.tsx inline)
-   — entre 768-1023px quedaba una franja donde el layout ya era de una sola
-   columna pero este bloque no había colapsado todavía. Se alinea al mismo
-   1024px que usa el resto de la página para que exista un solo sistema de
-   breakpoints, no dos que casi (pero no del todo) coinciden. */
-@media (max-width: 1023px) {
-  .quick-start {
-    grid-template-columns: 1fr;
-  }
-
-  .quick-action {
-    min-height: auto;
+  .puntos span,
+  .brillo-carga,
+  .foto-en-vuelo {
+    animation: none !important;
   }
 }
 
 /* ==========================================================================
-   CHAT — capa visual "estudio": globos con borde de gradiente, avatares,
-   estado de streaming vivo y compositor flotante. Todo se apoya en los
-   tokens de marca de arriba (violeta/magenta) y en color-mix, así que el
-   tema oscuro sale gratis; ninguna regla de aquí fija un color literal
-   fuera de los blancos de realce.
+   HAPPIE IA: transiciones del recomendador/wizard. La regla global de
+   prefers-reduced-motion (arriba) ya neutraliza duración e iteración.
    ========================================================================== */
-
-/* --- El lienzo del log ---------------------------------------------------- */
-
-.workspace-log {
-  position: relative;
-  background:
-    radial-gradient(120% 60% at 12% -10%, color-mix(in srgb, var(--acento) 13%, transparent), transparent 60%),
-    radial-gradient(90% 55% at 92% 110%, color-mix(in srgb, var(--acento-2) 11%, transparent), transparent 60%);
-  /* El contenido se desvanece al entrar y salir del área de scroll en vez de
-     cortarse a filo contra el header y el compositor. */
-  mask-image: linear-gradient(to bottom, transparent 0, #000 1.75rem, #000 calc(100% - 1.25rem), transparent 100%);
-}
-
-.workspace-log::before {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  background-image:
-    linear-gradient(color-mix(in srgb, var(--borde) 34%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--borde) 34%, transparent) 1px, transparent 1px);
-  background-size: 2.5rem 2.5rem;
-  content: "";
-  mask-image: radial-gradient(80% 60% at 50% 0%, #000, transparent 78%);
-  opacity: 0.5;
-  pointer-events: none;
-}
-
-.workspace-log > * {
-  position: relative;
-  z-index: 1;
-}
-
-/* --- Fila: avatar + columna de contenido ---------------------------------- */
-
-.chat-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.7rem;
-}
-
-.chat-row-user {
-  flex-direction: row-reverse;
-}
-
-.chat-column {
-  display: flex;
-  min-width: 0;
-  flex: 1 1 auto;
-  flex-direction: column;
-}
-
-.chat-row-user .chat-column {
-  align-items: flex-end;
-}
-
-.chat-avatar {
-  position: relative;
-  display: grid;
-  width: 2rem;
-  height: 2rem;
-  flex: 0 0 auto;
-  place-items: center;
-  margin-top: 0.15rem;
-  border-radius: 999px;
-  color: #fff;
-}
-
-.chat-row-ia .chat-avatar {
-  background: linear-gradient(145deg, var(--acento), color-mix(in srgb, var(--acento-2) 70%, var(--acento)));
-  box-shadow: 0 6px 18px var(--sombra-acento);
-}
-
-/* Anillo cónico girando: señal de "asistente vivo" que no ocupa layout. */
-.chat-row-ia .chat-avatar::before {
-  position: absolute;
-  inset: -3px;
-  border-radius: 999px;
-  background: conic-gradient(from 0deg, transparent 0deg, var(--acento) 90deg, var(--acento-2) 190deg, transparent 300deg);
-  content: "";
-  opacity: 0.55;
-  animation: avatar-orbit 6s linear infinite;
-  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
-  pointer-events: none;
-}
-
-.chat-row-user .chat-avatar {
-  border: 1px solid color-mix(in srgb, var(--borde) 88%, transparent);
-  background: color-mix(in srgb, var(--superficie-2) 82%, transparent);
-  color: var(--texto-suave);
-}
-
-.chat-avatar-initial {
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-/* --- El globo ------------------------------------------------------------- */
-
-.chat-bubble {
-  position: relative;
-  min-width: 0;
-  border-radius: 1.15rem;
-  isolation: isolate;
-  overflow-wrap: anywhere;
-  transition: transform 220ms var(--ease-out), box-shadow 220ms var(--ease-out);
-}
-
-/* Borde de 1px hecho con gradiente (border-color no admite gradientes): se
-   pinta un pseudo-elemento del tamaño del globo y se recorta su interior. */
-.chat-bubble::before {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  padding: 1px;
-  content: "";
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  -webkit-mask-composite: xor;
-  pointer-events: none;
-}
-
-.chat-bubble-ia {
-  border-bottom-left-radius: 0.35rem;
-  background: linear-gradient(155deg, color-mix(in srgb, var(--superficie) 94%, transparent), color-mix(in srgb, var(--superficie) 72%, transparent));
-  box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 16%, transparent) inset,
-    0 14px 34px color-mix(in srgb, var(--texto) 9%, transparent);
-  backdrop-filter: blur(14px) saturate(125%);
-}
-
-.chat-bubble-ia::before {
-  background: linear-gradient(150deg, color-mix(in srgb, var(--acento) 42%, transparent), color-mix(in srgb, var(--borde) 90%, transparent) 45%, color-mix(in srgb, var(--acento-2) 26%, transparent));
-}
-
-.chat-bubble-ia:hover {
-  box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 18%, transparent) inset,
-    0 18px 40px color-mix(in srgb, var(--texto) 12%, transparent);
-  transform: translateY(-1px);
-}
-
-.chat-bubble-user {
-  border-bottom-right-radius: 0.35rem;
-  background: linear-gradient(135deg, var(--acento), color-mix(in srgb, var(--acento) 62%, var(--acento-2)));
-  box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 30%, transparent) inset,
-    0 16px 34px var(--sombra-acento);
-}
-
-.chat-bubble-user::before {
-  background: linear-gradient(135deg, color-mix(in srgb, #fff 46%, transparent), transparent 55%);
-}
-
-.chat-bubble-user:hover {
-  transform: translateY(-1px);
-  box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 34%, transparent) inset,
-    0 20px 42px var(--sombra-acento);
-}
-
-/* Streaming: el borde recorre el globo mientras el modelo escribe. Es la
-   misma señal que ya daba "Escribiendo…", pero visible también cuando el
-   mensaje ya tiene texto a medio llegar. */
-/* El comet conic-gradient por sí solo se apaga a casi transparente en el
-   tramo que no cubre (era el "borde incompleto" reportado): ahora corre
-   como una segunda capa encima del mismo degradado estático del globo en
-   reposo (línea ~1019), que sí envuelve el anillo completo. */
-.chat-bubble-ia.is-streaming::before {
-  background:
-    conic-gradient(
-      from var(--stream-angle, 0deg),
-      transparent 0deg,
-      var(--acento) 60deg,
-      var(--acento-2) 120deg,
-      transparent 180deg
-    ),
-    linear-gradient(
-      150deg,
-      color-mix(in srgb, var(--acento) 42%, transparent),
-      color-mix(in srgb, var(--borde) 90%, transparent) 45%,
-      color-mix(in srgb, var(--acento-2) 26%, transparent)
-    );
-  animation: stream-border 2.4s linear infinite;
-}
-
-.chat-bubble-ia.is-streaming::after {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: radial-gradient(60% 120% at 0% 50%, color-mix(in srgb, var(--acento) 14%, transparent), transparent 70%);
-  content: "";
-  animation: stream-glow 2.4s ease-in-out infinite;
-  pointer-events: none;
-}
-
-.chat-bubble-ia.is-streaming {
-  width: fit-content;
-  min-width: 11rem;
-}
-
-@property --stream-angle {
-  syntax: "<angle>";
-  inherits: false;
-  initial-value: 0deg;
-}
-
-@keyframes stream-border {
-  to {
-    --stream-angle: 360deg;
-  }
-}
-
-@keyframes stream-glow {
-  0%,
-  100% {
-    opacity: 0.35;
-  }
-  50% {
-    opacity: 0.9;
-  }
-}
-
-@keyframes avatar-orbit {
-  to {
-    transform: rotate(1turn);
-  }
-}
-
-/* Las tarjetas que cuelgan de un mensaje del cliente (raro, pero posible)
-   se alinean con su globo, no con el borde opuesto del log. */
-.chat-row-user .chat-column > *:not(.chat-bubble) {
-  margin-left: auto;
-}
-
-/* --- Compositor ----------------------------------------------------------- */
-
-.chat-composer-pill {
-  position: relative;
-  min-height: 3.25rem;
-  border-radius: 1.35rem;
-  background: color-mix(in srgb, var(--fondo) 62%, var(--superficie));
-  padding: 0.4rem 0.4rem 0.4rem 1rem;
-  box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 14%, transparent) inset,
-    0 10px 26px color-mix(in srgb, var(--texto) 8%, transparent);
-  transition: box-shadow 220ms var(--ease-out), transform 220ms var(--ease-out);
-}
-
-.chat-composer-pill > * {
-  position: relative;
-  z-index: 1;
-}
-
-.chat-composer-pill::before {
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(120deg, color-mix(in srgb, var(--acento) 34%, transparent), color-mix(in srgb, var(--borde) 92%, transparent) 50%, color-mix(in srgb, var(--acento-2) 30%, transparent));
-  content: "";
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  -webkit-mask-composite: xor;
-  pointer-events: none;
-}
-
-.chat-composer-pill:focus-within {
-  transform: translateY(-1px);
-  box-shadow:
-    0 1px 0 color-mix(in srgb, #fff 18%, transparent) inset,
-    0 0 0 4px color-mix(in srgb, var(--acento) 16%, transparent),
-    0 16px 34px color-mix(in srgb, var(--texto) 10%, transparent);
-}
-
-.chat-composer-pill.is-busy::before {
-  background: conic-gradient(
-    from var(--stream-angle, 0deg),
-    color-mix(in srgb, var(--borde) 92%, transparent) 0deg,
-    var(--acento) 90deg,
-    var(--acento-2) 180deg,
-    color-mix(in srgb, var(--borde) 92%, transparent) 270deg
-  );
-  animation: stream-border 2s linear infinite;
-}
-
-/* El input ya no dibuja su propia caja: borde y foco viven en la píldora,
-   para que sean una sola pieza y no dos rectángulos anidados. */
-.chat-composer-input {
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  padding: 0.6rem 0;
-  outline: none;
-  width: 100%;
-}
-
-/* The pill owns the focus state. Keeping a second focus box on the input
-   creates the clipped rectangle visible inside the composer. */
-.chat-composer-pill .chat-composer-input:focus,
-.chat-composer-pill .chat-composer-input:focus-visible {
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
-  outline: none;
-}
-
-.typing-indicator {
-  min-height: 1.4rem;
-}
-
-.typing-dots {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-  padding-top: 0.15rem;
-}
-
-.typing-dots span {
-  width: 0.28rem;
-  height: 0.28rem;
-  border-radius: 999px;
-  background: var(--acento);
-  animation: typing-dot 1.2s ease-in-out infinite;
-}
-
-.typing-dots span:nth-child(2) {
-  animation-delay: 0.14s;
-}
-
-.typing-dots span:nth-child(3) {
-  animation-delay: 0.28s;
-}
-
-@keyframes typing-dot {
-  0%,
-  60%,
-  100% {
-    opacity: 0.3;
-    transform: translateY(0);
-  }
-
-  30% {
-    opacity: 1;
-    transform: translateY(-0.18rem);
-  }
-}
-
-.chat-send {
-  position: relative;
-  display: inline-flex;
-  min-height: 2.5rem;
-  align-items: center;
-  gap: 0.4rem;
-  overflow: hidden;
-  border-radius: 1rem;
-  background: linear-gradient(135deg, var(--acento), color-mix(in srgb, var(--acento) 58%, var(--acento-2)));
-  padding: 0 0.9rem;
-  color: #fff;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  box-shadow: 0 8px 20px var(--sombra-acento);
-}
-
-/* Destello que barre el botón al pasar el mouse. */
-.chat-send::after {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(115deg, transparent 35%, color-mix(in srgb, #fff 40%, transparent) 50%, transparent 65%);
-  content: "";
-  opacity: 0;
-  transform: translateX(-120%);
-  pointer-events: none;
-}
-
-.chat-send:hover:not(:disabled)::after {
-  opacity: 1;
-  transform: translateX(120%);
-  transition: transform 620ms var(--ease-out), opacity 200ms linear;
-}
-
-.chat-send:hover:not(:disabled) {
-  box-shadow: 0 12px 26px var(--sombra-acento);
-}
-
-.chat-send:disabled {
-  cursor: not-allowed;
-  background: color-mix(in srgb, var(--superficie-2) 80%, var(--fondo));
-  color: var(--texto-suave);
-  box-shadow: none;
-}
-
-@media (max-width: 480px) {
-  .chat-bubble-ia.is-streaming {
-    min-width: 9.5rem;
-  }
-
-  .chat-send-label {
-    display: none;
-  }
-
-  .chat-send {
-    padding: 0 0.75rem;
-  }
-}
-
-/* --- Sugerencias de arranque --------------------------------------------- */
-
-.quick-action::after {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(115deg, transparent 40%, color-mix(in srgb, var(--acento) 16%, transparent) 50%, transparent 60%);
-  content: "";
-  opacity: 0;
-  transform: translateX(-110%);
-  pointer-events: none;
-}
-
-.quick-action:hover::after {
-  opacity: 1;
-  transform: translateX(110%);
-  transition: transform 700ms var(--ease-out), opacity 200ms linear;
-}
-
-/* El bloque global de prefers-reduced-motion ya neutraliza las animaciones
-   (0.01ms, una iteración); esto además apaga los efectos puramente
-   decorativos para que no queden congelados a media pose. */
-@media (prefers-reduced-motion: reduce) {
-  .chat-row-ia .chat-avatar::before,
-  .chat-bubble-ia.is-streaming::after,
-  .chat-send::after,
-  .quick-action::after,
-  .typing-dots span {
-    display: none;
-  }
-}
-
-/* Happie IA: arte generativo por tema y transiciones del recomendador/wizard.
-   La regla global de prefers-reduced-motion (arriba) ya neutraliza duración e
-   iteración de estas animaciones. */
 @keyframes happie-flotar {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-6px); }

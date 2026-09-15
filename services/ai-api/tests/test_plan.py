@@ -754,13 +754,17 @@ async def test_official_structure_is_accepted_and_bound_to_the_plan_hash() -> No
     plain_resolved = cast(dict[str, object], plain["plan_resuelto"])
     official_resolved = cast(dict[str, object], official["plan_resuelto"])
     asymmetrical_resolved = cast(dict[str, object], asymmetrical["plan_resuelto"])
-    structures = cast(list[dict[str, object]], cast(dict[str, object], official_resolved["plan"])["estructuras"])
+    structures = cast(
+        list[dict[str, object]], cast(dict[str, object], official_resolved["plan"])["estructuras"]
+    )
     assert structures[0]["estructura_oficial"] == "arco"
     assert official_resolved["plan_hash"] != plain_resolved["plan_hash"]
     # A plain official arch keeps the base geometry; the asymmetrical variant tapers its band.
     assert official_resolved["totales"] == plain_resolved["totales"]
     plain_units = cast(list[dict[str, object]], plain_resolved["estructuras"])[0]["total_unidades"]
-    asymmetrical_units = cast(list[dict[str, object]], asymmetrical_resolved["estructuras"])[0]["total_unidades"]
+    asymmetrical_units = cast(list[dict[str, object]], asymmetrical_resolved["estructuras"])[0][
+        "total_unidades"
+    ]
     assert isinstance(plain_units, int) and isinstance(asymmetrical_units, int)
     assert abs(asymmetrical_units - plain_units * 0.7) <= 1
 
@@ -788,7 +792,9 @@ def test_half_arch_axis_is_a_quarter_ellipse_that_uses_the_height() -> None:
         {"estructura_oficial": "estructura_inventada"},
     ],
 )
-def test_incoherent_official_structure_is_rejected_by_the_contract(changes: dict[str, object]) -> None:
+def test_incoherent_official_structure_is_rejected_by_the_contract(
+    changes: dict[str, object],
+) -> None:
     # The coherence table is generated from estructuras-oficiales.ts into the JSON Schema.
     with pytest.raises(ValidationError):
         _request_with_structure(changes)

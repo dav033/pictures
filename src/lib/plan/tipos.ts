@@ -103,6 +103,10 @@ const EstructuraPlanSchema = z.object({
   referencia_element_id: z.string().trim().min(1).max(80).optional(),
   /** Estructura oficial que materializa (`estructuras-oficiales.ts`); coherente con tipo, densidad y ubicación. */
   estructura_oficial: z.enum(ESTRUCTURAS_OFICIALES_IDS).optional(),
+  /** Dominant colors of the reference element this structure materializes
+   * (`colores-referencia.ts`). Written by the server from the turn blueprint,
+   * never by the model; both resolvers report the missing ones in `sustituciones`. */
+  colores_referencia: z.array(z.string().trim().min(1).max(80)).max(8).optional(),
 }).strict().superRefine((value, ctx) => {
   for (const problema of incoherenciasEstructuraOficial(value)) {
     ctx.addIssue({ code: "custom", path: [problema.campo], message: problema.mensaje });
@@ -328,6 +332,10 @@ export const EstructuraPlan1_1Schema = z.object({
   variant_overrides: z.array(VariantOverrideSchema).max(24).optional(),
   referencia_element_id: z.string().trim().min(1).max(80).optional(),
   estructura_oficial: z.enum(ESTRUCTURAS_OFICIALES_IDS).optional(),
+  /** Dominant colors of the reference element this structure materializes
+   * (`colores-referencia.ts`). Written by the server from the turn blueprint,
+   * never by the model; both resolvers report the missing ones in `sustituciones`. */
+  colores_referencia: z.array(z.string().trim().min(1).max(80)).max(8).optional(),
 }).strict().superRefine((value, ctx) => {
   validarRelacionesFisicasSchema(value.relaciones_fisicas, ctx);
   for (const problema of incoherenciasEstructuraOficial(value)) {

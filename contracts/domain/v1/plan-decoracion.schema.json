@@ -309,6 +309,15 @@
               "aro_circular",
               "techo_globos"
             ]
+          },
+          "colores_referencia": {
+            "maxItems": 8,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            }
           }
         },
         "required": [

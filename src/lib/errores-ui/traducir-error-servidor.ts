@@ -6,6 +6,7 @@ import { AllowlistProductoVarianteError } from "@/lib/plan/allowlist-producto-va
 import { PlanBackendNoDisponibleError } from "@/lib/plan/resolver-backend";
 import { PythonPlanMappingError } from "@/lib/plan/python-mapper";
 import { PlanEditError } from "@/lib/plan/edicion-error";
+import { ProveedorImagenNoDisponibleError } from "@/lib/ia/sempertex-lora";
 import { construirUiErrorV1, type UiErrorCodeV1, type UiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 
 /**
@@ -37,6 +38,39 @@ const CODIGOS_POR_PREFIJO: Readonly<Record<string, UiErrorCodeV1>> = {
   PRESUPUESTO_EXCEDIDO: "PRESUPUESTO_EXCEDIDO",
   IMAGE_QA_REQUIRED: "VALIDACION_VISUAL_REQUERIDA",
   NON_CONFORME: "IMAGEN_NO_FIEL",
+  REFERENCE_IMAGE_TOO_LARGE: "ADJUNTO_INVALIDO",
+  REFERENCE_IMAGE_UNREADABLE: "ADJUNTO_INVALIDO",
+  REFERENCE_IMAGE_EMPTY: "ADJUNTO_INVALIDO",
+  REFERENCE_IMAGE_TYPE: "ADJUNTO_INVALIDO",
+  REFERENCE_IMAGE_DIMENSIONS: "ADJUNTO_INVALIDO",
+  REFERENCE_TOO_MANY_IMAGES: "ADJUNTO_INVALIDO",
+  REFERENCE_NO_IMAGES: "ADJUNTO_INVALIDO",
+};
+
+/**
+ * Prefijo con el que el adaptador de Gemini (`PREFIJO_IMAGEN_RECHAZADA` en
+ * packages/agente-core/src/gemini/chat.ts) marca un 400 del proveedor sobre
+ * una imagen adjunta. Se repite como literal para no importar el adaptador
+ * del proveedor desde la traducción de errores.
+ */
+const PREFIJO_IMAGEN_RECHAZADA = "AI_IMAGE_REJECTED";
+
+/**
+ * Texto de cliente específico para los adjuntos de la foto de referencia,
+ * más preciso que el genérico de ADJUNTO_INVALIDO (una foto corrupta, vacía
+ * o demasiadas fotos recibían "más livianas" o "Recarga la página").
+ * Adaptador temporal: se retira cuando ui-error-v1 tenga códigos propios para
+ * estos casos, porque su catálogo es el dueño del texto al cliente.
+ */
+const MENSAJE_ADJUNTO_POR_ORIGEN: Readonly<Record<string, string>> = {
+  [PREFIJO_IMAGEN_RECHAZADA]: "No pude leer esa foto. Prueba con otra imagen (JPG, PNG o WebP).",
+  REFERENCE_IMAGE_UNREADABLE: "No pude leer esa foto. Prueba con otra imagen (JPG, PNG o WebP).",
+  REFERENCE_IMAGE_TOO_LARGE: "La foto es demasiado grande. Prueba con una imagen más liviana o de menor resolución (JPG, PNG o WebP).",
+  REFERENCE_IMAGE_EMPTY: "La foto llegó vacía. Vuelve a adjuntarla.",
+  REFERENCE_IMAGE_TYPE: "Solo puedo usar fotos JPG, PNG o WebP.",
+  REFERENCE_IMAGE_DIMENSIONS: "La foto es muy pequeña o tiene unas medidas que no puedo usar. Prueba con otra imagen.",
+  REFERENCE_TOO_MANY_IMAGES: "Puedes adjuntar hasta tres fotos de referencia a la vez.",
+  REFERENCE_NO_IMAGES: "Adjunta al menos una foto de referencia.",
 };
 
 /**
@@ -95,6 +129,10 @@ export interface ClasificacionError {
 
 /** Clasificación pura (sin I/O); expuesta para las pruebas de regresión. */
 export function clasificarErrorServidor(error: unknown): ClasificacionError {
+  if (error instanceof ErrorIA && error.message.startsWith(PREFIJO_IMAGEN_RECHAZADA)) {
+    return { code: "ADJUNTO_INVALIDO", codigoOrigen: PREFIJO_IMAGEN_RECHAZADA, causa: error.causa };
+  }
+  if (error instanceof ProveedorImagenNoDisponibleError) return { code: "VISTA_PREVIA_NO_DISPONIBLE", codigoOrigen: `FAL_${error.status}`, causa: error.causa };
   if (error instanceof ErrorIA) return { code: codigoDeErrorIA(error), codigoOrigen: `AI_${error.causa.toUpperCase()}`, causa: error.causa };
   if (error instanceof NonCommercialSourceRejectedError) return { code: "PRODUCTO_NO_DISPONIBLE", codigoOrigen: "NON_COMMERCIAL_SOURCE", causa: "fuente_no_comercial" };
   if (error instanceof AllowlistProductoVarianteError) return { code: "PROPUESTA_DESACTUALIZADA", codigoOrigen: error.causa, causa: error.causa };
@@ -137,12 +175,17 @@ export function clasificarErrorServidor(error: unknown): ClasificacionError {
 export function traducirErrorServidor(error: unknown, requestId?: string): UiErrorV1 {
   const clasificacion = clasificarErrorServidor(error);
   const mensaje = error instanceof Error ? error.message : "Se lanzó un valor que no es Error.";
-  return construirUiErrorV1(clasificacion.code, {
+  const uiError = construirUiErrorV1(clasificacion.code, {
     mensaje,
     codigoOrigen: clasificacion.codigoOrigen,
     causa: clasificacion.causa,
     requestId,
   });
+  const mensajeAdjunto = clasificacion.code === "ADJUNTO_INVALIDO" && clasificacion.codigoOrigen
+    ? MENSAJE_ADJUNTO_POR_ORIGEN[clasificacion.codigoOrigen]
+    : undefined;
+  // Static strings under the 280-character contract limit: no re-validation needed.
+  return mensajeAdjunto ? { ...uiError, mensaje_usuario: mensajeAdjunto } : uiError;
 }
 
 /**

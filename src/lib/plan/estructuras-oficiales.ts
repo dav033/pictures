@@ -51,6 +51,12 @@ export type EstructuraOficial = {
   sustantivoEn: string;
   /** Diferencias de geometría frente al tipo base; ausente = misma geometría. */
   geometria?: GeometriaEstructuraOficial;
+  /**
+   * Realistic minimum of loose latex balloons per instance for structures
+   * without computed geometry (`unidades_declaradas`). A design assumption, not
+   * a calibrated figure; `validarUnidadesDeclaradas` (restricciones.ts) applies it.
+   */
+  unidadesMinimasPorInstancia?: number;
 };
 
 /**
@@ -86,8 +92,8 @@ export const ESTRUCTURAS_OFICIALES: Readonly<Record<EstructuraOficialId, Estruct
   pared_no_densa: { id: "pared_no_densa", nombre: "Pared de globos no densa", descripcion: "Fondo de globos ligero, deja ver la pared.", tipoBase: "pared", tiposAdmitidos: ["pared"], forma: "organica", densidades: ["sencilla"], sustantivoEn: "airy balloon wall installation" },
   guirnalda: { id: "guirnalda", nombre: "Guirnalda", descripcion: "Tira orgánica de globos sobre una superficie o el piso.", tipoBase: "guirnalda", tiposAdmitidos: ["guirnalda"], forma: "organica", sustantivoEn: "organic balloon garland" },
   centro_mesa: { id: "centro_mesa", nombre: "Centro de mesa con globos", descripcion: "Arreglo bajo de globos sobre una mesa.", tipoBase: "centro_mesa", tiposAdmitidos: ["centro_mesa"], forma: "libre", sustantivoEn: "small balloon cluster centerpiece" },
-  bouquet: { id: "bouquet", nombre: "Bouquet de globos", descripcion: "Ramillete de globos atados que flota o se apoya en un peso.", tipoBase: "kit", tiposAdmitidos: ["kit"], forma: "libre", sustantivoEn: "balloon bouquet" },
-  figura: { id: "figura", nombre: "Figura con globos", descripcion: "Figura armada con globos (animal, número, personaje).", tipoBase: "kit", tiposAdmitidos: ["kit", "escultura"], forma: "libre", sustantivoEn: "balloon sculpture figure" },
+  bouquet: { id: "bouquet", nombre: "Bouquet de globos", descripcion: "Ramillete de globos atados que flota o se apoya en un peso.", tipoBase: "kit", tiposAdmitidos: ["kit"], forma: "libre", sustantivoEn: "balloon bouquet", unidadesMinimasPorInstancia: 5 },
+  figura: { id: "figura", nombre: "Figura con globos", descripcion: "Figura armada con globos (animal, número, personaje).", tipoBase: "kit", tiposAdmitidos: ["kit", "escultura"], forma: "libre", sustantivoEn: "balloon sculpture figure", unidadesMinimasPorInstancia: 20 },
   aro_circular: { id: "aro_circular", nombre: "Aro circular", descripcion: "Marco redondo cubierto de globos.", tipoBase: "arco", tiposAdmitidos: ["arco"], forma: "circular", sustantivoEn: "circular balloon hoop", geometria: { eje: "circunferencia" } },
   techo_globos: { id: "techo_globos", nombre: "Techo de globos", descripcion: "Globos suspendidos que cubren el techo.", tipoBase: "guirnalda", tiposAdmitidos: ["guirnalda"], forma: "libre", ubicacion: "techo", sustantivoEn: "ceiling balloon installation" },
 };
@@ -218,7 +224,7 @@ export const GUIA_ESTRUCTURAS_OFICIALES = `
 ESTRUCTURAS OFICIALES
 Solo diseña con estas estructuras. En confirmar_plan_decoracion pon en cada estructura estructura_oficial con el id indicado, el tipo indicado, una densidad admitida cuando se indique, y empieza el nombre con su etiqueta oficial (ej. "Semiarco asimétrico derecho"):
 ${Object.values(ESTRUCTURAS_OFICIALES).map((estructura) => `- ${estructura.nombre} (estructura_oficial ${estructura.id}): tipo ${estructura.tipoBase}${estructura.densidades ? `, densidad ${estructura.densidades.join(" o ")}` : ""}${estructura.ubicacion ? `, ubicación ${estructura.ubicacion}` : ""}. ${estructura.descripcion}`).join("\n")}
-- Bouquet y Figura con globos no tienen geometría calculada: indica variant_id y unidades_declaradas.
+- Bouquet y Figura con globos no tienen geometría calculada: indica variant_id y unidades_declaradas. unidades_declaradas es el total de globos de la pieza sumando sus repeticiones (no el número de figuras): al menos ${Object.values(ESTRUCTURAS_OFICIALES).filter((estructura) => estructura.unidadesMinimasPorInstancia).map((estructura) => `${estructura.unidadesMinimasPorInstancia} globos por ${estructura.nombre}`).join(" y ")} y nunca menos unidades que materiales.
 - Asimétrica significa un contorno irregular o un lado más cargado; dos piezas separadas de alturas distintas son dos estructuras, no una asimétrica.`;
 
 /**

@@ -8,8 +8,13 @@ import {
   ambientacionCliente,
   cantidadCliente,
   coloresCliente,
+  coloresObservadosCliente,
   describirEstructuraCliente,
   medidasCliente,
+  medidasCortasCliente,
+  nombreConCantidadCliente,
+  piezasVistasEnReferencia,
+  ubicacionCortaCliente,
   productoCliente,
   productoConTamanoCliente,
   pulgadasConCentimetrosCliente,
@@ -72,6 +77,11 @@ assert.equal(
   resumenPlanCliente([semiarco, columna], ["azul", "blanco", "dorado"]),
   "Un semiarco asimétrico a la derecha y una columna a la izquierda, en azul, blanco y dorado.",
 );
+assert.equal(
+  resumenPlanCliente([{ oficialId: "semiarco", nombre: "Semiarco izquierdo", ubicacion: "lateral_izquierdo", repeticiones: 1 }, { oficialId: "semiarco", nombre: "Semiarco derecho", ubicacion: "lateral_derecho", repeticiones: 1 }], ["rosado"]),
+  "Dos semiarcos, uno a cada lado, en rosado.",
+  "un par de piezas iguales a cada lado no se repite (#10)",
+);
 ok("resumen derivado de las estructuras reales");
 
 const descripciones = new Map([["EST_01_SEMIARCO", "el semiarco a la derecha"], ["EST_02_COLUMNA", "la columna a la izquierda"]]);
@@ -91,6 +101,21 @@ assert.equal(
   supuestoCliente("medidas asumidas para centro_mesa: 0.4 m × 0.5 m — no nos diste el tamaño del espacio"),
   "Usé medidas estándar para centro de mesa con globos (0,4 m × 0,5 m) porque no me diste el tamaño del espacio.",
 );
+// Auditoría #3: los colores de la foto que el plan no lleva llegan en `sustituciones`
+// con su frase para el cliente; no se reescriben como si fueran un tamaño.
+{
+  const motivo = "La foto de referencia muestra burdeos y esta pieza no lo lleva: se armó con plateado y blanco.";
+  const textos = sustitucionesCliente([
+    { estructura_id: "EST_01_SEMIARCO", pedido: "R-18", entregado: "R-12", motivo: "sin cobertura del tamaño" },
+    { estructura_id: "EST_01_SEMIARCO", pedido: "burdeos", entregado: "plateado, blanco", motivo },
+    { estructura_id: "EST_02_COLUMNA", pedido: "burdeos", entregado: "plateado, blanco", motivo },
+  ], descripciones);
+  assert.deepEqual(textos, [
+    "Para el semiarco a la derecha no hay globos de 18 pulgadas en ese color; usamos globos de 12 pulgadas.",
+    motivo,
+  ]);
+  assert.ok(textos.every((texto) => !/globos de burdeos/.test(texto)), "un color no se describe como tamaño");
+}
 ok("sustituciones agrupadas y supuestos sin ids, códigos ni slugs");
 
 // 2. Referencia: estructuras vistas y ambientación en español.
@@ -140,6 +165,80 @@ const blueprint = blueprintParseado.data;
 assert.equal(resumenReferenciaCliente(blueprint), "Veo un semiarco asimétrico a la derecha y una columna a la izquierda.");
 assert.deepEqual(ambientacionCliente(blueprint, new Set(["REF_01_E01", "REF_01_E02"])), ["Luces", "Hojas y plantas"], "sin letreros y en español");
 ok("referencia: estructuras vistas y ambientación en español");
+
+// Hallazgo #10 (auditoría 2026-09-14): el resumen de la foto omitía kits y
+// racimos (F21 devolvía null), repetía "una columna a la izquierda, una columna
+// a la izquierda…" (F05/F07) y decía "un techo de globos en el techo" (F09/F10).
+{
+  function blueprintCon(elementos: Record<string, unknown>[], paleta: string[] = []) {
+    const resultado = ReferenceBlueprintV2Schema.safeParse({
+      schema_version: "2.0",
+      source_images: [{ image_id: "REF_01", approved_roles: ["composition_reference"] }],
+      elements: elementos,
+      composition: { focal_point: "x", density: "dense", symmetry: "symmetric", negative_space: [] },
+      palette: { observed: paleta, priority: [] },
+      unresolved_decisions: [],
+    });
+    if (!resultado.success) assert.fail(resultado.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join(" | "));
+    return resultado.data;
+  }
+  const semantica = (tipo: string, ubicacion: string, id: string) => ({ structure_type: tipo, placement: ubicacion, design_role: "soporte", repetition_group: id, density: "media" });
+  const forma = (shape: string) => ({ observed_colors: ["white"], resolved_colors: [], color_policy: "match_reference", material: "latex", shape, composition: "c" });
+
+  const columnasPar = blueprintCon([
+    elemento("REF_01_E01", { name: "left balloon column", appearance: forma("tall column, on the left"), visual_semantics: semantica("columna", "lateral_izquierdo", "REF_01_E01") }),
+    elemento("REF_01_E02", { name: "right balloon column", appearance: forma("tall column, on the right"), visual_semantics: semantica("columna", "lateral_derecho", "REF_01_E02") }),
+  ]);
+  assert.equal(resumenReferenciaCliente(columnasPar), "Veo dos columnas, una a cada lado.");
+
+  const columnasIzquierda = blueprintCon(["E01", "E02", "E03"].map((sufijo) => elemento(`REF_01_${sufijo}`, { appearance: forma("column, on the left"), visual_semantics: semantica("columna", "lateral_izquierdo", `REF_01_${sufijo}`) })));
+  assert.equal(resumenReferenciaCliente(columnasIzquierda), "Veo tres columnas a la izquierda.", "sin repetir la misma pieza");
+
+  const kits = blueprintCon([
+    elemento("REF_01_E01", { name: "left foil kit", appearance: forma("medium kit, on the left"), visual_semantics: semantica("kit", "lateral_izquierdo", "REF_01_E01") }),
+    elemento("REF_01_E02", { name: "right foil kit", appearance: forma("medium kit, on the right"), visual_semantics: semantica("kit", "lateral_derecho", "REF_01_E02") }),
+  ]);
+  assert.equal(resumenReferenciaCliente(kits), "Veo dos arreglos de globos, uno a cada lado.", "F21: dos kits nunca dejan el resumen vacío");
+
+  const racimoYBouquet = blueprintCon([
+    elemento("REF_01_E01", { name: "balloon cluster", appearance: forma("short dense cluster, on the left, standing on the floor"), visual_semantics: semantica("kit", "lateral_izquierdo", "REF_01_E01") }),
+    elemento("REF_01_E02", { name: "helium bouquet", appearance: forma("medium bouquet, on the right"), visual_semantics: semantica("kit", "lateral_derecho", "REF_01_E02") }),
+  ]);
+  assert.equal(resumenReferenciaCliente(racimoYBouquet), "Veo un racimo de globos a la izquierda y un bouquet de globos a la derecha.");
+
+  const techo = blueprintCon([
+    elemento("REF_01_E01", { name: "ceiling balloon cloud", appearance: forma("dense ceiling installation, spanning the full width"), visual_semantics: semantica("guirnalda", "techo", "REF_01_E01") }),
+  ]);
+  assert.equal(resumenReferenciaCliente(techo), "Veo un techo de globos.");
+  assert.doesNotMatch(describirEstructuraCliente({ oficialId: "techo_globos", nombre: "Techo de globos", ubicacion: "techo", repeticiones: 1 }, "indefinido"), /en el techo/);
+  assert.deepEqual(piezasVistasEnReferencia(techo).map((pieza) => [pieza.nombre, pieza.ubicacionCorta]), [["Techo de globos", null]]);
+  assert.deepEqual(
+    piezasVistasEnReferencia(columnasPar).map((pieza) => [pieza.elementId, pieza.nombre, pieza.ubicacionCorta]),
+    [["REF_01_E01", "Columna", "izquierda"], ["REF_01_E02", "Columna", "derecha"]],
+  );
+
+  const sinGlobos = blueprintCon([elemento("REF_01_E01", { name: "flowers", category: "floral", scene_role: "accent" })]);
+  assert.equal(resumenReferenciaCliente(sinGlobos), null, "sin piezas de globos no hay resumen");
+  assert.deepEqual(piezasVistasEnReferencia(sinGlobos), []);
+
+  const colores = coloresObservadosCliente(blueprintCon([], ["pastel pink", "white", "chrome silver", "clear", "neon-ish mystery"]));
+  assert.deepEqual(colores.map((muestra) => muestra.etiqueta), ["Rosado pastel", "Blanco", "Plateado cromado", "Transparente"], "en español y sin colores desconocidos");
+  ok("referencia: repetidas agrupadas, racimos y kits nombrados, sin 'techo en el techo' (#10)");
+}
+
+// Textos cortos de la tarjeta de propuesta (maquetas Main y ChatNormal).
+{
+  assert.equal(medidasCortasCliente("semiarco", { ancho_m: 1.6, alto_m: 2.4, largo_m: 0.5 }), "1,6 × 2,4 m");
+  assert.equal(medidasCortasCliente("columna", { alto_m: 2 }), "2 m de alto");
+  assert.equal(medidasCortasCliente("guirnalda", { ancho_m: 1.5, largo_m: 3.5 }), "3,5 m de largo");
+  assert.equal(medidasCortasCliente("pared", {}), null);
+  assert.equal(nombreConCantidadCliente({ oficialId: "arco", nombre: "Arco Orgánico", ubicacion: "fondo_pared", repeticiones: 1 }), "Arco");
+  assert.equal(nombreConCantidadCliente({ oficialId: "columna", nombre: "Columnas", ubicacion: "entrada", repeticiones: 2 }), "2 columnas");
+  assert.equal(ubicacionCortaCliente("lateral_izquierdo"), "izquierda");
+  assert.equal(ubicacionCortaCliente("lateral_izquierdo", 2), "ambos lados");
+  assert.equal(ubicacionCortaCliente("fondo_pared"), "pared del fondo");
+  ok("medidas cortas, nombre con cantidad y ubicación corta");
+}
 
 // 3. Render de la tarjeta con el caso de la captura 152524.
 const planParseado = PlanDecoracionSchema.safeParse({
@@ -252,7 +351,8 @@ assert.match(texto, /plateado metalizado/);
 assert.match(texto, /no hay globos de 18 pulgadas en ese color; usamos globos de 12 pulgadas/);
 assert.match(texto, /Usé medidas estándar para semiarco \(1,2 m × 2,2 m\)/);
 assert.match(texto, /Unos 58 globos en total/);
-assert.match(texto, /Ambientación de tu foto/);
+// Rediseño iteración 4 (maqueta Main): la ambientación va en una línea "En la imagen también pondré … · no se cotizan".
+assert.match(texto, /En la imagen también pondré Luces Hojas y plantas · no se cotizan/);
 assert.match(texto, /Luces/);
 assert.match(texto, /no se cotiza/);
 assert.match(html, /style="background:/, "los colores se muestran como muestras visuales");

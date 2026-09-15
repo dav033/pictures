@@ -54,6 +54,27 @@ type FalQueueStatus = {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * fal.ai refused the account, not the request: 402/403 without balance ("User is
+ * locked. Reason: Exhausted balance") or 401/403 with an invalid key. Retrying
+ * cannot fix it, so the UI maps it to a non-retryable message
+ * (`VISTA_PREVIA_NO_DISPONIBLE`) while the approved proposal stays saved.
+ */
+export class ProveedorImagenNoDisponibleError extends Error {
+  readonly causa: "saldo_agotado" | "acceso_denegado";
+  readonly status: number;
+
+  constructor(status: number, causa: "saldo_agotado" | "acceso_denegado", detalle: string) {
+    super(`IMAGEN_PROVEEDOR_NO_DISPONIBLE: fal.ai rechazó la cuenta (${status}, ${causa})${detalle ? `: ${detalle}` : ""}`);
+    this.name = "ProveedorImagenNoDisponibleError";
+    this.causa = causa;
+    this.status = status;
+  }
+}
+
+const ESTADOS_CUENTA_RECHAZADA = new Set([401, 402, 403]);
+const SIN_SALDO = /balance|billing|locked|top up|payment|credit|quota exceeded/i;
+
 async function falResponseError(response: Response, fallback: string): Promise<Error> {
   let detail = "";
   try {
@@ -66,6 +87,10 @@ async function falResponseError(response: Response, fallback: string): Promise<E
     }
   } catch {
     // Un proxy puede devolver HTML en lugar de JSON.
+  }
+  if (ESTADOS_CUENTA_RECHAZADA.has(response.status)) {
+    const causa = response.status === 402 || SIN_SALDO.test(detail) ? "saldo_agotado" : "acceso_denegado";
+    return new ProveedorImagenNoDisponibleError(response.status, causa, detail.slice(0, 300));
   }
   return new Error(`${fallback} (${response.status})${detail ? `: ${detail.slice(0, 300)}` : ""}`);
 }

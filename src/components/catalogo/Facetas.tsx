@@ -92,7 +92,7 @@ export function Facetas({ categorias, colores, formas, ocasiones }: Props) {
   return (
     <div className="space-y-5">
       <div>
-        <input
+        <input aria-label="Buscar en el catálogo"
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
           placeholder="Buscar en el catálogo…"

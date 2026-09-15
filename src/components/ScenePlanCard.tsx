@@ -19,7 +19,7 @@ export function ScenePlanCard({ plan, onApprove, approved = false, degraded = fa
   const gaps = plan.lines.filter((l) => l.item_id.startsWith("gap:"));
 
   return (
-    <section className="mt-3 max-w-[92%] space-y-3 rounded-xl border border-acento/30 bg-superficie p-4 shadow-sm">
+    <section className="mt-3 max-w-[92%] space-y-3 rounded-xl border border-acento/30 bg-superficie p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-texto">
@@ -65,20 +65,20 @@ export function ScenePlanCard({ plan, onApprove, approved = false, degraded = fa
 
       {/* Gaps */}
       {gaps.length > 0 && (
-        <div className="space-y-1 rounded-lg bg-amber-50 p-2">
-          <p className="text-xs font-semibold text-amber-700">Sin cobertura</p>
+        <div className="space-y-1 rounded-lg bg-aviso-suave p-2">
+          <p className="text-xs font-semibold text-aviso">Sin cobertura</p>
           {gaps.map((g) => (
-            <p key={g.slot_id} className="text-[10px] text-amber-600">{g.slot_id}</p>
+            <p key={g.slot_id} className="text-[10px] text-aviso">{g.slot_id}</p>
           ))}
         </div>
       )}
 
       {/* Blockers */}
       {plan.approval_blockers.length > 0 && (
-        <div className="space-y-1 rounded-lg bg-red-50 p-2">
-          <p className="text-xs font-semibold text-red-600">Pendiente de resolver</p>
+        <div className="space-y-1 rounded-lg bg-error-suave p-2">
+          <p className="text-xs font-semibold text-error">Pendiente de resolver</p>
           {plan.approval_blockers.map((b, i) => (
-            <p key={i} className="text-[10px] text-red-500">{b}</p>
+            <p key={i} className="text-[10px] text-error">{b}</p>
           ))}
         </div>
       )}
@@ -88,7 +88,7 @@ export function ScenePlanCard({ plan, onApprove, approved = false, degraded = fa
         <button
           type="button"
           onClick={onApprove}
-          className="w-full rounded-lg bg-amber-100 px-3 py-2 text-xs font-medium text-amber-700 hover:bg-amber-200 transition-colors"
+          className="w-full rounded-lg border border-aviso/40 bg-aviso-suave px-3 py-2 text-xs font-medium text-aviso hover:border-aviso transition-colors"
         >
           Aceptar perfil degradado y generar
         </button>
@@ -98,20 +98,20 @@ export function ScenePlanCard({ plan, onApprove, approved = false, degraded = fa
         <button
           type="button"
           onClick={onApprove}
-          className="w-full rounded-lg bg-acento px-3 py-2 text-xs font-semibold text-white hover:bg-acento/90 transition-colors"
+          className="w-full rounded-lg bg-acento px-3 py-2 text-xs font-semibold text-sobre-acento hover:bg-acento-hover transition-colors"
         >
           Aprobar y generar imagen
         </button>
       )}
 
       {isBlocked && (
-        <p className="text-xs text-red-500 text-center">
+        <p className="text-xs text-error text-center">
           No se puede generar: hay bloqeuos de aprobación pendientes.
         </p>
       )}
 
       {approved && (
-        <p className="text-xs text-green-600 text-center font-semibold">
+        <p className="text-xs text-exito text-center font-semibold">
           Plan aprobado — generando visualización
         </p>
       )}

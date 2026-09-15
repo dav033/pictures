@@ -126,10 +126,10 @@ export const HERRAMIENTAS_PLAN: Herramienta[] = [
               rol_escena: { type: "string", enum: [...ROLES_ESCENA] },
               ubicacion: { type: "string", enum: [...UBICACIONES] },
               medidas: { type: "object", properties: { ancho_m: { type: "number" }, alto_m: { type: "number" }, largo_m: { type: "number" } } },
-              repeticiones: { type: "integer", minimum: 1, maximum: 24 },
+              repeticiones: { type: "integer", minimum: 1, maximum: 24, description: "Número de piezas iguales de esta estructura (el número de piezas que muestra la referencia, ej. 2 columnas). No es un número de globos." },
               densidad: { type: "string", enum: [...DENSIDADES] },
               mezcla: { type: "string", enum: [...MEZCLAS], description: "organica_fina pide globos de 5, 9, 12, 18 y 24 pulgadas del mismo producto y color (organica_gruesa de 9 a 24, solo_grandes 18 y 24). Revisa diametro_pulgadas de las variantes: si el producto tiene 5, 9 y 12 pulgadas usa organica_fina aunque falten 18 o 24 (el backend los sustituye por el tamaño más cercano y lo avisa); usa clasica solo si el producto tiene únicamente 12 pulgadas o el cliente pidió un único tamaño. Una estructura orgánica toda de 12 pulgadas se ve plana." },
-              unidades_declaradas: { type: "integer", minimum: 1 },
+              unidades_declaradas: { type: "integer", minimum: 1, description: "Solo para piezas sin geometría (bouquet, figura, kit, backdrop, accesorio). Son unidades de venta del catálogo para la pieza completa, sumando todas sus repeticiones: si la pieza se arma con globos sueltos, es el total de GLOBOS (no el número de figuras ni de bouquets); si el material es un kit empaquetado, un telón o un accesorio, es el número de piezas. Se reparte entre los materiales según participacion y cada material recibe al menos 1, así que nunca declares menos unidades que materiales. Una Figura con globos lleva al menos 20 globos por figura y un Bouquet de globos al menos 5 por bouquet (ej.: 2 figuras con 4 colores → unidades_declaradas 48 o más, repeticiones 2)." },
               materiales: {
                 type: "array",
                 minItems: 1,

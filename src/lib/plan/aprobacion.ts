@@ -30,6 +30,12 @@ export type ContextoPlan = {
   /** `null` when the turn resolved without a published catalog snapshot (TypeScript path only). */
   catalogSnapshotId: string | null;
   allowlist: EntradaAllowlistPlan[];
+  /**
+   * Creativity level (0-5, creatividad.ts) the proposal was designed with.
+   * Generation uses it instead of the current slider so the image matches the
+   * approved plan. `null` for tokens issued before the field existed.
+   */
+  creatividad: number | null;
 };
 
 const TTL_POR_DEFECTO_MS = 24 * 60 * 60 * 1000;
@@ -56,6 +62,8 @@ const PayloadV2Schema = z.object({
   backend: z.enum(["next", "python"]),
   catalogSnapshotId: z.string().min(1).nullable(),
   allowlist: z.array(EntradaAllowlistSchema),
+  // Optional so v2 tokens issued before the field existed keep opening.
+  creatividad: z.number().int().min(0).max(5).optional(),
 }).strict();
 
 const PayloadSchema = z.union([PayloadV2Schema, PayloadV1Schema]);
@@ -117,6 +125,7 @@ function contextoDesdePayload(payload: Payload): ContextoPlan {
       backend: payload.backend,
       catalogSnapshotId: payload.catalogSnapshotId,
       allowlist: payload.allowlist,
+      creatividad: payload.creatividad ?? null,
     };
   }
   // A v1 token predates signed provenance: it can only be re-resolved by the
@@ -128,6 +137,7 @@ function contextoDesdePayload(payload: Payload): ContextoPlan {
     backend: "next",
     catalogSnapshotId: null,
     allowlist: [],
+    creatividad: null,
   };
 }
 
@@ -144,6 +154,8 @@ export function crearTokenPlan(
     backend: BackendPlan;
     catalogSnapshotId: string | null;
     allowlist: EntradaAllowlistPlan[];
+    /** Level the chat designed the plan with; omitted by callers that do not know it. */
+    creatividad?: number;
   },
   ttlMs = TTL_POR_DEFECTO_MS,
 ): string {
@@ -155,6 +167,7 @@ export function crearTokenPlan(
     backend: input.backend,
     catalogSnapshotId: input.catalogSnapshotId,
     allowlist: input.allowlist,
+    ...(input.creatividad === undefined ? {} : { creatividad: input.creatividad }),
   });
 }
 

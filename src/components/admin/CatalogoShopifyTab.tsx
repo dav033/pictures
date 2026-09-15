@@ -68,7 +68,7 @@ export function CatalogoShopifyTab() {
             type="button"
             onClick={sincronizar}
             disabled={sincronizando}
-            className="shrink-0 rounded-xl bg-acento px-4 py-2 text-sm font-medium text-white transition disabled:opacity-40"
+            className="shrink-0 rounded-xl bg-acento px-4 py-2 text-sm font-medium text-sobre-acento transition hover:bg-acento-hover disabled:opacity-40"
           >
             {sincronizando ? "Sincronizando…" : "Sincronizar catálogo"}
           </button>

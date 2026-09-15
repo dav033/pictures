@@ -1,33 +1,10 @@
 import { analizarReferenciasV2 } from "@/lib/ia/analizar-referencias-v2";
 import { chatDe, resolverProveedor } from "@/lib/ia/registro";
-import { ErrorIA, type Imagen, type ImagenEtiquetada, type ProveedorId } from "@/lib/ia/tipos";
-import { registrarFalloUi, traducirErrorServidor } from "@/lib/errores-ui/traducir-error-servidor";
+import type { ProveedorId } from "@/lib/ia/tipos";
+import { registrarFalloUi } from "@/lib/errores-ui/traducir-error-servidor";
+import { cuerpoExito, leerCuerpo, referenciasEtiquetadas, respuestaError, validarCuerpo } from "./analisis-http";
 
 export const maxDuration = 120;
-
-type Body = { images?: Imagen[]; proveedor?: string };
-
-function statusDe(causa: ErrorIA["causa"]): number {
-  if (causa === "sin_llave") return 503;
-  if (causa === "cuota") return 429;
-  if (causa === "filtrado") return 422;
-  if (causa === "timeout") return 504;
-  return 502;
-}
-
-function validarImagenes(images: Imagen[]): void {
-  if (images.length < 1 || images.length > 3) throw new Error("Attach between one and three reference images.");
-  const allowed = new Set(["image/png", "image/jpeg", "image/webp"]);
-  let total = 0;
-  for (const image of images) {
-    if (!allowed.has(image.mime)) throw new Error("Only PNG, JPEG, and WebP reference images are supported.");
-    if (!image.base64 || image.base64.length > 28_000_000) throw new Error("A reference image is too large.");
-    if (image.ancho !== undefined && (image.ancho < 128 || image.ancho > 12_000)) throw new Error("Reference width is outside the supported range.");
-    if (image.alto !== undefined && (image.alto < 128 || image.alto > 12_000)) throw new Error("Reference height is outside the supported range.");
-    total += image.base64.length;
-  }
-  if (total > 60_000_000) throw new Error("Reference payload is too large.");
-}
 
 export async function POST(request: Request) {
   let id: ProveedorId | undefined;
@@ -37,25 +14,19 @@ export async function POST(request: Request) {
     ? correlationHeader
     : requestId;
   try {
-    const body = await request.json() as Body;
-    const images = body.images ?? [];
-    validarImagenes(images);
+    const body = validarCuerpo(await leerCuerpo(request));
     const cookie = request.headers.get("cookie")?.match(/ia_proveedor=(gemini)/)?.[1];
     id = resolverProveedor({ override: body.proveedor, cookie });
     const chat = await chatDe(id);
-    const references: ImagenEtiquetada[] = images.map((image, index) => ({
-      ...image,
-      id: `REF_${String(index + 1).padStart(2, "0")}`,
-      descripcion: "Reference image pending forensic analysis.",
-    }));
+    const references = referenciasEtiquetadas(body.images);
     // La descripción visual no decide productos. El chat resuelve después
     // cada elemento mediante buscar_catalogo_rag contra PostgreSQL validado.
-    const result = await analizarReferenciasV2(chat, references, [], "perceptual", { requestId, correlationId, superficie: "/api/references/analyze" }, request.signal);
-    return Response.json({ blueprint: result.blueprint, metadata: { ...result.metadata, image_dimensions: references.map((image) => ({ image_id: image.id, original: { width: image.originalAncho ?? null, height: image.originalAlto ?? null }, processed: { width: image.ancho ?? null, height: image.alto ?? null } })) }, proveedor: id });
+    // `sin_cache` es el "Reintentar" de la UI: pide un análisis nuevo.
+    const result = await analizarReferenciasV2(chat, references, [], "perceptual", { requestId, correlationId, superficie: "/api/references/analyze" }, request.signal, { forzarNuevoAnalisis: body.sinCache });
+    return Response.json(cuerpoExito(result, references, requestId, id), { headers: { "X-Request-ID": requestId } });
   } catch (error) {
-    const uiError = traducirErrorServidor(error, requestId);
+    const { status, body, uiError } = respuestaError(error, requestId);
     registrarFalloUi("/api/references/analyze", uiError);
-    if (error instanceof ErrorIA) return Response.json({ error: error.message, causa: error.causa, proveedor: error.proveedor, ui_error: uiError }, { status: statusDe(error.causa) });
-    return Response.json({ error: error instanceof Error ? error.message : "Reference analysis failed.", ui_error: uiError }, { status: 400 });
+    return Response.json(body, { status, headers: { "X-Request-ID": requestId } });
   }
 }

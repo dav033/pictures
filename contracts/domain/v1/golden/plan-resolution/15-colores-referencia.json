@@ -1,0 +1,2005 @@
+{
+  "allowlist": [
+    {
+      "product_id": "P-F15-LILA",
+      "variant_ids": [
+        "V-F15-LILA-12"
+      ]
+    },
+    {
+      "product_id": "P-F15-BLANCO",
+      "variant_ids": [
+        "V-F15-BLANCO-12"
+      ]
+    },
+    {
+      "product_id": "P-F15-PLATEADO",
+      "variant_ids": [
+        "V-F15-PLATEADO-12"
+      ]
+    },
+    {
+      "product_id": "P-F15-NEGRO",
+      "variant_ids": [
+        "V-F15-NEGRO-9"
+      ]
+    }
+  ],
+  "catalog_rows": [
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "lila"
+      ],
+      "colores_variante": [
+        "lila"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex lila R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/lila-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 9000,
+      "product_id": "P-F15-LILA",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex lila",
+      "sku": "SKU-F15-LILA-12",
+      "sku_original": "SHOP-F15-LILA-12",
+      "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+      "source_variant_id": "SOURCE-F15-LILA-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-F15-LILA-12",
+      "variante_titulo": "R-12"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "blanco"
+      ],
+      "colores_variante": [
+        "blanco"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex blanco R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/blanco-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 9000,
+      "product_id": "P-F15-BLANCO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex blanco",
+      "sku": "SKU-F15-BLANCO-12",
+      "sku_original": "SHOP-F15-BLANCO-12",
+      "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+      "source_variant_id": "SOURCE-F15-BLANCO-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-F15-BLANCO-12",
+      "variante_titulo": "R-12"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "plateado"
+      ],
+      "colores_variante": [
+        "plateado"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex plateado R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/plateado-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 9000,
+      "product_id": "P-F15-PLATEADO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex plateado",
+      "sku": "SKU-F15-PLATEADO-12",
+      "sku_original": "SHOP-F15-PLATEADO-12",
+      "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+      "source_variant_id": "SOURCE-F15-PLATEADO-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-F15-PLATEADO-12",
+      "variante_titulo": "R-12"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-9",
+      "colores_producto": [
+        "negro"
+      ],
+      "colores_variante": [
+        "negro"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex negro R-9.",
+      "diam_pulg": 9,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/negro-9.jpg",
+      "inventory_quantity": 500,
+      "precio": 9000,
+      "product_id": "P-F15-NEGRO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex negro",
+      "sku": "SKU-F15-NEGRO-9",
+      "sku_original": "SHOP-F15-NEGRO-9",
+      "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+      "source_variant_id": "SOURCE-F15-NEGRO-9",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-F15-NEGRO-9",
+      "variante_titulo": "R-9"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-A5-009",
+  "description": "Dos fotos de referencia: cada estructura compara los colores dominantes de su propia foto con lo que compra; los que faltan quedan en sustituciones en los dos resolutores (geometrica y sin geometria).",
+  "expected": {
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "lila",
+          "design_quantity": 71,
+          "finish": null,
+          "product_id": "P-F15-LILA",
+          "required_quantity": 71,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-F15-LILA-12",
+          "waste_adjusted_quantity": 71,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 47,
+          "finish": null,
+          "product_id": "P-F15-BLANCO",
+          "required_quantity": 47,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-F15-BLANCO-12",
+          "waste_adjusted_quantity": 47,
+          "waste_reserve": 0
+        },
+        {
+          "color": "lila",
+          "design_quantity": 21,
+          "finish": null,
+          "product_id": "P-F15-LILA",
+          "required_quantity": 21,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_02_COLUMNA",
+          "variant_id": "V-F15-LILA-12",
+          "waste_adjusted_quantity": 21,
+          "waste_reserve": 0
+        },
+        {
+          "color": "plateado",
+          "design_quantity": 9,
+          "finish": null,
+          "product_id": "P-F15-PLATEADO",
+          "required_quantity": 9,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_02_COLUMNA",
+          "variant_id": "V-F15-PLATEADO-12",
+          "waste_adjusted_quantity": 9,
+          "waste_reserve": 0
+        },
+        {
+          "color": "negro",
+          "design_quantity": 10,
+          "finish": null,
+          "product_id": "P-F15-NEGRO",
+          "required_quantity": 10,
+          "shape": "redondo",
+          "size_inches": 9,
+          "structure_id": "EST_03_BOUQUET",
+          "variant_id": "V-F15-NEGRO-9",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 3,
+        "density": "media",
+        "dimensions_m": {
+          "height": 2.2,
+          "length": null,
+          "width": 2.5
+        },
+        "installation_length_m": 6.92,
+        "shape": "coordinated structures",
+        "type": "composite_installation",
+        "visual_density": "medium",
+        "visual_scale": "very_large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 8460,
+          "design_quantity": 47,
+          "leftover_inventory": 3,
+          "operational_surplus": 3,
+          "package_count": 1,
+          "potential_surplus": 3,
+          "product_id": "P-F15-BLANCO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "units_per_package": 50,
+          "used": 47,
+          "variant_id": "V-F15-BLANCO-12",
+          "waste_adjusted_quantity": 47,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 16560,
+          "design_quantity": 92,
+          "leftover_inventory": 8,
+          "operational_surplus": 8,
+          "package_count": 2,
+          "potential_surplus": 8,
+          "product_id": "P-F15-LILA",
+          "purchase_cost": 18000,
+          "purchase_quantity": 100,
+          "required_quantity": 92,
+          "units_per_package": 50,
+          "used": 92,
+          "variant_id": "V-F15-LILA-12",
+          "waste_adjusted_quantity": 92,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 1800,
+          "design_quantity": 10,
+          "leftover_inventory": 40,
+          "operational_surplus": 40,
+          "package_count": 1,
+          "potential_surplus": 40,
+          "product_id": "P-F15-NEGRO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 10,
+          "units_per_package": 50,
+          "used": 10,
+          "variant_id": "V-F15-NEGRO-9",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 3960,
+          "design_quantity": 9,
+          "leftover_inventory": 28,
+          "operational_surplus": 28,
+          "package_count": 1,
+          "potential_surplus": 41,
+          "product_id": "P-F15-PLATEADO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 22,
+          "units_per_package": 50,
+          "used": 9,
+          "variant_id": "V-F15-PLATEADO-12",
+          "waste_adjusted_quantity": 22,
+          "waste_reserve": 13
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 30780,
+        "covered_waste_reserve": 13,
+        "design_quantity": 158,
+        "natural_package_surplus": 92,
+        "operational_surplus": 79,
+        "potential_surplus": 92,
+        "purchase_cost": 45000,
+        "purchase_quantity": 250,
+        "required_quantity": 171,
+        "target_waste_reserve": 13,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 171,
+        "waste_only_savings_cop": 9000
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-F15-NEGRO-9",
+        "sobrante_alto:V-F15-PLATEADO-12"
+      ]
+    },
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-F15-NEGRO-9",
+        "sobrante_alto:V-F15-PLATEADO-12"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 8460,
+          "design_quantity": 47,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/blanco-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 3,
+          "paquetes": 1,
+          "precio_paquete": 9000,
+          "product_id": "P-F15-BLANCO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "sku": "SKU-F15-BLANCO-12",
+          "sku_original": "SHOP-F15-BLANCO-12",
+          "sobrante": 3,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-F15-BLANCO-12",
+          "subtotal": 9000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex blanco — R-12",
+          "unidades_con_merma": 47,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 47,
+          "unidades_paquete": 50,
+          "used": 47,
+          "variant_id": "V-F15-BLANCO-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "lila",
+          "consumption_cost": 16560,
+          "design_quantity": 92,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO",
+            "EST_02_COLUMNA"
+          ],
+          "imagen": "https://cdn.example.test/lila-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 8,
+          "paquetes": 2,
+          "precio_paquete": 9000,
+          "product_id": "P-F15-LILA",
+          "purchase_cost": 18000,
+          "purchase_quantity": 100,
+          "required_quantity": 92,
+          "sku": "SKU-F15-LILA-12",
+          "sku_original": "SHOP-F15-LILA-12",
+          "sobrante": 8,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-F15-LILA-12",
+          "subtotal": 18000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex lila — R-12",
+          "unidades_con_merma": 92,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 92,
+          "unidades_paquete": 50,
+          "used": 92,
+          "variant_id": "V-F15-LILA-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "negro",
+          "consumption_cost": 1800,
+          "design_quantity": 10,
+          "diam_pulg": 9,
+          "elementos_origen": [
+            {
+              "id": "EST_03_BOUQUET",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_03_BOUQUET"
+          ],
+          "imagen": "https://cdn.example.test/negro-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 40,
+          "paquetes": 1,
+          "precio_paquete": 9000,
+          "product_id": "P-F15-NEGRO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 10,
+          "sku": "SKU-F15-NEGRO-9",
+          "sku_original": "SHOP-F15-NEGRO-9",
+          "sobrante": 40,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-F15-NEGRO-9",
+          "subtotal": 9000,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex negro — R-9",
+          "unidades_con_merma": 10,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 10,
+          "unidades_paquete": 50,
+          "used": 10,
+          "variant_id": "V-F15-NEGRO-9",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "plateado",
+          "consumption_cost": 3960,
+          "design_quantity": 9,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_02_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_COLUMNA"
+          ],
+          "imagen": "https://cdn.example.test/plateado-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 28,
+          "paquetes": 1,
+          "precio_paquete": 9000,
+          "product_id": "P-F15-PLATEADO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 22,
+          "sku": "SKU-F15-PLATEADO-12",
+          "sku_original": "SHOP-F15-PLATEADO-12",
+          "sobrante": 41,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-F15-PLATEADO-12",
+          "subtotal": 9000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex plateado — R-12",
+          "unidades_con_merma": 22,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 9,
+          "unidades_paquete": 50,
+          "used": 9,
+          "variant_id": "V-F15-PLATEADO-12",
+          "waste_reserve": 13
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 5.52,
+          "estructura_id": "EST_01_ARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "lila",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/lila-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-F15-LILA",
+              "sku": "SKU-F15-LILA-12",
+              "sku_original": "SHOP-F15-LILA-12",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-F15-LILA-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex lila — R-12",
+              "unidades": 71,
+              "unidades_inferidas": false,
+              "variant_id": "V-F15-LILA-12"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/blanco-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-F15-BLANCO",
+              "sku": "SKU-F15-BLANCO-12",
+              "sku_original": "SHOP-F15-BLANCO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-F15-BLANCO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex blanco — R-12",
+              "unidades": 47,
+              "unidades_inferidas": false,
+              "variant_id": "V-F15-BLANCO-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 118
+            }
+          ],
+          "nombre": "Arco lila",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "arco",
+          "total_unidades": 118,
+          "ubicacion": "arco_central"
+        },
+        {
+          "eje_m": 1.4,
+          "estructura_id": "EST_02_COLUMNA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "lila",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_02_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/lila-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-F15-LILA",
+              "sku": "SKU-F15-LILA-12",
+              "sku_original": "SHOP-F15-LILA-12",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-F15-LILA-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex lila — R-12",
+              "unidades": 21,
+              "unidades_inferidas": false,
+              "variant_id": "V-F15-LILA-12"
+            },
+            {
+              "acabado": null,
+              "color": "plateado",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_02_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/plateado-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-F15-PLATEADO",
+              "sku": "SKU-F15-PLATEADO-12",
+              "sku_original": "SHOP-F15-PLATEADO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-F15-PLATEADO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex plateado — R-12",
+              "unidades": 9,
+              "unidades_inferidas": false,
+              "variant_id": "V-F15-PLATEADO-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 30
+            }
+          ],
+          "nombre": "Columna",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 30,
+          "ubicacion": "lateral_izquierdo"
+        },
+        {
+          "eje_m": null,
+          "estructura_id": "EST_03_BOUQUET",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "negro",
+              "diam_cm": 22.9,
+              "diam_pulg": 9,
+              "estructura_id": "EST_03_BOUQUET",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/negro-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_03_BOUQUET",
+                "kind": "estructura"
+              },
+              "product_id": "P-F15-NEGRO",
+              "sku": "SKU-F15-NEGRO-9",
+              "sku_original": "SHOP-F15-NEGRO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-F15-NEGRO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex negro — R-9",
+              "unidades": 10,
+              "unidades_inferidas": false,
+              "variant_id": "V-F15-NEGRO-9"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 9,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 10
+            }
+          ],
+          "nombre": "Bouquet de globos",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "kit",
+          "total_unidades": 10,
+          "ubicacion": "sobre_mesa_principal"
+        }
+      ],
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 158\nTarget waste reserve: 13\nNatural package surplus: 92\nUsable waste coverage: 13\nAdditional packages required for waste: 0\nGlobo latex blanco — R-12: design=47, required=47, package=50, packages=1, purchased=50, natural surplus=3, waste reserve=0, leftover inventory=3\nGlobo latex lila — R-12: design=92, required=92, package=50, packages=2, purchased=100, natural surplus=8, waste reserve=0, leftover inventory=8\nGlobo latex negro — R-9: design=10, required=10, package=50, packages=1, purchased=50, natural surplus=40, waste reserve=0, leftover inventory=40\nGlobo latex plateado — R-12: design=9, required=22, package=50, packages=1, purchased=50, natural surplus=41, waste reserve=13, leftover inventory=28",
+      "plan": {
+        "concepto": {
+          "descripcion": "Arco de la primera foto, columnas y bouquet de la segunda.",
+          "paleta": [
+            "lila",
+            "blanco",
+            "plateado"
+          ],
+          "titulo": "Dos fotos de referencia"
+        },
+        "espacio": {
+          "fuente": "foto",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "colores_referencia": [
+              "lila",
+              "blanco"
+            ],
+            "densidad": "media",
+            "estructura_id": "EST_01_ARCO",
+            "materiales": [
+              {
+                "color": "lila",
+                "participacion": 0.6,
+                "product_id": "P-F15-LILA",
+                "rol_material": "principal"
+              },
+              {
+                "color": "blanco",
+                "participacion": 0.4,
+                "product_id": "P-F15-BLANCO",
+                "rol_material": "secundario"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.2,
+              "ancho_m": 2.5
+            },
+            "mezcla": "clasica",
+            "nombre": "Arco lila",
+            "porque": "Materializa el arco de la primera foto con sus colores.",
+            "referencia_element_id": "REF_01_E01",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "arco",
+            "ubicacion": "arco_central"
+          },
+          {
+            "colores_referencia": [
+              "cafe",
+              "azul",
+              "plateado"
+            ],
+            "densidad": "media",
+            "estructura_id": "EST_02_COLUMNA",
+            "materiales": [
+              {
+                "color": "lila",
+                "participacion": 0.7,
+                "product_id": "P-F15-LILA",
+                "rol_material": "principal"
+              },
+              {
+                "color": "plateado",
+                "participacion": 0.3,
+                "product_id": "P-F15-PLATEADO",
+                "rol_material": "secundario"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna",
+            "porque": "Hereda la paleta lila de la primera foto, como en la auditoria F03+F06.",
+            "referencia_element_id": "REF_02_E01",
+            "repeticiones": 1,
+            "rol_escena": "soporte",
+            "tipo": "columna",
+            "ubicacion": "lateral_izquierdo"
+          },
+          {
+            "colores_referencia": [
+              "dorado"
+            ],
+            "densidad": "media",
+            "estructura_id": "EST_03_BOUQUET",
+            "estructura_oficial": "bouquet",
+            "materiales": [
+              {
+                "color": "negro",
+                "participacion": 1,
+                "product_id": "P-F15-NEGRO",
+                "rol_material": "principal",
+                "variant_id": "V-F15-NEGRO-9"
+              }
+            ],
+            "medidas": {},
+            "mezcla": "clasica",
+            "nombre": "Bouquet de globos",
+            "porque": "Pieza sin geometria con un color de la foto que el catalogo del turno no cubre.",
+            "referencia_element_id": "REF_02_E02",
+            "repeticiones": 1,
+            "rol_escena": "acento",
+            "tipo": "kit",
+            "ubicacion": "sobre_mesa_principal",
+            "unidades_declaradas": 10
+          }
+        ],
+        "plan_id": "f15f1515-0000-4000-8000-000000000015",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "5db574bb32fbb84e72dd4afa469e2034682aa8620708f18a726765eed8b88906",
+      "sin_cobertura": [],
+      "sustituciones": [
+        {
+          "entregado": "lila, plateado",
+          "estructura_id": "EST_02_COLUMNA",
+          "motivo": "La foto de referencia muestra cafe y esta pieza no lo lleva: se armó con lila y plateado.",
+          "pedido": "cafe"
+        },
+        {
+          "entregado": "lila, plateado",
+          "estructura_id": "EST_02_COLUMNA",
+          "motivo": "La foto de referencia muestra azul y esta pieza no lo lleva: se armó con lila y plateado.",
+          "pedido": "azul"
+        },
+        {
+          "entregado": "negro",
+          "estructura_id": "EST_03_BOUQUET",
+          "motivo": "La foto de referencia muestra dorado y esta pieza no lo lleva: se armó con negro.",
+          "pedido": "dorado"
+        }
+      ],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 9000,
+        "consumption_cost": 30780,
+        "covered_waste_reserve": 13,
+        "design_quantity": 158,
+        "globos_por_tamano": {
+          "R-12": 148,
+          "R-9": 10
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8,
+        "natural_package_surplus": 92,
+        "purchase_cost": 45000,
+        "target_waste_reserve": 13,
+        "total_cop": 45000,
+        "total_unidades": 158,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 9000
+      }
+    },
+    "quote": {
+      "complementosSoportados": false,
+      "consumptionCost": 30780,
+      "coveredWasteReserve": 13,
+      "incluyeIva": true,
+      "leftoverInventory": 79,
+      "lineas": [
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 47,
+          "color": "blanco",
+          "consumptionCost": 8460,
+          "designQuantity": 47,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-F15-BLANCO-12",
+          "leftoverInventory": 3,
+          "nombre": "Globo latex blanco — R-12",
+          "paquetes": 1,
+          "precioPaquete": 9000,
+          "productId": "P-F15-BLANCO",
+          "purchaseCost": 9000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [
+            "REF_01_E01"
+          ],
+          "requiredQuantity": 47,
+          "sobrante": 3,
+          "subtotal": 9000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 47,
+          "varianteId": "V-F15-BLANCO-12",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 92,
+          "color": "lila",
+          "consumptionCost": 16560,
+          "designQuantity": 92,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO",
+            "EST_02_COLUMNA"
+          ],
+          "id": "V-F15-LILA-12",
+          "leftoverInventory": 8,
+          "nombre": "Globo latex lila — R-12",
+          "paquetes": 2,
+          "precioPaquete": 9000,
+          "productId": "P-F15-LILA",
+          "purchaseCost": 18000,
+          "purchaseQuantity": 100,
+          "referenciaElementIds": [
+            "REF_01_E01",
+            "REF_02_E01"
+          ],
+          "requiredQuantity": 92,
+          "sobrante": 8,
+          "subtotal": 18000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 92,
+          "varianteId": "V-F15-LILA-12",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 10,
+          "color": "negro",
+          "consumptionCost": 1800,
+          "designQuantity": 10,
+          "diamPulg": 9,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_03_BOUQUET",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_03_BOUQUET"
+          ],
+          "id": "V-F15-NEGRO-9",
+          "leftoverInventory": 40,
+          "nombre": "Globo latex negro — R-9",
+          "paquetes": 1,
+          "precioPaquete": 9000,
+          "productId": "P-F15-NEGRO",
+          "purchaseCost": 9000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [
+            "REF_02_E02"
+          ],
+          "requiredQuantity": 10,
+          "sobrante": 40,
+          "subtotal": 9000,
+          "tamano": "R-9",
+          "tamanoCodigo": "R-9",
+          "unidadesPaquete": 50,
+          "used": 10,
+          "varianteId": "V-F15-NEGRO-9",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 9,
+          "color": "plateado",
+          "consumptionCost": 3960,
+          "designQuantity": 9,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_02_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_COLUMNA"
+          ],
+          "id": "V-F15-PLATEADO-12",
+          "leftoverInventory": 28,
+          "nombre": "Globo latex plateado — R-12",
+          "paquetes": 1,
+          "precioPaquete": 9000,
+          "productId": "P-F15-PLATEADO",
+          "purchaseCost": 9000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [
+            "REF_02_E01"
+          ],
+          "requiredQuantity": 22,
+          "sobrante": 41,
+          "subtotal": 9000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 9,
+          "varianteId": "V-F15-PLATEADO-12",
+          "wasteReserve": 13
+        }
+      ],
+      "mermaPorcentaje": 8,
+      "plan_hash": "5db574bb32fbb84e72dd4afa469e2034682aa8620708f18a726765eed8b88906",
+      "purchaseCost": 45000,
+      "targetWasteReserve": 13,
+      "total": 45000
+    }
+  },
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-A5-009",
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "lila",
+          "design_quantity": 71,
+          "finish": null,
+          "product_id": "P-F15-LILA",
+          "required_quantity": 71,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-F15-LILA-12",
+          "waste_adjusted_quantity": 71,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 47,
+          "finish": null,
+          "product_id": "P-F15-BLANCO",
+          "required_quantity": 47,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-F15-BLANCO-12",
+          "waste_adjusted_quantity": 47,
+          "waste_reserve": 0
+        },
+        {
+          "color": "lila",
+          "design_quantity": 21,
+          "finish": null,
+          "product_id": "P-F15-LILA",
+          "required_quantity": 21,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_02_COLUMNA",
+          "variant_id": "V-F15-LILA-12",
+          "waste_adjusted_quantity": 21,
+          "waste_reserve": 0
+        },
+        {
+          "color": "plateado",
+          "design_quantity": 9,
+          "finish": null,
+          "product_id": "P-F15-PLATEADO",
+          "required_quantity": 9,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_02_COLUMNA",
+          "variant_id": "V-F15-PLATEADO-12",
+          "waste_adjusted_quantity": 9,
+          "waste_reserve": 0
+        },
+        {
+          "color": "negro",
+          "design_quantity": 10,
+          "finish": null,
+          "product_id": "P-F15-NEGRO",
+          "required_quantity": 10,
+          "shape": "redondo",
+          "size_inches": 9.0,
+          "structure_id": "EST_03_BOUQUET",
+          "variant_id": "V-F15-NEGRO-9",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 3,
+        "density": "media",
+        "dimensions_m": {
+          "height": 2.2,
+          "length": null,
+          "width": 2.5
+        },
+        "installation_length_m": 6.92,
+        "shape": "coordinated structures",
+        "type": "composite_installation",
+        "visual_density": "medium",
+        "visual_scale": "very_large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 8460,
+          "design_quantity": 47,
+          "leftover_inventory": 3,
+          "operational_surplus": 3,
+          "package_count": 1,
+          "potential_surplus": 3,
+          "product_id": "P-F15-BLANCO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "units_per_package": 50,
+          "used": 47,
+          "variant_id": "V-F15-BLANCO-12",
+          "waste_adjusted_quantity": 47,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 16560,
+          "design_quantity": 92,
+          "leftover_inventory": 8,
+          "operational_surplus": 8,
+          "package_count": 2,
+          "potential_surplus": 8,
+          "product_id": "P-F15-LILA",
+          "purchase_cost": 18000,
+          "purchase_quantity": 100,
+          "required_quantity": 92,
+          "units_per_package": 50,
+          "used": 92,
+          "variant_id": "V-F15-LILA-12",
+          "waste_adjusted_quantity": 92,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 1800,
+          "design_quantity": 10,
+          "leftover_inventory": 40,
+          "operational_surplus": 40,
+          "package_count": 1,
+          "potential_surplus": 40,
+          "product_id": "P-F15-NEGRO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 10,
+          "units_per_package": 50,
+          "used": 10,
+          "variant_id": "V-F15-NEGRO-9",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 3960,
+          "design_quantity": 9,
+          "leftover_inventory": 28,
+          "operational_surplus": 28,
+          "package_count": 1,
+          "potential_surplus": 41,
+          "product_id": "P-F15-PLATEADO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 22,
+          "units_per_package": 50,
+          "used": 9,
+          "variant_id": "V-F15-PLATEADO-12",
+          "waste_adjusted_quantity": 22,
+          "waste_reserve": 13
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 30780,
+        "covered_waste_reserve": 13,
+        "design_quantity": 158,
+        "natural_package_surplus": 92,
+        "operational_surplus": 79,
+        "potential_surplus": 92,
+        "purchase_cost": 45000,
+        "purchase_quantity": 250,
+        "required_quantity": 171,
+        "target_waste_reserve": 13,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 171,
+        "waste_only_savings_cop": 9000
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-F15-NEGRO-9",
+        "sobrante_alto:V-F15-PLATEADO-12"
+      ]
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-F15-NEGRO-9",
+        "sobrante_alto:V-F15-PLATEADO-12"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 8460,
+          "design_quantity": 47,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/blanco-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 3,
+          "paquetes": 1,
+          "precio_paquete": 9000,
+          "product_id": "P-F15-BLANCO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "sku": "SKU-F15-BLANCO-12",
+          "sku_original": "SHOP-F15-BLANCO-12",
+          "sobrante": 3,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-F15-BLANCO-12",
+          "subtotal": 9000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex blanco — R-12",
+          "unidades_con_merma": 47,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 47,
+          "unidades_paquete": 50,
+          "used": 47,
+          "variant_id": "V-F15-BLANCO-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "lila",
+          "consumption_cost": 16560,
+          "design_quantity": 92,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO",
+            "EST_02_COLUMNA"
+          ],
+          "imagen": "https://cdn.example.test/lila-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 8,
+          "paquetes": 2,
+          "precio_paquete": 9000,
+          "product_id": "P-F15-LILA",
+          "purchase_cost": 18000,
+          "purchase_quantity": 100,
+          "required_quantity": 92,
+          "sku": "SKU-F15-LILA-12",
+          "sku_original": "SHOP-F15-LILA-12",
+          "sobrante": 8,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-F15-LILA-12",
+          "subtotal": 18000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex lila — R-12",
+          "unidades_con_merma": 92,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 92,
+          "unidades_paquete": 50,
+          "used": 92,
+          "variant_id": "V-F15-LILA-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "negro",
+          "consumption_cost": 1800,
+          "design_quantity": 10,
+          "diam_pulg": 9.0,
+          "elementos_origen": [
+            {
+              "id": "EST_03_BOUQUET",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_03_BOUQUET"
+          ],
+          "imagen": "https://cdn.example.test/negro-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 40,
+          "paquetes": 1,
+          "precio_paquete": 9000,
+          "product_id": "P-F15-NEGRO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 10,
+          "sku": "SKU-F15-NEGRO-9",
+          "sku_original": "SHOP-F15-NEGRO-9",
+          "sobrante": 40,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-F15-NEGRO-9",
+          "subtotal": 9000,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex negro — R-9",
+          "unidades_con_merma": 10,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 10,
+          "unidades_paquete": 50,
+          "used": 10,
+          "variant_id": "V-F15-NEGRO-9",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "plateado",
+          "consumption_cost": 3960,
+          "design_quantity": 9,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_02_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_COLUMNA"
+          ],
+          "imagen": "https://cdn.example.test/plateado-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 28,
+          "paquetes": 1,
+          "precio_paquete": 9000,
+          "product_id": "P-F15-PLATEADO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 22,
+          "sku": "SKU-F15-PLATEADO-12",
+          "sku_original": "SHOP-F15-PLATEADO-12",
+          "sobrante": 41,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-F15-PLATEADO-12",
+          "subtotal": 9000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex plateado — R-12",
+          "unidades_con_merma": 22,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 9,
+          "unidades_paquete": 50,
+          "used": 9,
+          "variant_id": "V-F15-PLATEADO-12",
+          "waste_reserve": 13
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 5.52,
+          "estructura_id": "EST_01_ARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "lila",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/lila-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-F15-LILA",
+              "sku": "SKU-F15-LILA-12",
+              "sku_original": "SHOP-F15-LILA-12",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-F15-LILA-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex lila — R-12",
+              "unidades": 71,
+              "unidades_inferidas": false,
+              "variant_id": "V-F15-LILA-12"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/blanco-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-F15-BLANCO",
+              "sku": "SKU-F15-BLANCO-12",
+              "sku_original": "SHOP-F15-BLANCO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-F15-BLANCO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex blanco — R-12",
+              "unidades": 47,
+              "unidades_inferidas": false,
+              "variant_id": "V-F15-BLANCO-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 118
+            }
+          ],
+          "nombre": "Arco lila",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "arco",
+          "total_unidades": 118,
+          "ubicacion": "arco_central"
+        },
+        {
+          "eje_m": 1.4,
+          "estructura_id": "EST_02_COLUMNA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "lila",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_02_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/lila-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-F15-LILA",
+              "sku": "SKU-F15-LILA-12",
+              "sku_original": "SHOP-F15-LILA-12",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-F15-LILA-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex lila — R-12",
+              "unidades": 21,
+              "unidades_inferidas": false,
+              "variant_id": "V-F15-LILA-12"
+            },
+            {
+              "acabado": null,
+              "color": "plateado",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_02_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/plateado-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-F15-PLATEADO",
+              "sku": "SKU-F15-PLATEADO-12",
+              "sku_original": "SHOP-F15-PLATEADO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-F15-PLATEADO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex plateado — R-12",
+              "unidades": 9,
+              "unidades_inferidas": false,
+              "variant_id": "V-F15-PLATEADO-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 30
+            }
+          ],
+          "nombre": "Columna",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 30,
+          "ubicacion": "lateral_izquierdo"
+        },
+        {
+          "eje_m": null,
+          "estructura_id": "EST_03_BOUQUET",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "negro",
+              "diam_cm": 22.9,
+              "diam_pulg": 9.0,
+              "estructura_id": "EST_03_BOUQUET",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/negro-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_03_BOUQUET",
+                "kind": "estructura"
+              },
+              "product_id": "P-F15-NEGRO",
+              "sku": "SKU-F15-NEGRO-9",
+              "sku_original": "SHOP-F15-NEGRO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-F15-NEGRO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex negro — R-9",
+              "unidades": 10,
+              "unidades_inferidas": false,
+              "variant_id": "V-F15-NEGRO-9"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 9.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 10
+            }
+          ],
+          "nombre": "Bouquet de globos",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "kit",
+          "total_unidades": 10,
+          "ubicacion": "sobre_mesa_principal"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-A5-009.",
+      "plan": {
+        "concepto": {
+          "descripcion": "Arco de la primera foto, columnas y bouquet de la segunda.",
+          "paleta": [
+            "lila",
+            "blanco",
+            "plateado"
+          ],
+          "titulo": "Dos fotos de referencia"
+        },
+        "espacio": {
+          "fuente": "foto",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "colores_referencia": [
+              "lila",
+              "blanco"
+            ],
+            "densidad": "media",
+            "estructura_id": "EST_01_ARCO",
+            "materiales": [
+              {
+                "color": "lila",
+                "participacion": 0.6,
+                "product_id": "P-F15-LILA",
+                "rol_material": "principal"
+              },
+              {
+                "color": "blanco",
+                "participacion": 0.4,
+                "product_id": "P-F15-BLANCO",
+                "rol_material": "secundario"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.2,
+              "ancho_m": 2.5
+            },
+            "mezcla": "clasica",
+            "nombre": "Arco lila",
+            "porque": "Materializa el arco de la primera foto con sus colores.",
+            "referencia_element_id": "REF_01_E01",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "arco",
+            "ubicacion": "arco_central"
+          },
+          {
+            "colores_referencia": [
+              "cafe",
+              "azul",
+              "plateado"
+            ],
+            "densidad": "media",
+            "estructura_id": "EST_02_COLUMNA",
+            "materiales": [
+              {
+                "color": "lila",
+                "participacion": 0.7,
+                "product_id": "P-F15-LILA",
+                "rol_material": "principal"
+              },
+              {
+                "color": "plateado",
+                "participacion": 0.3,
+                "product_id": "P-F15-PLATEADO",
+                "rol_material": "secundario"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.4
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna",
+            "porque": "Hereda la paleta lila de la primera foto, como en la auditoria F03+F06.",
+            "referencia_element_id": "REF_02_E01",
+            "repeticiones": 1,
+            "rol_escena": "soporte",
+            "tipo": "columna",
+            "ubicacion": "lateral_izquierdo"
+          },
+          {
+            "colores_referencia": [
+              "dorado"
+            ],
+            "densidad": "media",
+            "estructura_id": "EST_03_BOUQUET",
+            "estructura_oficial": "bouquet",
+            "materiales": [
+              {
+                "color": "negro",
+                "participacion": 1,
+                "product_id": "P-F15-NEGRO",
+                "rol_material": "principal",
+                "variant_id": "V-F15-NEGRO-9"
+              }
+            ],
+            "medidas": {},
+            "mezcla": "clasica",
+            "nombre": "Bouquet de globos",
+            "porque": "Pieza sin geometria con un color de la foto que el catalogo del turno no cubre.",
+            "referencia_element_id": "REF_02_E02",
+            "repeticiones": 1,
+            "rol_escena": "acento",
+            "tipo": "kit",
+            "ubicacion": "sobre_mesa_principal",
+            "unidades_declaradas": 10
+          }
+        ],
+        "plan_id": "f15f1515-0000-4000-8000-000000000015",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "797f4a4fbc1547f673afa99e30fc7532da226fc51d9dbda4142eb93788d55cd7",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [],
+      "sustituciones": [
+        {
+          "entregado": "lila, plateado",
+          "estructura_id": "EST_02_COLUMNA",
+          "motivo": "La foto de referencia muestra cafe y esta pieza no lo lleva: se armó con lila y plateado.",
+          "pedido": "cafe"
+        },
+        {
+          "entregado": "lila, plateado",
+          "estructura_id": "EST_02_COLUMNA",
+          "motivo": "La foto de referencia muestra azul y esta pieza no lo lleva: se armó con lila y plateado.",
+          "pedido": "azul"
+        },
+        {
+          "entregado": "negro",
+          "estructura_id": "EST_03_BOUQUET",
+          "motivo": "La foto de referencia muestra dorado y esta pieza no lo lleva: se armó con negro.",
+          "pedido": "dorado"
+        }
+      ],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 9000,
+        "consumption_cost": 30780,
+        "covered_waste_reserve": 13,
+        "design_quantity": 158,
+        "globos_por_tamano": {
+          "R-12": 148,
+          "R-9": 10
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 92,
+        "purchase_cost": 45000,
+        "target_waste_reserve": 13,
+        "total_cop": 45000,
+        "total_unidades": 158,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 9000
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 30780,
+      "covered_waste_reserve": 13,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 79,
+      "lines": [
+        {
+          "available": true,
+          "color": "blanco",
+          "consumption_cost_cop": 8460,
+          "design_quantity": 47,
+          "diameter_inches": 12.0,
+          "id": "V-F15-BLANCO-12",
+          "leftover_inventory": 3,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 9000,
+          "packages": 1,
+          "product_id": "P-F15-BLANCO",
+          "purchase_cost_cop": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 9000,
+          "surplus": 3,
+          "title": "Globo latex blanco — R-12",
+          "units_per_package": 50,
+          "used": 47,
+          "variant_id": "V-F15-BLANCO-12",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "lila",
+          "consumption_cost_cop": 16560,
+          "design_quantity": 92,
+          "diameter_inches": 12.0,
+          "id": "V-F15-LILA-12",
+          "leftover_inventory": 8,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 9000,
+          "packages": 2,
+          "product_id": "P-F15-LILA",
+          "purchase_cost_cop": 18000,
+          "purchase_quantity": 100,
+          "required_quantity": 92,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_ARCO",
+            "EST_02_COLUMNA"
+          ],
+          "subtotal_cop": 18000,
+          "surplus": 8,
+          "title": "Globo latex lila — R-12",
+          "units_per_package": 50,
+          "used": 92,
+          "variant_id": "V-F15-LILA-12",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "negro",
+          "consumption_cost_cop": 1800,
+          "design_quantity": 10,
+          "diameter_inches": 9.0,
+          "id": "V-F15-NEGRO-9",
+          "leftover_inventory": 40,
+          "origins": [
+            {
+              "id": "EST_03_BOUQUET",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 9000,
+          "packages": 1,
+          "product_id": "P-F15-NEGRO",
+          "purchase_cost_cop": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 10,
+          "size": "R-9",
+          "size_code": "R-9",
+          "structures": [
+            "EST_03_BOUQUET"
+          ],
+          "subtotal_cop": 9000,
+          "surplus": 40,
+          "title": "Globo latex negro — R-9",
+          "units_per_package": 50,
+          "used": 10,
+          "variant_id": "V-F15-NEGRO-9",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "plateado",
+          "consumption_cost_cop": 3960,
+          "design_quantity": 9,
+          "diameter_inches": 12.0,
+          "id": "V-F15-PLATEADO-12",
+          "leftover_inventory": 28,
+          "origins": [
+            {
+              "id": "EST_02_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 9000,
+          "packages": 1,
+          "product_id": "P-F15-PLATEADO",
+          "purchase_cost_cop": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 22,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_02_COLUMNA"
+          ],
+          "subtotal_cop": 9000,
+          "surplus": 41,
+          "title": "Globo latex plateado — R-12",
+          "units_per_package": 50,
+          "used": 9,
+          "variant_id": "V-F15-PLATEADO-12",
+          "waste_reserve": 13
+        }
+      ],
+      "plan_hash": "797f4a4fbc1547f673afa99e30fc7532da226fc51d9dbda4142eb93788d55cd7",
+      "purchase_cost_cop": 45000,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 13,
+      "total_cop": 45000,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "15-colores-referencia",
+  "plan": {
+    "concepto": {
+      "descripcion": "Arco de la primera foto, columnas y bouquet de la segunda.",
+      "paleta": [
+        "lila",
+        "blanco",
+        "plateado"
+      ],
+      "titulo": "Dos fotos de referencia"
+    },
+    "espacio": {
+      "fuente": "foto",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "colores_referencia": [
+          "lila",
+          "blanco"
+        ],
+        "densidad": "media",
+        "estructura_id": "EST_01_ARCO",
+        "materiales": [
+          {
+            "color": "lila",
+            "participacion": 0.6,
+            "product_id": "P-F15-LILA",
+            "rol_material": "principal"
+          },
+          {
+            "color": "blanco",
+            "participacion": 0.4,
+            "product_id": "P-F15-BLANCO",
+            "rol_material": "secundario"
+          }
+        ],
+        "medidas": {
+          "alto_m": 2.2,
+          "ancho_m": 2.5
+        },
+        "mezcla": "clasica",
+        "nombre": "Arco lila",
+        "porque": "Materializa el arco de la primera foto con sus colores.",
+        "referencia_element_id": "REF_01_E01",
+        "repeticiones": 1,
+        "rol_escena": "focal",
+        "tipo": "arco",
+        "ubicacion": "arco_central"
+      },
+      {
+        "colores_referencia": [
+          "cafe",
+          "azul",
+          "plateado"
+        ],
+        "densidad": "media",
+        "estructura_id": "EST_02_COLUMNA",
+        "materiales": [
+          {
+            "color": "lila",
+            "participacion": 0.7,
+            "product_id": "P-F15-LILA",
+            "rol_material": "principal"
+          },
+          {
+            "color": "plateado",
+            "participacion": 0.3,
+            "product_id": "P-F15-PLATEADO",
+            "rol_material": "secundario"
+          }
+        ],
+        "medidas": {
+          "alto_m": 1.4
+        },
+        "mezcla": "clasica",
+        "nombre": "Columna",
+        "porque": "Hereda la paleta lila de la primera foto, como en la auditoria F03+F06.",
+        "referencia_element_id": "REF_02_E01",
+        "repeticiones": 1,
+        "rol_escena": "soporte",
+        "tipo": "columna",
+        "ubicacion": "lateral_izquierdo"
+      },
+      {
+        "colores_referencia": [
+          "dorado"
+        ],
+        "densidad": "media",
+        "estructura_id": "EST_03_BOUQUET",
+        "estructura_oficial": "bouquet",
+        "materiales": [
+          {
+            "color": "negro",
+            "participacion": 1,
+            "product_id": "P-F15-NEGRO",
+            "rol_material": "principal",
+            "variant_id": "V-F15-NEGRO-9"
+          }
+        ],
+        "medidas": {},
+        "mezcla": "clasica",
+        "nombre": "Bouquet de globos",
+        "porque": "Pieza sin geometria con un color de la foto que el catalogo del turno no cubre.",
+        "referencia_element_id": "REF_02_E02",
+        "repeticiones": 1,
+        "rol_escena": "acento",
+        "tipo": "kit",
+        "ubicacion": "sobre_mesa_principal",
+        "unidades_declaradas": 10
+      }
+    ],
+    "plan_id": "f15f1515-0000-4000-8000-000000000015",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "supuestos": []
+  }
+}

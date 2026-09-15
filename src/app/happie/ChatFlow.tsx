@@ -61,7 +61,7 @@ export function ChatFlow({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-start gap-3 rounded-2xl border border-borde bg-superficie p-4 shadow-[0_2px_10px_var(--sombra)]">
+      <div className="flex items-start gap-3 rounded-2xl border border-borde bg-superficie p-4 focus-within:border-acento">
         <IconoIA className="mt-0.5 flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-acento-suave text-acento" />
         <textarea
           value={descripcionEvento}
@@ -74,12 +74,15 @@ export function ChatFlow({
           }}
           placeholder="Ej: cumpleaños de mi hija, cumple 15, somos 30 personas, en el patio de la casa"
           rows={2}
-          className="flex-grow resize-none bg-transparent pt-1.5 text-[15px] text-texto outline-none placeholder:text-texto-suave"
+          aria-label="Describe tu evento"
+          className="min-w-0 flex-grow resize-none bg-transparent pt-1.5 text-[15px] text-texto outline-none placeholder:text-texto-tenue"
         />
         <button
+          type="button"
+          aria-label="Buscar paquetes"
           onClick={recomendar}
           disabled={cargando || !descripcionEvento.trim()}
-          className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[11px] bg-acento text-white shadow-[0_6px_16px_var(--sombra-acento)] disabled:opacity-40"
+          className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[11px] bg-acento text-sobre-acento hover:bg-acento-hover disabled:opacity-40"
         >
           {cargando ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-[17px] w-[17px]" strokeWidth={2.4} />}
         </button>
@@ -90,8 +93,7 @@ export function ChatFlow({
       {enviado && !cargando && recomendaciones.length > 0 && (
         <div className="happie-entra flex items-start gap-3">
           <div
-            className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] text-white"
-            style={{ background: "linear-gradient(135deg, var(--acento), var(--acento-2))" }}
+            className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-acento text-sobre-acento"
           >
             <IconoIA />
           </div>

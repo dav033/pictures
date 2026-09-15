@@ -854,9 +854,19 @@ def _line(
 
 
 def _distribute_units(total: int, materials: Sequence[Mapping[str, object]]) -> list[int]:
-    quotas = [total * (_number(material.get("participacion")) or 0.0) for material in materials]
+    """Split ``unidades_declaradas`` by ``participacion``; mirror of ``repartirUnidades``.
+
+    Every declared material is a purchase, so each one first gets one unit and
+    only the rest is split by largest remainder (ties by position). A declared
+    total below the number of materials therefore resolves to one unit per
+    material; ``validarUnidadesDeclaradas`` rejects that plan at confirmation.
+    """
+    if not materials:
+        return []
+    rest = max(0, total - len(materials))
+    quotas = [rest * (_number(material.get("participacion")) or 0.0) for material in materials]
     floors = [math.floor(quota) for quota in quotas]
-    remaining = total - sum(floors)
+    remaining = rest - sum(floors)
     for index in sorted(
         range(len(quotas)), key=lambda item: (-(quotas[item] - floors[item]), item)
     ):
@@ -864,7 +874,47 @@ def _distribute_units(total: int, materials: Sequence[Mapping[str, object]]) -> 
             break
         floors[index] += 1
         remaining -= 1
-    return floors
+    return [1 + units for units in floors]
+
+
+def _join_colors(colors: Sequence[str]) -> str:
+    if len(colors) <= 1:
+        return colors[0] if colors else ""
+    return f"{', '.join(colors[:-1])} y {colors[-1]}"
+
+
+def _reference_color_substitutions(
+    structure_id: str, reference_colors: object, line_colors: Sequence[object]
+) -> list[dict[str, object]]:
+    """Photo colors a structure does not buy; mirror of ``sustitucionesColorReferencia``.
+
+    ``colores_referencia`` holds the dominant colors of the reference element the
+    structure materializes, written by the Next server from the turn blueprint.
+    A structure without resolved lines is reported as uncovered, not as a color
+    change.
+    """
+    delivered: list[str] = []
+    for color in line_colors:
+        normalized = _normalize(color) if isinstance(color, str) else ""
+        if normalized and normalized not in delivered:
+            delivered.append(normalized)
+    if not delivered or not isinstance(reference_colors, list):
+        return []
+    requested: list[str] = []
+    for color in reference_colors:
+        normalized = _normalize(color) if isinstance(color, str) else ""
+        if normalized and normalized not in requested:
+            requested.append(normalized)
+    return [
+        {
+            "estructura_id": structure_id,
+            "pedido": color,
+            "entregado": ", ".join(delivered),
+            "motivo": f"La foto de referencia muestra {color} y esta pieza no lo lleva: se armó con {_join_colors(delivered)}.",
+        }
+        for color in requested
+        if color not in delivered
+    ]
 
 
 def _mix_real(lines: Sequence[Mapping[str, object]]) -> list[dict[str, object]]:
@@ -1063,7 +1113,9 @@ def _resolve_structures(
                 requested_color = _text(demand.get("color"))
                 material_index = _integer(demand.get("material_index")) or 0
                 matching_material = (
-                    materials[material_index] if 0 <= material_index < len(materials) else materials[0]
+                    materials[material_index]
+                    if 0 <= material_index < len(materials)
+                    else materials[0]
                 )
                 requested_product = _text(matching_material.get("product_id")) or ""
                 requested_candidate = candidate_by_variant.get(requested_product)
@@ -1164,6 +1216,13 @@ def _resolve_structures(
                     )
                     continue
                 lines.append(_line(structure_id, candidate, quantity, _text(material.get("color"))))
+        substitutions.extend(
+            _reference_color_substitutions(
+                structure_id,
+                raw_structure.get("colores_referencia"),
+                [line.get("color") for line in lines],
+            )
+        )
         total_units = sum(_integer(line.get("unidades")) or 0 for line in lines)
         if len(uncovered) > before_missing:
             warnings.append(f"estructura_sin_cobertura:{structure_id}")

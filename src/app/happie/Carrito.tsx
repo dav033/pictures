@@ -23,14 +23,14 @@ export function Carrito({
   const totalItems = items.reduce((acc, item) => acc + item.cantidad, 0);
 
   return (
-    <aside className="flex h-fit flex-col gap-3.5 rounded-[18px] border border-borde bg-superficie p-5 shadow-[0_2px_10px_var(--sombra)]">
+    <aside className="flex h-fit min-w-0 flex-col gap-3.5 rounded-[18px] border border-borde bg-superficie p-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <ShoppingBag className="h-4 w-4 text-texto" strokeWidth={1.8} />
           <span className="text-sm font-semibold text-texto">Tu selección</span>
         </div>
         {totalItems > 0 && (
-          <span className="flex min-w-[22px] items-center justify-center rounded-full bg-acento px-1.5 py-0 text-xs font-semibold text-white">
+          <span className="flex min-w-[22px] items-center justify-center rounded-full bg-acento px-1.5 py-0 text-xs font-semibold text-sobre-acento">
             {totalItems}
           </span>
         )}
@@ -54,6 +54,8 @@ export function Carrito({
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
                   <button
+                    type="button"
+                    aria-label={`Quitar una unidad de ${paquete.name}`}
                     onClick={() => onCambiarCantidad(paquete.id, -1)}
                     className="flex h-[22px] w-[22px] items-center justify-center rounded-[7px] border border-borde text-texto-suave"
                   >
@@ -61,12 +63,14 @@ export function Carrito({
                   </button>
                   <span className="w-3 text-center text-[13px] font-semibold text-texto">{cantidad}</span>
                   <button
+                    type="button"
+                    aria-label={`Añadir una unidad de ${paquete.name}`}
                     onClick={() => onCambiarCantidad(paquete.id, 1)}
                     className="flex h-[22px] w-[22px] items-center justify-center rounded-[7px] border border-borde text-texto-suave"
                   >
                     <Plus className="h-2.5 w-2.5" strokeWidth={2.6} />
                   </button>
-                  <button onClick={() => onQuitar(paquete.id)} className="p-0.5 text-texto-suave hover:text-error">
+                  <button type="button" aria-label={`Quitar ${paquete.name} de la selección`} onClick={() => onQuitar(paquete.id)} className="p-0.5 text-texto-suave hover:text-error">
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
@@ -74,7 +78,7 @@ export function Carrito({
             ))}
           </div>
 
-          <div className="flex items-start gap-2 rounded-xl bg-fondo p-3">
+          <div className="flex items-start gap-2 rounded-xl bg-superficie-suave p-3">
             <Info className="h-3.5 w-3.5 shrink-0 text-acento" strokeWidth={1.8} />
             <span className="text-[11.5px] leading-relaxed text-texto-suave">
               Un asesor confirma disponibilidad y valor antes de cerrar.
@@ -88,8 +92,9 @@ export function Carrito({
             </div>
           ) : (
             <button
+              type="button"
               onClick={() => setSolicitada(true)}
-              className="flex items-center justify-center gap-1.5 rounded-xl bg-acento py-3 text-[13px] font-semibold text-white shadow-[0_6px_16px_var(--sombra-acento)]"
+              className="flex items-center justify-center gap-1.5 rounded-xl bg-acento py-3 text-[13px] font-semibold text-sobre-acento hover:bg-acento-hover"
             >
               Solicitar cotización
               <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.2} />

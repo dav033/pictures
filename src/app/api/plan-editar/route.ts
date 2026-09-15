@@ -536,6 +536,7 @@ export async function POST(request: Request) {
       backend,
       catalogSnapshotId: contextoPlan.catalogSnapshotId,
       allowlist: allowlistFinal,
+      ...(contextoPlan.creatividad === null ? {} : { creatividad: contextoPlan.creatividad }),
     });
     await registrarPlanAudit(pool, {
       requestId,

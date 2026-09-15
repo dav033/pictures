@@ -11,6 +11,14 @@ const nextConfig: NextConfig = {
   // abiertos, para no permitir que cualquier origen pida recursos del servidor de desarrollo.
   allowedDevOrigins: ["192.168.72.101", "192.168.*.*", "10.*.*.*", "172.16.*.*", "172.30.*.*"],
   cacheComponents: true,
+  experimental: {
+    // `src/proxy.ts` matches every API route, so Next buffers each request body
+    // up to this size and delivers a larger one truncated (no 413). Explicit
+    // instead of the implicit default so the photo analysis route can reject a
+    // bigger body with a clear "photo too large" message. Keep equal to
+    // `LIMITE_CUERPO_ANALISIS_BYTES` (src/app/api/references/analyze/analisis-http.ts).
+    proxyClientMaxBodySize: 10 * 1024 * 1024,
+  },
   images: {
     remotePatterns: [new URL("https://cdn.shopify.com/s/files/**")],
   },

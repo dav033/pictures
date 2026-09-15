@@ -22,7 +22,7 @@ function TooltipContent({ className, sideOffset = 6, ...props }: React.Component
       <TooltipPrimitive.Content
         sideOffset={sideOffset}
         className={cn(
-          "radix-pop z-50 rounded-lg bg-texto px-2 py-1 text-xs font-medium text-fondo shadow-md",
+          "radix-pop z-50 rounded-lg bg-texto px-2 py-1 text-xs font-medium text-fondo",
           className,
         )}
         {...props}

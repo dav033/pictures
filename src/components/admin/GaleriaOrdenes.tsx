@@ -54,7 +54,7 @@ function LightboxGaleria({ item, onCerrar }: { item: ItemGaleria | null; onCerra
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
-                className="fixed inset-0 z-50 bg-black/70"
+                className="fixed inset-0 z-50 bg-overlay"
               />
             </Dialog.Overlay>
             <Dialog.Content forceMount className="fixed inset-0 z-50 flex items-center justify-center p-4 outline-none">
@@ -63,7 +63,7 @@ function LightboxGaleria({ item, onCerrar }: { item: ItemGaleria | null; onCerra
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.97, y: 8 }}
                 transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
-                className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-borde bg-superficie shadow-xl sm:flex-row"
+                className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-borde bg-superficie shadow-[0_16px_40px_var(--sombra)] sm:flex-row"
               >
                 <button
                   type="button"
@@ -153,7 +153,7 @@ export function GaleriaOrdenes({ ordenes }: { ordenes: OrdenRevision[] }) {
           <input type="checkbox" checked={soloAptas} onChange={(e) => setSoloAptas(e.target.checked)} />
           Solo aptas para entrenamiento
         </label>
-        <select
+        <select aria-label="Categoría"
           value={categoria}
           onChange={(e) => setCategoria(e.target.value)}
           className="rounded-lg border border-borde bg-superficie px-2 py-1 text-xs text-texto outline-none focus:border-acento"

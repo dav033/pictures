@@ -50,7 +50,7 @@ export function VisorImagenCompleta({
                   src={src}
                   alt={alt}
                   onClick={(e) => e.stopPropagation()}
-                  className="max-h-[96vh] max-w-[96vw] cursor-default rounded-lg object-contain shadow-2xl"
+                  className="max-h-[96vh] max-w-[96vw] cursor-default rounded-lg object-contain"
                 />
                 <Dialog.Close asChild>
                   <button

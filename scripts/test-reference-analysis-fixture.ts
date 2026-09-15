@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import React from "react";
-import { ReferenceReviewPanel } from "@/components/references/ReferenceReviewPanel";
+import { vistaAnalisisFoto } from "@/components/referencia/textos-analisis";
 import { analizarReferenciasV2 } from "@/lib/ia/analizar-referencias-v2";
 import type { ChatPort, PeticionChat, TurnoChat } from "@/lib/ia/tipos";
 import { ReferenceBlueprintV2Schema } from "@/lib/ia/reference-blueprint";
@@ -95,13 +94,6 @@ const inventory = {
 
 const audit = { images: [{ image_id: "REF_01", elements: [] }] };
 
-function collectText(node: unknown): string {
-  if (typeof node === "string" || typeof node === "number") return String(node);
-  if (Array.isArray(node)) return node.map(collectText).join(" ");
-  if (React.isValidElement(node)) return collectText((node.props as { children?: unknown }).children);
-  return "";
-}
-
 function mockChat(): ChatPort {
   let turn = 0;
   return {
@@ -186,12 +178,18 @@ async function run() {
   const page = readFileSync(resolve(process.cwd(), "src/app/page.tsx"), "utf8");
   assert.doesNotMatch(page, /ReferencePlanCard/, "page.tsx no debe renderizar el panel de cobertura por elemento");
 
-  // Call the client component directly under the RSC-compatible test runtime
-  // and walk its element tree: the review panel is a short Spanish status.
-  const analizando = collectText(ReferenceReviewPanel({ references: [reference], blueprint: null, status: "analyzing", error: null }));
-  assert.match(analizando, /Estoy mirando tu foto de referencia/);
-  const listo = collectText(ReferenceReviewPanel({ references: [reference], blueprint, status: "ready", error: null }));
-  assert.match(listo, /usaré tu foto como referencia/);
+  // The review panel (ReferenceReviewPanel → AnalisisFoto, animated with
+  // motion) renders exactly the texts decided by `vistaAnalisisFoto`; the pure
+  // view model is checked here because this runtime cannot load motion.
+  const vistaAnalizando = vistaAnalisisFoto("analizando", null);
+  assert.equal(vistaAnalizando.caso, "analizando");
+  assert.match(vistaAnalizando.titulo, /Estoy mirando tu foto/);
+  const vistaLista = vistaAnalisisFoto("listo", blueprint);
+  assert.equal(vistaLista.caso, "listo", "la guirnalda de la foto es decoración con globos");
+  if (vistaLista.caso !== "listo") throw new Error("unreachable");
+  assert.match(vistaLista.resumen, /^Veo una guirnalda/);
+  const listo = [vistaLista.resumen, ...vistaLista.piezas.flatMap((pieza) => [pieza.nombre, pieza.ubicacionCorta ?? ""]), ...vistaLista.colores.map((muestra) => muestra.etiqueta), ...vistaLista.ambientacion].join(" | ");
+  assert.doesNotMatch(listo, /\bListo\b/, "el panel no dice 'Listo' (hallazgo #17)");
   for (const jerga of [/balloon_structure|curtain|lighting|signage/, /fuera_de_catalogo|emulable|Fuera de catálogo|Emulable/i, /guirnalda orgánica de globos|letrero Happy Birthday|luces de cadena/, /REF_01/]) {
     assert.doesNotMatch(listo, jerga, `el panel de referencia no debe mostrar ${jerga}`);
   }

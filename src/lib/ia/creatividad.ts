@@ -125,6 +125,17 @@ export function parseNivelCreatividad(valor: unknown): NivelCreatividad {
   return parsed.success ? parsed.data : CREATIVIDAD_POR_DEFECTO;
 }
 
+/**
+ * Level used to generate the image of an approved plan. The level recorded in
+ * the signed plan token wins: the proposal (number of pieces, scene) was
+ * designed with it, and the slider may have moved since. Plans signed before
+ * the level was recorded fall back to the untrusted request value.
+ */
+export function nivelCreatividadParaGenerar(nivelPlan: number | null | undefined, valorSolicitud: unknown): NivelCreatividad {
+  const firmado = NivelCreatividadSchema.safeParse(nivelPlan);
+  return firmado.success ? firmado.data : parseNivelCreatividad(valorSolicitud);
+}
+
 /** Venue labels the visual context recognizes (visual-context.ts VENUE_PATTERNS). */
 export const LUGARES_SUGERIBLES = ["jardín", "terraza", "playa", "hacienda", "parque", "salón", "hotel", "restaurante"] as const;
 export const MOMENTOS_SUGERIBLES = ["día", "tarde", "atardecer", "noche"] as const;

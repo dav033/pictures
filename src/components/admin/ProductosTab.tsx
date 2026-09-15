@@ -72,7 +72,7 @@ export function ProductosTab({
           <button
             type="button"
             onClick={() => setEditando("nuevo")}
-            className="rounded-lg bg-acento px-3 py-1.5 text-sm font-medium text-white"
+            className="rounded-lg bg-acento px-3 py-1.5 text-sm font-medium text-sobre-acento hover:bg-acento-hover"
           >
             + Nuevo producto
           </button>

@@ -2,8 +2,9 @@ import { UBICACIONES, type Ubicacion } from "./composicion";
 import { esParLateral } from "./ubicaciones";
 import { ESTRUCTURAS_OFICIALES, identificarEstructuraOficial, UBICACION_PARA_CLIENTE, type EstructuraOficialId } from "./estructuras-oficiales";
 import { ambientDecorSelection } from "@/lib/ia/reference-structure";
+import { esSustitucionDeColor } from "./colores-referencia";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
-import { clasificarAcabados, type PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
+import { clasificarAcabados, clasificarColores, type PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 
 /**
  * Textos de la tarjeta del plan para el cliente final (C2,
@@ -150,13 +151,46 @@ export function describirEstructuraCliente(estructura: EstructuraParaDescribir, 
   if (!estructura.oficialId) return `${minusculaInicial(estructura.nombre.trim())} ${ubicacion}`;
   const oficial = ESTRUCTURAS_OFICIALES[estructura.oficialId];
   const gramatica = GRAMATICA_OFICIAL[estructura.oficialId];
+  // "un techo de globos en el techo" (hallazgo #10): the name already says where it goes.
+  const sufijo = ubicacionRedundante(estructura.oficialId, estructura.ubicacion) ? "" : ` ${ubicacion}`;
   if (veces > 1) {
     const cantidad = CARDINALES[veces] ?? String(veces);
     const determinante = articulo === "definido" ? `${gramatica.genero === "f" ? "las" : "los"} ` : "";
-    return `${determinante}${cantidad} ${gramatica.plural} ${ubicacion}`;
+    return `${determinante}${cantidad} ${gramatica.plural}${sufijo}`;
   }
   const determinante = articulo === "definido" ? (gramatica.genero === "f" ? "la" : "el") : gramatica.genero === "f" ? "una" : "un";
-  return `${determinante} ${minusculaInicial(oficial.nombre)} ${ubicacion}`;
+  return `${determinante} ${minusculaInicial(oficial.nombre)}${sufijo}`;
+}
+
+const UBICACIONES_TECHO = new Set(["techo", "techo_multipunto"]);
+const LATERALES = new Set(["lateral_izquierdo", "lateral_derecho"]);
+
+function ubicacionRedundante(oficialId: EstructuraOficialId, ubicacion: string): boolean {
+  return ESTRUCTURAS_OFICIALES[oficialId].ubicacion === "techo" && UBICACIONES_TECHO.has(ubicacion);
+}
+
+/** "a la izquierda" → "izquierda"; etiqueta corta para recuadros sobre la foto. Un par lateral va a "ambos lados". */
+export function ubicacionCortaCliente(ubicacion: string, repeticiones = 1): string {
+  const larga = repeticiones > 1 ? ubicacionCliente({ ubicacion, repeticiones }) : UBICACION_PARA_CLIENTE[ubicacion] ?? "en el espacio";
+  return larga.replace(/^(?:a la|al|a|en el|en la|en las|en los|en una|a lo largo del|contra la)\s+/, "");
+}
+
+/** "1,6 × 2,4 m", "2 m de alto", "3,5 m de largo"; null sin medidas. */
+export function medidasCortasCliente(tipo: string, medidas: { ancho_m?: number; alto_m?: number; largo_m?: number } | undefined): string | null {
+  if (!medidas) return null;
+  if (tipo === "guirnalda") return medidasCliente(tipo, medidas);
+  if (medidas.ancho_m != null && medidas.alto_m != null) return `${NUMERO.format(medidas.ancho_m)} × ${NUMERO.format(medidas.alto_m)} m`;
+  if (medidas.alto_m != null) return `${metrosCliente(medidas.alto_m)} de alto`;
+  if (medidas.ancho_m != null) return `${metrosCliente(medidas.ancho_m)} de ${tipo === "centro_mesa" ? "diámetro" : "ancho"}`;
+  return null;
+}
+
+/** "Arco", "2 columnas", "5 centros de mesa con globos"; sin estructura oficial usa el nombre del plan. */
+export function nombreConCantidadCliente(estructura: EstructuraParaDescribir): string {
+  const veces = Math.max(1, estructura.repeticiones);
+  if (!estructura.oficialId) return veces > 1 ? `${veces} × ${estructura.nombre.trim()}` : estructura.nombre.trim();
+  if (veces === 1) return ESTRUCTURAS_OFICIALES[estructura.oficialId].nombre;
+  return `${NUMERO.format(veces)} ${GRAMATICA_OFICIAL[estructura.oficialId].plural}`;
 }
 
 /** Colores del catálogo en palabras del cliente (la paleta ya está en español). */
@@ -300,7 +334,23 @@ export function coloresCliente(lineas: ReadonlyArray<{ color: string | null; aca
  * columna a la izquierda, en azul, blanco y dorado."
  */
 export function resumenPlanCliente(estructuras: readonly EstructuraParaDescribir[], colores: readonly string[]): string {
-  const piezas = estructuras.map((estructura) => describirEstructuraCliente(estructura, "indefinido"));
+  // Two single pieces of the same official structure on opposite sides read as
+  // a pair (hallazgo #10): "dos semiarcos, uno a cada lado".
+  const usadas = new Set<number>();
+  const piezas: string[] = [];
+  estructuras.forEach((estructura, indice) => {
+    if (usadas.has(indice)) return;
+    const pareja = estructura.oficialId && estructura.repeticiones <= 1 && LATERALES.has(estructura.ubicacion)
+      ? estructuras.findIndex((otra, otroIndice) => otroIndice > indice && !usadas.has(otroIndice) && otra.oficialId === estructura.oficialId && otra.repeticiones <= 1 && LATERALES.has(otra.ubicacion) && otra.ubicacion !== estructura.ubicacion)
+      : -1;
+    if (pareja >= 0 && estructura.oficialId) {
+      usadas.add(pareja);
+      const gramatica = GRAMATICA_OFICIAL[estructura.oficialId];
+      piezas.push(`dos ${gramatica.plural}, ${gramatica.genero === "f" ? "una" : "uno"} a cada lado`);
+      return;
+    }
+    piezas.push(describirEstructuraCliente(estructura, "indefinido"));
+  });
   if (!piezas.length) return "";
   const nombres = [...new Set(colores.map((color) => nombreColorCliente(color)))];
   const texto = `${unirNatural(piezas)}${nombres.length ? `, en ${unirNatural(nombres)}` : ""}.`;
@@ -313,19 +363,30 @@ export function resumenPlanCliente(estructuras: readonly EstructuraParaDescribir
  * `descripciones` va de `estructura_id` a "el semiarco asimétrico a la derecha".
  */
 export function sustitucionesCliente(
-  sustituciones: ReadonlyArray<{ estructura_id: string; pedido: string; entregado: string }>,
+  sustituciones: ReadonlyArray<{ estructura_id: string; pedido: string; entregado: string; motivo?: string }>,
   descripciones: ReadonlyMap<string, string>,
 ): string[] {
   const grupos = new Map<string, { pedido: string; entregado: string; estructuras: string[] }>();
+  // A photo color the plan does not carry (`colores-referencia.ts`) already
+  // comes with its customer sentence; only size substitutions are rewritten.
+  const deColor: string[] = [];
   for (const item of sustituciones) {
+    if (esSustitucionDeColor(item)) {
+      const texto = item.motivo?.trim() || `La foto de referencia muestra ${nombreColorCliente(item.pedido)} y la propuesta no lo lleva.`;
+      if (!deColor.includes(texto)) deColor.push(texto);
+      continue;
+    }
     const clave = `${item.pedido}|${item.entregado}`;
     const grupo = grupos.get(clave) ?? { pedido: item.pedido, entregado: item.entregado, estructuras: [] };
     const descripcion = descripciones.get(item.estructura_id) ?? "la decoración";
     if (!grupo.estructuras.includes(descripcion)) grupo.estructuras.push(descripcion);
     grupos.set(clave, grupo);
   }
-  return [...grupos.values()].map((grupo) =>
-    `Para ${unirNatural(grupo.estructuras)} no hay globos de ${pulgadasCliente(grupo.pedido)} en ese color; usamos globos de ${pulgadasCliente(grupo.entregado)}.`);
+  return [
+    ...[...grupos.values()].map((grupo) =>
+      `Para ${unirNatural(grupo.estructuras)} no hay globos de ${pulgadasCliente(grupo.pedido)} en ese color; usamos globos de ${pulgadasCliente(grupo.entregado)}.`),
+    ...deColor,
+  ];
 }
 
 export function faltantesCliente(
@@ -423,26 +484,137 @@ export function ambientacionCliente(blueprint: ReferenceBlueprintV2, materializa
   return etiquetas;
 }
 
+/** Piezas de globos sin estructura oficial que el análisis sí detecta. */
+const PIEZAS_SIN_OFICIAL = {
+  racimo: { nombre: "Racimo de globos", genero: "m" as Genero, plural: "racimos de globos" },
+  arreglo: { nombre: "Arreglo de globos", genero: "m" as Genero, plural: "arreglos de globos" },
+} as const;
+
+export type PiezaVistaEnReferencia = {
+  elementId: string;
+  sourceImageId: string;
+  bbox: ReferenceBlueprintV2["elements"][number]["reference_bbox"];
+  /** Estructura oficial cuando existe; un racimo o un arreglo no la tienen. */
+  oficialId?: EstructuraOficialId;
+  /** "Semiarco", "Racimo de globos". */
+  nombre: string;
+  /** Slug de ubicación del análisis (`lateral_izquierdo`), o null si no se detectó. */
+  ubicacion: string | null;
+  /** "izquierda", "centro". */
+  ubicacionCorta: string | null;
+};
+
 /**
- * Estructuras de globos que el análisis vio en la foto, en palabras del
- * cliente ("un semiarco asimétrico a la derecha"). Usa la misma identificación
- * oficial que el chat (`serializeReferenceBlueprint`); los elementos sin
- * estructura detectada no se nombran.
+ * Piezas de globos que el análisis vio en la foto, en el orden del análisis.
+ * Usa la misma identificación oficial que el chat; un racimo (`cluster`) o un
+ * kit sin estructura oficial se nombra "racimo" o "arreglo de globos" en vez de
+ * desaparecer (hallazgo #10: dos kits dejaban el resumen vacío).
  */
-export function estructurasVistasEnReferencia(blueprint: ReferenceBlueprintV2): string[] {
-  const descripciones: string[] = [];
+export function piezasVistasEnReferencia(blueprint: ReferenceBlueprintV2): PiezaVistaEnReferencia[] {
+  const piezas: PiezaVistaEnReferencia[] = [];
   for (const elemento of blueprint.elements) {
+    if (!elemento.approved) continue;
     const semantica = elemento.visual_semantics;
-    if (!elemento.approved || !semantica) continue;
-    const oficial = identificarEstructuraOficial({ tipo: semantica.structure_type, densidad: semantica.density, ubicacion: semantica.placement, nombre: elemento.appearance.shape });
-    if (!oficial) continue;
-    descripciones.push(describirEstructuraCliente({ oficialId: oficial.id, nombre: oficial.nombre, ubicacion: semantica.placement, repeticiones: 1 }, "indefinido"));
+    if (!semantica && elemento.category !== "balloon_structure") continue;
+    const base = { elementId: elemento.element_id, sourceImageId: elemento.source_image_id, bbox: elemento.reference_bbox };
+    const ubicacion = semantica?.placement ?? null;
+    const ubicacionCorta = ubicacion ? ubicacionCortaCliente(ubicacion) : null;
+    const oficial = semantica
+      ? identificarEstructuraOficial({ tipo: semantica.structure_type, densidad: semantica.density, ubicacion: semantica.placement, nombre: `${elemento.appearance.shape} ${elemento.name}` })
+      : undefined;
+    if (oficial) {
+      piezas.push({ ...base, oficialId: oficial.id, nombre: oficial.nombre, ubicacion, ubicacionCorta: ubicacionRedundante(oficial.id, ubicacion ?? "") ? null : ubicacionCorta });
+      continue;
+    }
+    const esRacimo = /\bcluster|\bracimo/i.test(`${elemento.appearance.shape} ${elemento.name}`);
+    piezas.push({ ...base, nombre: (esRacimo ? PIEZAS_SIN_OFICIAL.racimo : PIEZAS_SIN_OFICIAL.arreglo).nombre, ubicacion, ubicacionCorta });
   }
-  return descripciones;
+  return piezas;
 }
 
-/** "Veo un semiarco asimétrico a la derecha y una columna a la izquierda." o null. */
+function gramaticaPieza(pieza: PiezaVistaEnReferencia): { nombre: string; genero: Genero; plural: string } {
+  if (pieza.oficialId) return { nombre: minusculaInicial(ESTRUCTURAS_OFICIALES[pieza.oficialId].nombre), ...GRAMATICA_OFICIAL[pieza.oficialId] };
+  const sinOficial = pieza.nombre === PIEZAS_SIN_OFICIAL.racimo.nombre ? PIEZAS_SIN_OFICIAL.racimo : PIEZAS_SIN_OFICIAL.arreglo;
+  return { nombre: minusculaInicial(sinOficial.nombre), genero: sinOficial.genero, plural: sinOficial.plural };
+}
+
+function ubicacionPieza(pieza: PiezaVistaEnReferencia): string | null {
+  if (!pieza.ubicacion || (pieza.oficialId && ubicacionRedundante(pieza.oficialId, pieza.ubicacion))) return null;
+  return UBICACION_PARA_CLIENTE[pieza.ubicacion] ?? null;
+}
+
+/**
+ * Estructuras de globos que el análisis vio en la foto, en palabras del
+ * cliente, agrupando las repetidas (hallazgo #10): "dos columnas, una a cada
+ * lado" en vez de "una columna a la izquierda, una columna a la derecha".
+ */
+export function estructurasVistasEnReferencia(blueprint: ReferenceBlueprintV2): string[] {
+  const grupos = new Map<string, PiezaVistaEnReferencia[]>();
+  for (const pieza of piezasVistasEnReferencia(blueprint)) {
+    const clave = pieza.oficialId ?? pieza.nombre;
+    grupos.set(clave, [...(grupos.get(clave) ?? []), pieza]);
+  }
+  return [...grupos.values()].map((piezas) => {
+    const { nombre, genero, plural } = gramaticaPieza(piezas[0]!);
+    const ubicaciones = [...new Set(piezas.map(ubicacionPieza).filter((texto): texto is string => Boolean(texto)))];
+    if (piezas.length === 1) {
+      return [genero === "f" ? "una" : "un", nombre, ubicaciones[0]].filter(Boolean).join(" ");
+    }
+    const cantidad = CARDINALES[piezas.length] ?? String(piezas.length);
+    const slugs = new Set(piezas.map((pieza) => pieza.ubicacion));
+    if (piezas.length === 2 && slugs.size === 2 && slugs.has("lateral_izquierdo") && slugs.has("lateral_derecho")) {
+      return `${cantidad} ${plural}, ${genero === "f" ? "una" : "uno"} a cada lado`;
+    }
+    if (ubicaciones.length === 0) return `${cantidad} ${plural}`;
+    if (ubicaciones.length === 1 && slugs.size === 1) return `${cantidad} ${plural} ${ubicaciones[0]}`;
+    return `${cantidad} ${plural}, ${unirNatural(ubicaciones)}`;
+  });
+}
+
+/** "Veo un semiarco asimétrico a la derecha y una columna a la izquierda."; null solo si no hay piezas. */
 export function resumenReferenciaCliente(blueprint: ReferenceBlueprintV2): string | null {
   const descripciones = estructurasVistasEnReferencia(blueprint);
   return descripciones.length ? `Veo ${unirNatural(descripciones)}.` : null;
+}
+
+/** Palabras del análisis (en inglés) que la taxonomía del catálogo no cubre; solo para mostrar. */
+const COLOR_OBSERVADO_EXTRA: ReadonlyArray<readonly [RegExp, string]> = [
+  [/\bclear\b/, "transparente"],
+  [/\blilac\b|\blavender\b/, "lila"],
+  [/\bgr[ae]y\b|\bgraphite\b/, "gris"],
+];
+const ACABADO_OBSERVADO_EXTRA: ReadonlyArray<readonly [RegExp, string]> = [
+  [/\bchrome\b|\bmirror\b|\breflex\b/, "cromado"],
+  [/\bpastel\b/, "pastel"],
+  [/\bmatte?\b/, "mate"],
+];
+
+/**
+ * Colores que el análisis observó en la foto como muestras en español
+ * ("Rosado pastel", "Plateado cromado"). Un color que no se reconoce se omite
+ * en vez de mostrarse en inglés.
+ */
+export function coloresObservadosCliente(blueprint: ReferenceBlueprintV2, maximo = 6): MuestraColor[] {
+  const observados = blueprint.palette.observed.length
+    ? blueprint.palette.observed
+    : blueprint.elements.filter((elemento) => elemento.approved).flatMap((elemento) => elemento.appearance.observed_colors);
+  const muestras = new Map<string, MuestraColor>();
+  for (const texto of observados) {
+    const plegado = sinTildes(texto);
+    const clasificado = clasificarColores(texto);
+    const color = clasificado.status === "known" && clasificado.values.length === 1
+      ? clasificado.values[0]!
+      : COLOR_OBSERVADO_EXTRA.find(([patron]) => patron.test(plegado))?.[1];
+    if (!color) continue;
+    const acabadoTaxonomia = clasificarAcabados(texto);
+    const acabado = (acabadoTaxonomia.status === "known" ? ACABADO_CLIENTE[acabadoTaxonomia.values[0]!] : undefined)
+      ?? ACABADO_OBSERVADO_EXTRA.find(([patron]) => patron.test(plegado))?.[1]
+      ?? null;
+    const muestra = muestraColor(color, acabado === "pastel" ? null : acabado);
+    const etiqueta = [nombreColorCliente(color), acabado].filter(Boolean).join(" ");
+    const clave = etiqueta;
+    if (!muestras.has(clave)) muestras.set(clave, { ...muestra, etiqueta: `${etiqueta.charAt(0).toUpperCase()}${etiqueta.slice(1)}` });
+    if (muestras.size >= maximo) break;
+  }
+  return [...muestras.values()];
 }

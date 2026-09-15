@@ -18,7 +18,7 @@ function proveedores(paquete: HappiaPackage): string[] {
 
 function Meta({ paquete }: { paquete: HappiaPackage }) {
   return (
-    <div className="flex gap-4">
+    <div className="flex flex-wrap gap-x-4 gap-y-1">
       <span className="flex items-center gap-1.5 text-xs text-texto-suave">
         <Users className="h-3.5 w-3.5 text-acento" />
         <strong className="font-semibold text-texto">{paquete.base_guests}</strong> invitados base
@@ -51,27 +51,28 @@ export function PaqueteHero({
   const provs = proveedores(paquete);
 
   return (
-    <div className="happie-tarjeta happie-entra flex overflow-hidden rounded-[20px] border border-borde bg-superficie shadow-[0_4px_16px_var(--sombra)]">
-      <ArtePaquete nombre={paquete.name} className="relative w-[220px] shrink-0 sm:w-[260px]">
-        <div className="absolute left-3.5 top-3.5 flex items-center gap-1.5 rounded-full bg-[rgba(28,20,37,0.62)] px-2.5 py-1 backdrop-blur-sm">
-          <Sparkles className="h-2.5 w-2.5 fill-[#fbbf24] text-[#fbbf24]" />
+    <div className="happie-tarjeta happie-entra flex flex-col overflow-hidden rounded-[20px] border border-borde bg-superficie sm:flex-row">
+      <ArtePaquete nombre={paquete.name} className="relative h-40 w-full shrink-0 sm:h-auto sm:w-[260px]">
+        <div className="absolute left-3.5 top-3.5 flex items-center gap-1.5 rounded-full bg-[rgba(28,20,37,0.72)] px-2.5 py-1">
+          <Sparkles className="h-2.5 w-2.5 fill-[#fbbf24] text-[#fbbf24]" aria-hidden="true" />
           <span className="text-[10px] font-semibold uppercase tracking-wider text-white">Mejor opción</span>
         </div>
       </ArtePaquete>
 
-      <div className="flex flex-grow flex-col gap-3.5 p-5 sm:p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex flex-col gap-1.5">
+      <div className="flex min-w-0 flex-grow flex-col gap-3.5 p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex min-w-0 flex-col gap-1.5">
             <h2 className="text-xl font-semibold tracking-tight text-texto sm:text-[21px]">{paquete.name}</h2>
             {razon && <p className="max-w-md text-[13.5px] leading-relaxed text-texto-suave text-pretty">{razon}</p>}
           </div>
           <button
+            type="button"
             onClick={() => onAgregar(paquete)}
             className="flex shrink-0 items-center gap-1.5 rounded-xl border px-3.5 py-2.5 text-[13px] font-semibold"
             style={
               enCarrito
                 ? { background: "var(--acento-suave)", borderColor: "var(--acento-suave)", color: "var(--acento)" }
-                : { background: "#ffffff", borderColor: "var(--acento)", color: "var(--acento)" }
+                : { background: "var(--superficie)", borderColor: "var(--acento)", color: "var(--acento)" }
             }
           >
             {enCarrito ? <Check className="h-3.5 w-3.5" strokeWidth={2.6} /> : <Plus className="h-3.5 w-3.5" strokeWidth={2.4} />}
@@ -134,7 +135,7 @@ export function PaqueteCompacta({
 
   return (
     <div
-      className="happie-tarjeta happie-entra flex flex-col overflow-hidden rounded-[18px] border border-borde bg-superficie shadow-[0_2px_10px_var(--sombra)]"
+      className="happie-tarjeta happie-entra flex flex-col overflow-hidden rounded-[18px] border border-borde bg-superficie"
       style={{ animationDelay: `${retraso}s` }}
     >
       <ArtePaquete nombre={paquete.name} className="h-[128px] w-full" />
@@ -152,12 +153,13 @@ export function PaqueteCompacta({
           </div>
         )}
         <button
+          type="button"
           onClick={() => onAgregar(paquete)}
           className="mt-1 flex items-center justify-center gap-1.5 rounded-xl border py-2.5 text-[13px] font-semibold"
           style={
             enCarrito
               ? { background: "var(--acento-suave)", borderColor: "var(--acento-suave)", color: "var(--acento)" }
-              : { background: "#ffffff", borderColor: "var(--borde)", color: "var(--acento)" }
+              : { background: "var(--superficie)", borderColor: "var(--borde)", color: "var(--acento)" }
           }
         >
           {enCarrito ? <Check className="h-3.5 w-3.5" strokeWidth={2.6} /> : <Plus className="h-3.5 w-3.5" strokeWidth={2.4} />}

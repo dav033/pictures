@@ -18,13 +18,13 @@ function approvalColor(status: SceneApprovalStatus): string {
   switch (status) {
     case "COMPLETE":
     case "APPROVED":
-      return "bg-green-100 text-green-700";
+      return "bg-exito-suave text-exito";
     case "PARTIAL":
-      return "bg-amber-100 text-amber-700";
+      return "bg-aviso-suave text-aviso";
     case "BLOCKED":
-      return "bg-red-100 text-red-700";
+      return "bg-error-suave text-error";
     default:
-      return "bg-slate-100 text-slate-600";
+      return "bg-superficie-2 text-texto-suave";
   }
 }
 
@@ -42,7 +42,7 @@ export function SceneCoveragePanel({ plan }: { plan: ResolvedScenePlan }) {
   const gapLines = plan.lines.filter((l) => l.item_id.startsWith("gap:"));
 
   return (
-    <section className="mt-3 max-w-[92%] space-y-3 rounded-xl border border-acento/30 bg-superficie p-4 shadow-sm">
+    <section className="mt-3 max-w-[92%] space-y-3 rounded-xl border border-acento/30 bg-superficie p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-texto">Plan de escena V2</p>
@@ -116,9 +116,9 @@ export function SceneCoveragePanel({ plan }: { plan: ResolvedScenePlan }) {
       {/* Gaps */}
       {gapLines.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs font-semibold text-amber-600">Brechas</p>
+          <p className="text-xs font-semibold text-aviso">Brechas</p>
           {gapLines.map((line) => (
-            <div key={line.slot_id} className="rounded-lg bg-amber-50 p-2 text-xs text-amber-700">
+            <div key={line.slot_id} className="rounded-lg bg-aviso-suave p-2 text-xs text-aviso">
               <p className="font-medium">{line.slot_id}</p>
             </div>
           ))}
@@ -127,10 +127,10 @@ export function SceneCoveragePanel({ plan }: { plan: ResolvedScenePlan }) {
 
       {/* Blockers */}
       {plan.approval_blockers.length > 0 && (
-        <div className="space-y-1 rounded-lg bg-red-50 p-3">
-          <p className="text-xs font-semibold text-red-600">Bloqueos de aprobación</p>
+        <div className="space-y-1 rounded-lg bg-error-suave p-3">
+          <p className="text-xs font-semibold text-error">Bloqueos de aprobación</p>
           {plan.approval_blockers.map((blocker, i) => (
-            <p key={i} className="text-[10px] text-red-500">{blocker}</p>
+            <p key={i} className="text-[10px] text-error">{blocker}</p>
           ))}
         </div>
       )}

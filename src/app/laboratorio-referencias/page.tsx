@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { InterruptorTema } from "@/components/ui/interruptor-tema";
 import type { Imagen, PeticionImagen, ProveedorId } from "@/lib/ia/tipos";
 
 type Prueba = {
@@ -142,16 +143,19 @@ export default function LaboratorioReferenciasPage() {
 
   return (
     <div className="min-h-dvh bg-fondo text-texto">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-borde bg-superficie px-5 py-3">
-        <div>
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-borde-suave bg-fondo px-4 py-2.5 sm:px-5">
+        <div className="min-w-0">
           <h1 className="text-base font-semibold">Laboratorio de referencias JSON</h1>
           <p className="text-xs text-texto-suave">Prueba aislada: JSON + imágenes, sin catálogo ni conversación principal.</p>
         </div>
-        <Link href="/" className="text-sm text-acento underline underline-offset-2">Volver al chat</Link>
+        <div className="flex items-center gap-1">
+          <Link href="/" className="ui-button-ghost rounded-lg px-2 py-1.5">← Volver al chat</Link>
+          <InterruptorTema />
+        </div>
       </header>
 
-      <main className="grid min-h-[calc(100dvh-65px)] lg:grid-cols-[1fr_29rem]">
-        <section className="space-y-5 p-5 lg:overflow-y-auto">
+      <main className="grid min-h-[calc(100dvh-65px)] lg:grid-cols-[minmax(0,1fr)_29rem]">
+        <section className="min-w-0 space-y-5 p-4 sm:p-5 lg:overflow-y-auto">
           {pruebas.length === 0 && (
             <div className="rounded-2xl border border-dashed border-borde bg-superficie p-6 text-sm text-texto-suave">
               Pega un Reference Blueprint v2. Puedes adjuntar imágenes originales en el mismo orden de <code>source_images</code>. Fixtures v1 siguen disponibles solo como adaptador de laboratorio.
@@ -159,14 +163,14 @@ export default function LaboratorioReferenciasPage() {
           )}
           {pruebas.map((prueba) => (
             <article key={prueba.id} className="space-y-3">
-              <div className="ml-auto max-w-3xl rounded-2xl bg-acento px-4 py-3 text-sm text-white">
+              <div className="ml-auto max-w-3xl rounded-2xl bg-acento-suave px-4 py-3 text-sm text-texto">
                 <p>{prueba.instruccion}</p>
                 <details className="mt-2 text-xs">
                   <summary className="cursor-pointer">Ver JSON enviado</summary>
-                  <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg bg-black/20 p-3 font-mono">{prueba.json}</pre>
+                  <pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap rounded-lg bg-superficie p-3 font-mono">{prueba.json}</pre>
                 </details>
               </div>
-              <div className="max-w-3xl rounded-2xl border border-borde bg-superficie p-4">
+              <div className="ui-card max-w-3xl p-4">
                 <AnimatePresence mode="wait">
                   {prueba.pendiente && (
                     <motion.p
@@ -181,7 +185,7 @@ export default function LaboratorioReferenciasPage() {
                     </motion.p>
                   )}
                   {prueba.error && (
-                    <motion.p key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm text-red-700">
+                    <motion.p key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-sm text-error">
                       {prueba.error}
                     </motion.p>
                   )}
@@ -201,7 +205,7 @@ export default function LaboratorioReferenciasPage() {
           ))}
         </section>
 
-        <aside className="space-y-4 border-t border-borde bg-superficie-2 p-5 lg:border-l lg:border-t-0">
+        <aside className="min-w-0 space-y-4 border-t border-borde-suave bg-superficie-suave p-4 sm:p-5 lg:border-l lg:border-t-0">
           <label className="block text-xs font-semibold uppercase tracking-wide text-texto-suave">
             JSON descriptivo
             <textarea
@@ -228,7 +232,7 @@ export default function LaboratorioReferenciasPage() {
 
           <div className="grid grid-cols-2 gap-2">
             <Select value={proveedor} onValueChange={(v) => setProveedor(v as ProveedorId)}>
-              <SelectTrigger className="w-full max-w-none border border-borde bg-superficie text-xs text-texto">
+              <SelectTrigger aria-label="Proveedor" className="w-full max-w-none border border-borde bg-superficie text-xs text-texto">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -241,7 +245,7 @@ export default function LaboratorioReferenciasPage() {
               </SelectContent>
             </Select>
             <Select value={aspecto} onValueChange={(v) => setAspecto(v as PeticionImagen["aspecto"])}>
-              <SelectTrigger className="w-full max-w-none border border-borde bg-superficie text-xs text-texto">
+              <SelectTrigger aria-label="Formato de imagen" className="w-full max-w-none border border-borde bg-superficie text-xs text-texto">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -254,8 +258,8 @@ export default function LaboratorioReferenciasPage() {
             </Select>
           </div>
 
-          {errorEntrada && <p className="rounded-lg border border-red-300 bg-red-50 p-2 text-xs text-red-700">{errorEntrada}</p>}
-          <button type="button" onClick={enviar} disabled={procesando || !json.trim()} className="w-full rounded-xl bg-acento px-4 py-3 text-sm font-medium text-white disabled:opacity-40">
+          {errorEntrada && <p role="alert" className="rounded-lg border border-error bg-error-suave p-2 text-xs text-error">{errorEntrada}</p>}
+          <button type="button" onClick={enviar} disabled={procesando || !json.trim()} className="ui-button-primary w-full">
             {procesando ? "Generando prueba…" : "Enviar al generador"}
           </button>
         </aside>

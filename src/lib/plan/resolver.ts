@@ -8,6 +8,7 @@ import { planHashResuelto } from "./hash";
 import { completarMedidas, completarMedidas1_1 } from "./medidas-defecto";
 import { distribuirReservaProyecto, optimizarCobertura } from "./optimizar-materiales";
 import { cajasDeEstructuras } from "./ubicaciones";
+import { sustitucionesColorReferencia } from "./colores-referencia";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import type { PlanDecoracion, PlanDecoracion1_1 } from "./tipos";
 import type { CompraConsolidada, EstructuraResuelta, LineaMaterial, OrigenLineaPlan, PlanResuelto } from "./resuelto";
@@ -189,17 +190,26 @@ function lineaDesdeCandidato(origen: OrigenLineaPlan, candidato: Candidato, unid
   };
 }
 
+/**
+ * Splits `unidades_declaradas` by `participacion` (mirror of `_distribute_units`
+ * in services/ai-api/app/plan.py). Every declared material is a purchase, so
+ * each one first gets one unit and only the rest is split by largest remainder
+ * (ties by position). Regression: a figure with 4 materials declared with 1 unit
+ * was quoted as one balloon of the first material.
+ */
 function repartirUnidades(total: number, materiales: ReadonlyArray<{ participacion?: number }>): number[] {
-  const cuotas = materiales.map((material) => total * (material.participacion ?? 0));
+  if (materiales.length === 0) return [];
+  const resto = Math.max(0, total - materiales.length);
+  const cuotas = materiales.map((material) => resto * (material.participacion ?? 0));
   const unidades = cuotas.map(Math.floor);
-  let faltan = total - unidades.reduce((sum, value) => sum + value, 0);
+  let faltan = resto - unidades.reduce((sum, value) => sum + value, 0);
   const orden = cuotas.map((cuota, index) => ({ index, resto: cuota - unidades[index]! })).sort((a, b) => b.resto - a.resto || a.index - b.index);
   for (const item of orden) {
     if (faltan <= 0) break;
     unidades[item.index]! += 1;
     faltan -= 1;
   }
-  return unidades;
+  return unidades.map((cantidad) => cantidad + 1);
 }
 
 function mezclaReal(lineas: LineaMaterial[]): EstructuraResuelta["mezcla_real"] {
@@ -496,6 +506,8 @@ export async function resolverPlan(
         lineas.push(lineaDesdeCandidato({ kind: "estructura", id: estructura.estructura_id }, elegido, unidades[index]!, material.color));
       }
     }
+    // Photo colors this structure does not buy (colores-referencia.ts).
+    sustituciones.push(...sustitucionesColorReferencia(estructura.estructura_id, estructura.colores_referencia ?? [], lineas.map((linea) => linea.color)));
     const totalUnidades = lineas.reduce((sum, linea) => sum + linea.unidades, 0);
     if (sinCobertura.length > faltantesAntes) advertencias.push(`estructura_sin_cobertura:${estructura.estructura_id}`);
     estructuras.push({

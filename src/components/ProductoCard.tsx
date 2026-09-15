@@ -63,7 +63,7 @@ export function ProductoCard({
         aria-hidden
         className={`flex size-5 shrink-0 items-center justify-center rounded-full border ${
           seleccionado
-            ? "border-acento bg-acento text-white"
+            ? "border-acento bg-acento text-sobre-acento"
             : "border-borde text-transparent group-hover:border-acento/50"
         }`}
       >

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { MotionConfig } from "motion/react";
 import { SeleccionProvider } from "@/lib/estado/seleccion";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SCRIPT_TEMA_ANTES_DE_PINTAR } from "@/lib/tema/tema";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -26,7 +27,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="es"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      // El script de tema fija data-theme antes de hidratar: manda el DOM.
+      suppressHydrationWarning
     >
+      <head>
+        {/* Aplica el tema claro/oscuro guardado antes del primer pintado (sin
+            parpadeo). Sin elección, globals.css sigue prefers-color-scheme. */}
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA_ANTES_DE_PINTAR }} />
+      </head>
       <body className="flex min-h-dvh flex-col font-sans">
         {/* "user": Motion respeta prefers-reduced-motion del sistema operativo,
             igual que ya hace el CSS puro en globals.css. */}

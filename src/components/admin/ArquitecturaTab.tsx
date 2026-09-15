@@ -234,7 +234,7 @@ function ElementosView(props: {
             <h3 className="text-sm font-semibold text-texto">Elementos clasificados</h3>
             <p className="mt-1 text-xs text-texto-suave">Fuente única para recuperación, recetas y próximo dataset.</p>
           </div>
-          <span className="text-xs tabular-nums text-texto-suave">{props.data.elementos.length} total</span>
+          <span className="shrink-0 whitespace-nowrap text-xs tabular-nums text-texto-suave">{props.data.elementos.length} total</span>
         </div>
         {props.data.elementos.length === 0 ? (
           <div className="rounded-xl bg-superficie-2 px-6 py-12 text-center">
@@ -369,7 +369,7 @@ function ElementoEditor(props: {
       </div>
 
       <label className="mt-5 block text-xs font-medium text-texto">Nombre en biblioteca</label>
-      <input value={name} onChange={(event) => setName(event.target.value)} required className="mt-2 w-full rounded-xl border border-borde bg-superficie px-3 py-2.5 text-sm text-texto outline-none focus:border-acento" />
+      <input aria-label="Nombre en biblioteca" value={name} onChange={(event) => setName(event.target.value)} required className="mt-2 w-full rounded-xl border border-borde bg-superficie px-3 py-2.5 text-sm text-texto outline-none focus:border-acento" />
 
       <label className="mt-4 block text-xs font-medium text-texto">Tipo y nivel</label>
       <Select value={typeId} onValueChange={setTypeId} required>
@@ -422,7 +422,7 @@ function ElementoEditor(props: {
       </fieldset>
 
       <label className="mt-4 block text-xs font-medium text-texto">Notas para IA</label>
-      <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={3} placeholder="Uso visual, restricciones o composición…" className="mt-2 w-full resize-none rounded-xl border border-borde bg-superficie px-3 py-2.5 text-sm text-texto outline-none placeholder:text-texto-suave focus:border-acento" />
+      <textarea aria-label="Notas para IA" value={notes} onChange={(event) => setNotes(event.target.value)} rows={3} placeholder="Uso visual, restricciones o composición…" className="mt-2 w-full resize-none rounded-xl border border-borde bg-superficie px-3 py-2.5 text-sm text-texto outline-none placeholder:text-texto-suave focus:border-acento" />
 
       <div className="mt-5 flex gap-2">
         <button type="submit" disabled={props.saving || !typeId} className="ui-button-primary flex-1">{props.saving ? "Guardando…" : "Guardar"}</button>
@@ -508,11 +508,11 @@ function TaxonomyEditor(props: {
     <form onSubmit={submit} className="rounded-2xl bg-superficie-2 p-4">
       <h3 className="text-sm font-semibold text-texto">{props.item === "new" ? "Nuevo registro" : "Editar registro"}</h3>
       <label className="mt-4 block text-xs font-medium text-texto">Nombre</label>
-      <input value={name} onChange={(event) => setName(event.target.value)} required className="mt-2 w-full rounded-xl border border-borde bg-superficie px-3 py-2.5 text-sm text-texto outline-none focus:border-acento" />
+      <input aria-label="Nombre" value={name} onChange={(event) => setName(event.target.value)} required className="mt-2 w-full rounded-xl border border-borde bg-superficie px-3 py-2.5 text-sm text-texto outline-none focus:border-acento" />
       <label className="mt-4 block text-xs font-medium text-texto">Descripción</label>
-      <textarea value={description ?? ""} onChange={(event) => setDescription(event.target.value)} rows={3} className="mt-2 w-full resize-none rounded-xl border border-borde bg-superficie px-3 py-2.5 text-sm text-texto outline-none focus:border-acento" />
+      <textarea aria-label="Descripción" value={description ?? ""} onChange={(event) => setDescription(event.target.value)} rows={3} className="mt-2 w-full resize-none rounded-xl border border-borde bg-superficie px-3 py-2.5 text-sm text-texto outline-none focus:border-acento" />
       {props.mode === "category" ? (
-        <><label className="mt-4 block text-xs font-medium text-texto">Color identificador</label><input type="color" value={color} onChange={(event) => setColor(event.target.value)} className="mt-2 h-10 w-full cursor-pointer rounded-xl border border-borde bg-superficie p-1" /></>
+        <><label className="mt-4 block text-xs font-medium text-texto">Color identificador</label><input aria-label="Color identificador" type="color" value={color} onChange={(event) => setColor(event.target.value)} className="mt-2 h-10 w-full cursor-pointer rounded-xl border border-borde bg-superficie p-1" /></>
       ) : (
         <>
           <label className="mt-4 block text-xs font-medium text-texto">Nivel</label>

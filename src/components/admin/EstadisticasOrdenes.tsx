@@ -16,7 +16,7 @@ export const ETIQUETAS_CATEGORIA: Record<string, string> = {
 
 function StatTile({ label, value, className = "" }: { label: string; value: string; className?: string }) {
   return (
-    <div className={`rounded-2xl border border-borde bg-superficie p-4 shadow-[0_8px_24px_color-mix(in_srgb,var(--texto)_5%,transparent)] sm:p-5 ${className}`}>
+    <div className={`rounded-2xl border border-borde bg-superficie p-4 sm:p-5 ${className}`}>
       <p className="text-xs text-texto-suave">{label}</p>
       <p className="mt-2 text-3xl font-semibold tracking-tight text-texto">{value}</p>
     </div>
@@ -117,7 +117,7 @@ function ItemCatalogo({ item }: { item: ConteoImagen }) {
 
 const ESTILO_NIVEL: Record<Alerta["nivel"], { badge: string; borde: string; etiqueta: string }> = {
   alta: { badge: "bg-error-suave text-error", borde: "border-error/40", etiqueta: "Alta" },
-  media: { badge: "bg-amber-500/10 text-amber-600", borde: "border-amber-500/30", etiqueta: "Media" },
+  media: { badge: "bg-aviso-suave text-aviso", borde: "border-aviso/40", etiqueta: "Media" },
   baja: { badge: "bg-superficie-2 text-texto-suave", borde: "border-borde", etiqueta: "Informativa" },
 };
 
@@ -159,7 +159,7 @@ function PanelSalud({ alertas }: { alertas: Alerta[] }) {
           <span className="size-2 rounded-full bg-error" /> {altas} alta{altas === 1 ? "" : "s"}
         </span>
         <span className="flex items-center gap-1.5 text-texto-suave">
-          <span className="size-2 rounded-full bg-amber-500" /> {medias} media{medias === 1 ? "" : "s"}
+          <span className="size-2 rounded-full bg-aviso" /> {medias} media{medias === 1 ? "" : "s"}
         </span>
         <span className="flex items-center gap-1.5 text-texto-suave">
           <span className="size-2 rounded-full bg-texto-suave" /> {bajas} informativa{bajas === 1 ? "" : "s"}

@@ -49,7 +49,7 @@ const DatasetImageCard = memo(function DatasetImageCard({
   const removedComponentCount = record.components.length - visibleComponents.length;
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-borde bg-superficie shadow-sm transition hover:border-acento/50 hover:shadow-md">
+    <article className="overflow-hidden rounded-2xl border border-borde bg-superficie transition hover:border-acento/50">
       <a
         href={imageUrl}
         target="_blank"
@@ -66,7 +66,7 @@ const DatasetImageCard = memo(function DatasetImageCard({
           unoptimized
           className="object-contain transition duration-300 group-hover:scale-[1.02]"
         />
-        <span className="absolute left-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-semibold tabular-nums text-white backdrop-blur-sm">
+        <span className="absolute left-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-semibold tabular-nums text-white">
           {String(index + 1).padStart(3, "0")} / {total}
         </span>
         <span className="absolute bottom-3 right-3 rounded-full bg-black/70 px-2.5 py-1 text-[11px] text-white opacity-0 transition group-hover:opacity-100">
@@ -556,7 +556,7 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
 
   if (!data || !viewData) {
     return (
-      <section className="rounded-3xl border border-error/30 bg-error-suave p-5 sm:p-7" role="alert">
+      <section className="rounded-[1.25rem] border border-error/30 bg-error-suave p-5 sm:p-7" role="alert">
         <h2 className="text-sm font-semibold text-texto">Dataset no disponible</h2>
         <p className="mt-1 text-sm leading-6 text-texto-suave">No hay una selección de imágenes disponible para revisar.</p>
       </section>
@@ -565,7 +565,7 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
 
   return (
     <section className="space-y-5" aria-labelledby="lora-dataset-heading">
-      <div className="rounded-3xl border border-borde bg-superficie p-5 shadow-sm sm:p-7">
+      <div className="ui-card p-5 sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
@@ -585,7 +585,7 @@ export default function LoraDatasetGallery({ data }: { data: LoraDatasetGalleryD
         <Stats data={viewData} />
       </div>
 
-      <div className="rounded-2xl border border-borde bg-superficie p-4 shadow-sm sm:p-5">
+      <div className="rounded-2xl border border-borde bg-superficie p-4 sm:p-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <label className="block min-w-0 flex-1">
             <span className="mb-1.5 block text-xs font-semibold text-texto">Buscar en las imágenes</span>

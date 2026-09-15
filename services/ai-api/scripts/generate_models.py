@@ -115,7 +115,7 @@ def build_source() -> str:
             "        raise ValueError(f'{model_name} schema validation failed at {location}: {first.message}')\n",
             "    return value\n\n",
             "def contract_schema(model_name: str) -> dict[str, Any]:\n",
-            "    \"\"\"Return the exported JSON Schema of a contract, including x- extension data.\"\"\"\n",
+            '    """Return the exported JSON Schema of a contract, including x- extension data."""\n',
             "    return _SCHEMAS[model_name]\n\n",
         ]
     )

@@ -144,7 +144,7 @@ export default function LoraTrainingWizard({ onClose, onStarted, specialization 
   }
 
   return (
-    <section className="rounded-3xl border border-acento/30 bg-superficie p-5 shadow-sm sm:p-7" aria-labelledby="nuevo-entrenamiento-heading">
+    <section className="rounded-[1.25rem] border border-acento/30 bg-superficie p-5 sm:p-7" aria-labelledby="nuevo-entrenamiento-heading">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-acento">{isStructure ? "Estructuras" : "Producto"}</p>

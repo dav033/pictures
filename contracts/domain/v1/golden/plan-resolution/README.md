@@ -43,7 +43,7 @@ cd services/ai-api && uv run --extra test python -m pytest tests/test_plan_parit
 # Regenerar expected_python tras un cambio intencional de Python
 cd services/ai-api && PARIDAD_ACTUALIZAR=1 uv run --extra test python -m pytest tests/test_plan_parity.py
 
-# Paridad entre backends: la puerta de activación (13/13 el 2026-09-14).
+# Paridad entre backends: la puerta de activación (15/15 el 2026-09-14).
 npm run plan:test-paridad-python
 ```
 
@@ -108,3 +108,16 @@ en los dos backends y el vector `09` espera `0`. Decisión en `decision-log.md`
   reflex y azul pastel) en una estructura. Cada línea del despiece conserva su
   material por posición; antes el resolver buscaba por color y compraba solo el
   primero, sin avisar.
+
+## Auditoría de la imagen de referencia (2026-09-14)
+
+- `14-figura-cuatro-materiales.json`: una figura con cuatro materiales declarada
+  con `unidades_declaradas: 1` (caso F13) y un bouquet con restos empatados. Cada
+  material declarado recibe al menos una unidad: se reserva 1 por material y el
+  resto se reparte por mayor residuo. Antes la figura se cotizaba con un solo
+  globo del primer material y el bouquet perdía un color.
+- `15-colores-referencia.json`: dos fotos de referencia. Cada estructura lleva en
+  `colores_referencia` los colores dominantes de su propio elemento (los escribe
+  el servidor desde el blueprint) y los dos resolutores registran en
+  `sustituciones` los que no compra, tanto en una estructura geométrica como en
+  una sin geometría (casos F03+F06).

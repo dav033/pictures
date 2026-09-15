@@ -169,7 +169,7 @@ export function AgregarImagenManual({ onCreada }: { onCreada: () => void }) {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.15 }}
-                  className="fixed inset-0 z-50 bg-black/60"
+                  className="fixed inset-0 z-50 bg-overlay"
                 />
               </Dialog.Overlay>
               <Dialog.Content forceMount className="fixed inset-0 z-50 flex items-center justify-center p-4 outline-none">
@@ -178,7 +178,7 @@ export function AgregarImagenManual({ onCreada }: { onCreada: () => void }) {
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.97, y: 8 }}
                   transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
-                  className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl border border-borde bg-superficie p-5 shadow-xl"
+                  className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl border border-borde bg-superficie p-5 shadow-[0_16px_40px_var(--sombra)]"
                 >
                   <div className="mb-3 flex items-center justify-between">
                     <Dialog.Title className="text-sm font-semibold text-texto">Agregar imagen al dataset</Dialog.Title>
@@ -244,7 +244,7 @@ export function AgregarImagenManual({ onCreada }: { onCreada: () => void }) {
                         </div>
                       )}
 
-                      <input
+                      <input aria-label="Buscar producto o SKU"
                         value={busqueda}
                         onChange={(e) => setBusqueda(e.target.value)}
                         placeholder="Buscar producto o SKU del catálogo…"
@@ -280,7 +280,7 @@ export function AgregarImagenManual({ onCreada }: { onCreada: () => void }) {
                         type="button"
                         disabled={!puedeGuardar}
                         onClick={guardar}
-                        className="rounded-lg bg-acento px-3 py-1.5 text-xs font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+                        className="rounded-lg bg-acento px-3 py-1.5 text-xs font-medium text-sobre-acento disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {guardando ? "Generando caption…" : "Guardar y generar caption"}
                       </button>

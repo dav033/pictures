@@ -5,6 +5,7 @@ import type { Producto } from "@/lib/types";
 import { bytesBase64, registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "./telemetria-llamadas";
 import {
   analysisCacheKey,
+  bboxContainment,
   bboxOverlap,
   ReferenceBlueprintV2Schema,
   stableElementId,
@@ -12,21 +13,39 @@ import {
   type ReferenceBBox,
 } from "./reference-blueprint";
 import {
+  alignVerticalPosition,
+  attachedStructureContainers,
   DETECTED_STRUCTURE_TOOL_SCHEMA,
   COMPOSITION_RELEVANCE,
+  inferStructureFromName,
+  isLooseFloorBalloons,
+  isNonDecorativeBalloon,
+  normalizeFinishColors,
   parseCompositionRelevance,
   parseDetectedStructure,
   referenceStructureSemantics,
   shapeDescription,
+  shouldSplitSidePieces,
+  splitSidePieces,
+  structureCountFromName,
+  structureTypeFromName,
   STRUCTURE_DETECTION_RULES,
+  tieneElementosAprobados,
+  tieneEstructurasDeGlobos,
   type CompositionRelevance,
   type DetectedStructure,
 } from "./reference-structure";
 
-type AnalisisV2Resultado = {
+export type AnalisisV2Resultado = {
   blueprint: ReferenceBlueprintV2;
+  /** UI/chat contract: at least one approved balloon structure (see `tieneEstructurasDeGlobos`). */
+  tieneEstructurasDeGlobos: boolean;
+  /** UI contract: at least one approved element. False = nothing usable was seen (never "Listo"). */
+  tieneElementos: boolean;
   metadata: {
     passes: ["inventory", "audit"];
+    /** True when this result came from the in-memory cache instead of a new provider call. */
+    cached: boolean;
     cache_key: string;
     system_prompt_hash: string;
     requires_review: boolean;
@@ -110,7 +129,7 @@ const REAR_LAYER_RULE = "Rear-layer rule: any visible curtain, telon, drape, fab
 const AUDIT_SYSTEM = `You are a strict verifier and catalog-resolution reviewer of an event-design reference inventory. Inspect the image and draft inventory. Report only visible event-design elements that were missed, misclassified, or lack evidence. For every new finding, decide include or omit and select the closest valid catalog product when useful. Do not ask the customer. Include normalized reference_bbox, visible_evidence, and the complete model_decision object.`;
 const AUDIT_SYSTEM_PERCEPTUAL = `You are a strict verifier of an event-design reference inventory. Inspect the image and draft inventory. Report only visible event-design elements that were missed, misclassified, or lack evidence. You have no catalog access — never propose a catalog_product_id or bill_of_materials; set match_type to "none" and decide include/omit purely on visual relevance. Do not ask the customer. Include normalized reference_bbox, visible_evidence, and the complete model_decision object. Also correct structure when a balloon structure type, side, height or curve was misread.
 ${STRUCTURE_DETECTION_RULES}`;
-const ANALYSIS_PARSER_VERSION = "semantic-layers-v10-overhang-balloon-category";
+const ANALYSIS_PARSER_VERSION = "semantic-layers-v11-balloon-normalization";
 
 const TOOL: Herramienta = {
   nombre: "return_reference_inventory",
@@ -149,8 +168,18 @@ const TOOL: Herramienta = {
                     height: { type: "number" },
                   },
                 },
-                composition: { type: "string" },
-                observed_colors: { type: "array", items: { type: "string" }, description: "Plain English color names seen on this element, most dominant first (e.g. royal blue, white, chrome gold)." },
+                composition: { type: "string", description: "One sentence: proportion of each color and how the parts are arranged." },
+                observed_colors: { type: "array", items: { type: "string" }, description: "Plain English color names seen on this element, most dominant first, each prefixed with its finish when visible: pearl (soft satin sheen), chrome (mirror-like), metallic, matte or clear (e.g. royal blue, pearl white, chrome gold)." },
+                quantity: {
+                  type: "object",
+                  description: "How many separate identical pieces this element represents: 1 for a single structure, 2 for a pair of identical columns reported as one element.",
+                  required: ["mode", "min", "max"],
+                  properties: {
+                    mode: { type: "string", enum: ["exact", "approximate", "range"] },
+                    min: { type: "integer" },
+                    max: { type: "integer" },
+                  },
+                },
                 material: { type: "string" },
                 structure: DETECTED_STRUCTURE_TOOL_SCHEMA,
                 composition_relevance: { type: "string", enum: [...COMPOSITION_RELEVANCE] },
@@ -180,8 +209,23 @@ const TOOL: Herramienta = {
                 },
               },
             },
-            composition: { type: "object", additionalProperties: true },
-            palette: { type: "object", additionalProperties: true },
+            composition: {
+              type: "object",
+              additionalProperties: true,
+              required: ["focal_point", "density", "symmetry"],
+              properties: {
+                focal_point: { type: "string", description: "Short description of the visual focal point of the image." },
+                density: { type: "string", enum: ["sparse", "moderate", "dense"], description: "How full the decorated area is." },
+                symmetry: { type: "string", enum: ["symmetric", "asymmetric"], description: "Whether the decoration mirrors left and right." },
+              },
+            },
+            palette: {
+              type: "object",
+              additionalProperties: true,
+              properties: {
+                observed: { type: "array", items: { type: "string" }, description: "Dominant colors of the whole decoration, most dominant first." },
+              },
+            },
           },
         },
       },
@@ -212,6 +256,62 @@ const AUDIT_TOOL: Herramienta = {
 
 const cache = new Map<string, AnalisisV2Resultado>();
 const MAX_CACHE = 40;
+
+/**
+ * In-flight analyses by cache key (#19): concurrent requests for the same
+ * photos share one provider call. The shared call is aborted only when every
+ * waiting request has been cancelled.
+ */
+type AnalisisEnVuelo = { promise: Promise<AnalisisV2Resultado>; controller: AbortController; waiters: number };
+const enVuelo = new Map<string, AnalisisEnVuelo>();
+
+export type OpcionesAnalisisReferencias = {
+  /**
+   * Skip the completed-result cache and ask the provider again (the UI's
+   * "Reintentar"). The new result replaces the cached one. An analysis of the
+   * same photos already in flight is still shared: it is already a new call.
+   */
+  forzarNuevoAnalisis?: boolean;
+};
+
+function abortReason(signal: AbortSignal): unknown {
+  return signal.reason ?? new Error("CLIENT_CANCELLED");
+}
+
+function esperarAnalisisCompartido(key: string, entry: AnalisisEnVuelo, signal: AbortSignal | undefined): Promise<AnalisisV2Resultado> {
+  if (signal?.aborted) return Promise.reject(abortReason(signal));
+  entry.waiters += 1;
+  return new Promise<AnalisisV2Resultado>((resolve, reject) => {
+    let settled = false;
+    const onAbort = () => {
+      if (settled) return;
+      settled = true;
+      entry.waiters -= 1;
+      if (entry.waiters === 0) {
+        if (enVuelo.get(key) === entry) enVuelo.delete(key);
+        entry.controller.abort(abortReason(signal!));
+      }
+      reject(abortReason(signal!));
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
+    entry.promise.then(
+      (result) => {
+        if (settled) return;
+        settled = true;
+        entry.waiters -= 1;
+        signal?.removeEventListener("abort", onAbort);
+        resolve(result);
+      },
+      (error: unknown) => {
+        if (settled) return;
+        settled = true;
+        entry.waiters -= 1;
+        signal?.removeEventListener("abort", onAbort);
+        reject(error);
+      },
+    );
+  });
+}
 /** Attempts per analysis pass when the model answers with malformed tool output. */
 const MAX_INTENTOS_FORMATO_ANALISIS = 2;
 
@@ -247,11 +347,14 @@ function numberValue(value: unknown, fallback: number, min = 0, max = 1): number
 
 function bbox(value: unknown): ReferenceBBox {
   const source = object(value);
+  const x = numberValue(source.x, 0.1, 0, 0.99);
+  const y = numberValue(source.y, 0.1, 0, 0.99);
+  // Keep the box inside the image: the UI crops each piece from it.
   return {
-    x: numberValue(source.x, 0.1),
-    y: numberValue(source.y, 0.1),
-    width: numberValue(source.width, 0.2, 0.01),
-    height: numberValue(source.height, 0.2, 0.01),
+    x,
+    y,
+    width: Math.min(numberValue(source.width, 0.2, 0.01), 1 - x),
+    height: Math.min(numberValue(source.height, 0.2, 0.01), 1 - y),
   };
 }
 
@@ -266,7 +369,11 @@ function category(value: unknown): Candidate["category"] {
     lighting: "lighting", light: "lighting", luces: "lighting", luz: "lighting", iluminacion: "lighting", tableware: "tableware", vajilla: "tableware", velas: "tableware", centro_mesa: "tableware", manteleria: "drape",
   };
   if (direct[text]) return direct[text];
-  if (text.includes("cortin") || text.includes("drape") || text.includes("tela")) return "curtain";
+  // Whole words, and a draped table is still furniture: "Draped High Cocktail
+  // Table" used to become a curtain through the substring "drape".
+  if (text.includes("cortin") || /\bdrap(?:e|es|ed|ery|eries|ing)\b/.test(text) || /\btelas?\b/.test(text)) {
+    return /\b(?:tables?|mesas?|chairs?|sillas?|sofas?|benches?|stools?|counters?)\b/.test(text) ? "furniture" : "curtain";
+  }
   if (text.includes("globo") || text.includes("balloon") || text.includes("arco") || text.includes("guirnalda")) return "balloon_structure";
   if (text.includes("luz") || text.includes("light") || text.includes("foquito") || text.includes("ilumin")) return "lighting";
   if (text.includes("flor") || text.includes("follaje") || text.includes("floral")) return "floral";
@@ -309,7 +416,7 @@ export function inferReferenceLayer(input: { explicitCategory?: unknown; explici
     : inferredCategory === "other" && /cortin|telon|drape|tela|fondo|backdrop|muro|panel/.test(text)
       ? "backdrop"
       : inferredCategory;
-  const finalRole = ["curtain", "drape", "backdrop", "panel"].includes(finalCategory) || (!hasLighting && /cortin|telon|drape|tela|fondo|backdrop|muro|panel/.test(text))
+  const finalRole = ["curtain", "drape", "backdrop", "panel"].includes(finalCategory) || (!hasLighting && !["furniture", "tableware", "plinth"].includes(finalCategory) && /cortin|telon|drape|tela|fondo|backdrop|muro|panel/.test(text))
     ? "backdrop"
     : finalCategory === "lighting" || hasLighting
       ? "lighting"
@@ -322,10 +429,47 @@ function relationType(value: unknown): Candidate["relationships"][number]["type"
   return valid.includes(value as Candidate["relationships"][number]["type"]) ? value as Candidate["relationships"][number]["type"] : "overlaps";
 }
 
+function quantityValue(raw: unknown): Candidate["quantity"] {
+  const quantity = object(raw);
+  const min = Math.round(numberValue(quantity.min, 1, 0, 999));
+  const max = Math.max(min, Math.round(numberValue(quantity.max, min, 0, 999)));
+  return { mode: quantity.mode === "exact" ? "exact" : quantity.mode === "range" ? "range" : "approximate", min, max };
+}
+
+type BalloonReview = {
+  category: Candidate["category"];
+  structure?: DetectedStructure;
+  /** Forces model_decision.action to omit: not a quotable structure. */
+  reject: boolean;
+  notes: string[];
+};
+
+/**
+ * Deterministic review of a balloon detection (#2, #12). A balloon structure
+ * is only approvable with a typed structure: the model's own, or one named
+ * unambiguously ("guirnalda", "column"). Hot air balloons and soap bubbles
+ * are not decoration; loose floor balloons and untyped foil are not a
+ * structure a quote can build.
+ */
+function reviewBalloonDetection(category: Candidate["category"], rawStructure: unknown, name: string, evidence: string, box: ReferenceBBox): BalloonReview {
+  if (category !== "balloon_structure") return { category, reject: false, notes: [] };
+  if (isNonDecorativeBalloon(name) && !structureTypeFromName(name) && !/\b(?:foil|mylar|latex|metalizad[oa]s?)\b/i.test(name)) {
+    return { category: "other", reject: true, notes: ["Not event balloon decoration (hot air balloon, bubble or similar)."] };
+  }
+  if (isLooseFloorBalloons(name, evidence)) {
+    return { category, reject: true, notes: ["Loose balloons on the floor are not a built structure."] };
+  }
+  const parsed = parseDetectedStructure(rawStructure);
+  if (parsed) return { category, structure: alignVerticalPosition(parsed, box), reject: false, notes: [] };
+  const inferred = inferStructureFromName(name, box);
+  if (inferred) return { category, structure: inferred, reject: false, notes: ["Structure type inferred from the element name."] };
+  return { category, reject: true, notes: ["Balloon element without a structure type; not quoted as a structure."] };
+}
+
 function parseCandidates(imageId: string, raw: unknown): Candidate[] {
   const source = object(raw);
   const elements = Array.isArray(source.elements) ? source.elements : [];
-  return elements.slice(0, 40).map((item) => {
+  return elements.slice(0, 40).flatMap((item): Candidate[] => {
     const value = object(item);
     const confidence = numberValue(value.detection_confidence ?? value.confidence, 0.45);
     const detectedName = firstString(value, ["name", "element", "element_name", "element_type", "object", "item", "object_name", "item_name", "label", "title", "nombre", "elemento", "tipo_elemento", "tipo", "visual_description", "element_description", "descripcion_visual", "description", "descripcion"], "unidentified decorative element", 160);
@@ -333,6 +477,7 @@ function parseCandidates(imageId: string, raw: unknown): Candidate[] {
     const material = firstString(value, ["material", "material_texture", "texture", "materiales", "textura"], "material not determinable", 160);
     const shape = firstString(value, ["shape", "form", "silhouette", "forma"], "shape not determinable", 160);
     const composition = firstString(value, ["composition", "composicion", "color_mix", "mix"], "single uniform material", 240);
+    const referenceBox = bbox(value.reference_bbox ?? value.bbox ?? value.bounding_box ?? value.box ?? value.location);
     // A typed balloon `structure` on an element named as balloons is a balloon
     // structure even if the model wrote another category (a half-arch wrapped in
     // fairy lights came back as "lighting" and vanished from the plan).
@@ -344,11 +489,10 @@ function parseCandidates(imageId: string, raw: unknown): Candidate[] {
       && parseDetectedStructure(value.structure) === undefined
       && /\b(?:bags?|boxe?s?|bolsas?|cajas?|plants?|planters?|pots?|signs?|rugs?|carpets?|runners?|lights?|leaves|foliage|candles?)\b/.test(normalize(detectedName))
       && !/\b(?:balloons?|globos?|arch|arco|garland|guirnalda|column|columna)\b/.test(normalize(detectedName));
-    const detectedCategory = misfiledProp ? "other" : layer.category;
+    const review = reviewBalloonDetection(misfiledProp ? "other" : layer.category, value.structure, detectedName, visibleEvidence, referenceBox);
+    const detectedCategory = review.category;
+    const structure = review.structure;
     const defaultInclude = ["curtain", "drape", "backdrop"].includes(detectedCategory) && confidence >= 0.5;
-    const quantity = object(value.quantity);
-    const min = Math.round(numberValue(quantity.min, 1, 0, 999));
-    const max = Math.max(min, Math.round(numberValue(quantity.max, min, 0, 999)));
     const relationships = Array.isArray(value.relationships) ? value.relationships.slice(0, 8).map((relation) => {
       const rel = object(relation);
       return { type: relationType(rel.type), target_element_id: stringValue(rel.target_element_id ?? rel.target, "unknown", 80) };
@@ -356,9 +500,8 @@ function parseCandidates(imageId: string, raw: unknown): Candidate[] {
     const rawDecision = object(value.model_decision ?? value.decision);
     const explicitAction = rawDecision.action ?? value.action;
     const relevance = parseCompositionRelevance(value.composition_relevance ?? value.relevance);
-    const structure = detectedCategory === "balloon_structure" ? parseDetectedStructure(value.structure) : undefined;
     // A negligible element never enters the composition, whatever action the model wrote.
-    const action = relevance === "minor" ? "omit" : explicitAction === "omit" ? "omit" : explicitAction === "include" ? "include" : defaultInclude ? "include" : "omit";
+    const action = review.reject || relevance === "minor" ? "omit" : explicitAction === "omit" ? "omit" : explicitAction === "include" ? "include" : defaultInclude ? "include" : "omit";
     const matchType = rawDecision.match_type === "exact" || rawDecision.match_type === "closest" || rawDecision.match_type === "none"
       ? rawDecision.match_type
       : "none";
@@ -372,24 +515,31 @@ function parseCandidates(imageId: string, raw: unknown): Candidate[] {
         share: numberValue(item.share, 0, 0, 1),
       };
     }).filter((line) => line.catalog_product_id);
-    return {
+    const rawColors = stringList(value.observed_colors ?? value.colors ?? value.colours ?? value.colores ?? value.palette, 8);
+    const observedColors = detectedCategory === "balloon_structure" ? normalizeFinishColors(rawColors, `${visibleEvidence} ${material} ${composition}`) : rawColors;
+    let quantity = quantityValue(value.quantity);
+    const declaredCount = structure ? structureCountFromName(detectedName) : undefined;
+    if (declaredCount && quantity.max <= 1) {
+      quantity = { mode: declaredCount.exact ? "exact" : "approximate", min: declaredCount.count, max: declaredCount.count };
+    }
+    const base: Candidate = {
       source_image_id: imageId,
       name: detectedName,
       category: detectedCategory,
       scene_role: layer.scene_role,
       detection_confidence: confidence,
       visible_evidence: visibleEvidence,
-      reference_bbox: bbox(value.reference_bbox ?? value.bbox ?? value.bounding_box ?? value.box ?? value.location),
+      reference_bbox: referenceBox,
       depth_layer: Math.round(numberValue(value.depth_layer, 2, 0, 99)),
       include_policy: defaultInclude ? "include" : "ask",
       source_type: "reference_only",
-      quantity: { mode: quantity.mode === "exact" ? "exact" : quantity.mode === "range" ? "range" : "approximate", min, max },
-      observed_colors: stringList(value.observed_colors ?? value.colors ?? value.colours ?? value.colores ?? value.palette, 8),
+      quantity,
+      observed_colors: observedColors,
       material,
       shape: structure ? shapeDescription(structure) : shape,
       composition,
       relationships,
-      uncertainties: stringList(value.uncertainties, 8),
+      uncertainties: [...review.notes, ...stringList(value.uncertainties, 8)].slice(0, 8),
       structure,
       relevance,
       model_decision: {
@@ -401,6 +551,17 @@ function parseCandidates(imageId: string, raw: unknown): Candidate[] {
         bill_of_materials: billOfMaterials.length ? billOfMaterials : undefined,
       },
     };
+    if (!structure || !shouldSplitSidePieces(structure, referenceBox, detectedName, visibleEvidence)) return [base];
+    // #9: one full-width detection with explicit left/right evidence is two pieces.
+    return splitSidePieces(structure, referenceBox).map((piece) => ({
+      ...base,
+      name: `${detectedName.slice(0, 150)} (${piece.side})`,
+      reference_bbox: piece.bbox,
+      structure: piece.structure,
+      shape: shapeDescription(piece.structure),
+      quantity: { mode: base.quantity.mode, min: Math.max(1, Math.floor(base.quantity.min / 2)), max: Math.max(1, Math.ceil(base.quantity.max / 2)) },
+      uncertainties: [...base.uncertainties, "Split from one detection spanning both sides (left/right evidence)."].slice(0, 8),
+    }));
   });
 }
 
@@ -413,6 +574,21 @@ function toolArgs(turn: { llamadas: Array<{ nombre: string; args: Record<string,
   return turn.llamadas.find((call) => call.nombre === toolName)?.args ?? object(extractJson(turn.texto));
 }
 
+/** Verifier-only findings below this confidence are recorded but never approved (#8). */
+export const VERIFIER_MIN_CONFIDENCE = 0.6;
+/** Share of the smaller box covered by the other one that makes two same-kind detections one piece. */
+const DUPLICATE_MIN_CONTAINMENT = 0.2;
+
+function sameKind(a: Candidate, b: Candidate): boolean {
+  return a.category === b.category && (a.structure?.type ?? null) === (b.structure?.type ?? null);
+}
+
+function duplicatesExisting(finding: Candidate, existing: Candidate[]): boolean {
+  return existing.some((item) => item.source_image_id === finding.source_image_id
+    && sameKind(item, finding)
+    && Math.max(bboxContainment(finding.reference_bbox, item.reference_bbox), bboxContainment(item.reference_bbox, finding.reference_bbox)) >= DUPLICATE_MIN_CONTAINMENT);
+}
+
 function mergeCandidates(inventory: Candidate[], audit: Candidate[]): Candidate[] {
   const merged = [...inventory];
   for (const finding of audit) {
@@ -423,7 +599,24 @@ function mergeCandidates(inventory: Candidate[], audit: Candidate[]): Candidate[
       const strongerRole = current.scene_role === "midground" && finding.scene_role !== "midground" ? finding.scene_role : current.scene_role;
       merged[match] = { ...current, structure: finding.structure ?? current.structure, shape: finding.structure ? finding.shape : current.shape, category: strongerCategory, scene_role: strongerRole, name: current.name === "unidentified decorative element" ? finding.name : current.name, visible_evidence: finding.visible_evidence, uncertainties: [...new Set([...current.uncertainties, ...finding.uncertainties])].slice(0, 8) };
     } else {
-      merged.push({ ...finding, detection_confidence: Math.min(finding.detection_confidence, 0.49), include_policy: finding.model_decision.action === "include" ? "include" : "exclude", uncertainties: [...finding.uncertainties, "Verifier-only finding resolved automatically."].slice(0, 8) });
+      // A verifier-only finding is approved only when the verifier is confident
+      // and it is not a second copy of a piece already in the inventory: F10
+      // got a third, non-existent ceiling cloud (confidence 0.49) approved.
+      const lowConfidence = finding.detection_confidence < VERIFIER_MIN_CONFIDENCE;
+      const duplicate = duplicatesExisting(finding, merged);
+      const approve = finding.model_decision.action === "include" && !lowConfidence && !duplicate;
+      const note = duplicate
+        ? "Verifier-only finding duplicates an existing element; not approved."
+        : lowConfidence
+          ? "Verifier-only finding below the confidence threshold; not approved."
+          : "Verifier-only finding resolved automatically.";
+      merged.push({
+        ...finding,
+        detection_confidence: Math.min(finding.detection_confidence, 0.49),
+        include_policy: approve ? "include" : "exclude",
+        model_decision: approve ? finding.model_decision : { ...finding.model_decision, action: "omit", catalog_product_id: undefined, match_type: "none", bill_of_materials: undefined },
+        uncertainties: [note, ...finding.uncertainties].slice(0, 8),
+      });
     }
   }
   return merged;
@@ -566,6 +759,28 @@ function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string,
       },
     };
   });
+  // #11: foil figures on a balloon wall (or one arrangement split in three
+  // centerpieces) are part of the larger structure, not extra quoted pieces.
+  const attachments = attachedStructureContainers(elements.map((element, index) => ({
+    sourceImageId: element.source_image_id,
+    name: element.name,
+    approved: element.approved,
+    bbox: element.reference_bbox,
+    structure: allCandidates[index]!.structure,
+  })));
+  for (const [innerIndex, containerIndex] of attachments) {
+    const inner = elements[innerIndex]!;
+    const container = elements[containerIndex]!;
+    elements[innerIndex] = {
+      ...inner,
+      approved: false,
+      include_policy: "exclude",
+      source_type: "reference_only",
+      relationships: [...inner.relationships, { type: "overlaps" as const, target_element_id: container.element_id }].slice(0, 12),
+      uncertainties: [`Attached to ${container.element_id}; quoted as part of that structure.`, ...inner.uncertainties].slice(0, 8),
+      model_decision: { ...inner.model_decision, action: "omit", catalog_product_id: undefined, match_type: "none", bill_of_materials: undefined },
+    };
+  }
   const compositionDensity = inventoryImages.map((value) => object(object(value).composition).density).find((value) => ["sparse", "moderate", "dense"].includes(String(value))) as "sparse" | "moderate" | "dense" | undefined;
   const semanticsById = referenceStructureSemantics(
     elements.map((element, index) => ({
@@ -610,7 +825,7 @@ function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string,
   });
 }
 
-export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenEtiquetada[], catalogo: ReferenceCatalogItem[] = [], mode: AnalysisMode = "perceptual", telemetria?: ContextoTelemetriaIA, signal?: AbortSignal): Promise<AnalisisV2Resultado> {
+export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenEtiquetada[], catalogo: ReferenceCatalogItem[] = [], mode: AnalysisMode = "perceptual", telemetria?: ContextoTelemetriaIA, signal?: AbortSignal, opciones: OpcionesAnalisisReferencias = {}): Promise<AnalisisV2Resultado> {
   if (!referencias.length) throw new Error("At least one reference image is required.");
   const inventorySystem = mode === "perceptual" ? INVENTORY_SYSTEM_PERCEPTUAL : INVENTORY_SYSTEM;
   const auditSystem = mode === "perceptual" ? AUDIT_SYSTEM_PERCEPTUAL : AUDIT_SYSTEM;
@@ -623,8 +838,45 @@ export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenE
       : "No catalog products supplied.";
   const systemPromptHash = createHash("sha256").update(ANALYSIS_PARSER_VERSION).update(mode).update(inventorySystem).update(auditSystem).update(REAR_LAYER_RULE).update(catalogText).digest("hex");
   const key = analysisCacheKey({ model: chat.modelo, systemPromptHash, images: referencias.map((image) => ({ image_id: image.id, mime: image.mime, base64: image.base64 })) });
-  const cached = cache.get(key);
-  if (cached) return cached;
+  const cached = opciones.forzarNuevoAnalisis ? undefined : cache.get(key);
+  if (cached) return { ...cached, metadata: { ...cached.metadata, cached: true } };
+  let entry = enVuelo.get(key);
+  if (!entry) {
+    const controller = new AbortController();
+    const nueva: AnalisisEnVuelo = {
+      controller,
+      waiters: 0,
+      promise: ejecutarAnalisis({ chat, referencias, catalogo, mode, telemetria, signal: controller.signal, key, systemPromptHash, inventorySystem, auditSystem, catalogText })
+        .then((result) => {
+          if (cache.has(key)) cache.delete(key);
+          if (cache.size >= MAX_CACHE) cache.delete(cache.keys().next().value!);
+          cache.set(key, result);
+          return result;
+        })
+        .finally(() => {
+          if (enVuelo.get(key) === nueva) enVuelo.delete(key);
+        }),
+    };
+    enVuelo.set(key, nueva);
+    entry = nueva;
+  }
+  return esperarAnalisisCompartido(key, entry, signal);
+}
+
+async function ejecutarAnalisis(input: {
+  chat: ChatPort;
+  referencias: ImagenEtiquetada[];
+  catalogo: ReferenceCatalogItem[];
+  mode: AnalysisMode;
+  telemetria?: ContextoTelemetriaIA;
+  signal: AbortSignal;
+  key: string;
+  systemPromptHash: string;
+  inventorySystem: string;
+  auditSystem: string;
+  catalogText: string;
+}): Promise<AnalisisV2Resultado> {
+  const { chat, referencias, catalogo, mode, telemetria, signal, key, systemPromptHash, inventorySystem, auditSystem, catalogText } = input;
   const ids = referencias.map((reference) => reference.id);
   const bytesImagenEntrada = referencias.reduce((total, image) => total + bytesBase64(image.base64), 0);
   const ejecutarPaso = async (
@@ -695,10 +947,13 @@ export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenE
       signal,
   }, AUDIT_TOOL.nombre);
   const blueprint = buildBlueprint(referencias, inventoryRaw, auditRaw, mode === "perceptual" ? [] : catalogo, mode);
-  const result: AnalisisV2Resultado = {
+  return {
     blueprint,
+    tieneEstructurasDeGlobos: tieneEstructurasDeGlobos(blueprint),
+    tieneElementos: tieneElementosAprobados(blueprint),
     metadata: {
       passes: ["inventory", "audit"],
+      cached: false,
       cache_key: key,
       system_prompt_hash: systemPromptHash,
       requires_review: false,
@@ -708,7 +963,4 @@ export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenE
         : "Model decides include, omit, or closest catalog substitution automatically; customer approval is never required.",
     },
   };
-  if (cache.size >= MAX_CACHE) cache.delete(cache.keys().next().value!);
-  cache.set(key, result);
-  return result;
 }

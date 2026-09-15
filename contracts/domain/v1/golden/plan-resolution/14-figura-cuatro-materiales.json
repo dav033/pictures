@@ -1,0 +1,2194 @@
+{
+  "allowlist": [
+    {
+      "product_id": "P-F14-NEGRO",
+      "variant_ids": [
+        "V-F14-NEGRO-9"
+      ]
+    },
+    {
+      "product_id": "P-F14-AMARILLO",
+      "variant_ids": [
+        "V-F14-AMARILLO-9"
+      ]
+    },
+    {
+      "product_id": "P-F14-NARANJA",
+      "variant_ids": [
+        "V-F14-NARANJA-9"
+      ]
+    },
+    {
+      "product_id": "P-F14-BLANCO",
+      "variant_ids": [
+        "V-F14-BLANCO-9"
+      ]
+    }
+  ],
+  "catalog_rows": [
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-9",
+      "colores_producto": [
+        "negro"
+      ],
+      "colores_variante": [
+        "negro"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex negro R-9.",
+      "diam_pulg": 9,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/negro-9.jpg",
+      "inventory_quantity": 500,
+      "precio": 8000,
+      "product_id": "P-F14-NEGRO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex negro",
+      "sku": "SKU-NEGRO-9",
+      "sku_original": "SHOP-NEGRO-9",
+      "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+      "source_variant_id": "SOURCE-NEGRO-9",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-F14-NEGRO-9",
+      "variante_titulo": "R-9"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-9",
+      "colores_producto": [
+        "amarillo"
+      ],
+      "colores_variante": [
+        "amarillo"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex amarillo R-9.",
+      "diam_pulg": 9,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/amarillo-9.jpg",
+      "inventory_quantity": 500,
+      "precio": 8000,
+      "product_id": "P-F14-AMARILLO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex amarillo",
+      "sku": "SKU-AMARILLO-9",
+      "sku_original": "SHOP-AMARILLO-9",
+      "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+      "source_variant_id": "SOURCE-AMARILLO-9",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-F14-AMARILLO-9",
+      "variante_titulo": "R-9"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-9",
+      "colores_producto": [
+        "naranja"
+      ],
+      "colores_variante": [
+        "naranja"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex naranja R-9.",
+      "diam_pulg": 9,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/naranja-9.jpg",
+      "inventory_quantity": 500,
+      "precio": 8000,
+      "product_id": "P-F14-NARANJA",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex naranja",
+      "sku": "SKU-NARANJA-9",
+      "sku_original": "SHOP-NARANJA-9",
+      "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+      "source_variant_id": "SOURCE-NARANJA-9",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-F14-NARANJA-9",
+      "variante_titulo": "R-9"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-9",
+      "colores_producto": [
+        "blanco"
+      ],
+      "colores_variante": [
+        "blanco"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex blanco R-9.",
+      "diam_pulg": 9,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/blanco-9.jpg",
+      "inventory_quantity": 500,
+      "precio": 8000,
+      "product_id": "P-F14-BLANCO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex blanco",
+      "sku": "SKU-BLANCO-9",
+      "sku_original": "SHOP-BLANCO-9",
+      "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+      "source_variant_id": "SOURCE-BLANCO-9",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-F14-BLANCO-9",
+      "variante_titulo": "R-9"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-A5-009",
+  "description": "Figura con cuatro materiales declarada con 1 unidad y bouquet con restos empatados: cada material declarado recibe al menos una unidad en los dos resolutores.",
+  "expected": {
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "negro",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-F14-NEGRO",
+          "required_quantity": 1,
+          "shape": "redondo",
+          "size_inches": 9,
+          "structure_id": "EST_01_FIGURA",
+          "variant_id": "V-F14-NEGRO-9",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "color": "amarillo",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-F14-AMARILLO",
+          "required_quantity": 1,
+          "shape": "redondo",
+          "size_inches": 9,
+          "structure_id": "EST_01_FIGURA",
+          "variant_id": "V-F14-AMARILLO-9",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "color": "naranja",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-F14-NARANJA",
+          "required_quantity": 1,
+          "shape": "redondo",
+          "size_inches": 9,
+          "structure_id": "EST_01_FIGURA",
+          "variant_id": "V-F14-NARANJA-9",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-F14-BLANCO",
+          "required_quantity": 1,
+          "shape": "redondo",
+          "size_inches": 9,
+          "structure_id": "EST_01_FIGURA",
+          "variant_id": "V-F14-BLANCO-9",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "color": "negro",
+          "design_quantity": 3,
+          "finish": null,
+          "product_id": "P-F14-NEGRO",
+          "required_quantity": 3,
+          "shape": "redondo",
+          "size_inches": 9,
+          "structure_id": "EST_02_BOUQUET",
+          "variant_id": "V-F14-NEGRO-9",
+          "waste_adjusted_quantity": 3,
+          "waste_reserve": 0
+        },
+        {
+          "color": "amarillo",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-F14-AMARILLO",
+          "required_quantity": 1,
+          "shape": "redondo",
+          "size_inches": 9,
+          "structure_id": "EST_02_BOUQUET",
+          "variant_id": "V-F14-AMARILLO-9",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "color": "naranja",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-F14-NARANJA",
+          "required_quantity": 1,
+          "shape": "redondo",
+          "size_inches": 9,
+          "structure_id": "EST_02_BOUQUET",
+          "variant_id": "V-F14-NARANJA-9",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-F14-BLANCO",
+          "required_quantity": 1,
+          "shape": "redondo",
+          "size_inches": 9,
+          "structure_id": "EST_02_BOUQUET",
+          "variant_id": "V-F14-BLANCO-9",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 3,
+        "density": "media",
+        "dimensions_m": {
+          "height": null,
+          "length": null,
+          "width": null
+        },
+        "installation_length_m": null,
+        "shape": "coordinated structures",
+        "type": "composite_installation",
+        "visual_density": "medium",
+        "visual_scale": "small"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 480,
+          "design_quantity": 2,
+          "leftover_inventory": 47,
+          "operational_surplus": 47,
+          "package_count": 1,
+          "potential_surplus": 48,
+          "product_id": "P-F14-AMARILLO",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 3,
+          "units_per_package": 50,
+          "used": 2,
+          "variant_id": "V-F14-AMARILLO-9",
+          "waste_adjusted_quantity": 3,
+          "waste_reserve": 1
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 320,
+          "design_quantity": 2,
+          "leftover_inventory": 48,
+          "operational_surplus": 48,
+          "package_count": 1,
+          "potential_surplus": 48,
+          "product_id": "P-F14-BLANCO",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 2,
+          "units_per_package": 50,
+          "used": 2,
+          "variant_id": "V-F14-BLANCO-9",
+          "waste_adjusted_quantity": 2,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 320,
+          "design_quantity": 2,
+          "leftover_inventory": 48,
+          "operational_surplus": 48,
+          "package_count": 1,
+          "potential_surplus": 48,
+          "product_id": "P-F14-NARANJA",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 2,
+          "units_per_package": 50,
+          "used": 2,
+          "variant_id": "V-F14-NARANJA-9",
+          "waste_adjusted_quantity": 2,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 640,
+          "design_quantity": 4,
+          "leftover_inventory": 46,
+          "operational_surplus": 46,
+          "package_count": 1,
+          "potential_surplus": 46,
+          "product_id": "P-F14-NEGRO",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 4,
+          "units_per_package": 50,
+          "used": 4,
+          "variant_id": "V-F14-NEGRO-9",
+          "waste_adjusted_quantity": 4,
+          "waste_reserve": 0
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 1760,
+        "covered_waste_reserve": 1,
+        "design_quantity": 10,
+        "natural_package_surplus": 190,
+        "operational_surplus": 189,
+        "potential_surplus": 190,
+        "purchase_cost": 32000,
+        "purchase_quantity": 200,
+        "required_quantity": 11,
+        "target_waste_reserve": 1,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 11,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-F14-AMARILLO-9",
+        "sobrante_alto:V-F14-BLANCO-9",
+        "sobrante_alto:V-F14-NARANJA-9",
+        "sobrante_alto:V-F14-NEGRO-9"
+      ]
+    },
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-F14-AMARILLO-9",
+        "sobrante_alto:V-F14-BLANCO-9",
+        "sobrante_alto:V-F14-NARANJA-9",
+        "sobrante_alto:V-F14-NEGRO-9"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "amarillo",
+          "consumption_cost": 480,
+          "design_quantity": 2,
+          "diam_pulg": 9,
+          "elementos_origen": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_BOUQUET",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_FIGURA",
+            "EST_02_BOUQUET"
+          ],
+          "imagen": "https://cdn.example.test/amarillo-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 47,
+          "paquetes": 1,
+          "precio_paquete": 8000,
+          "product_id": "P-F14-AMARILLO",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 3,
+          "sku": "SKU-AMARILLO-9",
+          "sku_original": "SHOP-AMARILLO-9",
+          "sobrante": 48,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-AMARILLO-9",
+          "subtotal": 8000,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex amarillo — R-9",
+          "unidades_con_merma": 3,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 2,
+          "unidades_paquete": 50,
+          "used": 2,
+          "variant_id": "V-F14-AMARILLO-9",
+          "waste_reserve": 1
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 320,
+          "design_quantity": 2,
+          "diam_pulg": 9,
+          "elementos_origen": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_BOUQUET",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_FIGURA",
+            "EST_02_BOUQUET"
+          ],
+          "imagen": "https://cdn.example.test/blanco-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 48,
+          "paquetes": 1,
+          "precio_paquete": 8000,
+          "product_id": "P-F14-BLANCO",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 2,
+          "sku": "SKU-BLANCO-9",
+          "sku_original": "SHOP-BLANCO-9",
+          "sobrante": 48,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-BLANCO-9",
+          "subtotal": 8000,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex blanco — R-9",
+          "unidades_con_merma": 2,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 2,
+          "unidades_paquete": 50,
+          "used": 2,
+          "variant_id": "V-F14-BLANCO-9",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "naranja",
+          "consumption_cost": 320,
+          "design_quantity": 2,
+          "diam_pulg": 9,
+          "elementos_origen": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_BOUQUET",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_FIGURA",
+            "EST_02_BOUQUET"
+          ],
+          "imagen": "https://cdn.example.test/naranja-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 48,
+          "paquetes": 1,
+          "precio_paquete": 8000,
+          "product_id": "P-F14-NARANJA",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 2,
+          "sku": "SKU-NARANJA-9",
+          "sku_original": "SHOP-NARANJA-9",
+          "sobrante": 48,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-NARANJA-9",
+          "subtotal": 8000,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex naranja — R-9",
+          "unidades_con_merma": 2,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 2,
+          "unidades_paquete": 50,
+          "used": 2,
+          "variant_id": "V-F14-NARANJA-9",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "negro",
+          "consumption_cost": 640,
+          "design_quantity": 4,
+          "diam_pulg": 9,
+          "elementos_origen": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_BOUQUET",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_FIGURA",
+            "EST_02_BOUQUET"
+          ],
+          "imagen": "https://cdn.example.test/negro-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 46,
+          "paquetes": 1,
+          "precio_paquete": 8000,
+          "product_id": "P-F14-NEGRO",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 4,
+          "sku": "SKU-NEGRO-9",
+          "sku_original": "SHOP-NEGRO-9",
+          "sobrante": 46,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-NEGRO-9",
+          "subtotal": 8000,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex negro — R-9",
+          "unidades_con_merma": 4,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 4,
+          "unidades_paquete": 50,
+          "used": 4,
+          "variant_id": "V-F14-NEGRO-9",
+          "waste_reserve": 0
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": null,
+          "estructura_id": "EST_01_FIGURA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "negro",
+              "diam_cm": 22.9,
+              "diam_pulg": 9,
+              "estructura_id": "EST_01_FIGURA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/negro-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_FIGURA",
+                "kind": "estructura"
+              },
+              "product_id": "P-F14-NEGRO",
+              "sku": "SKU-NEGRO-9",
+              "sku_original": "SHOP-NEGRO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-NEGRO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex negro — R-9",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-F14-NEGRO-9"
+            },
+            {
+              "acabado": null,
+              "color": "amarillo",
+              "diam_cm": 22.9,
+              "diam_pulg": 9,
+              "estructura_id": "EST_01_FIGURA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/amarillo-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_FIGURA",
+                "kind": "estructura"
+              },
+              "product_id": "P-F14-AMARILLO",
+              "sku": "SKU-AMARILLO-9",
+              "sku_original": "SHOP-AMARILLO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-AMARILLO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex amarillo — R-9",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-F14-AMARILLO-9"
+            },
+            {
+              "acabado": null,
+              "color": "naranja",
+              "diam_cm": 22.9,
+              "diam_pulg": 9,
+              "estructura_id": "EST_01_FIGURA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/naranja-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_FIGURA",
+                "kind": "estructura"
+              },
+              "product_id": "P-F14-NARANJA",
+              "sku": "SKU-NARANJA-9",
+              "sku_original": "SHOP-NARANJA-9",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-NARANJA-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex naranja — R-9",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-F14-NARANJA-9"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 22.9,
+              "diam_pulg": 9,
+              "estructura_id": "EST_01_FIGURA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/blanco-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_FIGURA",
+                "kind": "estructura"
+              },
+              "product_id": "P-F14-BLANCO",
+              "sku": "SKU-BLANCO-9",
+              "sku_original": "SHOP-BLANCO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-BLANCO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex blanco — R-9",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-F14-BLANCO-9"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 9,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 4
+            }
+          ],
+          "nombre": "Figura con globos jirafa",
+          "repeticiones": 2,
+          "supuestos": [],
+          "tipo": "kit",
+          "total_unidades": 4,
+          "ubicacion": "lateral_derecho"
+        },
+        {
+          "eje_m": null,
+          "estructura_id": "EST_02_BOUQUET",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "negro",
+              "diam_cm": 22.9,
+              "diam_pulg": 9,
+              "estructura_id": "EST_02_BOUQUET",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/negro-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_BOUQUET",
+                "kind": "estructura"
+              },
+              "product_id": "P-F14-NEGRO",
+              "sku": "SKU-NEGRO-9",
+              "sku_original": "SHOP-NEGRO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-NEGRO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex negro — R-9",
+              "unidades": 3,
+              "unidades_inferidas": false,
+              "variant_id": "V-F14-NEGRO-9"
+            },
+            {
+              "acabado": null,
+              "color": "amarillo",
+              "diam_cm": 22.9,
+              "diam_pulg": 9,
+              "estructura_id": "EST_02_BOUQUET",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/amarillo-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_BOUQUET",
+                "kind": "estructura"
+              },
+              "product_id": "P-F14-AMARILLO",
+              "sku": "SKU-AMARILLO-9",
+              "sku_original": "SHOP-AMARILLO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-AMARILLO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex amarillo — R-9",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-F14-AMARILLO-9"
+            },
+            {
+              "acabado": null,
+              "color": "naranja",
+              "diam_cm": 22.9,
+              "diam_pulg": 9,
+              "estructura_id": "EST_02_BOUQUET",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/naranja-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_BOUQUET",
+                "kind": "estructura"
+              },
+              "product_id": "P-F14-NARANJA",
+              "sku": "SKU-NARANJA-9",
+              "sku_original": "SHOP-NARANJA-9",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-NARANJA-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex naranja — R-9",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-F14-NARANJA-9"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 22.9,
+              "diam_pulg": 9,
+              "estructura_id": "EST_02_BOUQUET",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/blanco-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_BOUQUET",
+                "kind": "estructura"
+              },
+              "product_id": "P-F14-BLANCO",
+              "sku": "SKU-BLANCO-9",
+              "sku_original": "SHOP-BLANCO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-BLANCO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex blanco — R-9",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-F14-BLANCO-9"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 9,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 6
+            }
+          ],
+          "nombre": "Bouquet de globos",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "kit",
+          "total_unidades": 6,
+          "ubicacion": "sobre_mesa_principal"
+        }
+      ],
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 10\nTarget waste reserve: 1\nNatural package surplus: 190\nUsable waste coverage: 1\nAdditional packages required for waste: 0\nGlobo latex amarillo — R-9: design=2, required=3, package=50, packages=1, purchased=50, natural surplus=48, waste reserve=1, leftover inventory=47\nGlobo latex blanco — R-9: design=2, required=2, package=50, packages=1, purchased=50, natural surplus=48, waste reserve=0, leftover inventory=48\nGlobo latex naranja — R-9: design=2, required=2, package=50, packages=1, purchased=50, natural surplus=48, waste reserve=0, leftover inventory=48\nGlobo latex negro — R-9: design=4, required=4, package=50, packages=1, purchased=50, natural surplus=46, waste reserve=0, leftover inventory=46",
+      "plan": {
+        "concepto": {
+          "descripcion": "Dos figuras de jirafa y un bouquet.",
+          "paleta": [
+            "negro",
+            "amarillo",
+            "naranja",
+            "blanco"
+          ],
+          "titulo": "Safari"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_FIGURA",
+            "estructura_oficial": "figura",
+            "materiales": [
+              {
+                "color": "negro",
+                "participacion": 0.4,
+                "product_id": "P-F14-NEGRO",
+                "rol_material": "principal",
+                "variant_id": "V-F14-NEGRO-9"
+              },
+              {
+                "color": "amarillo",
+                "participacion": 0.3,
+                "product_id": "P-F14-AMARILLO",
+                "rol_material": "secundario",
+                "variant_id": "V-F14-AMARILLO-9"
+              },
+              {
+                "color": "naranja",
+                "participacion": 0.2,
+                "product_id": "P-F14-NARANJA",
+                "rol_material": "secundario",
+                "variant_id": "V-F14-NARANJA-9"
+              },
+              {
+                "color": "blanco",
+                "participacion": 0.1,
+                "product_id": "P-F14-BLANCO",
+                "rol_material": "secundario",
+                "variant_id": "V-F14-BLANCO-9"
+              }
+            ],
+            "medidas": {},
+            "mezcla": "clasica",
+            "nombre": "Figura con globos jirafa",
+            "porque": "Declarada con una sola unidad, como en la auditoria F13.",
+            "repeticiones": 2,
+            "rol_escena": "focal",
+            "tipo": "kit",
+            "ubicacion": "lateral_derecho",
+            "unidades_declaradas": 1
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_02_BOUQUET",
+            "estructura_oficial": "bouquet",
+            "materiales": [
+              {
+                "color": "negro",
+                "participacion": 0.7,
+                "product_id": "P-F14-NEGRO",
+                "rol_material": "principal",
+                "variant_id": "V-F14-NEGRO-9"
+              },
+              {
+                "color": "amarillo",
+                "participacion": 0.1,
+                "product_id": "P-F14-AMARILLO",
+                "rol_material": "secundario",
+                "variant_id": "V-F14-AMARILLO-9"
+              },
+              {
+                "color": "naranja",
+                "participacion": 0.1,
+                "product_id": "P-F14-NARANJA",
+                "rol_material": "secundario",
+                "variant_id": "V-F14-NARANJA-9"
+              },
+              {
+                "color": "blanco",
+                "participacion": 0.1,
+                "product_id": "P-F14-BLANCO",
+                "rol_material": "secundario",
+                "variant_id": "V-F14-BLANCO-9"
+              }
+            ],
+            "medidas": {},
+            "mezcla": "clasica",
+            "nombre": "Bouquet de globos",
+            "porque": "Reparto con restos empatados que dejaba un color en cero.",
+            "repeticiones": 1,
+            "rol_escena": "acento",
+            "tipo": "kit",
+            "ubicacion": "sobre_mesa_principal",
+            "unidades_declaradas": 6
+          }
+        ],
+        "plan_id": "f14f1414-0000-4000-8000-000000000014",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "a5b4a8ced1ff8d3a634f85ae4a4c80b8a8302ffd5f05bb914acfef5642395d30",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 32000,
+        "consumption_cost": 1760,
+        "covered_waste_reserve": 1,
+        "design_quantity": 10,
+        "globos_por_tamano": {
+          "R-9": 10
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8,
+        "natural_package_surplus": 190,
+        "purchase_cost": 32000,
+        "target_waste_reserve": 1,
+        "total_cop": 32000,
+        "total_unidades": 10,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "complementosSoportados": false,
+      "consumptionCost": 1760,
+      "coveredWasteReserve": 1,
+      "incluyeIva": true,
+      "leftoverInventory": 189,
+      "lineas": [
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 2,
+          "color": "amarillo",
+          "consumptionCost": 480,
+          "designQuantity": 2,
+          "diamPulg": 9,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_BOUQUET",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_FIGURA",
+            "EST_02_BOUQUET"
+          ],
+          "id": "V-F14-AMARILLO-9",
+          "leftoverInventory": 47,
+          "nombre": "Globo latex amarillo — R-9",
+          "paquetes": 1,
+          "precioPaquete": 8000,
+          "productId": "P-F14-AMARILLO",
+          "purchaseCost": 8000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 3,
+          "sobrante": 48,
+          "subtotal": 8000,
+          "tamano": "R-9",
+          "tamanoCodigo": "R-9",
+          "unidadesPaquete": 50,
+          "used": 2,
+          "varianteId": "V-F14-AMARILLO-9",
+          "wasteReserve": 1
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 2,
+          "color": "blanco",
+          "consumptionCost": 320,
+          "designQuantity": 2,
+          "diamPulg": 9,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_BOUQUET",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_FIGURA",
+            "EST_02_BOUQUET"
+          ],
+          "id": "V-F14-BLANCO-9",
+          "leftoverInventory": 48,
+          "nombre": "Globo latex blanco — R-9",
+          "paquetes": 1,
+          "precioPaquete": 8000,
+          "productId": "P-F14-BLANCO",
+          "purchaseCost": 8000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 2,
+          "sobrante": 48,
+          "subtotal": 8000,
+          "tamano": "R-9",
+          "tamanoCodigo": "R-9",
+          "unidadesPaquete": 50,
+          "used": 2,
+          "varianteId": "V-F14-BLANCO-9",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 2,
+          "color": "naranja",
+          "consumptionCost": 320,
+          "designQuantity": 2,
+          "diamPulg": 9,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_BOUQUET",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_FIGURA",
+            "EST_02_BOUQUET"
+          ],
+          "id": "V-F14-NARANJA-9",
+          "leftoverInventory": 48,
+          "nombre": "Globo latex naranja — R-9",
+          "paquetes": 1,
+          "precioPaquete": 8000,
+          "productId": "P-F14-NARANJA",
+          "purchaseCost": 8000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 2,
+          "sobrante": 48,
+          "subtotal": 8000,
+          "tamano": "R-9",
+          "tamanoCodigo": "R-9",
+          "unidadesPaquete": 50,
+          "used": 2,
+          "varianteId": "V-F14-NARANJA-9",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 4,
+          "color": "negro",
+          "consumptionCost": 640,
+          "designQuantity": 4,
+          "diamPulg": 9,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_BOUQUET",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_FIGURA",
+            "EST_02_BOUQUET"
+          ],
+          "id": "V-F14-NEGRO-9",
+          "leftoverInventory": 46,
+          "nombre": "Globo latex negro — R-9",
+          "paquetes": 1,
+          "precioPaquete": 8000,
+          "productId": "P-F14-NEGRO",
+          "purchaseCost": 8000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 4,
+          "sobrante": 46,
+          "subtotal": 8000,
+          "tamano": "R-9",
+          "tamanoCodigo": "R-9",
+          "unidadesPaquete": 50,
+          "used": 4,
+          "varianteId": "V-F14-NEGRO-9",
+          "wasteReserve": 0
+        }
+      ],
+      "mermaPorcentaje": 8,
+      "plan_hash": "a5b4a8ced1ff8d3a634f85ae4a4c80b8a8302ffd5f05bb914acfef5642395d30",
+      "purchaseCost": 32000,
+      "targetWasteReserve": 1,
+      "total": 32000
+    }
+  },
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-A5-009",
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "negro",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-F14-NEGRO",
+          "required_quantity": 1,
+          "shape": "redondo",
+          "size_inches": 9.0,
+          "structure_id": "EST_01_FIGURA",
+          "variant_id": "V-F14-NEGRO-9",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "color": "amarillo",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-F14-AMARILLO",
+          "required_quantity": 1,
+          "shape": "redondo",
+          "size_inches": 9.0,
+          "structure_id": "EST_01_FIGURA",
+          "variant_id": "V-F14-AMARILLO-9",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "color": "naranja",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-F14-NARANJA",
+          "required_quantity": 1,
+          "shape": "redondo",
+          "size_inches": 9.0,
+          "structure_id": "EST_01_FIGURA",
+          "variant_id": "V-F14-NARANJA-9",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-F14-BLANCO",
+          "required_quantity": 1,
+          "shape": "redondo",
+          "size_inches": 9.0,
+          "structure_id": "EST_01_FIGURA",
+          "variant_id": "V-F14-BLANCO-9",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "color": "negro",
+          "design_quantity": 3,
+          "finish": null,
+          "product_id": "P-F14-NEGRO",
+          "required_quantity": 3,
+          "shape": "redondo",
+          "size_inches": 9.0,
+          "structure_id": "EST_02_BOUQUET",
+          "variant_id": "V-F14-NEGRO-9",
+          "waste_adjusted_quantity": 3,
+          "waste_reserve": 0
+        },
+        {
+          "color": "amarillo",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-F14-AMARILLO",
+          "required_quantity": 1,
+          "shape": "redondo",
+          "size_inches": 9.0,
+          "structure_id": "EST_02_BOUQUET",
+          "variant_id": "V-F14-AMARILLO-9",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "color": "naranja",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-F14-NARANJA",
+          "required_quantity": 1,
+          "shape": "redondo",
+          "size_inches": 9.0,
+          "structure_id": "EST_02_BOUQUET",
+          "variant_id": "V-F14-NARANJA-9",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-F14-BLANCO",
+          "required_quantity": 1,
+          "shape": "redondo",
+          "size_inches": 9.0,
+          "structure_id": "EST_02_BOUQUET",
+          "variant_id": "V-F14-BLANCO-9",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 3,
+        "density": "media",
+        "dimensions_m": {
+          "height": null,
+          "length": null,
+          "width": null
+        },
+        "installation_length_m": null,
+        "shape": "coordinated structures",
+        "type": "composite_installation",
+        "visual_density": "medium",
+        "visual_scale": "small"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 480,
+          "design_quantity": 2,
+          "leftover_inventory": 47,
+          "operational_surplus": 47,
+          "package_count": 1,
+          "potential_surplus": 48,
+          "product_id": "P-F14-AMARILLO",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 3,
+          "units_per_package": 50,
+          "used": 2,
+          "variant_id": "V-F14-AMARILLO-9",
+          "waste_adjusted_quantity": 3,
+          "waste_reserve": 1
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 320,
+          "design_quantity": 2,
+          "leftover_inventory": 48,
+          "operational_surplus": 48,
+          "package_count": 1,
+          "potential_surplus": 48,
+          "product_id": "P-F14-BLANCO",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 2,
+          "units_per_package": 50,
+          "used": 2,
+          "variant_id": "V-F14-BLANCO-9",
+          "waste_adjusted_quantity": 2,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 320,
+          "design_quantity": 2,
+          "leftover_inventory": 48,
+          "operational_surplus": 48,
+          "package_count": 1,
+          "potential_surplus": 48,
+          "product_id": "P-F14-NARANJA",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 2,
+          "units_per_package": 50,
+          "used": 2,
+          "variant_id": "V-F14-NARANJA-9",
+          "waste_adjusted_quantity": 2,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 640,
+          "design_quantity": 4,
+          "leftover_inventory": 46,
+          "operational_surplus": 46,
+          "package_count": 1,
+          "potential_surplus": 46,
+          "product_id": "P-F14-NEGRO",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 4,
+          "units_per_package": 50,
+          "used": 4,
+          "variant_id": "V-F14-NEGRO-9",
+          "waste_adjusted_quantity": 4,
+          "waste_reserve": 0
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 1760,
+        "covered_waste_reserve": 1,
+        "design_quantity": 10,
+        "natural_package_surplus": 190,
+        "operational_surplus": 189,
+        "potential_surplus": 190,
+        "purchase_cost": 32000,
+        "purchase_quantity": 200,
+        "required_quantity": 11,
+        "target_waste_reserve": 1,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 11,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-F14-AMARILLO-9",
+        "sobrante_alto:V-F14-BLANCO-9",
+        "sobrante_alto:V-F14-NARANJA-9",
+        "sobrante_alto:V-F14-NEGRO-9"
+      ]
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-F14-AMARILLO-9",
+        "sobrante_alto:V-F14-BLANCO-9",
+        "sobrante_alto:V-F14-NARANJA-9",
+        "sobrante_alto:V-F14-NEGRO-9"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "amarillo",
+          "consumption_cost": 480,
+          "design_quantity": 2,
+          "diam_pulg": 9.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_BOUQUET",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_FIGURA",
+            "EST_02_BOUQUET"
+          ],
+          "imagen": "https://cdn.example.test/amarillo-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 47,
+          "paquetes": 1,
+          "precio_paquete": 8000,
+          "product_id": "P-F14-AMARILLO",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 3,
+          "sku": "SKU-AMARILLO-9",
+          "sku_original": "SHOP-AMARILLO-9",
+          "sobrante": 48,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-AMARILLO-9",
+          "subtotal": 8000,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex amarillo — R-9",
+          "unidades_con_merma": 3,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 2,
+          "unidades_paquete": 50,
+          "used": 2,
+          "variant_id": "V-F14-AMARILLO-9",
+          "waste_reserve": 1
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 320,
+          "design_quantity": 2,
+          "diam_pulg": 9.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_BOUQUET",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_FIGURA",
+            "EST_02_BOUQUET"
+          ],
+          "imagen": "https://cdn.example.test/blanco-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 48,
+          "paquetes": 1,
+          "precio_paquete": 8000,
+          "product_id": "P-F14-BLANCO",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 2,
+          "sku": "SKU-BLANCO-9",
+          "sku_original": "SHOP-BLANCO-9",
+          "sobrante": 48,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-BLANCO-9",
+          "subtotal": 8000,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex blanco — R-9",
+          "unidades_con_merma": 2,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 2,
+          "unidades_paquete": 50,
+          "used": 2,
+          "variant_id": "V-F14-BLANCO-9",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "naranja",
+          "consumption_cost": 320,
+          "design_quantity": 2,
+          "diam_pulg": 9.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_BOUQUET",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_FIGURA",
+            "EST_02_BOUQUET"
+          ],
+          "imagen": "https://cdn.example.test/naranja-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 48,
+          "paquetes": 1,
+          "precio_paquete": 8000,
+          "product_id": "P-F14-NARANJA",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 2,
+          "sku": "SKU-NARANJA-9",
+          "sku_original": "SHOP-NARANJA-9",
+          "sobrante": 48,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-NARANJA-9",
+          "subtotal": 8000,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex naranja — R-9",
+          "unidades_con_merma": 2,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 2,
+          "unidades_paquete": 50,
+          "used": 2,
+          "variant_id": "V-F14-NARANJA-9",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "negro",
+          "consumption_cost": 640,
+          "design_quantity": 4,
+          "diam_pulg": 9.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_BOUQUET",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_FIGURA",
+            "EST_02_BOUQUET"
+          ],
+          "imagen": "https://cdn.example.test/negro-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 46,
+          "paquetes": 1,
+          "precio_paquete": 8000,
+          "product_id": "P-F14-NEGRO",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 4,
+          "sku": "SKU-NEGRO-9",
+          "sku_original": "SHOP-NEGRO-9",
+          "sobrante": 46,
+          "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+          "source_variant_id": "SOURCE-NEGRO-9",
+          "subtotal": 8000,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex negro — R-9",
+          "unidades_con_merma": 4,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 4,
+          "unidades_paquete": 50,
+          "used": 4,
+          "variant_id": "V-F14-NEGRO-9",
+          "waste_reserve": 0
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": null,
+          "estructura_id": "EST_01_FIGURA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "negro",
+              "diam_cm": 22.9,
+              "diam_pulg": 9.0,
+              "estructura_id": "EST_01_FIGURA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/negro-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_FIGURA",
+                "kind": "estructura"
+              },
+              "product_id": "P-F14-NEGRO",
+              "sku": "SKU-NEGRO-9",
+              "sku_original": "SHOP-NEGRO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-NEGRO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex negro — R-9",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-F14-NEGRO-9"
+            },
+            {
+              "acabado": null,
+              "color": "amarillo",
+              "diam_cm": 22.9,
+              "diam_pulg": 9.0,
+              "estructura_id": "EST_01_FIGURA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/amarillo-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_FIGURA",
+                "kind": "estructura"
+              },
+              "product_id": "P-F14-AMARILLO",
+              "sku": "SKU-AMARILLO-9",
+              "sku_original": "SHOP-AMARILLO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-AMARILLO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex amarillo — R-9",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-F14-AMARILLO-9"
+            },
+            {
+              "acabado": null,
+              "color": "naranja",
+              "diam_cm": 22.9,
+              "diam_pulg": 9.0,
+              "estructura_id": "EST_01_FIGURA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/naranja-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_FIGURA",
+                "kind": "estructura"
+              },
+              "product_id": "P-F14-NARANJA",
+              "sku": "SKU-NARANJA-9",
+              "sku_original": "SHOP-NARANJA-9",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-NARANJA-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex naranja — R-9",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-F14-NARANJA-9"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 22.9,
+              "diam_pulg": 9.0,
+              "estructura_id": "EST_01_FIGURA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/blanco-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_FIGURA",
+                "kind": "estructura"
+              },
+              "product_id": "P-F14-BLANCO",
+              "sku": "SKU-BLANCO-9",
+              "sku_original": "SHOP-BLANCO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-BLANCO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex blanco — R-9",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-F14-BLANCO-9"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 9.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 4
+            }
+          ],
+          "nombre": "Figura con globos jirafa",
+          "repeticiones": 2,
+          "supuestos": [],
+          "tipo": "kit",
+          "total_unidades": 4,
+          "ubicacion": "lateral_derecho"
+        },
+        {
+          "eje_m": null,
+          "estructura_id": "EST_02_BOUQUET",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "negro",
+              "diam_cm": 22.9,
+              "diam_pulg": 9.0,
+              "estructura_id": "EST_02_BOUQUET",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/negro-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_BOUQUET",
+                "kind": "estructura"
+              },
+              "product_id": "P-F14-NEGRO",
+              "sku": "SKU-NEGRO-9",
+              "sku_original": "SHOP-NEGRO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-NEGRO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex negro — R-9",
+              "unidades": 3,
+              "unidades_inferidas": false,
+              "variant_id": "V-F14-NEGRO-9"
+            },
+            {
+              "acabado": null,
+              "color": "amarillo",
+              "diam_cm": 22.9,
+              "diam_pulg": 9.0,
+              "estructura_id": "EST_02_BOUQUET",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/amarillo-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_BOUQUET",
+                "kind": "estructura"
+              },
+              "product_id": "P-F14-AMARILLO",
+              "sku": "SKU-AMARILLO-9",
+              "sku_original": "SHOP-AMARILLO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-AMARILLO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex amarillo — R-9",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-F14-AMARILLO-9"
+            },
+            {
+              "acabado": null,
+              "color": "naranja",
+              "diam_cm": 22.9,
+              "diam_pulg": 9.0,
+              "estructura_id": "EST_02_BOUQUET",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/naranja-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_BOUQUET",
+                "kind": "estructura"
+              },
+              "product_id": "P-F14-NARANJA",
+              "sku": "SKU-NARANJA-9",
+              "sku_original": "SHOP-NARANJA-9",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-NARANJA-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex naranja — R-9",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-F14-NARANJA-9"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 22.9,
+              "diam_pulg": 9.0,
+              "estructura_id": "EST_02_BOUQUET",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/blanco-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_BOUQUET",
+                "kind": "estructura"
+              },
+              "product_id": "P-F14-BLANCO",
+              "sku": "SKU-BLANCO-9",
+              "sku_original": "SHOP-BLANCO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-A5-009",
+              "source_variant_id": "SOURCE-BLANCO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex blanco — R-9",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-F14-BLANCO-9"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 9.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 6
+            }
+          ],
+          "nombre": "Bouquet de globos",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "kit",
+          "total_unidades": 6,
+          "ubicacion": "sobre_mesa_principal"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-A5-009.",
+      "plan": {
+        "concepto": {
+          "descripcion": "Dos figuras de jirafa y un bouquet.",
+          "paleta": [
+            "negro",
+            "amarillo",
+            "naranja",
+            "blanco"
+          ],
+          "titulo": "Safari"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_FIGURA",
+            "estructura_oficial": "figura",
+            "materiales": [
+              {
+                "color": "negro",
+                "participacion": 0.4,
+                "product_id": "P-F14-NEGRO",
+                "rol_material": "principal",
+                "variant_id": "V-F14-NEGRO-9"
+              },
+              {
+                "color": "amarillo",
+                "participacion": 0.3,
+                "product_id": "P-F14-AMARILLO",
+                "rol_material": "secundario",
+                "variant_id": "V-F14-AMARILLO-9"
+              },
+              {
+                "color": "naranja",
+                "participacion": 0.2,
+                "product_id": "P-F14-NARANJA",
+                "rol_material": "secundario",
+                "variant_id": "V-F14-NARANJA-9"
+              },
+              {
+                "color": "blanco",
+                "participacion": 0.1,
+                "product_id": "P-F14-BLANCO",
+                "rol_material": "secundario",
+                "variant_id": "V-F14-BLANCO-9"
+              }
+            ],
+            "medidas": {},
+            "mezcla": "clasica",
+            "nombre": "Figura con globos jirafa",
+            "porque": "Declarada con una sola unidad, como en la auditoria F13.",
+            "repeticiones": 2,
+            "rol_escena": "focal",
+            "tipo": "kit",
+            "ubicacion": "lateral_derecho",
+            "unidades_declaradas": 1
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_02_BOUQUET",
+            "estructura_oficial": "bouquet",
+            "materiales": [
+              {
+                "color": "negro",
+                "participacion": 0.7,
+                "product_id": "P-F14-NEGRO",
+                "rol_material": "principal",
+                "variant_id": "V-F14-NEGRO-9"
+              },
+              {
+                "color": "amarillo",
+                "participacion": 0.1,
+                "product_id": "P-F14-AMARILLO",
+                "rol_material": "secundario",
+                "variant_id": "V-F14-AMARILLO-9"
+              },
+              {
+                "color": "naranja",
+                "participacion": 0.1,
+                "product_id": "P-F14-NARANJA",
+                "rol_material": "secundario",
+                "variant_id": "V-F14-NARANJA-9"
+              },
+              {
+                "color": "blanco",
+                "participacion": 0.1,
+                "product_id": "P-F14-BLANCO",
+                "rol_material": "secundario",
+                "variant_id": "V-F14-BLANCO-9"
+              }
+            ],
+            "medidas": {},
+            "mezcla": "clasica",
+            "nombre": "Bouquet de globos",
+            "porque": "Reparto con restos empatados que dejaba un color en cero.",
+            "repeticiones": 1,
+            "rol_escena": "acento",
+            "tipo": "kit",
+            "ubicacion": "sobre_mesa_principal",
+            "unidades_declaradas": 6
+          }
+        ],
+        "plan_id": "f14f1414-0000-4000-8000-000000000014",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "a11d9a0d23fd1cf0b29170a253aa07fcbb01cca68991a451f190fc7401072ef8",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 32000,
+        "consumption_cost": 1760,
+        "covered_waste_reserve": 1,
+        "design_quantity": 10,
+        "globos_por_tamano": {
+          "R-9": 10
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 190,
+        "purchase_cost": 32000,
+        "target_waste_reserve": 1,
+        "total_cop": 32000,
+        "total_unidades": 10,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 1760,
+      "covered_waste_reserve": 1,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 189,
+      "lines": [
+        {
+          "available": true,
+          "color": "amarillo",
+          "consumption_cost_cop": 480,
+          "design_quantity": 2,
+          "diameter_inches": 9.0,
+          "id": "V-F14-AMARILLO-9",
+          "leftover_inventory": 47,
+          "origins": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_BOUQUET",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 8000,
+          "packages": 1,
+          "product_id": "P-F14-AMARILLO",
+          "purchase_cost_cop": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 3,
+          "size": "R-9",
+          "size_code": "R-9",
+          "structures": [
+            "EST_01_FIGURA",
+            "EST_02_BOUQUET"
+          ],
+          "subtotal_cop": 8000,
+          "surplus": 48,
+          "title": "Globo latex amarillo — R-9",
+          "units_per_package": 50,
+          "used": 2,
+          "variant_id": "V-F14-AMARILLO-9",
+          "waste_reserve": 1
+        },
+        {
+          "available": true,
+          "color": "blanco",
+          "consumption_cost_cop": 320,
+          "design_quantity": 2,
+          "diameter_inches": 9.0,
+          "id": "V-F14-BLANCO-9",
+          "leftover_inventory": 48,
+          "origins": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_BOUQUET",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 8000,
+          "packages": 1,
+          "product_id": "P-F14-BLANCO",
+          "purchase_cost_cop": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 2,
+          "size": "R-9",
+          "size_code": "R-9",
+          "structures": [
+            "EST_01_FIGURA",
+            "EST_02_BOUQUET"
+          ],
+          "subtotal_cop": 8000,
+          "surplus": 48,
+          "title": "Globo latex blanco — R-9",
+          "units_per_package": 50,
+          "used": 2,
+          "variant_id": "V-F14-BLANCO-9",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "naranja",
+          "consumption_cost_cop": 320,
+          "design_quantity": 2,
+          "diameter_inches": 9.0,
+          "id": "V-F14-NARANJA-9",
+          "leftover_inventory": 48,
+          "origins": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_BOUQUET",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 8000,
+          "packages": 1,
+          "product_id": "P-F14-NARANJA",
+          "purchase_cost_cop": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 2,
+          "size": "R-9",
+          "size_code": "R-9",
+          "structures": [
+            "EST_01_FIGURA",
+            "EST_02_BOUQUET"
+          ],
+          "subtotal_cop": 8000,
+          "surplus": 48,
+          "title": "Globo latex naranja — R-9",
+          "units_per_package": 50,
+          "used": 2,
+          "variant_id": "V-F14-NARANJA-9",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "negro",
+          "consumption_cost_cop": 640,
+          "design_quantity": 4,
+          "diameter_inches": 9.0,
+          "id": "V-F14-NEGRO-9",
+          "leftover_inventory": 46,
+          "origins": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_BOUQUET",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 8000,
+          "packages": 1,
+          "product_id": "P-F14-NEGRO",
+          "purchase_cost_cop": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 4,
+          "size": "R-9",
+          "size_code": "R-9",
+          "structures": [
+            "EST_01_FIGURA",
+            "EST_02_BOUQUET"
+          ],
+          "subtotal_cop": 8000,
+          "surplus": 46,
+          "title": "Globo latex negro — R-9",
+          "units_per_package": 50,
+          "used": 4,
+          "variant_id": "V-F14-NEGRO-9",
+          "waste_reserve": 0
+        }
+      ],
+      "plan_hash": "a11d9a0d23fd1cf0b29170a253aa07fcbb01cca68991a451f190fc7401072ef8",
+      "purchase_cost_cop": 32000,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 1,
+      "total_cop": 32000,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "14-figura-cuatro-materiales",
+  "plan": {
+    "concepto": {
+      "descripcion": "Dos figuras de jirafa y un bouquet.",
+      "paleta": [
+        "negro",
+        "amarillo",
+        "naranja",
+        "blanco"
+      ],
+      "titulo": "Safari"
+    },
+    "espacio": {
+      "fuente": "cliente",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "densidad": "media",
+        "estructura_id": "EST_01_FIGURA",
+        "estructura_oficial": "figura",
+        "materiales": [
+          {
+            "color": "negro",
+            "participacion": 0.4,
+            "product_id": "P-F14-NEGRO",
+            "rol_material": "principal",
+            "variant_id": "V-F14-NEGRO-9"
+          },
+          {
+            "color": "amarillo",
+            "participacion": 0.3,
+            "product_id": "P-F14-AMARILLO",
+            "rol_material": "secundario",
+            "variant_id": "V-F14-AMARILLO-9"
+          },
+          {
+            "color": "naranja",
+            "participacion": 0.2,
+            "product_id": "P-F14-NARANJA",
+            "rol_material": "secundario",
+            "variant_id": "V-F14-NARANJA-9"
+          },
+          {
+            "color": "blanco",
+            "participacion": 0.1,
+            "product_id": "P-F14-BLANCO",
+            "rol_material": "secundario",
+            "variant_id": "V-F14-BLANCO-9"
+          }
+        ],
+        "medidas": {},
+        "mezcla": "clasica",
+        "nombre": "Figura con globos jirafa",
+        "porque": "Declarada con una sola unidad, como en la auditoria F13.",
+        "repeticiones": 2,
+        "rol_escena": "focal",
+        "tipo": "kit",
+        "ubicacion": "lateral_derecho",
+        "unidades_declaradas": 1
+      },
+      {
+        "densidad": "media",
+        "estructura_id": "EST_02_BOUQUET",
+        "estructura_oficial": "bouquet",
+        "materiales": [
+          {
+            "color": "negro",
+            "participacion": 0.7,
+            "product_id": "P-F14-NEGRO",
+            "rol_material": "principal",
+            "variant_id": "V-F14-NEGRO-9"
+          },
+          {
+            "color": "amarillo",
+            "participacion": 0.1,
+            "product_id": "P-F14-AMARILLO",
+            "rol_material": "secundario",
+            "variant_id": "V-F14-AMARILLO-9"
+          },
+          {
+            "color": "naranja",
+            "participacion": 0.1,
+            "product_id": "P-F14-NARANJA",
+            "rol_material": "secundario",
+            "variant_id": "V-F14-NARANJA-9"
+          },
+          {
+            "color": "blanco",
+            "participacion": 0.1,
+            "product_id": "P-F14-BLANCO",
+            "rol_material": "secundario",
+            "variant_id": "V-F14-BLANCO-9"
+          }
+        ],
+        "medidas": {},
+        "mezcla": "clasica",
+        "nombre": "Bouquet de globos",
+        "porque": "Reparto con restos empatados que dejaba un color en cero.",
+        "repeticiones": 1,
+        "rol_escena": "acento",
+        "tipo": "kit",
+        "ubicacion": "sobre_mesa_principal",
+        "unidades_declaradas": 6
+      }
+    ],
+    "plan_id": "f14f1414-0000-4000-8000-000000000014",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "supuestos": []
+  }
+}

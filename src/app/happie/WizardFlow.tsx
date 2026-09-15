@@ -119,7 +119,7 @@ const ESCENAS: Record<string, () => React.JSX.Element> = {
 
 function Figura({ activo }: { activo: boolean }) {
   return (
-    <svg width="17" height="34" viewBox="0 0 17 34" fill={activo ? "#6d3fe0" : "#c4b5e8"} className="shrink-0">
+    <svg width="17" height="34" viewBox="0 0 17 34" fill={activo ? "var(--acento)" : "var(--borde)"} className="shrink-0">
       <circle cx="8.5" cy="7" r="5.4" />
       <path d="M8.5 14.5c-4.4 0-6.6 2.8-6.6 7.2V33h13.2V21.7c0-4.4-2.2-7.2-6.6-7.2z" />
     </svg>
@@ -229,25 +229,25 @@ export function WizardFlow({
   return (
     <div className="flex flex-col gap-7">
       {paso < 5 && (
-        <div className="flex items-center">
+        <ol className="flex min-w-0 items-center" aria-label="Pasos">
           {PASOS.map((nombre, i) => {
             const n = i + 1;
             const activo = paso === n;
             const hecho = paso > n;
             return (
-              <div key={nombre} className="flex flex-grow items-center last:flex-grow-0">
-                <div className="flex items-center gap-2.5">
+              <li key={nombre} aria-current={activo ? "step" : undefined} className="flex min-w-0 flex-grow items-center last:flex-grow-0">
+                <div className="flex shrink-0 items-center gap-2.5">
                   <div
                     className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-full text-[13px] font-semibold"
                     style={{
                       background: paso >= n ? "var(--acento)" : "var(--superficie-2)",
-                      color: paso >= n ? "#fff" : "var(--texto-suave)",
+                      color: paso >= n ? "var(--sobre-acento)" : "var(--texto-suave)",
                     }}
                   >
                     {hecho ? <Check className="h-3.5 w-3.5" strokeWidth={2.8} /> : n}
                   </div>
                   <span
-                    className="whitespace-nowrap text-[13px]"
+                    className={`whitespace-nowrap text-[13px] ${activo ? "" : "sr-only md:not-sr-only"}`}
                     style={{ color: activo ? "var(--texto)" : "var(--texto-suave)", fontWeight: activo ? 600 : 500 }}
                   >
                     {nombre}
@@ -255,14 +255,14 @@ export function WizardFlow({
                 </div>
                 {n < TOTAL_PASOS && (
                   <div
-                    className="mx-3.5 h-0.5 flex-grow rounded-full"
+                    className="mx-2 h-0.5 min-w-3 flex-grow rounded-full sm:mx-3.5"
                     style={{ background: paso > n ? "var(--acento)" : "var(--acento-suave)" }}
                   />
                 )}
-              </div>
+              </li>
             );
           })}
-        </div>
+        </ol>
       )}
 
       {paso === 1 && (
@@ -278,11 +278,13 @@ export function WizardFlow({
               return (
                 <button
                   key={tipo.etiqueta}
+                  type="button"
+                  aria-pressed={elegido}
                   onClick={() => {
                     setTipoEvento(tipo.etiqueta);
                     setPaso(2);
                   }}
-                  className="happie-tarjeta flex flex-col overflow-hidden rounded-[18px] border-2 bg-superficie text-left shadow-[0_2px_10px_var(--sombra)]"
+                  className="happie-tarjeta flex flex-col overflow-hidden rounded-[18px] border-2 bg-superficie text-left"
                   style={{ borderColor: elegido ? "var(--acento)" : "var(--borde)" }}
                 >
                   <ArteTipoEvento clave={tipo.clave} className="h-32 w-full" />
@@ -295,7 +297,7 @@ export function WizardFlow({
                     </div>
                     {elegido && (
                       <div className="flex h-6 w-6 items-center justify-center rounded-full bg-acento">
-                        <Check className="h-3.5 w-3.5 text-white" strokeWidth={2.8} />
+                        <Check className="h-3.5 w-3.5 text-sobre-acento" strokeWidth={2.8} />
                       </div>
                     )}
                   </div>
@@ -313,8 +315,10 @@ export function WizardFlow({
             <p className="text-sm text-texto-suave">Nos sirve para ordenar los paquetes según lo que cubren.</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-6 rounded-[20px] border border-borde bg-superficie p-6 shadow-[0_2px_10px_var(--sombra)] sm:gap-7 sm:p-8">
+          <div className="flex flex-wrap items-center gap-6 rounded-[20px] border border-borde bg-superficie p-6 sm:gap-7 sm:p-8">
             <button
+              type="button"
+              aria-label="Restar 5 invitados"
               onClick={() => setInvitados((v) => Math.max(1, v - 5))}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] border border-borde text-acento"
             >
@@ -325,6 +329,8 @@ export function WizardFlow({
               <span className="text-xs text-texto-suave">invitados</span>
             </div>
             <button
+              type="button"
+              aria-label="Sumar 5 invitados"
               onClick={() => setInvitados((v) => v + 5)}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] border border-borde text-acento"
             >
@@ -342,6 +348,8 @@ export function WizardFlow({
             {[10, 20, 30, 50].map((n) => (
               <button
                 key={n}
+                type="button"
+                aria-pressed={invitados === n}
                 onClick={() => setInvitados(n)}
                 className="rounded-full border px-4 py-2 text-[13px] font-medium"
                 style={
@@ -371,8 +379,10 @@ export function WizardFlow({
               return (
                 <button
                   key={necesidad.etiqueta}
+                  type="button"
+                  aria-pressed={elegido}
                   onClick={() => alternarNecesidad(necesidad.etiqueta)}
-                  className="happie-tarjeta flex flex-col items-start gap-3 rounded-[16px] border-2 bg-superficie p-4 text-left shadow-[0_2px_10px_var(--sombra)]"
+                  className="happie-tarjeta flex flex-col items-start gap-3 rounded-[16px] border-2 bg-superficie p-4 text-left"
                   style={{ borderColor: elegido ? "var(--acento)" : "var(--borde)" }}
                 >
                   <div className="flex w-full items-center justify-between">
@@ -380,11 +390,11 @@ export function WizardFlow({
                       className="flex h-9 w-9 items-center justify-center rounded-[10px]"
                       style={{ background: elegido ? "var(--acento)" : "var(--superficie-2)" }}
                     >
-                      <Icono className={elegido ? "h-[18px] w-[18px] text-white" : "h-[18px] w-[18px] text-texto-suave"} strokeWidth={1.8} />
+                      <Icono className={elegido ? "h-[18px] w-[18px] text-sobre-acento" : "h-[18px] w-[18px] text-texto-suave"} strokeWidth={1.8} />
                     </div>
                     {elegido && (
                       <div className="flex h-5 w-5 items-center justify-center rounded-full bg-acento">
-                        <Check className="h-3 w-3 text-white" strokeWidth={3} />
+                        <Check className="h-3 w-3 text-sobre-acento" strokeWidth={3} />
                       </div>
                     )}
                   </div>
@@ -415,8 +425,10 @@ export function WizardFlow({
               return (
                 <button
                   key={u}
+                  type="button"
+                  aria-pressed={elegido}
                   onClick={() => setUbicacion(u)}
-                  className="happie-tarjeta flex flex-col overflow-hidden rounded-[18px] border-2 bg-superficie text-left shadow-[0_2px_10px_var(--sombra)]"
+                  className="happie-tarjeta flex flex-col overflow-hidden rounded-[18px] border-2 bg-superficie text-left"
                   style={{ borderColor: elegido ? "var(--acento)" : "var(--borde)" }}
                 >
                   <div className="relative h-[140px] w-full overflow-hidden">{Escena && <Escena />}</div>
@@ -424,7 +436,7 @@ export function WizardFlow({
                     <span className="text-[15.5px] font-semibold text-texto">{u}</span>
                     {elegido && (
                       <div className="flex h-6 w-6 items-center justify-center rounded-full bg-acento">
-                        <Check className="h-3.5 w-3.5 text-white" strokeWidth={2.8} />
+                        <Check className="h-3.5 w-3.5 text-sobre-acento" strokeWidth={2.8} />
                       </div>
                     )}
                   </div>
@@ -438,7 +450,7 @@ export function WizardFlow({
 
       {paso === 5 && (
         <div className="flex flex-col gap-5">
-          <button onClick={reiniciar} className="flex w-fit items-center gap-1 text-xs text-texto-suave hover:text-texto">
+          <button type="button" onClick={reiniciar} className="flex w-fit items-center gap-1 text-xs text-texto-suave hover:text-texto">
             <ChevronLeft className="h-3.5 w-3.5" /> Empezar de nuevo
           </button>
           {resumen && <p className="text-sm italic text-texto-suave">{resumen}</p>}
@@ -453,6 +465,7 @@ export function WizardFlow({
       {paso < 5 && (
         <div className="mt-1 flex items-center justify-between gap-4 border-t border-borde pt-5">
           <button
+            type="button"
             onClick={() => setPaso((p) => Math.max(1, p - 1) as 1 | 2 | 3 | 4)}
             disabled={paso === 1}
             className="flex items-center gap-1.5 rounded-xl border border-borde bg-superficie px-4 py-2.5 text-[13px] font-semibold text-texto-suave disabled:opacity-40"
@@ -461,9 +474,10 @@ export function WizardFlow({
             Atrás
           </button>
           <button
+            type="button"
             onClick={siguiente}
             disabled={!puedeAvanzar || cargando}
-            className="flex items-center gap-1.5 rounded-xl bg-acento px-5 py-2.5 text-[13px] font-semibold text-white shadow-[0_6px_16px_var(--sombra-acento)] disabled:opacity-40"
+            className="flex items-center gap-1.5 rounded-xl bg-acento px-5 py-2.5 text-[13px] font-semibold text-sobre-acento hover:bg-acento-hover disabled:opacity-40"
           >
             {cargando ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />

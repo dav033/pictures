@@ -103,7 +103,7 @@ export default function LoraStructureConsole() {
 
   return (
     <section className="space-y-5" aria-labelledby="lora-estructuras-heading">
-      <div className="rounded-3xl border border-acento/25 bg-superficie p-5 shadow-sm sm:p-7">
+      <div className="rounded-[1.25rem] border border-acento/25 bg-superficie p-5 sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold text-acento"><ShieldCheck className="size-4" aria-hidden="true" /> Especialización independiente</div>
@@ -130,17 +130,17 @@ export default function LoraStructureConsole() {
       {error && <div className="flex items-start gap-3 rounded-2xl border border-error/25 bg-error-suave px-4 py-3 text-sm text-texto" role="alert"><AlertTriangle className="mt-0.5 size-4 shrink-0 text-error" aria-hidden="true" />{error}</div>}
 
       {loading && !dataset ? (
-        <div className="grid gap-3 sm:grid-cols-2"><div className="h-52 animate-pulse rounded-3xl bg-superficie-2" /><div className="h-52 animate-pulse rounded-3xl bg-superficie-2" /></div>
+        <div className="grid gap-3 sm:grid-cols-2"><div className="h-52 animate-pulse rounded-[1.25rem] bg-superficie-2" /><div className="h-52 animate-pulse rounded-[1.25rem] bg-superficie-2" /></div>
       ) : (
         <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-          <section className="rounded-3xl border border-borde bg-superficie p-5 shadow-sm sm:p-7" aria-labelledby="cobertura-estructuras-heading">
+          <section className="ui-card p-5 sm:p-7" aria-labelledby="cobertura-estructuras-heading">
             <div className="flex items-start justify-between gap-3"><div><h3 id="cobertura-estructuras-heading" className="text-sm font-semibold text-texto">Cobertura por clase</h3><p className="mt-1 text-sm text-texto-suave">La clase debe aparecer en el manifest y en los splits antes de entrenar.</p></div><Database className="size-5 text-acento" aria-hidden="true" /></div>
             <div className="mt-5 space-y-3">
               {classSummary.map((item) => <div key={item.key} className="flex items-center justify-between gap-3 rounded-2xl bg-superficie-2 px-4 py-3"><span className="text-sm text-texto">{item.label}</span><span className={`text-xs font-semibold ${item.present ? "text-exito" : "text-aviso"}`}>{item.present ? "Presente" : "Pendiente"}</span></div>)}
             </div>
           </section>
 
-          <section className="rounded-3xl border border-borde bg-superficie p-5 shadow-sm sm:p-7" aria-labelledby="auditoria-estructuras-heading">
+          <section className="ui-card p-5 sm:p-7" aria-labelledby="auditoria-estructuras-heading">
             <h3 id="auditoria-estructuras-heading" className="text-sm font-semibold text-texto">Preflight del dataset</h3>
             <dl className="mt-5 space-y-3 text-sm">
               <div className="flex justify-between gap-3"><dt className="text-texto-suave">Captions</dt><dd className="font-medium text-texto">{dataset?.caption_count ?? 0}/{dataset?.image_count ?? 0}</dd></div>
@@ -155,7 +155,7 @@ export default function LoraStructureConsole() {
         </div>
       )}
 
-      <section className="rounded-3xl border border-borde bg-superficie p-5 shadow-sm sm:p-7" aria-labelledby="historial-estructuras-heading">
+      <section className="ui-card p-5 sm:p-7" aria-labelledby="historial-estructuras-heading">
         <div className="flex items-start justify-between gap-3"><div><h3 id="historial-estructuras-heading" className="text-sm font-semibold text-texto">Historial y pesos independientes</h3><p className="mt-1 text-sm text-texto-suave">Los pesos de estructuras solo se activan después de una evaluación aprobada.</p></div><span className="text-xs text-texto-suave">{artifacts.length} artifact(s) respaldado(s)</span></div>
         {trainings.length === 0 ? <p className="mt-5 rounded-2xl border border-dashed border-borde px-4 py-6 text-center text-sm text-texto-suave">Todavía no hay corridas de estructuras.</p> : <div className="mt-5 overflow-x-auto"><table className="w-full min-w-[620px] text-left text-sm"><thead className="text-xs text-texto-suave"><tr><th className="px-3 py-2 font-semibold">Corrida</th><th className="px-3 py-2 font-semibold">Estado</th><th className="px-3 py-2 font-semibold">Parámetros</th><th className="px-3 py-2 font-semibold">Creada</th></tr></thead><tbody>{trainings.map((training) => <tr key={training.id} className="border-t border-borde"><td className="px-3 py-3 font-medium text-texto">{training.label}</td><td className="px-3 py-3 text-texto">{statusLabel(training.status)}</td><td className="px-3 py-3 text-texto-suave">{training.steps} pasos · LR {training.learning_rate}</td><td className="px-3 py-3 text-texto-suave">{dateFormat.format(new Date(training.created_at))}</td></tr>)}</tbody></table></div>}
       </section>

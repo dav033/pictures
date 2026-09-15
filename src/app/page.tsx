@@ -1,13 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Search, Ruler, NotebookPen, CheckCircle2, X, AlertCircle, Lock, Plus, Sparkles, ArrowUp, Paperclip, Home, ChartColumn, Image as ImageIcon, type LucideIcon } from "lucide-react";
+import { Lock } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ETIQUETA_FORMATO_PROMPT, esSeleccionFormatoPrompt, FORMATO_PROMPT_AUTOMATICO, OPCIONES_FORMATO_PROMPT, promptFormatParaGenerar, type SeleccionFormatoPrompt } from "@/lib/lora/formato-prompt-cliente";
-import { CREATIVIDAD_POR_DEFECTO, parseNivelCreatividad, perfilCreatividad, type NivelCreatividad } from "@/lib/ia/creatividad";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { CREATIVIDAD_POR_DEFECTO, type NivelCreatividad } from "@/lib/ia/creatividad";
 import { DecoracionCard } from "@/components/DecoracionCard";
 import { Lightbox } from "@/components/Lightbox";
 import { PromptModal } from "@/components/PromptModal";
@@ -19,6 +17,7 @@ import { TarjetaPlanDecoracion } from "@/components/TarjetaPlanDecoracion";
 import { GenerationQaSummary } from "@/components/references/GenerationQaSummary";
 import { ReferenceAnalysisController } from "@/components/references/ReferenceAnalysisController";
 import type { ReferenceDraft } from "@/components/references/ReferenceReviewPanel";
+import { PasosAsistente } from "@/components/propuesta";
 import { useSeleccion } from "@/lib/estado/seleccion";
 import type { LineaBorrador } from "@/lib/estado/borrador-cotizacion";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
@@ -35,9 +34,18 @@ import { classifyGenerationIds, normalizeGenerationSources } from "@/lib/generac
 import { ChatSseEventV1Schema } from "@/lib/ia/contracts/chat-v1";
 import { construirUiErrorV1, leerUiErrorV1, uiErrorDesdeChatV1, type AccionUiV1, type UiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 import { AvisoError } from "@/components/errores/AvisoError";
-import { SwitchModoVista } from "@/components/modo/SwitchModoVista";
 import { useModoVista } from "@/lib/estado/modo-vista";
 import { abrirPromptAutomaticamente, qaVisualEfectivo, usarLoraEfectivo } from "@/lib/estado/modo-vista-reglas";
+import { aplicarEventoHerramienta, cerrarPasos, type PasoAsistente } from "@/lib/estado/pasos-asistente";
+import { contextoEvento } from "@/lib/estado/contexto-evento";
+import type { OrigenError } from "@/lib/estado/estado-error";
+import { archivoDeFotoEjemplo, type FotoEjemplo } from "@/lib/referencias-ejemplo/manifiesto";
+import { CabeceraApp } from "@/components/ui/shell/CabeceraApp";
+import { Compositor } from "@/components/ui/shell/Compositor";
+import { EsperaAsistente } from "@/components/ui/shell/EsperaAsistente";
+import { DialogoEjemplos, GaleriaEjemplos } from "@/components/ui/shell/GaleriaEjemplos";
+import { HojaSeleccion } from "@/components/ui/shell/HojaSeleccion";
+import { volarFoto } from "@/components/ui/shell/vuelo-foto";
 
 type ProveedorId = "gemini";
 type SelectorIA = ProveedorId | "lora";
@@ -87,7 +95,37 @@ type Mensaje = {
    * así que una sustitución o un descarte podía pasar sin que el cliente lo
    * viera nunca (viola "nunca sustituir en silencio"). */
   ragRechazados?: ItemRechazado[];
+  /**
+   * Fotos del turno que produjo este mensaje (iteración 4): miniatura en el
+   * mensaje del cliente y recortes por pieza en la propuesta. El estado de
+   * adjuntos del compositor puede cambiar después, así que se copian aquí al
+   * enviar. No se guardan en sessionStorage (base64 pesado).
+   */
+  adjuntos?: AdjuntosTurno;
+  /** Pasos en vivo del asistente para este turno (eventos SSE `herramienta`). */
+  pasos?: PasoAsistente[];
 };
+
+type ImagenTurno = { id?: string; base64: string; mime: string };
+type AdjuntosTurno = { referencias: ImagenTurno[]; fotoEspacio?: ImagenTurno };
+
+function dataUrl(imagen: { base64: string; mime: string }): string {
+  return `data:${imagen.mime};base64,${imagen.base64}`;
+}
+
+/** Clave estable de un adjunto para su etiqueta visible (título del ejemplo o nombre del archivo). */
+function claveImagen(imagen: { base64: string }): string {
+  return `${imagen.base64.length}:${imagen.base64.slice(-48)}`;
+}
+
+/** Copia liviana de los adjuntos del turno; los ids siguen el orden que usa /api/references/analyze (REF_01…). */
+function adjuntosDelTurno(referencias: readonly Imagen[], fotoEspacio: Imagen | null): AdjuntosTurno | undefined {
+  if (!referencias.length && !fotoEspacio) return undefined;
+  return {
+    referencias: referencias.map(({ base64, mime }, indice) => ({ id: `REF_${String(indice + 1).padStart(2, "0")}`, base64, mime })),
+    ...(fotoEspacio ? { fotoEspacio: { base64: fotoEspacio.base64, mime: fotoEspacio.mime } } : {}),
+  };
+}
 
 const SALUDO: Mensaje = {
   id: "saludo",
@@ -109,71 +147,12 @@ const SUGERENCIAS = [
   "Algo boho en tonos tierra",
 ];
 
-// 4 franjas fijas de presupuesto — se guardan como propiedad del brief al
-// tocarlas (como un adjunto más), sin mandar un mensaje de chat. `valor` es
-// lo que se guarda en `brief.presupuesto`; se muestra igual en "Tu evento".
-const ETIQUETAS_BRIEF: Record<keyof Brief, string> = {
-  tipo_evento: "Evento",
-  espacio: "Espacio",
-  invitados: "Invitados",
-  colores: "Colores",
-  estilo: "Estilo",
-  momento_dia: "Momento",
-  fecha: "Fecha",
-  presupuesto: "Presupuesto",
-};
-
-const ETIQUETA_HERRAMIENTA: Record<string, string> = {
-  buscar_catalogo_rag: "Buscando en el catálogo…",
-  calcular_medidas: "Calculando medidas…",
-  guardar_brief: "Guardando datos del evento…",
-  confirmar_seleccion_rag: "Confirmando selección…",
-  confirmar_plan_decoracion: "Armando el plan…",
-};
-
 const LIMITE_INACTIVIDAD_CHAT_MS = 90_000;
+/** Espera máxima del análisis de la foto antes de enviar el turno sin él (p95 medido: 20 s). */
+const LIMITE_ESPERA_ANALISIS_MS = 45_000;
 
-const ICONO_HERRAMIENTA: Record<string, LucideIcon> = {
-  buscar_catalogo_rag: Search,
-  calcular_medidas: Ruler,
-  guardar_brief: NotebookPen,
-  confirmar_seleccion_rag: CheckCircle2,
-  confirmar_plan_decoracion: CheckCircle2,
-};
-
-/** Reemplaza el swap de texto plano por un cross-fade con ícono + pulso
- * continuo en la etiqueta — antes era un cambio instantáneo sin ninguna
- * señal visual de que algo sigue en curso. */
-function EstadoHerramienta({ herramienta }: { herramienta: string | null }) {
-  const etiqueta = (herramienta && ETIQUETA_HERRAMIENTA[herramienta]) ?? "Escribiendo…";
-  const Icono = herramienta ? ICONO_HERRAMIENTA[herramienta] : undefined;
-  return (
-    <AnimatePresence mode="wait">
-      <motion.span
-        key={etiqueta}
-        initial={{ opacity: 0, y: 4 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -4 }}
-        transition={{ duration: 0.18, ease: "easeOut" }}
-        role="status"
-        className="typing-indicator inline-flex items-center gap-1.5 text-sm text-texto-suave"
-      >
-        {Icono && <Icono className="size-3.5 shrink-0" aria-hidden="true" />}
-        <motion.span
-          animate={{ opacity: [0.55, 1, 0.55] }}
-          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-        >
-          {etiqueta}
-        </motion.span>
-        <span className="typing-dots" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </span>
-      </motion.span>
-    </AnimatePresence>
-  );
-}
+/** `order` de flexbox para lo que va después de toda la conversación (visualización, errores, análisis sin enviar). */
+const ORDEN_AL_FINAL = 1_000_000;
 
 type DatosFin = {
   reply: string;
@@ -224,9 +203,6 @@ type GenerarOverride = {
    */
   estiloEstandar?: boolean;
 };
-
-/** Dónde ocurrió el error visible: decide qué acciones del aviso se pueden ejecutar. */
-type OrigenError = "chat" | "generacion" | "catalogo" | "plan";
 
 type ErrorVisible = { ui: UiErrorV1; origen: OrigenError };
 
@@ -480,10 +456,13 @@ export default function Page() {
   const [mensajes, setMensajes] = useState<Mensaje[]>([SALUDO]);
   const [entrada, setEntrada] = useState("");
   const [brief, setBrief] = useState<Brief>({});
-  const [agregandoManual, setAgregandoManual] = useState(false);
-  const [nombreManual, setNombreManual] = useState("");
-  const [descripcionManual, setDescripcionManual] = useState("");
-  const [precioManual, setPrecioManual] = useState("");
+  const [hojaSeleccionAbierta, setHojaSeleccionAbierta] = useState(false);
+  // Etiqueta visible de cada foto adjunta (título del ejemplo o nombre del archivo).
+  const [etiquetasAdjuntos, setEtiquetasAdjuntos] = useState<Record<string, string>>({});
+  // Foto de ejemplo adjunta ahora (id del manifiesto + clave de su imagen procesada).
+  const [ejemploElegido, setEjemploElegido] = useState<{ id: string; clave: string } | null>(null);
+  const [cargandoEjemplo, setCargandoEjemplo] = useState(false);
+  const [galeriaAbierta, setGaleriaAbierta] = useState(false);
   const {
     ids: seleccion,
     productos: seleccionados,
@@ -499,7 +478,6 @@ export default function Page() {
   const [imagenAmpliada, setImagenAmpliada] = useState<string | null>(null);
   const [ajuste, setAjuste] = useState("");
   const [cargandoChat, setCargandoChat] = useState(false);
-  const [herramientaEnCurso, setHerramientaEnCurso] = useState<string | null>(null);
   const [generando, setGenerando] = useState(false);
   const [planDecoracionActivo, setPlanDecoracionActivo] = useState(false);
   const [segundosGeneracion, setSegundosGeneracion] = useState(0);
@@ -520,8 +498,7 @@ export default function Page() {
   // en los callbacks que arman las peticiones.
   const [creatividad, setCreatividad] = useState<NivelCreatividad>(CREATIVIDAD_POR_DEFECTO);
   const creatividadRef = useRef<NivelCreatividad>(CREATIVIDAD_POR_DEFECTO);
-  const cambiarCreatividad = (valor: string) => {
-    const nivel = parseNivelCreatividad(Number(valor));
+  const cambiarCreatividad = (nivel: NivelCreatividad) => {
     creatividadRef.current = nivel;
     setCreatividad(nivel);
   };
@@ -594,10 +571,6 @@ export default function Page() {
 
   const finChat = useRef<HTMLDivElement>(null);
   const entradaRef = useRef<HTMLInputElement>(null);
-  const fotoEspacioInputRef = useRef<HTMLInputElement>(null);
-  const referenciasInputRef = useRef<HTMLInputElement>(null);
-  const menuAdjuntosRef = useRef<HTMLDivElement>(null);
-  const [menuAdjuntosAbierto, setMenuAdjuntosAbierto] = useState(false);
   const [planAprobadoHash, setPlanAprobadoHash] = useState<string | null>(null);
   const hayPlanEnConversacion = mensajes.some((mensaje) => mensaje.role === "assistant" && Boolean(mensaje.plan));
 
@@ -620,6 +593,9 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
+    // En el estado inicial no hay conversación que seguir: bajar hasta el final
+    // escondería el título y el compositor detrás de la galería.
+    if (!mensajes.some((mensaje) => mensaje.id !== SALUDO.id)) return;
     const reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     finChat.current?.scrollIntoView({ behavior: reducido ? "auto" : "smooth" });
   }, [mensajes, cargandoChat]);
@@ -627,22 +603,6 @@ export default function Page() {
   useEffect(() => {
     fotoEspacioRef.current = fotoEspacio;
   }, [fotoEspacio]);
-
-  useEffect(() => {
-    if (!menuAdjuntosAbierto) return;
-    function alClicFuera(evento: MouseEvent) {
-      if (!menuAdjuntosRef.current?.contains(evento.target as Node)) setMenuAdjuntosAbierto(false);
-    }
-    function alEscape(evento: KeyboardEvent) {
-      if (evento.key === "Escape") setMenuAdjuntosAbierto(false);
-    }
-    document.addEventListener("mousedown", alClicFuera);
-    document.addEventListener("keydown", alEscape);
-    return () => {
-      document.removeEventListener("mousedown", alClicFuera);
-      document.removeEventListener("keydown", alEscape);
-    };
-  }, [menuAdjuntosAbierto]);
 
   useEffect(() => {
     imagenesReferenciaRef.current = imagenesReferencia;
@@ -699,7 +659,10 @@ export default function Page() {
   useEffect(() => {
     if (!cargadoDeStorage) return;
     try {
-      sessionStorage.setItem(CLAVE_CHAT, JSON.stringify({ mensajes, brief, ultimasMedidas }));
+      // Sin los base64 de las fotos del turno: sessionStorage tiene un límite de
+      // pocos MB y un fallo aquí dejaría la conversación sin persistir.
+      const mensajesLivianos = mensajes.map((mensaje) => ({ ...mensaje, adjuntos: undefined }));
+      sessionStorage.setItem(CLAVE_CHAT, JSON.stringify({ mensajes: mensajesLivianos, brief, ultimasMedidas }));
     } catch {
       // idem
     }
@@ -759,7 +722,7 @@ export default function Page() {
     ]);
   }
 
-  function finalizarUltimoMensaje(datos: DatosFin) {
+  function finalizarUltimoMensaje(datos: DatosFin, adjuntosTurno?: AdjuntosTurno) {
     const briefActualizado = datos.brief ?? {};
     briefRef.current = briefActualizado;
     setBrief(briefActualizado);
@@ -783,16 +746,20 @@ export default function Page() {
 
     setMensajes((previos) => {
       const copia = [...previos];
+      const pasosTurno = copia[copia.length - 1].pasos;
       copia[copia.length - 1] = {
         id: copia[copia.length - 1].id,
         role: "assistant",
         content: datos.reply,
+        pasos: pasosTurno?.length ? cerrarPasos(pasosTurno) : undefined,
+        // Las fotos del turno acompañan a la propuesta (recortes por pieza).
+        adjuntos: datos.plan ? adjuntosTurno : undefined,
         productos: recomendaciones.length ? recomendaciones : undefined,
         decoraciones: decoracionesRecomendadas.length ? decoracionesRecomendadas : undefined,
         categorias: datos.categorias?.length ? datos.categorias : undefined,
         categoriasFiltros: datos.categorias?.length ? datos.filtrosCategorias : undefined,
         medidas: datos.medidas ?? undefined,
-        referenceBlueprint: datos.referenceBlueprint,
+        referenceBlueprint: datos.referenceBlueprint ?? (datos.plan ? referenceDraftRef.current?.blueprint : undefined),
         plan: datos.plan,
         // En modo plan la cotización preliminar pertenece al mismo mensaje que
         // contiene el blueprint y el plan; la imagen final lo actualiza ahí.
@@ -822,25 +789,18 @@ export default function Page() {
    * chocar con ids reales, y la descripción es lo único que la IA usa para
    * dibujarla, así que si el cliente no la llena se cae de vuelta al nombre.
    */
-  function agregarPiezaManual(e: React.FormEvent) {
-    e.preventDefault();
-    const nombre = nombreManual.trim();
-    if (!nombre) return;
+  function agregarPiezaManual(pieza: { nombre: string; descripcion: string; precio: number }) {
     agregarVarios([
       {
         id: `manual-${crypto.randomUUID()}`,
-        nombre,
+        nombre: pieza.nombre,
         categoria: "Personalizado",
         estilos: [],
         colores: [],
-        descripcion: descripcionManual.trim() || nombre,
-        precio: Number(precioManual) || 0,
+        descripcion: pieza.descripcion || pieza.nombre,
+        precio: pieza.precio,
       },
     ]);
-    setNombreManual("");
-    setDescripcionManual("");
-    setPrecioManual("");
-    setAgregandoManual(false);
   }
 
   /**
@@ -893,9 +853,14 @@ export default function Page() {
    * la app está lenta o rota. */
   function esperarReferenciasListas(): Promise<void> {
     if (referenceReadyRef.current) return Promise.resolve();
+    let esperadoMs = 0;
     return new Promise((resolve) => {
       const intervalo = window.setInterval(() => {
-        if (referenceReadyRef.current) {
+        esperadoMs += 150;
+        // Si el análisis falló, el controlador nunca vuelve a "listo": pasado el
+        // límite el turno sale igual, sin plano de la foto, en vez de quedarse
+        // "pensando" para siempre. El cliente ve el error del análisis aparte.
+        if (referenceReadyRef.current || esperadoMs > LIMITE_ESPERA_ANALISIS_MS) {
           window.clearInterval(intervalo);
           resolve();
         }
@@ -925,19 +890,25 @@ export default function Page() {
     }
     solicitudUsuarioRef.current = limpio;
 
-    const nuevos: Mensaje[] = [...(historialBase ?? mensajes), { id: crypto.randomUUID(), role: "user", content: limpio }];
+    // Al reintentar se conservan las fotos del mensaje original; en un envío
+    // nuevo son las del compositor en este momento.
+    const adjuntosUsuario = historialBase
+      ? mensajes.find((mensaje, indice) => indice >= historialBase.length && mensaje.role === "user")?.adjuntos
+      : adjuntosDelTurno(imagenesReferencia, fotoEspacio);
+    const nuevos: Mensaje[] = [...(historialBase ?? mensajes), { id: crypto.randomUUID(), role: "user", content: limpio, adjuntos: adjuntosUsuario }];
     // Burbuja vacía del asistente desde ya: ahí se va llenando el texto que
     // llega en streaming, en vez de esperar la respuesta completa.
     setMensajes([...nuevos, { id: crypto.randomUUID(), role: "assistant", content: "" }]);
     setEntrada("");
     setCargandoChat(true);
-    setHerramientaEnCurso(null);
     setError(null);
     // El mensaje ya se ve enviado (burbuja + input limpio + "pensando"); si
     // el análisis de referencias sigue en curso, la espera ocurre aquí,
     // detrás de esa misma burbuja, en vez de con un error que obligue a
     // reenviar el turno.
     if (imagenesReferenciaRef.current.length > 0 && !referenceReadyRef.current) await esperarReferenciasListas();
+    // Fotos que realmente viajan en este turno (leídas de los refs, igual que el cuerpo).
+    const adjuntosTurno = adjuntosDelTurno(imagenesReferenciaRef.current, fotoEspacioRef.current);
     const controlador = new AbortController();
     chatAbortRef.current = controlador;
     let excedioTiempo = false;
@@ -996,9 +967,15 @@ export default function Page() {
             });
           },
           onHerramienta: (nombre, estado) => {
-            setHerramientaEnCurso(estado === "ejecutando" ? nombre : null);
+            setMensajes((previos) => {
+              const copia = [...previos];
+              const ultimo = copia[copia.length - 1];
+              if (ultimo?.role !== "assistant") return previos;
+              copia[copia.length - 1] = { ...ultimo, pasos: aplicarEventoHerramienta(ultimo.pasos ?? [], nombre, estado) };
+              return copia;
+            });
           },
-          onFin: finalizarUltimoMensaje,
+          onFin: (datos) => finalizarUltimoMensaje(datos, adjuntosTurno),
           onError: (datos) => {
             hayError = true;
             setError({ ui: uiErrorDesdeChatV1(datos), origen: "chat" });
@@ -1019,7 +996,7 @@ export default function Page() {
           setMensajes((previos) => previos.slice(0, -1));
           return;
         }
-        finalizarUltimoMensaje(data);
+        finalizarUltimoMensaje(data, adjuntosTurno);
       }
     } catch {
       if (controlador.signal.aborted && !excedioTiempo) {
@@ -1037,7 +1014,6 @@ export default function Page() {
       if (temporizador !== undefined) window.clearTimeout(temporizador);
       if (chatAbortRef.current === controlador) chatAbortRef.current = null;
       setCargandoChat(false);
-      setHerramientaEnCurso(null);
       entradaRef.current?.focus();
     }
   }
@@ -1077,6 +1053,9 @@ export default function Page() {
     setLoraModeParaBadge("training_1");
     setFotoEspacio(null);
     setImagenesReferencia([]);
+    setEtiquetasAdjuntos({});
+    setEjemploElegido(null);
+    setHojaSeleccionAbierta(false);
     setErrorAdjuntos(null);
     aspectoActivoRef.current = undefined;
     ultimaInteraccionIdRef.current = undefined;
@@ -1524,6 +1503,7 @@ export default function Page() {
     }
     try {
       const procesadas = await Promise.all(aProcesar.map((f) => redimensionarImagen(f, 1800, 0.9)));
+      setEtiquetasAdjuntos((previas) => ({ ...previas, ...Object.fromEntries(procesadas.map((imagen, indice) => [claveImagen(imagen), aProcesar[indice]!.name])) }));
       setImagenesReferencia((previas) => [...previas, ...procesadas]);
     } catch (e) {
       setErrorAdjuntos(e instanceof Error ? e.message : "No se pudo procesar alguna imagen de referencia.");
@@ -1531,869 +1511,585 @@ export default function Page() {
   }
 
   function quitarImagenReferencia(indice: number) {
+    const quitada = imagenesReferencia[indice];
     setImagenesReferencia((previas) => previas.filter((_, i) => i !== indice));
+    if (quitada && ejemploElegido?.clave === claveImagen(quitada)) setEjemploElegido(null);
   }
 
-  const entradasBrief = Object.entries(brief).filter(
-    ([, v]) => v !== undefined && v !== null && String(v).length > 0,
-  );
+  /**
+   * Foto de ejemplo de la galería: se adjunta como imagen de referencia con el
+   * mismo redimensionado que una subida, vuela hasta su chip y el análisis
+   * arranca solo (ReferenceAnalysisController reacciona a las referencias).
+   * Reemplaza otra foto de ejemplo ya elegida en vez de acumularlas.
+   */
+  async function elegirEjemplo(foto: FotoEjemplo, miniatura: HTMLImageElement | null) {
+    if (cargandoEjemplo || cargandoChat) return;
+    setErrorAdjuntos(null);
+    setCargandoEjemplo(true);
+    try {
+      const archivo = await archivoDeFotoEjemplo(foto);
+      const imagen = await redimensionarImagen(archivo, 1800, 0.9);
+      const clave = claveImagen(imagen);
+      setEtiquetasAdjuntos((previas) => ({ ...previas, [clave]: foto.titulo }));
+      const claveAnterior = ejemploElegido?.clave;
+      setImagenesReferencia((previas) => {
+        const sinEjemploAnterior = previas.filter((previa) => claveImagen(previa) !== claveAnterior);
+        return [...sinEjemploAnterior, imagen].slice(-LIMITE_REFERENCIAS_CLIENTE);
+      });
+      setEjemploElegido({ id: foto.id, clave });
+      setGaleriaAbierta(false);
+      window.requestAnimationFrame(() => {
+        const chips = document.querySelectorAll("[data-adjunto='referencia'] img");
+        volarFoto(miniatura, chips[chips.length - 1] ?? null);
+      });
+      entradaRef.current?.focus();
+    } catch (e) {
+      setErrorAdjuntos(e instanceof Error ? e.message : "No se pudo cargar la foto de ejemplo.");
+    } finally {
+      setCargandoEjemplo(false);
+    }
+  }
+
   const listoParaGenerar = (seleccion.length > 0 || (imagenesReferencia.length > 0 && Boolean(referenceDraft?.blueprint))) && referenceReady;
   const planActualEntry = [...mensajes].reverse().find((mensaje) => mensaje.role === "assistant" && mensaje.plan);
   const planActual = planActualEntry?.plan;
   const planActualAprobado = Boolean(planActual && planAprobadoHash === planActual.plan_hash);
-  const botonPlanBloqueado = Boolean(planActual && (planActual.comercial.estado === "PRESUPUESTO_EXCEDIDO" || planAprobadoHash === planActual.plan_hash));
   const ultimoIndiceUsuario = mensajes.map((m) => m.role).lastIndexOf("user");
+  // Estado inicial (maqueta EstadoInicial): todavía no hay turno del cliente.
+  const enInicio = !mensajes.some((mensaje) => mensaje.id !== SALUDO.id);
+  const contexto = contextoEvento(brief);
+  // C2: con una propuesta en la conversación, el plan es la selección; la lista manual solo en dev.
+  const seleccionDisponible = esModoDev || !hayPlanEnConversacion;
+  const esperandoPlanConReferencias = planDecoracionActivo && imagenesReferencia.length > 0;
+  const generarSinPropuesta = planActual
+    ? undefined
+    : {
+        etiqueta: esperandoPlanConReferencias
+          ? "Espera la propuesta con tu foto"
+          : generando
+            ? "Generando…"
+            : seleccionPendiente
+              ? "Regenerar imagen"
+              : imagenes.length > 0
+                ? "Generar otra versión"
+                : "Generar visualización",
+        deshabilitado: !listoParaGenerar || generando || esperandoPlanConReferencias,
+        ayuda: esperandoPlanConReferencias
+          ? referenceReady && !generando ? "La imagen se habilita después de aprobar la propuesta que relaciona tu foto con productos reales." : null
+          : !listoParaGenerar && !generando
+            ? referenceReady ? "Necesitas una pieza o una foto de referencia para generar." : "Estoy terminando de mirar tu foto."
+            : null,
+      };
+  function generarDesdeSeleccion() {
+    if (esperandoPlanConReferencias) return;
+    generar();
+  }
+  const referenciasVisibles = imagenesReferencia.map((imagen, indice) => ({
+    src: dataUrl(imagen),
+    etiqueta: etiquetasAdjuntos[claveImagen(imagen)] ?? `Foto de referencia ${indice + 1}`,
+  }));
+
+  function aplicarAjusteSobrePropuesta() {
+    if (!planActual || !planActualAprobado || !ajuste.trim()) return;
+    generar({
+      ids: [],
+      ragVariantIds: planActual.compras.map((compra) => compra.variant_id),
+      plan: planActual,
+      brief: briefRef.current,
+      solicitudUsuario: solicitudUsuarioRef.current,
+      instruccion: ajuste.trim(),
+      anchorMessageId: planActualEntry?.id,
+    });
+  }
+
+  // El análisis de la foto va en la conversación, justo después del mensaje
+  // que la envió (maqueta FotoAnalisis); si la foto aún no se envió, queda al
+  // final, pegado al compositor y a su chip (hallazgo #23). Se ubica con
+  // `order` de flexbox para que el componente no cambie de lugar en el árbol:
+  // moverlo lo volvería a montar y repetiría el análisis.
+  const claveReferenciaActual = imagenesReferencia[0] ? claveImagen(imagenesReferencia[0]) : null;
+  const indiceMensajeConFoto = claveReferenciaActual
+    ? mensajes.findLastIndex((mensaje) => mensaje.role === "user" && mensaje.adjuntos?.referencias.some((imagen) => claveImagen(imagen) === claveReferenciaActual))
+    : -1;
+  const ordenAnalisis = indiceMensajeConFoto >= 0 ? indiceMensajeConFoto * 2 + 1 : ORDEN_AL_FINAL + 2;
+  const analisisFoto = (
+    <div style={{ order: ordenAnalisis }} className="w-full min-w-0 text-left empty:hidden" data-testid="analisis-foto-slot">
+      <ReferenceAnalysisController
+        references={imagenesReferencia}
+        proveedor={proveedor}
+        onDraft={(draft) => {
+          referenceDraftRef.current = draft;
+          setReferenceDraft(draft);
+        }}
+        onReady={setReferenceReady}
+        onElegirEjemplo={() => setGaleriaAbierta(true)}
+      />
+    </div>
+  );
+
+  const compositor = (
+    <Compositor
+      variante={enInicio ? "grande" : "normal"}
+      entrada={entrada}
+      onEntrada={setEntrada}
+      onEnviar={() => void enviar(entrada)}
+      cargando={cargandoChat}
+      onCancelar={cancelarChat}
+      placeholder={
+        enInicio
+          ? "Ej. cumpleaños de mi mamá en rosa y plateado…"
+          : fotoEspacio || imagenesReferencia.length
+            ? "Cuéntame qué quieres o solo envía la foto"
+            : hayPlanEnConversacion
+              ? "Pide un cambio: “más dorado”, “que sea más grande”…"
+              : "Cuéntame de tu evento…"
+      }
+      inputRef={entradaRef}
+      fotoEspacio={fotoEspacio ? { src: dataUrl(fotoEspacio), etiqueta: "Foto del espacio" } : null}
+      onQuitarFotoEspacio={() => setFotoEspacio(null)}
+      referencias={referenciasVisibles}
+      onQuitarReferencia={quitarImagenReferencia}
+      onArchivoEspacio={(archivo) => void subirFotoEspacio(archivo)}
+      onArchivosReferencia={(archivos) => void subirImagenesReferencia(archivos)}
+      puedeAgregarReferencia={imagenesReferencia.length < LIMITE_REFERENCIAS_CLIENTE}
+      errorAdjuntos={errorAdjuntos}
+    />
+  );
 
   return (
-    <div className="workspace-shell flex flex-1 flex-col">
-      <header className="workspace-header material-topbar border-b px-4 py-3 sm:px-6">
-        <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-3">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="workspace-brand">
-              <span className="workspace-mark" aria-hidden="true" />
-              <div className="min-w-0">
-                <p className="workspace-kicker">Sempertex studio</p>
-                <h1 className="workspace-title">Asistente de decoración</h1>
-                <p className="workspace-subtitle">De una idea suelta a una escena que puedes imaginar.</p>
-              </div>
-            </div>
-            <div className="workspace-header-actions">
-              <SwitchModoVista modo={modoVista} onCambiar={cambiarModoVista} />
-              {/* Controles técnicos: solo en modo dev (B2). */}
-              {esModoDev && (<>
-              <label htmlFor="selector-modelo" className="sr-only">Modelo para generar imágenes</label>
-              <Select value={selectorIA} onValueChange={(v) => cambiarSelector(v as SelectorIA)}>
-                <SelectTrigger id="selector-modelo">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(["gemini"] as ProveedorId[]).map((id) => (
-                    <SelectItem key={id} value={id} disabled={!proveedoresDisponibles.includes(id)}>
-                      <span className="inline-flex items-center gap-1.5">
-                        {!proveedoresDisponibles.includes(id) && <Lock className="size-3" aria-hidden="true" />}
-                        {NOMBRE_PROVEEDOR[id]}
-                        {!proveedoresDisponibles.includes(id) ? " (sin llave)" : ""}
-                      </span>
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="lora">{NOMBRE_SELECTOR.lora}</SelectItem>
-                </SelectContent>
-              </Select>
-              {selectorIA === "lora" && (
-                <>
-                  <label htmlFor="formato-prompt-lora" className="sr-only">Formato del prompt LoRA</label>
-                  <Select value={formatoPromptLora} onValueChange={(v) => { if (esSeleccionFormatoPrompt(v)) setFormatoPromptLora(v); }}>
-                    <SelectTrigger id="formato-prompt-lora" title="Automático: el servidor elige el formato según el estilo LoRA. Texto: prompt entrenado. JSON: prompt estructurado. Ambos: dos imágenes con la misma semilla (doble costo).">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {OPCIONES_FORMATO_PROMPT.map((formato) => (
-                        <SelectItem key={formato} value={formato}>
-                          {ETIQUETA_FORMATO_PROMPT[formato]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </>
-              )}
-              <label className="inline-flex items-center gap-2 text-xs font-medium text-texto" title="Hace una revisión visual adicional y puede aumentar el tiempo de respuesta">
-                <input
-                  type="checkbox"
-                  checked={qaVisualSolicitado}
-                  onChange={(event) => setQaVisualSolicitado(event.target.checked)}
-                  className="size-4 accent-acento"
-                />
-                Validar visualmente
-              </label>
-              <Link
-                href="/estadisticas"
-                className="ui-button-secondary inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold"
-              >
-                <ChartColumn className="size-4" aria-hidden="true" />
-                Estadísticas
-              </Link>
-              </>)}
-              <div className="flex items-center gap-2 text-xs font-medium text-texto" title={perfilCreatividad(creatividad).descripcion}>
-                <label htmlFor="nivel-creatividad">Creatividad</label>
-                <input
-                  id="nivel-creatividad"
-                  type="range"
-                  min={0}
-                  max={5}
-                  step={1}
-                  value={creatividad}
-                  onChange={(event) => cambiarCreatividad(event.target.value)}
-                  aria-valuetext={`${creatividad} de 5: ${perfilCreatividad(creatividad).nombre}`}
-                  aria-describedby="nivel-creatividad-descripcion"
-                  className="w-24 accent-acento focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"
-                />
-                <output htmlFor="nivel-creatividad" className="min-w-[6.5rem] tabular-nums">
-                  {creatividad} · {perfilCreatividad(creatividad).nombre}
-                </output>
-                <span id="nivel-creatividad-descripcion" className="sr-only">{perfilCreatividad(creatividad).descripcion}</span>
-              </div>
-              <button
-                type="button"
-                onClick={limpiarTodo}
-                disabled={cargandoChat || generando}
-                className="ui-button-ghost px-2 py-2 underline-offset-2 hover:underline disabled:opacity-40"
-              >
-                Limpiar chat
-              </button>
-            </div>
-          </div>
-          <nav aria-label="Herramientas" className="workspace-nav flex flex-wrap items-center gap-x-5 gap-y-1 border-t pt-2">
-            <Link href="/catalogo" className="ui-nav-link hover:underline hover:underline-offset-2">
-              Explorar catálogo
-            </Link>
-            {esModoDev && (
+    <div className="app-shell">
+      <CabeceraApp
+        contexto={contexto}
+        creatividad={creatividad}
+        onCreatividad={cambiarCreatividad}
+        modoVista={modoVista}
+        onModoVista={cambiarModoVista}
+        onLimpiar={limpiarTodo}
+        limpiarDeshabilitado={cargandoChat || generando}
+        onAbrirSeleccion={seleccionDisponible ? () => setHojaSeleccionAbierta(true) : undefined}
+        totalSeleccion={seleccionados.length}
+        barraDev={
+          <>
+            <span className="font-medium text-texto-suave">Dev</span>
+            <label htmlFor="selector-modelo" className="sr-only">Modelo para generar imágenes</label>
+            <Select value={selectorIA} onValueChange={(v) => cambiarSelector(v as SelectorIA)}>
+              <SelectTrigger id="selector-modelo">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {(["gemini"] as ProveedorId[]).map((id) => (
+                  <SelectItem key={id} value={id} disabled={!proveedoresDisponibles.includes(id)}>
+                    <span className="inline-flex items-center gap-1.5">
+                      {!proveedoresDisponibles.includes(id) && <Lock className="size-3" aria-hidden="true" />}
+                      {NOMBRE_PROVEEDOR[id]}
+                      {!proveedoresDisponibles.includes(id) ? " (sin llave)" : ""}
+                    </span>
+                  </SelectItem>
+                ))}
+                <SelectItem value="lora">{NOMBRE_SELECTOR.lora}</SelectItem>
+              </SelectContent>
+            </Select>
+            {selectorIA === "lora" && (
               <>
-                <Link href="/laboratorio-referencias" className="ui-nav-link hover:underline hover:underline-offset-2">
-                  Laboratorio JSON
-                </Link>
-                <Link href="/admin" className="ui-nav-link hover:underline hover:underline-offset-2">
-                  Panel de administración
-                </Link>
-                <Link href="/configuracion-lora" className="ui-nav-link hover:underline hover:underline-offset-2">
-                  Configuración LoRA
-                </Link>
+                <label htmlFor="formato-prompt-lora" className="sr-only">Formato del prompt LoRA</label>
+                <Select value={formatoPromptLora} onValueChange={(v) => { if (esSeleccionFormatoPrompt(v)) setFormatoPromptLora(v); }}>
+                  <SelectTrigger id="formato-prompt-lora" title="Automático: el servidor elige el formato según el estilo LoRA. Texto: prompt entrenado. JSON: prompt estructurado. Ambos: dos imágenes con la misma semilla (doble costo).">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {OPCIONES_FORMATO_PROMPT.map((formato) => (
+                      <SelectItem key={formato} value={formato}>
+                        {ETIQUETA_FORMATO_PROMPT[formato]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </>
             )}
-          </nav>
-        </div>
-      </header>
-
-      <main className="workspace-grid material-main grid flex-1 lg:min-h-0 lg:grid-cols-[minmax(0,1fr)_25rem]">
-        {/* Columna de chat */}
-        <section className="workspace-stage material-chat flex min-h-[calc(100dvh-13rem)] flex-col lg:min-h-0">
-          <div
-            role="log"
-            aria-live="polite"
-            aria-label="Conversación con el asistente"
-            aria-busy={cargandoChat}
-            className="workspace-log scroll-suave flex-1 space-y-4 overflow-y-auto px-4 py-6 sm:px-6 lg:min-h-0 lg:px-8"
-          >
-            {planDecoracionActivo && <ReferenceAnalysisController
-               references={imagenesReferencia}
-               proveedor={proveedor}
-               onDraft={(draft) => {
-                 referenceDraftRef.current = draft;
-                 setReferenceDraft(draft);
-               }}
-               onReady={setReferenceReady}
-            />}
-            <AnimatePresence initial={false}>
-            {mensajes.map((m, i) => {
-              const esUltimoStreaming = i === mensajes.length - 1 && m.role === "assistant" && cargandoChat;
-              // El mensaje con el JSON del análisis de referencias es solo de diagnóstico (B2).
-              if (!esModoDev && m.analisisReferencias != null) return null;
-              return (
-              <motion.div
-                key={m.id}
-                id={`mensaje-${m.id}`}
-                layout="position"
-                initial={{ opacity: 0, y: 10, filter: "blur(3px)" }}
-                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                exit={{ opacity: 0, filter: "blur(3px)", transition: { duration: 0.15 } }}
-                transition={{ duration: 0.43, ease: [0.23, 1, 0.32, 1] }}
-                className={`chat-row mx-auto w-full max-w-4xl ${m.role === "user" ? "chat-row-user" : "chat-row-ia"}`}
-              >
-                <span className="chat-avatar" aria-hidden="true">
-                  {m.role === "user" ? <span className="chat-avatar-initial">Tú</span> : <Sparkles className="size-4" />}
-                </span>
-                <div className="chat-column">
-                <div
-                  className={
-                    m.role === "user"
-                      ? "chat-bubble chat-bubble-user ml-auto max-w-[85%] px-4 py-2.5 text-sm text-white"
-                      : `chat-bubble chat-bubble-ia max-w-[85%] px-4 py-2.5 text-texto${esUltimoStreaming ? " is-streaming" : ""}`
-                  }
-                >
-                  {m.role === "assistant" ? (
-                    esUltimoStreaming && !m.content ? (
-                      <EstadoHerramienta herramienta={herramientaEnCurso} />
-                    ) : (
-                      <Markdown>{m.content}</Markdown>
-                    )
-                  ) : (
-                    m.content
-                  )}
-                </div>
-
-                {m.role === "user" && i === ultimoIndiceUsuario && !cargandoChat && (
-                  <button
-                    type="button"
-                    onClick={() => editarUltimoMensaje(i)}
-                    className="ml-auto mt-1 block text-xs text-texto-suave underline underline-offset-2 hover:text-acento"
-                  >
-                    Editar y reenviar
-                  </button>
-                )}
-
-                {/* Tarjetas/chips de selección: siempre aparecen debajo del mensaje que las trajo, sin importar si la IA también armó su propia propuesta en el mismo turno. */}
-                {m.decoraciones && (
-                  <div className="mt-3 max-w-[85%] space-y-2">
-                    <p className="text-xs text-texto-suave">
-                      {m.decoraciones.length} decoraciones armadas. Elige una para empezar
-                    </p>
-                    {m.decoraciones.map((d) => (
-                      <DecoracionCard key={d.id} decoracion={d} onElegir={elegirDecoracion} />
-                    ))}
-                  </div>
-                )}
-
-                {m.categorias && (
-                  <div className="mt-3 flex max-w-[85%] flex-wrap gap-2">
-                    {m.categorias.map((c) => (
-                      <button
-                        key={c.valor}
-                        type="button"
-                        onClick={() => navegarCategoria(m.categoriasFiltros, c)}
-                        disabled={cargandoChat}
-                        className="ui-chip ui-pressable disabled:opacity-40"
-                      >
-                        {c.etiqueta}: {c.total}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {m.productos && (
-                  <div className="mt-3 max-w-[85%] space-y-1.5">
-                    <p className="text-xs text-texto-suave">
-                      {m.productos.length} piezas disponibles. Toca para seleccionar
-                    </p>
-                    {m.productos.map((p) => (
-                      <ProductoCard
-                        key={p.id}
-                        producto={p}
-                        seleccionado={estaSeleccionado(p.id)}
-                        onToggle={() => alternarSeleccion(p)}
-                      />
-                    ))}
-                  </div>
-                )}
-
-                {m.medidas && <TarjetaMedidas medidas={m.medidas} />}
-                {m.plan && <TarjetaPlanDecoracion plan={m.plan} aprobado={planAprobadoHash === m.plan.plan_hash} referenceBlueprint={selectorIA === "lora" ? m.referenceBlueprint : undefined} generando={generando && m.plan.plan_hash === planActual?.plan_hash} qaSolicitado={qaEfectivo} modoDev={esModoDev} onAprobar={m.plan.plan_hash === planActual?.plan_hash ? () => aprobarPlan(m.plan!, m.id) : undefined} onPlanActualizado={m.plan.plan_hash === planActual?.plan_hash ? (plan, cotizacion) => actualizarPlanEnMensaje(m.id, plan, cotizacion) : undefined} loraMode={loraModeParaBadge} />}
-                {m.cotizacion && (
-                  <TarjetaCotizacion
-                    cotizacion={m.cotizacion}
-                    referenceBlueprint={m.referenceBlueprint}
-                    editable={!m.plan && !m.cotizacion.plan_hash && !cargandoChat && !generando}
-                    onAplicar={!m.plan && !m.cotizacion.plan_hash ? aplicarCotizacionEditada : undefined}
-                  />
-                )}
-
-                {/* Colapsado por defecto a propósito: es info de debug, no algo que el
-                    cliente necesite ver de entrada — antes se mandaba como bloque de
-                    código dentro del mensaje y el JSON grande reventaba el layout. */}
-                {esModoDev && m.analisisReferencias != null && (
-                  <details className="mt-2 max-w-[85%] rounded-lg border border-borde bg-superficie px-3 py-2 text-xs text-texto-suave">
-                    <summary className="cursor-pointer select-none">Ver JSON de análisis de referencias</summary>
-                    <pre className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap break-all">
-                      {JSON.stringify(m.analisisReferencias, null, 2)}
-                    </pre>
-                  </details>
-                )}
-
-                {/* Verificación contra la fuente real (plan G-05): la tabla de texto
-                    que redacta el modelo puede describir mal un producto sin que se
-                    note. Esto deja ver la foto real y linkear a la ficha pública de
-                    Shopify para comprobar que no se inventó nada. */}
-                {m.ragValidados && m.ragValidados.length > 0 && (
-                  <div className="mt-2 max-w-[85%] space-y-1.5 rounded-lg border border-borde bg-superficie p-2">
-                    <p className="text-xs text-texto-suave">Verificar piezas de esta propuesta contra el catálogo real:</p>
-                    {m.ragValidados.map((v) => (
-                      <div key={v.variantId} className="flex items-center gap-2 rounded-lg p-1">
-                        {v.imagen ? (
-                          <button
-                            type="button"
-                            onClick={() => setImagenAmpliada(v.imagen!)}
-                            className="shrink-0"
-                            title="Ver foto ampliada"
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={v.imagen} alt={v.titulo} className="size-12 rounded-lg object-cover" />
-                          </button>
-                        ) : (
-                          <span className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-superficie-2 px-1 text-center text-[10px] font-semibold uppercase tracking-wide text-texto-suave">Sin foto</span>
-                        )}
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-xs font-medium text-texto">{v.titulo}</span>
-                          <span className="block text-xs text-texto-suave">
-                            {esModoDev ? `${v.sku ? `SKU ${v.sku}` : "sin SKU"} / ` : ""}{v.cantidad} {v.cantidad === 1 ? "paquete" : "paquetes"}
-                          </span>
-                        </span>
-                        {v.handle && (
-                          <a
-                            href={`https://www.sempertex.com/products/${v.handle}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="shrink-0 whitespace-nowrap text-xs text-acento underline underline-offset-2"
-                          >
-                            Ver en la tienda ↗
-                          </a>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Fase 3.11 (honestidad estructural): si el modelo propuso una
-                    pieza que el backend descartó (no estaba en la whitelist
-                    recuperada, variante agotada, etc.), el cliente debe verlo en
-                    vez de que la sustitución pase en silencio. */}
-                {m.ragRechazados && m.ragRechazados.length > 0 && (
-                  <div className="mt-2 max-w-[85%] space-y-1 rounded-lg border border-aviso/30 bg-aviso/10 p-2 text-xs text-aviso">
-                    {esModoDev ? (
-                      <>
-                        <p className="font-medium">Piezas descartadas de esta propuesta:</p>
-                        {m.ragRechazados.map((r) => (
-                          <p key={`${r.productId}:${r.variantId}`}>⚠ {r.variantId}: {r.motivo}</p>
-                        ))}
-                      </>
-                    ) : (
-                      // Modo usuario: se avisa sin ids ni motivos técnicos (B2).
-                      <p>{m.ragRechazados.length === 1 ? "Una pieza que te propuse ya no está disponible y la quité de la propuesta." : `${m.ragRechazados.length} piezas que te propuse ya no están disponibles y las quité de la propuesta.`}</p>
-                    )}
-                  </div>
-                )}
-                </div>
-              </motion.div>
-              );
-            })}
-            </AnimatePresence>
-
-            {mensajes.length === 1 && (
-              <div className="quick-start pt-1">
-                {SUGERENCIAS.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => enviar(s)}
-                    className="quick-action ui-pressable"
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            <div ref={finChat} />
-          </div>
-
-          {error && (
-            <div className="mx-4 mb-2 sm:mx-6 lg:mx-8">
-              <AvisoError
-                error={error.ui}
-                accionesDisponibles={ACCIONES_POR_ORIGEN[error.origen]}
-                onAccion={ejecutarAccionError}
-                onCerrar={() => setError(null)}
-                mostrarDetallesDev={esModoDev}
-              />
-            </div>
-          )}
-
-          {errorAdjuntos && (
-            <p className="ui-alert mx-4 mb-2 sm:mx-6 lg:mx-8">
-              {errorAdjuntos}
-            </p>
-          )}
-
-          {/* Adjuntos del cliente: aportan contexto en ambos modos. */}
-          <div id="adjuntos-cliente" className="workspace-attachments mx-auto flex w-full max-w-4xl flex-wrap items-center gap-2 px-4 pb-2 sm:px-6 lg:px-8">
-            <input
-              ref={fotoEspacioInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) subirFotoEspacio(file);
-                e.target.value = "";
-              }}
-            />
-            <input
-              ref={referenciasInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              multiple
-              className="hidden"
-              onChange={(e) => {
-                if (e.target.files?.length) subirImagenesReferencia(e.target.files);
-                e.target.value = "";
-              }}
-            />
-
-            <AnimatePresence mode="wait" initial={false}>
-              {fotoEspacio && (
-                <motion.span
-                  key="foto-espacio-adjunta"
-                  initial={{ opacity: 0, scale: 0.85 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.85 }}
-                  transition={{ duration: 0.15 }}
-                  className="flex items-center gap-1.5 rounded-full border border-borde bg-superficie py-1 pl-1 pr-2 text-xs text-texto"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`data:${fotoEspacio.mime};base64,${fotoEspacio.base64}`}
-                    alt="Foto del espacio"
-                    className="h-6 w-6 rounded-full object-cover"
-                  />
-                  Foto del espacio
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        onClick={() => setFotoEspacio(null)}
-                        aria-label="Quitar foto del espacio"
-                        className="ui-pressable rounded-full px-1 text-texto-suave hover:text-acento"
-                      >
-                        <X className="size-3" aria-hidden="true" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>Quitar foto del espacio</TooltipContent>
-                  </Tooltip>
-                </motion.span>
-              )}
-            </AnimatePresence>
-
-            <AnimatePresence initial={false}>
-              {imagenesReferencia.map((img, i) => (
-                <motion.span
-                  key={img.base64.slice(0, 40)}
-                  layout
-                  initial={{ opacity: 0, scale: 0.85 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.85 }}
-                  transition={{ duration: 0.15 }}
-                  className="flex items-center gap-1.5 rounded-full border border-borde bg-superficie py-1 pl-1 pr-2 text-xs text-texto"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`data:${img.mime};base64,${img.base64}`}
-                    alt={`Referencia ${i + 1}`}
-                    className="h-6 w-6 rounded-full object-cover"
-                  />
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        onClick={() => quitarImagenReferencia(i)}
-                        aria-label={`Quitar imagen de referencia ${i + 1}`}
-                        className="ui-pressable rounded-full px-1 text-texto-suave hover:text-acento"
-                      >
-                        <X className="size-3" aria-hidden="true" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>Quitar imagen de referencia {i + 1}</TooltipContent>
-                  </Tooltip>
-                </motion.span>
-              ))}
-            </AnimatePresence>
-           </div>
-
-           {planActual && (
-             <div className="workspace-plan-action-dock" aria-label="Acción del plan">
-               <div className="mx-auto w-full max-w-4xl">
-                 <button
-                   type="button"
-                   data-testid="aprobar-generar-plan-sticky"
-                    onClick={() => aprobarPlan(planActual, planActualEntry?.id)}
-                    disabled={planActualAprobado || generando || !qaEfectivo || planActual.comercial.estado === "PRESUPUESTO_EXCEDIDO" || planActual.sin_cobertura.length > 0}
-                   aria-busy={generando}
-                   className="ui-button-primary ui-pressable w-full disabled:opacity-60"
-                 >
-                    {generando ? "Generando…" : planActualAprobado ? "Aprobación registrada" : !qaEfectivo ? "Activa la validación visual" : planActual.sin_cobertura.length > 0 ? "Faltan piezas disponibles" : "Aprobar y generar imagen"}
-                 </button>
-               </div>
-             </div>
-           )}
-
-           <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              enviar(entrada);
-            }}
-            className="workspace-composer chat-composer shrink-0 border-t border-borde px-4 py-3 sm:px-6 lg:px-8"
-          >
-            <div className={`chat-composer-pill mx-auto flex w-full max-w-4xl items-center gap-2 ${cargandoChat ? "is-busy" : ""}`}>
-              <div ref={menuAdjuntosRef} className="relative shrink-0">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={() => setMenuAdjuntosAbierto((abierto) => !abierto)}
-                      aria-haspopup="menu"
-                      aria-expanded={menuAdjuntosAbierto}
-                      aria-label="Adjuntar imagen"
-                      className="ui-pressable flex size-9 items-center justify-center rounded-full text-texto-suave hover:text-acento"
-                    >
-                      <Paperclip className="size-4" aria-hidden="true" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>Adjuntar imagen</TooltipContent>
-                </Tooltip>
-                {menuAdjuntosAbierto && (
-                  <div role="menu" className="absolute bottom-full left-0 z-10 mb-2 w-52 overflow-hidden rounded-lg border border-borde bg-superficie shadow-lg">
-                    <button
-                      type="button"
-                      role="menuitem"
-                      onClick={() => {
-                        fotoEspacioInputRef.current?.click();
-                        setMenuAdjuntosAbierto(false);
-                      }}
-                      className="ui-pressable flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-texto hover:bg-superficie-2"
-                    >
-                      <Home className="size-4 text-texto-suave" aria-hidden="true" />
-                      Foto de tu espacio
-                    </button>
-                    <button
-                      type="button"
-                      role="menuitem"
-                      disabled={imagenesReferencia.length >= LIMITE_REFERENCIAS_CLIENTE}
-                      onClick={() => {
-                        referenciasInputRef.current?.click();
-                        setMenuAdjuntosAbierto(false);
-                      }}
-                      className="ui-pressable flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-texto hover:bg-superficie-2 disabled:opacity-50"
-                    >
-                      <ImageIcon className="size-4 text-texto-suave" aria-hidden="true" />
-                      Imagen de referencia
-                    </button>
-                  </div>
-                )}
-              </div>
+            <label className="inline-flex items-center gap-2 text-texto" title="Hace una revisión visual adicional y puede aumentar el tiempo de respuesta">
               <input
-                ref={entradaRef}
-                name="mensaje"
-                autoComplete="off"
-                value={entrada}
-                onChange={(e) => setEntrada(e.target.value)}
-                placeholder={
-                  fotoEspacio || imagenesReferencia.length
-                    ? "Cuéntame de tu evento… (o solo pulsa Enviar con la imagen adjunta)"
-                    : "Cuéntame de tu evento…"
-                }
-                aria-label="Escribe tu mensaje"
-                className="chat-composer-input min-w-0 flex-1 text-sm text-texto outline-none placeholder:text-texto-suave"
+                type="checkbox"
+                checked={qaVisualSolicitado}
+                onChange={(event) => setQaVisualSolicitado(event.target.checked)}
+                className="size-4 accent-acento"
               />
-              {cargandoChat && (
-                <button
-                  type="button"
-                  onClick={cancelarChat}
-                  aria-label="Cancelar respuesta"
-                  className="ui-pressable shrink-0 rounded-full px-2 text-xs text-texto-suave hover:text-acento"
-                >
-                  <span className="chat-send-label">Cancelar</span>
-                  <X className="size-4" aria-hidden="true" />
-                </button>
-              )}
-              <button
-                type="submit"
-                disabled={cargandoChat || (!entrada.trim() && !fotoEspacio && imagenesReferencia.length === 0)}
-                // El texto se oculta por CSS bajo 480px y quedaría un botón
-                // solo-ícono sin nombre accesible.
-                aria-label="Enviar"
-                className="chat-send ui-pressable shrink-0"
-              >
-                <span className="chat-send-label">Enviar</span>
-                <ArrowUp className="size-4 shrink-0" aria-hidden="true" />
-              </button>
-            </div>
-          </form>
-        </section>
+              Validar visualmente
+            </label>
+          </>
+        }
+      />
 
-        {/* Panel lateral */}
-        <aside aria-label="Panel de salida" className="workspace-sidebar scroll-suave space-y-5 border-t border-borde px-4 py-5 sm:px-6 lg:min-h-0 lg:border-l lg:border-t-0">
-          {!planDecoracionActivo && <ReferenceAnalysisController
-            references={imagenesReferencia}
-            proveedor={proveedor}
-            onDraft={(draft) => {
-              referenceDraftRef.current = draft;
-              setReferenceDraft(draft);
-            }}
-            onReady={setReferenceReady}
-          />}
-          <div className="workspace-sidebar-pinned space-y-5">
-          <section>
-            <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-texto-suave">
-              Tu evento
-            </h2>
-            {entradasBrief.length === 0 ? (
-              <p className="text-xs text-texto-suave">
-                Se va llenando conforme platicas con el asistente.
-              </p>
-            ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {entradasBrief.map(([k, v]) => (
-                  <span
-                    key={k}
-                    className="rounded-full border border-borde bg-superficie px-2.5 py-1 text-xs text-texto"
-                  >
-                    <span className="text-texto-suave">
-                      {ETIQUETAS_BRIEF[k as keyof Brief] ?? k}:
-                    </span>{" "}
-                    {Array.isArray(v) ? v.join(", ") : String(v)}
-                  </span>
-                ))}
+      <main className={`app-main ${enInicio ? "en-inicio" : ""}`}>
+        <div
+          role="log"
+          aria-live="polite"
+          aria-label="Conversación con el asistente"
+          aria-busy={cargandoChat}
+          className="app-log scroll-suave"
+        >
+          {/* Un solo contenedor para inicio y chat: el análisis de la foto vive
+              dentro y no debe volver a montarse al enviar el primer mensaje. */}
+          <div className={`app-columna flex flex-col ${enInicio ? "inicio gap-6" : "gap-4"}`}>
+            {enInicio && (
+              <div style={{ order: 0 }}>
+                <h2 className="inicio-titulo entra">¿Qué vamos a decorar?</h2>
+                <p className="inicio-subtitulo entra" style={{ animationDelay: "0.1s" }}>
+                  Cuéntame tu idea o muéstrame una foto de una decoración que te guste.
+                </p>
               </div>
             )}
-          </section>
-
-          {/* C2: con una propuesta en la conversación, el plan es la selección; la lista manual solo en dev. */}
-          {(esModoDev || !hayPlanEnConversacion) && <section>
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <h2 className="text-xs font-semibold uppercase tracking-wide text-texto-suave">
-                  Selección ({seleccionados.length})
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => setAgregandoManual((v) => !v)}
-                  className="flex shrink-0 items-center gap-1 text-xs font-medium text-acento hover:underline"
-                >
-                  <Plus className="size-3" aria-hidden="true" />
-                  Agregar a mano
-                </button>
-              </div>
               <AnimatePresence initial={false}>
-                {agregandoManual && (
-                  <motion.form
-                    onSubmit={agregarPiezaManual}
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-                    className="mb-2 space-y-2 overflow-hidden rounded-xl border border-borde bg-superficie p-3"
-                  >
-                    <input
-                      value={nombreManual}
-                      onChange={(e) => setNombreManual(e.target.value)}
-                      placeholder="Nombre de la pieza"
-                      required
-                      autoFocus
-                      className="w-full rounded-lg border border-borde bg-fondo px-2.5 py-1.5 text-xs text-texto outline-none focus:border-acento"
-                    />
-                    <textarea
-                      value={descripcionManual}
-                      onChange={(e) => setDescripcionManual(e.target.value)}
-                      placeholder="Descripción visual (para que la IA la dibuje)"
-                      rows={2}
-                      className="w-full resize-none rounded-lg border border-borde bg-fondo px-2.5 py-1.5 text-xs text-texto outline-none focus:border-acento"
-                    />
-                    <input
-                      value={precioManual}
-                      onChange={(e) => setPrecioManual(e.target.value)}
-                      type="number"
-                      min={0}
-                      placeholder="Precio (opcional)"
-                      className="w-full rounded-lg border border-borde bg-fondo px-2.5 py-1.5 text-xs text-texto outline-none focus:border-acento"
-                    />
-                    <div className="flex justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setAgregandoManual(false)}
-                        className="rounded-lg px-2.5 py-1.5 text-xs text-texto-suave hover:text-texto"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="submit"
-                        className="rounded-lg bg-acento px-3 py-1.5 text-xs font-medium text-white transition hover:opacity-90"
-                      >
-                        Agregar
-                      </button>
-                    </div>
-                  </motion.form>
-                )}
-              </AnimatePresence>
-              {seleccionados.length === 0 ? (
-                <p className="text-xs text-texto-suave">
-                  Pide recomendaciones en el chat y elige las piezas que te gusten.
-                </p>
-              ) : (
-                <ul className="space-y-1">
-                  <AnimatePresence initial={false}>
-                    {seleccionados.map((p) => (
-                      <motion.li
-                        key={p.id}
-                        layout
-                        initial={{ opacity: 0, x: 8 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 8, transition: { duration: 0.12 } }}
-                        transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="flex items-center gap-2 text-xs text-texto"
-                      >
-                        <span aria-hidden className="flex size-5 shrink-0 items-center justify-center rounded-full bg-superficie-2 text-[10px] font-semibold uppercase text-texto-suave">
-                          {p.nombre.slice(0, 1)}
-                        </span>
-                        <span className="flex-1 truncate">{p.nombre}</span>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
+                {mensajes.map((m, i) => {
+                  // El saludo lo reemplaza el estado inicial.
+                  if (m.id === SALUDO.id) return null;
+                  const esUltimoStreaming = i === mensajes.length - 1 && m.role === "assistant" && cargandoChat;
+                  // El mensaje con el JSON del análisis de referencias es solo de diagnóstico (B2).
+                  if (!esModoDev && m.analisisReferencias != null) return null;
+                  const fotoMensaje = m.adjuntos?.referencias[0] ?? m.adjuntos?.fotoEspacio;
+                  return (
+                    <motion.div
+                      key={m.id}
+                      id={`mensaje-${m.id}`}
+                      layout="position"
+                      initial={{ opacity: 0, y: 10, filter: "blur(3px)" }}
+                      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                      exit={{ opacity: 0, filter: "blur(3px)", transition: { duration: 0.15 } }}
+                      transition={{ duration: 0.43, ease: [0.23, 1, 0.32, 1] }}
+                      style={{ order: i * 2 }}
+                      className="flex min-w-0 flex-col gap-3"
+                    >
+                      {m.role === "user" ? (
+                        <div className="msg-usuario flex-col items-end gap-1">
+                          <div className={`msg-usuario-burbuja ${fotoMensaje ? "con-foto" : ""}`} data-testid="mensaje-cliente">
+                            {fotoMensaje && (
+                              <button
+                                type="button"
+                                onClick={() => setImagenAmpliada(dataUrl(fotoMensaje))}
+                                className="shrink-0 rounded-[0.625rem]"
+                                aria-label="Ver la foto adjunta"
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element -- miniatura local en base64 */}
+                                <img src={dataUrl(fotoMensaje)} alt="" className="msg-usuario-foto" />
+                              </button>
+                            )}
+                            <span className="min-w-0">{m.content}</span>
+                          </div>
+                          {i === ultimoIndiceUsuario && !cargandoChat && (
                             <button
                               type="button"
-                              onClick={() => quitarSeleccion(p.id)}
-                              aria-label={`Quitar ${p.nombre}`}
-                              className="text-texto-suave hover:text-acento"
+                              onClick={() => editarUltimoMensaje(i)}
+                              className="text-xs text-texto-suave underline-offset-2 hover:text-acento hover:underline"
                             >
-                              <X className="size-3" aria-hidden="true" />
+                              Editar y reenviar
                             </button>
-                          </TooltipTrigger>
-                          <TooltipContent>Quitar {p.nombre}</TooltipContent>
-                        </Tooltip>
-                      </motion.li>
-                    ))}
-                  </AnimatePresence>
-                </ul>
-              )}
-          </section>}
+                          )}
+                        </div>
+                      ) : (
+                        <>
+                          {m.pasos && m.pasos.length > 0 && <PasosAsistente pasos={m.pasos} />}
+                          {esUltimoStreaming && !m.content && !m.pasos?.length ? (
+                            <EsperaAsistente />
+                          ) : m.content ? (
+                            <div className="msg-asistente">
+                              <Markdown>{m.content}</Markdown>
+                            </div>
+                          ) : null}
+                        </>
+                      )}
 
-          <section className="space-y-2">
-            {imagenes.length > 0 && (
-              <input
-                value={ajuste}
-                onChange={(e) => setAjuste(e.target.value)}
-                placeholder="Ajuste: 'más velas', 'de noche'…"
-                className="w-full rounded-xl border border-borde bg-superficie px-3 py-2 text-xs text-texto outline-none placeholder:text-texto-suave focus:border-acento"
-              />
-            )}
-            <AnimatePresence>
-              {seleccionPendiente && !generando && (
-                <motion.p
-                  initial={{ opacity: 0, y: -6, scale: 0.97 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -6, scale: 0.97 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="flex items-center gap-1.5 rounded-lg bg-acento-suave px-2.5 py-2 text-xs font-semibold text-acento"
-                >
-                  <AlertCircle className="size-3.5 shrink-0" aria-hidden="true" />
-                  Tu selección cambió — regenera para verla reflejada en la imagen.
-                </motion.p>
-              )}
-            </AnimatePresence>
-            {/* C2: con propuesta pendiente la aprobación ya está en la tarjeta y la barra fija; en modo usuario este botón solo aparece sin propuesta o para aplicar un ajuste escrito sobre una propuesta aprobada. */}
-            {(esModoDev || !planActual || (planActualAprobado && ajuste.trim().length > 0)) && <button
-              type="button"
-              onClick={() => {
-                if (planDecoracionActivo && imagenesReferencia.length > 0 && !planActual) return;
-                if (!planActual) {
-                  generar();
-                  return;
-                }
-                if (planAprobadoHash === planActual.plan_hash && ajuste.trim()) {
-                  generar({
-                    ids: [],
-                    ragVariantIds: planActual.compras.map((compra) => compra.variant_id),
-                    plan: planActual,
-                    brief: briefRef.current,
-                    solicitudUsuario: solicitudUsuarioRef.current,
-                    instruccion: ajuste.trim(),
-                    anchorMessageId: planActualEntry?.id,
-                  });
-                  return;
-                }
-                aprobarPlan(planActual, planActualEntry?.id);
-              }}
-               disabled={planActual ? !qaEfectivo || (botonPlanBloqueado && !ajuste.trim()) || generando : !listoParaGenerar || generando || (planDecoracionActivo && imagenesReferencia.length > 0)}
-              aria-busy={generando}
-              className="ui-button-primary ui-pressable w-full"
-            >
-              {planActual && planAprobadoHash === planActual.plan_hash
-                ? ajuste.trim() ? "Aplicar ajuste y regenerar" : "Aprobación registrada"
-                 : planActual
-                   ? !qaEfectivo ? "Activa la validación visual" : "Aprobar y generar imagen"
-                  : planDecoracionActivo && imagenesReferencia.length > 0
-                    ? "Espera el plan comercial"
-                    : generando
-                      ? "Generando…"
-                      : seleccionPendiente
-                        ? "Regenerar imagen"
-                        : imagenes.length > 0
-                          ? "Generar otra versión"
-                          : "Generar visualización"}
-            </button>}
-            {!listoParaGenerar && !generando && !planActual && (
-              <p className="text-xs text-texto-suave">{referenceReady ? "Necesitas una pieza o referencia para generar." : "La IA está resolviendo las referencias."}</p>
-            )}
-            {planDecoracionActivo && imagenesReferencia.length > 0 && !planActual && referenceReady && !generando && (
-              <p className="text-xs text-texto-suave">La imagen se habilita después de aprobar el plan que relaciona tus referencias con productos reales.</p>
-            )}
-          </section>
+                      {/* Tarjetas/chips de selección: debajo del mensaje que las trajo. */}
+                      {m.decoraciones && (
+                        <div className="space-y-2">
+                          <p className="text-xs text-texto-suave">
+                            {m.decoraciones.length} decoraciones armadas. Elige una para empezar
+                          </p>
+                          {m.decoraciones.map((d) => (
+                            <DecoracionCard key={d.id} decoracion={d} onElegir={elegirDecoracion} />
+                          ))}
+                        </div>
+                      )}
 
-          {/* Única señal de que la imagen se está armando sola cuando la dispara la IA, sin que el cliente haya pulsado el botón. */}
-          <AnimatePresence>
-            {generando && (
-              <motion.p
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.96 }}
-                transition={{ duration: 0.2 }}
-                className="material-generating text-center text-xs"
-                role="status"
-                aria-live="polite"
-              >
-                <motion.span
-                  animate={{ opacity: [0.6, 1, 0.6] }}
-                  transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
-                >
-                  {faseGeneracion(segundosGeneracion)} ({segundosGeneracion}s). Puede tardar hasta 2 min.
-                </motion.span>
-              </motion.p>
-            )}
-          </AnimatePresence>
+                      {m.categorias && (
+                        <div className="flex flex-wrap gap-2">
+                          {m.categorias.map((c) => (
+                            <button
+                              key={c.valor}
+                              type="button"
+                              onClick={() => navegarCategoria(m.categoriasFiltros, c)}
+                              disabled={cargandoChat}
+                              className="ui-chip ui-pressable disabled:opacity-40"
+                            >
+                              {c.etiqueta}: {c.total}
+                            </button>
+                          ))}
+                        </div>
+                      )}
 
-          {imagenes.length > 0 && (
-            <section className="space-y-2">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-xs font-semibold uppercase tracking-wide text-texto-suave">
-                  Visualizaciones
-                </h2>
-                {esModoDev && ultimaGeneracion && (
-                  <div className="flex flex-wrap items-center justify-end gap-2">
-                  <span className="material-status" title="Proveedor que devolvió esta imagen">
-                    Generada con {ultimaGeneracion.etiqueta}
-                  </span>
-                  {ultimaGeneracion.prompts.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setPromptModalAbierto(true)}
-                      className="ui-button-secondary ui-pressable px-3 py-1.5 text-xs"
-                    >
-                      Ver prompt usado
-                    </button>
-                  )}
+                      {m.productos && (
+                        <div className="space-y-1.5">
+                          <p className="text-xs text-texto-suave">
+                            {m.productos.length} piezas disponibles. Toca para seleccionar
+                          </p>
+                          {m.productos.map((p) => (
+                            <ProductoCard
+                              key={p.id}
+                              producto={p}
+                              seleccionado={estaSeleccionado(p.id)}
+                              onToggle={() => alternarSeleccion(p)}
+                            />
+                          ))}
+                        </div>
+                      )}
+
+                      {m.medidas && <TarjetaMedidas medidas={m.medidas} />}
+                      {m.plan && (
+                        <TarjetaPlanDecoracion
+                          plan={m.plan}
+                          aprobado={planAprobadoHash === m.plan.plan_hash}
+                          referenceBlueprint={m.referenceBlueprint}
+                          imagenesReferencia={m.adjuntos?.referencias}
+                          fotoEspacio={m.adjuntos?.fotoEspacio}
+                          generando={generando && m.plan.plan_hash === planActual?.plan_hash}
+                          qaSolicitado={qaEfectivo}
+                          modoDev={esModoDev}
+                          onAprobar={m.plan.plan_hash === planActual?.plan_hash ? () => aprobarPlan(m.plan!, m.id) : undefined}
+                          onPlanActualizado={m.plan.plan_hash === planActual?.plan_hash ? (plan, cotizacion) => actualizarPlanEnMensaje(m.id, plan, cotizacion) : undefined}
+                          loraMode={loraModeParaBadge}
+                        />
+                      )}
+                      {m.cotizacion && (
+                        <TarjetaCotizacion
+                          cotizacion={m.cotizacion}
+                          referenceBlueprint={m.referenceBlueprint}
+                          editable={!m.plan && !m.cotizacion.plan_hash && !cargandoChat && !generando}
+                          onAplicar={!m.plan && !m.cotizacion.plan_hash ? aplicarCotizacionEditada : undefined}
+                        />
+                      )}
+
+                      {/* Info de debug colapsada por defecto. */}
+                      {esModoDev && m.analisisReferencias != null && (
+                        <details className="rounded-xl border border-borde-suave bg-superficie px-3 py-2 text-xs text-texto-suave">
+                          <summary className="cursor-pointer select-none">Ver JSON de análisis de referencias</summary>
+                          <pre className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap break-all">
+                            {JSON.stringify(m.analisisReferencias, null, 2)}
+                          </pre>
+                        </details>
+                      )}
+
+                      {/* Verificación contra la fuente real (plan G-05): foto real y
+                          ficha pública de Shopify para comprobar que no se inventó nada. */}
+                      {m.ragValidados && m.ragValidados.length > 0 && (
+                        <div className="space-y-1.5 rounded-xl border border-borde-suave bg-superficie p-2">
+                          <p className="px-1 text-xs text-texto-suave">Verificar piezas de esta propuesta contra el catálogo real:</p>
+                          {m.ragValidados.map((v) => (
+                            <div key={v.variantId} className="flex items-center gap-2 rounded-lg p-1">
+                              {v.imagen ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setImagenAmpliada(v.imagen!)}
+                                  className="shrink-0 rounded-lg"
+                                  aria-label={`Ver foto ampliada de ${v.titulo}`}
+                                >
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img src={v.imagen} alt={v.titulo} className="size-12 rounded-lg object-cover" />
+                                </button>
+                              ) : (
+                                <span className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-superficie-2 px-1 text-center text-[10px] font-semibold uppercase tracking-wide text-texto-suave">Sin foto</span>
+                              )}
+                              <span className="min-w-0 flex-1">
+                                <span className="block truncate text-xs font-medium text-texto">{v.titulo}</span>
+                                <span className="block text-xs text-texto-suave">
+                                  {esModoDev ? `${v.sku ? `SKU ${v.sku}` : "sin SKU"} / ` : ""}{v.cantidad} {v.cantidad === 1 ? "paquete" : "paquetes"}
+                                </span>
+                              </span>
+                              {v.handle && (
+                                <a
+                                  href={`https://www.sempertex.com/products/${v.handle}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="shrink-0 whitespace-nowrap text-xs text-acento underline underline-offset-2"
+                                >
+                                  Ver en la tienda ↗
+                                </a>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Fase 3.11 (honestidad estructural): una pieza descartada nunca pasa en silencio. */}
+                      {m.ragRechazados && m.ragRechazados.length > 0 && (
+                        <div className="space-y-1 rounded-xl border border-aviso/30 bg-aviso-suave p-2.5 text-xs text-aviso">
+                          {esModoDev ? (
+                            <>
+                              <p className="font-medium">Piezas descartadas de esta propuesta:</p>
+                              {m.ragRechazados.map((r) => (
+                                <p key={`${r.productId}:${r.variantId}`}>⚠ {r.variantId}: {r.motivo}</p>
+                              ))}
+                            </>
+                          ) : (
+                            // Modo usuario: se avisa sin ids ni motivos técnicos (B2).
+                            <p>{m.ragRechazados.length === 1 ? "Una pieza que te propuse ya no está disponible y la quité de la propuesta." : `${m.ragRechazados.length} piezas que te propuse ya no están disponibles y las quité de la propuesta.`}</p>
+                          )}
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+
+              {(imagenes.length > 0 || generando) && (
+                <section aria-label="Visualización" style={{ order: ORDEN_AL_FINAL }} className="ui-card space-y-3 p-4" data-testid="bloque-visualizacion">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h2 className="text-sm font-semibold">Así quedaría</h2>
+                    {esModoDev && ultimaGeneracion && (
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <span className="material-status" title="Proveedor que devolvió esta imagen">
+                          Generada con {ultimaGeneracion.etiqueta}
+                        </span>
+                        {ultimaGeneracion.prompts.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setPromptModalAbierto(true)}
+                            className="ui-button-secondary ui-pressable min-h-8 px-3 py-1 text-xs"
+                          >
+                            Ver prompt usado
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              {imagenes.map((src, i) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={i}
-                  src={src}
-                  alt={`Visualización ${imagenes.length - i}`}
-                  onClick={() => setImagenAmpliada(src)}
-                  className="w-full cursor-zoom-in rounded-xl border border-borde transition hover:opacity-90"
-                />
-              ))}
-              <p className="text-xs text-texto-suave">
-                Imagen referencial generada con IA. No es un render contractual.
-              </p>
-              {esModoDev ? (
-                <GenerationQaSummary qa={ultimaQa} />
-              ) : ultimaQa?.pass === false ? (
-                // Modo usuario: sin razones técnicas del QA, pero sin ocultar que la imagen no quedó fiel.
-                <p className="text-xs text-texto-suave" data-testid="aviso-imagen-no-fiel">
-                  Esta imagen puede no reflejar exactamente la propuesta. Puedes generar otra versión.
-                </p>
-              ) : null}
-            </section>
-          )}
+
+                  {generando && (
+                    <div role="status" aria-live="polite" className="space-y-2.5">
+                      <p className="flex items-center gap-2 text-sm text-texto-suave">
+                        {faseGeneracion(segundosGeneracion)} ({segundosGeneracion} s). Puede tardar hasta 2 min.
+                        <span className="puntos" aria-hidden="true"><span /><span /><span /></span>
+                      </p>
+                      {imagenes.length === 0 && <div className="brillo-carga aspect-[3/2] w-full rounded-2xl" aria-hidden="true" />}
+                    </div>
+                  )}
+
+                  {imagenes.map((src, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setImagenAmpliada(src)}
+                      className="block w-full cursor-zoom-in overflow-hidden rounded-2xl border border-borde-suave"
+                      aria-label={`Ampliar visualización ${imagenes.length - i}`}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element -- imagen generada en base64 */}
+                      <img src={src} alt={`Visualización ${imagenes.length - i}`} className="w-full transition hover:opacity-95" />
+                    </button>
+                  ))}
+
+                  {imagenes.length > 0 && (
+                    <>
+                      <p className="text-xs text-texto-suave">Imagen referencial generada con IA. No es un render contractual.</p>
+                      {esModoDev ? (
+                        <GenerationQaSummary qa={ultimaQa} />
+                      ) : ultimaQa?.pass === false ? (
+                        // Modo usuario: sin razones técnicas del QA, pero sin ocultar que la imagen no quedó fiel.
+                        <p className="text-xs text-texto-suave" data-testid="aviso-imagen-no-fiel">
+                          Esta imagen puede no reflejar exactamente la propuesta. Puedes generar otra versión.
+                        </p>
+                      ) : null}
+                      {seleccionPendiente && !generando && !planActual && (
+                        <p className="rounded-xl bg-acento-suave px-3 py-2 text-xs font-medium text-acento">
+                          Tu selección cambió: regenera para verla reflejada en la imagen.
+                        </p>
+                      )}
+                      {(planActualAprobado || !planActual) && (
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <label htmlFor="ajuste-imagen" className="sr-only">Ajuste para la imagen</label>
+                          <input
+                            id="ajuste-imagen"
+                            value={ajuste}
+                            onChange={(e) => setAjuste(e.target.value)}
+                            placeholder="Ajuste: “más velas”, “de noche”…"
+                            className="ui-input min-w-0 flex-1"
+                          />
+                          {planActualAprobado ? (
+                            <button type="button" onClick={aplicarAjusteSobrePropuesta} disabled={!ajuste.trim() || generando || !qaEfectivo} className="ui-button-primary shrink-0">
+                              Aplicar ajuste y regenerar
+                            </button>
+                          ) : generarSinPropuesta && (
+                            <button type="button" onClick={generarDesdeSeleccion} disabled={generarSinPropuesta.deshabilitado} className="ui-button-primary shrink-0">
+                              {generarSinPropuesta.etiqueta}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </section>
+              )}
+
+              {error && (
+                <div data-testid="estado-error-chat" style={{ order: ORDEN_AL_FINAL + 1 }}>
+                  <AvisoError
+                    error={error.ui}
+                    origen={error.origen}
+                    accionesDisponibles={ACCIONES_POR_ORIGEN[error.origen]}
+                    onAccion={ejecutarAccionError}
+                    onCerrar={() => setError(null)}
+                    mostrarDetallesDev={esModoDev}
+                  />
+                </div>
+              )}
+
+              {analisisFoto}
           </div>
-        </aside>
+          <div ref={finChat} />
+        </div>
+
+        <div className={enInicio ? "app-inicio-compositor" : "app-compositor-zona"}>
+          <div className="app-columna">
+            {!enInicio && seleccionDisponible && seleccionados.length > 0 && (
+              <div className="mb-2 flex justify-end">
+                <button type="button" onClick={() => setHojaSeleccionAbierta(true)} className="ui-chip ui-pressable inline-flex items-center gap-1.5" data-testid="abrir-seleccion">
+                  Tu selección · {seleccionados.length}
+                </button>
+              </div>
+            )}
+            {compositor}
+          </div>
+        </div>
+
+        {enInicio && (
+          <div className="app-inicio-extra">
+            <div className="app-columna flex flex-col items-center gap-10">
+              <ul className="flex flex-wrap justify-center gap-2" aria-label="Ideas para empezar">
+                {SUGERENCIAS.map((s) => (
+                  <li key={s}>
+                    <button type="button" onClick={() => void enviar(s)} className="ui-chip ui-pressable">
+                      {s}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <GaleriaEjemplos onElegir={(foto, miniatura) => void elegirEjemplo(foto, miniatura)} elegidaId={ejemploElegido?.id ?? null} deshabilitado={cargandoEjemplo} />
+            </div>
+          </div>
+        )}
       </main>
 
+      <HojaSeleccion
+        abierta={hojaSeleccionAbierta && seleccionDisponible}
+        onCerrar={() => setHojaSeleccionAbierta(false)}
+        seleccionados={seleccionados}
+        onQuitar={quitarSeleccion}
+        onAgregarManual={agregarPiezaManual}
+        generar={generarSinPropuesta}
+        onGenerar={generarDesdeSeleccion}
+      />
+      <DialogoEjemplos
+        abierto={galeriaAbierta}
+        onCerrar={() => setGaleriaAbierta(false)}
+        onElegir={(foto, miniatura) => void elegirEjemplo(foto, miniatura)}
+        elegidaId={ejemploElegido?.id ?? null}
+        deshabilitado={cargandoEjemplo || cargandoChat}
+      />
       <Lightbox src={imagenAmpliada} open={imagenAmpliada != null} onClose={() => setImagenAmpliada(null)} />
       <PromptModal
         entries={ultimaGeneracion?.prompts ?? []}

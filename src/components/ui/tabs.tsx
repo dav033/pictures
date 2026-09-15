@@ -13,7 +13,7 @@ function TabsList({ className, ...props }: React.ComponentProps<typeof TabsPrimi
   return (
     <TabsPrimitive.List
       className={cn(
-        "flex gap-1 overflow-x-auto rounded-lg border border-borde bg-superficie p-1 text-sm",
+        "flex max-w-full gap-1 overflow-x-auto rounded-xl border border-borde-suave bg-superficie p-1 text-sm",
         className,
       )}
       {...props}
@@ -36,7 +36,7 @@ function TabsTrigger({
       value={value}
       className={cn(
         "relative shrink-0 rounded-md px-3 py-1.5 text-texto-suave outline-none transition-colors",
-        activo && "text-white",
+        activo && "text-sobre-acento",
         "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
         className,
       )}

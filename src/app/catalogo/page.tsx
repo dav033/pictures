@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react";
 import { BarraSeleccion } from "@/components/catalogo/BarraSeleccion";
 import { Facetas } from "@/components/catalogo/Facetas";
 import { GridCatalogo } from "@/components/catalogo/GridCatalogo";
+import { InterruptorTema } from "@/components/ui/interruptor-tema";
 import { explorarCatalogo, facetasCatalogo, type FiltrosCatalogo } from "@/lib/shopify/consultas";
 
 // Página de búsqueda: `searchParams` fuerza render dinámico por request. No
@@ -44,22 +45,22 @@ export default async function CatalogoPage({
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="flex items-baseline justify-between border-b border-borde bg-superficie px-5 py-3">
-        <div>
+      <header className="flex items-center justify-between gap-3 border-b border-borde-suave bg-fondo px-4 py-2.5 sm:px-5">
+        <div className="min-w-0">
           <h1 className="text-base font-semibold text-texto">Catálogo</h1>
           <p className="text-xs text-texto-suave">{total} productos — Sempertex, precios B2C</p>
         </div>
-        <Link
-          href="/"
-          className="flex items-center gap-1 text-xs text-texto-suave underline underline-offset-2 hover:text-acento"
-        >
-          <ArrowLeft className="size-3.5" aria-hidden />
-          Volver al chat
-        </Link>
+        <div className="flex shrink-0 items-center gap-1">
+          <Link href="/" className="ui-button-ghost flex items-center gap-1 rounded-lg px-2 py-1.5">
+            <ArrowLeft className="size-3.5" aria-hidden />
+            Volver al chat
+          </Link>
+          <InterruptorTema />
+        </div>
       </header>
 
-      <div className="grid flex-1 grid-cols-1 gap-5 px-5 py-5 lg:grid-cols-[16rem_1fr]">
-        <aside>
+      <div className="grid flex-1 grid-cols-1 gap-5 px-4 py-5 sm:px-5 lg:grid-cols-[16rem_minmax(0,1fr)]">
+        <aside className="min-w-0">
           <Suspense fallback={null}>
             <Facetas
               categorias={facetas.categorias}
@@ -70,7 +71,7 @@ export default async function CatalogoPage({
           </Suspense>
         </aside>
 
-        <section>
+        <section className="min-w-0">
           {productos.length === 0 ? (
             <p className="text-sm text-texto-suave">
               No hay productos con estos filtros. Prueba quitando alguno.
@@ -80,11 +81,11 @@ export default async function CatalogoPage({
           )}
 
           {totalPaginas > 1 && (
-            <nav className="mt-6 flex items-center justify-center gap-3 text-sm">
+            <nav className="mt-6 flex flex-wrap items-center justify-center gap-3 text-sm">
               {pagina > 1 && (
                 <Link
                   href={`/catalogo?${new URLSearchParams({ ...paramsAString(params), pagina: String(pagina - 1) }).toString()}`}
-                  className="flex items-center gap-1.5 rounded-lg border border-borde px-3 py-1.5 text-texto hover:border-acento"
+                  className="ui-button-secondary"
                 >
                   <ArrowLeft className="size-3.5" aria-hidden />
                   Anterior
@@ -96,7 +97,7 @@ export default async function CatalogoPage({
               {pagina < totalPaginas && (
                 <Link
                   href={`/catalogo?${new URLSearchParams({ ...paramsAString(params), pagina: String(pagina + 1) }).toString()}`}
-                  className="flex items-center gap-1.5 rounded-lg border border-borde px-3 py-1.5 text-texto hover:border-acento"
+                  className="ui-button-secondary"
                 >
                   Siguiente
                   <ArrowRight className="size-3.5" aria-hidden />

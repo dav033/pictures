@@ -121,7 +121,7 @@ function TarjetaMaterial({
           onClick={onToggle}
           title={noVisible ? "Marcar como visible en la foto" : "Marcar como NO visible en la foto"}
           className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-medium ${
-            noVisible ? "bg-error text-white" : "bg-exito-suave text-exito"
+            noVisible ? "bg-error text-destructive-foreground" : "bg-exito-suave text-exito"
           }`}
         >
           {noVisible ? "no visible" : "visible"}
@@ -183,7 +183,7 @@ function EditarCaptionModal({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
-                className="fixed inset-0 z-50 bg-black/60"
+                className="fixed inset-0 z-50 bg-overlay"
               />
             </Dialog.Overlay>
             <Dialog.Content
@@ -195,7 +195,7 @@ function EditarCaptionModal({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.97, y: 8 }}
                 transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
-                className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl border border-borde bg-superficie p-5 shadow-xl"
+                className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl border border-borde bg-superficie p-5 shadow-[0_16px_40px_var(--sombra)]"
               >
                 <div className="mb-3 flex items-center justify-between">
                   <Dialog.Title className="text-sm font-semibold text-texto">
@@ -281,7 +281,7 @@ function EditarCaptionModal({
                       type="button"
                       disabled={guardando}
                       onClick={guardar}
-                      className="rounded-lg bg-acento px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+                      className="rounded-lg bg-acento px-3 py-1.5 text-xs font-medium text-sobre-acento disabled:opacity-60"
                     >
                       {guardando ? "Guardando…" : "Guardar"}
                     </button>
@@ -354,7 +354,7 @@ function FeedbackModal({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.15 }}
-                className="fixed inset-0 z-50 bg-black/60"
+                className="fixed inset-0 z-50 bg-overlay"
               />
             </Dialog.Overlay>
             <Dialog.Content forceMount className="fixed inset-0 z-50 flex items-center justify-center p-4 outline-none">
@@ -363,7 +363,7 @@ function FeedbackModal({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.97, y: 8 }}
                 transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
-                className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl border border-borde bg-superficie p-5 shadow-xl"
+                className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-xl border border-borde bg-superficie p-5 shadow-[0_16px_40px_var(--sombra)]"
               >
                 <div className="mb-3 flex items-center justify-between">
                   <Dialog.Title className="text-sm font-semibold text-texto">
@@ -488,7 +488,7 @@ function FeedbackModal({
                       type="button"
                       disabled={guardando}
                       onClick={guardar}
-                      className="rounded-lg bg-acento px-3 py-1.5 text-xs font-medium text-white disabled:opacity-60"
+                      className="rounded-lg bg-acento px-3 py-1.5 text-xs font-medium text-sobre-acento disabled:opacity-60"
                     >
                       {guardando ? "Guardando…" : "Guardar feedback"}
                     </button>
@@ -652,7 +652,7 @@ function BloqueFoto({
               {foto.feedback.fuente === "ia_automatica" ? "revisión IA" : "revisión humana"}
             </span>
           )}
-          <select
+          <select aria-label="Categoría de entrenamiento"
             value={foto.feedback?.categoria ?? "no_asignada"}
             onChange={(e) => cambiarCategoria(e.target.value as CategoriaEntrenamiento)}
             disabled={guardandoToggle}
@@ -813,7 +813,7 @@ function TarjetaOrden({
                 type="button"
                 disabled={eliminando}
                 onClick={eliminar}
-                className="rounded-lg bg-error px-2 py-0.5 text-xs text-white disabled:opacity-60"
+                className="rounded-lg bg-error px-2 py-0.5 text-xs text-destructive-foreground disabled:opacity-60"
               >
                 {eliminando ? "Eliminando…" : "Confirmar"}
               </button>
@@ -1009,21 +1009,21 @@ export function OrdenesTab() {
         <button
           type="button"
           onClick={() => setVista("lista")}
-          className={`rounded-md px-3 py-1 text-xs font-medium ${vista === "lista" ? "bg-acento text-white" : "text-texto-suave"}`}
+          className={`rounded-md px-3 py-1 text-xs font-medium ${vista === "lista" ? "bg-acento text-sobre-acento" : "text-texto-suave"}`}
         >
           Lista
         </button>
         <button
           type="button"
           onClick={() => setVista("galeria")}
-          className={`rounded-md px-3 py-1 text-xs font-medium ${vista === "galeria" ? "bg-acento text-white" : "text-texto-suave"}`}
+          className={`rounded-md px-3 py-1 text-xs font-medium ${vista === "galeria" ? "bg-acento text-sobre-acento" : "text-texto-suave"}`}
         >
           Galería
         </button>
         <button
           type="button"
           onClick={() => setVista("estadisticas")}
-          className={`rounded-md px-3 py-1 text-xs font-medium ${vista === "estadisticas" ? "bg-acento text-white" : "text-texto-suave"}`}
+          className={`rounded-md px-3 py-1 text-xs font-medium ${vista === "estadisticas" ? "bg-acento text-sobre-acento" : "text-texto-suave"}`}
         >
           Estadísticas
         </button>
@@ -1053,13 +1053,13 @@ export function OrdenesTab() {
                 : `Recaption global (${fotosConFeedback.length})`}
             </button>
             <div className="ml-auto flex items-center gap-2">
-              <input
+              <input aria-label="Buscar número de orden"
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
                 placeholder="Buscar # orden…"
                 className="rounded-lg border border-borde bg-superficie px-2.5 py-1.5 text-xs text-texto outline-none focus:border-acento"
               />
-              <select
+              <select aria-label="Filtrar órdenes"
                 value={filtro}
                 onChange={(e) => setFiltro(e.target.value as Filtro)}
                 className="rounded-lg border border-borde bg-superficie px-2.5 py-1.5 text-xs text-texto outline-none focus:border-acento"

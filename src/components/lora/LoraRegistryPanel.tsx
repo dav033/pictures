@@ -138,7 +138,7 @@ function ModeCard({ slot, run }: { slot: Slot; run: TrainingRun | undefined }) {
   const isReady = slot.enabled && ["succeeded", "completed"].includes(run?.status ?? "") && run?.artifact_status === "backed_up";
 
   return (
-    <article className="rounded-2xl border border-borde bg-superficie p-4 shadow-sm sm:p-5">
+    <article className="rounded-2xl border border-borde bg-superficie p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-semibold text-texto">{slot.display_name}</h3>
@@ -189,7 +189,7 @@ function RunEvaluation({ run }: { run: TrainingRun }) {
 
 function LoadingPanel() {
   return (
-    <section className="rounded-3xl border border-borde bg-superficie p-5 shadow-sm sm:p-7" aria-label="Cargando registro LoRA">
+    <section className="ui-card p-5 sm:p-7" aria-label="Cargando registro LoRA">
       <div className="animate-pulse space-y-5">
         <div className="h-5 w-56 rounded bg-superficie-2" />
         <div className="grid gap-3 lg:grid-cols-3">
@@ -237,7 +237,7 @@ export default function LoraRegistryPanel() {
 
   if (state === "error" && !data) {
     return (
-      <section className="rounded-3xl border border-error/30 bg-error-suave p-5 sm:p-7" role="alert">
+      <section className="rounded-[1.25rem] border border-error/30 bg-error-suave p-5 sm:p-7" role="alert">
         <div className="flex items-start gap-3">
           <AlertTriangle className="mt-0.5 size-5 shrink-0 text-error" aria-hidden="true" />
           <div>
@@ -259,7 +259,7 @@ export default function LoraRegistryPanel() {
 
   return (
     <section className="space-y-5" aria-labelledby="registro-lora-heading">
-      <div className="rounded-3xl border border-borde bg-superficie p-5 shadow-sm sm:p-7">
+      <div className="ui-card p-5 sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-texto-suave">
@@ -315,7 +315,7 @@ export default function LoraRegistryPanel() {
         </div>
       </div>
 
-      <div className="rounded-3xl border border-borde bg-superficie p-5 shadow-sm sm:p-7">
+      <div className="ui-card p-5 sm:p-7">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-sm font-semibold text-texto">Entrenamientos recientes</h2>

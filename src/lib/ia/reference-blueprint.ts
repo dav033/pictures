@@ -234,14 +234,24 @@ export function analysisCacheKey(parts: {
   return hash.digest("hex");
 }
 
-export function bboxOverlap(a: ReferenceBBox, b: ReferenceBBox): number {
+function bboxIntersection(a: ReferenceBBox, b: ReferenceBBox): number {
   const left = Math.max(a.x, b.x);
   const top = Math.max(a.y, b.y);
   const right = Math.min(a.x + a.width, b.x + b.width);
   const bottom = Math.min(a.y + a.height, b.y + b.height);
-  const intersection = Math.max(0, right - left) * Math.max(0, bottom - top);
+  return Math.max(0, right - left) * Math.max(0, bottom - top);
+}
+
+export function bboxOverlap(a: ReferenceBBox, b: ReferenceBBox): number {
+  const intersection = bboxIntersection(a, b);
   const union = a.width * a.height + b.width * b.height - intersection;
   return union ? intersection / union : 0;
+}
+
+/** Fraction of `inner`'s area that lies inside `outer` (1 = fully contained). */
+export function bboxContainment(inner: ReferenceBBox, outer: ReferenceBBox): number {
+  const area = inner.width * inner.height;
+  return area ? bboxIntersection(inner, outer) / area : 0;
 }
 
 function detectLayerCycles(elements: ReferenceElement[], ctx: z.RefinementCtx): void {

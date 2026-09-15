@@ -104,8 +104,13 @@ async function contenidoPorModo(browser: Browser, cookie: { name: string; value:
 
   check(t("selector de modelo solo en dev"), (await hay(page.locator("#selector-modelo"))) === esDev);
   check(t("casilla de validación visual solo en dev"), (await hay(page.getByText("Validar visualmente"))) === esDev);
-  check(t("Estadísticas, Laboratorio JSON y Configuración LoRA solo en dev"), (await hay(page.getByRole("link", { name: "Estadísticas" }))) === esDev && (await hay(page.getByRole("link", { name: "Laboratorio JSON" }))) === esDev && (await hay(page.getByRole("link", { name: "Configuración LoRA" }))) === esDev);
-  check(t("Explorar catálogo en ambos modos"), (await page.getByRole("link", { name: "Explorar catálogo" }).count()) === 1);
+  // Iteración 4: los enlaces viven en el menú "⋯" de la cabecera de una sola línea.
+  await page.getByTestId("menu-app").click();
+  await page.getByRole("menu").waitFor();
+  check(t("Estadísticas, Laboratorio JSON y Configuración LoRA solo en dev"), (await hay(page.getByRole("menuitem", { name: "Estadísticas" }))) === esDev && (await hay(page.getByRole("menuitem", { name: "Laboratorio JSON" }))) === esDev && (await hay(page.getByRole("menuitem", { name: "Configuración LoRA" }))) === esDev);
+  check(t("Explorar catálogo en ambos modos"), (await page.getByRole("menuitem", { name: "Explorar catálogo" }).count()) === 1);
+  await page.keyboard.press("Escape");
+  check(t("Escape cierra el menú y devuelve el foco"), (await page.getByRole("menu").count()) === 0 && (await page.getByTestId("menu-app").evaluate((boton) => boton === document.activeElement)));
 
   const entrada = page.getByRole("textbox").first();
   await entrada.fill("Arco blanco y dorado con columnas");
@@ -119,7 +124,9 @@ async function contenidoPorModo(browser: Browser, cookie: { name: string; value:
   check(t("aprobar: dev exige la casilla, usuario no"), esDev ? textoAprobar === "Activa la validación visual" : textoAprobar === "Aprobar y generar imagen", textoAprobar);
 
   if (!esDev) {
-    await page.getByTestId("aprobar-generar-plan-sticky").click();
+    // Sin dock duplicado: aprobar vive dentro de la tarjeta de la propuesta.
+    check(t("sin botón de aprobar duplicado fuera de la tarjeta"), (await page.getByTestId("aprobar-generar-plan-sticky").count()) === 0 && (await page.getByTestId("aprobar-generar-plan").count()) === 1);
+    await page.getByTestId("aprobar-generar-plan").click();
     await page.locator("img[alt^='Visualización']").first().waitFor({ timeout: 30_000 });
     await page.waitForTimeout(500);
     const cuerpo = (cuerposGenerate[0] ?? {}) as { imageQaRequested?: unknown; usarLora?: unknown; loraMode?: unknown };
@@ -133,12 +140,41 @@ async function contenidoPorModo(browser: Browser, cookie: { name: string; value:
   await cerrar();
 }
 
+/** Iteración 4: interruptor de tema persistente y foto de ejemplo adjunta al compositor. */
+async function temaYGaleria(browser: Browser, cookie: { name: string; value: string }): Promise<void> {
+  const { page, errores, cerrar } = await nuevaPagina(browser, cookie);
+  await page.route("**/api/references/analyze", (route) => route.fulfill({ status: 503, headers: { "content-type": "application/json" }, body: JSON.stringify({ error: "simulado" }) }));
+  await page.emulateMedia({ colorScheme: "light" });
+  await abrir(page);
+  const tema = () => page.evaluate(() => document.documentElement.getAttribute("data-theme"));
+  check("tema: sin elección sigue al sistema (sin data-theme)", (await tema()) === null);
+  await page.getByTestId("interruptor-tema").click();
+  check("tema: el interruptor pasa a oscuro", (await tema()) === "dark");
+  await abrir(page);
+  check("tema: la elección persiste al recargar (script antes de pintar)", (await tema()) === "dark");
+  await page.getByTestId("interruptor-tema").click();
+  check("tema: volver a claro", (await tema()) === "light");
+  check("galería: 10 fotos de ejemplo con crédito", (await page.locator("[data-testid^='ejemplo-ejemplo-']").count()) === 10 && (await page.getByText("Fotos de ejemplo · Pexels").count()) === 1);
+  await page.getByTestId("ejemplo-ejemplo-01").click();
+  await page.locator("[data-adjunto='referencia']").first().waitFor({ timeout: 20_000 });
+  check("galería: la foto elegida queda adjunta como chip", (await page.locator("[data-adjunto='referencia']").count()) === 1 && (await page.getByTestId("ejemplo-ejemplo-01").getAttribute("aria-pressed")) === "true");
+  const desborde = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  check("sin desborde horizontal a 1280 px", desborde <= 0, String(desborde));
+  await page.setViewportSize({ width: 400, height: 860 });
+  await page.waitForTimeout(400);
+  const desbordeMovil = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  check("sin desborde horizontal a 400 px", desbordeMovil <= 0, String(desbordeMovil));
+  check("tema y galería: sin errores de runtime", errores.length === 0, errores.join(" | "));
+  await cerrar();
+}
+
 async function main(): Promise<void> {
   const cookie = await cookieDeSesion();
   const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE?.trim() || undefined;
   const browser = await chromium.launch({ executablePath, args: ["--disable-gpu", "--disable-dev-shm-usage"] });
   try {
     await switchYPersistencia(browser, cookie);
+    await temaYGaleria(browser, cookie);
     await contenidoPorModo(browser, cookie, "usuario");
     await contenidoPorModo(browser, cookie, "dev");
   } finally {

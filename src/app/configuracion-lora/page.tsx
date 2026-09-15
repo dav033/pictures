@@ -4,6 +4,7 @@ import Image from "next/image";
 import LoraRegistryPanel from "@/components/lora/LoraRegistryPanel";
 import LoraStructureConsole from "@/components/lora/LoraStructureConsole";
 import SnapshotSyncPanel from "@/components/lora/SnapshotSyncPanel";
+import { InterruptorTema } from "@/components/ui/interruptor-tema";
 import { leerComposicionLocal, type Elemento, type ElementoShopify } from "@/lib/lora/composicion";
 import { readLocalSnapshot } from "@/lib/lora/snapshot";
 
@@ -117,19 +118,25 @@ export default async function ConfiguracionLoraPage() {
     : [];
 
   return (
-    <main className="min-h-[100dvh] bg-fondo px-5 py-8 text-texto sm:px-8">
-      <div className="mx-auto max-w-5xl space-y-6" style={{ animation: "workspace-in 520ms var(--ease-out) both" }}>
+    <main className="min-h-[100dvh] bg-fondo px-4 py-8 text-texto sm:px-8">
+      <div className="mx-auto w-full min-w-0 max-w-5xl space-y-6">
         <header className="flex flex-wrap items-start justify-between gap-4">
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-acento">Sempertex · laboratorio</p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight">Configuración LoRA</h1>
             <p className="mt-2 max-w-xl text-sm leading-6 text-texto-suave">
               Estado del estilo visual entrenado y de qué está compuesto su dataset.
             </p>
           </div>
-          <span className="rounded-full bg-exito-suave px-3 py-1.5 text-xs font-semibold text-exito">
-            {datos ? `${datos.lora.etiqueta} en producción` : "sin datos"}
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-exito-suave px-3 py-1.5 text-xs font-semibold text-exito">
+              {datos ? `${datos.lora.etiqueta} en producción` : "sin datos"}
+            </span>
+            <Link href="/" className="ui-button-ghost rounded-lg px-2 py-1.5">
+              ← Volver al asistente
+            </Link>
+            <InterruptorTema />
+          </div>
         </header>
 
         <LoraRegistryPanel />
@@ -139,13 +146,13 @@ export default async function ConfiguracionLoraPage() {
         <LoraStructureConsole />
 
         {!datos ? (
-          <section className="rounded-3xl border border-aviso bg-aviso-suave p-5 text-sm leading-6">
+          <section className="rounded-[1.25rem] border border-aviso bg-aviso-suave p-5 text-sm leading-6">
             Todavía no hay análisis de composición. Generalo con{" "}
-            <code className="rounded bg-superficie-2 px-1.5 py-0.5 text-xs">npx tsx scripts/analizar-composicion-lora.ts</code>.
+            <code className="break-all rounded bg-superficie-2 px-1.5 py-0.5 text-xs">npx tsx scripts/analizar-composicion-lora.ts</code>.
           </section>
         ) : (
           <>
-            <section className="rounded-3xl border border-borde bg-superficie p-5 shadow-sm sm:p-7">
+            <section className="ui-card p-5 sm:p-7">
               <div className="grid gap-3 sm:grid-cols-2">
                 {parametros.map(([nombre, valor]) => (
                   <div key={nombre} className="rounded-2xl bg-superficie-2 px-4 py-3">
@@ -163,7 +170,7 @@ export default async function ConfiguracionLoraPage() {
               </div>
             </section>
 
-            <section className="rounded-3xl border border-borde bg-superficie p-5 shadow-sm sm:p-7">
+            <section className="ui-card p-5 sm:p-7">
               <h2 className="text-sm font-semibold">Composición del entrenamiento</h2>
               <p className="mt-1 text-sm leading-6 text-texto-suave">
                 {datos.dataset.imagenes} fotos con su descripción. Cada barra es en cuántas de esas fotos
@@ -229,7 +236,7 @@ export default async function ConfiguracionLoraPage() {
         )}
 
         <div className="flex flex-wrap gap-3">
-          <Link href="/" className="rounded-xl bg-acento px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90">
+          <Link href="/" className="ui-button-primary">
             Volver al asistente
           </Link>
           {datos?.lora.url && (
@@ -237,7 +244,7 @@ export default async function ConfiguracionLoraPage() {
               href={`https://fal.ai/models/fal-ai/flux-2/lora?lora=${encodeURIComponent(datos.lora.url)}`}
               target="_blank"
               rel="noreferrer"
-              className="rounded-xl border border-borde px-4 py-2.5 text-sm font-medium text-acento transition hover:border-acento hover:bg-acento-suave"
+              className="ui-button-secondary"
             >
               Abrir prueba en fal.ai
             </a>

@@ -54,7 +54,7 @@ export function Lightbox({ src, open, onClose }: { src: string | null; open: boo
                 <a
                   href={src}
                   download="visualizacion.jpg"
-                  className="ui-pressable flex items-center gap-1.5 rounded-lg bg-white/90 px-3 py-1.5 text-sm font-medium text-texto hover:bg-white"
+                  className="ui-pressable flex items-center gap-1.5 rounded-lg border border-borde-suave bg-superficie px-3 py-1.5 text-sm font-medium text-texto hover:bg-superficie-2"
                 >
                   <Download className="size-4" aria-hidden="true" />
                   Descargar
@@ -63,7 +63,7 @@ export function Lightbox({ src, open, onClose }: { src: string | null; open: boo
                   <button
                     type="button"
                     aria-label="Cerrar"
-                    className="ui-pressable flex items-center gap-1.5 rounded-lg bg-white/90 px-3 py-1.5 text-sm font-medium text-texto hover:bg-white"
+                    className="ui-pressable flex items-center gap-1.5 rounded-lg border border-borde-suave bg-superficie px-3 py-1.5 text-sm font-medium text-texto hover:bg-superficie-2"
                   >
                     <X className="size-4" aria-hidden="true" />
                     Cerrar

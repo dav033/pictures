@@ -4,12 +4,13 @@
  * Run: npx tsx --conditions=react-server scripts/test-creatividad.ts
  */
 import assert from "node:assert/strict";
-import { CREATIVIDAD_POR_DEFECTO, NIVELES_CREATIVIDAD, parseNivelCreatividad, perfilCreatividad } from "../src/lib/ia/creatividad";
+import { CREATIVIDAD_POR_DEFECTO, NIVELES_CREATIVIDAD, nivelCreatividadParaGenerar, parseNivelCreatividad, perfilCreatividad } from "../src/lib/ia/creatividad";
+import { abrirContextoPlan, crearTokenPlan, verificarTokenAprobacion } from "../src/lib/plan/aprobacion";
 import { bloqueCreatividad, construirSistema } from "../src/lib/ia/prompt-sistema";
 import { ChatRequestV1Schema, parseChatRequestV1 } from "../src/lib/ia/contracts/chat-v1";
 import { guidanceScaleSeguro } from "../src/lib/ia/sempertex-lora";
 import { ReferenceBlueprintV2Schema } from "../src/lib/ia/reference-blueprint";
-import { validarEstructurasFueraDeReferencia } from "../src/lib/plan/restricciones";
+import { validarEstructurasFueraDeReferencia, validarRangoCreatividad } from "../src/lib/plan/restricciones";
 import { PlanDecoracionSchema } from "../src/lib/plan/tipos";
 import { compileLoraCaption } from "../src/lib/ia/lora-caption-compiler";
 import { findLoraPromptLanguageLeaks } from "../src/lib/ia/lora-prompt-preflight";
@@ -147,5 +148,41 @@ assert.doesNotMatch(ajustado.prompt, /rich layered styling|cinematic|editorial/,
 assert.match(ajustado.prompt, /column/);
 assert.match(ajustado.prompt, /one-sided curved/);
 ok("el prompt LoRA lleva las pistas del nivel y la compactación las descarta primero");
+
+// 7. The signed plan records the level it was designed with; generation uses it
+// instead of whatever the slider says now. Tokens issued before the field existed
+// still open and fall back to the request value.
+const tokenBase = { planHash: "a".repeat(64), requestId: "req-creatividad", backend: "next" as const, catalogSnapshotId: null, allowlist: [] };
+const tokenNivel4 = crearTokenPlan({ ...tokenBase, creatividad: 4 });
+assert.equal(abrirContextoPlan(tokenNivel4)?.creatividad, 4, "the token carries the plan level");
+assert.ok(verificarTokenAprobacion(tokenNivel4, tokenBase.planHash), "the level does not break approval");
+assert.equal(nivelCreatividadParaGenerar(abrirContextoPlan(tokenNivel4)?.creatividad, 0), 4, "the signed plan level wins over the slider");
+const tokenAntiguo = crearTokenPlan(tokenBase);
+assert.equal(abrirContextoPlan(tokenAntiguo)?.creatividad, null, "an old token has no level");
+assert.equal(nivelCreatividadParaGenerar(abrirContextoPlan(tokenAntiguo)?.creatividad, 5), 5, "without a plan level the request value is used");
+assert.equal(nivelCreatividadParaGenerar(null, "x"), CREATIVIDAD_POR_DEFECTO, "invalid request value falls back to the default");
+assert.equal(nivelCreatividadParaGenerar(undefined, undefined), CREATIVIDAD_POR_DEFECTO);
+ok("el plan firmado guarda el nivel y la imagen usa ese nivel");
+
+// 8. Without a reference photo, the confirmed plan respects the structure range of
+// the chosen level for any event type (regression: level 4 accepted 3 structures
+// for a wedding). Level 2 keeps the historical rule (open events only), and a
+// photo with balloons, a single piece, an explicit composition or an explicit
+// budget still win over the range.
+const boda = "Boda en jardín, blanco y verde";
+const rango = (nivel: 0 | 1 | 2 | 3 | 4 | 5, planPrueba: ReturnType<typeof plan>, extra: { solicitud?: string; referencia?: typeof blueprint } = {}) =>
+  validarRangoCreatividad(planPrueba, { nivel, solicitudOriginal: extra.solicitud ?? boda, hayCandidatosCatalogo: true, referenceBlueprint: extra.referencia });
+const pocas = rango(4, plan(1));
+assert.equal(pocas.length, 1, "level 4 rejects 3 structures");
+assert.match(pocas[0]!, /entre 4 y 7/);
+assert.deepEqual(rango(4, plan(2)), [], "level 4 accepts 4 structures");
+assert.match(rango(0, plan(2))[0] ?? "", /entre 1 y 3[\s\S]*más de tres/, "level 0 rejects more than 3 structures");
+assert.deepEqual(rango(2, plan(0)), [], "level 2 keeps the historical behavior outside open events");
+assert.deepEqual(rango(4, plan(1), { referencia: blueprint }), [], "with a reference photo the photo decides");
+assert.deepEqual(rango(4, plan(1), { solicitud: "Boda en jardín, solo un arco blanco" }), [], "a single piece is not padded");
+const conTecho = PlanDecoracionSchema.parse({ ...plan(0), restricciones: { presupuesto: { techo_cop: 90000, procedencia: "explicito", texto_original: "hasta 90 mil" }, estructuras: [], colores: [], tamanos: [], acabados: [] } });
+assert.deepEqual(rango(5, conTecho), [], "an explicit budget decides how many pieces fit");
+assert.equal(validarRangoCreatividad(plan(1), { nivel: 4, solicitudOriginal: boda, hayCandidatosCatalogo: false }).length, 0, "without catalog candidates there is nothing to design");
+ok("el plan sin foto respeta el rango de estructuras del nivel");
 
 console.log(`\n${casos} casos OK (creatividad 0-5)`);

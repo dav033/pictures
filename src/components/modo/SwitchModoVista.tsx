@@ -21,15 +21,17 @@ export function SwitchModoVista({ modo, onCambiar }: Props) {
       data-testid="switch-modo-vista"
       title={esDev ? "Modo dev: se muestran controles y datos técnicos" : "Modo usuario: vista del cliente"}
       onClick={() => onCambiar(esDev ? "usuario" : "dev")}
-      className="inline-flex items-center gap-2 rounded-full px-2 py-1 text-xs font-medium text-texto focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"
+      className="inline-flex h-9 items-center gap-2 rounded-[0.7rem] px-2 text-[0.8125rem] text-texto-suave hover:bg-superficie-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"
     >
       <span
         aria-hidden="true"
-        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${esDev ? "bg-acento" : "bg-borde"}`}
+        className={`relative inline-flex h-4 w-7 shrink-0 items-center rounded-full transition-colors ${esDev ? "bg-acento" : "bg-superficie-2"}`}
       >
-        <span className={`inline-block size-4 rounded-full bg-white shadow transition-transform ${esDev ? "translate-x-4" : "translate-x-0.5"}`} />
+        <span className={`inline-block size-3 rounded-full transition-transform ${esDev ? "translate-x-3.5 bg-sobre-acento" : "translate-x-0.5 bg-superficie"}`} />
       </span>
-      Modo dev
+      {/* En pantallas angostas el texto queda solo para lectores de pantalla:
+          el nombre accesible sigue siendo "Modo dev". */}
+      <span className="sr-only min-[520px]:not-sr-only">Modo dev</span>
     </button>
   );
 }

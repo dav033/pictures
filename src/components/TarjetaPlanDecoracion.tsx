@@ -3,9 +3,10 @@
 /* Catalog images come from runtime URLs and already carry explicit dimensions. */
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { ArrowLeftRight, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { motion, useReducedMotion, type Variants } from "motion/react";
+import { ArrowLeftRight, ChevronDown, Palette, Plus, Search, X } from "lucide-react";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { ProductoCandidato, VarianteCandidata } from "@/lib/rag/chat/buscar";
@@ -14,17 +15,18 @@ import { ReferenciasEntrenamientoModal, type ReferenciasEvidenciaData } from "@/
 import type { LoraModeSlug } from "@/lib/lora/schema";
 import { esCancelacion, FalloPlanEditar, mensajeErrorRespuesta, mensajeFalloPlanEditar, pedirPlanEditar } from "@/lib/plan/peticion-plan-editar";
 import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
-import { IconoEstructura } from "@/components/plan/IconoEstructura";
+import { esSustitucionDeColor } from "@/lib/plan/colores-referencia";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import {
   ambientacionCliente,
-  cantidadCliente,
   coloresCliente,
   contar,
   describirEstructuraCliente,
   esEstructuraDeGlobos,
   faltantesCliente,
-  medidasCliente,
+  medidasCortasCliente,
+  nombreConCantidadCliente,
+  piezasVistasEnReferencia,
   productoCliente,
   productoConTamanoCliente,
   pulgadasCliente,
@@ -33,8 +35,16 @@ import {
   supuestoCliente,
   sustitucionesCliente,
   tamanosCliente,
-  ubicacionCliente,
+  ubicacionCortaCliente,
 } from "@/lib/plan/presentacion-cliente";
+import { DetalleEstructura } from "@/components/plan/DetalleEstructura";
+import { DialogoCotizacion } from "@/components/plan/DialogoCotizacion";
+import { BarraTamanos, tramosPorTamano } from "@/components/plan/BarraTamanos";
+import { ChipEstructura, ENTRADA_CASCADA, TarjetaPiezaFoto, TarjetaProducto, type PiezaPropuestaVista, type ProductoPropuestaVista } from "@/components/plan/PiezasPropuesta";
+import { NumeroAnimado } from "@/components/propuesta/NumeroAnimado";
+import { BotonAprobar } from "@/components/propuesta/BotonAprobar";
+import { PanelEspacio } from "@/components/referencia/PanelEspacio";
+import { imagenDeReferencia, urlImagen } from "@/components/referencia/recorte";
 
 const RESPALDO_RECOMENDACIONES = "No pudimos cargar opciones parecidas. Intenta de nuevo o busca en todo el catálogo.";
 
@@ -70,9 +80,35 @@ type Props = {
   loraMode?: LoraModeSlug;
   /** Modo dev (B2): muestra niveles de coincidencia, ajustes declarados y referencias de entrenamiento. */
   modoDev?: boolean;
-  /** Referencia analizada, solo cuando la imagen la usa para dibujar ambientación sin cotizar (LoRA). */
+  /** Referencia analizada del turno que produjo el plan: recortes por pieza y ambientación que no se cotiza. */
   referenceBlueprint?: ReferenceBlueprintV2;
+  /** Fotos de referencia del turno que produjo el plan (`REF_01`, `REF_02`… por orden). */
+  imagenesReferencia?: { id?: string; base64: string; mime: string }[];
+  /** Foto del espacio del turno, para el panel de espacio. */
+  fotoEspacio?: { base64: string; mime: string };
+  /** Si llega, "Ver cotización" lo llama en vez de abrir el diálogo propio de la tarjeta. */
+  onVerCotizacion?: () => void;
 };
+
+const CASCADA: Variants = {
+  oculto: { opacity: 0, y: 18, scale: 0.985, filter: "blur(6px)" },
+  visible: { opacity: 1, y: 0, scale: 1, filter: "blur(0px)", transition: { duration: 0.6, ease: [0.23, 1, 0.32, 1], staggerChildren: 0.12, delayChildren: 0.15 } },
+};
+
+const LISTA_CASCADA: Variants = {
+  oculto: {},
+  visible: { transition: { staggerChildren: 0.14 } },
+};
+
+function mayusculaInicial(texto: string): string {
+  return texto ? `${texto.charAt(0).toUpperCase()}${texto.slice(1)}` : texto;
+}
+
+function unirTamanos(pulgadas: number[]): string {
+  const unicos = [...new Set(pulgadas)].sort((a, b) => a - b);
+  if (!unicos.length) return "";
+  return `${unicos.length === 1 ? unicos[0] : `${unicos.slice(0, -1).join(", ")} y ${unicos.at(-1)}`} pulgadas`;
+}
 
 type OpcionCatalogo = { candidato: ProductoCandidato; variante: VarianteCandidata };
 
@@ -84,23 +120,6 @@ function unicosPor<T>(items: T[], clave: (item: T) => string): T[] {
     vistas.add(key);
     return true;
   });
-}
-
-/** Barra proporcional de tamaños; decorativa, el texto de tamaños la acompaña. */
-function BarraTamanos({ mezcla }: { mezcla: PlanResuelto["estructuras"][number]["mezcla_real"] }) {
-  const porTamano = new Map<number, number>();
-  for (const linea of mezcla) porTamano.set(linea.diam_pulg, (porTamano.get(linea.diam_pulg) ?? 0) + linea.unidades);
-  const total = [...porTamano.values()].reduce((suma, valor) => suma + valor, 0);
-  if (total <= 0 || porTamano.size < 2) return null;
-  const tamanos = [...porTamano.entries()].sort((a, b) => a[0] - b[0]);
-  const maximo = tamanos[tamanos.length - 1]![0];
-  return (
-    <span aria-hidden="true" className="mt-1.5 flex h-2 w-full max-w-56 overflow-hidden rounded-full bg-superficie-2">
-      {tamanos.map(([pulgadas, unidades]) => (
-        <span key={pulgadas} className="h-full border-r border-superficie last:border-r-0 bg-acento" style={{ width: `${(unidades / total) * 100}%`, opacity: 0.35 + 0.65 * (pulgadas / maximo) }} />
-      ))}
-    </span>
-  );
 }
 
 function lineasVisiblesPorVariante(lineas: PlanResuelto["estructuras"][number]["lineas"]): PlanResuelto["estructuras"][number]["lineas"] {
@@ -172,7 +191,7 @@ function ListaOpciones({ opciones, guardando, onCambiar, ariaLabel, listId, acti
             <span className="block truncate text-xs font-semibold text-texto">{productoCliente(candidato.titulo)}</span>
             <span className="block truncate text-[11px] text-texto-suave">{variante.codigoTamano ? pulgadasCliente(variante.codigoTamano) : "Tamaño no especificado"} · {variante.colores.join(", ") || "Color de catálogo"} · {pesos.format(variante.precio)}</span>
           </span>
-          <button id={listId ? `opcion-intercambio-${variante.variantId}` : undefined} type="button" role={listId ? "option" : undefined} aria-selected={listId ? activeVariantId === variante.variantId : undefined} disabled={guardando} onClick={() => onCambiar({ candidato, variante })} className={`ui-pressable shrink-0 rounded-md bg-acento px-2.5 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50 ${activeVariantId === variante.variantId ? "ring-2 ring-acento ring-offset-1" : ""}`}>
+          <button id={listId ? `opcion-intercambio-${variante.variantId}` : undefined} type="button" role={listId ? "option" : undefined} aria-selected={listId ? activeVariantId === variante.variantId : undefined} disabled={guardando} onClick={() => onCambiar({ candidato, variante })} className={`ui-pressable shrink-0 rounded-md bg-acento px-2.5 py-1.5 text-[11px] font-semibold text-sobre-acento disabled:opacity-50 ${activeVariantId === variante.variantId ? "ring-2 ring-acento ring-offset-1" : ""}`}>
             {guardando ? "Cambiando…" : "Cambiar"}
           </button>
         </li>
@@ -181,7 +200,12 @@ function ListaOpciones({ opciones, guardando, onCambiar, ariaLabel, listId, acti
   );
 }
 
-export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, generando = false, qaSolicitado = false, onPlanActualizado, loraMode, modoDev = false, referenceBlueprint }: Props) {
+export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, generando = false, qaSolicitado = false, onPlanActualizado, loraMode, modoDev = false, referenceBlueprint, imagenesReferencia, fotoEspacio, onVerCotizacion }: Props) {
+  const reducir = useReducedMotion();
+  const [detalleAbierto, setDetalleAbierto] = useState(false);
+  const [estructuraAbierta, setEstructuraAbierta] = useState<string | null>(plan.estructuras[0]?.estructura_id ?? null);
+  const [cotizacionAbierta, setCotizacionAbierta] = useState(false);
+  const detalleRef = useRef<HTMLDivElement | null>(null);
   const [imagenesCatalogo, setImagenesCatalogo] = useState<Record<string, string>>({});
   const [imagenesAusentes, setImagenesAusentes] = useState<Record<string, true>>({});
   const [referenciasEntrenamiento, setReferenciasEntrenamiento] = useState<Record<string, ReferenciaEntrenamiento>>({});
@@ -249,11 +273,101 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   const ambientacion = referenceBlueprint
     ? ambientacionCliente(referenceBlueprint, new Set(plan.plan.estructuras.map((estructura) => estructura.referencia_element_id).filter((id): id is string => Boolean(id))))
     : [];
-  const textosSustitucion = sustitucionesCliente(sustituciones, descripcionesPorId);
+  const textosSustitucion = sustitucionesCliente(sustituciones.filter((item) => !esSustitucionDeColor(item)), descripcionesPorId);
+  const textosColorReferencia = sustitucionesCliente(sustituciones.filter(esSustitucionDeColor), descripcionesPorId);
   const textosFaltantes = faltantesCliente(sinCobertura, descripcionesPorId);
   const estructuraSeleccionada = plan.plan.estructuras.find((estructura) => estructura.estructura_id === estructuraEdicion);
   const opcionesRecomendadas = seleccionCatalogo ? opcionesCatalogo(recomendaciones, seleccionCatalogo.linea, true) : [];
   const opcionesBusqueda = seleccionCatalogo ? opcionesCatalogo(resultadosCatalogo, seleccionCatalogo.linea, false) : [];
+  const idDetalle = `${editorId}-detalle`;
+  // Data URLs of the turn's photos, built once per attachment set.
+  const urlsReferencia = useMemo(() => new Map((imagenesReferencia ?? []).map((imagen) => [imagen, urlImagen(imagen)])), [imagenesReferencia]);
+  const elementosReferencia = new Map((referenceBlueprint?.elements ?? []).map((elemento) => [elemento.element_id, elemento]));
+  const compraPorVariante = new Map(plan.compras.map((compra) => [compra.variant_id, compra]));
+  const imagenLinea = (variantId: string, propia?: string | null): string | undefined => propia ?? imagenesCatalogo[variantId];
+
+  function recorteDe(declarada: (typeof vistasEstructura)[number]["declarada"]) {
+    const elemento = declarada?.referencia_element_id ? elementosReferencia.get(declarada.referencia_element_id) : undefined;
+    if (!elemento) return null;
+    const imagen = imagenDeReferencia(imagenesReferencia, elemento.source_image_id);
+    const src = imagen ? urlsReferencia.get(imagen) : undefined;
+    return src ? { src, caja: elemento.reference_bbox } : null;
+  }
+
+  /** Consumption value of a structure's balloons; null when a line has no purchase price. */
+  function sumaPieza(estructura: PlanResuelto["estructuras"][number]): number | null {
+    let suma = 0;
+    for (const linea of estructura.lineas) {
+      const compra = compraPorVariante.get(linea.variant_id);
+      if (!compra || compra.unidades_paquete <= 0) return null;
+      suma += (linea.unidades * compra.precio_paquete) / compra.unidades_paquete;
+    }
+    return estructura.lineas.length ? Math.round(suma) : null;
+  }
+
+  const piezas = vistasEstructura.map(({ estructura, declarada, oficial, paraDescribir, colores }, indice): PiezaPropuestaVista & { recorteCrudo: ReturnType<typeof recorteDe> } => {
+    const recorte = recorteDe(declarada);
+    const ubicacionCorta = mayusculaInicial(ubicacionCortaCliente(estructura.ubicacion, estructura.repeticiones));
+    return {
+      id: estructura.estructura_id,
+      numero: indice + 1,
+      oficialId: oficial?.id,
+      espejo: estructura.ubicacion === "lateral_derecho",
+      titulo: oficial ? nombreConCantidadCliente(paraDescribir) : productoCliente(estructura.nombre),
+      subtitulo: [ubicacionCorta, medidasCortasCliente(estructura.tipo, declarada?.medidas)].filter(Boolean).join(" · "),
+      globos: estructura.total_unidades,
+      unidad: esEstructuraDeGlobos(estructura.tipo) ? "globos" : "piezas",
+      colores,
+      recorte: recorte ? { ...recorte, alt: `${oficial?.nombre ?? productoCliente(estructura.nombre)} de tu foto de referencia, ${ubicacionCorta.toLowerCase()}` } : null,
+      recorteCrudo: recorte,
+    };
+  });
+  const conFotos = piezas.some((pieza) => pieza.recorte);
+  const piezasEnFoto = referenceBlueprint ? piezasVistasEnReferencia(referenceBlueprint) : [];
+  const idsMaterializados = new Set(plan.plan.estructuras.map((estructura) => estructura.referencia_element_id).filter((id): id is string => Boolean(id)));
+  // Only pieces a plan structure really links to count; with none linked the card falls back to product photos.
+  const piezasIncluidas = piezasEnFoto.filter((pieza) => idsMaterializados.has(pieza.elementId)).length;
+  const miniaturaReferencia = imagenesReferencia?.[0] ? urlsReferencia.get(imagenesReferencia[0]) : undefined;
+  const productos: ProductoPropuestaVista[] = (() => {
+    const grupos = new Map<string, ProductoPropuestaVista & { pulgadas: number[] }>();
+    for (const compra of plan.compras) {
+      const clave = `${compra.product_id}|${compra.color ?? ""}`;
+      const previo = grupos.get(clave);
+      const pulgadas = compra.diam_pulg != null ? [compra.diam_pulg] : [];
+      if (previo) {
+        previo.unidades += compra.design_quantity;
+        previo.pulgadas.push(...pulgadas);
+        previo.imagen ??= imagenLinea(compra.variant_id, compra.imagen);
+        continue;
+      }
+      const nombre = productoCliente(compra.titulo);
+      grupos.set(clave, { clave, nombre, alt: nombre, imagen: imagenLinea(compra.variant_id, compra.imagen), unidades: compra.design_quantity, tamanos: "", pulgadas });
+    }
+    return [...grupos.values()]
+      .map(({ pulgadas, ...producto }) => ({ ...producto, tamanos: unirTamanos(pulgadas) }))
+      .sort((a, b) => b.unidades - a.unidades);
+  })();
+  const tramosPlan = tramosPorTamano(Object.entries(plan.totales.globos_por_tamano).map(([codigo, unidades]) => ({ pulgadas: Number(/(\d+(?:[.,]\d+)?)/.exec(codigo)?.[1]?.replace(",", ".") ?? Number.NaN) || null, unidades })));
+  const textoTamanosPlan = tamanosCliente(tramosPlan.map((tramo) => ({ diam_pulg: tramo.pulgadas })));
+  const techo = plan.comercial.techo_cop;
+  const estadoPresupuesto = plan.comercial.estado === "PRESUPUESTO_EXCEDIDO"
+    ? `se pasa de tu presupuesto por ${pesos.format(plan.comercial.delta_cop)}`
+    : plan.comercial.estado === "APROBACION_REQUERIDA"
+      ? "revisión pendiente"
+      : techo != null ? "dentro de tu presupuesto" : null;
+  const aprobarDeshabilitado = aprobado || generando || !qaSolicitado || plan.comercial.estado === "PRESUPUESTO_EXCEDIDO" || plan.sin_cobertura.length > 0;
+  const textoAprobar = generando ? "Generando…" : aprobado ? "Aprobación registrada" : !qaSolicitado ? "Activa la validación visual" : plan.sin_cobertura.length > 0 ? "Faltan piezas disponibles" : "Aprobar y generar imagen";
+
+  function abrirPieza(estructuraId: string): void {
+    setDetalleAbierto(true);
+    setEstructuraAbierta(estructuraId);
+    requestAnimationFrame(() => detalleRef.current?.scrollIntoView({ behavior: reducir ? "auto" : "smooth", block: "nearest" }));
+  }
+
+  function verCotizacion(): void {
+    if (onVerCotizacion) onVerCotizacion();
+    else setCotizacionAbierta(true);
+  }
 
   function referenciaEntrenamiento(linea: PlanResuelto["estructuras"][number]["lineas"][number]): { count: number; catalogId: string } | null {
     const referencia = [linea.sku, linea.product_id, linea.variant_id]
@@ -325,6 +439,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     setColorEdicion(objetivo?.color ?? "");
     setParticipacionEdicion("20");
     setErrorEdicion(null);
+    setDetalleAbierto(true);
     setEditorAbierto(true);
   }
 
@@ -561,14 +676,22 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     requestAnimationFrame(() => volverDetalleRef.current?.focus() ?? busquedaCatalogoRef.current?.focus());
   }, [intercambioAbierto]);
 
+  const botonAjustar = editorDisponible && <button type="button" data-testid="editar-plan" aria-expanded={editorAbierto} aria-controls={editorId} onClick={() => { setDetalleAbierto(true); setEditorAbierto((abierto) => !abierto); }} className="ui-pressable inline-flex items-center gap-1 rounded-full border border-borde px-2.5 py-1 text-xs font-medium text-acento hover:bg-acento-suave focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"><Plus className="size-3" aria-hidden="true" />Ajustar plan</button>;
+
   return (
-    <section data-testid="plan-desglose" className="mt-3 max-w-[92%] space-y-3 rounded-xl border border-acento/30 bg-superficie p-4 shadow-sm">
-      {/* Wraps by the card's own width: on narrow cards the badges move below the text instead of squeezing it. */}
-      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
-        <div className="min-w-0 flex-1 basis-64">
-          <p className="text-xs font-medium text-texto-suave">Tu propuesta de decoración</p>
-          <h3 className="text-base font-semibold leading-snug text-texto">{plan.plan.concepto.titulo}</h3>
-          {resumenPlan && <p data-testid="plan-resumen" className="mt-1 text-sm text-texto">{resumenPlan}</p>}
+    <motion.section
+      data-testid="plan-desglose"
+      aria-label={`Tu propuesta: ${plan.plan.concepto.titulo}`}
+      variants={CASCADA}
+      initial={reducir ? false : "oculto"}
+      animate="visible"
+      className="@container mt-3 w-full max-w-190 overflow-hidden rounded-[20px] border border-borde-suave bg-superficie text-texto shadow-[0_1px_2px_var(--sombra),0_18px_40px_var(--sombra)]"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 px-4 pt-4 @xl:px-5.5 @xl:pt-4.5">
+        <div className="min-w-0 flex-1 basis-60">
+          <motion.p variants={ENTRADA_CASCADA} className="text-xs font-medium text-acento">Tu propuesta</motion.p>
+          <motion.h3 variants={ENTRADA_CASCADA} className="mt-0.5 text-lg font-semibold leading-snug tracking-tight text-texto @xl:text-xl">{plan.plan.concepto.titulo}</motion.h3>
+          {resumenPlan && <motion.p variants={ENTRADA_CASCADA} data-testid="plan-resumen" className="mt-1 text-sm text-texto-suave">{resumenPlan}</motion.p>}
           {plan.event_label && <p data-testid="plan-event-label" className="mt-1 text-xs text-texto-suave">Evento: <span className="font-medium text-texto">{plan.event_label}</span></p>}
           {modoDev && plan.event_match_levels && plan.event_match_levels.length > 0 && (
             <div data-testid="plan-match-levels" className="mt-1 flex flex-wrap gap-1.5" aria-label="Niveles de coincidencia del catálogo">
@@ -580,135 +703,202 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
             </div>
           )}
         </div>
-        <div className="flex max-w-full flex-wrap items-center gap-2">
-          {editorDisponible && <button type="button" data-testid="editar-plan" aria-expanded={editorAbierto} aria-controls={editorId} onClick={() => setEditorAbierto((abierto) => !abierto)} className="ui-pressable inline-flex items-center gap-1 rounded-full border border-acento/40 px-2 py-1 text-[10px] font-semibold text-acento hover:bg-acento-suave focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"><Plus className="size-3" aria-hidden="true" />Ajustar plan</button>}
-          <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${plan.comercial.estado === "PRESUPUESTO_EXCEDIDO" ? "bg-red-100 text-red-700" : "bg-acento-suave text-acento"}`}>
-            {plan.comercial.estado === "APROBACION_REQUERIDA" ? "Revisión pendiente" : plan.comercial.estado === "VERIFICADO" ? "Dentro del presupuesto" : "Excede el presupuesto"}
-          </span>
-        </div>
+        {referenceBlueprint && miniaturaReferencia && piezasIncluidas > 0 && (
+          <motion.div variants={ENTRADA_CASCADA} className="flex items-center gap-2.5 rounded-2xl bg-superficie-suave py-1.5 pl-1.5 pr-3 ring-1 ring-borde-suave ring-inset">
+            <img src={miniaturaReferencia} alt="Tu foto de referencia" width={52} height={36} className="h-9 w-13 rounded-[10px] object-cover" />
+            <span>
+              <span className="block text-xs font-semibold text-texto">Basada en tu foto</span>
+              <span className="block text-xs text-texto-suave">{piezasIncluidas} de {contar(piezasEnFoto.length, "pieza incluida", "piezas incluidas")}</span>
+            </span>
+          </motion.div>
+        )}
       </div>
       {/* The concept description is free model text and may name pieces the plan does not have; the summary above is derived from the real structures. */}
-      {modoDev && <p className="text-xs text-texto-suave">{plan.plan.concepto.descripcion}</p>}
-      {ambientacion.length > 0 && (
-        <div data-testid="plan-ambientacion" className="rounded-lg bg-fondo/60 p-2.5">
-          <p className="text-xs font-medium text-texto">Ambientación de tu foto</p>
-          <ul className="mt-1.5 flex flex-wrap gap-1.5" aria-label="Ambientación incluida en la imagen">
-            {ambientacion.map((etiqueta) => <li key={etiqueta} className="rounded-full border border-borde bg-superficie px-2 py-0.5 text-xs text-texto">{etiqueta}</li>)}
-          </ul>
-          <p className="mt-1.5 text-[11px] text-texto-suave">Decoración de ambiente para la imagen, no se cotiza.</p>
-        </div>
+      {modoDev && <p className="px-4 pt-2 text-xs text-texto-suave @xl:px-5.5">{plan.plan.concepto.descripcion}</p>}
+
+      {fotoEspacio && <div className="px-4 pt-4 @xl:px-5.5"><PanelEspacio foto={fotoEspacio} espacio={plan.plan.espacio} /></div>}
+
+      <motion.ul
+        variants={LISTA_CASCADA}
+        aria-label="Piezas de la propuesta"
+        className={conFotos
+          ? "grid grid-cols-2 gap-2.5 px-4 pt-4 @xl:gap-3 @xl:px-5.5"
+          : "grid grid-cols-1 gap-2.5 px-4 pt-4 @md:grid-cols-2 @2xl:grid-cols-3 @xl:px-5.5"}
+      >
+        {piezas.map((pieza, indice) => conFotos
+          ? <TarjetaPiezaFoto key={pieza.id} pieza={pieza} retraso={reducir ? 0 : 0.45 + indice * 0.2} controles={idDetalle} onAbrir={() => abrirPieza(pieza.id)} />
+          : <ChipEstructura key={pieza.id} pieza={pieza} controles={idDetalle} onAbrir={() => abrirPieza(pieza.id)} />)}
+      </motion.ul>
+
+      {!conFotos && productos.length > 0 && (
+        <motion.div variants={ENTRADA_CASCADA} className="px-4 pt-4 @xl:px-5.5">
+          <p className="text-[13px] font-semibold text-texto">Globos que usaré</p>
+          <motion.ul variants={LISTA_CASCADA} className="mt-2.5 grid grid-cols-1 gap-2.5 @md:grid-cols-2 @2xl:grid-cols-3" aria-label="Productos del catálogo que usa la propuesta">
+            {productos.slice(0, 6).map((producto, indice) => <TarjetaProducto key={producto.clave} producto={producto} indice={indice} />)}
+          </motion.ul>
+          {productos.length > 6 && <p className="mt-2 text-xs text-texto-suave">Y {contar(productos.length - 6, "producto más", "productos más")} en el detalle.</p>}
+        </motion.div>
       )}
+
+      {soloGlobos && tramosPlan.length > 0 && (
+        <motion.div variants={ENTRADA_CASCADA} className="px-4 pt-4 @xl:px-5.5">
+          <BarraTamanos tramos={tramosPlan} descripcion={textoTamanosPlan ? mayusculaInicial(textoTamanosPlan) : null} retraso={reducir ? 0 : 0.9} />
+        </motion.div>
+      )}
+
+      {ambientacion.length > 0 && (
+        <motion.div variants={ENTRADA_CASCADA} data-testid="plan-ambientacion" className="flex flex-wrap items-center gap-x-2 gap-y-1.5 px-4 pt-3 text-xs text-texto-suave @xl:px-5.5">
+          <span>En la imagen también pondré</span>
+          <ul className="contents" aria-label="Ambientación incluida en la imagen">
+            {ambientacion.map((etiqueta) => <li key={etiqueta} className="rounded-full bg-superficie-suave px-2.5 py-0.5 text-texto ring-1 ring-borde-suave ring-inset">{etiqueta}</li>)}
+          </ul>
+          <span>· no se cotizan</span>
+        </motion.div>
+      )}
+
+      {textosColorReferencia.length > 0 && (
+        <motion.div variants={ENTRADA_CASCADA} data-testid="plan-avisos-color" className="mx-4 mt-3 flex items-start gap-2 rounded-xl bg-aviso-suave px-3 py-2 text-xs text-aviso @xl:mx-5.5">
+          <Palette className="mt-px size-3.5 shrink-0" aria-hidden="true" />
+          <ul className="space-y-1" aria-label="Colores de tu foto que la propuesta no lleva">{textosColorReferencia.map((texto) => <li key={texto}>{texto}</li>)}</ul>
+        </motion.div>
+      )}
+      {(supuestos.length > 0 || textosSustitucion.length > 0 || textosFaltantes.length > 0) && <motion.ul variants={ENTRADA_CASCADA} data-testid="plan-avisos" className="mx-4 mt-3 space-y-1 rounded-xl bg-aviso-suave px-3 py-2 text-xs text-aviso @xl:mx-5.5" aria-label="Aclaraciones de la propuesta">{supuestos.map((supuesto) => <li key={`supuesto:${supuesto}`}>{supuestoCliente(supuesto)}</li>)}{textosSustitucion.map((texto) => <li key={`sustitucion:${texto}`}>{texto}</li>)}{textosFaltantes.map((texto) => <li key={`cobertura:${texto}`}>{texto}</li>)}</motion.ul>}
       {modoDev && plan.event_relaxations && plan.event_relaxations.length > 0 && (
-        <p data-testid="plan-event-relaxations" className="rounded-md border border-amber-300/60 bg-amber-50 px-2.5 py-2 text-xs text-amber-900">
+        <p data-testid="plan-event-relaxations" className="mx-4 mt-3 rounded-md border border-aviso/40 bg-aviso-suave px-2.5 py-2 text-xs text-aviso @xl:mx-5.5">
           Ajustes declarados: {plan.event_relaxations.join("; ")}
         </p>
       )}
 
-      {editorDisponible && editorAbierto && (
-        <section id={editorId} aria-labelledby={`${editorId}-titulo`} className="space-y-3 rounded-lg border border-acento/30 bg-fondo/60 p-3">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h3 id={`${editorId}-titulo`} className="text-sm font-semibold text-texto">Ajusta la propuesta</h3>
-              <p className="mt-0.5 text-xs text-texto-suave">Busca una variante real, elige el tamaño/color y guarda el cambio. La cotización se recalcula y cualquier aprobación anterior se reinicia.</p>
-            </div>
-            <button type="button" aria-label="Cerrar editor del plan" onClick={cerrarEditor} className="rounded-md p-1 text-texto-suave hover:bg-superficie hover:text-texto focus-visible:outline-2 focus-visible:outline-acento"><X className="size-4" aria-hidden="true" /></button>
+      <motion.div
+        ref={detalleRef}
+        id={idDetalle}
+        inert={!detalleAbierto}
+        initial={false}
+        animate={{ height: detalleAbierto ? "auto" : 0, opacity: detalleAbierto ? 1 : 0 }}
+        transition={reducir ? { duration: 0 } : { height: { duration: 0.42, ease: [0.23, 1, 0.32, 1] }, opacity: { duration: 0.25 } }}
+        style={{ overflow: "hidden" }}
+      >
+        <div className="space-y-3 px-4 pt-4 @xl:px-5.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-xs text-texto-suave">Toca una pieza para ver qué lleva</p>
+            {botonAjustar}
           </div>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <label className="text-xs text-texto-suave">Estructura<select name="estructura-plan" value={estructuraEdicion} onChange={(evento) => { setEstructuraEdicion(evento.target.value); setObjetivoEdicion(null); setVarianteEdicion(null); }} className="mt-1 w-full rounded-md border border-borde bg-superficie px-2 py-2 text-sm text-texto focus-visible:outline-2 focus-visible:outline-acento">{plan.plan.estructuras.map((estructura) => <option key={estructura.estructura_id} value={estructura.estructura_id}>{estructura.nombre}</option>)}</select></label>
-            <label className="text-xs text-texto-suave">Acción<select name="accion-plan" value={modoEdicion} onChange={(evento) => { setModoEdicion(evento.target.value as ModoEdicion); setObjetivoEdicion(null); setVarianteEdicion(null); }} className="mt-1 w-full rounded-md border border-borde bg-superficie px-2 py-2 text-sm text-texto focus-visible:outline-2 focus-visible:outline-acento"><option value="agregar">Agregar una pieza</option><option value="reemplazar">Reemplazar una pieza</option></select></label>
-          </div>
-          {modoEdicion === "reemplazar" && <label className="block text-xs text-texto-suave">Pieza a reemplazar<select name="objetivo-plan" value={objetivoEdicion ?? ""} onChange={(evento) => setObjetivoEdicion(evento.target.value || null)} className="mt-1 w-full rounded-md border border-borde bg-superficie px-2 py-2 text-sm text-texto focus-visible:outline-2 focus-visible:outline-acento"><option value="">Elige una pieza</option>{lineasVisiblesPorVariante(plan.estructuras.find((estructura) => estructura.estructura_id === estructuraEdicion)?.lineas ?? []).map((linea) => <option key={linea.variant_id} value={linea.variant_id}>{[productoCliente(linea.titulo), linea.tamano_codigo ? pulgadasCliente(linea.tamano_codigo) : null, linea.color].filter(Boolean).join(" · ")}</option>)}</select></label>}
-          <form onSubmit={buscarVariantes} className="flex gap-2"><label htmlFor={`${editorId}-buscar`} className="sr-only">Buscar variante del catálogo</label><input id={`${editorId}-buscar`} name="consulta-variante-plan" autoComplete="off" value={consultaEdicion} onChange={(evento) => setConsultaEdicion(evento.target.value)} placeholder="Ej. globo rojo de 5 pulgadas…" className="min-w-0 flex-1 rounded-md border border-borde bg-superficie px-2.5 py-2 text-sm text-texto outline-none placeholder:text-texto-suave focus-visible:border-acento focus-visible:outline-2 focus-visible:outline-acento" /><button type="submit" disabled={buscandoEdicion || !consultaEdicion.trim()} className="ui-pressable inline-flex shrink-0 items-center gap-1 rounded-md bg-acento px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"><Search className="size-3.5" aria-hidden="true" />{buscandoEdicion ? "Buscando…" : "Buscar"}</button></form>
-          {candidatosEdicion.length > 0 && <ul className="space-y-2" aria-label="Resultados del catálogo">{candidatosEdicion.map((candidato) => <li key={candidato.productId} className="rounded-md border border-borde bg-superficie/70 p-2"><p className="text-xs font-semibold text-texto">{productoCliente(candidato.titulo)}</p><div className="mt-1.5 flex flex-wrap gap-1.5">{candidato.variantes.map((variante) => { const elegido = varianteEdicion?.variantId === variante.variantId; return <button key={variante.variantId} type="button" aria-pressed={elegido} onClick={() => elegirVariante(candidato, variante)} className={`rounded-md border px-2 py-1 text-left text-[11px] transition-colors focus-visible:outline-2 focus-visible:outline-acento ${elegido ? "border-acento bg-acento-suave text-acento" : "border-borde text-texto hover:bg-fondo"}`}><span className="font-semibold">{variante.codigoTamano ?? variante.titulo ?? "Variante"}</span><span className="ml-1 text-texto-suave">{pesos.format(variante.precio)}{variante.colores.length ? ` · ${variante.colores.join(", ")}` : ""}</span></button>; })}</div></li>)}</ul>}
-          {varianteEdicion && <form onSubmit={aplicarEdicion} className="grid gap-2 rounded-md bg-superficie p-2 sm:grid-cols-[1fr_8rem_auto] sm:items-end"><label className="text-xs text-texto-suave">Color en la estructura<input name="color-variante-plan" autoComplete="off" value={colorEdicion} onChange={(evento) => setColorEdicion(evento.target.value)} placeholder="Según catálogo…" className="mt-1 w-full rounded-md border border-borde bg-fondo px-2 py-1.5 text-sm text-texto focus-visible:outline-2 focus-visible:outline-acento" /></label>{modoEdicion === "agregar" ? <label className="text-xs text-texto-suave">Participación<input name="participacion-variante-plan" type="number" min="2" max="79" inputMode="numeric" value={participacionEdicion} onChange={(evento) => setParticipacionEdicion(evento.target.value)} className="mt-1 w-full rounded-md border border-borde bg-fondo px-2 py-1.5 text-sm text-texto focus-visible:outline-2 focus-visible:outline-acento" /></label> : <span /> }<button type="submit" disabled={guardandoEdicion} data-testid="guardar-edicion-plan" className="ui-pressable rounded-md bg-acento px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">{guardandoEdicion ? "Guardando…" : modoEdicion === "agregar" ? "Agregar al plan" : "Reemplazar"}</button></form>}
-          {errorEdicion && <p role="alert" aria-live="polite" className="text-xs font-medium text-error">{errorEdicion}</p>}
-        </section>
-      )}
 
-      <ol className="space-y-3" aria-label="Piezas de la decoración">
-        {vistasEstructura.map(({ estructura, declarada, oficial, colores }) => {
-          const medidasTexto = medidasCliente(estructura.tipo, declarada?.medidas);
-          const tamanosTexto = tamanosCliente(estructura.mezcla_real);
-          const nombreVisible = oficial?.nombre ?? productoCliente(estructura.nombre);
-          return (
-          <li key={estructura.estructura_id}>
-            <details className="plan-pieza group overflow-hidden rounded-lg bg-fondo/60">
-              <summary className="cursor-pointer list-none rounded-lg p-3 focus-visible:outline-2 focus-visible:outline-acento [&::-webkit-details-marker]:hidden">
-                <div className="flex items-start gap-3">
-                  <span className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-superficie text-acento" title={oficial?.descripcion}>
-                    {oficial ? <IconoEstructura id={oficial.id} espejo={estructura.ubicacion === "lateral_derecho"} className="size-9" /> : <span aria-hidden className="size-3 rounded-full bg-acento/60" />}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-texto">{nombreVisible} <span className="font-normal text-texto-suave">{ubicacionCliente(estructura)}</span></p>
-                    <p className="mt-0.5 text-xs text-texto-suave">{[medidasTexto, cantidadCliente(estructura.total_unidades, estructura.repeticiones, estructura.tipo)].filter(Boolean).join(" · ")}</p>
-                    {colores.length > 0 && (
-                      <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1.5" aria-label={`Colores de ${nombreVisible}`}>
-                        {colores.map((muestra) => (
-                          <li key={muestra.etiqueta} className="inline-flex items-center gap-1.5 text-xs text-texto">
-                            <span aria-hidden className={`inline-block size-4 shrink-0 rounded-full ${muestra.conBorde ? "border border-texto-suave/50" : ""}`} style={{ background: muestra.fondo }} />
-                            {muestra.etiqueta}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    {tamanosTexto && <p className="mt-1.5 text-xs text-texto-suave">{tamanosTexto.charAt(0).toUpperCase()}{tamanosTexto.slice(1)}</p>}
-                    <BarraTamanos mezcla={estructura.mezcla_real} />
-                    {modoDev && estructura.mezcla_real.length > 0 && <p className="mt-1 text-[11px] text-texto-suave">{estructura.nombre} · {estructura.mezcla_real.map((linea) => `R-${linea.diam_pulg} · ${linea.unidades} (${Math.round(linea.pct)}%)`).join(" · ")}</p>}
-                  </div>
-                  <span aria-hidden className="shrink-0 text-base leading-none text-texto-suave transition-transform duration-150 group-open:rotate-90">›</span>
+          {editorDisponible && editorAbierto && (
+            <section id={editorId} aria-labelledby={`${editorId}-titulo`} className="space-y-3 rounded-2xl border border-borde bg-superficie-suave p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 id={`${editorId}-titulo`} className="text-sm font-semibold text-texto">Ajusta la propuesta</h3>
+                  <p className="mt-0.5 text-xs text-texto-suave">Busca una variante real, elige el tamaño/color y guarda el cambio. La cotización se recalcula y cualquier aprobación anterior se reinicia.</p>
                 </div>
-              </summary>
-              <div className="border-t border-borde px-3 py-2.5">
-                {declarada?.porque && <p className="mb-2 text-xs text-texto-suave">{declarada.porque}</p>}
-                {editorDisponible && <button type="button" onClick={() => abrirEditor("agregar", estructura.estructura_id)} className="mb-2 inline-flex items-center gap-1 rounded-md border border-acento/40 px-2 py-1 text-[11px] font-semibold text-acento hover:bg-acento-suave focus-visible:outline-2 focus-visible:outline-acento"><Plus className="size-3" aria-hidden="true" />Agregar pieza</button>}
-                <p className="text-xs font-semibold text-texto">Productos que usamos</p>
-                <p className="mt-1 text-[11px] text-texto-suave">Toca un producto para ver su foto o cambiarlo.</p>
-                <ul className="mt-2 space-y-2">
-                  {lineasVisiblesPorVariante(estructura.lineas).map((linea) => {
-                    const imagen = linea.imagen ?? imagenesCatalogo[linea.variant_id];
-                    const referencias = referenciaEntrenamiento(linea);
-                    return (
-                      <li key={linea.variant_id} className="flex items-center gap-1.5">
-                        <button type="button" onClick={(evento) => { disparadorModalRef.current = evento.currentTarget; setSeleccionCatalogo({ linea, estructuraId: estructura.estructura_id, estructura: estructura.nombre }); setIntercambioAbierto(false); setRecomendaciones([]); setResultadosCatalogo([]); setErrorEdicion(null); }} aria-haspopup="dialog" className="flex min-w-0 flex-1 items-center gap-2.5 rounded-md bg-superficie/70 p-2 text-left text-xs transition-colors hover:bg-superficie-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">
-                          {imagen ? <img src={imagen} alt="" width={40} height={40} loading="lazy" className="size-10 shrink-0 rounded-md object-cover" /> : <span aria-hidden className="flex size-10 shrink-0 items-center justify-center rounded-md bg-superficie-2 text-center text-[10px] font-medium text-texto-suave">{imagenesAusentes[linea.variant_id] ? "Foto no disponible" : "Cargando foto…"}</span>}
-                          <span className="min-w-0 flex-1"><span className="block truncate font-medium text-texto">{productoCliente(linea.titulo)}</span><span className="mt-0.5 block text-texto-suave">{[linea.tamano_codigo ? pulgadasCliente(linea.tamano_codigo) : null, linea.color, contar(linea.unidades, "unidad", "unidades")].filter(Boolean).join(" · ")}</span></span>
-                          <span aria-hidden className="shrink-0 text-base leading-none text-texto-suave">›</span>
-                        </button>
-                        {modoDev && referencias && <button type="button" data-testid="linea-referencias-entrenamiento" onClick={() => abrirEvidencia(linea, referencias)} className="ui-pressable shrink-0 rounded-lg border border-acento/35 bg-acento-suave px-2 py-1.5 text-left text-[11px] font-semibold leading-4 text-acento hover:bg-acento/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento" aria-label={`Ver ${referencias.count} ${referencias.count === 1 ? "referencia" : "referencias"} de entrenamiento para ${linea.titulo}`}>
-                          <span className="block tabular-nums">{referencias.count} {referencias.count === 1 ? "referencia" : "referencias"}</span><span className="block font-normal">en entrenamiento</span>
-                        </button>}
-                        {editorDisponible && <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-borde/70 bg-superficie/50 p-0.5"><button type="button" title={`Modificar ${productoConTamanoCliente(linea.titulo, linea.tamano_codigo)}`} aria-label={`Modificar ${productoConTamanoCliente(linea.titulo, linea.tamano_codigo)}`} onClick={() => abrirEditor("reemplazar", estructura.estructura_id, linea)} className="flex size-7 items-center justify-center rounded-md text-texto-suave hover:bg-acento-suave hover:text-acento focus-visible:outline-2 focus-visible:outline-acento"><Pencil className="size-3.5" aria-hidden="true" /></button><button type="button" title={`Quitar ${productoConTamanoCliente(linea.titulo, linea.tamano_codigo)}`} aria-label={`Quitar ${productoConTamanoCliente(linea.titulo, linea.tamano_codigo)}`} onClick={() => void quitarVariante(estructura.estructura_id, linea)} className="flex size-7 items-center justify-center rounded-md text-texto-suave hover:bg-error-suave hover:text-error focus-visible:outline-2 focus-visible:outline-acento"><Trash2 className="size-3.5" aria-hidden="true" /></button></div>}
-                      </li>
-                    );
-                  })}
-                </ul>
+                <button type="button" aria-label="Cerrar editor del plan" onClick={cerrarEditor} className="rounded-md p-1 text-texto-suave hover:bg-superficie hover:text-texto focus-visible:outline-2 focus-visible:outline-acento"><X className="size-4" aria-hidden="true" /></button>
               </div>
-            </details>
-          </li>
-          );
-        })}
-      </ol>
-      <div className="border-t border-borde pt-2 text-xs text-texto">
-        <div className="flex items-baseline justify-between gap-2"><span className="text-sm font-semibold">Total</span><span data-testid="plan-total" className="text-lg font-semibold tabular-nums">{pesos.format(plan.totales.total_cop)} COP</span></div>
-        <p className="mt-1 text-texto-suave">{soloGlobos ? `Unos ${contar(plan.totales.total_unidades, "globo", "globos")} en total.` : `Unas ${contar(plan.totales.total_unidades, "unidad", "unidades")} en total.`} Los globos se venden en paquetes cerrados y cada paquete se compra una sola vez para toda la decoración.</p>
-        {/* ahorro_paquetes_cop compares against buying every structure line in separate packages, a purchase nobody quoted; for small plans it can exceed the total, so the customer only sees the real total. */}
-        {modoDev && plan.totales.ahorro_paquetes_cop > 0 && <p className="mt-1 text-texto-suave">Ahorro por consolidar paquetes: <span className="font-medium text-texto">{pesos.format(plan.totales.ahorro_paquetes_cop)} COP</span></p>}
-        {modoDev && acabados.length > 0 && <p className="mt-1 text-texto-suave">Acabado solicitado: <span className="font-medium text-texto">{acabados.join(", ")}</span></p>}
-        {plan.comercial.techo_cop != null && <p className={`mt-1 ${plan.comercial.delta_cop > 0 ? "text-red-700" : "text-texto-suave"}`}>Tu presupuesto: {pesos.format(plan.comercial.techo_cop)}{plan.comercial.delta_cop > 0 ? ` · la propuesta se pasa por ${pesos.format(plan.comercial.delta_cop)}` : " · la propuesta cabe"}</p>}
-      </div>
-      {plan.alternativas.length > 0 && <div data-testid="plan-alternativas" className="space-y-1 border-t border-borde pt-2 text-xs text-texto"><p className="font-semibold">Otras opciones de precio</p>{plan.alternativas.map((alternativa) => <p key={alternativa.familia_id} className="flex items-center justify-between gap-2"><span>{alternativa.etiqueta === "economica" ? "Económica" : alternativa.etiqueta === "equilibrada" ? "Equilibrada" : "Premium"}: {productoCliente(alternativa.titulo)}</span><span className="shrink-0 font-medium">{pesos.format(alternativa.total_cop)}{alternativa.ahorro_cop > 0 ? ` · ahorras ${pesos.format(alternativa.ahorro_cop)}` : ""}</span></p>)}</div>}
-      {(supuestos.length > 0 || textosSustitucion.length > 0 || textosFaltantes.length > 0) && <ul data-testid="plan-avisos" className="space-y-1 text-xs text-aviso" aria-label="Aclaraciones de la propuesta">{supuestos.map((supuesto) => <li key={`supuesto:${supuesto}`}>{supuestoCliente(supuesto)}</li>)}{textosSustitucion.map((texto) => <li key={`sustitucion:${texto}`}>{texto}</li>)}{textosFaltantes.map((texto) => <li key={`cobertura:${texto}`}>{texto}</li>)}</ul>}
-      {modoDev && (sustituciones.length > 0 || sinCobertura.length > 0) && <div className="space-y-1 text-[11px] text-texto-suave">{sustituciones.map((item) => <p key={`sustitucion-dev:${item.estructura_id}:${item.pedido}:${item.entregado}:${item.motivo}`}>{item.estructura_id}: {item.pedido} → {item.entregado}</p>)}{sinCobertura.map((item) => <p key={`cobertura-dev:${item.estructura_id}:${item.product_id}:${item.tamano}`}>{item.estructura_id}: sin cobertura para {item.tamano}</p>)}</div>}
-       {onAprobar && <div className="plan-card-approval-action"><button type="button" data-testid="aprobar-generar-plan" onClick={onAprobar} disabled={aprobado || generando || !qaSolicitado || plan.comercial.estado === "PRESUPUESTO_EXCEDIDO" || plan.sin_cobertura.length > 0} aria-busy={generando} className="ui-button-primary ui-pressable w-full disabled:opacity-60">{generando ? "Generando…" : aprobado ? "Aprobación registrada" : !qaSolicitado ? "Activa la validación visual" : plan.sin_cobertura.length > 0 ? "Faltan piezas disponibles" : "Aprobar y generar imagen"}</button></div>}
+              <div className="grid gap-2 sm:grid-cols-2">
+                <label className="text-xs text-texto-suave">Estructura<select name="estructura-plan" value={estructuraEdicion} onChange={(evento) => { setEstructuraEdicion(evento.target.value); setObjetivoEdicion(null); setVarianteEdicion(null); }} className="mt-1 w-full rounded-md border border-borde bg-superficie px-2 py-2 text-sm text-texto focus-visible:outline-2 focus-visible:outline-acento">{plan.plan.estructuras.map((estructura) => <option key={estructura.estructura_id} value={estructura.estructura_id}>{descripcionesPorId.get(estructura.estructura_id) ?? estructura.nombre}</option>)}</select></label>
+                <label className="text-xs text-texto-suave">Acción<select name="accion-plan" value={modoEdicion} onChange={(evento) => { setModoEdicion(evento.target.value as ModoEdicion); setObjetivoEdicion(null); setVarianteEdicion(null); }} className="mt-1 w-full rounded-md border border-borde bg-superficie px-2 py-2 text-sm text-texto focus-visible:outline-2 focus-visible:outline-acento"><option value="agregar">Agregar una pieza</option><option value="reemplazar">Reemplazar una pieza</option></select></label>
+              </div>
+              {modoEdicion === "reemplazar" && <label className="block text-xs text-texto-suave">Pieza a reemplazar<select name="objetivo-plan" value={objetivoEdicion ?? ""} onChange={(evento) => setObjetivoEdicion(evento.target.value || null)} className="mt-1 w-full rounded-md border border-borde bg-superficie px-2 py-2 text-sm text-texto focus-visible:outline-2 focus-visible:outline-acento"><option value="">Elige una pieza</option>{lineasVisiblesPorVariante(plan.estructuras.find((estructura) => estructura.estructura_id === estructuraEdicion)?.lineas ?? []).map((linea) => <option key={linea.variant_id} value={linea.variant_id}>{[productoCliente(linea.titulo), linea.tamano_codigo ? pulgadasCliente(linea.tamano_codigo) : null, linea.color].filter(Boolean).join(" · ")}</option>)}</select></label>}
+              <form onSubmit={buscarVariantes} className="flex gap-2"><label htmlFor={`${editorId}-buscar`} className="sr-only">Buscar variante del catálogo</label><input id={`${editorId}-buscar`} name="consulta-variante-plan" autoComplete="off" value={consultaEdicion} onChange={(evento) => setConsultaEdicion(evento.target.value)} placeholder="Ej. globo rojo de 5 pulgadas…" className="min-w-0 flex-1 rounded-md border border-borde bg-superficie px-2.5 py-2 text-sm text-texto outline-none placeholder:text-texto-tenue focus-visible:border-acento focus-visible:outline-2 focus-visible:outline-acento" /><button type="submit" disabled={buscandoEdicion || !consultaEdicion.trim()} className="ui-pressable inline-flex shrink-0 items-center gap-1 rounded-md bg-acento px-3 py-2 text-sm font-semibold text-sobre-acento disabled:opacity-50"><Search className="size-3.5" aria-hidden="true" />{buscandoEdicion ? "Buscando…" : "Buscar"}</button></form>
+              {candidatosEdicion.length > 0 && <ul className="space-y-2" aria-label="Resultados del catálogo">{candidatosEdicion.map((candidato) => <li key={candidato.productId} className="rounded-md border border-borde bg-superficie/70 p-2"><p className="text-xs font-semibold text-texto">{productoCliente(candidato.titulo)}</p><div className="mt-1.5 flex flex-wrap gap-1.5">{candidato.variantes.map((variante) => { const elegido = varianteEdicion?.variantId === variante.variantId; return <button key={variante.variantId} type="button" aria-pressed={elegido} onClick={() => elegirVariante(candidato, variante)} className={`rounded-md border px-2 py-1 text-left text-[11px] transition-colors focus-visible:outline-2 focus-visible:outline-acento ${elegido ? "border-acento bg-acento-suave text-acento" : "border-borde text-texto hover:bg-fondo"}`}><span className="font-semibold">{variante.codigoTamano ? pulgadasCliente(variante.codigoTamano) : variante.titulo ?? "Variante"}</span><span className="ml-1 text-texto-suave">{pesos.format(variante.precio)}{variante.colores.length ? ` · ${variante.colores.join(", ")}` : ""}</span></button>; })}</div></li>)}</ul>}
+              {varianteEdicion && <form onSubmit={aplicarEdicion} className="grid gap-2 rounded-md bg-superficie p-2 sm:grid-cols-[1fr_8rem_auto] sm:items-end"><label className="text-xs text-texto-suave">Color en la estructura<input name="color-variante-plan" autoComplete="off" value={colorEdicion} onChange={(evento) => setColorEdicion(evento.target.value)} placeholder="Según catálogo…" className="mt-1 w-full rounded-md border border-borde bg-fondo px-2 py-1.5 text-sm text-texto focus-visible:outline-2 focus-visible:outline-acento" /></label>{modoEdicion === "agregar" ? <label className="text-xs text-texto-suave">Participación<input name="participacion-variante-plan" type="number" min="2" max="79" inputMode="numeric" value={participacionEdicion} onChange={(evento) => setParticipacionEdicion(evento.target.value)} className="mt-1 w-full rounded-md border border-borde bg-fondo px-2 py-1.5 text-sm text-texto focus-visible:outline-2 focus-visible:outline-acento" /></label> : <span /> }<button type="submit" disabled={guardandoEdicion} data-testid="guardar-edicion-plan" className="ui-pressable rounded-md bg-acento px-3 py-2 text-sm font-semibold text-sobre-acento disabled:opacity-50">{guardandoEdicion ? "Guardando…" : modoEdicion === "agregar" ? "Agregar al plan" : "Reemplazar"}</button></form>}
+              {errorEdicion && <p role="alert" aria-live="polite" className="text-xs font-medium text-error">{errorEdicion}</p>}
+            </section>
+          )}
+          {!editorAbierto && errorEdicion && !seleccionCatalogo && <p role="alert" className="rounded-xl bg-error-suave px-3 py-2 text-xs font-medium text-error">{errorEdicion}</p>}
+
+          <ol className="space-y-2.5" aria-label="Piezas de la decoración">
+            {vistasEstructura.map(({ estructura, declarada, oficial }, indice) => (
+              <DetalleEstructura
+                key={estructura.estructura_id}
+                idBase={`${editorId}-pieza-${indice}`}
+                estructura={estructura}
+                declarada={declarada}
+                oficial={oficial}
+                abierto={estructuraAbierta === estructura.estructura_id}
+                onAlternar={() => setEstructuraAbierta((actual) => (actual === estructura.estructura_id ? null : estructura.estructura_id))}
+                recorte={piezas[indice]?.recorteCrudo}
+                lineas={lineasVisiblesPorVariante(estructura.lineas)}
+                imagenDe={(linea) => imagenLinea(linea.variant_id, linea.imagen)}
+                fotoAusente={(linea) => Boolean(imagenesAusentes[linea.variant_id])}
+                sumaCop={sumaPieza(estructura)}
+                editable={editorDisponible}
+                onAgregar={() => abrirEditor("agregar", estructura.estructura_id)}
+                onEditar={(linea) => abrirEditor("reemplazar", estructura.estructura_id, linea)}
+                onQuitar={(linea) => void quitarVariante(estructura.estructura_id, linea)}
+                onVerProducto={(linea, disparador) => { disparadorModalRef.current = disparador; setSeleccionCatalogo({ linea, estructuraId: estructura.estructura_id, estructura: estructura.nombre }); setIntercambioAbierto(false); setRecomendaciones([]); setResultadosCatalogo([]); setErrorEdicion(null); }}
+                modoDev={modoDev}
+                extraLinea={modoDev ? (linea) => {
+                  const referencias = referenciaEntrenamiento(linea);
+                  return referencias && <button type="button" data-testid="linea-referencias-entrenamiento" onClick={() => abrirEvidencia(linea, referencias)} className="ui-pressable shrink-0 rounded-lg border border-acento/35 bg-acento-suave px-2 py-1.5 text-left text-[11px] font-semibold leading-4 text-acento hover:bg-acento/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento" aria-label={`Ver ${referencias.count} ${referencias.count === 1 ? "referencia" : "referencias"} de entrenamiento para ${linea.titulo}`}><span className="block tabular-nums">{referencias.count} {referencias.count === 1 ? "referencia" : "referencias"}</span><span className="block font-normal">en entrenamiento</span></button>;
+                } : undefined}
+              />
+            ))}
+          </ol>
+
+          <div className="space-y-1 text-xs text-texto-suave">
+            <p>{soloGlobos ? `Unos ${contar(plan.totales.total_unidades, "globo", "globos")} en total.` : `Unas ${contar(plan.totales.total_unidades, "unidad", "unidades")} en total.`} Los globos se venden en paquetes cerrados y cada paquete se compra una sola vez para toda la decoración.</p>
+            {/* ahorro_paquetes_cop compares against buying every structure line in separate packages, a purchase nobody quoted; for small plans it can exceed the total, so the customer only sees the real total. */}
+            {modoDev && plan.totales.ahorro_paquetes_cop > 0 && <p>Ahorro por consolidar paquetes: <span className="font-medium text-texto">{pesos.format(plan.totales.ahorro_paquetes_cop)} COP</span></p>}
+            {modoDev && acabados.length > 0 && <p>Acabado solicitado: <span className="font-medium text-texto">{acabados.join(", ")}</span></p>}
+          </div>
+          {plan.alternativas.length > 0 && <div data-testid="plan-alternativas" className="space-y-1 rounded-xl bg-superficie-suave p-3 text-xs text-texto"><p className="font-semibold">Otras opciones de precio</p>{plan.alternativas.map((alternativa) => <p key={alternativa.familia_id} className="flex items-center justify-between gap-2"><span>{alternativa.etiqueta === "economica" ? "Económica" : alternativa.etiqueta === "equilibrada" ? "Equilibrada" : "Premium"}: {productoCliente(alternativa.titulo)}</span><span className="shrink-0 font-medium">{pesos.format(alternativa.total_cop)}{alternativa.ahorro_cop > 0 ? ` · ahorras ${pesos.format(alternativa.ahorro_cop)}` : ""}</span></p>)}</div>}
+          {modoDev && (sustituciones.length > 0 || sinCobertura.length > 0) && <div className="space-y-1 text-[11px] text-texto-suave">{sustituciones.map((item) => <p key={`sustitucion-dev:${item.estructura_id}:${item.pedido}:${item.entregado}:${item.motivo}`}>{item.estructura_id}: {item.pedido} → {item.entregado}</p>)}{sinCobertura.map((item) => <p key={`cobertura-dev:${item.estructura_id}:${item.product_id}:${item.tamano}`}>{item.estructura_id}: sin cobertura para {item.tamano}</p>)}</div>}
+        </div>
+      </motion.div>
+
+      <motion.div variants={ENTRADA_CASCADA} className="mt-4 flex flex-col gap-3 border-t border-borde-suave bg-superficie-suave px-4 py-4 @2xl:flex-row @2xl:items-center @2xl:justify-between @xl:px-5.5">
+        <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 @2xl:block">
+          <p data-testid="plan-total" className="text-2xl font-semibold tracking-tight whitespace-nowrap tabular-nums text-texto">
+            <NumeroAnimado valor={plan.totales.total_cop} formato="pesos" retraso={reducir ? 0 : 1.1} />
+          </p>
+          <p className={`text-xs ${plan.comercial.estado === "PRESUPUESTO_EXCEDIDO" ? "text-aviso" : "text-texto-suave"}`}>
+            COP{estadoPresupuesto ? ` · ${estadoPresupuesto}` : ""}
+            <span aria-hidden="true"> · </span>
+            <button type="button" onClick={verCotizacion} aria-haspopup="dialog" className="font-medium whitespace-nowrap text-acento underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">Ver cotización</button>
+          </p>
+        </div>
+        <div className="flex flex-col-reverse items-stretch gap-1.5 @md:flex-row @md:items-center @md:justify-end">
+          <button
+            type="button"
+            aria-expanded={detalleAbierto}
+            aria-controls={idDetalle}
+            onClick={() => setDetalleAbierto((abierto) => !abierto)}
+            className="inline-flex h-10 items-center justify-center gap-1 rounded-[0.8rem] px-3 text-sm font-medium whitespace-nowrap text-acento hover:bg-acento-suave focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"
+          >
+            {detalleAbierto ? "Ocultar productos" : editorDisponible ? "Ver productos y ajustar" : "Ver productos"}
+            <ChevronDown className={`size-4 transition-transform ${detalleAbierto ? "rotate-180" : ""}`} aria-hidden="true" />
+          </button>
+          {onAprobar && (
+            <div className="plan-card-approval-action">
+              <BotonAprobar data-testid="aprobar-generar-plan" onClick={onAprobar} disabled={aprobarDeshabilitado} ocupado={generando} className="w-full @md:w-auto">
+                {textoAprobar}
+              </BotonAprobar>
+            </div>
+          )}
+        </div>
+      </motion.div>
+
+      {!onVerCotizacion && (
+        <DialogoCotizacion
+          plan={plan}
+          abierto={cotizacionAbierta}
+          onAbiertoChange={setCotizacionAbierta}
+          imagenDe={(compra) => imagenLinea(compra.variant_id, compra.imagen)}
+          onAprobar={onAprobar ? () => { setCotizacionAbierta(false); onAprobar(); } : undefined}
+          aprobarDeshabilitado={aprobarDeshabilitado}
+          textoAprobar={textoAprobar}
+          generando={generando}
+        />
+      )}
 
       <Dialog.Root open={Boolean(seleccionCatalogo) && !intercambioAbierto} onOpenChange={(abierto) => { if (abierto) return; setSeleccionCatalogo(null); setIntercambioAbierto(false); requestAnimationFrame(() => disparadorModalRef.current?.focus()); }}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-borde bg-superficie p-4 shadow-lg">
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-overlay" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[calc(100dvh-2rem)] w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-borde-suave bg-superficie p-4 shadow-lg">
             <Dialog.Title className="text-base font-semibold text-texto">{seleccionCatalogo ? productoCliente(seleccionCatalogo.linea.titulo) : "Detalle del producto"}</Dialog.Title>
             <Dialog.Description className="mt-1 text-xs text-texto-suave">Se usa en {seleccionCatalogo ? descripcionesPorId.get(seleccionCatalogo.estructuraId) ?? "la decoración" : "la decoración"}.</Dialog.Description>
             {seleccionCatalogo && <div className="mt-4 space-y-4"><div className="relative">{imagenSeleccionada ? <img src={imagenSeleccionada} alt={productoConTamanoCliente(seleccionCatalogo.linea.titulo, seleccionCatalogo.linea.tamano_codigo)} width={400} height={400} className="aspect-square w-full rounded-lg bg-superficie-2 object-contain" /> : <div className="flex aspect-square items-center justify-center rounded-lg bg-superficie-2 text-sm text-texto-suave">{imagenesAusentes[seleccionCatalogo.linea.variant_id] ? "Foto no disponible en el catálogo" : "Cargando foto…"}</div>}{editorDisponible && <button type="button" title="Cambiar elemento" aria-label="Cambiar elemento del catálogo" aria-expanded={intercambioAbierto} aria-controls={`intercambio-${plan.plan.plan_id}`} onClick={() => void abrirIntercambio()} className="absolute right-2 top-2 inline-flex items-center gap-1.5 rounded-lg border border-borde bg-superficie/90 px-2.5 py-2 text-xs font-semibold text-texto shadow-sm backdrop-blur hover:bg-acento-suave hover:text-acento focus-visible:outline-2 focus-visible:outline-acento"><ArrowLeftRight className="size-3.5" aria-hidden="true" />Cambiar</button>}</div><dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm"><div><dt className="text-xs text-texto-suave">Tamaño</dt><dd className="font-medium text-texto">{seleccionCatalogo.linea.tamano_codigo ? pulgadasConCentimetrosCliente(seleccionCatalogo.linea.tamano_codigo, seleccionCatalogo.linea.diam_cm) : "No especificado"}</dd></div><div><dt className="text-xs text-texto-suave">Color</dt><dd className="font-medium text-texto">{seleccionCatalogo.linea.color ?? "Según catálogo"}</dd></div><div><dt className="text-xs text-texto-suave">Unidades en esta estructura</dt><dd className="font-medium tabular-nums text-texto">{seleccionCatalogo.linea.unidades}</dd></div>{compraSeleccionada && <><div><dt className="text-xs text-texto-suave">Se compra en</dt><dd className="font-medium text-texto">{contar(compraSeleccionada.paquetes, "paquete", "paquetes")} de {contar(compraSeleccionada.unidades_paquete, "unidad", "unidades")}</dd></div><div><dt className="text-xs text-texto-suave">Unidades que sobran</dt><dd className="font-medium tabular-nums text-texto">{compraSeleccionada.sobrante}</dd></div><div><dt className="text-xs text-texto-suave">Precio de los paquetes</dt><dd className="font-medium tabular-nums text-texto">{pesos.format(compraSeleccionada.subtotal)}</dd></div></>}</dl>
-              {editorDisponible && intercambioAbierto && <section id={`intercambio-${plan.plan.plan_id}`} aria-labelledby={`intercambio-${plan.plan.plan_id}-titulo`} className="space-y-3 rounded-lg border border-acento/30 bg-fondo/60 p-3"><div><h3 id={`intercambio-${plan.plan.plan_id}-titulo`} className="text-sm font-semibold text-texto">Cambia esta pieza</h3><p className="mt-0.5 text-xs text-texto-suave">Primero te muestro opciones del mismo tamaño y forma, priorizando colores cercanos y la misma familia; también puedes buscar cualquier pieza del catálogo.</p></div><div className="space-y-2"><p className="text-[11px] font-semibold uppercase tracking-wide text-texto-suave">Recomendados</p>{buscandoCatalogo && recomendaciones.length === 0 ? <p className="rounded-md bg-superficie px-2.5 py-2 text-xs text-texto-suave" role="status">Buscando opciones compatibles…</p> : opcionesRecomendadas.length > 0 ? <ListaOpciones opciones={opcionesRecomendadas} guardando={guardandoEdicion} onCambiar={(opcion) => void reemplazarDesdeCatalogo(opcion)} ariaLabel="Elementos recomendados" /> : <p className="rounded-md bg-superficie px-2.5 py-2 text-xs text-texto-suave">No encontré otra variante compatible. Prueba la búsqueda completa.</p>}</div><div className="space-y-2 border-t border-borde pt-3"><p className="text-[11px] font-semibold uppercase tracking-wide text-texto-suave">Todo el catálogo</p><form onSubmit={buscarEnCatalogo} className="flex gap-2"><label htmlFor={`buscar-intercambio-${plan.plan.plan_id}`} className="sr-only">Buscar en todo el catálogo</label><input id={`buscar-intercambio-${plan.plan.plan_id}`} name="buscar-intercambio-catalogo" autoComplete="off" value={consultaCatalogo} onChange={(evento) => setConsultaCatalogo(evento.target.value)} placeholder="Busca por nombre, tamaño o color…" className="min-w-0 flex-1 rounded-md border border-borde bg-superficie px-2.5 py-2 text-sm text-texto outline-none placeholder:text-texto-suave focus-visible:border-acento focus-visible:outline-2 focus-visible:outline-acento" /><button type="submit" disabled={buscandoCatalogo || consultaCatalogo.trim().length < 2} className="ui-pressable inline-flex shrink-0 items-center gap-1 rounded-md bg-acento px-3 py-2 text-xs font-semibold text-white disabled:opacity-50"><Search className="size-3.5" aria-hidden="true" />{buscandoCatalogo ? "Buscando…" : "Buscar"}</button></form>{opcionesBusqueda.length > 0 && <ListaOpciones opciones={opcionesBusqueda} guardando={guardandoEdicion} onCambiar={(opcion) => void reemplazarDesdeCatalogo(opcion)} ariaLabel="Resultados de todo el catálogo" />}</div></section>}
+              {editorDisponible && intercambioAbierto && <section id={`intercambio-${plan.plan.plan_id}`} aria-labelledby={`intercambio-${plan.plan.plan_id}-titulo`} className="space-y-3 rounded-lg border border-acento/30 bg-fondo/60 p-3"><div><h3 id={`intercambio-${plan.plan.plan_id}-titulo`} className="text-sm font-semibold text-texto">Cambia esta pieza</h3><p className="mt-0.5 text-xs text-texto-suave">Primero te muestro opciones del mismo tamaño y forma, priorizando colores cercanos y la misma familia; también puedes buscar cualquier pieza del catálogo.</p></div><div className="space-y-2"><p className="text-[11px] font-semibold uppercase tracking-wide text-texto-suave">Recomendados</p>{buscandoCatalogo && recomendaciones.length === 0 ? <p className="rounded-md bg-superficie px-2.5 py-2 text-xs text-texto-suave" role="status">Buscando opciones compatibles…</p> : opcionesRecomendadas.length > 0 ? <ListaOpciones opciones={opcionesRecomendadas} guardando={guardandoEdicion} onCambiar={(opcion) => void reemplazarDesdeCatalogo(opcion)} ariaLabel="Elementos recomendados" /> : <p className="rounded-md bg-superficie px-2.5 py-2 text-xs text-texto-suave">No encontré otra variante compatible. Prueba la búsqueda completa.</p>}</div><div className="space-y-2 border-t border-borde pt-3"><p className="text-[11px] font-semibold uppercase tracking-wide text-texto-suave">Todo el catálogo</p><form onSubmit={buscarEnCatalogo} className="flex gap-2"><label htmlFor={`buscar-intercambio-${plan.plan.plan_id}`} className="sr-only">Buscar en todo el catálogo</label><input id={`buscar-intercambio-${plan.plan.plan_id}`} name="buscar-intercambio-catalogo" autoComplete="off" value={consultaCatalogo} onChange={(evento) => setConsultaCatalogo(evento.target.value)} placeholder="Busca por nombre, tamaño o color…" className="min-w-0 flex-1 rounded-md border border-borde bg-superficie px-2.5 py-2 text-sm text-texto outline-none placeholder:text-texto-suave focus-visible:border-acento focus-visible:outline-2 focus-visible:outline-acento" /><button type="submit" disabled={buscandoCatalogo || consultaCatalogo.trim().length < 2} className="ui-pressable inline-flex shrink-0 items-center gap-1 rounded-md bg-acento px-3 py-2 text-xs font-semibold text-sobre-acento disabled:opacity-50"><Search className="size-3.5" aria-hidden="true" />{buscandoCatalogo ? "Buscando…" : "Buscar"}</button></form>{opcionesBusqueda.length > 0 && <ListaOpciones opciones={opcionesBusqueda} guardando={guardandoEdicion} onCambiar={(opcion) => void reemplazarDesdeCatalogo(opcion)} ariaLabel="Resultados de todo el catálogo" />}</div></section>}
             </div>}
              {errorEdicion && <p role="alert" aria-live="polite" className="rounded-md border border-error/30 bg-error/10 px-3 py-2 text-xs font-medium text-error">{errorEdicion}</p>}
              <div className="mt-5 flex justify-end"><Dialog.Close asChild><button type="button" className="ui-pressable rounded-lg border border-borde px-3 py-2 text-sm font-medium text-texto hover:bg-fondo focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">Cerrar</button></Dialog.Close></div>
@@ -717,8 +907,8 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       </Dialog.Root>
       <Dialog.Root open={Boolean(seleccionCatalogo) && intercambioAbierto} onOpenChange={(abierto) => { if (abierto) return; peticionCatalogoRef.current?.abort(); setIntercambioAbierto(false); requestAnimationFrame(() => disparadorModalRef.current?.focus()); }}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-y-auto overscroll-contain rounded-xl border border-borde bg-superficie p-4 shadow-lg">
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-overlay" />
+          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[min(36rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-y-auto overscroll-contain rounded-2xl border border-borde-suave bg-superficie p-4 shadow-lg">
             <Dialog.Title className="text-base font-semibold text-texto">Cambiar {seleccionCatalogo ? productoConTamanoCliente(seleccionCatalogo.linea.titulo, seleccionCatalogo.linea.tamano_codigo) : "elemento"}</Dialog.Title>
             <Dialog.Description className="mt-1 text-xs text-texto-suave">Elige otra pieza disponible del catálogo. El total de tu propuesta se actualiza con el cambio.</Dialog.Description>
             {seleccionCatalogo && (
@@ -802,6 +992,6 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
         productLabel={referenciaEvidencia?.productLabel ?? "Producto"}
         expectedCount={referenciaEvidencia?.expectedCount ?? 0}
       />
-    </section>
+    </motion.section>
   );
 }

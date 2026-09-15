@@ -122,11 +122,28 @@ function extraerLlamadas(partes: Part[]): LlamadaHerramienta[] {
 }
 
 /**
+ * Prefijo estable del mensaje de `ErrorIA` cuando el proveedor rechaza una
+ * imagen adjunta (400 INVALID_ARGUMENT: corrupta, truncada, formato que no
+ * decodifica). `CausaFallo` no tiene una causa de "entrada inválida"; el
+ * prefijo permite a los consumidores traducirlo a un error de adjunto no
+ * reintentable sin depender del texto del proveedor.
+ */
+export const PREFIJO_IMAGEN_RECHAZADA = "AI_IMAGE_REJECTED";
+
+/** Un 400 que habla de la configuración de la petición no es culpa de la imagen. */
+const RECHAZO_DE_CONFIGURACION = /function|tool|schema|thought_signature|system_instruction|generation_?config|max_output_tokens|temperature|api key/;
+
+/**
  * `ApiError.status` es el status HTTP real que expone @google/genai; se usa
  * como señal primaria y el substring del mensaje queda de respaldo para
  * errores que no traen status (red, abort por timeout local).
+ *
+ * `conImagenes`: la petición transmitió bytes de imagen. Un 400
+ * INVALID_ARGUMENT en esa petición que no habla de herramientas ni de
+ * configuración es la imagen rechazada: reintentar no cambia nada.
  */
-function categorizarError(error: unknown): ErrorIA {
+export function categorizarError(error: unknown, conImagenes = false): ErrorIA {
+  if (error instanceof ErrorIA) return error;
   const mensaje = error instanceof Error ? error.message : "Error desconocido";
   const status = error instanceof ApiError ? error.status : undefined;
   const m = mensaje.toLowerCase();
@@ -140,11 +157,11 @@ function categorizarError(error: unknown): ErrorIA {
   if (status === 504 || m.includes("timeout") || m.includes("deadline"))
     return new ErrorIA("timeout", "gemini", mensaje, true);
   if (status !== undefined && status >= 500) return new ErrorIA("desconocido", "gemini", mensaje, true);
+  const argumentoInvalido = status === 400 || m.includes("invalid_argument");
+  if (conImagenes && argumentoInvalido && !RECHAZO_DE_CONFIGURACION.test(m)) {
+    return new ErrorIA("desconocido", "gemini", `${PREFIJO_IMAGEN_RECHAZADA}: ${mensaje}`, false);
+  }
   return new ErrorIA("desconocido", "gemini", mensaje, true);
-}
-
-function esReintentable(error: unknown): boolean {
-  return categorizarError(error).reintentable;
 }
 
 /**
@@ -201,7 +218,7 @@ export function crearChatGemini(opts?: { apiKey?: string; modelo?: string; think
                 ...(thinkingConfig ? { thinkingConfig } : {}),
               },
             }),
-          { esReintentable, signal: p.signal },
+          { esReintentable: (error) => categorizarError(error, bytesImagenEnviados > 0).reintentable, signal: p.signal },
         );
 
         const partes = respuesta.candidates?.[0]?.content?.parts ?? [];
@@ -213,7 +230,7 @@ export function crearChatGemini(opts?: { apiKey?: string; modelo?: string; think
           bytesImagenEnviados,
         };
       } catch (error) {
-        throw categorizarError(error);
+        throw categorizarError(error, bytesImagenEnviados > 0);
       }
     },
 
@@ -243,7 +260,7 @@ export function crearChatGemini(opts?: { apiKey?: string; modelo?: string; think
                 ...(thinkingConfig ? { thinkingConfig } : {}),
               },
             }),
-          { esReintentable, signal: p.signal },
+          { esReintentable: (error) => categorizarError(error, bytesImagenEnviados > 0).reintentable, signal: p.signal },
         );
 
         let texto = "";
@@ -275,7 +292,7 @@ export function crearChatGemini(opts?: { apiKey?: string; modelo?: string; think
 
         yield { tipo: "fin", texto, llamadas: [...llamadasPorClave.values()], uso, modelo, bytesImagenEnviados };
       } catch (error) {
-        throw categorizarError(error);
+        throw categorizarError(error, bytesImagenEnviados > 0);
       }
     },
   };

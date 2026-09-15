@@ -42,12 +42,12 @@ export function PromptModal({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.18 }}
-                className="fixed inset-0 z-[60] bg-black/55 backdrop-blur-[2px]"
+                className="fixed inset-0 z-[60] bg-overlay"
               />
             </Dialog.Overlay>
             <Dialog.Content
               forceMount
-              className="fixed left-1/2 top-1/2 z-[60] flex max-h-[calc(100dvh-2rem)] w-[min(92vw,54rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-borde bg-superficie shadow-2xl outline-none"
+              className="fixed left-1/2 top-1/2 z-[60] flex max-h-[calc(100dvh-2rem)] w-[min(92vw,54rem)] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl border border-borde bg-superficie shadow-[0_16px_40px_var(--sombra)] outline-none"
             >
               <motion.div
                 initial={{ opacity: 0, y: 8, scale: 0.98 }}
