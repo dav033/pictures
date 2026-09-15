@@ -25,6 +25,40 @@ function resultadoDe(estado: Exclude<EstadoAnalisisReferencia, "analyzing">): Re
   return estado === "ready" ? "listo" : estado === "error" ? "fallo" : "sin_analisis";
 }
 
+/**
+ * Tiempo mínimo que el cliente ve el escaneo de su foto. Las fotos de la
+ * galería y las ya analizadas responden desde caché al instante, y sin este
+ * mínimo la propuesta parece no haber mirado la foto. Solo retrasa un análisis
+ * correcto: un fallo se muestra en cuanto llega.
+ */
+export const DURACION_MINIMA_ANALISIS_MS = 5_000;
+
+export function restanteDuracionMinima(inicioMs: number, ahoraMs: number, minimoMs: number = DURACION_MINIMA_ANALISIS_MS): number {
+  return Math.max(0, minimoMs - Math.max(0, ahoraMs - inicioMs));
+}
+
+/** Resuelve cuando pasó el mínimo desde `inicioMs`; rechaza con el motivo del `signal` si se cancela antes. */
+export function esperarDuracionMinima(
+  inicioMs: number,
+  signal: AbortSignal,
+  { ahora = () => performance.now(), reloj = RELOJ_NAVEGADOR, minimoMs = DURACION_MINIMA_ANALISIS_MS }: { ahora?: () => number; reloj?: Reloj; minimoMs?: number } = {},
+): Promise<void> {
+  if (signal.aborted) return Promise.reject(signal.reason);
+  const restante = restanteDuracionMinima(inicioMs, ahora(), minimoMs);
+  if (restante === 0) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    const alCancelar = () => {
+      reloj.cancelar(temporizador);
+      reject(signal.reason);
+    };
+    const temporizador = reloj.programar(() => {
+      signal.removeEventListener("abort", alCancelar);
+      resolve();
+    }, restante);
+    signal.addEventListener("abort", alCancelar, { once: true });
+  });
+}
+
 export type EsperaAnalisis = {
   readonly estado: EstadoAnalisisReferencia;
   notificar: (estado: EstadoAnalisisReferencia) => void;

@@ -10,7 +10,7 @@ import { contextoEvento, contextoEventoConversacion } from "../src/lib/estado/co
 import { presentarError, respetarReintentable, uiErrorDesdeEventoChat } from "../src/lib/estado/estado-error";
 import { construirUiErrorV1, type AccionUiV1 } from "../src/lib/ia/contracts/ui-error-v1";
 import type { PlanResuelto } from "../src/lib/plan/resuelto";
-import { crearEsperaAnalisis } from "../src/lib/estado/espera-analisis";
+import { crearEsperaAnalisis, DURACION_MINIMA_ANALISIS_MS, esperarDuracionMinima, restanteDuracionMinima } from "../src/lib/estado/espera-analisis";
 import { MENSAJE_SIN_CONEXION, mensajeErrorCliente } from "../src/lib/estado/mensaje-error-cliente";
 import { interpretarPreferenciaTema, OPCIONES_TEMA, resolverTema, siguienteTema } from "../src/lib/tema/tema";
 
@@ -162,6 +162,37 @@ void (async () => {
   temporizadores.at(-1)!.fn();
   assert.equal(await colgada, "limite", "un análisis que no responde tiene límite");
   console.log("[PASS] espera del análisis: sale al terminar, al fallar o al límite");
+
+  // Un análisis desde caché llega al instante: el escaneo dura al menos 5 s.
+  assert.equal(DURACION_MINIMA_ANALISIS_MS, 5_000);
+  assert.equal(restanteDuracionMinima(1_000, 1_200), 4_800, "respuesta desde caché: falta casi todo el mínimo");
+  assert.equal(restanteDuracionMinima(1_000, 9_000), 0, "un análisis real más largo que el mínimo no espera de más");
+  assert.equal(restanteDuracionMinima(1_000, 500), 5_000, "un reloj que retrocede no acorta ni alarga el mínimo");
+  const temporizadoresMinimo: Array<{ fn: () => void; ms: number; activo: boolean }> = [];
+  const relojMinimo = {
+    programar: (fn: () => void, ms: number) => temporizadoresMinimo.push({ fn, ms, activo: true }) - 1,
+    cancelar: (id: number) => { temporizadoresMinimo[id]!.activo = false; },
+  };
+  let resuelta = false;
+  const minimo = esperarDuracionMinima(0, new AbortController().signal, { ahora: () => 300, reloj: relojMinimo }).then(() => { resuelta = true; });
+  await Promise.resolve();
+  assert.equal(temporizadoresMinimo[0]!.ms, 4_700, "espera solo lo que falta del mínimo");
+  assert.equal(resuelta, false, "no marca listo antes del mínimo");
+  temporizadoresMinimo[0]!.fn();
+  await minimo;
+  assert.equal(resuelta, true);
+  assert.equal(temporizadoresMinimo.length, 1);
+  await esperarDuracionMinima(0, new AbortController().signal, { ahora: () => 6_000, reloj: relojMinimo });
+  assert.equal(temporizadoresMinimo.length, 1, "sin tiempo pendiente no programa nada");
+  const cancelacion = new AbortController();
+  const cancelada = esperarDuracionMinima(0, cancelacion.signal, { ahora: () => 0, reloj: relojMinimo });
+  cancelacion.abort(new Error("otra foto"));
+  await assert.rejects(cancelada, /otra foto/, "cambiar de foto cancela la espera");
+  assert.equal(temporizadoresMinimo.at(-1)!.activo, false, "la cancelación limpia el temporizador");
+  const yaCancelado = new AbortController();
+  yaCancelado.abort(new Error("desmontado"));
+  await assert.rejects(esperarDuracionMinima(0, yaCancelado.signal, { ahora: () => 0, reloj: relojMinimo }), /desmontado/);
+  console.log("[PASS] análisis desde caché: el escaneo dura al menos 5 s y se cancela con la foto");
 })().catch((error: unknown) => {
   console.error(error);
   process.exitCode = 1;

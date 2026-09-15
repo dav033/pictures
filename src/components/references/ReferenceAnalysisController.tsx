@@ -6,7 +6,7 @@ import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import { ReferenceBlueprintV2Schema } from "@/lib/ia/reference-blueprint";
 import { CATALOGO_ERRORES_UI_V1, leerUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 import { tieneElementosAprobados, tieneEstructurasDeGlobos } from "@/lib/ia/reference-structure";
-import type { EstadoAnalisisReferencia } from "@/lib/estado/espera-analisis";
+import { esperarDuracionMinima, type EstadoAnalisisReferencia } from "@/lib/estado/espera-analisis";
 import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
 import { ReferenceReviewPanel, type ReferenceDraft } from "./ReferenceReviewPanel";
 
@@ -80,6 +80,7 @@ export function ReferenceAnalysisController({ references, proveedor, onDraft, on
     setError(null);
     setReintentable(true);
     onDraft(null);
+    const inicio = performance.now();
     fetch("/api/references/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -104,6 +105,12 @@ export function ReferenceAnalysisController({ references, proveedor, onDraft, on
           tieneEstructurasDeGlobos: typeof respuesta.tieneEstructurasDeGlobos === "boolean" ? respuesta.tieneEstructurasDeGlobos : tieneEstructurasDeGlobos(blueprint.data),
         };
         return { next: blueprint.data, info };
+      })
+      // A cached analysis (gallery photos, photos seen before) arrives at once:
+      // keep the scan on screen for the minimum time. Failures do not wait.
+      .then(async (resultado) => {
+        await esperarDuracionMinima(inicio, controller.signal);
+        return resultado;
       })
       .then(({ next, info }) => {
         if (cancelled) return;
