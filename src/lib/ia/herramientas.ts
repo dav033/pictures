@@ -1,6 +1,6 @@
 import type { Herramienta } from "./tipos";
 import { DENSIDADES, MEZCLAS, ROLES_ESCENA, ROLES_MATERIAL, TIPOS_ESTRUCTURA, UBICACIONES } from "@/lib/plan/tipos";
-import { ESTRUCTURAS_OFICIALES_IDS } from "@/lib/plan/estructuras-oficiales";
+import { EJEMPLO_UNIDADES_DECLARADAS, ESTRUCTURAS_OFICIALES_IDS } from "@/lib/plan/estructuras-oficiales";
 
 /**
  * Registro único de herramientas expuestas al pipeline RAG y al planificador.
@@ -84,7 +84,7 @@ export const HERRAMIENTAS_RAG: Herramienta[] = [
 export const HERRAMIENTAS_PLAN: Herramienta[] = [
   {
     nombre: "confirmar_plan_decoracion",
-    descripcion: "Confirma el diseño completo: estructuras, ubicación, productos y colores. No mandes tamaños, cantidades de globos ni precios; el backend los calcula desde la geometría y el catálogo real. Cada product_id debe haber aparecido en buscar_catalogo_rag de este turno. Es la última herramienta del turno y devuelve el desglose que se muestra antes de generar la imagen.",
+    descripcion: "Confirma el diseño completo: estructuras, ubicación, productos y colores. Nunca mandes precios. En las estructuras con geometría (arco, semiarco, guirnalda, columna, pared, centro_mesa) no mandes variant_id, tamaños ni cantidades de globos: el backend los calcula desde la geometría y el catálogo real; las piezas sin geometría (bouquet, figura, kit, backdrop, accesorio) sí llevan variant_id por material y unidades_declaradas. Cada product_id debe haber aparecido en buscar_catalogo_rag de este turno. Es la última herramienta del turno y devuelve el desglose que se muestra antes de generar la imagen.",
     esquema: {
       type: "object",
       required: ["concepto", "espacio", "estructuras"],
@@ -129,7 +129,7 @@ export const HERRAMIENTAS_PLAN: Herramienta[] = [
               repeticiones: { type: "integer", minimum: 1, maximum: 24, description: "Número de piezas iguales de esta estructura (el número de piezas que muestra la referencia, ej. 2 columnas). No es un número de globos." },
               densidad: { type: "string", enum: [...DENSIDADES] },
               mezcla: { type: "string", enum: [...MEZCLAS], description: "organica_fina pide globos de 5, 9, 12, 18 y 24 pulgadas del mismo producto y color (organica_gruesa de 9 a 24, solo_grandes 18 y 24). Revisa diametro_pulgadas de las variantes: si el producto tiene 5, 9 y 12 pulgadas usa organica_fina aunque falten 18 o 24 (el backend los sustituye por el tamaño más cercano y lo avisa); usa clasica solo si el producto tiene únicamente 12 pulgadas o el cliente pidió un único tamaño. Una estructura orgánica toda de 12 pulgadas se ve plana." },
-              unidades_declaradas: { type: "integer", minimum: 1, description: "Solo para piezas sin geometría (bouquet, figura, kit, backdrop, accesorio). Son unidades de venta del catálogo para la pieza completa, sumando todas sus repeticiones: si la pieza se arma con globos sueltos, es el total de GLOBOS (no el número de figuras ni de bouquets); si el material es un kit empaquetado, un telón o un accesorio, es el número de piezas. Se reparte entre los materiales según participacion y cada material recibe al menos 1, así que nunca declares menos unidades que materiales. Una Figura con globos lleva al menos 20 globos por figura y un Bouquet de globos al menos 5 por bouquet (ej.: 2 figuras con 4 colores → unidades_declaradas 48 o más, repeticiones 2)." },
+              unidades_declaradas: { type: "integer", minimum: 1, description: `Solo para piezas sin geometría (bouquet, figura, kit, backdrop, accesorio). Son unidades de venta del catálogo para la pieza completa, sumando todas sus repeticiones: si la pieza se arma con globos sueltos, es el total de GLOBOS (no el número de figuras ni de bouquets); si el material es un kit empaquetado, un telón o un accesorio, es el número de piezas. Se reparte entre los materiales según participacion y cada material recibe al menos 1, así que nunca declares menos unidades que materiales. Mínimos: ${EJEMPLO_UNIDADES_DECLARADAS}.` },
               materiales: {
                 type: "array",
                 minItems: 1,
@@ -139,7 +139,7 @@ export const HERRAMIENTAS_PLAN: Herramienta[] = [
                   required: ["product_id", "participacion", "rol_material"],
                   properties: {
                     product_id: { type: "string" },
-                    variant_id: { type: "string", description: "Solo para backdrop, kit o accesorio; no mandes tamaños para estructuras de globos." },
+                    variant_id: { type: "string", description: "Obligatorio en las piezas sin geometría (bouquet, figura, kit, backdrop, accesorio), una variante por material. En las estructuras con geometría (arco, semiarco, guirnalda, columna, pared, centro_mesa) no lo mandes: el tamaño lo resuelve el backend." },
                     color: { type: "string" },
                     acabado: { type: "string", description: "solo si el cliente lo pidió explícitamente o la imagen de referencia lo muestra (cromado = reflex); no lo inventes desde el estilo" },
                     participacion: { type: "number", minimum: 0, maximum: 1, description: "Fracción de los globos de esta estructura que va en este material. Todas las participaciones de una estructura suman exactamente 1: usa décimas o veinteavos (0,5 / 0,3 / 0,2, o 0,4 / 0,35 / 0,25), nunca 0,33 tres veces." },

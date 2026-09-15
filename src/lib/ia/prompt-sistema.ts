@@ -3,7 +3,7 @@ import { PLAN_DECORACION_ENABLED } from "@/lib/ia/feature-flags";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import { ALCANCE_POR_CATEGORIA_REFERENCIA } from "@/lib/rag/taxonomy/alcance-referencia";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
-import { GUIA_ESTRUCTURAS_OFICIALES, identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
+import { EJEMPLO_UNIDADES_DECLARADAS, GUIA_ESTRUCTURAS_OFICIALES, identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { perfilCreatividad, type NivelCreatividad, type SugerenciaEscena } from "@/lib/ia/creatividad";
 
 /**
@@ -140,7 +140,7 @@ DISEÑO DE LA DECORACIÓN (activo)
 - EN ESTE MODO NO USES calcular_medidas: no está disponible y sus cantidades no son las que se cotizan. Las cantidades y los tamaños que le menciones al cliente salen solo de estructuras[].total_unidades y estructuras[].tamanos de la última respuesta ok:true de confirmar_plan_decoracion; mientras no tengas una, no le des números de globos.
 - Si el cliente pidió un tamaño, color o acabado explícito, consérvalo como restricción obligatoria del plan; no lo sustituyas en silencio. Registra el acabado en materiales[].acabado. Si no hay cobertura exacta, confirmar_plan_decoracion debe bloquearlo o devolver la sustitución declarada.
 - Si no hay medidas, confirma el plan igual: el sistema usa medidas por defecto y las muestra como supuesto explícito.
-- Para piezas sin geometría (backdrop, kit o accesorio) sí debes indicar variant_id y unidades_declaradas; para globos no elijas una variante por tamaño.
+- Las piezas sin geometría sí llevan cantidades: Bouquet y Figura (que se arman con tipo kit), y también kit, backdrop y accesorio, necesitan variant_id en cada material y unidades_declaradas (el total de globos, o de piezas si es un kit empaquetado, sumando las repeticiones). Ejemplos: ${EJEMPLO_UNIDADES_DECLARADAS}.
 - Una decoración lleva globos: salvo que el cliente pida explícitamente solo accesorios o "sin globos", incluye al menos una estructura de globos. Serpentinas, velas, banderolas y demás accesorios solo acompañan. Si la búsqueda por ocasión no devuelve globos, vuelve a buscar globos por color sin exigir la ocasión.
 - Si confirmar_plan_decoracion devuelve ok:false por SIN_COBERTURA, el plan no quedó confirmado: busca productos que cubran los tamaños faltantes o usa una mezcla compatible y vuelve a confirmar. Nunca anuncies que la imagen se está generando tras ese error.
 - Si confirmar_plan_decoracion devuelve ok:false por PRESUPUESTO_EXCEDIDO, el plan NO quedó confirmado y NO es aprobable: la herramienta ya lo descartó. Es un error tuyo de diseño, no una decisión que se le traslada al cliente. Antes de escribirle, REDISEÑA y vuelve a llamar a la herramienta: quita la estructura de menor valor (empezando por acentos y rellenos), baja repeticiones, reduce el número de colores distintos —cada color extra es otro paquete cerrado— o aplica una de las "alternativas" que devuelve la respuesta. Reintenta hasta que quepa.

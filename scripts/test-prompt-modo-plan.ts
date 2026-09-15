@@ -52,6 +52,28 @@ async function main(): Promise<void> {
   assert.equal(typeof registro.calcular_medidas, "function", "el handler legacy sigue registrado");
   ok("herramientasActivas: sin calcular_medidas en modo diseño, con él en el flujo legacy");
 
+  // 4. Regla acotada de variant_id/unidades_declaradas: las estructuras con
+  //    geometría no llevan cantidades, Bouquet/Figura y las piezas de catálogo sí.
+  const { ESTRUCTURAS_OFICIALES, EJEMPLO_UNIDADES_DECLARADAS } = await import("../src/lib/plan/estructuras-oficiales");
+  const { HERRAMIENTAS_PLAN } = await import("../src/lib/ia/herramientas");
+  const { perfilCreatividad } = await import("../src/lib/ia/creatividad");
+  assert.doesNotMatch(modoPlan, /Nunca mandes tamaños de globo, cantidades de globos/);
+  assert.match(modoPlan, /estructuras con geometría \(arco, semiarco, guirnalda, columna, pared, centro de mesa\) no mandes variant_id, tamaños de globo ni cantidades/);
+  assert.match(modoPlan, /Bouquet y Figura \(que se arman con tipo kit\), y también kit, backdrop y accesorio, necesitan variant_id en cada material y unidades_declaradas/);
+  // El mínimo tiene un solo dueño: la tabla de estructuras oficiales.
+  const esperado = Object.values(ESTRUCTURAS_OFICIALES)
+    .flatMap((estructura) => estructura.unidadesMinimasPorInstancia === undefined
+      ? []
+      : [`${estructura.nombre} con repeticiones 2 → unidades_declaradas ${estructura.unidadesMinimasPorInstancia * 2} o más (${estructura.unidadesMinimasPorInstancia} por pieza)`])
+    .join("; ");
+  assert.equal(EJEMPLO_UNIDADES_DECLARADAS, esperado);
+  assert.ok(modoPlan.includes(esperado), "el prompt usa el ejemplo derivado de la tabla");
+  const estructuraPlan = (HERRAMIENTAS_PLAN[0]!.esquema as { properties: { estructuras: { items: { properties: Record<string, { description?: string }> } } } }).properties.estructuras.items.properties;
+  assert.ok(String(estructuraPlan.unidades_declaradas!.description).includes(esperado), String(estructuraPlan.unidades_declaradas!.description));
+  assert.doesNotMatch(HERRAMIENTAS_PLAN[0]!.descripcion, /No mandes tamaños, cantidades de globos ni precios/);
+  assert.match(perfilCreatividad(5).instruccionDiseno ?? "", /no inventes precios \(las cantidades de las estructuras con geometría las calcula el sistema/);
+  ok("regla acotada: geometría sin cantidades, Bouquet/Figura con unidades_declaradas del mínimo de la tabla");
+
   console.log(`\n${casos} casos OK (prompt del modo diseño)`);
 }
 
