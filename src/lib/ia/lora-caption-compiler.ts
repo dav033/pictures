@@ -228,6 +228,11 @@ const COLOR_ALIASES: Record<string, string> = {
   "dorado rosa": "rose gold",
   rosagold: "rose gold",
   plateado: "silver",
+  // `gris` is a real product color (colores-producto.ts) that the taxonomy v2
+  // palette does not carry, so without this alias the Spanish word reached the
+  // English-only LoRA caption untranslated.
+  gris: "gray",
+  grafito: "charcoal gray",
   cafe: "brown",
   marron: "brown",
   morado: "purple",
@@ -369,7 +374,7 @@ export function translateLoraColor(color: string): string {
   // Resolve Spanish aliases such as "azul rey" or "verde esmeralda" to the
   // canonical catalog color before translating. Preserve already-English
   // descriptors such as "light blue" when the taxonomy has no Spanish cue.
-  const spanishColor = /\b(?:dorado|oro|platead[oa]|plata|rojo|azul|rosad[oa]|rosa|verde|lima|esmeralda|blanc[oa]|negr[oa]|morado|lila|violeta|naranja|amarill[oa]|fucsia|transparente|surtido|arcoiris|turquesa|arena|cafe|marron|chocolate|champana|menta|crema|crudo|piel|burdeos|vino|borgona)\b/i.test(key);
+  const spanishColor = /\b(?:dorado|oro|platead[oa]|plata|gris|grafito|rojo|azul|rosad[oa]|rosa|verde|lima|esmeralda|blanc[oa]|negr[oa]|morado|lila|violeta|naranja|amarill[oa]|fucsia|transparente|surtido|arcoiris|turquesa|arena|cafe|marron|chocolate|champana|menta|crema|crudo|piel|burdeos|vino|borgona)\b/i.test(key);
   if (spanishColor) {
     const canonical = clasificarColores(color).values[0];
     return canonical ? PALETA_COLORES_EN_V2[canonical] : "catalog color";
@@ -851,12 +856,19 @@ const SCENE_V004_ONE_SIDED_PLACEMENTS: Partial<Record<LoraPlacement, string>> = 
   entrada: "at one side of the doorway",
 };
 
-/** Diameters of the confirmed sizes ("12-inch") as the dataset words it: large, small, or both. */
+/**
+ * Diameters of the confirmed sizes ("12-inch") as the dataset words it: large,
+ * small, or both. v004 judged size by eye and RELATIVE to the piece itself
+ * (scripts/recaption-v004.ts), so any mix of two diameters is "large and
+ * small"; the absolute thresholds only describe a single-diameter piece.
+ * Before this, a 5" + 12" mix read entirely "small" and 12" + 18" entirely
+ * "large", because 10"-15" matched neither threshold.
+ */
 function sceneSizeWords(sizes: string[]): string {
   const diameters = sizes.map(sizeValue).filter(Number.isFinite);
+  if (new Set(diameters).size >= 2) return "large and small";
   const large = diameters.some((value) => value >= 16);
   const small = diameters.some((value) => value <= 9);
-  if (large && small) return "large and small";
   if (large) return "large";
   if (small) return "small";
   return "";

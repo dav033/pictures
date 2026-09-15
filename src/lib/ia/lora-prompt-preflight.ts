@@ -33,7 +33,7 @@ const SPANISH_TOKENS = [
   "arco", "semiarco", "guirnalda", "columna", "pared", "centro de mesa", "sobre mesa",
   "lateral", "entrada", "fondo pared", "piso frontal", "mesas invitados", "techo", "dorado",
   "rosado", "rojo", "verde", "azul", "blanco", "negro", "plateado", "fucsia", "amarillo",
-  "morado", "naranja", "marron", "cafe", "crema", "quinceañera", "quince", "años", "evento",
+  "morado", "naranja", "marron", "cafe", "crema", "gris", "quinceañera", "quince", "años", "evento",
   "corporativo", "celebración", "jardín", "salón", "esmeralda",
 ];
 
