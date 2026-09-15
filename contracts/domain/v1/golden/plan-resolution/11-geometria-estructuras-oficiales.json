@@ -119,7 +119,7 @@
       ],
       "special_elements": [],
       "totals": {
-        "additional_waste_packages": 8,
+        "additional_waste_packages": 1,
         "consumption_cost": 74600,
         "covered_waste_reserve": 28,
         "design_quantity": 345,
@@ -132,7 +132,7 @@
         "target_waste_reserve": 28,
         "uncovered_waste_reserve": 0,
         "waste_adjusted_quantity": 373,
-        "waste_only_savings_cop": 10000
+        "waste_only_savings_cop": 0
       },
       "version": "design-material-estimate-v1",
       "warnings": []
@@ -341,7 +341,7 @@
           "ubicacion": "fondo_pared"
         }
       ],
-      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 345\nTarget waste reserve: 28\nNatural package surplus: 5\nUsable waste coverage: 28\nAdditional packages required for waste: 8\nGlobo latex rojo — R-12: design=345, required=373, package=50, packages=8, purchased=400, natural surplus=55, waste reserve=28, leftover inventory=27",
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 345\nTarget waste reserve: 28\nNatural package surplus: 5\nUsable waste coverage: 28\nAdditional packages required for waste: 1\nGlobo latex rojo — R-12: design=345, required=373, package=50, packages=8, purchased=400, natural surplus=55, waste reserve=28, leftover inventory=27",
       "plan": {
         "concepto": {
           "descripcion": "Columnas rojas para una zona de fotos.",
@@ -437,7 +437,7 @@
       "sin_cobertura": [],
       "sustituciones": [],
       "totales": {
-        "additional_waste_packages": 8,
+        "additional_waste_packages": 1,
         "ahorro_paquetes_cop": 0,
         "consumption_cost": 74600,
         "covered_waste_reserve": 28,
@@ -453,7 +453,7 @@
         "total_cop": 80000,
         "total_unidades": 345,
         "uncovered_waste_reserve": 0,
-        "waste_only_savings_cop": 10000
+        "waste_only_savings_cop": 0
       }
     },
     "quote": {
@@ -597,7 +597,7 @@
       ],
       "special_elements": [],
       "totals": {
-        "additional_waste_packages": 8,
+        "additional_waste_packages": 1,
         "consumption_cost": 74600,
         "covered_waste_reserve": 28,
         "design_quantity": 345,
@@ -610,7 +610,7 @@
         "target_waste_reserve": 28,
         "uncovered_waste_reserve": 0,
         "waste_adjusted_quantity": 373,
-        "waste_only_savings_cop": 10000
+        "waste_only_savings_cop": 0
       },
       "version": "design-material-estimate-v1",
       "warnings": []
@@ -918,7 +918,7 @@
       "sin_cobertura": [],
       "sustituciones": [],
       "totales": {
-        "additional_waste_packages": 8,
+        "additional_waste_packages": 1,
         "ahorro_paquetes_cop": 0,
         "consumption_cost": 74600,
         "covered_waste_reserve": 28,
@@ -934,7 +934,7 @@
         "total_cop": 80000,
         "total_unidades": 345,
         "uncovered_waste_reserve": 0,
-        "waste_only_savings_cop": 10000
+        "waste_only_savings_cop": 0
       }
     },
     "quote": {

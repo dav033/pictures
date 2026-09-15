@@ -205,7 +205,7 @@ def test_material_waste_savings_uses_float_unit_price_and_rounds_once() -> None:
                 {
                     "product_id": "P-BAL",
                     "variant_id": "V-B",
-                    "design_quantity": 50,
+                    "design_quantity": 30,
                     "units_per_package": 10,
                     "package_count": 3,
                     "purchase_cost": 100,
@@ -213,7 +213,7 @@ def test_material_waste_savings_uses_float_unit_price_and_rounds_once() -> None:
                 {
                     "product_id": "P-BAL",
                     "variant_id": "V-C",
-                    "design_quantity": 50,
+                    "design_quantity": 30,
                     "units_per_package": 10,
                     "package_count": 3,
                     "purchase_cost": 100,
@@ -263,7 +263,10 @@ def test_material_waste_savings_only_counts_balloon_purchases() -> None:
 
 
 @pytest.mark.anyio
-async def test_waste_reserve_buys_minimum_additional_package_in_variant_order() -> None:
+async def test_waste_reserve_buys_the_cheapest_additional_package() -> None:
+    # With a single balloon purchase the cheapest cover is that purchase, and
+    # only the delta of packages counts as an additional waste package: the
+    # totals used to report all 10 packages of the flagged line.
     request = _request()
     plan = json.loads(json.dumps(request.plan))
     structure = cast(dict[str, object], plan["estructuras"][0])
@@ -292,8 +295,11 @@ async def test_waste_reserve_buys_minimum_additional_package_in_variant_order() 
     assert totals["natural_package_surplus"] == 3
     assert totals["covered_waste_reserve"] == 5
     assert totals["uncovered_waste_reserve"] == 0
-    assert totals["additional_waste_packages"] == 10
-    assert estimate_totals["additional_waste_packages"] == 10
+    assert totals["additional_waste_packages"] == 1
+    assert estimate_totals["additional_waste_packages"] == 1
+    # Naive purchase (ceil(65/7) = 10 packages) against what was bought (10).
+    assert totals["waste_only_savings_cop"] == 0
+    assert estimate_totals["waste_only_savings_cop"] == 0
 
 
 def test_alternatives_filter_allowlist_geometry_and_non_geometric_cost() -> None:

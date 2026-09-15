@@ -144,11 +144,14 @@ assert.equal(
 );
 
 // Two balloon lines with a fractional package price (100 / 3) round once at the
-// end: 33.33 + 33.33 = 66.67 -> 67, never 33 + 33 = 66.
-const fractionalA = purchase({ product_id: "P-BAL", variant_id: "V-BAL-A", design_quantity: 50, units_per_package: 10, package_count: 3, purchase_cost: 100 });
-const fractionalB = purchase({ product_id: "P-BAL", variant_id: "V-BAL-B", design_quantity: 50, units_per_package: 10, package_count: 3, purchase_cost: 100 });
+// end: 33.33 + 33.33 = 66.67 -> 67, never 33 + 33 = 66. The comparison is
+// against the packages actually bought (3 exact), so the design quantity fits
+// the purchase: a line whose capacity was below its design was not a real
+// purchase and hid how many packages the merma really added.
+const fractionalA = purchase({ product_id: "P-BAL", variant_id: "V-BAL-A", design_quantity: 30, units_per_package: 10, package_count: 3, purchase_cost: 100 });
+const fractionalB = purchase({ product_id: "P-BAL", variant_id: "V-BAL-B", design_quantity: 30, units_per_package: 10, package_count: 3, purchase_cost: 100 });
 assert.equal(
-  wasteOnlySavingsCop([line("P-BAL", "V-BAL-A", 50, 12), line("P-BAL", "V-BAL-B", 50, 12)], [], [fractionalA, fractionalB]),
+  wasteOnlySavingsCop([line("P-BAL", "V-BAL-A", 30, 12), line("P-BAL", "V-BAL-B", 30, 12)], [], [fractionalA, fractionalB]),
   67,
 );
 

@@ -1660,16 +1660,33 @@ def _consolidate(
             covered_groups[key] = covered_groups.get(key, 0) - allocation
     covered_reserve = sum(allocations.values())
     remaining = max(0, target_reserve - covered_reserve)
-    for purchase in eligible:
-        if remaining <= 0:
-            break
-        variant_id = str(purchase["variant_id"])
+    # When the natural surplus is not enough, buy the balloon presentation that
+    # covers what is left at the lowest cost. It used to buy on the first
+    # purchase by variant_id, so an 80,000 COP R-24 package could cover a
+    # reserve that a 30,000 COP R-12 package covered just as well.
+    reserve_candidates = [
+        purchase for purchase in eligible if int(cast(int, purchase["design_quantity"])) > 0
+    ]
+    while remaining > 0 and reserve_candidates:
+        pending = remaining
+        chosen = min(
+            reserve_candidates,
+            key=lambda purchase: (
+                math.ceil(
+                    pending / candidate_by_variant[str(purchase["variant_id"])].units_per_package
+                )
+                * candidate_by_variant[str(purchase["variant_id"])].price,
+                -int(cast(int, purchase["design_quantity"])),
+                str(purchase["variant_id"]),
+            ),
+        )
+        variant_id = str(chosen["variant_id"])
         units_per_package = candidate_by_variant[variant_id].units_per_package
-        additional_packages = math.ceil(remaining / units_per_package)
+        additional_packages = math.ceil(pending / units_per_package)
         additional_capacity = additional_packages * units_per_package
-        additional_reserve = min(remaining, additional_capacity)
-        purchase["paquetes"] = int(cast(int, purchase["paquetes"])) + additional_packages
-        purchase["additional_package_for_waste"] = True
+        additional_reserve = min(pending, additional_capacity)
+        chosen["paquetes"] = int(cast(int, chosen["paquetes"])) + additional_packages
+        chosen["additional_package_for_waste"] = True
         allocations[variant_id] = allocations.get(variant_id, 0) + additional_reserve
         remaining -= additional_reserve
     covered_reserve = sum(allocations.values())
@@ -1701,6 +1718,35 @@ def _consolidate(
         },
         allocations,
     )
+
+
+def _waste_extra_packages(design_quantity: int, units_per_package: int, packages: int) -> int:
+    """Packages bought above the design's minimum cover, mirror of ``paquetesExtraPorMerma``.
+
+    Every package of a flagged line used to be reported as an additional waste
+    package (golden 08 said 10 where 1 was added). ``design-material-estimate-v1``
+    does not store the base count, so it is derived from the line's own fields
+    and TypeScript's ``validateMaterialEstimate`` recomputes the same value.
+    """
+    if units_per_package <= 0:
+        return 0
+    return max(0, packages - max(1, math.ceil(max(0, design_quantity) / units_per_package)))
+
+
+def _waste_only_savings(
+    design_quantity: int, units_per_package: int, packages: int, package_price: float
+) -> float:
+    """Mirror of ``ahorroSoloMermaCop`` in ``src/lib/plan/optimizar-materiales.ts``.
+
+    The naive purchase (every line with its full merma) minus what was actually
+    bought. It used to compare against the design's minimum cover and ignore the
+    packages the reserve did force to buy, so it reported savings that never
+    happened. The caller rounds the sum once.
+    """
+    if units_per_package <= 0:
+        return 0.0
+    naive_packages = math.ceil(math.ceil(max(0, design_quantity) * (1 + MERMA)) / units_per_package)
+    return max(0.0, (naive_packages - packages) * package_price)
 
 
 def _material_waste_only_savings(
@@ -1735,12 +1781,9 @@ def _material_waste_only_savings(
         package_count = _integer(line.get("package_count")) or 0
         purchase_cost = _number(line.get("purchase_cost")) or 0.0
         unit_price = purchase_cost / package_count if package_count > 0 else 0.0
-        if units_per_package <= 0:
-            continue
-        base_packages = math.ceil(design_quantity / units_per_package)
-        naive_quantity = math.ceil(design_quantity * (1 + MERMA))
-        naive_packages = math.ceil(naive_quantity / units_per_package)
-        savings += max(0, (naive_packages - base_packages) * unit_price)
+        savings += _waste_only_savings(
+            design_quantity, units_per_package, package_count, unit_price
+        )
     return _round_half_up(savings)
 
 
@@ -1904,7 +1947,11 @@ def _material_estimate(resolved: Mapping[str, object]) -> dict[str, object]:
                 balloons, special, purchase_lines
             ),
             "additional_waste_packages": sum(
-                _integer(item.get("package_count")) or 0
+                _waste_extra_packages(
+                    _integer(item.get("design_quantity")) or 0,
+                    _integer(item.get("units_per_package")) or 0,
+                    _integer(item.get("package_count")) or 0,
+                )
                 for item in purchase_lines
                 if item.get("additional_package_for_waste") is True
             ),
@@ -2017,15 +2064,29 @@ def _build_resolved(
         for line in lineas
         if str(line.get("variant_id")) in candidate_by_variant
     )
-    naive_cost = sum(
-        _package_cost(
-            candidate_by_variant[str(line["variant_id"])],
-            _integer(line.get("unidades")) or 0,
-            MERMA,
+    # Real saving: the naive purchase (every purchase with its full merma)
+    # against what was actually bought, extra reserve packages included. Same
+    # rule as ``wasteOnlySavingsCop`` over the estimate.
+    waste_only_savings = _round_half_up(
+        sum(
+            _waste_only_savings(
+                int(cast(int, purchase["design_quantity"])),
+                candidate_by_variant[str(purchase["variant_id"])].units_per_package,
+                int(cast(int, purchase["paquetes"])),
+                candidate_by_variant[str(purchase["variant_id"])].price,
+            )
+            for purchase in purchases
+            if _number(purchase.get("diam_pulg")) is not None
         )
-        for line in lineas
-        if _number(line.get("diam_pulg")) is not None
-        and str(line.get("variant_id")) in candidate_by_variant
+    )
+    additional_waste_packages = sum(
+        _waste_extra_packages(
+            int(cast(int, purchase["design_quantity"])),
+            candidate_by_variant[str(purchase["variant_id"])].units_per_package,
+            int(cast(int, purchase["paquetes"])),
+        )
+        for purchase in purchases
+        if purchase.get("additional_package_for_waste") is True
     )
     globos_por_tamano: dict[str, int] = {}
     for purchase in purchases:
@@ -2080,12 +2141,8 @@ def _build_resolved(
             "consumption_cost": sum(
                 _integer(item.get("consumption_cost")) or 0 for item in purchases
             ),
-            "waste_only_savings_cop": max(0, naive_cost - base_line_cost),
-            "additional_waste_packages": sum(
-                _integer(item.get("paquetes")) or 0
-                for item in purchases
-                if item.get("additional_package_for_waste") is True
-            ),
+            "waste_only_savings_cop": waste_only_savings,
+            "additional_waste_packages": additional_waste_packages,
             "ahorro_paquetes_cop": max(0, base_line_cost - total_cop),
             "incluye_iva": True,
             "merma_porcentaje": MERMA * 100,

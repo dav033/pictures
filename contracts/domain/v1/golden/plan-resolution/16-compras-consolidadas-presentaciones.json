@@ -315,7 +315,7 @@
       ],
       "special_elements": [],
       "totals": {
-        "additional_waste_packages": 5,
+        "additional_waste_packages": 1,
         "consumption_cost": 63036,
         "covered_waste_reserve": 10,
         "design_quantity": 125,
@@ -328,7 +328,7 @@
         "target_waste_reserve": 10,
         "uncovered_waste_reserve": 0,
         "waste_adjusted_quantity": 135,
-        "waste_only_savings_cop": 42058
+        "waste_only_savings_cop": 37809
       },
       "version": "design-material-estimate-v1",
       "warnings": []
@@ -704,7 +704,7 @@
           "ubicacion": "entrada"
         }
       ],
-      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 125\nTarget waste reserve: 10\nNatural package surplus: 5\nUsable waste coverage: 10\nAdditional packages required for waste: 5\nGlobo latex redondo fashion azul rey — R-12 / PAQUETE X 12: design=48, required=53, package=12, packages=5, purchased=60, natural surplus=12, waste reserve=5, leftover inventory=7\nGlobo latex redondo fashion azul rey — R-12 / PAQUETE X 20: design=18, required=20, package=20, packages=1, purchased=20, natural surplus=2, waste reserve=2, leftover inventory=0\nGlobo latex redondo reflex plata — R-12 / PAQUETE X 12: design=12, required=12, package=12, packages=1, purchased=12, natural surplus=0, waste reserve=0, leftover inventory=0\nGlobo latex redondo reflex plata — R-12 / PAQUETE X 50: design=47, required=50, package=50, packages=1, purchased=50, natural surplus=3, waste reserve=3, leftover inventory=0",
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 125\nTarget waste reserve: 10\nNatural package surplus: 5\nUsable waste coverage: 10\nAdditional packages required for waste: 1\nGlobo latex redondo fashion azul rey — R-12 / PAQUETE X 12: design=48, required=53, package=12, packages=5, purchased=60, natural surplus=12, waste reserve=5, leftover inventory=7\nGlobo latex redondo fashion azul rey — R-12 / PAQUETE X 20: design=18, required=20, package=20, packages=1, purchased=20, natural surplus=2, waste reserve=2, leftover inventory=0\nGlobo latex redondo reflex plata — R-12 / PAQUETE X 12: design=12, required=12, package=12, packages=1, purchased=12, natural surplus=0, waste reserve=0, leftover inventory=0\nGlobo latex redondo reflex plata — R-12 / PAQUETE X 50: design=47, required=50, package=50, packages=1, purchased=50, natural surplus=3, waste reserve=3, leftover inventory=0",
       "plan": {
         "concepto": {
           "descripcion": "Semiarco y columnas de entrada en azul rey y plata.",
@@ -795,7 +795,7 @@
       "sin_cobertura": [],
       "sustituciones": [],
       "totales": {
-        "additional_waste_packages": 5,
+        "additional_waste_packages": 1,
         "ahorro_paquetes_cop": 28977,
         "consumption_cost": 63036,
         "covered_waste_reserve": 10,
@@ -811,7 +811,7 @@
         "total_cop": 65515,
         "total_unidades": 125,
         "uncovered_waste_reserve": 0,
-        "waste_only_savings_cop": 8832
+        "waste_only_savings_cop": 37809
       }
     },
     "quote": {
@@ -1156,7 +1156,7 @@
       ],
       "special_elements": [],
       "totals": {
-        "additional_waste_packages": 5,
+        "additional_waste_packages": 1,
         "consumption_cost": 63036,
         "covered_waste_reserve": 10,
         "design_quantity": 125,
@@ -1169,7 +1169,7 @@
         "target_waste_reserve": 10,
         "uncovered_waste_reserve": 0,
         "waste_adjusted_quantity": 135,
-        "waste_only_savings_cop": 42058
+        "waste_only_savings_cop": 37809
       },
       "version": "design-material-estimate-v1",
       "warnings": []
@@ -1639,7 +1639,7 @@
       "sin_cobertura": [],
       "sustituciones": [],
       "totales": {
-        "additional_waste_packages": 5,
+        "additional_waste_packages": 1,
         "ahorro_paquetes_cop": 28977,
         "consumption_cost": 63036,
         "covered_waste_reserve": 10,
@@ -1655,7 +1655,7 @@
         "total_cop": 65515,
         "total_unidades": 125,
         "uncovered_waste_reserve": 0,
-        "waste_only_savings_cop": 8832
+        "waste_only_savings_cop": 37809
       }
     },
     "quote": {

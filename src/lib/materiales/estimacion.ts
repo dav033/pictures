@@ -1,6 +1,6 @@
 import type { ResultadoMedidas } from "@/lib/medidas/geometria";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
-import { distribuirReservaProyecto, optimizarCobertura, asignarUnidades } from "@/lib/plan/optimizar-materiales";
+import { ahorroSoloMermaCop, distribuirReservaProyecto, optimizarCobertura, asignarUnidades, paquetesExtraPorMerma } from "@/lib/plan/optimizar-materiales";
 import { MERMA } from "@/lib/cotizacion/constantes";
 import { z } from "zod";
 
@@ -257,13 +257,25 @@ export function wasteOnlySavingsCop(
     if (specialVariants.has(line.variant_id)) return sum;
     if (!balloonVariants.has(line.variant_id) && !balloonProducts.has(line.product_id)) return sum;
     const unitPrice = line.package_count > 0 ? line.purchase_cost / line.package_count : 0;
-    const basePackages = Math.ceil(line.design_quantity / line.units_per_package);
-    const naivePackages = Math.ceil(Math.ceil(line.design_quantity * (1 + MERMA)) / line.units_per_package);
-    return sum + Math.max(0, (naivePackages - basePackages) * unitPrice);
+    return sum + ahorroSoloMermaCop(line.design_quantity, line.units_per_package, line.package_count, unitPrice, MERMA);
   }, 0);
   return Math.round(savings);
 }
 
+/**
+ * Cambio de significado dentro de `design-material-estimate-v1` (ADR 0022), sin
+ * cambiar el esquema porque los dos campos se derivan de las mismas líneas:
+ *
+ * - `additional_waste_packages` es el delta de paquetes comprados por la
+ *   reserva de merma, no todos los paquetes de la línea marcada.
+ * - `waste_only_savings_cop` compara la compra ingenua con lo que de verdad se
+ *   compró, así que una línea que sí necesitó un paquete extra ya no reporta
+ *   un ahorro que no ocurrió.
+ *
+ * Los dos alimentan `merma_log` (IMAGE_DEBUG) y las auditorías; quien calibre
+ * MERMA con series anteriores al despliegue debe saber que la definición
+ * cambió. `validateMaterialEstimate` recalcula ambos desde las líneas.
+ */
 function totals(balloons: DesignMaterialEstimate["balloons"], special: DesignMaterialEstimate["special_elements"], purchases: DesignMaterialEstimate["purchases"]): DesignMaterialEstimate["totals"] {
   const designQuantity = [...balloons, ...special].reduce((sum, line) => sum + line.design_quantity, 0);
   const targetWasteReserve = Math.ceil(balloons.reduce((sum, line) => sum + line.design_quantity, 0) * MERMA);
@@ -283,7 +295,7 @@ function totals(balloons: DesignMaterialEstimate["balloons"], special: DesignMat
     consumption_cost: purchases.reduce((sum, line) => sum + line.consumption_cost, 0),
     purchase_cost: purchases.reduce((sum, line) => sum + line.purchase_cost, 0),
     waste_only_savings_cop: wasteOnlySavingsCop(balloons, special, purchases),
-    additional_waste_packages: purchases.filter((line) => line.additional_package_for_waste).reduce((sum, line) => sum + line.package_count, 0),
+    additional_waste_packages: purchases.filter((line) => line.additional_package_for_waste).reduce((sum, line) => sum + paquetesExtraPorMerma(line.design_quantity, line.units_per_package, line.package_count), 0),
     waste_adjusted_quantity: wasteAdjustedQuantity,
     purchase_quantity: purchaseQuantity,
     operational_surplus: operationalSurplus,
