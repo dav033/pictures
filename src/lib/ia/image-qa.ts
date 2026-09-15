@@ -1,9 +1,10 @@
 import { ThinkingLevel } from "@google/genai";
-import type { SceneSpec } from "./scene-spec";
+import { tableSupportedElements, type SceneSpec } from "./scene-spec";
 import { z } from "zod";
 import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
 import type { DesignMaterialEstimate } from "@/lib/materiales/estimacion";
 import { identificarEstructuraOficial, type EstructuraOficial } from "@/lib/plan/estructuras-oficiales";
+import { AMBIENTACION_IMAGEN, esAmbientacionPermitida, perfilCreatividad, type NivelCreatividad } from "./creatividad";
 import { featureEnabled } from "./feature-flags";
 import { compileLoraCaption, type LoraVisualClause } from "./lora-caption-compiler";
 import { findSeparateSidePieces, type SeparateSidePieces } from "./separate-side-pieces";
@@ -193,7 +194,34 @@ export function describeExpectedQaElement(element: SceneSpec["elements"][number]
   return `${element.element_id}: ONE distinct installed structure; name=${JSON.stringify(element.name)}; ${kind}canonical type=${semantics?.structure_type ?? element.category}; canonical placement=${semantics?.placement ?? "legacy bbox placement"}; design role=${semantics?.design_role ?? "legacy"}; repetition group=${semantics?.repetition_group ?? "none"}; colors=${element.resolved_colors.join(", ") || "not specified"}; bbox=${element.target_bbox.x},${element.target_bbox.y},${element.target_bbox.width},${element.target_bbox.height}; installed material quantity=${element.quantity.min}-${element.quantity.max} (material units, not structure count)`;
 }
 
-export function buildQaObserverPrompt(sceneSpec: SceneSpec, estimate?: DesignMaterialEstimate, plan?: QaPlanInputs): string {
+/**
+ * Styling the generation level allowed (creatividad.ts): the observer reports
+ * it apart from real extras so an allowed flower or guest does not trigger a
+ * corrective retry. Without a level nothing is allowed.
+ */
+function allowedStylingInstruction(creatividad: NivelCreatividad | undefined): string {
+  const styling = creatividad === undefined ? [] : perfilCreatividad(creatividad).imagen.ambientacion.map((clave) => AMBIENTACION_IMAGEN[clave].cue);
+  return styling.length
+    ? `\nAllowed non-catalog styling for this image: ${styling.join("; ")}. Do not list that styling as unexpected; still list any extra balloons, balloon structures, backdrops, signs, or text.`
+    : "";
+}
+
+/** Tables under approved centerpieces are their requested support (build-image-prompt TABLE SUPPORT EXCEPTION). */
+function tableSupportInstruction(sceneSpec: SceneSpec): string {
+  return tableSupportedElements(sceneSpec).length
+    ? "\nPlain tables that hold the expected table-top structures are their expected support: do not list those tables as unexpected."
+    : "";
+}
+
+/** A plain supporting table, never one carrying balloons, signs or text of its own. */
+function isSupportTable(sceneSpec: SceneSpec, observed: string): boolean {
+  const item = observed.replace(/_/g, " ");
+  return tableSupportedElements(sceneSpec).length > 0
+    && /\b(?:tables?|tablecloths?)\b/i.test(item)
+    && !/\b(?:balloons?|signs?|text|letters?|food|cakes?|chairs?|flowers?|candles?)\b/i.test(item);
+}
+
+export function buildQaObserverPrompt(sceneSpec: SceneSpec, estimate?: DesignMaterialEstimate, plan?: QaPlanInputs, creatividad?: NivelCreatividad): string {
   const clauses = compiledClauses(sceneSpec, plan);
   const officialByElementId = new Map(clauses.flatMap((clause) => clause.officialStructure ? clause.elementIds.map((id) => [id, clause.officialStructure] as const) : []));
   const expected = sceneSpec.elements.map((element) => describeExpectedQaElement(element, officialByElementId.get(element.element_id))).join("\n");
@@ -201,7 +229,7 @@ export function buildQaObserverPrompt(sceneSpec: SceneSpec, estimate?: DesignMat
     ? `\nMaterial estimate: approximately ${estimate.totals.design_quantity} installed units; expected visual scale=${estimate.design.visual_scale}; density=${estimate.design.visual_density}; installed balloon sizes=${estimate.balloons.map((line) => `${line.design_quantity}x${line.size_inches ?? "special"}-inch`).join(", ") || "none"}. Purchased capacity=${estimate.totals.purchase_quantity} is not visual quantity. Assess physical scale, not exact object count.`
     : "";
   const separation = plan ? separateSidePiecesInstruction(findSeparateSidePieces(clauses)) : "";
-  return `You are a strict visual QA observer. Inspect the generated image and return only JSON. Do not infer presence from this prompt: decide from visible pixels. Expected physical instances:\n${expected}${materialExpectation}${separation}\nEach expected element_id represents one distinct installed structure, even when its material quantity is large; list that id once when its structure is visibly present. Do not list one id per balloon, material unit, package, or repeated visual detail. Mark an instance missing when its distinct structure is not visibly present. Mark placement failure when its canonical placement or bbox region is wrong. Mark appearance failure when the visible palette, material, or size differs from the required catalog colors and material description above. List unexpected decorative objects not in the expected list. For the material estimate, use a broad perceptual range and visual scale: a result is inconsistent when it is clearly several times denser/larger than the installed estimate, not merely because an exact count is difficult. Treat any visible free-floating text, heading, number, measurement, element ID, caption, callout, arrow, watermark, invented logo, or label as a text_artifact or annotation_artifact. Only lettering physically printed on an explicitly approved signage product is allowed; all other visible writing is a failure.`;
+  return `You are a strict visual QA observer. Inspect the generated image and return only JSON. Do not infer presence from this prompt: decide from visible pixels. Expected physical instances:\n${expected}${materialExpectation}${separation}${tableSupportInstruction(sceneSpec)}${allowedStylingInstruction(creatividad)}\nEach expected element_id represents one distinct installed structure, even when its material quantity is large; list that id once when its structure is visibly present. Do not list one id per balloon, material unit, package, or repeated visual detail. Mark an instance missing when its distinct structure is not visibly present. Mark placement failure when its canonical placement or bbox region is wrong. Mark appearance failure when the visible palette, material, or size differs from the required catalog colors and material description above. List unexpected decorative objects not in the expected list, including any backdrop, curtain, drape, fabric or panel wall, hoop or ring frame, pedestal, crate or stand used instead of the expected support, loose or floating balloons, sign, flowers, candles, furniture, props, or people. Mark appearance failure when a structure has a different form than its official structure (for example a round hoop instead of an arch), or when a hanging structure floats without visible support. For the material estimate, use a broad perceptual range and visual scale: a result is inconsistent when it is clearly several times denser/larger than the installed estimate, not merely because an exact count is difficult. Treat any visible free-floating text, heading, number, measurement, element ID, caption, callout, arrow, watermark, invented logo, or label as a text_artifact or annotation_artifact. Only lettering physically printed on an explicitly approved signage product is allowed; all other visible writing is a failure.`;
 }
 
 export async function observarImagenGenerada(
@@ -212,13 +240,14 @@ export async function observarImagenGenerada(
   signal?: AbortSignal,
   force = false,
   plan?: QaPlanInputs,
+  creatividad?: NivelCreatividad,
 ): Promise<SceneQaObservation | null> {
   // The UI can opt into one observation for a request without turning on the
   // global flag. The flag remains the server-side default/kill switch.
   if (!force && !featureEnabled("IMAGE_QA_ENABLED")) return null;
   const client = getGeminiClient();
   if (!client) return null;
-  const instruction = buildQaObserverPrompt(sceneSpec, estimate, plan);
+  const instruction = buildQaObserverPrompt(sceneSpec, estimate, plan, creatividad);
   const inicio = Date.now();
   try {
     const response = await client.models.generateContent({
@@ -272,7 +301,7 @@ function separateSidePiecesOutcome(sceneSpec: SceneSpec, separation: SceneQaObse
   return pieces ? { ok: separation === "separate", pieces } : undefined;
 }
 
-export function evaluateSceneQa(sceneSpec: SceneSpec, observation: SceneQaObservation = {}, estimate?: DesignMaterialEstimate, plan?: QaPlanInputs): ImageQaReport {
+export function evaluateSceneQa(sceneSpec: SceneSpec, observation: SceneQaObservation = {}, estimate?: DesignMaterialEstimate, plan?: QaPlanInputs, creatividad?: NivelCreatividad): ImageQaReport {
   const present = new Set(observation.presentElementIds ?? []);
   const observedIds = observation.presentElementIds ?? [];
   const expectedIds = new Set(sceneSpec.elements.map((element) => element.element_id));
@@ -287,7 +316,10 @@ export function evaluateSceneQa(sceneSpec: SceneSpec, observation: SceneQaObserv
     appearance_ok: !appearanceFailures.has(element.element_id),
     confidence: observation.confidence ?? null,
   }));
-  const unexpected = observation.unexpectedElements ?? [];
+  // Backstop for an observer that lists requested supports or allowed styling
+  // anyway: only plain centerpiece tables and items the level allows that name
+  // no balloon, structure, sign or text are dropped.
+  const unexpected = (observation.unexpectedElements ?? []).filter((item) => !isSupportTable(sceneSpec, item) && (creatividad === undefined || !esAmbientacionPermitida(creatividad, item)));
   const textArtifacts = observation.textArtifacts ?? [];
   const annotationArtifacts = observation.annotationArtifacts ?? [];
   const pastedArtifacts = observation.pastedArtifacts ?? [];

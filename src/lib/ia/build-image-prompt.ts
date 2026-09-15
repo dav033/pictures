@@ -1,4 +1,6 @@
-import type { SceneSpec } from "./scene-spec";
+import { AMBIENTACION_IMAGEN, perfilCreatividad, type AmbientacionImagen, type NivelCreatividad } from "./creatividad";
+import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
+import { tableSupportedElements, type SceneSpec } from "./scene-spec";
 import { buildLoraImagePromptV2 } from "./lora-caption-compiler";
 import {
   buildPositiveEnvironmentCues,
@@ -30,7 +32,101 @@ export type ImagePromptInput = {
   droppedCatalogReferenceCount?: number;
   /** Number of client composition-reference photos omitted because the provider input cap was reached (R6). */
   droppedCompositionReferenceCount?: number;
+  /**
+   * Creativity level the plan was designed with (creatividad.ts). Absent keeps
+   * the prompt of the default level, for callers without a level.
+   */
+  creatividad?: NivelCreatividad;
+  /**
+   * Declared official structure by plan structure id (QaPlanInputs of the
+   * approved plan), so a declared circular hoop is not asked to be an arch.
+   */
+  officialStructures?: ReadonlyMap<string, string>;
 };
+
+/**
+ * Element name for the image model without its measurement parenthetical. The
+ * plan blueprint names carry "(2.4 m × 2.2 m)"; in the 2026-09-15 calibration
+ * the model drew those values as dimension callouts (2 of 6 five-piece
+ * images). Scale travels as words through physicalScale instead.
+ */
+export function promptElementName(name: string): string {
+  return name.replace(/\s*\((?=[^)]*\d)[^)]*\)/g, "").replace(/\s{2,}/g, " ").trim() || name;
+}
+
+function heightWords(meters: number): string {
+  if (meters <= 0.8) return "table-top height";
+  if (meters <= 1.3) return "about waist-to-chest height of an adult";
+  if (meters <= 2) return "about the height of an adult";
+  if (meters <= 2.7) return "clearly taller than an adult, below a standard ceiling";
+  return "close to ceiling height";
+}
+
+function widthWords(meters: number): string {
+  if (meters <= 0.8) return "narrow, about one person wide";
+  if (meters <= 1.5) return "about as wide as two people side by side";
+  // Not "a doorway": arches were then drawn as closed rectangular door frames.
+  if (meters <= 3) return "about two adult arm spans wide";
+  return "more than two adult arm spans wide";
+}
+
+/** Physical size in words: numbers in the prompt were rendered as measurement labels. */
+function physicalScale(element: SceneSpec["elements"][number]): string {
+  const dimensions = element.visual_semantics?.dimensions_m;
+  const parts = [
+    dimensions?.height ? heightWords(dimensions.height) : undefined,
+    dimensions?.width ? widthWords(dimensions.width) : undefined,
+  ].filter(Boolean);
+  return parts.length ? ` Physical scale: ${parts.join("; ")}.` : "";
+}
+
+/**
+ * Form and support the image model got wrong in the 2026-09-15 calibration: an
+ * approved arch drawn as a round hoop or a closed square frame (7 of 48 images
+ * of the arch plan) and a wall garland floating mid-wall. A declared or named
+ * circular hoop keeps its own form.
+ */
+function shapeClause(element: SceneSpec["elements"][number], officialStructures?: ReadonlyMap<string, string>): string {
+  const semantics = element.visual_semantics;
+  if (!semantics) return "";
+  const official = identificarEstructuraOficial({
+    tipo: semantics.structure_type,
+    densidad: semantics.density,
+    ubicacion: semantics.placement,
+    nombre: element.name,
+    estructura_oficial: officialStructures?.get(semantics.repetition_group) ?? officialStructures?.get(element.element_id),
+  });
+  if (semantics.structure_type === "arco" && official?.forma !== "circular") {
+    return " Form: a free-standing inverted-U arch, both legs standing on the floor and joined by one continuous curve over the top; never a round hoop, a ring, or a closed square frame.";
+  }
+  if (semantics.structure_type === "guirnalda" && semantics.placement === "fondo_pared") {
+    return " Support: mounted flat against the wall along its whole length with visible anchoring; it never floats away from the wall.";
+  }
+  return "";
+}
+
+function stylingOf(nivel: NivelCreatividad | undefined): readonly AmbientacionImagen[] {
+  return perfilCreatividad(nivel).imagen.ambientacion;
+}
+
+/**
+ * Creativity section of the standard image prompt. The quoted structures are
+ * locked at every level; only art direction and the listed non-catalog
+ * styling change. Empty at the default level (pre-calibration prompt).
+ */
+function creativityContract(nivel: NivelCreatividad | undefined): string {
+  const perfil = perfilCreatividad(nivel);
+  if (!perfil.imagen.direccion) return "";
+  const styling = perfil.imagen.ambientacion.map((clave) => AMBIENTACION_IMAGEN[clave].cue);
+  return [
+    `CREATIVITY LEVEL ${perfil.nivel} OF 5 — ART DIRECTION`,
+    `- ${perfil.imagen.direccion}`,
+    "- Fidelity lock at every level: keep exactly the approved balloon structures, their type, colors, balloon sizes, count, and placement. Creativity never adds, removes, merges, recolors, or resizes a balloon structure and never adds loose balloons, signage, or text. The result stays a plain photograph: no captions, labels, dimension notes, or magazine-style text at any level.",
+    styling.length
+      ? `- Allowed non-catalog styling at this level: ${styling.join("; ")}. These are the ONLY exceptions to the bans on flowers, candles, furniture, props, or people elsewhere in this prompt. They are not quoted products: keep them secondary, physically separate from the balloon structures, and free of balloons, text, and signs.`
+      : "- No styling beyond the approved balloon structures: the bans on flowers, plants, candles, furniture, props, and people elsewhere in this prompt apply fully.",
+  ].join("\n");
+}
 
 function list(items: string[]): string {
   return items.length ? items.map((item) => `- ${item}`).join("\n") : "- None.";
@@ -58,7 +154,7 @@ function compactSceneSpec(scene: SceneSpec): string {
       editable_areas: "use only the approved placement descriptions below",
     },
     elements: scene.elements.map((element) => ({
-      name: element.name,
+      name: promptElementName(element.name),
       category: element.category,
       source_type: element.source_type,
       required: element.required,
@@ -120,8 +216,10 @@ function materialEstimateContract(sceneSpec: SceneSpec): string {
  * decoration.  This contract describes the *scene architecture* without
  * inventing any catalog objects.
  */
-function decorationCompositionContract(sceneSpec: SceneSpec, visualContext?: VisualContext): string[] {
+function decorationCompositionContract(sceneSpec: SceneSpec, visualContext?: VisualContext, styling: readonly AmbientacionImagen[] = []): string[] {
   const categories = new Set(sceneSpec.elements.map((element) => element.category));
+  const tableSupports = tableSupportedElements(sceneSpec);
+  const stylingException = styling.length ? " (except the non-catalog styling allowed in CREATIVITY LEVEL)" : "";
   const hasBackdrop = [...categories].some((category) => ["backdrop", "curtain", "drape", "panel"].includes(category));
   const hasBalloonStructure = categories.has("balloon_structure");
   const hasTableProduct = categories.has("tableware") || categories.has("furniture");
@@ -142,8 +240,8 @@ function decorationCompositionContract(sceneSpec: SceneSpec, visualContext?: Vis
     "Do not turn a single catalog line into an isolated generic balloon arch, a loose garland, or unrelated furniture. Every selected line must contribute to the same coherent installation and be physically attached, hung, framed, or grounded.",
     !hasTableProduct && !hasVenuePhoto
       ? hasExplicitOutdoorVenue
-        ? "No generic table, empty table, chairs, dining setup, food, gifts, flowers, or event props: natural vegetation and terrain may appear only as context for the explicitly named outdoor venue, never as added decoration."
-        : "No generic table, empty table, chairs, dining setup, food, gifts, flowers, plants, or landscape scenery: none is an approved catalog element."
+        ? `No generic table, empty table, chairs, dining setup, food, gifts, flowers, or event props${stylingException}: natural vegetation and terrain may appear only as context for the explicitly named outdoor venue, never as added decoration.`
+        : `No generic table, empty table, chairs, dining setup, food, gifts, flowers, plants, or landscape scenery${stylingException}: none is an approved catalog element.`
       : !hasTableProduct
         ? "Do not add a new table, empty table, chairs, or props; preserve only furniture already present in the supplied venue photo."
         : "Use the approved table/furniture only as a supporting layer for the decoration, never as the main subject or an empty event-table cliché.",
@@ -154,7 +252,10 @@ function decorationCompositionContract(sceneSpec: SceneSpec, visualContext?: Vis
       : "Preserve the supplied venue camera and architecture; add the installation to the editable area without replacing the venue with a generic scene.",
     "Treat selected catalog products as installed decoration and raw materials for this one event, never as catalog samples, retail packaging, isolated product cutouts, or evenly spaced inventory.",
     "Only a selected catalog-backed signage product may contain a focal sign or legible printed message; if no signage product is selected, add no sign, banner, lettering, or invented event text.",
-    "Never add commercial/event objects absent from the selected catalog allowlist: no generic tables, chairs, centerpieces, gifts, food, flowers, plants, props, signs, lights, or extra balloons.",
+    `Never add commercial/event objects absent from the selected catalog allowlist${stylingException}: no generic tables, chairs, centerpieces, gifts, food, flowers, plants, props, signs, lights, or extra balloons.`,
+    ...(tableSupports.length
+      ? [`TABLE SUPPORT EXCEPTION: ${tableSupports.length} approved table-top structure(s) stand on plain event tables with simple tablecloths, one table per table-top structure. Those tables are their physical support, not added furniture; never replace them with boxes, crates, pedestals, or the floor, and add no chairs, food, or place settings.`]
+      : []),
   ];
   return layers;
 }
@@ -180,13 +281,13 @@ function colorVarietyContract(sceneSpec: SceneSpec): string[] {
   return balloonStructures.map((element) => {
     const colors = [...new Set(element.resolved_colors.map((color) => color.trim()).filter(Boolean))];
     if (colors.length < 2) {
-      return `${element.name}: MONOCHROME LOCK — use only ${colors[0] ?? "the supplied catalog color"}; do not introduce color variety.`;
+      return `${promptElementName(element.name)}: MONOCHROME LOCK — use only ${colors[0] ?? "the supplied catalog color"}; do not introduce color variety.`;
     }
-    return `${element.name}: APPROVED COLOR VARIETY — use exactly these catalog colors: ${colors.join(", ")}. Distribute them through intentional organic clusters and transitions, preserving any material percentages in the scene spec; avoid flat stripes, random speckles, or one color replacing another. Do not invent, recolor, or borrow any additional color.`;
+    return `${promptElementName(element.name)}: APPROVED COLOR VARIETY — use exactly these catalog colors: ${colors.join(", ")}. Distribute them through intentional organic clusters and transitions, preserving any material percentages in the scene spec; avoid flat stripes, random speckles, or one color replacing another. Do not invent, recolor, or borrow any additional color.`;
   });
 }
 
-function eventAuthorityContract(context?: VisualContext): string[] {
+function eventAuthorityContract(context?: VisualContext, styling: readonly AmbientacionImagen[] = []): string[] {
   if (!context) return [];
   const lines: string[] = [];
   if (context.eventLabel) lines.push(`OPEN EVENT LABEL: ${context.eventLabel}. Convey it only through approved composition, palette, motifs, and lighting.`);
@@ -197,11 +298,18 @@ function eventAuthorityContract(context?: VisualContext): string[] {
   }
   if (context.approvedPlan?.length) lines.push(`APPROVED PLAN / STRUCTURES: ${context.approvedPlan.join("; ")}. Render only these planned structures.`);
   if (context.approvedMaterials?.length) lines.push(`APPROVED PLAN MATERIALS: ${context.approvedMaterials.join("; ")}. These are the complete material allowlist.`);
-  lines.push("OPEN-EVENT HONESTY: express an unclassified event through spatial composition and approved color/style; invent no signage, readable text, props, flowers, furniture, or accessories without an approved catalog line or preserved venue element.");
+  lines.push(`OPEN-EVENT HONESTY: express an unclassified event through spatial composition and approved color/style; invent no signage, readable text, props, flowers, furniture, or accessories without an approved catalog line or preserved venue element${styling.length ? ", except the non-catalog styling allowed in CREATIVITY LEVEL" : ""}.`);
   return lines;
 }
 
-export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount = 0, droppedCompositionReferenceCount = 0 }: ImagePromptInput): string {
+/**
+ * Last words of the prompt. It used to end on the scene JSON; in the 2026-09-15
+ * calibration 5 of 48 images drew element names, sizes or counts from the
+ * prompt as caption cards, so the photograph-only rule is restated last.
+ */
+export const FINAL_OUTPUT_REMINDER = "OUTPUT REMINDER: everything above is invisible control metadata. Return one clean photograph of the decorated venue with zero visible text: no captions, labels, name tags, size or count notes, dimension lines, or info cards.";
+
+export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount = 0, droppedCompositionReferenceCount = 0, creatividad, officialStructures }: ImagePromptInput): string {
   // Keep prompt construction useful for lightweight visual eval fixtures that
   // provide only approved elements. Production callers still pass the full
   // server-validated SceneSpec.
@@ -218,15 +326,17 @@ export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, 
   const sceneLock = visualContext ? buildVisualSceneLock(visualContext) : "No explicit scene context supplied.";
   const environmentCues = visualContext ? buildPositiveEnvironmentCues(visualContext) : [];
   const failureConditions = visualContext ? buildVisualFailureConditions(visualContext) : [];
-  const compositionContract = decorationCompositionContract(sceneSpec, visualContext);
+  const styling = stylingOf(creatividad);
+  const compositionContract = decorationCompositionContract(sceneSpec, visualContext, styling);
+  const creativity = creativityContract(creatividad);
   const scaleInstruction = balloonScaleInstruction(sizeMixBlock);
   const materialContract = materialEstimateContract(sceneSpec);
   const instanceContract = sceneSpec.elements.length
-    ? sceneSpec.elements.map((element, index) => `- EXACTLY ONE physical installed structure ${index + 1}: render the approved ${element.category} described by “${element.name}”; use only its assigned placement and installed quantity. Quantity means material units inside this one structure, not additional structures. This description is invisible metadata; never print or turn it into a sign.`).join("\n")
+    ? sceneSpec.elements.map((element, index) => `- EXACTLY ONE physical installed structure ${index + 1}: render the approved ${element.category} described by “${promptElementName(element.name)}”; use only its assigned placement and installed quantity.${physicalScale(element)}${shapeClause(element, officialStructures)} Quantity means material units inside this one structure, not additional structures. This description is invisible metadata; never print or turn it into a sign.`).join("\n")
     : "- No physical decoration instances are approved.";
   const physicalCardinality = cardinalityContract(sceneSpec);
   const colorVariety = colorVarietyContract(sceneSpec);
-  const eventAuthority = eventAuthorityContract(visualContext);
+  const eventAuthority = eventAuthorityContract(visualContext, styling);
   const referenceCapacityNotice = droppedCatalogReferenceCount > 0
     ? `CATALOG REFERENCE CAPACITY: ${droppedCatalogReferenceCount} catalog photo(s) could not be attached because the provider input limit was reached. Use the complete catalog metadata and quantities in AUTOMATIC_SCENE_SPEC for those lines; do not invent a substitute product, omit the line, or treat the missing photo as permission to change its color/material.`
     : "CATALOG REFERENCE CAPACITY: all selected catalog product photos fit within the provider limit.";
@@ -254,7 +364,7 @@ TASK
 ${task} Add only the automatically selected decorative elements in AUTOMATIC_SCENE_SPEC. This is one clean photographed scene, never a product board, catalog sheet, collage, or annotated mockup. Make thoughtful event-designer choices: build one convincing installation with a focal point, hierarchy, grouping, depth, atmosphere, and usable floor space. ${scaleInstruction}${revision}
 
 ${physicalCardinality}
-
+${creativity ? `\n${creativity}\n` : ""}
 ${eventAuthority.join("\n")}
 
 ${materialContract}
@@ -360,7 +470,9 @@ First verify venue and time of day visibly match SCENE LOCK. Then verify every r
 
 <AUTOMATIC_SCENE_SPEC>
 ${compactSceneSpec(sceneSpec)}
-</AUTOMATIC_SCENE_SPEC>`;
+</AUTOMATIC_SCENE_SPEC>
+
+${FINAL_OUTPUT_REMINDER}`;
 }
 
 /** Caption LoRA V2. */

@@ -217,6 +217,17 @@ export function blueprintHash(blueprint: ReferenceBlueprintV2): string {
   return createHash("sha256").update(JSON.stringify(blueprint)).digest("hex");
 }
 
+const TABLE_PLACEMENTS = new Set(["mesas_invitados", "sobre_mesa_principal"]);
+
+/**
+ * Approved elements that stand on a table (centerpieces): the table is their
+ * physical support, so the image prompt asks for it and the visual QA does not
+ * count it as added furniture.
+ */
+export function tableSupportedElements(sceneSpec: Pick<SceneSpec, "elements">): SceneSpec["elements"] {
+  return sceneSpec.elements.filter((element) => element.visual_semantics?.structure_type === "centro_mesa" || TABLE_PLACEMENTS.has(element.visual_semantics?.placement ?? ""));
+}
+
 export function sceneSpecHash(sceneSpec: SceneSpec): string {
   return createHash("sha256").update(JSON.stringify(sceneSpec)).digest("hex");
 }

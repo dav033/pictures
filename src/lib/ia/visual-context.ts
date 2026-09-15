@@ -59,8 +59,6 @@ function matchVenue(value: string | undefined): VenuePattern | undefined {
   return VENUE_PATTERNS.find((candidate) => candidate.pattern.test(text));
 }
 
-/** Legacy open "en <...>" phrase, kept verbatim as the venue when no place phrase is found. */
-const FREE_VENUE_PATTERN = /\ben\s+(?:un|una|el|la)?\s*([^,.;]+?)(?=\s+(?:de|por)\s+(?:la\s+)?(?:noche|d[i\u00ed]a|tarde|ma[\u00f1n]ana|atardecer)|$)/i;
 /** A place phrase never spans punctuation. */
 const CLAUSE_SEPARATOR = /[,.;:!?\u00a1\u00bf()\n]+/;
 /**
@@ -88,12 +86,14 @@ function findPlacePhrase(request: string | undefined): string | undefined {
   return undefined;
 }
 
+/**
+ * The venue named in the request, read exactly as requestNamesVenue reads it.
+ * A legacy fallback kept any "en <...>" tail verbatim, so "en blanco y dorado
+ * con un arco" or "en la pared" became a MANDATORY VENUE of the image prompt
+ * (2026-09-15 calibration, every default-level prompt of four plans).
+ */
 function extractVenueFromRequest(request: string | undefined): string | undefined {
-  const known = matchVenue(request);
-  if (known) return known.label;
-  const source = clean(request);
-  if (!source) return undefined;
-  return findPlacePhrase(source) ?? clean(source.match(FREE_VENUE_PATTERN)?.[1], 100);
+  return matchVenue(request)?.label ?? findPlacePhrase(request);
 }
 
 /**

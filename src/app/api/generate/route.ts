@@ -116,7 +116,7 @@ type Body = {
    * returned; an invalid one is still a 400.
    */
   seed?: unknown;
-  /** Creativity 0-5 (creatividad.ts): LoRA styling cues and guidance scale. Invalid or absent = default. */
+  /** Creativity 0-5 (creatividad.ts): LoRA styling cues and guidance scale, Gemini art direction and allowed styling (also read by the visual QA). The level signed in an approved plan wins. Invalid or absent = default. */
   creatividad?: unknown;
 };
 
@@ -1148,7 +1148,9 @@ async function generar(request: Request, generationRequestId: string): Promise<R
           mezcla_real: estructura.mezcla_real.map((linea) => ({ diamPulg: linea.diam_pulg, forma: linea.forma, unidades: linea.unidades, pct: linea.pct })),
         }))) ?? undefined
       : bloqueMezclaTamanos([...unidadesPorTamano.values()]) ?? undefined;
-    const providerPrompt = buildImagePrompt({ sceneSpec: transformedSceneSpec, inputs: selected.promptInputs, revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount: selected.droppedCatalogProductIds.length, droppedCompositionReferenceCount: selected.droppedReferenceCount });
+    // Same plan map for the prompts below and for the QA, so all read the declared official structures alike.
+    const qaPlan = approvedPlanQaInputs(planResuelto);
+    const providerPrompt = buildImagePrompt({ sceneSpec: transformedSceneSpec, inputs: selected.promptInputs, revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount: selected.droppedCatalogProductIds.length, droppedCompositionReferenceCount: selected.droppedReferenceCount, creatividad: creatividad.nivel, officialStructures: qaPlan?.officialStructures });
     if (planResuelto) {
       const coherencia = verificarCoherenciaPrompt(providerPrompt, planResuelto);
       if (!coherencia.ok) throw new Error(`El prompt no coincide con el plan resuelto: ${coherencia.errores.join("; ")}`);
@@ -1187,8 +1189,6 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       }
     }
     const promptFormat = resolveLoraPromptFormat(body.promptFormat, usarLora ? resolvedLoras?.[0]?.trigger : undefined);
-    // Same plan map for the prompt below and for the QA, so both pair the side pieces alike.
-    const qaPlan = approvedPlanQaInputs(planResuelto);
     // Styling seen in the reference that the catalog does not sell (lights,
     // foliage) is drawn when the analysis kept it as relevant and no plan
     // structure materializes it. It never reaches the quote or the plan.
@@ -1285,13 +1285,13 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       ? { imagen: loraPrimaryImage }
       : await port!.generar({ prompt: providerPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: previous, previousInteractionId, revisionMode: previous ? "revise_current_result" : "new_generation", signal: request.signal, telemetria: { ...contextoTelemetria, capacidad: "imagen_generacion" } });
     let qa: ImageQaReport | undefined;
-    qa ??= await buildGenerationQa({ sceneSpec: transformedSceneSpec, image: result.imagen, hashes: { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, telemetria: contextoTelemetria, signal: request.signal, force: imageQaRequested, plan: qaPlan });
+    qa ??= await buildGenerationQa({ sceneSpec: transformedSceneSpec, image: result.imagen, hashes: { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, telemetria: contextoTelemetria, signal: request.signal, force: imageQaRequested, plan: qaPlan, creatividad: creatividad.nivel });
     let retried = false;
     if (!usarLora && imageQaRequested && qa.pass === false) {
       const retryPrompt = `${providerPrompt}\n\n${buildCorrectiveRetryPrompt(qa)}`;
       const retry = await port!.generar({ prompt: retryPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: { ...result.imagen, id: "GENERATED_RESULT", descripcion: "Current generated result for one corrective retry." }, previousInteractionId: result.interactionId, revisionMode: "revise_current_result", signal: request.signal, telemetria: { ...contextoTelemetria, capacidad: "imagen_generacion_correctiva", intento: 2 } });
       retried = true;
-      qa = await buildGenerationQa({ sceneSpec: transformedSceneSpec, image: retry.imagen, hashes: { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, telemetria: { ...contextoTelemetria, intento: 2 }, signal: request.signal, force: imageQaRequested, plan: qaPlan });
+      qa = await buildGenerationQa({ sceneSpec: transformedSceneSpec, image: retry.imagen, hashes: { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, telemetria: { ...contextoTelemetria, intento: 2 }, signal: request.signal, force: imageQaRequested, plan: qaPlan, creatividad: creatividad.nivel });
       await auditarImagen("IMAGEN_QA_RETRY", qa, transformedSceneSpec);
       if (qa.pass !== true) return respuestaNoConforme(`NON_CONFORME: la imagen no cumple la cardinalidad o composición aprobada${qa.retry_reasons.length ? ` — ${qa.retry_reasons.join("; ")}` : ""}.`, generationRequestId, { qa, plan: planResuelto, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash });
       return Response.json({ imagen: `data:${retry.imagen.mime};base64,${retry.imagen.base64}`, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, plan: planResuelto, qa, retried, proveedor, cotizacion, interactionId: retry.interactionId, prompt: retryPrompt, prompts: { "Gemini · Nano Banana 2": retryPrompt }, productAuthority: productAuthority.length ? productAuthority : undefined });

@@ -1,5 +1,6 @@
 import type { DesignMaterialEstimate } from "@/lib/materiales/estimacion";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
+import type { NivelCreatividad } from "./creatividad";
 import { evaluateSceneQa, observarImagenGenerada, qaPlanInputsFromPlan, type ImageQaReport, type QaPlanInputs } from "./image-qa";
 import type { SceneSpec } from "./scene-spec";
 import type { ContextoTelemetriaIA } from "./telemetria-llamadas";
@@ -30,13 +31,15 @@ export async function buildGenerationQa(input: {
   signal?: AbortSignal;
   force: boolean;
   plan: QaPlanInputs | undefined;
+  /** Creativity level the image was generated with: its allowed styling is not an unexpected element. */
+  creatividad?: NivelCreatividad;
   observe?: QaObserver;
 }): Promise<ImageQaReport> {
   const observe = input.observe ?? observarImagenGenerada;
-  const observation = await observe(input.sceneSpec, input.image, input.materialEstimate, input.telemetria, input.signal, input.force, input.plan);
+  const observation = await observe(input.sceneSpec, input.image, input.materialEstimate, input.telemetria, input.signal, input.force, input.plan, input.creatividad);
   const hashes = { plan_hash: input.hashes.planHash, scene_spec_hash: input.hashes.sceneSpecHash };
   if (!observation) {
-    return { ...evaluateSceneQa(input.sceneSpec, {}, input.materialEstimate, input.plan), pass: null, confidence: "unknown", observation_confidence: null, ...hashes, observed_instances: null };
+    return { ...evaluateSceneQa(input.sceneSpec, {}, input.materialEstimate, input.plan, input.creatividad), pass: null, confidence: "unknown", observation_confidence: null, ...hashes, observed_instances: null };
   }
-  return { ...evaluateSceneQa(input.sceneSpec, observation, input.materialEstimate, input.plan), confidence: "vision_assisted", ...hashes, observed_instances: observation.presentElementIds ?? [] };
+  return { ...evaluateSceneQa(input.sceneSpec, observation, input.materialEstimate, input.plan, input.creatividad), confidence: "vision_assisted", ...hashes, observed_instances: observation.presentElementIds ?? [] };
 }

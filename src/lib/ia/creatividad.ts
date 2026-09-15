@@ -11,7 +11,9 @@ import { z } from "zod";
  *
  * Single owner of the table read by the chat (design rule and scene
  * suggestion), the plan validation (structure range, extras over a reference
- * photo) and the LoRA generation (prompt cues, fal.ai guidance scale).
+ * photo), the LoRA generation (prompt cues, fal.ai guidance scale), the
+ * standard Gemini image prompt (art direction, allowed styling) and the visual
+ * QA (that styling is not an unexpected element).
  * Level 2 reproduces the behavior before this calibration existed. Levels never
  * relax commercial invariants: real catalog products, backend prices and
  * quantities, mandatory colors, the budget and honest disclosure. The values
@@ -42,7 +44,41 @@ export type PerfilCreatividad = {
   pistasPrompt: readonly string[];
   /** fal.ai flux-2 guidance scale. */
   guidanceScale: number;
+  /**
+   * Standard (Gemini) image prompt, build-image-prompt.ts. `direccion` is a
+   * plain English art direction (camera, light, venue styling); empty at the
+   * default level, which keeps the pre-calibration prompt. `ambientacion` is
+   * the non-catalog styling the image may add around the approved balloon
+   * structures; the visual QA does not count it as unexpected. Neither ever
+   * adds, removes, merges or recolors a quoted structure.
+   */
+  imagen: { direccion: string; ambientacion: readonly AmbientacionImagen[] };
 };
+
+/**
+ * Non-catalog styling a creative image may show. Each entry has the prompt cue
+ * and the pattern that recognizes it in the visual QA observer's free-text
+ * "unexpected element" list.
+ */
+export const AMBIENTACION_IMAGEN = {
+  flores: { cue: "fresh flower arrangements on the floor or on surfaces already in the venue", patron: /\b(?:flowers?|floral|bouquets?|roses?|peon(?:y|ies)|greenery|foliage|plants?|vases?)\b/i },
+  velas: { cue: "lit candles in simple holders", patron: /\b(?:candles?|candlesticks?|candelabras?|candle ?holders?|lanterns?|votives?)\b/i },
+  mesa_postres: { cue: "one styled dessert table with a cake, set apart from the balloon structures", patron: /\b(?:dessert|cakes?|cupcakes?|sweets|pastr(?:y|ies)|tables?|tablecloths?|cake stands?)\b/i },
+  invitados: { cue: "a few guests softly out of focus, never covering or touching the balloon structures", patron: /\b(?:guests?|people|persons?|crowd|wom[ae]n|m[ae]n|child(?:ren)?|girls?|boys?|couple|figures?)\b/i },
+} as const satisfies Record<string, { cue: string; patron: RegExp }>;
+export type AmbientacionImagen = keyof typeof AMBIENTACION_IMAGEN;
+
+/**
+ * Whether an observed "unexpected element" is styling allowed at this level.
+ * Anything that names balloons, a balloon structure, signage, text or a
+ * backdrop is never styling: those stay QA failures at every level.
+ */
+export function esAmbientacionPermitida(nivel: NivelCreatividad | undefined, observado: string): boolean {
+  // The observer sometimes answers in snake_case ("tables_with_white_cloths").
+  const descripcion = observado.replace(/_/g, " ");
+  if (/\b(?:balloons?|arch(?:es)?|columns?|garlands?|hoops?|rings?|frames?|signs?|signage|banners?|letters?|lettering|text|words?|numbers?|logos?|backdrops?|curtains?|drapes?|panels?|neon)\b/i.test(descripcion)) return false;
+  return perfilCreatividad(nivel).imagen.ambientacion.some((clave) => AMBIENTACION_IMAGEN[clave].patron.test(descripcion));
+}
 
 const INVARIANTES = "Lo que el cliente sí dijo (lugar, momento, colores, piezas, presupuesto) manda siempre sobre esta regla. Usa solo productos que devuelva buscar_catalogo_rag, no inventes precios ni cantidades y cuéntale en una frase lo que elegiste por tu cuenta (lugar, momento o piezas extra).";
 
@@ -57,6 +93,7 @@ const PERFILES: Record<NivelCreatividad, PerfilCreatividad> = {
     sugiereEscena: false,
     pistasPrompt: [],
     guidanceScale: 4.5,
+    imagen: { direccion: "Plain, true-to-life photograph of the installation: straight-on eye-level camera, even neutral light, a plain uncluttered venue corner; show only the approved balloon structures and nothing else around them.", ambientacion: [] },
   },
   1: {
     nivel: 1,
@@ -68,6 +105,7 @@ const PERFILES: Record<NivelCreatividad, PerfilCreatividad> = {
     sugiereEscena: false,
     pistasPrompt: [],
     guidanceScale: 4,
+    imagen: { direccion: "Clean, understated event photo: eye-level camera, soft natural light, a tidy neutral venue with no added styling.", ambientacion: [] },
   },
   2: {
     nivel: 2,
@@ -79,6 +117,7 @@ const PERFILES: Record<NivelCreatividad, PerfilCreatividad> = {
     sugiereEscena: false,
     pistasPrompt: [],
     guidanceScale: 3.5,
+    imagen: { direccion: "", ambientacion: [] },
   },
   3: {
     nivel: 3,
@@ -90,6 +129,7 @@ const PERFILES: Record<NivelCreatividad, PerfilCreatividad> = {
     sugiereEscena: false,
     pistasPrompt: ["fresh flower arrangements", "rich layered styling"],
     guidanceScale: 3,
+    imagen: { direccion: "Styled event photograph: a flattering three-quarter camera angle and warm layered event lighting that make the approved structures look designed for the celebration.", ambientacion: ["flores"] },
   },
   4: {
     nivel: 4,
@@ -101,6 +141,7 @@ const PERFILES: Record<NivelCreatividad, PerfilCreatividad> = {
     sugiereEscena: true,
     pistasPrompt: ["fresh flower arrangements", "lit candles", "a few guests softly blurred in the background", "soft cinematic lighting"],
     guidanceScale: 2.5,
+    imagen: { direccion: "Cinematic celebration photo: dramatic but natural event lighting with shallow depth of field, a lived-in party moment around the approved structures.", ambientacion: ["flores", "velas", "invitados"] },
   },
   5: {
     nivel: 5,
@@ -112,6 +153,7 @@ const PERFILES: Record<NivelCreatividad, PerfilCreatividad> = {
     sugiereEscena: true,
     pistasPrompt: ["lush flower arrangements", "lit candles", "a styled dessert table", "guests celebrating around the decoration", "bold editorial composition"],
     guidanceScale: 2,
+    imagen: { direccion: "Bold, dynamic celebration photograph: an unexpected camera angle, striking mood lighting and abundant styling around the approved structures, which stay the hero of the image.", ambientacion: ["flores", "velas", "mesa_postres", "invitados"] },
   },
 };
 
