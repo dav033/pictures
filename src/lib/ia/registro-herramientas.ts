@@ -58,7 +58,7 @@ import { ajustarCoberturaPlan, avisosClienteAjustes, mezclasAdmisiblesEstructura
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "@/lib/plan/composicion";
 import { ACCION_PLAN_NO_CONVERGE, disponibilidadDelTurno, quitarMaterialesSinCobertura, RECHAZOS_MAXIMOS, RECHAZOS_PARA_CONVERGER, unirCandidatosTurno } from "./convergencia-plan";
 import { normalizarArgsBrief } from "./brief-herramienta";
-import { HERRAMIENTAS_PLAN, HERRAMIENTAS_RAG } from "./herramientas";
+import { HERRAMIENTAS_PLAN, HERRAMIENTAS_RAG, HERRAMIENTAS_RAG_MODO_PLAN } from "./herramientas";
 import type { ReferenceBlueprintV2 } from "./reference-blueprint";
 import type { Herramienta } from "./tipos";
 import { z } from "zod";
@@ -90,14 +90,16 @@ export const HERRAMIENTAS_SOLO_LECTURA = new Set([
  * partes iguales, no conoce `estructura_oficial` ni `repeticiones` y sus totales
  * contradicen los que cotiza `confirmar_plan_decoracion` — con el plan en
  * pantalla el cliente veía dos conteos distintos del mismo arco. El handler
- * sigue registrado para el flujo legacy y sus pruebas.
+ * sigue registrado para el flujo legacy y sus pruebas. `HERRAMIENTAS_RAG_MODO_PLAN`
+ * quita además el despiece de `confirmar_seleccion_rag`, que sin esa herramienta
+ * solo podía terminar en un rechazo que el modelo no puede corregir.
  */
 export function herramientasActivas(flags: { ragEnabled?: boolean; planEnabled?: boolean } = {}): Herramienta[] {
   const ragEnabled = flags.ragEnabled ?? RAG_ENABLED;
   const planEnabled = flags.planEnabled ?? PLAN_DECORACION_ENABLED;
   if (!ragEnabled) return [];
   if (!planEnabled) return HERRAMIENTAS_RAG;
-  return [...HERRAMIENTAS_RAG.filter((herramienta) => herramienta.nombre !== "calcular_medidas"), ...HERRAMIENTAS_PLAN];
+  return [...HERRAMIENTAS_RAG_MODO_PLAN, ...HERRAMIENTAS_PLAN];
 }
 
 // Se permiten varias búsquedas por turno porque una referencia puede contener

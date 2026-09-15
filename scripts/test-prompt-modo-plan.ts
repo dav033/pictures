@@ -52,6 +52,21 @@ async function main(): Promise<void> {
   assert.equal(typeof registro.calcular_medidas, "function", "el handler legacy sigue registrado");
   ok("herramientasActivas: sin calcular_medidas en modo diseño, con él en el flujo legacy");
 
+  // 3b. Revisión W3-2: las descripciones que viajan en el mismo request tampoco
+  //     pueden mandar al modelo a una herramienta que ese modo no expone.
+  const herramientasPlanActivas = herramientasActivas({ ragEnabled: true, planEnabled: true });
+  for (const herramienta of herramientasPlanActivas) {
+    assert.doesNotMatch(herramienta.descripcion, /calcular_medidas/, herramienta.nombre);
+    assert.doesNotMatch(JSON.stringify(herramienta.esquema), /usar_despiece|calcular_medidas/, herramienta.nombre);
+  }
+  const seleccionPlan = herramientasPlanActivas.find((herramienta) => herramienta.nombre === "confirmar_seleccion_rag")!;
+  assert.doesNotMatch(seleccionPlan.descripcion, /usar_despiece/);
+  assert.match(seleccionPlan.descripcion, /los calcula confirmar_plan_decoracion/);
+  const seleccionLegacy = herramientasActivas({ ragEnabled: true, planEnabled: false }).find((herramienta) => herramienta.nombre === "confirmar_seleccion_rag")!;
+  assert.match(seleccionLegacy.descripcion, /usar_despiece únicamente después de calcular_medidas/);
+  assert.match(JSON.stringify(seleccionLegacy.esquema), /usar_despiece/, "el flujo legacy conserva el campo");
+  ok("modo diseño: ninguna descripción ni esquema activo menciona calcular_medidas ni usar_despiece");
+
   // 4. Regla acotada de variant_id/unidades_declaradas: las estructuras con
   //    geometría no llevan cantidades, Bouquet/Figura y las piezas de catálogo sí.
   const { ESTRUCTURAS_OFICIALES, EJEMPLO_UNIDADES_DECLARADAS } = await import("../src/lib/plan/estructuras-oficiales");
