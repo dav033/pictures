@@ -62,6 +62,10 @@ export const SupuestoTokensSchema = z.object({
   n_llamadas: z.number().int().positive(),
   inventario: PaseSupuestoSchema,
   auditoria: PaseSupuestoSchema,
+  /** Calls that were a malformed-output retry, per pass (informative). */
+  reintentos: z.record(z.string(), z.number().int().nonnegative()).optional(),
+  /** First and last day of the measured window. */
+  ventana: z.object({ desde: z.iso.date(), hasta: z.iso.date() }).strict().optional(),
 }).strict();
 
 export type SupuestoTokens = z.infer<typeof SupuestoTokensSchema>;
