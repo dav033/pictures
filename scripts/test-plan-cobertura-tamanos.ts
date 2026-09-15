@@ -37,18 +37,22 @@ async function main(): Promise<void> {
   const { HERRAMIENTAS_PLAN: herramientasPlan } = await import("../src/lib/ia/herramientas");
   const descripcionMezcla = String((herramientasPlan[0]!.esquema as { properties: { estructuras: { items: { properties: Record<string, { description?: string }> } } } }).properties.estructuras.items.properties.mezcla!.description);
   const recomendaciones = [
-    { diametros: [5, 9, 12, 18], mezcla: "organica_fina" as const },
-    { diametros: [5, 9, 12, 24], mezcla: "organica_fina" as const },
-    { diametros: [5, 9, 12], mezcla: "clasica" as const },
-    { diametros: [9, 12], mezcla: "clasica" as const },
+    { diametros: [5, 9, 12, 18], mezcla: "organica_fina" as const, organicaFina: true },
+    { diametros: [5, 9, 12, 24], mezcla: "organica_fina" as const, organicaFina: true },
+    { diametros: [5, 9, 12], mezcla: "clasica" as const, organicaFina: false },
+    { diametros: [9, 12], mezcla: "clasica" as const, organicaFina: false },
+    // Revisión W3-3: las 5 pulgadas y una grande no bastan; la pedida de 9 solo
+    // la cubren el 9 o el 12, así que el texto tiene que nombrarlas también.
+    { diametros: [5, 18, 24], mezcla: "clasica" as const, organicaFina: false },
+    { diametros: [5, 24], mezcla: "solo_grandes" as const, organicaFina: false },
   ];
   for (const caso of recomendaciones) {
     const compatibles = mezclasCompatiblesConDiametros(caso.diametros);
     assert.ok(compatibles.includes(caso.mezcla), `${caso.diametros.join("/")} debería admitir ${caso.mezcla}: ${compatibles.join(", ")}`);
-    if (caso.mezcla === "clasica") assert.ok(!compatibles.includes("organica_fina"), `${caso.diametros.join("/")} no admite organica_fina: ${compatibles.join(", ")}`);
+    assert.equal(compatibles.includes("organica_fina"), caso.organicaFina, `${caso.diametros.join("/")}: ${compatibles.join(", ")}`);
   }
   assert.doesNotMatch(descripcionMezcla, /aunque falten 18 o 24/, "el texto ya no recomienda una mezcla que el resolver no cubre");
-  assert.match(descripcionMezcla, /5 pulgadas exactas y al menos una de 18 o 24/);
+  assert.match(descripcionMezcla, /5 pulgadas exactas, al menos una de 9 o 12, y al menos una de 18 o 24/);
   assert.match(descripcionMezcla, /solo tiene 5, 9 y 12 pulgadas \(o solo 9 y 12\) no cabe en organica_fina/);
   ok("descripción de mezcla alineada con sustitucionAdmisible (tabla de conjuntos de tamaños)");
 
