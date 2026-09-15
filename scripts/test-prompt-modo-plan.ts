@@ -74,6 +74,32 @@ async function main(): Promise<void> {
   assert.match(perfilCreatividad(5).instruccionDiseno ?? "", /no inventes precios \(las cantidades de las estructuras con geometría las calcula el sistema/);
   ok("regla acotada: geometría sin cantidades, Bouquet/Figura con unidades_declaradas del mínimo de la tabla");
 
+  // 5. Notas de costo de los acentos y lectura de "clear" en la foto.
+  const { ReferenceBlueprintV2Schema } = await import("../src/lib/ia/reference-blueprint");
+  assert.match(modoPlan, /paquete cerrado en CADA tamaño de la mezcla[\s\S]{0,200}0,2 o más/);
+  const blueprint = ReferenceBlueprintV2Schema.parse({
+    schema_version: "2.0",
+    source_images: [{ image_id: "REF_01", approved_roles: ["composition_reference"] }],
+    elements: [{
+      element_id: "REF_01_E01", source_image_id: "REF_01", name: "arco de globos", category: "balloon_structure",
+      scene_role: "midground", detection_confidence: 0.9, visible_evidence: "arco al frente",
+      reference_bbox: { x: 0.1, y: 0.1, width: 0.5, height: 0.5 }, depth_layer: 1,
+      include_policy: "include", approved: true, source_type: "reference_only",
+      quantity: { mode: "exact", min: 1, max: 1 },
+      appearance: { observed_colors: ["rosado"], resolved_colors: [], color_policy: "match_reference", material: "latex", shape: "arco", composition: "single uniform material" },
+      relationships: [], uncertainties: [],
+      visual_semantics: { structure_type: "arco", density: "media", placement: "arco_central", design_role: "focal", repetition_group: "arco_central" },
+      model_decision: { action: "include", match_type: "none", reason: "relevante", adaptation: "ninguna" },
+    }],
+    composition: { focal_point: "arco", density: "moderate", symmetry: "symmetric", negative_space: [] },
+    palette: { observed: ["rosado"], priority: ["rosado"] },
+    unresolved_decisions: [],
+  });
+  const conReferencia = construirSistema({ ragEnabled: true, franjasEnabled: false, planEnabled: true, referenceBlueprint: blueprint });
+  assert.match(conReferencia, /"clear" junto a un color, como "clear pink", es la línea Cristal de ese color/);
+  assert.match(conReferencia, /"clear" solo sí es transparente/);
+  ok("notas de costo del acento pequeño y lectura de 'clear' con color en la foto");
+
   console.log(`\n${casos} casos OK (prompt del modo diseño)`);
 }
 
