@@ -62,6 +62,18 @@ export const RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED =
 /** Default: ON ("false" is the explicit rollback value). */
 export const PLAN_DECORACION_ENABLED = process.env.PLAN_DECORACION_ENABLED !== "false";
 
+// --- Image QA flags --------------------------------------------------------
+
+/**
+ * Default: OFF. TEMPORARY (2026-09-15, requested to unblock local E2E): when
+ * "true", a Gemini image the visual QA marks non-conforming is returned with
+ * `qa.pass: false` (as the LoRA path already does) instead of a 422
+ * IMAGEN_NO_FIEL. QA, the corrective retry and the audit still run, and the
+ * page keeps showing the "may not reflect the proposal" notice. Remove once the
+ * placement false positives (e.g. EST_01_GUIRNALDA) are fixed.
+ */
+export const IMAGE_QA_NON_BLOCKING = process.env.IMAGE_QA_NON_BLOCKING === "true";
+
 // --- LoRA capability flags -------------------------------------------------
 
 // --- Debug flags -----------------------------------------------------------

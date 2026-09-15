@@ -12,7 +12,7 @@ import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
 import { findLoraPromptLanguageLeaks, preflightLoraPrompt } from "@/lib/ia/lora-prompt-preflight";
 import { bloqueMezclaTamanos, bloqueMezclaPorEstructura, descripcionFisicaTamano } from "@/lib/ia/tamano-fisico";
 import { cotizarProductos, type Cotizacion } from "@/lib/cotizacion/motor";
-import { featureEnabled, IMAGE_DEBUG } from "@/lib/ia/feature-flags";
+import { featureEnabled, IMAGE_DEBUG, IMAGE_QA_NON_BLOCKING } from "@/lib/ia/feature-flags";
 import { resolveAspectTransform } from "@/lib/ia/aspect-transform";
 import { evaluateSceneQa, buildCorrectiveRetryPrompt, type ImageQaReport } from "@/lib/ia/image-qa";
 import { approvedPlanQaInputs, buildGenerationQa } from "@/lib/ia/generation-qa";
@@ -119,6 +119,17 @@ type Body = {
   /** Creativity 0-5 (creatividad.ts): LoRA styling cues and guidance scale, Gemini art direction and allowed styling (also read by the visual QA). The level signed in an approved plan wins. Invalid or absent = default. */
   creatividad?: unknown;
 };
+
+/**
+ * Temporal (IMAGE_QA_NON_BLOCKING): con el flag activo un QA no conforme no
+ * bloquea la imagen; queda registrado para no ocultar que se omitió el 422.
+ */
+function bloquearPorQa(qa: ImageQaReport, requestId: string): boolean {
+  if (qa.pass === true) return false;
+  if (!IMAGE_QA_NON_BLOCKING) return true;
+  console.warn(`[generate] IMAGE_QA_NON_BLOCKING: se entrega imagen no conforme request_id=${requestId} razones=${qa.retry_reasons.length}`);
+  return false;
+}
 
 /** 422 de QA visual: el cliente ve `IMAGEN_NO_FIEL`; `qa` y el plan siguen en el cuerpo. */
 function respuestaNoConforme(mensaje: string, requestId: string, extra: Record<string, unknown>): Response {
@@ -1295,7 +1306,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       retried = true;
       qa = await buildGenerationQa({ sceneSpec: transformedSceneSpec, image: retry.imagen, hashes: { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, telemetria: { ...contextoTelemetria, intento: 2 }, signal: request.signal, force: imageQaRequested, plan: qaPlan, creatividad: creatividad.nivel });
       await auditarImagen("IMAGEN_QA_RETRY", qa, transformedSceneSpec);
-      if (qa.pass !== true) return respuestaNoConforme(`NON_CONFORME: la imagen no cumple la cardinalidad o composición aprobada${qa.retry_reasons.length ? ` — ${qa.retry_reasons.join("; ")}` : ""}.`, generationRequestId, { qa, plan: planResuelto, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash });
+      if (bloquearPorQa(qa, generationRequestId)) return respuestaNoConforme(`NON_CONFORME: la imagen no cumple la cardinalidad o composición aprobada${qa.retry_reasons.length ? ` — ${qa.retry_reasons.join("; ")}` : ""}.`, generationRequestId, { qa, plan: planResuelto, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash });
       return Response.json({ imagen: `data:${retry.imagen.mime};base64,${retry.imagen.base64}`, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, plan: planResuelto, qa, retried, proveedor, cotizacion, interactionId: retry.interactionId, prompt: retryPrompt, prompts: { "Gemini · Nano Banana 2": retryPrompt }, productAuthority: productAuthority.length ? productAuthority : undefined });
     }
     await auditarImagen("IMAGEN_QA", qa, transformedSceneSpec);
@@ -1303,7 +1314,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // Gemini), no bloqueamos con 422: se devuelve igual la imagen para poder
     // verla, con el QA en pass:false para que el frontend siga mostrando la
     // advertencia "no conforme" en vez de esconder el resultado.
-    if (planResuelto && qa.pass !== true && !usarLora) return respuestaNoConforme(`NON_CONFORME: la imagen no fue observada conforme al plan aprobado${qa.retry_reasons.length ? ` — ${qa.retry_reasons.join("; ")}` : ""}.`, generationRequestId, { qa, plan: planResuelto, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash });
+    if (planResuelto && !usarLora && bloquearPorQa(qa, generationRequestId)) return respuestaNoConforme(`NON_CONFORME: la imagen no fue observada conforme al plan aprobado${qa.retry_reasons.length ? ` — ${qa.retry_reasons.join("; ")}` : ""}.`, generationRequestId, { qa, plan: planResuelto, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash });
     const debug = IMAGE_DEBUG;
     return Response.json({ imagen: `data:${result.imagen.mime};base64,${result.imagen.base64}`, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, plan: planResuelto, qa, loraPreflight: usarLora ? loraPreflight : undefined, loraPromptVersion: usarLora ? "v2" : undefined, loraPromptHash: usarLora ? hashPrompt(promptPrincipal) : undefined, compilerVersion: usarLora ? LORA_CAPTION_COMPILER_VERSION : undefined, loraProductRuntimeVersion: usarLora ? LORA_PRODUCT_RUNTIME_VERSION : undefined, productPromptCompilation: { resolved_concepts: productPromptCompilation.resolved_concepts, unresolved_products: productPromptCompilation.unresolved_products, vocabulary_version: productPromptCompilation.vocabulary_version, compiler_version: productPromptCompilation.compiler_version, legacy: productPromptCompilation.legacy, diagnostics: productPromptCompilation.diagnostics }, retried, proveedor, modoImagen: usarLora ? "lora" : "proveedor_base", promptFormat: usarLora ? promptFormat : undefined, seed: loraSeed, creatividad: usarLora ? { nivel: creatividad.nivel, nombre: creatividad.nombre, guidance_scale: creatividad.guidanceScale, pistas_prompt: creatividad.pistasPrompt } : undefined, loraJsonPreflight: jsonPreflight, ambientDecor: ambientDecor.length ? ambientDecor : undefined, imagenAlternativa: loraJsonImage && effectiveJsonPrompt ? { formato: "json", imagen: `data:${loraJsonImage.mime};base64,${loraJsonImage.base64}`, prompt: effectiveJsonPrompt, qa: "no_evaluada" } : undefined, cotizacion, interactionId: result.interactionId, prompt: promptPrincipal, prompts: usarLora && promptFormat === "ambos" && effectiveJsonPrompt ? { "LoRA Sempertex · texto": effectiveLoraPrompt, "LoRA Sempertex · JSON": effectiveJsonPrompt } : { [usarLora ? (promptFormat === "json" ? "LoRA Sempertex · JSON" : "LoRA Sempertex") : "Gemini · Nano Banana 2"]: promptPrincipal }, productAuthority: productAuthority.length ? productAuthority : undefined, ...(debug ? { visualContext, droppedImageIds: selected.droppedImageIds, aspectTransform, loraSelection: resolvedLoras?.map((lora) => ({ artifactId: lora.artifactId, specialization: lora.specialization, scale: lora.scale, trigger: lora.trigger })) } : {}) });
   } catch (error) {
