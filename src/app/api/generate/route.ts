@@ -1204,7 +1204,8 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // With a reference or venue photo its own setting (backdrop, curtains, furniture, lighting) is expected context for the QA.
     const planQaBase = approvedPlanQaInputs(planResuelto);
     const qaPlan = planQaBase && (references.length > 0 || venue) ? { ...planQaBase, photoSetting: true } : planQaBase;
-    const providerPrompt = buildImagePrompt({ sceneSpec: transformedSceneSpec, inputs: selected.promptInputs, revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount: selected.droppedCatalogProductIds.length, droppedCompositionReferenceCount: selected.droppedReferenceCount, creatividad: creatividad.nivel, officialStructures: qaPlan?.officialStructures });
+    const promptBase = { sceneSpec: transformedSceneSpec, inputs: selected.promptInputs, revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount: selected.droppedCatalogProductIds.length, droppedCompositionReferenceCount: selected.droppedReferenceCount, creatividad: creatividad.nivel, officialStructures: qaPlan?.officialStructures };
+    const providerPrompt = buildImagePrompt(promptBase);
     if (planResuelto) {
       const coherencia = verificarCoherenciaPrompt(providerPrompt, planResuelto);
       if (!coherencia.ok) throw new Error(`El prompt no coincide con el plan resuelto: ${coherencia.errores.join("; ")}`);
@@ -1342,7 +1343,10 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     qa ??= await buildGenerationQa({ sceneSpec: transformedSceneSpec, image: result.imagen, hashes: { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, telemetria: contextoTelemetria, signal: request.signal, force: imageQaRequested, plan: qaPlan, creatividad: creatividad.nivel });
     let retried = false;
     if (!usarLora && imageQaRequested && qa.pass === false) {
-      const retryPrompt = `${providerPrompt}\n\n${buildCorrectiveRetryPrompt(qa)}`;
+      // La corrección va DENTRO del prompt, antes del recordatorio final: al
+      // concatenarla después, la regla de "solo una fotografía" dejaba de ser
+      // lo último que lee el modelo y el reintento reintroducía ids visibles.
+      const retryPrompt = buildImagePrompt({ ...promptBase, correctiveInstruction: buildCorrectiveRetryPrompt(qa, transformedSceneSpec) });
       const retry = await port!.generar({ prompt: retryPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: { ...result.imagen, id: "GENERATED_RESULT", descripcion: "Current generated result for one corrective retry." }, previousInteractionId: result.interactionId, revisionMode: "revise_current_result", signal: request.signal, telemetria: { ...contextoTelemetria, capacidad: "imagen_generacion_correctiva", intento: 2 } });
       retried = true;
       qa = await buildGenerationQa({ sceneSpec: transformedSceneSpec, image: retry.imagen, hashes: { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, telemetria: { ...contextoTelemetria, intento: 2 }, signal: request.signal, force: imageQaRequested, plan: qaPlan, creatividad: creatividad.nivel });

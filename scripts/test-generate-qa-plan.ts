@@ -7,7 +7,8 @@ import { planBlueprint } from "@/app/api/generate/route";
 import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/scene-spec";
 import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
 import { estimateFromPlan } from "@/lib/materiales/estimacion";
-import { buildQaObserverPrompt, type SceneQaObservation } from "@/lib/ia/image-qa";
+import { buildCorrectiveRetryPrompt, buildQaObserverPrompt, type SceneQaObservation } from "@/lib/ia/image-qa";
+import { buildImagePrompt, FINAL_OUTPUT_REMINDER } from "@/lib/ia/build-image-prompt";
 import { approvedPlanQaInputs, buildGenerationQa, type QaObserver } from "@/lib/ia/generation-qa";
 import { compileProductPrompt } from "@/lib/ia/lora-product-runtime";
 import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
@@ -116,7 +117,34 @@ async function main(): Promise<void> {
   assert.equal(unobserved.observed_instances, null);
   console.log("[PASS] generation QA: no observation -> pass=null, confidence=unknown");
 
-  // 4. One owner: the prompt compiled with the same plan map asks the image model for the gap.
+  // 4. Corrective retry: readable names and placement instead of ids, inserted
+  //    before FINAL_OUTPUT_REMINDER instead of concatenated after it.
+  const conDetalle = await buildGenerationQa({
+    sceneSpec: scene,
+    image: IMAGE,
+    hashes: HASHES,
+    plan: qaPlan,
+    force: true,
+    observe: async (sceneSpec) => ({
+      presentElementIds: sceneSpec.elements.map((element) => element.element_id),
+      appearanceFailures: ["EST_01_SEMIARCO"],
+      appearanceDetails: [{ element_id: "EST_01_SEMIARCO", aspect: "color_proportion", note: "el dorado ocupa la mitad de la pieza" }],
+    }),
+  });
+  assert.equal(conDetalle.pass, false);
+  const correccion = buildCorrectiveRetryPrompt(conDetalle, scene);
+  assert.doesNotMatch(correccion, /EST_\d|CATALOG_/, correccion);
+  assert.match(correccion, /“Semiarco derecho” in the .+ area of the composition/, correccion);
+  assert.match(correccion, /the approved color shares are inverted/, correccion);
+  assert.match(correccion, /observed: el dorado ocupa la mitad de la pieza/, correccion);
+  const promptReintento = buildImagePrompt({ sceneSpec: scene, correctiveInstruction: correccion });
+  assert.ok(promptReintento.endsWith(FINAL_OUTPUT_REMINDER), "el recordatorio final sigue siendo lo último que lee el modelo");
+  assert.ok(promptReintento.includes("CORRECTIVE RETRY — HIGHEST PRIORITY"), promptReintento.slice(-800));
+  assert.ok(promptReintento.indexOf("CORRECTIVE RETRY") < promptReintento.indexOf(FINAL_OUTPUT_REMINDER));
+  assert.equal(buildCorrectiveRetryPrompt(passed, scene), "", "una imagen conforme no lleva instrucción correctiva");
+  console.log("[PASS] corrective retry: nombres legibles, sin ids y antes del recordatorio final");
+
+  // 5. One owner: the prompt compiled with the same plan map asks the image model for the gap.
   const compiled = compileProductPrompt({ sceneSpec: scene, visualContext: CONTEXT, vocabulary: PRODUCT_VOCABULARY, trigger: "eventdecor_style_v2", officialStructures: qaPlan.officialStructures });
   assert.match(compiled.prompt, /stand apart with an open gap between them/, compiled.prompt);
   console.log("[PASS] the LoRA prompt compiled with the same plan inputs requests the separation QA checks");

@@ -44,6 +44,13 @@ export type ImagePromptInput = {
    * approved plan), so a declared circular hoop is not asked to be an arch.
    */
   officialStructures?: ReadonlyMap<string, string>;
+  /**
+   * Corrective instruction of a QA retry (`buildCorrectiveRetryPrompt`). Goes
+   * right before FINAL_OUTPUT_REMINDER, which must stay the last thing the
+   * model reads: concatenating the retry after it left the photograph-only
+   * rule buried in the middle of the prompt.
+   */
+  correctiveInstruction?: string;
 };
 
 /**
@@ -140,7 +147,8 @@ function list(items: string[]): string {
   return items.length ? items.map((item) => `- ${item}`).join("\n") : "- None.";
 }
 
-function placementDescription(target: SceneSpec["elements"][number]["target_bbox"], category: string): string {
+/** Ubicación en palabras: el prompt y el reintento correctivo nunca muestran cajas ni ids. */
+export function placementDescription(target: SceneSpec["elements"][number]["target_bbox"], category: string): string {
   if (["curtain", "drape", "backdrop", "panel"].includes(category)) return "rear background surface spanning the central decoration area";
   const centerX = target.x + target.width / 2;
   const centerY = target.y + target.height / 2;
@@ -412,7 +420,7 @@ function eventAuthorityContract(context?: VisualContext, styling: readonly Ambie
  */
 export const FINAL_OUTPUT_REMINDER = "OUTPUT REMINDER: everything above is invisible control metadata. Return one clean photograph of the decorated venue with zero visible text: no captions, labels, name tags, size or count notes, dimension lines, or info cards.";
 
-export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount = 0, droppedCompositionReferenceCount = 0, creatividad, officialStructures }: ImagePromptInput): string {
+export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount = 0, droppedCompositionReferenceCount = 0, creatividad, officialStructures, correctiveInstruction }: ImagePromptInput): string {
   // Keep prompt construction useful for lightweight visual eval fixtures that
   // provide only approved elements. Production callers still pass the full
   // server-validated SceneSpec.
@@ -574,7 +582,7 @@ First verify venue and time of day visibly match SCENE LOCK. Then verify every r
 <AUTOMATIC_SCENE_SPEC>
 ${compactSceneSpec(sceneSpec)}
 </AUTOMATIC_SCENE_SPEC>
-
+${correctiveInstruction?.trim() ? `\nCORRECTIVE RETRY — HIGHEST PRIORITY\n${correctiveInstruction.trim()}\n` : ""}
 ${FINAL_OUTPUT_REMINDER}`;
 }
 

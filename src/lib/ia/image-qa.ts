@@ -6,13 +6,25 @@ import type { DesignMaterialEstimate } from "@/lib/materiales/estimacion";
 import { identificarEstructuraOficial, type EstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { AMBIENTACION_IMAGEN, esAmbientacionPermitida, perfilCreatividad, type NivelCreatividad } from "./creatividad";
 import { featureEnabled } from "./feature-flags";
+import { placementDescription, promptElementName } from "./build-image-prompt";
 import { compileLoraCaption, GROUPING_ONLY_CONTEXT, type LoraVisualClause } from "./lora-caption-compiler";
 import { describirMezclaDeColor, mezclaDeColorDeEstructura } from "./mezcla-color-escena";
 import { findSeparateSidePieces, type SeparateSidePieces } from "./separate-side-pieces";
 import { bytesBase64, registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "./telemetria-llamadas";
 
+/**
+ * Qué se ve mal en una instancia. `appearance_failures` solo traía el id, así
+ * que el reintento correctivo decía "appearance failure EST_01_ARCO" y el
+ * modelo —que nunca recibe ids— no podía saber qué corregir.
+ */
+export const QA_APPEARANCE_ASPECTS = ["missing_color", "extra_color", "color_proportion", "finish", "size_mix", "form", "support"] as const;
+export type QaAppearanceAspect = (typeof QA_APPEARANCE_ASPECTS)[number];
+export type QaAppearanceDetail = { element_id: string; aspect: QaAppearanceAspect; note: string };
+
 export type ImageQaReport = {
   required_elements: Array<{ element_id: string; present: boolean; placement_ok: boolean; appearance_ok: boolean; confidence: number | null }>;
+  /** Detalle opcional de cada fallo de apariencia; vacío en observaciones antiguas. */
+  appearance_details: QaAppearanceDetail[];
   unexpected_elements: string[];
   text_artifacts: string[];
   annotation_artifacts: string[];
@@ -52,6 +64,7 @@ export type SceneQaObservation = {
   annotationArtifacts?: string[];
   placementFailures?: string[];
   appearanceFailures?: string[];
+  appearanceDetails?: QaAppearanceDetail[];
   cameraOk?: boolean;
   architectureOk?: boolean;
   layeringOk?: boolean;
@@ -77,6 +90,12 @@ const VisionObservationSchema = z.object({
   annotation_artifacts: z.array(z.string()).default([]),
   placement_failures: z.array(z.string()).default([]),
   appearance_failures: z.array(z.string()).default([]),
+  // Observations stored before this field existed parse as []: no detail, never an extra failure.
+  appearance_details: z.array(z.object({
+    element_id: z.string(),
+    aspect: z.enum(QA_APPEARANCE_ASPECTS),
+    note: z.string().max(160),
+  }).strict()).max(12).default([]),
   camera_ok: z.boolean().default(true),
   architecture_ok: z.boolean().default(true),
   layering_ok: z.boolean().default(true),
@@ -109,6 +128,7 @@ export function parseVisionObservation(raw: unknown): SceneQaObservation {
     annotationArtifacts: observado.annotation_artifacts,
     placementFailures: observado.placement_failures,
     appearanceFailures: observado.appearance_failures,
+    appearanceDetails: observado.appearance_details,
     cameraOk: observado.camera_ok,
     architectureOk: observado.architecture_ok,
     layeringOk: observado.layering_ok,
@@ -251,7 +271,7 @@ export function buildQaObserverPrompt(sceneSpec: SceneSpec, estimate?: DesignMat
     ? `\nMaterial estimate: approximately ${estimate.totals.design_quantity} installed units; expected visual scale=${estimate.design.visual_scale}; density=${estimate.design.visual_density}; installed balloon sizes=${estimate.balloons.map((line) => `${line.design_quantity}x${line.size_inches ?? "special"}-inch`).join(", ") || "none"}. Purchased capacity=${estimate.totals.purchase_quantity} is not visual quantity. Assess physical scale, not exact object count.`
     : "";
   const separation = plan ? separateSidePiecesInstruction(findSeparateSidePieces(clauses)) : "";
-  return `You are a strict visual QA observer. Inspect the generated image and return only JSON. Do not infer presence from this prompt: decide from visible pixels. Expected physical instances:\n${expected}${materialExpectation}${separation}${tableSupportInstruction(sceneSpec)}${allowedStylingInstruction(creatividad)}${photoSettingInstruction(plan)}\nEach expected element_id represents one distinct installed structure, even when its material quantity is large; list that id once when its structure is visibly present. Do not list one id per balloon, material unit, package, or repeated visual detail. Mark an instance missing when its distinct structure is not visibly present. Mark placement failure when its canonical placement or bbox region is wrong. Mark appearance failure when the visible palette, balloon material, finish, or size differs from that instance's own "colors", "color mix" and installed balloon sizes listed above: a color that is missing, an extra color, an inverted dominant/accent share, or a finish that is matte where chrome was approved (or the reverse) is an appearance failure. List unexpected decorative objects not in the expected list, including any backdrop, curtain, drape, fabric or panel wall, hoop or ring frame, pedestal, crate or stand used instead of the expected support, loose or floating balloons, sign, flowers, candles, furniture, props, or people. Mark appearance failure when a structure has a different form than its official structure (for example a round hoop instead of an arch), or when a hanging structure floats without visible support. For the material estimate, use a broad perceptual range and visual scale: a result is inconsistent when it is clearly several times denser/larger than the installed estimate, not merely because an exact count is difficult. Treat any visible free-floating text, heading, number, measurement, element ID, caption, callout, arrow, watermark, invented logo, or label as a text_artifact or annotation_artifact. Only lettering physically printed on an explicitly approved signage product is allowed; all other visible writing is a failure.`;
+  return `You are a strict visual QA observer. Inspect the generated image and return only JSON. Do not infer presence from this prompt: decide from visible pixels. Expected physical instances:\n${expected}${materialExpectation}${separation}${tableSupportInstruction(sceneSpec)}${allowedStylingInstruction(creatividad)}${photoSettingInstruction(plan)}\nEach expected element_id represents one distinct installed structure, even when its material quantity is large; list that id once when its structure is visibly present. Do not list one id per balloon, material unit, package, or repeated visual detail. Mark an instance missing when its distinct structure is not visibly present. Mark placement failure when its canonical placement or bbox region is wrong. Mark appearance failure when the visible palette, balloon material, finish, or size differs from that instance's own "colors", "color mix" and installed balloon sizes listed above: a color that is missing, an extra color, an inverted dominant/accent share, or a finish that is matte where chrome was approved (or the reverse) is an appearance failure. For every appearance failure, add one entry to appearance_details with that element_id, the aspect that failed (missing_color, extra_color, color_proportion, finish, size_mix, form or support) and a note of at most 160 characters describing only what you see. List unexpected decorative objects not in the expected list, including any backdrop, curtain, drape, fabric or panel wall, hoop or ring frame, pedestal, crate or stand used instead of the expected support, loose or floating balloons, sign, flowers, candles, furniture, props, or people. Mark appearance failure when a structure has a different form than its official structure (for example a round hoop instead of an arch), or when a hanging structure floats without visible support. For the material estimate, use a broad perceptual range and visual scale: a result is inconsistent when it is clearly several times denser/larger than the installed estimate, not merely because an exact count is difficult. Treat any visible free-floating text, heading, number, measurement, element ID, caption, callout, arrow, watermark, invented logo, or label as a text_artifact or annotation_artifact. Only lettering physically printed on an explicitly approved signage product is allowed; all other visible writing is a failure.`;
 }
 
 export async function observarImagenGenerada(
@@ -370,6 +390,9 @@ export function evaluateSceneQa(sceneSpec: SceneSpec, observation: SceneQaObserv
   ].slice(0, 12);
   return {
     required_elements: requiredElements,
+    // Solo detalles de instancias que la escena espera: el observador no puede
+    // inventar un id y arrastrarlo al prompt de reintento.
+    appearance_details: (observation.appearanceDetails ?? []).filter((detail) => expectedIds.has(detail.element_id)),
     unexpected_elements: unexpected,
     text_artifacts: textArtifacts,
     annotation_artifacts: annotationArtifacts,
@@ -406,13 +429,47 @@ export function evaluateSceneQa(sceneSpec: SceneSpec, observation: SceneQaObserv
   };
 }
 
-export function buildCorrectiveRetryPrompt(report: ImageQaReport): string {
+/** Qué corregir de cada aspecto, en las mismas palabras que usa el prompt de imagen. */
+const ASPECTO_CORRECTIVO: Readonly<Record<QaAppearanceAspect, string>> = {
+  missing_color: "an approved catalog color is missing from this structure",
+  extra_color: "this structure shows a color that was never approved",
+  color_proportion: "the approved color shares are inverted: the dominant color must clearly dominate and the accent must stay an accent",
+  finish: "the balloon finish is wrong (matte where chrome was approved, or the reverse)",
+  size_mix: "the balloon size mix does not match the approved diameters and proportions",
+  form: "the structure has the wrong form",
+  support: "the structure has no believable physical support or floor contact",
+};
+
+/** Etiqueta legible de una instancia: el prompt de imagen nunca recibe ids. */
+function etiquetaLegible(element: SceneSpec["elements"][number]): string {
+  return `“${promptElementName(element.name)}” in the ${placementDescription(element.target_bbox, element.category)}`;
+}
+
+/**
+ * Instrucción correctiva del reintento. Traduce cada id de instancia (incluido
+ * `<id>#n`) a su nombre legible y su ubicación en palabras: el brief retira los
+ * ids a propósito, así que "appearance failure EST_01_ARCO" no le decía nada al
+ * modelo y además reintroducía un id como texto visible.
+ */
+export function buildCorrectiveRetryPrompt(report: ImageQaReport, sceneSpec?: SceneSpec): string {
   if (report.pass === true) return "";
+  const elementos = sceneSpec?.elements ?? [];
+  // Ids más largos primero: `EST_02#2` antes que `EST_02`.
+  const etiquetas = [...elementos]
+    .sort((a, b) => b.element_id.length - a.element_id.length)
+    .map((element) => [element.element_id, etiquetaLegible(element)] as const);
+  const legible = (texto: string) => etiquetas.reduce((acumulado, [id, etiqueta]) => acumulado.split(id).join(etiqueta), texto);
+  const detalles = report.appearance_details.map((detail) => {
+    const element = elementos.find((candidate) => candidate.element_id === detail.element_id);
+    const nota = detail.note.replace(/\s+/g, " ").trim();
+    return `- ${element ? etiquetaLegible(element) : legible(detail.element_id)}: ${ASPECTO_CORRECTIVO[detail.aspect]}${nota ? ` — observed: ${nota}` : ""}.`;
+  });
   return [
     "Correct only the following failed validation checks in the current generated image.",
     "Do not add design details or change venue geometry. Restore missing required instances and remove unexpected or duplicated instances; the final count must exactly match the approved scene.",
     "If text, logos, labels, measurements, IDs, or annotations failed, remove every visible character and return a clean photograph with no typography; these are machine instructions, not scene content.",
-    ...report.retry_reasons.map((reason) => `- ${reason}`),
+    ...report.retry_reasons.map((reason) => `- ${legible(reason)}`),
+    ...detalles,
     "Preserve all approved scene elements, target boxes, layers, and protected venue regions. Keep the installed material quantity and visual scale consistent with the approved estimate; do not add package surplus.",
   ].join("\n");
 }
