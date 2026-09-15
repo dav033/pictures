@@ -51,7 +51,7 @@ import { PLAN_DECORACION_ENABLED, RAG_ENABLED, RAG_FRANJAS_ENABLED, featureEnabl
 import { isPythonAdapterError, seleccionarBackendPython } from "@/lib/ia/python-adapter";
 import { AllowlistProductoVarianteError } from "@/lib/plan/allowlist-producto-variante";
 import { sceneShadowPipeline } from "@/lib/scene/orchestrator";
-import { blockingPhysicalWarnings, validateMaterialEstimate } from "@/lib/materiales/estimacion";
+import { physicalWarningsForPlan, validateMaterialEstimate } from "@/lib/materiales/estimacion";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
 import { ajustarCoberturaPlan, mezclasAdmisiblesEstructura, type AjusteCobertura } from "@/lib/plan/cobertura-materiales";
@@ -784,7 +784,9 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     const resuelto = resolucion.resuelto;
     const materialEstimate = resolucion.materialEstimate;
     const estimateValidation = validateMaterialEstimate(materialEstimate);
-    const physicalWarnings = blockingPhysicalWarnings(materialEstimate);
+    // Un solo dueño de la puerta física sobre el plan resuelto de cualquiera de
+    // los dos backends (estimacion.ts), por estructura lineal y con su densidad.
+    const physicalWarnings = physicalWarningsForPlan(resuelto);
     const auditarResuelto = (status: string, error?: string) => encolarEscrituraObservabilidad(auditarPlan({
       requestId: estado.ragRequestId,
       planHash: resuelto.plan_hash,

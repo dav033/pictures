@@ -1,15 +1,21 @@
 import assert from "node:assert/strict";
+import type { Pool } from "pg";
 import { cotizarProductos } from "../src/lib/cotizacion/motor";
 import { buildImagePrompt } from "../src/lib/ia/build-image-prompt";
 import { evaluateSceneQa } from "../src/lib/ia/image-qa";
 import {
+  blockingPhysicalWarnings,
   estimateFromMeasuredMaterials,
+  estimateFromPlan,
   designQuantityForProduct,
+  physicalWarningsForPlan,
   purchaseForProduct,
   validateMaterialEstimate,
   wasteOnlySavingsCop,
   type DesignMaterialEstimate,
 } from "../src/lib/materiales/estimacion";
+import { resolverPlan } from "../src/lib/plan/resolver";
+import { PlanDecoracionSchema } from "../src/lib/plan/tipos";
 import type { Producto } from "../src/lib/types";
 import type { SceneSpec } from "../src/lib/ia/scene-spec";
 
@@ -223,4 +229,65 @@ const qa = evaluateSceneQa(scene, { materialScaleConsistent: false, materialScal
 assert.equal(qa.pass, false);
 assert.ok(qa.retry_reasons.some((reason) => /material scale mismatch/i.test(reason)));
 
-console.log("[PASS] material consistency regression — installed 42 + 1 special, purchased capacity 101, visual prompt excludes package surplus");
+async function comprobarPuertaFisica(): Promise<void> {
+  // --- Puerta física por estructura (ADR 0022) -------------------------------
+  // Antes `estimateFromPlan` dividía TODOS los globos instalados (la pared, cuyo
+  // eje es 0, incluida) entre el eje sumado de las piezas lineales: "pared +
+  // guirnalda" daba 161 globos/m y `confirmar_plan_decoracion` devolvía
+  // ESTIMACION_INCONSISTENTE en Next mientras Python aceptaba el mismo plan.
+  const filasFisicas = [
+    { product_id: "P-GLOBOS", variant_id: "V-BLANCO-12", sku: "SKU-BLANCO-12", producto_titulo: "Globo blanco", variante_titulo: "R-12", precio: 10_000, unidades_paq: 50, disponible: true, producto_disponible: true, codigo_tamano: "R-12", forma: "redondo", diam_pulg: 12, colores_producto: ["blanco"], colores_variante: ["blanco"], descripcion: "Globo látex blanco R-12.", imagen: null },
+  ];
+  const poolFisico = { query: async () => ({ rows: filasFisicas }) } as unknown as Pool;
+  const whitelistFisica = new Map<string, ReadonlySet<string>>([["P-GLOBOS", new Set(["V-BLANCO-12"])]]);
+  const materialBlanco = [{ product_id: "P-GLOBOS", color: "blanco", participacion: 1, rol_material: "principal" as const }];
+  const planFisico = await resolverPlan(poolFisico, PlanDecoracionSchema.parse({
+    plan_version: "1.0",
+    plan_id: "33333333-3333-4333-8333-333333333333",
+    concepto: { titulo: "Pared con guirnalda", descripcion: "Pared de globos con una guirnalda encima.", paleta: ["blanco"] },
+    espacio: { tipo: "salón", fuente: "cliente" },
+    estructuras: [
+      { estructura_id: "EST_01_GUIRNALDA", nombre: "Guirnalda superior", tipo: "guirnalda", rol_escena: "acento", ubicacion: "arco_central", medidas: { largo_m: 2.5 }, repeticiones: 1, densidad: "lujosa", mezcla: "clasica", materiales: materialBlanco, porque: "Remata la pared." },
+      { estructura_id: "EST_02_PARED", nombre: "Pared de globos", tipo: "pared", rol_escena: "focal", ubicacion: "fondo_pared", medidas: { ancho_m: 2.4, alto_m: 2.4 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales: materialBlanco, porque: "Fondo de fotos." },
+    ],
+    supuestos: [],
+  }), whitelistFisica);
+  const guirnalda = planFisico.estructuras.find((estructura) => estructura.tipo === "guirnalda")!;
+  const pared = planFisico.estructuras.find((estructura) => estructura.tipo === "pared")!;
+  assert.ok(pared.total_unidades > guirnalda.total_unidades * 4, `${pared.total_unidades} vs ${guirnalda.total_unidades}`);
+  assert.deepEqual(physicalWarningsForPlan(planFisico), [], "pared + guirnalda es un plan válido y confirmable");
+  const estimacionFisica = estimateFromPlan(planFisico);
+  assert.deepEqual(blockingPhysicalWarnings(estimacionFisica), [], "la estimación ya no inyecta la puerta física del plan");
+  // Una sola regla de densidad: la de la estructura con más globos de diseño
+  // (antes TypeScript decía "lujosa si alguna lo es" y Python la primera).
+  assert.equal(estimacionFisica.design.density, "media");
+  assert.equal(estimacionFisica.design.visual_density, "medium");
+  // La guirnalda sí se revisa contra su propio eje y su propia densidad.
+  const guirnaldaEscasa = {
+    ...planFisico,
+    estructuras: planFisico.estructuras.map((estructura) => estructura.tipo !== "guirnalda" ? estructura : {
+      ...estructura,
+      lineas: estructura.lineas.map((linea, indice) => ({ ...linea, unidades: indice === 0 ? 5 : 0 })),
+      total_unidades: 5,
+    }),
+  };
+  const avisosEscasos = physicalWarningsForPlan(guirnaldaEscasa);
+  assert.equal(avisosEscasos.length, 1, avisosEscasos.join(" | "));
+  assert.match(avisosEscasos[0]!, /^EST_01_GUIRNALDA: estimated material quantity appears too low for high density over 2\.50 m \(5 installed balloons\)$/);
+  const guirnaldaExcesiva = {
+    ...planFisico,
+    estructuras: planFisico.estructuras.map((estructura) => estructura.tipo !== "guirnalda" ? estructura : {
+      ...estructura,
+      lineas: estructura.lineas.map((linea, indice) => ({ ...linea, unidades: indice === 0 ? 900 : 0 })),
+      total_unidades: 900,
+    }),
+  };
+  assert.match(physicalWarningsForPlan(guirnaldaExcesiva)[0] ?? "", /EST_01_GUIRNALDA: estimated material quantity appears unusually high/);
+}
+
+comprobarPuertaFisica().then(() => {
+  console.log("[PASS] material consistency regression — installed 42 + 1 special, purchased capacity 101, visual prompt excludes package surplus, puerta física por estructura");
+}).catch((error: unknown) => {
+  console.error("[FAIL] puerta física por estructura", error instanceof Error ? error.message : error);
+  process.exitCode = 1;
+});

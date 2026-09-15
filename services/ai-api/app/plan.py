@@ -1744,6 +1744,36 @@ def _material_waste_only_savings(
     return _round_half_up(savings)
 
 
+def _plan_density(
+    plan: Mapping[str, object], structures: Sequence[Mapping[str, object]]
+) -> Mapping[str, object]:
+    """Plan structure that decides ``design.density`` / ``visual_density``.
+
+    The structure with the most design balloons wins; ties keep the first one in
+    plan order. Mirror of ``planDensity`` in ``src/lib/materiales/estimacion.ts``:
+    TypeScript used "lujosa if any structure is lujosa" and Python the first
+    structure, so the same mixed plan reached the image prompt with a different
+    density depending on the backend.
+    """
+    inputs = _mappings(plan.get("estructuras"))
+    if not inputs:
+        return {}
+    balloons: dict[str, int] = {}
+    for structure in structures:
+        balloons[str(structure.get("estructura_id"))] = sum(
+            _integer(line.get("unidades")) or 0
+            for line in _mappings(structure.get("lineas"))
+            if _number(line.get("diam_pulg")) is not None
+        )
+    dominant = inputs[0]
+    for candidate in inputs:
+        if balloons.get(str(candidate.get("estructura_id")), 0) > balloons.get(
+            str(dominant.get("estructura_id")), 0
+        ):
+            dominant = candidate
+    return dominant
+
+
 def _material_estimate(resolved: Mapping[str, object]) -> dict[str, object]:
     plan = _mapping(resolved["plan"])
     structures = _mappings(resolved["estructuras"])
@@ -1797,7 +1827,7 @@ def _material_estimate(resolved: Mapping[str, object]) -> dict[str, object]:
     first_input = (
         _mappings(plan.get("estructuras"))[0] if _mappings(plan.get("estructuras")) else {}
     )
-    density = _text(first_input.get("densidad")) or "media"
+    density = _text(_plan_density(plan, structures).get("densidad")) or "media"
     total_design = sum(_integer(line.get("design_quantity")) or 0 for line in balloons + special)
     installation_length = sum(
         (_number(structure.get("eje_m")) or 0) * (_integer(structure.get("repeticiones")) or 1)

@@ -29,6 +29,7 @@ from app.plan import (
     _product_variant_mismatches,
     _material_waste_only_savings,
     _MIXES,
+    _plan_density,
     _optimizar_cobertura,
     _plan_cost_optimizer_enabled,
     resolve_plan,
@@ -837,7 +838,7 @@ def test_mandatory_sizes_renormalize_the_mix_and_the_total() -> None:
     assert _despiece_with_plan_sizes(_plan_with_sizes(36), _arch("organica_fina", one))[2] == ()
     sizes = (5, 9, 12, 18, 24, 36)
     for mix in _MIXES:
-        for mask in range(1, 2**len(sizes)):
+        for mask in range(1, 2 ** len(sizes)):
             requested = [size for index, size in enumerate(sizes) if (mask >> index) & 1]
             proportions, missing = _effective_proportions(mix, set(requested))
             assert abs(sum(share for _diameter, share in proportions) - 1) < 1e-9
@@ -895,6 +896,36 @@ def test_both_margins_keep_size_totals_independent_of_the_number_of_colors() -> 
                 assert units == by_size[diameter] * 3
             for index, units in totals_by_material.items():
                 assert abs(units / 3 - base_total * split[index]) < 1
+
+
+def test_plan_density_follows_the_structure_with_most_design_balloons() -> None:
+    # Mirror of planDensity in src/lib/materiales/estimacion.ts. TypeScript used
+    # "lujosa if any structure is lujosa" and Python the first structure, so the
+    # same mixed plan reached the image prompt with a different visual_density.
+    plan = {
+        "estructuras": [
+            {"estructura_id": "EST_01_GUIRNALDA", "densidad": "lujosa"},
+            {"estructura_id": "EST_02_PARED", "densidad": "media"},
+        ]
+    }
+    structures = [
+        {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "lineas": [{"unidades": 67, "diam_pulg": 12}],
+        },
+        {
+            "estructura_id": "EST_02_PARED",
+            "lineas": [{"unidades": 336, "diam_pulg": 12}, {"unidades": 1, "diam_pulg": None}],
+        },
+    ]
+    assert _plan_density(plan, structures)["densidad"] == "media"
+    # Tie: the first structure in plan order wins.
+    tied = [
+        {"estructura_id": "EST_01_GUIRNALDA", "lineas": [{"unidades": 10, "diam_pulg": 12}]},
+        {"estructura_id": "EST_02_PARED", "lineas": [{"unidades": 10, "diam_pulg": 12}]},
+    ]
+    assert _plan_density(plan, tied)["densidad"] == "lujosa"
+    assert _plan_density({"estructuras": []}, structures) == {}
 
 
 def test_margin_matrix_closes_both_margins() -> None:

@@ -62,6 +62,7 @@ import {
   blockingPhysicalWarnings,
   designQuantityForProduct,
   estimateFromMeasuredMaterials,
+  physicalWarningsForPlan,
   formatMaterialEstimateLog,
   purchaseForProduct,
   validateMaterialEstimate,
@@ -960,7 +961,9 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     }
     const preflight = validateMaterialEstimate(materialEstimateForLayout);
     if (!preflight.ok) throw new Error(`La estimación de materiales no es válida: ${preflight.errors.join("; ")}`);
-    const physicalWarnings = blockingPhysicalWarnings(materialEstimateForLayout);
+    // Con plan, la puerta física la decide `physicalWarningsForPlan` por
+    // estructura lineal; la ruta heredada sin plan sigue leyendo la estimación.
+    const physicalWarnings = planResuelto ? physicalWarningsForPlan(planResuelto) : blockingPhysicalWarnings(materialEstimateForLayout);
     if (physicalWarnings.length > 0) throw new Error(`La estimación de materiales no es compatible con la escala solicitada: ${physicalWarnings.join("; ")}`);
     if (IMAGE_DEBUG) console.info(formatMaterialEstimateLog(materialEstimateForLayout));
     const aspecto = body.aspecto ?? "3:2";
@@ -1031,7 +1034,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       : estimateFromMeasuredMaterials(body.medidas, productosConMateriales);
     const finalPreflight = validateMaterialEstimate(materialEstimate);
     if (!finalPreflight.ok) throw new Error(`La estimación de materiales no es válida: ${finalPreflight.errors.join("; ")}`);
-    const finalPhysicalWarnings = blockingPhysicalWarnings(materialEstimate);
+    const finalPhysicalWarnings = planResuelto ? physicalWarningsForPlan(planResuelto) : blockingPhysicalWarnings(materialEstimate);
     if (finalPhysicalWarnings.length > 0) throw new Error(`La estimación de materiales no es compatible con la escala solicitada: ${finalPhysicalWarnings.join("; ")}`);
     if (IMAGE_DEBUG) console.info(formatMaterialEstimateLog(materialEstimate));
     const catalogProducts = Object.fromEntries(

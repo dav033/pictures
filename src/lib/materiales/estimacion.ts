@@ -160,6 +160,75 @@ function physicalWarnings(design: DesignMaterialEstimate["design"], total: numbe
 }
 
 /**
+ * Line-based structures: their balloon count is a function of an axis length.
+ * `pared` uses an area model (its axis is 0) and `centro_mesa` is a compact
+ * piece whose largest dimension is not an installation run, so neither has a
+ * calibrated balloons-per-meter range; inventing one would block valid plans.
+ * Non-geometric pieces (bouquet, figura, kit, backdrop, escultura) declare
+ * their units and have no geometry at all.
+ */
+const ESTRUCTURAS_LINEALES = new Set(["arco", "semiarco", "guirnalda", "columna"]);
+
+/**
+ * Único dueño de la puerta física en Next: corre sobre el `PlanResuelto` de
+ * cualquiera de los dos backends (`resolver-backend.ts` devuelve el mismo
+ * tipo), así que Next y Python bloquean lo mismo.
+ *
+ * Antes la comprobación vivía dentro de `estimateFromPlan` y dividía TODOS los
+ * globos instalados (incluida la pared, cuyo eje es 0, y las piezas sin
+ * geometría) entre el eje sumado de las estructuras lineales: "pared +
+ * guirnalda" quedaba en 173 globos/m y no se podía confirmar en Next, mientras
+ * el backend Python —que nunca calculó estas advertencias— sí lo aceptaba.
+ *
+ * Cada estructura lineal se compara ahora contra su propia densidad y su
+ * propio eje por instancia. Los umbrales siguen siendo heurísticos sin
+ * calibrar (ver `physicalWarnings`); el texto conserva las frases que
+ * `blockingPhysicalWarnings` reconoce.
+ */
+export function physicalWarningsForPlan(plan: PlanResuelto): string[] {
+  const warnings: string[] = [];
+  for (const structure of plan.estructuras) {
+    if (!ESTRUCTURAS_LINEALES.has(structure.tipo)) continue;
+    const repeticiones = Math.max(1, Math.round(structure.repeticiones));
+    const extent = (structure.eje_m ?? 0) * repeticiones;
+    if (extent <= 0) continue;
+    const balloons = structure.lineas.filter((line) => line.diam_pulg != null).reduce((sum, line) => sum + line.unidades, 0);
+    if (balloons <= 0) continue;
+    const density = visualDensity(plan.plan.estructuras.find((item) => item.estructura_id === structure.estructura_id)?.densidad);
+    const minimumPerMeter = { low: 8, medium: 14, high: 20 }[density];
+    const maximumPerMeter = { low: 48, medium: 68, high: 88 }[density];
+    const perMeter = balloons / extent;
+    if (perMeter < minimumPerMeter * 0.6) {
+      warnings.push(`${structure.estructura_id}: estimated material quantity appears too low for ${density} density over ${extent.toFixed(2)} m (${balloons} installed balloons)`);
+    }
+    if (perMeter > maximumPerMeter * 1.3) {
+      warnings.push(`${structure.estructura_id}: estimated material quantity appears unusually high for ${density} density over ${extent.toFixed(2)} m (${balloons} installed balloons)`);
+    }
+  }
+  return warnings;
+}
+
+/**
+ * `design.density` / `visual_density` del plan: la densidad de la estructura
+ * con más globos de diseño (empate: la primera en el orden del plan). TypeScript
+ * usaba "lujosa si alguna lo es" y Python la primera estructura, así que el
+ * mismo plan mixto llegaba al prompt de imagen con densidades distintas.
+ * Espejo: `_plan_density` en `services/ai-api/app/plan.py`.
+ */
+function planDensity(plan: PlanResuelto): string | undefined {
+  const balloonsByStructure = new Map(plan.estructuras.map((structure) => [
+    structure.estructura_id,
+    structure.lineas.filter((line) => line.diam_pulg != null).reduce((sum, line) => sum + line.unidades, 0),
+  ]));
+  const structures = plan.plan.estructuras;
+  let dominant = structures[0];
+  for (const structure of structures) {
+    if ((balloonsByStructure.get(structure.estructura_id) ?? 0) > (balloonsByStructure.get(dominant?.estructura_id ?? "") ?? 0)) dominant = structure;
+  }
+  return dominant?.densidad;
+}
+
+/**
  * MERMA models balloons bursting while they are inflated and mounted, so only
  * balloon purchases can avoid a waste-only package. This mirrors the waste
  * reserve eligibility of both producers (`resolver.ts` uses `diam_pulg != null`,
@@ -484,10 +553,14 @@ export function estimateFromPlan(plan: PlanResuelto): DesignMaterialEstimate {
     height: first?.medidas.alto_m ?? null,
     length: first?.medidas.largo_m ?? null,
     installationLength,
-    density: plan.plan.estructuras.some((structure) => structure.densidad === "lujosa") ? "lujosa" : plan.plan.estructuras.some((structure) => structure.densidad === "media") ? "media" : "sencilla",
+    density: planDensity(plan),
     clusterCount: plan.plan.estructuras.reduce((sum, structure) => sum + structure.repeticiones, 0),
   }, totalDesign);
-  return withWarnings({ version: "design-material-estimate-v1", design, balloons, special_elements: specialElements, purchases }, [...plan.advertencias, ...physicalWarnings(design, totalDesign)]);
+  // La puerta física del plan ya no se inyecta aquí: la calcula
+  // `physicalWarningsForPlan` sobre el `PlanResuelto` de cualquiera de los dos
+  // backends, así que la estimación que compara la paridad no lleva
+  // advertencias que solo existen en TypeScript.
+  return withWarnings({ version: "design-material-estimate-v1", design, balloons, special_elements: specialElements, purchases }, plan.advertencias);
 }
 
 export function validateMaterialEstimate(estimate: DesignMaterialEstimate): MaterialEstimateValidation {
