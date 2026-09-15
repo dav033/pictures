@@ -5,7 +5,7 @@ Estado global: EN_CURSO
 | Id | Estado | Evidencia / notas |
 |---|---|---|
 | T0 | COMPLETADA | Árbol limpio en `2026-09-14` (HEAD `8590d90`); rama creada; `.gitignore` e inventario revisados (abajo) |
-| T1 | EN_CURSO | Parte 1 hecha: las 8 pruebas de A0.2 pasan en la base (exit 0 cada una, sin `process.env`/`fetch`) y se agregaron a `plan:test`; `npm run plan:test` exit 0 (178 casos). Falta: fixture EXIF (orientación 6) y lista explícita de cajas por defecto |
+| T1 | EN_CURSO | Parte 1 hecha: las 8 pruebas de A0.2 pasan en la base (exit 0 cada una, sin `process.env`/`fetch`) y se agregaron a `plan:test`; `npm run plan:test` exit 0 (178 casos). Parte 2 hecha: fixture `eval/fixtures/exif/orientacion-6.jpg` + 2 casos en `ia:test-referencias-ruta` (caracterización: el servidor no normaliza; la UI sí). Falta: lista explícita de cajas por defecto |
 | T2 | PENDIENTE | |
 | T3 | PENDIENTE | Depende de T2 |
 | T4 | PENDIENTE | Depende de T3 |
@@ -27,6 +27,8 @@ Estado global: EN_CURSO
 
 ## Contradicciones registradas
 
+- Plan A §A0.2 pide que "la prueba EXIF pase o exista un PR con normalización", pero normalizar en `analisis-http.ts` cambia producción (fuera de esta corrida). Verificado: `src/app/page.tsx` (`redimensionarImagen`) y `src/app/laboratorio-referencias/page.tsx` enderezan en el navegador (`createImageBitmap` con `imageOrientation: "from-image"` + recodificación en canvas); el servidor reenvía los bytes intactos. Se dejó una prueba de caracterización con condición de retiro y la decisión en `REVISION`. No se sabe si Gemini aplica la orientación EXIF (comprobarlo cuesta una llamada paga; no se hizo).
+
 - Guía §5.3 ubica los scripts de adquisición en `tools/dataset-estructuras-ext/` [P] (Python con dependencias bloqueadas) y Plan A §A0.3 ubica métricas en `tools/eval-estructuras/`; ninguna existe. Interpretación conservadora: crear `tools/dataset-estructuras-ext/` como proyecto `uv` propio con `uv.lock`, sin mezclar dependencias con `services/ai-api`.
 
 ## Conteos
@@ -36,5 +38,6 @@ Candidatas por clase (licencia verificada): 0 · descargas usadas: 0 / 800 · cu
 Gemini estimado acumulado: US$0 · reportado: US$0 · tope: US$15
 
 ## Bitácora (más reciente arriba)
+- 2026-09-15 T1 (parte 2) · fixture EXIF orientación 6 (sintético, 1,2 KB) con README; 2 casos en `scripts/test-reference-analyze-route.ts` · verificación: `npm run ia:test-referencias-ruta` exit 0 (12 casos), `npx eslint` del archivo exit 0, `npx tsc --noEmit` exit 0; no se corrió `npm run lint` completo ni build (sin cambios de app ni paquetes) · siguiente: lista explícita de excepciones de cajas por defecto (E03 del análisis fijo) con condición de retiro "A7 fusionado"; con eso T1 queda completa.
 - 2026-09-15 T1 (parte 1) · 8 pruebas fuera de CI corridas en la base: todas exit 0; agregadas al final de `plan:test` · verificación: `npm run plan:test` exit 0; solo cambia `package.json` (sin TS nuevo, no se corrió lint/tsc/build) · siguiente: fixture EXIF orientación 6 en `eval/fixtures/exif/` contra `/api/references/analyze` con puerto simulado, luego lista de excepciones de cajas por defecto.
 - 2026-09-15 T0 · rama `fase-a/a0-linea-base` creada desde `2026-09-14` limpio; ESTADO y REVISION creados; inventario · verificación: `git status` limpio antes de crear la rama; solo documentación (sin checks de aplicación, según `AGENTS.md`) · siguiente: T1 (correr en la base las 8 pruebas fuera de CI).

@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import sharp from "sharp";
 import nextConfig from "../next.config";
 import {
@@ -63,7 +65,8 @@ async function run(): Promise<void> {
   const png = (await sharp({ create: { width: 200, height: 160, channels: 4, background: "#b4befe" } }).png().toBuffer()).toString("base64");
   const webp = (await sharp({ create: { width: 200, height: 160, channels: 3, background: "#b4befe" } }).webp().toBuffer()).toString("base64");
   const gif = (await sharp({ create: { width: 200, height: 160, channels: 3, background: "#000" } }).gif().toBuffer()).toString("base64");
-  const truncadoJpeg = Buffer.from(jpeg, "base64").subarray(0, Math.floor(Buffer.from(jpeg, "base64").length / 2)).toString("base64");
+  const exifOrientacion6 = readFileSync(resolve(process.cwd(), "eval/fixtures/exif/orientacion-6.jpg"));
+  const truncadoJpeg =Buffer.from(jpeg, "base64").subarray(0, Math.floor(Buffer.from(jpeg, "base64").length / 2)).toString("base64");
 
   await caso("#6 el límite de la ruta es el del proxy de next.config", () => {
     assert.equal(nextConfig.experimental?.proxyClientMaxBodySize, LIMITE_CUERPO_ANALISIS_BYTES);
@@ -138,6 +141,30 @@ async function run(): Promise<void> {
     const desarrollo = respuestaError(new ErrorIA("cuota", "gemini", secreto, true), crypto.randomUUID(), false);
     assert.match(desarrollo.uiError.detalles_dev.mensaje, /Quota exceeded/);
     assert.doesNotMatch(String(desarrollo.body.error), /Quota exceeded/);
+  });
+
+  await caso("A0.2 EXIF: el fixture compartido guarda 240×160 con orientación 6 y se ve 160×240 con la franja roja arriba", async () => {
+    const meta = await sharp(exifOrientacion6).metadata();
+    assert.deepEqual([meta.width, meta.height, meta.orientation], [240, 160, 6]);
+    const { data, info } = await sharp(exifOrientacion6).rotate().raw().toBuffer({ resolveWithObject: true });
+    assert.deepEqual([info.width, info.height], [160, 240]);
+    assert.ok(data[0] > 200 && data[1] < 60, "arriba a la izquierda es rojo tras aplicar la orientación");
+    const abajo = (info.height - 1) * info.width * info.channels;
+    assert.ok(Math.abs(data[abajo] - data[abajo + 1]) < 30, "abajo es gris tras aplicar la orientación");
+  });
+
+  await caso("A0.2 EXIF: hoy el servidor no normaliza la orientación; los bytes con orientación 6 llegan intactos al proveedor", () => {
+    // Characterization, not the target: both UI clients upright the photo in
+    // the browser (createImageBitmap imageOrientation "from-image" + canvas
+    // re-encode), so only non-UI callers reach this path. Normalizing here with
+    // sharp().rotate() changes production behavior and needs the standalone
+    // Docker check (Plan A §A0.2, L17); pending human decision in
+    // docs/planes/estructuras-2026-09/ejecucion/fase-a/REVISION-HUMANA.md.
+    // Remove this case when that normalization lands.
+    const base64 = exifOrientacion6.toString("base64");
+    const [image] = validarCuerpo({ images: [{ mime: "image/jpeg", base64 }] }).images;
+    assert.equal(image.base64, base64);
+    assert.equal(image.mime, "image/jpeg");
   });
 
   await caso("#22 la respuesta 200 incluye request_id y las banderas del análisis", () => {
