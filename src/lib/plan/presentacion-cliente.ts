@@ -708,6 +708,35 @@ export type GrupoCompraCliente<T> = {
   paquetes: Array<{ paquetes: number; unidades_paquete: number }>;
 };
 
+/** Inches of a line: `diam_pulg`, else the number in the size code ("R-9" → 9); null without a size. */
+function diametroCliente(linea: { diam_pulg?: number | null; tamano_codigo?: string | null }): number | null {
+  if (linea.diam_pulg != null && Number.isFinite(linea.diam_pulg)) return linea.diam_pulg;
+  const numero = linea.tamano_codigo ? /(\d+(?:[.,]\d+)?)/.exec(linea.tamano_codigo)?.[1] : undefined;
+  return numero ? Number(numero.replace(",", ".")) : null;
+}
+
+/**
+ * One order for every view that lists balloons by size (E2E real 3: the quote
+ * card listed 5/12/9 and the dialog 5/9/12): by color, then product, then
+ * smallest to largest diameter; lines without a size go last. Stable, so
+ * equal lines keep their original order.
+ */
+export function compararLineasPorTamanoCliente(
+  a: { color?: string | null; titulo: string; diam_pulg?: number | null; tamano_codigo?: string | null },
+  b: { color?: string | null; titulo: string; diam_pulg?: number | null; tamano_codigo?: string | null },
+): number {
+  const porColor = sinTildes(a.color ?? "").localeCompare(sinTildes(b.color ?? ""), "es");
+  if (porColor) return porColor;
+  const porProducto = sinTildes(productoCliente(a.titulo)).localeCompare(sinTildes(productoCliente(b.titulo)), "es");
+  if (porProducto) return porProducto;
+  const diametroA = diametroCliente(a);
+  const diametroB = diametroCliente(b);
+  if (diametroA === diametroB) return 0;
+  if (diametroA === null) return 1;
+  if (diametroB === null) return -1;
+  return diametroA - diametroB;
+}
+
 function clavePresentacionCompra(compra: CompraParaAgrupar): string {
   const producto = compra.product_id || sinTildes(productoCliente(compra.titulo)).toLowerCase();
   const tamano = compra.tamano_codigo ?? (compra.diam_pulg != null ? String(compra.diam_pulg) : "");
@@ -741,7 +770,7 @@ export function agruparComprasCliente<T>(items: readonly T[], leer: (item: T) =>
     else grupo.paquetes.push({ paquetes: compra.paquetes, unidades_paquete: compra.unidades_paquete });
   }
   for (const grupo of grupos.values()) grupo.paquetes.sort((a, b) => b.unidades_paquete - a.unidades_paquete);
-  return [...grupos.values()];
+  return [...grupos.values()].sort((a, b) => compararLineasPorTamanoCliente(leer(a.items[0]!), leer(b.items[0]!)));
 }
 
 /** ["1 paquete de 50", "1 paquete de 20"]: one part per package size, to render without breaking inside a part. */

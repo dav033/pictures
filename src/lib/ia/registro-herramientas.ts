@@ -7,7 +7,8 @@ import { getRagPool } from "@/lib/rag/db";
 import { buscarCatalogoRag, type ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { buscarCatalogoRagConPresupuesto, type PoolItemPresupuesto, type ResultadoBusquedaPresupuesto } from "@/lib/rag/chat/buscar-presupuesto";
 import type { RolPresupuesto } from "@/lib/rag/presupuesto/franjas";
-import { extraerFiltrosDurosBusqueda } from "@/lib/rag/query-parser/hard-filters";
+import { avisoFiltrosBusqueda, filtrosDurosDeBusqueda } from "@/lib/rag/chat/filtros-turno";
+import type { FiltrosDurosBusqueda } from "@/lib/rag/query-parser/hard-filters";
 import { parseEventSearchIntent } from "@/lib/rag/query-parser/event-search";
 import { aProductoValidado, validarSeleccion, type ItemRechazado, type ItemValidado, type SeleccionSolicitada } from "@/lib/rag/chat/validar";
 import { actualizarResultadoBusqueda, encolarEscrituraObservabilidad, registrarBusqueda, registrarPlanAudit, registrarSeleccion } from "@/lib/rag/observability/log";
@@ -36,15 +37,16 @@ import {
 import { PythonPlanMappingError } from "@/lib/plan/python-mapper";
 import { resolverPlanConBackend, type ResolucionPlan } from "@/lib/plan/resolver-backend";
 import { mezclasCompatiblesConDiametros } from "@/lib/plan/resolver";
-import { canonizarColoresPlan, colorDeCatalogo } from "@/lib/plan/colores-catalogo";
+import { canonizarColoresPlan } from "@/lib/plan/colores-catalogo";
 import { coloresVigentes, extraerRestriccionesConversacion } from "@/lib/plan/restricciones-conversacion";
-import { numerosPedidos, validarNumerosPedidos } from "@/lib/plan/numeros-pedidos";
+import { digitoDeFiguraNumero, numerosPedidos, validarNumerosPedidos } from "@/lib/plan/numeros-pedidos";
 import { conFotosDeCatalogo } from "@/lib/plan/cotizacion-fotos";
 import { sanearPorquesPlan } from "@/lib/plan/porque-cliente";
 import { sanearMarcasPlan } from "@/lib/plan/marcas-registradas";
 import { aplicarFuenteMedidasEspacio, clienteDioMedidasEspacio } from "@/lib/plan/medidas-defecto";
 import { coloresElementoReferencia, coloresFotoParaBusqueda, coloresReferenciaOmitidos, esSustitucionDeColor, productosGloboPorColor, type ProductoColorDisponible } from "@/lib/plan/colores-referencia";
 import { buscarGlobosPorColor } from "@/lib/rag/catalog/globos-por-color";
+import { buscarNumerosPorDigito, digitosBuscados } from "@/lib/rag/catalog/numeros-por-digito";
 import { PLAN_DECORACION_ENABLED, RAG_ENABLED, RAG_FRANJAS_ENABLED, featureEnabled } from "@/lib/ia/feature-flags";
 import { isPythonAdapterError, seleccionarBackendPython } from "@/lib/ia/python-adapter";
 import { AllowlistProductoVarianteError } from "@/lib/plan/allowlist-producto-variante";
@@ -52,6 +54,10 @@ import { sceneShadowPipeline } from "@/lib/scene/orchestrator";
 import { blockingPhysicalWarnings, validateMaterialEstimate } from "@/lib/materiales/estimacion";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
+import { ajustarCoberturaPlan, mezclasAdmisiblesEstructura, type AjusteCobertura } from "@/lib/plan/cobertura-materiales";
+import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "@/lib/plan/composicion";
+import { ACCION_PLAN_NO_CONVERGE, disponibilidadDelTurno, quitarMaterialesSinCobertura, RECHAZOS_MAXIMOS, RECHAZOS_PARA_CONVERGER, unirCandidatosTurno } from "./convergencia-plan";
+import { normalizarArgsBrief } from "./brief-herramienta";
 import { HERRAMIENTAS_PLAN, HERRAMIENTAS_RAG } from "./herramientas";
 import type { ReferenceBlueprintV2 } from "./reference-blueprint";
 import type { Herramienta } from "./tipos";
@@ -100,6 +106,12 @@ export type EstadoConversacion = {
    * any later omission goes on with a notice, so a search that cannot find the
    * color never loops. */
   coloresReferenciaReclamados: Set<string>;
+  /** Refusals of `confirmar_plan_decoracion` in this turn (convergencia-plan.ts). */
+  rechazosPlan: number;
+  /** When this turn started (ms since epoch): bounds how long it may keep calling the model. */
+  inicioTurnoMs: number;
+  /** Server adjustments of material colors, mixes and uncovered materials in this turn (cobertura-materiales.ts). */
+  ajustesCobertura: AjusteCobertura[];
   restriccionesUsuario: ReturnType<typeof extraerRestriccionesUsuario>;
   /** Colors a later customer message withdrew ("cambia el plateado por blanco"):
    * they are no longer a search filter either. */
@@ -230,6 +242,9 @@ export function crearEstadoConversacion(brief: Brief, solicitudOriginal = "", re
     solicitudOriginal,
     referenciaSinGlobosPreguntada: opciones.referenciaSinGlobosPreguntada ?? false,
     coloresReferenciaReclamados: new Set(),
+    rechazosPlan: 0,
+    inicioTurnoMs: Date.now(),
+    ajustesCobertura: [],
     restriccionesUsuario: mensajes?.length ? extraerRestriccionesConversacion(mensajes, brief) : extraerRestriccionesUsuario(solicitudOriginal, brief),
     coloresRetiradosCliente: mensajes?.length ? coloresVigentes(mensajes).retirados : [],
     recomendaciones: [],
@@ -296,18 +311,20 @@ export function textoAlAgotarVueltas(estado: EstadoConversacion): string {
 }
 
 export const ACCION_COLORES_REFERENCIA_OMITIDOS = "La foto de referencia muestra colores dominantes que estas estructuras no usan y el catálogo sí tiene (colores_omitidos). Arma cada estructura con sus colores de la foto: si un producto de la lista tiene en_busqueda true, úsalo en materiales con ese color; si no, búscalo una sola vez con buscar_catalogo_rag usando una consulta de un solo color (por ejemplo \"globo latex redondo rosado\"): la búsqueda deja de exigir la ocasión cuando esta esconde los colores de la foto. Luego vuelve a confirmar con lo que tengas; si la búsqueda no devolvió un color, confirma igual y el sistema se lo avisará al cliente. Este aviso llega una sola vez por mensaje. No cambies los colores de la foto por otros ni anuncies o generes una imagen.";
-export const ACCION_NUMERO_INCORRECTO = "Los globos de número deben formar exactamente el número que pidió el cliente, un globo por dígito. Busca cada dígito por separado con buscar_catalogo_rag (por ejemplo \"globo metalizado numero 4 plata\" y \"globo metalizado numero 0 plata\"), usa esos productos en la figura y vuelve a confirmar. Si el catálogo no tiene uno de los dígitos, quita la figura de número y díselo al cliente. No anuncies ni generes una imagen.";
-export const MENSAJE_CLIENTE_COLORES_REFERENCIA = "Estoy ajustando la propuesta para que lleve los colores de tu foto.";
+export const ACCION_NUMERO_INCORRECTO = "Los globos de número deben formar exactamente el número que pidió el cliente, un globo por dígito. Busca cada dígito por separado con buscar_catalogo_rag (por ejemplo \"globo metalizado numero 4 plata\" y \"globo metalizado numero 0 plata\"), usa esos productos en la figura y vuelve a confirmar. Si el catálogo no tiene uno de los dígitos en el color pedido, quita la figura de número y ofrécele al cliente el color en que sí está ese dígito (numeros_en_catalogo de la búsqueda) en vez de decirle solo que no hay. No anuncies ni generes una imagen.";
+export const ACCION_NUMEROS_EN_CATALOGO = "numeros_en_catalogo lista los globos de número que el catálogo disponible sí tiene para cada dígito que esta búsqueda no devolvió. No le digas al cliente solo que no hay ese número: ofrécele el color que sí existe para ese dígito (por ejemplo «el 4 lo tengo en latte, ¿te sirve?») y pregúntale si lo quiere; si disponibles está vacío, dile que ese dígito no está disponible y ofrece la decoración sin número. No uses ese globo en un plan hasta que el cliente lo acepte y lo busques.";
+export const ACCION_TAMANO_CLIENTE_SIN_COBERTURA = "Los tamaños que faltan son los que pidió el cliente y los productos de ese color no los tienen en el catálogo disponible. No reintentes el mismo plan: busca una vez ese tamaño en otro color o producto si no lo hiciste; si tampoco sirve, responde ya al cliente con lo que sí hay (el color en otros tamaños o ese tamaño en otro color) y pregúntale cómo prefiere seguir. No anuncies ni generes este plan.";
 
-/** Search filters without the colors a later customer message withdrew. */
-function sinColoresRetirados(filtros: ReturnType<typeof extraerFiltrosDurosBusqueda>, retirados: readonly string[]): ReturnType<typeof extraerFiltrosDurosBusqueda> {
-  if (retirados.length === 0) return filtros;
-  const fuera = new Set(retirados.map(colorDeCatalogo));
-  return { ...filtros, colores: filtros.colores.filter((color) => !fuera.has(colorDeCatalogo(color))) };
+/** Every uncovered size is a size the customer made mandatory: retrying the same plan cannot work. */
+function faltanTamanosDelCliente(sinCobertura: ReadonlyArray<{ tamano: string }>, plan: PlanDecoracion): boolean {
+  const delCliente = new Set((plan.restricciones?.tamanos ?? []).filter((item) => item.polaridad === "obligatorio").map((item) => `R-${item.valor.replace(/^R-/i, "")}`));
+  return delCliente.size > 0 && sinCobertura.length > 0 && sinCobertura.every((item) => delCliente.has(item.tamano));
 }
 
+export const MENSAJE_CLIENTE_COLORES_REFERENCIA = "Estoy ajustando la propuesta para que lleve los colores de tu foto.";
+
 /** Hard filters the relaxation ladder never loosens (relajacion-filtros.ts). */
-function tieneFiltrosNoRelajables(filtros: ReturnType<typeof extraerFiltrosDurosBusqueda>): boolean {
+function tieneFiltrosNoRelajables(filtros: FiltrosDurosBusqueda): boolean {
   return filtros.categorias.length > 0 || filtros.formas.length > 0 || filtros.acabados.length > 0 || filtros.diametros_pulgadas.length > 0 || filtros.precio_max != null;
 }
 
@@ -334,6 +351,8 @@ async function coloresReferenciaOmitidosDelTurno(
   catalogAllowlist: CatalogAllowlist | undefined,
 ) {
   if (!estado.referenceBlueprint || estado.restriccionesUsuario.colores.length > 0 || estado.coloresReferenciaReclamados.size > 0) return [];
+  // After repeated refusals the photo colors are notices, never another refusal.
+  if (estado.rechazosPlan >= RECHAZOS_PARA_CONVERGER) return [];
   const pendientes = plan.estructuras.map((estructura) => ({
     ...estructura,
     colores_referencia: coloresElementoReferencia(estado.referenceBlueprint, estructura.referencia_element_id),
@@ -345,7 +364,7 @@ async function coloresReferenciaOmitidosDelTurno(
   if (faltantes.length === 0) return [];
   const disponibles = new Map<string, ProductoColorDisponible[]>(productosGloboPorColor(estado.ragCandidatos ?? [], faltantes));
   const sinBusqueda = faltantes.filter((color) => !disponibles.has(color));
-  const busquedaLosPuedeDevolver = !tieneFiltrosNoRelajables(extraerFiltrosDurosBusqueda(estado.solicitudOriginal, estado.brief));
+  const busquedaLosPuedeDevolver = !tieneFiltrosNoRelajables(filtrosDurosDeBusqueda({ mensaje: "", solicitudOriginal: estado.solicitudOriginal, brief: estado.brief }));
   if (sinBusqueda.length > 0 && busquedaLosPuedeDevolver) {
     try {
       const catalogo = await buscarGlobosPorColor(pool, sinBusqueda, { variantIds: catalogAllowlist?.variantIds ?? null, catalogSnapshotId: estado.ragCatalogSnapshotId ?? null });
@@ -354,7 +373,18 @@ async function coloresReferenciaOmitidosDelTurno(
       console.warn("[plan] no se pudo consultar colores de la foto en el catálogo", { requestId: estado.ragRequestId, error: error instanceof Error ? error.message : String(error) });
     }
   }
-  return coloresReferenciaOmitidos(pendientes, disponibles);
+  // A color is claimed only when one of its products can build the structure
+  // in a mix close to the one chosen: otherwise the claim contradicts
+  // SIN_COBERTURA (E2E 2026-09-15, clear balloon without R-5).
+  const disponibilidad = disponibilidadDelTurno(estado.ragCandidatos ?? []);
+  const geometricas = new Set<string>(TIPOS_ESTRUCTURA_GEOMETRICOS);
+  return coloresReferenciaOmitidos(pendientes, disponibles, (estructura, producto) => {
+    if (!geometricas.has(estructura.tipo) || !producto.diametros) return true;
+    const admisibles = mezclasAdmisiblesEstructura(estructura, disponibilidad);
+    if (admisibles.length === 0) return true;
+    const mezclasProducto = mezclasCompatiblesConDiametros(producto.diametros);
+    return admisibles.some((mezcla) => mezclasProducto.includes(mezcla));
+  });
 }
 
 /** Arma el registro de herramientas (nombre → handler) que el motor genérico
@@ -372,10 +402,505 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
 } = {}): RegistroHerramientas {
   const ragPool = options.pool ?? getRagPool();
   const catalogoBloqueado = options.catalogoLoraNoDisponible;
+
+  const confirmarPlan = async (args: Record<string, unknown>): Promise<Record<string, unknown>> => {
+    if (catalogoBloqueado) return respuestaCatalogoLoraNoDisponible(catalogoBloqueado);
+    // C4: occasion is the customer's open label, not a closed taxonomy
+    // value invented by the model. Keep model wording only when no label
+    // was recoverable from the original request.
+    const eventLabel = parseEventSearchIntent(estado.solicitudOriginal).event_label;
+    const eventIntent = parseEventIntent(estado.solicitudOriginal);
+    const parseado = PlanDecoracionSchema.safeParse({
+      ...(args as Record<string, unknown>),
+      ...(eventLabel
+        ? { concepto: { ...((args as { concepto?: Record<string, unknown> }).concepto ?? {}), ocasion: eventLabel } }
+        : {}),
+      plan_version: "1.0",
+      plan_id: crypto.randomUUID(),
+      supuestos: [],
+      restricciones: estado.restriccionesUsuario,
+    });
+    if (!parseado.success) {
+      encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
+      return { ok: false, errores: parseado.error.issues.map((issue) => `${issue.path.join(".") || "plan"}: ${issue.message}`), mensaje_cliente: MENSAJE_CLIENTE_PLAN_EN_AJUSTE };
+    }
+    const perfil = perfilCreatividad(options.creatividad);
+    // Photo without balloons and no named pieces: ask before designing
+    // anything (user decision, audit Media #4).
+    const erroresReferenciaSinGlobos = validarReferenciaSinGlobos(estado.referenceBlueprint, estado.solicitudOriginal, perfil.estructurasExtraConReferencia, estado.referenciaSinGlobosPreguntada);
+    if (erroresReferenciaSinGlobos.length > 0) {
+      estado.planResuelto = undefined;
+      estado.seleccionFinalIA = [];
+      encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+        requestId: estado.ragRequestId,
+        solicitudOriginal: estado.solicitudOriginal,
+        restricciones: estado.restriccionesUsuario,
+        candidateProductIds: [...estado.ragIdsRecuperados],
+        status: "REFERENCIA_SIN_GLOBOS",
+        error: erroresReferenciaSinGlobos.join(" | "),
+      }));
+      encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
+      return {
+        ok: false,
+        status: "REFERENCIA_SIN_GLOBOS",
+        errores: erroresReferenciaSinGlobos,
+        accion_requerida: "No armes ni confirmes una propuesta todavía. Dile al cliente que su foto no tiene decoración con globos y pregúntale qué piezas quiere (por ejemplo un arco, columnas o centros de mesa), o sugiérele elegir una foto de ejemplo. No inventes piezas, no anuncies ni generes una imagen.",
+        mensaje_cliente: MENSAJE_CLIENTE_REFERENCIA_SIN_GLOBOS,
+      };
+    }
+    // Colores del material al vocabulario del catálogo antes de validar y
+    // resolver: "azul rey" → "azul", "rosa" → "rosado" (A6).
+    // The server, not the model, records the dominant colors of the photo
+    // element each structure materializes; the resolver reports the ones the
+    // plan does not buy (audit Alta #3, colores-referencia.ts).
+    // Space measures are the customer's or an estimate, never the model's
+    // reading of a photo (E2E 2026-09-14, medidas-defecto.ts).
+    // `porque` is shown to the customer: internal wording is removed before signing.
+    // Character and brand names never title a proposal (marcas-registradas.ts).
+    // Materials follow the sizes and colors this turn's search really has: a
+    // one-color product keeps its color and a structure gets a close mix every
+    // material can build (cobertura-materiales.ts, E2E 2026-09-15).
+    const cobertura = ajustarCoberturaPlan(canonizarColoresPlan(parseado.data).plan, disponibilidadDelTurno(estado.ragCandidatos ?? []));
+    estado.ajustesCobertura = cobertura.ajustes;
+    let planCanonico = sanearMarcasPlan(sanearPorquesPlan(aplicarFuenteMedidasEspacio(
+      aplicarColoresReferencia(cobertura.plan, estado.referenceBlueprint),
+      clienteDioMedidasEspacio(estado.solicitudOriginal, estado.brief.espacio),
+    )));
+    const erroresDeIntencion = validarRestriccionesPlan(planCanonico, estado.restriccionesUsuario);
+    // Default level: historical rule (open events). Any other level the
+    // customer chose: its structure range for every event type.
+    const erroresDeCardinalidad = perfil.nivel === CREATIVIDAD_POR_DEFECTO
+      ? validarCardinalidadEventoAbierto(
+          planCanonico,
+          eventIntent.event_type,
+          estado.solicitudOriginal,
+          estado.ragIdsRecuperados.size > 0,
+          estado.referenceBlueprint,
+          perfil.rangoEstructuras,
+        )
+      : validarRangoCreatividad(planCanonico, {
+          nivel: perfil.nivel,
+          solicitudOriginal: estado.solicitudOriginal,
+          hayCandidatosCatalogo: estado.ragIdsRecuperados.size > 0,
+          referenceBlueprint: estado.referenceBlueprint,
+        });
+    const erroresDeReferencia = validarEstructurasFueraDeReferencia(planCanonico, estado.referenceBlueprint, estado.solicitudOriginal, perfil.estructurasExtraConReferencia);
+    const erroresDeContrato = [...erroresDeIntencion, ...erroresDeCardinalidad, ...erroresDeReferencia];
+    if (erroresDeContrato.length > 0) {
+      estado.planResuelto = undefined;
+      estado.seleccionFinalIA = [];
+      encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+        requestId: estado.ragRequestId,
+        solicitudOriginal: estado.solicitudOriginal,
+        restricciones: estado.restriccionesUsuario,
+        candidateProductIds: [...estado.ragIdsRecuperados],
+        status: "RESTRICCIONES_INCONSISTENTES",
+        error: erroresDeContrato.join(" | "),
+      }));
+      encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
+      return {
+        ok: false,
+        status: "RESTRICCIONES_INCONSISTENTES",
+        errores: erroresDeContrato,
+        accion_requerida: erroresDeReferencia.length > 0
+          ? "Con imagen de referencia, cada estructura de globos debe materializar un elemento de la referencia con referencia_element_id: quita las estructuras que la referencia no tiene y vuelve a confirmar; no anuncies ni generes una imagen."
+          : "Corrige el número de estructuras (respeta el rango de CREATIVIDAD DEL DISEÑO si está presente) o los colores del plan antes de confirmar; no anuncies ni generes una imagen.",
+        mensaje_cliente: mensajeClienteRestricciones(erroresDeContrato),
+      };
+    }
+    // Number figures spell the customer's number (numeros-pedidos.ts, E2E 2026-09-15 D4).
+    const erroresDeNumero = validarNumerosPedidos(planCanonico, new Map((estado.ragCandidatos ?? []).map((candidato) => [candidato.productId, candidato])), numerosPedidos(estado.solicitudOriginal));
+    if (erroresDeNumero.length > 0) {
+      estado.planResuelto = undefined;
+      estado.seleccionFinalIA = [];
+      encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+        requestId: estado.ragRequestId,
+        solicitudOriginal: estado.solicitudOriginal,
+        restricciones: estado.restriccionesUsuario,
+        candidateProductIds: [...estado.ragIdsRecuperados],
+        status: "NUMERO_INCORRECTO",
+        error: erroresDeNumero.join(" | "),
+      }));
+      encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
+      return {
+        ok: false,
+        status: "NUMERO_INCORRECTO",
+        errores: erroresDeNumero,
+        accion_requerida: ACCION_NUMERO_INCORRECTO,
+        mensaje_cliente: mensajeClienteRestricciones(erroresDeNumero),
+      };
+    }
+    const categoriaPorProducto = new Map((estado.ragCandidatos ?? []).map((candidato) => [candidato.productId, candidato.categoria]));
+    const erroresDeGlobos = validarPresenciaGlobos(planCanonico, categoriaPorProducto, estado.solicitudOriginal);
+    if (erroresDeGlobos.length > 0) {
+      estado.planResuelto = undefined;
+      estado.seleccionFinalIA = [];
+      encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+        requestId: estado.ragRequestId,
+        solicitudOriginal: estado.solicitudOriginal,
+        restricciones: estado.restriccionesUsuario,
+        candidateProductIds: [...estado.ragIdsRecuperados],
+        status: "PLAN_SIN_GLOBOS",
+        error: erroresDeGlobos.join(" | "),
+      }));
+      encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
+      return {
+        ok: false,
+        status: "PLAN_SIN_GLOBOS",
+        errores: erroresDeGlobos,
+        accion_requerida: "El plan solo tiene accesorios. Busca globos en los colores pedidos con buscar_catalogo_rag (sin exigir la ocasión si no aparecen) y arma al menos una estructura de globos; serpentinas, velas y banderolas solo acompañan. No anuncies ni generes este plan.",
+        mensaje_cliente: MENSAJE_CLIENTE_SIN_GLOBOS,
+      };
+    }
+    const estructurasSinGlobos = validarEstructurasDeGlobosConGlobos(planCanonico, categoriaPorProducto);
+    if (estructurasSinGlobos.length > 0) {
+      estado.planResuelto = undefined;
+      estado.seleccionFinalIA = [];
+      encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+        requestId: estado.ragRequestId,
+        solicitudOriginal: estado.solicitudOriginal,
+        restricciones: estado.restriccionesUsuario,
+        candidateProductIds: [...estado.ragIdsRecuperados],
+        status: "ESTRUCTURA_SIN_GLOBOS",
+        error: estructurasSinGlobos.join(" | "),
+      }));
+      encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
+      return {
+        ok: false,
+        status: "ESTRUCTURA_SIN_GLOBOS",
+        errores: estructurasSinGlobos,
+        accion_requerida: "Una estructura oficial de globos (figura, bouquet, centro de mesa, arco…) quedó materializada solo con accesorios. Arma esa estructura con globos del catálogo de este turno; una banderola, serpentina o cartel va como tipo accesorio, sin estructura_oficial y sin nombre de estructura de globos. No anuncies ni generes este plan.",
+        mensaje_cliente: MENSAJE_CLIENTE_SIN_GLOBOS,
+      };
+    }
+    const erroresDeUnidades = validarUnidadesDeclaradas(planCanonico, categoriaPorProducto);
+    if (erroresDeUnidades.length > 0) {
+      estado.planResuelto = undefined;
+      estado.seleccionFinalIA = [];
+      encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+        requestId: estado.ragRequestId,
+        solicitudOriginal: estado.solicitudOriginal,
+        restricciones: estado.restriccionesUsuario,
+        candidateProductIds: [...estado.ragIdsRecuperados],
+        status: "UNIDADES_INSUFICIENTES",
+        error: erroresDeUnidades.join(" | "),
+      }));
+      encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
+      return {
+        ok: false,
+        status: "UNIDADES_INSUFICIENTES",
+        errores: erroresDeUnidades,
+        accion_requerida: "Corrige unidades_declaradas: es el total de globos (o de piezas si el material es un kit empaquetado o un accesorio) de la pieza completa sumando sus repeticiones, nunca el número de figuras o bouquets. Declara al menos una unidad por material y el mínimo de globos por pieza indicado, y vuelve a confirmar; no anuncies ni generes imagen.",
+        mensaje_cliente: mensajeClienteRestricciones(erroresDeUnidades),
+      };
+    }
+    // Cobertura referencia→plan (plan de integración de referencias
+    // visuales, R4): con una imagen de referencia analizada en este turno,
+    // cada elemento aprobado debe quedar cubierto por una estructura
+    // (referencia_element_id) o declarado omitido (referencia_omitida) —
+    // omitir uno en silencio es tan deshonesto como omitir un producto sin
+    // decirlo (ver HONESTIDAD AL SUSTITUIR en el prompt del sistema).
+    const elementosSinCubrir = validarCoberturaReferencia(planCanonico, estado.referenceBlueprint);
+    if (elementosSinCubrir.length > 0) {
+      estado.planResuelto = undefined;
+      estado.seleccionFinalIA = [];
+      encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+        requestId: estado.ragRequestId,
+        solicitudOriginal: estado.solicitudOriginal,
+        restricciones: estado.restriccionesUsuario,
+        candidateProductIds: [...estado.ragIdsRecuperados],
+        status: "COBERTURA_REFERENCIA_INCOMPLETA",
+        error: elementosSinCubrir.join(" | "),
+      }));
+      encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
+      return {
+        ok: false,
+        status: "COBERTURA_REFERENCIA_INCOMPLETA",
+        elementos_sin_cubrir: elementosSinCubrir,
+        accion_requerida: "Para cada elemento sin cubrir: asígnale una estructura con referencia_element_id, o decláralo en referencia_omitida con un motivo real. No anuncies ni generes esta imagen hasta cubrir todos.",
+        mensaje_cliente: MENSAJE_CLIENTE_REFERENCIA,
+      };
+    }
+    const coloresOmitidos = await coloresReferenciaOmitidosDelTurno(planCanonico, estado, ragPool, options.catalogAllowlist);
+    if (coloresOmitidos.length > 0) {
+      for (const item of coloresOmitidos) estado.coloresReferenciaReclamados.add(`${item.estructura_id}|${item.color}`);
+      estado.planResuelto = undefined;
+      estado.seleccionFinalIA = [];
+      encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+        requestId: estado.ragRequestId,
+        solicitudOriginal: estado.solicitudOriginal,
+        restricciones: estado.restriccionesUsuario,
+        candidateProductIds: [...estado.ragIdsRecuperados],
+        status: "COLORES_REFERENCIA_OMITIDOS",
+        error: coloresOmitidos.map((item) => `${item.estructura_id}:${item.color}`).join(" | "),
+      }));
+      encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
+      return {
+        ok: false,
+        status: "COLORES_REFERENCIA_OMITIDOS",
+        colores_omitidos: coloresOmitidos,
+        accion_requerida: ACCION_COLORES_REFERENCIA_OMITIDOS,
+        mensaje_cliente: MENSAJE_CLIENTE_COLORES_REFERENCIA,
+      };
+    }
+    if (featureEnabled("SCENE_PLAN_V2_SHADOW") && estado.solicitudOriginal.trim()) {
+      let shadow: Awaited<ReturnType<typeof sceneShadowPipeline>>;
+      try {
+        shadow = await sceneShadowPipeline(estado.solicitudOriginal, ragPool, planCanonico.estructuras.length);
+      } catch (error) {
+        shadow = {
+          v1_exists: planCanonico.estructuras.length > 0,
+          v2_ran: false,
+          v2_slots_covered: 0,
+          v2_total_slots: 0,
+          v2_gaps: 0,
+          v2_approved: false,
+          latency_v2_ms: 0,
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+      encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+        requestId: estado.ragRequestId,
+        solicitudOriginal: estado.solicitudOriginal,
+        geometry: shadow,
+        status: "SCENE_V2_SHADOW",
+        error: shadow.error,
+        flagSnapshot: { scenePlanV2Shadow: true },
+      }));
+    }
+    const planningStart = Date.now();
+    const backendPlan = seleccionarBackendPython().backend;
+    // Same-turn allowlist: only the variants the model actually saw in this
+    // turn. It travels signed with the plan so /api/generate and
+    // /api/plan-editar can restate it without trusting the browser.
+    const allowlistTurno = allowlistDesdeMapa(estado.ragVariantIdsRecuperados);
+    const snapshotTurno = estado.ragCatalogSnapshotId ?? null;
+    const correlacionPython = z.string().uuid().safeParse(options.correlationId);
+    const fallarPorBackend = (motivo: string, detalle: string, accionRequerida: string, mensajeCliente: string) => {
+      estado.planResuelto = undefined;
+      estado.seleccionFinalIA = [];
+      encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+        requestId: estado.ragRequestId,
+        solicitudOriginal: estado.solicitudOriginal,
+        restricciones: estado.restriccionesUsuario,
+        candidateProductIds: [...estado.ragIdsRecuperados],
+        status: "BACKEND_NO_DISPONIBLE",
+        error: `${motivo}: ${detalle}`,
+      }));
+      encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion", Date.now() - planningStart));
+      return { ok: false, status: "BACKEND_NO_DISPONIBLE", accion_requerida: accionRequerida, mensaje_cliente: mensajeCliente };
+    };
+    const FALLO_TECNICO = "No se pudo verificar el plan contra el catálogo comercial. Dile al cliente que hubo un problema técnico y que vuelva a intentarlo; no inventes precios, no confirmes el plan y no generes ninguna imagen.";
+    // When the Python resolver is the selected commercial authority it needs
+    // the published snapshot of this turn, and there is no implicit fallback
+    // to TypeScript: answering with a plan the operator never verified would
+    // hide a broken cutover. PYTHON_BACKEND_KILL_SWITCH is the rollback.
+    if (backendPlan === "python" && !snapshotTurno) {
+      return fallarPorBackend(
+        "SIN_SNAPSHOT_CATALOGO",
+        "el turno no tiene un snapshot de catálogo publicado",
+        "Busca primero en el catálogo con buscar_catalogo_rag: sin una búsqueda de este turno no hay catálogo verificado contra el que validar precios, stock ni variantes. No confirmes el plan ni generes una imagen hasta tenerla.",
+        MENSAJE_CLIENTE_SIN_BUSQUEDA,
+      );
+    }
+    const resolverPlan = (plan: PlanDecoracion) => backendPlan === "python" && snapshotTurno
+      ? resolverPlanConBackend({
+          backend: "python",
+          plan,
+          allowlist: allowlistTurno,
+          catalogSnapshotId: snapshotTurno,
+          loraAllowlist: options.catalogAllowlist,
+          requestId: estado.ragRequestId,
+          correlationId: correlacionPython.success ? correlacionPython.data : estado.ragRequestId,
+          ...(options.signal ? { signal: options.signal } : {}),
+        })
+      : resolverPlanConBackend({
+          backend: "next",
+          pool: ragPool,
+          plan,
+          whitelist: estado.ragVariantIdsRecuperados,
+          loraAllowlist: options.catalogAllowlist,
+        });
+    let resolucion: ResolucionPlan;
+    const avisosConvergencia: string[] = [];
+    try {
+      resolucion = await resolverPlan(planCanonico);
+      // Convergence: after repeated refusals the materials without size
+      // coverage leave the structure (with a notice) instead of another
+      // SIN_COBERTURA refusal (convergencia-plan.ts).
+      if (estado.rechazosPlan >= RECHAZOS_PARA_CONVERGER && resolucion.resuelto.sin_cobertura.length > 0) {
+        const reparado = quitarMaterialesSinCobertura(planCanonico, resolucion.resuelto.sin_cobertura);
+        if (reparado.cambiado) {
+          const reintento = await resolverPlan(reparado.plan);
+          if (reintento.resuelto.sin_cobertura.length === 0 && reintento.resuelto.compras.length > 0) {
+            planCanonico = reparado.plan;
+            resolucion = reintento;
+            avisosConvergencia.push(...reparado.avisos);
+          }
+        }
+      }
+    } catch (error) {
+      if (error instanceof AllowlistProductoVarianteError) {
+        // Model-correctable: the plan paired a variant with a product that
+        // does not own it. Not a technical failure, so the model can retry.
+        estado.planResuelto = undefined;
+        estado.seleccionFinalIA = [];
+        encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+          requestId: estado.ragRequestId,
+          solicitudOriginal: estado.solicitudOriginal,
+          restricciones: estado.restriccionesUsuario,
+          candidateProductIds: [...estado.ragIdsRecuperados],
+          status: "PRODUCTO_VARIANTE_INCONSISTENTE",
+          error: `${error.causa}: ${error.message}`,
+        }));
+        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion", Date.now() - planningStart));
+        return {
+          ok: false,
+          status: "PRODUCTO_VARIANTE_INCONSISTENTE",
+          accion_requerida: "Cada material y cada variant_override debe usar un variant_id que pertenezca a su product_id según buscar_catalogo_rag. Corrige los ids y vuelve a confirmar; no anuncies ni generes imagen.",
+          mensaje_cliente: MENSAJE_CLIENTE_PIEZAS,
+        };
+      }
+      if (isPythonAdapterError(error)) return fallarPorBackend(error.code, error.domainCode ?? error.message, FALLO_TECNICO, MENSAJE_CLIENTE_VERIFICACION_FALLIDA);
+      if (error instanceof PythonPlanMappingError) return fallarPorBackend(error.code, error.message, FALLO_TECNICO, MENSAJE_CLIENTE_VERIFICACION_FALLIDA);
+      throw error;
+    }
+    const resuelto = resolucion.resuelto;
+    const materialEstimate = resolucion.materialEstimate;
+    const estimateValidation = validateMaterialEstimate(materialEstimate);
+    const physicalWarnings = blockingPhysicalWarnings(materialEstimate);
+    const auditarResuelto = (status: string, error?: string) => encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
+      requestId: estado.ragRequestId,
+      planHash: resuelto.plan_hash,
+      solicitudOriginal: estado.solicitudOriginal,
+      restricciones: estado.restriccionesUsuario,
+      candidateProductIds: [...estado.ragIdsRecuperados],
+      selectedProductIds: planCanonico.estructuras.flatMap((estructura) => estructura.materiales.map((material) => material.product_id)),
+      geometry: resuelto.estructuras.map((estructura) => ({ id: estructura.estructura_id, tipo: estructura.tipo, repeticiones: estructura.repeticiones, unidades: estructura.total_unidades })),
+      costMinCop: Math.min(resuelto.totales.total_cop, ...resuelto.alternativas.map((alternativa) => alternativa.total_cop)),
+      costChosenCop: resuelto.totales.total_cop,
+      ceilingCop: resuelto.comercial.techo_cop,
+      deltaCop: resuelto.comercial.delta_cop,
+       packages: { ahorro_paquetes_cop: resuelto.totales.ahorro_paquetes_cop, lineas: resuelto.compras.map((compra) => ({ variant_id: compra.variant_id, paquetes: compra.paquetes, unidades: compra.unidades_necesarias, subtotal: compra.subtotal })) },
+      instances: planCanonico.estructuras.map((estructura) => ({ id: estructura.estructura_id, repeticiones: estructura.repeticiones })),
+      status,
+      error,
+    }));
+    if (!estimateValidation.ok || physicalWarnings.length > 0) {
+      estado.planResuelto = undefined;
+      estado.seleccionFinalIA = [];
+      const error = [...estimateValidation.errors, ...physicalWarnings].join(" | ");
+      auditarResuelto("ESTIMACION_INCONSISTENTE", error);
+      encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion", Date.now() - planningStart));
+      return {
+        ok: false,
+        status: "ESTIMACION_INCONSISTENTE",
+        advertencias: [...new Set([...estimateValidation.warnings, ...physicalWarnings])],
+        accion_requerida: "Revisa las medidas, densidad, mezcla o número de estructuras; la cantidad física estimada no es compatible con la escala solicitada. No cotices ni generes la imagen hasta corregirlo.",
+        mensaje_cliente: MENSAJE_CLIENTE_ESTIMACION,
+      };
+    }
+    if (resuelto.sin_cobertura.length > 0 || resuelto.compras.length === 0) {
+      estado.planResuelto = undefined;
+      estado.seleccionFinalIA = [];
+      auditarResuelto("SIN_COBERTURA", resuelto.sin_cobertura.map((item) => `${item.estructura_id}:${item.tamano}`).join(" | "));
+      encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion", Date.now() - planningStart));
+      return {
+        ok: false,
+        status: "SIN_COBERTURA",
+        sin_cobertura: resuelto.sin_cobertura,
+        sustituciones_admisibles: resuelto.sustituciones,
+        cobertura_por_producto: coberturaPorProducto(resuelto.sin_cobertura, estado.ragCandidatos ?? []),
+        accion_requerida: faltanTamanosDelCliente(resuelto.sin_cobertura, planCanonico)
+          ? ACCION_TAMANO_CLIENTE_SIN_COBERTURA
+          : "Revisa cobertura_por_producto: en cada estructura usa una mezcla de mezclas_compatibles para ese producto, o elige con buscar_catalogo_rag otro producto del mismo color que tenga los tamaños faltantes. Si mezclas_compatibles está vacío, ese producto no sirve para una estructura de globos: cámbialo. No anuncies ni generes este plan.",
+        mensaje_cliente: mensajeClienteSinCobertura(resuelto.sin_cobertura, new Map(planCanonico.estructuras.map((estructura) => [estructura.estructura_id, estructura.nombre]))),
+      };
+    }
+    if (resuelto.comercial.estado === "PRESUPUESTO_EXCEDIDO") {
+      estado.planResuelto = undefined;
+      estado.seleccionFinalIA = [];
+      auditarResuelto("PRESUPUESTO_EXCEDIDO");
+      encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion", Date.now() - planningStart));
+      return {
+        ok: false,
+        status: "PRESUPUESTO_EXCEDIDO",
+        total_cop: resuelto.totales.total_cop,
+        techo_cop: resuelto.comercial.techo_cop,
+        delta_cop: resuelto.comercial.delta_cop,
+        alternativas: resuelto.alternativas,
+        accion_requerida: "Reduce la complejidad o elige una alternativa compatible; no confirmes ni generes este plan por encima del techo.",
+        mensaje_cliente: mensajeClientePresupuesto(resuelto.totales.total_cop, resuelto.comercial.techo_cop, resuelto.comercial.delta_cop),
+      };
+    }
+    resuelto.request_id = estado.ragRequestId;
+    enriquecerPlanResueltoEvento(resuelto, eventIntent, estado.ragEventEvidence ?? new Map(), estado.ragEventRelaxations ?? []);
+    resuelto.approval_token = crearTokenPlan({
+      planHash: resuelto.plan_hash,
+      requestId: estado.ragRequestId,
+      backend: resolucion.backend,
+      catalogSnapshotId: snapshotTurno,
+      allowlist: allowlistTurno,
+      // The image of this plan is generated with the level it was designed with.
+      creatividad: perfilCreatividad(options.creatividad).nivel,
+    });
+    estado.planResuelto = resuelto;
+    estado.cotizacion = conFotosDeCatalogo(resolucion.cotizacion, resuelto.compras);
+    // La cotización se muestra, pero generar queda bloqueado hasta la
+    // aprobación explícita del cliente en la tarjeta del plan.
+    estado.seleccionFinalIA = [];
+    const estadoAuditoria = resuelto.comercial.estado === "APROBACION_REQUERIDA" ? "APROBACION_REQUERIDA" : "VERIFICADO";
+    // Photo colors the plan does not include: the model must tell the customer.
+    // Materials the server removed for lack of sizes are notices too.
+    const avisosCliente = [...new Set([
+      ...estado.ajustesCobertura.flatMap((ajuste) => (ajuste.tipo === "material_quitado" ? [ajuste.aviso_cliente] : [])),
+      ...avisosConvergencia,
+      ...resuelto.sustituciones.filter(esSustitucionDeColor).map((item) => item.motivo),
+    ])];
+    auditarResuelto(estadoAuditoria);
+    encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, resuelto.estructuras.length ? "plan_confirmado" : "NO_MATCH", Date.now() - planningStart));
+    return {
+      ok: true,
+      status: resuelto.estructuras.length ? estadoAuditoria : "NO_MATCH",
+      evento: {
+        event_label: resuelto.event_label,
+        original_request: resuelto.original_request,
+        match_levels: resuelto.event_match_levels ?? [],
+        relaxations: resuelto.event_relaxations ?? [],
+      },
+      // Fase 3.2: plan_id/plan_hash no van al modelo — no los necesita
+      // (nunca los pasa de vuelta en una llamada; el cliente los lee de
+      // `estado.planResuelto`, surfaceado aparte en `ResultadoConversacion`,
+      // y `/api/generate` los valida contra el plan guardado en servidor).
+      estructuras: resuelto.estructuras.map((estructura) => ({
+        estructura_id: estructura.estructura_id,
+        nombre: estructura.nombre,
+        tipo: estructura.tipo,
+        total_unidades: estructura.total_unidades,
+        tamanos: estructura.mezcla_real.map((linea) => `R-${linea.diam_pulg}×${linea.unidades}`),
+      })),
+      total_cop: resuelto.totales.total_cop,
+      sustituciones: resuelto.sustituciones,
+      avisos_cliente: avisosCliente,
+      ...(avisosCliente.length
+        ? { accion_requerida: "avisos_cliente trae colores de la foto o globos que la propuesta no incluye: díselos al cliente en tu resumen, con tus palabras y sin omitir ninguno, como algo que esta propuesta no incluye (no afirmes que el catálogo no los tiene), y ofrece buscar esos colores si quiere acercarse más a la foto." }
+        : {}),
+      sin_cobertura: resuelto.sin_cobertura,
+      advertencias: resuelto.advertencias,
+      comercial: resuelto.comercial,
+      alternativas: resuelto.alternativas,
+      fase: "desglose_previo; la imagen se genera despues de mostrarlo",
+      cotizacion: estado.cotizacion,
+    };
+  };
+
   return {
     guardar_brief: async (args) => {
-      Object.assign(estado.brief, args);
-      return { ok: true, brief: estado.brief };
+      // Model output: invented keys are mapped or dropped, never stored
+      // (brief-herramienta.ts). The terminal event validates the brief strictly.
+      const { brief, descartadas } = normalizarArgsBrief(args);
+      Object.assign(estado.brief, brief);
+      return { ok: true, brief: estado.brief, ...(descartadas.length ? { campos_ignorados: descartadas } : {}) };
     },
 
     calcular_medidas: async (args) => {
@@ -416,7 +941,10 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       // turn a style term such as "glamour" into a hard catalog filter.
       const mensaje = typeof args.mensaje === "string" ? args.mensaje : "";
       const solicitudParaFiltros = estado.solicitudOriginal.trim() || mensaje;
-      const filtrosDuros = sinColoresRetirados(extraerFiltrosDurosBusqueda(solicitudParaFiltros, estado.brief), estado.coloresRetiradosCliente);
+      // Sizes come from this search's own message, never from the original
+      // request (filtros-turno.ts, E2E 2026-09-15 rid bc991913).
+      const filtrosDuros = filtrosDurosDeBusqueda({ mensaje, solicitudOriginal: estado.solicitudOriginal, brief: estado.brief, coloresRetirados: estado.coloresRetiradosCliente });
+      const avisoFiltros = avisoFiltrosBusqueda(filtrosDuros);
       const eventIntent = parseEventSearchIntent(solicitudParaFiltros);
       // Photo colors are not filters, but the occasion must not hide them
       // (relajacion-filtros.ts). The customer's own colors replace the photo's.
@@ -528,6 +1056,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
           // precio, tamaño, disponibilidad, match_level, eventEvidence siguen
           // intactos).
           pool_por_rol: proyectarPoolParaModelo(respuesta.poolPorRol),
+          ...(avisoFiltros ? { limite_busqueda: avisoFiltros } : {}),
           relajaciones: respuesta.relajaciones,
           conflictos: respuesta.conflictos,
           evento: {
@@ -550,9 +1079,8 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         rerankCorrelationId: options.correlationId ?? estado.ragRequestId,
         rerankSignal: options.signal,
       });
-      estado.ragCandidatos = [...new Map(
-        [...(estado.ragCandidatos ?? []), ...respuesta.candidatos].map((candidate) => [candidate.productId, candidate]),
-      ).values()];
+      // Every variant seen this turn stays known, also when a later search is narrower.
+      estado.ragCandidatos = unirCandidatosTurno(estado.ragCandidatos ?? [], respuesta.candidatos);
       if (respuesta.catalogSnapshotId) estado.ragCatalogSnapshotId = respuesta.catalogSnapshotId;
       for (const candidate of respuesta.candidatos) {
         if (candidate.eventEvidence) {
@@ -587,10 +1115,26 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
           observabilidad: respuesta.observabilidad,
         });
 
+      // A number digit the search did not return: say which colors of that
+      // digit the active catalog does have, so the model offers them instead
+      // of only saying there is none (numeros-por-digito.ts).
+      const digitosSinFigura = digitosBuscados(mensaje).filter((digito) => !respuesta.candidatos.some((candidato) => digitoDeFiguraNumero(candidato) === digito));
+      let numerosEnCatalogo: Array<{ digito: string; disponibles: string[] }> = [];
+      if (digitosSinFigura.length > 0) {
+        try {
+          const porDigito = await buscarNumerosPorDigito(pool, digitosSinFigura, { variantIds: options.catalogAllowlist?.variantIds ?? null, catalogSnapshotId: estado.ragCatalogSnapshotId ?? null });
+          numerosEnCatalogo = digitosSinFigura.map((digito) => ({ digito, disponibles: porDigito.get(digito) ?? [] }));
+        } catch (error) {
+          console.warn("[rag] no se pudo consultar globos de número por dígito", { requestId: estado.ragRequestId, error: error instanceof Error ? error.message : String(error) });
+        }
+      }
+
       return {
         status: respuesta.status,
         sku_status: respuesta.skuStatus,
         filtro_relajado: respuesta.filtroRelajado,
+        ...(numerosEnCatalogo.length ? { numeros_en_catalogo: numerosEnCatalogo, accion_numeros: ACCION_NUMEROS_EN_CATALOGO } : {}),
+        ...(avisoFiltros ? { limite_busqueda: avisoFiltros } : {}),
         evento: {
           event_label: eventIntent.event_label,
           original_request: eventIntent.semantic_query,
@@ -799,466 +1343,15 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     },
 
     confirmar_plan_decoracion: async (args) => {
-      if (catalogoBloqueado) return respuestaCatalogoLoraNoDisponible(catalogoBloqueado);
-      // C4: occasion is the customer's open label, not a closed taxonomy
-      // value invented by the model. Keep model wording only when no label
-      // was recoverable from the original request.
-      const eventLabel = parseEventSearchIntent(estado.solicitudOriginal).event_label;
-      const eventIntent = parseEventIntent(estado.solicitudOriginal);
-      const parseado = PlanDecoracionSchema.safeParse({
-        ...(args as Record<string, unknown>),
-        ...(eventLabel
-          ? { concepto: { ...((args as { concepto?: Record<string, unknown> }).concepto ?? {}), ocasion: eventLabel } }
-          : {}),
-        plan_version: "1.0",
-        plan_id: crypto.randomUUID(),
-        supuestos: [],
-        restricciones: estado.restriccionesUsuario,
-      });
-      if (!parseado.success) {
-        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
-        return { ok: false, errores: parseado.error.issues.map((issue) => `${issue.path.join(".") || "plan"}: ${issue.message}`), mensaje_cliente: MENSAJE_CLIENTE_PLAN_EN_AJUSTE };
+      // Bounded retries: after RECHAZOS_MAXIMOS refusals the model must answer
+      // the customer instead of confirming again (convergencia-plan.ts).
+      if (estado.rechazosPlan >= RECHAZOS_MAXIMOS) {
+        return { ok: false, status: "PLAN_NO_CONVERGE", accion_requerida: ACCION_PLAN_NO_CONVERGE, mensaje_cliente: MENSAJE_CLIENTE_PLAN_EN_AJUSTE };
       }
-      const perfil = perfilCreatividad(options.creatividad);
-      // Photo without balloons and no named pieces: ask before designing
-      // anything (user decision, audit Media #4).
-      const erroresReferenciaSinGlobos = validarReferenciaSinGlobos(estado.referenceBlueprint, estado.solicitudOriginal, perfil.estructurasExtraConReferencia, estado.referenciaSinGlobosPreguntada);
-      if (erroresReferenciaSinGlobos.length > 0) {
-        estado.planResuelto = undefined;
-        estado.seleccionFinalIA = [];
-        encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
-          requestId: estado.ragRequestId,
-          solicitudOriginal: estado.solicitudOriginal,
-          restricciones: estado.restriccionesUsuario,
-          candidateProductIds: [...estado.ragIdsRecuperados],
-          status: "REFERENCIA_SIN_GLOBOS",
-          error: erroresReferenciaSinGlobos.join(" | "),
-        }));
-        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
-        return {
-          ok: false,
-          status: "REFERENCIA_SIN_GLOBOS",
-          errores: erroresReferenciaSinGlobos,
-          accion_requerida: "No armes ni confirmes una propuesta todavía. Dile al cliente que su foto no tiene decoración con globos y pregúntale qué piezas quiere (por ejemplo un arco, columnas o centros de mesa), o sugiérele elegir una foto de ejemplo. No inventes piezas, no anuncies ni generes una imagen.",
-          mensaje_cliente: MENSAJE_CLIENTE_REFERENCIA_SIN_GLOBOS,
-        };
-      }
-      // Colores del material al vocabulario del catálogo antes de validar y
-      // resolver: "azul rey" → "azul", "rosa" → "rosado" (A6).
-      // The server, not the model, records the dominant colors of the photo
-      // element each structure materializes; the resolver reports the ones the
-      // plan does not buy (audit Alta #3, colores-referencia.ts).
-      // Space measures are the customer's or an estimate, never the model's
-      // reading of a photo (E2E 2026-09-14, medidas-defecto.ts).
-      // `porque` is shown to the customer: internal wording is removed before signing.
-      // Character and brand names never title a proposal (marcas-registradas.ts).
-      const planCanonico = sanearMarcasPlan(sanearPorquesPlan(aplicarFuenteMedidasEspacio(
-        aplicarColoresReferencia(canonizarColoresPlan(parseado.data).plan, estado.referenceBlueprint),
-        clienteDioMedidasEspacio(estado.solicitudOriginal, estado.brief.espacio),
-      )));
-      const erroresDeIntencion = validarRestriccionesPlan(planCanonico, estado.restriccionesUsuario);
-      // Default level: historical rule (open events). Any other level the
-      // customer chose: its structure range for every event type.
-      const erroresDeCardinalidad = perfil.nivel === CREATIVIDAD_POR_DEFECTO
-        ? validarCardinalidadEventoAbierto(
-            planCanonico,
-            eventIntent.event_type,
-            estado.solicitudOriginal,
-            estado.ragIdsRecuperados.size > 0,
-            estado.referenceBlueprint,
-            perfil.rangoEstructuras,
-          )
-        : validarRangoCreatividad(planCanonico, {
-            nivel: perfil.nivel,
-            solicitudOriginal: estado.solicitudOriginal,
-            hayCandidatosCatalogo: estado.ragIdsRecuperados.size > 0,
-            referenceBlueprint: estado.referenceBlueprint,
-          });
-      const erroresDeReferencia = validarEstructurasFueraDeReferencia(planCanonico, estado.referenceBlueprint, estado.solicitudOriginal, perfil.estructurasExtraConReferencia);
-      const erroresDeContrato = [...erroresDeIntencion, ...erroresDeCardinalidad, ...erroresDeReferencia];
-      if (erroresDeContrato.length > 0) {
-        estado.planResuelto = undefined;
-        estado.seleccionFinalIA = [];
-        encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
-          requestId: estado.ragRequestId,
-          solicitudOriginal: estado.solicitudOriginal,
-          restricciones: estado.restriccionesUsuario,
-          candidateProductIds: [...estado.ragIdsRecuperados],
-          status: "RESTRICCIONES_INCONSISTENTES",
-          error: erroresDeContrato.join(" | "),
-        }));
-        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
-        return {
-          ok: false,
-          status: "RESTRICCIONES_INCONSISTENTES",
-          errores: erroresDeContrato,
-          accion_requerida: erroresDeReferencia.length > 0
-            ? "Con imagen de referencia, cada estructura de globos debe materializar un elemento de la referencia con referencia_element_id: quita las estructuras que la referencia no tiene y vuelve a confirmar; no anuncies ni generes una imagen."
-            : "Corrige el número de estructuras (respeta el rango de CREATIVIDAD DEL DISEÑO si está presente) o los colores del plan antes de confirmar; no anuncies ni generes una imagen.",
-          mensaje_cliente: mensajeClienteRestricciones(erroresDeContrato),
-        };
-      }
-      // Number figures spell the customer's number (numeros-pedidos.ts, E2E 2026-09-15 D4).
-      const erroresDeNumero = validarNumerosPedidos(planCanonico, new Map((estado.ragCandidatos ?? []).map((candidato) => [candidato.productId, candidato])), numerosPedidos(estado.solicitudOriginal));
-      if (erroresDeNumero.length > 0) {
-        estado.planResuelto = undefined;
-        estado.seleccionFinalIA = [];
-        encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
-          requestId: estado.ragRequestId,
-          solicitudOriginal: estado.solicitudOriginal,
-          restricciones: estado.restriccionesUsuario,
-          candidateProductIds: [...estado.ragIdsRecuperados],
-          status: "NUMERO_INCORRECTO",
-          error: erroresDeNumero.join(" | "),
-        }));
-        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
-        return {
-          ok: false,
-          status: "NUMERO_INCORRECTO",
-          errores: erroresDeNumero,
-          accion_requerida: ACCION_NUMERO_INCORRECTO,
-          mensaje_cliente: mensajeClienteRestricciones(erroresDeNumero),
-        };
-      }
-      const categoriaPorProducto = new Map((estado.ragCandidatos ?? []).map((candidato) => [candidato.productId, candidato.categoria]));
-      const erroresDeGlobos = validarPresenciaGlobos(planCanonico, categoriaPorProducto, estado.solicitudOriginal);
-      if (erroresDeGlobos.length > 0) {
-        estado.planResuelto = undefined;
-        estado.seleccionFinalIA = [];
-        encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
-          requestId: estado.ragRequestId,
-          solicitudOriginal: estado.solicitudOriginal,
-          restricciones: estado.restriccionesUsuario,
-          candidateProductIds: [...estado.ragIdsRecuperados],
-          status: "PLAN_SIN_GLOBOS",
-          error: erroresDeGlobos.join(" | "),
-        }));
-        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
-        return {
-          ok: false,
-          status: "PLAN_SIN_GLOBOS",
-          errores: erroresDeGlobos,
-          accion_requerida: "El plan solo tiene accesorios. Busca globos en los colores pedidos con buscar_catalogo_rag (sin exigir la ocasión si no aparecen) y arma al menos una estructura de globos; serpentinas, velas y banderolas solo acompañan. No anuncies ni generes este plan.",
-          mensaje_cliente: MENSAJE_CLIENTE_SIN_GLOBOS,
-        };
-      }
-      const estructurasSinGlobos = validarEstructurasDeGlobosConGlobos(planCanonico, categoriaPorProducto);
-      if (estructurasSinGlobos.length > 0) {
-        estado.planResuelto = undefined;
-        estado.seleccionFinalIA = [];
-        encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
-          requestId: estado.ragRequestId,
-          solicitudOriginal: estado.solicitudOriginal,
-          restricciones: estado.restriccionesUsuario,
-          candidateProductIds: [...estado.ragIdsRecuperados],
-          status: "ESTRUCTURA_SIN_GLOBOS",
-          error: estructurasSinGlobos.join(" | "),
-        }));
-        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
-        return {
-          ok: false,
-          status: "ESTRUCTURA_SIN_GLOBOS",
-          errores: estructurasSinGlobos,
-          accion_requerida: "Una estructura oficial de globos (figura, bouquet, centro de mesa, arco…) quedó materializada solo con accesorios. Arma esa estructura con globos del catálogo de este turno; una banderola, serpentina o cartel va como tipo accesorio, sin estructura_oficial y sin nombre de estructura de globos. No anuncies ni generes este plan.",
-          mensaje_cliente: MENSAJE_CLIENTE_SIN_GLOBOS,
-        };
-      }
-      const erroresDeUnidades = validarUnidadesDeclaradas(planCanonico, categoriaPorProducto);
-      if (erroresDeUnidades.length > 0) {
-        estado.planResuelto = undefined;
-        estado.seleccionFinalIA = [];
-        encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
-          requestId: estado.ragRequestId,
-          solicitudOriginal: estado.solicitudOriginal,
-          restricciones: estado.restriccionesUsuario,
-          candidateProductIds: [...estado.ragIdsRecuperados],
-          status: "UNIDADES_INSUFICIENTES",
-          error: erroresDeUnidades.join(" | "),
-        }));
-        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
-        return {
-          ok: false,
-          status: "UNIDADES_INSUFICIENTES",
-          errores: erroresDeUnidades,
-          accion_requerida: "Corrige unidades_declaradas: es el total de globos (o de piezas si el material es un kit empaquetado o un accesorio) de la pieza completa sumando sus repeticiones, nunca el número de figuras o bouquets. Declara al menos una unidad por material y el mínimo de globos por pieza indicado, y vuelve a confirmar; no anuncies ni generes imagen.",
-          mensaje_cliente: mensajeClienteRestricciones(erroresDeUnidades),
-        };
-      }
-      // Cobertura referencia→plan (plan de integración de referencias
-      // visuales, R4): con una imagen de referencia analizada en este turno,
-      // cada elemento aprobado debe quedar cubierto por una estructura
-      // (referencia_element_id) o declarado omitido (referencia_omitida) —
-      // omitir uno en silencio es tan deshonesto como omitir un producto sin
-      // decirlo (ver HONESTIDAD AL SUSTITUIR en el prompt del sistema).
-      const elementosSinCubrir = validarCoberturaReferencia(planCanonico, estado.referenceBlueprint);
-      if (elementosSinCubrir.length > 0) {
-        estado.planResuelto = undefined;
-        estado.seleccionFinalIA = [];
-        encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
-          requestId: estado.ragRequestId,
-          solicitudOriginal: estado.solicitudOriginal,
-          restricciones: estado.restriccionesUsuario,
-          candidateProductIds: [...estado.ragIdsRecuperados],
-          status: "COBERTURA_REFERENCIA_INCOMPLETA",
-          error: elementosSinCubrir.join(" | "),
-        }));
-        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
-        return {
-          ok: false,
-          status: "COBERTURA_REFERENCIA_INCOMPLETA",
-          elementos_sin_cubrir: elementosSinCubrir,
-          accion_requerida: "Para cada elemento sin cubrir: asígnale una estructura con referencia_element_id, o decláralo en referencia_omitida con un motivo real. No anuncies ni generes esta imagen hasta cubrir todos.",
-          mensaje_cliente: MENSAJE_CLIENTE_REFERENCIA,
-        };
-      }
-      const coloresOmitidos = await coloresReferenciaOmitidosDelTurno(planCanonico, estado, ragPool, options.catalogAllowlist);
-      if (coloresOmitidos.length > 0) {
-        for (const item of coloresOmitidos) estado.coloresReferenciaReclamados.add(`${item.estructura_id}|${item.color}`);
-        estado.planResuelto = undefined;
-        estado.seleccionFinalIA = [];
-        encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
-          requestId: estado.ragRequestId,
-          solicitudOriginal: estado.solicitudOriginal,
-          restricciones: estado.restriccionesUsuario,
-          candidateProductIds: [...estado.ragIdsRecuperados],
-          status: "COLORES_REFERENCIA_OMITIDOS",
-          error: coloresOmitidos.map((item) => `${item.estructura_id}:${item.color}`).join(" | "),
-        }));
-        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
-        return {
-          ok: false,
-          status: "COLORES_REFERENCIA_OMITIDOS",
-          colores_omitidos: coloresOmitidos,
-          accion_requerida: ACCION_COLORES_REFERENCIA_OMITIDOS,
-          mensaje_cliente: MENSAJE_CLIENTE_COLORES_REFERENCIA,
-        };
-      }
-      if (featureEnabled("SCENE_PLAN_V2_SHADOW") && estado.solicitudOriginal.trim()) {
-        let shadow: Awaited<ReturnType<typeof sceneShadowPipeline>>;
-        try {
-          shadow = await sceneShadowPipeline(estado.solicitudOriginal, ragPool, planCanonico.estructuras.length);
-        } catch (error) {
-          shadow = {
-            v1_exists: planCanonico.estructuras.length > 0,
-            v2_ran: false,
-            v2_slots_covered: 0,
-            v2_total_slots: 0,
-            v2_gaps: 0,
-            v2_approved: false,
-            latency_v2_ms: 0,
-            error: error instanceof Error ? error.message : String(error),
-          };
-        }
-        encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
-          requestId: estado.ragRequestId,
-          solicitudOriginal: estado.solicitudOriginal,
-          geometry: shadow,
-          status: "SCENE_V2_SHADOW",
-          error: shadow.error,
-          flagSnapshot: { scenePlanV2Shadow: true },
-        }));
-      }
-      const planningStart = Date.now();
-      const backendPlan = seleccionarBackendPython().backend;
-      // Same-turn allowlist: only the variants the model actually saw in this
-      // turn. It travels signed with the plan so /api/generate and
-      // /api/plan-editar can restate it without trusting the browser.
-      const allowlistTurno = allowlistDesdeMapa(estado.ragVariantIdsRecuperados);
-      const snapshotTurno = estado.ragCatalogSnapshotId ?? null;
-      const correlacionPython = z.string().uuid().safeParse(options.correlationId);
-      const fallarPorBackend = (motivo: string, detalle: string, accionRequerida: string, mensajeCliente: string) => {
-        estado.planResuelto = undefined;
-        estado.seleccionFinalIA = [];
-        encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
-          requestId: estado.ragRequestId,
-          solicitudOriginal: estado.solicitudOriginal,
-          restricciones: estado.restriccionesUsuario,
-          candidateProductIds: [...estado.ragIdsRecuperados],
-          status: "BACKEND_NO_DISPONIBLE",
-          error: `${motivo}: ${detalle}`,
-        }));
-        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion", Date.now() - planningStart));
-        return { ok: false, status: "BACKEND_NO_DISPONIBLE", accion_requerida: accionRequerida, mensaje_cliente: mensajeCliente };
-      };
-      const FALLO_TECNICO = "No se pudo verificar el plan contra el catálogo comercial. Dile al cliente que hubo un problema técnico y que vuelva a intentarlo; no inventes precios, no confirmes el plan y no generes ninguna imagen.";
-      // When the Python resolver is the selected commercial authority it needs
-      // the published snapshot of this turn, and there is no implicit fallback
-      // to TypeScript: answering with a plan the operator never verified would
-      // hide a broken cutover. PYTHON_BACKEND_KILL_SWITCH is the rollback.
-      if (backendPlan === "python" && !snapshotTurno) {
-        return fallarPorBackend(
-          "SIN_SNAPSHOT_CATALOGO",
-          "el turno no tiene un snapshot de catálogo publicado",
-          "Busca primero en el catálogo con buscar_catalogo_rag: sin una búsqueda de este turno no hay catálogo verificado contra el que validar precios, stock ni variantes. No confirmes el plan ni generes una imagen hasta tenerla.",
-          MENSAJE_CLIENTE_SIN_BUSQUEDA,
-        );
-      }
-      let resolucion: ResolucionPlan;
-      try {
-        resolucion = backendPlan === "python" && snapshotTurno
-          ? await resolverPlanConBackend({
-              backend: "python",
-              plan: planCanonico,
-              allowlist: allowlistTurno,
-              catalogSnapshotId: snapshotTurno,
-              loraAllowlist: options.catalogAllowlist,
-              requestId: estado.ragRequestId,
-              correlationId: correlacionPython.success ? correlacionPython.data : estado.ragRequestId,
-              ...(options.signal ? { signal: options.signal } : {}),
-            })
-          : await resolverPlanConBackend({
-              backend: "next",
-              pool: ragPool,
-              plan: planCanonico,
-              whitelist: estado.ragVariantIdsRecuperados,
-              loraAllowlist: options.catalogAllowlist,
-            });
-      } catch (error) {
-        if (error instanceof AllowlistProductoVarianteError) {
-          // Model-correctable: the plan paired a variant with a product that
-          // does not own it. Not a technical failure, so the model can retry.
-          estado.planResuelto = undefined;
-          estado.seleccionFinalIA = [];
-          encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
-            requestId: estado.ragRequestId,
-            solicitudOriginal: estado.solicitudOriginal,
-            restricciones: estado.restriccionesUsuario,
-            candidateProductIds: [...estado.ragIdsRecuperados],
-            status: "PRODUCTO_VARIANTE_INCONSISTENTE",
-            error: `${error.causa}: ${error.message}`,
-          }));
-          encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion", Date.now() - planningStart));
-          return {
-            ok: false,
-            status: "PRODUCTO_VARIANTE_INCONSISTENTE",
-            accion_requerida: "Cada material y cada variant_override debe usar un variant_id que pertenezca a su product_id según buscar_catalogo_rag. Corrige los ids y vuelve a confirmar; no anuncies ni generes imagen.",
-            mensaje_cliente: MENSAJE_CLIENTE_PIEZAS,
-          };
-        }
-        if (isPythonAdapterError(error)) return fallarPorBackend(error.code, error.domainCode ?? error.message, FALLO_TECNICO, MENSAJE_CLIENTE_VERIFICACION_FALLIDA);
-        if (error instanceof PythonPlanMappingError) return fallarPorBackend(error.code, error.message, FALLO_TECNICO, MENSAJE_CLIENTE_VERIFICACION_FALLIDA);
-        throw error;
-      }
-      const resuelto = resolucion.resuelto;
-      const materialEstimate = resolucion.materialEstimate;
-      const estimateValidation = validateMaterialEstimate(materialEstimate);
-      const physicalWarnings = blockingPhysicalWarnings(materialEstimate);
-      const auditarResuelto = (status: string, error?: string) => encolarEscrituraObservabilidad(registrarPlanAudit(ragPool, {
-        requestId: estado.ragRequestId,
-        planHash: resuelto.plan_hash,
-        solicitudOriginal: estado.solicitudOriginal,
-        restricciones: estado.restriccionesUsuario,
-        candidateProductIds: [...estado.ragIdsRecuperados],
-        selectedProductIds: planCanonico.estructuras.flatMap((estructura) => estructura.materiales.map((material) => material.product_id)),
-        geometry: resuelto.estructuras.map((estructura) => ({ id: estructura.estructura_id, tipo: estructura.tipo, repeticiones: estructura.repeticiones, unidades: estructura.total_unidades })),
-        costMinCop: Math.min(resuelto.totales.total_cop, ...resuelto.alternativas.map((alternativa) => alternativa.total_cop)),
-        costChosenCop: resuelto.totales.total_cop,
-        ceilingCop: resuelto.comercial.techo_cop,
-        deltaCop: resuelto.comercial.delta_cop,
-         packages: { ahorro_paquetes_cop: resuelto.totales.ahorro_paquetes_cop, lineas: resuelto.compras.map((compra) => ({ variant_id: compra.variant_id, paquetes: compra.paquetes, unidades: compra.unidades_necesarias, subtotal: compra.subtotal })) },
-        instances: planCanonico.estructuras.map((estructura) => ({ id: estructura.estructura_id, repeticiones: estructura.repeticiones })),
-        status,
-        error,
-      }));
-      if (!estimateValidation.ok || physicalWarnings.length > 0) {
-        estado.planResuelto = undefined;
-        estado.seleccionFinalIA = [];
-        const error = [...estimateValidation.errors, ...physicalWarnings].join(" | ");
-        auditarResuelto("ESTIMACION_INCONSISTENTE", error);
-        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion", Date.now() - planningStart));
-        return {
-          ok: false,
-          status: "ESTIMACION_INCONSISTENTE",
-          advertencias: [...new Set([...estimateValidation.warnings, ...physicalWarnings])],
-          accion_requerida: "Revisa las medidas, densidad, mezcla o número de estructuras; la cantidad física estimada no es compatible con la escala solicitada. No cotices ni generes la imagen hasta corregirlo.",
-          mensaje_cliente: MENSAJE_CLIENTE_ESTIMACION,
-        };
-      }
-      if (resuelto.sin_cobertura.length > 0 || resuelto.compras.length === 0) {
-        estado.planResuelto = undefined;
-        estado.seleccionFinalIA = [];
-        auditarResuelto("SIN_COBERTURA", resuelto.sin_cobertura.map((item) => `${item.estructura_id}:${item.tamano}`).join(" | "));
-        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion", Date.now() - planningStart));
-        return {
-          ok: false,
-          status: "SIN_COBERTURA",
-          sin_cobertura: resuelto.sin_cobertura,
-          sustituciones_admisibles: resuelto.sustituciones,
-          cobertura_por_producto: coberturaPorProducto(resuelto.sin_cobertura, estado.ragCandidatos ?? []),
-          accion_requerida: "Revisa cobertura_por_producto: en cada estructura usa una mezcla de mezclas_compatibles para ese producto, o elige con buscar_catalogo_rag otro producto del mismo color que tenga los tamaños faltantes. Si mezclas_compatibles está vacío, ese producto no sirve para una estructura de globos: cámbialo. No anuncies ni generes este plan.",
-          mensaje_cliente: mensajeClienteSinCobertura(resuelto.sin_cobertura, new Map(planCanonico.estructuras.map((estructura) => [estructura.estructura_id, estructura.nombre]))),
-        };
-      }
-      if (resuelto.comercial.estado === "PRESUPUESTO_EXCEDIDO") {
-        estado.planResuelto = undefined;
-        estado.seleccionFinalIA = [];
-        auditarResuelto("PRESUPUESTO_EXCEDIDO");
-        encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion", Date.now() - planningStart));
-        return {
-          ok: false,
-          status: "PRESUPUESTO_EXCEDIDO",
-          total_cop: resuelto.totales.total_cop,
-          techo_cop: resuelto.comercial.techo_cop,
-          delta_cop: resuelto.comercial.delta_cop,
-          alternativas: resuelto.alternativas,
-          accion_requerida: "Reduce la complejidad o elige una alternativa compatible; no confirmes ni generes este plan por encima del techo.",
-          mensaje_cliente: mensajeClientePresupuesto(resuelto.totales.total_cop, resuelto.comercial.techo_cop, resuelto.comercial.delta_cop),
-        };
-      }
-      resuelto.request_id = estado.ragRequestId;
-      enriquecerPlanResueltoEvento(resuelto, eventIntent, estado.ragEventEvidence ?? new Map(), estado.ragEventRelaxations ?? []);
-      resuelto.approval_token = crearTokenPlan({
-        planHash: resuelto.plan_hash,
-        requestId: estado.ragRequestId,
-        backend: resolucion.backend,
-        catalogSnapshotId: snapshotTurno,
-        allowlist: allowlistTurno,
-        // The image of this plan is generated with the level it was designed with.
-        creatividad: perfilCreatividad(options.creatividad).nivel,
-      });
-      estado.planResuelto = resuelto;
-      estado.cotizacion = conFotosDeCatalogo(resolucion.cotizacion, resuelto.compras);
-      // La cotización se muestra, pero generar queda bloqueado hasta la
-      // aprobación explícita del cliente en la tarjeta del plan.
-      estado.seleccionFinalIA = [];
-      const estadoAuditoria = resuelto.comercial.estado === "APROBACION_REQUERIDA" ? "APROBACION_REQUERIDA" : "VERIFICADO";
-      // Photo colors the plan does not include: the model must tell the customer.
-      const avisosCliente = [...new Set(resuelto.sustituciones.filter(esSustitucionDeColor).map((item) => item.motivo))];
-      auditarResuelto(estadoAuditoria);
-      encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, resuelto.estructuras.length ? "plan_confirmado" : "NO_MATCH", Date.now() - planningStart));
-      return {
-        ok: true,
-        status: resuelto.estructuras.length ? estadoAuditoria : "NO_MATCH",
-        evento: {
-          event_label: resuelto.event_label,
-          original_request: resuelto.original_request,
-          match_levels: resuelto.event_match_levels ?? [],
-          relaxations: resuelto.event_relaxations ?? [],
-        },
-        // Fase 3.2: plan_id/plan_hash no van al modelo — no los necesita
-        // (nunca los pasa de vuelta en una llamada; el cliente los lee de
-        // `estado.planResuelto`, surfaceado aparte en `ResultadoConversacion`,
-        // y `/api/generate` los valida contra el plan guardado en servidor).
-        estructuras: resuelto.estructuras.map((estructura) => ({
-          estructura_id: estructura.estructura_id,
-          nombre: estructura.nombre,
-          tipo: estructura.tipo,
-          total_unidades: estructura.total_unidades,
-          tamanos: estructura.mezcla_real.map((linea) => `R-${linea.diam_pulg}×${linea.unidades}`),
-        })),
-        total_cop: resuelto.totales.total_cop,
-        sustituciones: resuelto.sustituciones,
-        avisos_cliente: avisosCliente,
-        ...(avisosCliente.length
-          ? { accion_requerida: "avisos_cliente trae colores de la foto de referencia que la propuesta no incluye: díselos al cliente en tu resumen, con tus palabras y sin omitir ninguno, y ofrece buscar esos colores si quiere acercarse más a la foto." }
-          : {}),
-        sin_cobertura: resuelto.sin_cobertura,
-        advertencias: resuelto.advertencias,
-        comercial: resuelto.comercial,
-        alternativas: resuelto.alternativas,
-        fase: "desglose_previo; la imagen se genera despues de mostrarlo",
-        cotizacion: estado.cotizacion,
-      };
+      const respuesta = await confirmarPlan(args);
+      if (respuesta.ok !== false) return respuesta;
+      estado.rechazosPlan += 1;
+      return estado.rechazosPlan >= RECHAZOS_MAXIMOS ? { ...respuesta, accion_requerida: ACCION_PLAN_NO_CONVERGE } : respuesta;
     },
 
   };

@@ -372,7 +372,8 @@ async function main(): Promise<void> {
   assert.equal(llamadasBloqueado.length, 0);
   const briefArgs = { tipoEvento: "cumpleaños" };
   const brief = await registro.guardar_brief!(briefArgs, { nombre: "guardar_brief", args: briefArgs });
-  assert.deepEqual(brief, { ok: true, brief: { tipoEvento: "cumpleaños" } }, "las herramientas sin catálogo siguen funcionando");
+  // guardar_brief stores only chat.v1 brief fields (brief-herramienta.ts): the camelCase key maps to tipo_evento.
+  assert.deepEqual(brief, { ok: true, brief: { tipo_evento: "cumpleaños" } }, "las herramientas sin catálogo siguen funcionando");
   assert.match(construirSistema({ ragEnabled: true, franjasEnabled: false, catalogoLoraNoDisponible: true }), /CATÁLOGO NO DISPONIBLE EN ESTE MODO/);
   assert.doesNotMatch(construirSistema({ ragEnabled: true, franjasEnabled: false }), /CATÁLOGO NO DISPONIBLE EN ESTE MODO/);
   console.log("[PASS] con el pool LoRA no disponible, las herramientas de catálogo fallan cerrado sin tocar base ni Python y el chat sigue");

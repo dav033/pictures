@@ -34,15 +34,16 @@ function detalleCompra(compra: CompraConsolidada): string {
 }
 
 /** "Compras una sola vez para las dos piezas" / "para toda la decoración". */
-function fraseCompra(plan: PlanResuelto): string {
+export function fraseCompra(plan: PlanResuelto): string {
   const piezas = plan.estructuras.reduce((suma, estructura) => suma + Math.max(1, estructura.repeticiones), 0);
   const cardinales = ["", "", "las dos piezas", "las tres piezas", "las cuatro piezas", "las cinco piezas"];
-  return `Compras una sola vez para ${cardinales[piezas] ?? "toda la decoración"}.`;
+  return `Compras una sola vez para ${cardinales[piezas] || "toda la decoración"}.`;
 }
 
 /**
  * Purchase lines grouped for the customer: one row per product + size + color
- * even when the cheapest mix buys two package sizes (D3). Sorted by color and size.
+ * even when the cheapest mix buys two package sizes (D3). Sorted by color,
+ * product and smallest to largest size (`agruparComprasCliente`).
  */
 export function gruposCotizacionPlan(compras: readonly CompraConsolidada[]): GrupoCompraCliente<CompraConsolidada>[] {
   return agruparComprasCliente(compras, (compra) => ({
@@ -56,7 +57,7 @@ export function gruposCotizacionPlan(compras: readonly CompraConsolidada[]): Gru
     unidades_paquete: compra.unidades_paquete,
     sobrante: compra.sobrante,
     subtotal: compra.subtotal,
-  })).sort((a, b) => (a.items[0]!.color ?? "").localeCompare(b.items[0]!.color ?? "") || (a.items[0]!.diam_pulg ?? 0) - (b.items[0]!.diam_pulg ?? 0));
+  }));
 }
 
 type PropsFilas = {

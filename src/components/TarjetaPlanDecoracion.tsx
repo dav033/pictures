@@ -21,6 +21,7 @@ import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import {
   ambientacionCliente,
   coloresCliente,
+  compararLineasPorTamanoCliente,
   contar,
   describirEstructuraCliente,
   esEstructuraDeGlobos,
@@ -147,7 +148,8 @@ function lineasVisiblesPorVariante(lineas: PlanResuelto["estructuras"][number]["
       sustitucion: anterior.sustitucion ?? linea.sustitucion,
     });
   }
-  return [...agrupadas.values()];
+  // Same order as the quote card and dialog: color, product, smallest size first.
+  return [...agrupadas.values()].sort(compararLineasPorTamanoCliente);
 }
 
 function mismaMedida(linea: LineaCatalogoSeleccionada["linea"], variante: VarianteCandidata): boolean {

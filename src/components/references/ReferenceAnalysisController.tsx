@@ -42,10 +42,15 @@ export type InfoAnalisisReferencia = { tieneElementos: boolean; tieneEstructuras
  */
 const CAMPO_SIN_CACHE = "sin_cache";
 
+/** Analysis failure the server marked as not retryable (ui-error.v1 `retryable: false`). */
+class ErrorAnalisisNoReintentable extends Error {}
+
 export function ReferenceAnalysisController({ references, proveedor, onDraft, onReintentar, onElegirEjemplo, onEstado, className }: Props) {
   const [blueprint, setBlueprint] = useState<ReferenceBlueprintV2 | null>(null);
   const [status, setStatus] = useState<EstadoAnalisisReferencia>("idle");
   const [error, setError] = useState<string | null>(null);
+  // "Reintentar" only while the last failure allows it (ui-error.v1 `retryable`).
+  const [reintentable, setReintentable] = useState(true);
   // Each retry bumps the attempt; the effect below re-runs and skips the cache.
   const [intento, setIntento] = useState(0);
   const [intentoDe, setIntentoDe] = useState(references);
@@ -73,6 +78,7 @@ export function ReferenceAnalysisController({ references, proveedor, onDraft, on
     setStatus("analyzing");
     onEstado("analyzing");
     setError(null);
+    setReintentable(true);
     onDraft(null);
     fetch("/api/references/analyze", {
       method: "POST",
@@ -84,7 +90,9 @@ export function ReferenceAnalysisController({ references, proveedor, onDraft, on
         const data: unknown = await response.json();
         if (!response.ok) {
           // ui-error.v1: el cliente ve el mensaje redactado, nunca el texto técnico.
-          throw new Error(leerUiErrorV1(data)?.mensaje_usuario ?? CATALOGO_ERRORES_UI_V1.ERROR_INTERNO.mensaje_usuario);
+          const uiError = leerUiErrorV1(data);
+          const mensaje = uiError?.mensaje_usuario ?? CATALOGO_ERRORES_UI_V1.ERROR_INTERNO.mensaje_usuario;
+          throw uiError?.retryable === false ? new ErrorAnalisisNoReintentable(mensaje) : new Error(mensaje);
         }
         const blueprint = typeof data === "object" && data !== null && "blueprint" in data
           ? ReferenceBlueprintV2Schema.safeParse(data.blueprint)
@@ -107,6 +115,7 @@ export function ReferenceAnalysisController({ references, proveedor, onDraft, on
       .catch((reason) => {
         if (cancelled) return;
         setStatus("error");
+        setReintentable(!(reason instanceof ErrorAnalisisNoReintentable));
         // Sin red el navegador rechaza con "Failed to fetch": el cliente ve el mensaje de conexión (D4).
         setError(mensajeErrorCliente(reason, "No se pudo analizar tu foto. Inténtalo de nuevo."));
         onDraft(null);
@@ -134,7 +143,7 @@ export function ReferenceAnalysisController({ references, proveedor, onDraft, on
       blueprint={blueprint}
       status={status}
       error={error}
-      onReintentar={reintentar}
+      onReintentar={reintentable ? reintentar : undefined}
       reintentando={status === "analyzing" && intento > 0}
       onElegirEjemplo={onElegirEjemplo}
       className={className}

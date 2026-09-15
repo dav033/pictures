@@ -1,0 +1,1017 @@
+{
+  "allowlist": [
+    {
+      "product_id": "P-19-GRIS",
+      "variant_ids": [
+        "V-19-GRIS-12"
+      ]
+    },
+    {
+      "product_id": "P-19-PLATA",
+      "variant_ids": [
+        "V-19-PLATA-12"
+      ]
+    }
+  ],
+  "catalog_rows": [
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "plateado"
+      ],
+      "colores_variante": [],
+      "currency": "COP",
+      "descripcion": "Globo Latex Redondo Fashion Gris R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-19-gris-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 9000,
+      "product_id": "P-19-GRIS",
+      "producto_disponible": true,
+      "producto_titulo": "Globo Latex Redondo Fashion Gris",
+      "sku": "SKU-V-19-GRIS-12",
+      "sku_original": "SHOP-V-19-GRIS-12",
+      "source_snapshot_id": "SNAP-GOLDEN-19",
+      "source_variant_id": "SOURCE-V-19-GRIS-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-19-GRIS-12",
+      "variante_titulo": "R-12"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "plateado"
+      ],
+      "colores_variante": [
+        "plateado"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo Latex Redondo Reflex Plata R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-19-plata-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 11000,
+      "product_id": "P-19-PLATA",
+      "producto_disponible": true,
+      "producto_titulo": "Globo Latex Redondo Reflex Plata",
+      "sku": "SKU-V-19-PLATA-12",
+      "sku_original": "SHOP-V-19-PLATA-12",
+      "source_snapshot_id": "SNAP-GOLDEN-19",
+      "source_variant_id": "SOURCE-V-19-PLATA-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-19-PLATA-12",
+      "variante_titulo": "R-12"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-19",
+  "description": "Marco vino y plata (E2E 2026-09-15, ejemplo-07): el catalogo derivado archiva Fashion Gris como plateado. Gris no es plateado: los dos resolutores leen el titulo, cubren el material gris con Fashion Gris y no avisan que falta gris; solo falta blanco.",
+  "expected": {
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "plateado",
+          "design_quantity": 71,
+          "finish": null,
+          "product_id": "P-19-PLATA",
+          "required_quantity": 71,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-19-PLATA-12",
+          "waste_adjusted_quantity": 71,
+          "waste_reserve": 0
+        },
+        {
+          "color": "gris",
+          "design_quantity": 47,
+          "finish": null,
+          "product_id": "P-19-GRIS",
+          "required_quantity": 47,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-19-GRIS-12",
+          "waste_adjusted_quantity": 47,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 1,
+        "density": "media",
+        "dimensions_m": {
+          "height": 2.2,
+          "length": null,
+          "width": 2.5
+        },
+        "installation_length_m": 5.52,
+        "shape": "clasica",
+        "type": "arco",
+        "visual_density": "medium",
+        "visual_scale": "very_large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 8460,
+          "design_quantity": 47,
+          "leftover_inventory": 3,
+          "operational_surplus": 3,
+          "package_count": 1,
+          "potential_surplus": 3,
+          "product_id": "P-19-GRIS",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "units_per_package": 50,
+          "used": 47,
+          "variant_id": "V-19-GRIS-12",
+          "waste_adjusted_quantity": 47,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 17820,
+          "design_quantity": 71,
+          "leftover_inventory": 19,
+          "operational_surplus": 19,
+          "package_count": 2,
+          "potential_surplus": 29,
+          "product_id": "P-19-PLATA",
+          "purchase_cost": 22000,
+          "purchase_quantity": 100,
+          "required_quantity": 81,
+          "units_per_package": 50,
+          "used": 71,
+          "variant_id": "V-19-PLATA-12",
+          "waste_adjusted_quantity": 81,
+          "waste_reserve": 10
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 26280,
+        "covered_waste_reserve": 10,
+        "design_quantity": 118,
+        "natural_package_surplus": 32,
+        "operational_surplus": 22,
+        "potential_surplus": 32,
+        "purchase_cost": 31000,
+        "purchase_quantity": 150,
+        "required_quantity": 128,
+        "target_waste_reserve": 10,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 128,
+        "waste_only_savings_cop": 9000
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-19-PLATA-12"
+      ]
+    },
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-19-PLATA-12"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "gris",
+          "consumption_cost": 8460,
+          "design_quantity": 47,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-19-gris-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 3,
+          "paquetes": 1,
+          "precio_paquete": 9000,
+          "product_id": "P-19-GRIS",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "sku": "SKU-V-19-GRIS-12",
+          "sku_original": "SHOP-V-19-GRIS-12",
+          "sobrante": 3,
+          "source_snapshot_id": "SNAP-GOLDEN-19",
+          "source_variant_id": "SOURCE-V-19-GRIS-12",
+          "subtotal": 9000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo Latex Redondo Fashion Gris — R-12",
+          "unidades_con_merma": 47,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 47,
+          "unidades_paquete": 50,
+          "used": 47,
+          "variant_id": "V-19-GRIS-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "plateado",
+          "consumption_cost": 17820,
+          "design_quantity": 71,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-19-plata-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 19,
+          "paquetes": 2,
+          "precio_paquete": 11000,
+          "product_id": "P-19-PLATA",
+          "purchase_cost": 22000,
+          "purchase_quantity": 100,
+          "required_quantity": 81,
+          "sku": "SKU-V-19-PLATA-12",
+          "sku_original": "SHOP-V-19-PLATA-12",
+          "sobrante": 29,
+          "source_snapshot_id": "SNAP-GOLDEN-19",
+          "source_variant_id": "SOURCE-V-19-PLATA-12",
+          "subtotal": 22000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo Latex Redondo Reflex Plata — R-12",
+          "unidades_con_merma": 81,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 71,
+          "unidades_paquete": 50,
+          "used": 71,
+          "variant_id": "V-19-PLATA-12",
+          "waste_reserve": 10
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 5.52,
+          "estructura_id": "EST_01_ARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "plateado",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-19-plata-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-19-PLATA",
+              "sku": "SKU-V-19-PLATA-12",
+              "sku_original": "SHOP-V-19-PLATA-12",
+              "source_snapshot_id": "SNAP-GOLDEN-19",
+              "source_variant_id": "SOURCE-V-19-PLATA-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo Latex Redondo Reflex Plata — R-12",
+              "unidades": 71,
+              "unidades_inferidas": false,
+              "variant_id": "V-19-PLATA-12"
+            },
+            {
+              "acabado": null,
+              "color": "gris",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-19-gris-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-19-GRIS",
+              "sku": "SKU-V-19-GRIS-12",
+              "sku_original": "SHOP-V-19-GRIS-12",
+              "source_snapshot_id": "SNAP-GOLDEN-19",
+              "source_variant_id": "SOURCE-V-19-GRIS-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo Latex Redondo Fashion Gris — R-12",
+              "unidades": 47,
+              "unidades_inferidas": false,
+              "variant_id": "V-19-GRIS-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 118
+            }
+          ],
+          "nombre": "Arco asimetrico",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "arco",
+          "total_unidades": 118,
+          "ubicacion": "arco_central"
+        }
+      ],
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 118\nTarget waste reserve: 10\nNatural package surplus: 32\nUsable waste coverage: 10\nAdditional packages required for waste: 0\nGlobo Latex Redondo Fashion Gris — R-12: design=47, required=47, package=50, packages=1, purchased=50, natural surplus=3, waste reserve=0, leftover inventory=3\nGlobo Latex Redondo Reflex Plata — R-12: design=71, required=81, package=50, packages=2, purchased=100, natural surplus=29, waste reserve=10, leftover inventory=19",
+      "plan": {
+        "concepto": {
+          "descripcion": "Arco de la foto en plata y gris.",
+          "paleta": [
+            "plateado",
+            "gris"
+          ],
+          "titulo": "Marco plata y gris"
+        },
+        "espacio": {
+          "fuente": "foto",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "colores_referencia": [
+              "plateado",
+              "gris",
+              "blanco"
+            ],
+            "densidad": "media",
+            "estructura_id": "EST_01_ARCO",
+            "materiales": [
+              {
+                "color": "plateado",
+                "participacion": 0.6,
+                "product_id": "P-19-PLATA",
+                "rol_material": "principal"
+              },
+              {
+                "color": "gris",
+                "participacion": 0.4,
+                "product_id": "P-19-GRIS",
+                "rol_material": "secundario"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.2,
+              "ancho_m": 2.5
+            },
+            "mezcla": "clasica",
+            "nombre": "Arco asimetrico",
+            "porque": "Enmarca la escena principal.",
+            "referencia_element_id": "REF_01_E03",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "arco",
+            "ubicacion": "arco_central"
+          }
+        ],
+        "plan_id": "f19f1919-0000-4000-8000-000000000019",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "d4a9e278d1efbce1d6832c2fc61472f87fd6f5e79248b21c560944639d4d92c7",
+      "sin_cobertura": [],
+      "sustituciones": [
+        {
+          "entregado": "plateado, gris",
+          "estructura_id": "EST_01_ARCO",
+          "motivo": "La foto de referencia muestra blanco y esta pieza no lo lleva: se armó con plateado y gris.",
+          "pedido": "blanco"
+        }
+      ],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 26280,
+        "covered_waste_reserve": 10,
+        "design_quantity": 118,
+        "globos_por_tamano": {
+          "R-12": 118
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8,
+        "natural_package_surplus": 32,
+        "purchase_cost": 31000,
+        "target_waste_reserve": 10,
+        "total_cop": 31000,
+        "total_unidades": 118,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 9000
+      }
+    },
+    "quote": {
+      "complementosSoportados": false,
+      "consumptionCost": 26280,
+      "coveredWasteReserve": 10,
+      "incluyeIva": true,
+      "leftoverInventory": 22,
+      "lineas": [
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 47,
+          "color": "gris",
+          "consumptionCost": 8460,
+          "designQuantity": 47,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-19-GRIS-12",
+          "leftoverInventory": 3,
+          "nombre": "Globo Latex Redondo Fashion Gris — R-12",
+          "paquetes": 1,
+          "precioPaquete": 9000,
+          "productId": "P-19-GRIS",
+          "purchaseCost": 9000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [
+            "REF_01_E03"
+          ],
+          "requiredQuantity": 47,
+          "sobrante": 3,
+          "subtotal": 9000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 47,
+          "varianteId": "V-19-GRIS-12",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 71,
+          "color": "plateado",
+          "consumptionCost": 17820,
+          "designQuantity": 71,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-19-PLATA-12",
+          "leftoverInventory": 19,
+          "nombre": "Globo Latex Redondo Reflex Plata — R-12",
+          "paquetes": 2,
+          "precioPaquete": 11000,
+          "productId": "P-19-PLATA",
+          "purchaseCost": 22000,
+          "purchaseQuantity": 100,
+          "referenciaElementIds": [
+            "REF_01_E03"
+          ],
+          "requiredQuantity": 81,
+          "sobrante": 29,
+          "subtotal": 22000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 71,
+          "varianteId": "V-19-PLATA-12",
+          "wasteReserve": 10
+        }
+      ],
+      "mermaPorcentaje": 8,
+      "plan_hash": "d4a9e278d1efbce1d6832c2fc61472f87fd6f5e79248b21c560944639d4d92c7",
+      "purchaseCost": 31000,
+      "targetWasteReserve": 10,
+      "total": 31000
+    }
+  },
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-19",
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "plateado",
+          "design_quantity": 71,
+          "finish": null,
+          "product_id": "P-19-PLATA",
+          "required_quantity": 71,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-19-PLATA-12",
+          "waste_adjusted_quantity": 71,
+          "waste_reserve": 0
+        },
+        {
+          "color": "gris",
+          "design_quantity": 47,
+          "finish": null,
+          "product_id": "P-19-GRIS",
+          "required_quantity": 47,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-19-GRIS-12",
+          "waste_adjusted_quantity": 47,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 1,
+        "density": "media",
+        "dimensions_m": {
+          "height": 2.2,
+          "length": null,
+          "width": 2.5
+        },
+        "installation_length_m": 5.52,
+        "shape": "clasica",
+        "type": "arco",
+        "visual_density": "medium",
+        "visual_scale": "very_large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 8460,
+          "design_quantity": 47,
+          "leftover_inventory": 3,
+          "operational_surplus": 3,
+          "package_count": 1,
+          "potential_surplus": 3,
+          "product_id": "P-19-GRIS",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "units_per_package": 50,
+          "used": 47,
+          "variant_id": "V-19-GRIS-12",
+          "waste_adjusted_quantity": 47,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 17820,
+          "design_quantity": 71,
+          "leftover_inventory": 19,
+          "operational_surplus": 19,
+          "package_count": 2,
+          "potential_surplus": 29,
+          "product_id": "P-19-PLATA",
+          "purchase_cost": 22000,
+          "purchase_quantity": 100,
+          "required_quantity": 81,
+          "units_per_package": 50,
+          "used": 71,
+          "variant_id": "V-19-PLATA-12",
+          "waste_adjusted_quantity": 81,
+          "waste_reserve": 10
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 26280,
+        "covered_waste_reserve": 10,
+        "design_quantity": 118,
+        "natural_package_surplus": 32,
+        "operational_surplus": 22,
+        "potential_surplus": 32,
+        "purchase_cost": 31000,
+        "purchase_quantity": 150,
+        "required_quantity": 128,
+        "target_waste_reserve": 10,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 128,
+        "waste_only_savings_cop": 9000
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-19-PLATA-12"
+      ]
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-19-PLATA-12"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "gris",
+          "consumption_cost": 8460,
+          "design_quantity": 47,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-19-gris-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 3,
+          "paquetes": 1,
+          "precio_paquete": 9000,
+          "product_id": "P-19-GRIS",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "sku": "SKU-V-19-GRIS-12",
+          "sku_original": "SHOP-V-19-GRIS-12",
+          "sobrante": 3,
+          "source_snapshot_id": "SNAP-GOLDEN-19",
+          "source_variant_id": "SOURCE-V-19-GRIS-12",
+          "subtotal": 9000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo Latex Redondo Fashion Gris — R-12",
+          "unidades_con_merma": 47,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 47,
+          "unidades_paquete": 50,
+          "used": 47,
+          "variant_id": "V-19-GRIS-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "plateado",
+          "consumption_cost": 17820,
+          "design_quantity": 71,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-19-plata-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 19,
+          "paquetes": 2,
+          "precio_paquete": 11000,
+          "product_id": "P-19-PLATA",
+          "purchase_cost": 22000,
+          "purchase_quantity": 100,
+          "required_quantity": 81,
+          "sku": "SKU-V-19-PLATA-12",
+          "sku_original": "SHOP-V-19-PLATA-12",
+          "sobrante": 29,
+          "source_snapshot_id": "SNAP-GOLDEN-19",
+          "source_variant_id": "SOURCE-V-19-PLATA-12",
+          "subtotal": 22000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo Latex Redondo Reflex Plata — R-12",
+          "unidades_con_merma": 81,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 71,
+          "unidades_paquete": 50,
+          "used": 71,
+          "variant_id": "V-19-PLATA-12",
+          "waste_reserve": 10
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 5.52,
+          "estructura_id": "EST_01_ARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "plateado",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-19-plata-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-19-PLATA",
+              "sku": "SKU-V-19-PLATA-12",
+              "sku_original": "SHOP-V-19-PLATA-12",
+              "source_snapshot_id": "SNAP-GOLDEN-19",
+              "source_variant_id": "SOURCE-V-19-PLATA-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo Latex Redondo Reflex Plata — R-12",
+              "unidades": 71,
+              "unidades_inferidas": false,
+              "variant_id": "V-19-PLATA-12"
+            },
+            {
+              "acabado": null,
+              "color": "gris",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-19-gris-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-19-GRIS",
+              "sku": "SKU-V-19-GRIS-12",
+              "sku_original": "SHOP-V-19-GRIS-12",
+              "source_snapshot_id": "SNAP-GOLDEN-19",
+              "source_variant_id": "SOURCE-V-19-GRIS-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo Latex Redondo Fashion Gris — R-12",
+              "unidades": 47,
+              "unidades_inferidas": false,
+              "variant_id": "V-19-GRIS-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 118
+            }
+          ],
+          "nombre": "Arco asimetrico",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "arco",
+          "total_unidades": 118,
+          "ubicacion": "arco_central"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-19.",
+      "plan": {
+        "concepto": {
+          "descripcion": "Arco de la foto en plata y gris.",
+          "paleta": [
+            "plateado",
+            "gris"
+          ],
+          "titulo": "Marco plata y gris"
+        },
+        "espacio": {
+          "fuente": "foto",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "colores_referencia": [
+              "plateado",
+              "gris",
+              "blanco"
+            ],
+            "densidad": "media",
+            "estructura_id": "EST_01_ARCO",
+            "materiales": [
+              {
+                "color": "plateado",
+                "participacion": 0.6,
+                "product_id": "P-19-PLATA",
+                "rol_material": "principal"
+              },
+              {
+                "color": "gris",
+                "participacion": 0.4,
+                "product_id": "P-19-GRIS",
+                "rol_material": "secundario"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.2,
+              "ancho_m": 2.5
+            },
+            "mezcla": "clasica",
+            "nombre": "Arco asimetrico",
+            "porque": "Enmarca la escena principal.",
+            "referencia_element_id": "REF_01_E03",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "arco",
+            "ubicacion": "arco_central"
+          }
+        ],
+        "plan_id": "f19f1919-0000-4000-8000-000000000019",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "0fde4d2c8c91b665b2773bc4c2259eaded9f28c8af1c8790b43f52848f60ce67",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [],
+      "sustituciones": [
+        {
+          "entregado": "plateado, gris",
+          "estructura_id": "EST_01_ARCO",
+          "motivo": "La foto de referencia muestra blanco y esta pieza no lo lleva: se armó con plateado y gris.",
+          "pedido": "blanco"
+        }
+      ],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 26280,
+        "covered_waste_reserve": 10,
+        "design_quantity": 118,
+        "globos_por_tamano": {
+          "R-12": 118
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 32,
+        "purchase_cost": 31000,
+        "target_waste_reserve": 10,
+        "total_cop": 31000,
+        "total_unidades": 118,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 9000
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 26280,
+      "covered_waste_reserve": 10,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 22,
+      "lines": [
+        {
+          "available": true,
+          "color": "gris",
+          "consumption_cost_cop": 8460,
+          "design_quantity": 47,
+          "diameter_inches": 12.0,
+          "id": "V-19-GRIS-12",
+          "leftover_inventory": 3,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 9000,
+          "packages": 1,
+          "product_id": "P-19-GRIS",
+          "purchase_cost_cop": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 9000,
+          "surplus": 3,
+          "title": "Globo Latex Redondo Fashion Gris — R-12",
+          "units_per_package": 50,
+          "used": 47,
+          "variant_id": "V-19-GRIS-12",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "plateado",
+          "consumption_cost_cop": 17820,
+          "design_quantity": 71,
+          "diameter_inches": 12.0,
+          "id": "V-19-PLATA-12",
+          "leftover_inventory": 19,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 11000,
+          "packages": 2,
+          "product_id": "P-19-PLATA",
+          "purchase_cost_cop": 22000,
+          "purchase_quantity": 100,
+          "required_quantity": 81,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 22000,
+          "surplus": 29,
+          "title": "Globo Latex Redondo Reflex Plata — R-12",
+          "units_per_package": 50,
+          "used": 71,
+          "variant_id": "V-19-PLATA-12",
+          "waste_reserve": 10
+        }
+      ],
+      "plan_hash": "0fde4d2c8c91b665b2773bc4c2259eaded9f28c8af1c8790b43f52848f60ce67",
+      "purchase_cost_cop": 31000,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 10,
+      "total_cop": 31000,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "19-gris-no-es-plateado",
+  "plan": {
+    "concepto": {
+      "descripcion": "Arco de la foto en plata y gris.",
+      "paleta": [
+        "plateado",
+        "gris"
+      ],
+      "titulo": "Marco plata y gris"
+    },
+    "espacio": {
+      "fuente": "foto",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "colores_referencia": [
+          "plateado",
+          "gris",
+          "blanco"
+        ],
+        "densidad": "media",
+        "estructura_id": "EST_01_ARCO",
+        "materiales": [
+          {
+            "color": "plateado",
+            "participacion": 0.6,
+            "product_id": "P-19-PLATA",
+            "rol_material": "principal"
+          },
+          {
+            "color": "gris",
+            "participacion": 0.4,
+            "product_id": "P-19-GRIS",
+            "rol_material": "secundario"
+          }
+        ],
+        "medidas": {
+          "alto_m": 2.2,
+          "ancho_m": 2.5
+        },
+        "mezcla": "clasica",
+        "nombre": "Arco asimetrico",
+        "porque": "Enmarca la escena principal.",
+        "referencia_element_id": "REF_01_E03",
+        "repeticiones": 1,
+        "rol_escena": "focal",
+        "tipo": "arco",
+        "ubicacion": "arco_central"
+      }
+    ],
+    "plan_id": "f19f1919-0000-4000-8000-000000000019",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "supuestos": []
+  }
+}

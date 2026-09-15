@@ -317,6 +317,24 @@ def _valid_image(value: object) -> str | None:
     return candidate if parsed.scheme in {"http", "https"} and bool(parsed.netloc) else None
 
 
+_GREY_TITLE = re.compile(r"\bgris\b")
+_SILVER_TITLE = re.compile(r"\b(?:plata|plateado|plateada|silver)\b")
+
+
+def _product_colors(title: str, colors: Sequence[str]) -> tuple[str, ...]:
+    """Real colors of a catalog product; mirror of ``coloresRealesProducto``.
+
+    The derived catalog colors file grey balloons under "plateado" (Fashion
+    Gris), but grey is not silver: a product whose title names "gris" and not
+    silver has "gris" instead of "plateado" (E2E 2026-09-15, ejemplo-07).
+    """
+    folded = tuple(dict.fromkeys(_normalize(color) for color in colors if _normalize(color)))
+    folded_title = _normalize(title)
+    if not _GREY_TITLE.search(folded_title) or _SILVER_TITLE.search(folded_title):
+        return folded
+    return tuple(dict.fromkeys(("gris", *(color for color in folded if color != "plateado"))))
+
+
 def _candidate(row: Mapping[str, object], snapshot_id: str) -> Candidate | None:
     source_snapshot = _text(row.get("source_snapshot_id"))
     product_id = _text(row.get("product_id"))
@@ -360,10 +378,9 @@ def _candidate(row: Mapping[str, object], snapshot_id: str) -> Candidate | None:
         size_code=_text(row.get("codigo_tamano")),
         shape=_text(row.get("forma")),
         diameter_inches=diameter,
-        colors=tuple(
-            dict.fromkeys(
-                _strings(row.get("colores_variante")) + _strings(row.get("colores_producto"))
-            )
+        colors=_product_colors(
+            product_title,
+            _strings(row.get("colores_variante")) + _strings(row.get("colores_producto")),
         ),
         finishes=_strings(row.get("acabados_producto")),
         image=_valid_image(row.get("imagen")),

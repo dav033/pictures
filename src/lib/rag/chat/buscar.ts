@@ -9,6 +9,7 @@ import type { ObservabilidadBusqueda, ResultadoBusquedaObservabilidad } from "..
 import type { CatalogAllowlist } from "../retrieval/types";
 import { llamarPythonCatalogSearch, seleccionarBackendPython } from "@/lib/ia/python-adapter";
 import { candidatoDesdePython } from "./candidato-python";
+import { coloresRealesProducto } from "@/lib/plan/colores-producto";
 import { recorrerEscalera } from "./relajacion-filtros";
 
 export type OpcionesBusquedaRag = {
@@ -210,7 +211,7 @@ async function buscarCatalogoPython(
     ? await recorrerEscalera(filtros, primera, {
         buscar: llamar,
         cantidad: (respuesta) => respuesta.candidates.length,
-        colores: (respuesta) => respuesta.candidates.map((candidate) => ({ colores: candidate.colors })),
+        colores: (respuesta) => respuesta.candidates.map((candidate) => ({ colores: coloresRealesProducto(candidate.title, candidate.colors) })),
         coloresContexto: opciones.coloresContexto,
         puedeSeguir: (respuesta) => respuesta.status !== "AMBIGUOUS_SKU" && Date.now() < deadlineAt,
       })

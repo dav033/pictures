@@ -54,6 +54,10 @@ export type OpcionesConversacion = {
    * Default: un mensaje genérico en español; el consumidor normalmente
    * quiere algo consciente de SU propio estado (ver demo-decoracion). */
   alAgotarVueltas?: (historial: Mensaje[]) => string;
+  /** Checked before every model call after the first one: a text ends the
+   * conversation with it, without calling the model again (the consumer's
+   * time budget for one turn). `null` goes on. */
+  cierreAnticipado?: (historial: Mensaje[]) => string | null;
   /** Señal de desconexión/cancelación del consumidor. */
   signal?: AbortSignal;
   /** Atribución de producto obligatoria para cada llamada del loop. */
@@ -163,6 +167,8 @@ export async function ejecutarConversacion(opts: OpcionesConversacion): Promise<
 
   for (let vuelta = 0; vuelta < vueltasMax; vuelta++) {
     asegurarNoCancelado(opts.signal);
+    const cierre = vuelta > 0 ? opts.cierreAnticipado?.(historial) ?? null : null;
+    if (cierre !== null) return { texto: cierre, historial, proveedor: opts.chat.id, modelo: opts.chat.modelo, agotado: true };
     const inicio = Date.now();
     let turno;
     try {
@@ -234,6 +240,12 @@ export async function* ejecutarConversacionStream(opts: OpcionesConversacion): A
 
   for (let vuelta = 0; vuelta < vueltasMax; vuelta++) {
     asegurarNoCancelado(opts.signal);
+    const cierre = vuelta > 0 ? opts.cierreAnticipado?.(historial) ?? null : null;
+    if (cierre !== null) {
+      yield { tipo: "texto", delta: cierre };
+      yield { tipo: "fin", resultado: { texto: cierre, historial, proveedor: opts.chat.id, modelo: opts.chat.modelo, agotado: true } };
+      return;
+    }
     const inicio = Date.now();
     let texto = "";
     let llamadasCrudas: LlamadaHerramienta[] = [];

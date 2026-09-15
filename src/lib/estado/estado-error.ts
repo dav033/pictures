@@ -1,4 +1,4 @@
-import type { AccionUiV1, UiErrorCodeV1, UiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
+import { uiErrorDesdeChatV1, type AccionUiV1, type UiErrorCodeV1, type UiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 
 /** Dónde ocurrió el error visible: decide el título por defecto y qué acciones se pueden ejecutar. */
 export type OrigenError = "chat" | "generacion" | "catalogo" | "plan";
@@ -64,4 +64,47 @@ export function presentarError(ui: UiErrorV1, origen: OrigenError, accionesDispo
     acciones: [...new Set(acciones)].slice(0, 2),
     variante: CODIGOS_AVISO.has(ui.code) ? "aviso" : "error",
   };
+}
+
+/**
+ * Texto del cliente cuando el origen marca el error como no reintentable pero
+ * el catálogo lo redacta invitando a «intentar de nuevo» (p. ej. un
+ * INTERNAL_ERROR del chat con `retryable: false`, E2E real 3).
+ */
+const MENSAJE_NO_REINTENTABLE_GENERACION: Partial<Readonly<Record<UiErrorCodeV1, string>>> = {
+  ERROR_INTERNO: "Algo no salió bien de nuestro lado al crear la imagen. Tu propuesta y su precio quedan guardados.",
+  TIEMPO_AGOTADO: "Crear la imagen tardó más de lo esperado. Tu propuesta y su precio quedan guardados.",
+};
+
+const MENSAJE_NO_REINTENTABLE: Partial<Readonly<Record<UiErrorCodeV1, string>>> = {
+  ERROR_INTERNO: "Algo no salió bien de nuestro lado con este pedido. Prueba contarlo de otra forma.",
+  TIEMPO_AGOTADO: "Esto tardó más de lo esperado. Prueba pedirlo de otra forma o con menos detalles.",
+  SERVICIO_NO_DISPONIBLE: "El servicio no está disponible por ahora. Tu conversación queda guardada; vuelve más tarde.",
+  SERVICIO_OCUPADO: "Hay mucha demanda en este momento. Tu conversación queda guardada; vuelve más tarde.",
+  SIN_CONEXION: "No pudimos conectarnos. Revisa tu conexión.",
+  OPERACION_CANCELADA: "Cancelaste la creación de la imagen.",
+};
+
+/**
+ * Aplica el `retryable` que declaró el origen (evento SSE `error`, cuerpo de
+ * /api/generate) sobre el ui-error.v1 construido desde el catálogo. Con
+ * `false` nunca queda «reintentar» como acción ni un texto que invite a
+ * reintentar; la acción sugerida del contrato que no sea reintentar se
+ * conserva. Sin el campo, manda el catálogo.
+ */
+export function respetarReintentable(ui: UiErrorV1, retryable: boolean | undefined, origen: OrigenError = "chat"): UiErrorV1 {
+  if (retryable === undefined || retryable === ui.retryable) return ui;
+  if (retryable) return { ...ui, retryable: true };
+  return {
+    ...ui,
+    retryable: false,
+    accion_sugerida: ui.accion_sugerida === "reintentar" ? null : ui.accion_sugerida,
+    acciones_alternativas: ui.acciones_alternativas.filter((accion) => accion !== "reintentar"),
+    mensaje_usuario: (origen === "generacion" ? MENSAJE_NO_REINTENTABLE_GENERACION[ui.code] : undefined) ?? MENSAJE_NO_REINTENTABLE[ui.code] ?? ui.mensaje_usuario,
+  };
+}
+
+/** ui-error.v1 de un evento `error` del chat (o su sobre JSON) respetando su `retryable`. */
+export function uiErrorDesdeEventoChat(evento: { code?: string; error?: string; causa?: string; request_id?: string; retryable?: boolean }): UiErrorV1 {
+  return respetarReintentable(uiErrorDesdeChatV1(evento), evento.retryable);
 }

@@ -32,15 +32,15 @@ import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
 import { classifyGenerationIds, normalizeGenerationSources } from "@/lib/generacion/provenance";
 import { ChatSseEventV1Schema } from "@/lib/ia/contracts/chat-v1";
-import { CATALOGO_ERRORES_UI_V1, construirUiErrorV1, leerUiErrorV1, uiErrorDesdeChatV1, type AccionUiV1, type UiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
+import { CATALOGO_ERRORES_UI_V1, construirUiErrorV1, leerUiErrorV1, type AccionUiV1, type UiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 import { AvisoError } from "@/components/errores/AvisoError";
 import { useModoVista } from "@/lib/estado/modo-vista";
 import { abrirPromptAutomaticamente, qaVisualEfectivo, usarLoraEfectivo } from "@/lib/estado/modo-vista-reglas";
 import { aplicarEventoHerramienta, cerrarPasos, type PasoAsistente } from "@/lib/estado/pasos-asistente";
-import { contextoEvento } from "@/lib/estado/contexto-evento";
+import { contextoEventoConversacion } from "@/lib/estado/contexto-evento";
 import { crearEsperaAnalisis, type EstadoAnalisisReferencia } from "@/lib/estado/espera-analisis";
 import { aligerarAdjuntos, claveImagen, imagenesSinMiniatura, type AdjuntosTurno } from "@/lib/estado/persistencia-adjuntos";
-import type { OrigenError } from "@/lib/estado/estado-error";
+import { respetarReintentable, uiErrorDesdeEventoChat, type OrigenError } from "@/lib/estado/estado-error";
 import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
 import {
   CLAVE_GENERACIONES,
@@ -94,6 +94,8 @@ type Mensaje = {
   categoriasFiltros?: FiltrosCatalogo;
   medidas?: ResultadoMedidas;
   plan?: PlanResuelto;
+  /** Brief del evento `fin` de esta respuesta: la cabecera distingue si cambió después de la última propuesta. */
+  brief?: Brief;
   cotizacion?: Cotizacion;
   referenceBlueprint?: ReferenceBlueprintV2;
   /** Debug: JSON crudo que usó el análisis de imágenes de referencia. Va
@@ -232,6 +234,13 @@ function campoTexto(valor: unknown, campo: string): string | undefined {
   return typeof dato === "string" && dato.length > 0 ? dato : undefined;
 }
 
+/** `retryable` del sobre de error (error.v1); undefined si no viene. */
+function campoReintentable(valor: unknown): boolean | undefined {
+  if (typeof valor !== "object" || valor === null || !("retryable" in valor)) return undefined;
+  const dato: unknown = (valor as Record<string, unknown>).retryable;
+  return typeof dato === "boolean" ? dato : undefined;
+}
+
 /**
  * Streaming real (§5.4 del plan): parsea a mano los bloques
  * `event: X\ndata: Y\n\n` de la respuesta SSE de /api/chat. No se usa
@@ -244,7 +253,7 @@ async function consumirSSE(
     onTexto: (delta: string) => void;
     onHerramienta: (nombre: string, estado: "ejecutando" | "lista") => void;
     onFin: (datos: DatosFin) => void;
-    onError: (datos: { error?: string; code?: string; causa?: string; request_id?: string }) => void;
+    onError: (datos: { error?: string; code?: string; causa?: string; request_id?: string; retryable?: boolean }) => void;
     onActividad?: () => void;
   },
 ) {
@@ -838,6 +847,7 @@ export default function Page() {
         medidas: datos.medidas ?? undefined,
         referenceBlueprint: datos.referenceBlueprint ?? (datos.plan ? referenceDraftRef.current?.blueprint : undefined),
         plan: datos.plan,
+        brief: datos.brief,
         // En modo plan la cotización preliminar pertenece al mismo mensaje que
         // contiene el blueprint y el plan; la imagen final lo actualiza ahí.
         cotizacion: seleccionIA.length ? undefined : datos.cotizacion ?? undefined,
@@ -1035,7 +1045,7 @@ export default function Page() {
           onFin: (datos) => finalizarUltimoMensaje(datos, adjuntosTurno),
           onError: (datos) => {
             hayError = true;
-            setError({ ui: uiErrorDesdeChatV1(datos), origen: "chat" });
+            setError({ ui: uiErrorDesdeEventoChat(datos), origen: "chat" });
             setMensajes((previos) => previos.slice(0, -1));
           },
           onActividad: reiniciarLimiteInactividad,
@@ -1047,7 +1057,7 @@ export default function Page() {
         if (!res.ok) {
           const cuerpo: unknown = data;
           setError({
-            ui: uiErrorDesdeChatV1({ code: campoTexto(cuerpo, "code"), error: campoTexto(cuerpo, "error") ?? `chat HTTP ${res.status}`, causa: campoTexto(cuerpo, "causa"), request_id: campoTexto(cuerpo, "request_id") }),
+            ui: uiErrorDesdeEventoChat({ code: campoTexto(cuerpo, "code"), error: campoTexto(cuerpo, "error") ?? `chat HTTP ${res.status}`, causa: campoTexto(cuerpo, "causa"), request_id: campoTexto(cuerpo, "request_id"), retryable: campoReintentable(cuerpo) }),
             origen: "chat",
           });
           setMensajes((previos) => previos.slice(0, -1));
@@ -1308,7 +1318,7 @@ export default function Page() {
             guardarVistaPreviaNoDisponible(override.plan.plan_hash);
           }
           setError({
-            ui: uiError ?? errorLocal("ERROR_INTERNO", campoTexto(cuerpo, "error") ?? campoTexto(cuerpo, "message") ?? `generate HTTP ${res.status}`),
+            ui: uiError ?? respetarReintentable(errorLocal("ERROR_INTERNO", campoTexto(cuerpo, "error") ?? campoTexto(cuerpo, "message") ?? `generate HTTP ${res.status}`), campoReintentable(cuerpo), "generacion"),
             origen: "generacion",
           });
           return;
@@ -1687,7 +1697,7 @@ export default function Page() {
   const ultimoIndiceUsuario = mensajes.map((m) => m.role).lastIndexOf("user");
   // Estado inicial (maqueta EstadoInicial): todavía no hay turno del cliente.
   const enInicio = !mensajes.some((mensaje) => mensaje.id !== SALUDO.id);
-  const contexto = contextoEvento(brief);
+  const contexto = contextoEventoConversacion(mensajes, brief);
   // C2: con una propuesta en la conversación, el plan es la selección; la lista manual solo en dev.
   const seleccionDisponible = esModoDev || !hayPlanEnConversacion;
   const esperandoPlanConReferencias = planDecoracionActivo && imagenesReferencia.length > 0;

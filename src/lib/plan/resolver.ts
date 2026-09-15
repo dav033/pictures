@@ -4,6 +4,7 @@ import { featureEnabled } from "@/lib/ia/feature-flags";
 import { MERMA } from "@/lib/cotizacion/constantes";
 import { calcularDespieceEstructura, MEZCLAS_DISPONIBLES, pulgadasDeMezcla, type Mezcla } from "@/lib/medidas/geometria";
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "./composicion";
+import { coloresRealesProducto } from "./colores-producto";
 import { planHashResuelto } from "./hash";
 import { completarMedidas, completarMedidas1_1 } from "./medidas-defecto";
 import { distribuirReservaProyecto, optimizarCobertura } from "./optimizar-materiales";
@@ -90,7 +91,7 @@ function aCandidato(row: FilaCatalogoPlan): Candidato | null {
     codigoTamano: row.codigo_tamano,
     forma: row.forma,
     diamPulg: Number.isFinite(diamPulg) ? diamPulg : null,
-     colores: [...new Set([...strings(row.colores_variante), ...strings(row.colores_producto)].map(normalizar))],
+     colores: coloresRealesProducto(row.producto_titulo, [...strings(row.colores_variante), ...strings(row.colores_producto)]),
      acabados: strings(row.acabados_producto).map(normalizar),
     descripcion: row.descripcion,
     imagen: row.imagen,

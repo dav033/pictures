@@ -3,7 +3,7 @@ import React from "react";
 import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { TarjetaCotizacion, filasBorrador } from "@/components/TarjetaCotizacion";
-import { FilasCotizacion, gruposCotizacionPlan } from "@/components/plan/DialogoCotizacion";
+import { FilasCotizacion, fraseCompra, gruposCotizacionPlan } from "@/components/plan/DialogoCotizacion";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import { TarjetaPlanDecoracion } from "@/components/TarjetaPlanDecoracion";
 import { ReferenceBlueprintV2Schema } from "@/lib/ia/reference-blueprint";
@@ -520,6 +520,59 @@ ok("modo dev conserva los datos crudos");
   assert.equal([...semiarco.matchAll(/Reflex Plata/g)].length, 1, semiarco);
   assert.match(semiarco, /Reflex Plata 12 pulgadas · [^0-9]+ 24 unidades/);
   ok("D3: una fila por producto, tamaño y color con paquetes combinados (plan real)");
+}
+
+// E2E real 3 (P5): «Tu cotización» listaba Fashion Blanco 5/12/9 y el diálogo
+// 5/9/12. Todas las vistas ordenan de menor a mayor diámetro (mismo color y
+// producto juntos): tarjeta, diálogo, detalle de la pieza y barra de tamaños.
+{
+  const base = JSON.parse(readFileSync(new URL("./fixtures/plan-d3-paquetes-combinados.json", import.meta.url), "utf8")) as PlanResuelto;
+  const molde = base.compras.find((compra) => /Reflex Plata/.test(compra.titulo) && compra.unidades_paquete === 50)!;
+  const compraDe = (pulgadas: number): CompraConsolidada => ({
+    ...molde,
+    product_id: `blanco-${pulgadas}`,
+    variant_id: `blanco-${pulgadas}-x50`,
+    titulo: `B2b Globo Latex Redondo Fashion Blanco — R-${pulgadas} / PAQUETE X 50`,
+    color: "blanco",
+    tamano_codigo: `R-${pulgadas}`,
+    diam_pulg: pulgadas,
+  });
+  const desordenadas = [compraDe(5), compraDe(12), compraDe(9)];
+  const lineaMolde = base.estructuras[0]!.lineas[0]!;
+  const lineasDesordenadas = desordenadas.map((compra) => ({ ...lineaMolde, product_id: compra.product_id, variant_id: compra.variant_id, titulo: compra.titulo, color: "blanco", acabado: "fashion", tamano_codigo: compra.tamano_codigo, diam_pulg: compra.diam_pulg, unidades: 10, imagen: null, sustitucion: null }));
+  const plan = {
+    ...base,
+    compras: desordenadas,
+    estructuras: [{ ...base.estructuras[0]!, lineas: lineasDesordenadas, mezcla_real: [5, 12, 9].map((diam_pulg) => ({ ...base.estructuras[0]!.mezcla_real[0]!, diam_pulg, unidades: 10 })) }],
+    totales: { ...base.totales, globos_por_tamano: { "R-5": 10, "R-12": 10, "R-9": 10 } },
+  } as PlanResuelto;
+  const orden = (texto: string, patron: RegExp) => [...texto.matchAll(patron)].map((m) => Number(m[1]));
+
+  assert.deepEqual(gruposCotizacionPlan(desordenadas).map((grupo) => grupo.items[0]!.diam_pulg), [5, 9, 12], "grupos del diálogo");
+  const dialogo = textoVisible(renderToStaticMarkup(React.createElement(FilasCotizacion, { compras: desordenadas, imagenDe: () => undefined })));
+  assert.deepEqual(orden(dialogo, /(\d+) pulgadas/g), [5, 9, 12], dialogo);
+
+  const cotizacion: Cotizacion = {
+    lineas: desordenadas.map((compra) => ({
+      id: compra.variant_id, productId: compra.product_id, tamano: compra.tamano_codigo!, tamanoCodigo: compra.tamano_codigo ?? undefined, diamPulg: compra.diam_pulg ?? undefined, color: "blanco",
+      cantidadNecesaria: compra.unidades_necesarias, disponible: true, varianteId: compra.variant_id, nombre: compra.titulo, precioPaquete: compra.precio_paquete, unidadesPaquete: 50, paquetes: 1, subtotal: compra.subtotal, sobrante: compra.sobrante,
+    })),
+    total: 0, mermaPorcentaje: 10, incluyeIva: true, complementosSoportados: false,
+  };
+  const tarjeta = textoVisible(renderToStaticMarkup(React.createElement(TarjetaCotizacion, { cotizacion })));
+  assert.deepEqual(orden(tarjeta, /(\d+) pulgadas/g), [5, 9, 12], `tarjeta «Tu cotización»: ${tarjeta}`);
+  assert.deepEqual(filasBorrador(cotizacion.lineas.map((linea) => ({ ...linea, excluida: false })), true).map((fila) => fila.items[0]!.diamPulg), [5, 9, 12], "tarjeta en edición");
+
+  const html = renderToStaticMarkup(React.createElement(TarjetaPlanDecoracion, { plan }));
+  const detalle = textoVisible(html);
+  const lleva = detalle.slice(detalle.indexOf("Globos que lleva"));
+  assert.deepEqual(orden(lleva, /Fashion Blanco (\d+) pulgadas/g), [5, 9, 12], `detalle «Globos que lleva»: ${lleva}`);
+  const mezcla = detalle.slice(detalle.indexOf("Mezcla de tamaños"), detalle.indexOf("Globos que lleva"));
+  assert.deepEqual(orden(mezcla, /(\d+) pulgadas ·/g), [5, 9, 12], `barra de tamaños del detalle: ${mezcla}`);
+  assert.deepEqual([...tamanosCliente([{ diam_pulg: 12 }, { diam_pulg: 5 }, { diam_pulg: 9 }])!.matchAll(/\d+/g)].map(Number), [5, 9, 12], "texto de la barra del resumen");
+  // Revisión visual fix-ui-3: con una sola pieza el diálogo decía «Compras una sola vez para .».
+  assert.equal(fraseCompra(plan), "Compras una sola vez para toda la decoración.");
+  ok("tamaños de menor a mayor diámetro en tarjeta, diálogo, detalle y barra");
 }
 
 console.log(`\n${casos} casos OK (presentación de la tarjeta del plan)`);

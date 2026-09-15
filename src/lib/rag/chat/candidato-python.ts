@@ -1,3 +1,4 @@
+import { coloresRealesProducto } from "@/lib/plan/colores-producto";
 import type { ProductoCandidato } from "./buscar";
 
 /**
@@ -33,7 +34,8 @@ export function candidatoDesdePython(candidate: CandidatoPython): ProductoCandid
     productId: candidate.product_id,
     titulo: candidate.title,
     categoria: candidate.category,
-    colores: candidate.colors,
+    // Grey is not silver (colores-producto.ts).
+    colores: coloresRealesProducto(candidate.title, candidate.colors),
     acabados: candidate.finishes,
     ocasiones: candidate.occasions,
     disponible: candidate.available,
@@ -47,7 +49,7 @@ export function candidatoDesdePython(candidate: CandidatoPython): ProductoCandid
       codigoTamano: variant.size_code,
       diamPulg: variant.diameter_inches,
       forma: variant.shape,
-      colores: variant.colors,
+      colores: coloresRealesProducto(candidate.title, variant.colors),
     })),
   };
 }

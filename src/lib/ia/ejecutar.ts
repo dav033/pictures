@@ -11,6 +11,10 @@ import { referenciaSinGlobosYaPreguntada } from "@/lib/plan/restricciones";
 import { crearEstadoConversacion, crearRegistroHerramientas, HERRAMIENTAS_SOLO_LECTURA, herramientasActivas, textoAlAgotarVueltas, VUELTAS_MAX } from "./registro-herramientas";
 import type { EstadoConversacion } from "./registro-herramientas";
 import type { ReferenceBlueprintV2 } from "./reference-blueprint";
+import { sanearBrief } from "./brief-herramienta";
+import { cierreAnticipado, disponibilidadDelTurno } from "./convergencia-plan";
+import { colorDeCatalogo } from "@/lib/plan/colores-catalogo";
+import { coloresFotoParaBusqueda } from "@/lib/plan/colores-referencia";
 import { textoFinalTurno } from "./texto-final-turno";
 import type { ChatPort, Mensaje } from "./tipos";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
@@ -72,6 +76,25 @@ function estadoDelTurno(historial: Mensaje[], brief: Brief, referenceBlueprint: 
   });
 }
 
+/**
+ * Time budget of one turn (convergencia-plan.ts): past the limit the turn ends
+ * with a useful question, or with the proposal already on screen, instead of
+ * calling the model until the route deadline.
+ */
+function cierreDelTurno(estado: EstadoConversacion): string | null {
+  const pedidosCliente = estado.restriccionesUsuario.colores.filter((color) => color.polaridad === "obligatorio").map((color) => colorDeCatalogo(color.valor));
+  const coloresPedidos = pedidosCliente.length ? pedidosCliente : coloresFotoParaBusqueda(estado.referenceBlueprint);
+  const coloresDisponibles = [...disponibilidadDelTurno(estado.ragCandidatos ?? []).values()]
+    .filter((producto) => producto.mezclas.length > 0)
+    .flatMap((producto) => producto.colores);
+  return cierreAnticipado({
+    transcurridoMs: Date.now() - estado.inicioTurnoMs,
+    hayPlan: Boolean(estado.planResuelto),
+    coloresPedidos: [...new Set(coloresPedidos)],
+    coloresDisponibles: [...new Set(coloresDisponibles)],
+  });
+}
+
 /** Never an empty turn, never a claimed change without a plan (texto-final-turno.ts). */
 function textoDelTurno(estado: EstadoConversacion, texto: string, historial: Mensaje[]): string {
   return textoFinalTurno(texto, { planConfirmado: Boolean(estado.planResuelto), seleccionConfirmada: Boolean(estado.seleccionFinalIA?.length) }, historial);
@@ -80,7 +103,8 @@ function textoDelTurno(estado: EstadoConversacion, texto: string, historial: Men
 function empaquetar(estado: EstadoConversacion, texto: string, proveedor: ChatPort["id"], modelo: string): ResultadoConversacion {
   return {
     texto,
-    brief: estado.brief,
+    // The `fin` event validates the brief strictly: only valid fields leave the turn.
+    brief: sanearBrief(estado.brief),
     recomendaciones: estado.recomendaciones,
     decoraciones: estado.decoraciones,
     categorias: estado.categoriasSugeridas,
@@ -128,6 +152,7 @@ export async function ejecutarConversacion(opts: {
     vueltasMax: VUELTAS_MAX,
     onLlamada: opts.onLlamada,
     alAgotarVueltas: () => textoAlAgotarVueltas(estado),
+    cierreAnticipado: () => cierreDelTurno(estado),
     signal: opts.signal,
     telemetria: opts.telemetria ?? { flujo: "armador_decoracion", superficie: "/api/chat" },
   });
@@ -165,6 +190,7 @@ export async function* ejecutarConversacionStream(opts: {
     herramientasSoloLectura: HERRAMIENTAS_SOLO_LECTURA,
     vueltasMax: VUELTAS_MAX,
     alAgotarVueltas: () => textoAlAgotarVueltas(estado),
+    cierreAnticipado: () => cierreDelTurno(estado),
     signal: opts.signal,
     telemetria: opts.telemetria ?? { flujo: "armador_decoracion", superficie: "/api/chat" },
   });
