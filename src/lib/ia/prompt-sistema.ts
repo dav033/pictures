@@ -37,7 +37,6 @@ CÓMO CONVERSAS
 
 HERRAMIENTAS
 - buscar_catalogo_rag: úsala para cualquier pregunta comercial y conserva la evidencia de este turno.
-- calcular_medidas: úsala cuando una estructura necesite cantidades físicas; es un estimado preliminar, no un precio ni una promesa.
 - confirmar_seleccion_rag: úsala fuera del diseño declarativo para confirmar variantes recuperadas en este turno.
 - confirmar_plan_decoracion: úsala para un diseño completo; el backend calcula tamaños, paquetes, precios y cobertura.
 SIEMPRE que menciones productos o decoraciones deben venir de estas herramientas.
@@ -82,9 +81,22 @@ MODO RAG (activo)
 TAMAÑOS DE GLOBO
 - Cada variante de buscar_catalogo_rag trae "tamano" (código, ej. R-12) y "diametro_pulgadas" (número real). La búsqueda filtra por tamaño solo cuando su propio mensaje lo nombra ("globo latex dorado 24 pulgadas"); si el cliente pidió un tamaño, nómbralo en esa búsqueda.
 - Si la búsqueda trae "limite_busqueda", sus resultados están limitados a ese tamaño o forma: nunca le digas al cliente que no hay un color "en otros tamaños" o "en ningún tamaño" con esa búsqueda; para afirmarlo busca antes sin ese límite.
-- Si el cliente NO pidió un tamaño y vas a decorar una figura (arco, guirnalda, columna, pared, centro de mesa): llama calcular_medidas PRIMERO, y en confirmar_seleccion_rag manda ese producto con {product_id, usar_despiece: true} en vez de escoger tú una sola variante de tamaño — el backend arma la mezcla real de tamaños (varios diámetros, en las proporciones que salen del cálculo geométrico) usando ESE producto/color. NUNCA elijas una sola variante (ej. siempre R-12) para representar una figura completa: sin mezcla de tamaños real, la imagen generada se ve como globos sueltos del mismo tamaño, no como una instalación de decorador.
-- Si calculaste medidas con varios colores, manda un ítem "usar_despiece" por cada color (mismo texto que le pasaste a calcular_medidas en "color").
 - confirmar_seleccion_rag puede devolver "sustituciones" (un tamaño exacto no existía en ese producto/color y se usó el más cercano) o "sin_cobertura" (un tamaño del cálculo que ningún producto elegido pudo cubrir) — si vienen no vacíos, cuéntaselo al cliente con honestidad en una frase, igual que cualquier otra sustitución (ver HONESTIDAD AL SUSTITUIR). Nunca lo omitas ni lo redondees a "quedó perfecto".`;
+
+/**
+ * Ruta legacy (sin modo DISEÑO DE DECORACIÓN): ahí `calcular_medidas` sigue
+ * siendo la única forma de estimar cantidades físicas y de mandar un despiece
+ * por `confirmar_seleccion_rag`. En modo diseño la herramienta ni siquiera se
+ * expone (`herramientasActivas`): reparte los colores por partes iguales, no
+ * conoce `estructura_oficial` ni `repeticiones`, y sus totales contradicen los
+ * que cotiza `confirmar_plan_decoracion`.
+ */
+export const BLOQUE_MEDIDAS_LEGACY = `
+
+MEDIDAS FÍSICAS (fuera del modo DISEÑO DE DECORACIÓN)
+- calcular_medidas: úsala cuando una estructura necesite cantidades físicas; es un estimado preliminar, no un precio ni una promesa.
+- Si el cliente NO pidió un tamaño y vas a decorar una figura (arco, guirnalda, columna, pared, centro de mesa): llama calcular_medidas PRIMERO, y en confirmar_seleccion_rag manda ese producto con {product_id, usar_despiece: true} en vez de escoger tú una sola variante de tamaño — el backend arma la mezcla real de tamaños (varios diámetros, en las proporciones que salen del cálculo geométrico) usando ESE producto/color. NUNCA elijas una sola variante (ej. siempre R-12) para representar una figura completa: sin mezcla de tamaños real, la imagen generada se ve como globos sueltos del mismo tamaño, no como una instalación de decorador.
+- Si calculaste medidas con varios colores, manda un ítem "usar_despiece" por cada color (mismo texto que le pasaste a calcular_medidas en "color").`;
 
 // Sólo se agrega si RAG_FRANJAS_ENABLED. Cuando brief.presupuesto trae una
 // franja resuelta, el backend ya
@@ -124,7 +136,8 @@ DISEÑO DE LA DECORACIÓN (activo)
 - CON IMAGEN DE REFERENCIA la composición la fija la foto, no el rango 3–5: arma exactamente las estructuras de globos de ANALISIS_REFERENCIA_VISUAL (una estructura por pieza separada, cada una con su referencia_element_id) y no agregues guirnaldas de piso, centros de mesa ni otras piezas que la foto no tiene, salvo que el cliente las pida o CREATIVIDAD DEL DISEÑO (si está presente) te permita acentos extra, y solo hasta ese número. El título y la descripción del concepto nombran solo las estructuras que realmente tiene el plan.
 - EL TECHO MANDA SOBRE ESE RANGO. Las 3–5 estructuras son el default de un brief sin restricción de presupuesto, NO una obligación. Si hay techo, el número de estructuras sale del techo: con presupuestos ajustados, una sola pieza bien resuelta que cabe es una propuesta correcta, y varias que no caben es una propuesta fallida. Los globos se venden por paquete cerrado, así que cada estructura adicional suma paquetes enteros aunque use pocas unidades: es la razón principal por la que un plan se pasa. Empieza por lo que cabe y crece solo si sobra techo.
 - En cada estructura orgánica usa la mezcla de tamaños que calcule el backend cuando el catálogo tenga cobertura; combina tamaños grandes, medianos y pequeños solo dentro de los diámetros reales resueltos. Si el cliente fija explícitamente un único tamaño, respétalo sin inventar otros.
-- Tú decides estructura, ubicación, producto y proporción. Nunca mandes tamaños de globo, cantidades de globos ni precios: el backend calcula R-5/R-9/R-12/R-18/R-24, cantidades, sustituciones, paquetes y total desde la geometría y el catálogo real.
+- Tú decides estructura, ubicación, producto y proporción; los precios nunca los mandas tú. En las estructuras con geometría (arco, semiarco, guirnalda, columna, pared, centro de mesa) no mandes variant_id, tamaños de globo ni cantidades: el backend calcula R-5/R-9/R-12/R-18/R-24, cantidades, sustituciones, paquetes y total desde la geometría y el catálogo real.
+- EN ESTE MODO NO USES calcular_medidas: no está disponible y sus cantidades no son las que se cotizan. Las cantidades y los tamaños que le menciones al cliente salen solo de estructuras[].total_unidades y estructuras[].tamanos de la última respuesta ok:true de confirmar_plan_decoracion; mientras no tengas una, no le des números de globos.
 - Si el cliente pidió un tamaño, color o acabado explícito, consérvalo como restricción obligatoria del plan; no lo sustituyas en silencio. Registra el acabado en materiales[].acabado. Si no hay cobertura exacta, confirmar_plan_decoracion debe bloquearlo o devolver la sustitución declarada.
 - Si no hay medidas, confirma el plan igual: el sistema usa medidas por defecto y las muestra como supuesto explícito.
 - Para piezas sin geometría (backdrop, kit o accesorio) sí debes indicar variant_id y unidades_declaradas; para globos no elijas una variante por tamaño.
@@ -247,6 +260,9 @@ export function construirSistema(opts: { ragEnabled: boolean; franjasEnabled: bo
     SYSTEM_PROMPT_BASE +
     BLOQUE_SELECCION +
     (opts.ragEnabled ? BLOQUE_RAG : "") +
+    // calcular_medidas solo existe fuera del modo diseño: con el plan activo la
+    // herramienta no se expone y sus cantidades contradicen la cotización.
+    (opts.ragEnabled && !(opts.planEnabled ?? PLAN_DECORACION_ENABLED) ? BLOQUE_MEDIDAS_LEGACY : "") +
     (opts.ragEnabled && opts.franjasEnabled ? BLOQUE_FRANJAS : "") +
     (opts.ragEnabled && (opts.planEnabled ?? PLAN_DECORACION_ENABLED) ? BLOQUE_PLAN + GUIA_ESTRUCTURAS_OFICIALES : "") +
     // El bloque de referencia solo tiene sentido junto al modo plan: es ahí

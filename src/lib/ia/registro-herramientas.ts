@@ -82,12 +82,22 @@ export const HERRAMIENTAS_SOLO_LECTURA = new Set([
   "buscar_catalogo_rag",
 ]);
 
-export function herramientasActivas(): Herramienta[] {
-  if (!RAG_ENABLED) return [];
-  if (PLAN_DECORACION_ENABLED && RAG_ENABLED) {
-    return [...HERRAMIENTAS_RAG, ...HERRAMIENTAS_PLAN];
-  }
-  return HERRAMIENTAS_RAG;
+/**
+ * Herramientas expuestas al modelo según los flags activos (los parámetros
+ * existen para poder probar cada combinación sin tocar el entorno).
+ *
+ * En modo diseño `calcular_medidas` no se expone: reparte los colores por
+ * partes iguales, no conoce `estructura_oficial` ni `repeticiones` y sus totales
+ * contradicen los que cotiza `confirmar_plan_decoracion` — con el plan en
+ * pantalla el cliente veía dos conteos distintos del mismo arco. El handler
+ * sigue registrado para el flujo legacy y sus pruebas.
+ */
+export function herramientasActivas(flags: { ragEnabled?: boolean; planEnabled?: boolean } = {}): Herramienta[] {
+  const ragEnabled = flags.ragEnabled ?? RAG_ENABLED;
+  const planEnabled = flags.planEnabled ?? PLAN_DECORACION_ENABLED;
+  if (!ragEnabled) return [];
+  if (!planEnabled) return HERRAMIENTAS_RAG;
+  return [...HERRAMIENTAS_RAG.filter((herramienta) => herramienta.nombre !== "calcular_medidas"), ...HERRAMIENTAS_PLAN];
 }
 
 // Se permiten varias búsquedas por turno porque una referencia puede contener
