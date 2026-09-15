@@ -1,0 +1,2680 @@
+{
+  "allowlist": [
+    {
+      "product_id": "P-ROSA",
+      "variant_ids": [
+        "V-ROSA-9",
+        "V-ROSA-12",
+        "V-ROSA-18",
+        "V-ROSA-24"
+      ]
+    },
+    {
+      "product_id": "P-BLANCO",
+      "variant_ids": [
+        "V-BLANCO-9",
+        "V-BLANCO-12",
+        "V-BLANCO-18",
+        "V-BLANCO-24"
+      ]
+    },
+    {
+      "product_id": "P-ORO",
+      "variant_ids": [
+        "V-ORO-9",
+        "V-ORO-12",
+        "V-ORO-18",
+        "V-ORO-24"
+      ]
+    }
+  ],
+  "catalog_rows": [
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-9",
+      "colores_producto": [
+        "rosado"
+      ],
+      "colores_variante": [
+        "rosado"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex rosado R-9.",
+      "diam_pulg": 9,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-rosa-9.jpg",
+      "inventory_quantity": 500,
+      "precio": 12600,
+      "product_id": "P-ROSA",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex rosado",
+      "sku": "SKU-V-ROSA-9",
+      "sku_original": "SHOP-V-ROSA-9",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-ROSA-9",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-ROSA-9",
+      "variante_titulo": "R-9 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-9",
+      "colores_producto": [
+        "blanco"
+      ],
+      "colores_variante": [
+        "blanco"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex blanco R-9.",
+      "diam_pulg": 9,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-blanco-9.jpg",
+      "inventory_quantity": 500,
+      "precio": 13100,
+      "product_id": "P-BLANCO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex blanco",
+      "sku": "SKU-V-BLANCO-9",
+      "sku_original": "SHOP-V-BLANCO-9",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-BLANCO-9",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-BLANCO-9",
+      "variante_titulo": "R-9 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-9",
+      "colores_producto": [
+        "dorado"
+      ],
+      "colores_variante": [
+        "dorado"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex dorado R-9.",
+      "diam_pulg": 9,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-oro-9.jpg",
+      "inventory_quantity": 500,
+      "precio": 14100,
+      "product_id": "P-ORO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex dorado",
+      "sku": "SKU-V-ORO-9",
+      "sku_original": "SHOP-V-ORO-9",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-ORO-9",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-ORO-9",
+      "variante_titulo": "R-9 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "rosado"
+      ],
+      "colores_variante": [
+        "rosado"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex rosado R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-rosa-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 13800,
+      "product_id": "P-ROSA",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex rosado",
+      "sku": "SKU-V-ROSA-12",
+      "sku_original": "SHOP-V-ROSA-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-ROSA-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-ROSA-12",
+      "variante_titulo": "R-12 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "blanco"
+      ],
+      "colores_variante": [
+        "blanco"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex blanco R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 14300,
+      "product_id": "P-BLANCO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex blanco",
+      "sku": "SKU-V-BLANCO-12",
+      "sku_original": "SHOP-V-BLANCO-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-BLANCO-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-BLANCO-12",
+      "variante_titulo": "R-12 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "dorado"
+      ],
+      "colores_variante": [
+        "dorado"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex dorado R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-oro-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 15300,
+      "product_id": "P-ORO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex dorado",
+      "sku": "SKU-V-ORO-12",
+      "sku_original": "SHOP-V-ORO-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-ORO-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-ORO-12",
+      "variante_titulo": "R-12 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-18",
+      "colores_producto": [
+        "rosado"
+      ],
+      "colores_variante": [
+        "rosado"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex rosado R-18.",
+      "diam_pulg": 18,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-rosa-18.jpg",
+      "inventory_quantity": 500,
+      "precio": 16200,
+      "product_id": "P-ROSA",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex rosado",
+      "sku": "SKU-V-ROSA-18",
+      "sku_original": "SHOP-V-ROSA-18",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-ROSA-18",
+      "unidades_inferidas": false,
+      "unidades_paq": 25,
+      "variant_id": "V-ROSA-18",
+      "variante_titulo": "R-18 / PAQUETE X 25"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-18",
+      "colores_producto": [
+        "blanco"
+      ],
+      "colores_variante": [
+        "blanco"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex blanco R-18.",
+      "diam_pulg": 18,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-blanco-18.jpg",
+      "inventory_quantity": 500,
+      "precio": 16700,
+      "product_id": "P-BLANCO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex blanco",
+      "sku": "SKU-V-BLANCO-18",
+      "sku_original": "SHOP-V-BLANCO-18",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-BLANCO-18",
+      "unidades_inferidas": false,
+      "unidades_paq": 25,
+      "variant_id": "V-BLANCO-18",
+      "variante_titulo": "R-18 / PAQUETE X 25"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-18",
+      "colores_producto": [
+        "dorado"
+      ],
+      "colores_variante": [
+        "dorado"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex dorado R-18.",
+      "diam_pulg": 18,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-oro-18.jpg",
+      "inventory_quantity": 500,
+      "precio": 17700,
+      "product_id": "P-ORO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex dorado",
+      "sku": "SKU-V-ORO-18",
+      "sku_original": "SHOP-V-ORO-18",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-ORO-18",
+      "unidades_inferidas": false,
+      "unidades_paq": 25,
+      "variant_id": "V-ORO-18",
+      "variante_titulo": "R-18 / PAQUETE X 25"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-24",
+      "colores_producto": [
+        "rosado"
+      ],
+      "colores_variante": [
+        "rosado"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex rosado R-24.",
+      "diam_pulg": 24,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-rosa-24.jpg",
+      "inventory_quantity": 500,
+      "precio": 18600,
+      "product_id": "P-ROSA",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex rosado",
+      "sku": "SKU-V-ROSA-24",
+      "sku_original": "SHOP-V-ROSA-24",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-ROSA-24",
+      "unidades_inferidas": false,
+      "unidades_paq": 25,
+      "variant_id": "V-ROSA-24",
+      "variante_titulo": "R-24 / PAQUETE X 25"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-24",
+      "colores_producto": [
+        "blanco"
+      ],
+      "colores_variante": [
+        "blanco"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex blanco R-24.",
+      "diam_pulg": 24,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-blanco-24.jpg",
+      "inventory_quantity": 500,
+      "precio": 19100,
+      "product_id": "P-BLANCO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex blanco",
+      "sku": "SKU-V-BLANCO-24",
+      "sku_original": "SHOP-V-BLANCO-24",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-BLANCO-24",
+      "unidades_inferidas": false,
+      "unidades_paq": 25,
+      "variant_id": "V-BLANCO-24",
+      "variante_titulo": "R-24 / PAQUETE X 25"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-24",
+      "colores_producto": [
+        "dorado"
+      ],
+      "colores_variante": [
+        "dorado"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex dorado R-24.",
+      "diam_pulg": 24,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-oro-24.jpg",
+      "inventory_quantity": 500,
+      "precio": 20100,
+      "product_id": "P-ORO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex dorado",
+      "sku": "SKU-V-ORO-24",
+      "sku_original": "SHOP-V-ORO-24",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-ORO-24",
+      "unidades_inferidas": false,
+      "unidades_paq": 25,
+      "variant_id": "V-ORO-24",
+      "variante_titulo": "R-24 / PAQUETE X 25"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-001",
+  "description": "Diez centros de mesa con rosado 60 %, blanco 30 % y dorado 10 %. Cada instancia se redondea por separado y después se multiplica por las repeticiones, así que el acento R-24 sobrevive al tercer color (antes el Hamilton conjunto lo dejaba en cero) y el reparto por color se queda a menos de una unidad por instancia de su participación.",
+  "expected": {
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "rosado",
+          "design_quantity": 10,
+          "finish": null,
+          "product_id": "P-ROSA",
+          "required_quantity": 10,
+          "shape": "redondo",
+          "size_inches": 9,
+          "structure_id": "EST_01_CENTRO_MESA",
+          "variant_id": "V-ROSA-9",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        },
+        {
+          "color": "dorado",
+          "design_quantity": 10,
+          "finish": null,
+          "product_id": "P-ORO",
+          "required_quantity": 10,
+          "shape": "redondo",
+          "size_inches": 9,
+          "structure_id": "EST_01_CENTRO_MESA",
+          "variant_id": "V-ORO-9",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rosado",
+          "design_quantity": 20,
+          "finish": null,
+          "product_id": "P-ROSA",
+          "required_quantity": 20,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_01_CENTRO_MESA",
+          "variant_id": "V-ROSA-12",
+          "waste_adjusted_quantity": 20,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 10,
+          "finish": null,
+          "product_id": "P-BLANCO",
+          "required_quantity": 10,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_01_CENTRO_MESA",
+          "variant_id": "V-BLANCO-12",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rosado",
+          "design_quantity": 10,
+          "finish": null,
+          "product_id": "P-ROSA",
+          "required_quantity": 10,
+          "shape": "redondo",
+          "size_inches": 18,
+          "structure_id": "EST_01_CENTRO_MESA",
+          "variant_id": "V-ROSA-18",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 10,
+          "finish": null,
+          "product_id": "P-BLANCO",
+          "required_quantity": 10,
+          "shape": "redondo",
+          "size_inches": 18,
+          "structure_id": "EST_01_CENTRO_MESA",
+          "variant_id": "V-BLANCO-18",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rosado",
+          "design_quantity": 10,
+          "finish": null,
+          "product_id": "P-ROSA",
+          "required_quantity": 10,
+          "shape": "redondo",
+          "size_inches": 24,
+          "structure_id": "EST_01_CENTRO_MESA",
+          "variant_id": "V-ROSA-24",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 10,
+        "density": "media",
+        "dimensions_m": {
+          "height": 0.5,
+          "length": null,
+          "width": 0.4
+        },
+        "installation_length_m": 5,
+        "shape": "organica_gruesa",
+        "type": "centro_mesa",
+        "visual_density": "medium",
+        "visual_scale": "large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 4862,
+          "design_quantity": 10,
+          "leftover_inventory": 33,
+          "operational_surplus": 33,
+          "package_count": 1,
+          "potential_surplus": 40,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 14300,
+          "purchase_quantity": 50,
+          "required_quantity": 17,
+          "units_per_package": 50,
+          "used": 10,
+          "variant_id": "V-BLANCO-12",
+          "waste_adjusted_quantity": 17,
+          "waste_reserve": 7
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 6680,
+          "design_quantity": 10,
+          "leftover_inventory": 15,
+          "operational_surplus": 15,
+          "package_count": 1,
+          "potential_surplus": 15,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 16700,
+          "purchase_quantity": 25,
+          "required_quantity": 10,
+          "units_per_package": 25,
+          "used": 10,
+          "variant_id": "V-BLANCO-18",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 2820,
+          "design_quantity": 10,
+          "leftover_inventory": 40,
+          "operational_surplus": 40,
+          "package_count": 1,
+          "potential_surplus": 40,
+          "product_id": "P-ORO",
+          "purchase_cost": 14100,
+          "purchase_quantity": 50,
+          "required_quantity": 10,
+          "units_per_package": 50,
+          "used": 10,
+          "variant_id": "V-ORO-9",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 5520,
+          "design_quantity": 20,
+          "leftover_inventory": 30,
+          "operational_surplus": 30,
+          "package_count": 1,
+          "potential_surplus": 30,
+          "product_id": "P-ROSA",
+          "purchase_cost": 13800,
+          "purchase_quantity": 50,
+          "required_quantity": 20,
+          "units_per_package": 50,
+          "used": 20,
+          "variant_id": "V-ROSA-12",
+          "waste_adjusted_quantity": 20,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 6480,
+          "design_quantity": 10,
+          "leftover_inventory": 15,
+          "operational_surplus": 15,
+          "package_count": 1,
+          "potential_surplus": 15,
+          "product_id": "P-ROSA",
+          "purchase_cost": 16200,
+          "purchase_quantity": 25,
+          "required_quantity": 10,
+          "units_per_package": 25,
+          "used": 10,
+          "variant_id": "V-ROSA-18",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 7440,
+          "design_quantity": 10,
+          "leftover_inventory": 15,
+          "operational_surplus": 15,
+          "package_count": 1,
+          "potential_surplus": 15,
+          "product_id": "P-ROSA",
+          "purchase_cost": 18600,
+          "purchase_quantity": 25,
+          "required_quantity": 10,
+          "units_per_package": 25,
+          "used": 10,
+          "variant_id": "V-ROSA-24",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 2520,
+          "design_quantity": 10,
+          "leftover_inventory": 40,
+          "operational_surplus": 40,
+          "package_count": 1,
+          "potential_surplus": 40,
+          "product_id": "P-ROSA",
+          "purchase_cost": 12600,
+          "purchase_quantity": 50,
+          "required_quantity": 10,
+          "units_per_package": 50,
+          "used": 10,
+          "variant_id": "V-ROSA-9",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 36322,
+        "covered_waste_reserve": 7,
+        "design_quantity": 80,
+        "natural_package_surplus": 195,
+        "operational_surplus": 188,
+        "potential_surplus": 195,
+        "purchase_cost": 106300,
+        "purchase_quantity": 275,
+        "required_quantity": 87,
+        "target_waste_reserve": 7,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 87,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-BLANCO-12",
+        "sobrante_alto:V-BLANCO-18",
+        "sobrante_alto:V-ORO-9",
+        "sobrante_alto:V-ROSA-12",
+        "sobrante_alto:V-ROSA-18",
+        "sobrante_alto:V-ROSA-24",
+        "sobrante_alto:V-ROSA-9"
+      ]
+    },
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-BLANCO-12",
+        "sobrante_alto:V-BLANCO-18",
+        "sobrante_alto:V-ORO-9",
+        "sobrante_alto:V-ROSA-12",
+        "sobrante_alto:V-ROSA-18",
+        "sobrante_alto:V-ROSA-24",
+        "sobrante_alto:V-ROSA-9"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 4862,
+          "design_quantity": 10,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 33,
+          "paquetes": 1,
+          "precio_paquete": 14300,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 14300,
+          "purchase_quantity": 50,
+          "required_quantity": 17,
+          "sku": "SKU-V-BLANCO-12",
+          "sku_original": "SHOP-V-BLANCO-12",
+          "sobrante": 40,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-BLANCO-12",
+          "subtotal": 14300,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex blanco — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 17,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 10,
+          "unidades_paquete": 50,
+          "used": 10,
+          "variant_id": "V-BLANCO-12",
+          "waste_reserve": 7
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 6680,
+          "design_quantity": 10,
+          "diam_pulg": 18,
+          "elementos_origen": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "imagen": "https://cdn.example.test/v-blanco-18.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 15,
+          "paquetes": 1,
+          "precio_paquete": 16700,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 16700,
+          "purchase_quantity": 25,
+          "required_quantity": 10,
+          "sku": "SKU-V-BLANCO-18",
+          "sku_original": "SHOP-V-BLANCO-18",
+          "sobrante": 15,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-BLANCO-18",
+          "subtotal": 16700,
+          "tamano_codigo": "R-18",
+          "titulo": "Globo latex blanco — R-18 / PAQUETE X 25",
+          "unidades_con_merma": 10,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 10,
+          "unidades_paquete": 25,
+          "used": 10,
+          "variant_id": "V-BLANCO-18",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "dorado",
+          "consumption_cost": 2820,
+          "design_quantity": 10,
+          "diam_pulg": 9,
+          "elementos_origen": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "imagen": "https://cdn.example.test/v-oro-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 40,
+          "paquetes": 1,
+          "precio_paquete": 14100,
+          "product_id": "P-ORO",
+          "purchase_cost": 14100,
+          "purchase_quantity": 50,
+          "required_quantity": 10,
+          "sku": "SKU-V-ORO-9",
+          "sku_original": "SHOP-V-ORO-9",
+          "sobrante": 40,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-ORO-9",
+          "subtotal": 14100,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex dorado — R-9 / PAQUETE X 50",
+          "unidades_con_merma": 10,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 10,
+          "unidades_paquete": 50,
+          "used": 10,
+          "variant_id": "V-ORO-9",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "rosado",
+          "consumption_cost": 5520,
+          "design_quantity": 20,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "imagen": "https://cdn.example.test/v-rosa-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 30,
+          "paquetes": 1,
+          "precio_paquete": 13800,
+          "product_id": "P-ROSA",
+          "purchase_cost": 13800,
+          "purchase_quantity": 50,
+          "required_quantity": 20,
+          "sku": "SKU-V-ROSA-12",
+          "sku_original": "SHOP-V-ROSA-12",
+          "sobrante": 30,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-ROSA-12",
+          "subtotal": 13800,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex rosado — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 20,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 20,
+          "unidades_paquete": 50,
+          "used": 20,
+          "variant_id": "V-ROSA-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "rosado",
+          "consumption_cost": 6480,
+          "design_quantity": 10,
+          "diam_pulg": 18,
+          "elementos_origen": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "imagen": "https://cdn.example.test/v-rosa-18.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 15,
+          "paquetes": 1,
+          "precio_paquete": 16200,
+          "product_id": "P-ROSA",
+          "purchase_cost": 16200,
+          "purchase_quantity": 25,
+          "required_quantity": 10,
+          "sku": "SKU-V-ROSA-18",
+          "sku_original": "SHOP-V-ROSA-18",
+          "sobrante": 15,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-ROSA-18",
+          "subtotal": 16200,
+          "tamano_codigo": "R-18",
+          "titulo": "Globo latex rosado — R-18 / PAQUETE X 25",
+          "unidades_con_merma": 10,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 10,
+          "unidades_paquete": 25,
+          "used": 10,
+          "variant_id": "V-ROSA-18",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "rosado",
+          "consumption_cost": 7440,
+          "design_quantity": 10,
+          "diam_pulg": 24,
+          "elementos_origen": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "imagen": "https://cdn.example.test/v-rosa-24.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 15,
+          "paquetes": 1,
+          "precio_paquete": 18600,
+          "product_id": "P-ROSA",
+          "purchase_cost": 18600,
+          "purchase_quantity": 25,
+          "required_quantity": 10,
+          "sku": "SKU-V-ROSA-24",
+          "sku_original": "SHOP-V-ROSA-24",
+          "sobrante": 15,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-ROSA-24",
+          "subtotal": 18600,
+          "tamano_codigo": "R-24",
+          "titulo": "Globo latex rosado — R-24 / PAQUETE X 25",
+          "unidades_con_merma": 10,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 10,
+          "unidades_paquete": 25,
+          "used": 10,
+          "variant_id": "V-ROSA-24",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "rosado",
+          "consumption_cost": 2520,
+          "design_quantity": 10,
+          "diam_pulg": 9,
+          "elementos_origen": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "imagen": "https://cdn.example.test/v-rosa-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 40,
+          "paquetes": 1,
+          "precio_paquete": 12600,
+          "product_id": "P-ROSA",
+          "purchase_cost": 12600,
+          "purchase_quantity": 50,
+          "required_quantity": 10,
+          "sku": "SKU-V-ROSA-9",
+          "sku_original": "SHOP-V-ROSA-9",
+          "sobrante": 40,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-ROSA-9",
+          "subtotal": 12600,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex rosado — R-9 / PAQUETE X 50",
+          "unidades_con_merma": 10,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 10,
+          "unidades_paquete": 50,
+          "used": 10,
+          "variant_id": "V-ROSA-9",
+          "waste_reserve": 0
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 0.5,
+          "estructura_id": "EST_01_CENTRO_MESA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rosado",
+              "diam_cm": 22.9,
+              "diam_pulg": 9,
+              "estructura_id": "EST_01_CENTRO_MESA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-rosa-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_CENTRO_MESA",
+                "kind": "estructura"
+              },
+              "product_id": "P-ROSA",
+              "sku": "SKU-V-ROSA-9",
+              "sku_original": "SHOP-V-ROSA-9",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-ROSA-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex rosado — R-9 / PAQUETE X 50",
+              "unidades": 10,
+              "unidades_inferidas": false,
+              "variant_id": "V-ROSA-9"
+            },
+            {
+              "acabado": null,
+              "color": "dorado",
+              "diam_cm": 22.9,
+              "diam_pulg": 9,
+              "estructura_id": "EST_01_CENTRO_MESA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-oro-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_CENTRO_MESA",
+                "kind": "estructura"
+              },
+              "product_id": "P-ORO",
+              "sku": "SKU-V-ORO-9",
+              "sku_original": "SHOP-V-ORO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-ORO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex dorado — R-9 / PAQUETE X 50",
+              "unidades": 10,
+              "unidades_inferidas": false,
+              "variant_id": "V-ORO-9"
+            },
+            {
+              "acabado": null,
+              "color": "rosado",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_01_CENTRO_MESA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-rosa-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_CENTRO_MESA",
+                "kind": "estructura"
+              },
+              "product_id": "P-ROSA",
+              "sku": "SKU-V-ROSA-12",
+              "sku_original": "SHOP-V-ROSA-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-ROSA-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rosado — R-12 / PAQUETE X 50",
+              "unidades": 20,
+              "unidades_inferidas": false,
+              "variant_id": "V-ROSA-12"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_01_CENTRO_MESA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_CENTRO_MESA",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLANCO",
+              "sku": "SKU-V-BLANCO-12",
+              "sku_original": "SHOP-V-BLANCO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-BLANCO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex blanco — R-12 / PAQUETE X 50",
+              "unidades": 10,
+              "unidades_inferidas": false,
+              "variant_id": "V-BLANCO-12"
+            },
+            {
+              "acabado": null,
+              "color": "rosado",
+              "diam_cm": 45.7,
+              "diam_pulg": 18,
+              "estructura_id": "EST_01_CENTRO_MESA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-rosa-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_CENTRO_MESA",
+                "kind": "estructura"
+              },
+              "product_id": "P-ROSA",
+              "sku": "SKU-V-ROSA-18",
+              "sku_original": "SHOP-V-ROSA-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-ROSA-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex rosado — R-18 / PAQUETE X 25",
+              "unidades": 10,
+              "unidades_inferidas": false,
+              "variant_id": "V-ROSA-18"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 45.7,
+              "diam_pulg": 18,
+              "estructura_id": "EST_01_CENTRO_MESA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-blanco-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_CENTRO_MESA",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLANCO",
+              "sku": "SKU-V-BLANCO-18",
+              "sku_original": "SHOP-V-BLANCO-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-BLANCO-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex blanco — R-18 / PAQUETE X 25",
+              "unidades": 10,
+              "unidades_inferidas": false,
+              "variant_id": "V-BLANCO-18"
+            },
+            {
+              "acabado": null,
+              "color": "rosado",
+              "diam_cm": 61,
+              "diam_pulg": 24,
+              "estructura_id": "EST_01_CENTRO_MESA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-rosa-24.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_CENTRO_MESA",
+                "kind": "estructura"
+              },
+              "product_id": "P-ROSA",
+              "sku": "SKU-V-ROSA-24",
+              "sku_original": "SHOP-V-ROSA-24",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-ROSA-24",
+              "sustitucion": null,
+              "tamano_codigo": "R-24",
+              "titulo": "Globo latex rosado — R-24 / PAQUETE X 25",
+              "unidades": 10,
+              "unidades_inferidas": false,
+              "variant_id": "V-ROSA-24"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 37.5,
+              "unidades": 30
+            },
+            {
+              "diam_pulg": 18,
+              "forma": "redondo",
+              "pct": 25,
+              "unidades": 20
+            },
+            {
+              "diam_pulg": 9,
+              "forma": "redondo",
+              "pct": 25,
+              "unidades": 20
+            },
+            {
+              "diam_pulg": 24,
+              "forma": "redondo",
+              "pct": 12.5,
+              "unidades": 10
+            }
+          ],
+          "nombre": "Centros de mesa",
+          "repeticiones": 10,
+          "supuestos": [],
+          "tipo": "centro_mesa",
+          "total_unidades": 80,
+          "ubicacion": "mesas_invitados"
+        }
+      ],
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 80\nTarget waste reserve: 7\nNatural package surplus: 195\nUsable waste coverage: 7\nAdditional packages required for waste: 0\nGlobo latex blanco — R-12 / PAQUETE X 50: design=10, required=17, package=50, packages=1, purchased=50, natural surplus=40, waste reserve=7, leftover inventory=33\nGlobo latex blanco — R-18 / PAQUETE X 25: design=10, required=10, package=25, packages=1, purchased=25, natural surplus=15, waste reserve=0, leftover inventory=15\nGlobo latex dorado — R-9 / PAQUETE X 50: design=10, required=10, package=50, packages=1, purchased=50, natural surplus=40, waste reserve=0, leftover inventory=40\nGlobo latex rosado — R-12 / PAQUETE X 50: design=20, required=20, package=50, packages=1, purchased=50, natural surplus=30, waste reserve=0, leftover inventory=30\nGlobo latex rosado — R-18 / PAQUETE X 25: design=10, required=10, package=25, packages=1, purchased=25, natural surplus=15, waste reserve=0, leftover inventory=15\nGlobo latex rosado — R-24 / PAQUETE X 25: design=10, required=10, package=25, packages=1, purchased=25, natural surplus=15, waste reserve=0, leftover inventory=15\nGlobo latex rosado — R-9 / PAQUETE X 50: design=10, required=10, package=50, packages=1, purchased=50, natural surplus=40, waste reserve=0, leftover inventory=40",
+      "plan": {
+        "concepto": {
+          "descripcion": "Centros de mesa en rosado, blanco y dorado.",
+          "paleta": [
+            "rosado",
+            "blanco",
+            "dorado"
+          ],
+          "titulo": "Centros de mesa rosados"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_CENTRO_MESA",
+            "materiales": [
+              {
+                "color": "rosado",
+                "participacion": 0.6,
+                "product_id": "P-ROSA",
+                "rol_material": "principal"
+              },
+              {
+                "color": "blanco",
+                "participacion": 0.3,
+                "product_id": "P-BLANCO",
+                "rol_material": "secundario"
+              },
+              {
+                "color": "dorado",
+                "participacion": 0.1,
+                "product_id": "P-ORO",
+                "rol_material": "acento"
+              }
+            ],
+            "medidas": {
+              "alto_m": 0.5,
+              "ancho_m": 0.4
+            },
+            "mezcla": "organica_gruesa",
+            "nombre": "Centros de mesa",
+            "porque": "Una pieza por mesa con la paleta del evento.",
+            "repeticiones": 10,
+            "rol_escena": "focal",
+            "tipo": "centro_mesa",
+            "ubicacion": "mesas_invitados"
+          }
+        ],
+        "plan_id": "23232323-2323-4232-8232-232323232323",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "bc9e9919aa351275135c60b206dedd5a525b1174b857964ac6177b1c22bba059",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 36322,
+        "covered_waste_reserve": 7,
+        "design_quantity": 80,
+        "globos_por_tamano": {
+          "R-12": 30,
+          "R-18": 20,
+          "R-24": 10,
+          "R-9": 20
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8,
+        "natural_package_surplus": 195,
+        "purchase_cost": 106300,
+        "target_waste_reserve": 7,
+        "total_cop": 106300,
+        "total_unidades": 80,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "complementosSoportados": false,
+      "consumptionCost": 36322,
+      "coveredWasteReserve": 7,
+      "incluyeIva": true,
+      "leftoverInventory": 188,
+      "lineas": [
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 10,
+          "color": "blanco",
+          "consumptionCost": 4862,
+          "designQuantity": 10,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "id": "V-BLANCO-12",
+          "leftoverInventory": 33,
+          "nombre": "Globo latex blanco — R-12 / PAQUETE X 50",
+          "paquetes": 1,
+          "precioPaquete": 14300,
+          "productId": "P-BLANCO",
+          "purchaseCost": 14300,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 17,
+          "sobrante": 40,
+          "subtotal": 14300,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 10,
+          "varianteId": "V-BLANCO-12",
+          "wasteReserve": 7
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 10,
+          "color": "blanco",
+          "consumptionCost": 6680,
+          "designQuantity": 10,
+          "diamPulg": 18,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "id": "V-BLANCO-18",
+          "leftoverInventory": 15,
+          "nombre": "Globo latex blanco — R-18 / PAQUETE X 25",
+          "paquetes": 1,
+          "precioPaquete": 16700,
+          "productId": "P-BLANCO",
+          "purchaseCost": 16700,
+          "purchaseQuantity": 25,
+          "referenciaElementIds": [],
+          "requiredQuantity": 10,
+          "sobrante": 15,
+          "subtotal": 16700,
+          "tamano": "R-18",
+          "tamanoCodigo": "R-18",
+          "unidadesPaquete": 25,
+          "used": 10,
+          "varianteId": "V-BLANCO-18",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 10,
+          "color": "dorado",
+          "consumptionCost": 2820,
+          "designQuantity": 10,
+          "diamPulg": 9,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "id": "V-ORO-9",
+          "leftoverInventory": 40,
+          "nombre": "Globo latex dorado — R-9 / PAQUETE X 50",
+          "paquetes": 1,
+          "precioPaquete": 14100,
+          "productId": "P-ORO",
+          "purchaseCost": 14100,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 10,
+          "sobrante": 40,
+          "subtotal": 14100,
+          "tamano": "R-9",
+          "tamanoCodigo": "R-9",
+          "unidadesPaquete": 50,
+          "used": 10,
+          "varianteId": "V-ORO-9",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 20,
+          "color": "rosado",
+          "consumptionCost": 5520,
+          "designQuantity": 20,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "id": "V-ROSA-12",
+          "leftoverInventory": 30,
+          "nombre": "Globo latex rosado — R-12 / PAQUETE X 50",
+          "paquetes": 1,
+          "precioPaquete": 13800,
+          "productId": "P-ROSA",
+          "purchaseCost": 13800,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 20,
+          "sobrante": 30,
+          "subtotal": 13800,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 20,
+          "varianteId": "V-ROSA-12",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 10,
+          "color": "rosado",
+          "consumptionCost": 6480,
+          "designQuantity": 10,
+          "diamPulg": 18,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "id": "V-ROSA-18",
+          "leftoverInventory": 15,
+          "nombre": "Globo latex rosado — R-18 / PAQUETE X 25",
+          "paquetes": 1,
+          "precioPaquete": 16200,
+          "productId": "P-ROSA",
+          "purchaseCost": 16200,
+          "purchaseQuantity": 25,
+          "referenciaElementIds": [],
+          "requiredQuantity": 10,
+          "sobrante": 15,
+          "subtotal": 16200,
+          "tamano": "R-18",
+          "tamanoCodigo": "R-18",
+          "unidadesPaquete": 25,
+          "used": 10,
+          "varianteId": "V-ROSA-18",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 10,
+          "color": "rosado",
+          "consumptionCost": 7440,
+          "designQuantity": 10,
+          "diamPulg": 24,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "id": "V-ROSA-24",
+          "leftoverInventory": 15,
+          "nombre": "Globo latex rosado — R-24 / PAQUETE X 25",
+          "paquetes": 1,
+          "precioPaquete": 18600,
+          "productId": "P-ROSA",
+          "purchaseCost": 18600,
+          "purchaseQuantity": 25,
+          "referenciaElementIds": [],
+          "requiredQuantity": 10,
+          "sobrante": 15,
+          "subtotal": 18600,
+          "tamano": "R-24",
+          "tamanoCodigo": "R-24",
+          "unidadesPaquete": 25,
+          "used": 10,
+          "varianteId": "V-ROSA-24",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 10,
+          "color": "rosado",
+          "consumptionCost": 2520,
+          "designQuantity": 10,
+          "diamPulg": 9,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "id": "V-ROSA-9",
+          "leftoverInventory": 40,
+          "nombre": "Globo latex rosado — R-9 / PAQUETE X 50",
+          "paquetes": 1,
+          "precioPaquete": 12600,
+          "productId": "P-ROSA",
+          "purchaseCost": 12600,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 10,
+          "sobrante": 40,
+          "subtotal": 12600,
+          "tamano": "R-9",
+          "tamanoCodigo": "R-9",
+          "unidadesPaquete": 50,
+          "used": 10,
+          "varianteId": "V-ROSA-9",
+          "wasteReserve": 0
+        }
+      ],
+      "mermaPorcentaje": 8,
+      "plan_hash": "bc9e9919aa351275135c60b206dedd5a525b1174b857964ac6177b1c22bba059",
+      "purchaseCost": 106300,
+      "targetWasteReserve": 7,
+      "total": 106300
+    }
+  },
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-001",
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "rosado",
+          "design_quantity": 10,
+          "finish": null,
+          "product_id": "P-ROSA",
+          "required_quantity": 10,
+          "shape": "redondo",
+          "size_inches": 9.0,
+          "structure_id": "EST_01_CENTRO_MESA",
+          "variant_id": "V-ROSA-9",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        },
+        {
+          "color": "dorado",
+          "design_quantity": 10,
+          "finish": null,
+          "product_id": "P-ORO",
+          "required_quantity": 10,
+          "shape": "redondo",
+          "size_inches": 9.0,
+          "structure_id": "EST_01_CENTRO_MESA",
+          "variant_id": "V-ORO-9",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rosado",
+          "design_quantity": 20,
+          "finish": null,
+          "product_id": "P-ROSA",
+          "required_quantity": 20,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_CENTRO_MESA",
+          "variant_id": "V-ROSA-12",
+          "waste_adjusted_quantity": 20,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 10,
+          "finish": null,
+          "product_id": "P-BLANCO",
+          "required_quantity": 10,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_CENTRO_MESA",
+          "variant_id": "V-BLANCO-12",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rosado",
+          "design_quantity": 10,
+          "finish": null,
+          "product_id": "P-ROSA",
+          "required_quantity": 10,
+          "shape": "redondo",
+          "size_inches": 18.0,
+          "structure_id": "EST_01_CENTRO_MESA",
+          "variant_id": "V-ROSA-18",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 10,
+          "finish": null,
+          "product_id": "P-BLANCO",
+          "required_quantity": 10,
+          "shape": "redondo",
+          "size_inches": 18.0,
+          "structure_id": "EST_01_CENTRO_MESA",
+          "variant_id": "V-BLANCO-18",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rosado",
+          "design_quantity": 10,
+          "finish": null,
+          "product_id": "P-ROSA",
+          "required_quantity": 10,
+          "shape": "redondo",
+          "size_inches": 24.0,
+          "structure_id": "EST_01_CENTRO_MESA",
+          "variant_id": "V-ROSA-24",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 10,
+        "density": "media",
+        "dimensions_m": {
+          "height": 0.5,
+          "length": null,
+          "width": 0.4
+        },
+        "installation_length_m": 5.0,
+        "shape": "organica_gruesa",
+        "type": "centro_mesa",
+        "visual_density": "medium",
+        "visual_scale": "large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 4862,
+          "design_quantity": 10,
+          "leftover_inventory": 33,
+          "operational_surplus": 33,
+          "package_count": 1,
+          "potential_surplus": 40,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 14300,
+          "purchase_quantity": 50,
+          "required_quantity": 17,
+          "units_per_package": 50,
+          "used": 10,
+          "variant_id": "V-BLANCO-12",
+          "waste_adjusted_quantity": 17,
+          "waste_reserve": 7
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 6680,
+          "design_quantity": 10,
+          "leftover_inventory": 15,
+          "operational_surplus": 15,
+          "package_count": 1,
+          "potential_surplus": 15,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 16700,
+          "purchase_quantity": 25,
+          "required_quantity": 10,
+          "units_per_package": 25,
+          "used": 10,
+          "variant_id": "V-BLANCO-18",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 2820,
+          "design_quantity": 10,
+          "leftover_inventory": 40,
+          "operational_surplus": 40,
+          "package_count": 1,
+          "potential_surplus": 40,
+          "product_id": "P-ORO",
+          "purchase_cost": 14100,
+          "purchase_quantity": 50,
+          "required_quantity": 10,
+          "units_per_package": 50,
+          "used": 10,
+          "variant_id": "V-ORO-9",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 5520,
+          "design_quantity": 20,
+          "leftover_inventory": 30,
+          "operational_surplus": 30,
+          "package_count": 1,
+          "potential_surplus": 30,
+          "product_id": "P-ROSA",
+          "purchase_cost": 13800,
+          "purchase_quantity": 50,
+          "required_quantity": 20,
+          "units_per_package": 50,
+          "used": 20,
+          "variant_id": "V-ROSA-12",
+          "waste_adjusted_quantity": 20,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 6480,
+          "design_quantity": 10,
+          "leftover_inventory": 15,
+          "operational_surplus": 15,
+          "package_count": 1,
+          "potential_surplus": 15,
+          "product_id": "P-ROSA",
+          "purchase_cost": 16200,
+          "purchase_quantity": 25,
+          "required_quantity": 10,
+          "units_per_package": 25,
+          "used": 10,
+          "variant_id": "V-ROSA-18",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 7440,
+          "design_quantity": 10,
+          "leftover_inventory": 15,
+          "operational_surplus": 15,
+          "package_count": 1,
+          "potential_surplus": 15,
+          "product_id": "P-ROSA",
+          "purchase_cost": 18600,
+          "purchase_quantity": 25,
+          "required_quantity": 10,
+          "units_per_package": 25,
+          "used": 10,
+          "variant_id": "V-ROSA-24",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 2520,
+          "design_quantity": 10,
+          "leftover_inventory": 40,
+          "operational_surplus": 40,
+          "package_count": 1,
+          "potential_surplus": 40,
+          "product_id": "P-ROSA",
+          "purchase_cost": 12600,
+          "purchase_quantity": 50,
+          "required_quantity": 10,
+          "units_per_package": 50,
+          "used": 10,
+          "variant_id": "V-ROSA-9",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 36322,
+        "covered_waste_reserve": 7,
+        "design_quantity": 80,
+        "natural_package_surplus": 195,
+        "operational_surplus": 188,
+        "potential_surplus": 195,
+        "purchase_cost": 106300,
+        "purchase_quantity": 275,
+        "required_quantity": 87,
+        "target_waste_reserve": 7,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 87,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-BLANCO-12",
+        "sobrante_alto:V-BLANCO-18",
+        "sobrante_alto:V-ORO-9",
+        "sobrante_alto:V-ROSA-12",
+        "sobrante_alto:V-ROSA-18",
+        "sobrante_alto:V-ROSA-24",
+        "sobrante_alto:V-ROSA-9"
+      ]
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-BLANCO-12",
+        "sobrante_alto:V-BLANCO-18",
+        "sobrante_alto:V-ORO-9",
+        "sobrante_alto:V-ROSA-12",
+        "sobrante_alto:V-ROSA-18",
+        "sobrante_alto:V-ROSA-24",
+        "sobrante_alto:V-ROSA-9"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 4862,
+          "design_quantity": 10,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 33,
+          "paquetes": 1,
+          "precio_paquete": 14300,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 14300,
+          "purchase_quantity": 50,
+          "required_quantity": 17,
+          "sku": "SKU-V-BLANCO-12",
+          "sku_original": "SHOP-V-BLANCO-12",
+          "sobrante": 40,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-BLANCO-12",
+          "subtotal": 14300,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex blanco — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 17,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 10,
+          "unidades_paquete": 50,
+          "used": 10,
+          "variant_id": "V-BLANCO-12",
+          "waste_reserve": 7
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 6680,
+          "design_quantity": 10,
+          "diam_pulg": 18.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "imagen": "https://cdn.example.test/v-blanco-18.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 15,
+          "paquetes": 1,
+          "precio_paquete": 16700,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 16700,
+          "purchase_quantity": 25,
+          "required_quantity": 10,
+          "sku": "SKU-V-BLANCO-18",
+          "sku_original": "SHOP-V-BLANCO-18",
+          "sobrante": 15,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-BLANCO-18",
+          "subtotal": 16700,
+          "tamano_codigo": "R-18",
+          "titulo": "Globo latex blanco — R-18 / PAQUETE X 25",
+          "unidades_con_merma": 10,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 10,
+          "unidades_paquete": 25,
+          "used": 10,
+          "variant_id": "V-BLANCO-18",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "dorado",
+          "consumption_cost": 2820,
+          "design_quantity": 10,
+          "diam_pulg": 9.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "imagen": "https://cdn.example.test/v-oro-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 40,
+          "paquetes": 1,
+          "precio_paquete": 14100,
+          "product_id": "P-ORO",
+          "purchase_cost": 14100,
+          "purchase_quantity": 50,
+          "required_quantity": 10,
+          "sku": "SKU-V-ORO-9",
+          "sku_original": "SHOP-V-ORO-9",
+          "sobrante": 40,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-ORO-9",
+          "subtotal": 14100,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex dorado — R-9 / PAQUETE X 50",
+          "unidades_con_merma": 10,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 10,
+          "unidades_paquete": 50,
+          "used": 10,
+          "variant_id": "V-ORO-9",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "rosado",
+          "consumption_cost": 5520,
+          "design_quantity": 20,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "imagen": "https://cdn.example.test/v-rosa-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 30,
+          "paquetes": 1,
+          "precio_paquete": 13800,
+          "product_id": "P-ROSA",
+          "purchase_cost": 13800,
+          "purchase_quantity": 50,
+          "required_quantity": 20,
+          "sku": "SKU-V-ROSA-12",
+          "sku_original": "SHOP-V-ROSA-12",
+          "sobrante": 30,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-ROSA-12",
+          "subtotal": 13800,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex rosado — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 20,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 20,
+          "unidades_paquete": 50,
+          "used": 20,
+          "variant_id": "V-ROSA-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "rosado",
+          "consumption_cost": 6480,
+          "design_quantity": 10,
+          "diam_pulg": 18.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "imagen": "https://cdn.example.test/v-rosa-18.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 15,
+          "paquetes": 1,
+          "precio_paquete": 16200,
+          "product_id": "P-ROSA",
+          "purchase_cost": 16200,
+          "purchase_quantity": 25,
+          "required_quantity": 10,
+          "sku": "SKU-V-ROSA-18",
+          "sku_original": "SHOP-V-ROSA-18",
+          "sobrante": 15,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-ROSA-18",
+          "subtotal": 16200,
+          "tamano_codigo": "R-18",
+          "titulo": "Globo latex rosado — R-18 / PAQUETE X 25",
+          "unidades_con_merma": 10,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 10,
+          "unidades_paquete": 25,
+          "used": 10,
+          "variant_id": "V-ROSA-18",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "rosado",
+          "consumption_cost": 7440,
+          "design_quantity": 10,
+          "diam_pulg": 24.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "imagen": "https://cdn.example.test/v-rosa-24.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 15,
+          "paquetes": 1,
+          "precio_paquete": 18600,
+          "product_id": "P-ROSA",
+          "purchase_cost": 18600,
+          "purchase_quantity": 25,
+          "required_quantity": 10,
+          "sku": "SKU-V-ROSA-24",
+          "sku_original": "SHOP-V-ROSA-24",
+          "sobrante": 15,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-ROSA-24",
+          "subtotal": 18600,
+          "tamano_codigo": "R-24",
+          "titulo": "Globo latex rosado — R-24 / PAQUETE X 25",
+          "unidades_con_merma": 10,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 10,
+          "unidades_paquete": 25,
+          "used": 10,
+          "variant_id": "V-ROSA-24",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "rosado",
+          "consumption_cost": 2520,
+          "design_quantity": 10,
+          "diam_pulg": 9.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "imagen": "https://cdn.example.test/v-rosa-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 40,
+          "paquetes": 1,
+          "precio_paquete": 12600,
+          "product_id": "P-ROSA",
+          "purchase_cost": 12600,
+          "purchase_quantity": 50,
+          "required_quantity": 10,
+          "sku": "SKU-V-ROSA-9",
+          "sku_original": "SHOP-V-ROSA-9",
+          "sobrante": 40,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-ROSA-9",
+          "subtotal": 12600,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex rosado — R-9 / PAQUETE X 50",
+          "unidades_con_merma": 10,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 10,
+          "unidades_paquete": 50,
+          "used": 10,
+          "variant_id": "V-ROSA-9",
+          "waste_reserve": 0
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 0.5,
+          "estructura_id": "EST_01_CENTRO_MESA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rosado",
+              "diam_cm": 22.9,
+              "diam_pulg": 9.0,
+              "estructura_id": "EST_01_CENTRO_MESA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-rosa-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_CENTRO_MESA",
+                "kind": "estructura"
+              },
+              "product_id": "P-ROSA",
+              "sku": "SKU-V-ROSA-9",
+              "sku_original": "SHOP-V-ROSA-9",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-ROSA-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex rosado — R-9 / PAQUETE X 50",
+              "unidades": 10,
+              "unidades_inferidas": false,
+              "variant_id": "V-ROSA-9"
+            },
+            {
+              "acabado": null,
+              "color": "dorado",
+              "diam_cm": 22.9,
+              "diam_pulg": 9.0,
+              "estructura_id": "EST_01_CENTRO_MESA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-oro-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_CENTRO_MESA",
+                "kind": "estructura"
+              },
+              "product_id": "P-ORO",
+              "sku": "SKU-V-ORO-9",
+              "sku_original": "SHOP-V-ORO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-ORO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex dorado — R-9 / PAQUETE X 50",
+              "unidades": 10,
+              "unidades_inferidas": false,
+              "variant_id": "V-ORO-9"
+            },
+            {
+              "acabado": null,
+              "color": "rosado",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_CENTRO_MESA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-rosa-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_CENTRO_MESA",
+                "kind": "estructura"
+              },
+              "product_id": "P-ROSA",
+              "sku": "SKU-V-ROSA-12",
+              "sku_original": "SHOP-V-ROSA-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-ROSA-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rosado — R-12 / PAQUETE X 50",
+              "unidades": 20,
+              "unidades_inferidas": false,
+              "variant_id": "V-ROSA-12"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_CENTRO_MESA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_CENTRO_MESA",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLANCO",
+              "sku": "SKU-V-BLANCO-12",
+              "sku_original": "SHOP-V-BLANCO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-BLANCO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex blanco — R-12 / PAQUETE X 50",
+              "unidades": 10,
+              "unidades_inferidas": false,
+              "variant_id": "V-BLANCO-12"
+            },
+            {
+              "acabado": null,
+              "color": "rosado",
+              "diam_cm": 45.7,
+              "diam_pulg": 18.0,
+              "estructura_id": "EST_01_CENTRO_MESA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-rosa-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_CENTRO_MESA",
+                "kind": "estructura"
+              },
+              "product_id": "P-ROSA",
+              "sku": "SKU-V-ROSA-18",
+              "sku_original": "SHOP-V-ROSA-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-ROSA-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex rosado — R-18 / PAQUETE X 25",
+              "unidades": 10,
+              "unidades_inferidas": false,
+              "variant_id": "V-ROSA-18"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 45.7,
+              "diam_pulg": 18.0,
+              "estructura_id": "EST_01_CENTRO_MESA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-blanco-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_CENTRO_MESA",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLANCO",
+              "sku": "SKU-V-BLANCO-18",
+              "sku_original": "SHOP-V-BLANCO-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-BLANCO-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex blanco — R-18 / PAQUETE X 25",
+              "unidades": 10,
+              "unidades_inferidas": false,
+              "variant_id": "V-BLANCO-18"
+            },
+            {
+              "acabado": null,
+              "color": "rosado",
+              "diam_cm": 61.0,
+              "diam_pulg": 24.0,
+              "estructura_id": "EST_01_CENTRO_MESA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-rosa-24.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_CENTRO_MESA",
+                "kind": "estructura"
+              },
+              "product_id": "P-ROSA",
+              "sku": "SKU-V-ROSA-24",
+              "sku_original": "SHOP-V-ROSA-24",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-ROSA-24",
+              "sustitucion": null,
+              "tamano_codigo": "R-24",
+              "titulo": "Globo latex rosado — R-24 / PAQUETE X 25",
+              "unidades": 10,
+              "unidades_inferidas": false,
+              "variant_id": "V-ROSA-24"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 37.5,
+              "unidades": 30
+            },
+            {
+              "diam_pulg": 18.0,
+              "forma": "redondo",
+              "pct": 25.0,
+              "unidades": 20
+            },
+            {
+              "diam_pulg": 9.0,
+              "forma": "redondo",
+              "pct": 25.0,
+              "unidades": 20
+            },
+            {
+              "diam_pulg": 24.0,
+              "forma": "redondo",
+              "pct": 12.5,
+              "unidades": 10
+            }
+          ],
+          "nombre": "Centros de mesa",
+          "repeticiones": 10,
+          "supuestos": [],
+          "tipo": "centro_mesa",
+          "total_unidades": 80,
+          "ubicacion": "mesas_invitados"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-001.",
+      "plan": {
+        "concepto": {
+          "descripcion": "Centros de mesa en rosado, blanco y dorado.",
+          "paleta": [
+            "rosado",
+            "blanco",
+            "dorado"
+          ],
+          "titulo": "Centros de mesa rosados"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_CENTRO_MESA",
+            "materiales": [
+              {
+                "color": "rosado",
+                "participacion": 0.6,
+                "product_id": "P-ROSA",
+                "rol_material": "principal"
+              },
+              {
+                "color": "blanco",
+                "participacion": 0.3,
+                "product_id": "P-BLANCO",
+                "rol_material": "secundario"
+              },
+              {
+                "color": "dorado",
+                "participacion": 0.1,
+                "product_id": "P-ORO",
+                "rol_material": "acento"
+              }
+            ],
+            "medidas": {
+              "alto_m": 0.5,
+              "ancho_m": 0.4
+            },
+            "mezcla": "organica_gruesa",
+            "nombre": "Centros de mesa",
+            "porque": "Una pieza por mesa con la paleta del evento.",
+            "repeticiones": 10,
+            "rol_escena": "focal",
+            "tipo": "centro_mesa",
+            "ubicacion": "mesas_invitados"
+          }
+        ],
+        "plan_id": "23232323-2323-4232-8232-232323232323",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "5d4262bb29552bb5978265d90e192c52f06745d0296dea677915abb0de121e75",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 36322,
+        "covered_waste_reserve": 7,
+        "design_quantity": 80,
+        "globos_por_tamano": {
+          "R-12": 30,
+          "R-18": 20,
+          "R-24": 10,
+          "R-9": 20
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 195,
+        "purchase_cost": 106300,
+        "target_waste_reserve": 7,
+        "total_cop": 106300,
+        "total_unidades": 80,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 36322,
+      "covered_waste_reserve": 7,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 188,
+      "lines": [
+        {
+          "available": true,
+          "color": "blanco",
+          "consumption_cost_cop": 4862,
+          "design_quantity": 10,
+          "diameter_inches": 12.0,
+          "id": "V-BLANCO-12",
+          "leftover_inventory": 33,
+          "origins": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 14300,
+          "packages": 1,
+          "product_id": "P-BLANCO",
+          "purchase_cost_cop": 14300,
+          "purchase_quantity": 50,
+          "required_quantity": 17,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "subtotal_cop": 14300,
+          "surplus": 40,
+          "title": "Globo latex blanco — R-12 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 10,
+          "variant_id": "V-BLANCO-12",
+          "waste_reserve": 7
+        },
+        {
+          "available": true,
+          "color": "blanco",
+          "consumption_cost_cop": 6680,
+          "design_quantity": 10,
+          "diameter_inches": 18.0,
+          "id": "V-BLANCO-18",
+          "leftover_inventory": 15,
+          "origins": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 16700,
+          "packages": 1,
+          "product_id": "P-BLANCO",
+          "purchase_cost_cop": 16700,
+          "purchase_quantity": 25,
+          "required_quantity": 10,
+          "size": "R-18",
+          "size_code": "R-18",
+          "structures": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "subtotal_cop": 16700,
+          "surplus": 15,
+          "title": "Globo latex blanco — R-18 / PAQUETE X 25",
+          "units_per_package": 25,
+          "used": 10,
+          "variant_id": "V-BLANCO-18",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "dorado",
+          "consumption_cost_cop": 2820,
+          "design_quantity": 10,
+          "diameter_inches": 9.0,
+          "id": "V-ORO-9",
+          "leftover_inventory": 40,
+          "origins": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 14100,
+          "packages": 1,
+          "product_id": "P-ORO",
+          "purchase_cost_cop": 14100,
+          "purchase_quantity": 50,
+          "required_quantity": 10,
+          "size": "R-9",
+          "size_code": "R-9",
+          "structures": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "subtotal_cop": 14100,
+          "surplus": 40,
+          "title": "Globo latex dorado — R-9 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 10,
+          "variant_id": "V-ORO-9",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "rosado",
+          "consumption_cost_cop": 5520,
+          "design_quantity": 20,
+          "diameter_inches": 12.0,
+          "id": "V-ROSA-12",
+          "leftover_inventory": 30,
+          "origins": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 13800,
+          "packages": 1,
+          "product_id": "P-ROSA",
+          "purchase_cost_cop": 13800,
+          "purchase_quantity": 50,
+          "required_quantity": 20,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "subtotal_cop": 13800,
+          "surplus": 30,
+          "title": "Globo latex rosado — R-12 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 20,
+          "variant_id": "V-ROSA-12",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "rosado",
+          "consumption_cost_cop": 6480,
+          "design_quantity": 10,
+          "diameter_inches": 18.0,
+          "id": "V-ROSA-18",
+          "leftover_inventory": 15,
+          "origins": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 16200,
+          "packages": 1,
+          "product_id": "P-ROSA",
+          "purchase_cost_cop": 16200,
+          "purchase_quantity": 25,
+          "required_quantity": 10,
+          "size": "R-18",
+          "size_code": "R-18",
+          "structures": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "subtotal_cop": 16200,
+          "surplus": 15,
+          "title": "Globo latex rosado — R-18 / PAQUETE X 25",
+          "units_per_package": 25,
+          "used": 10,
+          "variant_id": "V-ROSA-18",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "rosado",
+          "consumption_cost_cop": 7440,
+          "design_quantity": 10,
+          "diameter_inches": 24.0,
+          "id": "V-ROSA-24",
+          "leftover_inventory": 15,
+          "origins": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 18600,
+          "packages": 1,
+          "product_id": "P-ROSA",
+          "purchase_cost_cop": 18600,
+          "purchase_quantity": 25,
+          "required_quantity": 10,
+          "size": "R-24",
+          "size_code": "R-24",
+          "structures": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "subtotal_cop": 18600,
+          "surplus": 15,
+          "title": "Globo latex rosado — R-24 / PAQUETE X 25",
+          "units_per_package": 25,
+          "used": 10,
+          "variant_id": "V-ROSA-24",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "rosado",
+          "consumption_cost_cop": 2520,
+          "design_quantity": 10,
+          "diameter_inches": 9.0,
+          "id": "V-ROSA-9",
+          "leftover_inventory": 40,
+          "origins": [
+            {
+              "id": "EST_01_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 12600,
+          "packages": 1,
+          "product_id": "P-ROSA",
+          "purchase_cost_cop": 12600,
+          "purchase_quantity": 50,
+          "required_quantity": 10,
+          "size": "R-9",
+          "size_code": "R-9",
+          "structures": [
+            "EST_01_CENTRO_MESA"
+          ],
+          "subtotal_cop": 12600,
+          "surplus": 40,
+          "title": "Globo latex rosado — R-9 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 10,
+          "variant_id": "V-ROSA-9",
+          "waste_reserve": 0
+        }
+      ],
+      "plan_hash": "5d4262bb29552bb5978265d90e192c52f06745d0296dea677915abb0de121e75",
+      "purchase_cost_cop": 106300,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 7,
+      "total_cop": 106300,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "23-centro-mesa-repetido-tres-colores",
+  "plan": {
+    "concepto": {
+      "descripcion": "Centros de mesa en rosado, blanco y dorado.",
+      "paleta": [
+        "rosado",
+        "blanco",
+        "dorado"
+      ],
+      "titulo": "Centros de mesa rosados"
+    },
+    "espacio": {
+      "fuente": "cliente",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "densidad": "media",
+        "estructura_id": "EST_01_CENTRO_MESA",
+        "materiales": [
+          {
+            "color": "rosado",
+            "participacion": 0.6,
+            "product_id": "P-ROSA",
+            "rol_material": "principal"
+          },
+          {
+            "color": "blanco",
+            "participacion": 0.3,
+            "product_id": "P-BLANCO",
+            "rol_material": "secundario"
+          },
+          {
+            "color": "dorado",
+            "participacion": 0.1,
+            "product_id": "P-ORO",
+            "rol_material": "acento"
+          }
+        ],
+        "medidas": {
+          "alto_m": 0.5,
+          "ancho_m": 0.4
+        },
+        "mezcla": "organica_gruesa",
+        "nombre": "Centros de mesa",
+        "porque": "Una pieza por mesa con la paleta del evento.",
+        "repeticiones": 10,
+        "rol_escena": "focal",
+        "tipo": "centro_mesa",
+        "ubicacion": "mesas_invitados"
+      }
+    ],
+    "plan_id": "23232323-2323-4232-8232-232323232323",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "supuestos": []
+  }
+}

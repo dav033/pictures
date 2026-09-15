@@ -1,0 +1,1062 @@
+{
+  "allowlist": [
+    {
+      "product_id": "P-ORO",
+      "variant_ids": [
+        "V-A-ORO-24"
+      ]
+    },
+    {
+      "product_id": "P-ROSA",
+      "variant_ids": [
+        "V-Z-ROSA-12"
+      ]
+    }
+  ],
+  "catalog_rows": [
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-24",
+      "colores_producto": [
+        "dorado"
+      ],
+      "colores_variante": [
+        "dorado"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex dorado R-24.",
+      "diam_pulg": 24,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-a-oro-24.jpg",
+      "inventory_quantity": 500,
+      "precio": 80000,
+      "product_id": "P-ORO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex dorado",
+      "sku": "SKU-V-A-ORO-24",
+      "sku_original": "SHOP-V-A-ORO-24",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-A-ORO-24",
+      "unidades_inferidas": false,
+      "unidades_paq": 25,
+      "variant_id": "V-A-ORO-24",
+      "variante_titulo": "R-24 / PAQUETE X 25"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "rosado"
+      ],
+      "colores_variante": [
+        "rosado"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex rosado R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-z-rosa-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 30000,
+      "product_id": "P-ROSA",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex rosado",
+      "sku": "SKU-V-Z-ROSA-12",
+      "sku_original": "SHOP-V-Z-ROSA-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-Z-ROSA-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 100,
+      "variant_id": "V-Z-ROSA-12",
+      "variante_titulo": "R-12 / PAQUETE X 100"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-001",
+  "description": "Dos grupos sin sobrante natural: R-12 rosado en paquete de 100 a 30.000 COP y R-24 dorado en paquete de 25 a 80.000 COP, con la variante cara ordenada primero. El paquete extra de la reserva de merma va al que cubre lo pendiente al menor costo (antes iba al primero por variant_id y el plan costaba 190.000 en vez de 140.000), y los totales reportan solo el paquete de delta y el ahorro real.",
+  "expected": {
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "rosado",
+          "design_quantity": 100,
+          "finish": null,
+          "product_id": "P-ROSA",
+          "required_quantity": 100,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_01_KIT",
+          "variant_id": "V-Z-ROSA-12",
+          "waste_adjusted_quantity": 100,
+          "waste_reserve": 0
+        },
+        {
+          "color": "dorado",
+          "design_quantity": 25,
+          "finish": null,
+          "product_id": "P-ORO",
+          "required_quantity": 25,
+          "shape": "redondo",
+          "size_inches": 24,
+          "structure_id": "EST_02_KIT",
+          "variant_id": "V-A-ORO-24",
+          "waste_adjusted_quantity": 25,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 2,
+        "density": "media",
+        "dimensions_m": {
+          "height": null,
+          "length": null,
+          "width": null
+        },
+        "installation_length_m": null,
+        "shape": "coordinated structures",
+        "type": "composite_installation",
+        "visual_density": "medium",
+        "visual_scale": "large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 80000,
+          "design_quantity": 25,
+          "leftover_inventory": 0,
+          "operational_surplus": 0,
+          "package_count": 1,
+          "potential_surplus": 0,
+          "product_id": "P-ORO",
+          "purchase_cost": 80000,
+          "purchase_quantity": 25,
+          "required_quantity": 25,
+          "units_per_package": 25,
+          "used": 25,
+          "variant_id": "V-A-ORO-24",
+          "waste_adjusted_quantity": 25,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": true,
+          "consumption_cost": 33000,
+          "design_quantity": 100,
+          "leftover_inventory": 90,
+          "operational_surplus": 90,
+          "package_count": 2,
+          "potential_surplus": 100,
+          "product_id": "P-ROSA",
+          "purchase_cost": 60000,
+          "purchase_quantity": 200,
+          "required_quantity": 110,
+          "units_per_package": 100,
+          "used": 100,
+          "variant_id": "V-Z-ROSA-12",
+          "waste_adjusted_quantity": 110,
+          "waste_reserve": 10
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 1,
+        "consumption_cost": 113000,
+        "covered_waste_reserve": 10,
+        "design_quantity": 125,
+        "natural_package_surplus": 100,
+        "operational_surplus": 90,
+        "potential_surplus": 100,
+        "purchase_cost": 140000,
+        "purchase_quantity": 225,
+        "required_quantity": 135,
+        "target_waste_reserve": 10,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 135,
+        "waste_only_savings_cop": 80000
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": []
+    },
+    "plan_resuelto": {
+      "advertencias": [],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "dorado",
+          "consumption_cost": 80000,
+          "design_quantity": 25,
+          "diam_pulg": 24,
+          "elementos_origen": [
+            {
+              "id": "EST_02_KIT",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_KIT"
+          ],
+          "imagen": "https://cdn.example.test/v-a-oro-24.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 0,
+          "paquetes": 1,
+          "precio_paquete": 80000,
+          "product_id": "P-ORO",
+          "purchase_cost": 80000,
+          "purchase_quantity": 25,
+          "required_quantity": 25,
+          "sku": "SKU-V-A-ORO-24",
+          "sku_original": "SHOP-V-A-ORO-24",
+          "sobrante": 0,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-A-ORO-24",
+          "subtotal": 80000,
+          "tamano_codigo": "R-24",
+          "titulo": "Globo latex dorado — R-24 / PAQUETE X 25",
+          "unidades_con_merma": 25,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 25,
+          "unidades_paquete": 25,
+          "used": 25,
+          "variant_id": "V-A-ORO-24",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": true,
+          "color": "rosado",
+          "consumption_cost": 33000,
+          "design_quantity": 100,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_01_KIT",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_KIT"
+          ],
+          "imagen": "https://cdn.example.test/v-z-rosa-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 90,
+          "paquetes": 2,
+          "precio_paquete": 30000,
+          "product_id": "P-ROSA",
+          "purchase_cost": 60000,
+          "purchase_quantity": 200,
+          "required_quantity": 110,
+          "sku": "SKU-V-Z-ROSA-12",
+          "sku_original": "SHOP-V-Z-ROSA-12",
+          "sobrante": 100,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-Z-ROSA-12",
+          "subtotal": 60000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex rosado — R-12 / PAQUETE X 100",
+          "unidades_con_merma": 110,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 100,
+          "unidades_paquete": 100,
+          "used": 100,
+          "variant_id": "V-Z-ROSA-12",
+          "waste_reserve": 10
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": null,
+          "estructura_id": "EST_01_KIT",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rosado",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_01_KIT",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-z-rosa-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_KIT",
+                "kind": "estructura"
+              },
+              "product_id": "P-ROSA",
+              "sku": "SKU-V-Z-ROSA-12",
+              "sku_original": "SHOP-V-Z-ROSA-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-Z-ROSA-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rosado — R-12 / PAQUETE X 100",
+              "unidades": 100,
+              "unidades_inferidas": false,
+              "variant_id": "V-Z-ROSA-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 100
+            }
+          ],
+          "nombre": "Kit rosado",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "kit",
+          "total_unidades": 100,
+          "ubicacion": "piso_frontal"
+        },
+        {
+          "eje_m": null,
+          "estructura_id": "EST_02_KIT",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "dorado",
+              "diam_cm": 61,
+              "diam_pulg": 24,
+              "estructura_id": "EST_02_KIT",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-a-oro-24.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_KIT",
+                "kind": "estructura"
+              },
+              "product_id": "P-ORO",
+              "sku": "SKU-V-A-ORO-24",
+              "sku_original": "SHOP-V-A-ORO-24",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-A-ORO-24",
+              "sustitucion": null,
+              "tamano_codigo": "R-24",
+              "titulo": "Globo latex dorado — R-24 / PAQUETE X 25",
+              "unidades": 25,
+              "unidades_inferidas": false,
+              "variant_id": "V-A-ORO-24"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 24,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 25
+            }
+          ],
+          "nombre": "Kit dorado",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "kit",
+          "total_unidades": 25,
+          "ubicacion": "mesas_invitados"
+        }
+      ],
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 125\nTarget waste reserve: 10\nNatural package surplus: 0\nUsable waste coverage: 10\nAdditional packages required for waste: 1\nGlobo latex dorado — R-24 / PAQUETE X 25: design=25, required=25, package=25, packages=1, purchased=25, natural surplus=0, waste reserve=0, leftover inventory=0\nGlobo latex rosado — R-12 / PAQUETE X 100: design=100, required=110, package=100, packages=2, purchased=200, natural surplus=100, waste reserve=10, leftover inventory=90",
+      "plan": {
+        "concepto": {
+          "descripcion": "Globos sueltos rosados y dorados.",
+          "paleta": [
+            "rosado",
+            "dorado"
+          ],
+          "titulo": "Kits de globos"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_KIT",
+            "materiales": [
+              {
+                "color": "rosado",
+                "participacion": 1,
+                "product_id": "P-ROSA",
+                "rol_material": "principal",
+                "variant_id": "V-Z-ROSA-12"
+              }
+            ],
+            "medidas": {},
+            "mezcla": "clasica",
+            "nombre": "Kit rosado",
+            "porque": "Globos sueltos para el piso.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "kit",
+            "ubicacion": "piso_frontal",
+            "unidades_declaradas": 100
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_02_KIT",
+            "materiales": [
+              {
+                "color": "dorado",
+                "participacion": 1,
+                "product_id": "P-ORO",
+                "rol_material": "acento",
+                "variant_id": "V-A-ORO-24"
+              }
+            ],
+            "medidas": {},
+            "mezcla": "solo_grandes",
+            "nombre": "Kit dorado",
+            "porque": "Globos grandes sobre las mesas.",
+            "repeticiones": 1,
+            "rol_escena": "acento",
+            "tipo": "kit",
+            "ubicacion": "mesas_invitados",
+            "unidades_declaradas": 25
+          }
+        ],
+        "plan_id": "24242424-2424-4242-8242-242424242424",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "321250123a0f7baddfec7c65e80797e3ec2e8bea464af24f9cc2d50d568f8a5c",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 1,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 113000,
+        "covered_waste_reserve": 10,
+        "design_quantity": 125,
+        "globos_por_tamano": {
+          "R-12": 100,
+          "R-24": 25
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8,
+        "natural_package_surplus": 0,
+        "purchase_cost": 140000,
+        "target_waste_reserve": 10,
+        "total_cop": 140000,
+        "total_unidades": 125,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 80000
+      }
+    },
+    "quote": {
+      "complementosSoportados": false,
+      "consumptionCost": 113000,
+      "coveredWasteReserve": 10,
+      "incluyeIva": true,
+      "leftoverInventory": 90,
+      "lineas": [
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 25,
+          "color": "dorado",
+          "consumptionCost": 80000,
+          "designQuantity": 25,
+          "diamPulg": 24,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_02_KIT",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_KIT"
+          ],
+          "id": "V-A-ORO-24",
+          "leftoverInventory": 0,
+          "nombre": "Globo latex dorado — R-24 / PAQUETE X 25",
+          "paquetes": 1,
+          "precioPaquete": 80000,
+          "productId": "P-ORO",
+          "purchaseCost": 80000,
+          "purchaseQuantity": 25,
+          "referenciaElementIds": [],
+          "requiredQuantity": 25,
+          "sobrante": 0,
+          "subtotal": 80000,
+          "tamano": "R-24",
+          "tamanoCodigo": "R-24",
+          "unidadesPaquete": 25,
+          "used": 25,
+          "varianteId": "V-A-ORO-24",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": true,
+          "cantidadNecesaria": 100,
+          "color": "rosado",
+          "consumptionCost": 33000,
+          "designQuantity": 100,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_KIT",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_KIT"
+          ],
+          "id": "V-Z-ROSA-12",
+          "leftoverInventory": 90,
+          "nombre": "Globo latex rosado — R-12 / PAQUETE X 100",
+          "paquetes": 2,
+          "precioPaquete": 30000,
+          "productId": "P-ROSA",
+          "purchaseCost": 60000,
+          "purchaseQuantity": 200,
+          "referenciaElementIds": [],
+          "requiredQuantity": 110,
+          "sobrante": 100,
+          "subtotal": 60000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 100,
+          "used": 100,
+          "varianteId": "V-Z-ROSA-12",
+          "wasteReserve": 10
+        }
+      ],
+      "mermaPorcentaje": 8,
+      "plan_hash": "321250123a0f7baddfec7c65e80797e3ec2e8bea464af24f9cc2d50d568f8a5c",
+      "purchaseCost": 140000,
+      "targetWasteReserve": 10,
+      "total": 140000
+    }
+  },
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-001",
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "rosado",
+          "design_quantity": 100,
+          "finish": null,
+          "product_id": "P-ROSA",
+          "required_quantity": 100,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_KIT",
+          "variant_id": "V-Z-ROSA-12",
+          "waste_adjusted_quantity": 100,
+          "waste_reserve": 0
+        },
+        {
+          "color": "dorado",
+          "design_quantity": 25,
+          "finish": null,
+          "product_id": "P-ORO",
+          "required_quantity": 25,
+          "shape": "redondo",
+          "size_inches": 24.0,
+          "structure_id": "EST_02_KIT",
+          "variant_id": "V-A-ORO-24",
+          "waste_adjusted_quantity": 25,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 2,
+        "density": "media",
+        "dimensions_m": {
+          "height": null,
+          "length": null,
+          "width": null
+        },
+        "installation_length_m": null,
+        "shape": "coordinated structures",
+        "type": "composite_installation",
+        "visual_density": "medium",
+        "visual_scale": "large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 80000,
+          "design_quantity": 25,
+          "leftover_inventory": 0,
+          "operational_surplus": 0,
+          "package_count": 1,
+          "potential_surplus": 0,
+          "product_id": "P-ORO",
+          "purchase_cost": 80000,
+          "purchase_quantity": 25,
+          "required_quantity": 25,
+          "units_per_package": 25,
+          "used": 25,
+          "variant_id": "V-A-ORO-24",
+          "waste_adjusted_quantity": 25,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": true,
+          "consumption_cost": 33000,
+          "design_quantity": 100,
+          "leftover_inventory": 90,
+          "operational_surplus": 90,
+          "package_count": 2,
+          "potential_surplus": 100,
+          "product_id": "P-ROSA",
+          "purchase_cost": 60000,
+          "purchase_quantity": 200,
+          "required_quantity": 110,
+          "units_per_package": 100,
+          "used": 100,
+          "variant_id": "V-Z-ROSA-12",
+          "waste_adjusted_quantity": 110,
+          "waste_reserve": 10
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 1,
+        "consumption_cost": 113000,
+        "covered_waste_reserve": 10,
+        "design_quantity": 125,
+        "natural_package_surplus": 100,
+        "operational_surplus": 90,
+        "potential_surplus": 100,
+        "purchase_cost": 140000,
+        "purchase_quantity": 225,
+        "required_quantity": 135,
+        "target_waste_reserve": 10,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 135,
+        "waste_only_savings_cop": 80000
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": []
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "dorado",
+          "consumption_cost": 80000,
+          "design_quantity": 25,
+          "diam_pulg": 24.0,
+          "elementos_origen": [
+            {
+              "id": "EST_02_KIT",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_KIT"
+          ],
+          "imagen": "https://cdn.example.test/v-a-oro-24.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 0,
+          "paquetes": 1,
+          "precio_paquete": 80000,
+          "product_id": "P-ORO",
+          "purchase_cost": 80000,
+          "purchase_quantity": 25,
+          "required_quantity": 25,
+          "sku": "SKU-V-A-ORO-24",
+          "sku_original": "SHOP-V-A-ORO-24",
+          "sobrante": 0,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-A-ORO-24",
+          "subtotal": 80000,
+          "tamano_codigo": "R-24",
+          "titulo": "Globo latex dorado — R-24 / PAQUETE X 25",
+          "unidades_con_merma": 25,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 25,
+          "unidades_paquete": 25,
+          "used": 25,
+          "variant_id": "V-A-ORO-24",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": true,
+          "color": "rosado",
+          "consumption_cost": 33000,
+          "design_quantity": 100,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_KIT",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_KIT"
+          ],
+          "imagen": "https://cdn.example.test/v-z-rosa-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 90,
+          "paquetes": 2,
+          "precio_paquete": 30000,
+          "product_id": "P-ROSA",
+          "purchase_cost": 60000,
+          "purchase_quantity": 200,
+          "required_quantity": 110,
+          "sku": "SKU-V-Z-ROSA-12",
+          "sku_original": "SHOP-V-Z-ROSA-12",
+          "sobrante": 100,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-Z-ROSA-12",
+          "subtotal": 60000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex rosado — R-12 / PAQUETE X 100",
+          "unidades_con_merma": 110,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 100,
+          "unidades_paquete": 100,
+          "used": 100,
+          "variant_id": "V-Z-ROSA-12",
+          "waste_reserve": 10
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": null,
+          "estructura_id": "EST_01_KIT",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rosado",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_KIT",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-z-rosa-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_KIT",
+                "kind": "estructura"
+              },
+              "product_id": "P-ROSA",
+              "sku": "SKU-V-Z-ROSA-12",
+              "sku_original": "SHOP-V-Z-ROSA-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-Z-ROSA-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rosado — R-12 / PAQUETE X 100",
+              "unidades": 100,
+              "unidades_inferidas": false,
+              "variant_id": "V-Z-ROSA-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 100
+            }
+          ],
+          "nombre": "Kit rosado",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "kit",
+          "total_unidades": 100,
+          "ubicacion": "piso_frontal"
+        },
+        {
+          "eje_m": null,
+          "estructura_id": "EST_02_KIT",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "dorado",
+              "diam_cm": 61.0,
+              "diam_pulg": 24.0,
+              "estructura_id": "EST_02_KIT",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-a-oro-24.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_KIT",
+                "kind": "estructura"
+              },
+              "product_id": "P-ORO",
+              "sku": "SKU-V-A-ORO-24",
+              "sku_original": "SHOP-V-A-ORO-24",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-A-ORO-24",
+              "sustitucion": null,
+              "tamano_codigo": "R-24",
+              "titulo": "Globo latex dorado — R-24 / PAQUETE X 25",
+              "unidades": 25,
+              "unidades_inferidas": false,
+              "variant_id": "V-A-ORO-24"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 24.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 25
+            }
+          ],
+          "nombre": "Kit dorado",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "kit",
+          "total_unidades": 25,
+          "ubicacion": "mesas_invitados"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-001.",
+      "plan": {
+        "concepto": {
+          "descripcion": "Globos sueltos rosados y dorados.",
+          "paleta": [
+            "rosado",
+            "dorado"
+          ],
+          "titulo": "Kits de globos"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_KIT",
+            "materiales": [
+              {
+                "color": "rosado",
+                "participacion": 1,
+                "product_id": "P-ROSA",
+                "rol_material": "principal",
+                "variant_id": "V-Z-ROSA-12"
+              }
+            ],
+            "medidas": {},
+            "mezcla": "clasica",
+            "nombre": "Kit rosado",
+            "porque": "Globos sueltos para el piso.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "kit",
+            "ubicacion": "piso_frontal",
+            "unidades_declaradas": 100
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_02_KIT",
+            "materiales": [
+              {
+                "color": "dorado",
+                "participacion": 1,
+                "product_id": "P-ORO",
+                "rol_material": "acento",
+                "variant_id": "V-A-ORO-24"
+              }
+            ],
+            "medidas": {},
+            "mezcla": "solo_grandes",
+            "nombre": "Kit dorado",
+            "porque": "Globos grandes sobre las mesas.",
+            "repeticiones": 1,
+            "rol_escena": "acento",
+            "tipo": "kit",
+            "ubicacion": "mesas_invitados",
+            "unidades_declaradas": 25
+          }
+        ],
+        "plan_id": "24242424-2424-4242-8242-242424242424",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "1bbb79394753065711af0a8558cd9539c293e423d82777479268804f9367ae07",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 1,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 113000,
+        "covered_waste_reserve": 10,
+        "design_quantity": 125,
+        "globos_por_tamano": {
+          "R-12": 100,
+          "R-24": 25
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 0,
+        "purchase_cost": 140000,
+        "target_waste_reserve": 10,
+        "total_cop": 140000,
+        "total_unidades": 125,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 80000
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 113000,
+      "covered_waste_reserve": 10,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 90,
+      "lines": [
+        {
+          "available": true,
+          "color": "dorado",
+          "consumption_cost_cop": 80000,
+          "design_quantity": 25,
+          "diameter_inches": 24.0,
+          "id": "V-A-ORO-24",
+          "leftover_inventory": 0,
+          "origins": [
+            {
+              "id": "EST_02_KIT",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 80000,
+          "packages": 1,
+          "product_id": "P-ORO",
+          "purchase_cost_cop": 80000,
+          "purchase_quantity": 25,
+          "required_quantity": 25,
+          "size": "R-24",
+          "size_code": "R-24",
+          "structures": [
+            "EST_02_KIT"
+          ],
+          "subtotal_cop": 80000,
+          "surplus": 0,
+          "title": "Globo latex dorado — R-24 / PAQUETE X 25",
+          "units_per_package": 25,
+          "used": 25,
+          "variant_id": "V-A-ORO-24",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "rosado",
+          "consumption_cost_cop": 33000,
+          "design_quantity": 100,
+          "diameter_inches": 12.0,
+          "id": "V-Z-ROSA-12",
+          "leftover_inventory": 90,
+          "origins": [
+            {
+              "id": "EST_01_KIT",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 30000,
+          "packages": 2,
+          "product_id": "P-ROSA",
+          "purchase_cost_cop": 60000,
+          "purchase_quantity": 200,
+          "required_quantity": 110,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_KIT"
+          ],
+          "subtotal_cop": 60000,
+          "surplus": 100,
+          "title": "Globo latex rosado — R-12 / PAQUETE X 100",
+          "units_per_package": 100,
+          "used": 100,
+          "variant_id": "V-Z-ROSA-12",
+          "waste_reserve": 10
+        }
+      ],
+      "plan_hash": "1bbb79394753065711af0a8558cd9539c293e423d82777479268804f9367ae07",
+      "purchase_cost_cop": 140000,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 10,
+      "total_cop": 140000,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "24-reserva-paquete-mas-barato",
+  "plan": {
+    "concepto": {
+      "descripcion": "Globos sueltos rosados y dorados.",
+      "paleta": [
+        "rosado",
+        "dorado"
+      ],
+      "titulo": "Kits de globos"
+    },
+    "espacio": {
+      "fuente": "cliente",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "densidad": "media",
+        "estructura_id": "EST_01_KIT",
+        "materiales": [
+          {
+            "color": "rosado",
+            "participacion": 1,
+            "product_id": "P-ROSA",
+            "rol_material": "principal",
+            "variant_id": "V-Z-ROSA-12"
+          }
+        ],
+        "medidas": {},
+        "mezcla": "clasica",
+        "nombre": "Kit rosado",
+        "porque": "Globos sueltos para el piso.",
+        "repeticiones": 1,
+        "rol_escena": "focal",
+        "tipo": "kit",
+        "ubicacion": "piso_frontal",
+        "unidades_declaradas": 100
+      },
+      {
+        "densidad": "media",
+        "estructura_id": "EST_02_KIT",
+        "materiales": [
+          {
+            "color": "dorado",
+            "participacion": 1,
+            "product_id": "P-ORO",
+            "rol_material": "acento",
+            "variant_id": "V-A-ORO-24"
+          }
+        ],
+        "medidas": {},
+        "mezcla": "solo_grandes",
+        "nombre": "Kit dorado",
+        "porque": "Globos grandes sobre las mesas.",
+        "repeticiones": 1,
+        "rol_escena": "acento",
+        "tipo": "kit",
+        "ubicacion": "mesas_invitados",
+        "unidades_declaradas": 25
+      }
+    ],
+    "plan_id": "24242424-2424-4242-8242-242424242424",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "supuestos": []
+  }
+}

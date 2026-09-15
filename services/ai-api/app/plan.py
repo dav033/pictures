@@ -2051,7 +2051,17 @@ def _build_resolved(
     purchases, reserve, _allocations = _consolidate(structures, candidate_by_variant, packages)
     for purchase in purchases:
         design = int(cast(int, purchase["design_quantity"]))
-        if design > 0 and int(cast(int, purchase["sobrante"])) / design > 0.4:
+        candidate = candidate_by_variant[str(purchase["variant_id"])]
+        package_count = int(cast(int, purchase["paquetes"]))
+        # The surplus that matters here is the design purchase's, before the
+        # waste reserve bought anything: a package bought on purpose for the
+        # reserve is not an oversized purchase. TypeScript checks it in that
+        # order (resolver.ts), and the parity vector 24 showed the difference.
+        base_packages = package_count - _waste_extra_packages(
+            design, candidate.units_per_package, package_count
+        )
+        base_surplus = base_packages * candidate.units_per_package - design
+        if design > 0 and base_surplus / design > 0.4:
             warnings.append(f"sobrante_alto:{purchase['variant_id']}")
     if reserve["uncovered_waste_reserve"]:
         warnings.append(f"reserva_merma_no_cubierta:{reserve['uncovered_waste_reserve']}")
