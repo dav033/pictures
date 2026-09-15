@@ -1,0 +1,1402 @@
+{
+  "allowlist": [
+    {
+      "product_id": "P-25-VIOLETA",
+      "variant_ids": [
+        "V-25-VIOLETA-12"
+      ]
+    },
+    {
+      "product_id": "P-25-MERLOT",
+      "variant_ids": [
+        "V-25-MERLOT-12"
+      ]
+    },
+    {
+      "product_id": "P-25-NUDE",
+      "variant_ids": [
+        "V-25-NUDE-12"
+      ]
+    }
+  ],
+  "catalog_rows": [
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "violeta",
+        "morado"
+      ],
+      "colores_variante": [
+        "violeta"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo Latex Redondo Fashion Violeta R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-25-violeta-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 9000,
+      "product_id": "P-25-VIOLETA",
+      "producto_disponible": true,
+      "producto_titulo": "Globo Latex Redondo Fashion Violeta",
+      "sku": "SKU-V-25-VIOLETA-12",
+      "sku_original": "SHOP-V-25-VIOLETA-12",
+      "source_snapshot_id": "SNAP-GOLDEN-25",
+      "source_variant_id": "SOURCE-V-25-VIOLETA-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-25-VIOLETA-12",
+      "variante_titulo": "R-12"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "rojo",
+        "burdeos"
+      ],
+      "colores_variante": [],
+      "currency": "COP",
+      "descripcion": "Globo Latex Redondo Fashion Merlot R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-25-merlot-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 9500,
+      "product_id": "P-25-MERLOT",
+      "producto_disponible": true,
+      "producto_titulo": "Globo Latex Redondo Fashion Merlot",
+      "sku": "SKU-V-25-MERLOT-12",
+      "sku_original": "SHOP-V-25-MERLOT-12",
+      "source_snapshot_id": "SNAP-GOLDEN-25",
+      "source_variant_id": "SOURCE-V-25-MERLOT-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-25-MERLOT-12",
+      "variante_titulo": "R-12"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "nude",
+        "naranja"
+      ],
+      "colores_variante": [
+        "nude"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo Latex Redondo Pastel Mate Nude R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-25-nude-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 8000,
+      "product_id": "P-25-NUDE",
+      "producto_disponible": true,
+      "producto_titulo": "Globo Latex Redondo Pastel Mate Nude",
+      "sku": "SKU-V-25-NUDE-12",
+      "sku_original": "SHOP-V-25-NUDE-12",
+      "source_snapshot_id": "SNAP-GOLDEN-25",
+      "source_variant_id": "SOURCE-V-25-NUDE-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 25,
+      "variant_id": "V-25-NUDE-12",
+      "variante_titulo": "R-12"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-25",
+  "description": "El color real de la variante etiqueta la linea: Fashion Violeta se cotiza violeta aunque el plan pida morado (color de familia de sus tags), la foto que muestra morado no reporta perdida, y Fashion Merlot, sin colores de variante, conserva el burdeos que pidio el plan.",
+  "expected": {
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "violeta",
+          "design_quantity": 71,
+          "finish": null,
+          "product_id": "P-25-VIOLETA",
+          "required_quantity": 71,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-25-VIOLETA-12",
+          "waste_adjusted_quantity": 71,
+          "waste_reserve": 0
+        },
+        {
+          "color": "burdeos",
+          "design_quantity": 47,
+          "finish": null,
+          "product_id": "P-25-MERLOT",
+          "required_quantity": 47,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-25-MERLOT-12",
+          "waste_adjusted_quantity": 47,
+          "waste_reserve": 0
+        },
+        {
+          "color": "nude",
+          "design_quantity": 10,
+          "finish": null,
+          "product_id": "P-25-NUDE",
+          "required_quantity": 10,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_02_KIT",
+          "variant_id": "V-25-NUDE-12",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 2,
+        "density": "media",
+        "dimensions_m": {
+          "height": 2.2,
+          "length": null,
+          "width": 2.5
+        },
+        "installation_length_m": 5.52,
+        "shape": "coordinated structures",
+        "type": "composite_installation",
+        "visual_density": "medium",
+        "visual_scale": "very_large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 8930,
+          "design_quantity": 47,
+          "leftover_inventory": 3,
+          "operational_surplus": 3,
+          "package_count": 1,
+          "potential_surplus": 3,
+          "product_id": "P-25-MERLOT",
+          "purchase_cost": 9500,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "units_per_package": 50,
+          "used": 47,
+          "variant_id": "V-25-MERLOT-12",
+          "waste_adjusted_quantity": 47,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 3200,
+          "design_quantity": 10,
+          "leftover_inventory": 15,
+          "operational_surplus": 15,
+          "package_count": 1,
+          "potential_surplus": 15,
+          "product_id": "P-25-NUDE",
+          "purchase_cost": 8000,
+          "purchase_quantity": 25,
+          "required_quantity": 10,
+          "units_per_package": 25,
+          "used": 10,
+          "variant_id": "V-25-NUDE-12",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 14760,
+          "design_quantity": 71,
+          "leftover_inventory": 18,
+          "operational_surplus": 18,
+          "package_count": 2,
+          "potential_surplus": 29,
+          "product_id": "P-25-VIOLETA",
+          "purchase_cost": 18000,
+          "purchase_quantity": 100,
+          "required_quantity": 82,
+          "units_per_package": 50,
+          "used": 71,
+          "variant_id": "V-25-VIOLETA-12",
+          "waste_adjusted_quantity": 82,
+          "waste_reserve": 11
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 26890,
+        "covered_waste_reserve": 11,
+        "design_quantity": 128,
+        "natural_package_surplus": 47,
+        "operational_surplus": 36,
+        "potential_surplus": 47,
+        "purchase_cost": 35500,
+        "purchase_quantity": 175,
+        "required_quantity": 139,
+        "target_waste_reserve": 11,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 139,
+        "waste_only_savings_cop": 9500
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-25-NUDE-12",
+        "sobrante_alto:V-25-VIOLETA-12"
+      ]
+    },
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-25-NUDE-12",
+        "sobrante_alto:V-25-VIOLETA-12"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "burdeos",
+          "consumption_cost": 8930,
+          "design_quantity": 47,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-25-merlot-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 3,
+          "paquetes": 1,
+          "precio_paquete": 9500,
+          "product_id": "P-25-MERLOT",
+          "purchase_cost": 9500,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "sku": "SKU-V-25-MERLOT-12",
+          "sku_original": "SHOP-V-25-MERLOT-12",
+          "sobrante": 3,
+          "source_snapshot_id": "SNAP-GOLDEN-25",
+          "source_variant_id": "SOURCE-V-25-MERLOT-12",
+          "subtotal": 9500,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo Latex Redondo Fashion Merlot — R-12",
+          "unidades_con_merma": 47,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 47,
+          "unidades_paquete": 50,
+          "used": 47,
+          "variant_id": "V-25-MERLOT-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "nude",
+          "consumption_cost": 3200,
+          "design_quantity": 10,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_02_KIT",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_KIT"
+          ],
+          "imagen": "https://cdn.example.test/v-25-nude-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 15,
+          "paquetes": 1,
+          "precio_paquete": 8000,
+          "product_id": "P-25-NUDE",
+          "purchase_cost": 8000,
+          "purchase_quantity": 25,
+          "required_quantity": 10,
+          "sku": "SKU-V-25-NUDE-12",
+          "sku_original": "SHOP-V-25-NUDE-12",
+          "sobrante": 15,
+          "source_snapshot_id": "SNAP-GOLDEN-25",
+          "source_variant_id": "SOURCE-V-25-NUDE-12",
+          "subtotal": 8000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo Latex Redondo Pastel Mate Nude — R-12",
+          "unidades_con_merma": 10,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 10,
+          "unidades_paquete": 25,
+          "used": 10,
+          "variant_id": "V-25-NUDE-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "violeta",
+          "consumption_cost": 14760,
+          "design_quantity": 71,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-25-violeta-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 18,
+          "paquetes": 2,
+          "precio_paquete": 9000,
+          "product_id": "P-25-VIOLETA",
+          "purchase_cost": 18000,
+          "purchase_quantity": 100,
+          "required_quantity": 82,
+          "sku": "SKU-V-25-VIOLETA-12",
+          "sku_original": "SHOP-V-25-VIOLETA-12",
+          "sobrante": 29,
+          "source_snapshot_id": "SNAP-GOLDEN-25",
+          "source_variant_id": "SOURCE-V-25-VIOLETA-12",
+          "subtotal": 18000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo Latex Redondo Fashion Violeta — R-12",
+          "unidades_con_merma": 82,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 71,
+          "unidades_paquete": 50,
+          "used": 71,
+          "variant_id": "V-25-VIOLETA-12",
+          "waste_reserve": 11
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 5.52,
+          "estructura_id": "EST_01_ARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "violeta",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-25-violeta-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-25-VIOLETA",
+              "sku": "SKU-V-25-VIOLETA-12",
+              "sku_original": "SHOP-V-25-VIOLETA-12",
+              "source_snapshot_id": "SNAP-GOLDEN-25",
+              "source_variant_id": "SOURCE-V-25-VIOLETA-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo Latex Redondo Fashion Violeta — R-12",
+              "unidades": 71,
+              "unidades_inferidas": false,
+              "variant_id": "V-25-VIOLETA-12"
+            },
+            {
+              "acabado": null,
+              "color": "burdeos",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-25-merlot-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-25-MERLOT",
+              "sku": "SKU-V-25-MERLOT-12",
+              "sku_original": "SHOP-V-25-MERLOT-12",
+              "source_snapshot_id": "SNAP-GOLDEN-25",
+              "source_variant_id": "SOURCE-V-25-MERLOT-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo Latex Redondo Fashion Merlot — R-12",
+              "unidades": 47,
+              "unidades_inferidas": false,
+              "variant_id": "V-25-MERLOT-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 118
+            }
+          ],
+          "nombre": "Arco focal",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "arco",
+          "total_unidades": 118,
+          "ubicacion": "arco_central"
+        },
+        {
+          "eje_m": null,
+          "estructura_id": "EST_02_KIT",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "nude",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_02_KIT",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-25-nude-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_KIT",
+                "kind": "estructura"
+              },
+              "product_id": "P-25-NUDE",
+              "sku": "SKU-V-25-NUDE-12",
+              "sku_original": "SHOP-V-25-NUDE-12",
+              "source_snapshot_id": "SNAP-GOLDEN-25",
+              "source_variant_id": "SOURCE-V-25-NUDE-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo Latex Redondo Pastel Mate Nude — R-12",
+              "unidades": 10,
+              "unidades_inferidas": false,
+              "variant_id": "V-25-NUDE-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 10
+            }
+          ],
+          "nombre": "Bouquets de mesa",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "kit",
+          "total_unidades": 10,
+          "ubicacion": "mesas_invitados"
+        }
+      ],
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 128\nTarget waste reserve: 11\nNatural package surplus: 47\nUsable waste coverage: 11\nAdditional packages required for waste: 0\nGlobo Latex Redondo Fashion Merlot — R-12: design=47, required=47, package=50, packages=1, purchased=50, natural surplus=3, waste reserve=0, leftover inventory=3\nGlobo Latex Redondo Pastel Mate Nude — R-12: design=10, required=10, package=25, packages=1, purchased=25, natural surplus=15, waste reserve=0, leftover inventory=15\nGlobo Latex Redondo Fashion Violeta — R-12: design=71, required=82, package=50, packages=2, purchased=100, natural surplus=29, waste reserve=11, leftover inventory=18",
+      "plan": {
+        "concepto": {
+          "descripcion": "Arco en violeta y merlot con un kit de bouquets nude.",
+          "paleta": [
+            "violeta",
+            "burdeos"
+          ],
+          "titulo": "Arco violeta y merlot"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "colores_referencia": [
+              "morado",
+              "burdeos"
+            ],
+            "densidad": "media",
+            "estructura_id": "EST_01_ARCO",
+            "materiales": [
+              {
+                "color": "morado",
+                "participacion": 0.6,
+                "product_id": "P-25-VIOLETA",
+                "rol_material": "principal"
+              },
+              {
+                "color": "burdeos",
+                "participacion": 0.4,
+                "product_id": "P-25-MERLOT",
+                "rol_material": "secundario"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.2,
+              "ancho_m": 2.5
+            },
+            "mezcla": "clasica",
+            "nombre": "Arco focal",
+            "porque": "Enmarca la escena principal.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "arco",
+            "ubicacion": "arco_central"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_02_KIT",
+            "materiales": [
+              {
+                "color": "naranja",
+                "participacion": 1,
+                "product_id": "P-25-NUDE",
+                "rol_material": "principal",
+                "variant_id": "V-25-NUDE-12"
+              }
+            ],
+            "medidas": {},
+            "mezcla": "clasica",
+            "nombre": "Bouquets de mesa",
+            "porque": "Acompanan las mesas de los invitados.",
+            "repeticiones": 1,
+            "rol_escena": "soporte",
+            "tipo": "kit",
+            "ubicacion": "mesas_invitados",
+            "unidades_declaradas": 10
+          }
+        ],
+        "plan_id": "c0102525-0000-4000-8000-000000000025",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "510a822cd059cf73cb9873afcef206fef30c5d7e77744cdbb0d46aa9ce32d941",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 26890,
+        "covered_waste_reserve": 11,
+        "design_quantity": 128,
+        "globos_por_tamano": {
+          "R-12": 128
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8,
+        "natural_package_surplus": 47,
+        "purchase_cost": 35500,
+        "target_waste_reserve": 11,
+        "total_cop": 35500,
+        "total_unidades": 128,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 9500
+      }
+    },
+    "quote": {
+      "complementosSoportados": false,
+      "consumptionCost": 26890,
+      "coveredWasteReserve": 11,
+      "incluyeIva": true,
+      "leftoverInventory": 36,
+      "lineas": [
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 47,
+          "color": "burdeos",
+          "consumptionCost": 8930,
+          "designQuantity": 47,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-25-MERLOT-12",
+          "leftoverInventory": 3,
+          "nombre": "Globo Latex Redondo Fashion Merlot — R-12",
+          "paquetes": 1,
+          "precioPaquete": 9500,
+          "productId": "P-25-MERLOT",
+          "purchaseCost": 9500,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 47,
+          "sobrante": 3,
+          "subtotal": 9500,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 47,
+          "varianteId": "V-25-MERLOT-12",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 10,
+          "color": "nude",
+          "consumptionCost": 3200,
+          "designQuantity": 10,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_02_KIT",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_KIT"
+          ],
+          "id": "V-25-NUDE-12",
+          "leftoverInventory": 15,
+          "nombre": "Globo Latex Redondo Pastel Mate Nude — R-12",
+          "paquetes": 1,
+          "precioPaquete": 8000,
+          "productId": "P-25-NUDE",
+          "purchaseCost": 8000,
+          "purchaseQuantity": 25,
+          "referenciaElementIds": [],
+          "requiredQuantity": 10,
+          "sobrante": 15,
+          "subtotal": 8000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 25,
+          "used": 10,
+          "varianteId": "V-25-NUDE-12",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 71,
+          "color": "violeta",
+          "consumptionCost": 14760,
+          "designQuantity": 71,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-25-VIOLETA-12",
+          "leftoverInventory": 18,
+          "nombre": "Globo Latex Redondo Fashion Violeta — R-12",
+          "paquetes": 2,
+          "precioPaquete": 9000,
+          "productId": "P-25-VIOLETA",
+          "purchaseCost": 18000,
+          "purchaseQuantity": 100,
+          "referenciaElementIds": [],
+          "requiredQuantity": 82,
+          "sobrante": 29,
+          "subtotal": 18000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 71,
+          "varianteId": "V-25-VIOLETA-12",
+          "wasteReserve": 11
+        }
+      ],
+      "mermaPorcentaje": 8,
+      "plan_hash": "510a822cd059cf73cb9873afcef206fef30c5d7e77744cdbb0d46aa9ce32d941",
+      "purchaseCost": 35500,
+      "targetWasteReserve": 11,
+      "total": 35500
+    }
+  },
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-25",
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "violeta",
+          "design_quantity": 71,
+          "finish": null,
+          "product_id": "P-25-VIOLETA",
+          "required_quantity": 71,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-25-VIOLETA-12",
+          "waste_adjusted_quantity": 71,
+          "waste_reserve": 0
+        },
+        {
+          "color": "burdeos",
+          "design_quantity": 47,
+          "finish": null,
+          "product_id": "P-25-MERLOT",
+          "required_quantity": 47,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-25-MERLOT-12",
+          "waste_adjusted_quantity": 47,
+          "waste_reserve": 0
+        },
+        {
+          "color": "nude",
+          "design_quantity": 10,
+          "finish": null,
+          "product_id": "P-25-NUDE",
+          "required_quantity": 10,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_02_KIT",
+          "variant_id": "V-25-NUDE-12",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 2,
+        "density": "media",
+        "dimensions_m": {
+          "height": 2.2,
+          "length": null,
+          "width": 2.5
+        },
+        "installation_length_m": 5.52,
+        "shape": "coordinated structures",
+        "type": "composite_installation",
+        "visual_density": "medium",
+        "visual_scale": "very_large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 8930,
+          "design_quantity": 47,
+          "leftover_inventory": 3,
+          "operational_surplus": 3,
+          "package_count": 1,
+          "potential_surplus": 3,
+          "product_id": "P-25-MERLOT",
+          "purchase_cost": 9500,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "units_per_package": 50,
+          "used": 47,
+          "variant_id": "V-25-MERLOT-12",
+          "waste_adjusted_quantity": 47,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 3200,
+          "design_quantity": 10,
+          "leftover_inventory": 15,
+          "operational_surplus": 15,
+          "package_count": 1,
+          "potential_surplus": 15,
+          "product_id": "P-25-NUDE",
+          "purchase_cost": 8000,
+          "purchase_quantity": 25,
+          "required_quantity": 10,
+          "units_per_package": 25,
+          "used": 10,
+          "variant_id": "V-25-NUDE-12",
+          "waste_adjusted_quantity": 10,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 14760,
+          "design_quantity": 71,
+          "leftover_inventory": 18,
+          "operational_surplus": 18,
+          "package_count": 2,
+          "potential_surplus": 29,
+          "product_id": "P-25-VIOLETA",
+          "purchase_cost": 18000,
+          "purchase_quantity": 100,
+          "required_quantity": 82,
+          "units_per_package": 50,
+          "used": 71,
+          "variant_id": "V-25-VIOLETA-12",
+          "waste_adjusted_quantity": 82,
+          "waste_reserve": 11
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 26890,
+        "covered_waste_reserve": 11,
+        "design_quantity": 128,
+        "natural_package_surplus": 47,
+        "operational_surplus": 36,
+        "potential_surplus": 47,
+        "purchase_cost": 35500,
+        "purchase_quantity": 175,
+        "required_quantity": 139,
+        "target_waste_reserve": 11,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 139,
+        "waste_only_savings_cop": 9500
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-25-NUDE-12",
+        "sobrante_alto:V-25-VIOLETA-12"
+      ]
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-25-NUDE-12",
+        "sobrante_alto:V-25-VIOLETA-12"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "burdeos",
+          "consumption_cost": 8930,
+          "design_quantity": 47,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-25-merlot-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 3,
+          "paquetes": 1,
+          "precio_paquete": 9500,
+          "product_id": "P-25-MERLOT",
+          "purchase_cost": 9500,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "sku": "SKU-V-25-MERLOT-12",
+          "sku_original": "SHOP-V-25-MERLOT-12",
+          "sobrante": 3,
+          "source_snapshot_id": "SNAP-GOLDEN-25",
+          "source_variant_id": "SOURCE-V-25-MERLOT-12",
+          "subtotal": 9500,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo Latex Redondo Fashion Merlot — R-12",
+          "unidades_con_merma": 47,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 47,
+          "unidades_paquete": 50,
+          "used": 47,
+          "variant_id": "V-25-MERLOT-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "nude",
+          "consumption_cost": 3200,
+          "design_quantity": 10,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_02_KIT",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_KIT"
+          ],
+          "imagen": "https://cdn.example.test/v-25-nude-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 15,
+          "paquetes": 1,
+          "precio_paquete": 8000,
+          "product_id": "P-25-NUDE",
+          "purchase_cost": 8000,
+          "purchase_quantity": 25,
+          "required_quantity": 10,
+          "sku": "SKU-V-25-NUDE-12",
+          "sku_original": "SHOP-V-25-NUDE-12",
+          "sobrante": 15,
+          "source_snapshot_id": "SNAP-GOLDEN-25",
+          "source_variant_id": "SOURCE-V-25-NUDE-12",
+          "subtotal": 8000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo Latex Redondo Pastel Mate Nude — R-12",
+          "unidades_con_merma": 10,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 10,
+          "unidades_paquete": 25,
+          "used": 10,
+          "variant_id": "V-25-NUDE-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "violeta",
+          "consumption_cost": 14760,
+          "design_quantity": 71,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-25-violeta-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 18,
+          "paquetes": 2,
+          "precio_paquete": 9000,
+          "product_id": "P-25-VIOLETA",
+          "purchase_cost": 18000,
+          "purchase_quantity": 100,
+          "required_quantity": 82,
+          "sku": "SKU-V-25-VIOLETA-12",
+          "sku_original": "SHOP-V-25-VIOLETA-12",
+          "sobrante": 29,
+          "source_snapshot_id": "SNAP-GOLDEN-25",
+          "source_variant_id": "SOURCE-V-25-VIOLETA-12",
+          "subtotal": 18000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo Latex Redondo Fashion Violeta — R-12",
+          "unidades_con_merma": 82,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 71,
+          "unidades_paquete": 50,
+          "used": 71,
+          "variant_id": "V-25-VIOLETA-12",
+          "waste_reserve": 11
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 5.52,
+          "estructura_id": "EST_01_ARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "violeta",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-25-violeta-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-25-VIOLETA",
+              "sku": "SKU-V-25-VIOLETA-12",
+              "sku_original": "SHOP-V-25-VIOLETA-12",
+              "source_snapshot_id": "SNAP-GOLDEN-25",
+              "source_variant_id": "SOURCE-V-25-VIOLETA-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo Latex Redondo Fashion Violeta — R-12",
+              "unidades": 71,
+              "unidades_inferidas": false,
+              "variant_id": "V-25-VIOLETA-12"
+            },
+            {
+              "acabado": null,
+              "color": "burdeos",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-25-merlot-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-25-MERLOT",
+              "sku": "SKU-V-25-MERLOT-12",
+              "sku_original": "SHOP-V-25-MERLOT-12",
+              "source_snapshot_id": "SNAP-GOLDEN-25",
+              "source_variant_id": "SOURCE-V-25-MERLOT-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo Latex Redondo Fashion Merlot — R-12",
+              "unidades": 47,
+              "unidades_inferidas": false,
+              "variant_id": "V-25-MERLOT-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 118
+            }
+          ],
+          "nombre": "Arco focal",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "arco",
+          "total_unidades": 118,
+          "ubicacion": "arco_central"
+        },
+        {
+          "eje_m": null,
+          "estructura_id": "EST_02_KIT",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "nude",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_02_KIT",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-25-nude-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_KIT",
+                "kind": "estructura"
+              },
+              "product_id": "P-25-NUDE",
+              "sku": "SKU-V-25-NUDE-12",
+              "sku_original": "SHOP-V-25-NUDE-12",
+              "source_snapshot_id": "SNAP-GOLDEN-25",
+              "source_variant_id": "SOURCE-V-25-NUDE-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo Latex Redondo Pastel Mate Nude — R-12",
+              "unidades": 10,
+              "unidades_inferidas": false,
+              "variant_id": "V-25-NUDE-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 10
+            }
+          ],
+          "nombre": "Bouquets de mesa",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "kit",
+          "total_unidades": 10,
+          "ubicacion": "mesas_invitados"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-25.",
+      "plan": {
+        "concepto": {
+          "descripcion": "Arco en violeta y merlot con un kit de bouquets nude.",
+          "paleta": [
+            "violeta",
+            "burdeos"
+          ],
+          "titulo": "Arco violeta y merlot"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "colores_referencia": [
+              "morado",
+              "burdeos"
+            ],
+            "densidad": "media",
+            "estructura_id": "EST_01_ARCO",
+            "materiales": [
+              {
+                "color": "morado",
+                "participacion": 0.6,
+                "product_id": "P-25-VIOLETA",
+                "rol_material": "principal"
+              },
+              {
+                "color": "burdeos",
+                "participacion": 0.4,
+                "product_id": "P-25-MERLOT",
+                "rol_material": "secundario"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.2,
+              "ancho_m": 2.5
+            },
+            "mezcla": "clasica",
+            "nombre": "Arco focal",
+            "porque": "Enmarca la escena principal.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "arco",
+            "ubicacion": "arco_central"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_02_KIT",
+            "materiales": [
+              {
+                "color": "naranja",
+                "participacion": 1,
+                "product_id": "P-25-NUDE",
+                "rol_material": "principal",
+                "variant_id": "V-25-NUDE-12"
+              }
+            ],
+            "medidas": {},
+            "mezcla": "clasica",
+            "nombre": "Bouquets de mesa",
+            "porque": "Acompanan las mesas de los invitados.",
+            "repeticiones": 1,
+            "rol_escena": "soporte",
+            "tipo": "kit",
+            "ubicacion": "mesas_invitados",
+            "unidades_declaradas": 10
+          }
+        ],
+        "plan_id": "c0102525-0000-4000-8000-000000000025",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "b74857e01d43ae447321cc40f7a27c44dd2ff7db9da53416768d2a6cfb39ae39",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 26890,
+        "covered_waste_reserve": 11,
+        "design_quantity": 128,
+        "globos_por_tamano": {
+          "R-12": 128
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 47,
+        "purchase_cost": 35500,
+        "target_waste_reserve": 11,
+        "total_cop": 35500,
+        "total_unidades": 128,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 9500
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 26890,
+      "covered_waste_reserve": 11,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 36,
+      "lines": [
+        {
+          "available": true,
+          "color": "burdeos",
+          "consumption_cost_cop": 8930,
+          "design_quantity": 47,
+          "diameter_inches": 12.0,
+          "id": "V-25-MERLOT-12",
+          "leftover_inventory": 3,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 9500,
+          "packages": 1,
+          "product_id": "P-25-MERLOT",
+          "purchase_cost_cop": 9500,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 9500,
+          "surplus": 3,
+          "title": "Globo Latex Redondo Fashion Merlot — R-12",
+          "units_per_package": 50,
+          "used": 47,
+          "variant_id": "V-25-MERLOT-12",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "nude",
+          "consumption_cost_cop": 3200,
+          "design_quantity": 10,
+          "diameter_inches": 12.0,
+          "id": "V-25-NUDE-12",
+          "leftover_inventory": 15,
+          "origins": [
+            {
+              "id": "EST_02_KIT",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 8000,
+          "packages": 1,
+          "product_id": "P-25-NUDE",
+          "purchase_cost_cop": 8000,
+          "purchase_quantity": 25,
+          "required_quantity": 10,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_02_KIT"
+          ],
+          "subtotal_cop": 8000,
+          "surplus": 15,
+          "title": "Globo Latex Redondo Pastel Mate Nude — R-12",
+          "units_per_package": 25,
+          "used": 10,
+          "variant_id": "V-25-NUDE-12",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "violeta",
+          "consumption_cost_cop": 14760,
+          "design_quantity": 71,
+          "diameter_inches": 12.0,
+          "id": "V-25-VIOLETA-12",
+          "leftover_inventory": 18,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 9000,
+          "packages": 2,
+          "product_id": "P-25-VIOLETA",
+          "purchase_cost_cop": 18000,
+          "purchase_quantity": 100,
+          "required_quantity": 82,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 18000,
+          "surplus": 29,
+          "title": "Globo Latex Redondo Fashion Violeta — R-12",
+          "units_per_package": 50,
+          "used": 71,
+          "variant_id": "V-25-VIOLETA-12",
+          "waste_reserve": 11
+        }
+      ],
+      "plan_hash": "b74857e01d43ae447321cc40f7a27c44dd2ff7db9da53416768d2a6cfb39ae39",
+      "purchase_cost_cop": 35500,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 11,
+      "total_cop": 35500,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "color-variante-primero",
+  "plan": {
+    "concepto": {
+      "descripcion": "Arco en violeta y merlot con un kit de bouquets nude.",
+      "paleta": [
+        "violeta",
+        "burdeos"
+      ],
+      "titulo": "Arco violeta y merlot"
+    },
+    "espacio": {
+      "fuente": "cliente",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "colores_referencia": [
+          "morado",
+          "burdeos"
+        ],
+        "densidad": "media",
+        "estructura_id": "EST_01_ARCO",
+        "materiales": [
+          {
+            "color": "morado",
+            "participacion": 0.6,
+            "product_id": "P-25-VIOLETA",
+            "rol_material": "principal"
+          },
+          {
+            "color": "burdeos",
+            "participacion": 0.4,
+            "product_id": "P-25-MERLOT",
+            "rol_material": "secundario"
+          }
+        ],
+        "medidas": {
+          "alto_m": 2.2,
+          "ancho_m": 2.5
+        },
+        "mezcla": "clasica",
+        "nombre": "Arco focal",
+        "porque": "Enmarca la escena principal.",
+        "repeticiones": 1,
+        "rol_escena": "focal",
+        "tipo": "arco",
+        "ubicacion": "arco_central"
+      },
+      {
+        "densidad": "media",
+        "estructura_id": "EST_02_KIT",
+        "materiales": [
+          {
+            "color": "naranja",
+            "participacion": 1,
+            "product_id": "P-25-NUDE",
+            "rol_material": "principal",
+            "variant_id": "V-25-NUDE-12"
+          }
+        ],
+        "medidas": {},
+        "mezcla": "clasica",
+        "nombre": "Bouquets de mesa",
+        "porque": "Acompanan las mesas de los invitados.",
+        "repeticiones": 1,
+        "rol_escena": "soporte",
+        "tipo": "kit",
+        "ubicacion": "mesas_invitados",
+        "unidades_declaradas": 10
+      }
+    ],
+    "plan_id": "c0102525-0000-4000-8000-000000000025",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "supuestos": []
+  }
+}

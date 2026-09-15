@@ -15,8 +15,10 @@ import type { PlanDecoracion } from "./tipos";
  *
  * Rules, applied to the plan the model confirmed (only with this turn's search
  * data, never inventing availability):
- * 1. A material whose product has exactly one real color takes that color
- *    ("Fashion Gris" is grey even when the model wrote "plateado"). A finish
+ * 1. A material whose product's round variants share exactly one real color
+ *    takes that color ("Fashion Gris" is grey even when the model wrote
+ *    "plateado"; "Fashion Violeta" is violeta, not the family color morado of
+ *    its tags). A finish
  *    the product does not have is dropped: the product fixes its finish, and
  *    "satin" on Fashion Rosado left every size uncovered (rid 0acd0eb6).
  * 2. A geometric structure without mandatory customer sizes keeps its mix when
@@ -35,8 +37,10 @@ import type { PlanDecoracion } from "./tipos";
 
 export type DisponibilidadProducto = {
   titulo: string;
-  /** Real colors of the product (`coloresRealesProducto`). */
+  /** Real colors of the product (`coloresRealesProducto`), family colors from its tags included. */
   colores: readonly string[];
+  /** Real colors of its available round variants (`coloresRealesVariante`); the product's when it has none. */
+  coloresVariante: readonly string[];
   /** Mixes the product's available round sizes can build (`mezclasCompatiblesConDiametros`). */
   mezclas: readonly Mezcla[];
   /** Catalog finishes of the product ("fashion", "reflex"…). */
@@ -105,9 +109,13 @@ export function ajustarCoberturaPlan(
         material = sinAcabado;
       }
       if (!material.color) return material;
-      const colores = producto.colores.map(plegar).filter((color) => !SIN_COLOR_UNICO.has(color));
+      // The variant colors, not the product's: a product's `derived.colors`
+      // include the Shopify color FAMILIES of its tags ("Fashion Violeta" is
+      // tagged MORADOS), and taking them as real colors stopped this rule from
+      // firing, so a violet balloon was quoted as "morado".
+      const colores = producto.coloresVariante.map(plegar).filter((color) => !SIN_COLOR_UNICO.has(color));
       const actual = plegar(material.color);
-      if (colores.length !== 1 || colores.includes(actual) || producto.colores.map(plegar).includes(actual)) return material;
+      if (colores.length !== 1 || colores.includes(actual)) return material;
       ajustes.push({ tipo: "color_material", estructura_id: estructuraOriginal.estructura_id, product_id: material.product_id, antes: material.color, despues: colores[0]! });
       return { ...material, color: colores[0]! };
     });

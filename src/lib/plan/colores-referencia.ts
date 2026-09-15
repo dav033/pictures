@@ -165,6 +165,13 @@ export function sustitucionesColorReferencia(
   estructuraId: string,
   coloresReferencia: readonly string[],
   coloresLineas: ReadonlyArray<string | null | undefined>,
+  /**
+   * Colors a line covers although its label says another one: the color the
+   * plan asked for when the resolver relabelled the line with the variant's
+   * real color (`colorDeLinea`). They only make the comparison tolerant; the
+   * customer is always told the colors the lines actually say.
+   */
+  coloresEquivalentes: ReadonlyArray<string | null | undefined> = [],
 ): SustitucionColor[] {
   const entregados: string[] = [];
   for (const color of coloresLineas) {
@@ -172,13 +179,18 @@ export function sustitucionesColorReferencia(
     if (normalizado && !entregados.includes(normalizado)) entregados.push(normalizado);
   }
   if (entregados.length === 0) return [];
+  const cubiertos = new Set(entregados);
+  for (const color of coloresEquivalentes) {
+    const normalizado = color ? normalizarColor(color) : "";
+    if (normalizado) cubiertos.add(normalizado);
+  }
   const pedidos: string[] = [];
   for (const color of coloresReferencia) {
     const normalizado = normalizarColor(color);
     if (normalizado && !pedidos.includes(normalizado)) pedidos.push(normalizado);
   }
   return pedidos
-    .filter((pedido) => !entregados.includes(pedido))
+    .filter((pedido) => !cubiertos.has(pedido))
     .map((pedido) => ({
       estructura_id: estructuraId,
       pedido,

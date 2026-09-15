@@ -309,7 +309,19 @@ function cantidadEstructura(tipo: TipoEstructura, cantidad: number): string {
  * están redactados para el cliente (sin códigos ni ids): el modelo los usa
  * para corregir el plan y `mensaje_cliente` los reutiliza tal cual.
  */
-export function validarRestriccionesPlan(plan: PlanDecoracion, restricciones: RestriccionesUsuario): string[] {
+export function validarRestriccionesPlan(
+  plan: PlanDecoracion,
+  restricciones: RestriccionesUsuario,
+  /**
+   * Colors the server itself replaced on a material (coverage rule 1,
+   * `cobertura-materiales.ts`): the customer asked for "morado", the product
+   * the search returned is a Fashion Violeta and its material now says violeta.
+   * The balloon bought is the one the customer's color matched, so the
+   * restriction is covered; without this the plan would be refused for a color
+   * no product of the turn can carry, and the model could not fix it.
+   */
+  coloresReemplazados: ReadonlyArray<{ antes: string; despues: string }> = [],
+): string[] {
   const errores: string[] = [];
   for (const requerida of restricciones.estructuras) {
     const total = plan.estructuras.filter((estructura) => estructura.tipo === requerida.tipo)
@@ -318,6 +330,9 @@ export function validarRestriccionesPlan(plan: PlanDecoracion, restricciones: Re
   }
   if (restricciones.colores.filter((color) => color.polaridad === "obligatorio").length) {
     const coloresPlan = new Set(plan.estructuras.flatMap((estructura) => estructura.materiales.map((material) => normalizar(material.color ?? ""))).filter(Boolean));
+    for (const cambio of coloresReemplazados) {
+      if (coloresPlan.has(normalizar(cambio.despues))) coloresPlan.add(normalizar(cambio.antes));
+    }
     for (const color of restricciones.colores.filter((item) => item.polaridad === "obligatorio")) {
       const requerido = normalizar(color.valor).replace("plata", "plateado");
       const cubierto = [...coloresPlan].some((disponible) => disponible === requerido || disponible.includes(requerido) || requerido.includes(disponible));

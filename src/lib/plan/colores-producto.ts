@@ -32,3 +32,31 @@ export function coloresRealesProducto(titulo: string | null | undefined, colores
   if (!TITULO_GRIS.test(tituloPlegado) || TITULO_PLATA.test(tituloPlegado)) return plegados;
   return [...new Set([COLOR_GRIS, ...plegados.filter((color) => color !== "plateado")])];
 }
+
+/**
+ * Real colors of ONE variant, for the two decisions that need a single color:
+ * which color a one-color product forces (coverage rule 1) and how a resolved
+ * line is labelled.
+ *
+ * The ingest keeps sibling-variant and tag colors out of `derived_colors`, but a
+ * product's `derived.colors` come from its tags too, which are Shopify color
+ * FAMILIES: "Fashion Violeta" is tagged MORADOS, "Pastel Mate Nude" NARANJAS.
+ * Merging both made a one-color balloon look multi-color, so the plan could
+ * quote a violet balloon as "morado".
+ *
+ * Rule: the variant's colors when it has any; otherwise the merged set, never
+ * an empty list (25 round latex products have no variant colors and two or more
+ * product colors — Fashion Merlot [rojo, burdeos] — and an empty list is
+ * uncoverable for the resolvers). Then the same grey correction.
+ *
+ * Mirror: `_variant_real_colors` in services/ai-api/app/plan.py (parity vector
+ * 25-color-variante-primero).
+ */
+export function coloresRealesVariante(
+  titulo: string | null | undefined,
+  coloresVariante: readonly string[],
+  coloresProducto: readonly string[],
+): string[] {
+  const propios = coloresVariante.map(plegar).filter(Boolean);
+  return coloresRealesProducto(titulo, propios.length ? propios : [...coloresVariante, ...coloresProducto]);
+}

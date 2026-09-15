@@ -130,6 +130,50 @@ async function main(): Promise<void> {
   assert.equal(estadoAzul.planResuelto.plan.estructuras[0]!.materiales[0]!.color, "azul");
   ok("colores del cliente al vocabulario del catálogo: 'azul rey' resuelve contra variantes 'azul'");
 
+  // 5. W2.4 (D8): el color real de la variante manda sobre el color de familia
+  //    que aportan los tags del producto. "Fashion Violeta" está etiquetado
+  //    MORADOS, así que la regla 1 no disparaba y el plan cotizaba globos
+  //    violeta como "morado", con ese color en la cotización y en el prompt.
+  const { coloresRealesVariante } = await import("../src/lib/plan/colores-producto");
+  const { disponibilidadDelTurno } = await import("../src/lib/ia/convergencia-plan");
+  assert.deepEqual(coloresRealesVariante("Globo Latex Redondo Fashion Violeta", ["violeta"], ["violeta", "morado"]), ["violeta"]);
+  assert.deepEqual(coloresRealesVariante("Globo Latex Redondo Fashion Merlot", [], ["rojo", "burdeos"]), ["rojo", "burdeos"], "sin colores de variante se conserva el conjunto del producto, nunca vacío");
+  assert.deepEqual(coloresRealesVariante("Globo Latex Redondo Fashion Gris", [], ["plateado"]), ["gris"], "la corrección de gris sigue aplicando");
+
+  const violeta: ProductoCandidato = {
+    productId: "P-VIOLETA",
+    titulo: "Globo Latex Redondo Fashion Violeta",
+    categoria: "globo_latex",
+    colores: ["violeta", "morado"],
+    acabados: [],
+    ocasiones: [],
+    disponible: true,
+    imagen: null,
+    variantes: [{ variantId: "P-VIOLETA-R12", sku: null, titulo: "R-12", precio: 10000, disponible: true, codigoTamano: "R-12", diamPulg: 12, forma: "redondo", colores: ["violeta"] }],
+  };
+  const disponibilidadVioleta = disponibilidadDelTurno([violeta]).get("P-VIOLETA")!;
+  assert.deepEqual(disponibilidadVioleta.coloresVariante, ["violeta"], "la regla 1 lee los colores de las variantes redondas");
+  assert.deepEqual(disponibilidadVioleta.colores, ["violeta", "morado"], "el producto conserva el color de familia: decide qué variantes acepta un color pedido");
+
+  const filaVioleta = { ...filas[0]!, product_id: "P-VIOLETA", variant_id: "P-VIOLETA-R12", producto_titulo: "Globo Latex Redondo Fashion Violeta", colores_producto: ["violeta", "morado"], colores_variante: ["violeta"] };
+  const poolVioleta = { query: async (sql: string) => (sql.includes("catalog_variants") ? { rows: [filaVioleta] } : { rows: [] }) } as unknown as Pool;
+  const estadoVioleta = crearEstadoConversacion({}, "Quiero un arco morado");
+  estadoVioleta.ragCandidatos = [violeta];
+  estadoVioleta.ragIdsRecuperados.add("P-VIOLETA");
+  estadoVioleta.ragVariantIdsRecuperados.set("P-VIOLETA", new Set(["P-VIOLETA-R12"]));
+  const argsVioleta = { ...plan("clasica"), estructuras: plan("clasica").estructuras.map((estructura) => ({ ...estructura, materiales: [{ product_id: "P-VIOLETA", color: "morado", participacion: 1, rol_material: "principal" }] })) };
+  const resultadoVioleta = await crearRegistroHerramientas(estadoVioleta, { pool: poolVioleta }).confirmar_plan_decoracion!(argsVioleta, llamada) as Record<string, unknown>;
+  assert.equal(resultadoVioleta.ok, true, JSON.stringify(resultadoVioleta).slice(0, 400));
+  assert.ok(estadoVioleta.planResuelto, JSON.stringify(resultadoVioleta).slice(0, 300));
+  assert.equal(estadoVioleta.planResuelto.plan.estructuras[0]!.materiales[0]!.color, "violeta", "la regla 1 corrige el color de familia");
+  const lineasVioleta = estadoVioleta.planResuelto.estructuras[0]!.lineas;
+  assert.ok(lineasVioleta.length > 0 && lineasVioleta.every((linea) => linea.color === "violeta"), JSON.stringify(lineasVioleta.map((linea) => linea.color)));
+  // El cliente pidió "morado" y el servidor mismo cambió ese color: el globo
+  // comprado es el que su color eligió, así que la restricción sigue cubierta.
+  assert.deepEqual(estadoVioleta.restriccionesUsuario.colores.map((color) => color.valor), ["morado"]);
+  assert.notEqual(resultadoVioleta.status, "RESTRICCIONES_INCONSISTENTES");
+  ok("color real de la variante: 'morado' (color de familia de los tags) se cotiza violeta sin rechazar la restricción del cliente");
+
   console.log(`\n${casos} casos OK (A6)`);
 }
 

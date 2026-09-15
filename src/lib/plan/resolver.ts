@@ -4,7 +4,7 @@ import { featureEnabled } from "@/lib/ia/feature-flags";
 import { MERMA } from "@/lib/cotizacion/constantes";
 import { calcularDespieceEstructura, MEZCLAS_DISPONIBLES, pulgadasDeMezcla, type Mezcla } from "@/lib/medidas/geometria";
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "./composicion";
-import { coloresRealesProducto } from "./colores-producto";
+import { coloresRealesProducto, coloresRealesVariante } from "./colores-producto";
 import { planHashResuelto } from "./hash";
 import { completarMedidas, completarMedidas1_1 } from "./medidas-defecto";
 import { distribuirReservaProyecto, optimizarCobertura } from "./optimizar-materiales";
@@ -54,7 +54,10 @@ type Candidato = {
   codigoTamano: string | null;
   forma: string | null;
   diamPulg: number | null;
+  /** Product colors: the variant's own plus the product's family colors (tags). Decides which variants a color request accepts. */
   colores: string[];
+  /** Real colors of this variant (`coloresRealesVariante`). Decides how the line is labelled. */
+  coloresVariante: string[];
   acabados: string[];
   descripcion: string | null;
   imagen: string | null;
@@ -92,6 +95,7 @@ function aCandidato(row: FilaCatalogoPlan): Candidato | null {
     forma: row.forma,
     diamPulg: Number.isFinite(diamPulg) ? diamPulg : null,
      colores: coloresRealesProducto(row.producto_titulo, [...strings(row.colores_variante), ...strings(row.colores_producto)]),
+     coloresVariante: coloresRealesVariante(row.producto_titulo, strings(row.colores_variante), strings(row.colores_producto)),
      acabados: strings(row.acabados_producto).map(normalizar),
     descripcion: row.descripcion,
     imagen: row.imagen,
@@ -159,6 +163,24 @@ function unicosPor<T>(items: T[], clave: (item: T) => string): T[] {
   });
 }
 
+/**
+ * Color a line is labelled with. The requested color wins, except when it only
+ * matched a family color of the product (its tags) and the chosen variant has
+ * exactly one real color: the line then says the color the balloon actually is
+ * ("Fashion Violeta" is violeta even when the plan asked for morado, and the
+ * image prompt, the quote and the purchase all read the line). Which products a
+ * color request accepts does not change: that is still decided by
+ * `candidatosCompatibles` over the product colors.
+ *
+ * Mirror: `_line_color` in services/ai-api/app/plan.py.
+ */
+function colorDeLinea(candidato: Candidato, color: string | undefined): string | null {
+  if (!color) return candidato.coloresVariante[0] ?? null;
+  const pedido = normalizar(color);
+  if (candidato.coloresVariante.length !== 1 || candidato.coloresVariante.includes(pedido)) return color;
+  return candidato.coloresVariante[0]!;
+}
+
 function lineaDesdeCandidato(origen: OrigenLineaPlan, candidato: Candidato, unidades: number, color: string | undefined, pedidoPulgadas?: number): LineaMaterial {
   const sustitucion = pedidoPulgadas != null && candidato.diamPulg != null && candidato.diamPulg !== pedidoPulgadas
     ? {
@@ -179,7 +201,7 @@ function lineaDesdeCandidato(origen: OrigenLineaPlan, candidato: Candidato, unid
     inventory_quantity: candidato.inventoryQuantity,
     unidades_inferidas: candidato.unidadesInferidas,
     titulo: candidato.titulo,
-    color: color ?? candidato.colores[0] ?? null,
+    color: colorDeLinea(candidato, color),
     tamano_codigo: candidato.codigoTamano,
     diam_pulg: candidato.diamPulg,
     diam_cm: candidato.diamPulg == null ? null : Math.round(candidato.diamPulg * 2.54 * 10) / 10,
@@ -428,6 +450,16 @@ export async function resolverPlan(
   for (const estructura of plan.estructuras) {
     const geometrica = GEOMETRICOS.has(estructura.tipo);
     const lineas: LineaMaterial[] = [];
+    // Colors the plan asked for that `colorDeLinea` relabelled with the
+    // variant's real color. The photo comparison still counts them as
+    // delivered: a "morado" photo built with Fashion Violeta is the same
+    // balloon, not a color the piece dropped.
+    const coloresEquivalentes: string[] = [];
+    const agregarLinea = (linea: LineaMaterial, colorPedido: string | undefined): LineaMaterial => {
+      if (colorPedido && linea.color && normalizar(colorPedido) !== normalizar(linea.color)) coloresEquivalentes.push(colorPedido);
+      lineas.push(linea);
+      return linea;
+    };
     let ejeM: number | null = null;
     const faltantesAntes = sinCobertura.length;
     if (plan.plan_version === "1.1" && estructura.tipo === "escultura") {
@@ -446,12 +478,12 @@ export async function resolverPlan(
           sinCobertura.push({ estructura_id: estructura.estructura_id, product_id: material.product_id, tamano: variantId ?? "variant_id inválido" });
           continue;
         }
-        lineas.push(lineaDesdeCandidato(
+        agregarLinea(lineaDesdeCandidato(
           { kind: "estructura", id: estructura.estructura_id },
           recuperado,
           unidadesPorInstancia * repeticiones,
           material.color,
-        ));
+        ), material.color);
       }
     } else if (geometrica) {
       const geometria = calcularDespieceEstructura({
@@ -500,8 +532,8 @@ export async function resolverPlan(
           sinCobertura.push({ estructura_id: estructura.estructura_id, product_id: materialId, tamano: despiece.tamano });
           continue;
         }
-        const linea = lineaDesdeCandidato({ kind: "estructura", id: estructura.estructura_id }, elegido, despiece.cantidad, override?.color ?? despiece.color, despiece.pulgadas);
-        lineas.push(linea);
+        const colorPedido = override?.color ?? despiece.color;
+        const linea = agregarLinea(lineaDesdeCandidato({ kind: "estructura", id: estructura.estructura_id }, elegido, despiece.cantidad, colorPedido, despiece.pulgadas), colorPedido);
         if (linea.sustitucion) sustituciones.push({ estructura_id: estructura.estructura_id, ...linea.sustitucion });
       }
     } else {
@@ -515,11 +547,11 @@ export async function resolverPlan(
           sinCobertura.push({ estructura_id: estructura.estructura_id, product_id: material.product_id, tamano: material.variant_id ?? "variant_id inválido" });
           continue;
         }
-        lineas.push(lineaDesdeCandidato({ kind: "estructura", id: estructura.estructura_id }, elegido, unidades[index]!, material.color));
+        agregarLinea(lineaDesdeCandidato({ kind: "estructura", id: estructura.estructura_id }, elegido, unidades[index]!, material.color), material.color);
       }
     }
     // Photo colors this structure does not buy (colores-referencia.ts).
-    sustituciones.push(...sustitucionesColorReferencia(estructura.estructura_id, estructura.colores_referencia ?? [], lineas.map((linea) => linea.color)));
+    sustituciones.push(...sustitucionesColorReferencia(estructura.estructura_id, estructura.colores_referencia ?? [], lineas.map((linea) => linea.color), coloresEquivalentes));
     const totalUnidades = lineas.reduce((sum, linea) => sum + linea.unidades, 0);
     if (sinCobertura.length > faltantesAntes) advertencias.push(`estructura_sin_cobertura:${estructura.estructura_id}`);
     estructuras.push({
