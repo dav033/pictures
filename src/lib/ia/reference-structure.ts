@@ -65,7 +65,7 @@ export const STRUCTURE_DETECTION_RULES = `For every balloon structure also retur
 For every element return composition_relevance: essential (defines the composition), supporting (clearly visible styling such as string lights, foliage or props next to the decoration), or minor (negligible). Minor elements must use model_decision.action "omit".`;
 
 /** Recognizer prompt variants. "v13" is production; any other value is an evaluation candidate. */
-export const VARIANTES_RECONOCEDOR = ["v13", "v14-candidato", "v15-candidato"] as const;
+export const VARIANTES_RECONOCEDOR = ["v13", "v14-candidato", "v15-candidato", "v16-candidato"] as const;
 export type VarianteReconocedor = (typeof VARIANTES_RECONOCEDOR)[number];
 
 /**
@@ -96,6 +96,18 @@ export const STRUCTURE_RULES_V15_CANDIDATE = `Clarification for compact balloon 
 - bouquet = a larger, balloon-heavy arrangement: many balloons packed together (a full stacked base of several round balloons, several toppers or twisted accents, or a big cloud of helium balloons). It reads as a statement piece on its own.
 - When unsure between the two, prefer centerpiece for a small piece with visible gaps or few balloons, and bouquet for a large dense piece.
 - A tall vertical stack of balloons whose top stays above its base is a column, even with a foil balloon on top; never call it a bouquet or centerpiece.`;
+
+/**
+ * v16 candidate: v15's bouquet / centerpiece rule, with the column guard
+ * narrowed. In v15 "tall vertical stack = column" also caught tall
+ * centerpieces and bouquets (5 + 5 analyses turned into columns).
+ */
+export const STRUCTURE_RULES_V16_CANDIDATE = `Clarification for compact balloon arrangements (it overrides the bouquet and centerpiece definitions above):
+- Decide between centerpiece and bouquet by size and balloon load, not by where the piece stands.
+- centerpiece = a compact arrangement with a low balloon load: few balloons in total (roughly up to a dozen), for example a single bubble or foil balloon on a small base, or a handful of helium balloons tied to a weight. It stays small relative to the table or furniture it sits on.
+- bouquet = a larger, balloon-heavy arrangement: many balloons packed together (a full stacked base of several round balloons, several toppers or twisted accents, or a big cloud of helium balloons). It reads as a statement piece on its own.
+- When unsure between the two, prefer centerpiece for a small piece with visible gaps or few balloons, and bouquet for a large dense piece.
+- column = a slim freestanding pillar of stacked balloons that stands directly on the floor and reaches roughly the height of a standing adult or more; it may carry a foil balloon on top. A piece that sits on a table or furniture, or a short, wide piece built around a base with toppers, is a centerpiece or bouquet, not a column, even if it is taller than it is wide.`;
 
 function oneOf<T extends readonly string[]>(values: T, value: unknown): T[number] | undefined {
   const text = typeof value === "string" ? value.trim().toLowerCase().replace(/[\s-]+/g, "_") : "";
