@@ -214,6 +214,36 @@ async function main(): Promise<void> {
   assert.equal(materialesAjustados.find((material) => material.rol_material === "principal")?.product_id, "P-MAYOR", JSON.stringify(materialesAjustados));
   ok("cobertura regla 3: el principal quitado deja el rol al material de mayor participación reescalada");
 
+  // 7. W3.6: los ajustes de acabado y de color que hace el servidor llegan al
+  //    modelo como avisos_cliente, sin duplicar lo que ya reporta otra vía.
+  const { avisosClienteAjustes } = await import("../src/lib/plan/cobertura-materiales");
+  const nombresEstructura = new Map([["EST_01_ARCO", "Arco rojo"]]);
+  const ajustesAviso = [
+    { tipo: "acabado_material" as const, estructura_id: "EST_01_ARCO", product_id: "P-ROJO", antes: "reflex", color: "dorado" },
+    { tipo: "color_material" as const, estructura_id: "EST_01_ARCO", product_id: "P-ROJO", antes: "plateado", despues: "gris" },
+  ];
+  const avisos = avisosClienteAjustes(ajustesAviso, { nombres: nombresEstructura });
+  assert.deepEqual(avisos, [
+    "Los globos dorado de arco rojo no vienen en acabado reflex en el catálogo: van en su acabado normal.",
+    "En arco rojo los globos plateado van en gris, que es el color real de ese producto.",
+  ]);
+  for (const aviso of avisos) assert.deepEqual(detectarJergaInterna(aviso), [], aviso);
+  assert.deepEqual(avisosClienteAjustes(ajustesAviso, { nombres: nombresEstructura, coloresReportados: [{ estructura_id: "EST_01_ARCO", color: "Plateado" }] }), [avisos[0]], "el color ya reportado por una sustitución de la foto no se repite");
+  assert.deepEqual(avisosClienteAjustes(ajustesAviso, { nombres: nombresEstructura, coloresDelCliente: ["plateado"] }), [avisos[0]], "un color exigido por el cliente lo reporta la validación de restricciones");
+  assert.deepEqual(avisosClienteAjustes([{ tipo: "mezcla", estructura_id: "EST_01_ARCO", antes: "organica_fina", despues: "clasica" }], { nombres: nombresEstructura }), [], "un cambio de mezcla no es un aviso para el cliente");
+
+  const conAcabado = confirmar();
+  const planAcabado = plan("clasica");
+  const respuestaAcabado = await conAcabado.herramienta({
+    ...planAcabado,
+    estructuras: [{ ...planAcabado.estructuras[0]!, materiales: [{ product_id: "P-ROJO", color: "rojo", acabado: "reflex", participacion: 1, rol_material: "principal" }] }],
+  }, llamada) as Record<string, unknown>;
+  assert.equal(respuestaAcabado.ok, true, JSON.stringify(respuestaAcabado).slice(0, 300));
+  const avisosRespuesta = respuestaAcabado.avisos_cliente as string[];
+  assert.ok(avisosRespuesta.some((aviso) => /no vienen en acabado reflex/.test(aviso)), JSON.stringify(avisosRespuesta));
+  for (const aviso of avisosRespuesta) assert.deepEqual(detectarJergaInterna(aviso), [], aviso);
+  ok("ok:true avisa el acabado que el catálogo no tiene en vez de dejar que el resumen lo prometa");
+
   console.log(`\n${casos} casos OK (A6)`);
 }
 

@@ -46,7 +46,7 @@ export type DisponibilidadProducto = {
 
 export type AjusteCobertura =
   | { tipo: "color_material"; estructura_id: string; product_id: string; antes: string; despues: string }
-  | { tipo: "acabado_material"; estructura_id: string; product_id: string; antes: string }
+  | { tipo: "acabado_material"; estructura_id: string; product_id: string; antes: string; color: string | null }
   | { tipo: "mezcla"; estructura_id: string; antes: Mezcla; despues: Mezcla }
   | { tipo: "material_quitado"; estructura_id: string; product_id: string; color: string | null; aviso_cliente: string };
 
@@ -87,6 +87,44 @@ function unirColores(colores: readonly string[]): string {
   return colores.length <= 1 ? (colores[0] ?? "") : `${colores.slice(0, -1).join(", ")} y ${colores.at(-1)}`;
 }
 
+/**
+ * Notices for the customer about the adjustments the server makes before
+ * resolving. Without them the model describes a finish or a color the quote
+ * does not have ("dorados cromados como en tu foto" over a plain metal line).
+ *
+ * A color rewrite is only reported when nobody else reports it: the photo-color
+ * substitutions already cover the reference flow and a color the customer made
+ * mandatory is refused earlier by `validarRestriccionesPlan`, so repeating it
+ * here would duplicate the notice.
+ *
+ * Pure: customer wording only, no ids, codes or internal field names.
+ */
+export function avisosClienteAjustes(
+  ajustes: readonly AjusteCobertura[],
+  contexto: {
+    /** estructura_id → nombre para el cliente. */
+    nombres: ReadonlyMap<string, string>;
+    /** Colores que otra vía ya le reporta al cliente (sustituciones de la foto). */
+    coloresReportados?: ReadonlyArray<{ estructura_id: string; color: string }>;
+    /** Colores que el cliente exigió (los valida `validarRestriccionesPlan`). */
+    coloresDelCliente?: readonly string[];
+  },
+): string[] {
+  const nombreDe = (estructuraId: string) => (contexto.nombres.get(estructuraId) ?? "la decoración").toLowerCase();
+  const reportados = new Set((contexto.coloresReportados ?? []).map((item) => `${item.estructura_id}|${plegar(item.color)}`));
+  const delCliente = new Set((contexto.coloresDelCliente ?? []).map(plegar));
+  return [...new Set(ajustes.flatMap((ajuste) => {
+    if (ajuste.tipo === "acabado_material") {
+      const globos = ajuste.color ? `Los globos ${ajuste.color}` : "Los globos";
+      return [`${globos} de ${nombreDe(ajuste.estructura_id)} no vienen en acabado ${ajuste.antes} en el catálogo: van en su acabado normal.`];
+    }
+    if (ajuste.tipo !== "color_material") return [];
+    const color = plegar(ajuste.antes);
+    if (reportados.has(`${ajuste.estructura_id}|${color}`) || delCliente.has(color)) return [];
+    return [`En ${nombreDe(ajuste.estructura_id)} los globos ${ajuste.antes} van en ${ajuste.despues}, que es el color real de ese producto.`];
+  }))];
+}
+
 export function ajustarCoberturaPlan(
   plan: PlanDecoracion,
   disponibilidad: ReadonlyMap<string, DisponibilidadProducto>,
@@ -100,7 +138,7 @@ export function ajustarCoberturaPlan(
       if (!producto) return materialModelo;
       let material = materialModelo;
       if (material.acabado && !producto.acabados.map(plegar).includes(plegar(material.acabado))) {
-        ajustes.push({ tipo: "acabado_material", estructura_id: estructuraOriginal.estructura_id, product_id: material.product_id, antes: material.acabado });
+        ajustes.push({ tipo: "acabado_material", estructura_id: estructuraOriginal.estructura_id, product_id: material.product_id, antes: material.acabado, color: material.color ?? null });
         const sinAcabado = { ...material };
         delete sinAcabado.acabado;
         material = sinAcabado;

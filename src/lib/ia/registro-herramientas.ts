@@ -54,7 +54,7 @@ import { sceneShadowPipeline } from "@/lib/scene/orchestrator";
 import { blockingPhysicalWarnings, validateMaterialEstimate } from "@/lib/materiales/estimacion";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
-import { ajustarCoberturaPlan, mezclasAdmisiblesEstructura, type AjusteCobertura } from "@/lib/plan/cobertura-materiales";
+import { ajustarCoberturaPlan, avisosClienteAjustes, mezclasAdmisiblesEstructura, type AjusteCobertura } from "@/lib/plan/cobertura-materiales";
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "@/lib/plan/composicion";
 import { ACCION_PLAN_NO_CONVERGE, disponibilidadDelTurno, quitarMaterialesSinCobertura, RECHAZOS_MAXIMOS, RECHAZOS_PARA_CONVERGER, unirCandidatosTurno } from "./convergencia-plan";
 import { normalizarArgsBrief } from "./brief-herramienta";
@@ -963,11 +963,19 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     estado.seleccionFinalIA = [];
     const estadoAuditoria = resuelto.comercial.estado === "APROBACION_REQUERIDA" ? "APROBACION_REQUERIDA" : "VERIFICADO";
     // Photo colors the plan does not include: the model must tell the customer.
-    // Materials the server removed for lack of sizes are notices too.
+    // Materials the server removed for lack of sizes are notices too, and so
+    // are the finishes and colors the server rewrote before resolving: sin eso
+    // el resumen prometía un acabado o un color que la cotización no lleva.
+    const sustitucionesDeColor = resuelto.sustituciones.filter(esSustitucionDeColor);
     const avisosCliente = [...new Set([
       ...estado.ajustesCobertura.flatMap((ajuste) => (ajuste.tipo === "material_quitado" ? [ajuste.aviso_cliente] : [])),
+      ...avisosClienteAjustes(estado.ajustesCobertura, {
+        nombres: new Map(planCanonico.estructuras.map((estructura) => [estructura.estructura_id, estructura.nombre])),
+        coloresReportados: sustitucionesDeColor.map((item) => ({ estructura_id: item.estructura_id, color: item.pedido })),
+        coloresDelCliente: estado.restriccionesUsuario.colores.map((color) => color.valor),
+      }),
       ...avisosConvergencia,
-      ...resuelto.sustituciones.filter(esSustitucionDeColor).map((item) => item.motivo),
+      ...sustitucionesDeColor.map((item) => item.motivo),
     ])];
     auditarResuelto(estadoAuditoria);
     encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, resuelto.estructuras.length ? "plan_confirmado" : "NO_MATCH", Date.now() - planningStart));
@@ -995,7 +1003,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       sustituciones: resuelto.sustituciones,
       avisos_cliente: avisosCliente,
       ...(avisosCliente.length
-        ? { accion_requerida: "avisos_cliente trae colores de la foto o globos que la propuesta no incluye: díselos al cliente en tu resumen, con tus palabras y sin omitir ninguno, como algo que esta propuesta no incluye (no afirmes que el catálogo no los tiene), y ofrece buscar esos colores si quiere acercarse más a la foto." }
+        ? { accion_requerida: "avisos_cliente trae colores de la foto o globos que la propuesta no incluye, y los ajustes de color o acabado que el sistema le hizo al plan que confirmaste: díselos al cliente en tu resumen, con tus palabras y sin omitir ninguno (no afirmes que el catálogo no tiene un color), y ofrece buscar esos colores si quiere acercarse más a la foto." }
         : {}),
       sin_cobertura: resuelto.sin_cobertura,
       advertencias: resuelto.advertencias,
