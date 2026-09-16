@@ -1,7 +1,9 @@
 import { AMBIENTACION_IMAGEN, perfilCreatividad, type AmbientacionImagen, type NivelCreatividad } from "./creatividad";
 import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
+import { describirMezclaDeColor, mezclaDeColorDeEstructura } from "./mezcla-color-escena";
 import { tableSupportedElements, type SceneSpec } from "./scene-spec";
-import { buildLoraImagePromptV2 } from "./lora-caption-compiler";
+import { buildLoraImagePromptV2, compileLoraCaption, GROUPING_ONLY_CONTEXT, type LoraVisualClause } from "./lora-caption-compiler";
+import { findSeparateSidePieces } from "./separate-side-pieces";
 import {
   buildPositiveEnvironmentCues,
   buildVisualFailureConditions,
@@ -42,6 +44,13 @@ export type ImagePromptInput = {
    * approved plan), so a declared circular hoop is not asked to be an arch.
    */
   officialStructures?: ReadonlyMap<string, string>;
+  /**
+   * Corrective instruction of a QA retry (`buildCorrectiveRetryPrompt`). Goes
+   * right before FINAL_OUTPUT_REMINDER, which must stay the last thing the
+   * model reads: concatenating the retry after it left the photograph-only
+   * rule buried in the middle of the prompt.
+   */
+  correctiveInstruction?: string;
 };
 
 /**
@@ -99,6 +108,12 @@ function shapeClause(element: SceneSpec["elements"][number], officialStructures?
   if (semantics.structure_type === "arco" && official?.forma !== "circular") {
     return " Form: a free-standing inverted-U arch, both legs standing on the floor and joined by one continuous curve over the top; never a round hoop, a ring, or a closed square frame.";
   }
+  // Un semiarco dibujado como arco completo (o cerrado contra la pieza del
+  // otro lado) es el fallo que el QA marca como piezas unidas: su forma
+  // abierta tiene que estar en el prompt, igual que la del arco.
+  if (semantics.structure_type === "semiarco") {
+    return " Form: a one-sided half-arch rising from the floor on one side and ending in open air; never closed into a full arch, a hoop, or a frame.";
+  }
   if (semantics.structure_type === "guirnalda" && semantics.placement === "fondo_pared") {
     return " Support: mounted flat against the wall along its whole length with visible anchoring; it never floats away from the wall.";
   }
@@ -132,7 +147,8 @@ function list(items: string[]): string {
   return items.length ? items.map((item) => `- ${item}`).join("\n") : "- None.";
 }
 
-function placementDescription(target: SceneSpec["elements"][number]["target_bbox"], category: string): string {
+/** Ubicación en palabras: el prompt y el reintento correctivo nunca muestran cajas ni ids. */
+export function placementDescription(target: SceneSpec["elements"][number]["target_bbox"], category: string): string {
   if (["curtain", "drape", "backdrop", "panel"].includes(category)) return "rear background surface spanning the central decoration area";
   const centerX = target.x + target.width / 2;
   const centerY = target.y + target.height / 2;
@@ -192,7 +208,9 @@ function materialEstimateContract(sceneSpec: SceneSpec): string {
     const color = line.color ?? "catalog color";
     colorLines.set(color, (colorLines.get(color) ?? 0) + line.design_quantity);
   }
-  const sizes = [...sizeLines.entries()].map(([size, quantity]) => `${quantity} ${size}`).join(", ");
+  // "78 balloons of 12-inch", no "78 12-inch": el modelo leía el diámetro
+  // pegado a la cantidad como una sola cifra.
+  const sizes = [...sizeLines.entries()].map(([size, quantity]) => `${quantity} balloons of ${size}`).join(", ");
   const colors = [...colorLines.entries()].map(([color, quantity]) => `${quantity} ${color}`).join(", ");
   const specials = estimate.special_elements.reduce((sum, line) => sum + line.design_quantity, 0);
   return [
@@ -260,21 +278,116 @@ function decorationCompositionContract(sceneSpec: SceneSpec, visualContext?: Vis
   return layers;
 }
 
-function cardinalityContract(sceneSpec: SceneSpec): string {
+/**
+ * Sustantivo en inglés de cada estructura oficial para contarla. `sustantivoEn`
+ * es la descripción larga que el caption necesita ("organic balloon garland
+ * arch"); aquí hace falta el sustantivo corto, porque esta es la instrucción
+ * numérica más prominente del prompt.
+ */
+const SUSTANTIVO_CARDINALIDAD: Readonly<Record<string, string>> = {
+  arco: "arch",
+  arco_asimetrico: "arch",
+  arco_no_denso: "arch",
+  semiarco: "half-arch",
+  semiarco_asimetrico: "half-arch",
+  columna: "column",
+  columna_asimetrica: "column",
+  columna_no_densa: "column",
+  pared_densa: "balloon wall",
+  pared_no_densa: "balloon wall",
+  guirnalda: "garland",
+  centro_mesa: "table centerpiece",
+  bouquet: "balloon bouquet",
+  figura: "balloon figure",
+  aro_circular: "circular hoop",
+  techo_globos: "ceiling balloon installation",
+};
+
+/** Por tipo del plan cuando la estructura oficial no se puede identificar (backdrop, kit, accesorio). */
+const SUSTANTIVO_POR_TIPO: Readonly<Record<string, string>> = {
+  arco: "arch",
+  semiarco: "half-arch",
+  columna: "column",
+  guirnalda: "garland",
+  pared: "balloon wall",
+  centro_mesa: "table centerpiece",
+  backdrop: "backdrop",
+  kit: "balloon kit",
+  accesorio: "balloon accent",
+  escultura: "balloon figure",
+};
+
+function pluralizarEstructura(noun: string): string {
+  return noun.endsWith("arch") ? `${noun}es` : `${noun}s`;
+}
+
+/**
+ * Tipo contable de un elemento. Antes se decidía con `name.includes("arco")`,
+ * así que "Semiarco…" y "Marco circular…" se contaban como arcos completos y
+ * cualquier otro tipo salía como el token interno (`balloon_structure`). La
+ * semántica declarada manda; el nombre solo sirve para escenas sin ella.
+ */
+function cardinalityKind(element: SceneSpec["elements"][number], officialStructures?: ReadonlyMap<string, string>): string {
+  const semantics = element.visual_semantics;
+  if (semantics) {
+    const official = identificarEstructuraOficial({
+      tipo: semantics.structure_type,
+      densidad: semantics.density,
+      ubicacion: semantics.placement,
+      nombre: element.name,
+      estructura_oficial: officialStructures?.get(semantics.repetition_group) ?? officialStructures?.get(element.element_id),
+    });
+    const noun = (official && SUSTANTIVO_CARDINALIDAD[official.id]) ?? SUSTANTIVO_POR_TIPO[semantics.structure_type];
+    if (noun) return noun;
+  }
+  const normalized = element.name.toLowerCase();
+  if (/\bsemiarcos?\b/.test(normalized)) return "half-arch";
+  if (/\bmarcos?\b/.test(normalized)) return "frame";
+  if (normalized.includes("arco")) return "arch";
+  if (normalized.includes("columna")) return "column";
+  return element.category;
+}
+
+/**
+ * Piezas laterales separadas: misma regla y mismo dueño que el QA
+ * (separate-side-pieces.ts sobre las cláusulas del compilador, con un contexto
+ * visual neutro porque solo interesa la agrupación). El prompt tenía una
+ * separación genérica, pero no el hueco abierto entre la pieza izquierda y la
+ * derecha que el QA sí exige y por el que dispara un reintento pagado.
+ */
+function separateSidePiecesSentence(sceneSpec: SceneSpec, officialStructures?: ReadonlyMap<string, string>): string {
+  const clauses = compileLoraCaption({ sceneSpec, visualContext: GROUPING_ONLY_CONTEXT, officialStructures }).clauses;
+  const pieces = findSeparateSidePieces(clauses);
+  if (!pieces) return "";
+  const nombres = (grupo: readonly LoraVisualClause[]) => grupo
+    .flatMap((clause) => clause.elementIds)
+    .map((id) => promptElementName(sceneSpec.elements.find((element) => element.element_id === id)?.name ?? id))
+    .join(" and ");
+  return ` SEPARATE SIDE PIECES: ${nombres(pieces.left)} on the left and ${nombres(pieces.right)} on the right are separate installations with an open gap between them; never join them into one continuous arch, frame, or garland across that gap.`;
+}
+
+function cardinalityContract(sceneSpec: SceneSpec, officialStructures?: ReadonlyMap<string, string>): string {
   const counts = new Map<string, number>();
   for (const element of sceneSpec.elements) {
-    const normalized = element.name.toLowerCase();
-    const kind = normalized.includes("arco") ? "arches" : normalized.includes("columna") ? "columns" : element.category;
+    const kind = cardinalityKind(element, officialStructures);
     counts.set(kind, (counts.get(kind) ?? 0) + 1);
   }
-  const summary = [...counts.entries()].map(([kind, count]) => `${count} ${kind}`).join(" and ");
-  return `CARDINALITY CONTRACT: render exactly ${summary || "zero approved physical instances"}, meaning exactly ${sceneSpec.elements.length} distinct installed structure(s). Each listed element is one visible structure, not one balloon or one package. The quantity inside an element is its installed material quantity; never turn it into extra structures. Keep every listed structure separate, positioned separately, and neither merge, duplicate, nor omit any one.`;
+  const partes = [...counts.entries()].map(([kind, count]) => `${count} ${count === 1 ? kind : pluralizarEstructura(kind)}`);
+  const summary = partes.length > 2 ? `${partes.slice(0, -1).join(", ")} and ${partes[partes.length - 1]}` : partes.join(" and ");
+  return `CARDINALITY CONTRACT: render exactly ${summary || "zero approved physical instances"}, meaning exactly ${sceneSpec.elements.length} distinct installed structure(s). Each listed element is one visible structure, not one balloon or one package. The quantity inside an element is its installed material quantity; never turn it into extra structures. Keep every listed structure separate, positioned separately, and neither merge, duplicate, nor omit any one.${separateSidePiecesSentence(sceneSpec, officialStructures)}`;
+}
+
+/**
+ * Elementos para los que el prompt emite una línea de color propia. Único
+ * dueño de esa condición: `verificarCoherenciaPrompt` comprueba justo esas
+ * líneas y no puede tener su propia copia de la regla.
+ */
+export function tieneContratoDeColor(element: SceneSpec["elements"][number]): boolean {
+  return element.category === "balloon_structure" || /\b(?:arco|columna|guirnalda|balloon)\b/i.test(element.name);
 }
 
 function colorVarietyContract(sceneSpec: SceneSpec): string[] {
-  const balloonStructures = sceneSpec.elements.filter((element) =>
-    element.category === "balloon_structure" || /\b(?:arco|columna|guirnalda|balloon)\b/i.test(element.name),
-  );
+  const balloonStructures = sceneSpec.elements.filter(tieneContratoDeColor);
   if (balloonStructures.length === 0) {
     return ["No balloon color mix is approved; do not add balloon structures or colors as atmosphere."];
   }
@@ -283,7 +396,12 @@ function colorVarietyContract(sceneSpec: SceneSpec): string[] {
     if (colors.length < 2) {
       return `${promptElementName(element.name)}: MONOCHROME LOCK — use only ${colors[0] ?? "the supplied catalog color"}; do not introduce color variety.`;
     }
-    return `${promptElementName(element.name)}: APPROVED COLOR VARIETY — use exactly these catalog colors: ${colors.join(", ")}. Distribute them through intentional organic clusters and transitions, preserving any material percentages in the scene spec; avoid flat stripes, random speckles, or one color replacing another. Do not invent, recolor, or borrow any additional color.`;
+    // La proporción sale del estimado de esta estructura. Sin líneas suyas
+    // (camino de catálogo sin plan) se conserva el texto sin porcentajes: el
+    // prompt prometía "preserve any material percentages in the scene spec",
+    // que nunca existieron en ninguna parte del prompt.
+    const mezcla = describirMezclaDeColor(mezclaDeColorDeEstructura(sceneSpec, element));
+    return `${promptElementName(element.name)}: APPROVED COLOR VARIETY — use exactly these catalog colors: ${colors.join(", ")}.${mezcla ? ` Approximate share of this structure's own balloons: ${mezcla}. Keep that balance visible; the dominant color must read as dominant.` : ""} Distribute them through intentional organic clusters and transitions; avoid flat stripes, random speckles, or one color replacing another. Do not invent, recolor, or borrow any additional color.`;
   });
 }
 
@@ -309,7 +427,7 @@ function eventAuthorityContract(context?: VisualContext, styling: readonly Ambie
  */
 export const FINAL_OUTPUT_REMINDER = "OUTPUT REMINDER: everything above is invisible control metadata. Return one clean photograph of the decorated venue with zero visible text: no captions, labels, name tags, size or count notes, dimension lines, or info cards.";
 
-export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount = 0, droppedCompositionReferenceCount = 0, creatividad, officialStructures }: ImagePromptInput): string {
+export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount = 0, droppedCompositionReferenceCount = 0, creatividad, officialStructures, correctiveInstruction }: ImagePromptInput): string {
   // Keep prompt construction useful for lightweight visual eval fixtures that
   // provide only approved elements. Production callers still pass the full
   // server-validated SceneSpec.
@@ -334,7 +452,7 @@ export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, 
   const instanceContract = sceneSpec.elements.length
     ? sceneSpec.elements.map((element, index) => `- EXACTLY ONE physical installed structure ${index + 1}: render the approved ${element.category} described by “${promptElementName(element.name)}”; use only its assigned placement and installed quantity.${physicalScale(element)}${shapeClause(element, officialStructures)} Quantity means material units inside this one structure, not additional structures. This description is invisible metadata; never print or turn it into a sign.`).join("\n")
     : "- No physical decoration instances are approved.";
-  const physicalCardinality = cardinalityContract(sceneSpec);
+  const physicalCardinality = cardinalityContract(sceneSpec, officialStructures);
   const colorVariety = colorVarietyContract(sceneSpec);
   const eventAuthority = eventAuthorityContract(visualContext, styling);
   const referenceCapacityNotice = droppedCatalogReferenceCount > 0
@@ -471,7 +589,7 @@ First verify venue and time of day visibly match SCENE LOCK. Then verify every r
 <AUTOMATIC_SCENE_SPEC>
 ${compactSceneSpec(sceneSpec)}
 </AUTOMATIC_SCENE_SPEC>
-
+${correctiveInstruction?.trim() ? `\nCORRECTIVE RETRY — HIGHEST PRIORITY\n${correctiveInstruction.trim()}\n` : ""}
 ${FINAL_OUTPUT_REMINDER}`;
 }
 

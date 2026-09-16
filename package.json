@@ -143,6 +143,7 @@
     "plan:test-orden": "tsx scripts/test-orden-desglose.ts",
     "plan:test-prompt": "tsx scripts/test-plan-prompt.ts",
     "plan:test-prompt-modo": "tsx --conditions=react-server scripts/test-prompt-modo-plan.ts",
+    "plan:test-color-prompt": "tsx --conditions=react-server scripts/test-plan-color-prompt.ts",
     "plan:test-material-consistency": "tsx --conditions=react-server scripts/test-material-consistency.ts",
     "plan:test-contexto": "tsx --conditions=react-server scripts/test-plan-contexto.ts",
     "plan:test-paridad": "tsx --conditions=react-server scripts/test-paridad-plan-python.ts",

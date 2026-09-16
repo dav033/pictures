@@ -69,6 +69,13 @@ function check(input: { spec: SceneSpec; request?: string }) {
 
 assert.equal(translateLoraColor("azul rey"), "blue");
 assert.equal(translateLoraColor("verde esmeralda"), "green");
+// `gris` es un color real de producto (colores-producto.ts) fuera de la paleta
+// v2: sin alias llegaba en español al caption y el preflight no lo detectaba.
+assert.equal(translateLoraColor("gris"), "gray");
+assert.equal(translateLoraColor("grafito"), "charcoal gray");
+assert.equal(translateLoraColor("plateado"), "silver", "plateado sigue siendo silver, no gris");
+assert.ok(findLoraPromptLanguageLeaks("eventdecor_style_v2, an arch of gris balloons").includes("gris"), "el preflight detecta 'gris' sin traducir");
+assert.deepEqual(findLoraPromptLanguageLeaks("eventdecor_style_v2, an arch of gray balloons"), []);
 
 const canonicalLabel = "round latex balloon in gold with a Reflex high-shine finish";
 const canonicalSpec = scene([element({ id: "CANONICAL", name: "Arco", type: "arco", placement: "arco_central", role: "focal" })]);

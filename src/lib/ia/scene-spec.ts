@@ -238,7 +238,7 @@ export function sceneSpecHash(sceneSpec: SceneSpec): string {
  * caracteres que acepta cada `identity_constraint`; truncar con `.slice()`
  * a ciegas partía el nombre del último material justo donde importaba.
  */
-function joinWithinLimit(parts: string[], limit: number, joiner = "; "): string {
+export function joinWithinLimit(parts: string[], limit: number, joiner = "; "): string {
   let result = "";
   for (let i = 0; i < parts.length; i++) {
     const candidate = result ? `${result}${joiner}${parts[i]}` : parts[i];
@@ -250,6 +250,26 @@ function joinWithinLimit(parts: string[], limit: number, joiner = "; "): string 
     result = candidate;
   }
   return result;
+}
+
+function plegarColor(color: string): string {
+  return color.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
+}
+
+/**
+ * Orden de dominancia que el elemento ya trae: `planBlueprint` ordena
+ * `appearance.resolved_colors` por unidades instaladas, y antes esa lista se
+ * descartaba y los colores del BOM salían en orden de variante (tamaño), con
+ * el color de acento primero. El CONJUNTO no cambia: solo el orden, y un color
+ * que el elemento no declara queda al final en su posición actual.
+ */
+function ordenarComoElElemento(colores: string[], orden: readonly string[]): string[] {
+  if (!orden.length) return colores;
+  const posicionDeclarada = new Map(orden.map((color, posicion) => [plegarColor(color), posicion] as const));
+  return colores
+    .map((color, posicion) => ({ color, posicion, declarada: posicionDeclarada.get(plegarColor(color)) ?? Number.POSITIVE_INFINITY }))
+    .sort((a, b) => a.declarada - b.declarada || a.posicion - b.posicion)
+    .map((item) => item.color);
 }
 
 function placementDescription(target: z.infer<typeof BBoxSchema>, category: string): string {
@@ -339,7 +359,7 @@ export function buildApprovedSceneSpec(input: {
         target_bbox: target,
         depth_layer: element.depth_layer,
         resolved_colors: isMultiMaterial
-          ? [...new Set(materials.flatMap((material) => material.colors ?? []))].slice(0, 8)
+          ? ordenarComoElElemento([...new Set(materials.flatMap((material) => material.colors ?? []))], element.appearance.resolved_colors).slice(0, 8)
           : resolveElementColors({
             override: input.colorOverrides?.[element.element_id],
             catalogColors: product?.colors,

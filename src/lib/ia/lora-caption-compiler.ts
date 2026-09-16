@@ -228,6 +228,11 @@ const COLOR_ALIASES: Record<string, string> = {
   "dorado rosa": "rose gold",
   rosagold: "rose gold",
   plateado: "silver",
+  // `gris` is a real product color (colores-producto.ts) that the taxonomy v2
+  // palette does not carry, so without this alias the Spanish word reached the
+  // English-only LoRA caption untranslated.
+  gris: "gray",
+  grafito: "charcoal gray",
   cafe: "brown",
   marron: "brown",
   morado: "purple",
@@ -369,7 +374,7 @@ export function translateLoraColor(color: string): string {
   // Resolve Spanish aliases such as "azul rey" or "verde esmeralda" to the
   // canonical catalog color before translating. Preserve already-English
   // descriptors such as "light blue" when the taxonomy has no Spanish cue.
-  const spanishColor = /\b(?:dorado|oro|platead[oa]|plata|rojo|azul|rosad[oa]|rosa|verde|lima|esmeralda|blanc[oa]|negr[oa]|morado|lila|violeta|naranja|amarill[oa]|fucsia|transparente|surtido|arcoiris|turquesa|arena|cafe|marron|chocolate|champana|menta|crema|crudo|piel|burdeos|vino|borgona)\b/i.test(key);
+  const spanishColor = /\b(?:dorado|oro|platead[oa]|plata|gris|grafito|rojo|azul|rosad[oa]|rosa|verde|lima|esmeralda|blanc[oa]|negr[oa]|morado|lila|violeta|naranja|amarill[oa]|fucsia|transparente|surtido|arcoiris|turquesa|arena|cafe|marron|chocolate|champana|menta|crema|crudo|piel|burdeos|vino|borgona)\b/i.test(key);
   if (spanishColor) {
     const canonical = clasificarColores(color).values[0];
     return canonical ? PALETA_COLORES_EN_V2[canonical] : "catalog color";
@@ -851,12 +856,19 @@ const SCENE_V004_ONE_SIDED_PLACEMENTS: Partial<Record<LoraPlacement, string>> = 
   entrada: "at one side of the doorway",
 };
 
-/** Diameters of the confirmed sizes ("12-inch") as the dataset words it: large, small, or both. */
+/**
+ * Diameters of the confirmed sizes ("12-inch") as the dataset words it: large,
+ * small, or both. v004 judged size by eye and RELATIVE to the piece itself
+ * (scripts/recaption-v004.ts), so any mix of two diameters is "large and
+ * small"; the absolute thresholds only describe a single-diameter piece.
+ * Before this, a 5" + 12" mix read entirely "small" and 12" + 18" entirely
+ * "large", because 10"-15" matched neither threshold.
+ */
 function sceneSizeWords(sizes: string[]): string {
   const diameters = sizes.map(sizeValue).filter(Number.isFinite);
+  if (new Set(diameters).size >= 2) return "large and small";
   const large = diameters.some((value) => value >= 16);
   const small = diameters.some((value) => value <= 9);
-  if (large && small) return "large and small";
   if (large) return "large";
   if (small) return "small";
   return "";
@@ -1027,7 +1039,12 @@ function renderClauseText(clause: LoraVisualClause, render?: CaptionRenderState)
 
   if (renderedCount > 1 && clause.placement === "lateral_izquierdo" && clause.relation?.startsWith("flanking")) {
     const matching = hasCanonicalProduct ? "" : " matching one another,";
-    return `${colored},${matching} one standing on the left and one on the right, ${clause.relation}`;
+    // Un grupo con más de un par ("cuatro columnas, dos a cada lado") no puede
+    // decir "one on the left and one on the right": el conteo no cuadraría.
+    const reparto = renderedCount > 2 && renderedCount % 2 === 0
+      ? `${numberWord(renderedCount / 2)} standing on each side`
+      : "one standing on the left and one on the right";
+    return `${colored},${matching} ${reparto}, ${clause.relation}`;
   }
   if (clause.relation && clause.structureType === "centro_mesa") return `${colored} ${placementPhrase} ${clause.relation}`;
   if (clause.relation) return `${colored} ${placementPhrase}, ${clause.relation}`;
@@ -1061,10 +1078,15 @@ function groupClauses(sceneSpec: SceneSpec, productConceptsByElementId?: Map<str
   const used = new Set<string>();
   const clauses: LoraVisualClause[] = [];
 
-  // A pair of matching lateral structures is one spatial instruction, even
-  // when the plan materialized them as separate physical elements.
+  // Matching lateral structures are one spatial instruction, even when the plan
+  // materialized them as separate physical elements. Every mirrored pair of the
+  // same structure goes into the SAME clause: two pairs used to render the
+  // identical pair sentence twice ("two columns ... flanking the main arch, two
+  // columns ... flanking the main arch") instead of naming the four pieces once.
+  const bilateralGroups = new Map<string, SemanticElement[]>();
   const leftItems = items.filter((item) => item.semantics.placement === "lateral_izquierdo");
   for (const left of leftItems) {
+    if (used.has(left.element.element_id)) continue;
     const right = items.find((candidate) =>
       candidate.semantics.placement === "lateral_derecho"
       && candidate.semantics.structure_type === left.semantics.structure_type
@@ -1073,11 +1095,15 @@ function groupClauses(sceneSpec: SceneSpec, productConceptsByElementId?: Map<str
       && candidate.semantics.design_role === left.semantics.design_role
       && !used.has(candidate.element.element_id),
     );
-    if (!right || used.has(left.element.element_id)) continue;
-    const pair = createClause([left, right], "lateral_izquierdo", productConceptsByElementId);
-    pair.bilateral = true;
+    if (!right) continue;
     used.add(left.element.element_id);
     used.add(right.element.element_id);
+    const key = structuralKey(left);
+    bilateralGroups.set(key, [...(bilateralGroups.get(key) ?? []), left, right]);
+  }
+  for (const group of bilateralGroups.values()) {
+    const pair = createClause(group, "lateral_izquierdo", productConceptsByElementId);
+    pair.bilateral = true;
     clauses.push(pair);
   }
 
@@ -1199,6 +1225,15 @@ function buildJsonPrompt(parts: CaptionParts, ambientDecor: readonly string[]): 
     composition: "every listed decoration appears once as a separate physical piece, natural depth, grounded supports",
   });
 }
+
+/**
+ * Contexto visual neutro para los consumidores que solo necesitan la
+ * AGRUPACIÓN del compilador (qué elementos forman un par reflejado, qué
+ * estructura oficial es cada uno) y descartan la redacción: el QA visual
+ * (image-qa.ts) y la cláusula de piezas laterales del prompt de imagen. Vive
+ * aquí para que los dos lean exactamente la misma agrupación.
+ */
+export const GROUPING_ONLY_CONTEXT: VisualContext = { venueKind: "unknown", lightingKind: "unspecified", palette: [] };
 
 export function compileLoraCaption(input: {
   sceneSpec: SceneSpec;

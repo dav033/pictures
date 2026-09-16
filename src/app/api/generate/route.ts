@@ -1,25 +1,26 @@
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
-import { buildImagePrompt, type PromptImageInput } from "@/lib/ia/build-image-prompt";
-import { LORA_CAPTION_COMPILER_VERSION, LORA_JSON_PROMPT_MAX_LENGTH } from "@/lib/ia/lora-caption-compiler";
+import { buildImagePrompt, placementDescription, promptElementName, tieneContratoDeColor, type PromptImageInput } from "@/lib/ia/build-image-prompt";
+import { LORA_CAPTION_COMPILER_VERSION, LORA_JSON_PROMPT_MAX_LENGTH, translateLoraColor } from "@/lib/ia/lora-caption-compiler";
 import { includesJsonPrompt, includesTextPrompt, resolveLoraPromptFormat } from "@/lib/ia/lora-prompt-format";
 import { parseLoraSeed, resolveLoraSeed } from "@/lib/ia/lora-seed";
 import { ambientDecorFromReference } from "@/lib/ia/reference-structure";
 import { nivelCreatividadParaGenerar, perfilCreatividad } from "@/lib/ia/creatividad";
 import { compileProductPrompt, LORA_PRODUCT_RUNTIME_VERSION, sizeConfirmationsFromMaterialLines } from "@/lib/ia/lora-product-runtime";
 import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
-import { findLoraPromptLanguageLeaks, preflightLoraPrompt } from "@/lib/ia/lora-prompt-preflight";
-import { bloqueMezclaTamanos, bloqueMezclaPorEstructura, descripcionFisicaTamano } from "@/lib/ia/tamano-fisico";
+import { findLoraPromptLanguageLeaks, findLoraPromptProductLeaks, preflightLoraPrompt } from "@/lib/ia/lora-prompt-preflight";
+import { bloqueMezclaTamanos, bloqueMezclaPorEstructura, descripcionFisicaTamano, porcentajesMayorResto } from "@/lib/ia/tamano-fisico";
+import { descripcionProductoParaImagen, nombreProductoParaImagen } from "@/lib/ia/producto-para-imagen";
 import { cotizarProductos, type Cotizacion } from "@/lib/cotizacion/motor";
 import { featureEnabled, IMAGE_DEBUG, IMAGE_QA_NON_BLOCKING } from "@/lib/ia/feature-flags";
 import { resolveAspectTransform } from "@/lib/ia/aspect-transform";
 import { evaluateSceneQa, buildCorrectiveRetryPrompt, type ImageQaReport } from "@/lib/ia/image-qa";
 import { approvedPlanQaInputs, buildGenerationQa } from "@/lib/ia/generation-qa";
 import { imagenDe, resolverProveedor } from "@/lib/ia/registro";
-import { buildApprovedSceneSpec, SceneSpecSchema, sceneSpecHash } from "@/lib/ia/scene-spec";
+import { buildApprovedSceneSpec, joinWithinLimit, SceneSpecSchema, sceneSpecHash } from "@/lib/ia/scene-spec";
 import { registrarPlanAudit } from "@/lib/rag/observability/log";
-import { DEFAULT_SEMPERTEX_LORA_TRIGGER, ensureLoraTriggers, generarConSempertexLora, loraEditApagado } from "@/lib/ia/sempertex-lora";
+import { buildLoraEditPrompt, DEFAULT_SEMPERTEX_LORA_TRIGGER, ensureLoraTriggers, generarConSempertexLora, loraEditApagado, LORA_EDIT_PROMPT_MAX_LENGTH, referenciasParaLoraEdit } from "@/lib/ia/sempertex-lora";
 import { LoraModeSlugSchema, LoraSelectionSchema } from "@/lib/lora/schema";
 import { resolveLoraMode, resolveLoraModeDatasetAllowlist, resolveLoraSelection, type ResolvedLoraApplication } from "@/lib/lora/mode-resolver";
 
@@ -55,7 +56,7 @@ import { construirUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 import { registrarFalloUi, traducirErrorServidor } from "@/lib/errores-ui/traducir-error-servidor";
 import { PlanDecoracionSchema } from "@/lib/plan/tipos";
 import { cajasDeEstructuras, ubicacionDeInstancia } from "@/lib/plan/ubicaciones";
-import { verificarCoherenciaPrompt } from "@/lib/plan/coherencia";
+import { verificarCoherenciaPrompt, verificarColoresCaptionLora, type EscenaParaCoherencia } from "@/lib/plan/coherencia";
 import { abrirContextoPlan, verificarTokenAprobacion } from "@/lib/plan/aprobacion";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import {
@@ -270,12 +271,13 @@ async function cargarFoto(foto: string): Promise<Imagen | null> {
   }
 }
 
-async function cargarFotosProducto(productos: Producto[]): Promise<Array<ImagenEtiquetada & { productoId: string }>> {
+async function cargarFotosProducto(productos: Producto[], materialEstimate?: DesignMaterialEstimate): Promise<Array<ImagenEtiquetada & { productoId: string }>> {
   const results = await Promise.all(productos.filter((product) => product.foto).map(async (product, index) => {
     const image = await cargarFoto(product.foto!);
     if (!image) return null;
-    const packageNote = product.paquetes && product.unidadesPaquete ? ` Cotización: ${product.paquetes} paquete(s) de ${product.unidadesPaquete} unidades.` : "";
-    return { ...image, id: `CATALOG_${String(index + 1).padStart(2, "0")}`, productoId: product.id, descripcion: `${product.nombre}. ${product.descripcion}.${packageNote}` };
+    // Sin paquetes cotizados ni sufijo de variante: la foto va pegada a esta
+    // descripción, así que la capacidad de compra se leía como cantidad visual.
+    return { ...image, id: `CATALOG_${String(index + 1).padStart(2, "0")}`, productoId: product.id, descripcion: descripcionProductoParaImagen(product, materialEstimate ? designQuantityForProduct(materialEstimate, product.id) : undefined) };
   }));
   return results.filter((item): item is ImagenEtiquetada & { productoId: string } => item !== null);
 }
@@ -513,6 +515,15 @@ function catalogBlueprint(productos: Producto[], materialEstimate?: DesignMateri
   return addCreativeCatalogRelationships(blueprint, productos);
 }
 
+function plegarColor(color: string): string {
+  return color.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
+}
+
+/** Orden por punto de código: un desempate no puede depender del locale del servidor. */
+function comparar(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 export function planBlueprint(plan: PlanResuelto): ReferenceBlueprintV2 {
   const cajas = cajasDeEstructuras(plan.plan.estructuras);
   const focal = plan.plan.estructuras.find((estructura) => estructura.rol_escena === "focal")?.estructura_id;
@@ -536,6 +547,33 @@ export function planBlueprint(plan: PlanResuelto): ReferenceBlueprintV2 {
       });
     }
     const materiales = [...materialPorVariante.values()];
+    // Mezcla de color de la estructura para el prompt de imagen: se agrega por
+    // color plegado Y producto (dos productos distintos del mismo color siguen
+    // separados), nunca por variante. Una variante es un TAMAÑO, así que el
+    // reparto por variante partía un mismo color en trozos y ninguno parecía
+    // dominante; el `bill_of_materials` sigue siendo por variante porque de él
+    // salen las cantidades compradas.
+    const mezclaPorColor = new Map<string, { color: string; productId: string; unidades: number; rol: string }>();
+    for (const linea of resuelta.lineas) {
+      if (!linea.color) continue;
+      const clave = JSON.stringify([plegarColor(linea.color), linea.product_id]);
+      const previo = mezclaPorColor.get(clave);
+      mezclaPorColor.set(clave, {
+        color: previo?.color ?? linea.color,
+        productId: linea.product_id,
+        unidades: (previo?.unidades ?? 0) + linea.unidades,
+        rol: previo?.rol ?? declarada.materiales.find((material) => material.product_id === linea.product_id)?.rol_material ?? "principal",
+      });
+    }
+    // Dominancia primero; los empates se rompen por color plegado y luego por
+    // producto (comparación por punto de código, no por locale) para que el
+    // orden no dependa del idioma del servidor.
+    const mezclaOrdenada = [...mezclaPorColor.values()].sort((a, b) =>
+      b.unidades - a.unidades
+      || comparar(plegarColor(a.color), plegarColor(b.color))
+      || comparar(a.productId, b.productId));
+    const coloresPorDominancia = [...new Set(mezclaOrdenada.map((material) => material.color))].slice(0, 8);
+    const porcentajesColor = porcentajesMayorResto(mezclaOrdenada.map((material) => material.unidades));
     const medidas = [declarada.medidas.ancho_m, declarada.medidas.alto_m, declarada.medidas.largo_m].filter((value): value is number => value != null).map((value) => `${value} m`).join(" × ");
     const nombreBase = medidas ? `${declarada.nombre} (${medidas})` : declarada.nombre;
     const dimensiones = {
@@ -570,12 +608,15 @@ export function planBlueprint(plan: PlanResuelto): ReferenceBlueprintV2 {
       source_type: "catalog_backed" as const,
       quantity: { mode: "exact" as const, min: instanceUnits, max: instanceUnits },
       appearance: {
-        observed_colors: [...new Set(resuelta.lineas.map((linea) => linea.color).filter((color): color is string => Boolean(color)))].slice(0, 8),
-        resolved_colors: [...new Set(resuelta.lineas.map((linea) => linea.color).filter((color): color is string => Boolean(color)))].slice(0, 8),
+        observed_colors: coloresPorDominancia,
+        resolved_colors: coloresPorDominancia,
         color_policy: "match_reference" as const,
         material: "Materiales reales del catálogo resueltos por variante.",
         shape: nombre.slice(0, 160),
-        composition: materiales.map((material) => `${Math.round(material.share * 100)}% ${material.role} (${material.color ?? "color de catálogo"})`).join("; ").slice(0, 240) || "pieza de catálogo",
+        // Fragmentos completos dentro de los 180 caracteres que admite cada
+        // identity_constraint (scene-spec.ts): el corte crudo a 240 partía el
+        // último material justo donde importaba.
+        composition: joinWithinLimit(mezclaOrdenada.map((material, indice) => `${porcentajesColor[indice]}% ${material.rol} (${material.color})`), 180) || "pieza de catálogo",
       },
       visual_semantics: {
         structure_type: declarada.tipo,
@@ -1116,7 +1157,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     const transformedSceneSpec = SceneSpecSchema.parse({ ...sceneSpec, canvas: { ...sceneSpec.canvas, content_rect: aspectTransform.contentRect } });
     const resolvedSceneSpecHash = sceneSpecHash(transformedSceneSpec);
     if (body.sceneSpecHash && body.sceneSpecHash !== resolvedSceneSpecHash) throw new Error("Scene specification hash does not match the validated scene.");
-    const productImages = await cargarFotosProducto(productosConMateriales);
+    const productImages = await cargarFotosProducto(productosConMateriales, materialEstimate);
     // LoRA Edit recibe hasta cuatro referencias visuales. Mantenemos una lista
     // más amplia aquí para resolver prioridades; el adaptador escoge las cuatro
     // mejores (espacio, productos y después composición).
@@ -1133,7 +1174,9 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       approvedPlan: planResuelto?.plan.estructuras.map((estructura) => `${estructura.nombre} (${estructura.tipo}, ${estructura.ubicacion})`),
       approvedMaterials: planResuelto?.compras.map((compra) => {
         const product = productosConMateriales.find((candidate) => candidate.id === compra.variant_id);
-        return product ? `${product.nombre}${product.colores.length ? ` — ${product.colores.join(", ")}` : ""}` : undefined;
+        // Mismo nombre que ve el modelo junto a la foto: sin el sufijo de
+        // variante, que arrastra el empaque ("R-12 / PAQUETE X 50").
+        return product ? `${nombreProductoParaImagen(product)}${product.colores.length ? ` — ${product.colores.join(", ")}` : ""}` : undefined;
       }).filter((material): material is string => Boolean(material)),
       pieceMatchLevels: blueprint.elements
         .filter((element) => element.model_decision?.catalog_product_id && element.model_decision.match_type !== "none")
@@ -1156,21 +1199,42 @@ async function generar(request: Request, generationRequestId: string): Promise<R
        const existente = unidadesPorTamano.get(clave);
        unidadesPorTamano.set(clave, { diamPulg: linea.size_inches, forma: linea.shape, cantidad: (existente?.cantidad ?? 0) + linea.design_quantity });
      }
+    // Ubicación en palabras de cada estructura, con el mismo dueño que el resto
+    // del prompt: distingue dos estructuras que se llamen igual sin devolver el
+    // `estructura_id` al texto.
+    const ubicacionPorEstructura = new Map<string, string>();
+    for (const element of transformedSceneSpec.elements) {
+      const grupo = element.visual_semantics?.repetition_group ?? element.element_id.split("#")[0]!;
+      if (!ubicacionPorEstructura.has(grupo)) ubicacionPorEstructura.set(grupo, placementDescription(element.target_bbox, element.category));
+    }
     const sizeMixBlock = planResuelto
       ? bloqueMezclaPorEstructura(planResuelto.estructuras.map((estructura) => ({
-          estructura_id: estructura.estructura_id,
           nombre: estructura.nombre,
           total_unidades: estructura.total_unidades,
-          mezcla_real: estructura.mezcla_real.map((linea) => ({ diamPulg: linea.diam_pulg, forma: linea.forma, unidades: linea.unidades, pct: linea.pct })),
+          repeticiones: estructura.repeticiones,
+          ubicacion_en_palabras: ubicacionPorEstructura.get(estructura.estructura_id),
+          mezcla_real: estructura.mezcla_real.map((linea) => ({ diamPulg: linea.diam_pulg, forma: linea.forma, unidades: linea.unidades })),
         }))) ?? undefined
       : bloqueMezclaTamanos([...unidadesPorTamano.values()]) ?? undefined;
     // Same plan map for the prompts below and for the QA, so all read the declared official structures alike.
     // With a reference or venue photo its own setting (backdrop, curtains, furniture, lighting) is expected context for the QA.
     const planQaBase = approvedPlanQaInputs(planResuelto);
     const qaPlan = planQaBase && (references.length > 0 || venue) ? { ...planQaBase, photoSetting: true } : planQaBase;
-    const providerPrompt = buildImagePrompt({ sceneSpec: transformedSceneSpec, inputs: selected.promptInputs, revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount: selected.droppedCatalogProductIds.length, droppedCompositionReferenceCount: selected.droppedReferenceCount, creatividad: creatividad.nivel, officialStructures: qaPlan?.officialStructures });
+    // Lo que la escena aprobada dice de cada estructura, para la comprobación
+    // estructural de color de `verificarCoherenciaPrompt`.
+    const escenaParaCoherencia: EscenaParaCoherencia = {
+      elementos: transformedSceneSpec.elements.map((element) => ({
+        element_id: element.element_id,
+        nombre_en_prompt: promptElementName(element.name),
+        estructura_id: element.visual_semantics?.repetition_group ?? element.element_id.split("#")[0]!,
+        resolved_colors: element.resolved_colors,
+        espera_linea_de_color: tieneContratoDeColor(element),
+      })),
+    };
+    const promptBase = { sceneSpec: transformedSceneSpec, inputs: selected.promptInputs, revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount: selected.droppedCatalogProductIds.length, droppedCompositionReferenceCount: selected.droppedReferenceCount, creatividad: creatividad.nivel, officialStructures: qaPlan?.officialStructures };
+    const providerPrompt = buildImagePrompt(promptBase);
     if (planResuelto) {
-      const coherencia = verificarCoherenciaPrompt(providerPrompt, planResuelto);
+      const coherencia = verificarCoherenciaPrompt(providerPrompt, planResuelto, escenaParaCoherencia);
       if (!coherencia.ok) throw new Error(`El prompt no coincide con el plan resuelto: ${coherencia.errores.join("; ")}`);
     }
     // Fail closed before opening a paid provider call. An approved plan must
@@ -1272,11 +1336,35 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     if (jsonPreflight && !jsonPreflight.ok) {
       throw new Error(`LORA_PREFLIGHT_FAILED: prompt JSON — ${jsonPreflight.errors.join("; ")}`);
     }
+    // El caption del LoRA nunca pasa por verificarCoherenciaPrompt (no lleva
+    // diámetros ni nombres del plan), así que sus colores por estructura se
+    // comprueban sobre las cláusulas compiladas, con el mismo traductor.
+    if (usarLora && planResuelto) {
+      const coherenciaLora = verificarColoresCaptionLora(planResuelto, escenaParaCoherencia, { clausulas: loraCompilation.clauses, traducirColor: translateLoraColor });
+      if (!coherenciaLora.ok) throw new Error(`El caption LoRA no coincide con el plan resuelto: ${coherenciaLora.errores.join("; ")}`);
+    }
     if (usarLora && includesTextPrompt(promptFormat) && !loraPreflight.ok) {
       // Sin semánticas canónicas del plan (selección suelta sin propuesta
       // aprobada) ninguna compactación ni reintento produce un prompt válido.
       const codigo = loraPreflight.requiresPlanSemantics ? "LORA_PLAN_REQUIRED" : "LORA_PREFLIGHT_FAILED";
       throw new Error(`${codigo}: ${loraPreflight.errors.join("; ")}`);
+    }
+    // Preflight del prompt FINAL que recibe fal: con foto del espacio o
+    // referencias, el adaptador le añade la guía de imágenes de entrada
+    // DESPUÉS de todas las comprobaciones anteriores, que solo ven el caption.
+    // Fallar cerrado aquí es lo que impide mandar español, ids o datos
+    // comerciales al proveedor.
+    if (usarLora) {
+      const referenciasEdit = referenciasParaLoraEdit(selected.inputs);
+      for (const [etiqueta, prompt] of [["texto", promptPrincipal], ["JSON", effectiveJsonPrompt]] as const) {
+        if (!prompt) continue;
+        const promptFinal = buildLoraEditPrompt(prompt, referenciasEdit);
+        const fugas = [...findLoraPromptLanguageLeaks(promptFinal), ...findLoraPromptProductLeaks(promptFinal, PRODUCT_VOCABULARY)];
+        if (fugas.length) throw new Error(`LORA_EDIT_PREFLIGHT_FAILED: el prompt ${etiqueta} enviado al proveedor filtra ${fugas.join(", ")}`);
+        if (promptFinal.length > LORA_EDIT_PROMPT_MAX_LENGTH) {
+          throw new Error(`LORA_EDIT_PREFLIGHT_FAILED: el prompt ${etiqueta} enviado al proveedor mide ${promptFinal.length} y supera el límite ${LORA_EDIT_PROMPT_MAX_LENGTH}`);
+        }
+      }
     }
     // Solo tiene sentido encadenar contexto real cuando esta petición ES una
     // revisión de una imagen previa; una generación nueva no hereda otra.
@@ -1306,7 +1394,10 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     qa ??= await buildGenerationQa({ sceneSpec: transformedSceneSpec, image: result.imagen, hashes: { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, telemetria: contextoTelemetria, signal: request.signal, force: imageQaRequested, plan: qaPlan, creatividad: creatividad.nivel });
     let retried = false;
     if (!usarLora && imageQaRequested && qa.pass === false) {
-      const retryPrompt = `${providerPrompt}\n\n${buildCorrectiveRetryPrompt(qa)}`;
+      // La corrección va DENTRO del prompt, antes del recordatorio final: al
+      // concatenarla después, la regla de "solo una fotografía" dejaba de ser
+      // lo último que lee el modelo y el reintento reintroducía ids visibles.
+      const retryPrompt = buildImagePrompt({ ...promptBase, correctiveInstruction: buildCorrectiveRetryPrompt(qa, transformedSceneSpec) });
       const retry = await port!.generar({ prompt: retryPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: { ...result.imagen, id: "GENERATED_RESULT", descripcion: "Current generated result for one corrective retry." }, previousInteractionId: result.interactionId, revisionMode: "revise_current_result", signal: request.signal, telemetria: { ...contextoTelemetria, capacidad: "imagen_generacion_correctiva", intento: 2 } });
       retried = true;
       qa = await buildGenerationQa({ sceneSpec: transformedSceneSpec, image: retry.imagen, hashes: { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, telemetria: { ...contextoTelemetria, intento: 2 }, signal: request.signal, force: imageQaRequested, plan: qaPlan, creatividad: creatividad.nivel });

@@ -203,4 +203,26 @@ console.log(`ok - barrido v004: ${compactadas} prompts compactados sin referenci
   console.log(`ok - cláusula mixta: "of … balloons with matching …" (paso ${mixta.paso})`);
 }
 
+// ---------------------------------------------------------------------------
+// Palabras de tamaño: v004 juzgaba el tamaño a ojo y relativo a la pieza, así
+// que dos diámetros distintos son "large and small" aunque ambos caigan entre
+// 10" y 15". Antes una mezcla R-5 + R-12 se describía entera como "small".
+// ---------------------------------------------------------------------------
+{
+  const arco = (colores: string[]) => [elemento("EST_01_ARCO", "Arco orgánico", "arco", "arco_central", "focal", colores)];
+  const mezclaPequena = compilar(arco(["dorado"]), ["dorado"], EVENTOS[0], ["R-5", "R-12"]);
+  assert.match(mezclaPequena.prompt, /large and small/, mezclaPequena.prompt);
+  const mezclaGrande = compilar(arco(["dorado"]), ["dorado"], EVENTOS[0], ["R-12", "R-18"]);
+  assert.match(mezclaGrande.prompt, /large and small/, mezclaGrande.prompt);
+  const unSoloDiametro = compilar(arco(["dorado"]), ["dorado"], EVENTOS[0], ["R-12"]);
+  assert.doesNotMatch(unSoloDiametro.prompt, /\b(?:large|small)\b/, unSoloDiametro.prompt);
+  const soloPequeno = compilar(arco(["dorado"]), ["dorado"], EVENTOS[0], ["R-5"]);
+  assert.match(soloPequeno.prompt, /small [a-z ]*balloons/, soloPequeno.prompt);
+  assert.doesNotMatch(soloPequeno.prompt, /large and small/, soloPequeno.prompt);
+  const soloGrande = compilar(arco(["dorado"]), ["dorado"], EVENTOS[0], ["R-18"]);
+  assert.match(soloGrande.prompt, /large [a-z ]*balloons/, soloGrande.prompt);
+  assert.doesNotMatch(soloGrande.prompt, /large and small/, soloGrande.prompt);
+  console.log("ok - sceneSizeWords: dos diámetros distintos = \"large and small\"; uno solo conserva la regla absoluta");
+}
+
 console.log("LoRA caption v004 compactación: OK");

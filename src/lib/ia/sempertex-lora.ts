@@ -248,26 +248,46 @@ function validarUnaAplicacion(loras: LoraApplication[]): void {
 }
 
 /**
- * Recorta a `maximo` sin partir palabras y sin dejar puntuación colgando.
+ * Qué hacer con cada imagen de entrada, en inglés y en frases fijas.
  *
- * El corte crudo a 180 caracteres producía frases truncadas a mitad de palabra
- * ("never package su") y puntos dobles cuando la descripción ya terminaba en
- * punto ("del cliente.. USE ONLY:").
+ * Antes la guía se armaba con `IMAGE n (role, id): <descripcion>. USE ONLY:
+ * <allowed_use>.` recortado a 180 caracteres: metía los ids internos
+ * (`CATALOG_01`, `VENUE_01`), el nombre comercial del producto con su
+ * "PAQUETE X N" y texto en español en un prompt que el preflight nunca veía
+ * —corre sobre el caption, no sobre lo que se manda a fal—, y el recorte
+ * llegaba a invertir la instrucción ("…never package" sin "surplus").
+ *
+ * Las frases no llevan ids ni descripciones y están dimensionadas para caber
+ * sin recorte.
  */
-function recortarLimpio(texto: string, maximo: number): string {
-  const limpio = texto.trim().replace(/[.,;:\s]+$/, "");
-  if (limpio.length <= maximo) return limpio;
-  const cortado = limpio.slice(0, maximo);
-  const ultimoEspacio = cortado.lastIndexOf(" ");
-  return (ultimoEspacio > maximo * 0.6 ? cortado.slice(0, ultimoEspacio) : cortado).replace(/[.,;:\s]+$/, "");
-}
+const FRASE_POR_ROL: Readonly<Record<ImageInput["role"], string>> = {
+  venue_base: "One input image is a photograph of the real venue: keep its architecture, camera angle, crop and ambient light, and install the decoration inside it.",
+  composition_reference: "One input image is a composition reference: take only its framing, density and spatial layout from it, never its objects, products or colors.",
+  element_reference: "One input image is a composition reference: take only its framing, density and spatial layout from it, never its objects, products or colors.",
+  style_reference: "One input image is a style reference: take only its mood and lighting from it, never its objects, products or colors.",
+  palette_reference: "One input image is a palette reference: take only its ambient palette from it, never its objects or products.",
+  catalog_product_reference: "One input image shows a balloon product: take only its color, finish, material and size from it, never its arrangement, packaging or background.",
+  previous_generated_result: "One input image is the previous result: keep it as the base and change only what the description above asks for.",
+};
 
-function promptConReferencias(prompt: string, references: ImageInput[]): string {
+/**
+ * Longitud máxima del prompt que llega a `/edit`. Es el presupuesto del caption
+ * más largo (`LORA_JSON_PROMPT_MAX_LENGTH`, 1800) más el bloque fijo de
+ * INPUT IMAGES con sus cuatro roles distintos (menos de 700 caracteres).
+ * Superarla significa que algo ajeno se coló en el prompt, no que el diseño sea
+ * grande, así que la ruta falla cerrada antes de llamar al proveedor.
+ */
+export const LORA_EDIT_PROMPT_MAX_LENGTH = 2500;
+
+/**
+ * Prompt final que recibe `/edit`: el caption compilado más una guía de frases
+ * fijas en inglés, una por rol distinto de imagen de entrada. Puro y sin ids,
+ * para poder pasarlo por el preflight antes de llamar al proveedor.
+ */
+export function buildLoraEditPrompt(prompt: string, references: readonly ImageInput[]): string {
   if (!references.length) return prompt;
-  const guide = references.map((image, index) =>
-    `IMAGE ${index + 1} (${image.role}, ${image.id}): ${recortarLimpio(image.descripcion, 180)}. USE ONLY: ${recortarLimpio(image.allowed_use, 180)}.`,
-  );
-  return `${prompt}\n\nINPUT IMAGE GUIDE\n${guide.join("\n")}\nRebuild one cohesive photorealistic event scene. Never output a collage, product board, isolated cutouts, or separate samples.`;
+  const frases = [...new Set(references.map((image) => FRASE_POR_ROL[image.role]))];
+  return `${prompt}\n\nINPUT IMAGES\n${frases.join("\n")}\nRebuild one cohesive photorealistic event scene. Never output a collage, product board, isolated cutouts, or separate samples.`;
 }
 
 /** Bounded to the range the creativity levels use; anything else keeps the historical 3.5. */
@@ -321,7 +341,7 @@ export async function generarConSempertexLora(
     method: "POST",
     headers: { Authorization: `Key ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      prompt: ensureLoraTriggers(promptConReferencias(prompt, references), options.loras),
+      prompt: ensureLoraTriggers(buildLoraEditPrompt(prompt, references), options.loras),
       loras: lorasFor(options.loras),
       guidance_scale: guidanceScaleSeguro(options.guidanceScale),
       num_inference_steps: 28,

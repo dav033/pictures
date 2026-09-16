@@ -752,7 +752,10 @@ console.log("17. Caption wording follows the resolved LoRA");
   assert.doesNotMatch(v004.prompt, /inch|round latex balloon|stage/i, "v004 captions never use inch sizes, catalog object labels or a stage");
   assert.match(v004.prompt, /a one-sided curved organic balloon garland of large and small muted matte blue balloons/);
   assert.match(v004.prompt, /organic balloon column of large and small muted matte blue balloons standing apart on the left/);
-  assert.match(v004.prompt, /organic balloon garland of small matte white balloons resting on the floor in front/, "R-24 is not an allowed white size, so only small sizes remain");
+  // R-24 no es un tamaño permitido del blanco, así que quedan R-5 y R-12: dos
+  // diámetros distintos son "large and small" en la redacción relativa de v004
+  // (antes la mezcla se describía entera como "small").
+  assert.match(v004.prompt, /organic balloon garland of large and small matte white balloons resting on the floor in front/);
   assert.match(v004.prompt, /\. set in an indoor event hall, birthday celebration atmosphere/, "the venue becomes the v004 \"set in/against\" setting");
   pass("eventdecor_style_v2 prompts use the v004 scene wording and still pass preflight");
 

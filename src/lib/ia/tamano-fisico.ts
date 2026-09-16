@@ -44,6 +44,36 @@ export function descripcionFisicaTamano(diamPulg: number | null | undefined, for
 export type LineaMezclaTamanos = { diamPulg: number; forma: string | null; cantidad: number };
 
 /**
+ * Porcentajes enteros que suman exactamente 100 (mayor resto). Único dueño del
+ * redondeo de las proporciones que se le muestran al modelo de imagen:
+ * redondear cada fila por separado daba 99 % o 101 % junto a la frase "EXACTLY
+ * these proportions" (ej. 64/25/21/6/3 de 119 globos daba 101 %).
+ */
+export function porcentajesMayorResto(unidades: number[]): number[] {
+  const total = unidades.reduce((suma, valor) => suma + valor, 0);
+  if (total <= 0) return unidades.map(() => 0);
+  const exactos = unidades.map((valor) => (valor / total) * 100);
+  const resultado = exactos.map(Math.floor);
+  const faltante = 100 - resultado.reduce((suma, valor) => suma + valor, 0);
+  const porResto = exactos
+    .map((valor, indice) => ({ indice, resto: valor - Math.floor(valor) }))
+    .sort((a, b) => b.resto - a.resto || a.indice - b.indice);
+  for (let i = 0; i < faltante && i < porResto.length; i += 1) resultado[porResto[i]!.indice] += 1;
+  return resultado;
+}
+
+/**
+ * Globos de UNA instancia cuando la estructura se repite: mismo reparto
+ * piso + resto que usa `planBlueprint` para la cantidad de cada instancia, así
+ * que el bloque y el INSTANCE CONTRACT no se contradicen. "39" si el total es
+ * divisible, "39-40" si no.
+ */
+function porInstancia(unidades: number, repeticiones: number): string {
+  const piso = Math.floor(unidades / repeticiones);
+  return unidades % repeticiones === 0 ? `${piso}` : `${piso}-${piso + 1}`;
+}
+
+/**
  * Bloque SIZE MIX del prompt (plan F4): declara las proporciones EXACTAS de
  * tamaño que se cotizaron, para que "vary scale" (necesario para que una
  * guirnalda orgánica se vea creíble) quede acotado a los diámetros reales en
@@ -54,14 +84,12 @@ export function bloqueMezclaTamanos(lineas: LineaMezclaTamanos[]): string | null
   const total = lineas.reduce((suma, l) => suma + l.cantidad, 0);
   if (total === 0) return null;
   const diametros = [...new Set(lineas.map((linea) => linea.diamPulg))];
-  const filas = lineas
-    .slice()
-    .sort((a, b) => b.cantidad - a.cantidad)
-    .map((l) => {
-      const pct = Math.round((l.cantidad / total) * 100);
-      const desc = descripcionFisicaTamano(l.diamPulg, l.forma) ?? `${l.diamPulg}-inch balloon`;
-      return `- ${l.cantidad} balloons (${pct}%): ${desc}`;
-    });
+  const ordenadas = lineas.slice().sort((a, b) => b.cantidad - a.cantidad);
+  const porcentajes = porcentajesMayorResto(ordenadas.map((linea) => linea.cantidad));
+  const filas = ordenadas.map((l, indice) => {
+    const desc = descripcionFisicaTamano(l.diamPulg, l.forma) ?? `${l.diamPulg}-inch balloon`;
+    return `- ${l.cantidad} balloons (${porcentajes[indice]}%): ${desc}`;
+  });
   return [
     "BALLOON SIZE MIX — HARD CONSTRAINT",
     "This installation uses EXACTLY these balloon diameters, in these proportions:",
@@ -74,19 +102,47 @@ export function bloqueMezclaTamanos(lineas: LineaMezclaTamanos[]): string | null
   ].join("\n");
 }
 
-export function bloqueMezclaPorEstructura(estructuras: Array<{
-  estructura_id: string;
+/**
+ * Una estructura del plan tal como la nombra el prompt de imagen: sin
+ * `estructura_id` (el brief retira los IDs a propósito porque el modelo los
+ * dibuja como rótulos) y con sus repeticiones, para que las cantidades sean
+ * por instancia y no el total de todas las piezas juntas.
+ */
+export type EstructuraMezclaTamanos = {
   nombre: string;
   total_unidades: number;
-  mezcla_real: Array<{ diamPulg: number; forma: string | null; unidades: number; pct: number }>;
-}>): string | null {
+  /** Instancias idénticas de la estructura; ausente o menor que 1 = una sola. */
+  repeticiones?: number;
+  /**
+   * Ubicación en palabras (`placementDescription`), la misma que usa el resto
+   * del prompt. Solo se imprime cuando dos estructuras comparten nombre: sin
+   * `estructura_id` el bloque sacaba dos cabeceras idénticas y el modelo no
+   * podía saber qué mezcla era de cuál.
+   */
+  ubicacion_en_palabras?: string;
+  mezcla_real: Array<{ diamPulg: number; forma: string | null; unidades: number }>;
+};
+
+export function bloqueMezclaPorEstructura(estructuras: EstructuraMezclaTamanos[]): string | null {
+  const nombresRepetidos = new Set(
+    estructuras.map((estructura) => estructura.nombre).filter((nombre, indice, nombres) => nombres.indexOf(nombre) !== indice),
+  );
   const bloques = estructuras.filter((estructura) => estructura.mezcla_real.length > 0).map((estructura) => {
-    const filas = estructura.mezcla_real.slice().sort((a, b) => b.unidades - a.unidades || b.diamPulg - a.diamPulg).map((linea) => {
+    const etiqueta = nombresRepetidos.has(estructura.nombre) && estructura.ubicacion_en_palabras
+      ? `"${estructura.nombre}" in the ${estructura.ubicacion_en_palabras}`
+      : `"${estructura.nombre}"`;
+    const repeticiones = Math.max(1, Math.round(estructura.repeticiones ?? 1));
+    const ordenadas = estructura.mezcla_real.slice().sort((a, b) => b.unidades - a.unidades || b.diamPulg - a.diamPulg);
+    const porcentajes = porcentajesMayorResto(ordenadas.map((linea) => linea.unidades));
+    const filas = ordenadas.map((linea, indice) => {
       const desc = descripcionFisicaTamano(linea.diamPulg, linea.forma) ?? `${linea.diamPulg}-inch balloon`;
-      return `- ${linea.unidades} balloons (${Math.round(linea.pct)}%): ${desc}`;
+      const cantidad = repeticiones === 1 ? `${linea.unidades} balloons` : `${porInstancia(linea.unidades, repeticiones)} balloons each`;
+      return `- ${cantidad} (${porcentajes[indice]}%): ${desc}`;
     });
     return [
-      `${estructura.estructura_id} — "${estructura.nombre}", ${estructura.total_unidades} balloons total:`,
+      repeticiones === 1
+        ? `${etiqueta}, ${estructura.total_unidades} balloons total:`
+        : `${etiqueta}: ${repeticiones} separate identical structures, ${porInstancia(estructura.total_unidades, repeticiones)} balloons each (${estructura.total_unidades} total across ${repeticiones === 2 ? "both" : `all ${repeticiones}`}):`,
       ...filas,
       ...(estructura.mezcla_real.length === 1
         ? [`SINGLE DIAMETER FOR THIS STRUCTURE: every balloon in this structure MUST be exactly ${estructura.mezcla_real[0]!.diamPulg} inches. Do not vary balloon size.`]
