@@ -31,6 +31,7 @@
  */
 import assert from "node:assert/strict";
 import { readFileSync, writeFileSync } from "node:fs";
+import { MaterialEstimateSchema, validateMaterialEstimate } from "../src/lib/materiales/estimacion";
 import { cotizacionDesdePython, planResueltoDesdePython } from "../src/lib/plan/python-mapper";
 import {
   bloqueJsonDeClave,
@@ -148,6 +149,15 @@ function compararParidad(vector: GoldenVector, expectedTs: GoldenExpected): void
   allDifferences(expectedTs.material_estimate, resultadoPython.material_estimate, "material_estimate", diferencias);
   allDifferences(sinCamposExcluidos(expectedTs.quote), sinCamposExcluidos(cotizacionPython), "cotizacion", diferencias);
   if (diferencias.length > 0) throw new Error(describirDiferencias(vector.name, diferencias, "typescript", "python"));
+
+  // La estimación de Python atraviesa en producción la misma puerta que la de
+  // TypeScript (`registro-herramientas.ts`), y esa puerta recalcula los totales
+  // desde las líneas. Una estimación TypeScript no puede fallarla, porque la
+  // construye con la misma función; la de Python sí, si una de las dos
+  // definiciones cambia sin la otra. Hasta ahora ningún test la ejercía.
+  const estimacionPython = MaterialEstimateSchema.parse(resultadoPython.material_estimate);
+  const validacion = validateMaterialEstimate(estimacionPython);
+  assert.ok(validacion.ok, `${vector.name}: la estimación de Python no pasa validateMaterialEstimate: ${validacion.errors.join("; ")}`);
 }
 
 /**

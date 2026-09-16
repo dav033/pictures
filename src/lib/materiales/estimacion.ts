@@ -620,7 +620,13 @@ export function validateMaterialEstimate(estimate: DesignMaterialEstimate): Mate
   const errors: string[] = [];
   const warnings = [...estimate.warnings];
   const calculated = totals(estimate.balloons, estimate.special_elements, estimate.purchases);
-  if (JSON.stringify(calculated) !== JSON.stringify(estimate.totals)) errors.push("material estimate totals do not match its lines");
+  // Naming the fields that differ turns an unactionable refusal into a
+  // diagnosable one: with the Python backend the mismatch can only be seen
+  // here, and the model retries the same plan until the convergence guard fires.
+  const diferencias = (Object.keys(calculated) as Array<keyof typeof calculated>)
+    .filter((campo) => calculated[campo] !== estimate.totals[campo])
+    .map((campo) => `${campo}: líneas ${calculated[campo]} ≠ totales ${estimate.totals[campo]}`);
+  if (diferencias.length > 0) errors.push(`material estimate totals do not match its lines (${diferencias.join("; ")})`);
   for (const purchase of estimate.purchases) {
     if (purchase.purchase_quantity < purchase.waste_adjusted_quantity) errors.push(`purchase capacity is below waste-adjusted demand for ${purchase.variant_id}`);
   }
