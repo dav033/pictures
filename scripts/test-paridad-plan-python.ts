@@ -4,43 +4,45 @@
  * Cada vector de `contracts/domain/v1/golden/plan-resolution` describe un
  * catálogo, una allowlist same-turn y un Plan 1.0, y guarda dos expectativas:
  *
- * - `expected`: lo que produce el resolutor TypeScript, en las formas que
- *   consume la UI (`PlanResuelto`, `DesignMaterialEstimate`, `Cotizacion`).
+ * - `expected`: oráculo congelado, escrito a mano, en las formas que consume la
+ *   UI (`PlanResuelto`, `DesignMaterialEstimate`, `Cotizacion`).
  * - `expected_python`: el payload `plan-resolution-result.v1` que produce el
  *   servicio Python, regenerado por `services/ai-api/tests/test_plan_parity.py`.
  *
  * Modos:
  * - por defecto, bloqueo de regresión del resolutor TypeScript contra `expected`;
- * - `--update`, regenera `expected` tras un cambio intencional de TypeScript;
  * - `--paridad`, compara los dos backends pasando la respuesta Python por el
  *   mapper de producción. Esa es la puerta para poder activar
- *   `PYTHON_BACKEND_ENABLED`: hoy pasa en los 27 vectores y corre en CI dentro
+ *   `PYTHON_BACKEND_ENABLED`: hoy pasa en los 28 vectores y corre en CI dentro
  *   de `plan:test` como `plan:test-paridad-python`, así que una deriva entre
  *   backends rompe el pipeline en vez de quedar verde.
  *
- * Al regenerar, el orden ya no importa: `--update` sustituye `expected` y
- * reinyecta el bloque `expected_python` tal cual está escrito
- * (`textoDeVectorConExpected`), así que los flotantes enteros de Python
- * (`12.0`) sobreviven y `PARIDAD_ACTUALIZAR=1 pytest tests/test_plan_parity.py`
- * puede correr antes o después. Antes lo reescribía todo con `JSON.stringify`,
- * que dejaba `12` donde Python había escrito `12.0`, y ese pytest compara
- * también el tipo del número: parecía una deriva entre backends.
+ * Este script ya no escribe vectores. Hasta el paso 3 del ADR-0023 tenía un
+ * modo `--update` que recalculaba `expected` con el propio resolutor
+ * TypeScript, así que `expected` no era un oráculo: era la salida de hoy del
+ * código que decía vigilar, y cualquier cambio de conteo se legitimaba solo con
+ * volver a correrlo. Ahora `expected` vale justo por haber salido de una
+ * implementación independiente, y cambiarlo es editar el JSON del vector a
+ * mano: un acto deliberado, que se lee en el diff y se revisa como cualquier
+ * cambio de regla de negocio. Este script solo compara.
+ *
+ * Como consecuencia, nadie reescribe ya el archivo del vector desde aquí: los
+ * flotantes enteros que escribe Python (`12.0`, que su pytest compara también
+ * por tipo) sobreviven por construcción, y `PARIDAD_ACTUALIZAR=1 pytest
+ * tests/test_plan_parity.py` puede correr cuando haga falta.
  *
  * Nada de esto necesita base de datos ni red: el catálogo del vector entra por
  * un doble del `Pool`, igual que en `scripts/test-resolver-plan.ts`.
  */
 import assert from "node:assert/strict";
-import { readFileSync, writeFileSync } from "node:fs";
 import { MaterialEstimateSchema, validateMaterialEstimate } from "../src/lib/materiales/estimacion";
 import { cotizacionDesdePython, planResueltoDesdePython } from "../src/lib/plan/python-mapper";
 import {
-  bloqueJsonDeClave,
-  expectedFromTypeScript,
+  formasDeUiDesdeTypeScript,
   isRecord,
   jsonCompatibleRecord,
   loadVectors,
   resolverVector,
-  textoDeVectorConExpected,
   VECTORS_DIRECTORY,
   withoutNonDomainPlanFields,
   type GoldenExpected,
@@ -114,7 +116,7 @@ function sinCamposExcluidos(valor: Record<string, unknown>): Record<string, unkn
 }
 
 async function resolveWithTypeScript(vector: GoldenVector): Promise<GoldenExpected> {
-  return expectedFromTypeScript(await resolverVector(vector));
+  return formasDeUiDesdeTypeScript(await resolverVector(vector));
 }
 
 /**
@@ -160,75 +162,34 @@ function compararParidad(vector: GoldenVector, expectedTs: GoldenExpected): void
   assert.ok(validacion.ok, `${vector.name}: la estimación de Python no pasa validateMaterialEstimate: ${validacion.errors.join("; ")}`);
 }
 
+const USO = "Usage: tsx --conditions=react-server scripts/test-paridad-plan-python.ts [--paridad]";
+
 /**
- * `--update` no puede tocar `expected_python`: es del backend Python y su
- * pytest compara también el tipo del número, así que un `12.0` convertido en
- * `12` se lee como una deriva entre backends. Se comprueba de dos maneras: con
- * un vector mínimo de laboratorio (donde el flotante es visible) y contra el
- * archivo real de cada vector, que tiene que salir del escritor byte a byte
- * igual en ese bloque.
+ * Aquí vivía `--update`, que reescribía `expected` con la salida del resolutor
+ * TypeScript. Se retiró en el paso 3 del ADR-0023: un oráculo que se regenera
+ * desde el código que vigila no vigila nada.
+ *
+ * Para cambiar un `expected` a propósito, edita a mano el JSON del vector en
+ * `contracts/domain/v1/golden/plan-resolution/` y explica en el commit por qué
+ * el valor nuevo es el correcto. El bloque `expected_python` no se toca a mano:
+ * lo escribe `PARIDAD_ACTUALIZAR=1 pytest tests/test_plan_parity.py`.
  */
-function assertEscritorNoTocaExpectedPython(): void {
-  const crudo = [
-    "{",
-    '  "expected_python": {',
-    '    "lineas": [',
-    "      {",
-    '        "size_inches": 12.0,',
-    '        "pct": 100.0',
-    "      }",
-    "    ]",
-    "  },",
-    '  "name": "laboratorio"',
-    "}",
-    "",
-  ].join("\n");
-  const bloque = bloqueJsonDeClave(crudo, "expected_python");
-  assert.ok(bloque?.includes("12.0") && bloque.includes("100.0"), "el lector de bloques no conservó los flotantes");
-  const vector = { name: "laboratorio", expected_python: { lineas: [{ size_inches: 12, pct: 100 }] } } as unknown as GoldenVector;
-  const expected = { plan_resuelto: {}, material_estimate: {}, quote: {} } as GoldenExpected;
-  const escrito = textoDeVectorConExpected(crudo, vector, expected);
-  assert.equal(
-    bloqueJsonDeClave(escrito, "expected_python"),
-    bloque,
-    "el escritor de vectores reescribió expected_python (los flotantes de Python se pierden y pytest falla por tipo)",
-  );
-  console.log("[PASS] --update conserva expected_python tal cual está escrito");
-}
-
-function assertExpectedPythonIntacto(vector: GoldenVector, crudo: string): void {
-  if (!vector.expected) return;
-  const antes = bloqueJsonDeClave(crudo.replace(/\r\n/g, "\n"), "expected_python");
-  if (antes === null) return;
-  const despues = bloqueJsonDeClave(textoDeVectorConExpected(crudo, vector, vector.expected), "expected_python");
-  assert.equal(despues, antes, `${vector.name}: regenerar expected cambiaría expected_python`);
-}
-
-const USO = "Usage: tsx --conditions=react-server scripts/test-paridad-plan-python.ts [--update | --paridad]";
-
 async function main(): Promise<void> {
   const argumentos = process.argv.slice(2);
-  if (argumentos.length > 1 || argumentos.some((argumento) => argumento !== "--update" && argumento !== "--paridad")) {
+  if (argumentos.length > 1 || argumentos.some((argumento) => argumento !== "--paridad")) {
     throw new Error(USO);
   }
-  const update = argumentos[0] === "--update";
   const paridad = argumentos[0] === "--paridad";
 
   const vectors = loadVectors();
   if (vectors.length === 0) throw new Error(`No golden vectors found in ${VECTORS_DIRECTORY}`);
-  if (!update) assertEscritorNoTocaExpectedPython();
 
   const fallos: string[] = [];
-  for (const { file, vector } of vectors) {
+  for (const { vector } of vectors) {
     const generated = await resolveWithTypeScript(vector);
-    const crudo = readFileSync(file, "utf8");
-    if (update) {
-      writeFileSync(file, textoDeVectorConExpected(crudo, vector, generated), "utf8");
-      console.log(`[UPDATED] ${vector.name}`);
-      continue;
+    if (!vector.expected) {
+      throw new Error(`${vector.name}: falta expected; escríbelo a mano en el JSON del vector (ADR-0023, paso 3)`);
     }
-    if (!vector.expected) throw new Error(`${vector.name}: falta expected; regenéralo con --update`);
-    assertExpectedPythonIntacto(vector, crudo);
     assertGoldenMatch(vector.name, vector.expected, generated);
     if (!paridad) {
       console.log(`[PASS] ${vector.name}`);
