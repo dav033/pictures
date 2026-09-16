@@ -18,24 +18,28 @@
  *   de `plan:test` como `plan:test-paridad-python`, así que una deriva entre
  *   backends rompe el pipeline en vez de quedar verde.
  *
- * Orden al regenerar: primero `--update` (reescribe el archivo entero con
- * `JSON.stringify`, que además normaliza `12.0` a `12` dentro de
- * `expected_python`) y después `PARIDAD_ACTUALIZAR=1 pytest
- * tests/test_plan_parity.py`, que vuelve a escribir `expected_python` con los
- * tipos que emite Python. Al revés, pytest falla por int contra float.
+ * Al regenerar, el orden ya no importa: `--update` sustituye `expected` y
+ * reinyecta el bloque `expected_python` tal cual está escrito
+ * (`textoDeVectorConExpected`), así que los flotantes enteros de Python
+ * (`12.0`) sobreviven y `PARIDAD_ACTUALIZAR=1 pytest tests/test_plan_parity.py`
+ * puede correr antes o después. Antes lo reescribía todo con `JSON.stringify`,
+ * que dejaba `12` donde Python había escrito `12.0`, y ese pytest compara
+ * también el tipo del número: parecía una deriva entre backends.
  *
  * Nada de esto necesita base de datos ni red: el catálogo del vector entra por
  * un doble del `Pool`, igual que en `scripts/test-resolver-plan.ts`.
  */
 import assert from "node:assert/strict";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { cotizacionDesdePython, planResueltoDesdePython } from "../src/lib/plan/python-mapper";
 import {
+  bloqueJsonDeClave,
   expectedFromTypeScript,
   isRecord,
   jsonCompatibleRecord,
   loadVectors,
   resolverVector,
+  textoDeVectorConExpected,
   VECTORS_DIRECTORY,
   withoutNonDomainPlanFields,
   type GoldenExpected,
@@ -55,16 +59,6 @@ import {
 const CAMPOS_FUERA_DE_PARIDAD = ["plan_hash", "merma_log"] as const;
 
 type Diferencia = { path: string; expected: unknown; actual: unknown };
-
-function stableSort(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(stableSort);
-  if (!isRecord(value)) return value;
-  return Object.fromEntries(
-    Object.entries(value)
-      .sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0)
-      .map(([key, item]) => [key, stableSort(item)]),
-  );
-}
 
 function formatValue(value: unknown): string {
   const serialized = JSON.stringify(value);
@@ -156,6 +150,50 @@ function compararParidad(vector: GoldenVector, expectedTs: GoldenExpected): void
   if (diferencias.length > 0) throw new Error(describirDiferencias(vector.name, diferencias, "typescript", "python"));
 }
 
+/**
+ * `--update` no puede tocar `expected_python`: es del backend Python y su
+ * pytest compara también el tipo del número, así que un `12.0` convertido en
+ * `12` se lee como una deriva entre backends. Se comprueba de dos maneras: con
+ * un vector mínimo de laboratorio (donde el flotante es visible) y contra el
+ * archivo real de cada vector, que tiene que salir del escritor byte a byte
+ * igual en ese bloque.
+ */
+function assertEscritorNoTocaExpectedPython(): void {
+  const crudo = [
+    "{",
+    '  "expected_python": {',
+    '    "lineas": [',
+    "      {",
+    '        "size_inches": 12.0,',
+    '        "pct": 100.0',
+    "      }",
+    "    ]",
+    "  },",
+    '  "name": "laboratorio"',
+    "}",
+    "",
+  ].join("\n");
+  const bloque = bloqueJsonDeClave(crudo, "expected_python");
+  assert.ok(bloque?.includes("12.0") && bloque.includes("100.0"), "el lector de bloques no conservó los flotantes");
+  const vector = { name: "laboratorio", expected_python: { lineas: [{ size_inches: 12, pct: 100 }] } } as unknown as GoldenVector;
+  const expected = { plan_resuelto: {}, material_estimate: {}, quote: {} } as GoldenExpected;
+  const escrito = textoDeVectorConExpected(crudo, vector, expected);
+  assert.equal(
+    bloqueJsonDeClave(escrito, "expected_python"),
+    bloque,
+    "el escritor de vectores reescribió expected_python (los flotantes de Python se pierden y pytest falla por tipo)",
+  );
+  console.log("[PASS] --update conserva expected_python tal cual está escrito");
+}
+
+function assertExpectedPythonIntacto(vector: GoldenVector, crudo: string): void {
+  if (!vector.expected) return;
+  const antes = bloqueJsonDeClave(crudo.replace(/\r\n/g, "\n"), "expected_python");
+  if (antes === null) return;
+  const despues = bloqueJsonDeClave(textoDeVectorConExpected(crudo, vector, vector.expected), "expected_python");
+  assert.equal(despues, antes, `${vector.name}: regenerar expected cambiaría expected_python`);
+}
+
 const USO = "Usage: tsx --conditions=react-server scripts/test-paridad-plan-python.ts [--update | --paridad]";
 
 async function main(): Promise<void> {
@@ -168,18 +206,19 @@ async function main(): Promise<void> {
 
   const vectors = loadVectors();
   if (vectors.length === 0) throw new Error(`No golden vectors found in ${VECTORS_DIRECTORY}`);
+  if (!update) assertEscritorNoTocaExpectedPython();
 
   const fallos: string[] = [];
   for (const { file, vector } of vectors) {
     const generated = await resolveWithTypeScript(vector);
+    const crudo = readFileSync(file, "utf8");
     if (update) {
-      const serialized = JSON.stringify(stableSort({ ...vector, expected: generated }), null, 2);
-      if (serialized === undefined) throw new Error(`${vector.name}: vector could not be serialized`);
-      writeFileSync(file, serialized + "\n", "utf8");
+      writeFileSync(file, textoDeVectorConExpected(crudo, vector, generated), "utf8");
       console.log(`[UPDATED] ${vector.name}`);
       continue;
     }
     if (!vector.expected) throw new Error(`${vector.name}: falta expected; regenéralo con --update`);
+    assertExpectedPythonIntacto(vector, crudo);
     assertGoldenMatch(vector.name, vector.expected, generated);
     if (!paridad) {
       console.log(`[PASS] ${vector.name}`);
