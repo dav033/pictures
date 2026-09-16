@@ -380,6 +380,15 @@ function invarianteBloqueTamanos(vector: GoldenVector, estructura: EstructuraRes
 }
 
 /**
+ * Cuántas cantidades por instancia llegaron como rango `N-N+1`. Las dos reglas
+ * de abajo que dependen del rango sólo valen si algún vector lo emite: mientras
+ * ningún vector repartió unidades no divisibles entre sus repeticiones,
+ * estuvieron escritas pero nunca ejecutadas (lo cubre
+ * `28-figura-repetida-reparto-inexacto`).
+ */
+let rangosPorInstanciaVistos = 0;
+
+/**
  * La cantidad "por instancia" del bloque es `N` o el rango `N-N+1` (piso y
  * techo del reparto entre instancias). Lo que se comprueba es que multiplicada
  * por `repeticiones` contenga las unidades reales, y que el rango no sea más
@@ -387,6 +396,7 @@ function invarianteBloqueTamanos(vector: GoldenVector, estructura: EstructuraRes
  */
 function comprobarRango(informe: Informe, donde: string, piso: number, techo: number | undefined, repeticiones: number, unidades: number): void {
   const alto = techo ?? piso;
+  if (techo != null) rangosPorInstanciaVistos += 1;
   comprobar(informe, alto - piso <= 1, `${donde}: el rango por instancia ${piso}-${alto} abarca más de un globo`);
   comprobar(
     informe,
@@ -480,7 +490,16 @@ async function main(): Promise<void> {
     errores.push(...informe.errores);
   }
 
-  console.log(`\n${vectores.length} vector(es), ${omitidas} invariante(s) omitida(s) con razón, ${errores.length} fallo(s).`);
+  // Guarda de cobertura, no invariante de un vector: si ningún vector reparte
+  // unidades no divisibles entre sus repeticiones, las dos reglas de rango de
+  // `comprobarRango` no se ejecutan nunca y la suite pasaría igual con el
+  // bloque anunciando una cantidad exacta que ninguna instancia tendrá.
+  if (rangosPorInstanciaVistos === 0) {
+    errores.push("ningún vector golden emite un rango N-N+1 por instancia: las reglas de rango del bloque de tamaños quedan sin ejercitar");
+    console.log("[FAIL] ningún vector golden emite un rango N-N+1 por instancia");
+  }
+
+  console.log(`\n${vectores.length} vector(es), ${omitidas} invariante(s) omitida(s) con razón, ${rangosPorInstanciaVistos} rango(s) por instancia comprobado(s), ${errores.length} fallo(s).`);
   if (errores.length > 0) throw new Error(`${errores.length} invariante(s) rota(s) en los vectores golden.`);
 }
 

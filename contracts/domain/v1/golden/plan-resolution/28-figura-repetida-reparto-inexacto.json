@@ -1,0 +1,990 @@
+{
+  "allowlist": [
+    {
+      "product_id": "P-F28-ROSADO",
+      "variant_ids": [
+        "V-F28-ROSADO-9"
+      ]
+    },
+    {
+      "product_id": "P-F28-BLANCO",
+      "variant_ids": [
+        "V-F28-BLANCO-9"
+      ]
+    }
+  ],
+  "catalog_rows": [
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-9",
+      "colores_producto": [
+        "rosado"
+      ],
+      "colores_variante": [
+        "rosado"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex rosado R-9.",
+      "diam_pulg": 9,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/rosado-9.jpg",
+      "inventory_quantity": 500,
+      "precio": 8000,
+      "product_id": "P-F28-ROSADO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex rosado",
+      "sku": "SKU-F28-ROSADO-9",
+      "sku_original": "SHOP-F28-ROSADO-9",
+      "source_snapshot_id": "SNAP-GOLDEN-28",
+      "source_variant_id": "SOURCE-F28-ROSADO-9",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-F28-ROSADO-9",
+      "variante_titulo": "R-9"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-9",
+      "colores_producto": [
+        "blanco"
+      ],
+      "colores_variante": [
+        "blanco"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex blanco R-9.",
+      "diam_pulg": 9,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/blanco-9.jpg",
+      "inventory_quantity": 500,
+      "precio": 8000,
+      "product_id": "P-F28-BLANCO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex blanco",
+      "sku": "SKU-F28-BLANCO-9",
+      "sku_original": "SHOP-F28-BLANCO-9",
+      "source_snapshot_id": "SNAP-GOLDEN-28",
+      "source_variant_id": "SOURCE-F28-BLANCO-9",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-F28-BLANCO-9",
+      "variante_titulo": "R-9"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-28",
+  "description": "Tres figuras iguales con 50 globos declarados: el reparto entre instancias no es exacto (16-17 por pieza), el unico caso que hace que el bloque de tamanos del prompt emita el rango N-N+1 en la cabecera y en sus filas. Sin el, las dos reglas de rango de plan:test-invariantes nunca se ejecutan con un dato que las ejercite.",
+  "expected": {
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "rosado",
+          "design_quantity": 30,
+          "finish": null,
+          "product_id": "P-F28-ROSADO",
+          "required_quantity": 30,
+          "shape": "redondo",
+          "size_inches": 9,
+          "structure_id": "EST_01_FIGURA",
+          "variant_id": "V-F28-ROSADO-9",
+          "waste_adjusted_quantity": 30,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 20,
+          "finish": null,
+          "product_id": "P-F28-BLANCO",
+          "required_quantity": 20,
+          "shape": "redondo",
+          "size_inches": 9,
+          "structure_id": "EST_01_FIGURA",
+          "variant_id": "V-F28-BLANCO-9",
+          "waste_adjusted_quantity": 20,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 3,
+        "density": "media",
+        "dimensions_m": {
+          "height": null,
+          "length": null,
+          "width": null
+        },
+        "installation_length_m": null,
+        "shape": "clasica",
+        "type": "kit",
+        "visual_density": "medium",
+        "visual_scale": "small_medium"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 3840,
+          "design_quantity": 20,
+          "leftover_inventory": 26,
+          "operational_surplus": 26,
+          "package_count": 1,
+          "potential_surplus": 30,
+          "product_id": "P-F28-BLANCO",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 24,
+          "units_per_package": 50,
+          "used": 20,
+          "variant_id": "V-F28-BLANCO-9",
+          "waste_adjusted_quantity": 24,
+          "waste_reserve": 4
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 4800,
+          "design_quantity": 30,
+          "leftover_inventory": 20,
+          "operational_surplus": 20,
+          "package_count": 1,
+          "potential_surplus": 20,
+          "product_id": "P-F28-ROSADO",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 30,
+          "units_per_package": 50,
+          "used": 30,
+          "variant_id": "V-F28-ROSADO-9",
+          "waste_adjusted_quantity": 30,
+          "waste_reserve": 0
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 8640,
+        "covered_waste_reserve": 4,
+        "design_quantity": 50,
+        "natural_package_surplus": 50,
+        "operational_surplus": 46,
+        "potential_surplus": 50,
+        "purchase_cost": 16000,
+        "purchase_quantity": 100,
+        "required_quantity": 54,
+        "target_waste_reserve": 4,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 54,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-F28-BLANCO-9",
+        "sobrante_alto:V-F28-ROSADO-9"
+      ]
+    },
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-F28-BLANCO-9",
+        "sobrante_alto:V-F28-ROSADO-9"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 3840,
+          "design_quantity": 20,
+          "diam_pulg": 9,
+          "elementos_origen": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_FIGURA"
+          ],
+          "imagen": "https://cdn.example.test/blanco-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 26,
+          "paquetes": 1,
+          "precio_paquete": 8000,
+          "product_id": "P-F28-BLANCO",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 24,
+          "sku": "SKU-F28-BLANCO-9",
+          "sku_original": "SHOP-F28-BLANCO-9",
+          "sobrante": 30,
+          "source_snapshot_id": "SNAP-GOLDEN-28",
+          "source_variant_id": "SOURCE-F28-BLANCO-9",
+          "subtotal": 8000,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex blanco — R-9",
+          "unidades_con_merma": 24,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 20,
+          "unidades_paquete": 50,
+          "used": 20,
+          "variant_id": "V-F28-BLANCO-9",
+          "waste_reserve": 4
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "rosado",
+          "consumption_cost": 4800,
+          "design_quantity": 30,
+          "diam_pulg": 9,
+          "elementos_origen": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_FIGURA"
+          ],
+          "imagen": "https://cdn.example.test/rosado-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 20,
+          "paquetes": 1,
+          "precio_paquete": 8000,
+          "product_id": "P-F28-ROSADO",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 30,
+          "sku": "SKU-F28-ROSADO-9",
+          "sku_original": "SHOP-F28-ROSADO-9",
+          "sobrante": 20,
+          "source_snapshot_id": "SNAP-GOLDEN-28",
+          "source_variant_id": "SOURCE-F28-ROSADO-9",
+          "subtotal": 8000,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex rosado — R-9",
+          "unidades_con_merma": 30,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 30,
+          "unidades_paquete": 50,
+          "used": 30,
+          "variant_id": "V-F28-ROSADO-9",
+          "waste_reserve": 0
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": null,
+          "estructura_id": "EST_01_FIGURA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rosado",
+              "diam_cm": 22.9,
+              "diam_pulg": 9,
+              "estructura_id": "EST_01_FIGURA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/rosado-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_FIGURA",
+                "kind": "estructura"
+              },
+              "product_id": "P-F28-ROSADO",
+              "sku": "SKU-F28-ROSADO-9",
+              "sku_original": "SHOP-F28-ROSADO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-28",
+              "source_variant_id": "SOURCE-F28-ROSADO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex rosado — R-9",
+              "unidades": 30,
+              "unidades_inferidas": false,
+              "variant_id": "V-F28-ROSADO-9"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 22.9,
+              "diam_pulg": 9,
+              "estructura_id": "EST_01_FIGURA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/blanco-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_FIGURA",
+                "kind": "estructura"
+              },
+              "product_id": "P-F28-BLANCO",
+              "sku": "SKU-F28-BLANCO-9",
+              "sku_original": "SHOP-F28-BLANCO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-28",
+              "source_variant_id": "SOURCE-F28-BLANCO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex blanco — R-9",
+              "unidades": 20,
+              "unidades_inferidas": false,
+              "variant_id": "V-F28-BLANCO-9"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 9,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 50
+            }
+          ],
+          "nombre": "Figuras de globos",
+          "repeticiones": 3,
+          "supuestos": [],
+          "tipo": "kit",
+          "total_unidades": 50,
+          "ubicacion": "lateral_derecho"
+        }
+      ],
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 50\nTarget waste reserve: 4\nNatural package surplus: 50\nUsable waste coverage: 4\nAdditional packages required for waste: 0\nGlobo latex blanco — R-9: design=20, required=24, package=50, packages=1, purchased=50, natural surplus=30, waste reserve=4, leftover inventory=26\nGlobo latex rosado — R-9: design=30, required=30, package=50, packages=1, purchased=50, natural surplus=20, waste reserve=0, leftover inventory=20",
+      "plan": {
+        "concepto": {
+          "descripcion": "Tres figuras de globos identicas en rosado y blanco.",
+          "paleta": [
+            "rosado",
+            "blanco"
+          ],
+          "titulo": "Figuras repetidas"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_FIGURA",
+            "estructura_oficial": "figura",
+            "materiales": [
+              {
+                "color": "rosado",
+                "participacion": 0.6,
+                "product_id": "P-F28-ROSADO",
+                "rol_material": "principal",
+                "variant_id": "V-F28-ROSADO-9"
+              },
+              {
+                "color": "blanco",
+                "participacion": 0.4,
+                "product_id": "P-F28-BLANCO",
+                "rol_material": "secundario",
+                "variant_id": "V-F28-BLANCO-9"
+              }
+            ],
+            "medidas": {},
+            "mezcla": "clasica",
+            "nombre": "Figuras de globos",
+            "porque": "Tres piezas iguales con 50 globos en total: el reparto por pieza no es exacto.",
+            "repeticiones": 3,
+            "rol_escena": "focal",
+            "tipo": "kit",
+            "ubicacion": "lateral_derecho",
+            "unidades_declaradas": 50
+          }
+        ],
+        "plan_id": "28282828-2828-4282-8282-282828282828",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "aace904168e139b64d7004cb281aafa25514f27b09fdf08734c905e42af93c1b",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 8640,
+        "covered_waste_reserve": 4,
+        "design_quantity": 50,
+        "globos_por_tamano": {
+          "R-9": 50
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8,
+        "natural_package_surplus": 50,
+        "purchase_cost": 16000,
+        "target_waste_reserve": 4,
+        "total_cop": 16000,
+        "total_unidades": 50,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "complementosSoportados": false,
+      "consumptionCost": 8640,
+      "coveredWasteReserve": 4,
+      "incluyeIva": true,
+      "leftoverInventory": 46,
+      "lineas": [
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 20,
+          "color": "blanco",
+          "consumptionCost": 3840,
+          "designQuantity": 20,
+          "diamPulg": 9,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_FIGURA"
+          ],
+          "id": "V-F28-BLANCO-9",
+          "leftoverInventory": 26,
+          "nombre": "Globo latex blanco — R-9",
+          "paquetes": 1,
+          "precioPaquete": 8000,
+          "productId": "P-F28-BLANCO",
+          "purchaseCost": 8000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 24,
+          "sobrante": 30,
+          "subtotal": 8000,
+          "tamano": "R-9",
+          "tamanoCodigo": "R-9",
+          "unidadesPaquete": 50,
+          "used": 20,
+          "varianteId": "V-F28-BLANCO-9",
+          "wasteReserve": 4
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 30,
+          "color": "rosado",
+          "consumptionCost": 4800,
+          "designQuantity": 30,
+          "diamPulg": 9,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_FIGURA"
+          ],
+          "id": "V-F28-ROSADO-9",
+          "leftoverInventory": 20,
+          "nombre": "Globo latex rosado — R-9",
+          "paquetes": 1,
+          "precioPaquete": 8000,
+          "productId": "P-F28-ROSADO",
+          "purchaseCost": 8000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 30,
+          "sobrante": 20,
+          "subtotal": 8000,
+          "tamano": "R-9",
+          "tamanoCodigo": "R-9",
+          "unidadesPaquete": 50,
+          "used": 30,
+          "varianteId": "V-F28-ROSADO-9",
+          "wasteReserve": 0
+        }
+      ],
+      "mermaPorcentaje": 8,
+      "plan_hash": "aace904168e139b64d7004cb281aafa25514f27b09fdf08734c905e42af93c1b",
+      "purchaseCost": 16000,
+      "targetWasteReserve": 4,
+      "total": 16000
+    }
+  },
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-28",
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "rosado",
+          "design_quantity": 30,
+          "finish": null,
+          "product_id": "P-F28-ROSADO",
+          "required_quantity": 30,
+          "shape": "redondo",
+          "size_inches": 9.0,
+          "structure_id": "EST_01_FIGURA",
+          "variant_id": "V-F28-ROSADO-9",
+          "waste_adjusted_quantity": 30,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 20,
+          "finish": null,
+          "product_id": "P-F28-BLANCO",
+          "required_quantity": 20,
+          "shape": "redondo",
+          "size_inches": 9.0,
+          "structure_id": "EST_01_FIGURA",
+          "variant_id": "V-F28-BLANCO-9",
+          "waste_adjusted_quantity": 20,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 3,
+        "density": "media",
+        "dimensions_m": {
+          "height": null,
+          "length": null,
+          "width": null
+        },
+        "installation_length_m": null,
+        "shape": "clasica",
+        "type": "kit",
+        "visual_density": "medium",
+        "visual_scale": "small_medium"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 3840,
+          "design_quantity": 20,
+          "leftover_inventory": 26,
+          "operational_surplus": 26,
+          "package_count": 1,
+          "potential_surplus": 30,
+          "product_id": "P-F28-BLANCO",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 24,
+          "units_per_package": 50,
+          "used": 20,
+          "variant_id": "V-F28-BLANCO-9",
+          "waste_adjusted_quantity": 24,
+          "waste_reserve": 4
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 4800,
+          "design_quantity": 30,
+          "leftover_inventory": 20,
+          "operational_surplus": 20,
+          "package_count": 1,
+          "potential_surplus": 20,
+          "product_id": "P-F28-ROSADO",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 30,
+          "units_per_package": 50,
+          "used": 30,
+          "variant_id": "V-F28-ROSADO-9",
+          "waste_adjusted_quantity": 30,
+          "waste_reserve": 0
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 8640,
+        "covered_waste_reserve": 4,
+        "design_quantity": 50,
+        "natural_package_surplus": 50,
+        "operational_surplus": 46,
+        "potential_surplus": 50,
+        "purchase_cost": 16000,
+        "purchase_quantity": 100,
+        "required_quantity": 54,
+        "target_waste_reserve": 4,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 54,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-F28-BLANCO-9",
+        "sobrante_alto:V-F28-ROSADO-9"
+      ]
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-F28-BLANCO-9",
+        "sobrante_alto:V-F28-ROSADO-9"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 3840,
+          "design_quantity": 20,
+          "diam_pulg": 9.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_FIGURA"
+          ],
+          "imagen": "https://cdn.example.test/blanco-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 26,
+          "paquetes": 1,
+          "precio_paquete": 8000,
+          "product_id": "P-F28-BLANCO",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 24,
+          "sku": "SKU-F28-BLANCO-9",
+          "sku_original": "SHOP-F28-BLANCO-9",
+          "sobrante": 30,
+          "source_snapshot_id": "SNAP-GOLDEN-28",
+          "source_variant_id": "SOURCE-F28-BLANCO-9",
+          "subtotal": 8000,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex blanco — R-9",
+          "unidades_con_merma": 24,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 20,
+          "unidades_paquete": 50,
+          "used": 20,
+          "variant_id": "V-F28-BLANCO-9",
+          "waste_reserve": 4
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "rosado",
+          "consumption_cost": 4800,
+          "design_quantity": 30,
+          "diam_pulg": 9.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_FIGURA"
+          ],
+          "imagen": "https://cdn.example.test/rosado-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 20,
+          "paquetes": 1,
+          "precio_paquete": 8000,
+          "product_id": "P-F28-ROSADO",
+          "purchase_cost": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 30,
+          "sku": "SKU-F28-ROSADO-9",
+          "sku_original": "SHOP-F28-ROSADO-9",
+          "sobrante": 20,
+          "source_snapshot_id": "SNAP-GOLDEN-28",
+          "source_variant_id": "SOURCE-F28-ROSADO-9",
+          "subtotal": 8000,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex rosado — R-9",
+          "unidades_con_merma": 30,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 30,
+          "unidades_paquete": 50,
+          "used": 30,
+          "variant_id": "V-F28-ROSADO-9",
+          "waste_reserve": 0
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": null,
+          "estructura_id": "EST_01_FIGURA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "rosado",
+              "diam_cm": 22.9,
+              "diam_pulg": 9.0,
+              "estructura_id": "EST_01_FIGURA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/rosado-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_FIGURA",
+                "kind": "estructura"
+              },
+              "product_id": "P-F28-ROSADO",
+              "sku": "SKU-F28-ROSADO-9",
+              "sku_original": "SHOP-F28-ROSADO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-28",
+              "source_variant_id": "SOURCE-F28-ROSADO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex rosado — R-9",
+              "unidades": 30,
+              "unidades_inferidas": false,
+              "variant_id": "V-F28-ROSADO-9"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 22.9,
+              "diam_pulg": 9.0,
+              "estructura_id": "EST_01_FIGURA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/blanco-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_FIGURA",
+                "kind": "estructura"
+              },
+              "product_id": "P-F28-BLANCO",
+              "sku": "SKU-F28-BLANCO-9",
+              "sku_original": "SHOP-F28-BLANCO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-28",
+              "source_variant_id": "SOURCE-F28-BLANCO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex blanco — R-9",
+              "unidades": 20,
+              "unidades_inferidas": false,
+              "variant_id": "V-F28-BLANCO-9"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 9.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 50
+            }
+          ],
+          "nombre": "Figuras de globos",
+          "repeticiones": 3,
+          "supuestos": [],
+          "tipo": "kit",
+          "total_unidades": 50,
+          "ubicacion": "lateral_derecho"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-28.",
+      "plan": {
+        "concepto": {
+          "descripcion": "Tres figuras de globos identicas en rosado y blanco.",
+          "paleta": [
+            "rosado",
+            "blanco"
+          ],
+          "titulo": "Figuras repetidas"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_FIGURA",
+            "estructura_oficial": "figura",
+            "materiales": [
+              {
+                "color": "rosado",
+                "participacion": 0.6,
+                "product_id": "P-F28-ROSADO",
+                "rol_material": "principal",
+                "variant_id": "V-F28-ROSADO-9"
+              },
+              {
+                "color": "blanco",
+                "participacion": 0.4,
+                "product_id": "P-F28-BLANCO",
+                "rol_material": "secundario",
+                "variant_id": "V-F28-BLANCO-9"
+              }
+            ],
+            "medidas": {},
+            "mezcla": "clasica",
+            "nombre": "Figuras de globos",
+            "porque": "Tres piezas iguales con 50 globos en total: el reparto por pieza no es exacto.",
+            "repeticiones": 3,
+            "rol_escena": "focal",
+            "tipo": "kit",
+            "ubicacion": "lateral_derecho",
+            "unidades_declaradas": 50
+          }
+        ],
+        "plan_id": "28282828-2828-4282-8282-282828282828",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "1243a6e0618f8be2d666c3aa913542a38a5c63730f714f8b2bd1be91a221d730",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 8640,
+        "covered_waste_reserve": 4,
+        "design_quantity": 50,
+        "globos_por_tamano": {
+          "R-9": 50
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 50,
+        "purchase_cost": 16000,
+        "target_waste_reserve": 4,
+        "total_cop": 16000,
+        "total_unidades": 50,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 8640,
+      "covered_waste_reserve": 4,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 46,
+      "lines": [
+        {
+          "available": true,
+          "color": "blanco",
+          "consumption_cost_cop": 3840,
+          "design_quantity": 20,
+          "diameter_inches": 9.0,
+          "id": "V-F28-BLANCO-9",
+          "leftover_inventory": 26,
+          "origins": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 8000,
+          "packages": 1,
+          "product_id": "P-F28-BLANCO",
+          "purchase_cost_cop": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 24,
+          "size": "R-9",
+          "size_code": "R-9",
+          "structures": [
+            "EST_01_FIGURA"
+          ],
+          "subtotal_cop": 8000,
+          "surplus": 30,
+          "title": "Globo latex blanco — R-9",
+          "units_per_package": 50,
+          "used": 20,
+          "variant_id": "V-F28-BLANCO-9",
+          "waste_reserve": 4
+        },
+        {
+          "available": true,
+          "color": "rosado",
+          "consumption_cost_cop": 4800,
+          "design_quantity": 30,
+          "diameter_inches": 9.0,
+          "id": "V-F28-ROSADO-9",
+          "leftover_inventory": 20,
+          "origins": [
+            {
+              "id": "EST_01_FIGURA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 8000,
+          "packages": 1,
+          "product_id": "P-F28-ROSADO",
+          "purchase_cost_cop": 8000,
+          "purchase_quantity": 50,
+          "required_quantity": 30,
+          "size": "R-9",
+          "size_code": "R-9",
+          "structures": [
+            "EST_01_FIGURA"
+          ],
+          "subtotal_cop": 8000,
+          "surplus": 20,
+          "title": "Globo latex rosado — R-9",
+          "units_per_package": 50,
+          "used": 30,
+          "variant_id": "V-F28-ROSADO-9",
+          "waste_reserve": 0
+        }
+      ],
+      "plan_hash": "1243a6e0618f8be2d666c3aa913542a38a5c63730f714f8b2bd1be91a221d730",
+      "purchase_cost_cop": 16000,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 4,
+      "total_cop": 16000,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "28-figura-repetida-reparto-inexacto",
+  "plan": {
+    "concepto": {
+      "descripcion": "Tres figuras de globos identicas en rosado y blanco.",
+      "paleta": [
+        "rosado",
+        "blanco"
+      ],
+      "titulo": "Figuras repetidas"
+    },
+    "espacio": {
+      "fuente": "cliente",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "densidad": "media",
+        "estructura_id": "EST_01_FIGURA",
+        "estructura_oficial": "figura",
+        "materiales": [
+          {
+            "color": "rosado",
+            "participacion": 0.6,
+            "product_id": "P-F28-ROSADO",
+            "rol_material": "principal",
+            "variant_id": "V-F28-ROSADO-9"
+          },
+          {
+            "color": "blanco",
+            "participacion": 0.4,
+            "product_id": "P-F28-BLANCO",
+            "rol_material": "secundario",
+            "variant_id": "V-F28-BLANCO-9"
+          }
+        ],
+        "medidas": {},
+        "mezcla": "clasica",
+        "nombre": "Figuras de globos",
+        "porque": "Tres piezas iguales con 50 globos en total: el reparto por pieza no es exacto.",
+        "repeticiones": 3,
+        "rol_escena": "focal",
+        "tipo": "kit",
+        "ubicacion": "lateral_derecho",
+        "unidades_declaradas": 50
+      }
+    ],
+    "plan_id": "28282828-2828-4282-8282-282828282828",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "supuestos": []
+  }
+}
