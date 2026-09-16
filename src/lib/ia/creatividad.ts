@@ -80,7 +80,7 @@ export function esAmbientacionPermitida(nivel: NivelCreatividad | undefined, obs
   return perfilCreatividad(nivel).imagen.ambientacion.some((clave) => AMBIENTACION_IMAGEN[clave].patron.test(descripcion));
 }
 
-const INVARIANTES = "Lo que el cliente sí dijo (lugar, momento, colores, piezas, presupuesto) manda siempre sobre esta regla. Usa solo productos que devuelva buscar_catalogo_rag, no inventes precios ni cantidades y cuéntale en una frase lo que elegiste por tu cuenta (lugar, momento o piezas extra).";
+const INVARIANTES = "Lo que el cliente sí dijo (lugar, momento, colores, piezas, presupuesto) manda siempre sobre esta regla. Usa solo productos que devuelva buscar_catalogo_rag, no inventes precios (las cantidades de las estructuras con geometría las calcula el sistema; en bouquet, figura, kit, backdrop y accesorio van en unidades_declaradas) y cuéntale en una frase lo que elegiste por tu cuenta (lugar, momento o piezas extra).";
 
 const PERFILES: Record<NivelCreatividad, PerfilCreatividad> = {
   0: {

@@ -54,11 +54,11 @@ import { sceneShadowPipeline } from "@/lib/scene/orchestrator";
 import { physicalWarningsForPlan, validateMaterialEstimate } from "@/lib/materiales/estimacion";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
-import { ajustarCoberturaPlan, mezclasAdmisiblesEstructura, type AjusteCobertura } from "@/lib/plan/cobertura-materiales";
+import { ajustarCoberturaPlan, avisosClienteAjustes, mezclasAdmisiblesEstructura, type AjusteCobertura } from "@/lib/plan/cobertura-materiales";
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "@/lib/plan/composicion";
 import { ACCION_PLAN_NO_CONVERGE, disponibilidadDelTurno, quitarMaterialesSinCobertura, RECHAZOS_MAXIMOS, RECHAZOS_PARA_CONVERGER, unirCandidatosTurno } from "./convergencia-plan";
 import { normalizarArgsBrief } from "./brief-herramienta";
-import { HERRAMIENTAS_PLAN, HERRAMIENTAS_RAG } from "./herramientas";
+import { HERRAMIENTAS_PLAN, HERRAMIENTAS_RAG, HERRAMIENTAS_RAG_MODO_PLAN } from "./herramientas";
 import type { ReferenceBlueprintV2 } from "./reference-blueprint";
 import type { Herramienta } from "./tipos";
 import { z } from "zod";
@@ -82,12 +82,24 @@ export const HERRAMIENTAS_SOLO_LECTURA = new Set([
   "buscar_catalogo_rag",
 ]);
 
-export function herramientasActivas(): Herramienta[] {
-  if (!RAG_ENABLED) return [];
-  if (PLAN_DECORACION_ENABLED && RAG_ENABLED) {
-    return [...HERRAMIENTAS_RAG, ...HERRAMIENTAS_PLAN];
-  }
-  return HERRAMIENTAS_RAG;
+/**
+ * Herramientas expuestas al modelo según los flags activos (los parámetros
+ * existen para poder probar cada combinación sin tocar el entorno).
+ *
+ * En modo diseño `calcular_medidas` no se expone: reparte los colores por
+ * partes iguales, no conoce `estructura_oficial` ni `repeticiones` y sus totales
+ * contradicen los que cotiza `confirmar_plan_decoracion` — con el plan en
+ * pantalla el cliente veía dos conteos distintos del mismo arco. El handler
+ * sigue registrado para el flujo legacy y sus pruebas. `HERRAMIENTAS_RAG_MODO_PLAN`
+ * quita además el despiece de `confirmar_seleccion_rag`, que sin esa herramienta
+ * solo podía terminar en un rechazo que el modelo no puede corregir.
+ */
+export function herramientasActivas(flags: { ragEnabled?: boolean; planEnabled?: boolean } = {}): Herramienta[] {
+  const ragEnabled = flags.ragEnabled ?? RAG_ENABLED;
+  const planEnabled = flags.planEnabled ?? PLAN_DECORACION_ENABLED;
+  if (!ragEnabled) return [];
+  if (!planEnabled) return HERRAMIENTAS_RAG;
+  return [...HERRAMIENTAS_RAG_MODO_PLAN, ...HERRAMIENTAS_PLAN];
 }
 
 // Se permiten varias búsquedas por turno porque una referencia puede contener
@@ -310,7 +322,82 @@ export function textoAlAgotarVueltas(estado: EstadoConversacion): string {
   return "Perdón, me enredé un poco. ¿Me lo repites de otra forma?";
 }
 
-export const ACCION_COLORES_REFERENCIA_OMITIDOS = "La foto de referencia muestra colores dominantes que estas estructuras no usan y el catálogo sí tiene (colores_omitidos). Arma cada estructura con sus colores de la foto: si un producto de la lista tiene en_busqueda true, úsalo en materiales con ese color; si no, búscalo una sola vez con buscar_catalogo_rag usando una consulta de un solo color (por ejemplo \"globo latex redondo rosado\"): la búsqueda deja de exigir la ocasión cuando esta esconde los colores de la foto. Luego vuelve a confirmar con lo que tengas; si la búsqueda no devolvió un color, confirma igual y el sistema se lo avisará al cliente. Este aviso llega una sola vez por mensaje. No cambies los colores de la foto por otros ni anuncies o generes una imagen.";
+export type AjusteParticipacion =
+  | { tipo: "participacion_reescalada"; estructura_id: string; suma_declarada: number }
+  | { tipo: "rol_principal_reasignado"; estructura_id: string; product_id: string };
+
+/** Índice de la participación mayor; los empates se quedan con el primero declarado. */
+function indiceParticipacionMayor(cuotas: readonly number[]): number {
+  return cuotas.reduce((mejor, cuota, indice) => (cuota > cuotas[mejor]! ? indice : mejor), 0);
+}
+
+function esObjeto(valor: unknown): valor is Record<string, unknown> {
+  return typeof valor === "object" && valor !== null && !Array.isArray(valor);
+}
+
+/**
+ * Ruido de redondeo de las participaciones antes de que el esquema lo convierta
+ * en un rechazo.
+ *
+ * `PlanDecoracionSchema` exige que las participaciones de una estructura sumen 1
+ * (±0,001) y cada rechazo cuenta para `rechazosPlan`: dos rechazos apagan el
+ * reclamo de los colores de la foto (convergencia-plan.ts), así que un 0,33 × 3
+ * degrada la fidelidad de color del resto del turno. Con la suma declarada a
+ * menos de 0,02 de 1 se reescala aquí (el residuo va a la participación mayor) y
+ * el rol `principal` pasa al material de mayor participación cuando el declarado
+ * tiene una menor — cobertura-materiales.ts decide la mezcla con ese material.
+ * Cualquier otra desviación sigue siendo un rechazo del esquema.
+ *
+ * Pura y defensiva: los argumentos vienen del modelo, así que una estructura
+ * que no cumpla exactamente la forma esperada se devuelve intacta para que zod
+ * la rechace con su mensaje.
+ */
+export function normalizarParticipacionesPlan(args: Record<string, unknown>): { args: Record<string, unknown>; ajustes: AjusteParticipacion[] } {
+  const estructuras = args.estructuras;
+  if (!Array.isArray(estructuras)) return { args, ajustes: [] };
+  const ajustes: AjusteParticipacion[] = [];
+  const normalizadas = estructuras.map((estructura) => {
+    if (!esObjeto(estructura)) return estructura;
+    const materiales = estructura.materiales;
+    if (!Array.isArray(materiales) || materiales.length === 0) return estructura;
+    if (!materiales.every((material) => esObjeto(material) && typeof material.participacion === "number" && Number.isFinite(material.participacion) && material.participacion > 0)) return estructura;
+    const declaradas = materiales.map((material) => (material as { participacion: number }).participacion);
+    const suma = declaradas.reduce((total, cuota) => total + cuota, 0);
+    if (Math.abs(suma - 1) > 0.02) return estructura;
+    const estructuraId = typeof estructura.estructura_id === "string" ? estructura.estructura_id : "";
+    let ajustados = materiales.map((material) => ({ ...(material as Record<string, unknown>) }));
+    if (Math.abs(suma - 1) > 1e-9) {
+      const mayor = indiceParticipacionMayor(declaradas);
+      const reescaladas = declaradas.map((cuota) => cuota / suma);
+      reescaladas[mayor] = reescaladas[mayor]! + (1 - reescaladas.reduce((total, cuota) => total + cuota, 0));
+      ajustados = ajustados.map((material, indice) => ({ ...material, participacion: reescaladas[indice]! }));
+      ajustes.push({ tipo: "participacion_reescalada", estructura_id: estructuraId, suma_declarada: suma });
+    }
+    const finales = ajustados.map((material) => material.participacion as number);
+    const mayor = indiceParticipacionMayor(finales);
+    const principalDeclarado = ajustados.findIndex((material) => material.rol_material === "principal");
+    if (principalDeclarado >= 0 && finales[principalDeclarado]! < finales[mayor]!) {
+      ajustados = ajustados.map((material, indice) => {
+        if (indice === mayor) return { ...material, rol_material: "principal" };
+        return material.rol_material === "principal" ? { ...material, rol_material: "secundario" } : material;
+      });
+      ajustes.push({ tipo: "rol_principal_reasignado", estructura_id: estructuraId, product_id: typeof ajustados[mayor]!.product_id === "string" ? String(ajustados[mayor]!.product_id) : "" });
+    }
+    return { ...estructura, materiales: ajustados };
+  });
+  return ajustes.length === 0 ? { args, ajustes } : { args: { ...args, estructuras: normalizadas }, ajustes };
+}
+
+/** Una línea por ajuste para `plan_audit_log.error`; sin argumentos del modelo. */
+export function describirAjustesParticipacion(ajustes: readonly AjusteParticipacion[]): string {
+  return ajustes
+    .map((ajuste) => ajuste.tipo === "participacion_reescalada"
+      ? `${ajuste.estructura_id || "estructura"}: participaciones reescaladas desde ${ajuste.suma_declarada}`
+      : `${ajuste.estructura_id || "estructura"}: rol principal al material de mayor participación (${ajuste.product_id})`)
+    .join(" | ");
+}
+
+export const ACCION_COLORES_REFERENCIA_OMITIDOS ="La foto de referencia muestra colores dominantes que estas estructuras no usan y el catálogo sí tiene (colores_omitidos). Arma cada estructura con sus colores de la foto: si un producto de la lista tiene en_busqueda true, úsalo en materiales con ese color; si no, búscalo una sola vez con buscar_catalogo_rag usando una consulta de un solo color (por ejemplo \"globo latex redondo rosado\"): la búsqueda deja de exigir la ocasión cuando esta esconde los colores de la foto. Luego vuelve a confirmar con lo que tengas; si la búsqueda no devolvió un color, confirma igual y el sistema se lo avisará al cliente. Este aviso llega una sola vez por mensaje. No cambies los colores de la foto por otros ni anuncies o generes una imagen.";
 export const ACCION_NUMERO_INCORRECTO = "Los globos de número deben formar exactamente el número que pidió el cliente, un globo por dígito. Busca cada dígito por separado con buscar_catalogo_rag (por ejemplo \"globo metalizado numero 4 plata\" y \"globo metalizado numero 0 plata\"), usa esos productos en la figura y vuelve a confirmar. Si el catálogo no tiene uno de los dígitos en el color pedido, quita la figura de número y ofrécele al cliente el color en que sí está ese dígito (numeros_en_catalogo de la búsqueda) en vez de decirle solo que no hay. No anuncies ni generes una imagen.";
 export const ACCION_NUMEROS_EN_CATALOGO = "numeros_en_catalogo lista los globos de número que el catálogo disponible sí tiene para cada dígito que esta búsqueda no devolvió. No le digas al cliente solo que no hay ese número: ofrécele el color que sí existe para ese dígito (por ejemplo «el 4 lo tengo en latte, ¿te sirve?») y pregúntale si lo quiere; si disponibles está vacío, dile que ese dígito no está disponible y ofrece la decoración sin número. No uses ese globo en un plan hasta que el cliente lo acepte y lo busques.";
 export const ACCION_TAMANO_CLIENTE_SIN_COBERTURA = "Los tamaños que faltan son los que pidió el cliente y los productos de ese color no los tienen en el catálogo disponible. No reintentes el mismo plan: busca una vez ese tamaño en otro color o producto si no lo hiciste; si tampoco sirve, responde ya al cliente con lo que sí hay (el color en otros tamaños o ese tamaño en otro color) y pregúntale cómo prefiere seguir. No anuncies ni generes este plan.";
@@ -416,8 +503,19 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     // was recoverable from the original request.
     const eventLabel = parseEventSearchIntent(estado.solicitudOriginal).event_label;
     const eventIntent = parseEventIntent(estado.solicitudOriginal);
+    // Ruido de redondeo de las participaciones y un `principal` que no es el
+    // material de mayor participación se corrigen antes del esquema, para no
+    // gastar un rechazo (normalizarParticipacionesPlan).
+    const normalizado = normalizarParticipacionesPlan(args);
+    if (normalizado.ajustes.length > 0) {
+      encolarEscrituraObservabilidad(auditarPlan({
+        requestId: estado.ragRequestId,
+        status: "PLAN_PARTICIPACION_NORMALIZADA",
+        error: describirAjustesParticipacion(normalizado.ajustes),
+      }));
+    }
     const parseado = PlanDecoracionSchema.safeParse({
-      ...(args as Record<string, unknown>),
+      ...normalizado.args,
       ...(eventLabel
         ? { concepto: { ...((args as { concepto?: Record<string, unknown> }).concepto ?? {}), ocasion: eventLabel } }
         : {}),
@@ -869,11 +967,28 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     estado.seleccionFinalIA = [];
     const estadoAuditoria = resuelto.comercial.estado === "APROBACION_REQUERIDA" ? "APROBACION_REQUERIDA" : "VERIFICADO";
     // Photo colors the plan does not include: the model must tell the customer.
-    // Materials the server removed for lack of sizes are notices too.
+    // Materials the server removed for lack of sizes are notices too, and so
+    // are the finishes and colors the server rewrote before resolving: sin eso
+    // el resumen prometía un acabado o un color que la cotización no lleva.
+    const sustitucionesDeColor = resuelto.sustituciones.filter(esSustitucionDeColor);
+    // Un material que la cobertura o la convergencia sacaron del plan no lleva
+    // aviso de acabado ni de color: la cotización no lo compra y el aviso de
+    // material quitado ya lo cuenta. `planCanonico` es el plan que se resolvió.
+    const materialesEnPlan = new Set(planCanonico.estructuras.flatMap((estructura) => estructura.materiales.map((material) => `${estructura.estructura_id}|${material.product_id}`)));
     const avisosCliente = [...new Set([
       ...estado.ajustesCobertura.flatMap((ajuste) => (ajuste.tipo === "material_quitado" ? [ajuste.aviso_cliente] : [])),
+      ...avisosClienteAjustes(estado.ajustesCobertura, {
+        nombres: new Map(planCanonico.estructuras.map((estructura) => [estructura.estructura_id, estructura.nombre])),
+        coloresReportados: sustitucionesDeColor.map((item) => ({ estructura_id: item.estructura_id, color: item.pedido })),
+        coloresDelCliente: estado.restriccionesUsuario.colores.map((color) => color.valor),
+        materialesFuera: estado.ajustesCobertura.flatMap((ajuste) => (
+          ajuste.tipo !== "mezcla" && !materialesEnPlan.has(`${ajuste.estructura_id}|${ajuste.product_id}`)
+            ? [{ estructura_id: ajuste.estructura_id, product_id: ajuste.product_id }]
+            : []
+        )),
+      }),
       ...avisosConvergencia,
-      ...resuelto.sustituciones.filter(esSustitucionDeColor).map((item) => item.motivo),
+      ...sustitucionesDeColor.map((item) => item.motivo),
     ])];
     auditarResuelto(estadoAuditoria);
     encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, resuelto.estructuras.length ? "plan_confirmado" : "NO_MATCH", Date.now() - planningStart));
@@ -901,7 +1016,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       sustituciones: resuelto.sustituciones,
       avisos_cliente: avisosCliente,
       ...(avisosCliente.length
-        ? { accion_requerida: "avisos_cliente trae colores de la foto o globos que la propuesta no incluye: díselos al cliente en tu resumen, con tus palabras y sin omitir ninguno, como algo que esta propuesta no incluye (no afirmes que el catálogo no los tiene), y ofrece buscar esos colores si quiere acercarse más a la foto." }
+        ? { accion_requerida: "avisos_cliente trae colores de la foto o globos que la propuesta no incluye, y los ajustes de color o acabado que el sistema le hizo al plan que confirmaste: díselos al cliente en tu resumen, con tus palabras y sin omitir ninguno (no afirmes que el catálogo no tiene un color), y ofrece buscar esos colores si quiere acercarse más a la foto." }
         : {}),
       sin_cobertura: resuelto.sin_cobertura,
       advertencias: resuelto.advertencias,

@@ -3,7 +3,7 @@ import { PLAN_DECORACION_ENABLED } from "@/lib/ia/feature-flags";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import { ALCANCE_POR_CATEGORIA_REFERENCIA } from "@/lib/rag/taxonomy/alcance-referencia";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
-import { GUIA_ESTRUCTURAS_OFICIALES, identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
+import { EJEMPLO_UNIDADES_DECLARADAS, GUIA_ESTRUCTURAS_OFICIALES, identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { perfilCreatividad, type NivelCreatividad, type SugerenciaEscena } from "@/lib/ia/creatividad";
 
 /**
@@ -37,7 +37,6 @@ CÓMO CONVERSAS
 
 HERRAMIENTAS
 - buscar_catalogo_rag: úsala para cualquier pregunta comercial y conserva la evidencia de este turno.
-- calcular_medidas: úsala cuando una estructura necesite cantidades físicas; es un estimado preliminar, no un precio ni una promesa.
 - confirmar_seleccion_rag: úsala fuera del diseño declarativo para confirmar variantes recuperadas en este turno.
 - confirmar_plan_decoracion: úsala para un diseño completo; el backend calcula tamaños, paquetes, precios y cobertura.
 SIEMPRE que menciones productos o decoraciones deben venir de estas herramientas.
@@ -82,9 +81,22 @@ MODO RAG (activo)
 TAMAÑOS DE GLOBO
 - Cada variante de buscar_catalogo_rag trae "tamano" (código, ej. R-12) y "diametro_pulgadas" (número real). La búsqueda filtra por tamaño solo cuando su propio mensaje lo nombra ("globo latex dorado 24 pulgadas"); si el cliente pidió un tamaño, nómbralo en esa búsqueda.
 - Si la búsqueda trae "limite_busqueda", sus resultados están limitados a ese tamaño o forma: nunca le digas al cliente que no hay un color "en otros tamaños" o "en ningún tamaño" con esa búsqueda; para afirmarlo busca antes sin ese límite.
-- Si el cliente NO pidió un tamaño y vas a decorar una figura (arco, guirnalda, columna, pared, centro de mesa): llama calcular_medidas PRIMERO, y en confirmar_seleccion_rag manda ese producto con {product_id, usar_despiece: true} en vez de escoger tú una sola variante de tamaño — el backend arma la mezcla real de tamaños (varios diámetros, en las proporciones que salen del cálculo geométrico) usando ESE producto/color. NUNCA elijas una sola variante (ej. siempre R-12) para representar una figura completa: sin mezcla de tamaños real, la imagen generada se ve como globos sueltos del mismo tamaño, no como una instalación de decorador.
-- Si calculaste medidas con varios colores, manda un ítem "usar_despiece" por cada color (mismo texto que le pasaste a calcular_medidas en "color").
 - confirmar_seleccion_rag puede devolver "sustituciones" (un tamaño exacto no existía en ese producto/color y se usó el más cercano) o "sin_cobertura" (un tamaño del cálculo que ningún producto elegido pudo cubrir) — si vienen no vacíos, cuéntaselo al cliente con honestidad en una frase, igual que cualquier otra sustitución (ver HONESTIDAD AL SUSTITUIR). Nunca lo omitas ni lo redondees a "quedó perfecto".`;
+
+/**
+ * Ruta legacy (sin modo DISEÑO DE DECORACIÓN): ahí `calcular_medidas` sigue
+ * siendo la única forma de estimar cantidades físicas y de mandar un despiece
+ * por `confirmar_seleccion_rag`. En modo diseño la herramienta ni siquiera se
+ * expone (`herramientasActivas`): reparte los colores por partes iguales, no
+ * conoce `estructura_oficial` ni `repeticiones`, y sus totales contradicen los
+ * que cotiza `confirmar_plan_decoracion`.
+ */
+export const BLOQUE_MEDIDAS_LEGACY = `
+
+MEDIDAS FÍSICAS (fuera del modo DISEÑO DE DECORACIÓN)
+- calcular_medidas: úsala cuando una estructura necesite cantidades físicas; es un estimado preliminar, no un precio ni una promesa.
+- Si el cliente NO pidió un tamaño y vas a decorar una figura (arco, guirnalda, columna, pared, centro de mesa): llama calcular_medidas PRIMERO, y en confirmar_seleccion_rag manda ese producto con {product_id, usar_despiece: true} en vez de escoger tú una sola variante de tamaño — el backend arma la mezcla real de tamaños (varios diámetros, en las proporciones que salen del cálculo geométrico) usando ESE producto/color. NUNCA elijas una sola variante (ej. siempre R-12) para representar una figura completa: sin mezcla de tamaños real, la imagen generada se ve como globos sueltos del mismo tamaño, no como una instalación de decorador.
+- Si calculaste medidas con varios colores, manda un ítem "usar_despiece" por cada color (mismo texto que le pasaste a calcular_medidas en "color").`;
 
 // Sólo se agrega si RAG_FRANJAS_ENABLED. Cuando brief.presupuesto trae una
 // franja resuelta, el backend ya
@@ -124,10 +136,11 @@ DISEÑO DE LA DECORACIÓN (activo)
 - CON IMAGEN DE REFERENCIA la composición la fija la foto, no el rango 3–5: arma exactamente las estructuras de globos de ANALISIS_REFERENCIA_VISUAL (una estructura por pieza separada, cada una con su referencia_element_id) y no agregues guirnaldas de piso, centros de mesa ni otras piezas que la foto no tiene, salvo que el cliente las pida o CREATIVIDAD DEL DISEÑO (si está presente) te permita acentos extra, y solo hasta ese número. El título y la descripción del concepto nombran solo las estructuras que realmente tiene el plan.
 - EL TECHO MANDA SOBRE ESE RANGO. Las 3–5 estructuras son el default de un brief sin restricción de presupuesto, NO una obligación. Si hay techo, el número de estructuras sale del techo: con presupuestos ajustados, una sola pieza bien resuelta que cabe es una propuesta correcta, y varias que no caben es una propuesta fallida. Los globos se venden por paquete cerrado, así que cada estructura adicional suma paquetes enteros aunque use pocas unidades: es la razón principal por la que un plan se pasa. Empieza por lo que cabe y crece solo si sobra techo.
 - En cada estructura orgánica usa la mezcla de tamaños que calcule el backend cuando el catálogo tenga cobertura; combina tamaños grandes, medianos y pequeños solo dentro de los diámetros reales resueltos. Si el cliente fija explícitamente un único tamaño, respétalo sin inventar otros.
-- Tú decides estructura, ubicación, producto y proporción. Nunca mandes tamaños de globo, cantidades de globos ni precios: el backend calcula R-5/R-9/R-12/R-18/R-24, cantidades, sustituciones, paquetes y total desde la geometría y el catálogo real.
+- Tú decides estructura, ubicación, producto y proporción; los precios nunca los mandas tú. En las estructuras con geometría (arco, semiarco, guirnalda, columna, pared, centro de mesa) no mandes variant_id, tamaños de globo ni cantidades: el backend calcula R-5/R-9/R-12/R-18/R-24, cantidades, sustituciones, paquetes y total desde la geometría y el catálogo real.
+- EN ESTE MODO NO USES calcular_medidas: no está disponible y sus cantidades no son las que se cotizan. Las cantidades y los tamaños que le menciones al cliente salen solo de estructuras[].total_unidades y estructuras[].tamanos de la última respuesta ok:true de confirmar_plan_decoracion; mientras no tengas una, no le des números de globos.
 - Si el cliente pidió un tamaño, color o acabado explícito, consérvalo como restricción obligatoria del plan; no lo sustituyas en silencio. Registra el acabado en materiales[].acabado. Si no hay cobertura exacta, confirmar_plan_decoracion debe bloquearlo o devolver la sustitución declarada.
 - Si no hay medidas, confirma el plan igual: el sistema usa medidas por defecto y las muestra como supuesto explícito.
-- Para piezas sin geometría (backdrop, kit o accesorio) sí debes indicar variant_id y unidades_declaradas; para globos no elijas una variante por tamaño.
+- Las piezas sin geometría sí llevan cantidades: Bouquet y Figura (que se arman con tipo kit), y también kit, backdrop y accesorio, necesitan variant_id en cada material y unidades_declaradas (el total de globos, o de piezas si es un kit empaquetado, sumando las repeticiones). Ejemplos: ${EJEMPLO_UNIDADES_DECLARADAS}.
 - Una decoración lleva globos: salvo que el cliente pida explícitamente solo accesorios o "sin globos", incluye al menos una estructura de globos. Serpentinas, velas, banderolas y demás accesorios solo acompañan. Si la búsqueda por ocasión no devuelve globos, vuelve a buscar globos por color sin exigir la ocasión.
 - Si confirmar_plan_decoracion devuelve ok:false por SIN_COBERTURA, el plan no quedó confirmado: busca productos que cubran los tamaños faltantes o usa una mezcla compatible y vuelve a confirmar. Nunca anuncies que la imagen se está generando tras ese error.
 - Si confirmar_plan_decoracion devuelve ok:false por PRESUPUESTO_EXCEDIDO, el plan NO quedó confirmado y NO es aprobable: la herramienta ya lo descartó. Es un error tuyo de diseño, no una decisión que se le traslada al cliente. Antes de escribirle, REDISEÑA y vuelve a llamar a la herramienta: quita la estructura de menor valor (empezando por acentos y rellenos), baja repeticiones, reduce el número de colores distintos —cada color extra es otro paquete cerrado— o aplica una de las "alternativas" que devuelve la respuesta. Reintenta hasta que quepa.
@@ -137,7 +150,9 @@ DISEÑO DE LA DECORACIÓN (activo)
 - FOTO SIN GLOBOS: si ANALISIS_REFERENCIA_VISUAL no trae ninguna estructura de globos (balloon_structure) y el cliente no nombró piezas (arco, columnas, centros de mesa, bouquet…), PREGUNTA antes de armar: dile en una frase que su foto no tiene decoración con globos y pregúntale qué piezas quiere, o sugiérele elegir una de las fotos de ejemplo. No inventes estructuras ni llames confirmar_plan_decoracion hasta que responda; con un nivel de CREATIVIDAD DEL DISEÑO que permita acentos extra sobre la foto sí puedes proponerlos. Si confirmar_plan_decoracion devuelve REFERENCIA_SIN_GLOBOS, haz esa pregunta.
 - Respeta alcance comercial de cada elemento: un elemento fuera_de_catalogo no dispara buscar_catalogo_rag ni una propuesta de emulación; decláralo con motivo_tipo "fuera_de_catalogo". Un elemento emulable solo puede quedar como propuesta pendiente con motivo_tipo "emulacion_propuesta" y propuesta explícita; no lo asignes a una estructura en el primer plan.
 - La respuesta de confirmar_plan_decoracion incluye \`evento.event_label\`, \`evento.original_request\`, \`evento.match_levels\` y \`evento.relaxations\`; consérvalos en el resumen. Si aparece \`thematic\` o \`adaptable\`, dilo como propuesta temática/adaptable, nunca como coincidencia exacta.
-- COLORES DE LA FOTO: usa en cada estructura los colores observados de SU elemento de referencia (con varias fotos, cada estructura sigue la paleta de su propia foto, no la de otra). Nunca armes una estructura con un color que la foto no tiene (por ejemplo, todo transparente para una foto rosa y plata) mientras el catálogo tenga los colores de la foto: si una búsqueda no te trae uno de esos colores, búscalo aparte con una consulta de un solo color ("globo latex redondo rosado") antes de confirmar. Si confirmar_plan_decoracion devuelve COLORES_REFERENCIA_OMITIDOS, arma esas estructuras con los colores de "colores_omitidos" y vuelve a confirmar; si una búsqueda de un color no lo trae, no la repitas: confirma con lo que tengas y el sistema avisará al cliente. Si devuelve "avisos_cliente", son colores dominantes de la foto que el catálogo no tiene o que la propuesta no lleva: díselos al cliente en tu resumen, sin omitir ninguno, y ofrécele buscar esos colores.
+- PROPORCIONES DE LA FOTO: cuando un elemento trae "mezcla de color observada", esa mezcla es el punto de partida de materiales[].participacion (múltiplos de 0,05 que sumen 1) y el material de mayor participación va con rol_material "principal". Es una guía, no una orden: los colores que el cliente pidió explícitamente y lo que el catálogo de verdad cubre mandan sobre ella; si un color de la mezcla no se puede comprar, reparte su participación entre los que sí y cuéntaselo al cliente.
+- LO QUE CUESTA UN ACENTO CHIQUITO: cada color se compra por paquete cerrado en CADA tamaño de la mezcla, así que un acento con participación de 0,1 o menos puede salir en tres o cuatro paquetes para unos pocos globos. Con presupuesto ajustado, súbelo a 0,2 o más, o déjalo fuera y quédate con dos colores bien resueltos.
+- COLORES DE LA FOTO: usa en cada estructura los colores observados de SU elemento de referencia (con varias fotos, cada estructura sigue la paleta de su propia foto, no la de otra). Nunca armes una estructura con un color que la foto no tiene (por ejemplo, todo transparente para una foto rosa y plata) mientras el catálogo tenga los colores de la foto: si una búsqueda no te trae uno de esos colores, búscalo aparte con una consulta de un solo color ("globo latex redondo rosado") antes de confirmar. Si confirmar_plan_decoracion devuelve COLORES_REFERENCIA_OMITIDOS, arma esas estructuras con los colores de "colores_omitidos" y vuelve a confirmar; si una búsqueda de un color no lo trae, no la repitas: confirma con lo que tengas y el sistema avisará al cliente. Si devuelve "avisos_cliente", son colores dominantes de la foto que la propuesta no lleva, o ajustes de color y acabado que el sistema le hizo al plan (un acabado que ese producto no tiene, o el color real de un producto de un solo color): díselos al cliente en tu resumen, sin omitir ninguno, y ofrécele buscar esos colores.
 - MEDIDAS DEL ESPACIO: no mides fotos. espacio.fuente "foto" solo dice que el TIPO de espacio (salón, jardín, terraza…) lo viste en la foto; no pongas ancho_m, alto_m ni largo_m del espacio salvo que el cliente te haya dado esas medidas (entonces fuente "cliente"). Si no las dio, omítelas: el sistema marca cualquier medida sin dato del cliente como estimada y le pide confirmarla.
 - "porque" de cada estructura: una frase corta para el cliente, en español y sin jerga, sobre para qué sirve la pieza en su evento ("Enmarca la mesa del pastel"). No menciones la imagen de referencia, la foto analizada, identificadores ni verbos como "materializa".
 - Después de confirmar_plan_decoracion el cliente verá el desglose completo antes de la imagen. Escribe solo 2 o 3 frases sobre el concepto y menciona cualquier supuesto, sustitución o pieza que no esté disponible que devuelva la herramienta, en palabras del cliente.
@@ -153,6 +168,18 @@ const REFERENCE_ROLE_LABELS: Record<string, string> = {
   aligned_with: "alineado con",
   supports: "sostiene a",
 };
+
+/** Valor por defecto de `appearance.composition` (reference-blueprint.ts): no aporta proporciones. */
+const COMPOSICION_UNIFORME = "single uniform material";
+
+/**
+ * Texto libre del modelo de visión listo para ir entre comillas en el prompt:
+ * una sola línea, sin comillas dobles y con el mismo tope de 240 caracteres del
+ * blueprint, para que no pueda salirse del campo citado (test-inyeccion-prompt.ts).
+ */
+function sanearTextoObservado(texto: string): string {
+  return texto.replace(/\s+/g, " ").replace(/"/g, "").trim().slice(0, 240);
+}
 
 /**
  * Serializa el blueprint de referencia (analizado por
@@ -173,6 +200,13 @@ export function serializeReferenceBlueprint(blueprint: ReferenceBlueprintV2): st
       const bbox = element.reference_bbox;
       const posicion = `x${bbox.x.toFixed(2)} y${bbox.y.toFixed(2)} w${bbox.width.toFixed(2)} h${bbox.height.toFixed(2)}`;
       const colores = element.appearance.observed_colors.join(", ") || "no determinable";
+      // La proporción de cada color ya la extrajo el análisis de la foto: sin
+      // ella el plan inventa las participaciones (BLOQUE_PLAN, PROPORCIONES DE
+      // LA FOTO). El valor por defecto no dice nada, así que no se manda.
+      const composicion = sanearTextoObservado(element.appearance.composition);
+      const mezclaObservada = composicion && composicion.toLowerCase() !== COMPOSICION_UNIFORME
+        ? `; mezcla de color observada: "${composicion}"`
+        : "";
       const relaciones = element.relationships
         .map((relation) => `${REFERENCE_ROLE_LABELS[relation.type] ?? relation.type} ${relation.target_element_id}`)
         .join("; ") || "ninguna";
@@ -185,9 +219,9 @@ export function serializeReferenceBlueprint(blueprint: ReferenceBlueprintV2): st
         ? identificarEstructuraOficial({ tipo: semantica.structure_type, densidad: semantica.density, ubicacion: semantica.placement, nombre: element.appearance.shape })
         : undefined;
       const estructura = semantica
-        ? ` Estructura detectada: ${oficial ? `estructura oficial "${oficial.nombre}", ` : ""}tipo ${semantica.structure_type}, densidad ${semantica.density}, ubicación ${semantica.placement}, rol ${semantica.design_role}; forma: ${element.appearance.shape}. Usa exactamente esa estructura oficial (su etiqueta al inicio del nombre y en estructura_oficial), ese tipo y esa ubicación en la estructura del plan que lo materialice, con materiales que cubran sus colores y acabados observados (chrome/metallic = reflex, pearl = satin, clear = transparente: elige el producto con ese acabado y regístralo en materiales[].acabado) y alturas que respeten su forma relativa; dos piezas separadas son dos estructuras. Si el catálogo no tiene un color, acabado o tamaño grande observado, díselo al cliente en una frase.`
+        ? ` Estructura detectada: ${oficial ? `estructura oficial "${oficial.nombre}", ` : ""}tipo ${semantica.structure_type}, densidad ${semantica.density}, ubicación ${semantica.placement}, rol ${semantica.design_role}; forma: ${element.appearance.shape}. Usa exactamente esa estructura oficial (su etiqueta al inicio del nombre y en estructura_oficial), ese tipo y esa ubicación en la estructura del plan que lo materialice, con materiales que cubran sus colores y acabados observados (chrome/metallic = reflex, pearl = satin; "clear" junto a un color, como "clear pink", es la línea Cristal de ese color —un acabado translúcido, no un globo transparente—, y "clear" solo sí es transparente: elige el producto con ese acabado y regístralo en materiales[].acabado) y alturas que respeten su forma relativa; dos piezas separadas son dos estructuras. Si el catálogo no tiene un color, acabado o tamaño grande observado, díselo al cliente en una frase.`
         : "";
-      return `- ${element.element_id} (${element.category}, alcance ${alcance.alcance}, capa ${element.scene_role}): "${element.name}"${estructura ? ` —${estructura}` : ""} — colores observados: ${colores}; posición en la referencia: ${posicion}; piezas iguales en la foto: ${element.quantity.mode === "exact" ? element.quantity.min : `${element.quantity.min}-${element.quantity.max}`}; relaciones: ${relaciones}. Nota comercial: ${alcance.nota}${emulacion}`;
+      return `- ${element.element_id} (${element.category}, alcance ${alcance.alcance}, capa ${element.scene_role}): "${element.name}"${estructura ? ` —${estructura}` : ""} — colores observados: ${colores}${mezclaObservada}; posición en la referencia: ${posicion}; piezas iguales en la foto: ${element.quantity.mode === "exact" ? element.quantity.min : `${element.quantity.min}-${element.quantity.max}`}; relaciones: ${relaciones}. Nota comercial: ${alcance.nota}${emulacion}`;
     })
     .join("\n");
   return elementos || "- Ningún elemento relevante detectado.";
@@ -227,6 +261,9 @@ export function construirSistema(opts: { ragEnabled: boolean; franjasEnabled: bo
     SYSTEM_PROMPT_BASE +
     BLOQUE_SELECCION +
     (opts.ragEnabled ? BLOQUE_RAG : "") +
+    // calcular_medidas solo existe fuera del modo diseño: con el plan activo la
+    // herramienta no se expone y sus cantidades contradicen la cotización.
+    (opts.ragEnabled && !(opts.planEnabled ?? PLAN_DECORACION_ENABLED) ? BLOQUE_MEDIDAS_LEGACY : "") +
     (opts.ragEnabled && opts.franjasEnabled ? BLOQUE_FRANJAS : "") +
     (opts.ragEnabled && (opts.planEnabled ?? PLAN_DECORACION_ENABLED) ? BLOQUE_PLAN + GUIA_ESTRUCTURAS_OFICIALES : "") +
     // El bloque de referencia solo tiene sentido junto al modo plan: es ahí

@@ -215,6 +215,21 @@ export function resumenEstructuraParaCliente(estructura: EstructuraPlanLigera & 
   return partes.join(" · ");
 }
 
+/** Repeticiones que usa el ejemplo de `unidades_declaradas`. */
+const REPETICIONES_EJEMPLO = 2;
+
+/**
+ * Ejemplo de `unidades_declaradas` para la herramienta y el prompt, derivado de
+ * la tabla (mínimo por pieza × repeticiones). Vive aquí para que el mínimo
+ * tenga un solo dueño: `unidadesMinimasPorInstancia`, que es el mismo que
+ * aplica `validarUnidadesDeclaradas` (restricciones.ts).
+ */
+export const EJEMPLO_UNIDADES_DECLARADAS = Object.values(ESTRUCTURAS_OFICIALES)
+  .flatMap((estructura) => estructura.unidadesMinimasPorInstancia === undefined
+    ? []
+    : [`${estructura.nombre} con repeticiones ${REPETICIONES_EJEMPLO} → unidades_declaradas ${estructura.unidadesMinimasPorInstancia * REPETICIONES_EJEMPLO} o más (${estructura.unidadesMinimasPorInstancia} por pieza)`])
+  .join("; ");
+
 /**
  * Guía para el modelo del chat: qué estructuras existen y cómo expresarlas en
  * el plan actual (tipo + densidad + nombre con la etiqueta oficial).

@@ -1,6 +1,49 @@
 import type { Herramienta } from "./tipos";
 import { DENSIDADES, MEZCLAS, ROLES_ESCENA, ROLES_MATERIAL, TIPOS_ESTRUCTURA, UBICACIONES } from "@/lib/plan/tipos";
-import { ESTRUCTURAS_OFICIALES_IDS } from "@/lib/plan/estructuras-oficiales";
+import { EJEMPLO_UNIDADES_DECLARADAS, ESTRUCTURAS_OFICIALES_IDS } from "@/lib/plan/estructuras-oficiales";
+
+const SELECCION_PROPIEDADES = {
+  product_id: { type: "string" },
+  variant_id: { type: "string" },
+  cantidad: { type: "integer" },
+  color: { type: "string" },
+  razon: { type: "string" },
+} as const;
+
+/**
+ * `confirmar_seleccion_rag` cambia con el modo porque el despiece legacy sale
+ * de `calcular_medidas`, y en DISEÑO DE DECORACIÓN esa herramienta no se expone
+ * (`herramientasActivas`): allí `usar_despiece` solo podía terminar en el
+ * rechazo "usar_despiece sin haber llamado calcular_medidas en este turno", que
+ * el modelo no puede corregir. En ese modo el campo no existe y la descripción
+ * manda las cantidades a confirmar_plan_decoracion.
+ */
+function confirmarSeleccionRag(conDespiece: boolean): Herramienta {
+  return {
+    nombre: "confirmar_seleccion_rag",
+    descripcion:
+      "Confirma la selección final usando únicamente product_id y variant_id recuperados por buscar_catalogo_rag en este mismo turno. Nunca incluyas precio: el backend lo calcula desde PostgreSQL. Usa una variante explícita cuando el cliente pidió tamaño; " +
+      (conDespiece
+        ? "usa usar_despiece únicamente después de calcular_medidas cuando el cliente no pidió tamaño específico."
+        : "en el modo DISEÑO DE DECORACIÓN no hay despiece: las cantidades y los tamaños de una estructura los calcula confirmar_plan_decoracion."),
+    esquema: {
+      type: "object",
+      required: ["seleccion"],
+      properties: {
+        seleccion: {
+          type: "array",
+          items: {
+            type: "object",
+            required: ["product_id"],
+            properties: conDespiece
+              ? { ...SELECCION_PROPIEDADES, usar_despiece: { type: "boolean" } }
+              : { ...SELECCION_PROPIEDADES },
+          },
+        },
+      },
+    },
+  };
+}
 
 /**
  * Registro único de herramientas expuestas al pipeline RAG y al planificador.
@@ -36,32 +79,7 @@ export const HERRAMIENTAS_RAG: Herramienta[] = [
       },
     },
   },
-  {
-    nombre: "confirmar_seleccion_rag",
-    descripcion:
-      "Confirma la selección final usando únicamente product_id y variant_id recuperados por buscar_catalogo_rag en este mismo turno. Nunca incluyas precio: el backend lo calcula desde PostgreSQL. Usa una variante explícita cuando el cliente pidió tamaño; usa usar_despiece únicamente después de calcular_medidas cuando el cliente no pidió tamaño específico.",
-    esquema: {
-      type: "object",
-      required: ["seleccion"],
-      properties: {
-        seleccion: {
-          type: "array",
-          items: {
-            type: "object",
-            required: ["product_id"],
-            properties: {
-              product_id: { type: "string" },
-              variant_id: { type: "string" },
-              cantidad: { type: "integer" },
-              usar_despiece: { type: "boolean" },
-              color: { type: "string" },
-              razon: { type: "string" },
-            },
-          },
-        },
-      },
-    },
-  },
+  confirmarSeleccionRag(true),
   {
     nombre: "calcular_medidas",
     descripcion: "Calcula un despiece físico preliminar para una estructura de decoración. El backend usa estas cantidades para resolver tamaños reales del catálogo; nunca inventes cantidades ni precios.",
@@ -81,10 +99,19 @@ export const HERRAMIENTAS_RAG: Herramienta[] = [
   },
 ];
 
+/**
+ * Las mismas herramientas RAG como las ve el modo DISEÑO DE DECORACIÓN: sin
+ * `calcular_medidas` (sus cantidades contradicen las que cotiza el plan) y sin
+ * el camino de despiece que dependía de ella.
+ */
+export const HERRAMIENTAS_RAG_MODO_PLAN: Herramienta[] = HERRAMIENTAS_RAG
+  .filter((herramienta) => herramienta.nombre !== "calcular_medidas")
+  .map((herramienta) => (herramienta.nombre === "confirmar_seleccion_rag" ? confirmarSeleccionRag(false) : herramienta));
+
 export const HERRAMIENTAS_PLAN: Herramienta[] = [
   {
     nombre: "confirmar_plan_decoracion",
-    descripcion: "Confirma el diseño completo: estructuras, ubicación, productos y colores. No mandes tamaños, cantidades de globos ni precios; el backend los calcula desde la geometría y el catálogo real. Cada product_id debe haber aparecido en buscar_catalogo_rag de este turno. Es la última herramienta del turno y devuelve el desglose que se muestra antes de generar la imagen.",
+    descripcion: "Confirma el diseño completo: estructuras, ubicación, productos y colores. Nunca mandes precios. En las estructuras con geometría (arco, semiarco, guirnalda, columna, pared, centro_mesa) no mandes variant_id, tamaños ni cantidades de globos: el backend los calcula desde la geometría y el catálogo real; las piezas sin geometría (bouquet, figura, kit, backdrop, accesorio) sí llevan variant_id por material y unidades_declaradas. Cada product_id debe haber aparecido en buscar_catalogo_rag de este turno. Es la última herramienta del turno y devuelve el desglose que se muestra antes de generar la imagen.",
     esquema: {
       type: "object",
       required: ["concepto", "espacio", "estructuras"],
@@ -128,8 +155,8 @@ export const HERRAMIENTAS_PLAN: Herramienta[] = [
               medidas: { type: "object", properties: { ancho_m: { type: "number" }, alto_m: { type: "number" }, largo_m: { type: "number" } } },
               repeticiones: { type: "integer", minimum: 1, maximum: 24, description: "Número de piezas iguales de esta estructura (el número de piezas que muestra la referencia, ej. 2 columnas). No es un número de globos." },
               densidad: { type: "string", enum: [...DENSIDADES] },
-              mezcla: { type: "string", enum: [...MEZCLAS], description: "organica_fina pide globos de 5, 9, 12, 18 y 24 pulgadas del mismo producto y color (organica_gruesa de 9 a 24, solo_grandes 18 y 24). Revisa diametro_pulgadas de las variantes: si el producto tiene 5, 9 y 12 pulgadas usa organica_fina aunque falten 18 o 24 (el backend los sustituye por el tamaño más cercano y lo avisa); usa clasica solo si el producto tiene únicamente 12 pulgadas o el cliente pidió un único tamaño. Una estructura orgánica toda de 12 pulgadas se ve plana." },
-              unidades_declaradas: { type: "integer", minimum: 1, description: "Solo para piezas sin geometría (bouquet, figura, kit, backdrop, accesorio). Son unidades de venta del catálogo para la pieza completa, sumando todas sus repeticiones: si la pieza se arma con globos sueltos, es el total de GLOBOS (no el número de figuras ni de bouquets); si el material es un kit empaquetado, un telón o un accesorio, es el número de piezas. Se reparte entre los materiales según participacion y cada material recibe al menos 1, así que nunca declares menos unidades que materiales. Una Figura con globos lleva al menos 20 globos por figura y un Bouquet de globos al menos 5 por bouquet (ej.: 2 figuras con 4 colores → unidades_declaradas 48 o más, repeticiones 2)." },
+              mezcla: { type: "string", enum: [...MEZCLAS], description: "organica_fina pide globos de 5, 9, 12, 18 y 24 pulgadas del mismo producto y color (organica_gruesa de 9 a 24, solo_grandes 18 y 24). Revisa diametro_pulgadas de las variantes: organica_fina necesita las 5 pulgadas exactas, al menos una de 9 o 12, y al menos una de 18 o 24 (si falta el 24 el backend lo sustituye por 18, si falta el 18 por 24 o 12 y si falta el 9 por 12, y lo avisa); un producto que solo tiene 5, 9 y 12 pulgadas (o solo 9 y 12) no cabe en organica_fina: usa clasica. Usa clasica también si el cliente pidió un único tamaño. Una estructura orgánica toda de 12 pulgadas se ve plana." },
+              unidades_declaradas: { type: "integer", minimum: 1, description: `Solo para piezas sin geometría (bouquet, figura, kit, backdrop, accesorio). Son unidades de venta del catálogo para la pieza completa, sumando todas sus repeticiones: si la pieza se arma con globos sueltos, es el total de GLOBOS (no el número de figuras ni de bouquets); si el material es un kit empaquetado, un telón o un accesorio, es el número de piezas. Se reparte entre los materiales según participacion y cada material recibe al menos 1, así que nunca declares menos unidades que materiales. Mínimos: ${EJEMPLO_UNIDADES_DECLARADAS}.` },
               materiales: {
                 type: "array",
                 minItems: 1,
@@ -139,11 +166,11 @@ export const HERRAMIENTAS_PLAN: Herramienta[] = [
                   required: ["product_id", "participacion", "rol_material"],
                   properties: {
                     product_id: { type: "string" },
-                    variant_id: { type: "string", description: "Solo para backdrop, kit o accesorio; no mandes tamaños para estructuras de globos." },
+                    variant_id: { type: "string", description: "Obligatorio en las piezas sin geometría (bouquet, figura, kit, backdrop, accesorio), una variante por material. En las estructuras con geometría (arco, semiarco, guirnalda, columna, pared, centro_mesa) no lo mandes: el tamaño lo resuelve el backend." },
                     color: { type: "string" },
                     acabado: { type: "string", description: "solo si el cliente lo pidió explícitamente o la imagen de referencia lo muestra (cromado = reflex); no lo inventes desde el estilo" },
-                    participacion: { type: "number", minimum: 0, maximum: 1 },
-                    rol_material: { type: "string", enum: [...ROLES_MATERIAL] },
+                    participacion: { type: "number", minimum: 0, maximum: 1, description: "Fracción de los globos de esta estructura que va en este material. Todas las participaciones de una estructura suman exactamente 1: usa décimas o veinteavos (0,5 / 0,3 / 0,2, o 0,4 / 0,35 / 0,25), nunca 0,33 tres veces." },
+                    rol_material: { type: "string", enum: [...ROLES_MATERIAL], description: "principal = el material con mayor participacion (uno solo por estructura); secundario = el que acompaña; acento = una participación pequeña." },
                   },
                 },
               },

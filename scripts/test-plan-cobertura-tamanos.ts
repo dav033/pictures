@@ -31,6 +31,31 @@ async function main(): Promise<void> {
   assert.deepEqual(mezclasCompatiblesConDiametros([]), []);
   ok("mezclas compatibles: R-5 exacto para organica_fina; vecinos admisibles para el resto");
 
+  // 1b. W3.5: lo que la descripción de `mezcla` le recomienda al modelo tiene
+  //     que ser lo que el resolver puede cubrir (sustitucionAdmisible), o el
+  //     plan sale directo a SIN_COBERTURA.
+  const { HERRAMIENTAS_PLAN: herramientasPlan } = await import("../src/lib/ia/herramientas");
+  const descripcionMezcla = String((herramientasPlan[0]!.esquema as { properties: { estructuras: { items: { properties: Record<string, { description?: string }> } } } }).properties.estructuras.items.properties.mezcla!.description);
+  const recomendaciones = [
+    { diametros: [5, 9, 12, 18], mezcla: "organica_fina" as const, organicaFina: true },
+    { diametros: [5, 9, 12, 24], mezcla: "organica_fina" as const, organicaFina: true },
+    { diametros: [5, 9, 12], mezcla: "clasica" as const, organicaFina: false },
+    { diametros: [9, 12], mezcla: "clasica" as const, organicaFina: false },
+    // Revisión W3-3: las 5 pulgadas y una grande no bastan; la pedida de 9 solo
+    // la cubren el 9 o el 12, así que el texto tiene que nombrarlas también.
+    { diametros: [5, 18, 24], mezcla: "clasica" as const, organicaFina: false },
+    { diametros: [5, 24], mezcla: "solo_grandes" as const, organicaFina: false },
+  ];
+  for (const caso of recomendaciones) {
+    const compatibles = mezclasCompatiblesConDiametros(caso.diametros);
+    assert.ok(compatibles.includes(caso.mezcla), `${caso.diametros.join("/")} debería admitir ${caso.mezcla}: ${compatibles.join(", ")}`);
+    assert.equal(compatibles.includes("organica_fina"), caso.organicaFina, `${caso.diametros.join("/")}: ${compatibles.join(", ")}`);
+  }
+  assert.doesNotMatch(descripcionMezcla, /aunque falten 18 o 24/, "el texto ya no recomienda una mezcla que el resolver no cubre");
+  assert.match(descripcionMezcla, /5 pulgadas exactas, al menos una de 9 o 12, y al menos una de 18 o 24/);
+  assert.match(descripcionMezcla, /solo tiene 5, 9 y 12 pulgadas \(o solo 9 y 12\) no cabe en organica_fina/);
+  ok("descripción de mezcla alineada con sustitucionAdmisible (tabla de conjuntos de tamaños)");
+
   // 2. Cobertura por producto desde los candidatos del turno.
   const candidato = (productId: string, diametros: number[], color: string): ProductoCandidato => ({
     productId,
@@ -129,6 +154,148 @@ async function main(): Promise<void> {
   assert.ok(estadoAzul.planResuelto, `material "azul rey" debe resolver contra variantes "azul": ${JSON.stringify(resultadoAzul).slice(0, 300)}`);
   assert.equal(estadoAzul.planResuelto.plan.estructuras[0]!.materiales[0]!.color, "azul");
   ok("colores del cliente al vocabulario del catálogo: 'azul rey' resuelve contra variantes 'azul'");
+
+  // 5. W3.2: ruido de redondeo de las participaciones y rol principal coherente
+  //    con la participación, antes de que el esquema gaste un rechazo.
+  const { normalizarParticipacionesPlan } = await import("../src/lib/ia/registro-herramientas");
+  const conMateriales = (materiales: Array<Record<string, unknown>>) => ({
+    estructuras: [{ estructura_id: "EST_01_ARCO", materiales }],
+  });
+  const tercios = normalizarParticipacionesPlan(conMateriales([
+    { product_id: "A", participacion: 0.33, rol_material: "principal" },
+    { product_id: "B", participacion: 0.33, rol_material: "secundario" },
+    { product_id: "C", participacion: 0.33, rol_material: "acento" },
+  ]));
+  const cuotasTercios = (tercios.args.estructuras as Array<{ materiales: Array<{ participacion: number }> }>)[0]!.materiales.map((material) => material.participacion);
+  assert.ok(Math.abs(cuotasTercios.reduce((suma, cuota) => suma + cuota, 0) - 1) < 1e-9, cuotasTercios.join(", "));
+  assert.deepEqual(tercios.ajustes, [{ tipo: "participacion_reescalada", estructura_id: "EST_01_ARCO", suma_declarada: 0.33 * 3 }]);
+  assert.ok(PlanDecoracionSchema.safeParse({ plan_version: "1.0", plan_id: "99999999-9999-4999-8999-999999999999", ...plan("clasica"), estructuras: [{ ...plan("clasica").estructuras[0]!, materiales: (tercios.args.estructuras as Array<{ materiales: unknown[] }>)[0]!.materiales }] }).success, "el plan reescalado pasa el esquema");
+  assert.ok(!PlanDecoracionSchema.safeParse({ plan_version: "1.0", plan_id: "99999999-9999-4999-8999-999999999999", ...plan("clasica"), estructuras: [{ ...plan("clasica").estructuras[0]!, materiales: [{ product_id: "A", participacion: 0.33, rol_material: "principal" }, { product_id: "B", participacion: 0.33, rol_material: "secundario" }, { product_id: "C", participacion: 0.33, rol_material: "acento" }] }] }).success, "sin normalizar, 0,33 × 3 es un rechazo del esquema");
+
+  const desviado = conMateriales([{ product_id: "A", participacion: 0.5, rol_material: "principal" }, { product_id: "B", participacion: 0.3, rol_material: "acento" }]);
+  assert.deepEqual(normalizarParticipacionesPlan(desviado), { args: desviado, ajustes: [] }, "una desviación mayor a 0,02 la sigue rechazando el esquema");
+  const exacto = conMateriales([{ product_id: "A", participacion: 0.6, rol_material: "principal" }, { product_id: "B", participacion: 0.4, rol_material: "acento" }]);
+  assert.deepEqual(normalizarParticipacionesPlan(exacto), { args: exacto, ajustes: [] }, "un plan coherente no se toca");
+  assert.deepEqual(normalizarParticipacionesPlan({ estructuras: "no es una lista" }).ajustes, [], "argumentos con otra forma quedan para zod");
+
+  const rolInvertido = normalizarParticipacionesPlan(conMateriales([
+    { product_id: "A", participacion: 0.2, rol_material: "principal" },
+    { product_id: "B", participacion: 0.8, rol_material: "acento" },
+  ]));
+  assert.deepEqual((rolInvertido.args.estructuras as Array<{ materiales: Array<{ rol_material: string }> }>)[0]!.materiales.map((material) => material.rol_material), ["secundario", "principal"]);
+  assert.deepEqual(rolInvertido.ajustes, [{ tipo: "rol_principal_reasignado", estructura_id: "EST_01_ARCO", product_id: "B" }]);
+  const { HERRAMIENTAS_PLAN } = await import("../src/lib/ia/herramientas");
+  const materialPlan = (HERRAMIENTAS_PLAN[0]!.esquema as { properties: { estructuras: { items: { properties: { materiales: { items: { properties: Record<string, { description?: string; minimum?: number }> } } } } } } }).properties.estructuras.items.properties.materiales.items.properties;
+  assert.match(String(materialPlan.participacion!.description), /suman exactamente 1/);
+  assert.match(String(materialPlan.rol_material!.description), /principal = el material con mayor participacion/);
+  assert.equal(materialPlan.participacion!.minimum, 0, "el mínimo del esquema de herramienta no cambia");
+  ok("participaciones: 0,33 × 3 se reescala a 1 y el rol principal pasa al material de mayor participación");
+
+  // 6. W3.2: al quitar el principal, la regla 3 de cobertura lo reasigna al de
+  //    mayor participación reescalada, no al primero de la lista.
+  const { ajustarCoberturaPlan } = await import("../src/lib/plan/cobertura-materiales");
+  const disponibilidad = new Map([
+    ["P-MENOR", { titulo: "Globo blanco", colores: ["blanco"], mezclas: ["organica_fina", "organica_gruesa"] as const, acabados: [] }],
+    ["P-SIN-COBERTURA", { titulo: "Globo dorado", colores: ["dorado"], mezclas: ["clasica"] as const, acabados: [] }],
+    ["P-MAYOR", { titulo: "Globo rosado", colores: ["rosado"], mezclas: ["organica_fina", "organica_gruesa"] as const, acabados: [] }],
+  ]);
+  const planSinPrincipal = PlanDecoracionSchema.parse({
+    plan_version: "1.0",
+    plan_id: "88888888-8888-4888-8888-888888888888",
+    ...plan("organica_fina"),
+    estructuras: [{
+      ...plan("organica_fina").estructuras[0]!,
+      materiales: [
+        { product_id: "P-MENOR", color: "blanco", participacion: 0.2, rol_material: "secundario" },
+        { product_id: "P-SIN-COBERTURA", color: "dorado", participacion: 0.1, rol_material: "acento" },
+        { product_id: "P-MAYOR", color: "rosado", participacion: 0.7, rol_material: "acento" },
+      ],
+    }],
+  });
+  const ajustado = ajustarCoberturaPlan(planSinPrincipal, disponibilidad);
+  const materialesAjustados = ajustado.plan.estructuras[0]!.materiales;
+  assert.deepEqual(materialesAjustados.map((material) => material.product_id), ["P-MENOR", "P-MAYOR"], JSON.stringify(materialesAjustados));
+  assert.equal(materialesAjustados.find((material) => material.rol_material === "principal")?.product_id, "P-MAYOR", JSON.stringify(materialesAjustados));
+  ok("cobertura regla 3: el principal quitado deja el rol al material de mayor participación reescalada");
+
+  // 7. W3.6: los ajustes de acabado y de color que hace el servidor llegan al
+  //    modelo como avisos_cliente, sin duplicar lo que ya reporta otra vía.
+  const { avisosClienteAjustes } = await import("../src/lib/plan/cobertura-materiales");
+  const nombresEstructura = new Map([["EST_01_ARCO", "Arco rojo"]]);
+  const ajustesAviso = [
+    { tipo: "acabado_material" as const, estructura_id: "EST_01_ARCO", product_id: "P-ROJO", antes: "reflex", color: "dorado" },
+    { tipo: "color_material" as const, estructura_id: "EST_01_ARCO", product_id: "P-ROJO", antes: "plateado", despues: "gris" },
+  ];
+  const avisos = avisosClienteAjustes(ajustesAviso, { nombres: nombresEstructura });
+  // Revisión W3-4: el color va como "globos de color X", no "globos X" dentro
+  // de una frase en plural.
+  assert.deepEqual(avisos, [
+    "En arco rojo los globos de color dorado no vienen en acabado reflex en el catálogo: van en su acabado normal.",
+    "En arco rojo los globos de color plateado van en gris, que es el color real de ese producto.",
+  ]);
+  for (const aviso of avisos) assert.deepEqual(detectarJergaInterna(aviso), [], aviso);
+  assert.deepEqual(avisosClienteAjustes([{ tipo: "acabado_material", estructura_id: "EST_01_ARCO", product_id: "P-ROJO", antes: "reflex", color: null }], { nombres: nombresEstructura }), [
+    "En arco rojo los globos no vienen en acabado reflex en el catálogo: van en su acabado normal.",
+  ], "sin color declarado el aviso no fuerza la concordancia");
+  assert.deepEqual(avisosClienteAjustes(ajustesAviso, { nombres: nombresEstructura, coloresReportados: [{ estructura_id: "EST_01_ARCO", color: "Plateado" }] }), [avisos[0]], "el color ya reportado por una sustitución de la foto no se repite");
+  assert.deepEqual(avisosClienteAjustes(ajustesAviso, { nombres: nombresEstructura, coloresDelCliente: ["plateado"] }), [avisos[0]], "un color exigido por el cliente lo reporta la validación de restricciones");
+  assert.deepEqual(avisosClienteAjustes([{ tipo: "mezcla", estructura_id: "EST_01_ARCO", antes: "organica_fina", despues: "clasica" }], { nombres: nombresEstructura }), [], "un cambio de mezcla no es un aviso para el cliente");
+  // Revisión W3-1: un material que la cobertura o la convergencia sacaron del
+  // plan no lleva aviso de acabado ni de color; el de material quitado ya basta.
+  assert.deepEqual(avisosClienteAjustes([...ajustesAviso, {
+    tipo: "material_quitado" as const,
+    estructura_id: "EST_01_ARCO",
+    product_id: "P-ROJO",
+    color: "dorado",
+    aviso_cliente: "No tengo globos dorado en los tamaños que necesita arco rojo: la armé con rosado.",
+  }], { nombres: nombresEstructura }), [], "el material que salió del plan no arrastra sus avisos de acabado y color");
+  assert.deepEqual(avisosClienteAjustes(ajustesAviso, { nombres: nombresEstructura, materialesFuera: [{ estructura_id: "EST_01_ARCO", product_id: "P-ROJO" }] }), [], "lo que quitó la convergencia tampoco se avisa");
+
+  const conAcabado = confirmar();
+  const planAcabado = plan("clasica");
+  const respuestaAcabado = await conAcabado.herramienta({
+    ...planAcabado,
+    estructuras: [{ ...planAcabado.estructuras[0]!, materiales: [{ product_id: "P-ROJO", color: "rojo", acabado: "reflex", participacion: 1, rol_material: "principal" }] }],
+  }, llamada) as Record<string, unknown>;
+  assert.equal(respuestaAcabado.ok, true, JSON.stringify(respuestaAcabado).slice(0, 300));
+  const avisosRespuesta = respuestaAcabado.avisos_cliente as string[];
+  assert.ok(avisosRespuesta.some((aviso) => /no vienen en acabado reflex/.test(aviso)), JSON.stringify(avisosRespuesta));
+  for (const aviso of avisosRespuesta) assert.deepEqual(detectarJergaInterna(aviso), [], aviso);
+  ok("ok:true avisa el acabado que el catálogo no tiene en vez de dejar que el resumen lo prometa");
+
+  // 8. Revisión W3-1: la regla 1 le quita el acabado a un material que la regla
+  //    3 saca de la estructura. La cotización no lleva ni un globo de ese color,
+  //    así que el único aviso es el del material quitado.
+  const fila = (productId: string, diametro: number, color: string) => ({
+    product_id: productId, variant_id: `${productId}-R${diametro}`, sku: `SKU-${productId}-R${diametro}`, producto_titulo: `Globo ${color}`, variante_titulo: `R-${diametro}`,
+    precio: 10000, unidades_paq: 50, disponible: true, producto_disponible: true, codigo_tamano: `R-${diametro}`, forma: "redondo", diam_pulg: diametro,
+    colores_producto: [color], colores_variante: [color], acabados_producto: [] as string[], descripcion: `Globo ${color} R-${diametro}`, imagen: null,
+  });
+  const poolDosProductos = { query: async (sql: string) => (sql.includes("catalog_variants") ? { rows: [fila("P-ROSADO", 12, "rosado"), fila("P-DORADO", 24, "dorado")] } : { rows: [] }) } as unknown as Pool;
+  const estadoQuitado = crearEstadoConversacion({}, "un arco para un cumpleaños");
+  estadoQuitado.ragCandidatos = [candidato("P-ROSADO", [12], "rosado"), candidato("P-DORADO", [24], "dorado")];
+  estadoQuitado.ragIdsRecuperados.add("P-ROSADO").add("P-DORADO");
+  estadoQuitado.ragVariantIdsRecuperados.set("P-ROSADO", new Set(["P-ROSADO-R12"]));
+  estadoQuitado.ragVariantIdsRecuperados.set("P-DORADO", new Set(["P-DORADO-R24"]));
+  const planQuitado = plan("clasica");
+  const respuestaQuitado = await crearRegistroHerramientas(estadoQuitado, { pool: poolDosProductos }).confirmar_plan_decoracion!({
+    ...planQuitado,
+    concepto: { titulo: "Arco de cumpleaños", descripcion: "Arco", paleta: ["rosado", "dorado"] },
+    estructuras: [{
+      ...planQuitado.estructuras[0]!,
+      nombre: "Arco principal",
+      materiales: [
+        { product_id: "P-ROSADO", color: "rosado", participacion: 0.6, rol_material: "principal" },
+        { product_id: "P-DORADO", color: "dorado", acabado: "reflex", participacion: 0.4, rol_material: "acento" },
+      ],
+    }],
+  }, llamada) as Record<string, unknown>;
+  assert.equal(respuestaQuitado.ok, true, JSON.stringify(respuestaQuitado).slice(0, 400));
+  assert.deepEqual(estadoQuitado.ajustesCobertura.map((ajuste) => ajuste.tipo).sort(), ["acabado_material", "material_quitado"], JSON.stringify(estadoQuitado.ajustesCobertura));
+  const avisosQuitado = respuestaQuitado.avisos_cliente as string[];
+  assert.ok(avisosQuitado.some((aviso) => /No tengo globos dorado/.test(aviso)), JSON.stringify(avisosQuitado));
+  assert.ok(!avisosQuitado.some((aviso) => /acabado reflex/.test(aviso)), JSON.stringify(avisosQuitado));
+  ok("el material que sale del plan no deja un aviso de acabado sobre globos que la cotización no compra");
 
   console.log(`\n${casos} casos OK (A6)`);
 }
