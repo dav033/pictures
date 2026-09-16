@@ -682,7 +682,7 @@
     }
   },
   "lora_variant_ids": null,
-  "name": "variant-override-sin-color",
+  "name": "26-variant-override-sin-color",
   "plan": {
     "concepto": {
       "descripcion": "Arco rojo con una pieza cambiada a azul desde la tarjeta.",
