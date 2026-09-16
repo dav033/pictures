@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { calcularDespieceEstructura, calcularEje, calcularMedidas, ErrorRepartoGlobos, MEZCLAS_DISPONIBLES, proporcionesEfectivas, pulgadasDeMezcla, tamanosObligatorios, type Densidad, type Figura, type Mezcla } from "../src/lib/medidas/geometria";
+import { calcularDespieceEstructura, calcularEje, calcularMedidas, ErrorRepartoGlobos, factorGlobosPorMetro, MEZCLAS_DISPONIBLES, proporcionesEfectivas, pulgadasDeMezcla, tamanosObligatorios, type Densidad, type Figura, type Mezcla } from "../src/lib/medidas/geometria";
 
 const base = {
   tipo: "arco" as const,
@@ -128,6 +128,24 @@ assert.deepEqual(tamanosObligatorios({ tamanos: [{ valor: "R-12", polaridad: "pr
 assert.deepEqual(tamanosObligatorios(undefined), []);
 // "R-" daba 0 pulgadas: área ponderada 0 y un arco entero sin un solo globo.
 assert.equal(arcoConTamanos("organica_fina", tamanosObligatorios({ tamanos: [{ valor: "R-" }] })).totalGlobos, 119, "antes 0 globos");
+
+// --- Factor de globos por metro (puerta física de estimacion.ts) -----------
+// Sin tamaños obligatorios vale 1 exacto, así que la puerta no cambia para los
+// planes de siempre; con ellos sigue al conteo, que es lo que hace comparables
+// unos umbrales calibrados con mezclas dominadas por R-12.
+for (const mezcla of MEZCLAS_DISPONIBLES) {
+  assert.equal(factorGlobosPorMetro(mezcla, proporcionesEfectivas(mezcla).proporciones), 1, mezcla);
+  for (const tamanos of [[5], [9], [12], [18], [24], [36], [12, 18], [18, 24], [5, 9, 12]]) {
+    const factor = factorGlobosPorMetro(mezcla, proporcionesEfectivas(mezcla, tamanos).proporciones);
+    const completo = arcoConTamanos(mezcla).totalGlobos;
+    const restringido = arcoConTamanos(mezcla, tamanos).totalGlobos;
+    assert.ok(factor > 0, `${mezcla} ${tamanos}: factor ${factor}`);
+    assert.ok(
+      Math.abs(restringido - completo * factor) <= 1 + factor,
+      `${mezcla} ${tamanos}: ${restringido} globos frente a ${completo} × ${factor}`,
+    );
+  }
+}
 
 // --- Reparto en dos márgenes (ADR 0022) ------------------------------------
 // El total por tamaño no depende de cuántos colores tenga la estructura (antes

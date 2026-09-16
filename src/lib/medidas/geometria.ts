@@ -306,6 +306,41 @@ export function proporcionesEfectivas(mezcla: Mezcla, tamanos?: readonly number[
   return { proporciones: pedidos.map((pulgadas) => ({ pulgadas, proporcion: 1 / pedidos.length })), sinUbicar: [] };
 }
 
+/** Tamaño que domina el volumen de una mezcla (empate: el primero, o sea el menor). */
+function tamanoDominante(proporciones: readonly ProporcionTamano[]): ProporcionTamano {
+  return proporciones.reduce((a, b) => (b.proporcion > a.proporcion ? b : a));
+}
+
+/** Área media del globo de una mezcla, ponderada por sus proporciones (m²). */
+function areaGloboPonderadaM2(proporciones: readonly ProporcionTamano[]): number {
+  return proporciones.reduce((suma, tamano) => {
+    const dM = diametroEfectivoCm(tamano.pulgadas) / 100;
+    return suma + tamano.proporcion * Math.PI * (dM / 2) ** 2;
+  }, 0);
+}
+
+/**
+ * Cuántas veces cambia el modelo los globos por metro al pasar de la mezcla del
+ * plan a la mezcla efectiva de `restricciones.tamanos`. λ, el ancho de banda y
+ * el perfil de la estructura oficial son los mismos en las dos mezclas y se
+ * cancelan, así que solo queda el diámetro dominante sobre el área ponderada
+ * del globo. Sin tamaños obligatorios vale exactamente 1.
+ *
+ * Lo usa la puerta física de `estimacion.ts`: sus umbrales por metro están
+ * calibrados contra mezclas donde R-12 domina el volumen, así que un arco "solo
+ * R-24" —52 globos correctos en vez de 119— caía por debajo del mínimo y ya no
+ * se podía confirmar el plan.
+ */
+export function factorGlobosPorMetro(mezcla: Mezcla, proporciones: readonly ProporcionTamano[]): number {
+  const porMetro = (valores: readonly ProporcionTamano[]): number => {
+    const area = areaGloboPonderadaM2(valores);
+    return valores.length > 0 && area > 0 ? diametroEfectivoCm(tamanoDominante(valores).pulgadas) / 100 / area : 0;
+  };
+  const base = porMetro(MEZCLAS[mezcla]);
+  const efectivo = porMetro(proporciones);
+  return base > 0 && efectivo > 0 ? efectivo / base : 1;
+}
+
 export function calcularDespieceEstructura(input: {
   tipo: Figura;
   medidas: { anchoM?: number; altoM?: number; largoM?: number };
@@ -377,8 +412,7 @@ export function calcularMedidas(opts: {
   const anchoBanda = ANCHO_BANDA_POR_MEZCLA[mezcla];
 
   const ejeM = calcularEje(opts.figura, opts, geometria);
-  const dominante = proporciones.reduce((a, b) => (b.proporcion > a.proporcion ? b : a));
-  const dDominanteCm = diametroEfectivoCm(dominante.pulgadas);
+  const dDominanteCm = diametroEfectivoCm(tamanoDominante(proporciones).pulgadas);
 
   // Modelo de área de fachada con factor de traslape (§3.3): pared usa área
   // real, el resto usa el eje por un "ancho" de banda proporcional al tamaño
@@ -388,11 +422,7 @@ export function calcularMedidas(opts: {
       ? (opts.anchoM ?? 0) * (opts.altoM ?? 0)
       : ejeM * ((anchoBanda * dDominanteCm) / 100) * factorPerfilBanda;
 
-  const areaGloboPonderada = proporciones.reduce((suma, m) => {
-    const dCm = diametroEfectivoCm(m.pulgadas);
-    const areaGlobo = Math.PI * (dCm / 100 / 2) ** 2;
-    return suma + m.proporcion * areaGlobo;
-  }, 0);
+  const areaGloboPonderada = areaGloboPonderadaM2(proporciones);
 
   const totalGlobos = areaGloboPonderada > 0 ? Math.ceil((lambda * area) / areaGloboPonderada) : 0;
 

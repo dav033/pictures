@@ -343,8 +343,69 @@ async function comprobarPuertaFisica(): Promise<void> {
   assert.match(physicalWarningsForPlan(guirnaldaExcesiva)[0] ?? "", /EST_01_GUIRNALDA: estimated material quantity appears unusually high/);
 }
 
-comprobarPuertaFisica().then(() => {
-  console.log("[PASS] material consistency regression — installed 42 + 1 special, purchased capacity 101, visual prompt excludes package surplus, puerta física por estructura");
+async function comprobarTamanoObligatorioGrande(): Promise<void> {
+  // --- Tamaño obligatorio grande + puerta física (W1.1 + W1.3) --------------
+  // Los umbrales por metro están calibrados contra mezclas donde R-12 domina el
+  // volumen. Desde que el total sale de la mezcla efectiva, un arco "solo R-24"
+  // cuenta 52 globos (8,37/m) donde la mezcla completa contaba 119 (19,16/m) y
+  // caía por debajo del mínimo de densidad media (8,4/m): el plan resolvía bien
+  // pero `confirmar_plan_decoracion` devolvía ESTIMACION_INCONSISTENTE y
+  // /api/generate lanzaba un error. La banda se escala ahora con el mismo
+  // modelo que produjo el conteo.
+  const filas = [5, 9, 12, 18, 24].map((pulgadas) => ({
+    product_id: "P-GLOBOS", variant_id: `V-BLANCO-${pulgadas}`, sku: `SKU-BLANCO-${pulgadas}`, producto_titulo: "Globo blanco", variante_titulo: `R-${pulgadas}`, precio: 10_000, unidades_paq: 50, disponible: true, producto_disponible: true, codigo_tamano: `R-${pulgadas}`, forma: "redondo", diam_pulg: pulgadas, colores_producto: ["blanco"], colores_variante: ["blanco"], descripcion: `Globo látex blanco R-${pulgadas}.`, imagen: null,
+  }));
+  const pool = { query: async () => ({ rows: filas }) } as unknown as Pool;
+  const whitelist = new Map<string, ReadonlySet<string>>([["P-GLOBOS", new Set(filas.map((fila) => fila.variant_id))]]);
+  const arco = async (tamanos: string[]) => resolverPlan(pool, PlanDecoracionSchema.parse({
+    plan_version: "1.0",
+    plan_id: "55555555-5555-4555-8555-555555555555",
+    concepto: { titulo: "Arco de 24 pulgadas", descripcion: "Arco orgánico con globos grandes.", paleta: ["blanco"] },
+    espacio: { tipo: "salón", fuente: "cliente" },
+    estructuras: [
+      { estructura_id: "EST_01_ARCO", nombre: "Arco orgánico", tipo: "arco", rol_escena: "focal", ubicacion: "arco_central", medidas: { ancho_m: 3, alto_m: 2.4 }, repeticiones: 1, densidad: "media", mezcla: "organica_fina", materiales: [{ product_id: "P-GLOBOS", color: "blanco", participacion: 1, rol_material: "principal" }], porque: "Es el foco." },
+    ],
+    supuestos: [],
+    ...(tamanos.length ? { restricciones: { colores: [], acabados: [], estructuras: [], tamanos: tamanos.map((valor) => ({ valor, procedencia: "explicito", texto_original: `solo globos ${valor}`, polaridad: "obligatorio" })) } } : {}),
+  }), whitelist);
+
+  const completo = await arco([]);
+  assert.equal(completo.estructuras[0]!.total_unidades, 119);
+  assert.deepEqual(physicalWarningsForPlan(completo), []);
+  const soloR24 = await arco(["R-24"]);
+  assert.deepEqual(soloR24.sin_cobertura, [], "el plan resuelve: el catálogo tiene R-24");
+  assert.equal(soloR24.estructuras[0]!.total_unidades, 52);
+  assert.deepEqual(physicalWarningsForPlan(soloR24), [], "antes: 52 globos / 6,21 m = 8,37 < 8,4 bloqueaba un plan válido");
+  // La puerta no se apaga: con la banda escalada (×0,435) el mínimo de la
+  // estructura es 3,65 globos/m y un conteo absurdo sigue avisando.
+  const soloR24Escaso = {
+    ...soloR24,
+    estructuras: soloR24.estructuras.map((estructura) => ({
+      ...estructura,
+      lineas: estructura.lineas.map((linea, indice) => ({ ...linea, unidades: indice === 0 ? 5 : 0 })),
+      total_unidades: 5,
+    })),
+  };
+  assert.match(physicalWarningsForPlan(soloR24Escaso)[0] ?? "", /^EST_01_ARCO: estimated material quantity appears too low for medium density over 6\.21 m \(5 installed balloons\)$/);
+  const soloR24Excesivo = {
+    ...soloR24,
+    estructuras: soloR24.estructuras.map((estructura) => ({
+      ...estructura,
+      lineas: estructura.lineas.map((linea, indice) => ({ ...linea, unidades: indice === 0 ? 400 : 0 })),
+      total_unidades: 400,
+    })),
+  };
+  assert.match(physicalWarningsForPlan(soloR24Excesivo)[0] ?? "", /^EST_01_ARCO: estimated material quantity appears unusually high/);
+  // El parseo estricto comparte dueño con Python: "R-12.5" no es un tamaño y la
+  // restricción se ignora en los dos backends (antes TypeScript cotizaba 100
+  // globos "R-12.5" y Python los 119 de la mezcla completa).
+  const noNumerico = await arco(["R-12.5"]);
+  assert.equal(noNumerico.estructuras[0]!.total_unidades, 119);
+  assert.deepEqual(physicalWarningsForPlan(noNumerico), []);
+}
+
+comprobarPuertaFisica().then(comprobarTamanoObligatorioGrande).then(() => {
+  console.log("[PASS] material consistency regression — installed 42 + 1 special, purchased capacity 101, visual prompt excludes package surplus, puerta física por estructura y con tamaño obligatorio grande");
 }).catch((error: unknown) => {
   console.error("[FAIL] puerta física por estructura", error instanceof Error ? error.message : error);
   process.exitCode = 1;

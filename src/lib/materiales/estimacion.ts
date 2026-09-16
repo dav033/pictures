@@ -1,4 +1,4 @@
-import type { ResultadoMedidas } from "@/lib/medidas/geometria";
+import { factorGlobosPorMetro, proporcionesEfectivas, tamanosObligatorios, type ResultadoMedidas } from "@/lib/medidas/geometria";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { ahorroSoloMermaCop, distribuirReservaProyecto, optimizarCobertura, asignarUnidades, paquetesExtraPorMerma } from "@/lib/plan/optimizar-materiales";
 import { MERMA } from "@/lib/cotizacion/constantes";
@@ -201,9 +201,18 @@ const ESTRUCTURAS_LINEALES = new Set(["arco", "semiarco", "guirnalda", "columna"
  * propio eje por instancia. Los umbrales siguen siendo heurísticos sin
  * calibrar (ver `physicalWarnings`); el texto conserva las frases que
  * `blockingPhysicalWarnings` reconoce.
+ *
+ * Esos umbrales están calibrados en globos por metro contra mezclas donde R-12
+ * domina el volumen, así que no son comparables cuando `restricciones.tamanos`
+ * cambia el globo dominante: un arco 3 × 2,4 m "solo R-24" cuenta 52 globos
+ * correctos (8,4/m) donde la mezcla completa contaba 119 (19,2/m) y caía por
+ * debajo del mínimo, de modo que un plan válido dejaba de poder confirmarse.
+ * La banda se escala con el mismo modelo que produjo el conteo
+ * (`factorGlobosPorMetro`), que vale 1 exacto sin tamaños obligatorios.
  */
 export function physicalWarningsForPlan(plan: PlanResuelto): string[] {
   const warnings: string[] = [];
+  const tamanos = tamanosObligatorios(plan.plan.restricciones);
   for (const structure of plan.estructuras) {
     if (!ESTRUCTURAS_LINEALES.has(structure.tipo)) continue;
     const repeticiones = Math.max(1, Math.round(structure.repeticiones));
@@ -211,9 +220,12 @@ export function physicalWarningsForPlan(plan: PlanResuelto): string[] {
     if (extent <= 0) continue;
     const balloons = structure.lineas.filter((line) => line.diam_pulg != null).reduce((sum, line) => sum + line.unidades, 0);
     if (balloons <= 0) continue;
-    const density = visualDensity(plan.plan.estructuras.find((item) => item.estructura_id === structure.estructura_id)?.densidad);
-    const minimumPerMeter = { low: 8, medium: 14, high: 20 }[density];
-    const maximumPerMeter = { low: 48, medium: 68, high: 88 }[density];
+    const declarada = plan.plan.estructuras.find((item) => item.estructura_id === structure.estructura_id);
+    const density = visualDensity(declarada?.densidad);
+    const mezcla = declarada && "mezcla" in declarada ? declarada.mezcla : undefined;
+    const factor = mezcla ? factorGlobosPorMetro(mezcla, proporcionesEfectivas(mezcla, tamanos).proporciones) : 1;
+    const minimumPerMeter = { low: 8, medium: 14, high: 20 }[density] * factor;
+    const maximumPerMeter = { low: 48, medium: 68, high: 88 }[density] * factor;
     const perMeter = balloons / extent;
     if (perMeter < minimumPerMeter * 0.6) {
       warnings.push(`${structure.estructura_id}: estimated material quantity appears too low for ${density} density over ${extent.toFixed(2)} m (${balloons} installed balloons)`);
