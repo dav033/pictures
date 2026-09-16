@@ -122,7 +122,27 @@ assert.deepEqual(
   ["dorado"],
 );
 
-// 10. Palabras ambiguas: un alias que también es una palabra común solo cuenta
+// 10. Tolerancia de los colores que el propio servidor reemplazó (regla 1 de
+//     cobertura). Solo vale entre dos nombres del mismo tono: los tags del
+//     catálogo son FAMILIAS de color, así que un "arco naranja" resuelto con el
+//     Pastel Mate Nude (tags NARANJAS) se cotizaría, compraría y dibujaría nude
+//     sin ningún aviso al cliente si la tolerancia lo diera por cubierto.
+const planDeColor = (color: string, restricciones: ReturnType<typeof extraerRestriccionesUsuario>) => PlanDecoracionSchema.parse({
+  ...planBase,
+  estructuras: [{ ...planBase.estructuras[0]!, materiales: [{ product_id: "P-1", color, participacion: 1, rol_material: "principal" }] }],
+  restricciones,
+});
+const planVioleta = planDeColor("violeta", extraerRestriccionesUsuario("quiero un arco morado"));
+assert.deepEqual(validarRestriccionesPlan(planVioleta, planVioleta.restricciones!), ["Pediste el color morado y la propuesta todavía no lo incluye."]);
+assert.deepEqual(validarRestriccionesPlan(planVioleta, planVioleta.restricciones!, [{ antes: "morado", despues: "violeta" }]), []);
+const planNude = planDeColor("nude", extraerRestriccionesUsuario("quiero un arco naranja"));
+assert.deepEqual(
+  validarRestriccionesPlan(planNude, planNude.restricciones!, [{ antes: "naranja", despues: "nude" }]),
+  ["Pediste el color naranja y la propuesta todavía no lo incluye."],
+  "nude no es naranja: el cambio de color del servidor no cubre la restricción",
+);
+
+// 11. Palabras ambiguas: un alias que también es una palabra común solo cuenta
 //     como color con una señal ("globos color vino") o enumerado con otro
 //     color. Sin la guarda, una conversación normal de decoración dejaba un
 //     color obligatorio imposible de cumplir (RESTRICCIONES_INCONSISTENTES) y

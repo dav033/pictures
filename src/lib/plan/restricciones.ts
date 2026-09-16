@@ -398,6 +398,27 @@ function cantidadEstructura(tipo: TipoEstructura, cantidad: number): string {
 }
 
 /**
+ * Dos nombres del MISMO tono. El catálogo vende el "Fashion Violeta" etiquetado
+ * MORADOS, así que quien pide morado recibe ese violeta y su restricción sigue
+ * cumplida cuando la regla 1 de cobertura reetiqueta la línea.
+ *
+ * Es la única equivalencia que puede silenciar la validación de colores del
+ * cliente, y por eso la lista es corta y explícita: la familia de color de los
+ * tags NO alcanza (el Pastel Mate Nude está etiquetado NARANJAS y es nude, un
+ * color que ningún cliente que pidió naranja reconocería). Crece solo con un
+ * caso verificado en el catálogo, nunca por parecido de tono: mientras el
+ * cambio no se le anuncie al cliente, un rechazo que el modelo puede corregir
+ * es preferible a una cotización en otro color sin aviso.
+ */
+const TONOS_EQUIVALENTES: ReadonlyArray<ReadonlySet<string>> = [new Set(["morado", "violeta"])];
+
+function mismoTono(antes: string, despues: string): boolean {
+  const desde = normalizar(antes).trim();
+  const hasta = normalizar(despues).trim();
+  return desde === hasta || TONOS_EQUIVALENTES.some((grupo) => grupo.has(desde) && grupo.has(hasta));
+}
+
+/**
  * Incumplimientos de lo que el cliente pidió explícitamente. Los mensajes
  * están redactados para el cliente (sin códigos ni ids): el modelo los usa
  * para corregir el plan y `mensaje_cliente` los reutiliza tal cual.
@@ -412,6 +433,12 @@ export function validarRestriccionesPlan(
    * The balloon bought is the one the customer's color matched, so the
    * restriction is covered; without this the plan would be refused for a color
    * no product of the turn can carry, and the model could not fix it.
+   *
+   * Only a replacement between two names of the SAME tone counts
+   * (`TONOS_EQUIVALENTES`). The color families of the Shopify tags also file
+   * "Pastel Mate Nude" under NARANJAS, so an "arco naranja" was quoted, bought
+   * and drawn in nude with no `aviso_cliente` at all: that one must keep
+   * refusing the plan.
    */
   coloresReemplazados: ReadonlyArray<{ antes: string; despues: string }> = [],
 ): string[] {
@@ -424,7 +451,7 @@ export function validarRestriccionesPlan(
   if (restricciones.colores.filter((color) => color.polaridad === "obligatorio").length) {
     const coloresPlan = new Set(plan.estructuras.flatMap((estructura) => estructura.materiales.map((material) => normalizar(material.color ?? ""))).filter(Boolean));
     for (const cambio of coloresReemplazados) {
-      if (coloresPlan.has(normalizar(cambio.despues))) coloresPlan.add(normalizar(cambio.antes));
+      if (mismoTono(cambio.antes, cambio.despues) && coloresPlan.has(normalizar(cambio.despues))) coloresPlan.add(normalizar(cambio.antes));
     }
     for (const color of restricciones.colores.filter((item) => item.polaridad === "obligatorio")) {
       const requerido = normalizar(color.valor).replace("plata", "plateado");
