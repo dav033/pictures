@@ -83,14 +83,14 @@ Los cuatro frentes se ejecutaron en su worktree desde `e738610` y están fusiona
 | W2 — color | `c045697..5297627` (8) | `6e10809` | completo, con los vectores `25-color-variante-primero` y `26-variant-override-sin-color` |
 | W3 — prompting del plan | `07631c4..b01f198` (11) | `240b849` | completo |
 | W4 — prompt de imagen, QA y ubicación | `7cb8c34..482c228` (13) | `86e10ca` | completo |
-| W5 — integración | `2e3a23b`, `ae57c38`, `715a946`, `a40562b`, `d11a7a7` | — | completo salvo lo que queda listado abajo |
+| W5 — integración | `2e3a23b`, `ae57c38`, `715a946`, `a40562b`, `d11a7a7`, `6e28c26`, `e4f9057`, `6eaf436`, `3ef5291`, `81c790a` | — | completo salvo lo que queda listado abajo |
 
 Lo que hizo la integración, además de fusionar:
 
 - El vector de tamaños mal escritos pasó a `27-` para dejar 25 y 26 a la rama de color, y su campo `name` interno se corrigió (`715a946`). No había otras referencias al nombre viejo.
-- **No hizo falta regenerar vectores.** Se corrieron `scripts/test-paridad-plan-python.ts --update` y `PARIDAD_ACTUALIZAR=1 pytest tests/test_plan_parity.py` sobre los 27 vectores y el diff quedó vacío: los cambios de reparto y de reserva de merma de W1 no mueven ninguna cifra de los vectores de W2 (arco de dos materiales con mezcla clásica, `repeticiones` 1 y sin tamaños obligatorios) ni de los demás. Se documentó en la cabecera del script que el orden correcto es `--update` y después pytest, porque `--update` reescribe el archivo entero con `JSON.stringify` y normaliza `12.0` a `12` dentro de `expected_python`.
-- `plan:test` pasó de 47 a 60 agregados (`a40562b`): entraron `plan:test-color-prompt`, `plan:test-paridad-python` (la comparación cruzada TS↔Python, que hasta ahora pasaba pero no corría en CI), `plan:test-referencia-cobertura`, `ia:test-prompts`, `ia:test-creatividad`, `ia:test-escena-plan`, `ia:test-escena-plan-imagen`, `ia:test-qa-piezas-separadas`, `ui:test-presentacion-plan`, `ia:test-lora-compiler`, `ia:test-lora-v004-compactacion` y `lora:test-product-runtime`. `.github/workflows/checks.yml` ya ejecuta `npm run plan:test`, así que no hizo falta añadir pasos al workflow. Con esto queda cerrado D14.
-- Prueba nueva de invariantes cruzadas (`d11a7a7`): `plan:test-invariantes` recorre los 27 vectores y comprueba líneas ↔ despiece ↔ estimado ↔ compras ↔ cotización ↔ bloque de tamaños ↔ color del prompt. Los vectores cuya forma no admite una invariante se omiten con la razón impresa (12 omisiones hoy). `scripts/lib/vectores-golden.ts` pasa a ser el dueño único de cargar y resolver los vectores para las dos suites.
+- **No hizo falta regenerar vectores.** Se corrieron `scripts/test-paridad-plan-python.ts --update` y `PARIDAD_ACTUALIZAR=1 pytest tests/test_plan_parity.py` sobre los 27 vectores y el diff quedó vacío: los cambios de reparto y de reserva de merma de W1 no mueven ninguna cifra de los vectores de W2 (arco de dos materiales con mezcla clásica, `repeticiones` 1 y sin tamaños obligatorios) ni de los demás. El orden de regeneración ya no importa: desde `3ef5291`, `--update` reinyecta `expected_python` tal cual está escrito en vez de reescribir el archivo entero con `JSON.stringify` (ver la revisión de abajo).
+- `plan:test` pasó de 47 a 60 agregados (`a40562b`; hoy son 61 con `plan:test-color-escena`): entraron `plan:test-color-prompt`, `plan:test-paridad-python` (la comparación cruzada TS↔Python, que hasta ahora pasaba pero no corría en CI), `plan:test-referencia-cobertura`, `ia:test-prompts`, `ia:test-creatividad`, `ia:test-escena-plan`, `ia:test-escena-plan-imagen`, `ia:test-qa-piezas-separadas`, `ui:test-presentacion-plan`, `ia:test-lora-compiler`, `ia:test-lora-v004-compactacion` y `lora:test-product-runtime`. `.github/workflows/checks.yml` ya ejecuta `npm run plan:test`, así que no hizo falta añadir pasos al workflow. Con esto queda cerrado D14.
+- Prueba nueva de invariantes cruzadas (`d11a7a7`): `plan:test-invariantes` recorre los vectores y comprueba líneas ↔ despiece ↔ estimado ↔ compras ↔ cotización ↔ bloque de tamaños ↔ color del prompt. Los vectores cuya forma no admite una invariante se omiten con la razón impresa (28 vectores y 13 omisiones hoy). `scripts/lib/vectores-golden.ts` pasa a ser el dueño único de cargar y resolver los vectores para las dos suites, y `scripts/lib/escena-de-vector.ts` el de armar la escena y el prompt con la cadena de producción.
 
 Comprobaciones ejecutadas en este worktree y su resultado real:
 
@@ -98,21 +98,34 @@ Comprobaciones ejecutadas en este worktree y su resultado real:
 |---|---|
 | `npm run lint` | verde (0 errores, 30 avisos preexistentes) |
 | `npm run build --workspaces --if-present` | verde |
-| `npx tsc --noEmit` | limpio |
+| `npx tsc --noEmit` | exit 0 y salida vacía, también tras borrar `tsconfig.tsbuildinfo` (medido con `cmd > fichero 2>&1; echo $?`, nunca detrás de un pipe) |
 | `npm run contracts:check` | verde (9 contratos de chat, 30 de dominio) |
-| `npm run plan:test` | verde, 60 agregados, **96 s** |
-| `plan:test-paridad` / `plan:test-paridad-python` | 27/27 y 27/27 |
-| `plan:test-invariantes` | 27 vectores, 12 invariantes omitidas con razón, 0 fallos |
-| `pytest` (services/ai-api) | 171 pasadas, 4 omitidas (necesitan Postgres) |
+| `npm run plan:test` | verde, 61 agregados |
+| `plan:test-paridad` / `plan:test-paridad-python` | 28/28 y 28/28 |
+| `plan:test-invariantes` | 28 vectores, 13 invariantes omitidas con razón, 2 rangos por instancia comprobados, 0 fallos |
+| `plan:test-color-escena` | 28 vectores coherentes con los colores de producción + control negativo |
+| `pytest` (services/ai-api) | 172 pasadas, 4 omitidas (necesitan Postgres) |
 | `ruff check` / `ruff format --check` | verde / 31 archivos ya formateados |
 | `mypy app scripts` | verde (15 archivos) |
 | `npm run build` (app Next) | **bloqueado en este worktree**, ver abajo |
+
+### Revisión de la integración (segunda pasada, 2026-09-15)
+
+Una revisión posterior levantó seis hallazgos. Lo verificado, con su commit o su evidencia de rechazo:
+
+| Hallazgo | Veredicto | Qué se hizo |
+|---|---|---|
+| El color de la escena no tiene un solo dueño (W2 × W4) | **confirmado** | `e4f9057`. `itemDesdeFila` etiquetaba `Producto.colores` con su propia regla y `verificarCoherenciaPrompt` compara esa lista con los colores comprados: los vectores 19 y 25 rompían la puerta y la generación moría en 500 con un plan aprobado. Ahora `/api/generate` usa `coloresRealesVariante`, el mismo dueño que el resolutor. |
+| La invariante (f) no comprobaba el color de producción | **confirmado** | `e4f9057`. La invariante llenaba `catalogProducts[].colors` con una tercera regla. Ahora la escena de la prueba se arma con la cadena de producción entera (`scripts/lib/escena-de-vector.ts`); con la regla anterior la suite da 4 fallos donde antes daba 0. |
+| `--update` pisaba `expected_python` | **confirmado** | `3ef5291`. Reescribía el archivo entero y dejaba `12` donde Python había escrito `12.0`; medido en +461/−461 líneas sobre los 27 vectores. Ahora reinyecta el bloque tal cual y `plan:test-paridad` lo comprueba en cada corrida. |
+| Los vectores 25 y 26 no llevaban su número en el campo `name` | **confirmado** | `6eaf436`. Los vectores 01-09 siguen sin prefijo como deuda heredada. |
+| Ningún vector ejercitaba el rango `N-N+1` por instancia | **confirmado** | `81c790a`. Vector `28-figura-repetida-reparto-inexacto` (3 piezas, 50 globos → 16-17 por pieza) y una guarda que falla si ningún vector emite un rango. |
+| `npx tsc --noEmit` estaría en rojo por el export `planBlueprint` | **rechazado** | No reproduce. Next 16.3 construye con Turbopack y genera `.next/types/validator.ts`, que valida cada ruta con `extends RouteHandlerConfig<...>` y admite exports de más; `npx tsc --noEmit` sale 0 y con salida vacía, con y sin `tsconfig.tsbuildinfo`, y también tras regenerar los tipos. El `checkFields<Diff<...>>` que cita el hallazgo lo emite el plugin de **webpack** (`node_modules/next/dist/build/webpack/plugins/next-types-plugin`), no la build por defecto; el archivo `.next/types/app/api/generate/route.ts` que se observó era un resto de una build antigua. El documento tampoco declaraba verde `npm run build`: ya decía que está bloqueado en este worktree. Aun así se aceptó el fondo: en `6e28c26` `planBlueprint` salió del módulo de ruta a `src/lib/plan/blueprint.ts`, porque un módulo de ruta solo debería exportar handlers y configuración y siete scripts dependían del handler HTTP. |
 
 ### Pendiente y limitaciones
 
 - **`npm run build` no se puede correr aquí.** Falla en 6 s con `TurbopackInternalError: Symlink [project]/node_modules is invalid, it points out of the filesystem root`: el `node_modules` del worktree es una junction al del árbol principal y Turbopack no la acepta. No es un fallo de código ni de configuración de entorno; hay que correr el build en un checkout con su propio `node_modules` antes de desplegar.
 - **El TS2304 `LayoutProps` de `src/app/layout.tsx` no es deuda de código.** Se comprobó moviendo `.next/types` y volviendo a ponerlo: sin los tipos de ruta que genera Next el error aparece, con ellos `npx tsc --noEmit` queda completamente limpio. Un worktree recién creado no los tiene hasta que corre `next dev` o `next build`.
-- **Hueco de datos en los vectores:** ninguno reparte unidades que no sean divisibles entre sus `repeticiones`, así que la regla "una cantidad exacta por instancia solo se anuncia cuando el reparto es exacto" del bloque de tamaños está escrita pero todavía no tiene dato que la ejercite. Se cerraría con un vector de pieza repetida con `unidades_declaradas` no divisible.
 - **`plan_hash` cambia** con el reparto de W1: los planes aprobados antes del despliegue con varios colores o con tamaños obligatorios se tienen que volver a aprobar (ya estaba en Reversión).
 - Sigue sin correrse nada pagado: ninguna mejora de calidad visual de Gemini o del LoRA está declarada.
 
