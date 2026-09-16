@@ -6,6 +6,7 @@ import type { ProductoCandidato } from "@/lib/rag/chat/buscar";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
+import type { BasePlan } from "@/lib/plan/edicion-esquemas";
 import { referenciaSinGlobosYaPreguntada } from "@/lib/plan/restricciones";
 import { crearEstadoConversacion, crearRegistroHerramientas, HERRAMIENTAS_SOLO_LECTURA, herramientasActivas, textoAlAgotarVueltas, VUELTAS_MAX } from "./registro-herramientas";
 import type { EstadoConversacion } from "./registro-herramientas";
@@ -80,12 +81,18 @@ export type ResultadoConversacion = {
  * One state per turn. The request joins every customer message (event label,
  * named pieces, budget), while colors and structures follow the latest messages
  * (restricciones-conversacion.ts, E2E 2026-09-15 D3).
+ *
+ * `planVigente` is the plan+token the browser echoed for this turn
+ * (chat-v1 `planVigente`, §7 "editar una propuesta desde el chat") — still
+ * unverified here; `crearEstadoConversacion` runs it through
+ * `planVigenteDelTurno` before anything downstream can trust it.
  */
-function estadoDelTurno(historial: Mensaje[], brief: Brief, referenceBlueprint: ReferenceBlueprintV2 | undefined): EstadoConversacion {
+function estadoDelTurno(historial: Mensaje[], brief: Brief, referenceBlueprint: ReferenceBlueprintV2 | undefined, planVigente: BasePlan | undefined): EstadoConversacion {
   const mensajesCliente = historial.flatMap((mensaje) => (mensaje.rol === "usuario" ? [mensaje.texto] : []));
   return crearEstadoConversacion(brief, mensajesCliente.join(" "), referenceBlueprint, {
     referenciaSinGlobosPreguntada: referenciaSinGlobosYaPreguntada(historial),
     mensajesCliente,
+    planVigente,
   });
 }
 
@@ -153,13 +160,15 @@ export async function ejecutarConversacion(opts: {
   signal?: AbortSignal;
   telemetria?: TelemetriaConversacion;
   hechosPeticion?: HechosRegistro;
+  /** Plan+token the browser echoed as its current proposal (chat-v1 `planVigente`, §7). */
+  planVigente?: BasePlan;
 }): Promise<ResultadoConversacion> {
-  const estado = estadoDelTurno(opts.historial, opts.brief, opts.referenceBlueprint);
+  const estado = estadoDelTurno(opts.historial, opts.brief, opts.referenceBlueprint, opts.planVigente);
   const resultado = await core({
     chat: opts.chat,
     sistema: opts.sistema,
     historial: opts.historial,
-    herramientas: herramientasActivas(),
+    herramientas: herramientasActivas({ planVigente: Boolean(estado.planVigente) }),
     registro: crearRegistroHerramientas(estado, { catalogAllowlist: opts.catalogAllowlist, catalogoLoraNoDisponible: opts.catalogoLoraNoDisponible, correlationId: opts.telemetria?.correlationId, signal: opts.signal, hechosPeticion: hechosDelTurno(opts) }),
     herramientasSoloLectura: HERRAMIENTAS_SOLO_LECTURA,
     vueltasMax: VUELTAS_MAX,
@@ -194,13 +203,15 @@ export async function* ejecutarConversacionStream(opts: {
   signal?: AbortSignal;
   telemetria?: TelemetriaConversacion;
   hechosPeticion?: HechosRegistro;
+  /** Plan+token the browser echoed as its current proposal (chat-v1 `planVigente`, §7). */
+  planVigente?: BasePlan;
 }): AsyncGenerator<EventoConversacion> {
-  const estado = estadoDelTurno(opts.historial, opts.brief, opts.referenceBlueprint);
+  const estado = estadoDelTurno(opts.historial, opts.brief, opts.referenceBlueprint, opts.planVigente);
   const generador = coreStream({
     chat: opts.chat,
     sistema: opts.sistema,
     historial: opts.historial,
-    herramientas: herramientasActivas(),
+    herramientas: herramientasActivas({ planVigente: Boolean(estado.planVigente) }),
     registro: crearRegistroHerramientas(estado, { catalogAllowlist: opts.catalogAllowlist, catalogoLoraNoDisponible: opts.catalogoLoraNoDisponible, correlationId: opts.telemetria?.correlationId, signal: opts.signal, creatividad: opts.creatividad, hechosPeticion: hechosDelTurno(opts) }),
     herramientasSoloLectura: HERRAMIENTAS_SOLO_LECTURA,
     vueltasMax: VUELTAS_MAX,

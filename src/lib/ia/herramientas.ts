@@ -163,3 +163,45 @@ export const HERRAMIENTAS_PLAN: Herramienta[] = [
     },
   },
 ];
+
+/**
+ * Ajusta la propuesta ya vigente en vez de diseñar una nueva (§7 "editar una
+ * propuesta desde el chat"). Mismo esquema que `EdicionSchema`
+ * (src/lib/plan/edicion-esquemas.ts), que es lo que de verdad valida los
+ * argumentos en el handler — este JSON Schema solo guía al modelo, igual que
+ * el resto de herramientas de este archivo describe requisitos condicionales
+ * en texto en vez de en el esquema. Se registra aparte de `HERRAMIENTAS_PLAN`
+ * porque `herramientasActivas()` solo la expone cuando `estado.planVigente`
+ * existe: el modelo no puede convocarla por su cuenta sin evidencia firmada
+ * de que hay algo que editar.
+ */
+export const AJUSTAR_PLAN_DECORACION: Herramienta = {
+  nombre: "ajustar_plan_decoracion",
+  descripcion:
+    "Ajusta la propuesta YA vigente de este turno (agrega, reemplaza o quita un material de una sola estructura) en vez de diseñar una propuesta nueva. Solo existe cuando hay una propuesta vigente. Úsala cuando el cliente pide un cambio puntual sobre lo que ya vio (\"cambia el globo rosado por dorado\", \"quita la columna izquierda\", \"agrégale unos morados\"); usa confirmar_plan_decoracion solo si el cliente pide diseñar algo distinto desde cero. No llames esta herramienta y confirmar_plan_decoracion en el mismo turno: es una u otra. El product_id y variant_id de `variante` deben haber aparecido en buscar_catalogo_rag de este mismo turno, igual que en confirmar_plan_decoracion. Nunca mandes precios: el backend los recalcula. Devuelve el desglose actualizado que reemplaza al de la propuesta vigente.",
+  esquema: {
+    type: "object",
+    required: ["accion", "estructura_id"],
+    properties: {
+      accion: {
+        type: "string",
+        enum: ["agregar", "reemplazar", "quitar"],
+        description: "agregar: suma un material nuevo a la estructura con la participación indicada. reemplazar: cambia la variante objetivo (objetivo_variant_id) por la de `variante`. quitar: elimina la variante objetivo (no la uses si es el único material de la estructura).",
+      },
+      estructura_id: { type: "string", description: "estructura_id de la propuesta vigente que se va a tocar." },
+      objetivo_variant_id: { type: "string", description: "Obligatorio en reemplazar y quitar: variant_id actual de la propuesta vigente que se reemplaza o elimina." },
+      variante: {
+        type: "object",
+        description: "Obligatoria en agregar y reemplazar: la pieza nueva, recuperada con buscar_catalogo_rag en este mismo turno.",
+        required: ["product_id", "variant_id"],
+        properties: {
+          product_id: { type: "string" },
+          variant_id: { type: "string" },
+          color: { type: "string" },
+          acabado: { type: "string" },
+        },
+      },
+      participacion: { type: "number", minimum: 0.01, maximum: 0.8, description: "Solo para agregar: fracción de la estructura que ocupa el material nuevo (0,01 a 0,8). Si no la mandas, el sistema usa 0,2." },
+    },
+  },
+};

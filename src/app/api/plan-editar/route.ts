@@ -1,67 +1,24 @@
 import { z } from "zod";
 import { buscarCatalogoRag, type ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { getRagPool } from "@/lib/rag/db";
-import { registrarPlanAudit } from "@/lib/rag/observability/log";
 import { puntuacionCromatica } from "@/lib/rag/catalog/similitud-color";
 import { isPythonAdapterError, pythonErrorBody } from "@/lib/ia/python-adapter";
-import { allowlistDesdeMapa, abrirContextoPlan, crearTokenPlan, mapaDesdeAllowlist, verificarTokenAprobacion, type ContextoPlan } from "@/lib/plan/aprobacion";
 import { PythonPlanMappingError } from "@/lib/plan/python-mapper";
 import { AllowlistProductoVarianteError } from "@/lib/plan/allowlist-producto-variante";
-import { colorDeCatalogo } from "@/lib/plan/colores-catalogo";
-import { coloresRealesVariante } from "@/lib/plan/colores-producto";
 import { PlanEditError } from "@/lib/plan/edicion-error";
-import { admitirVariantePython, exigirContextoPython, recomendarAlternativasPython } from "@/lib/plan/edicion-python";
-import { PlanBackendNoDisponibleError, resolverPlan } from "@/lib/plan/resolver-backend";
-import { PlanDecoracionSchema, type MaterialPlan, type PlanDecoracion } from "@/lib/plan/tipos";
+import { exigirContextoPython, recomendarAlternativasPython } from "@/lib/plan/edicion-python";
+import { PlanBackendNoDisponibleError } from "@/lib/plan/resolver-backend";
 import { LoraModeSlugSchema } from "@/lib/lora/schema";
 import { resolveLoraModeDatasetAllowlist } from "@/lib/lora/mode-resolver";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import { registrarFalloUi, traducirErrorServidor } from "@/lib/errores-ui/traducir-error-servidor";
-import { conFotosDeCatalogo } from "@/lib/plan/cotizacion-fotos";
-import { filtrarCandidatosCompatibles, MENSAJE_REEMPLAZO_INCOMPATIBLE, MENSAJE_UNICO_MATERIAL, reemplazoIncompatible } from "@/lib/plan/edicion-compatibilidad";
-
-const BaseLineaSchema = z.object({
-  product_id: z.string().min(1),
-  variant_id: z.string().min(1),
-  color: z.string().nullable().optional(),
-}).passthrough();
-
-const BasePlanSchema = z.object({
-  plan: PlanDecoracionSchema,
-  plan_hash: z.string().regex(/^[a-f0-9]{64}$/i),
-  approval_token: z.string().min(1),
-  request_id: z.string().uuid().optional(),
-  estructuras: z.array(z.object({
-    estructura_id: z.string().min(1),
-    lineas: z.array(BaseLineaSchema),
-  }).passthrough()).min(1),
-  compras: z.array(z.object({
-    product_id: z.string().min(1),
-    variant_id: z.string().min(1),
-  }).passthrough()).min(1),
-}).passthrough();
-
-const VarianteEdicionSchema = z.object({
-  product_id: z.string().trim().min(1).max(160),
-  variant_id: z.string().trim().min(1).max(160),
-  color: z.string().trim().min(1).max(80).optional(),
-  acabado: z.string().trim().min(1).max(80).optional(),
-}).strict();
-
-const EdicionSchema = z.object({
-  accion: z.enum(["agregar", "reemplazar", "quitar"]),
-  estructura_id: z.string().trim().min(1).max(160),
-  objetivo_variant_id: z.string().trim().min(1).max(160).optional(),
-  variante: VarianteEdicionSchema.optional(),
-  participacion: z.number().gt(0.01).lt(0.8).optional(),
-}).strict().superRefine((value, ctx) => {
-  if (value.accion !== "agregar" && !value.objetivo_variant_id) {
-    ctx.addIssue({ code: "custom", path: ["objetivo_variant_id"], message: "La operación necesita una variante objetivo." });
-  }
-  if (value.accion !== "quitar" && !value.variante) {
-    ctx.addIssue({ code: "custom", path: ["variante"], message: "La operación necesita una variante del catálogo." });
-  }
-});
+import { filtrarCandidatosCompatibles } from "@/lib/plan/edicion-compatibilidad";
+import {
+  abrirContextoExigido,
+  aplicarEdicionPlan,
+  correlationDesde,
+} from "@/lib/plan/aplicar-edicion";
+import { BasePlanSchema, EdicionSchema } from "@/lib/plan/edicion-esquemas";
 
 const BodySchema = z.discriminatedUnion("modo", [
   z.object({
@@ -78,229 +35,6 @@ const BodySchema = z.discriminatedUnion("modo", [
   z.object({ modo: z.literal("recomendadas"), variant_id: z.string().trim().min(1).max(160), approval_token: z.string().min(1), loraMode: LoraModeSlugSchema.optional() }).strict(),
   z.object({ modo: z.literal("aplicar"), base: BasePlanSchema, edicion: EdicionSchema, loraMode: LoraModeSlugSchema.optional() }).strict(),
 ]);
-
-type BasePlan = z.infer<typeof BasePlanSchema>;
-type Edicion = z.infer<typeof EdicionSchema>;
-
-const MENSAJE_APROBACION_INVALIDA = "La aprobación base expiró o no corresponde a este plan.";
-
-function correlationDesde(candidato: string | undefined): string {
-  const parsed = z.string().uuid().safeParse(candidato);
-  return parsed.success ? parsed.data : crypto.randomUUID();
-}
-
-function abrirContextoExigido(token: string): ContextoPlan {
-  const contexto = abrirContextoPlan(token);
-  if (!contexto) throw new PlanEditError(409, MENSAJE_APROBACION_INVALIDA);
-  return contexto;
-}
-
-function normalizar(value: string): string {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
-}
-
-function unicos(values: string[]): string[] {
-  return [...new Set(values)];
-}
-
-function normalizarParticipaciones(materiales: MaterialPlan[]): MaterialPlan[] {
-  const total = materiales.reduce((sum, material) => sum + material.participacion, 0);
-  if (total <= 0) throw new PlanEditError(400, "La estructura quedó sin participación de materiales.");
-
-  let acumulado = 0;
-  return materiales.map((material, index) => {
-    const participacion = index === materiales.length - 1
-      ? Math.max(0.000001, Number((1 - acumulado).toFixed(6)))
-      : Number((material.participacion / total).toFixed(6));
-    acumulado += participacion;
-    return { ...material, participacion };
-  });
-}
-
-async function whitelistDesdeBase(pool: ReturnType<typeof getRagPool>, base: BasePlan): Promise<Map<string, Set<string>>> {
-  const ids = unicos([
-    ...base.compras.map((compra) => compra.variant_id),
-    ...base.plan.estructuras.flatMap((estructura) => estructura.materiales.map((material) => material.variant_id).filter((id): id is string => Boolean(id))),
-    ...base.plan.estructuras.flatMap((estructura) => (estructura.variant_overrides ?? []).flatMap((override) => [override.objetivo_variant_id, override.variant_id])),
-  ]);
-  if (!ids.length) throw new PlanEditError(409, "El plan base no tiene variantes verificables.");
-
-  const { rows } = await pool.query<{ product_id: string; variant_id: string }>(
-    `SELECT v.product_id, v.variant_id
-       FROM catalog_variants v
-       JOIN catalog_products p ON p.product_id = v.product_id
-      WHERE v.variant_id = ANY($1::text[])
-        AND v.available = true
-        AND p.available = true
-        AND p.status = 'ACTIVE'`,
-    [ids],
-  );
-  const porVariante = new Map(rows.map((row) => [row.variant_id, row.product_id]));
-  if (rows.length !== ids.length || base.compras.some((compra) => porVariante.get(compra.variant_id) !== compra.product_id)) {
-    throw new PlanEditError(409, "El catálogo cambió desde que se armó el plan. Vuelve a solicitar la propuesta.");
-  }
-
-  const whitelist = new Map<string, Set<string>>();
-  for (const row of rows) {
-    const variantes = whitelist.get(row.product_id) ?? new Set<string>();
-    variantes.add(row.variant_id);
-    whitelist.set(row.product_id, variantes);
-  }
-  return whitelist;
-}
-
-async function agregarVarianteAWhitelist(
-  pool: ReturnType<typeof getRagPool>,
-  whitelist: Map<string, Set<string>>,
-  variante: NonNullable<Edicion["variante"]>,
-): Promise<string[]> {
-  const { rows } = await pool.query<{ product_id: string; variant_id: string; producto_titulo: string; colores_producto: unknown; colores_variante: unknown }>(
-    `SELECT v.product_id, v.variant_id, p.title AS producto_titulo,
-            COALESCE(p.derived->'colors', '[]'::jsonb) AS colores_producto,
-            COALESCE(v.derived_colors, ARRAY[]::text[]) AS colores_variante
-       FROM catalog_variants v
-       JOIN catalog_products p ON p.product_id = v.product_id
-      WHERE v.product_id = $1
-        AND v.variant_id = $2
-        AND v.available = true
-        AND p.available = true
-        AND p.status = 'ACTIVE'`,
-    [variante.product_id, variante.variant_id],
-  );
-  if (rows.length !== 1) {
-    // Legacy rollback path only: classify the failure so a variant paired with
-    // a product that does not own it gets the stable cause instead of the
-    // misleading "no longer available". No extra query on success.
-    const propietario = await pool.query<{ product_id: string }>(
-      "SELECT product_id FROM catalog_variants WHERE variant_id = $1",
-      [variante.variant_id],
-    );
-    const dueno = propietario.rows[0]?.product_id;
-    if (dueno !== undefined && dueno !== variante.product_id) throw new AllowlistProductoVarianteError();
-    throw new PlanEditError(409, "La variante elegida ya no está disponible en el catálogo.");
-  }
-  const variantes = whitelist.get(variante.product_id) ?? new Set<string>();
-  variantes.add(variante.variant_id);
-  whitelist.set(variante.product_id, variantes);
-  const fila = rows[0]!;
-  return coloresRealesVariante(fila.producto_titulo, textos(fila.colores_variante), textos(fila.colores_producto));
-}
-
-function textos(valor: unknown): string[] {
-  return Array.isArray(valor) ? valor.filter((item): item is string => typeof item === "string") : [];
-}
-
-function indiceMaterialParaLinea(
-  materiales: MaterialPlan[],
-  linea: { product_id: string; variant_id: string; color?: string | null },
-): number {
-  const porVariante = materiales.findIndex((material) => material.product_id === linea.product_id && material.variant_id === linea.variant_id);
-  if (porVariante >= 0) return porVariante;
-  const color = normalizar(linea.color ?? "");
-  return materiales.findIndex((material) => material.product_id === linea.product_id && normalizar(material.color ?? "") === color);
-}
-
-/**
- * Color the edit writes for the variant the customer picked ("agregar" and
- * "reemplazar"). The editor sends free text, and until now it reached the plan
- * untouched:
- * - it goes through the catalog vocabulary (`colorDeCatalogo`), because the
- *   geometric resolver filters variants by the literal color and a typed "azul
- *   rey" came back SIN_COBERTURA (A6 again);
- * - without a color, the variant's own color is used: the card pre-filled the
- *   color of the piece being replaced, so blue balloons were quoted as "rosado";
- * - a color the variant does not have is replaced by its single real color,
- *   because the label must say what is bought. A variant with no known colors
- *   (or with several) keeps what the customer wrote: rejecting it would block
- *   an edit the catalog does allow.
- */
-function colorDeEdicion(color: string | undefined, coloresVariante: readonly string[]): string | undefined {
-  const pedido = color?.trim() ? colorDeCatalogo(color.trim()) : undefined;
-  if (coloresVariante.length !== 1) return pedido;
-  const unico = coloresVariante[0]!;
-  return pedido && normalizar(pedido) === normalizar(unico) ? pedido : unico;
-}
-
-function aplicarEdicion(base: BasePlan, edicion: Edicion, coloresVariante: readonly string[]): PlanDecoracion {
-  const estructura = base.plan.estructuras.find((item) => item.estructura_id === edicion.estructura_id);
-  if (!estructura) throw new PlanEditError(404, "No se encontró la estructura seleccionada.");
-  const colorVariante = edicion.accion === "quitar" ? undefined : colorDeEdicion(edicion.variante?.color, coloresVariante);
-
-  const materiales = estructura.materiales.map((material) => ({ ...material }));
-  if (edicion.accion === "agregar") {
-    const variante = edicion.variante!;
-    const participacion = edicion.participacion ?? 0.2;
-    const restante = 1 - participacion;
-    const existentes = normalizarParticipaciones(materiales).map((material) => ({
-      ...material,
-      participacion: material.participacion * restante,
-    }));
-    materiales.splice(0, materiales.length, ...normalizarParticipaciones([
-      ...existentes,
-      {
-        product_id: variante.product_id,
-        variant_id: variante.variant_id,
-        color: colorVariante,
-        acabado: variante.acabado,
-        participacion,
-        rol_material: "acento",
-      },
-    ]));
-  } else {
-    const lineaObjetivo = base.estructuras
-      .find((item) => item.estructura_id === edicion.estructura_id)
-      ?.lineas.find((linea) => linea.variant_id === edicion.objetivo_variant_id);
-    if (!lineaObjetivo) throw new PlanEditError(404, "No se encontró la variante objetivo en la estructura.");
-
-    if (edicion.accion === "reemplazar" && ["arco", "semiarco", "guirnalda", "columna", "pared", "centro_mesa"].includes(estructura.tipo)) {
-      // Las estructuras geométricas no mutan `materiales` (la "receta" de colores/participación);
-      // el cambio vive en variant_overrides, que ya encadena ediciones sucesivas sobre la misma
-      // pieza. Por eso esta rama no depende de indiceMaterialParaLinea: una pieza ya editada
-      // antes puede tener un color que no está en `materiales`, y eso es válido.
-      const overrides = (estructura.variant_overrides ?? []).filter((override) => override.objetivo_variant_id !== edicion.objetivo_variant_id);
-      const variante = edicion.variante!;
-      const overrideAnterior = overrides.find((override) => override.variant_id === edicion.objetivo_variant_id);
-      const overridesSinCadena = overrides.filter((override) => override !== overrideAnterior);
-      const nuevoOverride = {
-        objetivo_variant_id: overrideAnterior?.objetivo_variant_id ?? edicion.objetivo_variant_id!,
-        product_id: variante.product_id,
-        variant_id: variante.variant_id,
-        color: colorVariante,
-      };
-      const planEditado: PlanDecoracion = {
-        ...base.plan,
-        estructuras: base.plan.estructuras.map((item) => item.estructura_id === estructura.estructura_id
-          ? { ...item, variant_overrides: [...overridesSinCadena, nuevoOverride] }
-          : item),
-      };
-      return PlanDecoracionSchema.parse(planEditado);
-    }
-
-    const indice = indiceMaterialParaLinea(materiales, lineaObjetivo);
-    if (indice < 0) throw new PlanEditError(409, "La variante visible no corresponde a un material editable.");
-
-    if (edicion.accion === "quitar") {
-      if (materiales.length === 1) throw new PlanEditError(400, MENSAJE_UNICO_MATERIAL, "UNICO_MATERIAL");
-      materiales.splice(indice, 1);
-      materiales.splice(0, materiales.length, ...normalizarParticipaciones(materiales));
-    } else {
-      const variante = edicion.variante!;
-      materiales[indice] = {
-        ...materiales[indice]!,
-        product_id: variante.product_id,
-        variant_id: variante.variant_id,
-        color: colorVariante ?? materiales[indice]!.color,
-        acabado: variante.acabado ?? materiales[indice]!.acabado,
-      };
-    }
-  }
-
-  const planEditado: PlanDecoracion = {
-    ...base.plan,
-    estructuras: base.plan.estructuras.map((item) => item.estructura_id === estructura.estructura_id ? { ...item, materiales } : item),
-  };
-  return PlanDecoracionSchema.parse(planEditado);
-}
 
 function serializarCandidatos(candidatos: readonly ProductoCandidato[]) {
   return candidatos.slice(0, 8).map((candidato) => ({
@@ -527,95 +261,19 @@ export async function POST(request: Request) {
       return Response.json({ candidatos: candidatos.slice(0, 12) }, { headers: cabeceras });
     }
 
-    const base = body.base;
-    const aprobacionBase = verificarTokenAprobacion(base.approval_token, base.plan_hash);
-    if (!aprobacionBase) throw new PlanEditError(409, MENSAJE_APROBACION_INVALIDA);
-
-    const contextoPlan = abrirContextoExigido(base.approval_token);
-    // Una propuesta con procedencia "next" ya no se puede re-resolver: ese
-    // resolutor desapareció (ADR-0023 paso 5). Los tokens caducan a las 24 h.
-    if (contextoPlan.backend !== "python") {
-      throw new PlanEditError(409, MENSAJE_APROBACION_INVALIDA);
-    }
-    const snapshotPython = exigirContextoPython(contextoPlan);
-    const whitelist = mapaDesdeAllowlist(contextoPlan.allowlist);
+    // The signed-approval / re-resolution / admission logic lives in
+    // `aplicarEdicionPlan` (src/lib/plan/aplicar-edicion.ts) so the chat tool
+    // `ajustar_plan_decoracion` (src/lib/ia/registro-herramientas.ts) can call
+    // the exact same checks instead of a second implementation.
     const catalogAllowlist = await resolverCatalogAllowlist();
-    const correlationId = correlationDesde(base.request_id ?? aprobacionBase.requestId);
-
-    const resolver = (plan: PlanDecoracion, allowlistPython: ContextoPlan["allowlist"]) =>
-      resolverPlan({
-        plan,
-        allowlist: allowlistPython,
-        catalogSnapshotId: snapshotPython,
-        loraAllowlist: catalogAllowlist,
-        requestId: crypto.randomUUID(),
-        correlationId,
-        signal: request.signal,
-      });
-
-    const planBaseVerificado = await resolver(base.plan, contextoPlan.allowlist);
-    if (planBaseVerificado.resuelto.plan_hash !== base.plan_hash) {
-      throw new PlanEditError(409, "El plan base cambió desde que se mostró. Vuelve a solicitar la propuesta.");
-    }
-    if (!verificarTokenAprobacion(base.approval_token, planBaseVerificado.resuelto.plan_hash)) {
-      throw new PlanEditError(409, MENSAJE_APROBACION_INVALIDA);
-    }
-
-    let coloresVariante: string[] = [];
-    if (body.edicion.accion !== "quitar") {
-      const variante = body.edicion.variante!;
-      // Se exige la variante exacta: que el producto esté entrenado no dice
-      // nada del tamaño concreto, y aceptarlo por `product_id` dejaba pasar
-      // tamaños nunca fotografiados (R-24 de un producto entrenado en R-5..R-18).
-      if (catalogAllowlist && !catalogAllowlist.variantIds.includes(variante.variant_id)) {
-        throw new PlanEditError(409, `LORA_DATASET_ALLOWLIST_REJECTED: ${variante.variant_id}`);
-      }
-      // El resolutor admite el par dentro del snapshot firmado; Next no
-      // consulta el catálogo por SQL.
-      coloresVariante = await admitirVariantePython({ variante, catalogSnapshotId: snapshotPython, whitelist, correlationId, signal: request.signal });
-    }
-    const planEditado = aplicarEdicion(base, body.edicion, coloresVariante);
-    const allowlistFinal = allowlistDesdeMapa(whitelist);
-    const resolucionEditada = await resolver(planEditado, allowlistFinal);
-    const resuelto = resolucionEditada.resuelto;
-    if (resuelto.compras.length === 0) throw new PlanEditError(422, "El cambio dejó la estructura sin piezas disponibles.");
-    if (body.edicion.accion === "reemplazar") {
-      // Server-verified lines on both sides: the base plan was just re-resolved.
-      const objetivo = planBaseVerificado.resuelto.estructuras
-        .find((item) => item.estructura_id === body.edicion.estructura_id)
-        ?.lineas.find((linea) => linea.variant_id === body.edicion.objetivo_variant_id);
-      const lineasNuevas = resuelto.estructuras
-        .find((item) => item.estructura_id === body.edicion.estructura_id)
-        ?.lineas.filter((linea) => linea.variant_id === body.edicion.variante?.variant_id) ?? [];
-      if (objetivo && reemplazoIncompatible(objetivo, lineasNuevas)) {
-        throw new PlanEditError(422, MENSAJE_REEMPLAZO_INCOMPATIBLE, "REEMPLAZO_INCOMPATIBLE");
-      }
-    }
-
-    const requestId = base.request_id ?? aprobacionBase.requestId;
-    resuelto.request_id = requestId;
-    resuelto.approval_token = crearTokenPlan({
-      planHash: resuelto.plan_hash,
-      requestId,
-      backend: "python",
-      catalogSnapshotId: contextoPlan.catalogSnapshotId,
-      allowlist: allowlistFinal,
-      ...(contextoPlan.creatividad === null ? {} : { creatividad: contextoPlan.creatividad }),
+    const { plan: resuelto, cotizacion } = await aplicarEdicionPlan({
+      base: body.base,
+      edicion: body.edicion,
+      catalogAllowlist,
+      pool,
+      signal: request.signal,
     });
-    await registrarPlanAudit(pool, {
-      requestId,
-      planHash: resuelto.plan_hash,
-      restricciones: resuelto.plan.restricciones,
-      selectedProductIds: resuelto.compras.map((compra) => compra.variant_id),
-      geometry: { accion: body.edicion.accion, estructura_id: body.edicion.estructura_id, objetivo_variant_id: body.edicion.objetivo_variant_id, nueva_variant_id: body.edicion.variante?.variant_id },
-      costChosenCop: resuelto.totales.total_cop,
-      ceilingCop: resuelto.comercial.techo_cop,
-      deltaCop: resuelto.comercial.delta_cop,
-      packages: { ahorro_paquetes_cop: resuelto.totales.ahorro_paquetes_cop, lineas: resuelto.compras.map((compra) => ({ variant_id: compra.variant_id, paquetes: compra.paquetes, subtotal: compra.subtotal })) },
-      status: "PLAN_EDITED",
-    });
-
-    return Response.json({ plan: resuelto, cotizacion: conFotosDeCatalogo(resolucionEditada.cotizacion, resuelto.compras) }, { headers: cabeceras });
+    return Response.json({ plan: resuelto, cotizacion }, { headers: cabeceras });
   } catch (error) {
     // Los campos legacy (`error`, `causa`, `detalles`, sobre operational.v1) se
     // conservan para los consumidores actuales; `ui_error` (ui-error.v1) es lo

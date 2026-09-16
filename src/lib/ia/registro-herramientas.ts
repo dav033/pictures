@@ -17,7 +17,10 @@ import { aplicarColoresReferencia, extraerRestriccionesUsuario, validarCardinali
 import { CREATIVIDAD_POR_DEFECTO, perfilCreatividad, type NivelCreatividad } from "@/lib/ia/creatividad";
 import { parseEventIntent } from "@/lib/rag/query-parser/parse-event";
 import type { CatalogAllowlist, EventMatchEvidence, EventMatchLevel } from "@/lib/rag/retrieval/types";
-import { allowlistDesdeMapa, crearTokenPlan } from "@/lib/plan/aprobacion";
+import { abrirContextoPlan, allowlistDesdeMapa, crearTokenPlan, verificarTokenAprobacion } from "@/lib/plan/aprobacion";
+import { aplicarEdicionPlan } from "@/lib/plan/aplicar-edicion";
+import { EdicionSchema, type BasePlan, type Edicion } from "@/lib/plan/edicion-esquemas";
+import { PlanEditError } from "@/lib/plan/edicion-error";
 import { respuestaCatalogoLoraNoDisponible } from "@/lib/lora/catalogo-no-disponible";
 import {
   MENSAJE_CLIENTE_ESTIMACION,
@@ -53,7 +56,7 @@ import { ajustarCoberturaPlan, avisosClienteAjustes, mezclasAdmisiblesEstructura
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "@/lib/plan/composicion";
 import { ACCION_PLAN_NO_CONVERGE, disponibilidadDelTurno, quitarMaterialesSinCobertura, RECHAZOS_MAXIMOS, RECHAZOS_PARA_CONVERGER, unirCandidatosTurno } from "./convergencia-plan";
 import { normalizarArgsBrief } from "./brief-herramienta";
-import { HERRAMIENTAS_PLAN, HERRAMIENTAS_RAG } from "./herramientas";
+import { AJUSTAR_PLAN_DECORACION, HERRAMIENTAS_PLAN, HERRAMIENTAS_RAG } from "./herramientas";
 import type { ReferenceBlueprintV2 } from "./reference-blueprint";
 import type { Herramienta } from "./tipos";
 import { z } from "zod";
@@ -81,11 +84,36 @@ export const HERRAMIENTAS_SOLO_LECTURA = new Set([
  * el catálogo apagado sin tocar el entorno). DISEÑO DE DECORACIÓN es el único
  * modo: las cantidades y los tamaños de una estructura tienen un solo dueño,
  * `confirmar_plan_decoracion`.
+ *
+ * `planVigente` expone `ajustar_plan_decoracion` (§7 "editar una propuesta
+ * desde el chat") — nunca por defecto: el llamador solo la activa cuando
+ * `estado.planVigente` ya existe, es decir cuando el token firmado del turno
+ * verificó una propuesta editable (`planVigenteDelTurno`). El modelo no puede
+ * convocar la herramienta con solo pedirla.
  */
-export function herramientasActivas(flags: { ragEnabled?: boolean } = {}): Herramienta[] {
+export function herramientasActivas(flags: { ragEnabled?: boolean; planVigente?: boolean } = {}): Herramienta[] {
   const ragEnabled = flags.ragEnabled ?? RAG_ENABLED;
   if (!ragEnabled) return [];
-  return [...HERRAMIENTAS_RAG, ...HERRAMIENTAS_PLAN];
+  return [...HERRAMIENTAS_RAG, ...HERRAMIENTAS_PLAN, ...(flags.planVigente ? [AJUSTAR_PLAN_DECORACION] : [])];
+}
+
+/**
+ * Evidencia no-modelo de que hay una propuesta vigente para editar (§7): el
+ * navegador ecoa el plan que muestra la tarjeta, y esto verifica su token
+ * firmado (firma HMAC, TTL, `backend === "python"` — un token "next" es
+ * irresoluble desde que se borró el resolutor de TypeScript — y el mismo
+ * `plan_hash`) antes de creer nada. Un candidato que falle cualquier chequeo
+ * es exactamente como si el navegador no hubiera mandado nada:
+ * `ajustar_plan_decoracion` queda oculta y el modelo solo puede diseñar una
+ * propuesta nueva. El booleano que ve el resto del turno (`Boolean(estado.planVigente)`)
+ * sale de aquí, nunca de una inferencia del modelo.
+ */
+export function planVigenteDelTurno(candidato: BasePlan | undefined): { base: BasePlan } | undefined {
+  if (!candidato) return undefined;
+  if (!verificarTokenAprobacion(candidato.approval_token, candidato.plan_hash)) return undefined;
+  const contexto = abrirContextoPlan(candidato.approval_token);
+  if (!contexto || contexto.backend !== "python") return undefined;
+  return { base: candidato };
 }
 
 // Se permiten varias búsquedas por turno porque una referencia puede contener
@@ -152,6 +180,24 @@ export type EstadoConversacion = {
    * analizado por /api/references/analyze — plan de integración de
    * referencias visuales, R2/R4. Ausente si el cliente no adjuntó nada. */
   referenceBlueprint?: ReferenceBlueprintV2;
+  /**
+   * Propuesta ya vigente al empezar el turno, verificada (§7 "editar una
+   * propuesta desde el chat"): presente solo cuando el navegador mandó un
+   * plan y su token firmado pasó `planVigenteDelTurno`. Habilita
+   * `ajustar_plan_decoracion` en `herramientasActivas` y es el ÚNICO origen
+   * del `base` que esa herramienta edita — el modelo nunca aporta el plan
+   * base, solo contenido semántico y variantes de `buscar_catalogo_rag`.
+   */
+  planVigente?: { base: BasePlan };
+  /**
+   * Qué herramienta comercial (confirmar_plan_decoracion o
+   * ajustar_plan_decoracion) se llamó primero en este turno — a lo sumo una
+   * de las dos por turno (§7 punto 3): nada impedía antes que el modelo
+   * llamara ambas en la misma vuelta. Reintentar la MISMA herramienta sigue
+   * permitido (confirmar_plan_decoracion ya se apoya en eso para corregir un
+   * rechazo); lo que se bloquea es mezclar las dos.
+   */
+  herramientaComercialUsada?: "confirmar_plan_decoracion" | "ajustar_plan_decoracion";
 };
 
 const EVENT_MATCH_PRIORITY: Record<EventMatchLevel, number> = {
@@ -202,6 +248,10 @@ export function crearEstadoConversacion(brief: Brief, solicitudOriginal = "", re
   /** The customer messages of the conversation, in order. With them the latest
    * messages win for colors and structures (restricciones-conversacion.ts). */
   mensajesCliente?: readonly string[];
+  /** Plan+token the browser echoed for this turn (chat-v1 `planVigente`), not
+   * yet verified — `crearEstadoConversacion` runs it through
+   * `planVigenteDelTurno` before trusting it (§7). */
+  planVigente?: BasePlan;
 } = {}): EstadoConversacion {
   // The wrapper in ejecutar.ts calls this once per request/turn, so these
   // sets cannot carry a prior conversation's retrieval whitelist.
@@ -225,6 +275,7 @@ export function crearEstadoConversacion(brief: Brief, solicitudOriginal = "", re
     ragEventRelaxations: [],
     ragRequestId: crypto.randomUUID(),
     referenceBlueprint,
+    planVigente: planVigenteDelTurno(opciones.planVigente),
   };
 }
 
@@ -461,6 +512,30 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
   const auditarPlan = (datos: Omit<Parameters<typeof registrarPlanAudit>[1], "hechos">) =>
     registrarPlanAudit(ragPool, { ...datos, hechos: { ...options.hechosPeticion, rechazosTurno: estado.rechazosPlan } });
   const catalogoBloqueado = options.catalogoLoraNoDisponible;
+
+  /**
+   * Invariante §7 punto 3: a lo sumo una herramienta comercial (confirmar_plan_decoracion
+   * o ajustar_plan_decoracion) por turno — nada impedía antes que el modelo
+   * llamara las dos en la misma vuelta (`HERRAMIENTAS_SOLO_LECTURA` solo
+   * protege las de lectura). Marca la primera que se llama y bloquea la OTRA
+   * mientras dure el turno; reintentar la MISMA sigue permitido porque
+   * confirmar_plan_decoracion ya depende de eso para corregir un rechazo
+   * (ver el E2E de colores de referencia: dos confirmaciones válidas en un
+   * mismo turno). No se activa por un intento que ni siquiera llegó a
+   * ejecutarse (p. ej. bloqueado por rechazosPlan): solo por una llamada real.
+   */
+  const bloqueoHerramientaComercial = (nombre: "confirmar_plan_decoracion" | "ajustar_plan_decoracion"): Record<string, unknown> | null => {
+    if (estado.herramientaComercialUsada && estado.herramientaComercialUsada !== nombre) {
+      return {
+        ok: false,
+        status: "HERRAMIENTA_COMERCIAL_YA_USADA",
+        accion_requerida: `Ya usaste ${estado.herramientaComercialUsada} en este turno. No llames ${nombre} en el mismo turno: son excluyentes. Si el resultado anterior no sirve, respóndele al cliente con lo que ya tienes en vez de intentar la otra herramienta.`,
+        mensaje_cliente: MENSAJE_CLIENTE_PLAN_EN_AJUSTE,
+      };
+    }
+    estado.herramientaComercialUsada = nombre;
+    return null;
+  };
 
   const confirmarPlan = async (args: Record<string, unknown>): Promise<Record<string, unknown>> => {
     if (catalogoBloqueado) return respuestaCatalogoLoraNoDisponible(catalogoBloqueado);
@@ -1207,6 +1282,15 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     },
 
     confirmar_plan_decoracion: async (args) => {
+      const bloqueo = bloqueoHerramientaComercial("confirmar_plan_decoracion");
+      if (bloqueo) return bloqueo;
+      // "Diseñar otra cosa" con una propuesta ya vigente: no se bloquea (el
+      // cliente puede de verdad querer empezar de cero), pero se audita aparte
+      // para medir cuántas veces pasa antes de decidir si conviene bloquearlo
+      // (§7 punto 3).
+      if (estado.planVigente) {
+        encolarEscrituraObservabilidad(auditarPlan({ requestId: estado.ragRequestId, status: "PLAN_REEMPLAZADO_SOBRE_APROBADO", candidateProductIds: [...estado.ragIdsRecuperados] }));
+      }
       // Bounded retries: after RECHAZOS_MAXIMOS refusals the model must answer
       // the customer instead of confirming again (convergencia-plan.ts).
       if (estado.rechazosPlan >= RECHAZOS_MAXIMOS) {
@@ -1219,6 +1303,114 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       if (estado.rechazosPlan < RECHAZOS_MAXIMOS) return respuesta;
       encolarEscrituraObservabilidad(auditarPlan({ requestId: estado.ragRequestId, status: "PLAN_NO_CONVERGE", candidateProductIds: [...estado.ragIdsRecuperados] }));
       return { ...respuesta, accion_requerida: ACCION_PLAN_NO_CONVERGE };
+    },
+
+    /**
+     * Ajusta la propuesta vigente en vez de rediseñarla (§7). Solo se registra
+     * como herramienta activa cuando `estado.planVigente` existe
+     * (`herramientasActivas`), pero el handler igual repite la comprobación:
+     * el modelo nunca autoriza nada con solo llamarla, la autorización es el
+     * token firmado que ya verificó `planVigenteDelTurno`.
+     */
+    ajustar_plan_decoracion: async (args) => {
+      const bloqueo = bloqueoHerramientaComercial("ajustar_plan_decoracion");
+      if (bloqueo) return bloqueo;
+      const planVigente = estado.planVigente;
+      if (!planVigente) {
+        return {
+          ok: false,
+          status: "SIN_PROPUESTA_VIGENTE",
+          accion_requerida: "No hay una propuesta vigente en este turno para ajustar. Usa confirmar_plan_decoracion para diseñar una propuesta.",
+          mensaje_cliente: MENSAJE_CLIENTE_PLAN_EN_AJUSTE,
+        };
+      }
+      const parsedEdicion = EdicionSchema.safeParse(args);
+      if (!parsedEdicion.success) {
+        const errores = parsedEdicion.error.issues.map((issue) => `${issue.path.join(".") || "edicion"}: ${issue.message}`);
+        encolarEscrituraObservabilidad(auditarPlan({ requestId: estado.ragRequestId, status: "AJUSTE_ESQUEMA_INVALIDO", error: errores.join(" | ") }));
+        return {
+          ok: false,
+          status: "AJUSTE_ESQUEMA_INVALIDO",
+          errores,
+          accion_requerida: "Corrige accion/estructura_id/objetivo_variant_id/variante/participacion según el esquema y vuelve a llamar ajustar_plan_decoracion.",
+          mensaje_cliente: MENSAJE_CLIENTE_PLAN_EN_AJUSTE,
+        };
+      }
+      const edicion: Edicion = parsedEdicion.data;
+      // Misma allowlist que confirmar_plan_decoracion (allowlistDesdeMapa(estado.ragVariantIdsRecuperados)):
+      // el variant_id que el modelo propone tiene que haber salido de
+      // buscar_catalogo_rag EN ESTE MISMO turno. `aplicarEdicionPlan` admite la
+      // variante contra el snapshot firmado, pero eso no exige que el modelo la
+      // haya buscado — sin este paso podría "recordar" un variant_id sin
+      // pasarlo por el catálogo de este turno.
+      if (edicion.accion !== "quitar") {
+        const variante = edicion.variante!;
+        const vistas = estado.ragVariantIdsRecuperados.get(variante.product_id);
+        if (!vistas?.has(variante.variant_id)) {
+          encolarEscrituraObservabilidad(auditarPlan({ requestId: estado.ragRequestId, status: "AJUSTE_VARIANTE_FUERA_DE_BUSQUEDA", error: `${variante.product_id}:${variante.variant_id}` }));
+          return {
+            ok: false,
+            status: "VARIANTE_FUERA_DE_BUSQUEDA",
+            accion_requerida: "El product_id/variant_id de `variante` debe haber aparecido en buscar_catalogo_rag de este mismo turno. Búscalo primero y usa exactamente ese par.",
+            mensaje_cliente: MENSAJE_CLIENTE_PIEZAS,
+          };
+        }
+      }
+      try {
+        const { plan: resuelto, cotizacion } = await aplicarEdicionPlan({
+          base: planVigente.base,
+          edicion,
+          catalogAllowlist: options.catalogAllowlist ?? null,
+          correlationId: options.correlationId,
+          pool: ragPool,
+          ...(options.signal ? { signal: options.signal } : {}),
+        });
+        estado.planResuelto = resuelto;
+        estado.cotizacion = cotizacion;
+        estado.seleccionFinalIA = [];
+        encolarEscrituraObservabilidad(auditarPlan({
+          requestId: estado.ragRequestId,
+          planHash: resuelto.plan_hash,
+          status: "PLAN_AJUSTADO_CHAT",
+          geometry: { accion: edicion.accion, estructura_id: edicion.estructura_id, objetivo_variant_id: edicion.objetivo_variant_id, nueva_variant_id: edicion.variante?.variant_id },
+          costChosenCop: resuelto.totales.total_cop,
+        }));
+        return {
+          ok: true,
+          status: "PLAN_AJUSTADO",
+          // Point 4 of §7: what changed vs. the previous card, so the model
+          // can say it instead of presenting the update as a first proposal.
+          estructura_ajustada: edicion.estructura_id,
+          accion: edicion.accion,
+          material_nuevo: edicion.accion === "quitar" ? undefined : `${edicion.variante!.product_id}/${edicion.variante!.variant_id}`,
+          total_cop: resuelto.totales.total_cop,
+          accion_requerida: "Cuéntale al cliente qué cambiaste (la estructura y el material, no todo el plan) y que el desglose en pantalla ya lo refleja. No llames confirmar_plan_decoracion en este turno ni presentes esto como una propuesta nueva.",
+          fase: "propuesta_actualizada; el desglose en pantalla ya refleja el ajuste",
+        };
+      } catch (error) {
+        if (error instanceof PlanEditError) {
+          encolarEscrituraObservabilidad(auditarPlan({ requestId: estado.ragRequestId, status: "AJUSTE_RECHAZADO", error: `${error.causa ?? "sin_causa"}: ${error.message}` }));
+          return {
+            ok: false,
+            status: "AJUSTE_RECHAZADO",
+            ...(error.causa ? { causa: error.causa } : {}),
+            accion_requerida: "El ajuste no se pudo aplicar. Dile al cliente el motivo; si la propuesta expiró o el catálogo cambió, ofrécele pedirla de nuevo en vez de inventar un resultado.",
+            mensaje_cliente: error.message,
+          };
+        }
+        if (error instanceof AllowlistProductoVarianteError) {
+          encolarEscrituraObservabilidad(auditarPlan({ requestId: estado.ragRequestId, status: "PRODUCTO_VARIANTE_INCONSISTENTE", error: error.message }));
+          return {
+            ok: false,
+            status: "PRODUCTO_VARIANTE_INCONSISTENTE",
+            accion_requerida: "El variant_id no pertenece a ese product_id según buscar_catalogo_rag; corrige el par y vuelve a llamar ajustar_plan_decoracion.",
+            mensaje_cliente: MENSAJE_CLIENTE_PIEZAS,
+          };
+        }
+        if (isPythonAdapterError(error)) throw new FalloTecnicoTurnoError(error.code, error.domainCode ?? error.message);
+        if (error instanceof PythonPlanMappingError) throw new FalloTecnicoTurnoError(error.code, error.message);
+        throw error;
+      }
     },
 
   };

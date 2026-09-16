@@ -197,7 +197,7 @@ export async function POST(request: Request) {
   }
   const requestId = contextoOperativo.request_id;
   const correlationId = contextoOperativo.correlation_id;
-  const { messages, brief, proveedor, fotoEspacio, imagenesReferencia, referenceBlueprint: rawReferenceBlueprint, loraMode: rawLoraMode } = body;
+  const { messages, brief, proveedor, fotoEspacio, imagenesReferencia, referenceBlueprint: rawReferenceBlueprint, loraMode: rawLoraMode, planVigente } = body;
   const creatividad = parseNivelCreatividad(body.creatividad);
   const cookieProveedor = request.headers
     .get("cookie")
@@ -302,6 +302,7 @@ export async function POST(request: Request) {
     catalogAllowlist: catalogAllowlist ?? undefined,
     catalogoLoraNoDisponible,
     creatividad,
+    planVigente,
     signal: deadline.signal,
     hechosPeticion: { tieneFotoEspacio: Boolean(fotoEspacio), tieneImagenesReferencia: (imagenesReferencia?.length ?? 0) > 0, loraMode: loraModeSlug },
     telemetria: {

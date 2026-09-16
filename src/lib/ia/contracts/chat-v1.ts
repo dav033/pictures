@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { ReferenceBlueprintV2Schema } from "@/lib/ia/reference-blueprint";
 import { LoraModeSlugSchema } from "@/lib/lora/schema";
+import { BasePlanSchema } from "@/lib/plan/edicion-esquemas";
 
 /** Versioned wire contracts for the Next facade and the future Python service. */
 export const CHAT_CONTRACT_VERSION = "chat.v1" as const;
@@ -58,6 +59,16 @@ export const ChatRequestV1Schema = z.object({
   loraMode: LoraModeSlugSchema.optional(),
   /** Creativity calibration 0-5 chosen in the UI (see src/lib/ia/creatividad.ts); absent = default level. */
   creatividad: z.number().int().min(0).max(5).optional(),
+  /**
+   * The proposal the browser currently shows (§7 "editar una propuesta desde
+   * el chat"), echoed back so the turn can offer `ajustar_plan_decoracion`
+   * instead of only being able to design a new one. Aditivo: a client that
+   * omits it behaves exactly as before. Never trusted at face value — the
+   * server re-verifies the signed `approval_token`/`plan_hash` before
+   * treating it as a real editable proposal (`planVigenteDelTurno` in
+   * src/lib/ia/registro-herramientas.ts).
+   */
+  planVigente: BasePlanSchema.optional(),
 }).strict();
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -79,6 +90,7 @@ export function parseChatRequestV1(input: unknown): ChatRequestV1 {
     referenceBlueprint: input.referenceBlueprint ?? undefined,
     loraMode: input.loraMode ?? undefined,
     creatividad: input.creatividad ?? undefined,
+    planVigente: input.planVigente ?? undefined,
   });
 }
 

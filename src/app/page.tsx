@@ -956,6 +956,13 @@ export default function Page() {
     }
     solicitudUsuarioRef.current = limpio;
 
+    // Propuesta que ya está en pantalla (§7 "editar una propuesta desde el
+    // chat"): se ecoa al backend para que el turno pueda ofrecer
+    // ajustar_plan_decoracion en vez de solo poder diseñar una nueva. El
+    // servidor vuelve a verificar el token firmado — esto es una pista, no
+    // una autorización.
+    const planVigenteActual = [...(historialBase ?? mensajes)].reverse().find((mensaje) => mensaje.role === "assistant" && mensaje.plan)?.plan;
+
     // Al reintentar se conservan las fotos del mensaje original; en un envío
     // nuevo son las del compositor en este momento.
     const adjuntosUsuario = historialBase
@@ -1017,6 +1024,7 @@ export default function Page() {
           // visuales, R2); con el modo plan apagado el backend lo ignora.
           referenceBlueprint: referenceDraftRef.current?.blueprint ?? referenceDraft?.blueprint,
           creatividad: creatividadRef.current,
+          planVigente: planVigenteActual ?? undefined,
         }),
       });
 
