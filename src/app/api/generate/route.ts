@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
-import { buildImagePrompt, promptElementName, tieneContratoDeColor, type PromptImageInput } from "@/lib/ia/build-image-prompt";
+import { buildImagePrompt, placementDescription, promptElementName, tieneContratoDeColor, type PromptImageInput } from "@/lib/ia/build-image-prompt";
 import { LORA_CAPTION_COMPILER_VERSION, LORA_JSON_PROMPT_MAX_LENGTH, translateLoraColor } from "@/lib/ia/lora-caption-compiler";
 import { includesJsonPrompt, includesTextPrompt, resolveLoraPromptFormat } from "@/lib/ia/lora-prompt-format";
 import { parseLoraSeed, resolveLoraSeed } from "@/lib/ia/lora-seed";
@@ -1196,11 +1196,20 @@ async function generar(request: Request, generationRequestId: string): Promise<R
        const existente = unidadesPorTamano.get(clave);
        unidadesPorTamano.set(clave, { diamPulg: linea.size_inches, forma: linea.shape, cantidad: (existente?.cantidad ?? 0) + linea.design_quantity });
      }
+    // Ubicación en palabras de cada estructura, con el mismo dueño que el resto
+    // del prompt: distingue dos estructuras que se llamen igual sin devolver el
+    // `estructura_id` al texto.
+    const ubicacionPorEstructura = new Map<string, string>();
+    for (const element of transformedSceneSpec.elements) {
+      const grupo = element.visual_semantics?.repetition_group ?? element.element_id.split("#")[0]!;
+      if (!ubicacionPorEstructura.has(grupo)) ubicacionPorEstructura.set(grupo, placementDescription(element.target_bbox, element.category));
+    }
     const sizeMixBlock = planResuelto
       ? bloqueMezclaPorEstructura(planResuelto.estructuras.map((estructura) => ({
           nombre: estructura.nombre,
           total_unidades: estructura.total_unidades,
           repeticiones: estructura.repeticiones,
+          ubicacion_en_palabras: ubicacionPorEstructura.get(estructura.estructura_id),
           mezcla_real: estructura.mezcla_real.map((linea) => ({ diamPulg: linea.diam_pulg, forma: linea.forma, unidades: linea.unidades })),
         }))) ?? undefined
       : bloqueMezclaTamanos([...unidadesPorTamano.values()]) ?? undefined;

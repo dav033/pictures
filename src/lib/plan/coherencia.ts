@@ -55,15 +55,21 @@ function faltantes(esperado: ReadonlySet<string>, encontrado: ReadonlySet<string
  * Las líneas de color por elemento del prompt (`colorVarietyContract`), por el
  * nombre con que aparecen. Se leen del prompt real, no del generador: lo que
  * se comprueba es lo que se va a enviar.
+ *
+ * Un nombre puede repetirse: `PlanDecoracionSchema` no exige que el `nombre` de
+ * dos estructuras sea distinto y `promptElementName` además borra el paréntesis
+ * de medidas ("Arco (2 m)" y "Arco (3 m)" colapsan). Por eso se guardan TODAS
+ * las líneas de cada nombre y no solo la última: quedarse con una sola hacía
+ * fallar cerrado un prompt correcto con dos estructuras homónimas.
  */
 const LINEA_COLOR = /^- (.+?): (?:APPROVED COLOR VARIETY — use exactly these catalog colors: ([^.]+)\.|MONOCHROME LOCK — use only ([^;]+);)/;
 
-function coloresPorElementoEnPrompt(prompt: string): Map<string, Set<string>> {
-  const lineas = new Map<string, Set<string>>();
+function coloresPorElementoEnPrompt(prompt: string): Map<string, Array<Set<string>>> {
+  const lineas = new Map<string, Array<Set<string>>>();
   for (const linea of prompt.split("\n")) {
     const match = LINEA_COLOR.exec(linea);
     if (!match) continue;
-    lineas.set(match[1]!, conjunto((match[2] ?? match[3] ?? "").split(",")));
+    lineas.set(match[1]!, [...(lineas.get(match[1]!) ?? []), conjunto((match[2] ?? match[3] ?? "").split(","))]);
   }
   return lineas;
 }
@@ -110,6 +116,19 @@ export function verificarCoherenciaPrompt(prompt: string, plan: PlanResuelto, es
 function erroresDeColor(prompt: string, plan: PlanResuelto, escena: EscenaParaCoherencia): string[] {
   const errores: string[] = [];
   const lineasDelPrompt = coloresPorElementoEnPrompt(prompt);
+  // El prompt emite exactamente una línea por elemento con contrato de color
+  // (`tieneContratoDeColor`, su único dueño), así que el conteo por nombre tiene
+  // que cuadrar: es lo que detecta una línea perdida cuando dos elementos
+  // comparten nombre y una sola línea valdría para los dos.
+  const esperadasPorNombre = new Map<string, number>();
+  for (const elemento of escena.elementos) {
+    if (!elemento.espera_linea_de_color) continue;
+    esperadasPorNombre.set(elemento.nombre_en_prompt, (esperadasPorNombre.get(elemento.nombre_en_prompt) ?? 0) + 1);
+  }
+  for (const [nombre, esperadas] of esperadasPorNombre) {
+    const encontradas = lineasDelPrompt.get(nombre)?.length ?? 0;
+    if (encontradas !== esperadas) errores.push(`el prompt trae ${encontradas} línea(s) de color de "${nombre}" y la escena espera ${esperadas}`);
+  }
   for (const estructura of plan.estructuras) {
     const esperados = coloresDeEstructura(estructura);
     const elementos = elementosDeEstructura(escena, estructura.estructura_id);
@@ -129,14 +148,19 @@ function erroresDeColor(prompt: string, plan: PlanResuelto, escena: EscenaParaCo
     if (esperados.size === 0) continue;
     for (const elemento of elementos) {
       if (!elemento.espera_linea_de_color) continue;
-      const enPrompt = lineasDelPrompt.get(elemento.nombre_en_prompt);
-      if (!enPrompt) {
+      const enPrompt = lineasDelPrompt.get(elemento.nombre_en_prompt) ?? [];
+      if (enPrompt.length === 0) {
         errores.push(`falta la línea de color de "${elemento.nombre_en_prompt}" en el prompt`);
         continue;
       }
       const propios = conjunto(elemento.resolved_colors);
-      if (!iguales(propios, enPrompt)) {
-        errores.push(`la línea de color de "${elemento.nombre_en_prompt}" no lista sus colores (${diferencia(propios, enPrompt)})`);
+      // Basta con que ALGUNA línea de ese nombre liste exactamente sus colores:
+      // dos líneas homónimas son indistinguibles en el texto, y el conteo de
+      // arriba ya garantiza que hay una por elemento. Lo que esto cierra —una
+      // estructura que pierde o cambia un color— sigue apareciendo, porque
+      // ninguna línea listaría ese conjunto.
+      if (!enPrompt.some((linea) => iguales(propios, linea))) {
+        errores.push(`la línea de color de "${elemento.nombre_en_prompt}" no lista sus colores (${diferencia(propios, enPrompt[0]!)})`);
       }
     }
   }

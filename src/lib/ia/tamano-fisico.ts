@@ -113,11 +113,24 @@ export type EstructuraMezclaTamanos = {
   total_unidades: number;
   /** Instancias idénticas de la estructura; ausente o menor que 1 = una sola. */
   repeticiones?: number;
+  /**
+   * Ubicación en palabras (`placementDescription`), la misma que usa el resto
+   * del prompt. Solo se imprime cuando dos estructuras comparten nombre: sin
+   * `estructura_id` el bloque sacaba dos cabeceras idénticas y el modelo no
+   * podía saber qué mezcla era de cuál.
+   */
+  ubicacion_en_palabras?: string;
   mezcla_real: Array<{ diamPulg: number; forma: string | null; unidades: number }>;
 };
 
 export function bloqueMezclaPorEstructura(estructuras: EstructuraMezclaTamanos[]): string | null {
+  const nombresRepetidos = new Set(
+    estructuras.map((estructura) => estructura.nombre).filter((nombre, indice, nombres) => nombres.indexOf(nombre) !== indice),
+  );
   const bloques = estructuras.filter((estructura) => estructura.mezcla_real.length > 0).map((estructura) => {
+    const etiqueta = nombresRepetidos.has(estructura.nombre) && estructura.ubicacion_en_palabras
+      ? `"${estructura.nombre}" in the ${estructura.ubicacion_en_palabras}`
+      : `"${estructura.nombre}"`;
     const repeticiones = Math.max(1, Math.round(estructura.repeticiones ?? 1));
     const ordenadas = estructura.mezcla_real.slice().sort((a, b) => b.unidades - a.unidades || b.diamPulg - a.diamPulg);
     const porcentajes = porcentajesMayorResto(ordenadas.map((linea) => linea.unidades));
@@ -128,8 +141,8 @@ export function bloqueMezclaPorEstructura(estructuras: EstructuraMezclaTamanos[]
     });
     return [
       repeticiones === 1
-        ? `"${estructura.nombre}", ${estructura.total_unidades} balloons total:`
-        : `"${estructura.nombre}": ${repeticiones} separate identical structures, ${porInstancia(estructura.total_unidades, repeticiones)} balloons each (${estructura.total_unidades} total across ${repeticiones === 2 ? "both" : `all ${repeticiones}`}):`,
+        ? `${etiqueta}, ${estructura.total_unidades} balloons total:`
+        : `${etiqueta}: ${repeticiones} separate identical structures, ${porInstancia(estructura.total_unidades, repeticiones)} balloons each (${estructura.total_unidades} total across ${repeticiones === 2 ? "both" : `all ${repeticiones}`}):`,
       ...filas,
       ...(estructura.mezcla_real.length === 1
         ? [`SINGLE DIAMETER FOR THIS STRUCTURE: every balloon in this structure MUST be exactly ${estructura.mezcla_real[0]!.diamPulg} inches. Do not vary balloon size.`]

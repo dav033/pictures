@@ -7,7 +7,7 @@ import { planBlueprint } from "@/app/api/generate/route";
 import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/scene-spec";
 import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
 import { estimateFromPlan } from "@/lib/materiales/estimacion";
-import { buildImagePrompt, promptElementName, tieneContratoDeColor } from "@/lib/ia/build-image-prompt";
+import { buildImagePrompt, placementDescription, promptElementName, tieneContratoDeColor } from "@/lib/ia/build-image-prompt";
 import { buildQaObserverPrompt, qaPlanInputsFromPlan } from "@/lib/ia/image-qa";
 import { compileLoraCaption, GROUPING_ONLY_CONTEXT, translateLoraColor } from "@/lib/ia/lora-caption-compiler";
 import { verificarCoherenciaPrompt, verificarColoresCaptionLora, type EscenaParaCoherencia } from "@/lib/plan/coherencia";
@@ -116,11 +116,17 @@ function escenaParaCoherencia(escena: SceneSpec): EscenaParaCoherencia {
 }
 
 /** El mismo bloque de tamaños que arma route.ts, necesario para la coherencia. */
-function sizeMixDe(plan: PlanResuelto): string | undefined {
+function sizeMixDe(plan: PlanResuelto, escena: SceneSpec): string | undefined {
+  const ubicaciones = new Map<string, string>();
+  for (const element of escena.elements) {
+    const grupo = element.visual_semantics?.repetition_group ?? element.element_id.split("#")[0]!;
+    if (!ubicaciones.has(grupo)) ubicaciones.set(grupo, placementDescription(element.target_bbox, element.category));
+  }
   return bloqueMezclaPorEstructura(plan.estructuras.map((estructura) => ({
     nombre: estructura.nombre,
     total_unidades: estructura.total_unidades,
     repeticiones: estructura.repeticiones,
+    ubicacion_en_palabras: ubicaciones.get(estructura.estructura_id),
     mezcla_real: estructura.mezcla_real.map((linea) => ({ diamPulg: linea.diam_pulg, forma: linea.forma, unidades: linea.unidades })),
   }))) ?? undefined;
 }
@@ -203,7 +209,7 @@ async function main(): Promise<void> {
     ], porque: "Columnas doradas a los lados." },
   ]);
   const escenaColumnas = escenaDe(conColumnas);
-  const prompt = buildImagePrompt({ sceneSpec: escenaColumnas, sizeMixBlock: sizeMixDe(conColumnas) });
+  const prompt = buildImagePrompt({ sceneSpec: escenaColumnas, sizeMixBlock: sizeMixDe(conColumnas, escenaColumnas) });
   const lineaArco = prompt.split("\n").find((linea) => linea.includes("APPROVED COLOR VARIETY"))!;
   assert.ok(lineaArco.indexOf("blanco (~85%") < lineaArco.indexOf("dorado (~15%"), lineaArco);
   assert.match(lineaArco, /mostly blanco \(~85%, matte\)/, lineaArco);
@@ -257,6 +263,54 @@ async function main(): Promise<void> {
   assert.equal(captionFallo.ok, false, "un color perdido en el caption tiene que fallar");
   assert.match(captionFallo.errores.join(" | "), /EST_01_ARCO en el caption LoRA no son los comprados \(faltan gold\)/, captionFallo.errores.join(" | "));
   console.log("[PASS] coherencia: los colores de cada estructura se comprueban en la escena, en el prompt y en el caption LoRA");
+
+  // 4d. Dos estructuras pueden llamarse igual: `PlanDecoracionSchema` no exige
+  //     nombres únicos y `promptElementName` además borra el paréntesis de
+  //     medidas. Indexar las líneas del prompt por nombre se quedaba con la
+  //     ÚLTIMA y hacía fallar cerrado un prompt correcto (route.ts aborta la
+  //     generación antes de llamar al proveedor).
+  const homonimas = await planResuelto("44444444-4444-4444-8444-444444444444", [
+    { estructura_id: "EST_01_ARCO", nombre: "Arco principal", tipo: "arco", rol_escena: "focal", ubicacion: "arco_central", medidas: { ancho_m: 2.4, alto_m: 2.2 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales: [
+      { product_id: "P-ROSADO", color: "rosado", participacion: 1, rol_material: "principal" },
+    ], porque: "Pieza focal." },
+    { estructura_id: "EST_02_COL", nombre: "Columna", tipo: "columna", rol_escena: "soporte", ubicacion: "lateral_izquierdo", medidas: { alto_m: 1.8 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales: [
+      { product_id: "P-BLANCO", color: "blanco", participacion: 1, rol_material: "principal" },
+    ], porque: "Columna blanca a la izquierda." },
+    { estructura_id: "EST_03_COL", nombre: "Columna", tipo: "columna", rol_escena: "soporte", ubicacion: "lateral_derecho", medidas: { alto_m: 1.8 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales: [
+      { product_id: "P-DORADO", color: "dorado", participacion: 1, rol_material: "principal" },
+    ], porque: "Columna dorada a la derecha." },
+  ]);
+  const escenaHomonimas = escenaDe(homonimas);
+  const sizeMixHomonimas = sizeMixDe(homonimas, escenaHomonimas);
+  assert.ok(sizeMixHomonimas, "el plan con columnas tiene bloque de tamaños");
+  const promptHomonimas = buildImagePrompt({ sceneSpec: escenaHomonimas, sizeMixBlock: sizeMixHomonimas });
+  const lineasColumna = promptHomonimas.split("\n").filter((linea) => linea.startsWith("- Columna: "));
+  assert.equal(lineasColumna.length, 2, promptHomonimas);
+  assert.ok(lineasColumna.some((linea) => linea.includes("use only blanco;")), lineasColumna.join(" | "));
+  assert.ok(lineasColumna.some((linea) => linea.includes("use only dorado;")), lineasColumna.join(" | "));
+  const escenaCoherenciaHomonimas = escenaParaCoherencia(escenaHomonimas);
+  const coherenciaHomonimas = verificarCoherenciaPrompt(promptHomonimas, homonimas, escenaCoherenciaHomonimas);
+  assert.equal(coherenciaHomonimas.ok, true, JSON.stringify(coherenciaHomonimas.errores));
+  // Perder una de las dos líneas homónimas sigue fallando: el conteo por nombre no cuadra.
+  const sinUnaLinea = promptHomonimas.replace("- Columna: MONOCHROME LOCK — use only dorado; do not introduce color variety.\n", "");
+  assert.notEqual(sinUnaLinea, promptHomonimas);
+  const faltaLinea = verificarCoherenciaPrompt(sinUnaLinea, homonimas, escenaCoherenciaHomonimas);
+  assert.equal(faltaLinea.ok, false);
+  assert.match(faltaLinea.errores.join(" | "), /trae 1 línea\(s\) de color de "Columna" y la escena espera 2/, faltaLinea.errores.join(" | "));
+  // Y cambiar el color de una de ellas también.
+  const recoloreadaHomonima = promptHomonimas.replace("use only dorado;", "use only plateado;");
+  const falloHomonimo = verificarCoherenciaPrompt(recoloreadaHomonima, homonimas, escenaCoherenciaHomonimas);
+  assert.equal(falloHomonimo.ok, false);
+  assert.match(falloHomonimo.errores.join(" | "), /la línea de color de "Columna" no lista sus colores/, falloHomonimo.errores.join(" | "));
+  // El bloque de tamaños ya no imprime dos cabeceras idénticas sin nada que las distinga.
+  const cabeceras = sizeMixHomonimas.split("\n").filter((linea) => linea.startsWith('"Columna"'));
+  assert.equal(cabeceras.length, 2, sizeMixHomonimas);
+  assert.equal(new Set(cabeceras).size, 2, cabeceras.join(" | "));
+  for (const cabecera of cabeceras) assert.match(cabecera, /^"Columna" in the \w+ (?:left|right|center) area of the composition, \d+ balloons total:$/, cabecera);
+  assert.doesNotMatch(sizeMixHomonimas, /EST_\d/, sizeMixHomonimas);
+  // Una sola estructura con ese nombre no lleva la ubicación pegada al nombre.
+  assert.ok(sizeMixHomonimas.includes('"Arco principal", '), sizeMixHomonimas);
+  console.log("[PASS] coherencia: dos estructuras con el mismo nombre no hacen fallar un prompt correcto y el bloque de tamaños las distingue");
 
   // 5. Sin estimado por estructura (catálogo suelto, sin plan) se conserva el
   //    texto sin proporciones en vez de inventar una.
