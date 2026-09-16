@@ -31,7 +31,7 @@ assert.equal(defecto.instruccionDiseno, "");
 assert.equal(defecto.estructurasExtraConReferencia, 0);
 assert.deepEqual(defecto.pistasPrompt, []);
 assert.equal(defecto.guidanceScale, 3.5);
-const base = { ragEnabled: true, franjasEnabled: false };
+const base = { ragEnabled: true };
 assert.equal(construirSistema({ ...base, creatividad: 2 }), construirSistema(base), "level 2 leaves the system prompt unchanged");
 ok("el nivel 2 reproduce el comportamiento anterior");
 

@@ -1,9 +1,7 @@
 import type { Pool } from "pg";
-import type { CuotaPlan } from "../presupuesto/plan";
-import type { RolPresupuesto } from "../presupuesto/franjas";
 import { buscarHibrido } from "./search";
 import type { RerankStatus } from "./search";
-import type { CatalogAllowlist, EventSearchIntent, EstadoSku, ResultadoRetrieval } from "./types";
+import type { CatalogAllowlist, CuotaPlan, EventSearchIntent, EstadoSku, ResultadoRetrieval, RolPresupuesto } from "./types";
 
 export type CandidatoRol = ResultadoRetrieval & { rol: RolPresupuesto };
 
@@ -151,10 +149,11 @@ export async function buscarPorRol(
   }
 
   // PLAN_RENDIMIENTO_RAG.md Fase 6: se probó lanzar todos los `intentos` en
-  // paralelo (Promise.all) en vez de secuencial. Medido con
-  // scripts/eval-presupuesto.ts contra el catálogo real (8/12 casos SÍ
-  // activan la escalera, hasta 5 relajaciones por caso — no es un escenario
-  // raro): la latencia NO mejoró (p50 1674ms secuencial vs 1752-1887ms en
+  // paralelo (Promise.all) en vez de secuencial. Medido en su momento con
+  // scripts/eval-presupuesto.ts (retirado en ADR-0023 paso 4) contra el
+  // catálogo real (8/12 casos SÍ activan la escalera, hasta 5 relajaciones
+  // por caso — no es un escenario raro): la latencia NO mejoró (p50 1674ms
+  // secuencial vs 1752-1887ms en
   // paralelo, dos corridas). Se descartó contención del pool de Postgres
   // como causa — con `max: 50` en vez del default (10) tampoco mejoró
   // (p50 1977ms). La causa real no se investigó más a fondo: el plan mismo

@@ -221,7 +221,7 @@ async function main(): Promise<void> {
   assert.match(honesto, /^Todavía no pude aplicar ese cambio/);
   assert.match(honesto, /Pediste el color plateado/);
   assert.equal(texto.textoFinalTurno(mentira, { planConfirmado: true, seleccionConfirmada: false }, historialCambio), mentira, "with a confirmed plan the change is real");
-  assert.match(construirSistema({ ragEnabled: true, franjasEnabled: false }), /CAMBIOS DEL CLIENTE[\s\S]*Nunca digas que cambiaste/);
+  assert.match(construirSistema({ ragEnabled: true }), /CAMBIOS DEL CLIENTE[\s\S]*Nunca digas que cambiaste/);
 
   // Through the chat wrapper: a model that ends with "" or with a false claim.
   const { ejecutarConversacionStream } = await import("../src/lib/ia/ejecutar");
@@ -308,7 +308,7 @@ async function main(): Promise<void> {
   assert.equal(rechazoNumero.status, "NUMERO_INCORRECTO", JSON.stringify(rechazoNumero).slice(0, 400));
   assert.match(String(rechazoNumero.accion_requerida), /numero 4/, "search digit by digit");
   assert.deepEqual(detectarJergaInterna(String(rechazoNumero.mensaje_cliente)), [], String(rechazoNumero.mensaje_cliente));
-  assert.match(construirSistema({ ragEnabled: true, franjasEnabled: false }), /NÚMEROS:[\s\S]*un globo número 4 y un globo número 0/);
+  assert.match(construirSistema({ ragEnabled: true }), /NÚMEROS:[\s\S]*un globo número 4 y un globo número 0/);
   ok("D4: los globos de número forman exactamente el número pedido");
 
   // ---------------------------------------------------------------------------
@@ -363,7 +363,7 @@ async function main(): Promise<void> {
   const saneado = sanearMarcasPlan(PlanDecoracionSchema.parse({ ...planVino, concepto: { titulo: "Decoración Estilo Princesa Leia Galáctica", descripcion: "Inspirado en Star Wars con un arco.", paleta: [] } }));
   assert.equal(saneado.concepto.titulo, "Decoración Estilo Princesa Galáctica");
   assert.doesNotMatch(saneado.concepto.descripcion, /star wars/i);
-  assert.match(construirSistema({ ragEnabled: true, franjasEnabled: false }), /NOMBRES PROTEGIDOS/);
+  assert.match(construirSistema({ ragEnabled: true }), /NOMBRES PROTEGIDOS/);
   const turnoLeia = confirmarTurno("Quiero algo así", marcoVino, candidatosVino, filasVino, []);
   const leia = await turnoLeia.confirmar({ ...argsVino, concepto: { titulo: "Decoración Estilo Princesa Leia Galáctica", descripcion: "Arco galáctico", paleta: [] } });
   assert.equal(leia.ok, true, JSON.stringify(leia).slice(0, 300));

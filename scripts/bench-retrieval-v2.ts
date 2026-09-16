@@ -2,8 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { performance } from "node:perf_hooks";
 import { Pool } from "pg";
-import type { ConsultaRetrieval } from "../src/lib/rag/retrieval/types";
-import type { CuotaPlan } from "../src/lib/rag/presupuesto/plan";
+import type { ConsultaRetrieval, CuotaPlan } from "../src/lib/rag/retrieval/types";
 
 for (const archivo of [".env.local", ".env"]) {
   if (existsSync(archivo)) process.loadEnvFile(archivo);
@@ -42,12 +41,11 @@ async function main(): Promise<void> {
     process.env.GEMINI_API_KEY = "";
     process.env.RAG_USE_VECTOR = "false";
   }
-  const [{ buscarHibrido, demandByProduct }, { buscarPorRol }, { buscarCatalogoRag }, { buscarCatalogoRagConPresupuesto, embeddingOpcional }, { FRANJAS }] = await Promise.all([
+  const [{ buscarHibrido, demandByProduct }, { buscarPorRol }, { buscarCatalogoRag }, { embeddingOpcional }] = await Promise.all([
     import("../src/lib/rag/retrieval/search"),
     import("../src/lib/rag/retrieval/por-rol"),
     import("../src/lib/rag/chat/buscar"),
-    import("../src/lib/rag/chat/buscar-presupuesto"),
-    import("../src/lib/rag/presupuesto/franjas"),
+    import("../src/lib/rag/embeddings"),
   ]);
   const pool = new Pool({ connectionString: process.env.DATABASE_URL });
   const iterations = options.smoke ? 3 : 10;
@@ -164,10 +162,6 @@ async function main(): Promise<void> {
       assert.equal(explicitChat.status, "AMBIGUOUS_SKU");
       assert.equal(explicitChat.skuStatus, "ambiguous");
       assert.equal(explicitChat.candidatos.length, 0);
-      const explicitBudget = await buscarCatalogoRagConPresupuesto(pool, "B2B-20008459", FRANJAS.detalle, undefined);
-      assert.equal(explicitBudget.status, "AMBIGUOUS_SKU", "budget caller must stop on an ambiguous SKU");
-      assert.equal(explicitBudget.skuStatus, "ambiguous");
-      assert.deepEqual(explicitBudget.poolPorRol, {});
     }
     const shortB2b = await pool.query<{ variant_id: string }>("SELECT variant_id FROM catalog_variants WHERE UPPER(sku_original)='B2B-AMOR1'");
     if (shortB2b.rows.length === 1) {
@@ -178,7 +172,6 @@ async function main(): Promise<void> {
 
     const budgetQuota: CuotaPlan = {
       rol: "relleno",
-      min: 1,
       max: 2,
       topeCop: 100_000,
       categorias: ["globo_latex"],
@@ -186,15 +179,13 @@ async function main(): Promise<void> {
     };
     const budgetStarted = performance.now();
     const budget = await buscarPorRol(pool, budgetSample.rows[0]?.title ?? sample.title, undefined, budgetQuota, { disponible: true });
-    console.log(`[CALLER] presupuesto/rol candidates=${budget.candidatos.length} latency=${(performance.now() - budgetStarted).toFixed(1)}ms`);
+    console.log(`[CALLER] retrieval-por-rol candidates=${budget.candidatos.length} latency=${(performance.now() - budgetStarted).toFixed(1)}ms`);
     assert.ok(budget.candidatos.length > 0, "budget role caller must return a real catalog candidate without Gemini");
     const previousVector = process.env.RAG_USE_VECTOR;
     const previousKey = process.env.GEMINI_API_KEY;
     process.env.RAG_USE_VECTOR = "true";
     process.env.GEMINI_API_KEY = "invalid-key-for-rag-smoke";
     assert.equal(await embeddingOpcional("prueba de embedding inválido"), undefined, "invalid Gemini key must fall back to lexical retrieval");
-    const invalidKeyBudget = await buscarCatalogoRagConPresupuesto(pool, budgetSample.rows[0]?.title ?? sample.title, FRANJAS.detalle, undefined);
-    assert.ok(["OK", "NO_MATCH", "AMBIGUOUS_SKU"].includes(invalidKeyBudget.status), "invalid embedding key must not throw from budget caller");
     if (previousVector === undefined) delete process.env.RAG_USE_VECTOR; else process.env.RAG_USE_VECTOR = previousVector;
     if (previousKey === undefined) delete process.env.GEMINI_API_KEY; else process.env.GEMINI_API_KEY = previousKey;
     const catalogCaller = await buscarCatalogoRag(pool, sample.title);

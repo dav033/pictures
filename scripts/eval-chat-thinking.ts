@@ -26,7 +26,6 @@ import type { Mensaje as MensajeIA } from "../src/lib/ia/tipos";
  */
 
 const RAG_ENABLED = process.env.RAG_ENABLED === "true";
-const RAG_FRANJAS_ENABLED = process.env.RAG_FRANJAS_ENABLED === "true";
 
 type Caso = {
   nombre: string;
@@ -109,18 +108,6 @@ const CASOS: Caso[] = [
       return fallos;
     },
   },
-  {
-    nombre: "Presupuesto con franja resuelta",
-    dimension: "franjas de presupuesto",
-    mensaje: "Tengo 90 mil pesos para decorar un cumpleaños con globos azules",
-    brief: { presupuesto: 90_000 },
-    verificar: (r, trazas) => {
-      const fallos: string[] = [];
-      if (!trazas.some((t) => t.nombre === "buscar_catalogo_rag")) fallos.push("nunca buscó");
-      if (RAG_FRANJAS_ENABLED && !r.seleccionFinalIA?.length) fallos.push("con franja resuelta y RAG_FRANJAS_ENABLED, no quedó selección final");
-      return fallos;
-    },
-  },
 ];
 
 const REPETICIONES = 2;
@@ -134,7 +121,7 @@ const CONFIGS: ConfigThinking[] = [
 
 async function correrCaso(config: ConfigThinking, caso: Caso) {
   const chat = crearChatGemini({ thinkingLevel: config.thinkingLevel });
-  const sistema = construirSistema({ ragEnabled: RAG_ENABLED, franjasEnabled: RAG_FRANJAS_ENABLED, brief: caso.brief });
+  const sistema = construirSistema({ ragEnabled: RAG_ENABLED, brief: caso.brief });
   const historial: MensajeIA[] = [{ rol: "usuario", texto: caso.mensaje }];
   const trazas: { nombre: string; args: Record<string, unknown> }[] = [];
 
@@ -155,7 +142,7 @@ async function correrCaso(config: ConfigThinking, caso: Caso) {
 
 async function main() {
   console.log(`Regresión conversacional — ${CASOS.length} casos x ${REPETICIONES} repeticiones x ${CONFIGS.length} configs\n`);
-  console.log(`RAG_ENABLED=${RAG_ENABLED} RAG_FRANJAS_ENABLED=${RAG_FRANJAS_ENABLED}\n`);
+  console.log(`RAG_ENABLED=${RAG_ENABLED}\n`);
 
   const resumen: Record<string, { estables: number; latencias: number[] }> = {};
   for (const config of CONFIGS) resumen[config.nombre] = { estables: 0, latencias: [] };

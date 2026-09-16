@@ -106,16 +106,16 @@ function run() {
   // "(presente en este turno)" solo lo agrega bloqueReferencia() de verdad.
   const encabezadoBloque = "ANALISIS_REFERENCIA_VISUAL (presente en este turno)";
 
-  const sistemaConPlanYReferencia = construirSistema({ ragEnabled: true, franjasEnabled: false, referenceBlueprint: blueprint });
+  const sistemaConPlanYReferencia = construirSistema({ ragEnabled: true, referenceBlueprint: blueprint });
   assert.ok(sistemaConPlanYReferencia.includes(encabezadoBloque), "el bloque debe aparecer con plan activo + blueprint");
   assert.ok(sistemaConPlanYReferencia.includes("REF_01_E02"), "el bloque debe incluir los element_id reales");
   assert.match(sistemaConPlanYReferencia, /PROPORCIONES DE LA FOTO[\s\S]*participacion[\s\S]*principal/, "la regla que usa la mezcla observada debe estar en el prompt");
 
-  const sistemaSinRag = construirSistema({ ragEnabled: false, franjasEnabled: false, referenceBlueprint: blueprint });
+  const sistemaSinRag = construirSistema({ ragEnabled: false, referenceBlueprint: blueprint });
   assert.ok(!sistemaSinRag.includes(encabezadoBloque), "sin catálogo RAG, el bloque nunca debe aparecer (auto-gateado)");
 
-  const sistemaSinBlueprint = construirSistema({ ragEnabled: true, franjasEnabled: false });
-  assert.equal(sistemaSinBlueprint, construirSistema({ ragEnabled: true, franjasEnabled: false }), "sin blueprint, el prompt es estable");
+  const sistemaSinBlueprint = construirSistema({ ragEnabled: true });
+  assert.equal(sistemaSinBlueprint, construirSistema({ ragEnabled: true }), "sin blueprint, el prompt es estable");
   assert.ok(!sistemaSinBlueprint.includes(encabezadoBloque), "sin blueprint no debe aparecer el bloque");
 
   console.log("[PASS] R2 — blueprint serializado de forma determinista y auto-gateado al catálogo RAG");

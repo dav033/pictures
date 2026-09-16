@@ -31,7 +31,6 @@
     "rag:embed": "tsx scripts/generate-embeddings.ts",
     "rag:sync": "npm run rag:import && npm run rag:embed",
     "rag:eval": "tsx scripts/eval-retrieval.ts",
-    "rag:eval-presupuesto": "tsx scripts/eval-presupuesto.ts",
     "rag:eval-parser": "tsx scripts/eval-query-parser.ts",
     "rag:test-event-open": "tsx scripts/test-event-open-rag.ts",
     "rag:test-open-intent": "tsx scripts/test-open-intent-foundation.ts",

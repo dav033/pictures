@@ -69,7 +69,7 @@ async function main(): Promise<void> {
   const suite = SuiteSchema.parse(JSON.parse(readFileSync(path.join(process.cwd(), "eval", "chat", "jerga-v001.json"), "utf8")));
   const solo = argumento("--solo")?.split(",");
   const casos = solo ? suite.casos.filter((caso) => solo.includes(caso.id)) : suite.casos;
-  const promptVersion = createHash("sha256").update(construirSistema({ ragEnabled: true, franjasEnabled: true })).digest("hex").slice(0, 16);
+  const promptVersion = createHash("sha256").update(construirSistema({ ragEnabled: true })).digest("hex").slice(0, 16);
   const cookie = await login(base);
   const resultados = [];
   for (const caso of casos) {

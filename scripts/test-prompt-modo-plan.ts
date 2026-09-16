@@ -23,7 +23,7 @@ async function main(): Promise<void> {
   const { construirSistema } = await import("../src/lib/ia/prompt-sistema");
   const { crearEstadoConversacion, crearRegistroHerramientas, herramientasActivas } = await import("../src/lib/ia/registro-herramientas");
 
-  const modoPlan = construirSistema({ ragEnabled: true, franjasEnabled: false });
+  const modoPlan = construirSistema({ ragEnabled: true });
 
   // 1. El prompt no menciona el despiece legacy por ningún lado: nombrar una
   //    herramienta que ya no existe es tan dañino como recomendarla.
@@ -99,7 +99,7 @@ async function main(): Promise<void> {
     palette: { observed: ["rosado"], priority: ["rosado"] },
     unresolved_decisions: [],
   });
-  const conReferencia = construirSistema({ ragEnabled: true, franjasEnabled: false, referenceBlueprint: blueprint });
+  const conReferencia = construirSistema({ ragEnabled: true, referenceBlueprint: blueprint });
   assert.match(conReferencia, /"clear" junto a un color, como "clear pink", es la línea Cristal de ese color/);
   assert.match(conReferencia, /"clear" solo sí es transparente/);
   ok("notas de costo del acento pequeño y lectura de 'clear' con color en la foto");

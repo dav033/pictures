@@ -81,21 +81,6 @@ TAMAÑOS DE GLOBO
 - Cada variante de buscar_catalogo_rag trae "tamano" (código, ej. R-12) y "diametro_pulgadas" (número real). La búsqueda filtra por tamaño solo cuando su propio mensaje lo nombra ("globo latex dorado 24 pulgadas"); si el cliente pidió un tamaño, nómbralo en esa búsqueda.
 - Si la búsqueda trae "limite_busqueda", sus resultados están limitados a ese tamaño o forma: nunca le digas al cliente que no hay un color "en otros tamaños" o "en ningún tamaño" con esa búsqueda; para afirmarlo busca antes sin ese límite.`;
 
-// Sólo se agrega si RAG_FRANJAS_ENABLED. Cuando brief.presupuesto trae una
-// franja resuelta, el backend ya
-// armó una canasta completa dentro del presupuesto — este bloque le dice al
-// modelo que la use tal cual en vez de re-elegir productos a mano.
-export const BLOQUE_FRANJAS = `
-
-FRANJAS DE PRESUPUESTO (activo)
-- Cuando el cliente tiene un presupuesto (guardado en el brief con guardar_brief, o elegido con uno de los 4 chips de la interfaz), buscar_catalogo_rag te devuelve algo más que candidatos sueltos: "franja" (el rango de presupuesto que se resolvió), "canasta" (una propuesta YA armada y sumada por el backend para caber en ese presupuesto) y "pool_por_rol" (alternativas reales por rol — focal, soporte, relleno, acento, servicio — para intercambiar una pieza).
-- NO armes tú la canasta desde cero ni la sumes de memoria: si "canasta" no es null, es tu punto de partida. Puedes quitar una pieza o cambiarla por otra del mismo rol en "pool_por_rol", pero el total final sale de confirmar_seleccion_rag, nunca de una suma que hagas tú.
-- Cada pieza de "canasta.piezas" trae "porque": son las razones reales por las que el backend la eligió (usa bien el presupuesto de su rol, coincide en color, etc.) — puedes citarlas o resumirlas al cliente, no las inventes de otra forma.
-- Si "canasta.cumple_presupuesto" es false, dilo con honestidad ("con lo que hay en catálogo ahora, esto queda $X por encima de tu presupuesto") — nunca lo ocultes ni recortes piezas por tu cuenta para que "cierre" el número; eso ya lo intentó el backend y no pudo.
-- Si "relajaciones" no viene vacío, es porque algún rol tuvo que ceder algo (color, ocasión, o un tope de precio un poco más alto) para poder ofrecer algo — cuéntaselo al cliente en una frase, igual que harías con cualquier sustitución (ver HONESTIDAD AL SUSTITUIR).
-- Si "conflictos" no viene vacío, es porque el cliente pidió algo (ej. "quiero un arco") que la receta de esta franja de presupuesto no puede incluir — dile la razón real (el presupuesto no alcanza para ese tipo de pieza) en vez de omitirlo en silencio o prometerlo de todas formas.
-- confirmar_seleccion_rag puede devolver "excede_presupuesto": true con un "delta_cop" — si pasa, dile al cliente cuánto se pasó de su presupuesto en pesos, no lo redondees a "un poco más". En modo DISEÑO DE DECORACIÓN el techo duro se valida en confirmar_plan_decoracion.`;
-
 // Ya no existen "modos" separados: las tarjetas clicables y la selección
 // propia de la IA conviven siempre en la misma conversación. La IA puede
 // proponer y confirmar sola, y el cliente puede tocar/agregar/quitar piezas
@@ -232,7 +217,7 @@ export function bloqueCreatividad(nivel: NivelCreatividad | undefined, sugerenci
   return `\n\nCREATIVIDAD DEL DISEÑO: nivel ${perfil.nivel} de 5 (${perfil.nombre})\n- ${perfil.instruccionDiseno}${escena}`;
 }
 
-export function construirSistema(opts: { ragEnabled: boolean; franjasEnabled: boolean; brief?: Brief; referenceBlueprint?: ReferenceBlueprintV2; catalogAllowlist?: CatalogAllowlist; catalogoLoraNoDisponible?: boolean; creatividad?: NivelCreatividad; sugerenciaEscena?: SugerenciaEscena }): string {
+export function construirSistema(opts: { ragEnabled: boolean; brief?: Brief; referenceBlueprint?: ReferenceBlueprintV2; catalogAllowlist?: CatalogAllowlist; catalogoLoraNoDisponible?: boolean; creatividad?: NivelCreatividad; sugerenciaEscena?: SugerenciaEscena }): string {
   const contexto =
     opts.brief && Object.keys(opts.brief).length ? `\n\nDatos del evento que ya conoces: ${JSON.stringify(opts.brief)}` : "";
   const alcanceCatalogo = opts.catalogoLoraNoDisponible
@@ -244,7 +229,6 @@ export function construirSistema(opts: { ragEnabled: boolean; franjasEnabled: bo
     SYSTEM_PROMPT_BASE +
     BLOQUE_SELECCION +
     (opts.ragEnabled ? BLOQUE_RAG : "") +
-    (opts.ragEnabled && opts.franjasEnabled ? BLOQUE_FRANJAS : "") +
     (opts.ragEnabled ? BLOQUE_PLAN + GUIA_ESTRUCTURAS_OFICIALES : "") +
     // El bloque de referencia describe cómo confirmar_plan_decoracion lee
     // referencia_element_id / referencia_omitida, así que acompaña siempre al

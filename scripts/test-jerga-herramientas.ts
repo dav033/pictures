@@ -176,7 +176,7 @@ async function main(): Promise<void> {
   ok("al agotar vueltas con un plan verificado, el texto remite a la propuesta en pantalla");
 
   // 5. Prompt del sistema y descripciones de herramientas.
-  const sistema = construirSistema({ ragEnabled: true, franjasEnabled: true });
+  const sistema = construirSistema({ ragEnabled: true });
   assert.match(sistema, /CÓMO HABLAS DE LO INTERNO/);
   assert.match(sistema, /mensaje_cliente/);
   assert.doesNotMatch(sistema, /usa su status\/errores\/accion_requerida/);

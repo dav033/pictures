@@ -59,14 +59,6 @@ export async function registrarBusqueda(
     latencyParseMs: number;
     latencyRetrievalMs: number;
     latencyTotalMs: number;
-    // Sólo se llenan cuando el turno resolvió una franja de presupuesto
-    // (ver docs/migracion-python/PLAN-MAESTRO-V2.md §5.1) — sin esto no se puede
-    // reconstruir después "por qué esta canasta y no otra".
-    franja?: string;
-    planCanasta?: unknown;
-    canasta?: unknown;
-    utilizacion?: number;
-    relajaciones?: unknown;
     observabilidad?: ObservabilidadBusqueda;
   },
 ): Promise<string | null> {
@@ -75,12 +67,11 @@ export async function registrarBusqueda(
       `INSERT INTO rag_query_log
          (request_id, tipo, mensaje, intent, retrieved_product_ids, retrieval_scores, status,
           latency_parse_ms, latency_retrieval_ms, latency_total_ms,
-           franja, plan_canasta, canasta, utilizacion, relajaciones,
             event_label, closed_occasion_recognized, component_queries,
             candidate_counts_by_tier, selected_match_levels, outcome, latency_planning_ms,
             rerank_status)
-         VALUES ($1, 'busqueda', $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14,
-                 $15, $16, $17, $18, $19, $20, $21, $22)
+         VALUES ($1, 'busqueda', $2, $3, $4, $5, $6, $7, $8, $9,
+                 $10, $11, $12, $13, $14, $15, $16, $17)
         RETURNING id`,
       [
         datos.requestId,
@@ -92,11 +83,6 @@ export async function registrarBusqueda(
         datos.latencyParseMs,
         datos.latencyRetrievalMs,
         datos.latencyTotalMs,
-        datos.franja ?? null,
-        datos.planCanasta != null ? JSON.stringify(datos.planCanasta) : null,
-         datos.canasta != null ? JSON.stringify(metadataAuditable(datos.canasta)) : null,
-        datos.utilizacion ?? null,
-         datos.relajaciones != null ? JSON.stringify(metadataAuditable(datos.relajaciones)) : null,
         datos.observabilidad?.eventLabel?.slice(0, 240) ?? null,
         datos.observabilidad?.closedOccasionRecognized ?? null,
         datos.observabilidad ? JSON.stringify(metadataAuditable(datos.observabilidad.componentQueries)) : null,

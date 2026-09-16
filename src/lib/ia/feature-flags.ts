@@ -34,8 +34,6 @@ export function featureEnabled(name: FeatureFlag): boolean {
 
 /** Default: ON. Explicit false is the RAG rollback switch. */
 export const RAG_ENABLED = process.env.RAG_ENABLED !== "false";
-/** Default: ON. Explicit false disables budget-tier RAG mode. */
-export const RAG_FRANJAS_ENABLED = process.env.RAG_FRANJAS_ENABLED !== "false";
 /** Default: ON. Missing provider credentials still degrade to lexical search. */
 export const RAG_USE_VECTOR = process.env.RAG_USE_VECTOR !== "false";
 /** Default: ON. Disabled only by the literal string "false" -- inverted polarity from the other RAG flags on purpose (full-text is the primary retrieval branch). */

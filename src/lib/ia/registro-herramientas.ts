@@ -5,14 +5,11 @@ import type { Cotizacion } from "@/lib/cotizacion/motor";
 import { tamanosObligatorios } from "@/lib/medidas/geometria";
 import { getRagPool } from "@/lib/rag/db";
 import { buscarCatalogoRag, type ProductoCandidato } from "@/lib/rag/chat/buscar";
-import { buscarCatalogoRagConPresupuesto, type PoolItemPresupuesto, type ResultadoBusquedaPresupuesto } from "@/lib/rag/chat/buscar-presupuesto";
-import type { RolPresupuesto } from "@/lib/rag/presupuesto/franjas";
 import { avisoFiltrosBusqueda, filtrosDurosDeBusqueda } from "@/lib/rag/chat/filtros-turno";
 import type { FiltrosDurosBusqueda } from "@/lib/rag/query-parser/hard-filters";
 import { parseEventSearchIntent } from "@/lib/rag/query-parser/event-search";
 import { aProductoValidado, validarSeleccion, type ItemRechazado, type ItemValidado, type SeleccionSolicitada } from "@/lib/rag/chat/validar";
 import { actualizarResultadoBusqueda, encolarEscrituraObservabilidad, registrarBusqueda, registrarPlanAudit, registrarSeleccion, type HechosPeticionPlan } from "@/lib/rag/observability/log";
-import { resolverFranja } from "@/lib/rag/presupuesto/resolver";
 import { PlanDecoracionSchema, type PlanDecoracion } from "@/lib/plan/tipos";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { aplicarColoresReferencia, extraerRestriccionesUsuario, validarCardinalidadEventoAbierto, validarCoberturaReferencia, validarEstructurasDeGlobosConGlobos, validarEstructurasFueraDeReferencia, validarPresenciaGlobos, validarRangoCreatividad, validarReferenciaSinGlobos, validarRestriccionesPlan, validarUnidadesDeclaradas, MENSAJE_CLIENTE_REFERENCIA_SIN_GLOBOS } from "@/lib/plan/restricciones";
@@ -46,7 +43,7 @@ import { aplicarFuenteMedidasEspacio, clienteDioMedidasEspacio } from "@/lib/pla
 import { coloresElementoReferencia, coloresFotoParaBusqueda, coloresReferenciaOmitidos, esSustitucionDeColor, productosGloboPorColor, type ProductoColorDisponible } from "@/lib/plan/colores-referencia";
 import { buscarGlobosPorColor } from "@/lib/rag/catalog/globos-por-color";
 import { buscarNumerosPorDigito, digitosBuscados } from "@/lib/rag/catalog/numeros-por-digito";
-import { RAG_ENABLED, RAG_FRANJAS_ENABLED, featureEnabled } from "@/lib/ia/feature-flags";
+import { RAG_ENABLED, featureEnabled } from "@/lib/ia/feature-flags";
 import { isPythonAdapterError, seleccionarBackendPython } from "@/lib/ia/python-adapter";
 import { AllowlistProductoVarianteError } from "@/lib/plan/allowlist-producto-variante";
 import { sceneShadowPipeline } from "@/lib/scene/orchestrator";
@@ -151,10 +148,6 @@ export type EstadoConversacion = {
   ragTotal?: number;
   /** Une búsqueda con selección en rag_query_log — un id por conversación, no por turno. */
   ragRequestId: string;
-  /** Franja de presupuesto resuelta en la última búsqueda de este turno (si
-   * RAG_FRANJAS_ENABLED) — confirmar_seleccion_rag la usa para avisar si la
-   * selección final se pasó del techo, sin bloquearla (§3, Etapa 5). */
-  ragFranja?: { slug: string; nombre: string; techoCop: number };
   planResuelto?: PlanResuelto;
   /** Blueprint de la(s) imagen(es) de referencia adjuntas a ESTE turno, ya
    * analizado por /api/references/analyze — plan de integración de
@@ -167,30 +160,6 @@ const EVENT_MATCH_PRIORITY: Record<EventMatchLevel, number> = {
   thematic: 1,
   exact_event: 2,
 };
-
-/** Fase 3.2: proyección compacta de `pool_por_rol` para el modelo. Quita
- * `imagen` (una URL que un modelo de texto no puede usar) sin tocar ningún
- * campo del que dependa la honestidad al sustituir (sku, precio, tamaño,
- * disponibilidad, `eventEvidence`). La UI obtiene sus fotos por una vía
- * completamente separada (`estado.ragValidados`, poblado en
- * `confirmar_seleccion_rag`), así que esto no le quita nada. */
-function proyectarPoolParaModelo(
-  poolPorRol: ResultadoBusquedaPresupuesto["poolPorRol"],
-): Partial<Record<RolPresupuesto, Omit<PoolItemPresupuesto, "imagen">[]>> {
-  const proyectado: Partial<Record<RolPresupuesto, Omit<PoolItemPresupuesto, "imagen">[]>> = {};
-  for (const [rol, items] of Object.entries(poolPorRol) as [RolPresupuesto, PoolItemPresupuesto[]][]) {
-    proyectado[rol] = items.map((item) => ({
-      productId: item.productId,
-      variantId: item.variantId,
-      titulo: item.titulo,
-      precio: item.precio,
-      disponible: item.disponible,
-      acabados: item.acabados,
-      eventEvidence: item.eventEvidence,
-    }));
-  }
-  return proyectado;
-}
 
 function mergeEventEvidence(
   current: EventMatchEvidence | undefined,
@@ -1049,122 +1018,6 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       const pool = ragPool;
       const t0 = Date.now();
 
-      // La franja NUNCA la nombra el LLM (§3, Etapa 0): se resuelve aquí, en
-      // código, a partir de lo que el cliente ya dijo en el brief. Sin franja
-      // resuelta (brief.presupuesto vacío o RAG_FRANJAS_ENABLED apagada) el
-      // pipeline de hoy corre exactamente igual, sin canasta.
-      // The budget pipeline is still TypeScript-owned. Do not execute it when
-      // Python is selected; a partial canary must not silently mix authorities.
-      const franjaResuelta = RAG_FRANJAS_ENABLED && seleccionarBackendPython().backend !== "python"
-        ? resolverFranja(estado.brief.presupuesto)
-        : null;
-
-      if (franjaResuelta) {
-        const respuesta = await buscarCatalogoRagConPresupuesto(
-          pool,
-          mensaje,
-          franjaResuelta.franja,
-          franjaResuelta.cifraCliente,
-          {
-            filtrosDuros,
-            eventIntent,
-            focusedQueries: [mensaje],
-            allowlist: options.catalogAllowlist,
-            rerankRequestId: estado.ragRequestId,
-            rerankCorrelationId: options.correlationId ?? estado.ragRequestId,
-            rerankSignal: options.signal,
-          },
-        );
-        estado.ragFranja = { slug: franjaResuelta.franja.slug, nombre: franjaResuelta.franja.nombre, techoCop: respuesta.canasta?.techoCop ?? franjaResuelta.franja.minCop };
-        if (respuesta.relajaciones.some((relajacion) => /color/i.test(relajacion))) {
-          estado.ragColorRelaxed = [...new Set([...(estado.ragColorRelaxed ?? []), "colores"])]
-        }
-
-        const idsPool = Object.values(respuesta.poolPorRol)
-          .flat()
-          .map((item) => item.productId);
-        const idsCanasta = respuesta.canasta?.piezas.map((p) => p.productId) ?? [];
-        for (const id of [...idsPool, ...idsCanasta, ...respuesta.variantIdsRecuperados.map((item) => item.productId)]) estado.ragIdsRecuperados.add(id);
-        for (const item of respuesta.variantIdsRecuperados) {
-          const variantes = estado.ragVariantIdsRecuperados.get(item.productId) ?? new Set<string>();
-          variantes.add(item.variantId);
-          estado.ragVariantIdsRecuperados.set(item.productId, variantes);
-        }
-        for (const item of Object.values(respuesta.poolPorRol).flat()) {
-          if (item.eventEvidence) {
-            estado.ragEventEvidence?.set(item.productId, mergeEventEvidence(estado.ragEventEvidence.get(item.productId), item.eventEvidence));
-          }
-          const variantes = estado.ragVariantIdsRecuperados.get(item.productId) ?? new Set<string>();
-          variantes.add(item.variantId);
-          estado.ragVariantIdsRecuperados.set(item.productId, variantes);
-        }
-        estado.ragEventRelaxations = [...new Set([...(estado.ragEventRelaxations ?? []), ...respuesta.relajaciones, ...respuesta.conflictos])];
-        for (const item of respuesta.canasta?.piezas ?? []) {
-          const variantes = estado.ragVariantIdsRecuperados.get(item.productId) ?? new Set<string>();
-          variantes.add(item.variantId);
-          estado.ragVariantIdsRecuperados.set(item.productId, variantes);
-        }
-
-        await registrarBusqueda(pool, {
-          requestId: estado.ragRequestId,
-          mensaje,
-          intent: respuesta.intent,
-          retrievedProductIds: [...new Set([...idsPool, ...idsCanasta, ...respuesta.variantIdsRecuperados.map((item) => item.productId)])],
-          retrievalScores: null,
-          status: respuesta.status,
-          latencyParseMs: respuesta.latencyParseMs,
-          latencyRetrievalMs: respuesta.latencyRetrievalMs,
-          latencyTotalMs: Date.now() - t0,
-          franja: respuesta.franja?.slug,
-          canasta: respuesta.canasta,
-          utilizacion: respuesta.canasta?.utilizacion,
-          relajaciones: [...respuesta.relajaciones, ...respuesta.conflictos],
-          observabilidad: respuesta.observabilidad,
-        });
-
-        return {
-          status: respuesta.status,
-          sku_status: respuesta.skuStatus,
-          franja: respuesta.franja,
-          canasta: respuesta.canasta
-            ? {
-                piezas: respuesta.canasta.piezas.map((p) => ({
-                  product_id: p.productId,
-                  variant_id: p.variantId,
-                  rol: p.rol,
-                  titulo: p.titulo,
-                  precio: p.precio,
-                  cantidad: p.cantidad,
-                  subtotal: p.subtotal,
-                  porque: p.porque,
-                })),
-                total: respuesta.canasta.total,
-                techo: respuesta.canasta.techoCop,
-                utilizacion: Math.round(respuesta.canasta.utilizacion * 100) / 100,
-                cumple_presupuesto: respuesta.canasta.cumplePresupuesto,
-                holgura: respuesta.canasta.holgura,
-              }
-            : null,
-          // Fase 3.2: `imagen` no se poda del tipo interno `PoolItemPresupuesto`
-          // (lo usa `estado.ragValidados`/la UI por otra vía, vía
-          // `confirmar_seleccion_rag`), pero un modelo de texto no puede leer
-          // una URL de foto — proyectarla afuera de lo que ve el modelo ahorra
-          // tokens de entrada sin perder ningún campo de honestidad (sku,
-          // precio, tamaño, disponibilidad, match_level, eventEvidence siguen
-          // intactos).
-          pool_por_rol: proyectarPoolParaModelo(respuesta.poolPorRol),
-          ...(avisoFiltros ? { limite_busqueda: avisoFiltros } : {}),
-          relajaciones: respuesta.relajaciones,
-          conflictos: respuesta.conflictos,
-          evento: {
-            event_label: eventIntent.event_label,
-            original_request: eventIntent.semantic_query,
-            match_levels: [...new Set(Object.values(respuesta.poolPorRol).flat().map((item) => item.eventEvidence?.match_level).filter((level): level is "exact_event" | "thematic" | "adaptable" => Boolean(level)))],
-            relaxations: respuesta.relajaciones,
-          },
-        };
-      }
-
       const respuesta = await buscarCatalogoRag(pool, mensaje, {
         filtrosDuros,
         eventIntent,
@@ -1329,13 +1182,6 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         }),
       ));
 
-      // Chequeo de presupuesto (§3, Etapa 5): la franja no bloquea la
-      // confirmación — el LLM puede tener una razón real para excederse (ej.
-      // el cliente pidió explícitamente una pieza fuera de la receta) — pero
-      // el backend SIEMPRE reporta el delta real en vez de dejarlo pasar en
-      // silencio, igual que con inventario (validarSeleccion arriba).
-      const excedePresupuesto = estado.ragFranja != null && resultado.total > estado.ragFranja.techoCop;
-
       return {
         status: statusSeleccion,
         validados: resultado.validados.map((v) => ({
@@ -1347,14 +1193,6 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         })),
         rechazados: resultado.rechazados,
         fase: "propuesta_visual; la cotizacion llega despues de generar la imagen",
-        ...(estado.ragFranja
-          ? {
-              franja: estado.ragFranja.slug,
-              techo_presupuesto: estado.ragFranja.techoCop,
-              excede_presupuesto: excedePresupuesto,
-              delta_cop: excedePresupuesto ? resultado.total - estado.ragFranja.techoCop : 0,
-            }
-          : {}),
       };
     },
 

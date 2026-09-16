@@ -197,13 +197,11 @@ async function main(): Promise<void> {
 
   // Dynamic imports keep module-level flags (RAG_USE_VECTOR, Gemini) aligned
   // with --no-key before production retrieval code is loaded.
-  const [parserModule, searchModule, browseModule, validationModule, budgetModule, budgetConstants, resolverModule] = await Promise.all([
+  const [parserModule, searchModule, browseModule, validationModule, resolverModule] = await Promise.all([
     import("../src/lib/rag/query-parser/parse"),
     import("../src/lib/rag/retrieval/search"),
     import("../src/lib/rag/chat/buscar"),
     import("../src/lib/rag/chat/validar"),
-    import("../src/lib/rag/chat/buscar-presupuesto"),
-    import("../src/lib/rag/presupuesto/franjas"),
     import("../src/lib/rag/tamanos/resolver"),
   ]);
   const pool = new Pool({ connectionString: databaseUrl, max: 6, connectionTimeoutMillis: 3_000 });
@@ -541,25 +539,6 @@ async function main(): Promise<void> {
         } else gate.block("selection/variant-whitelist", "no se encontró una variante hermana fuera de la whitelist para el ataque adversarial");
       } else gate.block("selection/variant-whitelist", "SKU con filtros no conservó el producto barato de la fixture");
     } else gate.block("selection/variant-whitelist", "fixture same-variant no tiene SKU para forzar whitelist exacta");
-
-    const budget = await budgetModule.buscarCatalogoRagConPresupuesto(pool, "globos para cumpleaños", budgetConstants.FRANJAS.detalle, undefined);
-    const hasBasket = budget.status === "OK" && budget.canasta != null && budget.canasta.piezas.length > 0;
-    gate.check(hasBasket, "budget/canasta", "presupuesto produce una canasta real");
-    if (budget.canasta) {
-      const budgetVariantIds = budget.canasta.piezas.map((piece) => piece.variantId);
-      const budgetRows = await loadVariants(pool, budgetVariantIds);
-      const budgetById = new Map(budgetRows.map((row) => [row.variant_id, row]));
-      const fullBudgetWhitelist = new Set(budget.variantIdsRecuperados.map((item) => `${item.productId}:${item.variantId}`));
-      const allBudgetSelections = [
-        ...budget.canasta.piezas.map((piece) => `${piece.productId}:${piece.variantId}`),
-        ...Object.values(budget.poolPorRol).flat().map((item) => `${item.productId}:${item.variantId}`),
-      ];
-      gate.check(allBudgetSelections.every((key) => fullBudgetWhitelist.has(key)), "budget/internal-variant-whitelist", "canasta y pool visible sólo usan IDs recuperados por retrieval");
-      const pricesExact = budget.canasta.piezas.every((piece) => budgetById.get(piece.variantId)?.price === String(piece.precio) || Number(budgetById.get(piece.variantId)?.price) === piece.precio);
-      const totalExact = budget.canasta.total === budget.canasta.piezas.reduce((sum, piece) => sum + piece.subtotal, 0);
-      gate.check(budgetRows.length === budgetVariantIds.length && pricesExact, "budget/db-prices", "todas las piezas usan precios de DB");
-      gate.check(totalExact && budget.canasta.total <= budget.canasta.techoCop, "budget/subtotal", "total suma subtotales y respeta techo");
-    }
 
     // Warm the same deterministic query twice, then measure a fixed sequential
     // sample. Warmups and the earlier cold semantic call are excluded from p50/p95.

@@ -4,8 +4,6 @@ import { performance } from "node:perf_hooks";
 import path from "node:path";
 import { getRagPool } from "../src/lib/rag/db";
 import { buscarCatalogoRag } from "../src/lib/rag/chat/buscar";
-import { buscarCatalogoRagConPresupuesto } from "../src/lib/rag/chat/buscar-presupuesto";
-import { resolverFranja } from "../src/lib/rag/presupuesto/resolver";
 
 for (const file of [".env.local", ".env"]) if (existsSync(file)) process.loadEnvFile(file);
 
@@ -27,11 +25,10 @@ process.env.RAG_USE_VECTOR = "false";
 const ROOT = process.cwd();
 const DEFAULT_REPORT = path.join(ROOT, "reports", "load-test-rag.md");
 
-// Consultas representativas de los dos flujos que golpean el pool con más
-// concurrencia por turno (identificados en el propio plan como el riesgo:
-// franjas dispara hasta 5 roles en paralelo, cada uno con sus propias ramas
-// léxicas concurrentes). Frases con intención clara para el parser
-// determinista local — no dependen de Gemini para clasificar bien.
+// Consultas representativas del flujo de chat, el que golpea el pool con más
+// concurrencia por turno (cada turno abre sus propias ramas léxicas en
+// paralelo). Frases con intención clara para el parser determinista local —
+// no dependen de Gemini para clasificar bien.
 const QUERIES = [
   "globos plateados para cumpleaños",
   "arco de globos rosados para baby shower",
@@ -43,27 +40,19 @@ const QUERIES = [
   "kit de mesa de dulces rosa pastel",
 ];
 
-// Franja "escena" (media-alta): dispara el fan-out completo de 5 roles
-// (ROLES_PRESUPUESTO en src/lib/rag/presupuesto/franjas.ts) en paralelo por
-// turno — el caso que el plan cita como origen del riesgo de saturación.
-const CIFRA_PRESUPUESTO = 400_000;
-
-type Flow = "chat" | "presupuesto";
+// El flujo `presupuesto` (fan-out de 5 roles por turno), que era el segundo
+// escenario de este arnés, se fue con el pipeline de franjas (ADR-0023 paso
+// 4). Queda el flujo de chat, que es el que corre en producción.
+type Flow = "chat";
 
 type TurnResult = { ok: boolean; ms: number; error?: string };
 
-async function runTurn(flow: Flow, index: number): Promise<TurnResult> {
+async function runTurn(index: number): Promise<TurnResult> {
   const pool = getRagPool();
   const query = QUERIES[index % QUERIES.length];
   const started = performance.now();
   try {
-    if (flow === "chat") {
-      await buscarCatalogoRag(pool, query);
-    } else {
-      const resuelta = resolverFranja(CIFRA_PRESUPUESTO);
-      if (!resuelta) throw new Error("resolverFranja() no resolvió la cifra fija del arnés — revisar franjas.ts");
-      await buscarCatalogoRagConPresupuesto(pool, query, resuelta.franja, resuelta.cifraCliente);
-    }
+    await buscarCatalogoRag(pool, query);
     return { ok: true, ms: performance.now() - started };
   } catch (error) {
     return { ok: false, ms: performance.now() - started, error: error instanceof Error ? error.message : String(error) };
@@ -72,7 +61,7 @@ async function runTurn(flow: Flow, index: number): Promise<TurnResult> {
 
 type PoolSample = { tMs: number; total: number; idle: number; waiting: number };
 
-async function runLevel(flow: Flow, concurrency: number, durationMs: number): Promise<{ results: TurnResult[]; poolSamples: PoolSample[] }> {
+async function runLevel(concurrency: number, durationMs: number): Promise<{ results: TurnResult[]; poolSamples: PoolSample[] }> {
   const pool = getRagPool();
   const results: TurnResult[] = [];
   const poolSamples: PoolSample[] = [];
@@ -84,7 +73,7 @@ async function runLevel(flow: Flow, concurrency: number, durationMs: number): Pr
   let counter = 0;
   const worker = async () => {
     while (performance.now() - start < durationMs) {
-      results.push(await runTurn(flow, counter++));
+      results.push(await runTurn(counter++));
     }
   };
   try {
@@ -143,7 +132,7 @@ type Options = { concurrencyLevels: number[]; durationMs: number; flows: Flow[];
 function parseArgs(argv: string[]): Options {
   let concurrencyLevels = [1, 5, 10, 20, 30, 50];
   let durationMs = 8_000;
-  let flows: Flow[] = ["chat", "presupuesto"];
+  let flows: Flow[] = ["chat"];
   let report = DEFAULT_REPORT;
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -157,8 +146,8 @@ function parseArgs(argv: string[]): Options {
       durationMs = next * 1000;
     } else if (arg === "--flow") {
       const next = argv[++i];
-      if (next !== "chat" && next !== "presupuesto" && next !== "both") throw new Error("--flow debe ser chat, presupuesto o both");
-      flows = next === "both" ? ["chat", "presupuesto"] : [next];
+      if (next !== "chat") throw new Error("--flow sólo admite chat");
+      flows = [next];
     } else if (arg === "--report") {
       const next = argv[++i];
       if (!next || next.startsWith("--")) throw new Error("--report requiere una ruta");
@@ -194,13 +183,12 @@ ${errorDetail}
 
 - **pool.total max** vs el \`max: 20\` configurado en \`src/lib/rag/db.ts\`: si llega a 20, el pool está saturado en ese nivel.
 - **pool.waiting** > 0 significa que hubo turnos esperando una conexión libre; si el error % sube junto con esto, la saturación se está traduciendo en fallos, no solo en cola.
-- El flujo \`presupuesto\` dispara 5 roles en paralelo por turno (\`ROLES_PRESUPUESTO\`), cada uno con sus propias ramas léxicas concurrentes — es el que más agresivamente demanda el pool, tal como anticipa la Fase 7 del plan.
 
 ## Reproducción
 
 \`\`\`powershell
 $env:DATABASE_URL="postgresql://demo:demo@127.0.0.1:5432/demo_rag"
-npx tsx --conditions=react-server scripts/load-test-rag.ts --concurrency ${options.concurrencyLevels.join(",")} --duration ${options.durationMs / 1000} --flow ${options.flows.length === 2 ? "both" : options.flows[0]}
+npx tsx --conditions=react-server scripts/load-test-rag.ts --concurrency ${options.concurrencyLevels.join(",")} --duration ${options.durationMs / 1000} --flow ${options.flows[0]}
 \`\`\`
 `;
 }
@@ -216,7 +204,7 @@ async function main(): Promise<void> {
     for (const flow of options.flows) {
       for (const concurrency of options.concurrencyLevels) {
         console.log(`[carga] flujo=${flow} concurrencia=${concurrency} duracion=${options.durationMs}ms`);
-        const { results, poolSamples } = await runLevel(flow, concurrency, options.durationMs);
+        const { results, poolSamples } = await runLevel(concurrency, options.durationMs);
         const summary = summarize(results);
         const poolSummary = summarizePool(poolSamples);
         levels.push({ flow, concurrency, durationMs: options.durationMs, summary, pool: poolSummary });

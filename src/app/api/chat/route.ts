@@ -7,7 +7,7 @@ import { construirSistema } from "@/lib/ia/prompt-sistema";
 import { parseNivelCreatividad } from "@/lib/ia/creatividad";
 import { sugerenciaEscenaDelTurno } from "@/lib/ia/sugerencia-escena-chat";
 import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
-import { RAG_ENABLED, RAG_FRANJAS_ENABLED } from "@/lib/ia/feature-flags";
+import { RAG_ENABLED } from "@/lib/ia/feature-flags";
 import type { Brief, ChatMessage } from "@/lib/types";
 import { LoraModeSlugSchema } from "@/lib/lora/schema";
 import { resolveLoraModeDatasetAllowlist } from "@/lib/lora/mode-resolver";
@@ -227,7 +227,7 @@ export async function POST(request: Request) {
     // a surprising scene can be traced.
     const sugerencia = sugerenciaEscenaDelTurno({ nivel: creatividad, mensajes: messages ?? [], brief, fotoEspacio: Boolean(fotoEspacio) });
     if (sugerencia) console.info("[chat] sugerencia de escena por creatividad", { requestId, creatividad, ...sugerencia });
-    sistema = construirSistema({ ragEnabled: RAG_ENABLED, franjasEnabled: RAG_FRANJAS_ENABLED, brief, referenceBlueprint, catalogAllowlist: catalogAllowlist ?? undefined, catalogoLoraNoDisponible: catalogoLoraNoDisponible !== undefined, creatividad, sugerenciaEscena: sugerencia });
+    sistema = construirSistema({ ragEnabled: RAG_ENABLED, brief, referenceBlueprint, catalogAllowlist: catalogAllowlist ?? undefined, catalogoLoraNoDisponible: catalogoLoraNoDisponible !== undefined, creatividad, sugerenciaEscena: sugerencia });
 
     // Las imágenes solo se adjuntan al último mensaje (el que se acaba de
     // mandar en este turno) — `historial` se reconstruye desde texto plano
