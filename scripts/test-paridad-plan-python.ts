@@ -14,7 +14,15 @@
  * - `--update`, regenera `expected` tras un cambio intencional de TypeScript;
  * - `--paridad`, compara los dos backends pasando la respuesta Python por el
  *   mapper de producción. Esa es la puerta para poder activar
- *   `PYTHON_BACKEND_ENABLED`, y hoy todavía no pasa.
+ *   `PYTHON_BACKEND_ENABLED`: hoy pasa en los 27 vectores y corre en CI dentro
+ *   de `plan:test` como `plan:test-paridad-python`, así que una deriva entre
+ *   backends rompe el pipeline en vez de quedar verde.
+ *
+ * Orden al regenerar: primero `--update` (reescribe el archivo entero con
+ * `JSON.stringify`, que además normaliza `12.0` a `12` dentro de
+ * `expected_python`) y después `PARIDAD_ACTUALIZAR=1 pytest
+ * tests/test_plan_parity.py`, que vuelve a escribir `expected_python` con los
+ * tipos que emite Python. Al revés, pytest falla por int contra float.
  *
  * Nada de esto necesita base de datos ni red: el catálogo del vector entra por
  * un doble del `Pool`, igual que en `scripts/test-resolver-plan.ts`.
