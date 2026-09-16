@@ -201,6 +201,28 @@ async function main(): Promise<void> {
   const doce = ordenarRecomendacionesPorColor(muchos, { productId: "prod-rojo", colores: ["rojo"] }).slice(0, RECOMENDACIONES_MAX_PRODUCTOS);
   assert.equal(doce[0]!.productId, "prod-reflex-rojo", "el mismo color encabeza las recomendaciones");
   assert.ok(doce.length === RECOMENDACIONES_MAX_PRODUCTOS && doce.some((p) => p.productId === "prod-reflex-rojo"));
+  // Invariante de las familias de neutros: dos colores de la misma familia
+  // nunca puntúan como un color desconocido (0,7), tengan tono o no. El bloque
+  // de arriba solo ejercía plateado/gris, los dos sin tono, así que la familia
+  // dorado/champagne no la cubría nada: quien le quitara el tono a un miembro
+  // de una familia no habría notado el cambio.
+  const { puntuacionCromatica, FAMILIAS_NEUTRAS, PUNTUACION_FAMILIA } = await import("../src/lib/rag/catalog/similitud-color");
+  for (const familia of FAMILIAS_NEUTRAS) {
+    for (const uno of familia) {
+      for (const otro of familia) {
+        if (uno === otro) continue;
+        assert.ok(
+          puntuacionCromatica([uno], [otro]) <= PUNTUACION_FAMILIA,
+          `${uno}/${otro} deben quedar dentro del techo de su familia (${PUNTUACION_FAMILIA})`,
+        );
+      }
+    }
+  }
+  // La distancia de tono sigue mandando cuando los dos colores la tienen: el
+  // techo de familia no puede alejar un par que el tono ya acerca.
+  assert.ok(puntuacionCromatica(["dorado"], ["champagne"]) < PUNTUACION_FAMILIA);
+  assert.equal(puntuacionCromatica(["plateado"], ["gris"]), PUNTUACION_FAMILIA);
+  assert.equal(puntuacionCromatica(["gris"], ["dorado"]), 0.7, "familias distintas siguen siendo color desconocido");
   console.log("[PASS] ordenarRecomendacionesPorColor: coincidencia exacta primero y familias de neutros");
 
   // --- 1. aplicar: Python rejects a variant paired with a product that does not own it.

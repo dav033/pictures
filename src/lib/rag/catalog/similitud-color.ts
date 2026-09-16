@@ -36,13 +36,17 @@ function distanciaCircular(a: number, b: number): number {
  * scored 0.7, the same as an unknown color, so a grey alternative for a silver
  * piece ranked behind an orange one.
  */
-const FAMILIAS_NEUTRAS: ReadonlyArray<ReadonlySet<string>> = [
+export const FAMILIAS_NEUTRAS: ReadonlyArray<ReadonlySet<string>> = [
   new Set(["blanco", "crema", "beige", "nude", "transparente"]),
   new Set(["plateado", "gris", "negro"]),
   new Set(["dorado", "champagne"]),
 ];
-/** Closer than an unknown color (0.7), farther than any hue distance (≤ 1). */
-const PUNTUACION_FAMILIA = 0.35;
+/**
+ * Techo de dos colores de la misma familia: siempre más cerca que un color
+ * desconocido (0,7). No es un piso — cuando los dos tienen tono (dorado 44 y
+ * champagne 42) la distancia de tono es menor y manda ella.
+ */
+export const PUNTUACION_FAMILIA = 0.35;
 
 function mismaFamiliaNeutra(actual: string, candidata: string): boolean {
   return FAMILIAS_NEUTRAS.some((familia) => familia.has(actual) && familia.has(candidata));
@@ -67,7 +71,11 @@ export function puntuacionCromatica(actuales: string[], candidatas: string[]): n
       const hueActual = HUES[actual];
       const hueCandidata = HUES[candidata];
       if (hueActual != null && hueCandidata != null) puntuaciones.push(distanciaCircular(hueActual, hueCandidata));
-      else if (mismaFamiliaNeutra(actual, candidata)) puntuaciones.push(PUNTUACION_FAMILIA);
+      // La familia es un techo, no una alternativa a la distancia de tono: sin
+      // esto solo llegaban aquí los colores sin tono, así que la familia
+      // dorado/champagne era código muerto y quitarle el tono a uno de los dos
+      // los habría dejado en 0,7 (color desconocido) sin que nada lo notara.
+      if (mismaFamiliaNeutra(actual, candidata)) puntuaciones.push(PUNTUACION_FAMILIA);
     }
   }
   return puntuaciones.length ? Math.min(...puntuaciones) : 0.7;
