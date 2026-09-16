@@ -48,16 +48,32 @@ assert.deepEqual(colores("un ramo de rosas en la entrada"), []);
 assert.deepEqual(colores("globos color crema"), ["crema"]);
 assert.deepEqual(colores("globos color vino"), ["burdeos"]);
 
-// 6. La negación existente se conserva.
+// 6. La negación existente se conserva, también con los alias compuestos: el
+//    tramo negado se tapa, así que el alias corto que vive dentro del largo no
+//    convierte el "sin" del cliente en la restricción obligatoria contraria.
 assert.deepEqual(colores("un arco azul, sin amarillo"), ["azul"]);
+assert.deepEqual(colores("Arco azul y blanco sin oro rosa").sort(), ["azul", "blanco"]);
+assert.deepEqual(colores("Arco azul sin dorado rosa"), ["azul"]);
+assert.deepEqual(colores("Arco azul sin rojo vino"), ["azul"]);
+assert.deepEqual(colores("Arco azul sin wine red"), ["azul"]);
 
 // 7. Valores canónicos que ya usan los planes firmados y `colorDeCatalogo`.
 assert.deepEqual(colores("globos rosados y plateados").sort(), ["plateado", "rosa"]);
 assert.equal(canonizarColorCliente("plateadas"), "plateado");
 assert.equal(canonizarColorCliente("rosada"), "rosa");
 assert.equal(canonizarColorCliente("oro rosa"), "dorado rosa");
-assert.ok(ALIAS_COLORES_CLIENTE.includes("amarillas"), "el vocabulario incluye los femeninos generados");
+assert.ok(ALIAS_COLORES_CLIENTE.includes("amarillas"), "el vocabulario incluye los femeninos de la taxonomía");
 assert.ok(!ALIAS_COLORES_CLIENTE.includes("multicolor"), "multicolor no es un color exigible");
+// Formas generadas: solo el plural español. El femenino morfológico inventaba
+// palabras reales que no son color ("oro" → "ora", "vino" → "viña") y el plural
+// de un alias inglés, palabras inexistentes o de otro significado ("blues").
+for (const forma of ["ora", "oras", "vina", "vinas", "doradoses", "goldes", "pinkes", "greenes", "ivoryes", "blues", "redes"]) {
+  assert.ok(!ALIAS_COLORES_CLIENTE.includes(forma), `"${forma}" no es una palabra de color`);
+}
+for (const forma of ["turquesas", "corales", "lilas", "violetas", "azules"]) {
+  assert.ok(ALIAS_COLORES_CLIENTE.includes(forma), `"${forma}" sí es como el cliente escribe el color`);
+}
+assert.deepEqual(colores("la finca esta entre las vinas del sur"), []);
 
 // 8. `validarRestriccionesPlan` ya puede reclamar los colores nuevos.
 const planBase = {
@@ -105,5 +121,26 @@ assert.deepEqual(
   extraerRestriccionesConversacion(["arco en fucsia y dorado", "quita el fucsia"]).colores.map((color) => color.valor),
   ["dorado"],
 );
+
+// 10. Palabras ambiguas: un alias que también es una palabra común solo cuenta
+//     como color con una señal ("globos color vino") o enumerado con otro
+//     color. Sin la guarda, una conversación normal de decoración dejaba un
+//     color obligatorio imposible de cumplir (RESTRICCIONES_INCONSISTENTES) y
+//     apagaba los colores de la foto de referencia.
+const conversacion = (mensajes: string[]): string[] => extraerRestriccionesConversacion(mensajes).colores.map((color) => color.valor);
+assert.deepEqual(conversacion(["Hola", "quiero un arco azul", "la torta va con crema y chocolate"]), ["azul"]);
+assert.deepEqual(conversacion(["Arco azul y blanco, habra brindis con champana"]).sort(), ["azul", "blanco"]);
+assert.deepEqual(conversacion(["Arco azul y blanco, luego lo publico en redes"]).sort(), ["azul", "blanco"]);
+assert.deepEqual(colores("la fiesta es en un cafe del centro"), []);
+assert.deepEqual(colores("la mesa de dulces lleva chocolate y arena decorativa"), []);
+assert.deepEqual(colores("vino mi tia con el dj"), []);
+assert.deepEqual(colores("el postre lleva lima y galletas"), []);
+assert.deepEqual(colores("centros de mesa con menta natural"), ["menta"], "solo el alias ambiguo necesita señal");
+// Y siguen siendo color cuando el cliente los pide como color.
+assert.deepEqual(colores("globos color cafe"), ["cafe"]);
+assert.deepEqual(colores("en tonos champagne"), ["champagne"]);
+assert.deepEqual(colores("un arco vino y azul").sort(), ["azul", "burdeos"]);
+assert.deepEqual(colores("globos crema y chocolate").sort(), ["cafe", "crema"]);
+assert.deepEqual(colores("arco azul con crema").sort(), ["azul", "crema"]);
 
 console.log("[PASS] vocabulario de colores del cliente — taxonomía v2, plurales, alias largos, exclusiones y retiro en conversación");
