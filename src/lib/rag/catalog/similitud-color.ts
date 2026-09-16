@@ -56,6 +56,12 @@ export const FAMILIAS_NEUTRAS: ReadonlyArray<ReadonlySet<string>> = [
  * champagne 42) la distancia de tono es menor y manda ella.
  */
 export const PUNTUACION_FAMILIA = 0.35;
+/**
+ * Puntuación de dos colores que no comparten ni tono ni familia neutra: «no
+ * relacionados», no «lejos». Que el mejor candidato llegue a esto significa que
+ * no hay nada que medir.
+ */
+export const PUNTUACION_DESCONOCIDA = 0.7;
 
 function mismaFamiliaNeutra(actual: string, candidata: string): boolean {
   return FAMILIAS_NEUTRAS.some((familia) => familia.has(actual) && familia.has(candidata));
@@ -71,7 +77,7 @@ function mismaFamiliaNeutra(actual: string, candidata: string): boolean {
 export function puntuacionCromatica(actuales: string[], candidatas: string[]): number {
   const base = actuales.map(normalizarColor).filter(Boolean);
   const opciones = candidatas.map(normalizarColor).filter(Boolean);
-  if (!base.length || !opciones.length) return 0.7;
+  if (!base.length || !opciones.length) return PUNTUACION_DESCONOCIDA;
   if (opciones.some((color) => base.includes(color))) return 0;
 
   const puntuaciones: number[] = [];
@@ -87,7 +93,7 @@ export function puntuacionCromatica(actuales: string[], candidatas: string[]): n
       if (mismaFamiliaNeutra(actual, candidata)) puntuaciones.push(PUNTUACION_FAMILIA);
     }
   }
-  return puntuaciones.length ? Math.min(...puntuaciones) : 0.7;
+  return puntuaciones.length ? Math.min(...puntuaciones) : PUNTUACION_DESCONOCIDA;
 }
 
 /** Shape of `x-tonos-colores-catalogo` in the exported `catalog-search.v1` contract. */
@@ -137,5 +143,9 @@ export function colorCatalogoMasCercano(pedido: string, disponibles: readonly st
       mejor = opcion;
     }
   }
-  return mejor;
+  // Nada relacionado: el color pedido es una palabra que la tabla no conoce (el
+  // analizador se inventa algunas, «frambuesa»), así que puntúa igual contra
+  // todos y ganaría el primero por orden alfabético. Así fue como una foto
+  // frambuesa acabó resolviéndose a amarillo. Sustituir exige una distancia.
+  return mejorPuntuacion >= PUNTUACION_DESCONOCIDA ? undefined : mejor;
 }

@@ -20,6 +20,7 @@ from app.catalog import (
     CatalogSelectionRequest,
     MAX_LEXICAL_TERMS,
     _group_candidates,
+    _nearest_present_color,
     extract_sku,
     lexical_terms,
 )
@@ -380,6 +381,37 @@ async def test_catalog_search_reports_no_substitution_when_nothing_close_is_stoc
 
     assert result["color_substitutions"] == []
     assert result["status"] == "NO_MATCH"
+
+
+@pytest.mark.anyio
+async def test_catalog_search_does_not_invent_a_substitute_for_a_color_the_table_does_not_know() -> None:
+    """Regresion encontrada corriendo el servicio contra el catalogo real.
+
+    El analizador de fotos se inventa nombres de color: "frambuesa" no esta en la
+    tabla de tonos, asi que puntua igual (`_UNRELATED_DISTANCE`) contra TODOS los
+    colores en stock y el desempate alfabetico elegia el primero -- una foto
+    frambuesa se resolvia a amarillo. Sustituir exige una distancia; sin ella no
+    hay nada que medir y la peticion se deja intacta.
+    """
+    pool = FakeColorResolutionPool(present_colors=["amarillo", "azul", "rojo"], candidate_rows=[])
+    store = CatalogStore("postgresql://demo:demo@localhost/demo", pool=pool)
+
+    result = await store.search(
+        _request(message="globo latex frambuesa", filters={"available": True, "colors": ["frambuesa"]})
+    )
+
+    assert result["color_substitutions"] == []
+    assert result["status"] == "NO_MATCH"
+
+
+def test_nearest_present_color_needs_a_measurable_distance() -> None:
+    en_stock = ["amarillo", "azul", "blanco", "rojo", "verde"]
+    # Burdeos SI tiene tono (350) y rojo esta a 10 grados: se sustituye.
+    assert _nearest_present_color("burdeos", en_stock) == "rojo"
+    # Frambuesa no esta en la tabla: ningun candidato esta relacionado.
+    assert _nearest_present_color("frambuesa", en_stock) is None
+    # Sin nada en stock tampoco hay a que parecerse.
+    assert _nearest_present_color("burdeos", []) is None
 
 
 def test_group_candidates_only_contains_rows_returned_by_sql() -> None:

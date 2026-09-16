@@ -17,6 +17,7 @@
  */
 import assert from "node:assert/strict";
 import type { Pool } from "pg";
+import { colorCatalogoMasCercano } from "../src/lib/rag/catalog/similitud-color";
 import { instalarResolutorPythonFalso, prepararEntornoPythonFalso, veredictoColoresReferencia, SNAPSHOT_FALSO } from "./lib/resolutor-python-falso";
 
 prepararEntornoPythonFalso();
@@ -478,6 +479,20 @@ async function main(): Promise<void> {
   assert.equal(porqueConfirmado.ok, true, JSON.stringify(porqueConfirmado).slice(0, 300));
   assert.equal(estadoPorque.planResuelto?.plan.estructuras[0]?.porque, "Recrea el arco de tu foto.");
   ok("porque: frase para el cliente sin jerga del modelo");
+
+  // Regresion encontrada corriendo el servicio contra el catalogo real: un color
+  // que la tabla de tonos no conoce puntuaba igual contra todos los disponibles y
+  // el desempate alfabetico elegia el primero, asi que una foto frambuesa se
+  // resolvia a amarillo. Sustituir exige una distancia; sin ella no se sustituye.
+  {
+    const enStock = ["amarillo", "azul", "blanco", "rojo", "verde"];
+    assert.equal(colorCatalogoMasCercano("burdeos", enStock), "rojo", "burdeos tiene tono (350) y rojo esta a 10 grados");
+    assert.equal(colorCatalogoMasCercano("rojo", enStock), "rojo", "un color exacto se devuelve tal cual");
+    assert.equal(colorCatalogoMasCercano("frambuesa", enStock), undefined, "la tabla no conoce frambuesa: no hay distancia que medir");
+    assert.equal(colorCatalogoMasCercano("burdeos", []), undefined, "sin stock no hay a que parecerse");
+    casos += 1;
+    console.log("[PASS] un color que la tabla no conoce no se sustituye por el primero alfabetico");
+  }
 
   console.log(`\n${casos} casos OK (auditoría de referencia en el plan)`);
 }

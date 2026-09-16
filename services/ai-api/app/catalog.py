@@ -1037,15 +1037,29 @@ def _chromatic_distance(requested: str, candidate: str) -> float:
     return min(scores) if scores else 0.7
 
 
+# Distance _chromatic_distance returns for two colors that share neither a hue
+# nor a neutral family: "unrelated", not "far". Every candidate scoring exactly
+# this means the request is a word the tone table does not know.
+_UNRELATED_DISTANCE = 0.7
+
+
 def _nearest_present_color(requested: str, present: Sequence[str]) -> str | None:
     """The color of ``present`` closest to ``requested`` by ``_chromatic_distance``.
 
     Ties break alphabetically for a deterministic result. ``None`` when
-    ``present`` is empty.
+    ``present`` is empty, and also when nothing is chromatically related: a word
+    the tone table does not know (the analyser invents some, e.g. "frambuesa")
+    scores the same against every color, so the winner would be whichever sorts
+    first -- that is how a raspberry photo resolved to yellow. Substituting
+    needs a distance; without one there is nothing to measure and the request is
+    left alone so the search reports NO_MATCH honestly.
     """
     if not present:
         return None
-    return min(present, key=lambda candidate: (_chromatic_distance(requested, candidate), candidate))
+    best = min(present, key=lambda candidate: (_chromatic_distance(requested, candidate), candidate))
+    if _chromatic_distance(requested, best) >= _UNRELATED_DISTANCE:
+        return None
+    return best
 
 
 async def _resolve_colors(
