@@ -19,7 +19,6 @@ import { ReferenceAnalysisController } from "@/components/references/ReferenceAn
 import type { ReferenceDraft } from "@/components/references/ReferenceReviewPanel";
 import { PasosAsistente } from "@/components/propuesta";
 import { useSeleccion } from "@/lib/estado/seleccion";
-import type { LineaBorrador } from "@/lib/estado/borrador-cotizacion";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { Imagen, PeticionImagen } from "@/lib/ia/tipos";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
@@ -205,7 +204,8 @@ type GenerarOverride = {
    * antes) todavía no aplicó su actualización de estado en este mismo tick.
    */
   manualProducts?: Producto[];
-  plan?: PlanResuelto;
+  /** Propuesta aprobada. Toda imagen sale de una (ADR-0023, paso 1). */
+  plan: PlanResuelto;
   /** Mensaje exacto al que debe volver la cotización final de esta generación. */
   anchorMessageId?: string;
   /**
@@ -507,7 +507,6 @@ export default function Page() {
     alternar: alternarSeleccion,
     quitar: quitarSeleccion,
     agregarVarios,
-    reemplazarTodo,
     registrarConocidos,
     limpiar: limpiarSeleccion,
   } = useSeleccion();
@@ -521,7 +520,7 @@ export default function Page() {
   const [error, setError] = useState<ErrorVisible | null>(null);
   // Último intento de generación, para "Reintentar" y "Generar con estilo
   // estándar" desde el aviso de error. `override` indefinido = clic manual.
-  const ultimoIntentoGeneracionRef = useRef<{ override?: GenerarOverride } | null>(null);
+  const ultimoIntentoGeneracionRef = useRef<{ override: GenerarOverride } | null>(null);
   const [proveedor, setProveedor] = useState<ProveedorId>("gemini");
   const [selectorIA, setSelectorIA] = useState<SelectorIA>("lora");
   // Validación visual activa por defecto también en modo dev: sin ella no se puede aprobar.
@@ -861,17 +860,6 @@ export default function Page() {
       return copia;
     });
     if (datos.plan) setPlanAprobadoHash(null);
-
-    if (seleccionIA.length > 0 && !datos.plan) {
-      generar({
-        ids: [],
-        ragVariantIds: seleccionIA.map((p) => p.id),
-        paquetes: Object.fromEntries(seleccionIA.map((p) => [p.id, p.paquetes ?? 1])),
-        instruccion: datos.instruccionIA,
-        brief: briefActualizado,
-        solicitudUsuario: solicitudUsuarioRef.current,
-      });
-    }
   }
 
   /**
@@ -1166,7 +1154,7 @@ export default function Page() {
    * `pendienteAutoGlobal` y el effect de más abajo la dispara en cuanto
    * `generando` se libera.
    */
-  async function generar(override?: GenerarOverride) {
+  async function generar(override: GenerarOverride) {
     if (planDecoracionActivo && imagenesReferenciaRef.current.length > 0 && !override?.plan) return;
     const ultimaValidacion = [...mensajes]
       .reverse()
@@ -1225,13 +1213,6 @@ export default function Page() {
       : seleccionados.filter((producto) => producto.id.startsWith("manual-") && idsAUsar.includes(producto.id));
     const briefAUsar = override?.brief ?? briefRef.current;
     const solicitudUsuario = override?.solicitudUsuario ?? solicitudUsuarioRef.current;
-    // Una generación automática espera al análisis en curso; una propuesta
-    // aprobada no (su plan ya está firmado), y un análisis fallido no bloquea nada.
-    if (imagenesReferenciaRef.current.length > 0 && esperaAnalisis.estado === "analyzing" && !override?.plan) {
-      // eslint-disable-next-line react-hooks/globals -- deliberado: cola de deduplicación de generación en curso, ver declaración de pendienteAutoGlobal.
-      pendienteAutoGlobal = { ids: productIdsGeneracion, ragVariantIds: ragVariantIdsAUsar, paquetes: paquetesAUsar, manualProducts: productosManuales, instruccion: (override?.instruccion ?? ajuste.trim()) || undefined, brief: briefAUsar, solicitudUsuario };
-      return;
-    }
     if (idsAUsar.length === 0) return;
 
     // eslint-disable-next-line react-hooks/globals -- deliberado: encadenar sobre una promesa de módulo es justo lo que garantiza la serialización, ver declaración de colaGeneracion.
@@ -1547,59 +1528,6 @@ export default function Page() {
     setMensajes((previos) => previos.map((mensaje) => mensaje.id === mensajeId ? { ...mensaje, plan, cotizacion: cotizacion ?? mensaje.cotizacion } : mensaje));
   }
 
-  /**
-   * El cliente confirmó con "Listo" su edición de una cotización (tarjeta →
-   * `useBorradorCotizacion`): `lineas` ya son las definitivas, sin lo que
-   * quitó y con las cantidades/reemplazos que hizo. Sustituye la selección
-   * compartida por esas piezas y regenera la imagen con ellas.
-   *
-   * Se empuja un mensaje de asistente nuevo (en vez de solo llamar
-   * `generar()`, como hace el botón "Regenerar imagen") para que la
-   * cotización final que traiga la respuesta tenga un ancla inequívoca:
-   * `generar()` la engancha al último mensaje de asistente, y si el cliente
-   * edita una tarjeta de un turno viejo, ese último mensaje podría no ser el
-   * que se está editando.
-   */
-  function aplicarCotizacionEditada(lineas: LineaBorrador[]) {
-    const productos: Producto[] = lineas
-      // Una línea "sin referencia" que el cliente no llegó a reemplazar no
-      // tiene una pieza real detrás — no hay nada que mandar a generar.
-      .filter((linea): linea is LineaBorrador & { varianteId: string } => !linea.sinReferencia && Boolean(linea.varianteId))
-      .map((linea) => ({
-        id: linea.varianteId,
-        nombre: linea.nombre ?? linea.tamano,
-        categoria: linea.categoria ?? "",
-        estilos: [],
-        colores: linea.colores ?? [],
-        descripcion: linea.descripcion ?? linea.nombre ?? linea.tamano,
-        precio: linea.precioPaquete ?? 0,
-        unidadesPaquete: linea.unidadesPaquete,
-        paquetes: linea.paquetes ?? 1,
-        tamanoCodigo: linea.tamanoCodigo,
-        diamPulg: linea.diamPulg,
-        foto: linea.foto,
-      }));
-
-    reemplazarTodo(productos);
-    // The quote can mix a RAG line retained from an older turn with a legacy
-    // replacement from this turn. Provenance belongs to the conversation,
-    // not to the card's latest validation payload.
-    const ragIds = new Set(
-      mensajes.flatMap((mensaje) => mensaje.ragValidados ?? []).map((item) => item.variantId),
-    );
-    const productosPorFuente = classifyGenerationIds(productos.map((producto) => producto.id), ragIds);
-    setMensajes((previos) => [
-      ...previos,
-      { id: crypto.randomUUID(), role: "assistant", content: "Listo, rehago la visualización con tus cambios." },
-    ]);
-    generar({
-      ids: productosPorFuente.productIds,
-      ragVariantIds: productosPorFuente.ragVariantIds,
-      paquetes: Object.fromEntries(productos.map((producto) => [producto.id, producto.paquetes ?? 1])),
-      manualProducts: productos.filter((producto) => producto.id.startsWith("manual-")),
-      soloIds: true,
-    });
-  }
 
   // Dispara la generación automática que quedó encolada mientras otra seguía
   // en curso (ver el guard de `generando` dentro de `generar`).
@@ -1707,7 +1635,6 @@ export default function Page() {
     }
   }
 
-  const listoParaGenerar = (seleccion.length > 0 || (imagenesReferencia.length > 0 && Boolean(referenceDraft?.blueprint))) && !analizandoFoto;
   const planActualEntry = [...mensajes].reverse().find((mensaje) => mensaje.role === "assistant" && mensaje.plan);
   const planActual = planActualEntry?.plan;
   const planActualAprobado = Boolean(planActual && planAprobadoHash === planActual.plan_hash);
@@ -1717,30 +1644,6 @@ export default function Page() {
   const contexto = contextoEventoConversacion(mensajes, brief);
   // C2: con una propuesta en la conversación, el plan es la selección; la lista manual solo en dev.
   const seleccionDisponible = esModoDev || !hayPlanEnConversacion;
-  const esperandoPlanConReferencias = planDecoracionActivo && imagenesReferencia.length > 0;
-  const generarSinPropuesta = planActual
-    ? undefined
-    : {
-        etiqueta: esperandoPlanConReferencias
-          ? "Espera la propuesta con tu foto"
-          : generando
-            ? "Generando…"
-            : seleccionPendiente
-              ? "Regenerar imagen"
-              : imagenes.length > 0
-                ? "Generar otra versión"
-                : "Generar visualización",
-        deshabilitado: !listoParaGenerar || generando || esperandoPlanConReferencias,
-        ayuda: esperandoPlanConReferencias
-          ? !analizandoFoto && !generando ? "La imagen se habilita después de aprobar la propuesta que relaciona tu foto con productos reales." : null
-          : !listoParaGenerar && !generando
-            ? analizandoFoto ? "Estoy terminando de mirar tu foto." : "Necesitas una pieza o una foto de referencia para generar."
-            : null,
-      };
-  function generarDesdeSeleccion() {
-    if (esperandoPlanConReferencias) return;
-    generar();
-  }
   const referenciasVisibles = imagenesReferencia.map((imagen, indice) => ({
     src: dataUrl(imagen),
     etiqueta: etiquetasAdjuntos[claveImagen(imagen)] ?? `Foto de referencia ${indice + 1}`,
@@ -2021,8 +1924,6 @@ export default function Page() {
                         <TarjetaCotizacion
                           cotizacion={m.cotizacion}
                           referenceBlueprint={m.referenceBlueprint}
-                          editable={!m.plan && !m.cotizacion.plan_hash && !cargandoChat && !generando}
-                          onAplicar={!m.plan && !m.cotizacion.plan_hash ? aplicarCotizacionEditada : undefined}
                         />
                       )}
 
@@ -2195,11 +2096,7 @@ export default function Page() {
                             <button type="button" onClick={aplicarAjusteSobrePropuesta} disabled={!ajuste.trim() || generando || !qaEfectivo} className="ui-button-primary shrink-0">
                               Aplicar ajuste y regenerar
                             </button>
-                          ) : generarSinPropuesta && (
-                            <button type="button" onClick={generarDesdeSeleccion} disabled={generarSinPropuesta.deshabilitado} className="ui-button-primary shrink-0">
-                              {generarSinPropuesta.etiqueta}
-                            </button>
-                          )}
+                          ) : null}
                         </div>
                       )}
                     </>
@@ -2262,8 +2159,6 @@ export default function Page() {
         seleccionados={seleccionados}
         onQuitar={quitarSeleccion}
         onAgregarManual={agregarPiezaManual}
-        generar={generarSinPropuesta}
-        onGenerar={generarDesdeSeleccion}
       />
       <DialogoEjemplos
         abierto={galeriaAbierta}

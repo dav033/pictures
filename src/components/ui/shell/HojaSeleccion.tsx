@@ -12,9 +12,6 @@ type Props = {
   seleccionados: readonly Producto[];
   onQuitar: (id: string) => void;
   onAgregarManual: (pieza: { nombre: string; descripcion: string; precio: number }) => void;
-  /** Botón de generar sin propuesta; undefined cuando la imagen solo sale de aprobar una propuesta. */
-  generar?: { etiqueta: string; deshabilitado: boolean; ayuda: string | null };
-  onGenerar: () => void;
 };
 
 /**
@@ -22,7 +19,7 @@ type Props = {
  * flujo sin propuesta — piezas tocadas en el chat, decoraciones armadas,
  * /catalogo o agregadas a mano — y `generar()` la manda a la imagen.
  */
-export function HojaSeleccion({ abierta, onCerrar, seleccionados, onQuitar, onAgregarManual, generar, onGenerar }: Props) {
+export function HojaSeleccion({ abierta, onCerrar, seleccionados, onQuitar, onAgregarManual }: Props) {
   const focoRetorno = useFocoDeRetorno();
   const [agregando, setAgregando] = useState(false);
   const [nombre, setNombre] = useState("");
@@ -107,14 +104,6 @@ export function HojaSeleccion({ abierta, onCerrar, seleccionados, onQuitar, onAg
               </button>
             )}
           </div>
-          {generar && (
-            <div className="space-y-2 border-t border-borde-suave px-5 py-4">
-              <button type="button" onClick={onGenerar} disabled={generar.deshabilitado} className="ui-button-primary w-full" data-testid="generar-sin-propuesta">
-                {generar.etiqueta}
-              </button>
-              {generar.ayuda && <p className="text-xs text-texto-suave">{generar.ayuda}</p>}
-            </div>
-          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

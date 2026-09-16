@@ -1,11 +1,8 @@
 import assert from "node:assert/strict";
 import type { Pool } from "pg";
-import { cotizarProductos } from "../src/lib/cotizacion/motor";
 import { buildImagePrompt } from "../src/lib/ia/build-image-prompt";
 import { evaluateSceneQa } from "../src/lib/ia/image-qa";
 import {
-  blockingPhysicalWarnings,
-  estimateFromMeasuredMaterials,
   estimateFromPlan,
   designQuantityForProduct,
   physicalWarningsForPlan,
@@ -15,86 +12,9 @@ import {
   type DesignMaterialEstimate,
 } from "../src/lib/materiales/estimacion";
 import { resolverPlan } from "../src/lib/plan/resolver";
+import type { PlanResuelto } from "../src/lib/plan/resuelto";
 import { PlanDecoracionSchema } from "../src/lib/plan/tipos";
-import type { Producto } from "../src/lib/types";
 import type { SceneSpec } from "../src/lib/ia/scene-spec";
-
-const products: Producto[] = [
-  {
-    id: "fashion-pink-r12",
-    nombre: "Fashion rosado R-12",
-    categoria: "Globo látex",
-    estilos: [],
-    colores: ["fashion rosado"],
-    descripcion: "Globo redondo Fashion rosado.",
-    precio: 17_100,
-    unidadesPaquete: 50,
-    paquetes: 1,
-    tamanoCodigo: "R-12",
-    forma: "redondo",
-    diamPulg: 12,
-  },
-  {
-    id: "rose-gold-r12",
-    nombre: "Metal dorado rosa R-12",
-    categoria: "Globo látex metalizado",
-    estilos: [],
-    colores: ["metal dorado rosa"],
-    descripcion: "Globo redondo metalizado dorado rosa.",
-    precio: 17_100,
-    unidadesPaquete: 50,
-    paquetes: 1,
-    tamanoCodigo: "R-12",
-    forma: "redondo",
-    diamPulg: 12,
-  },
-  {
-    id: "foil-heart",
-    nombre: "Corazón foil",
-    categoria: "Globo metalizado",
-    estilos: [],
-    colores: ["dorado rosa"],
-    descripcion: "Corazón foil decorativo.",
-    precio: 5_000,
-    unidadesPaquete: 1,
-    paquetes: 1,
-    forma: "corazon",
-  },
-];
-
-const estimate = estimateFromMeasuredMaterials({
-  figura: "arco",
-  anchoM: 4.5,
-  altoM: 2.6,
-  ejeM: 4.5,
-  despiece: [
-    { tamano: "R-12", pulgadas: 12, cantidad: 13, color: "fashion rosado" },
-    { tamano: "R-12", pulgadas: 12, cantidad: 29, color: "metal dorado rosa" },
-  ],
-  totalGlobos: 42,
-  supuestos: ["densidad lujosa (λ=4.5)"],
-  confianza: "preliminar",
-  aviso: "fixture",
-}, products);
-
-assert.equal(estimate.balloons.reduce((sum, line) => sum + line.design_quantity, 0), 42);
-assert.equal(estimate.special_elements.reduce((sum, line) => sum + line.design_quantity, 0), 1);
-assert.equal(designQuantityForProduct(estimate, "fashion-pink-r12"), 13);
-assert.equal(designQuantityForProduct(estimate, "rose-gold-r12"), 29);
-assert.equal(purchaseForProduct(estimate, "fashion-pink-r12")?.purchase_quantity, 50);
-assert.equal(estimate.totals.purchase_quantity, 101);
-assert.equal(estimate.totals.target_waste_reserve, 4);
-assert.equal(estimate.totals.covered_waste_reserve, 4);
-assert.equal(estimate.totals.uncovered_waste_reserve, 0);
-assert.equal(estimate.totals.required_quantity, 47);
-assert.equal(purchaseForProduct(estimate, "fashion-pink-r12")?.required_quantity, 17);
-assert.equal(purchaseForProduct(estimate, "fashion-pink-r12")?.leftover_inventory, 33);
-assert.equal(purchaseForProduct(estimate, "fashion-pink-r12")?.purchase_cost, 17_100);
-assert.ok(estimate.warnings.some((warning) => /appears too low/i.test(warning)));
-// The foil heart (1 unit, 1 per package, 5.000 COP) would need a second package
-// if merma applied to it; merma only covers balloons, so it saves nothing.
-assert.equal(estimate.totals.waste_only_savings_cop, 0);
-assert.equal(validateMaterialEstimate(estimate).ok, true);
 
 type Purchase = DesignMaterialEstimate["purchases"][number];
 type EstimateLine = DesignMaterialEstimate["balloons"][number];
@@ -155,139 +75,7 @@ assert.equal(
   67,
 );
 
-// Measured path: the optimizer may buy another package presentation of the same
-// balloon family than the variant that received the demand. It is still a
-// balloon purchase and keeps its waste-only savings (47 -> 51 would need a
-// second 50-unit package).
-const familyEstimate = estimateFromMeasuredMaterials({
-  figura: "arco",
-  anchoM: 2,
-  altoM: 2,
-  ejeM: 2,
-  despiece: [{ tamano: "R-12", pulgadas: 12, cantidad: 47, color: "blanco" }],
-  totalGlobos: 47,
-  supuestos: [],
-  confianza: "preliminar",
-  aviso: "fixture",
-}, [
-  { id: "fam-r12-x12", familiaId: "fam-r12", nombre: "Globo R-12 x12", categoria: "Globo látex", colores: ["rojo", "blanco"], descripcion: "Globo redondo", precio: 5_000, unidadesPaquete: 12, paquetes: 1, diamPulg: 12 },
-  { id: "fam-r12-x50", familiaId: "fam-r12", nombre: "Globo R-12 x50", categoria: "Globo látex", colores: ["rojo"], descripcion: "Globo redondo", precio: 9_000, unidadesPaquete: 50, paquetes: 1, diamPulg: 12 },
-]);
-assert.deepEqual(familyEstimate.balloons.map((item) => item.variant_id), ["fam-r12-x12"]);
-assert.deepEqual(familyEstimate.purchases.map((item) => [item.variant_id, item.design_quantity, item.package_count]), [["fam-r12-x50", 47, 1]]);
-assert.equal(familyEstimate.totals.waste_only_savings_cop, 9_000);
-assert.equal(validateMaterialEstimate(familyEstimate).ok, true);
-
-// Ruta heredada sin plan: el color de la demanda casaba por subcadena en los
-// dos sentidos, así que la demanda "dorado" se repartía 16/16 entre "dorado" y
-// "dorado rosa", y "rosa" se repartía entre "rosado" y "dorado rosa".
-const globo = (id: string, color: string): Parameters<typeof estimateFromMeasuredMaterials>[1][number] => ({
-  id,
-  nombre: `Globo ${color} R-12`,
-  categoria: "Globo látex",
-  colores: [color],
-  descripcion: "Globo redondo.",
-  precio: 10_000,
-  unidadesPaquete: 50,
-  paquetes: 1,
-  tamanoCodigo: "R-12",
-  forma: "redondo",
-  diamPulg: 12,
-});
-const productosColores = [globo("p-rosado", "rosado"), globo("p-dorado-rosa", "dorado rosa"), globo("p-dorado", "dorado")];
-const coloresAmbiguos = estimateFromMeasuredMaterials({
-  figura: "arco",
-  anchoM: 3,
-  altoM: 2.4,
-  ejeM: 6.21,
-  despiece: [
-    { tamano: "R-12", pulgadas: 12, cantidad: 32, color: "rosado" },
-    { tamano: "R-12", pulgadas: 12, cantidad: 32, color: "dorado" },
-    { tamano: "R-12", pulgadas: 12, cantidad: 10, color: "rosa dorado" },
-    { tamano: "R-12", pulgadas: 12, cantidad: 8, color: "rosa" },
-  ],
-  totalGlobos: 82,
-  supuestos: [],
-  confianza: "preliminar",
-  aviso: "fixture",
-}, productosColores);
-assert.equal(designQuantityForProduct(coloresAmbiguos, "p-rosado"), 32, "igualdad exacta antes que cualquier otra cosa");
-assert.equal(designQuantityForProduct(coloresAmbiguos, "p-dorado"), 32, "antes 16: 'dorado rosa' contenía 'dorado'");
-assert.equal(designQuantityForProduct(coloresAmbiguos, "p-dorado-rosa"), 10, "mismo color escrito al revés sí cuenta");
-// "rosa" no es "rosado" ni "dorado rosa": con varios productos del tamaño se
-// avisa y la demanda no se reasigna a un color que el cliente no pidió.
-assert.ok(coloresAmbiguos.warnings.some((warning) => /color demand 'rosa' for R-12 matches no selected catalog color/.test(warning)));
-assert.equal(coloresAmbiguos.balloons.reduce((sum, item) => sum + item.design_quantity, 0), 74);
-// Con un solo producto del tamaño sí se reasigna, con el aviso de siempre.
-const colorUnico = estimateFromMeasuredMaterials({
-  figura: "arco",
-  anchoM: 2,
-  altoM: 2,
-  ejeM: 2,
-  despiece: [{ tamano: "R-12", pulgadas: 12, cantidad: 20, color: "blanco" }],
-  totalGlobos: 20,
-  supuestos: [],
-  confianza: "preliminar",
-  aviso: "fixture",
-}, [globo("p-rosado", "rosado")]);
-assert.equal(designQuantityForProduct(colorUnico, "p-rosado"), 20);
-assert.ok(colorUnico.warnings.some((warning) => /was assigned to the available catalog color/.test(warning)));
-
-const zeroDimensionEstimate = estimateFromMeasuredMaterials({
-  figura: "pared",
-  anchoM: 0,
-  altoM: 0,
-  largoM: 0,
-  ejeM: 0,
-  despiece: [{ tamano: "R-12", pulgadas: 12, cantidad: 1, color: "fashion rosado" }],
-  totalGlobos: 1,
-  supuestos: [],
-  confianza: "preliminar",
-  aviso: "fixture with missing dimensions",
-}, products);
-assert.equal(zeroDimensionEstimate.design.installation_length_m, null);
-assert.deepEqual(zeroDimensionEstimate.design.dimensions_m, { width: null, height: null, length: null });
-
-const quote = cotizarProductos(products, estimate);
-assert.deepEqual(quote.lineas.map((line) => line.cantidadNecesaria), [13, 29, 1]);
-assert.deepEqual(quote.lineas.map((line) => line.sobrante), [37, 21, 0]);
-assert.equal(quote.mermaPorcentaje, 8);
-
-const scene = {
-  schema_version: "1.0",
-  generation_mode: "text_to_image",
-  canvas: { aspect_ratio: "3:2", content_rect: { x: 0, y: 0, width: 1, height: 1 } },
-  venue: { preserve: [], protected_regions: [], editable_regions: [] },
-  material_estimate: estimate,
-  elements: [{
-    element_id: "EST_01_ARCO",
-    name: "Arco orgánico rosado y dorado rosa",
-    category: "balloon_structure",
-    source_type: "catalog_backed",
-    catalog_product_id: "fashion-pink-r12",
-    required: true,
-    quantity: { mode: "exact", min: 43, max: 43 },
-    target_bbox: { x: 0.1, y: 0.1, width: 0.8, height: 0.7 },
-    depth_layer: 10,
-    resolved_colors: ["fashion rosado", "metal dorado rosa"],
-    identity_constraints: ["Use the approved installed material estimate."],
-    relationships: [],
-  }],
-  positive_prompt: { required_elements: ["one organic arch"], composition: ["one focal installation"], venue_preservation: [], photorealistic_integration: [] },
-  negative_prompt: { forbidden_elements: [], forbidden_venue_changes: [], forbidden_compositing_artifacts: [] },
-  metadata: { created_by: "server_default" },
-} as unknown as SceneSpec;
-const prompt = buildImagePrompt({ sceneSpec: scene });
-assert.match(prompt, /approximately 42 installed balloons/i);
-assert.match(prompt, /Purchase capacity \(101\) includes waste/i);
-assert.match(prompt, /Neither surplus nor unused package units may appear/i);
-assert.doesNotMatch(prompt, /use those 50 units/i);
-
-const qa = evaluateSceneQa(scene, { materialScaleConsistent: false, materialScaleReason: "render is clearly several times denser" }, estimate);
-assert.equal(qa.pass, false);
-assert.ok(qa.retry_reasons.some((reason) => /material scale mismatch/i.test(reason)));
-
-async function comprobarPuertaFisica(): Promise<void> {
+async function comprobarPuertaFisica(): Promise<PlanResuelto> {
   // --- Puerta física por estructura (ADR 0022) -------------------------------
   // Antes `estimateFromPlan` dividía TODOS los globos instalados (la pared, cuyo
   // eje es 0, incluida) entre el eje sumado de las piezas lineales: "pared +
@@ -315,7 +103,6 @@ async function comprobarPuertaFisica(): Promise<void> {
   assert.ok(pared.total_unidades > guirnalda.total_unidades * 4, `${pared.total_unidades} vs ${guirnalda.total_unidades}`);
   assert.deepEqual(physicalWarningsForPlan(planFisico), [], "pared + guirnalda es un plan válido y confirmable");
   const estimacionFisica = estimateFromPlan(planFisico);
-  assert.deepEqual(blockingPhysicalWarnings(estimacionFisica), [], "la estimación ya no inyecta la puerta física del plan");
   // Una sola regla de densidad: la de la estructura con más globos de diseño
   // (antes TypeScript decía "lujosa si alguna lo es" y Python la primera).
   assert.equal(estimacionFisica.design.density, "media");
@@ -341,6 +128,67 @@ async function comprobarPuertaFisica(): Promise<void> {
     }),
   };
   assert.match(physicalWarningsForPlan(guirnaldaExcesiva)[0] ?? "", /EST_01_GUIRNALDA: estimated material quantity appears unusually high/);
+  return planFisico;
+}
+
+async function comprobarEstimacionDelPlan(planFisico: PlanResuelto): Promise<void> {
+  // --- La estimación resuelta por el backend alimenta prompt y QA -----------
+  // Desde el paso 1 del ADR 0023 toda imagen sale de una propuesta aprobada, así
+  // que estas comprobaciones parten de `estimateFromPlan` en vez de una
+  // estimación armada en TypeScript a partir de piezas sueltas.
+  const estimate = estimateFromPlan(planFisico);
+  assert.equal(estimate.balloons.reduce((sum, item) => sum + item.design_quantity, 0), 403);
+  // La demanda de las dos estructuras se suma por producto, se busque por
+  // producto o por variante.
+  assert.equal(designQuantityForProduct(estimate, "P-GLOBOS"), 403);
+  assert.equal(designQuantityForProduct(estimate, "V-BLANCO-12"), 403);
+  assert.equal(purchaseForProduct(estimate, "P-GLOBOS")?.required_quantity, 436);
+  assert.equal(purchaseForProduct(estimate, "P-GLOBOS")?.purchase_quantity, 450);
+  assert.equal(purchaseForProduct(estimate, "P-GLOBOS")?.leftover_inventory, 14);
+  assert.equal(purchaseForProduct(estimate, "P-GLOBOS")?.purchase_cost, 90_000);
+  assert.equal(estimate.totals.required_quantity, 436);
+  assert.equal(estimate.totals.purchase_quantity, 450);
+  assert.equal(estimate.totals.target_waste_reserve, 33);
+  assert.equal(estimate.totals.covered_waste_reserve, 33);
+  assert.equal(estimate.totals.uncovered_waste_reserve, 0);
+  // Los 9 paquetes (450 unidades) ya cubren los 436 con merma, así que la merma
+  // no añadió ningún paquete y no hay ahorro que atribuirle.
+  assert.equal(estimate.totals.waste_only_savings_cop, 0);
+  assert.equal(validateMaterialEstimate(estimate).ok, true);
+
+  const scene = {
+    schema_version: "1.0",
+    generation_mode: "text_to_image",
+    canvas: { aspect_ratio: "3:2", content_rect: { x: 0, y: 0, width: 1, height: 1 } },
+    venue: { preserve: [], protected_regions: [], editable_regions: [] },
+    material_estimate: estimate,
+    elements: [{
+      element_id: "EST_02_PARED",
+      name: "Pared de globos blanca",
+      category: "balloon_structure",
+      source_type: "catalog_backed",
+      catalog_product_id: "P-GLOBOS",
+      required: true,
+      quantity: { mode: "exact", min: 1, max: 1 },
+      target_bbox: { x: 0.1, y: 0.1, width: 0.8, height: 0.7 },
+      depth_layer: 10,
+      resolved_colors: ["blanco"],
+      identity_constraints: ["Use the approved installed material estimate."],
+      relationships: [],
+    }],
+    positive_prompt: { required_elements: ["one balloon wall"], composition: ["one focal installation"], venue_preservation: [], photorealistic_integration: [] },
+    negative_prompt: { forbidden_elements: [], forbidden_venue_changes: [], forbidden_compositing_artifacts: [] },
+    metadata: { created_by: "server_default" },
+  } as unknown as SceneSpec;
+  const prompt = buildImagePrompt({ sceneSpec: scene });
+  assert.match(prompt, /approximately 403 installed balloons/i);
+  assert.match(prompt, /Purchase capacity \(450\) includes waste/i);
+  assert.match(prompt, /Neither surplus nor unused package units may appear/);
+  assert.doesNotMatch(prompt, /use those 50 units/i);
+
+  const qa = evaluateSceneQa(scene, { materialScaleConsistent: false, materialScaleReason: "render is clearly several times denser" }, estimate);
+  assert.equal(qa.pass, false);
+  assert.ok(qa.retry_reasons.some((reason) => /material scale mismatch/i.test(reason)));
 }
 
 async function comprobarTamanoObligatorioGrande(): Promise<void> {
@@ -404,8 +252,8 @@ async function comprobarTamanoObligatorioGrande(): Promise<void> {
   assert.deepEqual(physicalWarningsForPlan(noNumerico), []);
 }
 
-comprobarPuertaFisica().then(comprobarTamanoObligatorioGrande).then(() => {
-  console.log("[PASS] material consistency regression — installed 42 + 1 special, purchased capacity 101, visual prompt excludes package surplus, puerta física por estructura y con tamaño obligatorio grande");
+comprobarPuertaFisica().then(comprobarEstimacionDelPlan).then(comprobarTamanoObligatorioGrande).then(() => {
+  console.log("[PASS] material consistency regression — la estimación del plan aprobado alimenta prompt y QA, puerta física por estructura y con tamaño obligatorio grande");
 }).catch((error: unknown) => {
   console.error("[FAIL] puerta física por estructura", error instanceof Error ? error.message : error);
   process.exitCode = 1;

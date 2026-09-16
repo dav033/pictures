@@ -1,6 +1,6 @@
 # ADR-0023. Un solo dueño de las reglas de conteo y estimación
 
-Estado: aceptada (2026-09-16). Pendiente de implementar; este registro fija el destino y el orden.
+Estado: aceptada (2026-09-16). Paso 1 implementado; pasos 2 a 6 pendientes. Este registro fija el destino y el orden.
 
 Sustituye en la práctica al mecanismo temporal que describían los ADR 0005 y 0006 (borrados del árbol en `c7facf3`, recuperables con `git show c7facf3^:docs/architecture/decisions/<fichero>`).
 
@@ -27,16 +27,17 @@ El duplicado no es homogéneo. Son tres clases con causas distintas:
 Orden, con su razón:
 
 1. **Se retira la rama "sin plan" de `/api/generate`, y con ella la generación manual sin propuesta.** Decisión del usuario el 2026-09-16, conociendo que desaparece el botón "Generar visualización" con piezas elegidas a mano: toda generación pasa por una propuesta aprobada. Va primero porque es borrado puro, no necesita portar nada, y quita de un golpe `estimateFromMeasuredMaterials`, `blockingPhysicalWarnings` y `cotizarProductos`.
-2. **`validateMaterialEstimate` deja de recalcular fórmulas de negocio.** Validar datos externos en el límite es obligatorio y se queda: esquema, no-negativos, y capacidad ≥ demanda por línea. Re-derivar `waste_only_savings_cop`, `additional_waste_packages`, `natural_package_surplus` y los demás totales para compararlos **es el segundo dueño**, no una validación; es exactamente lo que falló el 2026-09-16. Quitada la duplicación, el recálculo sobra.
-3. **La geometría pasa a Python.** Se expone como operación de `ai-api` y la herramienta `calcular_medidas` la consume. Coherente con la dirección de la migración; el precio es un salto HTTP más en el turno de chat, sobre un servicio que ese mismo turno ya usa.
-4. **Se portan a Python las dos reglas que hoy solo existen en TypeScript:** `physicalWarningsForPlan` (la puerta física por estructura lineal, que hoy se aplica al resultado de los dos backends) y el pipeline de franjas de presupuesto (`resolverFranja`, deliberadamente desactivado cuando Python está seleccionado, así que hoy esa función no existe con Python activo).
-5. **Los vectores dorados congelan su bloque `expected`.** Hoy lo genera TypeScript (`scripts/lib/vectores-golden.ts:239-245`) y el pytest de Python se niega a cargar sin él (`services/ai-api/tests/test_plan_parity.py:128`). Su valor es haber salido de una implementación independiente, no seguir atado a ella: se fija como oráculo inmutable y se retira el generador. A partir de ahí, cambiar un `expected` es un acto deliberado y revisable, no el efecto secundario de tocar TypeScript.
-6. **Se retira `PYTHON_BACKEND_KILL_SWITCH` y se borra el resolutor TypeScript**, solo cuando 1-5 estén hechos. Es el último paso porque hasta entonces es la única reversión.
+2. **La geometría pasa a Python.** Se expone como operación de `ai-api` y la herramienta `calcular_medidas` la consume. Coherente con la dirección de la migración; el precio es un salto HTTP más en el turno de chat, sobre un servicio que ese mismo turno ya usa.
+3. **Se portan a Python las dos reglas que hoy solo existen en TypeScript:** `physicalWarningsForPlan` (la puerta física por estructura lineal, que hoy se aplica al resultado de los dos backends) y el pipeline de franjas de presupuesto (`resolverFranja`, deliberadamente desactivado cuando Python está seleccionado, así que hoy esa función no existe con Python activo).
+4. **Los vectores dorados congelan su bloque `expected`.** Hoy lo genera TypeScript (`scripts/lib/vectores-golden.ts:239-245`) y el pytest de Python se niega a cargar sin él (`services/ai-api/tests/test_plan_parity.py:128`). Su valor es haber salido de una implementación independiente, no seguir atado a ella: se fija como oráculo inmutable y se retira el generador. A partir de ahí, cambiar un `expected` es un acto deliberado y revisable, no el efecto secundario de tocar TypeScript.
+5. **Se retira `PYTHON_BACKEND_KILL_SWITCH` y se borra el resolutor TypeScript**, solo cuando 1-4 estén hechos. Es el penúltimo paso porque hasta entonces es la única reversión.
+6. **`validateMaterialEstimate` deja de recalcular fórmulas de negocio**, en el mismo cambio que el paso 5. Validar datos externos en el límite es obligatorio y se queda: esquema, no-negativos y capacidad ≥ demanda por línea. Re-derivar `waste_only_savings_cop`, `additional_waste_packages`, `natural_package_surplus` y los demás totales para compararlos es un segundo dueño de la regla, no una validación, y es lo que falló el 2026-09-16.
+   Va al final, no al principio: mientras los dos backends existan, ese recálculo es lo **único** que detecta que discrepan, porque los vectores dorados comparan código contra código. Se retira cuando desaparece `totals()` del lado TypeScript, es decir cuando ya no hay con quién discrepar. Retirarlo antes dejaría la migración entera sin esa red justo en el escenario que motivó este registro.
 
 ## Consecuencias
 
-- **Se pierde la reversión inmediata a TypeScript.** Es el precio explícito de tener un solo dueño, y el ADR 0005 ya lo anticipaba: *"el selector queda como mecanismo temporal de corte, no como solución permanente"*. A partir del paso 6 la recuperación es desplegar la revisión anterior del servicio, no cambiar una variable de entorno.
-- **Los planes ya aprobados con procedencia `"next"` y los tokens `v:1` dejan de poder re-resolverse.** Caducan a las 24 h, así que el paso 6 necesita una ventana de esa duración sin emitir tokens `"next"`, no una migración de datos.
+- **Se pierde la reversión inmediata a TypeScript.** Es el precio explícito de tener un solo dueño, y el ADR 0005 ya lo anticipaba: *"el selector queda como mecanismo temporal de corte, no como solución permanente"*. A partir del paso 5 la recuperación es desplegar la revisión anterior del servicio, no cambiar una variable de entorno.
+- **Los planes ya aprobados con procedencia `"next"` y los tokens `v:1` dejan de poder re-resolverse.** Caducan a las 24 h, así que el paso 5 necesita una ventana de esa duración sin emitir tokens `"next"`, no una migración de datos.
 - **`plan_hash` deja de ser ambiguo.** Hoy los dos backends lo calculan distinto y por eso está fuera de la paridad; con un solo resolutor, el hash tiene una sola definición.
 - **Los ~10 scripts que fuerzan `PYTHON_BACKEND_ENABLED=false` para ejercitar el camino TypeScript** dejan de tener camino que ejercitar y se retiran con él.
 - Mientras dure la migración, cada paso deja el árbol desplegable por sí solo. Ningún paso depende de que el siguiente esté hecho.
@@ -44,7 +45,7 @@ Orden, con su razón:
 ## Alternativas descartadas
 
 - **Handshake de versión entre Next y Python.** Convertiría el fallo silencioso en uno explícito, que es mejor que hoy, pero deja las dos implementaciones en pie y con ellas la obligación de escribir cada corrección dos veces. Trata el síntoma.
-- **Más vectores de paridad.** Los vectores comparan código contra código; el incidente del 2026-09-16 fue de runtime y ninguna cantidad de vectores lo habría detectado. Aun así, la comprobación que faltaba (pasar la estimación de Python por `validateMaterialEstimate`) se añadió el mismo día a `plan:test-paridad`, y se retirará con el paso 2 cuando esa puerta deje de recalcular.
+- **Más vectores de paridad.** Los vectores comparan código contra código; el incidente del 2026-09-16 fue de runtime y ninguna cantidad de vectores lo habría detectado. Aun así, la comprobación que faltaba (pasar la estimación de Python por `validateMaterialEstimate`) se añadió el mismo día a `plan:test-paridad`, y se retirará con el paso 6, cuando esa puerta deje de recalcular.
 - **Dejar TypeScript como reversión permanente.** Es el estado actual, y es el que produjo el incidente.
 - **Mover las reglas a TypeScript en vez de a Python.** Contradice la dirección de la migración y dejaría a Next como dueño de la autoridad comercial, que es justo lo que el ADR 0005 retiraba.
 

@@ -198,15 +198,13 @@ async function main(): Promise<void> {
     await rechaza(resolverProductosParaGeneracion({ ragVariantIds: [rag.variant_id, 7] }, pool), "ragVariantIds must be an array");
     console.log("[PASS] payload runtime: los campos de origen se validan en tiempo de ejecución.");
 
-    // Boundary evidence without a paid provider: no API key is exposed to the
-    // route, so a valid PG id must get past catalog validation and stop at the
-    // expected missing-provider configuration error.
+    // ADR-0023 paso 1: sin propuesta aprobada no hay imagen. La petición se
+    // rechaza en cerrado antes de tocar catálogo o proveedor.
     globalThis.__ragPool = pool;
-    const validPgBoundary = await postGenerate({ ragVariantIds: [rag.variant_id] });
-    assert.equal(validPgBoundary.status, 503);
-    assert.ok(validPgBoundary.error && !/could not be validated/i.test(validPgBoundary.error));
-    assert.match(validPgBoundary.error ?? "", /llave/i);
-    console.log("[PASS] HTTP /api/generate: PG válido supera validación de catálogo; se detiene sin proveedor configurado (sin llamada pagada).");
+    const sinPropuesta = await postGenerate({ ragVariantIds: [rag.variant_id] });
+    assert.equal(sinPropuesta.status, 400);
+    assert.match(sinPropuesta.error ?? "", /APROBACION_REQUERIDA/);
+    console.log("[PASS] HTTP /api/generate: una petición sin propuesta aprobada se rechaza sin llamar al proveedor.");
 
     const { rows: planRows } = await pool.query<{ product_id: string; variant_id: string }>(
       `SELECT p.product_id, v.variant_id
@@ -254,7 +252,18 @@ async function main(): Promise<void> {
     assert.notEqual(approvedPlanBoundary.error && /Plan hash does not match/i.test(approvedPlanBoundary.error), true);
     console.log("[PASS] HTTP /api/generate: un plan aprobado conserva el hash al revalidarse con la whitelist del catálogo.");
 
-    const invalidBoundary = await postGenerate({ productIds: "no-es-array" });
+    // Evidencia de frontera sin proveedor pagado: con la propuesta aprobada, la
+    // petición supera la validación de catálogo y se detiene en la ausencia de
+    // llave, no antes.
+    assert.ok(approvedPlanBoundary.error && !/could not be validated/i.test(approvedPlanBoundary.error));
+    assert.match(approvedPlanBoundary.error ?? "", /llave/i);
+    console.log("[PASS] HTTP /api/generate: con propuesta aprobada se pasa la validación de catálogo y se para sin proveedor configurado.");
+
+    const invalidBoundary = await postGenerate({
+      productIds: "no-es-array",
+      planHash: planAprobado.plan_hash,
+      plan: { ...planAprobado, request_id: requestId, approval_token: token },
+    });
     assert.equal(invalidBoundary.status, 400);
     assert.match(invalidBoundary.error ?? "", /productIds must be an array/i);
     console.log("[PASS] HTTP /api/generate: payload malformado devuelve 400 sin llegar al proveedor.");

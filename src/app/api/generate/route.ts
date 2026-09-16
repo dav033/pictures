@@ -12,7 +12,7 @@ import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
 import { findLoraPromptLanguageLeaks, findLoraPromptProductLeaks, preflightLoraPrompt } from "@/lib/ia/lora-prompt-preflight";
 import { bloqueMezclaTamanos, bloqueMezclaPorEstructura, descripcionFisicaTamano } from "@/lib/ia/tamano-fisico";
 import { descripcionProductoParaImagen, nombreProductoParaImagen } from "@/lib/ia/producto-para-imagen";
-import { cotizarProductos, type Cotizacion } from "@/lib/cotizacion/motor";
+import { type Cotizacion } from "@/lib/cotizacion/motor";
 import { featureEnabled, IMAGE_DEBUG, IMAGE_QA_NON_BLOCKING } from "@/lib/ia/feature-flags";
 import { resolveAspectTransform } from "@/lib/ia/aspect-transform";
 import { evaluateSceneQa, buildCorrectiveRetryPrompt, type ImageQaReport } from "@/lib/ia/image-qa";
@@ -61,12 +61,9 @@ import { verificarCoherenciaPrompt, verificarColoresCaptionLora, type EscenaPara
 import { abrirContextoPlan, verificarTokenAprobacion } from "@/lib/plan/aprobacion";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import {
-  blockingPhysicalWarnings,
   designQuantityForProduct,
-  estimateFromMeasuredMaterials,
   physicalWarningsForPlan,
   formatMaterialEstimateLog,
-  purchaseForProduct,
   validateMaterialEstimate,
   type DesignMaterialEstimate,
 } from "@/lib/materiales/estimacion";
@@ -456,66 +453,6 @@ function addCreativeCatalogRelationships(blueprint: ReferenceBlueprintV2, produc
   });
 }
 
-function ensureQuotedProducts(blueprint: ReferenceBlueprintV2, products: Producto[], materialEstimate?: DesignMaterialEstimate): ReferenceBlueprintV2 {
-  // Un producto puede estar representado solo como material secundario de un
-  // bill_of_materials (ej. los globos verdes de un árbol cuyo material
-  // principal son los rojos) — si solo se mira `catalog_product_id`, ese
-  // producto parece "no representado" y termina duplicado como un elemento
-  // suelto más en la escena.
-  const represented = new Set(
-    blueprint.elements.flatMap((element) => [
-      element.model_decision?.catalog_product_id,
-      ...(element.model_decision?.bill_of_materials?.map((line) => line.catalog_product_id) ?? []),
-    ]).filter((id): id is string => Boolean(id)),
-  );
-  const missing = products.filter((product) => !represented.has(product.id));
-  if (!missing.length) return blueprint;
-
-  const sourceImages = blueprint.source_images.some((source) => source.image_id === "CATALOG_SOURCE")
-    ? blueprint.source_images
-    : [...blueprint.source_images, { image_id: "CATALOG_SOURCE", approved_roles: ["catalog_product_reference"] as const }];
-  return ReferenceBlueprintV2Schema.parse({
-    ...blueprint,
-    source_images: sourceImages,
-    elements: [...blueprint.elements, ...missing.map((product, index) => catalogElement(product, index, hermanosDeFamilia(product, missing), materialEstimate))],
-    palette: {
-      observed: [...new Set([...blueprint.palette.observed, ...products.flatMap((product) => product.colores)])].slice(0, 12),
-      priority: [...new Set([...blueprint.palette.priority, ...products.flatMap((product) => product.colores)])].slice(0, 8),
-    },
-  });
-}
-
-function catalogBlueprint(productos: Producto[], materialEstimate?: DesignMaterialEstimate): ReferenceBlueprintV2 {
-  const blueprint = ReferenceBlueprintV2Schema.parse({
-    schema_version: "2.0",
-    source_images: [{ image_id: "CATALOG_SOURCE", approved_roles: ["catalog_product_reference"] }],
-    elements: productos.map((product, index) => catalogElement(product, index, hermanosDeFamilia(product, productos), materialEstimate)),
-    /*
-      element_id: `CATALOG_E${String(index + 1).padStart(2, "0")}`,
-      source_image_id: "CATALOG_SOURCE",
-      name: product.nombre,
-      category: categoryForProduct(product),
-      scene_role: "foreground",
-      detection_confidence: 1,
-      visible_evidence: "Explicitly selected catalog product.",
-      reference_bbox: { x: 0.1 + (index % 3) * 0.28, y: 0.18 + Math.floor(index / 3) * 0.25, width: 0.24, height: 0.24 },
-      depth_layer: index + 1,
-      include_policy: "include",
-      approved: true,
-      source_type: "catalog_backed",
-      quantity: { mode: "approximate", min: 1, max: 1 },
-      appearance: { observed_colors: product.colores.slice(0, 8), resolved_colors: product.colores.slice(0, 8), color_policy: "match_reference", material: product.descripcion.slice(0, 160), shape: product.nombre.slice(0, 160) },
-      relationships: [],
-      uncertainties: [],
-      model_decision: { action: "include", catalog_product_id: product.id, match_type: "exact", reason: "Producto elegido automáticamente por el asistente.", adaptation: "Conservar identidad del producto y adaptarlo al espacio." },
-    })), */
-    composition: { focal_point: "cohesive event installation with a strong central decorative focal point", density: productos.length >= 3 ? "dense" : "moderate", symmetry: "asymmetric", negative_space: ["clear usable floor in front of the decoration", "unoccupied venue circulation areas"] },
-    palette: { observed: [...new Set(productos.flatMap((product) => product.colores))].slice(0, 12), priority: [...new Set(productos.flatMap((product) => product.colores))].slice(0, 8) },
-    unresolved_decisions: [],
-  });
-  return addCreativeCatalogRelationships(blueprint, productos);
-}
-
 function applyAutomaticDecisions(blueprint: ReferenceBlueprintV2, validProductIds: Set<string>): ReferenceBlueprintV2 {
   return ReferenceBlueprintV2Schema.parse({
     ...blueprint,
@@ -669,9 +606,15 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       return Response.json({ error: seedParse.message, ui_error: uiError }, { status: 400 });
     }
     const imageQaRequested = body.imageQaRequested === true || featureEnabled("IMAGE_QA_ENABLED");
-    const planDeclarativo = body.plan ? PlanDecoracionSchema.parse(body.plan.plan) : undefined;
-    const contextoPlan = planDeclarativo ? abrirContextoPlan(body.plan?.approval_token) : null;
-    if (planDeclarativo && !contextoPlan) {
+    // Toda imagen sale de una propuesta aprobada (ADR-0023, paso 1). La rama
+    // heredada que estimaba y cotizaba en TypeScript a partir de piezas
+    // elegidas a mano se retiró: era el único camino de la app que no pasaba
+    // por el resolutor, y mantenía viva una segunda implementación de las
+    // reglas de conteo.
+    if (!body.plan) throw new Error("APROBACION_REQUERIDA: la imagen se genera desde una propuesta aprobada.");
+    const planDeclarativo = PlanDecoracionSchema.parse(body.plan.plan);
+    const contextoPlan = abrirContextoPlan(body.plan.approval_token);
+    if (!contextoPlan) {
       throw new Error("APROBACION_REQUERIDA: el plan debe aprobarse desde la tarjeta antes de generar.");
     }
     if (contextoPlan?.backend === "python") {
@@ -766,14 +709,56 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       const outsidePool = [...new Set(requestedIds)].filter((id) => !allowedProductIds.has(id) && !allowedVariantIds.has(id));
       if (outsidePool.length) throw new Error(`LORA_DATASET_ALLOWLIST_REJECTED: ${outsidePool.join(", ")}`);
     }
-    let planResuelto: PlanResuelto | undefined;
-    let materialEstimatePlan: DesignMaterialEstimate | undefined;
-    let cotizacionPlan: Cotizacion | undefined;
-    let approvalContext: { requestId: string; expiresAt: number } | null = null;
+    // El plan se re-resuelve con el mismo backend que lo produjo (ADR 0006):
+    // resolverlo con el otro podría dar otro hash y estaríamos aprobando un
+    // plan distinto del que vio el cliente.
+    let resolucion: ResolucionPlan;
+    if (contextoPlan.backend === "python") {
+      if (seleccionarBackendPython().backend !== "python") {
+        throw new PlanBackendNoDisponibleError("PYTHON_NO_SELECCIONADO", "El backend que generó este plan ya no está disponible; vuelve a pedir la propuesta.");
+      }
+      if (!contextoPlan.catalogSnapshotId) {
+        throw new PlanBackendNoDisponibleError("SIN_SNAPSHOT_CATALOGO", "La propuesta aprobada no tiene un snapshot de catálogo disponible; vuelve a pedir la propuesta.");
+      }
+      resolucion = await resolverPlanConBackend({
+        backend: "python",
+        plan: planDeclarativo,
+        allowlist: contextoPlan.allowlist,
+        catalogSnapshotId: contextoPlan.catalogSnapshotId,
+        loraAllowlist: loraCatalogAllowlist,
+        requestId: generationRequestId,
+        correlationId: generationCorrelationId,
+        signal: request.signal,
+      });
+    } else {
+      const whitelist = new Map<string, Set<string>>();
+      for (const producto of productosBase) {
+        if (!producto.familiaId) continue;
+        const variantes = whitelist.get(producto.familiaId) ?? new Set<string>();
+        variantes.add(producto.id);
+        whitelist.set(producto.familiaId, variantes);
+      }
+      resolucion = await resolverPlanConBackend({
+        backend: "next",
+        pool: getRagPool(),
+        plan: planDeclarativo,
+        whitelist,
+        loraAllowlist: loraCatalogAllowlist,
+      });
+    }
+    const planResuelto = resolucion.resuelto;
+    const cotizacionPlan = resolucion.cotizacion;
+    if (body.planHash && body.planHash !== planResuelto.plan_hash) throw new Error("Plan hash does not match the validated server plan.");
+    if (body.plan.plan_hash !== planResuelto.plan_hash) throw new Error("Plan hash does not match the validated server plan.");
+    if (planResuelto.sin_cobertura.length > 0) throw new Error("El plan tiene materiales sin cobertura en la selección validada; no se generó una imagen incoherente.");
+    if (planResuelto.comercial.estado === "PRESUPUESTO_EXCEDIDO") {
+      throw new Error(`PRESUPUESTO_EXCEDIDO: ${planResuelto.totales.total_cop} COP supera el techo de ${planResuelto.comercial.techo_cop} COP por ${planResuelto.comercial.delta_cop} COP.`);
+    }
+    const approvalContext = verificarTokenAprobacion(body.plan.approval_token, planResuelto.plan_hash);
+    if (!approvalContext) throw new Error("APROBACION_REQUERIDA: el plan debe aprobarse desde la tarjeta antes de generar.");
     const auditarImagen = async (status: string, qa: ImageQaReport, scene: Parameters<typeof evaluateSceneQa>[0]) => {
-      if (!planResuelto) return;
       await registrarPlanAudit(getRagPool(), {
-         requestId: approvalContext?.requestId ?? generationRequestId,
+         requestId: approvalContext.requestId,
         planHash: planResuelto.plan_hash,
         restricciones: planResuelto.plan.restricciones,
         selectedProductIds: planResuelto.compras.map((compra) => compra.variant_id),
@@ -790,155 +775,46 @@ async function generar(request: Request, generationRequestId: string): Promise<R
          flagSnapshot: { planCostOptimizerV2: featureEnabled("PLAN_COST_OPTIMIZER_V2"), planBudgetGateV2: featureEnabled("PLAN_BUDGET_GATE_V2"), imageQaEnabled: imageQaRequested },
       });
     };
-    if (planDeclarativo) {
-      if (!contextoPlan) throw new Error("APROBACION_REQUERIDA: el plan debe aprobarse desde la tarjeta antes de generar.");
-      // El plan se re-resuelve con el mismo backend que lo produjo (ADR 0006):
-      // resolverlo con el otro podría dar otro hash y estaríamos aprobando un
-      // plan distinto del que vio el cliente.
-      let resolucion: ResolucionPlan;
-      if (contextoPlan.backend === "python") {
-        if (seleccionarBackendPython().backend !== "python") {
-          throw new PlanBackendNoDisponibleError("PYTHON_NO_SELECCIONADO", "El backend que generó este plan ya no está disponible; vuelve a pedir la propuesta.");
-        }
-        if (!contextoPlan.catalogSnapshotId) {
-          throw new PlanBackendNoDisponibleError("SIN_SNAPSHOT_CATALOGO", "La propuesta aprobada no tiene un snapshot de catálogo disponible; vuelve a pedir la propuesta.");
-        }
-        resolucion = await resolverPlanConBackend({
-          backend: "python",
-          plan: planDeclarativo,
-          allowlist: contextoPlan.allowlist,
-          catalogSnapshotId: contextoPlan.catalogSnapshotId,
-          loraAllowlist: loraCatalogAllowlist,
-          requestId: generationRequestId,
-          correlationId: generationCorrelationId,
-          signal: request.signal,
-        });
-      } else {
-        const whitelist = new Map<string, Set<string>>();
-        for (const producto of productosBase) {
-          if (!producto.familiaId) continue;
-          const variantes = whitelist.get(producto.familiaId) ?? new Set<string>();
-          variantes.add(producto.id);
-          whitelist.set(producto.familiaId, variantes);
-        }
-        resolucion = await resolverPlanConBackend({
-          backend: "next",
-          pool: getRagPool(),
-          plan: planDeclarativo,
-          whitelist,
-          loraAllowlist: loraCatalogAllowlist,
-        });
-      }
-      planResuelto = resolucion.resuelto;
-      materialEstimatePlan = resolucion.materialEstimate;
-      cotizacionPlan = resolucion.cotizacion;
-      if (body.planHash && body.planHash !== planResuelto.plan_hash) throw new Error("Plan hash does not match the validated server plan.");
-      if (body.plan?.plan_hash !== planResuelto.plan_hash) throw new Error("Plan hash does not match the validated server plan.");
-      if (planResuelto.sin_cobertura.length > 0) throw new Error("El plan tiene materiales sin cobertura en la selección validada; no se generó una imagen incoherente.");
-      if (planResuelto.comercial.estado === "PRESUPUESTO_EXCEDIDO") {
-        throw new Error(`PRESUPUESTO_EXCEDIDO: ${planResuelto.totales.total_cop} COP supera el techo de ${planResuelto.comercial.techo_cop} COP por ${planResuelto.comercial.delta_cop} COP.`);
-      }
-      approvalContext = verificarTokenAprobacion(body.plan?.approval_token, planResuelto.plan_hash);
-      if (!approvalContext) throw new Error("APROBACION_REQUERIDA: el plan debe aprobarse desde la tarjeta antes de generar.");
-      await registrarPlanAudit(getRagPool(), {
-        requestId: approvalContext.requestId,
-        planHash: planResuelto.plan_hash,
-        solicitudOriginal: body.solicitudUsuario,
-        restricciones: planResuelto.plan.restricciones,
-        selectedProductIds: planResuelto.compras.map((compra) => compra.variant_id),
-        costChosenCop: planResuelto.totales.total_cop,
-        ceilingCop: planResuelto.comercial.techo_cop,
-        deltaCop: planResuelto.comercial.delta_cop,
-         packages: { ahorro_paquetes_cop: planResuelto.totales.ahorro_paquetes_cop, lineas: planResuelto.compras.map((compra) => ({ variant_id: compra.variant_id, paquetes: compra.paquetes, subtotal: compra.subtotal })) },
-        status: "CLIENT_APPROVED",
-        flagSnapshot: { planCostOptimizerV2: featureEnabled("PLAN_COST_OPTIMIZER_V2"), planBudgetGateV2: featureEnabled("PLAN_BUDGET_GATE_V2"), imageQaEnabled: imageQaRequested },
-       });
-     }
-    let materialEstimateForLayout: DesignMaterialEstimate;
-    if (planResuelto) {
-      if (!materialEstimatePlan) throw new Error("La resolución del plan no devolvió una estimación de materiales.");
-      materialEstimateForLayout = materialEstimatePlan;
-    } else {
-      materialEstimateForLayout = estimateFromMeasuredMaterials(body.medidas, productos);
-    }
-    const preflight = validateMaterialEstimate(materialEstimateForLayout);
+    await registrarPlanAudit(getRagPool(), {
+      requestId: approvalContext.requestId,
+      planHash: planResuelto.plan_hash,
+      solicitudOriginal: body.solicitudUsuario,
+      restricciones: planResuelto.plan.restricciones,
+      selectedProductIds: planResuelto.compras.map((compra) => compra.variant_id),
+      costChosenCop: planResuelto.totales.total_cop,
+      ceilingCop: planResuelto.comercial.techo_cop,
+      deltaCop: planResuelto.comercial.delta_cop,
+       packages: { ahorro_paquetes_cop: planResuelto.totales.ahorro_paquetes_cop, lineas: planResuelto.compras.map((compra) => ({ variant_id: compra.variant_id, paquetes: compra.paquetes, subtotal: compra.subtotal })) },
+      status: "CLIENT_APPROVED",
+      flagSnapshot: { planCostOptimizerV2: featureEnabled("PLAN_COST_OPTIMIZER_V2"), planBudgetGateV2: featureEnabled("PLAN_BUDGET_GATE_V2"), imageQaEnabled: imageQaRequested },
+     });
+    const materialEstimate = resolucion.materialEstimate;
+    const preflight = validateMaterialEstimate(materialEstimate);
     if (!preflight.ok) throw new Error(`La estimación de materiales no es válida: ${preflight.errors.join("; ")}`);
-    // Con plan, la puerta física la decide `physicalWarningsForPlan` por
-    // estructura lineal; la ruta heredada sin plan sigue leyendo la estimación.
-    const physicalWarnings = planResuelto ? physicalWarningsForPlan(planResuelto) : blockingPhysicalWarnings(materialEstimateForLayout);
+    // La puerta física la decide `physicalWarningsForPlan` por estructura
+    // lineal, sobre el plan resuelto de cualquiera de los dos backends.
+    const physicalWarnings = physicalWarningsForPlan(planResuelto);
     if (physicalWarnings.length > 0) throw new Error(`La estimación de materiales no es compatible con la escala solicitada: ${physicalWarnings.join("; ")}`);
-    if (IMAGE_DEBUG) console.info(formatMaterialEstimateLog(materialEstimateForLayout));
+    if (IMAGE_DEBUG) console.info(formatMaterialEstimateLog(materialEstimate));
     const aspecto = body.aspecto ?? "3:2";
     const venue = body.fotoEspacio ? { ...body.fotoEspacio, id: "VENUE_01", descripcion: "Venue base photo. Preserve its camera, crop, architecture, perspective, and ambient lighting." } : undefined;
     const previous = body.previousGeneratedImage ? { ...body.previousGeneratedImage, id: "PREVIOUS_RESULT", descripcion: "Previous generated result. Use as current revision base." } : undefined;
     const references = (body.imagenesReferencia ?? []).map((image, index) => ({ ...image, id: `REF_${String(index + 1).padStart(2, "0")}`, descripcion: "Automatic model decision defines element inclusion and catalog adaptation." }));
-    // Frontera de autoridad (plan de integración de referencias, R1): con un
-    // plan declarativo aprobado, el plan SIEMPRE es la única fuente de
-    // elementos — un blueprint de referencia adjunto (body.blueprint) usa ids
-    // REF_*/CATALOG_* que no existen en las cajas del plan (EST_*) y hacía
-    // fallar buildApprovedSceneSpec para cualquier cliente que adjuntara una
-    // foto de inspiración junto con un plan aprobado.
-    const productosParaEscena = planResuelto
-      ? productos
-      : productos.filter((product) => designQuantityForProduct(materialEstimateForLayout, product.id) > 0);
-    const rawBlueprint = planResuelto
-      ? planBlueprint(planResuelto)
-      : body.blueprint
-        ? ReferenceBlueprintV2Schema.parse(body.blueprint)
-        : catalogBlueprint(productosParaEscena, materialEstimateForLayout);
+    // Frontera de autoridad (plan de integración de referencias, R1): el plan
+    // aprobado es la única fuente de elementos. Un blueprint de referencia
+    // adjunto (body.blueprint) usa ids REF_*/CATALOG_* que no existen en las
+    // cajas del plan (EST_*), así que no se lee aquí.
+    const rawBlueprint = planBlueprint(planResuelto);
     const decidedBlueprint = applyAutomaticDecisions(rawBlueprint, new Set(productos.map((product) => product.id)));
-    // Bajo un plan, `productos` puede incluir variantes fuera de las
-    // estructuras resueltas (ragVariantIds heredados del chat) — inyectarlas
-    // como elementos sueltos con ensureQuotedProducts rompería el diseño que
-    // el cliente ya aprobó; el plan es la única autoridad de qué se muestra.
-    const blueprint = planResuelto
-      ? addCreativeCatalogRelationships(decidedBlueprint, productos)
-      : addCreativeCatalogRelationships(ensureQuotedProducts(decidedBlueprint, productosParaEscena, materialEstimateForLayout), productosParaEscena);
-    // Bill of materials: un elemento puede necesitar varios productos reales
-    // en proporciones distintas (ej. árbol de globos = 60% rojo + 30% verde +
-    // 10% dorado). Se suma la cantidad de paquetes que cada producto necesita
-    // en TODOS los elementos donde participa, para que la cotización refleje
-    // cada material por separado en vez de asumir 1 paquete por producto.
-    const paquetesPorMaterial = new Map<string, number>();
-    for (const element of blueprint.elements) {
-      if (!element.approved || element.source_type !== "catalog_backed") continue;
-      const lineas = element.model_decision?.bill_of_materials?.length
-        ? element.model_decision.bill_of_materials
-        : element.model_decision?.catalog_product_id
-          ? [{ catalog_product_id: element.model_decision.catalog_product_id, role: "material principal", share: 1 }]
-          : [];
-      // A piece count from the reference analysis is not a material quantity.
-      const cantidadTotal = unidadesMaterialDeElemento(element) ?? 1;
-      for (const linea of lineas) {
-        const producto = productos.find((candidate) => candidate.id === linea.catalog_product_id);
-        if (!producto) continue;
-        const unidadesNecesarias = Math.max(1, Math.round(cantidadTotal * linea.share));
-        const compraEstimada = purchaseForProduct(materialEstimateForLayout, producto.id);
-        const paquetesNecesarios = compraEstimada?.package_count ?? Math.max(1, Math.ceil(unidadesNecesarias / Math.max(1, producto.unidadesPaquete ?? 1)));
-        paquetesPorMaterial.set(producto.id, (paquetesPorMaterial.get(producto.id) ?? 0) + paquetesNecesarios);
-      }
-    }
-    // El cliente puede haber fijado una cantidad explícita (ej. producto
-    // elegido a mano en el catálogo) — eso siempre gana sobre lo derivado
-    // automáticamente del plan de referencias.
-    const productosConMateriales = planResuelto
-      ? productos.map((producto) => {
-          const compra = planResuelto!.compras.find((item) => item.variant_id === producto.id);
-          return compra ? { ...producto, paquetes: compra.paquetes, unidadesPaquete: compra.unidades_paquete } : producto;
-        })
-      : productos.map((producto) => {
-      const explicita = body.productQuantities?.[producto.id];
-      const derivada = paquetesPorMaterial.get(producto.id);
-      return explicita || !derivada ? producto : { ...producto, paquetes: derivada };
-       });
-    const materialEstimate = planResuelto
-      ? materialEstimateForLayout
-      : estimateFromMeasuredMaterials(body.medidas, productosConMateriales);
-    const finalPreflight = validateMaterialEstimate(materialEstimate);
-    if (!finalPreflight.ok) throw new Error(`La estimación de materiales no es válida: ${finalPreflight.errors.join("; ")}`);
-    const finalPhysicalWarnings = planResuelto ? physicalWarningsForPlan(planResuelto) : blockingPhysicalWarnings(materialEstimate);
-    if (finalPhysicalWarnings.length > 0) throw new Error(`La estimación de materiales no es compatible con la escala solicitada: ${finalPhysicalWarnings.join("; ")}`);
-    if (IMAGE_DEBUG) console.info(formatMaterialEstimateLog(materialEstimate));
+    // `productos` puede incluir variantes fuera de las estructuras resueltas
+    // (ragVariantIds heredados del chat) — inyectarlas como elementos sueltos
+    // rompería el diseño que el cliente ya aprobó; el plan es la única
+    // autoridad de qué se muestra.
+    const blueprint = addCreativeCatalogRelationships(decidedBlueprint, productos);
+    const productosConMateriales = productos.map((producto) => {
+      const compra = planResuelto.compras.find((item) => item.variant_id === producto.id);
+      return compra ? { ...producto, paquetes: compra.paquetes, unidadesPaquete: compra.unidades_paquete } : producto;
+    });
     const catalogProducts = Object.fromEntries(
       blueprint.elements
         .filter((element) => element.source_type === "catalog_backed")
@@ -1106,13 +982,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // The quote is finalized before the paid provider call. The image receives
     // the same estimate snapshot, but never gets package capacity as visual
     // quantity.
-    let cotizacion: Cotizacion;
-    if (planResuelto) {
-      if (!cotizacionPlan) throw new Error("La resolución del plan no devolvió una cotización.");
-      cotizacion = cotizacionPlan;
-    } else {
-      cotizacion = cotizarProductos(productosConMateriales, materialEstimate);
-    }
+    const cotizacion: Cotizacion = cotizacionPlan;
     // La identidad del producto se resuelve desde el vocabulario allowlisted
     // de v007. El compilador solo recibe etiquetas ya resueltas; nunca infiere
     // una etiqueta canónica desde color, SKU o nombre libre.
