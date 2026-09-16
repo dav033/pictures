@@ -142,7 +142,26 @@ async function main(): Promise<void> {
   assert.ok(promptReintento.includes("CORRECTIVE RETRY — HIGHEST PRIORITY"), promptReintento.slice(-800));
   assert.ok(promptReintento.indexOf("CORRECTIVE RETRY") < promptReintento.indexOf(FINAL_OUTPUT_REMINDER));
   assert.equal(buildCorrectiveRetryPrompt(passed, scene), "", "una imagen conforme no lleva instrucción correctiva");
-  console.log("[PASS] corrective retry: nombres legibles, sin ids y antes del recordatorio final");
+
+  //    La nota la escribe el observador, cuya propia instrucción le enumera los
+  //    element_id, así que citarlos en ella es el caso normal: también hay que
+  //    traducirlos, y tachar los que no existan en la escena.
+  const conIdsEnLaNota = await buildGenerationQa({
+    sceneSpec: scene,
+    image: IMAGE,
+    hashes: HASHES,
+    plan: qaPlan,
+    force: true,
+    observe: async (sceneSpec) => ({
+      presentElementIds: sceneSpec.elements.map((element) => element.element_id),
+      appearanceFailures: ["EST_01_SEMIARCO"],
+      appearanceDetails: [{ element_id: "EST_01_SEMIARCO", aspect: "color_proportion", note: "EST_01_SEMIARCO shows CATALOG_01 gold on half of the piece, unlike EST_99_FANTASMA" }],
+    }),
+  });
+  const correccionConIds = buildCorrectiveRetryPrompt(conIdsEnLaNota, scene);
+  assert.doesNotMatch(correccionConIds, /EST_\d|EST_[A-Z]|CATALOG_|VENUE_|EDIT_/, correccionConIds);
+  assert.match(correccionConIds, /observed: “Semiarco derecho” in the .+ shows gold on half of the piece, unlike\./, correccionConIds);
+  console.log("[PASS] corrective retry: nombres legibles, sin ids (tampoco en la nota del observador) y antes del recordatorio final");
 
   // 5. Ubicación de las instancias repetidas (ubicaciones.ts). Solo se
   //    reflejaban las laterales repetidas exactamente dos veces; cualquier

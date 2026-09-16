@@ -446,10 +446,24 @@ function etiquetaLegible(element: SceneSpec["elements"][number]): string {
 }
 
 /**
+ * Ids internos con la forma que usan el plan, el catálogo y las regiones de
+ * edición. El observador visual los recibe en su propia instrucción
+ * ("EST_01_ARCO: ONE distinct installed structure"), así que citarlos en su nota
+ * es lo normal; sin esto la nota devolvía al prompt de imagen justo lo que el
+ * brief retira, y el propio contrato marca un id visible como `text_artifact`.
+ */
+const ID_INTERNO = /\b(?:EST|CATALOG|VENUE|EDIT)_[A-Za-z0-9_]*(?:#\d+)?/g;
+
+function sinIdsInternos(texto: string): string {
+  return texto.replace(ID_INTERNO, "").replace(/\s{2,}/g, " ").replace(/\s+([.,;:])/g, "$1").trim();
+}
+
+/**
  * Instrucción correctiva del reintento. Traduce cada id de instancia (incluido
  * `<id>#n`) a su nombre legible y su ubicación en palabras: el brief retira los
  * ids a propósito, así que "appearance failure EST_01_ARCO" no le decía nada al
- * modelo y además reintroducía un id como texto visible.
+ * modelo y además reintroducía un id como texto visible. La traducción se aplica
+ * también a la nota libre del observador, que cita los ids de su instrucción.
  */
 export function buildCorrectiveRetryPrompt(report: ImageQaReport, sceneSpec?: SceneSpec): string {
   if (report.pass === true) return "";
@@ -458,10 +472,12 @@ export function buildCorrectiveRetryPrompt(report: ImageQaReport, sceneSpec?: Sc
   const etiquetas = [...elementos]
     .sort((a, b) => b.element_id.length - a.element_id.length)
     .map((element) => [element.element_id, etiquetaLegible(element)] as const);
-  const legible = (texto: string) => etiquetas.reduce((acumulado, [id, etiqueta]) => acumulado.split(id).join(etiqueta), texto);
+  // Los ids conocidos se traducen a su etiqueta legible; los que el observador
+  // se haya inventado se tachan, porque ninguno puede llegar al modelo.
+  const legible = (texto: string) => sinIdsInternos(etiquetas.reduce((acumulado, [id, etiqueta]) => acumulado.split(id).join(etiqueta), texto));
   const detalles = report.appearance_details.map((detail) => {
     const element = elementos.find((candidate) => candidate.element_id === detail.element_id);
-    const nota = detail.note.replace(/\s+/g, " ").trim();
+    const nota = legible(detail.note.replace(/\s+/g, " ").trim());
     return `- ${element ? etiquetaLegible(element) : legible(detail.element_id)}: ${ASPECTO_CORRECTIVO[detail.aspect]}${nota ? ` — observed: ${nota}` : ""}.`;
   });
   return [
