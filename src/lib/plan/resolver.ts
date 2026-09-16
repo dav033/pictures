@@ -2,12 +2,12 @@ import "server-only";
 import type { Pool } from "pg";
 import { featureEnabled } from "@/lib/ia/feature-flags";
 import { MERMA } from "@/lib/cotizacion/constantes";
-import { calcularDespieceEstructura, MEZCLAS_DISPONIBLES, pulgadasDeMezcla, type Mezcla } from "@/lib/medidas/geometria";
+import { calcularDespieceEstructura, MEZCLAS_DISPONIBLES, pulgadasDeMezcla, tamanosObligatorios, type Mezcla } from "@/lib/medidas/geometria";
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "./composicion";
 import { coloresRealesProducto } from "./colores-producto";
 import { planHashResuelto } from "./hash";
 import { completarMedidas, completarMedidas1_1 } from "./medidas-defecto";
-import { distribuirReservaProyecto, optimizarCobertura } from "./optimizar-materiales";
+import { ahorroSoloMermaCop, distribuirReservaProyecto, optimizarCobertura, paquetesExtraPorMerma } from "./optimizar-materiales";
 import { cajasDeEstructuras } from "./ubicaciones";
 import { sustitucionesColorReferencia } from "./colores-referencia";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
@@ -425,6 +425,10 @@ export async function resolverPlan(
   const sinCobertura: PlanResuelto["sin_cobertura"] = [];
   const advertencias: string[] = [];
   const estructuras: EstructuraResuelta[] = [];
+  // Un solo parseo de los tamaños obligatorios (geometria.ts), idéntico al de
+  // `_required_sizes` en Python: decide la mezcla efectiva y si la selección de
+  // variantes exige el tamaño exacto.
+  const tamanosDelCliente = tamanosObligatorios(plan.restricciones);
   for (const estructura of plan.estructuras) {
     const geometrica = GEOMETRICOS.has(estructura.tipo);
     const lineas: LineaMaterial[] = [];
@@ -464,11 +468,18 @@ export async function resolverPlan(
         repeticiones: estructura.repeticiones,
         densidad: estructura.densidad,
         mezcla: estructura.mezcla,
-        tamanos: plan.restricciones?.tamanos.filter((item) => item.polaridad === "obligatorio").map((item) => Number(item.valor.replace(/^R-/i, ""))).filter(Number.isFinite),
+        tamanos: tamanosDelCliente,
         materiales: estructura.materiales.map((material) => ({ color: material.color, participacion: material.participacion ?? 0 })),
         estructuraOficial: estructura.estructura_oficial,
       });
       ejeM = geometria.ejeM;
+      // La restricción de tamaños del cliente es de todo el plan, no por
+      // estructura: si la mezcla de esta estructura no puede ubicar un tamaño
+      // obligatorio queda como advertencia visible (`validarRestriccionesPlan`
+      // no revisa tamaños, así que este es el único aviso).
+      for (const pulgadas of geometria.tamanosSinUbicar) {
+        advertencias.push(`tamano_obligatorio_sin_ubicar:${estructura.estructura_id}:R-${pulgadas}`);
+      }
       const candidatos = candidatosPorProducto;
       for (const despiece of geometria.despiece) {
         if (despiece.cantidad <= 0) continue;
@@ -482,11 +493,10 @@ export async function resolverPlan(
         const productoCanonico = candidatos.has(materialId) ? materialId : candidatoPorVariante.get(materialId)?.productId ?? materialId;
         const permitidasProducto = whitelist.get(productoCanonico) ?? whitelist.get(materialId) ?? new Set<string>();
         const opciones = (candidatos.get(productoCanonico) ?? []).filter((candidato) => permitidasProducto.has(candidato.variantId));
-        const tamanosExplicitos = plan.restricciones?.tamanos.filter((item) => item.polaridad === "obligatorio") ?? [];
         const opcionesConAcabado = material?.acabado
           ? opciones.filter((candidato) => candidato.acabados.includes(normalizar(material.acabado!)))
           : opciones;
-        const elegidoBase = elegir(opcionesConAcabado, despiece.pulgadas, despiece.color, despiece.cantidad, tamanosExplicitos.length > 0);
+        const elegidoBase = elegir(opcionesConAcabado, despiece.pulgadas, despiece.color, despiece.cantidad, tamanosDelCliente.length > 0);
         const override = elegidoBase
           ? estructura.variant_overrides?.find((item) => item.objetivo_variant_id === elegidoBase.variantId)
           : undefined;
@@ -643,21 +653,31 @@ export async function resolverPlan(
     })),
     MERMA,
   );
-  // Si el sobrante natural no alcanza, se compran los paquetes mínimos que
-  // faltan para cubrir la reserva y se identifica la línea que los ocasionó.
+  // Si el sobrante natural no alcanza, se compra la presentación de globo que
+  // cubra lo pendiente al menor costo. Antes se compraba en la primera compra
+  // por `variant_id`, así que un paquete de R-24 de 80.000 COP podía cubrir una
+  // reserva que un paquete de R-12 de 30.000 COP cubría igual.
   let reservaPendiente = reserva.uncoveredWasteReserve;
-  for (const compra of compras) {
-    if (reservaPendiente <= 0 || compra.diam_pulg == null || compra.unidades_necesarias <= 0) continue;
-    const paquetesAdicionales = Math.ceil(reservaPendiente / compra.unidades_paquete);
-    const coberturaAdicional = paquetesAdicionales * compra.unidades_paquete;
-    compra.paquetes += paquetesAdicionales;
-    compra.additional_package_for_waste = true;
-    compra.purchase_quantity = compra.paquetes * compra.unidades_paquete;
-    compra.purchase_cost = compra.paquetes * compra.precio_paquete;
-    compra.subtotal = compra.purchase_cost;
-    compra.sobrante = compra.purchase_quantity - compra.unidades_necesarias;
-    const reservaAsignada = Math.min(reservaPendiente, coberturaAdicional);
-    reserva.allocations.set(compra.variant_id, (reserva.allocations.get(compra.variant_id) ?? 0) + reservaAsignada);
+  const elegiblesReserva = compras.filter((compra) => compra.diam_pulg != null && compra.unidades_necesarias > 0);
+  while (reservaPendiente > 0 && elegiblesReserva.length > 0) {
+    const pendiente = reservaPendiente;
+    const costoCobertura = (compra: CompraConsolidada) => Math.ceil(pendiente / compra.unidades_paquete) * compra.precio_paquete;
+    // El último desempate compara por punto de código, no con `localeCompare`,
+    // para que Python elija exactamente la misma compra.
+    const elegida = elegiblesReserva.slice().sort((a, b) =>
+      costoCobertura(a) - costoCobertura(b)
+      || b.unidades_necesarias - a.unidades_necesarias
+      || (a.variant_id < b.variant_id ? -1 : a.variant_id > b.variant_id ? 1 : 0))[0]!;
+    const paquetesAdicionales = Math.ceil(pendiente / elegida.unidades_paquete);
+    const coberturaAdicional = paquetesAdicionales * elegida.unidades_paquete;
+    elegida.paquetes += paquetesAdicionales;
+    elegida.additional_package_for_waste = true;
+    elegida.purchase_quantity = elegida.paquetes * elegida.unidades_paquete;
+    elegida.purchase_cost = elegida.paquetes * elegida.precio_paquete;
+    elegida.subtotal = elegida.purchase_cost;
+    elegida.sobrante = elegida.purchase_quantity - elegida.unidades_necesarias;
+    const reservaAsignada = Math.min(pendiente, coberturaAdicional);
+    reserva.allocations.set(elegida.variant_id, (reserva.allocations.get(elegida.variant_id) ?? 0) + reservaAsignada);
     reservaPendiente -= reservaAsignada;
   }
   reserva.coveredWasteReserve = [...reserva.allocations.values()].reduce((sum, value) => sum + value, 0);
@@ -691,13 +711,15 @@ export async function resolverPlan(
   const costoPaquetesConsolidado = compras
     .reduce((sum, compra) => sum + compra.subtotal, 0);
   const ahorroPaquetesCop = Math.max(0, costoPaquetesSinConsolidar - costoPaquetesConsolidado);
-  const costoIngenuoConMerma = lineasResueltas
-    .filter((linea) => linea.diam_pulg != null)
-    .reduce((sum, linea) => {
-      const candidato = candidatoPorVariante.get(linea.variant_id);
-      return candidato ? sum + costoPaquetes(candidato, linea.unidades, MERMA) : sum;
-    }, 0);
-  const ahorroMermaCop = Math.max(0, costoIngenuoConMerma - costoPaquetesSinConsolidar);
+  // Ahorro real: lo ingenuo (cada compra con su merma completa) frente a lo que
+  // de verdad se compró, incluidos los paquetes que la reserva sí obligó a
+  // comprar. La misma regla que `wasteOnlySavingsCop` sobre la estimación.
+  const ahorroMermaCop = Math.round(compras.reduce((sum, compra) => compra.diam_pulg == null
+    ? sum
+    : sum + ahorroSoloMermaCop(compra.design_quantity, compra.unidades_paquete, compra.paquetes, compra.precio_paquete, MERMA), 0));
+  const paquetesExtraMerma = compras
+    .filter((compra) => compra.additional_package_for_waste)
+    .reduce((sum, compra) => sum + paquetesExtraPorMerma(compra.design_quantity, compra.unidades_paquete, compra.paquetes), 0);
   const consumptionCost = compras.reduce((sum, compra) => sum + compra.consumption_cost, 0);
   const techoCop = plan.restricciones?.presupuesto?.techo_cop;
   const alternativas = optimizerEnabled
@@ -724,7 +746,7 @@ export async function resolverPlan(
     `Target waste reserve: ${reserva.targetWasteReserve}`,
     `Natural package surplus: ${reserva.naturalSurplus}`,
     `Usable waste coverage: ${reserva.coveredWasteReserve}`,
-    `Additional packages required for waste: ${compras.filter((compra) => compra.additional_package_for_waste).reduce((sum, compra) => sum + compra.paquetes, 0)}`,
+    `Additional packages required for waste: ${paquetesExtraMerma}`,
     ...compras.map((compra) => `${compra.titulo}: design=${compra.design_quantity}, required=${compra.required_quantity}, package=${compra.unidades_paquete}, packages=${compra.paquetes}, purchased=${compra.purchase_quantity}, natural surplus=${compra.sobrante}, waste reserve=${compra.waste_reserve}, leftover inventory=${compra.leftover_inventory}`),
   ].join("\n");
   return {
@@ -745,7 +767,7 @@ export async function resolverPlan(
       purchase_cost: totalCop,
       consumption_cost: consumptionCost,
       waste_only_savings_cop: ahorroMermaCop,
-      additional_waste_packages: compras.filter((compra) => compra.additional_package_for_waste).reduce((sum, compra) => sum + compra.paquetes, 0),
+      additional_waste_packages: paquetesExtraMerma,
       ahorro_paquetes_cop: ahorroPaquetesCop,
       incluye_iva: process.env.PRECIO_INCLUYE_IVA !== "false",
       merma_porcentaje: MERMA * 100,

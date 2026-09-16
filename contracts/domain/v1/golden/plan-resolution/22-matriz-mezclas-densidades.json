@@ -1,0 +1,3630 @@
+{
+  "allowlist": [
+    {
+      "product_id": "P-VERDE",
+      "variant_ids": [
+        "V-VERDE-9",
+        "V-VERDE-12",
+        "V-VERDE-18",
+        "V-VERDE-24"
+      ]
+    },
+    {
+      "product_id": "P-CREMA",
+      "variant_ids": [
+        "V-CREMA-9",
+        "V-CREMA-12",
+        "V-CREMA-18",
+        "V-CREMA-24"
+      ]
+    }
+  ],
+  "catalog_rows": [
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-9",
+      "colores_producto": [
+        "verde"
+      ],
+      "colores_variante": [
+        "verde"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex verde R-9.",
+      "diam_pulg": 9,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-verde-9.jpg",
+      "inventory_quantity": 500,
+      "precio": 14500,
+      "product_id": "P-VERDE",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex verde",
+      "sku": "SKU-V-VERDE-9",
+      "sku_original": "SHOP-V-VERDE-9",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-VERDE-9",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-VERDE-9",
+      "variante_titulo": "R-9 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-9",
+      "colores_producto": [
+        "crema"
+      ],
+      "colores_variante": [
+        "crema"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex crema R-9.",
+      "diam_pulg": 9,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-crema-9.jpg",
+      "inventory_quantity": 500,
+      "precio": 15500,
+      "product_id": "P-CREMA",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex crema",
+      "sku": "SKU-V-CREMA-9",
+      "sku_original": "SHOP-V-CREMA-9",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-CREMA-9",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-CREMA-9",
+      "variante_titulo": "R-9 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "verde"
+      ],
+      "colores_variante": [
+        "verde"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex verde R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-verde-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 16000,
+      "product_id": "P-VERDE",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex verde",
+      "sku": "SKU-V-VERDE-12",
+      "sku_original": "SHOP-V-VERDE-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-VERDE-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-VERDE-12",
+      "variante_titulo": "R-12 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "crema"
+      ],
+      "colores_variante": [
+        "crema"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex crema R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-crema-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 17000,
+      "product_id": "P-CREMA",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex crema",
+      "sku": "SKU-V-CREMA-12",
+      "sku_original": "SHOP-V-CREMA-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-CREMA-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-CREMA-12",
+      "variante_titulo": "R-12 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-18",
+      "colores_producto": [
+        "verde"
+      ],
+      "colores_variante": [
+        "verde"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex verde R-18.",
+      "diam_pulg": 18,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-verde-18.jpg",
+      "inventory_quantity": 500,
+      "precio": 19000,
+      "product_id": "P-VERDE",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex verde",
+      "sku": "SKU-V-VERDE-18",
+      "sku_original": "SHOP-V-VERDE-18",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-VERDE-18",
+      "unidades_inferidas": false,
+      "unidades_paq": 25,
+      "variant_id": "V-VERDE-18",
+      "variante_titulo": "R-18 / PAQUETE X 25"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-18",
+      "colores_producto": [
+        "crema"
+      ],
+      "colores_variante": [
+        "crema"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex crema R-18.",
+      "diam_pulg": 18,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-crema-18.jpg",
+      "inventory_quantity": 500,
+      "precio": 20000,
+      "product_id": "P-CREMA",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex crema",
+      "sku": "SKU-V-CREMA-18",
+      "sku_original": "SHOP-V-CREMA-18",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-CREMA-18",
+      "unidades_inferidas": false,
+      "unidades_paq": 25,
+      "variant_id": "V-CREMA-18",
+      "variante_titulo": "R-18 / PAQUETE X 25"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-24",
+      "colores_producto": [
+        "verde"
+      ],
+      "colores_variante": [
+        "verde"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex verde R-24.",
+      "diam_pulg": 24,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-verde-24.jpg",
+      "inventory_quantity": 500,
+      "precio": 22000,
+      "product_id": "P-VERDE",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex verde",
+      "sku": "SKU-V-VERDE-24",
+      "sku_original": "SHOP-V-VERDE-24",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-VERDE-24",
+      "unidades_inferidas": false,
+      "unidades_paq": 25,
+      "variant_id": "V-VERDE-24",
+      "variante_titulo": "R-24 / PAQUETE X 25"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-24",
+      "colores_producto": [
+        "crema"
+      ],
+      "colores_variante": [
+        "crema"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex crema R-24.",
+      "diam_pulg": 24,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-crema-24.jpg",
+      "inventory_quantity": 500,
+      "precio": 23000,
+      "product_id": "P-CREMA",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex crema",
+      "sku": "SKU-V-CREMA-24",
+      "sku_original": "SHOP-V-CREMA-24",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-CREMA-24",
+      "unidades_inferidas": false,
+      "unidades_paq": 25,
+      "variant_id": "V-CREMA-24",
+      "variante_titulo": "R-24 / PAQUETE X 25"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-001",
+  "description": "Mezclas y densidades que ningún vector cubría: pared solo_grandes sencilla, guirnalda organica_gruesa lujosa y centros de mesa organica_gruesa repetidos. Fija las constantes duplicadas de mezcla, λ y ancho de banda en los dos backends, y la regla de densidad del plan (la de la estructura con más globos: la pared sencilla, no la guirnalda lujosa).",
+  "expected": {
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "verde",
+          "design_quantity": 53,
+          "finish": null,
+          "product_id": "P-VERDE",
+          "required_quantity": 53,
+          "shape": "redondo",
+          "size_inches": 18,
+          "structure_id": "EST_01_PARED",
+          "variant_id": "V-VERDE-18",
+          "waste_adjusted_quantity": 53,
+          "waste_reserve": 0
+        },
+        {
+          "color": "verde",
+          "design_quantity": 36,
+          "finish": null,
+          "product_id": "P-VERDE",
+          "required_quantity": 36,
+          "shape": "redondo",
+          "size_inches": 24,
+          "structure_id": "EST_01_PARED",
+          "variant_id": "V-VERDE-24",
+          "waste_adjusted_quantity": 36,
+          "waste_reserve": 0
+        },
+        {
+          "color": "verde",
+          "design_quantity": 8,
+          "finish": null,
+          "product_id": "P-VERDE",
+          "required_quantity": 8,
+          "shape": "redondo",
+          "size_inches": 9,
+          "structure_id": "EST_02_GUIRNALDA",
+          "variant_id": "V-VERDE-9",
+          "waste_adjusted_quantity": 8,
+          "waste_reserve": 0
+        },
+        {
+          "color": "crema",
+          "design_quantity": 4,
+          "finish": null,
+          "product_id": "P-CREMA",
+          "required_quantity": 4,
+          "shape": "redondo",
+          "size_inches": 9,
+          "structure_id": "EST_02_GUIRNALDA",
+          "variant_id": "V-CREMA-9",
+          "waste_adjusted_quantity": 4,
+          "waste_reserve": 0
+        },
+        {
+          "color": "verde",
+          "design_quantity": 15,
+          "finish": null,
+          "product_id": "P-VERDE",
+          "required_quantity": 15,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_02_GUIRNALDA",
+          "variant_id": "V-VERDE-12",
+          "waste_adjusted_quantity": 15,
+          "waste_reserve": 0
+        },
+        {
+          "color": "crema",
+          "design_quantity": 6,
+          "finish": null,
+          "product_id": "P-CREMA",
+          "required_quantity": 6,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_02_GUIRNALDA",
+          "variant_id": "V-CREMA-12",
+          "waste_adjusted_quantity": 6,
+          "waste_reserve": 0
+        },
+        {
+          "color": "verde",
+          "design_quantity": 6,
+          "finish": null,
+          "product_id": "P-VERDE",
+          "required_quantity": 6,
+          "shape": "redondo",
+          "size_inches": 18,
+          "structure_id": "EST_02_GUIRNALDA",
+          "variant_id": "V-VERDE-18",
+          "waste_adjusted_quantity": 6,
+          "waste_reserve": 0
+        },
+        {
+          "color": "crema",
+          "design_quantity": 3,
+          "finish": null,
+          "product_id": "P-CREMA",
+          "required_quantity": 3,
+          "shape": "redondo",
+          "size_inches": 18,
+          "structure_id": "EST_02_GUIRNALDA",
+          "variant_id": "V-CREMA-18",
+          "waste_adjusted_quantity": 3,
+          "waste_reserve": 0
+        },
+        {
+          "color": "verde",
+          "design_quantity": 4,
+          "finish": null,
+          "product_id": "P-VERDE",
+          "required_quantity": 4,
+          "shape": "redondo",
+          "size_inches": 24,
+          "structure_id": "EST_02_GUIRNALDA",
+          "variant_id": "V-VERDE-24",
+          "waste_adjusted_quantity": 4,
+          "waste_reserve": 0
+        },
+        {
+          "color": "crema",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-CREMA",
+          "required_quantity": 1,
+          "shape": "redondo",
+          "size_inches": 24,
+          "structure_id": "EST_02_GUIRNALDA",
+          "variant_id": "V-CREMA-24",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "color": "crema",
+          "design_quantity": 12,
+          "finish": null,
+          "product_id": "P-CREMA",
+          "required_quantity": 12,
+          "shape": "redondo",
+          "size_inches": 9,
+          "structure_id": "EST_03_CENTRO_MESA",
+          "variant_id": "V-CREMA-9",
+          "waste_adjusted_quantity": 12,
+          "waste_reserve": 0
+        },
+        {
+          "color": "crema",
+          "design_quantity": 18,
+          "finish": null,
+          "product_id": "P-CREMA",
+          "required_quantity": 18,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_03_CENTRO_MESA",
+          "variant_id": "V-CREMA-12",
+          "waste_adjusted_quantity": 18,
+          "waste_reserve": 0
+        },
+        {
+          "color": "crema",
+          "design_quantity": 12,
+          "finish": null,
+          "product_id": "P-CREMA",
+          "required_quantity": 12,
+          "shape": "redondo",
+          "size_inches": 18,
+          "structure_id": "EST_03_CENTRO_MESA",
+          "variant_id": "V-CREMA-18",
+          "waste_adjusted_quantity": 12,
+          "waste_reserve": 0
+        },
+        {
+          "color": "crema",
+          "design_quantity": 6,
+          "finish": null,
+          "product_id": "P-CREMA",
+          "required_quantity": 6,
+          "shape": "redondo",
+          "size_inches": 24,
+          "structure_id": "EST_03_CENTRO_MESA",
+          "variant_id": "V-CREMA-24",
+          "waste_adjusted_quantity": 6,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 8,
+        "density": "sencilla",
+        "dimensions_m": {
+          "height": 2.4,
+          "length": null,
+          "width": 2.4
+        },
+        "installation_length_m": 5.5,
+        "shape": "coordinated structures",
+        "type": "composite_installation",
+        "visual_density": "low",
+        "visual_scale": "very_large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 8160,
+          "design_quantity": 24,
+          "leftover_inventory": 26,
+          "operational_surplus": 26,
+          "package_count": 1,
+          "potential_surplus": 26,
+          "product_id": "P-CREMA",
+          "purchase_cost": 17000,
+          "purchase_quantity": 50,
+          "required_quantity": 24,
+          "units_per_package": 50,
+          "used": 24,
+          "variant_id": "V-CREMA-12",
+          "waste_adjusted_quantity": 24,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 12000,
+          "design_quantity": 15,
+          "leftover_inventory": 10,
+          "operational_surplus": 10,
+          "package_count": 1,
+          "potential_surplus": 10,
+          "product_id": "P-CREMA",
+          "purchase_cost": 20000,
+          "purchase_quantity": 25,
+          "required_quantity": 15,
+          "units_per_package": 25,
+          "used": 15,
+          "variant_id": "V-CREMA-18",
+          "waste_adjusted_quantity": 15,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 6440,
+          "design_quantity": 7,
+          "leftover_inventory": 18,
+          "operational_surplus": 18,
+          "package_count": 1,
+          "potential_surplus": 18,
+          "product_id": "P-CREMA",
+          "purchase_cost": 23000,
+          "purchase_quantity": 25,
+          "required_quantity": 7,
+          "units_per_package": 25,
+          "used": 7,
+          "variant_id": "V-CREMA-24",
+          "waste_adjusted_quantity": 7,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 4960,
+          "design_quantity": 16,
+          "leftover_inventory": 34,
+          "operational_surplus": 34,
+          "package_count": 1,
+          "potential_surplus": 34,
+          "product_id": "P-CREMA",
+          "purchase_cost": 15500,
+          "purchase_quantity": 50,
+          "required_quantity": 16,
+          "units_per_package": 50,
+          "used": 16,
+          "variant_id": "V-CREMA-9",
+          "waste_adjusted_quantity": 16,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 4800,
+          "design_quantity": 15,
+          "leftover_inventory": 35,
+          "operational_surplus": 35,
+          "package_count": 1,
+          "potential_surplus": 35,
+          "product_id": "P-VERDE",
+          "purchase_cost": 16000,
+          "purchase_quantity": 50,
+          "required_quantity": 15,
+          "units_per_package": 50,
+          "used": 15,
+          "variant_id": "V-VERDE-12",
+          "waste_adjusted_quantity": 15,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 44840,
+          "design_quantity": 59,
+          "leftover_inventory": 16,
+          "operational_surplus": 16,
+          "package_count": 3,
+          "potential_surplus": 16,
+          "product_id": "P-VERDE",
+          "purchase_cost": 57000,
+          "purchase_quantity": 75,
+          "required_quantity": 59,
+          "units_per_package": 25,
+          "used": 59,
+          "variant_id": "V-VERDE-18",
+          "waste_adjusted_quantity": 59,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 35200,
+          "design_quantity": 40,
+          "leftover_inventory": 10,
+          "operational_surplus": 10,
+          "package_count": 2,
+          "potential_surplus": 10,
+          "product_id": "P-VERDE",
+          "purchase_cost": 44000,
+          "purchase_quantity": 50,
+          "required_quantity": 40,
+          "units_per_package": 25,
+          "used": 40,
+          "variant_id": "V-VERDE-24",
+          "waste_adjusted_quantity": 40,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 6670,
+          "design_quantity": 8,
+          "leftover_inventory": 27,
+          "operational_surplus": 27,
+          "package_count": 1,
+          "potential_surplus": 42,
+          "product_id": "P-VERDE",
+          "purchase_cost": 14500,
+          "purchase_quantity": 50,
+          "required_quantity": 23,
+          "units_per_package": 50,
+          "used": 8,
+          "variant_id": "V-VERDE-9",
+          "waste_adjusted_quantity": 23,
+          "waste_reserve": 15
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 123070,
+        "covered_waste_reserve": 15,
+        "design_quantity": 184,
+        "natural_package_surplus": 191,
+        "operational_surplus": 176,
+        "potential_surplus": 191,
+        "purchase_cost": 207000,
+        "purchase_quantity": 375,
+        "required_quantity": 199,
+        "target_waste_reserve": 15,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 199,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-CREMA-12",
+        "sobrante_alto:V-CREMA-18",
+        "sobrante_alto:V-CREMA-24",
+        "sobrante_alto:V-CREMA-9",
+        "sobrante_alto:V-VERDE-12",
+        "sobrante_alto:V-VERDE-9"
+      ]
+    },
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-CREMA-12",
+        "sobrante_alto:V-CREMA-18",
+        "sobrante_alto:V-CREMA-24",
+        "sobrante_alto:V-CREMA-9",
+        "sobrante_alto:V-VERDE-12",
+        "sobrante_alto:V-VERDE-9"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "crema",
+          "consumption_cost": 8160,
+          "design_quantity": 24,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_GUIRNALDA",
+            "EST_03_CENTRO_MESA"
+          ],
+          "imagen": "https://cdn.example.test/v-crema-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 26,
+          "paquetes": 1,
+          "precio_paquete": 17000,
+          "product_id": "P-CREMA",
+          "purchase_cost": 17000,
+          "purchase_quantity": 50,
+          "required_quantity": 24,
+          "sku": "SKU-V-CREMA-12",
+          "sku_original": "SHOP-V-CREMA-12",
+          "sobrante": 26,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-CREMA-12",
+          "subtotal": 17000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex crema — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 24,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 24,
+          "unidades_paquete": 50,
+          "used": 24,
+          "variant_id": "V-CREMA-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "crema",
+          "consumption_cost": 12000,
+          "design_quantity": 15,
+          "diam_pulg": 18,
+          "elementos_origen": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_GUIRNALDA",
+            "EST_03_CENTRO_MESA"
+          ],
+          "imagen": "https://cdn.example.test/v-crema-18.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 10,
+          "paquetes": 1,
+          "precio_paquete": 20000,
+          "product_id": "P-CREMA",
+          "purchase_cost": 20000,
+          "purchase_quantity": 25,
+          "required_quantity": 15,
+          "sku": "SKU-V-CREMA-18",
+          "sku_original": "SHOP-V-CREMA-18",
+          "sobrante": 10,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-CREMA-18",
+          "subtotal": 20000,
+          "tamano_codigo": "R-18",
+          "titulo": "Globo latex crema — R-18 / PAQUETE X 25",
+          "unidades_con_merma": 15,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 15,
+          "unidades_paquete": 25,
+          "used": 15,
+          "variant_id": "V-CREMA-18",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "crema",
+          "consumption_cost": 6440,
+          "design_quantity": 7,
+          "diam_pulg": 24,
+          "elementos_origen": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_GUIRNALDA",
+            "EST_03_CENTRO_MESA"
+          ],
+          "imagen": "https://cdn.example.test/v-crema-24.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 18,
+          "paquetes": 1,
+          "precio_paquete": 23000,
+          "product_id": "P-CREMA",
+          "purchase_cost": 23000,
+          "purchase_quantity": 25,
+          "required_quantity": 7,
+          "sku": "SKU-V-CREMA-24",
+          "sku_original": "SHOP-V-CREMA-24",
+          "sobrante": 18,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-CREMA-24",
+          "subtotal": 23000,
+          "tamano_codigo": "R-24",
+          "titulo": "Globo latex crema — R-24 / PAQUETE X 25",
+          "unidades_con_merma": 7,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 7,
+          "unidades_paquete": 25,
+          "used": 7,
+          "variant_id": "V-CREMA-24",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "crema",
+          "consumption_cost": 4960,
+          "design_quantity": 16,
+          "diam_pulg": 9,
+          "elementos_origen": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_GUIRNALDA",
+            "EST_03_CENTRO_MESA"
+          ],
+          "imagen": "https://cdn.example.test/v-crema-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 34,
+          "paquetes": 1,
+          "precio_paquete": 15500,
+          "product_id": "P-CREMA",
+          "purchase_cost": 15500,
+          "purchase_quantity": 50,
+          "required_quantity": 16,
+          "sku": "SKU-V-CREMA-9",
+          "sku_original": "SHOP-V-CREMA-9",
+          "sobrante": 34,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-CREMA-9",
+          "subtotal": 15500,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex crema — R-9 / PAQUETE X 50",
+          "unidades_con_merma": 16,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 16,
+          "unidades_paquete": 50,
+          "used": 16,
+          "variant_id": "V-CREMA-9",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "verde",
+          "consumption_cost": 4800,
+          "design_quantity": 15,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_GUIRNALDA"
+          ],
+          "imagen": "https://cdn.example.test/v-verde-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 35,
+          "paquetes": 1,
+          "precio_paquete": 16000,
+          "product_id": "P-VERDE",
+          "purchase_cost": 16000,
+          "purchase_quantity": 50,
+          "required_quantity": 15,
+          "sku": "SKU-V-VERDE-12",
+          "sku_original": "SHOP-V-VERDE-12",
+          "sobrante": 35,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-VERDE-12",
+          "subtotal": 16000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex verde — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 15,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 15,
+          "unidades_paquete": 50,
+          "used": 15,
+          "variant_id": "V-VERDE-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "verde",
+          "consumption_cost": 44840,
+          "design_quantity": 59,
+          "diam_pulg": 18,
+          "elementos_origen": [
+            {
+              "id": "EST_01_PARED",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_PARED",
+            "EST_02_GUIRNALDA"
+          ],
+          "imagen": "https://cdn.example.test/v-verde-18.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 16,
+          "paquetes": 3,
+          "precio_paquete": 19000,
+          "product_id": "P-VERDE",
+          "purchase_cost": 57000,
+          "purchase_quantity": 75,
+          "required_quantity": 59,
+          "sku": "SKU-V-VERDE-18",
+          "sku_original": "SHOP-V-VERDE-18",
+          "sobrante": 16,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-VERDE-18",
+          "subtotal": 57000,
+          "tamano_codigo": "R-18",
+          "titulo": "Globo latex verde — R-18 / PAQUETE X 25",
+          "unidades_con_merma": 59,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 59,
+          "unidades_paquete": 25,
+          "used": 59,
+          "variant_id": "V-VERDE-18",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "verde",
+          "consumption_cost": 35200,
+          "design_quantity": 40,
+          "diam_pulg": 24,
+          "elementos_origen": [
+            {
+              "id": "EST_01_PARED",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_PARED",
+            "EST_02_GUIRNALDA"
+          ],
+          "imagen": "https://cdn.example.test/v-verde-24.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 10,
+          "paquetes": 2,
+          "precio_paquete": 22000,
+          "product_id": "P-VERDE",
+          "purchase_cost": 44000,
+          "purchase_quantity": 50,
+          "required_quantity": 40,
+          "sku": "SKU-V-VERDE-24",
+          "sku_original": "SHOP-V-VERDE-24",
+          "sobrante": 10,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-VERDE-24",
+          "subtotal": 44000,
+          "tamano_codigo": "R-24",
+          "titulo": "Globo latex verde — R-24 / PAQUETE X 25",
+          "unidades_con_merma": 40,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 40,
+          "unidades_paquete": 25,
+          "used": 40,
+          "variant_id": "V-VERDE-24",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "verde",
+          "consumption_cost": 6670,
+          "design_quantity": 8,
+          "diam_pulg": 9,
+          "elementos_origen": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_GUIRNALDA"
+          ],
+          "imagen": "https://cdn.example.test/v-verde-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 27,
+          "paquetes": 1,
+          "precio_paquete": 14500,
+          "product_id": "P-VERDE",
+          "purchase_cost": 14500,
+          "purchase_quantity": 50,
+          "required_quantity": 23,
+          "sku": "SKU-V-VERDE-9",
+          "sku_original": "SHOP-V-VERDE-9",
+          "sobrante": 42,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-VERDE-9",
+          "subtotal": 14500,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex verde — R-9 / PAQUETE X 50",
+          "unidades_con_merma": 23,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 8,
+          "unidades_paquete": 50,
+          "used": 8,
+          "variant_id": "V-VERDE-9",
+          "waste_reserve": 15
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 0,
+          "estructura_id": "EST_01_PARED",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "verde",
+              "diam_cm": 45.7,
+              "diam_pulg": 18,
+              "estructura_id": "EST_01_PARED",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-verde-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_PARED",
+                "kind": "estructura"
+              },
+              "product_id": "P-VERDE",
+              "sku": "SKU-V-VERDE-18",
+              "sku_original": "SHOP-V-VERDE-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-VERDE-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex verde — R-18 / PAQUETE X 25",
+              "unidades": 53,
+              "unidades_inferidas": false,
+              "variant_id": "V-VERDE-18"
+            },
+            {
+              "acabado": null,
+              "color": "verde",
+              "diam_cm": 61,
+              "diam_pulg": 24,
+              "estructura_id": "EST_01_PARED",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-verde-24.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_PARED",
+                "kind": "estructura"
+              },
+              "product_id": "P-VERDE",
+              "sku": "SKU-V-VERDE-24",
+              "sku_original": "SHOP-V-VERDE-24",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-VERDE-24",
+              "sustitucion": null,
+              "tamano_codigo": "R-24",
+              "titulo": "Globo latex verde — R-24 / PAQUETE X 25",
+              "unidades": 36,
+              "unidades_inferidas": false,
+              "variant_id": "V-VERDE-24"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 18,
+              "forma": "redondo",
+              "pct": 59.55,
+              "unidades": 53
+            },
+            {
+              "diam_pulg": 24,
+              "forma": "redondo",
+              "pct": 40.45,
+              "unidades": 36
+            }
+          ],
+          "nombre": "Pared de globos",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "pared",
+          "total_unidades": 89,
+          "ubicacion": "fondo_pared"
+        },
+        {
+          "eje_m": 2.5,
+          "estructura_id": "EST_02_GUIRNALDA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "verde",
+              "diam_cm": 22.9,
+              "diam_pulg": 9,
+              "estructura_id": "EST_02_GUIRNALDA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-verde-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_GUIRNALDA",
+                "kind": "estructura"
+              },
+              "product_id": "P-VERDE",
+              "sku": "SKU-V-VERDE-9",
+              "sku_original": "SHOP-V-VERDE-9",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-VERDE-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex verde — R-9 / PAQUETE X 50",
+              "unidades": 8,
+              "unidades_inferidas": false,
+              "variant_id": "V-VERDE-9"
+            },
+            {
+              "acabado": null,
+              "color": "crema",
+              "diam_cm": 22.9,
+              "diam_pulg": 9,
+              "estructura_id": "EST_02_GUIRNALDA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-crema-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_GUIRNALDA",
+                "kind": "estructura"
+              },
+              "product_id": "P-CREMA",
+              "sku": "SKU-V-CREMA-9",
+              "sku_original": "SHOP-V-CREMA-9",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-CREMA-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex crema — R-9 / PAQUETE X 50",
+              "unidades": 4,
+              "unidades_inferidas": false,
+              "variant_id": "V-CREMA-9"
+            },
+            {
+              "acabado": null,
+              "color": "verde",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_02_GUIRNALDA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-verde-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_GUIRNALDA",
+                "kind": "estructura"
+              },
+              "product_id": "P-VERDE",
+              "sku": "SKU-V-VERDE-12",
+              "sku_original": "SHOP-V-VERDE-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-VERDE-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex verde — R-12 / PAQUETE X 50",
+              "unidades": 15,
+              "unidades_inferidas": false,
+              "variant_id": "V-VERDE-12"
+            },
+            {
+              "acabado": null,
+              "color": "crema",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_02_GUIRNALDA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-crema-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_GUIRNALDA",
+                "kind": "estructura"
+              },
+              "product_id": "P-CREMA",
+              "sku": "SKU-V-CREMA-12",
+              "sku_original": "SHOP-V-CREMA-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-CREMA-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex crema — R-12 / PAQUETE X 50",
+              "unidades": 6,
+              "unidades_inferidas": false,
+              "variant_id": "V-CREMA-12"
+            },
+            {
+              "acabado": null,
+              "color": "verde",
+              "diam_cm": 45.7,
+              "diam_pulg": 18,
+              "estructura_id": "EST_02_GUIRNALDA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-verde-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_GUIRNALDA",
+                "kind": "estructura"
+              },
+              "product_id": "P-VERDE",
+              "sku": "SKU-V-VERDE-18",
+              "sku_original": "SHOP-V-VERDE-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-VERDE-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex verde — R-18 / PAQUETE X 25",
+              "unidades": 6,
+              "unidades_inferidas": false,
+              "variant_id": "V-VERDE-18"
+            },
+            {
+              "acabado": null,
+              "color": "crema",
+              "diam_cm": 45.7,
+              "diam_pulg": 18,
+              "estructura_id": "EST_02_GUIRNALDA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-crema-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_GUIRNALDA",
+                "kind": "estructura"
+              },
+              "product_id": "P-CREMA",
+              "sku": "SKU-V-CREMA-18",
+              "sku_original": "SHOP-V-CREMA-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-CREMA-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex crema — R-18 / PAQUETE X 25",
+              "unidades": 3,
+              "unidades_inferidas": false,
+              "variant_id": "V-CREMA-18"
+            },
+            {
+              "acabado": null,
+              "color": "verde",
+              "diam_cm": 61,
+              "diam_pulg": 24,
+              "estructura_id": "EST_02_GUIRNALDA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-verde-24.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_GUIRNALDA",
+                "kind": "estructura"
+              },
+              "product_id": "P-VERDE",
+              "sku": "SKU-V-VERDE-24",
+              "sku_original": "SHOP-V-VERDE-24",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-VERDE-24",
+              "sustitucion": null,
+              "tamano_codigo": "R-24",
+              "titulo": "Globo latex verde — R-24 / PAQUETE X 25",
+              "unidades": 4,
+              "unidades_inferidas": false,
+              "variant_id": "V-VERDE-24"
+            },
+            {
+              "acabado": null,
+              "color": "crema",
+              "diam_cm": 61,
+              "diam_pulg": 24,
+              "estructura_id": "EST_02_GUIRNALDA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-crema-24.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_GUIRNALDA",
+                "kind": "estructura"
+              },
+              "product_id": "P-CREMA",
+              "sku": "SKU-V-CREMA-24",
+              "sku_original": "SHOP-V-CREMA-24",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-CREMA-24",
+              "sustitucion": null,
+              "tamano_codigo": "R-24",
+              "titulo": "Globo latex crema — R-24 / PAQUETE X 25",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-CREMA-24"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 44.68,
+              "unidades": 21
+            },
+            {
+              "diam_pulg": 9,
+              "forma": "redondo",
+              "pct": 25.53,
+              "unidades": 12
+            },
+            {
+              "diam_pulg": 18,
+              "forma": "redondo",
+              "pct": 19.15,
+              "unidades": 9
+            },
+            {
+              "diam_pulg": 24,
+              "forma": "redondo",
+              "pct": 10.64,
+              "unidades": 5
+            }
+          ],
+          "nombre": "Guirnalda superior",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "guirnalda",
+          "total_unidades": 47,
+          "ubicacion": "arco_central"
+        },
+        {
+          "eje_m": 0.5,
+          "estructura_id": "EST_03_CENTRO_MESA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "crema",
+              "diam_cm": 22.9,
+              "diam_pulg": 9,
+              "estructura_id": "EST_03_CENTRO_MESA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-crema-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_03_CENTRO_MESA",
+                "kind": "estructura"
+              },
+              "product_id": "P-CREMA",
+              "sku": "SKU-V-CREMA-9",
+              "sku_original": "SHOP-V-CREMA-9",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-CREMA-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex crema — R-9 / PAQUETE X 50",
+              "unidades": 12,
+              "unidades_inferidas": false,
+              "variant_id": "V-CREMA-9"
+            },
+            {
+              "acabado": null,
+              "color": "crema",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_03_CENTRO_MESA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-crema-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_03_CENTRO_MESA",
+                "kind": "estructura"
+              },
+              "product_id": "P-CREMA",
+              "sku": "SKU-V-CREMA-12",
+              "sku_original": "SHOP-V-CREMA-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-CREMA-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex crema — R-12 / PAQUETE X 50",
+              "unidades": 18,
+              "unidades_inferidas": false,
+              "variant_id": "V-CREMA-12"
+            },
+            {
+              "acabado": null,
+              "color": "crema",
+              "diam_cm": 45.7,
+              "diam_pulg": 18,
+              "estructura_id": "EST_03_CENTRO_MESA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-crema-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_03_CENTRO_MESA",
+                "kind": "estructura"
+              },
+              "product_id": "P-CREMA",
+              "sku": "SKU-V-CREMA-18",
+              "sku_original": "SHOP-V-CREMA-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-CREMA-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex crema — R-18 / PAQUETE X 25",
+              "unidades": 12,
+              "unidades_inferidas": false,
+              "variant_id": "V-CREMA-18"
+            },
+            {
+              "acabado": null,
+              "color": "crema",
+              "diam_cm": 61,
+              "diam_pulg": 24,
+              "estructura_id": "EST_03_CENTRO_MESA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-crema-24.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_03_CENTRO_MESA",
+                "kind": "estructura"
+              },
+              "product_id": "P-CREMA",
+              "sku": "SKU-V-CREMA-24",
+              "sku_original": "SHOP-V-CREMA-24",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-CREMA-24",
+              "sustitucion": null,
+              "tamano_codigo": "R-24",
+              "titulo": "Globo latex crema — R-24 / PAQUETE X 25",
+              "unidades": 6,
+              "unidades_inferidas": false,
+              "variant_id": "V-CREMA-24"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 37.5,
+              "unidades": 18
+            },
+            {
+              "diam_pulg": 18,
+              "forma": "redondo",
+              "pct": 25,
+              "unidades": 12
+            },
+            {
+              "diam_pulg": 9,
+              "forma": "redondo",
+              "pct": 25,
+              "unidades": 12
+            },
+            {
+              "diam_pulg": 24,
+              "forma": "redondo",
+              "pct": 12.5,
+              "unidades": 6
+            }
+          ],
+          "nombre": "Centros de mesa",
+          "repeticiones": 6,
+          "supuestos": [],
+          "tipo": "centro_mesa",
+          "total_unidades": 48,
+          "ubicacion": "mesas_invitados"
+        }
+      ],
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 184\nTarget waste reserve: 15\nNatural package surplus: 191\nUsable waste coverage: 15\nAdditional packages required for waste: 0\nGlobo latex crema — R-12 / PAQUETE X 50: design=24, required=24, package=50, packages=1, purchased=50, natural surplus=26, waste reserve=0, leftover inventory=26\nGlobo latex crema — R-18 / PAQUETE X 25: design=15, required=15, package=25, packages=1, purchased=25, natural surplus=10, waste reserve=0, leftover inventory=10\nGlobo latex crema — R-24 / PAQUETE X 25: design=7, required=7, package=25, packages=1, purchased=25, natural surplus=18, waste reserve=0, leftover inventory=18\nGlobo latex crema — R-9 / PAQUETE X 50: design=16, required=16, package=50, packages=1, purchased=50, natural surplus=34, waste reserve=0, leftover inventory=34\nGlobo latex verde — R-12 / PAQUETE X 50: design=15, required=15, package=50, packages=1, purchased=50, natural surplus=35, waste reserve=0, leftover inventory=35\nGlobo latex verde — R-18 / PAQUETE X 25: design=59, required=59, package=25, packages=3, purchased=75, natural surplus=16, waste reserve=0, leftover inventory=16\nGlobo latex verde — R-24 / PAQUETE X 25: design=40, required=40, package=25, packages=2, purchased=50, natural surplus=10, waste reserve=0, leftover inventory=10\nGlobo latex verde — R-9 / PAQUETE X 50: design=8, required=23, package=50, packages=1, purchased=50, natural surplus=42, waste reserve=15, leftover inventory=27",
+      "plan": {
+        "concepto": {
+          "descripcion": "Pared de globos con guirnalda y centros de mesa.",
+          "paleta": [
+            "verde",
+            "crema"
+          ],
+          "titulo": "Pared verde y crema"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "sencilla",
+            "estructura_id": "EST_01_PARED",
+            "materiales": [
+              {
+                "color": "verde",
+                "participacion": 1,
+                "product_id": "P-VERDE",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.4,
+              "ancho_m": 2.4
+            },
+            "mezcla": "solo_grandes",
+            "nombre": "Pared de globos",
+            "porque": "Fondo de fotos con globos grandes.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "pared",
+            "ubicacion": "fondo_pared"
+          },
+          {
+            "densidad": "lujosa",
+            "estructura_id": "EST_02_GUIRNALDA",
+            "materiales": [
+              {
+                "color": "verde",
+                "participacion": 0.7,
+                "product_id": "P-VERDE",
+                "rol_material": "principal"
+              },
+              {
+                "color": "crema",
+                "participacion": 0.3,
+                "product_id": "P-CREMA",
+                "rol_material": "secundario"
+              }
+            ],
+            "medidas": {
+              "largo_m": 2.5
+            },
+            "mezcla": "organica_gruesa",
+            "nombre": "Guirnalda superior",
+            "porque": "Remata la pared.",
+            "repeticiones": 1,
+            "rol_escena": "acento",
+            "tipo": "guirnalda",
+            "ubicacion": "arco_central"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_03_CENTRO_MESA",
+            "materiales": [
+              {
+                "color": "crema",
+                "participacion": 1,
+                "product_id": "P-CREMA",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 0.5,
+              "ancho_m": 0.4
+            },
+            "mezcla": "organica_gruesa",
+            "nombre": "Centros de mesa",
+            "porque": "Repiten la paleta en cada mesa.",
+            "repeticiones": 6,
+            "rol_escena": "relleno",
+            "tipo": "centro_mesa",
+            "ubicacion": "mesas_invitados"
+          }
+        ],
+        "plan_id": "22222222-2222-4222-8222-222222222223",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "b4a24b9020c0707abd2d0555816c414d6edd3d69e95ac6d4f139f0439931bb40",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 116500,
+        "consumption_cost": 123070,
+        "covered_waste_reserve": 15,
+        "design_quantity": 184,
+        "globos_por_tamano": {
+          "R-12": 39,
+          "R-18": 74,
+          "R-24": 47,
+          "R-9": 24
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8,
+        "natural_package_surplus": 191,
+        "purchase_cost": 207000,
+        "target_waste_reserve": 15,
+        "total_cop": 207000,
+        "total_unidades": 184,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "complementosSoportados": false,
+      "consumptionCost": 123070,
+      "coveredWasteReserve": 15,
+      "incluyeIva": true,
+      "leftoverInventory": 176,
+      "lineas": [
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 24,
+          "color": "crema",
+          "consumptionCost": 8160,
+          "designQuantity": 24,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_GUIRNALDA",
+            "EST_03_CENTRO_MESA"
+          ],
+          "id": "V-CREMA-12",
+          "leftoverInventory": 26,
+          "nombre": "Globo latex crema — R-12 / PAQUETE X 50",
+          "paquetes": 1,
+          "precioPaquete": 17000,
+          "productId": "P-CREMA",
+          "purchaseCost": 17000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 24,
+          "sobrante": 26,
+          "subtotal": 17000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 24,
+          "varianteId": "V-CREMA-12",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 15,
+          "color": "crema",
+          "consumptionCost": 12000,
+          "designQuantity": 15,
+          "diamPulg": 18,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_GUIRNALDA",
+            "EST_03_CENTRO_MESA"
+          ],
+          "id": "V-CREMA-18",
+          "leftoverInventory": 10,
+          "nombre": "Globo latex crema — R-18 / PAQUETE X 25",
+          "paquetes": 1,
+          "precioPaquete": 20000,
+          "productId": "P-CREMA",
+          "purchaseCost": 20000,
+          "purchaseQuantity": 25,
+          "referenciaElementIds": [],
+          "requiredQuantity": 15,
+          "sobrante": 10,
+          "subtotal": 20000,
+          "tamano": "R-18",
+          "tamanoCodigo": "R-18",
+          "unidadesPaquete": 25,
+          "used": 15,
+          "varianteId": "V-CREMA-18",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 7,
+          "color": "crema",
+          "consumptionCost": 6440,
+          "designQuantity": 7,
+          "diamPulg": 24,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_GUIRNALDA",
+            "EST_03_CENTRO_MESA"
+          ],
+          "id": "V-CREMA-24",
+          "leftoverInventory": 18,
+          "nombre": "Globo latex crema — R-24 / PAQUETE X 25",
+          "paquetes": 1,
+          "precioPaquete": 23000,
+          "productId": "P-CREMA",
+          "purchaseCost": 23000,
+          "purchaseQuantity": 25,
+          "referenciaElementIds": [],
+          "requiredQuantity": 7,
+          "sobrante": 18,
+          "subtotal": 23000,
+          "tamano": "R-24",
+          "tamanoCodigo": "R-24",
+          "unidadesPaquete": 25,
+          "used": 7,
+          "varianteId": "V-CREMA-24",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 16,
+          "color": "crema",
+          "consumptionCost": 4960,
+          "designQuantity": 16,
+          "diamPulg": 9,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_GUIRNALDA",
+            "EST_03_CENTRO_MESA"
+          ],
+          "id": "V-CREMA-9",
+          "leftoverInventory": 34,
+          "nombre": "Globo latex crema — R-9 / PAQUETE X 50",
+          "paquetes": 1,
+          "precioPaquete": 15500,
+          "productId": "P-CREMA",
+          "purchaseCost": 15500,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 16,
+          "sobrante": 34,
+          "subtotal": 15500,
+          "tamano": "R-9",
+          "tamanoCodigo": "R-9",
+          "unidadesPaquete": 50,
+          "used": 16,
+          "varianteId": "V-CREMA-9",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 15,
+          "color": "verde",
+          "consumptionCost": 4800,
+          "designQuantity": 15,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_GUIRNALDA"
+          ],
+          "id": "V-VERDE-12",
+          "leftoverInventory": 35,
+          "nombre": "Globo latex verde — R-12 / PAQUETE X 50",
+          "paquetes": 1,
+          "precioPaquete": 16000,
+          "productId": "P-VERDE",
+          "purchaseCost": 16000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 15,
+          "sobrante": 35,
+          "subtotal": 16000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 15,
+          "varianteId": "V-VERDE-12",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 59,
+          "color": "verde",
+          "consumptionCost": 44840,
+          "designQuantity": 59,
+          "diamPulg": 18,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_PARED",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_PARED",
+            "EST_02_GUIRNALDA"
+          ],
+          "id": "V-VERDE-18",
+          "leftoverInventory": 16,
+          "nombre": "Globo latex verde — R-18 / PAQUETE X 25",
+          "paquetes": 3,
+          "precioPaquete": 19000,
+          "productId": "P-VERDE",
+          "purchaseCost": 57000,
+          "purchaseQuantity": 75,
+          "referenciaElementIds": [],
+          "requiredQuantity": 59,
+          "sobrante": 16,
+          "subtotal": 57000,
+          "tamano": "R-18",
+          "tamanoCodigo": "R-18",
+          "unidadesPaquete": 25,
+          "used": 59,
+          "varianteId": "V-VERDE-18",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 40,
+          "color": "verde",
+          "consumptionCost": 35200,
+          "designQuantity": 40,
+          "diamPulg": 24,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_PARED",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_PARED",
+            "EST_02_GUIRNALDA"
+          ],
+          "id": "V-VERDE-24",
+          "leftoverInventory": 10,
+          "nombre": "Globo latex verde — R-24 / PAQUETE X 25",
+          "paquetes": 2,
+          "precioPaquete": 22000,
+          "productId": "P-VERDE",
+          "purchaseCost": 44000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 40,
+          "sobrante": 10,
+          "subtotal": 44000,
+          "tamano": "R-24",
+          "tamanoCodigo": "R-24",
+          "unidadesPaquete": 25,
+          "used": 40,
+          "varianteId": "V-VERDE-24",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 8,
+          "color": "verde",
+          "consumptionCost": 6670,
+          "designQuantity": 8,
+          "diamPulg": 9,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_GUIRNALDA"
+          ],
+          "id": "V-VERDE-9",
+          "leftoverInventory": 27,
+          "nombre": "Globo latex verde — R-9 / PAQUETE X 50",
+          "paquetes": 1,
+          "precioPaquete": 14500,
+          "productId": "P-VERDE",
+          "purchaseCost": 14500,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 23,
+          "sobrante": 42,
+          "subtotal": 14500,
+          "tamano": "R-9",
+          "tamanoCodigo": "R-9",
+          "unidadesPaquete": 50,
+          "used": 8,
+          "varianteId": "V-VERDE-9",
+          "wasteReserve": 15
+        }
+      ],
+      "mermaPorcentaje": 8,
+      "plan_hash": "b4a24b9020c0707abd2d0555816c414d6edd3d69e95ac6d4f139f0439931bb40",
+      "purchaseCost": 207000,
+      "targetWasteReserve": 15,
+      "total": 207000
+    }
+  },
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-001",
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "verde",
+          "design_quantity": 53,
+          "finish": null,
+          "product_id": "P-VERDE",
+          "required_quantity": 53,
+          "shape": "redondo",
+          "size_inches": 18.0,
+          "structure_id": "EST_01_PARED",
+          "variant_id": "V-VERDE-18",
+          "waste_adjusted_quantity": 53,
+          "waste_reserve": 0
+        },
+        {
+          "color": "verde",
+          "design_quantity": 36,
+          "finish": null,
+          "product_id": "P-VERDE",
+          "required_quantity": 36,
+          "shape": "redondo",
+          "size_inches": 24.0,
+          "structure_id": "EST_01_PARED",
+          "variant_id": "V-VERDE-24",
+          "waste_adjusted_quantity": 36,
+          "waste_reserve": 0
+        },
+        {
+          "color": "verde",
+          "design_quantity": 8,
+          "finish": null,
+          "product_id": "P-VERDE",
+          "required_quantity": 8,
+          "shape": "redondo",
+          "size_inches": 9.0,
+          "structure_id": "EST_02_GUIRNALDA",
+          "variant_id": "V-VERDE-9",
+          "waste_adjusted_quantity": 8,
+          "waste_reserve": 0
+        },
+        {
+          "color": "crema",
+          "design_quantity": 4,
+          "finish": null,
+          "product_id": "P-CREMA",
+          "required_quantity": 4,
+          "shape": "redondo",
+          "size_inches": 9.0,
+          "structure_id": "EST_02_GUIRNALDA",
+          "variant_id": "V-CREMA-9",
+          "waste_adjusted_quantity": 4,
+          "waste_reserve": 0
+        },
+        {
+          "color": "verde",
+          "design_quantity": 15,
+          "finish": null,
+          "product_id": "P-VERDE",
+          "required_quantity": 15,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_02_GUIRNALDA",
+          "variant_id": "V-VERDE-12",
+          "waste_adjusted_quantity": 15,
+          "waste_reserve": 0
+        },
+        {
+          "color": "crema",
+          "design_quantity": 6,
+          "finish": null,
+          "product_id": "P-CREMA",
+          "required_quantity": 6,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_02_GUIRNALDA",
+          "variant_id": "V-CREMA-12",
+          "waste_adjusted_quantity": 6,
+          "waste_reserve": 0
+        },
+        {
+          "color": "verde",
+          "design_quantity": 6,
+          "finish": null,
+          "product_id": "P-VERDE",
+          "required_quantity": 6,
+          "shape": "redondo",
+          "size_inches": 18.0,
+          "structure_id": "EST_02_GUIRNALDA",
+          "variant_id": "V-VERDE-18",
+          "waste_adjusted_quantity": 6,
+          "waste_reserve": 0
+        },
+        {
+          "color": "crema",
+          "design_quantity": 3,
+          "finish": null,
+          "product_id": "P-CREMA",
+          "required_quantity": 3,
+          "shape": "redondo",
+          "size_inches": 18.0,
+          "structure_id": "EST_02_GUIRNALDA",
+          "variant_id": "V-CREMA-18",
+          "waste_adjusted_quantity": 3,
+          "waste_reserve": 0
+        },
+        {
+          "color": "verde",
+          "design_quantity": 4,
+          "finish": null,
+          "product_id": "P-VERDE",
+          "required_quantity": 4,
+          "shape": "redondo",
+          "size_inches": 24.0,
+          "structure_id": "EST_02_GUIRNALDA",
+          "variant_id": "V-VERDE-24",
+          "waste_adjusted_quantity": 4,
+          "waste_reserve": 0
+        },
+        {
+          "color": "crema",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-CREMA",
+          "required_quantity": 1,
+          "shape": "redondo",
+          "size_inches": 24.0,
+          "structure_id": "EST_02_GUIRNALDA",
+          "variant_id": "V-CREMA-24",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "color": "crema",
+          "design_quantity": 12,
+          "finish": null,
+          "product_id": "P-CREMA",
+          "required_quantity": 12,
+          "shape": "redondo",
+          "size_inches": 9.0,
+          "structure_id": "EST_03_CENTRO_MESA",
+          "variant_id": "V-CREMA-9",
+          "waste_adjusted_quantity": 12,
+          "waste_reserve": 0
+        },
+        {
+          "color": "crema",
+          "design_quantity": 18,
+          "finish": null,
+          "product_id": "P-CREMA",
+          "required_quantity": 18,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_03_CENTRO_MESA",
+          "variant_id": "V-CREMA-12",
+          "waste_adjusted_quantity": 18,
+          "waste_reserve": 0
+        },
+        {
+          "color": "crema",
+          "design_quantity": 12,
+          "finish": null,
+          "product_id": "P-CREMA",
+          "required_quantity": 12,
+          "shape": "redondo",
+          "size_inches": 18.0,
+          "structure_id": "EST_03_CENTRO_MESA",
+          "variant_id": "V-CREMA-18",
+          "waste_adjusted_quantity": 12,
+          "waste_reserve": 0
+        },
+        {
+          "color": "crema",
+          "design_quantity": 6,
+          "finish": null,
+          "product_id": "P-CREMA",
+          "required_quantity": 6,
+          "shape": "redondo",
+          "size_inches": 24.0,
+          "structure_id": "EST_03_CENTRO_MESA",
+          "variant_id": "V-CREMA-24",
+          "waste_adjusted_quantity": 6,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 8,
+        "density": "sencilla",
+        "dimensions_m": {
+          "height": 2.4,
+          "length": null,
+          "width": 2.4
+        },
+        "installation_length_m": 5.5,
+        "shape": "coordinated structures",
+        "type": "composite_installation",
+        "visual_density": "low",
+        "visual_scale": "very_large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 8160,
+          "design_quantity": 24,
+          "leftover_inventory": 26,
+          "operational_surplus": 26,
+          "package_count": 1,
+          "potential_surplus": 26,
+          "product_id": "P-CREMA",
+          "purchase_cost": 17000,
+          "purchase_quantity": 50,
+          "required_quantity": 24,
+          "units_per_package": 50,
+          "used": 24,
+          "variant_id": "V-CREMA-12",
+          "waste_adjusted_quantity": 24,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 12000,
+          "design_quantity": 15,
+          "leftover_inventory": 10,
+          "operational_surplus": 10,
+          "package_count": 1,
+          "potential_surplus": 10,
+          "product_id": "P-CREMA",
+          "purchase_cost": 20000,
+          "purchase_quantity": 25,
+          "required_quantity": 15,
+          "units_per_package": 25,
+          "used": 15,
+          "variant_id": "V-CREMA-18",
+          "waste_adjusted_quantity": 15,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 6440,
+          "design_quantity": 7,
+          "leftover_inventory": 18,
+          "operational_surplus": 18,
+          "package_count": 1,
+          "potential_surplus": 18,
+          "product_id": "P-CREMA",
+          "purchase_cost": 23000,
+          "purchase_quantity": 25,
+          "required_quantity": 7,
+          "units_per_package": 25,
+          "used": 7,
+          "variant_id": "V-CREMA-24",
+          "waste_adjusted_quantity": 7,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 4960,
+          "design_quantity": 16,
+          "leftover_inventory": 34,
+          "operational_surplus": 34,
+          "package_count": 1,
+          "potential_surplus": 34,
+          "product_id": "P-CREMA",
+          "purchase_cost": 15500,
+          "purchase_quantity": 50,
+          "required_quantity": 16,
+          "units_per_package": 50,
+          "used": 16,
+          "variant_id": "V-CREMA-9",
+          "waste_adjusted_quantity": 16,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 4800,
+          "design_quantity": 15,
+          "leftover_inventory": 35,
+          "operational_surplus": 35,
+          "package_count": 1,
+          "potential_surplus": 35,
+          "product_id": "P-VERDE",
+          "purchase_cost": 16000,
+          "purchase_quantity": 50,
+          "required_quantity": 15,
+          "units_per_package": 50,
+          "used": 15,
+          "variant_id": "V-VERDE-12",
+          "waste_adjusted_quantity": 15,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 44840,
+          "design_quantity": 59,
+          "leftover_inventory": 16,
+          "operational_surplus": 16,
+          "package_count": 3,
+          "potential_surplus": 16,
+          "product_id": "P-VERDE",
+          "purchase_cost": 57000,
+          "purchase_quantity": 75,
+          "required_quantity": 59,
+          "units_per_package": 25,
+          "used": 59,
+          "variant_id": "V-VERDE-18",
+          "waste_adjusted_quantity": 59,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 35200,
+          "design_quantity": 40,
+          "leftover_inventory": 10,
+          "operational_surplus": 10,
+          "package_count": 2,
+          "potential_surplus": 10,
+          "product_id": "P-VERDE",
+          "purchase_cost": 44000,
+          "purchase_quantity": 50,
+          "required_quantity": 40,
+          "units_per_package": 25,
+          "used": 40,
+          "variant_id": "V-VERDE-24",
+          "waste_adjusted_quantity": 40,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 6670,
+          "design_quantity": 8,
+          "leftover_inventory": 27,
+          "operational_surplus": 27,
+          "package_count": 1,
+          "potential_surplus": 42,
+          "product_id": "P-VERDE",
+          "purchase_cost": 14500,
+          "purchase_quantity": 50,
+          "required_quantity": 23,
+          "units_per_package": 50,
+          "used": 8,
+          "variant_id": "V-VERDE-9",
+          "waste_adjusted_quantity": 23,
+          "waste_reserve": 15
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 123070,
+        "covered_waste_reserve": 15,
+        "design_quantity": 184,
+        "natural_package_surplus": 191,
+        "operational_surplus": 176,
+        "potential_surplus": 191,
+        "purchase_cost": 207000,
+        "purchase_quantity": 375,
+        "required_quantity": 199,
+        "target_waste_reserve": 15,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 199,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-CREMA-12",
+        "sobrante_alto:V-CREMA-18",
+        "sobrante_alto:V-CREMA-24",
+        "sobrante_alto:V-CREMA-9",
+        "sobrante_alto:V-VERDE-12",
+        "sobrante_alto:V-VERDE-9"
+      ]
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-CREMA-12",
+        "sobrante_alto:V-CREMA-18",
+        "sobrante_alto:V-CREMA-24",
+        "sobrante_alto:V-CREMA-9",
+        "sobrante_alto:V-VERDE-12",
+        "sobrante_alto:V-VERDE-9"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "crema",
+          "consumption_cost": 8160,
+          "design_quantity": 24,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_GUIRNALDA",
+            "EST_03_CENTRO_MESA"
+          ],
+          "imagen": "https://cdn.example.test/v-crema-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 26,
+          "paquetes": 1,
+          "precio_paquete": 17000,
+          "product_id": "P-CREMA",
+          "purchase_cost": 17000,
+          "purchase_quantity": 50,
+          "required_quantity": 24,
+          "sku": "SKU-V-CREMA-12",
+          "sku_original": "SHOP-V-CREMA-12",
+          "sobrante": 26,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-CREMA-12",
+          "subtotal": 17000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex crema — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 24,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 24,
+          "unidades_paquete": 50,
+          "used": 24,
+          "variant_id": "V-CREMA-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "crema",
+          "consumption_cost": 12000,
+          "design_quantity": 15,
+          "diam_pulg": 18.0,
+          "elementos_origen": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_GUIRNALDA",
+            "EST_03_CENTRO_MESA"
+          ],
+          "imagen": "https://cdn.example.test/v-crema-18.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 10,
+          "paquetes": 1,
+          "precio_paquete": 20000,
+          "product_id": "P-CREMA",
+          "purchase_cost": 20000,
+          "purchase_quantity": 25,
+          "required_quantity": 15,
+          "sku": "SKU-V-CREMA-18",
+          "sku_original": "SHOP-V-CREMA-18",
+          "sobrante": 10,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-CREMA-18",
+          "subtotal": 20000,
+          "tamano_codigo": "R-18",
+          "titulo": "Globo latex crema — R-18 / PAQUETE X 25",
+          "unidades_con_merma": 15,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 15,
+          "unidades_paquete": 25,
+          "used": 15,
+          "variant_id": "V-CREMA-18",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "crema",
+          "consumption_cost": 6440,
+          "design_quantity": 7,
+          "diam_pulg": 24.0,
+          "elementos_origen": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_GUIRNALDA",
+            "EST_03_CENTRO_MESA"
+          ],
+          "imagen": "https://cdn.example.test/v-crema-24.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 18,
+          "paquetes": 1,
+          "precio_paquete": 23000,
+          "product_id": "P-CREMA",
+          "purchase_cost": 23000,
+          "purchase_quantity": 25,
+          "required_quantity": 7,
+          "sku": "SKU-V-CREMA-24",
+          "sku_original": "SHOP-V-CREMA-24",
+          "sobrante": 18,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-CREMA-24",
+          "subtotal": 23000,
+          "tamano_codigo": "R-24",
+          "titulo": "Globo latex crema — R-24 / PAQUETE X 25",
+          "unidades_con_merma": 7,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 7,
+          "unidades_paquete": 25,
+          "used": 7,
+          "variant_id": "V-CREMA-24",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "crema",
+          "consumption_cost": 4960,
+          "design_quantity": 16,
+          "diam_pulg": 9.0,
+          "elementos_origen": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_GUIRNALDA",
+            "EST_03_CENTRO_MESA"
+          ],
+          "imagen": "https://cdn.example.test/v-crema-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 34,
+          "paquetes": 1,
+          "precio_paquete": 15500,
+          "product_id": "P-CREMA",
+          "purchase_cost": 15500,
+          "purchase_quantity": 50,
+          "required_quantity": 16,
+          "sku": "SKU-V-CREMA-9",
+          "sku_original": "SHOP-V-CREMA-9",
+          "sobrante": 34,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-CREMA-9",
+          "subtotal": 15500,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex crema — R-9 / PAQUETE X 50",
+          "unidades_con_merma": 16,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 16,
+          "unidades_paquete": 50,
+          "used": 16,
+          "variant_id": "V-CREMA-9",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "verde",
+          "consumption_cost": 4800,
+          "design_quantity": 15,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_GUIRNALDA"
+          ],
+          "imagen": "https://cdn.example.test/v-verde-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 35,
+          "paquetes": 1,
+          "precio_paquete": 16000,
+          "product_id": "P-VERDE",
+          "purchase_cost": 16000,
+          "purchase_quantity": 50,
+          "required_quantity": 15,
+          "sku": "SKU-V-VERDE-12",
+          "sku_original": "SHOP-V-VERDE-12",
+          "sobrante": 35,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-VERDE-12",
+          "subtotal": 16000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex verde — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 15,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 15,
+          "unidades_paquete": 50,
+          "used": 15,
+          "variant_id": "V-VERDE-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "verde",
+          "consumption_cost": 44840,
+          "design_quantity": 59,
+          "diam_pulg": 18.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_PARED",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_PARED",
+            "EST_02_GUIRNALDA"
+          ],
+          "imagen": "https://cdn.example.test/v-verde-18.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 16,
+          "paquetes": 3,
+          "precio_paquete": 19000,
+          "product_id": "P-VERDE",
+          "purchase_cost": 57000,
+          "purchase_quantity": 75,
+          "required_quantity": 59,
+          "sku": "SKU-V-VERDE-18",
+          "sku_original": "SHOP-V-VERDE-18",
+          "sobrante": 16,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-VERDE-18",
+          "subtotal": 57000,
+          "tamano_codigo": "R-18",
+          "titulo": "Globo latex verde — R-18 / PAQUETE X 25",
+          "unidades_con_merma": 59,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 59,
+          "unidades_paquete": 25,
+          "used": 59,
+          "variant_id": "V-VERDE-18",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "verde",
+          "consumption_cost": 35200,
+          "design_quantity": 40,
+          "diam_pulg": 24.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_PARED",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_PARED",
+            "EST_02_GUIRNALDA"
+          ],
+          "imagen": "https://cdn.example.test/v-verde-24.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 10,
+          "paquetes": 2,
+          "precio_paquete": 22000,
+          "product_id": "P-VERDE",
+          "purchase_cost": 44000,
+          "purchase_quantity": 50,
+          "required_quantity": 40,
+          "sku": "SKU-V-VERDE-24",
+          "sku_original": "SHOP-V-VERDE-24",
+          "sobrante": 10,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-VERDE-24",
+          "subtotal": 44000,
+          "tamano_codigo": "R-24",
+          "titulo": "Globo latex verde — R-24 / PAQUETE X 25",
+          "unidades_con_merma": 40,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 40,
+          "unidades_paquete": 25,
+          "used": 40,
+          "variant_id": "V-VERDE-24",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "verde",
+          "consumption_cost": 6670,
+          "design_quantity": 8,
+          "diam_pulg": 9.0,
+          "elementos_origen": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_02_GUIRNALDA"
+          ],
+          "imagen": "https://cdn.example.test/v-verde-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 27,
+          "paquetes": 1,
+          "precio_paquete": 14500,
+          "product_id": "P-VERDE",
+          "purchase_cost": 14500,
+          "purchase_quantity": 50,
+          "required_quantity": 23,
+          "sku": "SKU-V-VERDE-9",
+          "sku_original": "SHOP-V-VERDE-9",
+          "sobrante": 42,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-VERDE-9",
+          "subtotal": 14500,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex verde — R-9 / PAQUETE X 50",
+          "unidades_con_merma": 23,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 8,
+          "unidades_paquete": 50,
+          "used": 8,
+          "variant_id": "V-VERDE-9",
+          "waste_reserve": 15
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 0.0,
+          "estructura_id": "EST_01_PARED",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "verde",
+              "diam_cm": 45.7,
+              "diam_pulg": 18.0,
+              "estructura_id": "EST_01_PARED",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-verde-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_PARED",
+                "kind": "estructura"
+              },
+              "product_id": "P-VERDE",
+              "sku": "SKU-V-VERDE-18",
+              "sku_original": "SHOP-V-VERDE-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-VERDE-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex verde — R-18 / PAQUETE X 25",
+              "unidades": 53,
+              "unidades_inferidas": false,
+              "variant_id": "V-VERDE-18"
+            },
+            {
+              "acabado": null,
+              "color": "verde",
+              "diam_cm": 61.0,
+              "diam_pulg": 24.0,
+              "estructura_id": "EST_01_PARED",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-verde-24.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_PARED",
+                "kind": "estructura"
+              },
+              "product_id": "P-VERDE",
+              "sku": "SKU-V-VERDE-24",
+              "sku_original": "SHOP-V-VERDE-24",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-VERDE-24",
+              "sustitucion": null,
+              "tamano_codigo": "R-24",
+              "titulo": "Globo latex verde — R-24 / PAQUETE X 25",
+              "unidades": 36,
+              "unidades_inferidas": false,
+              "variant_id": "V-VERDE-24"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 18.0,
+              "forma": "redondo",
+              "pct": 59.55,
+              "unidades": 53
+            },
+            {
+              "diam_pulg": 24.0,
+              "forma": "redondo",
+              "pct": 40.45,
+              "unidades": 36
+            }
+          ],
+          "nombre": "Pared de globos",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "pared",
+          "total_unidades": 89,
+          "ubicacion": "fondo_pared"
+        },
+        {
+          "eje_m": 2.5,
+          "estructura_id": "EST_02_GUIRNALDA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "verde",
+              "diam_cm": 22.9,
+              "diam_pulg": 9.0,
+              "estructura_id": "EST_02_GUIRNALDA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-verde-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_GUIRNALDA",
+                "kind": "estructura"
+              },
+              "product_id": "P-VERDE",
+              "sku": "SKU-V-VERDE-9",
+              "sku_original": "SHOP-V-VERDE-9",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-VERDE-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex verde — R-9 / PAQUETE X 50",
+              "unidades": 8,
+              "unidades_inferidas": false,
+              "variant_id": "V-VERDE-9"
+            },
+            {
+              "acabado": null,
+              "color": "crema",
+              "diam_cm": 22.9,
+              "diam_pulg": 9.0,
+              "estructura_id": "EST_02_GUIRNALDA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-crema-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_GUIRNALDA",
+                "kind": "estructura"
+              },
+              "product_id": "P-CREMA",
+              "sku": "SKU-V-CREMA-9",
+              "sku_original": "SHOP-V-CREMA-9",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-CREMA-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex crema — R-9 / PAQUETE X 50",
+              "unidades": 4,
+              "unidades_inferidas": false,
+              "variant_id": "V-CREMA-9"
+            },
+            {
+              "acabado": null,
+              "color": "verde",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_02_GUIRNALDA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-verde-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_GUIRNALDA",
+                "kind": "estructura"
+              },
+              "product_id": "P-VERDE",
+              "sku": "SKU-V-VERDE-12",
+              "sku_original": "SHOP-V-VERDE-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-VERDE-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex verde — R-12 / PAQUETE X 50",
+              "unidades": 15,
+              "unidades_inferidas": false,
+              "variant_id": "V-VERDE-12"
+            },
+            {
+              "acabado": null,
+              "color": "crema",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_02_GUIRNALDA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-crema-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_GUIRNALDA",
+                "kind": "estructura"
+              },
+              "product_id": "P-CREMA",
+              "sku": "SKU-V-CREMA-12",
+              "sku_original": "SHOP-V-CREMA-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-CREMA-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex crema — R-12 / PAQUETE X 50",
+              "unidades": 6,
+              "unidades_inferidas": false,
+              "variant_id": "V-CREMA-12"
+            },
+            {
+              "acabado": null,
+              "color": "verde",
+              "diam_cm": 45.7,
+              "diam_pulg": 18.0,
+              "estructura_id": "EST_02_GUIRNALDA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-verde-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_GUIRNALDA",
+                "kind": "estructura"
+              },
+              "product_id": "P-VERDE",
+              "sku": "SKU-V-VERDE-18",
+              "sku_original": "SHOP-V-VERDE-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-VERDE-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex verde — R-18 / PAQUETE X 25",
+              "unidades": 6,
+              "unidades_inferidas": false,
+              "variant_id": "V-VERDE-18"
+            },
+            {
+              "acabado": null,
+              "color": "crema",
+              "diam_cm": 45.7,
+              "diam_pulg": 18.0,
+              "estructura_id": "EST_02_GUIRNALDA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-crema-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_GUIRNALDA",
+                "kind": "estructura"
+              },
+              "product_id": "P-CREMA",
+              "sku": "SKU-V-CREMA-18",
+              "sku_original": "SHOP-V-CREMA-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-CREMA-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex crema — R-18 / PAQUETE X 25",
+              "unidades": 3,
+              "unidades_inferidas": false,
+              "variant_id": "V-CREMA-18"
+            },
+            {
+              "acabado": null,
+              "color": "verde",
+              "diam_cm": 61.0,
+              "diam_pulg": 24.0,
+              "estructura_id": "EST_02_GUIRNALDA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-verde-24.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_GUIRNALDA",
+                "kind": "estructura"
+              },
+              "product_id": "P-VERDE",
+              "sku": "SKU-V-VERDE-24",
+              "sku_original": "SHOP-V-VERDE-24",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-VERDE-24",
+              "sustitucion": null,
+              "tamano_codigo": "R-24",
+              "titulo": "Globo latex verde — R-24 / PAQUETE X 25",
+              "unidades": 4,
+              "unidades_inferidas": false,
+              "variant_id": "V-VERDE-24"
+            },
+            {
+              "acabado": null,
+              "color": "crema",
+              "diam_cm": 61.0,
+              "diam_pulg": 24.0,
+              "estructura_id": "EST_02_GUIRNALDA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-crema-24.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_GUIRNALDA",
+                "kind": "estructura"
+              },
+              "product_id": "P-CREMA",
+              "sku": "SKU-V-CREMA-24",
+              "sku_original": "SHOP-V-CREMA-24",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-CREMA-24",
+              "sustitucion": null,
+              "tamano_codigo": "R-24",
+              "titulo": "Globo latex crema — R-24 / PAQUETE X 25",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-CREMA-24"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 44.68,
+              "unidades": 21
+            },
+            {
+              "diam_pulg": 9.0,
+              "forma": "redondo",
+              "pct": 25.53,
+              "unidades": 12
+            },
+            {
+              "diam_pulg": 18.0,
+              "forma": "redondo",
+              "pct": 19.15,
+              "unidades": 9
+            },
+            {
+              "diam_pulg": 24.0,
+              "forma": "redondo",
+              "pct": 10.64,
+              "unidades": 5
+            }
+          ],
+          "nombre": "Guirnalda superior",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "guirnalda",
+          "total_unidades": 47,
+          "ubicacion": "arco_central"
+        },
+        {
+          "eje_m": 0.5,
+          "estructura_id": "EST_03_CENTRO_MESA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "crema",
+              "diam_cm": 22.9,
+              "diam_pulg": 9.0,
+              "estructura_id": "EST_03_CENTRO_MESA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-crema-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_03_CENTRO_MESA",
+                "kind": "estructura"
+              },
+              "product_id": "P-CREMA",
+              "sku": "SKU-V-CREMA-9",
+              "sku_original": "SHOP-V-CREMA-9",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-CREMA-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex crema — R-9 / PAQUETE X 50",
+              "unidades": 12,
+              "unidades_inferidas": false,
+              "variant_id": "V-CREMA-9"
+            },
+            {
+              "acabado": null,
+              "color": "crema",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_03_CENTRO_MESA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-crema-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_03_CENTRO_MESA",
+                "kind": "estructura"
+              },
+              "product_id": "P-CREMA",
+              "sku": "SKU-V-CREMA-12",
+              "sku_original": "SHOP-V-CREMA-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-CREMA-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex crema — R-12 / PAQUETE X 50",
+              "unidades": 18,
+              "unidades_inferidas": false,
+              "variant_id": "V-CREMA-12"
+            },
+            {
+              "acabado": null,
+              "color": "crema",
+              "diam_cm": 45.7,
+              "diam_pulg": 18.0,
+              "estructura_id": "EST_03_CENTRO_MESA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-crema-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_03_CENTRO_MESA",
+                "kind": "estructura"
+              },
+              "product_id": "P-CREMA",
+              "sku": "SKU-V-CREMA-18",
+              "sku_original": "SHOP-V-CREMA-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-CREMA-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex crema — R-18 / PAQUETE X 25",
+              "unidades": 12,
+              "unidades_inferidas": false,
+              "variant_id": "V-CREMA-18"
+            },
+            {
+              "acabado": null,
+              "color": "crema",
+              "diam_cm": 61.0,
+              "diam_pulg": 24.0,
+              "estructura_id": "EST_03_CENTRO_MESA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-crema-24.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_03_CENTRO_MESA",
+                "kind": "estructura"
+              },
+              "product_id": "P-CREMA",
+              "sku": "SKU-V-CREMA-24",
+              "sku_original": "SHOP-V-CREMA-24",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-CREMA-24",
+              "sustitucion": null,
+              "tamano_codigo": "R-24",
+              "titulo": "Globo latex crema — R-24 / PAQUETE X 25",
+              "unidades": 6,
+              "unidades_inferidas": false,
+              "variant_id": "V-CREMA-24"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 37.5,
+              "unidades": 18
+            },
+            {
+              "diam_pulg": 18.0,
+              "forma": "redondo",
+              "pct": 25.0,
+              "unidades": 12
+            },
+            {
+              "diam_pulg": 9.0,
+              "forma": "redondo",
+              "pct": 25.0,
+              "unidades": 12
+            },
+            {
+              "diam_pulg": 24.0,
+              "forma": "redondo",
+              "pct": 12.5,
+              "unidades": 6
+            }
+          ],
+          "nombre": "Centros de mesa",
+          "repeticiones": 6,
+          "supuestos": [],
+          "tipo": "centro_mesa",
+          "total_unidades": 48,
+          "ubicacion": "mesas_invitados"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-001.",
+      "plan": {
+        "concepto": {
+          "descripcion": "Pared de globos con guirnalda y centros de mesa.",
+          "paleta": [
+            "verde",
+            "crema"
+          ],
+          "titulo": "Pared verde y crema"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "sencilla",
+            "estructura_id": "EST_01_PARED",
+            "materiales": [
+              {
+                "color": "verde",
+                "participacion": 1,
+                "product_id": "P-VERDE",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.4,
+              "ancho_m": 2.4
+            },
+            "mezcla": "solo_grandes",
+            "nombre": "Pared de globos",
+            "porque": "Fondo de fotos con globos grandes.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "pared",
+            "ubicacion": "fondo_pared"
+          },
+          {
+            "densidad": "lujosa",
+            "estructura_id": "EST_02_GUIRNALDA",
+            "materiales": [
+              {
+                "color": "verde",
+                "participacion": 0.7,
+                "product_id": "P-VERDE",
+                "rol_material": "principal"
+              },
+              {
+                "color": "crema",
+                "participacion": 0.3,
+                "product_id": "P-CREMA",
+                "rol_material": "secundario"
+              }
+            ],
+            "medidas": {
+              "largo_m": 2.5
+            },
+            "mezcla": "organica_gruesa",
+            "nombre": "Guirnalda superior",
+            "porque": "Remata la pared.",
+            "repeticiones": 1,
+            "rol_escena": "acento",
+            "tipo": "guirnalda",
+            "ubicacion": "arco_central"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_03_CENTRO_MESA",
+            "materiales": [
+              {
+                "color": "crema",
+                "participacion": 1,
+                "product_id": "P-CREMA",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 0.5,
+              "ancho_m": 0.4
+            },
+            "mezcla": "organica_gruesa",
+            "nombre": "Centros de mesa",
+            "porque": "Repiten la paleta en cada mesa.",
+            "repeticiones": 6,
+            "rol_escena": "relleno",
+            "tipo": "centro_mesa",
+            "ubicacion": "mesas_invitados"
+          }
+        ],
+        "plan_id": "22222222-2222-4222-8222-222222222223",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "9beab1506395f3e2819ea3eded02d86e46bf4b860f8ba875dc43ede47c941f9a",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 116500,
+        "consumption_cost": 123070,
+        "covered_waste_reserve": 15,
+        "design_quantity": 184,
+        "globos_por_tamano": {
+          "R-12": 39,
+          "R-18": 74,
+          "R-24": 47,
+          "R-9": 24
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 191,
+        "purchase_cost": 207000,
+        "target_waste_reserve": 15,
+        "total_cop": 207000,
+        "total_unidades": 184,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 123070,
+      "covered_waste_reserve": 15,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 176,
+      "lines": [
+        {
+          "available": true,
+          "color": "crema",
+          "consumption_cost_cop": 8160,
+          "design_quantity": 24,
+          "diameter_inches": 12.0,
+          "id": "V-CREMA-12",
+          "leftover_inventory": 26,
+          "origins": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 17000,
+          "packages": 1,
+          "product_id": "P-CREMA",
+          "purchase_cost_cop": 17000,
+          "purchase_quantity": 50,
+          "required_quantity": 24,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_02_GUIRNALDA",
+            "EST_03_CENTRO_MESA"
+          ],
+          "subtotal_cop": 17000,
+          "surplus": 26,
+          "title": "Globo latex crema — R-12 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 24,
+          "variant_id": "V-CREMA-12",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "crema",
+          "consumption_cost_cop": 12000,
+          "design_quantity": 15,
+          "diameter_inches": 18.0,
+          "id": "V-CREMA-18",
+          "leftover_inventory": 10,
+          "origins": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 20000,
+          "packages": 1,
+          "product_id": "P-CREMA",
+          "purchase_cost_cop": 20000,
+          "purchase_quantity": 25,
+          "required_quantity": 15,
+          "size": "R-18",
+          "size_code": "R-18",
+          "structures": [
+            "EST_02_GUIRNALDA",
+            "EST_03_CENTRO_MESA"
+          ],
+          "subtotal_cop": 20000,
+          "surplus": 10,
+          "title": "Globo latex crema — R-18 / PAQUETE X 25",
+          "units_per_package": 25,
+          "used": 15,
+          "variant_id": "V-CREMA-18",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "crema",
+          "consumption_cost_cop": 6440,
+          "design_quantity": 7,
+          "diameter_inches": 24.0,
+          "id": "V-CREMA-24",
+          "leftover_inventory": 18,
+          "origins": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 23000,
+          "packages": 1,
+          "product_id": "P-CREMA",
+          "purchase_cost_cop": 23000,
+          "purchase_quantity": 25,
+          "required_quantity": 7,
+          "size": "R-24",
+          "size_code": "R-24",
+          "structures": [
+            "EST_02_GUIRNALDA",
+            "EST_03_CENTRO_MESA"
+          ],
+          "subtotal_cop": 23000,
+          "surplus": 18,
+          "title": "Globo latex crema — R-24 / PAQUETE X 25",
+          "units_per_package": 25,
+          "used": 7,
+          "variant_id": "V-CREMA-24",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "crema",
+          "consumption_cost_cop": 4960,
+          "design_quantity": 16,
+          "diameter_inches": 9.0,
+          "id": "V-CREMA-9",
+          "leftover_inventory": 34,
+          "origins": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_03_CENTRO_MESA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 15500,
+          "packages": 1,
+          "product_id": "P-CREMA",
+          "purchase_cost_cop": 15500,
+          "purchase_quantity": 50,
+          "required_quantity": 16,
+          "size": "R-9",
+          "size_code": "R-9",
+          "structures": [
+            "EST_02_GUIRNALDA",
+            "EST_03_CENTRO_MESA"
+          ],
+          "subtotal_cop": 15500,
+          "surplus": 34,
+          "title": "Globo latex crema — R-9 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 16,
+          "variant_id": "V-CREMA-9",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "verde",
+          "consumption_cost_cop": 4800,
+          "design_quantity": 15,
+          "diameter_inches": 12.0,
+          "id": "V-VERDE-12",
+          "leftover_inventory": 35,
+          "origins": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 16000,
+          "packages": 1,
+          "product_id": "P-VERDE",
+          "purchase_cost_cop": 16000,
+          "purchase_quantity": 50,
+          "required_quantity": 15,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_02_GUIRNALDA"
+          ],
+          "subtotal_cop": 16000,
+          "surplus": 35,
+          "title": "Globo latex verde — R-12 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 15,
+          "variant_id": "V-VERDE-12",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "verde",
+          "consumption_cost_cop": 44840,
+          "design_quantity": 59,
+          "diameter_inches": 18.0,
+          "id": "V-VERDE-18",
+          "leftover_inventory": 16,
+          "origins": [
+            {
+              "id": "EST_01_PARED",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 19000,
+          "packages": 3,
+          "product_id": "P-VERDE",
+          "purchase_cost_cop": 57000,
+          "purchase_quantity": 75,
+          "required_quantity": 59,
+          "size": "R-18",
+          "size_code": "R-18",
+          "structures": [
+            "EST_01_PARED",
+            "EST_02_GUIRNALDA"
+          ],
+          "subtotal_cop": 57000,
+          "surplus": 16,
+          "title": "Globo latex verde — R-18 / PAQUETE X 25",
+          "units_per_package": 25,
+          "used": 59,
+          "variant_id": "V-VERDE-18",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "verde",
+          "consumption_cost_cop": 35200,
+          "design_quantity": 40,
+          "diameter_inches": 24.0,
+          "id": "V-VERDE-24",
+          "leftover_inventory": 10,
+          "origins": [
+            {
+              "id": "EST_01_PARED",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 22000,
+          "packages": 2,
+          "product_id": "P-VERDE",
+          "purchase_cost_cop": 44000,
+          "purchase_quantity": 50,
+          "required_quantity": 40,
+          "size": "R-24",
+          "size_code": "R-24",
+          "structures": [
+            "EST_01_PARED",
+            "EST_02_GUIRNALDA"
+          ],
+          "subtotal_cop": 44000,
+          "surplus": 10,
+          "title": "Globo latex verde — R-24 / PAQUETE X 25",
+          "units_per_package": 25,
+          "used": 40,
+          "variant_id": "V-VERDE-24",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "verde",
+          "consumption_cost_cop": 6670,
+          "design_quantity": 8,
+          "diameter_inches": 9.0,
+          "id": "V-VERDE-9",
+          "leftover_inventory": 27,
+          "origins": [
+            {
+              "id": "EST_02_GUIRNALDA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 14500,
+          "packages": 1,
+          "product_id": "P-VERDE",
+          "purchase_cost_cop": 14500,
+          "purchase_quantity": 50,
+          "required_quantity": 23,
+          "size": "R-9",
+          "size_code": "R-9",
+          "structures": [
+            "EST_02_GUIRNALDA"
+          ],
+          "subtotal_cop": 14500,
+          "surplus": 42,
+          "title": "Globo latex verde — R-9 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 8,
+          "variant_id": "V-VERDE-9",
+          "waste_reserve": 15
+        }
+      ],
+      "plan_hash": "9beab1506395f3e2819ea3eded02d86e46bf4b860f8ba875dc43ede47c941f9a",
+      "purchase_cost_cop": 207000,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 15,
+      "total_cop": 207000,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "22-matriz-mezclas-densidades",
+  "plan": {
+    "concepto": {
+      "descripcion": "Pared de globos con guirnalda y centros de mesa.",
+      "paleta": [
+        "verde",
+        "crema"
+      ],
+      "titulo": "Pared verde y crema"
+    },
+    "espacio": {
+      "fuente": "cliente",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "densidad": "sencilla",
+        "estructura_id": "EST_01_PARED",
+        "materiales": [
+          {
+            "color": "verde",
+            "participacion": 1,
+            "product_id": "P-VERDE",
+            "rol_material": "principal"
+          }
+        ],
+        "medidas": {
+          "alto_m": 2.4,
+          "ancho_m": 2.4
+        },
+        "mezcla": "solo_grandes",
+        "nombre": "Pared de globos",
+        "porque": "Fondo de fotos con globos grandes.",
+        "repeticiones": 1,
+        "rol_escena": "focal",
+        "tipo": "pared",
+        "ubicacion": "fondo_pared"
+      },
+      {
+        "densidad": "lujosa",
+        "estructura_id": "EST_02_GUIRNALDA",
+        "materiales": [
+          {
+            "color": "verde",
+            "participacion": 0.7,
+            "product_id": "P-VERDE",
+            "rol_material": "principal"
+          },
+          {
+            "color": "crema",
+            "participacion": 0.3,
+            "product_id": "P-CREMA",
+            "rol_material": "secundario"
+          }
+        ],
+        "medidas": {
+          "largo_m": 2.5
+        },
+        "mezcla": "organica_gruesa",
+        "nombre": "Guirnalda superior",
+        "porque": "Remata la pared.",
+        "repeticiones": 1,
+        "rol_escena": "acento",
+        "tipo": "guirnalda",
+        "ubicacion": "arco_central"
+      },
+      {
+        "densidad": "media",
+        "estructura_id": "EST_03_CENTRO_MESA",
+        "materiales": [
+          {
+            "color": "crema",
+            "participacion": 1,
+            "product_id": "P-CREMA",
+            "rol_material": "principal"
+          }
+        ],
+        "medidas": {
+          "alto_m": 0.5,
+          "ancho_m": 0.4
+        },
+        "mezcla": "organica_gruesa",
+        "nombre": "Centros de mesa",
+        "porque": "Repiten la paleta en cada mesa.",
+        "repeticiones": 6,
+        "rol_escena": "relleno",
+        "tipo": "centro_mesa",
+        "ubicacion": "mesas_invitados"
+      }
+    ],
+    "plan_id": "22222222-2222-4222-8222-222222222223",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "supuestos": []
+  }
+}

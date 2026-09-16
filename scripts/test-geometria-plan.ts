@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { calcularDespieceEstructura, calcularEje } from "../src/lib/medidas/geometria";
+import { calcularDespieceEstructura, calcularEje, calcularMedidas, ErrorRepartoGlobos, factorGlobosPorMetro, MEZCLAS_DISPONIBLES, proporcionesEfectivas, pulgadasDeMezcla, tamanosObligatorios, type Densidad, type Figura, type Mezcla } from "../src/lib/medidas/geometria";
 
 const base = {
   tipo: "arco" as const,
@@ -71,4 +71,125 @@ const dosAzules = calcularDespieceEstructura({ tipo: "columna", medidas: { altoM
 const unidadesDeMaterial = (indice: number) => dosAzules.despiece.filter((linea) => linea.materialIndex === indice).reduce((suma, linea) => suma + linea.cantidad, 0);
 assert.ok(unidadesDeMaterial(0) > unidadesDeMaterial(1) && unidadesDeMaterial(1) > 0, `${unidadesDeMaterial(0)} / ${unidadesDeMaterial(1)}`);
 assert.equal(unidadesDeMaterial(0) + unidadesDeMaterial(1), dosAzules.totalGlobos);
-console.log(`[PASS] geometría tamaño × color — ${uno.totalGlobos} globos, 10 celdas y 200 combinaciones sin pérdida`);
+
+// --- Tamaños obligatorios del cliente (ADR 0022) ---------------------------
+// La mezcla efectiva son los tamaños de la mezcla dentro del conjunto pedido,
+// renormalizados a 1; si ninguno está, partes iguales entre los pedidos. El
+// total sale de esa mezcla efectiva, así que el arco deja de cotizarse a la
+// mitad (R-12 solo) y un tamaño fuera de la mezcla deja de multiplicarlo.
+const arcoBase = { tipo: "arco" as const, medidas: { anchoM: 3, altoM: 2.4 }, repeticiones: 1, densidad: "media" as const, materiales: [{ participacion: 1 }] };
+const arcoConTamanos = (mezcla: Mezcla, tamanos?: number[]) => calcularDespieceEstructura({ ...arcoBase, mezcla, tamanos });
+assert.equal(arcoConTamanos("organica_fina").totalGlobos, 119);
+assert.equal(arcoConTamanos("organica_fina", [12]).totalGlobos, 104, "antes 65: el total salía de la mezcla completa");
+assert.equal(arcoConTamanos("organica_fina", [12, 18]).totalGlobos, 94, "antes 71");
+assert.equal(arcoConTamanos("clasica", [18, 24]).totalGlobos, 64, "antes 264: proporción 1 por tamaño");
+assert.equal(arcoConTamanos("organica_fina", [36]).totalGlobos, 35, "antes 119 globos de 36 pulgadas");
+// Un tamaño pedido que la mezcla no puede ubicar queda visible, no se pierde.
+assert.deepEqual(arcoConTamanos("organica_fina", [12, 36]).tamanosSinUbicar, [36]);
+assert.deepEqual(arcoConTamanos("organica_fina", [12, 36]).despiece.map((linea) => linea.pulgadas), [12]);
+assert.deepEqual(arcoConTamanos("organica_fina", [36]).tamanosSinUbicar, [], "sin tamaños de la mezcla se reparten por partes iguales");
+// El conteo baja al crecer el diámetro exigido: es el mismo modelo de área.
+const totalesPorTamano = [5, 9, 12, 18, 24].map((pulgadas) => arcoConTamanos("organica_fina", [pulgadas]).totalGlobos);
+assert.ok(totalesPorTamano.every((total, index) => index === 0 || total < totalesPorTamano[index - 1]!), JSON.stringify(totalesPorTamano));
+// El invariante de cuotas falla en vez de inventar un conteo.
+assert.throws(
+  () => calcularMedidas({ figura: "arco", anchoM: 3, altoM: 2.4, proporciones: [{ pulgadas: 12, proporcion: 0.5 }] }),
+  ErrorRepartoGlobos,
+);
+for (const mezcla of MEZCLAS_DISPONIBLES) {
+  const pedidos = [5, 9, 12, 18, 24, 36];
+  for (let mascara = 1; mascara < 2 ** pedidos.length; mascara += 1) {
+    const tamanos = pedidos.filter((_pulgadas, indice) => (mascara >> indice) & 1);
+    const { proporciones, sinUbicar } = proporcionesEfectivas(mezcla, tamanos);
+    const suma = proporciones.reduce((total, tamano) => total + tamano.proporcion, 0);
+    assert.ok(Math.abs(suma - 1) < 1e-9, `${mezcla} ${tamanos}: proporciones suman ${suma}`);
+    assert.ok(proporciones.every((tamano) => tamanos.includes(tamano.pulgadas)), `${mezcla} ${tamanos}: tamaño fuera de lo pedido`);
+    const enMezcla = pulgadasDeMezcla(mezcla).filter((pulgadas) => tamanos.includes(pulgadas));
+    assert.deepEqual(sinUbicar, enMezcla.length ? tamanos.filter((pulgadas) => !enMezcla.includes(pulgadas)) : []);
+    const resultado = calcularDespieceEstructura({ ...arcoBase, mezcla, tamanos, materiales: [{ color: "rojo", participacion: 0.7 }, { color: "azul", participacion: 0.3 }] });
+    assert.equal(resultado.despiece.reduce((total, linea) => total + linea.cantidad, 0), resultado.totalGlobos);
+    assert.ok(resultado.despiece.every((linea) => tamanos.includes(linea.pulgadas)), `${mezcla} ${tamanos}: línea fuera de lo pedido`);
+  }
+}
+
+// --- Parseo de `restricciones.tamanos[].valor` -----------------------------
+// El valor es texto libre del modelo: TypeScript lo leía con Number() y Python
+// con int(), así que los dos aceptaban "R-12" y diferían en decimales,
+// exponentes, hexadecimal, subrayados, dígitos no ASCII y la cadena vacía. Como
+// la mezcla efectiva decide el TOTAL, esa diferencia cambiaba conteos, costos y
+// plan_hash entre backends. Espejo: `_required_sizes` en app/plan.py.
+assert.deepEqual(tamanosObligatorios({ tamanos: [{ valor: "R-12" }, { valor: "r12" }, { valor: "18" }, { valor: " R-24 " }, { valor: "R-12" }] }), [12, 18, 24]);
+assert.deepEqual(
+  tamanosObligatorios({ tamanos: [{ valor: "R-12.5" }, { valor: "R-0x0C" }, { valor: "R-1e1" }, { valor: "R-" }, { valor: "R-1_0" }, { valor: "R-١٢" }, { valor: "R-0" }, { valor: "R-1234" }, { valor: "grandes" }] }),
+  [],
+  "antes: 12.5, 12, 10 y 0 pulgadas en TypeScript; 10 pulgadas en Python",
+);
+assert.deepEqual(tamanosObligatorios({ tamanos: [{ valor: "R-12", polaridad: "prohibido" }, { valor: "R-18", polaridad: "obligatorio" }] }), [18]);
+assert.deepEqual(tamanosObligatorios(undefined), []);
+// "R-" daba 0 pulgadas: área ponderada 0 y un arco entero sin un solo globo.
+assert.equal(arcoConTamanos("organica_fina", tamanosObligatorios({ tamanos: [{ valor: "R-" }] })).totalGlobos, 119, "antes 0 globos");
+
+// --- Factor de globos por metro (puerta física de estimacion.ts) -----------
+// Sin tamaños obligatorios vale 1 exacto, así que la puerta no cambia para los
+// planes de siempre; con ellos sigue al conteo, que es lo que hace comparables
+// unos umbrales calibrados con mezclas dominadas por R-12.
+for (const mezcla of MEZCLAS_DISPONIBLES) {
+  assert.equal(factorGlobosPorMetro(mezcla, proporcionesEfectivas(mezcla).proporciones), 1, mezcla);
+  for (const tamanos of [[5], [9], [12], [18], [24], [36], [12, 18], [18, 24], [5, 9, 12]]) {
+    const factor = factorGlobosPorMetro(mezcla, proporcionesEfectivas(mezcla, tamanos).proporciones);
+    const completo = arcoConTamanos(mezcla).totalGlobos;
+    const restringido = arcoConTamanos(mezcla, tamanos).totalGlobos;
+    assert.ok(factor > 0, `${mezcla} ${tamanos}: factor ${factor}`);
+    assert.ok(
+      Math.abs(restringido - completo * factor) <= 1 + factor,
+      `${mezcla} ${tamanos}: ${restringido} globos frente a ${completo} × ${factor}`,
+    );
+  }
+}
+
+// --- Reparto en dos márgenes (ADR 0022) ------------------------------------
+// El total por tamaño no depende de cuántos colores tenga la estructura (antes
+// un segundo color borraba el acento R-24) y el total por material se queda a
+// menos de una unidad de su participación en cada instancia.
+const FIGURAS: Array<{ tipo: Figura; medidas: { anchoM?: number; altoM?: number; largoM?: number }; repeticiones: number }> = [
+  { tipo: "arco", medidas: { anchoM: 3, altoM: 2.4 }, repeticiones: 1 },
+  { tipo: "columna", medidas: { altoM: 1.8 }, repeticiones: 3 },
+  { tipo: "guirnalda", medidas: { largoM: 2.5 }, repeticiones: 2 },
+  { tipo: "centro_mesa", medidas: { anchoM: 0.4, altoM: 0.5 }, repeticiones: 10 },
+  { tipo: "pared", medidas: { anchoM: 2.4, altoM: 2.4 }, repeticiones: 1 },
+];
+const REPARTOS: number[][] = [[1], [0.5, 0.5], [0.6, 0.4], [0.7, 0.2, 0.1], [0.34, 0.33, 0.33], [0.4, 0.3, 0.2, 0.1], [0.97, 0.01, 0.01, 0.01]];
+const DENSIDADES: Densidad[] = ["sencilla", "media", "lujosa"];
+let combinaciones = 0;
+for (const figura of FIGURAS) {
+  for (const mezcla of MEZCLAS_DISPONIBLES) {
+    for (const densidad of DENSIDADES) {
+      const referencia = calcularDespieceEstructura({ tipo: figura.tipo, medidas: figura.medidas, repeticiones: 1, densidad, mezcla, materiales: [{ participacion: 1 }] });
+      const totalPorTamanoReferencia = new Map(referencia.despiece.map((linea) => [linea.pulgadas, linea.cantidad]));
+      for (const participaciones of REPARTOS) {
+        const materiales = participaciones.map((participacion, indice) => ({ color: `color-${indice}`, participacion }));
+        const resultado = calcularDespieceEstructura({ tipo: figura.tipo, medidas: figura.medidas, repeticiones: figura.repeticiones, densidad, mezcla, materiales });
+        const etiqueta = `${figura.tipo}/${mezcla}/${densidad}/${participaciones.length} materiales`;
+        combinaciones += 1;
+        assert.equal(resultado.despiece.length, pulgadasDeMezcla(mezcla).length * participaciones.length, etiqueta);
+        assert.equal(resultado.despiece.reduce((total, linea) => total + linea.cantidad, 0), resultado.totalGlobos, etiqueta);
+        assert.equal(resultado.totalGlobos, referencia.totalGlobos * figura.repeticiones, etiqueta);
+        const porTamano = new Map<number, number>();
+        const porMaterial = new Map<number, number>();
+        for (const linea of resultado.despiece) {
+          porTamano.set(linea.pulgadas, (porTamano.get(linea.pulgadas) ?? 0) + linea.cantidad);
+          porMaterial.set(linea.materialIndex, (porMaterial.get(linea.materialIndex) ?? 0) + linea.cantidad);
+        }
+        for (const [pulgadas, cantidad] of porTamano) {
+          assert.equal(cantidad, (totalPorTamanoReferencia.get(pulgadas) ?? 0) * figura.repeticiones, `${etiqueta}: R-${pulgadas} depende del número de colores`);
+        }
+        for (const [indice, cantidad] of porMaterial) {
+          const esperado = referencia.totalGlobos * participaciones[indice]!;
+          assert.ok(Math.abs(cantidad / figura.repeticiones - esperado) < 1, `${etiqueta}: material ${indice} con ${cantidad / figura.repeticiones} frente a ${esperado}`);
+        }
+      }
+    }
+  }
+}
+
+console.log(`[PASS] geometría tamaño × color — ${uno.totalGlobos} globos, 10 celdas, 200 combinaciones sin pérdida, ${combinaciones} repartos en dos márgenes y 252 subconjuntos de tamaños obligatorios`);

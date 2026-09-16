@@ -106,7 +106,7 @@
       ],
       "special_elements": [],
       "totals": {
-        "additional_waste_packages": 10,
+        "additional_waste_packages": 1,
         "consumption_cost": 13929,
         "covered_waste_reserve": 5,
         "design_quantity": 60,
@@ -119,7 +119,7 @@
         "target_waste_reserve": 5,
         "uncovered_waste_reserve": 0,
         "waste_adjusted_quantity": 65,
-        "waste_only_savings_cop": 1500
+        "waste_only_savings_cop": 0
       },
       "version": "design-material-estimate-v1",
       "warnings": []
@@ -278,7 +278,7 @@
           "ubicacion": "lateral_derecho"
         }
       ],
-      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 60\nTarget waste reserve: 5\nNatural package surplus: 3\nUsable waste coverage: 5\nAdditional packages required for waste: 10\nGlobo latex azul — R-12 paquete x7: design=60, required=65, package=7, packages=10, purchased=70, natural surplus=10, waste reserve=5, leftover inventory=5",
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 60\nTarget waste reserve: 5\nNatural package surplus: 3\nUsable waste coverage: 5\nAdditional packages required for waste: 1\nGlobo latex azul — R-12 paquete x7: design=60, required=65, package=7, packages=10, purchased=70, natural surplus=10, waste reserve=5, leftover inventory=5",
       "plan": {
         "concepto": {
           "descripcion": "Dos columnas con paquetes pequenos para controlar la merma.",
@@ -346,7 +346,7 @@
       "sin_cobertura": [],
       "sustituciones": [],
       "totales": {
-        "additional_waste_packages": 10,
+        "additional_waste_packages": 1,
         "ahorro_paquetes_cop": 0,
         "consumption_cost": 13929,
         "covered_waste_reserve": 5,
@@ -488,7 +488,7 @@
       ],
       "special_elements": [],
       "totals": {
-        "additional_waste_packages": 10,
+        "additional_waste_packages": 1,
         "consumption_cost": 13929,
         "covered_waste_reserve": 5,
         "design_quantity": 60,
@@ -501,7 +501,7 @@
         "target_waste_reserve": 5,
         "uncovered_waste_reserve": 0,
         "waste_adjusted_quantity": 65,
-        "waste_only_savings_cop": 1500
+        "waste_only_savings_cop": 0
       },
       "version": "design-material-estimate-v1",
       "warnings": []
@@ -731,7 +731,7 @@
       "sin_cobertura": [],
       "sustituciones": [],
       "totales": {
-        "additional_waste_packages": 10,
+        "additional_waste_packages": 1,
         "ahorro_paquetes_cop": 0,
         "consumption_cost": 13929,
         "covered_waste_reserve": 5,

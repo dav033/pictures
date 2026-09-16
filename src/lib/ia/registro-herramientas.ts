@@ -2,7 +2,7 @@ import "server-only";
 import type { RegistroHerramientas } from "@sempertex/agente-core";
 import type { Pool } from "pg";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
-import { calcularMedidas, type Figura, type ResultadoMedidas } from "@/lib/medidas/geometria";
+import { calcularMedidas, tamanosObligatorios, type Figura, type ResultadoMedidas } from "@/lib/medidas/geometria";
 import { getRagPool } from "@/lib/rag/db";
 import { buscarCatalogoRag, type ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { buscarCatalogoRagConPresupuesto, type PoolItemPresupuesto, type ResultadoBusquedaPresupuesto } from "@/lib/rag/chat/buscar-presupuesto";
@@ -51,7 +51,7 @@ import { PLAN_DECORACION_ENABLED, RAG_ENABLED, RAG_FRANJAS_ENABLED, featureEnabl
 import { isPythonAdapterError, seleccionarBackendPython } from "@/lib/ia/python-adapter";
 import { AllowlistProductoVarianteError } from "@/lib/plan/allowlist-producto-variante";
 import { sceneShadowPipeline } from "@/lib/scene/orchestrator";
-import { blockingPhysicalWarnings, validateMaterialEstimate } from "@/lib/materiales/estimacion";
+import { physicalWarningsForPlan, validateMaterialEstimate } from "@/lib/materiales/estimacion";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
 import { ajustarCoberturaPlan, mezclasAdmisiblesEstructura, type AjusteCobertura } from "@/lib/plan/cobertura-materiales";
@@ -317,7 +317,7 @@ export const ACCION_TAMANO_CLIENTE_SIN_COBERTURA = "Los tamaños que faltan son 
 
 /** Every uncovered size is a size the customer made mandatory: retrying the same plan cannot work. */
 function faltanTamanosDelCliente(sinCobertura: ReadonlyArray<{ tamano: string }>, plan: PlanDecoracion): boolean {
-  const delCliente = new Set((plan.restricciones?.tamanos ?? []).filter((item) => item.polaridad === "obligatorio").map((item) => `R-${item.valor.replace(/^R-/i, "")}`));
+  const delCliente = new Set(tamanosObligatorios(plan.restricciones).map((pulgadas) => `R-${pulgadas}`));
   return delCliente.size > 0 && sinCobertura.length > 0 && sinCobertura.every((item) => delCliente.has(item.tamano));
 }
 
@@ -784,7 +784,9 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     const resuelto = resolucion.resuelto;
     const materialEstimate = resolucion.materialEstimate;
     const estimateValidation = validateMaterialEstimate(materialEstimate);
-    const physicalWarnings = blockingPhysicalWarnings(materialEstimate);
+    // Un solo dueño de la puerta física sobre el plan resuelto de cualquiera de
+    // los dos backends (estimacion.ts), por estructura lineal y con su densidad.
+    const physicalWarnings = physicalWarningsForPlan(resuelto);
     const auditarResuelto = (status: string, error?: string) => encolarEscrituraObservabilidad(auditarPlan({
       requestId: estado.ragRequestId,
       planHash: resuelto.plan_hash,

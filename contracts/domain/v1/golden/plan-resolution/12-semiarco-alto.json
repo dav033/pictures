@@ -132,7 +132,7 @@
       ],
       "special_elements": [],
       "totals": {
-        "additional_waste_packages": 5,
+        "additional_waste_packages": 1,
         "consumption_cost": 42400,
         "covered_waste_reserve": 16,
         "design_quantity": 196,
@@ -145,7 +145,7 @@
         "target_waste_reserve": 16,
         "uncovered_waste_reserve": 0,
         "waste_adjusted_quantity": 212,
-        "waste_only_savings_cop": 10000
+        "waste_only_savings_cop": 0
       },
       "version": "design-material-estimate-v1",
       "warnings": []
@@ -404,7 +404,7 @@
           "ubicacion": "fondo_pared"
         }
       ],
-      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 196\nTarget waste reserve: 16\nNatural package surplus: 4\nUsable waste coverage: 16\nAdditional packages required for waste: 5\nGlobo latex rojo — R-12: design=196, required=212, package=50, packages=5, purchased=250, natural surplus=54, waste reserve=16, leftover inventory=38",
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 196\nTarget waste reserve: 16\nNatural package surplus: 4\nUsable waste coverage: 16\nAdditional packages required for waste: 1\nGlobo latex rojo — R-12: design=196, required=212, package=50, packages=5, purchased=250, natural surplus=54, waste reserve=16, leftover inventory=38",
       "plan": {
         "concepto": {
           "descripcion": "Semiarco alto y columna rojos separados.",
@@ -523,7 +523,7 @@
       "sin_cobertura": [],
       "sustituciones": [],
       "totales": {
-        "additional_waste_packages": 5,
+        "additional_waste_packages": 1,
         "ahorro_paquetes_cop": 10000,
         "consumption_cost": 42400,
         "covered_waste_reserve": 16,
@@ -701,7 +701,7 @@
       ],
       "special_elements": [],
       "totals": {
-        "additional_waste_packages": 5,
+        "additional_waste_packages": 1,
         "consumption_cost": 42400,
         "covered_waste_reserve": 16,
         "design_quantity": 196,
@@ -714,7 +714,7 @@
         "target_waste_reserve": 16,
         "uncovered_waste_reserve": 0,
         "waste_adjusted_quantity": 212,
-        "waste_only_savings_cop": 10000
+        "waste_only_savings_cop": 0
       },
       "version": "design-material-estimate-v1",
       "warnings": []
@@ -1095,7 +1095,7 @@
       "sin_cobertura": [],
       "sustituciones": [],
       "totales": {
-        "additional_waste_packages": 5,
+        "additional_waste_packages": 1,
         "ahorro_paquetes_cop": 10000,
         "consumption_cost": 42400,
         "covered_waste_reserve": 16,

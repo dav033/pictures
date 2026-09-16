@@ -559,9 +559,20 @@ def _band_profile_factor(official: str | None) -> float:
 
 
 def _total_globos(
-    tipo: str, measures: Mapping[str, object], density: str, mix: str, official: str | None = None
+    tipo: str,
+    measures: Mapping[str, object],
+    density: str,
+    mix: str,
+    official: str | None = None,
+    proportions: Sequence[tuple[int, float]] | None = None,
 ) -> tuple[float, int]:
-    proportions = _MIXES[mix]
+    """Mirror of ``calcularMedidas`` in ``src/lib/medidas/geometria.ts``.
+
+    ``proportions`` is the effective mix when the customer fixed sizes: it
+    decides the weighted balloon area and the dominant diameter, while the band
+    width and the official structure profile still come from the plan mix.
+    """
+    proportions = tuple(proportions) if proportions else _MIXES[mix]
     dominant = max(proportions, key=lambda item: item[1])
     dominant_diameter_cm = dominant[0] * 2.54 * 0.92
     axis = _eje(tipo, measures, official)
@@ -580,27 +591,133 @@ def _total_globos(
     return axis, max(0, total)
 
 
-def _hamilton(
-    total: int, cells: Sequence[tuple[int, str | None, float]]
-) -> list[tuple[int, str | None, int]]:
-    if total <= 0 or not cells:
-        return [(diameter, color, 0) for diameter, color, _quota in cells]
-    floors = [math.floor(quota) for _diameter, _color, quota in cells]
+class BalloonApportionmentError(RuntimeError):
+    """Broken invariant in the integer split: no made-up count is returned."""
+
+
+# Quota invariant tolerance (ADR 0022); it only absorbs floating point error.
+_QUOTA_TOLERANCE = 1e-6
+
+
+def _hamilton(total: int, quotas: Sequence[float], tiebreaks: Sequence[float]) -> list[int]:
+    """Largest remainder split, mirror of ``repartirHamilton`` in geometria.ts.
+
+    Ties are broken by larger remainder, larger ``tiebreak`` (the diameter on
+    the size margin, 0 on the material margin) and finally lower index. The
+    color name no longer takes part: ``localeCompare`` in TypeScript and
+    codepoint order in Python split the same plan differently.
+
+    The quotas must add up to the total; otherwise the split would be a made-up
+    count (the unrenormalized mandatory sizes case).
+    """
+    if not quotas:
+        return []
+    quota_sum = sum(quotas)
+    if abs(quota_sum - total) > _QUOTA_TOLERANCE:
+        raise BalloonApportionmentError(
+            f"quotas add up to {quota_sum} and the total to split is {total}"
+        )
+    if total <= 0:
+        return [0 for _quota in quotas]
+    floors = [math.floor(quota) for quota in quotas]
     remaining = total - sum(floors)
     order = sorted(
-        range(len(cells)),
-        key=lambda index: (
-            -cells[index][2] + floors[index],
-            -cells[index][0],
-            cells[index][1] or "",
-        ),
+        range(len(quotas)),
+        key=lambda index: (-(quotas[index] - floors[index]), -tiebreaks[index], index),
     )
     for index in order:
         if remaining <= 0:
             break
         floors[index] += 1
         remaining -= 1
-    return [(cells[index][0], cells[index][1], floors[index]) for index in range(len(cells))]
+    return floors
+
+
+def _apportion_margins(
+    total: int, proportions: Sequence[tuple[int, float]], shares: Sequence[float]
+) -> list[list[int]]:
+    """Both-margin integer split of one instance, mirror of ``repartirPorMargenes``.
+
+    The size totals come from the effective mix and the material totals from
+    ``participacion``; the size x material matrix respects both. A single
+    Hamilton over the cells kept the total but not the margins: the R-18/R-24
+    accents vanished when a second color was added and the color split drifted
+    on small repeated pieces.
+
+    The matrix is complete (every size x material cell exists) and no cell has a
+    cap, so while a row and a column are both short there is a cell that can
+    take the unit; both deficits, which add up to the same amount, run out
+    together. The greedy sweep is therefore enough and no augmenting path is
+    needed; if a deficit survived it fails instead of returning a matrix whose
+    margins do not close.
+    """
+    if not proportions or not shares:
+        return []
+    share_sum = sum(shares)
+    # The plan schema already requires participaciones adding up to 1 (+-0.001).
+    # Renormalizing here keeps the margin invariant if they arrive otherwise.
+    material_quotas = (
+        [share / share_sum for share in shares]
+        if share_sum > 0
+        else [1 / len(shares) for _share in shares]
+    )
+    size_totals = _hamilton(
+        total,
+        [total * proportion for _diameter, proportion in proportions],
+        [float(diameter) for diameter, _proportion in proportions],
+    )
+    material_totals = _hamilton(
+        total, [total * quota for quota in material_quotas], [0.0 for _quota in material_quotas]
+    )
+    matrix = [[math.floor(units * quota) for quota in material_quotas] for units in size_totals]
+    missing_rows = [units - sum(matrix[row]) for row, units in enumerate(size_totals)]
+    missing_columns = [
+        units - sum(row[column] for row in matrix) for column, units in enumerate(material_totals)
+    ]
+    cells = sorted(
+        (
+            (row, column)
+            for row in range(len(size_totals))
+            for column in range(len(material_quotas))
+        ),
+        key=lambda cell: (
+            -(
+                size_totals[cell[0]] * material_quotas[cell[1]]
+                - math.floor(size_totals[cell[0]] * material_quotas[cell[1]])
+            ),
+            -proportions[cell[0]][0],
+            cell[1],
+        ),
+    )
+    progress = True
+    while progress:
+        progress = False
+        for row, column in cells:
+            if missing_rows[row] <= 0 or missing_columns[column] <= 0:
+                continue
+            matrix[row][column] += 1
+            missing_rows[row] -= 1
+            missing_columns[column] -= 1
+            progress = True
+    if any(missing_rows) or any(missing_columns):
+        raise BalloonApportionmentError(f"the split matrix did not close the margins of {total}")
+    return matrix
+
+
+_MANDATORY_SIZE = re.compile(
+    r"^[ \t\n\r\f\v]*R?-?(\d{1,3})[ \t\n\r\f\v]*$", re.IGNORECASE | re.ASCII
+)
+"""Mirror of ``TAMANO_OBLIGATORIO`` in ``src/lib/medidas/geometria.ts``.
+
+``restricciones.tamanos[].valor`` is free text from the model: only a positive
+integer of up to three digits, with "R-", "R" or no prefix. TypeScript read it
+with ``Number(...)`` and Python with ``int(...)``: both accepted "R-12" and
+differed on decimals, exponents, hexadecimal, underscores, non-ASCII digits and
+the empty string. Since the effective mix decides the TOTAL, that difference
+changed counts, costs and ``plan_hash`` between the two backends. ``re.ASCII``
+is what keeps ``\\d`` on ASCII digits, like JavaScript without the ``u`` flag.
+Anything else is ignored, never rounded and never a plan rejection.
+"""
 
 
 def _required_sizes(plan: Mapping[str, object]) -> set[int]:
@@ -618,57 +735,81 @@ def _required_sizes(plan: Mapping[str, object]) -> set[int]:
         text = _text(item.get("valor"))
         if text is None:
             continue
-        try:
-            size = int(re.sub(r"^R-", "", text, flags=re.IGNORECASE))
-        except ValueError:
+        match = _MANDATORY_SIZE.match(text)
+        if match is None:
             continue
-        result.add(size)
+        size = int(match.group(1))
+        if size > 0:
+            result.add(size)
     return result
+
+
+def _effective_proportions(
+    mix: str, sizes: set[int]
+) -> tuple[tuple[tuple[int, float], ...], tuple[int, ...]]:
+    """Effective mix when the customer fixes sizes, mirror of ``proporcionesEfectivas``.
+
+    The customer's size restriction belongs to the whole plan, not to one
+    structure: the mix sizes inside the required set, renormalized to 1, and
+    equal shares between the required sizes when none of them is in the mix.
+    Returns the effective mix and the required sizes it could not place.
+
+    It used to filter without renormalizing while the total still came from the
+    full mix, so an arch "solo R-12" quoted half the balloons and a size outside
+    the mix multiplied the total.
+    """
+    proportions = _MIXES[mix]
+    if not sizes:
+        return proportions, ()
+    filtered = tuple(item for item in proportions if item[0] in sizes)
+    filtered_sum = sum(proportion for _diameter, proportion in filtered)
+    if filtered and filtered_sum > 0:
+        placed = {diameter for diameter, _proportion in filtered}
+        unplaced = tuple(sorted(size for size in sizes if size not in placed))
+        return (
+            tuple((diameter, proportion / filtered_sum) for diameter, proportion in filtered),
+            unplaced,
+        )
+    ordered = tuple(sorted(sizes))
+    return tuple((size, 1.0 / len(ordered)) for size in ordered), ()
 
 
 def _despiece_with_plan_sizes(
     plan: Mapping[str, object], structure: Mapping[str, object]
-) -> tuple[float, list[dict[str, object]]]:
+) -> tuple[float, list[dict[str, object]], tuple[int, ...]]:
     tipo = _text(structure.get("tipo")) or ""
     density = _text(structure.get("densidad")) or "media"
     mix = _text(structure.get("mezcla")) or "organica_fina"
     measures = _mapping(structure.get("medidas"))
+    proportions, unplaced = _effective_proportions(mix, _required_sizes(plan))
     axis, base_total = _total_globos(
-        tipo, measures, density, mix, _text(structure.get("estructura_oficial"))
+        tipo, measures, density, mix, _text(structure.get("estructura_oficial")), proportions
     )
     materials = _mappings(structure.get("materiales"))
-    proportions = _MIXES[mix]
-    sizes = _required_sizes(plan)
-    if sizes:
-        filtered = tuple(item for item in proportions if item[0] in sizes)
-        proportions = filtered or tuple((size, 1.0) for size in sorted(sizes))
+    matrix = _apportion_margins(
+        base_total,
+        proportions,
+        [_number(material.get("participacion")) or 0.0 for material in materials],
+    )
+    repeats = max(1, _integer(structure.get("repeticiones")) or 1)
     # Each cell keeps its material position: two materials of the same color
     # (reflex and pastel) are two products, not one (they used to merge by color).
-    indexed_cells = [
-        (
-            index,
-            (
-                diameter,
-                _text(material.get("color")),
-                base_total * proportion * (_number(material.get("participacion")) or 0.0),
-            ),
-        )
-        for diameter, proportion in proportions
-        for index, material in enumerate(materials)
-    ]
-    repeats = max(1, _integer(structure.get("repeticiones")) or 1)
-    distributed = _hamilton(base_total, [cell for _index, cell in indexed_cells])
-    return round(axis, 2), [
-        {
-            "tamano": f"R-{diameter}",
-            "pulgadas": diameter,
-            "color": color,
-            "cantidad": quantity * repeats,
-            "material_index": material_index,
-        }
-        for (material_index, _cell), (diameter, color, quantity) in zip(indexed_cells, distributed)
-        if quantity * repeats > 0
-    ]
+    return (
+        round(axis, 2),
+        [
+            {
+                "tamano": f"R-{diameter}",
+                "pulgadas": diameter,
+                "color": _text(material.get("color")),
+                "cantidad": matrix[row][column] * repeats,
+                "material_index": column,
+            }
+            for row, (diameter, _proportion) in enumerate(proportions)
+            for column, material in enumerate(materials)
+            if matrix[row][column] * repeats > 0
+        ],
+        unplaced,
+    )
 
 
 def _admissible_substitution(requested: float, available: float) -> bool:
@@ -1151,7 +1292,13 @@ def _resolve_structures(
         before_missing = len(uncovered)
         materials = _mappings(raw_structure.get("materiales"))
         if structure_type in _GEOMETRIC_TYPES:
-            axis, demands = _despiece_with_plan_sizes(plan, raw_structure)
+            axis, demands, unplaced_sizes = _despiece_with_plan_sizes(plan, raw_structure)
+            # The customer's size restriction belongs to the whole plan, not to
+            # one structure: a mandatory size this mix cannot place stays as a
+            # visible warning (validarRestriccionesPlan does not check sizes, so
+            # this is the only notice).
+            for size in unplaced_sizes:
+                warnings.append(f"tamano_obligatorio_sin_ubicar:{structure_id}:R-{size}")
             exact_sizes = bool(_required_sizes(plan))
             for demand in demands:
                 requested_color = _text(demand.get("color"))
@@ -1530,16 +1677,33 @@ def _consolidate(
             covered_groups[key] = covered_groups.get(key, 0) - allocation
     covered_reserve = sum(allocations.values())
     remaining = max(0, target_reserve - covered_reserve)
-    for purchase in eligible:
-        if remaining <= 0:
-            break
-        variant_id = str(purchase["variant_id"])
+    # When the natural surplus is not enough, buy the balloon presentation that
+    # covers what is left at the lowest cost. It used to buy on the first
+    # purchase by variant_id, so an 80,000 COP R-24 package could cover a
+    # reserve that a 30,000 COP R-12 package covered just as well.
+    reserve_candidates = [
+        purchase for purchase in eligible if int(cast(int, purchase["design_quantity"])) > 0
+    ]
+    while remaining > 0 and reserve_candidates:
+        pending = remaining
+        chosen = min(
+            reserve_candidates,
+            key=lambda purchase: (
+                math.ceil(
+                    pending / candidate_by_variant[str(purchase["variant_id"])].units_per_package
+                )
+                * candidate_by_variant[str(purchase["variant_id"])].price,
+                -int(cast(int, purchase["design_quantity"])),
+                str(purchase["variant_id"]),
+            ),
+        )
+        variant_id = str(chosen["variant_id"])
         units_per_package = candidate_by_variant[variant_id].units_per_package
-        additional_packages = math.ceil(remaining / units_per_package)
+        additional_packages = math.ceil(pending / units_per_package)
         additional_capacity = additional_packages * units_per_package
-        additional_reserve = min(remaining, additional_capacity)
-        purchase["paquetes"] = int(cast(int, purchase["paquetes"])) + additional_packages
-        purchase["additional_package_for_waste"] = True
+        additional_reserve = min(pending, additional_capacity)
+        chosen["paquetes"] = int(cast(int, chosen["paquetes"])) + additional_packages
+        chosen["additional_package_for_waste"] = True
         allocations[variant_id] = allocations.get(variant_id, 0) + additional_reserve
         remaining -= additional_reserve
     covered_reserve = sum(allocations.values())
@@ -1571,6 +1735,35 @@ def _consolidate(
         },
         allocations,
     )
+
+
+def _waste_extra_packages(design_quantity: int, units_per_package: int, packages: int) -> int:
+    """Packages bought above the design's minimum cover, mirror of ``paquetesExtraPorMerma``.
+
+    Every package of a flagged line used to be reported as an additional waste
+    package (golden 08 said 10 where 1 was added). ``design-material-estimate-v1``
+    does not store the base count, so it is derived from the line's own fields
+    and TypeScript's ``validateMaterialEstimate`` recomputes the same value.
+    """
+    if units_per_package <= 0:
+        return 0
+    return max(0, packages - max(1, math.ceil(max(0, design_quantity) / units_per_package)))
+
+
+def _waste_only_savings(
+    design_quantity: int, units_per_package: int, packages: int, package_price: float
+) -> float:
+    """Mirror of ``ahorroSoloMermaCop`` in ``src/lib/plan/optimizar-materiales.ts``.
+
+    The naive purchase (every line with its full merma) minus what was actually
+    bought. It used to compare against the design's minimum cover and ignore the
+    packages the reserve did force to buy, so it reported savings that never
+    happened. The caller rounds the sum once.
+    """
+    if units_per_package <= 0:
+        return 0.0
+    naive_packages = math.ceil(math.ceil(max(0, design_quantity) * (1 + MERMA)) / units_per_package)
+    return max(0.0, (naive_packages - packages) * package_price)
 
 
 def _material_waste_only_savings(
@@ -1605,13 +1798,40 @@ def _material_waste_only_savings(
         package_count = _integer(line.get("package_count")) or 0
         purchase_cost = _number(line.get("purchase_cost")) or 0.0
         unit_price = purchase_cost / package_count if package_count > 0 else 0.0
-        if units_per_package <= 0:
-            continue
-        base_packages = math.ceil(design_quantity / units_per_package)
-        naive_quantity = math.ceil(design_quantity * (1 + MERMA))
-        naive_packages = math.ceil(naive_quantity / units_per_package)
-        savings += max(0, (naive_packages - base_packages) * unit_price)
+        savings += _waste_only_savings(
+            design_quantity, units_per_package, package_count, unit_price
+        )
     return _round_half_up(savings)
+
+
+def _plan_density(
+    plan: Mapping[str, object], structures: Sequence[Mapping[str, object]]
+) -> Mapping[str, object]:
+    """Plan structure that decides ``design.density`` / ``visual_density``.
+
+    The structure with the most design balloons wins; ties keep the first one in
+    plan order. Mirror of ``planDensity`` in ``src/lib/materiales/estimacion.ts``:
+    TypeScript used "lujosa if any structure is lujosa" and Python the first
+    structure, so the same mixed plan reached the image prompt with a different
+    density depending on the backend.
+    """
+    inputs = _mappings(plan.get("estructuras"))
+    if not inputs:
+        return {}
+    balloons: dict[str, int] = {}
+    for structure in structures:
+        balloons[str(structure.get("estructura_id"))] = sum(
+            _integer(line.get("unidades")) or 0
+            for line in _mappings(structure.get("lineas"))
+            if _number(line.get("diam_pulg")) is not None
+        )
+    dominant = inputs[0]
+    for candidate in inputs:
+        if balloons.get(str(candidate.get("estructura_id")), 0) > balloons.get(
+            str(dominant.get("estructura_id")), 0
+        ):
+            dominant = candidate
+    return dominant
 
 
 def _material_estimate(resolved: Mapping[str, object]) -> dict[str, object]:
@@ -1667,7 +1887,7 @@ def _material_estimate(resolved: Mapping[str, object]) -> dict[str, object]:
     first_input = (
         _mappings(plan.get("estructuras"))[0] if _mappings(plan.get("estructuras")) else {}
     )
-    density = _text(first_input.get("densidad")) or "media"
+    density = _text(_plan_density(plan, structures).get("densidad")) or "media"
     total_design = sum(_integer(line.get("design_quantity")) or 0 for line in balloons + special)
     installation_length = sum(
         (_number(structure.get("eje_m")) or 0) * (_integer(structure.get("repeticiones")) or 1)
@@ -1744,7 +1964,11 @@ def _material_estimate(resolved: Mapping[str, object]) -> dict[str, object]:
                 balloons, special, purchase_lines
             ),
             "additional_waste_packages": sum(
-                _integer(item.get("package_count")) or 0
+                _waste_extra_packages(
+                    _integer(item.get("design_quantity")) or 0,
+                    _integer(item.get("units_per_package")) or 0,
+                    _integer(item.get("package_count")) or 0,
+                )
                 for item in purchase_lines
                 if item.get("additional_package_for_waste") is True
             ),
@@ -1844,7 +2068,17 @@ def _build_resolved(
     purchases, reserve, _allocations = _consolidate(structures, candidate_by_variant, packages)
     for purchase in purchases:
         design = int(cast(int, purchase["design_quantity"]))
-        if design > 0 and int(cast(int, purchase["sobrante"])) / design > 0.4:
+        candidate = candidate_by_variant[str(purchase["variant_id"])]
+        package_count = int(cast(int, purchase["paquetes"]))
+        # The surplus that matters here is the design purchase's, before the
+        # waste reserve bought anything: a package bought on purpose for the
+        # reserve is not an oversized purchase. TypeScript checks it in that
+        # order (resolver.ts), and the parity vector 24 showed the difference.
+        base_packages = package_count - _waste_extra_packages(
+            design, candidate.units_per_package, package_count
+        )
+        base_surplus = base_packages * candidate.units_per_package - design
+        if design > 0 and base_surplus / design > 0.4:
             warnings.append(f"sobrante_alto:{purchase['variant_id']}")
     if reserve["uncovered_waste_reserve"]:
         warnings.append(f"reserva_merma_no_cubierta:{reserve['uncovered_waste_reserve']}")
@@ -1857,15 +2091,29 @@ def _build_resolved(
         for line in lineas
         if str(line.get("variant_id")) in candidate_by_variant
     )
-    naive_cost = sum(
-        _package_cost(
-            candidate_by_variant[str(line["variant_id"])],
-            _integer(line.get("unidades")) or 0,
-            MERMA,
+    # Real saving: the naive purchase (every purchase with its full merma)
+    # against what was actually bought, extra reserve packages included. Same
+    # rule as ``wasteOnlySavingsCop`` over the estimate.
+    waste_only_savings = _round_half_up(
+        sum(
+            _waste_only_savings(
+                int(cast(int, purchase["design_quantity"])),
+                candidate_by_variant[str(purchase["variant_id"])].units_per_package,
+                int(cast(int, purchase["paquetes"])),
+                candidate_by_variant[str(purchase["variant_id"])].price,
+            )
+            for purchase in purchases
+            if _number(purchase.get("diam_pulg")) is not None
         )
-        for line in lineas
-        if _number(line.get("diam_pulg")) is not None
-        and str(line.get("variant_id")) in candidate_by_variant
+    )
+    additional_waste_packages = sum(
+        _waste_extra_packages(
+            int(cast(int, purchase["design_quantity"])),
+            candidate_by_variant[str(purchase["variant_id"])].units_per_package,
+            int(cast(int, purchase["paquetes"])),
+        )
+        for purchase in purchases
+        if purchase.get("additional_package_for_waste") is True
     )
     globos_por_tamano: dict[str, int] = {}
     for purchase in purchases:
@@ -1920,12 +2168,8 @@ def _build_resolved(
             "consumption_cost": sum(
                 _integer(item.get("consumption_cost")) or 0 for item in purchases
             ),
-            "waste_only_savings_cop": max(0, naive_cost - base_line_cost),
-            "additional_waste_packages": sum(
-                _integer(item.get("paquetes")) or 0
-                for item in purchases
-                if item.get("additional_package_for_waste") is True
-            ),
+            "waste_only_savings_cop": waste_only_savings,
+            "additional_waste_packages": additional_waste_packages,
             "ahorro_paquetes_cop": max(0, base_line_cost - total_cop),
             "incluye_iva": True,
             "merma_porcentaje": MERMA * 100,

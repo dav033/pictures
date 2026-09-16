@@ -1,0 +1,984 @@
+{
+  "allowlist": [
+    {
+      "product_id": "P-TERRACOTA",
+      "variant_ids": [
+        "V-TERRACOTA-12"
+      ]
+    },
+    {
+      "product_id": "P-CORAL",
+      "variant_ids": [
+        "V-CORAL-12"
+      ]
+    }
+  ],
+  "catalog_rows": [
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "terracota"
+      ],
+      "colores_variante": [
+        "terracota"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex terracota R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-terracota-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 14000,
+      "product_id": "P-TERRACOTA",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex terracota",
+      "sku": "SKU-V-TERRACOTA-12",
+      "sku_original": "SHOP-V-TERRACOTA-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-TERRACOTA-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-TERRACOTA-12",
+      "variante_titulo": "R-12 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "coral"
+      ],
+      "colores_variante": [
+        "coral"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex coral R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-coral-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 14000,
+      "product_id": "P-CORAL",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex coral",
+      "sku": "SKU-V-CORAL-12",
+      "sku_original": "SHOP-V-CORAL-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-CORAL-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-CORAL-12",
+      "variante_titulo": "R-12 / PAQUETE X 50"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-001",
+  "description": "Dos colores al 50 % donde el resto del reparto empata y uno de ellos llega con mayúscula del modelo ('Terracota'). El desempate ya no usa el nombre del color —localeCompare en TypeScript y punto de código en Python daban 19/20 y 20/19— sino el índice del material.",
+  "expected": {
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "Terracota",
+          "design_quantity": 20,
+          "finish": null,
+          "product_id": "P-TERRACOTA",
+          "required_quantity": 20,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_01_COLUMNA",
+          "variant_id": "V-TERRACOTA-12",
+          "waste_adjusted_quantity": 20,
+          "waste_reserve": 0
+        },
+        {
+          "color": "coral",
+          "design_quantity": 19,
+          "finish": null,
+          "product_id": "P-CORAL",
+          "required_quantity": 19,
+          "shape": "redondo",
+          "size_inches": 12,
+          "structure_id": "EST_01_COLUMNA",
+          "variant_id": "V-CORAL-12",
+          "waste_adjusted_quantity": 19,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 1,
+        "density": "media",
+        "dimensions_m": {
+          "height": 1.8,
+          "length": null,
+          "width": null
+        },
+        "installation_length_m": 1.8,
+        "shape": "clasica",
+        "type": "columna",
+        "visual_density": "medium",
+        "visual_scale": "small_medium"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 6440,
+          "design_quantity": 19,
+          "leftover_inventory": 27,
+          "operational_surplus": 27,
+          "package_count": 1,
+          "potential_surplus": 31,
+          "product_id": "P-CORAL",
+          "purchase_cost": 14000,
+          "purchase_quantity": 50,
+          "required_quantity": 23,
+          "units_per_package": 50,
+          "used": 19,
+          "variant_id": "V-CORAL-12",
+          "waste_adjusted_quantity": 23,
+          "waste_reserve": 4
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 5600,
+          "design_quantity": 20,
+          "leftover_inventory": 30,
+          "operational_surplus": 30,
+          "package_count": 1,
+          "potential_surplus": 30,
+          "product_id": "P-TERRACOTA",
+          "purchase_cost": 14000,
+          "purchase_quantity": 50,
+          "required_quantity": 20,
+          "units_per_package": 50,
+          "used": 20,
+          "variant_id": "V-TERRACOTA-12",
+          "waste_adjusted_quantity": 20,
+          "waste_reserve": 0
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 12040,
+        "covered_waste_reserve": 4,
+        "design_quantity": 39,
+        "natural_package_surplus": 61,
+        "operational_surplus": 57,
+        "potential_surplus": 61,
+        "purchase_cost": 28000,
+        "purchase_quantity": 100,
+        "required_quantity": 43,
+        "target_waste_reserve": 4,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 43,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-CORAL-12",
+        "sobrante_alto:V-TERRACOTA-12"
+      ]
+    },
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-CORAL-12",
+        "sobrante_alto:V-TERRACOTA-12"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "coral",
+          "consumption_cost": 6440,
+          "design_quantity": 19,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA"
+          ],
+          "imagen": "https://cdn.example.test/v-coral-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 27,
+          "paquetes": 1,
+          "precio_paquete": 14000,
+          "product_id": "P-CORAL",
+          "purchase_cost": 14000,
+          "purchase_quantity": 50,
+          "required_quantity": 23,
+          "sku": "SKU-V-CORAL-12",
+          "sku_original": "SHOP-V-CORAL-12",
+          "sobrante": 31,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-CORAL-12",
+          "subtotal": 14000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex coral — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 23,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 19,
+          "unidades_paquete": 50,
+          "used": 19,
+          "variant_id": "V-CORAL-12",
+          "waste_reserve": 4
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "Terracota",
+          "consumption_cost": 5600,
+          "design_quantity": 20,
+          "diam_pulg": 12,
+          "elementos_origen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA"
+          ],
+          "imagen": "https://cdn.example.test/v-terracota-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 30,
+          "paquetes": 1,
+          "precio_paquete": 14000,
+          "product_id": "P-TERRACOTA",
+          "purchase_cost": 14000,
+          "purchase_quantity": 50,
+          "required_quantity": 20,
+          "sku": "SKU-V-TERRACOTA-12",
+          "sku_original": "SHOP-V-TERRACOTA-12",
+          "sobrante": 30,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-TERRACOTA-12",
+          "subtotal": 14000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex terracota — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 20,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 20,
+          "unidades_paquete": 50,
+          "used": 20,
+          "variant_id": "V-TERRACOTA-12",
+          "waste_reserve": 0
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 1.8,
+          "estructura_id": "EST_01_COLUMNA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "Terracota",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_01_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-terracota-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-TERRACOTA",
+              "sku": "SKU-V-TERRACOTA-12",
+              "sku_original": "SHOP-V-TERRACOTA-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-TERRACOTA-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex terracota — R-12 / PAQUETE X 50",
+              "unidades": 20,
+              "unidades_inferidas": false,
+              "variant_id": "V-TERRACOTA-12"
+            },
+            {
+              "acabado": null,
+              "color": "coral",
+              "diam_cm": 30.5,
+              "diam_pulg": 12,
+              "estructura_id": "EST_01_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-coral-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-CORAL",
+              "sku": "SKU-V-CORAL-12",
+              "sku_original": "SHOP-V-CORAL-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-CORAL-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex coral — R-12 / PAQUETE X 50",
+              "unidades": 19,
+              "unidades_inferidas": false,
+              "variant_id": "V-CORAL-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 39
+            }
+          ],
+          "nombre": "Columna",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 39,
+          "ubicacion": "lateral_izquierdo"
+        }
+      ],
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 39\nTarget waste reserve: 4\nNatural package surplus: 61\nUsable waste coverage: 4\nAdditional packages required for waste: 0\nGlobo latex coral — R-12 / PAQUETE X 50: design=19, required=23, package=50, packages=1, purchased=50, natural surplus=31, waste reserve=4, leftover inventory=27\nGlobo latex terracota — R-12 / PAQUETE X 50: design=20, required=20, package=50, packages=1, purchased=50, natural surplus=30, waste reserve=0, leftover inventory=30",
+      "plan": {
+        "concepto": {
+          "descripcion": "Columna en dos tonos cálidos.",
+          "paleta": [
+            "terracota",
+            "coral"
+          ],
+          "titulo": "Columna terracota y coral"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_COLUMNA",
+            "materiales": [
+              {
+                "color": "Terracota",
+                "participacion": 0.5,
+                "product_id": "P-TERRACOTA",
+                "rol_material": "principal"
+              },
+              {
+                "color": "coral",
+                "participacion": 0.5,
+                "product_id": "P-CORAL",
+                "rol_material": "secundario"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.8
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna",
+            "porque": "Los dos tonos de la foto en partes iguales.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "columna",
+            "ubicacion": "lateral_izquierdo"
+          }
+        ],
+        "plan_id": "21212121-2121-4212-8212-212121212121",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "4a0580d0257e0477c48c416d110e1567db6e81e6d40fe36b91a2070009a0f7b0",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 12040,
+        "covered_waste_reserve": 4,
+        "design_quantity": 39,
+        "globos_por_tamano": {
+          "R-12": 39
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8,
+        "natural_package_surplus": 61,
+        "purchase_cost": 28000,
+        "target_waste_reserve": 4,
+        "total_cop": 28000,
+        "total_unidades": 39,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "complementosSoportados": false,
+      "consumptionCost": 12040,
+      "coveredWasteReserve": 4,
+      "incluyeIva": true,
+      "leftoverInventory": 57,
+      "lineas": [
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 19,
+          "color": "coral",
+          "consumptionCost": 6440,
+          "designQuantity": 19,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA"
+          ],
+          "id": "V-CORAL-12",
+          "leftoverInventory": 27,
+          "nombre": "Globo latex coral — R-12 / PAQUETE X 50",
+          "paquetes": 1,
+          "precioPaquete": 14000,
+          "productId": "P-CORAL",
+          "purchaseCost": 14000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 23,
+          "sobrante": 31,
+          "subtotal": 14000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 19,
+          "varianteId": "V-CORAL-12",
+          "wasteReserve": 4
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 20,
+          "color": "Terracota",
+          "consumptionCost": 5600,
+          "designQuantity": 20,
+          "diamPulg": 12,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA"
+          ],
+          "id": "V-TERRACOTA-12",
+          "leftoverInventory": 30,
+          "nombre": "Globo latex terracota — R-12 / PAQUETE X 50",
+          "paquetes": 1,
+          "precioPaquete": 14000,
+          "productId": "P-TERRACOTA",
+          "purchaseCost": 14000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 20,
+          "sobrante": 30,
+          "subtotal": 14000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 20,
+          "varianteId": "V-TERRACOTA-12",
+          "wasteReserve": 0
+        }
+      ],
+      "mermaPorcentaje": 8,
+      "plan_hash": "4a0580d0257e0477c48c416d110e1567db6e81e6d40fe36b91a2070009a0f7b0",
+      "purchaseCost": 28000,
+      "targetWasteReserve": 4,
+      "total": 28000
+    }
+  },
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-001",
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "Terracota",
+          "design_quantity": 20,
+          "finish": null,
+          "product_id": "P-TERRACOTA",
+          "required_quantity": 20,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_COLUMNA",
+          "variant_id": "V-TERRACOTA-12",
+          "waste_adjusted_quantity": 20,
+          "waste_reserve": 0
+        },
+        {
+          "color": "coral",
+          "design_quantity": 19,
+          "finish": null,
+          "product_id": "P-CORAL",
+          "required_quantity": 19,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_COLUMNA",
+          "variant_id": "V-CORAL-12",
+          "waste_adjusted_quantity": 19,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 1,
+        "density": "media",
+        "dimensions_m": {
+          "height": 1.8,
+          "length": null,
+          "width": null
+        },
+        "installation_length_m": 1.8,
+        "shape": "clasica",
+        "type": "columna",
+        "visual_density": "medium",
+        "visual_scale": "small_medium"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 6440,
+          "design_quantity": 19,
+          "leftover_inventory": 27,
+          "operational_surplus": 27,
+          "package_count": 1,
+          "potential_surplus": 31,
+          "product_id": "P-CORAL",
+          "purchase_cost": 14000,
+          "purchase_quantity": 50,
+          "required_quantity": 23,
+          "units_per_package": 50,
+          "used": 19,
+          "variant_id": "V-CORAL-12",
+          "waste_adjusted_quantity": 23,
+          "waste_reserve": 4
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 5600,
+          "design_quantity": 20,
+          "leftover_inventory": 30,
+          "operational_surplus": 30,
+          "package_count": 1,
+          "potential_surplus": 30,
+          "product_id": "P-TERRACOTA",
+          "purchase_cost": 14000,
+          "purchase_quantity": 50,
+          "required_quantity": 20,
+          "units_per_package": 50,
+          "used": 20,
+          "variant_id": "V-TERRACOTA-12",
+          "waste_adjusted_quantity": 20,
+          "waste_reserve": 0
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 12040,
+        "covered_waste_reserve": 4,
+        "design_quantity": 39,
+        "natural_package_surplus": 61,
+        "operational_surplus": 57,
+        "potential_surplus": 61,
+        "purchase_cost": 28000,
+        "purchase_quantity": 100,
+        "required_quantity": 43,
+        "target_waste_reserve": 4,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 43,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-CORAL-12",
+        "sobrante_alto:V-TERRACOTA-12"
+      ]
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-CORAL-12",
+        "sobrante_alto:V-TERRACOTA-12"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "coral",
+          "consumption_cost": 6440,
+          "design_quantity": 19,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA"
+          ],
+          "imagen": "https://cdn.example.test/v-coral-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 27,
+          "paquetes": 1,
+          "precio_paquete": 14000,
+          "product_id": "P-CORAL",
+          "purchase_cost": 14000,
+          "purchase_quantity": 50,
+          "required_quantity": 23,
+          "sku": "SKU-V-CORAL-12",
+          "sku_original": "SHOP-V-CORAL-12",
+          "sobrante": 31,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-CORAL-12",
+          "subtotal": 14000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex coral — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 23,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 19,
+          "unidades_paquete": 50,
+          "used": 19,
+          "variant_id": "V-CORAL-12",
+          "waste_reserve": 4
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "Terracota",
+          "consumption_cost": 5600,
+          "design_quantity": 20,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA"
+          ],
+          "imagen": "https://cdn.example.test/v-terracota-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 30,
+          "paquetes": 1,
+          "precio_paquete": 14000,
+          "product_id": "P-TERRACOTA",
+          "purchase_cost": 14000,
+          "purchase_quantity": 50,
+          "required_quantity": 20,
+          "sku": "SKU-V-TERRACOTA-12",
+          "sku_original": "SHOP-V-TERRACOTA-12",
+          "sobrante": 30,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-TERRACOTA-12",
+          "subtotal": 14000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex terracota — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 20,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 20,
+          "unidades_paquete": 50,
+          "used": 20,
+          "variant_id": "V-TERRACOTA-12",
+          "waste_reserve": 0
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 1.8,
+          "estructura_id": "EST_01_COLUMNA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "Terracota",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-terracota-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-TERRACOTA",
+              "sku": "SKU-V-TERRACOTA-12",
+              "sku_original": "SHOP-V-TERRACOTA-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-TERRACOTA-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex terracota — R-12 / PAQUETE X 50",
+              "unidades": 20,
+              "unidades_inferidas": false,
+              "variant_id": "V-TERRACOTA-12"
+            },
+            {
+              "acabado": null,
+              "color": "coral",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-coral-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-CORAL",
+              "sku": "SKU-V-CORAL-12",
+              "sku_original": "SHOP-V-CORAL-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-CORAL-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex coral — R-12 / PAQUETE X 50",
+              "unidades": 19,
+              "unidades_inferidas": false,
+              "variant_id": "V-CORAL-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 39
+            }
+          ],
+          "nombre": "Columna",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 39,
+          "ubicacion": "lateral_izquierdo"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-001.",
+      "plan": {
+        "concepto": {
+          "descripcion": "Columna en dos tonos cálidos.",
+          "paleta": [
+            "terracota",
+            "coral"
+          ],
+          "titulo": "Columna terracota y coral"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_COLUMNA",
+            "materiales": [
+              {
+                "color": "Terracota",
+                "participacion": 0.5,
+                "product_id": "P-TERRACOTA",
+                "rol_material": "principal"
+              },
+              {
+                "color": "coral",
+                "participacion": 0.5,
+                "product_id": "P-CORAL",
+                "rol_material": "secundario"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.8
+            },
+            "mezcla": "clasica",
+            "nombre": "Columna",
+            "porque": "Los dos tonos de la foto en partes iguales.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "columna",
+            "ubicacion": "lateral_izquierdo"
+          }
+        ],
+        "plan_id": "21212121-2121-4212-8212-212121212121",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "0b9360d3f552b62dba831d0ccc72997ca7b15bbcd36a69239fd281f057ad1bcc",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 12040,
+        "covered_waste_reserve": 4,
+        "design_quantity": 39,
+        "globos_por_tamano": {
+          "R-12": 39
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 61,
+        "purchase_cost": 28000,
+        "target_waste_reserve": 4,
+        "total_cop": 28000,
+        "total_unidades": 39,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 12040,
+      "covered_waste_reserve": 4,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 57,
+      "lines": [
+        {
+          "available": true,
+          "color": "coral",
+          "consumption_cost_cop": 6440,
+          "design_quantity": 19,
+          "diameter_inches": 12.0,
+          "id": "V-CORAL-12",
+          "leftover_inventory": 27,
+          "origins": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 14000,
+          "packages": 1,
+          "product_id": "P-CORAL",
+          "purchase_cost_cop": 14000,
+          "purchase_quantity": 50,
+          "required_quantity": 23,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_COLUMNA"
+          ],
+          "subtotal_cop": 14000,
+          "surplus": 31,
+          "title": "Globo latex coral — R-12 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 19,
+          "variant_id": "V-CORAL-12",
+          "waste_reserve": 4
+        },
+        {
+          "available": true,
+          "color": "Terracota",
+          "consumption_cost_cop": 5600,
+          "design_quantity": 20,
+          "diameter_inches": 12.0,
+          "id": "V-TERRACOTA-12",
+          "leftover_inventory": 30,
+          "origins": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 14000,
+          "packages": 1,
+          "product_id": "P-TERRACOTA",
+          "purchase_cost_cop": 14000,
+          "purchase_quantity": 50,
+          "required_quantity": 20,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_COLUMNA"
+          ],
+          "subtotal_cop": 14000,
+          "surplus": 30,
+          "title": "Globo latex terracota — R-12 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 20,
+          "variant_id": "V-TERRACOTA-12",
+          "waste_reserve": 0
+        }
+      ],
+      "plan_hash": "0b9360d3f552b62dba831d0ccc72997ca7b15bbcd36a69239fd281f057ad1bcc",
+      "purchase_cost_cop": 28000,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 4,
+      "total_cop": 28000,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "21-desempate-color-mayusculas",
+  "plan": {
+    "concepto": {
+      "descripcion": "Columna en dos tonos cálidos.",
+      "paleta": [
+        "terracota",
+        "coral"
+      ],
+      "titulo": "Columna terracota y coral"
+    },
+    "espacio": {
+      "fuente": "cliente",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "densidad": "media",
+        "estructura_id": "EST_01_COLUMNA",
+        "materiales": [
+          {
+            "color": "Terracota",
+            "participacion": 0.5,
+            "product_id": "P-TERRACOTA",
+            "rol_material": "principal"
+          },
+          {
+            "color": "coral",
+            "participacion": 0.5,
+            "product_id": "P-CORAL",
+            "rol_material": "secundario"
+          }
+        ],
+        "medidas": {
+          "alto_m": 1.8
+        },
+        "mezcla": "clasica",
+        "nombre": "Columna",
+        "porque": "Los dos tonos de la foto en partes iguales.",
+        "repeticiones": 1,
+        "rol_escena": "focal",
+        "tipo": "columna",
+        "ubicacion": "lateral_izquierdo"
+      }
+    ],
+    "plan_id": "21212121-2121-4212-8212-212121212121",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "supuestos": []
+  }
+}

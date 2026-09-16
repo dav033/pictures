@@ -98,9 +98,17 @@ export type ResultadoReservaProyecto = {
 };
 
 /**
- * Distribuye una sola reserva estadística entre sobrantes que ya existen.
+ * Distribuye una sola reserva estadística de proyecto entre los sobrantes de
+ * paquete que ya existen. El objetivo es del proyecto entero, no de cada
+ * grupo: un paquete exacto de R-24 no se duplica solo por merma cuando el
+ * sobrante natural de otro grupo ya cubre el objetivo (regla comercial
+ * fijada por `scripts/test-plan-presupuesto.ts`).
+ *
  * La clave de compatibilidad la decide el llamador (por ejemplo, tamaño y
- * color), así que esta función no asume que un R-5 puede reemplazar un R-24.
+ * color) y solo controla en qué líneas puede quedar la reserva, no qué
+ * demanda cubre: no se asume que un R-5 pueda reemplazar a un R-24 en la
+ * línea, pero el objetivo sí es común. Lo que el sobrante no cubre se compra
+ * aparte (ver el bucle de paquetes adicionales en `resolver.ts`).
  */
 export function distribuirReservaProyecto(
   demandas: readonly DemandaReservaProyecto[],
@@ -147,6 +155,45 @@ export function distribuirReservaProyecto(
     uncoveredWasteReserve: Math.max(0, targetWasteReserve - coveredWasteReserve),
     allocations,
   };
+}
+
+/**
+ * Paquetes que una compra suma por encima de la cobertura mínima del diseño,
+ * es decir los que se compraron solo para la reserva de merma. Antes se
+ * reportaban TODOS los paquetes de la línea marcada (golden 08 decía 10
+ * paquetes adicionales donde se añadió 1).
+ *
+ * `design-material-estimate-v1` no guarda el conteo base, así que el valor se
+ * deriva de los campos de la línea y `validateMaterialEstimate` recalcula
+ * exactamente lo mismo. Espejo: `_waste_extra_packages` en
+ * `services/ai-api/app/plan.py`.
+ */
+export function paquetesExtraPorMerma(designQuantity: number, unidadesPaquete: number, paquetes: number): number {
+  if (!(unidadesPaquete > 0)) return 0;
+  return Math.max(0, paquetes - Math.max(1, Math.ceil(Math.max(0, designQuantity) / unidadesPaquete)));
+}
+
+/**
+ * Ahorro real de una compra por no comprar paquetes solo por merma: lo que
+ * habría costado el enfoque ingenuo (cada línea con su merma completa) menos
+ * los paquetes que de verdad se compraron. Antes se comparaba contra la
+ * cobertura mínima del diseño e ignoraba los paquetes que la reserva sí
+ * obligó a comprar, así que se reportaba un ahorro inexistente.
+ *
+ * Devuelve un valor sin redondear: el llamador suma todas las compras y
+ * redondea una sola vez (un precio por paquete puede ser fraccionario cuando
+ * sale de `purchase_cost / package_count`).
+ */
+export function ahorroSoloMermaCop(
+  designQuantity: number,
+  unidadesPaquete: number,
+  paquetes: number,
+  precioPaquete: number,
+  merma: number,
+): number {
+  if (!(unidadesPaquete > 0)) return 0;
+  const paquetesIngenuos = Math.ceil(Math.ceil(Math.max(0, designQuantity) * (1 + merma)) / unidadesPaquete);
+  return Math.max(0, (paquetesIngenuos - paquetes) * precioPaquete);
 }
 
 export function asignarUnidades(

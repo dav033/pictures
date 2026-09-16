@@ -1,6 +1,6 @@
-import type { ResultadoMedidas } from "@/lib/medidas/geometria";
+import { factorGlobosPorMetro, proporcionesEfectivas, tamanosObligatorios, type ResultadoMedidas } from "@/lib/medidas/geometria";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
-import { distribuirReservaProyecto, optimizarCobertura, asignarUnidades } from "@/lib/plan/optimizar-materiales";
+import { ahorroSoloMermaCop, distribuirReservaProyecto, optimizarCobertura, asignarUnidades, paquetesExtraPorMerma } from "@/lib/plan/optimizar-materiales";
 import { MERMA } from "@/lib/cotizacion/constantes";
 import { z } from "zod";
 
@@ -104,12 +104,29 @@ function positivoONull(value: number | null | undefined): number | null {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : null;
 }
 
-function colorCoincide(demandColor: string | undefined, productColors: string[]): boolean {
-  if (!demandColor) return true;
+/**
+ * Ruta heredada sin plan: el color de la demanda se comparaba por subcadena en
+ * los dos sentidos, así que "rosa" casaba con "rosado" y con "dorado rosa" y la
+ * demanda se repartía por igual entre colores distintos. Ahora solo cuenta la
+ * igualdad normalizada exacta y, si no hay ninguna, la igualdad del conjunto de
+ * palabras ("dorado rosa" = "rosa dorado"), que es el mismo color escrito al
+ * revés y no un color vecino.
+ */
+function coincidenciaExacta(demandColor: string, productColors: string[]): boolean {
   const demand = normalizar(demandColor);
+  return productColors.some((color) => normalizar(color) === demand);
+}
+
+function palabras(value: string): Set<string> {
+  return new Set(normalizar(value).split(/[\s/,-]+/).filter(Boolean));
+}
+
+function mismasPalabras(demandColor: string, productColors: string[]): boolean {
+  const demand = palabras(demandColor);
+  if (demand.size === 0) return false;
   return productColors.some((color) => {
-    const candidate = normalizar(color);
-    return candidate === demand || candidate.includes(demand) || demand.includes(candidate);
+    const candidate = palabras(color);
+    return candidate.size === demand.size && [...demand].every((palabra) => candidate.has(palabra));
   });
 }
 
@@ -160,6 +177,87 @@ function physicalWarnings(design: DesignMaterialEstimate["design"], total: numbe
 }
 
 /**
+ * Line-based structures: their balloon count is a function of an axis length.
+ * `pared` uses an area model (its axis is 0) and `centro_mesa` is a compact
+ * piece whose largest dimension is not an installation run, so neither has a
+ * calibrated balloons-per-meter range; inventing one would block valid plans.
+ * Non-geometric pieces (bouquet, figura, kit, backdrop, escultura) declare
+ * their units and have no geometry at all.
+ */
+const ESTRUCTURAS_LINEALES = new Set(["arco", "semiarco", "guirnalda", "columna"]);
+
+/**
+ * Único dueño de la puerta física en Next: corre sobre el `PlanResuelto` de
+ * cualquiera de los dos backends (`resolver-backend.ts` devuelve el mismo
+ * tipo), así que Next y Python bloquean lo mismo.
+ *
+ * Antes la comprobación vivía dentro de `estimateFromPlan` y dividía TODOS los
+ * globos instalados (incluida la pared, cuyo eje es 0, y las piezas sin
+ * geometría) entre el eje sumado de las estructuras lineales: "pared +
+ * guirnalda" quedaba en 173 globos/m y no se podía confirmar en Next, mientras
+ * el backend Python —que nunca calculó estas advertencias— sí lo aceptaba.
+ *
+ * Cada estructura lineal se compara ahora contra su propia densidad y su
+ * propio eje por instancia. Los umbrales siguen siendo heurísticos sin
+ * calibrar (ver `physicalWarnings`); el texto conserva las frases que
+ * `blockingPhysicalWarnings` reconoce.
+ *
+ * Esos umbrales están calibrados en globos por metro contra mezclas donde R-12
+ * domina el volumen, así que no son comparables cuando `restricciones.tamanos`
+ * cambia el globo dominante: un arco 3 × 2,4 m "solo R-24" cuenta 52 globos
+ * correctos (8,4/m) donde la mezcla completa contaba 119 (19,2/m) y caía por
+ * debajo del mínimo, de modo que un plan válido dejaba de poder confirmarse.
+ * La banda se escala con el mismo modelo que produjo el conteo
+ * (`factorGlobosPorMetro`), que vale 1 exacto sin tamaños obligatorios.
+ */
+export function physicalWarningsForPlan(plan: PlanResuelto): string[] {
+  const warnings: string[] = [];
+  const tamanos = tamanosObligatorios(plan.plan.restricciones);
+  for (const structure of plan.estructuras) {
+    if (!ESTRUCTURAS_LINEALES.has(structure.tipo)) continue;
+    const repeticiones = Math.max(1, Math.round(structure.repeticiones));
+    const extent = (structure.eje_m ?? 0) * repeticiones;
+    if (extent <= 0) continue;
+    const balloons = structure.lineas.filter((line) => line.diam_pulg != null).reduce((sum, line) => sum + line.unidades, 0);
+    if (balloons <= 0) continue;
+    const declarada = plan.plan.estructuras.find((item) => item.estructura_id === structure.estructura_id);
+    const density = visualDensity(declarada?.densidad);
+    const mezcla = declarada && "mezcla" in declarada ? declarada.mezcla : undefined;
+    const factor = mezcla ? factorGlobosPorMetro(mezcla, proporcionesEfectivas(mezcla, tamanos).proporciones) : 1;
+    const minimumPerMeter = { low: 8, medium: 14, high: 20 }[density] * factor;
+    const maximumPerMeter = { low: 48, medium: 68, high: 88 }[density] * factor;
+    const perMeter = balloons / extent;
+    if (perMeter < minimumPerMeter * 0.6) {
+      warnings.push(`${structure.estructura_id}: estimated material quantity appears too low for ${density} density over ${extent.toFixed(2)} m (${balloons} installed balloons)`);
+    }
+    if (perMeter > maximumPerMeter * 1.3) {
+      warnings.push(`${structure.estructura_id}: estimated material quantity appears unusually high for ${density} density over ${extent.toFixed(2)} m (${balloons} installed balloons)`);
+    }
+  }
+  return warnings;
+}
+
+/**
+ * `design.density` / `visual_density` del plan: la densidad de la estructura
+ * con más globos de diseño (empate: la primera en el orden del plan). TypeScript
+ * usaba "lujosa si alguna lo es" y Python la primera estructura, así que el
+ * mismo plan mixto llegaba al prompt de imagen con densidades distintas.
+ * Espejo: `_plan_density` en `services/ai-api/app/plan.py`.
+ */
+function planDensity(plan: PlanResuelto): string | undefined {
+  const balloonsByStructure = new Map(plan.estructuras.map((structure) => [
+    structure.estructura_id,
+    structure.lineas.filter((line) => line.diam_pulg != null).reduce((sum, line) => sum + line.unidades, 0),
+  ]));
+  const structures = plan.plan.estructuras;
+  let dominant = structures[0];
+  for (const structure of structures) {
+    if ((balloonsByStructure.get(structure.estructura_id) ?? 0) > (balloonsByStructure.get(dominant?.estructura_id ?? "") ?? 0)) dominant = structure;
+  }
+  return dominant?.densidad;
+}
+
+/**
  * MERMA models balloons bursting while they are inflated and mounted, so only
  * balloon purchases can avoid a waste-only package. This mirrors the waste
  * reserve eligibility of both producers (`resolver.ts` uses `diam_pulg != null`,
@@ -188,13 +286,25 @@ export function wasteOnlySavingsCop(
     if (specialVariants.has(line.variant_id)) return sum;
     if (!balloonVariants.has(line.variant_id) && !balloonProducts.has(line.product_id)) return sum;
     const unitPrice = line.package_count > 0 ? line.purchase_cost / line.package_count : 0;
-    const basePackages = Math.ceil(line.design_quantity / line.units_per_package);
-    const naivePackages = Math.ceil(Math.ceil(line.design_quantity * (1 + MERMA)) / line.units_per_package);
-    return sum + Math.max(0, (naivePackages - basePackages) * unitPrice);
+    return sum + ahorroSoloMermaCop(line.design_quantity, line.units_per_package, line.package_count, unitPrice, MERMA);
   }, 0);
   return Math.round(savings);
 }
 
+/**
+ * Cambio de significado dentro de `design-material-estimate-v1` (ADR 0022), sin
+ * cambiar el esquema porque los dos campos se derivan de las mismas líneas:
+ *
+ * - `additional_waste_packages` es el delta de paquetes comprados por la
+ *   reserva de merma, no todos los paquetes de la línea marcada.
+ * - `waste_only_savings_cop` compara la compra ingenua con lo que de verdad se
+ *   compró, así que una línea que sí necesitó un paquete extra ya no reporta
+ *   un ahorro que no ocurrió.
+ *
+ * Los dos alimentan `merma_log` (IMAGE_DEBUG) y las auditorías; quien calibre
+ * MERMA con series anteriores al despliegue debe saber que la definición
+ * cambió. `validateMaterialEstimate` recalcula ambos desde las líneas.
+ */
 function totals(balloons: DesignMaterialEstimate["balloons"], special: DesignMaterialEstimate["special_elements"], purchases: DesignMaterialEstimate["purchases"]): DesignMaterialEstimate["totals"] {
   const designQuantity = [...balloons, ...special].reduce((sum, line) => sum + line.design_quantity, 0);
   const targetWasteReserve = Math.ceil(balloons.reduce((sum, line) => sum + line.design_quantity, 0) * MERMA);
@@ -214,7 +324,7 @@ function totals(balloons: DesignMaterialEstimate["balloons"], special: DesignMat
     consumption_cost: purchases.reduce((sum, line) => sum + line.consumption_cost, 0),
     purchase_cost: purchases.reduce((sum, line) => sum + line.purchase_cost, 0),
     waste_only_savings_cop: wasteOnlySavingsCop(balloons, special, purchases),
-    additional_waste_packages: purchases.filter((line) => line.additional_package_for_waste).reduce((sum, line) => sum + line.package_count, 0),
+    additional_waste_packages: purchases.filter((line) => line.additional_package_for_waste).reduce((sum, line) => sum + paquetesExtraPorMerma(line.design_quantity, line.units_per_package, line.package_count), 0),
     waste_adjusted_quantity: wasteAdjustedQuantity,
     purchase_quantity: purchaseQuantity,
     operational_surplus: operationalSurplus,
@@ -363,14 +473,26 @@ export function estimateFromMeasuredMaterials(measures: ResultadoMedidas | undef
   const warnings: string[] = [];
 
   for (const demand of demands) {
-    let candidates = balloons.filter((product) => product.diamPulg === demand.pulgadas && colorCoincide(demand.color, product.colores));
-    if (candidates.length === 0) {
-      candidates = balloons.filter((product) => product.diamPulg === demand.pulgadas);
-      if (candidates.length > 0) warnings.push(`color demand '${demand.color ?? "unspecified"}' for R-${demand.pulgadas} was assigned to the available catalog color`);
-    }
-    if (candidates.length === 0) {
+    const sameSize = balloons.filter((product) => product.diamPulg === demand.pulgadas);
+    if (sameSize.length === 0) {
       warnings.push(`no selected catalog material covers R-${demand.pulgadas}${demand.color ? ` ${demand.color}` : ""}`);
       continue;
+    }
+    let candidates = sameSize;
+    if (demand.color) {
+      candidates = sameSize.filter((product) => coincidenciaExacta(demand.color!, product.colores));
+      if (candidates.length === 0) candidates = sameSize.filter((product) => mismasPalabras(demand.color!, product.colores));
+      if (candidates.length === 0) {
+        // Reasignar a otro color solo es defendible cuando no hay elección: con
+        // varios productos del mismo tamaño se avisa y la demanda no se asigna,
+        // en vez de repartirla entre colores que el cliente no pidió.
+        if (sameSize.length > 1) {
+          warnings.push(`color demand '${demand.color}' for R-${demand.pulgadas} matches no selected catalog color; its units were not assigned`);
+          continue;
+        }
+        candidates = sameSize;
+        warnings.push(`color demand '${demand.color}' for R-${demand.pulgadas} was assigned to the available catalog color`);
+      }
     }
     const base = Math.floor(demand.remaining / candidates.length);
     let remainder = demand.remaining - base * candidates.length;
@@ -484,10 +606,14 @@ export function estimateFromPlan(plan: PlanResuelto): DesignMaterialEstimate {
     height: first?.medidas.alto_m ?? null,
     length: first?.medidas.largo_m ?? null,
     installationLength,
-    density: plan.plan.estructuras.some((structure) => structure.densidad === "lujosa") ? "lujosa" : plan.plan.estructuras.some((structure) => structure.densidad === "media") ? "media" : "sencilla",
+    density: planDensity(plan),
     clusterCount: plan.plan.estructuras.reduce((sum, structure) => sum + structure.repeticiones, 0),
   }, totalDesign);
-  return withWarnings({ version: "design-material-estimate-v1", design, balloons, special_elements: specialElements, purchases }, [...plan.advertencias, ...physicalWarnings(design, totalDesign)]);
+  // La puerta física del plan ya no se inyecta aquí: la calcula
+  // `physicalWarningsForPlan` sobre el `PlanResuelto` de cualquiera de los dos
+  // backends, así que la estimación que compara la paridad no lleva
+  // advertencias que solo existen en TypeScript.
+  return withWarnings({ version: "design-material-estimate-v1", design, balloons, special_elements: specialElements, purchases }, plan.advertencias);
 }
 
 export function validateMaterialEstimate(estimate: DesignMaterialEstimate): MaterialEstimateValidation {

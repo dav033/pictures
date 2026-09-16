@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import type { Pool } from "pg";
 import { cotizarPlan } from "../src/lib/cotizacion/motor";
+import { estimateFromPlan, validateMaterialEstimate } from "../src/lib/materiales/estimacion";
 import { resolverPlan } from "../src/lib/plan/resolver";
 import { PlanDecoracion1_1Schema, PlanDecoracionSchema, type PlanDecoracion } from "../src/lib/plan/tipos";
 
@@ -275,6 +276,43 @@ async function main(): Promise<void> {
   });
   const resultadoCruzado = await resolverPlan(poolFase2, productoVarianteCruzados, whitelistRica);
   assert.ok(resultadoCruzado.sin_cobertura.some((item) => item.estructura_id === "PROP_02_MANTEL"), "producto y variante cruzados deben fallar");
+  // El paquete extra de la reserva de merma va a la compra más barata que la
+  // cubra, no a la primera por `variant_id`: con R-12 x100 a 30.000 COP y R-24
+  // x25 a 80.000 COP (que ordena primero) se compraba el paquete caro.
+  const filasReserva = [
+    { product_id: "P-ORO", variant_id: "V-A-ORO-24", sku: "SKU-A-ORO-24", producto_titulo: "Globo dorado", variante_titulo: "R-24", precio: 80_000, unidades_paq: 25, disponible: true, producto_disponible: true, codigo_tamano: "R-24", forma: "redondo", diam_pulg: 24, colores_producto: ["dorado"], colores_variante: ["dorado"], descripcion: "Globo látex dorado R-24." },
+    { product_id: "P-ROSA", variant_id: "V-Z-ROSA-12", sku: "SKU-Z-ROSA-12", producto_titulo: "Globo rosado", variante_titulo: "R-12", precio: 30_000, unidades_paq: 100, disponible: true, producto_disponible: true, codigo_tamano: "R-12", forma: "redondo", diam_pulg: 12, colores_producto: ["rosado"], colores_variante: ["rosado"], descripcion: "Globo látex rosado R-12." },
+  ];
+  const poolReserva = { query: async () => ({ rows: filasReserva }) } as unknown as Pool;
+  const planReserva = await resolverPlan(poolReserva, PlanDecoracionSchema.parse({
+    plan_version: "1.0",
+    plan_id: "44444444-4444-4444-8444-444444444444",
+    concepto: { titulo: "Kits", descripcion: "Dos kits de globos sueltos.", paleta: ["rosado", "dorado"] },
+    espacio: { tipo: "salón", fuente: "cliente" },
+    estructuras: [
+      { estructura_id: "EST_01_KIT", nombre: "Kit rosado", tipo: "kit", rol_escena: "focal", ubicacion: "piso_frontal", medidas: {}, repeticiones: 1, densidad: "media", mezcla: "clasica", unidades_declaradas: 100, materiales: [{ product_id: "P-ROSA", variant_id: "V-Z-ROSA-12", color: "rosado", participacion: 1, rol_material: "principal" }], porque: "Globos sueltos rosados." },
+      { estructura_id: "EST_02_KIT", nombre: "Kit dorado", tipo: "kit", rol_escena: "acento", ubicacion: "mesas_invitados", medidas: {}, repeticiones: 1, densidad: "media", mezcla: "solo_grandes", unidades_declaradas: 25, materiales: [{ product_id: "P-ORO", variant_id: "V-A-ORO-24", color: "dorado", participacion: 1, rol_material: "acento" }], porque: "Globos grandes dorados." },
+    ],
+    supuestos: [],
+  }), new Map<string, ReadonlySet<string>>([["P-ROSA", new Set(["V-Z-ROSA-12"])], ["P-ORO", new Set(["V-A-ORO-24"])]]));
+  const compraRosa = planReserva.compras.find((item) => item.variant_id === "V-Z-ROSA-12")!;
+  const compraOro = planReserva.compras.find((item) => item.variant_id === "V-A-ORO-24")!;
+  assert.equal(planReserva.totales.target_waste_reserve, 10);
+  assert.equal(compraRosa.additional_package_for_waste, true, "la reserva se compra en el paquete más barato");
+  assert.equal(compraRosa.paquetes, 2);
+  assert.equal(compraRosa.waste_reserve, 10);
+  assert.equal(compraOro.additional_package_for_waste, false, "el paquete caro de R-24 no se duplica");
+  assert.equal(compraOro.paquetes, 1);
+  assert.equal(planReserva.totales.total_cop, 140_000, "antes 190.000 COP con el paquete de R-24");
+  // Solo el delta de paquetes comprados por merma, y el ahorro real frente a lo
+  // que se compró: el R-24 sí se habría duplicado con el enfoque ingenuo.
+  assert.equal(planReserva.totales.additional_waste_packages, 1);
+  assert.equal(planReserva.totales.waste_only_savings_cop, 80_000);
+  const estimacionReserva = estimateFromPlan(planReserva);
+  assert.equal(estimacionReserva.totals.additional_waste_packages, 1);
+  assert.equal(estimacionReserva.totals.waste_only_savings_cop, 80_000);
+  assert.equal(validateMaterialEstimate(estimacionReserva).ok, true);
+
   console.log(`[PASS] resolver de plan — ${compra.unidades_necesarias} unidades consolidadas en ${compra.paquetes} paquetes; sustituciones y cobertura declaradas`);
 }
 
