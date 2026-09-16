@@ -247,7 +247,7 @@ async function consumirSSE(
   body: ReadableStream<Uint8Array>,
   manejadores: {
     onTexto: (delta: string) => void;
-    onHerramienta: (nombre: string, estado: "ejecutando" | "lista") => void;
+    onHerramienta: (nombre: string, estado: "ejecutando" | "lista", ok?: boolean) => void;
     onFin: (datos: DatosFin) => void;
     onError: (datos: { error?: string; code?: string; causa?: string; request_id?: string; retryable?: boolean }) => void;
     onActividad?: () => void;
@@ -276,7 +276,7 @@ async function consumirSSE(
     const datosValidados = eventoValidado.data;
     manejadores.onActividad?.();
     if (datosValidados.type === "texto") manejadores.onTexto(datosValidados.delta);
-    else if (datosValidados.type === "herramienta") manejadores.onHerramienta(datosValidados.nombre, datosValidados.estado);
+    else if (datosValidados.type === "herramienta") manejadores.onHerramienta(datosValidados.nombre, datosValidados.estado, datosValidados.ok);
     else if (datosValidados.type === "fin") {
       recibioFinal = true;
       manejadores.onFin(datosValidados);
@@ -1034,12 +1034,12 @@ export default function Page() {
               return copia;
             });
           },
-          onHerramienta: (nombre, estado) => {
+          onHerramienta: (nombre, estado, ok) => {
             setMensajes((previos) => {
               const copia = [...previos];
               const ultimo = copia[copia.length - 1];
               if (ultimo?.role !== "assistant") return previos;
-              copia[copia.length - 1] = { ...ultimo, pasos: aplicarEventoHerramienta(ultimo.pasos ?? [], nombre, estado) };
+              copia[copia.length - 1] = { ...ultimo, pasos: aplicarEventoHerramienta(ultimo.pasos ?? [], nombre, estado, ok) };
               return copia;
             });
           },

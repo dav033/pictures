@@ -100,6 +100,15 @@ function bytesImagenes(historial: Mensaje[]): number {
   return total;
 }
 
+/**
+ * Convencion del registro: una herramienta que falla devuelve `ok: false`. Las que
+ * no usan el campo (lectura simple) se consideran correctas, asi que anadirlo no
+ * cambia como se pinta ninguna herramienta existente.
+ */
+function herramientaSalioBien(resultado: Record<string, unknown>): boolean {
+  return resultado.ok !== false;
+}
+
 async function ejecutarHerramienta(
   registro: RegistroHerramientas,
   llamada: LlamadaHerramienta,
@@ -225,7 +234,10 @@ export async function ejecutarConversacion(opts: OpcionesConversacion): Promise<
 
 export type EventoConversacion =
   | { tipo: "texto"; delta: string }
-  | { tipo: "herramienta"; nombre: string; estado: "ejecutando" | "lista" }
+  // `ok` viaja con el evento `lista` porque una herramienta que TERMINO no es lo
+  // mismo que una que SALIO BIEN: sin este campo la UI pintaba en verde un paso
+  // que habia devuelto `ok:false`.
+  | { tipo: "herramienta"; nombre: string; estado: "ejecutando" | "lista"; ok?: boolean }
   | { tipo: "fin"; resultado: ResultadoConversacion };
 
 /**
@@ -325,7 +337,7 @@ export async function* ejecutarConversacionStream(opts: OpcionesConversacion): A
       const resultados = await Promise.all(llamadas.map((llamada) => ejecutarHerramienta(opts.registro, llamada, opts.signal)));
       for (let i = 0; i < llamadas.length; i++) {
         const llamada = llamadas[i]!;
-        yield { tipo: "herramienta", nombre: llamada.nombre, estado: "lista" };
+        yield { tipo: "herramienta", nombre: llamada.nombre, estado: "lista", ok: herramientaSalioBien(resultados[i]!) };
         historial.push({ rol: "herramienta", nombre: llamada.nombre, llamadaId: llamada.id, resultado: resultados[i]! });
       }
     } else {
@@ -334,7 +346,7 @@ export async function* ejecutarConversacionStream(opts: OpcionesConversacion): A
         opts.onLlamada?.(llamada.nombre, llamada.args ?? {});
         yield { tipo: "herramienta", nombre: llamada.nombre, estado: "ejecutando" };
         const resultado = await ejecutarHerramienta(opts.registro, llamada, opts.signal);
-        yield { tipo: "herramienta", nombre: llamada.nombre, estado: "lista" };
+        yield { tipo: "herramienta", nombre: llamada.nombre, estado: "lista", ok: herramientaSalioBien(resultado) };
         historial.push({ rol: "herramienta", nombre: llamada.nombre, llamadaId: llamada.id, resultado });
       }
     }

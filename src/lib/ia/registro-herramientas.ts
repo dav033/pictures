@@ -2,6 +2,7 @@ import "server-only";
 import type { RegistroHerramientas } from "@sempertex/agente-core";
 import type { Pool } from "pg";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
+import { FalloTecnicoTurnoError } from "@/lib/ia/fallo-tecnico-turno";
 import { advertenciasPuertaFisica, mezclasCompatiblesConDiametros, tamanosObligatorios } from "@/lib/plan/mezclas";
 import { getRagPool } from "@/lib/rag/db";
 import { buscarCatalogoRag, type ProductoCandidato } from "@/lib/rag/chat/buscar";
@@ -25,7 +26,6 @@ import {
   MENSAJE_CLIENTE_REFERENCIA,
   MENSAJE_CLIENTE_SIN_BUSQUEDA,
   MENSAJE_CLIENTE_SIN_GLOBOS,
-  MENSAJE_CLIENTE_VERIFICACION_FALLIDA,
   mensajeClientePresupuesto,
   mensajeClienteRestricciones,
   mensajeClienteSinCobertura,
@@ -752,7 +752,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     const allowlistTurno = allowlistDesdeMapa(estado.ragVariantIdsRecuperados);
     const snapshotTurno = estado.ragCatalogSnapshotId ?? null;
     const correlacionPython = z.string().uuid().safeParse(options.correlationId);
-    const fallarPorBackend = (motivo: string, detalle: string, accionRequerida: string, mensajeCliente: string) => {
+    const auditarFalloBackend = (motivo: string, detalle: string) => {
       estado.planResuelto = undefined;
       estado.seleccionFinalIA = [];
       encolarEscrituraObservabilidad(auditarPlan({
@@ -764,9 +764,21 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         error: `${motivo}: ${detalle}`,
       }));
       encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion", Date.now() - planningStart));
+    };
+    /** Fallo que el modelo SÍ puede corregir en el turno: vuelve como resultado. */
+    const fallarPorBackend = (motivo: string, detalle: string, accionRequerida: string, mensajeCliente: string) => {
+      auditarFalloBackend(motivo, detalle);
       return { ok: false, status: "BACKEND_NO_DISPONIBLE", accion_requerida: accionRequerida, mensaje_cliente: mensajeCliente };
     };
-    const FALLO_TECNICO = "No se pudo verificar el plan contra el catálogo comercial. Dile al cliente que hubo un problema técnico y que vuelva a intentarlo; no inventes precios, no confirmes el plan y no generes ninguna imagen.";
+    /**
+     * Fallo de infraestructura que el modelo NO puede corregir. Corta el turno en
+     * vez de devolverle un texto que parafrasear: el cliente recibe el error
+     * literal de `ui-error.v1`, con su acción de salida.
+     */
+    const abortarPorFalloTecnico = (motivo: string, detalle: string): never => {
+      auditarFalloBackend(motivo, detalle);
+      throw new FalloTecnicoTurnoError(motivo, detalle);
+    };
     // Python es la única autoridad comercial (ADR-0023 paso 5) y necesita el
     // snapshot publicado de este turno. No hay reserva: responder con un plan
     // que nadie verificó escondería un corte roto.
@@ -828,8 +840,8 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
           mensaje_cliente: MENSAJE_CLIENTE_PIEZAS,
         };
       }
-      if (isPythonAdapterError(error)) return fallarPorBackend(error.code, error.domainCode ?? error.message, FALLO_TECNICO, MENSAJE_CLIENTE_VERIFICACION_FALLIDA);
-      if (error instanceof PythonPlanMappingError) return fallarPorBackend(error.code, error.message, FALLO_TECNICO, MENSAJE_CLIENTE_VERIFICACION_FALLIDA);
+      if (isPythonAdapterError(error)) abortarPorFalloTecnico(error.code, error.domainCode ?? error.message);
+      if (error instanceof PythonPlanMappingError) abortarPorFalloTecnico(error.code, error.message);
       throw error;
     }
     const resuelto = resolucion.resuelto;

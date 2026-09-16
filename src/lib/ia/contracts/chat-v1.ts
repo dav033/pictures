@@ -132,6 +132,9 @@ export const ChatToolEventV1Schema = z.object({
   correlation_id: RequestIdV1Schema,
   nombre: z.string().min(1),
   estado: z.enum(["ejecutando", "lista"]),
+  // Aditivo y opcional: un cliente anterior lo ignora y sigue pintando el paso como
+  // antes. Distingue "termino de ejecutarse" de "salio bien".
+  ok: z.boolean().optional(),
 }).strict();
 
 export const ChatFinishEventV1Schema = z.object({

@@ -1,3 +1,4 @@
+import { FalloTecnicoTurnoError } from "@/lib/ia/fallo-tecnico-turno";
 import { chatDe, resolverProveedor } from "@/lib/ia/registro";
 import { ErrorIA } from "@/lib/ia/tipos";
 import type { Imagen, Mensaje } from "@/lib/ia/tipos";
@@ -98,6 +99,14 @@ function datosDeError(error: unknown): { error: string; causa?: string; proveedo
       causa: "base_datos",
     };
   }
+  // El servicio comercial no respondió o respondió fuera de contrato. El detalle
+  // queda en el log con su request_id; aquí solo viaja texto que el cliente puede leer.
+  if (error instanceof FalloTecnicoTurnoError) {
+    return {
+      error: "No se pudo verificar la propuesta contra el catálogo. Intenta nuevamente.",
+      causa: "backend_plan",
+    };
+  }
   const detalle = error instanceof Error ? error.message : "Error desconocido";
   if (/ECONNREFUSED|DATABASE_URL|postgres/i.test(detalle)) {
     return {
@@ -128,6 +137,10 @@ function codigoDeError(error: unknown): ErrorCodeV1 {
     }
   }
   if (error instanceof RagUnavailableError) return "RAG_UNAVAILABLE";
+  // Mismo código que el catálogo caído: para el cliente es el mismo hecho (no se
+  // pudo verificar) y `ui-error.v1` ya lo traduce a SERVICIO_NO_DISPONIBLE, que
+  // trae `accion_sugerida: "reintentar"`.
+  if (error instanceof FalloTecnicoTurnoError) return "RAG_UNAVAILABLE";
   const detalle = error instanceof Error ? error.message : "";
   if (/ECONNREFUSED|DATABASE_URL|postgres/i.test(detalle)) return "RAG_UNAVAILABLE";
   return "INTERNAL_ERROR";
@@ -351,7 +364,7 @@ export async function POST(request: Request) {
           if (evento.tipo === "texto") {
             enviar("texto", { delta: evento.delta });
           } else if (evento.tipo === "herramienta") {
-            enviar("herramienta", { nombre: evento.nombre, estado: evento.estado });
+            enviar("herramienta", { nombre: evento.nombre, estado: evento.estado, ...(evento.ok === undefined ? {} : { ok: evento.ok }) });
           } else {
             const r = evento.resultado;
             enviar("fin", {

@@ -32,9 +32,36 @@ const cerrados = cerrarPasos(pasos);
 assert.ok(cerrados.every((paso) => paso.estado === "listo"), "al terminar el turno ningún paso sigue en curso");
 assert.equal(textoPaso("herramienta_nueva_x", "en_curso"), "Trabajando en tu propuesta", "herramienta desconocida: frase genérica, nunca el nombre técnico");
 for (const nombre of ["guardar_brief", "buscar_catalogo_rag", "confirmar_seleccion_rag", "confirmar_plan_decoracion"]) {
-  assert.ok(!/_/.test(textoPaso(nombre, "en_curso")) && !/_/.test(textoPaso(nombre, "listo")), `${nombre}: frase sin jerga`);
+  for (const estado of ["en_curso", "listo", "fallido"] as const) {
+    assert.ok(!/_/.test(textoPaso(nombre, estado)), `${nombre}: frase sin jerga en ${estado}`);
+  }
 }
 console.log("[PASS] pasos del asistente: frases de cliente, sin duplicados y cerrados al terminar");
+
+// Un resultado `ok:false` no puede pintarse como un paso cumplido: el cliente veía
+// "Armé la propuesta con medidas y cantidades" en verde y sin propuesta ninguna.
+{
+  let fallidos = aplicarEventoHerramienta([], "confirmar_plan_decoracion", "ejecutando");
+  fallidos = aplicarEventoHerramienta(fallidos, "confirmar_plan_decoracion", "lista", false);
+  assert.equal(fallidos[0]!.estado, "fallido");
+  assert.equal(fallidos[0]!.texto, "No pude armar la propuesta");
+  assert.notEqual(fallidos[0]!.texto, textoPaso("confirmar_plan_decoracion", "listo"));
+
+  // Cerrar el turno no puede convertir un fallo en éxito.
+  assert.equal(cerrarPasos(fallidos)[0]!.estado, "fallido", "cerrarPasos no fabrica un éxito que no ocurrió");
+
+  // Sin `ok` (herramientas que no usan el campo) nada cambia respecto de antes.
+  const sinCampo = aplicarEventoHerramienta([], "buscar_catalogo_rag", "lista");
+  assert.equal(sinCampo[0]!.estado, "listo");
+  const conOkTrue = aplicarEventoHerramienta([], "buscar_catalogo_rag", "lista", true);
+  assert.equal(conOkTrue[0]!.estado, "listo");
+
+  // Un paso que falló y se reintenta vuelve a abrirse.
+  const reabierto = aplicarEventoHerramienta(fallidos, "confirmar_plan_decoracion", "ejecutando");
+  assert.equal(reabierto.length, 1);
+  assert.equal(reabierto[0]!.estado, "en_curso");
+}
+console.log("[PASS] un paso con ok:false se pinta como fallido, no como cumplido");
 
 // Contexto del evento.
 assert.equal(contextoEvento({}), null, "sin brief no hay contexto");

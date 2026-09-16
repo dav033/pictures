@@ -66,6 +66,9 @@
             "ejecutando",
             "lista"
           ]
+        },
+        "ok": {
+          "type": "boolean"
         }
       },
       "required": [

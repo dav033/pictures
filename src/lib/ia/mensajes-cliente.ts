@@ -35,7 +35,9 @@ export const MENSAJE_CLIENTE_REFERENCIA = "Todavía estoy ajustando la propuesta
 export const MENSAJE_CLIENTE_PIEZAS = "Todavía estoy ajustando las piezas de la propuesta.";
 export const MENSAJE_CLIENTE_ESTIMACION = "Las cantidades todavía no cuadran con el tamaño de la decoración; estoy ajustando la propuesta.";
 export const MENSAJE_CLIENTE_SIN_BUSQUEDA = "Primero busco las piezas en el catálogo y enseguida te armo la propuesta.";
-export const MENSAJE_CLIENTE_VERIFICACION_FALLIDA = "No pude verificar la propuesta contra el catálogo en este momento. Intentemos de nuevo en un momento.";
+// Retirado: era un segundo dueño del texto de fallo técnico, fuera del gobierno de
+// `ui-error.v1`, y el prompt autoriza parafrasearlo. Ese fallo ahora corta el turno
+// (fallo-tecnico-turno.ts) y el texto lo emite el catálogo de `ui-error.v1`.
 export const MENSAJE_CLIENTE_CATALOGO_NO_DISPONIBLE = "En este momento no puedo mostrarte el catálogo por un problema técnico temporal. Puedes seguir contándome los detalles de tu evento.";
 
 /** Los `errores` de restricciones ya vienen redactados para el cliente (src/lib/plan/restricciones.ts). */

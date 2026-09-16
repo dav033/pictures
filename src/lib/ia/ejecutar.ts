@@ -174,7 +174,8 @@ export async function ejecutarConversacion(opts: {
 
 export type EventoConversacion =
   | { tipo: "texto"; delta: string }
-  | { tipo: "herramienta"; nombre: string; estado: "ejecutando" | "lista" }
+  // `ok` acompaña a `lista`: una herramienta que terminó no es una que salió bien.
+  | { tipo: "herramienta"; nombre: string; estado: "ejecutando" | "lista"; ok?: boolean }
   | { tipo: "fin"; resultado: ResultadoConversacion };
 
 export async function* ejecutarConversacionStream(opts: {

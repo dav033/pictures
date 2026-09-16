@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
-export type PasoAsistente = { id: string; texto: string; estado: "en_curso" | "listo" };
+export type PasoAsistente = { id: string; texto: string; estado: "en_curso" | "listo" | "fallido" };
 
 type Props = {
   pasos: PasoAsistente[];
@@ -26,6 +26,29 @@ function Indicador({ estado }: { estado: PasoAsistente["estado"] }) {
           >
             <circle cx="8" cy="8" r="6" fill="none" strokeWidth="2" className="stroke-borde" />
             <path d="M8 2a6 6 0 016 6" fill="none" strokeWidth="2" strokeLinecap="round" className="stroke-acento" />
+          </motion.svg>
+        ) : estado === "fallido" ? (
+          /* Un paso que devolvio `ok:false` no puede llevar el check verde: el
+             cliente leia "Arme la propuesta" sin propuesta ninguna. */
+          <motion.svg
+            key="fallido"
+            viewBox="0 0 16 16"
+            className="size-4"
+            initial={{ opacity: 0, scale: 0.4 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "spring", stiffness: 520, damping: 22 }}
+          >
+            <circle cx="8" cy="8" r="7" className="fill-error-suave" />
+            <motion.path
+              d="M5.6 5.6l4.8 4.8M10.4 5.6l-4.8 4.8"
+              fill="none"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              className="stroke-error"
+              initial={{ pathLength: reducir ? 1 : 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 0.3, delay: 0.08 }}
+            />
           </motion.svg>
         ) : (
           <motion.svg
@@ -76,8 +99,8 @@ export function PasosAsistente({ pasos, className = "" }: Props) {
               className="flex items-center gap-2 text-[13px] text-texto-suave"
             >
               <Indicador estado={paso.estado} />
-              <span className={paso.estado === "en_curso" ? "text-texto" : undefined}>{paso.texto}</span>
-              <span className="sr-only">{paso.estado === "listo" ? "(listo)" : "(en curso)"}</span>
+              <span className={paso.estado === "en_curso" ? "text-texto" : paso.estado === "fallido" ? "text-error" : undefined}>{paso.texto}</span>
+              <span className="sr-only">{paso.estado === "listo" ? "(listo)" : paso.estado === "fallido" ? "(no se pudo)" : "(en curso)"}</span>
             </motion.li>
           ))}
         </AnimatePresence>
