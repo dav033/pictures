@@ -796,6 +796,106 @@ def _effective_proportions(
     return tuple((size, 1.0 / len(ordered)) for size in ordered), ()
 
 
+_LINEAR_STRUCTURES = frozenset({"arco", "semiarco", "guirnalda", "columna"})
+
+#: Prefijo reservado de la puerta física dentro de ``advertencias``. El resto de
+#: advertencias del plan son avisos que no bloquean (ADR-0022), así que estas
+#: necesitan una marca para que Next pueda distinguirlas y rechazar el plan sin
+#: convertir en bloqueante un campo declarado informativo. Detrás del prefijo va
+#: la frase tal cual la lee el modelo, que no cambia al portar la regla.
+PHYSICAL_GATE_PREFIX = "puerta_fisica:"
+
+
+def _balloons_per_meter_factor(mix: str, proportions: Sequence[tuple[int, float]]) -> float:
+    """Mirror of ``factorGlobosPorMetro`` in ``src/lib/medidas/geometria.ts``.
+
+    Cuántas veces cambia el modelo los globos por metro al pasar de la mezcla
+    del plan a la mezcla efectiva de ``restricciones.tamanos``. λ, el ancho de
+    banda y el perfil de la estructura oficial son los mismos en las dos mezclas
+    y se cancelan, así que solo queda el diámetro dominante sobre el área
+    ponderada del globo. Sin tamaños obligatorios vale exactamente 1.
+    """
+
+    def por_metro(valores: Sequence[tuple[int, float]]) -> float:
+        area = sum(
+            proportion * math.pi * ((diameter * 2.54 * 0.92) / 100 / 2) ** 2
+            for diameter, proportion in valores
+        )
+        if not valores or area <= 0:
+            return 0.0
+        dominant = max(valores, key=lambda item: item[1])
+        return dominant[0] * 2.54 * 0.92 / 100 / area
+
+    base = por_metro(_MIXES[mix])
+    effective = por_metro(proportions)
+    return effective / base if base > 0 and effective > 0 else 1.0
+
+
+def _physical_warnings(
+    plan: Mapping[str, object], structures: Sequence[Mapping[str, object]]
+) -> list[str]:
+    """Mirror of ``physicalWarningsForPlan`` in ``src/lib/materiales/estimacion.ts``.
+
+    Cada estructura lineal se compara contra su propia densidad y su propio eje
+    por instancia. Los umbrales son heurísticos sin calibrar: son una
+    comprobación previa transparente, no un sustituto de la calibración en
+    campo, y escalan con la extensión física y la densidad en vez de fijar un
+    conteo de globos para un tipo de decoración concreto.
+
+    Están calibrados en globos por metro contra mezclas donde R-12 domina el
+    volumen, así que no son comparables cuando ``restricciones.tamanos`` cambia
+    el globo dominante: un arco 3 × 2,4 m "solo R-24" cuenta 52 globos correctos
+    (8,4/m) donde la mezcla completa contaba 119 (19,2/m) y caía por debajo del
+    mínimo, de modo que un plan válido dejaba de poder confirmarse. La banda se
+    escala con el mismo modelo que produjo el conteo.
+    """
+    minimums = {"low": 8, "medium": 14, "high": 20}
+    maximums = {"low": 48, "medium": 68, "high": 88}
+    declared_by_id = {
+        str(item.get("estructura_id")): item for item in _mappings(plan.get("estructuras"))
+    }
+    sizes = _required_sizes(plan)
+    warnings: list[str] = []
+    for structure in structures:
+        if _text(structure.get("tipo")) not in _LINEAR_STRUCTURES:
+            continue
+        repeticiones = max(1, round(_number(structure.get("repeticiones")) or 0))
+        extent = (_number(structure.get("eje_m")) or 0.0) * repeticiones
+        if extent <= 0:
+            continue
+        balloons = sum(
+            _integer(line.get("unidades")) or 0
+            for line in _mappings(structure.get("lineas"))
+            if _number(line.get("diam_pulg")) is not None
+        )
+        if balloons <= 0:
+            continue
+        declared = declared_by_id.get(str(structure.get("estructura_id")), {})
+        density = {"sencilla": "low", "low": "low", "lujosa": "high", "high": "high"}.get(
+            _text(declared.get("densidad")) or "", "medium"
+        )
+        mix = _text(declared.get("mezcla"))
+        factor = (
+            _balloons_per_meter_factor(mix, _effective_proportions(mix, sizes)[0])
+            if mix in _MIXES
+            else 1.0
+        )
+        per_meter = balloons / extent
+        estructura_id = _text(structure.get("estructura_id")) or ""
+        if per_meter < minimums[density] * factor * 0.6:
+            warnings.append(
+                f"{PHYSICAL_GATE_PREFIX}{estructura_id}: estimated material quantity appears too"
+                f" low for {density} density over {extent:.2f} m ({balloons} installed balloons)"
+            )
+        if per_meter > maximums[density] * factor * 1.3:
+            warnings.append(
+                f"{PHYSICAL_GATE_PREFIX}{estructura_id}: estimated material quantity appears"
+                f" unusually high for {density} density over {extent:.2f} m"
+                f" ({balloons} installed balloons)"
+            )
+    return warnings
+
+
 def _despiece_with_plan_sizes(
     plan: Mapping[str, object], structure: Mapping[str, object]
 ) -> tuple[float, list[dict[str, object]], tuple[int, ...]]:
@@ -2150,6 +2250,12 @@ def _build_resolved(
             warnings.append(f"sobrante_alto:{purchase['variant_id']}")
     if reserve["uncovered_waste_reserve"]:
         warnings.append(f"reserva_merma_no_cubierta:{reserve['uncovered_waste_reserve']}")
+    # La puerta física la mide ahora el resolutor, dueño único de la regla
+    # (ADR-0023 paso 4). Sale marcada con ``PHYSICAL_GATE_PREFIX`` porque, a
+    # diferencia del resto de ``advertencias``, sí bloquea la confirmación: la
+    # política de bloqueo sigue en Next, que es donde vive lo que se hace con
+    # un plan.
+    warnings.extend(_physical_warnings(plan, structures))
     lineas = [line for structure in structures for line in _mappings(structure.get("lineas"))]
     total_cop = sum(_integer(item.get("subtotal")) or 0 for item in purchases)
     base_line_cost = sum(
