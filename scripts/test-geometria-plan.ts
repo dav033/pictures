@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { calcularDespieceEstructura, calcularEje, calcularMedidas, ErrorRepartoGlobos, MEZCLAS_DISPONIBLES, proporcionesEfectivas, pulgadasDeMezcla, type Densidad, type Figura, type Mezcla } from "../src/lib/medidas/geometria";
+import { calcularDespieceEstructura, calcularEje, calcularMedidas, ErrorRepartoGlobos, MEZCLAS_DISPONIBLES, proporcionesEfectivas, pulgadasDeMezcla, tamanosObligatorios, type Densidad, type Figura, type Mezcla } from "../src/lib/medidas/geometria";
 
 const base = {
   tipo: "arco" as const,
@@ -111,6 +111,23 @@ for (const mezcla of MEZCLAS_DISPONIBLES) {
     assert.ok(resultado.despiece.every((linea) => tamanos.includes(linea.pulgadas)), `${mezcla} ${tamanos}: línea fuera de lo pedido`);
   }
 }
+
+// --- Parseo de `restricciones.tamanos[].valor` -----------------------------
+// El valor es texto libre del modelo: TypeScript lo leía con Number() y Python
+// con int(), así que los dos aceptaban "R-12" y diferían en decimales,
+// exponentes, hexadecimal, subrayados, dígitos no ASCII y la cadena vacía. Como
+// la mezcla efectiva decide el TOTAL, esa diferencia cambiaba conteos, costos y
+// plan_hash entre backends. Espejo: `_required_sizes` en app/plan.py.
+assert.deepEqual(tamanosObligatorios({ tamanos: [{ valor: "R-12" }, { valor: "r12" }, { valor: "18" }, { valor: " R-24 " }, { valor: "R-12" }] }), [12, 18, 24]);
+assert.deepEqual(
+  tamanosObligatorios({ tamanos: [{ valor: "R-12.5" }, { valor: "R-0x0C" }, { valor: "R-1e1" }, { valor: "R-" }, { valor: "R-1_0" }, { valor: "R-١٢" }, { valor: "R-0" }, { valor: "R-1234" }, { valor: "grandes" }] }),
+  [],
+  "antes: 12.5, 12, 10 y 0 pulgadas en TypeScript; 10 pulgadas en Python",
+);
+assert.deepEqual(tamanosObligatorios({ tamanos: [{ valor: "R-12", polaridad: "prohibido" }, { valor: "R-18", polaridad: "obligatorio" }] }), [18]);
+assert.deepEqual(tamanosObligatorios(undefined), []);
+// "R-" daba 0 pulgadas: área ponderada 0 y un arco entero sin un solo globo.
+assert.equal(arcoConTamanos("organica_fina", tamanosObligatorios({ tamanos: [{ valor: "R-" }] })).totalGlobos, 119, "antes 0 globos");
 
 // --- Reparto en dos márgenes (ADR 0022) ------------------------------------
 // El total por tamaño no depende de cuántos colores tenga la estructura (antes

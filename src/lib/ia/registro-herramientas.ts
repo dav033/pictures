@@ -2,7 +2,7 @@ import "server-only";
 import type { RegistroHerramientas } from "@sempertex/agente-core";
 import type { Pool } from "pg";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
-import { calcularMedidas, type Figura, type ResultadoMedidas } from "@/lib/medidas/geometria";
+import { calcularMedidas, tamanosObligatorios, type Figura, type ResultadoMedidas } from "@/lib/medidas/geometria";
 import { getRagPool } from "@/lib/rag/db";
 import { buscarCatalogoRag, type ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { buscarCatalogoRagConPresupuesto, type PoolItemPresupuesto, type ResultadoBusquedaPresupuesto } from "@/lib/rag/chat/buscar-presupuesto";
@@ -317,7 +317,7 @@ export const ACCION_TAMANO_CLIENTE_SIN_COBERTURA = "Los tamaños que faltan son 
 
 /** Every uncovered size is a size the customer made mandatory: retrying the same plan cannot work. */
 function faltanTamanosDelCliente(sinCobertura: ReadonlyArray<{ tamano: string }>, plan: PlanDecoracion): boolean {
-  const delCliente = new Set((plan.restricciones?.tamanos ?? []).filter((item) => item.polaridad === "obligatorio").map((item) => `R-${item.valor.replace(/^R-/i, "")}`));
+  const delCliente = new Set(tamanosObligatorios(plan.restricciones).map((pulgadas) => `R-${pulgadas}`));
   return delCliente.size > 0 && sinCobertura.length > 0 && sinCobertura.every((item) => delCliente.has(item.tamano));
 }
 

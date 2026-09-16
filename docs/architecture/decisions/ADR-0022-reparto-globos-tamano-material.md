@@ -1,6 +1,6 @@
 # ADR-0022. Reparto de globos por tamaño y material
 
-Estado: aceptada (2026-09-15). Implementada en `src/lib/medidas/geometria.ts` y `services/ai-api/app/plan.py`, con vectores dorados 20 a 24.
+Estado: aceptada (2026-09-15). Implementada en `src/lib/medidas/geometria.ts` y `services/ai-api/app/plan.py`, con vectores dorados 20 a 25.
 
 Los ids 0010 a 0021 están reservados por los planes de `docs/planes/estructuras-2026-09`, así que este registro toma el 0022.
 
@@ -36,6 +36,7 @@ Tres defectos distintos:
 4. **Desempate sin color.** Mayor resto, después mayor diámetro (margen de tamaños) o menor índice de material (margen de materiales). El nombre del color ya no participa en ningún desempate.
 5. **Invariante explícito.** Si las cuotas no suman el total con tolerancia 1e-6, o si la matriz no cierra los dos márgenes, se lanza un error tipado (`ErrorRepartoGlobos` / `BalloonApportionmentError`) en vez de devolver un conteo que no cuadra.
 6. **Un solo dueño del reparto en TypeScript.** El reparto por partes iguales de `calcularMedidas` (ruta heredada sin plan) usa la misma rutina.
+7. **Un solo parseo de `restricciones.tamanos[].valor`.** El valor es texto libre del modelo: se acepta solo un entero positivo de hasta tres cifras con "R-", "R" o sin prefijo, y lo demás se ignora sin rechazar el plan. TypeScript lo leía con `Number(...)` y Python con `int(...)`: los dos aceptaban "R-12" y diferían en decimales, exponentes, hexadecimal, subrayados, dígitos no ASCII y la cadena vacía ("R-" daba 0 pulgadas en TypeScript, o sea un arco sin un solo globo). Mientras el tamaño solo elegía la variante de cada línea eso era un detalle; desde el punto 1 decide el TOTAL, así que cambiaba conteos, costos y `plan_hash` entre backends. Dueños espejo: `tamanosObligatorios` y `_required_sizes`; vector dorado 25.
 
 La matriz es completa (existe toda celda tamaño × material) y ninguna celda tiene tope, así que mientras queden déficit de fila y de columna hay una celda que puede recibir la unidad, y los dos déficits —que suman lo mismo— se agotan a la vez. Por eso el barrido codicioso siempre cierra y no se implementó un camino de aumento; el error tipado cubre el caso imposible.
 
@@ -52,11 +53,12 @@ La matriz es completa (existe toda celda tamaño × material) y ninguna celda ti
 
 - Cambian las cantidades de los planes con tamaños obligatorios y el reparto por color de los planes con varios materiales. Con eso cambia `plan_hash`: `/api/generate` vuelve a comprobar el hash contra el token de aprobación (`src/app/api/generate/route.ts`), así que **los planes aprobados antes del despliegue y todavía no generados dejan de coincidir y se tienen que volver a aprobar**. Afecta a planes con varios colores o con tamaños obligatorios; un plan de un solo color sin tamaños fijos no cambia.
 - Un arco "solo R-12" pasa a cotizar ~60 % más globos que antes (104 frente a 65 en el caso de referencia) y un "R-18 y R-24" sobre mezcla clásica pasa a cotizar 64 en vez de 264: los presupuestos de esos planes cambian en los dos sentidos.
-- Los vectores dorados 16 y 18 se regeneraron (cambia el reparto por color, no los totales) y se añadieron los vectores 20 a 24. `npm run plan:test-paridad-python` pasa en los 24.
+- Los vectores dorados 16 y 18 se regeneraron (cambia el reparto por color, no los totales) y se añadieron los vectores 20 a 25. `npm run plan:test-paridad-python` pasa en los 25.
+- Un plan que escriba un tamaño obligatorio que no es un entero ("R-12.5", "R-1_0", "R-") deja de recortar la mezcla en los dos backends: se cotiza con la mezcla completa del plan. Antes cada backend hacía una cosa distinta, así que ninguno de los dos comportamientos estaba en uso deliberado.
 - Los umbrales de densidad, λ y el ancho de banda siguen sin calibrar; esta decisión no los toca.
 
 En la misma entrega (frente W1) viajan otros dos cambios que también mueven `plan_hash` y las cifras del plan, documentados en el código y en sus commits: la puerta física pasa a evaluarse por estructura lineal con un solo dueño en Next (`physicalWarningsForPlan`) y el paquete extra de la reserva de merma se compra en la presentación más barata, con `additional_waste_packages` y `waste_only_savings_cop` redefinidos como delta real y ahorro real.
 
 ## Reversión
 
-Revertir los commits de W1 en `geometria.ts`, `plan.py`, `resolver.ts` y `estimacion.ts`, regenerar `expected` con `npx tsx --conditions=react-server scripts/test-paridad-plan-python.ts --update` y `expected_python` con `PARIDAD_ACTUALIZAR=1 pytest tests/test_plan_parity.py`, y retirar los vectores 20 a 24. No hay migración de datos: los planes guardados conservan su `plan_hash` y un plan re-resuelto con otro reparto deja de coincidir con su token, igual que ante cualquier cambio del resolutor. `PYTHON_BACKEND_KILL_SWITCH` sigue siendo la reversión del backend, pero no revierte este cambio: los dos backends lo llevan.
+Revertir los commits de W1 en `geometria.ts`, `plan.py`, `resolver.ts` y `estimacion.ts`, regenerar `expected` con `npx tsx --conditions=react-server scripts/test-paridad-plan-python.ts --update` y `expected_python` con `PARIDAD_ACTUALIZAR=1 pytest tests/test_plan_parity.py`, y retirar los vectores 20 a 25. No hay migración de datos: los planes guardados conservan su `plan_hash` y un plan re-resuelto con otro reparto deja de coincidir con su token, igual que ante cualquier cambio del resolutor. `PYTHON_BACKEND_KILL_SWITCH` sigue siendo la reversión del backend, pero no revierte este cambio: los dos backends lo llevan.

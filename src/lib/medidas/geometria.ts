@@ -245,6 +245,42 @@ function repartirPorMargenes(
 }
 
 /**
+ * `restricciones.tamanos[].valor` es texto libre del modelo: solo se acepta un
+ * entero positivo de hasta tres cifras, con "R-", "R" o sin prefijo ("R-12",
+ * "R12", "12"), que es lo único que emite el extractor determinista
+ * (`restricciones.ts`). Los espacios de la clase ASCII se toleran a los lados
+ * porque el esquema Python no recorta el valor como sí hace zod.
+ *
+ * TypeScript leía el valor con `Number(...)` y Python con `int(...)`: los dos
+ * aceptaban "R-12" y diferían en decimales, notación exponencial, hexadecimal,
+ * subrayados, dígitos no ASCII y la cadena vacía ("R-" daba 0 pulgadas en
+ * TypeScript, es decir cero globos). Desde que la mezcla efectiva decide el
+ * TOTAL, esa diferencia cambiaba conteos, costos y `plan_hash` entre los dos
+ * backends. Lo que no encaja se ignora —no se redondea ni se rechaza el plan—,
+ * que es lo que Python ya hacía.
+ *
+ * Espejo exacto: `_MANDATORY_SIZE` y `_required_sizes` en
+ * `services/ai-api/app/plan.py` (el flag `re.ASCII` es lo que mantiene `\d`
+ * limitado a los dígitos ASCII, como en JavaScript sin la bandera `u`).
+ */
+const TAMANO_OBLIGATORIO = /^[ \t\n\r\f\v]*R?-?(\d{1,3})[ \t\n\r\f\v]*$/i;
+
+/** Pulgadas que el cliente hizo obligatorias, de menor a mayor y sin repetir. */
+export function tamanosObligatorios(
+  restricciones?: { tamanos?: readonly { valor: string; polaridad?: string }[] } | null,
+): number[] {
+  const pulgadas = new Set<number>();
+  for (const tamano of restricciones?.tamanos ?? []) {
+    if ((tamano.polaridad ?? "obligatorio") !== "obligatorio") continue;
+    const encontrado = TAMANO_OBLIGATORIO.exec(tamano.valor);
+    if (!encontrado) continue;
+    const valor = Number(encontrado[1]);
+    if (valor > 0) pulgadas.add(valor);
+  }
+  return [...pulgadas].sort((a, b) => a - b);
+}
+
+/**
  * Mezcla efectiva cuando el cliente fija tamaños (`restricciones.tamanos`
  * obligatorios, que el resolutor aplica a TODAS las estructuras geométricas
  * del plan): los tamaños de la mezcla que están en el conjunto pedido,

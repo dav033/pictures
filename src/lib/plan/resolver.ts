@@ -2,7 +2,7 @@ import "server-only";
 import type { Pool } from "pg";
 import { featureEnabled } from "@/lib/ia/feature-flags";
 import { MERMA } from "@/lib/cotizacion/constantes";
-import { calcularDespieceEstructura, MEZCLAS_DISPONIBLES, pulgadasDeMezcla, type Mezcla } from "@/lib/medidas/geometria";
+import { calcularDespieceEstructura, MEZCLAS_DISPONIBLES, pulgadasDeMezcla, tamanosObligatorios, type Mezcla } from "@/lib/medidas/geometria";
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "./composicion";
 import { coloresRealesProducto } from "./colores-producto";
 import { planHashResuelto } from "./hash";
@@ -425,6 +425,10 @@ export async function resolverPlan(
   const sinCobertura: PlanResuelto["sin_cobertura"] = [];
   const advertencias: string[] = [];
   const estructuras: EstructuraResuelta[] = [];
+  // Un solo parseo de los tamaños obligatorios (geometria.ts), idéntico al de
+  // `_required_sizes` en Python: decide la mezcla efectiva y si la selección de
+  // variantes exige el tamaño exacto.
+  const tamanosDelCliente = tamanosObligatorios(plan.restricciones);
   for (const estructura of plan.estructuras) {
     const geometrica = GEOMETRICOS.has(estructura.tipo);
     const lineas: LineaMaterial[] = [];
@@ -464,7 +468,7 @@ export async function resolverPlan(
         repeticiones: estructura.repeticiones,
         densidad: estructura.densidad,
         mezcla: estructura.mezcla,
-        tamanos: plan.restricciones?.tamanos.filter((item) => item.polaridad === "obligatorio").map((item) => Number(item.valor.replace(/^R-/i, ""))).filter(Number.isFinite),
+        tamanos: tamanosDelCliente,
         materiales: estructura.materiales.map((material) => ({ color: material.color, participacion: material.participacion ?? 0 })),
         estructuraOficial: estructura.estructura_oficial,
       });
@@ -489,11 +493,10 @@ export async function resolverPlan(
         const productoCanonico = candidatos.has(materialId) ? materialId : candidatoPorVariante.get(materialId)?.productId ?? materialId;
         const permitidasProducto = whitelist.get(productoCanonico) ?? whitelist.get(materialId) ?? new Set<string>();
         const opciones = (candidatos.get(productoCanonico) ?? []).filter((candidato) => permitidasProducto.has(candidato.variantId));
-        const tamanosExplicitos = plan.restricciones?.tamanos.filter((item) => item.polaridad === "obligatorio") ?? [];
         const opcionesConAcabado = material?.acabado
           ? opciones.filter((candidato) => candidato.acabados.includes(normalizar(material.acabado!)))
           : opciones;
-        const elegidoBase = elegir(opcionesConAcabado, despiece.pulgadas, despiece.color, despiece.cantidad, tamanosExplicitos.length > 0);
+        const elegidoBase = elegir(opcionesConAcabado, despiece.pulgadas, despiece.color, despiece.cantidad, tamanosDelCliente.length > 0);
         const override = elegidoBase
           ? estructura.variant_overrides?.find((item) => item.objetivo_variant_id === elegidoBase.variantId)
           : undefined;

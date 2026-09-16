@@ -1,0 +1,1338 @@
+{
+  "allowlist": [
+    {
+      "product_id": "P-BLANCO",
+      "variant_ids": [
+        "V-BLANCO-12",
+        "V-BLANCO-18"
+      ]
+    },
+    {
+      "product_id": "P-DORADO",
+      "variant_ids": [
+        "V-DORADO-12",
+        "V-DORADO-18"
+      ]
+    }
+  ],
+  "catalog_rows": [
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "blanco"
+      ],
+      "colores_variante": [
+        "blanco"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex blanco R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 12000,
+      "product_id": "P-BLANCO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex blanco",
+      "sku": "SKU-V-BLANCO-12",
+      "sku_original": "SHOP-V-BLANCO-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-BLANCO-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-BLANCO-12",
+      "variante_titulo": "R-12 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-18",
+      "colores_producto": [
+        "blanco"
+      ],
+      "colores_variante": [
+        "blanco"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex blanco R-18.",
+      "diam_pulg": 18,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-blanco-18.jpg",
+      "inventory_quantity": 500,
+      "precio": 18000,
+      "product_id": "P-BLANCO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex blanco",
+      "sku": "SKU-V-BLANCO-18",
+      "sku_original": "SHOP-V-BLANCO-18",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-BLANCO-18",
+      "unidades_inferidas": false,
+      "unidades_paq": 25,
+      "variant_id": "V-BLANCO-18",
+      "variante_titulo": "R-18 / PAQUETE X 25"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "dorado"
+      ],
+      "colores_variante": [
+        "dorado"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex dorado R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-dorado-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 13000,
+      "product_id": "P-DORADO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex dorado",
+      "sku": "SKU-V-DORADO-12",
+      "sku_original": "SHOP-V-DORADO-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-DORADO-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-DORADO-12",
+      "variante_titulo": "R-12 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-18",
+      "colores_producto": [
+        "dorado"
+      ],
+      "colores_variante": [
+        "dorado"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex dorado R-18.",
+      "diam_pulg": 18,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-dorado-18.jpg",
+      "inventory_quantity": 500,
+      "precio": 19000,
+      "product_id": "P-DORADO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex dorado",
+      "sku": "SKU-V-DORADO-18",
+      "sku_original": "SHOP-V-DORADO-18",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-DORADO-18",
+      "unidades_inferidas": false,
+      "unidades_paq": 25,
+      "variant_id": "V-DORADO-18",
+      "variante_titulo": "R-18 / PAQUETE X 25"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-001",
+  "description": "Solo R-18 es un tamaño: TypeScript leía restricciones.tamanos[].valor con Number() y Python con int(), así que el mismo plan daba mezclas efectivas distintas (\"R-12.5\" solo en TypeScript, \"R-1_0\" solo en Python, \"R-\" eran cero pulgadas y cero globos en TypeScript). Ahora los dos aceptan solo un entero positivo de hasta tres cifras y lo demás se ignora sin rechazar el plan: el arco usa la mezcla efectiva {R-18} y la columna clásica, que no puede ubicarlo, reparte por partes iguales entre lo pedido.",
+  "expected": {
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "blanco",
+          "design_quantity": 42,
+          "finish": null,
+          "product_id": "P-BLANCO",
+          "required_quantity": 42,
+          "shape": "redondo",
+          "size_inches": 18,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-BLANCO-18",
+          "waste_adjusted_quantity": 42,
+          "waste_reserve": 0
+        },
+        {
+          "color": "dorado",
+          "design_quantity": 28,
+          "finish": null,
+          "product_id": "P-DORADO",
+          "required_quantity": 28,
+          "shape": "redondo",
+          "size_inches": 18,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-DORADO-18",
+          "waste_adjusted_quantity": 28,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 52,
+          "finish": null,
+          "product_id": "P-BLANCO",
+          "required_quantity": 52,
+          "shape": "redondo",
+          "size_inches": 18,
+          "structure_id": "EST_02_COLUMNA",
+          "variant_id": "V-BLANCO-18",
+          "waste_adjusted_quantity": 52,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 3,
+        "density": "media",
+        "dimensions_m": {
+          "height": 2.4,
+          "length": null,
+          "width": 3
+        },
+        "installation_length_m": 9.81,
+        "shape": "coordinated structures",
+        "type": "composite_installation",
+        "visual_density": "medium",
+        "visual_scale": "large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 67680,
+          "design_quantity": 94,
+          "leftover_inventory": 6,
+          "operational_surplus": 6,
+          "package_count": 4,
+          "potential_surplus": 6,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 72000,
+          "purchase_quantity": 100,
+          "required_quantity": 94,
+          "units_per_package": 25,
+          "used": 94,
+          "variant_id": "V-BLANCO-18",
+          "waste_adjusted_quantity": 94,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 28880,
+          "design_quantity": 28,
+          "leftover_inventory": 12,
+          "operational_surplus": 12,
+          "package_count": 2,
+          "potential_surplus": 22,
+          "product_id": "P-DORADO",
+          "purchase_cost": 38000,
+          "purchase_quantity": 50,
+          "required_quantity": 38,
+          "units_per_package": 25,
+          "used": 28,
+          "variant_id": "V-DORADO-18",
+          "waste_adjusted_quantity": 38,
+          "waste_reserve": 10
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 96560,
+        "covered_waste_reserve": 10,
+        "design_quantity": 122,
+        "natural_package_surplus": 28,
+        "operational_surplus": 18,
+        "potential_surplus": 28,
+        "purchase_cost": 110000,
+        "purchase_quantity": 150,
+        "required_quantity": 132,
+        "target_waste_reserve": 10,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 132,
+        "waste_only_savings_cop": 18000
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-DORADO-18"
+      ]
+    },
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-DORADO-18"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 67680,
+          "design_quantity": 94,
+          "diam_pulg": 18,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO",
+            "EST_02_COLUMNA"
+          ],
+          "imagen": "https://cdn.example.test/v-blanco-18.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 6,
+          "paquetes": 4,
+          "precio_paquete": 18000,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 72000,
+          "purchase_quantity": 100,
+          "required_quantity": 94,
+          "sku": "SKU-V-BLANCO-18",
+          "sku_original": "SHOP-V-BLANCO-18",
+          "sobrante": 6,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-BLANCO-18",
+          "subtotal": 72000,
+          "tamano_codigo": "R-18",
+          "titulo": "Globo latex blanco — R-18 / PAQUETE X 25",
+          "unidades_con_merma": 94,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 94,
+          "unidades_paquete": 25,
+          "used": 94,
+          "variant_id": "V-BLANCO-18",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "dorado",
+          "consumption_cost": 28880,
+          "design_quantity": 28,
+          "diam_pulg": 18,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-dorado-18.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 12,
+          "paquetes": 2,
+          "precio_paquete": 19000,
+          "product_id": "P-DORADO",
+          "purchase_cost": 38000,
+          "purchase_quantity": 50,
+          "required_quantity": 38,
+          "sku": "SKU-V-DORADO-18",
+          "sku_original": "SHOP-V-DORADO-18",
+          "sobrante": 22,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-DORADO-18",
+          "subtotal": 38000,
+          "tamano_codigo": "R-18",
+          "titulo": "Globo latex dorado — R-18 / PAQUETE X 25",
+          "unidades_con_merma": 38,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 28,
+          "unidades_paquete": 25,
+          "used": 28,
+          "variant_id": "V-DORADO-18",
+          "waste_reserve": 10
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 6.21,
+          "estructura_id": "EST_01_ARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 45.7,
+              "diam_pulg": 18,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-blanco-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLANCO",
+              "sku": "SKU-V-BLANCO-18",
+              "sku_original": "SHOP-V-BLANCO-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-BLANCO-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex blanco — R-18 / PAQUETE X 25",
+              "unidades": 42,
+              "unidades_inferidas": false,
+              "variant_id": "V-BLANCO-18"
+            },
+            {
+              "acabado": null,
+              "color": "dorado",
+              "diam_cm": 45.7,
+              "diam_pulg": 18,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-dorado-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-DORADO",
+              "sku": "SKU-V-DORADO-18",
+              "sku_original": "SHOP-V-DORADO-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-DORADO-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex dorado — R-18 / PAQUETE X 25",
+              "unidades": 28,
+              "unidades_inferidas": false,
+              "variant_id": "V-DORADO-18"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 18,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 70
+            }
+          ],
+          "nombre": "Arco principal",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "arco",
+          "total_unidades": 70,
+          "ubicacion": "arco_central"
+        },
+        {
+          "eje_m": 1.8,
+          "estructura_id": "EST_02_COLUMNA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 45.7,
+              "diam_pulg": 18,
+              "estructura_id": "EST_02_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-blanco-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLANCO",
+              "sku": "SKU-V-BLANCO-18",
+              "sku_original": "SHOP-V-BLANCO-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-BLANCO-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex blanco — R-18 / PAQUETE X 25",
+              "unidades": 52,
+              "unidades_inferidas": false,
+              "variant_id": "V-BLANCO-18"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 18,
+              "forma": "redondo",
+              "pct": 100,
+              "unidades": 52
+            }
+          ],
+          "nombre": "Columnas laterales",
+          "repeticiones": 2,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 52,
+          "ubicacion": "lateral_izquierdo"
+        }
+      ],
+      "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 122\nTarget waste reserve: 10\nNatural package surplus: 28\nUsable waste coverage: 10\nAdditional packages required for waste: 0\nGlobo latex blanco — R-18 / PAQUETE X 25: design=94, required=94, package=25, packages=4, purchased=100, natural surplus=6, waste reserve=0, leftover inventory=6\nGlobo latex dorado — R-18 / PAQUETE X 25: design=28, required=38, package=25, packages=2, purchased=50, natural surplus=22, waste reserve=10, leftover inventory=12",
+      "plan": {
+        "concepto": {
+          "descripcion": "Arco orgánico con columnas de apoyo.",
+          "paleta": [
+            "blanco",
+            "dorado"
+          ],
+          "titulo": "Arco blanco y dorado de 18 pulgadas"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_ARCO",
+            "materiales": [
+              {
+                "color": "blanco",
+                "participacion": 0.6,
+                "product_id": "P-BLANCO",
+                "rol_material": "principal"
+              },
+              {
+                "color": "dorado",
+                "participacion": 0.4,
+                "product_id": "P-DORADO",
+                "rol_material": "secundario"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.4,
+              "ancho_m": 3
+            },
+            "mezcla": "organica_fina",
+            "nombre": "Arco principal",
+            "porque": "El cliente pidió globos de 18 pulgadas.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "arco",
+            "ubicacion": "arco_central"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_02_COLUMNA",
+            "materiales": [
+              {
+                "color": "blanco",
+                "participacion": 1,
+                "product_id": "P-BLANCO",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.8
+            },
+            "mezcla": "clasica",
+            "nombre": "Columnas laterales",
+            "porque": "Enmarcan el arco.",
+            "repeticiones": 2,
+            "rol_escena": "soporte",
+            "tipo": "columna",
+            "ubicacion": "lateral_izquierdo"
+          }
+        ],
+        "plan_id": "25252525-2525-4252-8252-252525252525",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "restricciones": {
+          "acabados": [],
+          "colores": [],
+          "estructuras": [],
+          "tamanos": [
+            {
+              "polaridad": "obligatorio",
+              "procedencia": "explicito",
+              "texto_original": "con globos R-12.5",
+              "valor": "R-12.5"
+            },
+            {
+              "polaridad": "obligatorio",
+              "procedencia": "explicito",
+              "texto_original": "con globos R-1_0",
+              "valor": "R-1_0"
+            },
+            {
+              "polaridad": "obligatorio",
+              "procedencia": "explicito",
+              "texto_original": "con globos R-",
+              "valor": "R-"
+            },
+            {
+              "polaridad": "obligatorio",
+              "procedencia": "explicito",
+              "texto_original": "con globos R-18",
+              "valor": "R-18"
+            }
+          ]
+        },
+        "supuestos": []
+      },
+      "plan_hash": "325741d42e7394c6ac195390634f5c0442a2f48b4462b4cfd8230df38db42dd8",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 18000,
+        "consumption_cost": 96560,
+        "covered_waste_reserve": 10,
+        "design_quantity": 122,
+        "globos_por_tamano": {
+          "R-18": 122
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8,
+        "natural_package_surplus": 28,
+        "purchase_cost": 110000,
+        "target_waste_reserve": 10,
+        "total_cop": 110000,
+        "total_unidades": 122,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 18000
+      }
+    },
+    "quote": {
+      "complementosSoportados": false,
+      "consumptionCost": 96560,
+      "coveredWasteReserve": 10,
+      "incluyeIva": true,
+      "leftoverInventory": 18,
+      "lineas": [
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 94,
+          "color": "blanco",
+          "consumptionCost": 67680,
+          "designQuantity": 94,
+          "diamPulg": 18,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO",
+            "EST_02_COLUMNA"
+          ],
+          "id": "V-BLANCO-18",
+          "leftoverInventory": 6,
+          "nombre": "Globo latex blanco — R-18 / PAQUETE X 25",
+          "paquetes": 4,
+          "precioPaquete": 18000,
+          "productId": "P-BLANCO",
+          "purchaseCost": 72000,
+          "purchaseQuantity": 100,
+          "referenciaElementIds": [],
+          "requiredQuantity": 94,
+          "sobrante": 6,
+          "subtotal": 72000,
+          "tamano": "R-18",
+          "tamanoCodigo": "R-18",
+          "unidadesPaquete": 25,
+          "used": 94,
+          "varianteId": "V-BLANCO-18",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 28,
+          "color": "dorado",
+          "consumptionCost": 28880,
+          "designQuantity": 28,
+          "diamPulg": 18,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-DORADO-18",
+          "leftoverInventory": 12,
+          "nombre": "Globo latex dorado — R-18 / PAQUETE X 25",
+          "paquetes": 2,
+          "precioPaquete": 19000,
+          "productId": "P-DORADO",
+          "purchaseCost": 38000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 38,
+          "sobrante": 22,
+          "subtotal": 38000,
+          "tamano": "R-18",
+          "tamanoCodigo": "R-18",
+          "unidadesPaquete": 25,
+          "used": 28,
+          "varianteId": "V-DORADO-18",
+          "wasteReserve": 10
+        }
+      ],
+      "mermaPorcentaje": 8,
+      "plan_hash": "325741d42e7394c6ac195390634f5c0442a2f48b4462b4cfd8230df38db42dd8",
+      "purchaseCost": 110000,
+      "targetWasteReserve": 10,
+      "total": 110000
+    }
+  },
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-001",
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "blanco",
+          "design_quantity": 42,
+          "finish": null,
+          "product_id": "P-BLANCO",
+          "required_quantity": 42,
+          "shape": "redondo",
+          "size_inches": 18.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-BLANCO-18",
+          "waste_adjusted_quantity": 42,
+          "waste_reserve": 0
+        },
+        {
+          "color": "dorado",
+          "design_quantity": 28,
+          "finish": null,
+          "product_id": "P-DORADO",
+          "required_quantity": 28,
+          "shape": "redondo",
+          "size_inches": 18.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-DORADO-18",
+          "waste_adjusted_quantity": 28,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 52,
+          "finish": null,
+          "product_id": "P-BLANCO",
+          "required_quantity": 52,
+          "shape": "redondo",
+          "size_inches": 18.0,
+          "structure_id": "EST_02_COLUMNA",
+          "variant_id": "V-BLANCO-18",
+          "waste_adjusted_quantity": 52,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 3,
+        "density": "media",
+        "dimensions_m": {
+          "height": 2.4,
+          "length": null,
+          "width": 3.0
+        },
+        "installation_length_m": 9.81,
+        "shape": "coordinated structures",
+        "type": "composite_installation",
+        "visual_density": "medium",
+        "visual_scale": "large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 67680,
+          "design_quantity": 94,
+          "leftover_inventory": 6,
+          "operational_surplus": 6,
+          "package_count": 4,
+          "potential_surplus": 6,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 72000,
+          "purchase_quantity": 100,
+          "required_quantity": 94,
+          "units_per_package": 25,
+          "used": 94,
+          "variant_id": "V-BLANCO-18",
+          "waste_adjusted_quantity": 94,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 28880,
+          "design_quantity": 28,
+          "leftover_inventory": 12,
+          "operational_surplus": 12,
+          "package_count": 2,
+          "potential_surplus": 22,
+          "product_id": "P-DORADO",
+          "purchase_cost": 38000,
+          "purchase_quantity": 50,
+          "required_quantity": 38,
+          "units_per_package": 25,
+          "used": 28,
+          "variant_id": "V-DORADO-18",
+          "waste_adjusted_quantity": 38,
+          "waste_reserve": 10
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 96560,
+        "covered_waste_reserve": 10,
+        "design_quantity": 122,
+        "natural_package_surplus": 28,
+        "operational_surplus": 18,
+        "potential_surplus": 28,
+        "purchase_cost": 110000,
+        "purchase_quantity": 150,
+        "required_quantity": 132,
+        "target_waste_reserve": 10,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 132,
+        "waste_only_savings_cop": 18000
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-DORADO-18"
+      ]
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-DORADO-18"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 67680,
+          "design_quantity": 94,
+          "diam_pulg": 18.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO",
+            "EST_02_COLUMNA"
+          ],
+          "imagen": "https://cdn.example.test/v-blanco-18.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 6,
+          "paquetes": 4,
+          "precio_paquete": 18000,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 72000,
+          "purchase_quantity": 100,
+          "required_quantity": 94,
+          "sku": "SKU-V-BLANCO-18",
+          "sku_original": "SHOP-V-BLANCO-18",
+          "sobrante": 6,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-BLANCO-18",
+          "subtotal": 72000,
+          "tamano_codigo": "R-18",
+          "titulo": "Globo latex blanco — R-18 / PAQUETE X 25",
+          "unidades_con_merma": 94,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 94,
+          "unidades_paquete": 25,
+          "used": 94,
+          "variant_id": "V-BLANCO-18",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "dorado",
+          "consumption_cost": 28880,
+          "design_quantity": 28,
+          "diam_pulg": 18.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-dorado-18.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 12,
+          "paquetes": 2,
+          "precio_paquete": 19000,
+          "product_id": "P-DORADO",
+          "purchase_cost": 38000,
+          "purchase_quantity": 50,
+          "required_quantity": 38,
+          "sku": "SKU-V-DORADO-18",
+          "sku_original": "SHOP-V-DORADO-18",
+          "sobrante": 22,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-DORADO-18",
+          "subtotal": 38000,
+          "tamano_codigo": "R-18",
+          "titulo": "Globo latex dorado — R-18 / PAQUETE X 25",
+          "unidades_con_merma": 38,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 28,
+          "unidades_paquete": 25,
+          "used": 28,
+          "variant_id": "V-DORADO-18",
+          "waste_reserve": 10
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 6.21,
+          "estructura_id": "EST_01_ARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 45.7,
+              "diam_pulg": 18.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-blanco-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLANCO",
+              "sku": "SKU-V-BLANCO-18",
+              "sku_original": "SHOP-V-BLANCO-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-BLANCO-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex blanco — R-18 / PAQUETE X 25",
+              "unidades": 42,
+              "unidades_inferidas": false,
+              "variant_id": "V-BLANCO-18"
+            },
+            {
+              "acabado": null,
+              "color": "dorado",
+              "diam_cm": 45.7,
+              "diam_pulg": 18.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-dorado-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-DORADO",
+              "sku": "SKU-V-DORADO-18",
+              "sku_original": "SHOP-V-DORADO-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-DORADO-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex dorado — R-18 / PAQUETE X 25",
+              "unidades": 28,
+              "unidades_inferidas": false,
+              "variant_id": "V-DORADO-18"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 18.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 70
+            }
+          ],
+          "nombre": "Arco principal",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "arco",
+          "total_unidades": 70,
+          "ubicacion": "arco_central"
+        },
+        {
+          "eje_m": 1.8,
+          "estructura_id": "EST_02_COLUMNA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 45.7,
+              "diam_pulg": 18.0,
+              "estructura_id": "EST_02_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-blanco-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_02_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLANCO",
+              "sku": "SKU-V-BLANCO-18",
+              "sku_original": "SHOP-V-BLANCO-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-BLANCO-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex blanco — R-18 / PAQUETE X 25",
+              "unidades": 52,
+              "unidades_inferidas": false,
+              "variant_id": "V-BLANCO-18"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 18.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 52
+            }
+          ],
+          "nombre": "Columnas laterales",
+          "repeticiones": 2,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 52,
+          "ubicacion": "lateral_izquierdo"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-001.",
+      "plan": {
+        "concepto": {
+          "descripcion": "Arco orgánico con columnas de apoyo.",
+          "paleta": [
+            "blanco",
+            "dorado"
+          ],
+          "titulo": "Arco blanco y dorado de 18 pulgadas"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_ARCO",
+            "materiales": [
+              {
+                "color": "blanco",
+                "participacion": 0.6,
+                "product_id": "P-BLANCO",
+                "rol_material": "principal"
+              },
+              {
+                "color": "dorado",
+                "participacion": 0.4,
+                "product_id": "P-DORADO",
+                "rol_material": "secundario"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.4,
+              "ancho_m": 3
+            },
+            "mezcla": "organica_fina",
+            "nombre": "Arco principal",
+            "porque": "El cliente pidió globos de 18 pulgadas.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "arco",
+            "ubicacion": "arco_central"
+          },
+          {
+            "densidad": "media",
+            "estructura_id": "EST_02_COLUMNA",
+            "materiales": [
+              {
+                "color": "blanco",
+                "participacion": 1,
+                "product_id": "P-BLANCO",
+                "rol_material": "principal"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.8
+            },
+            "mezcla": "clasica",
+            "nombre": "Columnas laterales",
+            "porque": "Enmarcan el arco.",
+            "repeticiones": 2,
+            "rol_escena": "soporte",
+            "tipo": "columna",
+            "ubicacion": "lateral_izquierdo"
+          }
+        ],
+        "plan_id": "25252525-2525-4252-8252-252525252525",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "restricciones": {
+          "acabados": [],
+          "colores": [],
+          "estructuras": [],
+          "tamanos": [
+            {
+              "polaridad": "obligatorio",
+              "procedencia": "explicito",
+              "texto_original": "con globos R-12.5",
+              "valor": "R-12.5"
+            },
+            {
+              "polaridad": "obligatorio",
+              "procedencia": "explicito",
+              "texto_original": "con globos R-1_0",
+              "valor": "R-1_0"
+            },
+            {
+              "polaridad": "obligatorio",
+              "procedencia": "explicito",
+              "texto_original": "con globos R-",
+              "valor": "R-"
+            },
+            {
+              "polaridad": "obligatorio",
+              "procedencia": "explicito",
+              "texto_original": "con globos R-18",
+              "valor": "R-18"
+            }
+          ]
+        },
+        "supuestos": []
+      },
+      "plan_hash": "8303fb1eab6562a0647ecdd45c03aec8939ff8424db792fad0f67de1a1aaea57",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 18000,
+        "consumption_cost": 96560,
+        "covered_waste_reserve": 10,
+        "design_quantity": 122,
+        "globos_por_tamano": {
+          "R-18": 122
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 28,
+        "purchase_cost": 110000,
+        "target_waste_reserve": 10,
+        "total_cop": 110000,
+        "total_unidades": 122,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 18000
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 96560,
+      "covered_waste_reserve": 10,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 18,
+      "lines": [
+        {
+          "available": true,
+          "color": "blanco",
+          "consumption_cost_cop": 67680,
+          "design_quantity": 94,
+          "diameter_inches": 18.0,
+          "id": "V-BLANCO-18",
+          "leftover_inventory": 6,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            },
+            {
+              "id": "EST_02_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 18000,
+          "packages": 4,
+          "product_id": "P-BLANCO",
+          "purchase_cost_cop": 72000,
+          "purchase_quantity": 100,
+          "required_quantity": 94,
+          "size": "R-18",
+          "size_code": "R-18",
+          "structures": [
+            "EST_01_ARCO",
+            "EST_02_COLUMNA"
+          ],
+          "subtotal_cop": 72000,
+          "surplus": 6,
+          "title": "Globo latex blanco — R-18 / PAQUETE X 25",
+          "units_per_package": 25,
+          "used": 94,
+          "variant_id": "V-BLANCO-18",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "dorado",
+          "consumption_cost_cop": 28880,
+          "design_quantity": 28,
+          "diameter_inches": 18.0,
+          "id": "V-DORADO-18",
+          "leftover_inventory": 12,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 19000,
+          "packages": 2,
+          "product_id": "P-DORADO",
+          "purchase_cost_cop": 38000,
+          "purchase_quantity": 50,
+          "required_quantity": 38,
+          "size": "R-18",
+          "size_code": "R-18",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 38000,
+          "surplus": 22,
+          "title": "Globo latex dorado — R-18 / PAQUETE X 25",
+          "units_per_package": 25,
+          "used": 28,
+          "variant_id": "V-DORADO-18",
+          "waste_reserve": 10
+        }
+      ],
+      "plan_hash": "8303fb1eab6562a0647ecdd45c03aec8939ff8424db792fad0f67de1a1aaea57",
+      "purchase_cost_cop": 110000,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 10,
+      "total_cop": 110000,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "25-tamano-obligatorio-mal-escrito",
+  "plan": {
+    "concepto": {
+      "descripcion": "Arco orgánico con columnas de apoyo.",
+      "paleta": [
+        "blanco",
+        "dorado"
+      ],
+      "titulo": "Arco blanco y dorado de 18 pulgadas"
+    },
+    "espacio": {
+      "fuente": "cliente",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "densidad": "media",
+        "estructura_id": "EST_01_ARCO",
+        "materiales": [
+          {
+            "color": "blanco",
+            "participacion": 0.6,
+            "product_id": "P-BLANCO",
+            "rol_material": "principal"
+          },
+          {
+            "color": "dorado",
+            "participacion": 0.4,
+            "product_id": "P-DORADO",
+            "rol_material": "secundario"
+          }
+        ],
+        "medidas": {
+          "alto_m": 2.4,
+          "ancho_m": 3
+        },
+        "mezcla": "organica_fina",
+        "nombre": "Arco principal",
+        "porque": "El cliente pidió globos de 18 pulgadas.",
+        "repeticiones": 1,
+        "rol_escena": "focal",
+        "tipo": "arco",
+        "ubicacion": "arco_central"
+      },
+      {
+        "densidad": "media",
+        "estructura_id": "EST_02_COLUMNA",
+        "materiales": [
+          {
+            "color": "blanco",
+            "participacion": 1,
+            "product_id": "P-BLANCO",
+            "rol_material": "principal"
+          }
+        ],
+        "medidas": {
+          "alto_m": 1.8
+        },
+        "mezcla": "clasica",
+        "nombre": "Columnas laterales",
+        "porque": "Enmarcan el arco.",
+        "repeticiones": 2,
+        "rol_escena": "soporte",
+        "tipo": "columna",
+        "ubicacion": "lateral_izquierdo"
+      }
+    ],
+    "plan_id": "25252525-2525-4252-8252-252525252525",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "restricciones": {
+      "acabados": [],
+      "colores": [],
+      "estructuras": [],
+      "tamanos": [
+        {
+          "polaridad": "obligatorio",
+          "procedencia": "explicito",
+          "texto_original": "con globos R-12.5",
+          "valor": "R-12.5"
+        },
+        {
+          "polaridad": "obligatorio",
+          "procedencia": "explicito",
+          "texto_original": "con globos R-1_0",
+          "valor": "R-1_0"
+        },
+        {
+          "polaridad": "obligatorio",
+          "procedencia": "explicito",
+          "texto_original": "con globos R-",
+          "valor": "R-"
+        },
+        {
+          "polaridad": "obligatorio",
+          "procedencia": "explicito",
+          "texto_original": "con globos R-18",
+          "valor": "R-18"
+        }
+      ]
+    },
+    "supuestos": []
+  }
+}

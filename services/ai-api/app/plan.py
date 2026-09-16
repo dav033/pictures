@@ -704,6 +704,22 @@ def _apportion_margins(
     return matrix
 
 
+_MANDATORY_SIZE = re.compile(
+    r"^[ \t\n\r\f\v]*R?-?(\d{1,3})[ \t\n\r\f\v]*$", re.IGNORECASE | re.ASCII
+)
+"""Mirror of ``TAMANO_OBLIGATORIO`` in ``src/lib/medidas/geometria.ts``.
+
+``restricciones.tamanos[].valor`` is free text from the model: only a positive
+integer of up to three digits, with "R-", "R" or no prefix. TypeScript read it
+with ``Number(...)`` and Python with ``int(...)``: both accepted "R-12" and
+differed on decimals, exponents, hexadecimal, underscores, non-ASCII digits and
+the empty string. Since the effective mix decides the TOTAL, that difference
+changed counts, costs and ``plan_hash`` between the two backends. ``re.ASCII``
+is what keeps ``\\d`` on ASCII digits, like JavaScript without the ``u`` flag.
+Anything else is ignored, never rounded and never a plan rejection.
+"""
+
+
 def _required_sizes(plan: Mapping[str, object]) -> set[int]:
     restrictions = plan.get("restricciones")
     if not isinstance(restrictions, Mapping):
@@ -719,11 +735,12 @@ def _required_sizes(plan: Mapping[str, object]) -> set[int]:
         text = _text(item.get("valor"))
         if text is None:
             continue
-        try:
-            size = int(re.sub(r"^R-", "", text, flags=re.IGNORECASE))
-        except ValueError:
+        match = _MANDATORY_SIZE.match(text)
+        if match is None:
             continue
-        result.add(size)
+        size = int(match.group(1))
+        if size > 0:
+            result.add(size)
     return result
 
 

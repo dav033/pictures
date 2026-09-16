@@ -28,6 +28,7 @@ from app.plan import (
     _hamilton,
     _product_variant_mismatches,
     _material_waste_only_savings,
+    _required_sizes,
     _MIXES,
     _plan_density,
     _optimizar_cobertura,
@@ -853,6 +854,45 @@ def test_mandatory_sizes_renormalize_the_mix_and_the_total() -> None:
             assert list(missing) == (
                 [size for size in requested if size not in in_mix] if in_mix else []
             )
+
+
+def test_mandatory_size_parsing_is_identical_to_typescript() -> None:
+    # Mirror of scripts/test-geometria-plan.ts. TypeScript read
+    # restricciones.tamanos[].valor with Number() and Python with int(): both
+    # accepted "R-12" and differed on decimals, exponents, hexadecimal,
+    # underscores, non-ASCII digits and the empty string, so the same plan got
+    # different counts, costs and plan_hash on each backend.
+    def sizes(*values: str) -> set[int]:
+        return _required_sizes(
+            {"restricciones": {"tamanos": [{"valor": value} for value in values]}}
+        )
+
+    assert sizes("R-12", "r12", "18", " R-24 ", "R-12") == {12, 18, 24}
+    assert (
+        sizes(
+            "R-12.5",
+            "R-0x0C",
+            "R-1e1",
+            "R-",
+            "R-1_0",
+            "R-١٢",
+            "R-0",
+            "R-1234",
+            "grandes",
+        )
+        == set()
+    ), "antes: R-1_0 daba 10 pulgadas en Python y R-12.5 daba 12,5 en TypeScript"
+    assert _required_sizes(
+        {
+            "restricciones": {
+                "tamanos": [
+                    {"valor": "R-12", "polaridad": "prohibido"},
+                    {"valor": "R-18"},
+                ]
+            }
+        }
+    ) == {18}
+    assert _required_sizes({}) == set()
 
 
 def test_hamilton_refuses_quotas_that_do_not_add_up_to_the_total() -> None:
