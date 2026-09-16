@@ -1039,7 +1039,12 @@ function renderClauseText(clause: LoraVisualClause, render?: CaptionRenderState)
 
   if (renderedCount > 1 && clause.placement === "lateral_izquierdo" && clause.relation?.startsWith("flanking")) {
     const matching = hasCanonicalProduct ? "" : " matching one another,";
-    return `${colored},${matching} one standing on the left and one on the right, ${clause.relation}`;
+    // Un grupo con más de un par ("cuatro columnas, dos a cada lado") no puede
+    // decir "one on the left and one on the right": el conteo no cuadraría.
+    const reparto = renderedCount > 2 && renderedCount % 2 === 0
+      ? `${numberWord(renderedCount / 2)} standing on each side`
+      : "one standing on the left and one on the right";
+    return `${colored},${matching} ${reparto}, ${clause.relation}`;
   }
   if (clause.relation && clause.structureType === "centro_mesa") return `${colored} ${placementPhrase} ${clause.relation}`;
   if (clause.relation) return `${colored} ${placementPhrase}, ${clause.relation}`;
@@ -1073,10 +1078,15 @@ function groupClauses(sceneSpec: SceneSpec, productConceptsByElementId?: Map<str
   const used = new Set<string>();
   const clauses: LoraVisualClause[] = [];
 
-  // A pair of matching lateral structures is one spatial instruction, even
-  // when the plan materialized them as separate physical elements.
+  // Matching lateral structures are one spatial instruction, even when the plan
+  // materialized them as separate physical elements. Every mirrored pair of the
+  // same structure goes into the SAME clause: two pairs used to render the
+  // identical pair sentence twice ("two columns ... flanking the main arch, two
+  // columns ... flanking the main arch") instead of naming the four pieces once.
+  const bilateralGroups = new Map<string, SemanticElement[]>();
   const leftItems = items.filter((item) => item.semantics.placement === "lateral_izquierdo");
   for (const left of leftItems) {
+    if (used.has(left.element.element_id)) continue;
     const right = items.find((candidate) =>
       candidate.semantics.placement === "lateral_derecho"
       && candidate.semantics.structure_type === left.semantics.structure_type
@@ -1085,11 +1095,15 @@ function groupClauses(sceneSpec: SceneSpec, productConceptsByElementId?: Map<str
       && candidate.semantics.design_role === left.semantics.design_role
       && !used.has(candidate.element.element_id),
     );
-    if (!right || used.has(left.element.element_id)) continue;
-    const pair = createClause([left, right], "lateral_izquierdo", productConceptsByElementId);
-    pair.bilateral = true;
+    if (!right) continue;
     used.add(left.element.element_id);
     used.add(right.element.element_id);
+    const key = structuralKey(left);
+    bilateralGroups.set(key, [...(bilateralGroups.get(key) ?? []), left, right]);
+  }
+  for (const group of bilateralGroups.values()) {
+    const pair = createClause(group, "lateral_izquierdo", productConceptsByElementId);
+    pair.bilateral = true;
     clauses.push(pair);
   }
 

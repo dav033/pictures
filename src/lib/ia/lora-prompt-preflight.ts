@@ -57,12 +57,21 @@ function similarApprovedHeights(a: number | undefined, b: number | undefined): b
   return Math.max(a, b) / Math.min(a, b) < 1.15;
 }
 
+/**
+ * Cada izquierda se empareja con una derecha distinta, igual que el compilador:
+ * `find` sin consumir devolvía siempre la PRIMERA derecha, así que una lateral
+ * repetida cuatro veces (dos por lado) producía los pares [#1,#2] y [#3,#2] y
+ * solo uno tenía cláusula ("relaciones bilaterales 1/2" -> LORA_PREFLIGHT_FAILED
+ * sobre un caption correcto).
+ */
 function expectedBilateralPairs(sceneSpec: SceneSpec): Array<[string, string]> {
   const pairs: Array<[string, string]> = [];
+  const used = new Set<string>();
   const left = sceneSpec.elements.filter((element) => element.visual_semantics?.placement === "lateral_izquierdo");
   for (const leftElement of left) {
     const rightElement = sceneSpec.elements.find((element) =>
       element.visual_semantics?.placement === "lateral_derecho"
+      && !used.has(element.element_id)
       && element.visual_semantics.structure_type === leftElement.visual_semantics?.structure_type
       && element.resolved_colors.map(translateLoraColor).join("|") === leftElement.resolved_colors.map(translateLoraColor).join("|")
       // Same rule as the compiler: sides the plan sized clearly differently
@@ -70,7 +79,9 @@ function expectedBilateralPairs(sceneSpec: SceneSpec): Array<[string, string]> {
       && element.visual_semantics.design_role === leftElement.visual_semantics?.design_role
       && similarApprovedHeights(element.visual_semantics.dimensions_m?.height, leftElement.visual_semantics?.dimensions_m?.height),
     );
-    if (rightElement) pairs.push([leftElement.element_id, rightElement.element_id]);
+    if (!rightElement) continue;
+    used.add(rightElement.element_id);
+    pairs.push([leftElement.element_id, rightElement.element_id]);
   }
   return pairs;
 }
@@ -168,7 +179,10 @@ export function preflightLoraPrompt(input: {
   const bilateralPairs = expectedBilateralPairs(sceneSpec);
   const relationshipsRepresented = bilateralPairs.filter(([left, right]) => {
     const clause = clauses.find((candidate) => candidate.elementIds.includes(left) && candidate.elementIds.includes(right));
-    return Boolean(clause?.relation?.includes("flanking") && /left and one on the right/i.test(prompt));
+    // Con más de un par en el mismo grupo la frase es "two standing on each
+    // side" en vez de "one on the left and one on the right" (el conteo no
+    // cuadraría); ambas son la misma instrucción espejo del compilador.
+    return Boolean(clause?.relation?.includes("flanking") && /left and one on the right|standing on each side/i.test(prompt));
   }).length;
   const relationships = { expected: bilateralPairs.length, represented: relationshipsRepresented };
   if (relationshipsRepresented !== bilateralPairs.length) errors.push(`relaciones bilaterales ${relationshipsRepresented}/${bilateralPairs.length}`);

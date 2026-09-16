@@ -11,6 +11,7 @@ import { buildCorrectiveRetryPrompt, buildQaObserverPrompt, type SceneQaObservat
 import { buildImagePrompt, FINAL_OUTPUT_REMINDER } from "@/lib/ia/build-image-prompt";
 import { approvedPlanQaInputs, buildGenerationQa, type QaObserver } from "@/lib/ia/generation-qa";
 import { compileProductPrompt } from "@/lib/ia/lora-product-runtime";
+import { preflightLoraPrompt } from "@/lib/ia/lora-prompt-preflight";
 import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
 import type { VisualContext } from "@/lib/ia/visual-context";
 
@@ -37,16 +38,18 @@ const IMAGE = { base64: "iVBORw0KGgo=", mime: "image/png" };
 const HASHES = { planHash: "plan-hash", sceneSpecHash: "scene-hash" };
 const CONTEXT: VisualContext = { venueKind: "indoor", lightingKind: "night", palette: ["rojo", "dorado"] };
 
-async function approvedScene(): Promise<{ plan: PlanResuelto; scene: SceneSpec }> {
+const ESTRUCTURAS_BASE = [
+  { estructura_id: "EST_01_SEMIARCO", nombre: "Semiarco derecho", tipo: "semiarco", rol_escena: "focal", ubicacion: "lateral_derecho", medidas: { ancho_m: 1.2, alto_m: 2.2 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales, porque: "Pieza principal a un lado." },
+  { estructura_id: "EST_02_COLUMNA", nombre: "Columna izquierda", tipo: "columna", rol_escena: "soporte", ubicacion: "lateral_izquierdo", medidas: { alto_m: 1.8 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales, porque: "Pieza baja al otro lado, separada." },
+];
+
+async function approvedScene(estructuras: unknown[] = ESTRUCTURAS_BASE, planId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd"): Promise<{ plan: PlanResuelto; scene: SceneSpec }> {
   const declared = PlanDecoracionSchema.parse({
     plan_version: "1.0",
-    plan_id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+    plan_id: planId,
     concepto: { titulo: "Cumpleaños rojo y dorado", descripcion: "Piezas de globos en el salón.", paleta: ["rojo", "dorado"] },
     espacio: { tipo: "salón", fuente: "supuesto" },
-    estructuras: [
-      { estructura_id: "EST_01_SEMIARCO", nombre: "Semiarco derecho", tipo: "semiarco", rol_escena: "focal", ubicacion: "lateral_derecho", medidas: { ancho_m: 1.2, alto_m: 2.2 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales, porque: "Pieza principal a un lado." },
-      { estructura_id: "EST_02_COLUMNA", nombre: "Columna izquierda", tipo: "columna", rol_escena: "soporte", ubicacion: "lateral_izquierdo", medidas: { alto_m: 1.8 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales, porque: "Pieza baja al otro lado, separada." },
-    ],
+    estructuras,
     supuestos: [],
   });
   const plan = await resolverPlan(pool, declared, whitelist);
@@ -225,6 +228,31 @@ async function main(): Promise<void> {
   const compiled = compileProductPrompt({ sceneSpec: scene, visualContext: CONTEXT, vocabulary: PRODUCT_VOCABULARY, trigger: "eventdecor_style_v2", officialStructures: qaPlan.officialStructures });
   assert.match(compiled.prompt, /stand apart with an open gap between them/, compiled.prompt);
   console.log("[PASS] the LoRA prompt compiled with the same plan inputs requests the separation QA checks");
+
+  // 7. Una lateral repetida un número par de veces (el caso motivador: cuatro
+  //    columnas, dos a cada lado) tiene que llegar entera hasta el preflight,
+  //    que es lo que route.ts consulta antes de la llamada pagada. El
+  //    compilador emitía la frase de par una vez POR PAR y
+  //    `expectedBilateralPairs` emparejaba cada izquierda con la MISMA derecha,
+  //    así que salía "relaciones bilaterales 1/2" -> LORA_PREFLIGHT_FAILED.
+  for (const repeticiones of [2, 4, 6]) {
+    const lateralRepetida = await approvedScene([
+      { estructura_id: "EST_01_ARCO", nombre: "Arco principal", tipo: "arco", rol_escena: "focal", ubicacion: "arco_central", medidas: { ancho_m: 3, alto_m: 2.6 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales, porque: "Pieza focal." },
+      { estructura_id: "EST_02_COLUMNAS", nombre: "Columnas laterales", tipo: "columna", rol_escena: "soporte", ubicacion: "lateral_izquierdo", medidas: { alto_m: 1.8 }, repeticiones, densidad: "media", mezcla: "clasica", materiales, porque: "Columnas a los dos lados." },
+    ], "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee");
+    const planLateral = approvedPlanQaInputs(lateralRepetida.plan)!;
+    const caption = compileProductPrompt({ sceneSpec: lateralRepetida.scene, visualContext: CONTEXT, vocabulary: PRODUCT_VOCABULARY, trigger: "eventdecor_style_v2", officialStructures: planLateral.officialStructures });
+    // Todas las instancias del mismo grupo son UNA instrucción espejo, no la misma frase repetida.
+    const bilaterales = caption.clauses.filter((clause) => clause.bilateral);
+    assert.equal(bilaterales.length, 1, JSON.stringify(caption.clauses.map((clause) => clause.elementIds)));
+    assert.equal(bilaterales[0]!.elementIds.length, repeticiones);
+    const frase = repeticiones === 2 ? "one standing on the left and one on the right" : `${["", "one", "two", "three"][repeticiones / 2]} standing on each side`;
+    assert.equal(caption.prompt.split(frase).length - 1, 1, caption.prompt);
+    const preflight = preflightLoraPrompt({ sceneSpec: lateralRepetida.scene, clauses: caption.clauses, prompt: caption.prompt, triggers: ["eventdecor_style_v2"], vocabulary: PRODUCT_VOCABULARY });
+    assert.equal(preflight.ok, true, `repeticiones=${repeticiones}: ${JSON.stringify(preflight.errors)}`);
+    assert.deepEqual(preflight.relationships, { expected: repeticiones / 2, represented: repeticiones / 2 });
+  }
+  console.log("[PASS] laterales repetidas ×2, ×4 y ×6: una sola cláusula espejo que pasa el preflight LoRA");
 }
 
 main().catch((error) => {
