@@ -195,9 +195,9 @@ async function main(): Promise<void> {
   //    mayor participación reescalada, no al primero de la lista.
   const { ajustarCoberturaPlan } = await import("../src/lib/plan/cobertura-materiales");
   const disponibilidad = new Map([
-    ["P-MENOR", { titulo: "Globo blanco", colores: ["blanco"], mezclas: ["organica_fina", "organica_gruesa"] as const, acabados: [] }],
-    ["P-SIN-COBERTURA", { titulo: "Globo dorado", colores: ["dorado"], mezclas: ["clasica"] as const, acabados: [] }],
-    ["P-MAYOR", { titulo: "Globo rosado", colores: ["rosado"], mezclas: ["organica_fina", "organica_gruesa"] as const, acabados: [] }],
+    ["P-MENOR", { titulo: "Globo blanco", colores: ["blanco"], coloresVariante: ["blanco"], mezclas: ["organica_fina", "organica_gruesa"] as const, acabados: [] }],
+    ["P-SIN-COBERTURA", { titulo: "Globo dorado", colores: ["dorado"], coloresVariante: ["dorado"], mezclas: ["clasica"] as const, acabados: [] }],
+    ["P-MAYOR", { titulo: "Globo rosado", colores: ["rosado"], coloresVariante: ["rosado"], mezclas: ["organica_fina", "organica_gruesa"] as const, acabados: [] }],
   ]);
   const planSinPrincipal = PlanDecoracionSchema.parse({
     plan_version: "1.0",
