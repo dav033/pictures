@@ -26,7 +26,9 @@
  *      suman 100.
  *   f) color del prompt de imagen: cada color no nulo de una línea está en los
  *      colores de SU estructura en la escena y en su línea de color del prompt
- *      (`verificarCoherenciaPrompt`, el dueño de esa regla).
+ *      (`verificarCoherenciaPrompt`, el dueño de esa regla). La escena se arma
+ *      con la cadena de producción entera, colores incluidos: salen de
+ *      `resolverProductosParaGeneracion`, no de una regla propia de la prueba.
  *
  * Un vector cuya forma no admite una invariante se OMITE con la razón impresa
  * (una estructura sin geometría no tiene mezcla efectiva; un vector sin
@@ -37,18 +39,14 @@
  * `Pool` que usa `scripts/test-paridad-plan-python.ts` (`scripts/lib/vectores-golden.ts`).
  * Run: npx tsx --conditions=react-server scripts/test-invariantes-plan.ts
  */
-import { planBlueprint } from "@/lib/plan/blueprint";
-import { buildImagePrompt, placementDescription, promptElementName, tieneContratoDeColor } from "@/lib/ia/build-image-prompt";
-import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/scene-spec";
 import { bloqueMezclaPorEstructura } from "@/lib/ia/tamano-fisico";
 import { cotizarPlan, type Cotizacion } from "@/lib/cotizacion/motor";
 import { estimateFromPlan, validateMaterialEstimate, type DesignMaterialEstimate } from "@/lib/materiales/estimacion";
 import { calcularDespieceEstructura, proporcionesEfectivas, tamanosObligatorios } from "@/lib/medidas/geometria";
-import { coloresRealesProducto } from "@/lib/plan/colores-producto";
-import { verificarCoherenciaPrompt, type EscenaParaCoherencia } from "@/lib/plan/coherencia";
+import { verificarCoherenciaPrompt } from "@/lib/plan/coherencia";
 import type { EstructuraResuelta, PlanResuelto } from "@/lib/plan/resuelto";
-import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
-import { loadVectors, resolverVector, type CatalogRow, type GoldenVector } from "./lib/vectores-golden";
+import { coloresDeProduccionPorVariante, escenaDeVector } from "./lib/escena-de-vector";
+import { loadVectors, resolverVector, type GoldenVector } from "./lib/vectores-golden";
 
 /**
  * Tolerancia del margen de tamaños (ADR 0022): UN globo por instancia.
@@ -410,47 +408,13 @@ function comprobarRango(informe: Informe, donde: string, piso: number, techo: nu
 // ---------------------------------------------------------------------------
 
 /**
- * Los colores reales de una variante del catálogo del vector, con el MISMO
- * dueño que usa producción para llenar `catalogProducts` (`coloresRealesProducto`,
- * el que corrige "Fashion Gris" archivado como plateado). Tomar
- * `colores_variante[0]` en crudo haría fallar el vector 19 por culpa de la
- * prueba, no del código.
+ * La escena y el prompt se arman con la cadena de producción completa
+ * (`scripts/lib/escena-de-vector.ts`), colores incluidos: `catalogProducts` se
+ * llena con lo que devuelve `resolverProductosParaGeneracion`, igual que en
+ * `/api/generate`. Una regla de color propia de la prueba dejaba pasar en verde
+ * un prompt que producción sí rompía (vectores 19 y 25).
  */
-function coloresDeVariante(rows: readonly CatalogRow[], variantId: string): string[] {
-  const fila = rows.find((row) => row.variant_id === variantId);
-  if (!fila) return [];
-  return coloresRealesProducto(fila.producto_titulo, [...fila.colores_variante, ...fila.colores_producto]);
-}
-
-function escenaDelPlan(plan: PlanResuelto, rows: readonly CatalogRow[], estimate: DesignMaterialEstimate): SceneSpec {
-  const blueprint = planBlueprint(plan);
-  return buildApprovedSceneSpec({
-    blueprint,
-    aspectRatio: "3:2",
-    targetBoxes: Object.fromEntries(
-      Object.entries(cajasDeEstructuras(plan.plan.estructuras)).map(([id, layout]) => [id, layout.bbox]),
-    ),
-    catalogProducts: Object.fromEntries(blueprint.elements.map((element) => [
-      element.element_id,
-      (element.model_decision?.bill_of_materials ?? []).map((linea) => ({
-        id: linea.catalog_product_id,
-        name: linea.catalog_product_id,
-        description: "",
-        category: "balloon",
-        colors: coloresDeVariante(rows, linea.catalog_product_id),
-        share: linea.share,
-        role: linea.role,
-      })),
-    ])),
-    materialEstimate: estimate,
-    generationMode: "text_to_image",
-    createdBy: "server_default",
-    planHash: plan.plan_hash,
-    catalogOnly: true,
-  });
-}
-
-function invarianteColorPrompt(vector: GoldenVector, plan: PlanResuelto, estimate: DesignMaterialEstimate, informe: Informe): void {
+async function invarianteColorPrompt(vector: GoldenVector, plan: PlanResuelto, estimate: DesignMaterialEstimate, informe: Informe): Promise<void> {
   const donde = vector.name;
   const sinLineas = plan.estructuras.filter((estructura) => estructura.lineas.length === 0);
   if (sinLineas.length > 0) {
@@ -460,29 +424,8 @@ function invarianteColorPrompt(vector: GoldenVector, plan: PlanResuelto, estimat
     return;
   }
 
-  const escena = escenaDelPlan(plan, vector.catalog_rows, estimate);
-  const ubicaciones = new Map<string, string>();
-  for (const element of escena.elements) {
-    const grupo = element.visual_semantics?.repetition_group ?? element.element_id.split("#")[0]!;
-    if (!ubicaciones.has(grupo)) ubicaciones.set(grupo, placementDescription(element.target_bbox, element.category));
-  }
-  const sizeMixBlock = bloqueMezclaPorEstructura(plan.estructuras.map((estructura) => ({
-    nombre: estructura.nombre,
-    total_unidades: estructura.total_unidades,
-    repeticiones: estructura.repeticiones,
-    ubicacion_en_palabras: ubicaciones.get(estructura.estructura_id),
-    mezcla_real: estructura.mezcla_real.map((fila) => ({ diamPulg: fila.diam_pulg, forma: fila.forma, unidades: fila.unidades })),
-  }))) ?? undefined;
-  const prompt = buildImagePrompt({ sceneSpec: escena, sizeMixBlock });
-  const escenaCoherencia: EscenaParaCoherencia = {
-    elementos: escena.elements.map((element) => ({
-      element_id: element.element_id,
-      nombre_en_prompt: promptElementName(element.name),
-      estructura_id: element.visual_semantics?.repetition_group ?? element.element_id.split("#")[0]!,
-      resolved_colors: element.resolved_colors,
-      espera_linea_de_color: tieneContratoDeColor(element),
-    })),
-  };
+  const colores = await coloresDeProduccionPorVariante(vector.catalog_rows);
+  const { prompt, coherencia: escenaCoherencia } = escenaDeVector(plan, estimate, colores);
 
   // El dueño de la regla estructural de color es `verificarCoherenciaPrompt`:
   // comprueba que cada estructura esté nombrada, que cada diámetro comprado
@@ -525,7 +468,7 @@ async function main(): Promise<void> {
     invarianteCompras(vector, estimate, informe);
     invarianteCotizacion(vector, quote, estimate, informe);
     for (const estructura of plan.estructuras) invarianteBloqueTamanos(vector, estructura, informe);
-    invarianteColorPrompt(vector, plan, estimate, informe);
+    await invarianteColorPrompt(vector, plan, estimate, informe);
 
     for (const razon of informe.omisiones) console.log(`[OMITIDA] ${razon}`);
     omitidas += informe.omisiones.length;

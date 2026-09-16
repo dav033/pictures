@@ -1,6 +1,7 @@
 import type { Pool } from "pg";
 import { productosPorId } from "@/lib/products";
 import type { Producto } from "@/lib/types";
+import { coloresRealesVariante } from "@/lib/plan/colores-producto";
 import { getRagPool } from "@/lib/rag/db";
 import { aProductoValidado, type ItemValidado } from "@/lib/rag/chat/validar";
 
@@ -82,7 +83,15 @@ function itemDesdeFila(fila: FilaVarianteGeneracion): ItemValidado {
     handle: null,
     tipoProducto: fila.producto_tipo,
     categoria: fila.categoria,
-    colores: coloresVariante.length ? coloresVariante : coloresProducto.length === 1 ? coloresProducto : [],
+    // Mismo dueño del color que usa el resolutor del plan para etiquetar la
+    // línea (`coloresRealesVariante`, src/lib/plan/resolver.ts). Estos colores
+    // llegan al SceneSpec como `resolved_colors` y `verificarCoherenciaPrompt`
+    // los compara con los colores comprados por cada estructura: con dos reglas
+    // distintas, un "Fashion Gris" archivado como plateado (vector 19) o un
+    // producto de dos colores de familia sin colores de variante ("Fashion
+    // Merlot", vector 25) hacía fallar cerrado la generación con un plan
+    // aprobado ("El prompt no coincide con el plan resuelto").
+    colores: coloresRealesVariante(fila.producto_titulo, coloresVariante, coloresProducto),
     descripcion: fila.descripcion,
     unidadesPaquete: fila.unidades_paq,
     codigoTamano: fila.codigo_tamano,
