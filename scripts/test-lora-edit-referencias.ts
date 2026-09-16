@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { buildLoraEditPrompt, loraEditApagado, LORA_EDIT_PROMPT_MAX_LENGTH, referenciasParaLoraEdit } from "../src/lib/ia/sempertex-lora";
 import { findLoraPromptLanguageLeaks, findLoraPromptProductLeaks } from "../src/lib/ia/lora-prompt-preflight";
 import { descripcionProductoParaImagen, nombreProductoParaImagen } from "../src/lib/ia/producto-para-imagen";
-import { LORA_JSON_PROMPT_MAX_LENGTH } from "../src/lib/ia/lora-caption-compiler";
+import { LORA_JSON_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH } from "../src/lib/ia/lora-caption-compiler";
+import { GEMINI_COMPOSITION_HARD_LOCK, inputsParaComposicionGemini, LORA_PRESENTATION_INSTRUCTION, promptPresentacionLora } from "../src/lib/ia/lora-gemini-composition";
 import type { ImageInput } from "../src/lib/ia/tipos";
 
 /** LoRA /edit wiring (user decision 2026-09-15): which requests go to /edit and the off switch. */
@@ -12,9 +13,9 @@ const productos = [img("catalog_product_reference", 3, "P1"), img("catalog_produ
 
 assert.deepEqual(referenciasParaLoraEdit(productos, undefined), [], "product photos alone keep the validated text-to-image endpoint");
 const conEspacio = referenciasParaLoraEdit([...productos, img("venue_base", 1, "VENUE_01")], undefined);
-assert.deepEqual(conEspacio.map((i) => i.id), ["VENUE_01", "P1", "P2"], "a venue photo switches to /edit, venue first");
+assert.deepEqual(conEspacio.map((i) => i.id), ["VENUE_01"], "a venue photo switches to /edit and is the only pixel base");
 const muchas = referenciasParaLoraEdit([img("composition_reference", 4, "R2"), img("previous_generated_result", 0, "PREV"), img("composition_reference", 2, "R1"), ...productos, img("venue_base", 1, "V")], undefined);
-assert.deepEqual(muchas.map((i) => i.id), ["PREV", "V", "R1", "P1"], "at most 4 images, by priority");
+assert.deepEqual(muchas.map((i) => i.id), ["V"], "venue edit excludes every competing background");
 assert.equal(referenciasParaLoraEdit([img("composition_reference", 2, "R1")], "true").length, 1, "SEMPERTEX_LORA_EDIT=true behaves like the default");
 assert.deepEqual(referenciasParaLoraEdit([img("venue_base", 1, "V")], "false"), [], "SEMPERTEX_LORA_EDIT=false switches /edit off");
 assert.equal(loraEditApagado("false"), true);
@@ -41,14 +42,15 @@ assert.deepEqual(findLoraPromptLanguageLeaks(promptEdit), [], promptEdit);
 assert.deepEqual(findLoraPromptProductLeaks(promptEdit), [], promptEdit);
 assert.ok(promptEdit.startsWith(CAPTION), "el caption compilado sigue primero");
 assert.match(promptEdit, /INPUT IMAGES/);
-assert.match(promptEdit, /Input image 1: real venue photo/);
-assert.match(promptEdit, /Input image 2: balloon product photo/);
+assert.match(promptEdit, /PRIMARY VENUE @image1/);
+assert.match(promptEdit, /Input image 1 \(@image1\): venue base/);
+assert.match(promptEdit, /Input image 2 \(@image2\): product identity only/);
 // Sin imágenes de entrada el prompt no cambia: el camino texto a imagen validado queda igual.
 assert.equal(buildLoraEditPrompt(CAPTION, []), CAPTION);
 // Cada imagen queda etiquetada por posición: el proveedor necesita distinguir
 // el espacio de la referencia visual aunque compartan el mismo tipo de rol.
 const dosProductos = buildLoraEditPrompt(CAPTION, [referenciasSucias[1]!, { ...referenciasSucias[1]!, id: "CATALOG_02" }]);
-assert.equal((dosProductos.match(/Input image \d+: balloon product photo/g) ?? []).length, 2, dosProductos);
+assert.equal((dosProductos.match(/Input image \d+ \(@image\d+\): product identity only/g) ?? []).length, 2, dosProductos);
 // Cabe sin recorte incluso con los cuatro roles que activan /edit.
 const cuatroRoles = buildLoraEditPrompt("x".repeat(LORA_JSON_PROMPT_MAX_LENGTH), [
   img("venue_base", 1, "V"),
@@ -58,6 +60,25 @@ const cuatroRoles = buildLoraEditPrompt("x".repeat(LORA_JSON_PROMPT_MAX_LENGTH),
 ]);
 assert.ok(cuatroRoles.length <= LORA_EDIT_PROMPT_MAX_LENGTH, `el peor caso cabe en el límite documentado: ${cuatroRoles.length} > ${LORA_EDIT_PROMPT_MAX_LENGTH}`);
 console.log("[PASS] buildLoraEditPrompt: frases fijas en inglés, sin ids ni datos comerciales, dentro del límite de /edit");
+
+// Con venue real, LoRA presenta decoración aislada y Gemini recibe únicamente
+// espacio + resultado LoRA: ninguna referencia ambientada puede reemplazar fondo.
+const presentacion = promptPresentacionLora(CAPTION);
+assert.match(presentacion, /only approved quoted structures/);
+assert.match(presentacion, /uneven staggered clusters and nonmatching tops/);
+assert.match(presentacion, /soft pastel, not hot pink/);
+assert.match(presentacion, /No backdrop, drapes, furniture/);
+const presentacionEnLimite = promptPresentacionLora("x".repeat(LORA_PROMPT_MAX_LENGTH - LORA_PRESENTATION_INSTRUCTION.length));
+assert.equal(presentacionEnLimite.length, LORA_PROMPT_MAX_LENGTH);
+const composicionGemini = inputsParaComposicionGemini(referenciasSucias[0]!, { base64: "DECORACION", mime: "image/png" });
+assert.deepEqual(composicionGemini.map((imagen) => imagen.role), ["venue_base", "element_reference"]);
+assert.equal(composicionGemini[1]!.id, "LORA_DECORATION");
+assert.match(composicionGemini[0]!.allowed_use, /Preserve its architecture/);
+assert.match(composicionGemini[1]!.allowed_use, /Never transfer white studio background/);
+assert.match(GEMINI_COMPOSITION_HARD_LOCK, /Ignore its white studio background/);
+assert.match(GEMINI_COMPOSITION_HARD_LOCK, /Do not invent, retain or add/);
+assert.match(GEMINI_COMPOSITION_HARD_LOCK, /never turn them into matching straight towers/);
+console.log("[PASS] pipeline híbrido: LoRA presenta decoración aislada, Gemini la compone sobre venue");
 
 /*
  * Descripción de la foto de producto para el modelo de imagen: sin la nota de

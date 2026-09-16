@@ -37,6 +37,15 @@ Dejar lista y medida la **línea base del reconocimiento actual** (Plan A, fase 
 
 No re-investigues lo que esos documentos ya resolvieron. Si encuentras una contradicción real entre documento y código, regístrala en `ESTADO` y sigue con la interpretación más conservadora.
 
+## Convivencia con el loop recolector (worktree aparte)
+
+- El loop recolector trabaja en `C:\Users\davidt\Downloads\demo-decoracion-recolector` (rama `datos/recolector-estructuras`). **Nunca** edites, cambies de rama ni hagas commit en esa carpeta o rama, ni en `2026-09-14`/`main`.
+- Tu copia de trabajo es `C:\Users\davidt\Downloads\demo-decoracion` y tu rama `fase-a/a0-linea-base`. Si `git rev-parse --show-toplevel` o `git branch --show-current` no coinciden, no hagas nada y marca `BLOQUEADA`.
+- `DATA_ROOT` tiene un solo escritor: el recolector. **La fase A no escribe en `DATA_ROOT`** y omite T2–T4: toma las imágenes solo de la instantánea `DATA_ROOT\manifests\snapshots\aceptadas-latest.json` (solo lectura). Si todavía no existe, T5 queda `BLOQUEADA: esperando imágenes aceptadas del recolector` y sigues con T6–T7.
+- Si ves `DATA_ROOT\.escritura.lock`, lee la instantánea publicada (nunca el manifiesto en curso).
+- También corre el loop de la **fase C** en `C:UsersdavidtDownloadsdemo-decoracion-fase-c` (rama `fase-c/c0-c2-piloto`): no toques esa carpeta ni esa rama. Si la fase C lee tu `run.json` de la línea base, publícalo sin datos personales.
+- Los puertos 3010 y 8000 son tuyos; el 4173 es del recolector y el 8090 de la fase C: no los toques. Detén solo procesos que hayas iniciado tú.
+
 ## Límites duros (no negociables)
 
 **Fuentes e imágenes**

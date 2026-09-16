@@ -27,6 +27,7 @@ import {
   sinImagenes,
 } from "../src/lib/estado/persistencia-generacion";
 import { creatividadGuardada } from "../src/lib/estado/persistencia-creatividad";
+import { adjuntosParaGeneracion } from "../src/lib/estado/generacion-adjuntos";
 
 type Mensaje = { id: string; adjuntos?: AdjuntosTurno };
 
@@ -53,6 +54,16 @@ const livianos = aligerarAdjuntos(mensajes, miniaturas);
 assert.deepEqual(livianos[1]!.adjuntos, { referencias: [{ id: "REF_01", base64: miniatura("r"), mime: "image/jpeg" }], fotoEspacio: { base64: miniatura("e"), mime: "image/jpeg" } });
 assert.equal(livianos[2]!.adjuntos, undefined);
 assert.deepEqual(imagenesSinMiniatura(mensajes, miniaturas), []);
+
+// Una propuesta aprobada usa sus originales; miniaturas restauradas nunca viajan al proveedor.
+const originalesDePropuesta = adjuntosParaGeneracion(mensajes[1]!.adjuntos);
+assert.equal(originalesDePropuesta.fotoEspacio?.base64, espacio.base64);
+assert.deepEqual(originalesDePropuesta.referencias, [{ base64: referencia.base64, mime: referencia.mime }]);
+assert.equal(originalesDePropuesta.tieneMiniaturas, false);
+const miniaturasDePropuesta = adjuntosParaGeneracion(livianos[1]!.adjuntos);
+assert.equal(miniaturasDePropuesta.fotoEspacio, null);
+assert.deepEqual(miniaturasDePropuesta.referencias, []);
+assert.equal(miniaturasDePropuesta.tieneMiniaturas, true);
 
 // Un mensaje ya restaurado (miniatura como data URL) se vuelve a guardar tal cual.
 const restaurados = aligerarAdjuntos(livianos, new Map());

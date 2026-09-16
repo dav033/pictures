@@ -14,6 +14,7 @@ import { LoraModeSlugSchema } from "@/lib/lora/schema";
 import { resolveLoraModeDatasetAllowlist } from "@/lib/lora/mode-resolver";
 import { causaCatalogoLora } from "@/lib/lora/catalogo-no-disponible";
 import { RagUnavailableError } from "@/lib/rag/retrieval/search";
+import { isPythonAdapterError } from "@/lib/ia/python-adapter";
 import {
   CHAT_SSE_CONTRACT_VERSION,
   ERROR_CONTRACT_VERSION,
@@ -101,6 +102,12 @@ function datosDeError(error: unknown): { error: string; causa?: string; proveedo
   }
   // El servicio comercial no respondió o respondió fuera de contrato. El detalle
   // queda en el log con su request_id; aquí solo viaja texto que el cliente puede leer.
+  if (isPythonAdapterError(error)) {
+    return {
+      error: "No se pudo consultar el catálogo en este momento. Intenta nuevamente.",
+      causa: "backend_python",
+    };
+  }
   if (error instanceof FalloTecnicoTurnoError) {
     return {
       error: "No se pudo verificar la propuesta contra el catálogo. Intenta nuevamente.",
@@ -137,6 +144,10 @@ function codigoDeError(error: unknown): ErrorCodeV1 {
     }
   }
   if (error instanceof RagUnavailableError) return "RAG_UNAVAILABLE";
+  // Catalog search uses the Python owner directly. A transport or contract
+  // failure can happen before rag_query_log is written, so it must not surface
+  // as a misleading generic INTERNAL_ERROR.
+  if (isPythonAdapterError(error)) return "RAG_UNAVAILABLE";
   // Mismo código que el catálogo caído: para el cliente es el mismo hecho (no se
   // pudo verificar) y `ui-error.v1` ya lo traduce a SERVICIO_NO_DISPONIBLE, que
   // trae `accion_sugerida: "reintentar"`.
@@ -147,6 +158,7 @@ function codigoDeError(error: unknown): ErrorCodeV1 {
 }
 
 function reintentable(error: unknown): boolean {
+  if (isPythonAdapterError(error)) return error.retryable;
   if (!(error instanceof ErrorIA)) return false;
   return error.causa === "cuota" || error.causa === "timeout" || error.causa === "desconocido";
 }
@@ -305,6 +317,12 @@ export async function POST(request: Request) {
     planVigente,
     signal: deadline.signal,
     hechosPeticion: { tieneFotoEspacio: Boolean(fotoEspacio), tieneImagenesReferencia: (imagenesReferencia?.length ?? 0) > 0, loraMode: loraModeSlug },
+    onLlamada: (nombre) => {
+      // Solo el nombre de la herramienta: nunca registrar argumentos del
+      // cliente ni contenido de imágenes. Sirve para diagnosticar fallos que
+      // ocurren después de que Gemini ya respondió.
+      console.info(`[chat] herramienta request_id=${requestId} nombre=${nombre}`);
+    },
     telemetria: {
       flujo: "armador_decoracion",
       requestId,
@@ -330,7 +348,12 @@ export async function POST(request: Request) {
           correlation_id: correlationId,
           ...datos,
         };
-        ChatSseEventV1Schema.parse(versionado);
+        const validado = ChatSseEventV1Schema.safeParse(versionado);
+        if (!validado.success) {
+          const issues = validado.error.issues.map((issue) => `${issue.path.join(".") || "<raíz>"}:${issue.code}`).join(",");
+          console.error(`[chat] evento SSE inválido request_id=${requestId} type=${evento} issues=${issues}`);
+          throw new Error("El servidor no pudo construir el evento SSE final.");
+        }
         controller.enqueue(encoder.encode(formatoSSE(evento, versionado)));
       };
       const abortar = () => {
@@ -399,7 +422,8 @@ export async function POST(request: Request) {
             : datosDeError(error);
           const code = deadlineCancelado ? "AI_TIMEOUT" : codigoDeError(error);
           if (code === "INTERNAL_ERROR" || code === "RAG_UNAVAILABLE") {
-            console.error("[chat] fallo durante el stream:", { requestId, code, error: error instanceof Error ? `${error.name}: ${error.message}` : String(error) });
+            const detalle = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+            console.error(`[chat] fallo durante el stream request_id=${requestId} code=${code} detalle=${detalle.slice(0, 240)}`);
           }
           enviar("error", {
             ...datos,

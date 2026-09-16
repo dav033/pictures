@@ -355,6 +355,15 @@ export function sceneryFromReference(
 }
 
 /**
+ * Una referencia decorada puede aportar ideas, pero su mobiliario no pertenece
+ * al espacio real que el cliente subió. Con venue base, solo esa foto define el
+ * contexto que debe conservarse durante la composición.
+ */
+export function debeConservarEscenografiaDeReferencia(hasVenueBase: boolean): boolean {
+  return !hasVenueBase;
+}
+
+/**
  * Aplica el interruptor del cliente sobre los valores por defecto del
  * servidor. El cliente solo puede ENCENDER o APAGAR lo que el servidor ya
  * eligió: un id que no esté en la lista no añade nada a la escena.

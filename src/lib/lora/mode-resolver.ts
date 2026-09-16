@@ -62,7 +62,7 @@ export type LoraModeOption = {
   lora_scale: number;
   enabled: boolean;
   updated_at: string;
-  status: "disabled" | "not_configured" | "pending" | "running" | "succeeded" | "failed" | "ready" | "provider_url_missing";
+  status: "disabled" | "not_configured" | "pending" | "running" | "succeeded" | "failed" | "ready" | "provider_url_missing" | "testing_rejected";
   ready: boolean;
   trigger_token: string | null;
   selection: LoraSelection | null;
@@ -82,11 +82,19 @@ function isCompletedRun(status: string | null): boolean {
   return status === "succeeded" || status === "completed";
 }
 
+function permiteEvaluacionRechazadaEnPruebas(): boolean {
+  return process.env.NODE_ENV === "development" && process.env.LORA_ALLOW_REJECTED_FOR_TESTING === "true";
+}
+
 function modeStatus(row: ModeOptionRow): LoraModeOption["status"] {
   if (!row.enabled) return "disabled";
   if (!row.training_run_id) return "not_configured";
   if (!isCompletedRun(row.run_status)) return row.run_status === "running" ? "running" : row.run_status === "failed" ? "failed" : "pending";
-  if (row.evaluation_status === "rejected") return "failed";
+  if (row.evaluation_status === "rejected") {
+    return permiteEvaluacionRechazadaEnPruebas() && row.artifact_status === "backed_up" && Boolean(row.provider_url)
+      ? "testing_rejected"
+      : "failed";
+  }
   if (row.artifact_status !== "backed_up" || row.evaluation_status !== "approved") return "pending";
   if (!row.provider_url) return "provider_url_missing";
   return "ready";
@@ -120,7 +128,7 @@ export async function listLoraModeOptions(pool: Pool = getRagPool()): Promise<Lo
 
   return result.rows.map((row) => {
     const status = modeStatus(row);
-    const ready = status === "ready" && Boolean(row.artifact_id && row.specialization);
+    const ready = (status === "ready" || status === "testing_rejected") && Boolean(row.artifact_id && row.specialization);
     const selection = ready && row.artifact_id && row.specialization
       ? row.specialization === "product"
         ? { product: { artifactId: row.artifact_id, scale: row.lora_scale } }
@@ -190,7 +198,7 @@ export async function resolveLoraSelection(
     if (row.specialization !== specialization) throw new Error(`LORA_SPECIALIZATION_MISMATCH: ${value.artifactId}`);
     if (!isCompletedRun(row.run_status)) throw new Error(`LORA_RUN_NOT_COMPLETED: ${row.run_id}`);
     if (row.artifact_status !== "backed_up") throw new Error(`LORA_ARTIFACT_NOT_APPROVED: ${row.artifact_id}`);
-    if (row.evaluation_status !== "approved") {
+    if (row.evaluation_status !== "approved" && !permiteEvaluacionRechazadaEnPruebas()) {
       throw new Error(`LORA_EVALUATION_REQUIRED: ${row.run_id}`);
     }
     if (!row.provider_url) throw new Error(`LORA_PROVIDER_URL_MISSING: ${row.artifact_id}`);

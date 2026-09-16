@@ -218,14 +218,10 @@ const imageSizeFor = (aspecto: PeticionImagen["aspecto"]) => {
  * La identidad de producto no se pierde: color, acabado y tamaño ya viajan como
  * texto en el caption compilado.
  *
- * Decisión del usuario (2026-09-15): con foto del espacio, referencia del
- * cliente o ajuste de una imagen previa, el LoRA va por `/edit` siempre, para
- * que esos flujos usen el estilo Sempertex en vez de caer a Gemini. Sigue sin
- * validar (el panel de 6 seeds es solo de texto a imagen) y hoy fal no tiene
- * saldo, así que esas generaciones fallan hasta recargar; el error ya se
- * traduce a un mensaje de saldo en la UI.
- * Sin ninguna de esas imágenes, las fotos de producto solas NO cambian el
- * endpoint: el camino validado de texto a imagen queda igual.
+ * Con foto del espacio, `/api/generate` no entrega píxeles al LoRA: este crea
+ * la decoración aislada con `TEXT_ENDPOINT` y Gemini la compone después sobre
+ * el venue. Referencias sin venue y ajustes de una imagen previa sí usan
+ * `/edit`. Fotos de producto solas no cambian el endpoint.
  * `SEMPERTEX_LORA_EDIT=false` apaga `/edit` por completo (interruptor de retiro).
  */
 const ROLES_QUE_ACTIVAN_EDIT = new Set<ImageInput["role"]>(["venue_base", "composition_reference", "previous_generated_result"]);
@@ -233,6 +229,16 @@ const ROLES_QUE_ACTIVAN_EDIT = new Set<ImageInput["role"]>(["venue_base", "compo
 export function referenciasParaLoraEdit(inputs: readonly ImageInput[], interruptor = process.env.SEMPERTEX_LORA_EDIT): ImageInput[] {
   if (interruptor === "false") return [];
   if (!inputs.some((input) => ROLES_QUE_ACTIVAN_EDIT.has(input.role))) return [];
+  const hayVenue = inputs.some((input) => input.role === "venue_base");
+  // FLUX.2 /edit puede copiar el fondo de cualquier imagen enviada. Con un
+  // venue real, solo la foto del cliente entra como píxel; referencia,
+  // productos y sus fondos ya quedaron resumidos en blueprint, plan y caption.
+  if (hayVenue) {
+    return [...inputs]
+      .filter((input) => input.role === "venue_base")
+      .sort((a, b) => a.priority - b.priority)
+      .slice(0, MAX_EDIT_IMAGES);
+  }
   return [...inputs]
     .sort((a, b) => a.priority - b.priority)
     .slice(0, MAX_EDIT_IMAGES);
@@ -261,13 +267,13 @@ function validarUnaAplicacion(loras: LoraApplication[]): void {
  * sin recorte.
  */
 const FRASE_POR_ROL: Readonly<Record<ImageInput["role"], string>> = {
-  venue_base: "real venue photo: preserve its architecture, camera angle, crop and ambient light; install the decoration inside it.",
-  composition_reference: "composition reference: use only its framing, density and spatial layout; never its objects, products or colors.",
-  element_reference: "composition reference: use only its framing, density and spatial layout; never its objects, products or colors.",
-  style_reference: "style reference: use only its mood and lighting; never its objects, products or colors.",
-  palette_reference: "palette reference: use only its ambient palette; never its objects or products.",
-  catalog_product_reference: "balloon product photo: use only its color, finish, material and size; never its arrangement, packaging or background.",
-  previous_generated_result: "previous result: keep it as the base and change only the requested delta.",
+  venue_base: "venue base: preserve architecture, wall, ground, camera, crop and light; decorate only inside it.",
+  composition_reference: "composition only: use framing, density and layout; never copy its venue, background, objects or colors.",
+  element_reference: "composition only: use framing, density and layout; never copy its venue, background, objects or colors.",
+  style_reference: "style only: use mood and lighting; never copy venue, objects or colors.",
+  palette_reference: "palette only: use ambient palette; never copy venue, objects or products.",
+  catalog_product_reference: "product identity only: use color, finish, material and size; never arrangement, packaging or background.",
+  previous_generated_result: "previous result: preserve current scene and venue; apply only requested change.",
 };
 
 /**
@@ -286,8 +292,14 @@ export const LORA_EDIT_PROMPT_MAX_LENGTH = 2500;
  */
 export function buildLoraEditPrompt(prompt: string, references: readonly ImageInput[]): string {
   if (!references.length) return prompt;
-  const frases = references.map((image, index) => `Input image ${index + 1}: ${FRASE_POR_ROL[image.role]}`);
-  return `${prompt}\n\nINPUT IMAGES\n${frases.join("\n")}\nRebuild one cohesive photorealistic event scene. Never output a collage, product board, isolated cutouts, or separate samples.`;
+  const frases = references.map((image, index) => `Input image ${index + 1} (@image${index + 1}): ${FRASE_POR_ROL[image.role]}`);
+  const baseIndex = references.findIndex((image) => image.role === "previous_generated_result" || image.role === "venue_base");
+  const baseInstruction = baseIndex < 0
+    ? "No venue base; create venue from prompt."
+    : references[baseIndex]!.role === "previous_generated_result"
+      ? `PRIMARY BASE @image${baseIndex + 1}: preserve current scene and venue; apply only requested change.`
+      : `PRIMARY VENUE @image${baseIndex + 1}: preserve this venue; never use another input background.`;
+  return `${prompt}\n\nINPUT IMAGES\n${baseInstruction}\n${frases.join("\n")}\nOne cohesive photorealistic scene; no collage, board, cutouts or samples.`;
 }
 
 /** Bounded to the range the creativity levels use; anything else keeps the historical 3.5. */

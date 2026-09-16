@@ -296,6 +296,8 @@ export function compileProductPrompt(input: {
   productCatalogTitles?: ReadonlyMap<string, string | readonly string[]>;
   /** Resolved LoRA trigger that `ensureLoraTriggers` will write; counts against the prompt budget. */
   trigger?: string;
+  /** Smaller caption budget for callers that append a fixed instruction later. */
+  maxLength?: number;
   /** Relevant non-catalog styling from the reference; rendered only, never resolved or quoted. */
   ambientDecor?: readonly string[];
   /** `estructura_oficial` per plan `estructura_id`. */
@@ -307,7 +309,7 @@ export function compileProductPrompt(input: {
   const activeConcept = vocabulary.find((concept) => concept.status === "active");
 
   if (!activeConcept) {
-    const legacy = compileLoraCaption({ sceneSpec: input.sceneSpec, visualContext: input.visualContext, trigger: input.trigger, dialect: captionDialectForTrigger(input.trigger), ambientDecor: input.ambientDecor, officialStructures: input.officialStructures, creativeCues: input.creativeCues });
+    const legacy = compileLoraCaption({ sceneSpec: input.sceneSpec, visualContext: input.visualContext, trigger: input.trigger, maxLength: input.maxLength, dialect: captionDialectForTrigger(input.trigger), ambientDecor: input.ambientDecor, officialStructures: input.officialStructures, creativeCues: input.creativeCues });
     return {
       prompt: legacy.prompt,
       resolved_concepts: [],
@@ -358,6 +360,7 @@ export function compileProductPrompt(input: {
     visualContext: input.visualContext,
     productConcepts,
     trigger: input.trigger,
+    maxLength: input.maxLength,
     // The resolved LoRA decides the wording: each LoRA follows its own captions.
     dialect: captionDialectForTrigger(input.trigger),
     ambientDecor: input.ambientDecor,

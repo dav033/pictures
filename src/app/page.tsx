@@ -28,6 +28,8 @@ import type { ImageQaReport } from "@/lib/ia/image-qa";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
 import { classifyGenerationIds, normalizeGenerationSources } from "@/lib/generacion/provenance";
+
+const DEFAULT_LORA_MODE: LoraModeSlug = process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_LORA_MODE === "training_2" ? "training_2" : "training_1";
 import { ChatSseEventV1Schema } from "@/lib/ia/contracts/chat-v1";
 import { CATALOGO_ERRORES_UI_V1, construirUiErrorV1, leerUiErrorV1, type AccionUiV1, type UiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 import { AvisoError } from "@/components/errores/AvisoError";
@@ -36,6 +38,7 @@ import { abrirPromptAutomaticamente, qaVisualEfectivo, usarLoraEfectivo } from "
 import { aplicarEventoHerramienta, cerrarPasos, type PasoAsistente } from "@/lib/estado/pasos-asistente";
 import { contextoEventoConversacion } from "@/lib/estado/contexto-evento";
 import { crearEsperaAnalisis, type EstadoAnalisisReferencia } from "@/lib/estado/espera-analisis";
+import { adjuntosParaGeneracion } from "@/lib/estado/generacion-adjuntos";
 import { aligerarAdjuntos, claveImagen, imagenesSinMiniatura, type AdjuntosTurno } from "@/lib/estado/persistencia-adjuntos";
 import { respetarReintentable, uiErrorDesdeEventoChat, type OrigenError } from "@/lib/estado/estado-error";
 import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
@@ -204,6 +207,8 @@ type GenerarOverride = {
   plan: PlanResuelto;
   /** Mensaje exacto al que debe volver la cotización final de esta generación. */
   anchorMessageId?: string;
+  /** Adjuntos de la propuesta anclada; evita usar fotos de otro turno. */
+  adjuntos?: AdjuntosTurno;
   /**
    * El cliente pidió explícitamente "Generar con estilo estándar" desde un
    * aviso de error: este intento no usa LoRA. Nunca se activa solo.
@@ -534,11 +539,11 @@ export default function Page() {
     creatividadRef.current = nivel;
     setCreatividad(nivel);
   };
-  const loraModeRef = useRef<LoraModeSlug>("training_1");
+  const loraModeRef = useRef<LoraModeSlug>(DEFAULT_LORA_MODE);
   // Espejo en estado del ref anterior, solo para lecturas durante el render
   // (p. ej. la tarjeta del plan): un ref no puede leerse ahí sin violar las
   // reglas de React, así que este valor se actualiza junto con el ref.
-  const [loraModeParaBadge, setLoraModeParaBadge] = useState<LoraModeSlug>("training_1");
+  const [loraModeParaBadge, setLoraModeParaBadge] = useState<LoraModeSlug>(DEFAULT_LORA_MODE);
   const [proveedoresDisponibles, setProveedoresDisponibles] = useState<ProveedorId[]>(["gemini"]);
   const [cargadoDeStorage, setCargadoDeStorage] = useState(false);
   // Las tarjetas clicables y la propuesta autónoma de la IA conviven siempre
@@ -1139,8 +1144,8 @@ export default function Page() {
     setError(null);
     setSeleccionPendiente(false);
     setSelectorIA("lora");
-    loraModeRef.current = "training_1";
-    setLoraModeParaBadge("training_1");
+    loraModeRef.current = DEFAULT_LORA_MODE;
+    setLoraModeParaBadge(DEFAULT_LORA_MODE);
     setFotoEspacio(null);
     setImagenesReferencia([]);
     setEtiquetasAdjuntos({});
@@ -1174,6 +1179,20 @@ export default function Page() {
    */
   async function generar(override: GenerarOverride) {
     if (imagenesReferenciaRef.current.length > 0 && !override?.plan) return;
+    // Una regeneración de propuesta debe quedar ligada a sus propias fotos.
+    // Si solo sobrevivieron miniaturas tras recargar, no se deben enviar al proveedor.
+    const adjuntosAnclados = override.anchorMessageId !== undefined
+      ? adjuntosParaGeneracion(override.adjuntos)
+      : undefined;
+    if (adjuntosAnclados?.tieneMiniaturas) {
+      setError({
+        ui: errorLocal("ADJUNTO_INVALIDO", "La propuesta conserva solo miniaturas. Vuelve a adjuntar las fotos originales."),
+        origen: "generacion",
+      });
+      return;
+    }
+    const fotoEspacioParaGenerar = adjuntosAnclados ? adjuntosAnclados.fotoEspacio : fotoEspacioRef.current;
+    const imagenesReferenciaParaGenerar = adjuntosAnclados ? adjuntosAnclados.referencias : imagenesReferenciaRef.current;
     const ultimaValidacion = [...mensajes]
       .reverse()
       .find((mensaje) => mensaje.role === "assistant" && mensaje.ragValidados?.length)?.ragValidados ?? [];
@@ -1248,8 +1267,8 @@ export default function Page() {
         modo: modoVista,
         selectorLora: selectorIA === "lora",
         estiloEstandarExplicito: Boolean(override?.estiloEstandar),
-        hayFotoEspacio: Boolean(fotoEspacioRef.current),
-        hayReferencias: imagenesReferenciaRef.current.length > 0,
+        hayFotoEspacio: Boolean(fotoEspacioParaGenerar),
+        hayReferencias: imagenesReferenciaParaGenerar.length > 0,
         esAjusteDeImagen: Boolean((override?.instruccion ?? ajuste.trim()) && ultimaImagenGenerada),
       });
 
@@ -1283,14 +1302,10 @@ export default function Page() {
             loraMode: usarLoraEnIntento ? loraModeRef.current ?? undefined : undefined,
             promptFormat: promptFormatParaGenerar(formatoPromptLora, usarLoraEnIntento),
             creatividad: creatividadRef.current,
-            // Adjuntos del cliente, leídos de los refs (no del estado
-            // directamente): no son de un modo en particular, van en cualquier
-            // generación, manual o automática, y deben reflejar lo último que
-            // el cliente adjuntó aunque este `generar()` se haya disparado
-            // desde un closure de `enviar()` abierto desde antes (ver
-            // comentario en la declaración de `fotoEspacioRef`).
-            fotoEspacio: fotoEspacioRef.current
-              ? { base64: fotoEspacioRef.current.base64, mime: fotoEspacioRef.current.mime }
+            // Propuestas ancladas usan los adjuntos del mensaje exacto. Los
+            // envíos nuevos usan el compositor actual.
+            fotoEspacio: fotoEspacioParaGenerar
+              ? { base64: fotoEspacioParaGenerar.base64, mime: fotoEspacioParaGenerar.mime }
               : undefined,
             // El panel y el chat analizan las referencias, pero el adaptador
             // LoRA también las necesita cuando usa /edit: el blueprint lleva
@@ -1298,8 +1313,8 @@ export default function Page() {
             // relación visual que el modelo no puede reconstruir solo con el
             // plan. `/api/generate` limita y etiqueta estas imágenes antes de
             // enviarlas al proveedor.
-            imagenesReferencia: imagenesReferenciaRef.current.length
-              ? imagenesReferenciaRef.current
+            imagenesReferencia: imagenesReferenciaParaGenerar.length
+              ? imagenesReferenciaParaGenerar
               : undefined,
             aspecto: fotoEspacioRef.current?.aspecto ?? aspectoActivoRef.current,
             blueprint: referenceDraftRef.current?.blueprint ?? referenceDraft?.blueprint,
@@ -1537,6 +1552,13 @@ export default function Page() {
       return;
     }
     if (plan.comercial.estado === "PRESUPUESTO_EXCEDIDO" || plan.sin_cobertura.length > 0 || generando || generandoGlobal) return;
+    const mensajeAnclado = messageId
+      ? mensajes.find((mensaje) => mensaje.id === messageId && mensaje.role === "assistant" && mensaje.plan?.plan_hash === plan.plan_hash)
+      : undefined;
+    if (messageId && !mensajeAnclado) {
+      setError({ ui: errorLocal("ADJUNTO_INVALIDO", "No pude recuperar las fotos de esta propuesta. Vuelve a adjuntarlas."), origen: "plan" });
+      return;
+    }
     generar({
       ids: [],
       ragVariantIds: plan.compras.map((compra) => compra.variant_id),
@@ -1544,6 +1566,7 @@ export default function Page() {
       brief: briefRef.current,
       solicitudUsuario: solicitudUsuarioRef.current,
       anchorMessageId: messageId,
+      adjuntos: mensajeAnclado?.adjuntos,
     });
   }
 
@@ -1561,6 +1584,7 @@ export default function Page() {
     if (!pendiente) return;
     // eslint-disable-next-line react-hooks/globals -- deliberado: consumir la cola encolada por generar(), ver declaración de pendienteAutoGlobal.
     pendienteAutoGlobal = null;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberado: disparar el trabajo ya encolado cuando se libera la generación.
     generar(pendiente);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- generar se recrea cada render; pendienteAutoGlobal ya evita relanzar dos veces.
   }, [generando, analizandoFoto, hayPlanEnConversacion]);
@@ -1683,6 +1707,7 @@ export default function Page() {
       solicitudUsuario: solicitudUsuarioRef.current,
       instruccion: ajuste.trim(),
       anchorMessageId: planActualEntry?.id,
+      adjuntos: planActualEntry?.adjuntos,
     });
   }
 

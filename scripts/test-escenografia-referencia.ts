@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { ReferenceBlueprintV2Schema } from "@/lib/ia/reference-blueprint";
-import { applySceneryVisibility, sceneryFromReference } from "@/lib/ia/reference-structure";
+import { applySceneryVisibility, debeConservarEscenografiaDeReferencia, sceneryFromReference } from "@/lib/ia/reference-structure";
 import { buildApprovedSceneSpec, sceneSpecHash, type SceneryElement, type SceneSpec } from "@/lib/ia/scene-spec";
 import { buildImagePrompt } from "@/lib/ia/build-image-prompt";
 import { escenografiaCliente } from "@/lib/plan/presentacion-cliente";
@@ -87,7 +87,9 @@ const MATERIALIZADOS = new Set(["REF_01_E01"]);
 
 // 1. Selección: solo lo que el catálogo no vende, con nombre renderizable.
 {
-  const escenografia = sceneryFromReference(referencia, MATERIALIZADOS);
+const escenografia = sceneryFromReference(referencia, MATERIALIZADOS);
+assert.equal(debeConservarEscenografiaDeReferencia(false), true, "sin foto de espacio, la referencia puede aportar escenografía");
+assert.equal(debeConservarEscenografiaDeReferencia(true), false, "con foto de espacio, nunca se copian muebles o props de la referencia");
   // Orden de la selección: por confianza de detección y después por tamaño en
   // la foto, para que el recorte a `SCENERY_LIMIT` deje lo más visible.
   assert.deepEqual(escenografia.map((item) => item.elementId), ["REF_01_E04", "REF_01_E02", "REF_01_E03"]);

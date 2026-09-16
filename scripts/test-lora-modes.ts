@@ -57,14 +57,49 @@ async function main(): Promise<void> {
   await assert.rejects(() => resolveLoraMode("training_1", pendingPool), /LORA_MODE_NOT_READY/);
 
   const rejectedPool = {
-    query: async () => ({ rows: [{ ...modeRow, evaluation_status: "rejected" }] }),
+    query: async (sql: string) => sql.includes("lora_mode_slots")
+      ? { rows: [{ ...modeRow, evaluation_status: "rejected" }] }
+      : { rows: [{ ...artifactRow, evaluation_status: "rejected" }] },
   } as unknown as Pool;
   const rejectedOptions = await listLoraModeOptions(rejectedPool);
   assert.equal(rejectedOptions[0]?.status, "failed");
   assert.equal(rejectedOptions[0]?.ready, false);
   await assert.rejects(() => resolveLoraMode("training_1", rejectedPool), /LORA_MODE_NOT_READY/);
 
-  console.log("[PASS] modos LoRA: producto v007 preparado y bloqueado hasta aprobación");
+  const nodeEnvOriginal = process.env.NODE_ENV;
+  const allowRejectedOriginal = process.env.LORA_ALLOW_REJECTED_FOR_TESTING;
+  Object.defineProperty(process.env, "NODE_ENV", { configurable: true, enumerable: true, value: "development", writable: true });
+  process.env.LORA_ALLOW_REJECTED_FOR_TESTING = "true";
+  try {
+    const testingOptions = await listLoraModeOptions(rejectedPool);
+    assert.equal(testingOptions[0]?.status, "testing_rejected");
+    assert.equal(testingOptions[0]?.ready, true);
+    const testingResolved = await resolveLoraMode("training_1", rejectedPool);
+    assert.equal(testingResolved[0]?.runId, "run-v007");
+  } finally {
+    if (nodeEnvOriginal === undefined) Reflect.deleteProperty(process.env, "NODE_ENV");
+    else Object.defineProperty(process.env, "NODE_ENV", { configurable: true, enumerable: true, value: nodeEnvOriginal, writable: true });
+    if (allowRejectedOriginal === undefined) delete process.env.LORA_ALLOW_REJECTED_FOR_TESTING;
+    else process.env.LORA_ALLOW_REJECTED_FOR_TESTING = allowRejectedOriginal;
+  }
+
+  const productionEnvOriginal = process.env.NODE_ENV;
+  const productionAllowRejectedOriginal = process.env.LORA_ALLOW_REJECTED_FOR_TESTING;
+  Object.defineProperty(process.env, "NODE_ENV", { configurable: true, enumerable: true, value: "production", writable: true });
+  process.env.LORA_ALLOW_REJECTED_FOR_TESTING = "true";
+  try {
+    const productionOptions = await listLoraModeOptions(rejectedPool);
+    assert.equal(productionOptions[0]?.status, "failed");
+    assert.equal(productionOptions[0]?.ready, false);
+    await assert.rejects(() => resolveLoraMode("training_1", rejectedPool), /LORA_MODE_NOT_READY/);
+  } finally {
+    if (productionEnvOriginal === undefined) Reflect.deleteProperty(process.env, "NODE_ENV");
+    else Object.defineProperty(process.env, "NODE_ENV", { configurable: true, enumerable: true, value: productionEnvOriginal, writable: true });
+    if (productionAllowRejectedOriginal === undefined) delete process.env.LORA_ALLOW_REJECTED_FOR_TESTING;
+    else process.env.LORA_ALLOW_REJECTED_FOR_TESTING = productionAllowRejectedOriginal;
+  }
+
+  console.log("[PASS] modos LoRA: v007 bloqueado en producción y disponible solo para pruebas locales explícitas");
 
   await testDatasetLinkedAfterCatalogReimport();
   console.log("[PASS] allowlist LoRA: dataset vinculado al catálogo re-importado por SKU canónico exacto");

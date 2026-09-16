@@ -198,6 +198,8 @@ export async function* ejecutarConversacionStream(opts: {
   catalogAllowlist?: CatalogAllowlist;
   /** `LORA_*` cause when the LoRA catalog pool is unavailable; see crearRegistroHerramientas. */
   catalogoLoraNoDisponible?: string;
+  /** Observabilidad pura: nombre de cada herramienta antes de ejecutarla. */
+  onLlamada?: (nombre: string, args: Record<string, unknown>) => void;
   /** Creativity level (creatividad.ts); the system prompt already carries its design rule. */
   creatividad?: NivelCreatividad;
   signal?: AbortSignal;
@@ -217,6 +219,7 @@ export async function* ejecutarConversacionStream(opts: {
     vueltasMax: VUELTAS_MAX,
     alAgotarVueltas: () => textoAlAgotarVueltas(estado),
     cierreAnticipado: () => cierreDelTurno(estado),
+    onLlamada: opts.onLlamada,
     signal: opts.signal,
     telemetria: opts.telemetria ?? { flujo: "armador_decoracion", superficie: "/api/chat" },
   });
