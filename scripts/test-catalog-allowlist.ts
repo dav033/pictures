@@ -8,8 +8,6 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Pool } from "pg";
 
-process.env.PYTHON_BACKEND_ENABLED = "true";
-process.env.PYTHON_BACKEND_KILL_SWITCH = "false";
 process.env.PYTHON_BACKEND_URL = "http://python.test";
 process.env.INTERNAL_HMAC_SECRET = "local-only-secret-0123456789abcdef";
 process.env.DATABASE_URL = "postgresql://demo:demo@127.0.0.1:5432/demo_rag";
@@ -48,7 +46,7 @@ function contexto(body: Record<string, unknown>): { request_id: string; correlat
 async function main(): Promise<void> {
   const { crearCatalogAllowlist } = await import("../src/lib/rag/retrieval/allowlist");
   const { buscarCatalogoRag } = await import("../src/lib/rag/chat/buscar");
-  const { resolverPlanConBackend } = await import("../src/lib/plan/resolver-backend");
+  const { resolverPlan } = await import("../src/lib/plan/resolver-backend");
   const { AllowlistProductoVarianteError, CAUSA_ALLOWLIST_PRODUCTO_VARIANTE } = await import("../src/lib/plan/allowlist-producto-variante");
   const { PlanDecoracionSchema } = await import("../src/lib/plan/tipos");
 
@@ -261,15 +259,14 @@ async function main(): Promise<void> {
   assert.equal(llamadasVacia.length, 0);
   console.log("[PASS] allowlist sin entradas falla cerrado con NO_MATCH y 0 llamadas a Python");
 
-  // --- resolverPlanConBackend: LoRA without variants fails closed before fetch.
+  // --- resolverPlan: LoRA without variants fails closed before fetch.
   const fixture = JSON.parse(readFileSync(join(process.cwd(), "contracts", "domain", "v1", "fixtures", "plan-resuelto-ok.json"), "utf8")) as { plan: unknown };
   const plan = PlanDecoracionSchema.parse(fixture.plan);
   const llamadasLora = instalarFetch(() => {
     throw new Error("no debe llamar a Python con un modo LoRA sin variantes");
   });
   await assert.rejects(
-    resolverPlanConBackend({
-      backend: "python",
+    resolverPlan({
       plan,
       allowlist: [{ product_id: "prod-rojo", variant_ids: ["var-rojo-12"] }],
       catalogSnapshotId: "products_catalog:test",
@@ -282,11 +279,10 @@ async function main(): Promise<void> {
   assert.equal(llamadasLora.length, 0);
   console.log("[PASS] resolución Python con LoRA sin variantes lanza LORA_DATASET_ALLOWLIST_REJECTED antes de llamar");
 
-  // --- resolverPlanConBackend: Python allowlist_product_mismatch becomes the stable error.
+  // --- resolverPlan: Python allowlist_product_mismatch becomes the stable error.
   const llamadasMismatch = instalarFetch(() => Response.json({ detail: { code: "allowlist_product_mismatch" } }, { status: 422 }));
   await assert.rejects(
-    resolverPlanConBackend({
-      backend: "python",
+    resolverPlan({
       plan,
       allowlist: [{ product_id: "prod-azul", variant_ids: ["var-rojo-12"] }],
       catalogSnapshotId: "products_catalog:test",
@@ -299,8 +295,7 @@ async function main(): Promise<void> {
 
   const llamadasOtro = instalarFetch(() => Response.json({ detail: { code: "invalid_plan" } }, { status: 422 }));
   await assert.rejects(
-    resolverPlanConBackend({
-      backend: "python",
+    resolverPlan({
       plan,
       allowlist: [{ product_id: "prod-rojo", variant_ids: ["var-rojo-12"] }],
       catalogSnapshotId: "products_catalog:test",

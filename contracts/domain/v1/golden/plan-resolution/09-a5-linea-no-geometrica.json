@@ -277,6 +277,16 @@
           "waste_reserve": 0
         }
       ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 6000,
+          "estructura_id": "EST_01_COLUMNA"
+        },
+        {
+          "consumo_cop": 20000,
+          "estructura_id": "EST_02_BACKDROP"
+        }
+      ],
       "estructuras": [
         {
           "eje_m": 1.4,
@@ -739,6 +749,16 @@
           "used": 1,
           "variant_id": "V-A5-TELON-1",
           "waste_reserve": 0
+        }
+      ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 6000,
+          "estructura_id": "EST_01_COLUMNA"
+        },
+        {
+          "consumo_cop": 20000,
+          "estructura_id": "EST_02_BACKDROP"
         }
       ],
       "estructuras": [

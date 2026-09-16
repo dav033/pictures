@@ -8,9 +8,9 @@
   The model does not measure: numeric space measures with ``fuente: "foto"``
   become ``fuente: "supuesto"``.
 
-The TypeScript resolver implements the same rules; golden vectors
+Both rules belong to this resolver alone (ADR-0023 step 5); the golden vectors
 ``16-compras-consolidadas-presentaciones`` and ``17-espacio-foto-medidas-estimadas``
-lock the parity.
+lock their numbers against regression in ``test_plan_regresion.py``.
 """
 
 from __future__ import annotations

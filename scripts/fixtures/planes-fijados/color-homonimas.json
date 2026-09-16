@@ -1,0 +1,520 @@
+{
+  "plan_resuelto": {
+    "plan": {
+      "plan_version": "1.0",
+      "plan_id": "44444444-4444-4444-8444-444444444444",
+      "concepto": {
+        "titulo": "Prueba de color",
+        "descripcion": "Mezcla de color por estructura.",
+        "paleta": [
+          "blanco",
+          "dorado",
+          "rosado"
+        ]
+      },
+      "espacio": {
+        "tipo": "salón",
+        "fuente": "supuesto"
+      },
+      "estructuras": [
+        {
+          "estructura_id": "EST_01_ARCO",
+          "nombre": "Arco principal",
+          "tipo": "arco",
+          "rol_escena": "focal",
+          "ubicacion": "arco_central",
+          "medidas": {
+            "ancho_m": 2.4,
+            "alto_m": 2.2
+          },
+          "repeticiones": 1,
+          "densidad": "media",
+          "mezcla": "clasica",
+          "materiales": [
+            {
+              "product_id": "P-ROSADO",
+              "color": "rosado",
+              "participacion": 1,
+              "rol_material": "principal"
+            }
+          ],
+          "porque": "Pieza focal."
+        },
+        {
+          "estructura_id": "EST_02_COL",
+          "nombre": "Columna",
+          "tipo": "columna",
+          "rol_escena": "soporte",
+          "ubicacion": "lateral_izquierdo",
+          "medidas": {
+            "alto_m": 1.8
+          },
+          "repeticiones": 1,
+          "densidad": "media",
+          "mezcla": "clasica",
+          "materiales": [
+            {
+              "product_id": "P-BLANCO",
+              "color": "blanco",
+              "participacion": 1,
+              "rol_material": "principal"
+            }
+          ],
+          "porque": "Columna blanca a la izquierda."
+        },
+        {
+          "estructura_id": "EST_03_COL",
+          "nombre": "Columna",
+          "tipo": "columna",
+          "rol_escena": "soporte",
+          "ubicacion": "lateral_derecho",
+          "medidas": {
+            "alto_m": 1.8
+          },
+          "repeticiones": 1,
+          "densidad": "media",
+          "mezcla": "clasica",
+          "materiales": [
+            {
+              "product_id": "P-DORADO",
+              "color": "dorado",
+              "participacion": 1,
+              "rol_material": "principal"
+            }
+          ],
+          "porque": "Columna dorada a la derecha."
+        }
+      ],
+      "supuestos": [],
+      "referencia_omitida": []
+    },
+    "plan_hash": "420219357c9a6337fcf793d15272801bf406a1e74e3748aeed84ba2537853f53",
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_ARCO",
+        "nombre": "Arco principal",
+        "tipo": "arco",
+        "ubicacion": "arco_central",
+        "repeticiones": 1,
+        "eje_m": 5.46,
+        "total_unidades": 116,
+        "lineas": [
+          {
+            "estructura_id": "EST_01_ARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_ARCO"
+            },
+            "product_id": "P-ROSADO",
+            "variant_id": "V-P-ROSADO-R-12",
+            "sku": "SKU-P-ROSADO-R-12",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": null,
+            "unidades_inferidas": null,
+            "titulo": "Globo rosado — R-12",
+            "color": "rosado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 116,
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 116,
+            "pct": 100
+          }
+        ],
+        "supuestos": []
+      },
+      {
+        "estructura_id": "EST_02_COL",
+        "nombre": "Columna",
+        "tipo": "columna",
+        "ubicacion": "lateral_izquierdo",
+        "repeticiones": 1,
+        "eje_m": 1.8,
+        "total_unidades": 39,
+        "lineas": [
+          {
+            "estructura_id": "EST_02_COL",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_02_COL"
+            },
+            "product_id": "P-BLANCO",
+            "variant_id": "V-P-BLANCO-R-12",
+            "sku": "SKU-P-BLANCO-R-12",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": null,
+            "unidades_inferidas": null,
+            "titulo": "Globo blanco — R-12",
+            "color": "blanco",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 39,
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 39,
+            "pct": 100
+          }
+        ],
+        "supuestos": []
+      },
+      {
+        "estructura_id": "EST_03_COL",
+        "nombre": "Columna",
+        "tipo": "columna",
+        "ubicacion": "lateral_derecho",
+        "repeticiones": 1,
+        "eje_m": 1.8,
+        "total_unidades": 39,
+        "lineas": [
+          {
+            "estructura_id": "EST_03_COL",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_03_COL"
+            },
+            "product_id": "P-DORADO",
+            "variant_id": "V-P-DORADO-R-12",
+            "sku": "SKU-P-DORADO-R-12",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": null,
+            "unidades_inferidas": null,
+            "titulo": "Globo dorado — R-12",
+            "color": "dorado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 39,
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 39,
+            "pct": 100
+          }
+        ],
+        "supuestos": []
+      }
+    ],
+    "compras": [
+      {
+        "variant_id": "V-P-BLANCO-R-12",
+        "product_id": "P-BLANCO",
+        "sku": "SKU-P-BLANCO-R-12",
+        "sku_original": null,
+        "source_snapshot_id": null,
+        "source_variant_id": null,
+        "inventory_quantity": null,
+        "unidades_inferidas": null,
+        "titulo": "Globo blanco — R-12",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "blanco",
+        "unidades_necesarias": 39,
+        "design_quantity": 39,
+        "waste_reserve": 0,
+        "required_quantity": 39,
+        "unidades_con_merma": 39,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 39,
+        "leftover_inventory": 11,
+        "consumption_cost": 7800,
+        "purchase_cost": 10000,
+        "additional_package_for_waste": false,
+        "sobrante": 11,
+        "precio_paquete": 10000,
+        "subtotal": 10000,
+        "estructuras": [
+          "EST_02_COL"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_02_COL"
+          }
+        ]
+      },
+      {
+        "variant_id": "V-P-DORADO-R-12",
+        "product_id": "P-DORADO",
+        "sku": "SKU-P-DORADO-R-12",
+        "sku_original": null,
+        "source_snapshot_id": null,
+        "source_variant_id": null,
+        "inventory_quantity": null,
+        "unidades_inferidas": null,
+        "titulo": "Globo dorado — R-12",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "dorado",
+        "unidades_necesarias": 39,
+        "design_quantity": 39,
+        "waste_reserve": 0,
+        "required_quantity": 39,
+        "unidades_con_merma": 39,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 39,
+        "leftover_inventory": 11,
+        "consumption_cost": 7800,
+        "purchase_cost": 10000,
+        "additional_package_for_waste": false,
+        "sobrante": 11,
+        "precio_paquete": 10000,
+        "subtotal": 10000,
+        "estructuras": [
+          "EST_03_COL"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_03_COL"
+          }
+        ]
+      },
+      {
+        "variant_id": "V-P-ROSADO-R-12",
+        "product_id": "P-ROSADO",
+        "sku": "SKU-P-ROSADO-R-12",
+        "sku_original": null,
+        "source_snapshot_id": null,
+        "source_variant_id": null,
+        "inventory_quantity": null,
+        "unidades_inferidas": null,
+        "titulo": "Globo rosado — R-12",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "rosado",
+        "unidades_necesarias": 116,
+        "design_quantity": 116,
+        "waste_reserve": 16,
+        "required_quantity": 132,
+        "unidades_con_merma": 132,
+        "unidades_paquete": 50,
+        "paquetes": 3,
+        "purchase_quantity": 150,
+        "used": 116,
+        "leftover_inventory": 18,
+        "consumption_cost": 26400,
+        "purchase_cost": 30000,
+        "additional_package_for_waste": false,
+        "sobrante": 34,
+        "precio_paquete": 10000,
+        "subtotal": 30000,
+        "estructuras": [
+          "EST_01_ARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          }
+        ]
+      }
+    ],
+    "totales": {
+      "globos_por_tamano": {
+        "R-12": 194
+      },
+      "total_unidades": 194,
+      "total_cop": 50000,
+      "design_quantity": 194,
+      "target_waste_reserve": 16,
+      "covered_waste_reserve": 16,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 56,
+      "purchase_cost": 50000,
+      "consumption_cost": 42000,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "ahorro_paquetes_cop": 0,
+      "incluye_iva": true,
+      "merma_porcentaje": 8
+    },
+    "sustituciones": [],
+    "sin_cobertura": [],
+    "advertencias": [],
+    "comercial": {
+      "estado": "APROBACION_REQUERIDA",
+      "delta_cop": 0
+    },
+    "alternativas": [],
+    "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 194\nTarget waste reserve: 16\nNatural package surplus: 56\nUsable waste coverage: 16\nAdditional packages required for waste: 0\nGlobo blanco — R-12: design=39, required=39, package=50, packages=1, purchased=50, natural surplus=11, waste reserve=0, leftover inventory=11\nGlobo dorado — R-12: design=39, required=39, package=50, packages=1, purchased=50, natural surplus=11, waste reserve=0, leftover inventory=11\nGlobo rosado — R-12: design=116, required=132, package=50, packages=3, purchased=150, natural surplus=34, waste reserve=16, leftover inventory=18",
+    "costes_por_estructura": [
+      {
+        "estructura_id": "EST_01_ARCO",
+        "consumo_cop": 23200
+      },
+      {
+        "estructura_id": "EST_02_COL",
+        "consumo_cop": 7800
+      },
+      {
+        "estructura_id": "EST_03_COL",
+        "consumo_cop": 7800
+      }
+    ]
+  },
+  "material_estimate": {
+    "version": "design-material-estimate-v1",
+    "design": {
+      "type": "composite_installation",
+      "shape": "coordinated structures",
+      "dimensions_m": {
+        "width": 2.4,
+        "height": 2.2,
+        "length": null
+      },
+      "installation_length_m": 9.06,
+      "density": "media",
+      "visual_density": "medium",
+      "visual_scale": "very_large",
+      "cluster_count": 3
+    },
+    "balloons": [
+      {
+        "structure_id": "EST_01_ARCO",
+        "product_id": "P-ROSADO",
+        "variant_id": "V-P-ROSADO-R-12",
+        "color": "rosado",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 116,
+        "waste_reserve": 0,
+        "required_quantity": 116,
+        "waste_adjusted_quantity": 116
+      },
+      {
+        "structure_id": "EST_02_COL",
+        "product_id": "P-BLANCO",
+        "variant_id": "V-P-BLANCO-R-12",
+        "color": "blanco",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 39,
+        "waste_reserve": 0,
+        "required_quantity": 39,
+        "waste_adjusted_quantity": 39
+      },
+      {
+        "structure_id": "EST_03_COL",
+        "product_id": "P-DORADO",
+        "variant_id": "V-P-DORADO-R-12",
+        "color": "dorado",
+        "finish": "reflex",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 39,
+        "waste_reserve": 0,
+        "required_quantity": 39,
+        "waste_adjusted_quantity": 39
+      }
+    ],
+    "special_elements": [],
+    "purchases": [
+      {
+        "product_id": "P-BLANCO",
+        "variant_id": "V-P-BLANCO-R-12",
+        "design_quantity": 39,
+        "waste_reserve": 0,
+        "required_quantity": 39,
+        "waste_adjusted_quantity": 39,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 39,
+        "leftover_inventory": 11,
+        "consumption_cost": 7800,
+        "purchase_cost": 10000,
+        "additional_package_for_waste": false,
+        "operational_surplus": 11,
+        "potential_surplus": 11
+      },
+      {
+        "product_id": "P-DORADO",
+        "variant_id": "V-P-DORADO-R-12",
+        "design_quantity": 39,
+        "waste_reserve": 0,
+        "required_quantity": 39,
+        "waste_adjusted_quantity": 39,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 39,
+        "leftover_inventory": 11,
+        "consumption_cost": 7800,
+        "purchase_cost": 10000,
+        "additional_package_for_waste": false,
+        "operational_surplus": 11,
+        "potential_surplus": 11
+      },
+      {
+        "product_id": "P-ROSADO",
+        "variant_id": "V-P-ROSADO-R-12",
+        "design_quantity": 116,
+        "waste_reserve": 16,
+        "required_quantity": 132,
+        "waste_adjusted_quantity": 132,
+        "units_per_package": 50,
+        "package_count": 3,
+        "purchase_quantity": 150,
+        "used": 116,
+        "leftover_inventory": 18,
+        "consumption_cost": 26400,
+        "purchase_cost": 30000,
+        "additional_package_for_waste": false,
+        "operational_surplus": 18,
+        "potential_surplus": 34
+      }
+    ],
+    "totals": {
+      "design_quantity": 194,
+      "target_waste_reserve": 16,
+      "covered_waste_reserve": 16,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 56,
+      "required_quantity": 210,
+      "consumption_cost": 42000,
+      "purchase_cost": 50000,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "waste_adjusted_quantity": 210,
+      "purchase_quantity": 250,
+      "operational_surplus": 40,
+      "potential_surplus": 56
+    },
+    "warnings": []
+  }
+}

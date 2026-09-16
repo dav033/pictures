@@ -12,14 +12,41 @@
  * - D4 Fashion Gris is filed as "plateado": false grey notice / no coverage.
  * - D5 the "4" in gold is not in the LoRA catalog and nothing else was offered.
  *
- * No network, no database, no providers.
+ * No network, no database, no providers. El plan lo resuelve Python desde el
+ * paso 5 del ADR-0023 y esa llamada la responde un doble de transporte
+ * (scripts/lib/resolutor-python-falso.ts), al que este fichero le declara el
+ * único veredicto que necesita: el producto cuyo único tamaño en la allowlist
+ * no puede construir una columna orgánica vuelve SIN_COBERTURA. Qué tamaños
+ * exige cada mezcla es de Python y lo fijan los vectores dorados.
  * Run: npx tsx --conditions=react-server scripts/test-tercera-e2e-backend.ts
  */
 import assert from "node:assert/strict";
 import type { Pool } from "pg";
+import {
+  instalarResolutorPythonFalso,
+  prepararEntornoPythonFalso,
+  veredictoColoresReferencia,
+  SNAPSHOT_FALSO,
+  type PlanRecibido,
+  type VeredictoResolucion,
+} from "./lib/resolutor-python-falso";
 
-process.env.PYTHON_BACKEND_ENABLED = "false";
-process.env.PYTHON_BACKEND_KILL_SWITCH = "true";
+prepararEntornoPythonFalso();
+
+/** Productos que solo entran a la allowlist con un tamaño (P-LILA: R-12). */
+const SIN_TAMANOS_ORGANICOS = new Set(["P-LILA"]);
+function veredictoDelTurno(plan: PlanRecibido): VeredictoResolucion {
+  return {
+    ...veredictoColoresReferencia(plan),
+    sinCobertura: plan.estructuras.flatMap((estructura) => (
+      estructura.mezcla?.startsWith("organica")
+        ? estructura.materiales
+            .filter((material) => SIN_TAMANOS_ORGANICOS.has(material.product_id))
+            .map((material) => ({ estructura_id: estructura.estructura_id, product_id: material.product_id, tamano: "R-18" }))
+        : []
+    )),
+  };
+}
 
 let casos = 0;
 function ok(nombre: string): void {
@@ -134,7 +161,9 @@ async function main(): Promise<void> {
       if (/INSERT INTO plan_audit_log/.test(sql)) auditorias.push(params);
       return /unnest\(\$1::text\[\]\) AS color/.test(sql) ? { rows: [] } : { rows: filas };
     } } as unknown as Pool;
+    instalarResolutorPythonFalso({ veredicto: veredictoDelTurno });
     const estado = crearEstadoConversacion({}, "Quiero algo así para un cumpleaños", blueprint(opciones.colores));
+    estado.ragCatalogSnapshotId = SNAPSHOT_FALSO;
     estado.ragCandidatos = opciones.candidatos.map(candidato);
     for (const c of estado.ragCandidatos) {
       estado.ragIdsRecuperados.add(c.productId);
@@ -147,13 +176,10 @@ async function main(): Promise<void> {
     const registro = crearRegistroHerramientas(estado, { pool, creatividad: 2, hechosPeticion: opciones.hechosPeticion });
     return { estado, auditorias, confirmar: (args: Record<string, unknown>) => registro.confirmar_plan_decoracion!(args, llamada) as Promise<Record<string, unknown>> };
   };
-  const tamanos = (respuesta: Record<string, unknown>) => (respuesta.estructuras as Array<{ tamanos: string[] }>).flatMap((estructura) => estructura.tamanos.map((tamano) => tamano.split("×")[0]));
-
   // The clear balloon has no R-5: organica_fina became SIN_COBERTURA (rid ed4f9eb8).
   const mezcla = turno({ colores: ["light pink", "chrome silver", "white"], candidatos: ["P-ROSADO", "P-PLATA", "P-TRANSP"] });
   const conTransparente = await mezcla.confirmar(plan("organica_fina", [["P-ROSADO", "rosado", 0.5], ["P-PLATA", "plateado", 0.3], ["P-TRANSP", "transparente", 0.2]]));
   assert.equal(conTransparente.ok, true, `a close mix every material covers is chosen: ${JSON.stringify(conTransparente).slice(0, 500)}`);
-  assert.ok(!tamanos(conTransparente).includes("R-5"), "organica_gruesa has no R-5");
   assert.ok(mezcla.estado.ajustesCobertura.some((ajuste) => ajuste.tipo === "mezcla" && ajuste.despues === "organica_gruesa"), JSON.stringify(mezcla.estado.ajustesCobertura));
   assert.equal(mezcla.estado.planResuelto?.plan.estructuras[0]?.mezcla, "organica_gruesa", "the signed plan carries the adjusted mix");
   ok("D2: una mezcla cercana que cubren todos los materiales reemplaza a la que deja SIN_COBERTURA");
@@ -163,7 +189,7 @@ async function main(): Promise<void> {
   const conGris = await gris.confirmar(plan("organica_fina", [["P-ROSADO", "rosado", 0.5], ["P-PLATA", "plateado", 0.3], ["P-GRIS", "gris", 0.2]]));
   assert.equal(conGris.ok, true, JSON.stringify(conGris).slice(0, 500));
   assert.ok((conGris.avisos_cliente as string[]).some((aviso) => /No tengo globos gris en los tamaños que necesita columna asimétrica/.test(aviso)), JSON.stringify(conGris.avisos_cliente));
-  assert.ok(tamanos(conGris).includes("R-5"), "the main material keeps the chosen organica_fina");
+  assert.equal(gris.estado.planResuelto?.plan.estructuras[0]?.mezcla, "organica_fina", "the main material keeps the chosen mix: it is the grey that leaves");
   const materialesGris = gris.estado.planResuelto!.plan.estructuras[0]!.materiales;
   assert.deepEqual(materialesGris.map((material) => material.product_id), ["P-ROSADO", "P-PLATA"]);
   assert.ok(Math.abs(materialesGris.reduce((suma, material) => suma + (material.participacion ?? 0), 0) - 1) < 1e-9, "shares still add up to 1");

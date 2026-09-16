@@ -1,76 +1,50 @@
 import "server-only";
-import type { Pool } from "pg";
-import { cotizarPlan, type Cotizacion } from "@/lib/cotizacion/motor";
 import { llamarPythonPlanResolution } from "@/lib/ia/python-adapter";
-import { estimateFromPlan, type DesignMaterialEstimate } from "@/lib/materiales/estimacion";
+import type { DesignMaterialEstimate } from "@/lib/materiales/estimacion";
+import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import { errorAllowlistDesdePython } from "./allowlist-producto-variante";
-import type { BackendPlan, EntradaAllowlistPlan } from "./aprobacion";
+import type { EntradaAllowlistPlan } from "./aprobacion";
 import { cotizacionDesdePython, planResueltoDesdePython } from "./python-mapper";
-import { resolverPlan } from "./resolver";
 import type { PlanResuelto } from "./resuelto";
-import type { PlanDecoracion, PlanDecoracion1_1 } from "./tipos";
+import type { PlanDecoracion } from "./tipos";
 
 /**
- * Single place where "which backend resolves this plan" is decided and executed.
+ * Única puerta de resolución de un plan (ADR-0023 paso 5).
  *
- * Both paths return the same three domain outputs, so no consumer has to know
- * which one ran. What they must not do is mix them: the Python result already
- * carries its material estimate and quote, and re-running the TypeScript engines
- * on top of it would create a second owner for the same commercial rule.
+ * Hasta el paso 5 existía aquí un segundo camino, el resolutor TypeScript, que
+ * era el destino del kill switch. Con él vivían las reglas de conteo, medidas,
+ * estimación y cotización duplicadas a mano en los dos lenguajes; el 2026-09-16
+ * esa duplicación produjo un fallo silencioso en producción. Ahora Python es el
+ * único dueño: lo que devuelve no se recalcula ni se completa desde aquí, para
+ * no volver a crear un segundo dueño de la misma regla comercial.
  *
- * There is deliberately no implicit fallback. If the Python path fails, the
- * error propagates and the caller decides what the customer sees; silently
- * answering with a TypeScript resolution would hide a broken cutover behind a
- * plan the operator never verified. `PYTHON_BACKEND_KILL_SWITCH` is the rollback.
+ * No hay reserva implícita. Si Python falla, el error se propaga y quien llama
+ * decide qué ve el cliente; responder con otra resolución escondería un corte
+ * roto detrás de un plan que nadie verificó. La recuperación es desplegar la
+ * revisión anterior del servicio, no cambiar una variable de entorno.
  */
 export type ResolucionPlan = {
-  backend: BackendPlan;
   resuelto: PlanResuelto;
   materialEstimate: DesignMaterialEstimate;
   cotizacion: Cotizacion;
 };
 
-/**
- * The two paths take different authorization inputs on purpose. The TypeScript
- * resolver keeps the whitelist each caller already derived — changing it would
- * change the plan hash of proposals in flight — while the Python resolver takes
- * the same-turn allowlist recorded in the signed plan context.
- */
-export type EntradaResolucionPlan =
-  | {
-      backend: "next";
-      pool: Pool;
-      plan: PlanDecoracion | PlanDecoracion1_1;
-      whitelist: ReadonlyMap<string, ReadonlySet<string>>;
-      loraAllowlist?: CatalogAllowlist | null;
-    }
-  | {
-      backend: "python";
-      plan: PlanDecoracion;
-      allowlist: readonly EntradaAllowlistPlan[];
-      catalogSnapshotId: string;
-      loraAllowlist?: CatalogAllowlist | null;
-      requestId: string;
-      correlationId: string;
-      signal?: AbortSignal;
-      deadlineMs?: number;
-    };
+export type EntradaResolucionPlan = {
+  plan: PlanDecoracion;
+  /** Allowlist del mismo turno, tal como quedó firmada en el contexto del plan. */
+  allowlist: readonly EntradaAllowlistPlan[];
+  catalogSnapshotId: string;
+  loraAllowlist?: CatalogAllowlist | null;
+  requestId: string;
+  correlationId: string;
+  signal?: AbortSignal;
+  deadlineMs?: number;
+};
 
-export async function resolverPlanConBackend(entrada: EntradaResolucionPlan): Promise<ResolucionPlan> {
-  if (entrada.backend === "next") {
-    const resuelto = await resolverPlan(entrada.pool, entrada.plan, entrada.whitelist, entrada.loraAllowlist);
-    return {
-      backend: "next",
-      resuelto,
-      materialEstimate: estimateFromPlan(resuelto),
-      cotizacion: cotizarPlan(resuelto),
-    };
-  }
-
-  // Python reads an empty `lora_variant_ids` as "unrestricted", while the
-  // TypeScript resolver filters everything out. A LoRA mode that covers no
-  // variants must fail closed here instead of silently widening the catalog.
+export async function resolverPlan(entrada: EntradaResolucionPlan): Promise<ResolucionPlan> {
+  // Python lee una `lora_variant_ids` vacía como "sin restricción", mientras que
+  // un modo LoRA que no cubre ninguna variante tiene que fallar en cerrado.
   if (entrada.loraAllowlist && entrada.loraAllowlist.variantIds.length === 0) {
     throw new Error("LORA_DATASET_ALLOWLIST_REJECTED: el modo LoRA no cubre variantes");
   }
@@ -91,15 +65,19 @@ export async function resolverPlanConBackend(entrada: EntradaResolucionPlan): Pr
     throw errorAllowlistDesdePython(error) ?? error;
   }
   return {
-    backend: "python",
     resuelto: planResueltoDesdePython(resultado.plan_resuelto),
     materialEstimate: resultado.material_estimate,
     cotizacion: cotizacionDesdePython(resultado),
   };
 }
 
-/** Stable reasons a plan cannot be resolved by the backend its context requires. */
-export type MotivoBackendNoDisponible = "SIN_SNAPSHOT_CATALOGO" | "PYTHON_NO_SELECCIONADO";
+/**
+ * Razón estable por la que un plan aprobado ya no se puede volver a resolver.
+ * `PYTHON_NO_SELECCIONADO` desapareció con el kill switch (ADR-0023 paso 5);
+ * queda el caso del snapshot, que sigue siendo real: el catálogo rota y una
+ * propuesta con hasta 24 h de vida puede apuntar a uno que ya no se publica.
+ */
+export type MotivoBackendNoDisponible = "SIN_SNAPSHOT_CATALOGO";
 
 export class PlanBackendNoDisponibleError extends Error {
   readonly motivo: MotivoBackendNoDisponible;

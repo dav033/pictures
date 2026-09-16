@@ -1,11 +1,12 @@
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
+import { z } from "zod";
 import { buildImagePrompt, placementDescription, promptElementName, tieneContratoDeColor, type PromptImageInput } from "@/lib/ia/build-image-prompt";
 import { LORA_CAPTION_COMPILER_VERSION, LORA_JSON_PROMPT_MAX_LENGTH, translateLoraColor } from "@/lib/ia/lora-caption-compiler";
 import { includesJsonPrompt, includesTextPrompt, resolveLoraPromptFormat } from "@/lib/ia/lora-prompt-format";
 import { parseLoraSeed, resolveLoraSeed } from "@/lib/ia/lora-seed";
-import { ambientDecorFromReference } from "@/lib/ia/reference-structure";
+import { applySceneryVisibility, sceneryFromReference, type SceneryItem } from "@/lib/ia/reference-structure";
 import { nivelCreatividadParaGenerar, perfilCreatividad } from "@/lib/ia/creatividad";
 import { compileProductPrompt, LORA_PRODUCT_RUNTIME_VERSION, sizeConfirmationsFromMaterialLines } from "@/lib/ia/lora-product-runtime";
 import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
@@ -39,7 +40,7 @@ import { ErrorIA, type ImageInput, type Imagen, type ImagenEtiquetada, type Peti
 import { ReferenceBlueprintV2Schema, unidadesMaterialDeElemento, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import { resolverProductosParaGeneracion } from "@/lib/rag/generate-products";
 import { productosPorIdConFuente } from "@/lib/products";
-import { isPythonAdapterError, pythonErrorBody, seleccionarBackendPython } from "@/lib/ia/python-adapter";
+import { isPythonAdapterError, pythonErrorBody } from "@/lib/ia/python-adapter";
 import {
   classifyNonCommercialProducts,
   NonCommercialSourceRejectedError,
@@ -48,7 +49,8 @@ import {
 } from "@/lib/generacion/provenance";
 import type { Brief, Producto } from "@/lib/types";
 import { getRagPool } from "@/lib/rag/db";
-import { PlanBackendNoDisponibleError, resolverPlanConBackend, type ResolucionPlan } from "@/lib/plan/resolver-backend";
+import { advertenciasPuertaFisica } from "@/lib/plan/mezclas";
+import { PlanBackendNoDisponibleError, resolverPlan, type ResolucionPlan } from "@/lib/plan/resolver-backend";
 import { PythonPlanMappingError } from "@/lib/plan/python-mapper";
 import { AllowlistProductoVarianteError } from "@/lib/plan/allowlist-producto-variante";
 import { construirUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
@@ -61,7 +63,6 @@ import { abrirContextoPlan, verificarTokenAprobacion } from "@/lib/plan/aprobaci
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import {
   designQuantityForProduct,
-  physicalWarningsForPlan,
   formatMaterialEstimateLog,
   validateMaterialEstimate,
   type DesignMaterialEstimate,
@@ -87,6 +88,13 @@ type Body = {
   imagenesReferencia?: Imagen[];
   aspecto?: PeticionImagen["aspecto"];
   blueprint?: unknown;
+  /**
+   * Interruptor del cliente sobre la escenografía de la foto: `[{ element_id,
+   * visible }]`. Solo enciende o apaga lo que el servidor ya eligió — un id
+   * desconocido no añade nada a la escena, y nada de esto toca la cotización,
+   * los materiales ni `plan_hash`.
+   */
+  escenografia?: unknown;
   sceneSpec?: unknown;
   sceneSpecHash?: string;
   protectedRegions?: Array<{ region_id: string; bbox: { x: number; y: number; width: number; height: number } }>;
@@ -134,6 +142,23 @@ function respuestaNoConforme(mensaje: string, requestId: string, extra: Record<s
   const uiError = construirUiErrorV1("IMAGEN_NO_FIEL", { mensaje, codigoOrigen: "NON_CONFORME", requestId });
   registrarFalloUi("/api/generate", uiError);
   return Response.json({ error: mensaje, ...extra, ui_error: uiError }, { status: 422 });
+}
+
+const EscenografiaVisibilidadSchema = z
+  .array(z.object({ element_id: z.string().trim().min(1).max(80), visible: z.boolean() }).strict())
+  .max(24);
+
+/**
+ * Interruptor del cliente sobre la escenografía de su foto. Es dato del
+ * navegador, así que solo puede APAGAR o volver a encender un elemento que el
+ * servidor ya seleccionó del análisis: nunca añade un objeto a la escena,
+ * nunca nombra un producto y nunca llega a la cotización ni a `plan_hash`.
+ */
+function visibilidadEscenografia(raw: unknown): ReadonlyMap<string, boolean> | undefined {
+  if (raw === undefined) return undefined;
+  const parsed = EscenografiaVisibilidadSchema.safeParse(raw);
+  if (!parsed.success) throw new Error("ESCENOGRAFIA_INVALIDA: la escenografía debe ser una lista de { element_id, visible }.");
+  return new Map(parsed.data.map((item) => [item.element_id, item.visible] as const));
 }
 
 function hashPrompt(prompt: string): string {
@@ -615,13 +640,13 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     if (!contextoPlan) {
       throw new Error("APROBACION_REQUERIDA: el plan debe aprobarse desde la tarjeta antes de generar.");
     }
-    if (contextoPlan?.backend === "python") {
-      if (seleccionarBackendPython().backend !== "python") {
-        throw new PlanBackendNoDisponibleError("PYTHON_NO_SELECCIONADO", "El backend que generó este plan ya no está disponible; vuelve a pedir la propuesta.");
-      }
-      if (!contextoPlan.catalogSnapshotId) {
-        throw new PlanBackendNoDisponibleError("SIN_SNAPSHOT_CATALOGO", "La propuesta aprobada no tiene un snapshot de catálogo disponible; vuelve a pedir la propuesta.");
-      }
+    // Una propuesta con procedencia "next" ya no se puede re-resolver: ese
+    // resolutor desapareció (ADR-0023 paso 5). Los tokens caducan a las 24 h.
+    if (contextoPlan.backend !== "python") {
+      throw new Error("APROBACION_REQUERIDA: esta propuesta es de una versión anterior; vuelve a pedirla.");
+    }
+    if (!contextoPlan.catalogSnapshotId) {
+      throw new PlanBackendNoDisponibleError("SIN_SNAPSHOT_CATALOGO", "La propuesta aprobada no tiene un snapshot de catálogo disponible; vuelve a pedir la propuesta.");
     }
     // Keep the generation whitelist aligned with /api/plan-editar: a
     // declarative material may carry a variant that is not yet present in the
@@ -710,40 +735,18 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // El plan se re-resuelve con el mismo backend que lo produjo (ADR 0006):
     // resolverlo con el otro podría dar otro hash y estaríamos aprobando un
     // plan distinto del que vio el cliente.
-    let resolucion: ResolucionPlan;
-    if (contextoPlan.backend === "python") {
-      if (seleccionarBackendPython().backend !== "python") {
-        throw new PlanBackendNoDisponibleError("PYTHON_NO_SELECCIONADO", "El backend que generó este plan ya no está disponible; vuelve a pedir la propuesta.");
-      }
-      if (!contextoPlan.catalogSnapshotId) {
-        throw new PlanBackendNoDisponibleError("SIN_SNAPSHOT_CATALOGO", "La propuesta aprobada no tiene un snapshot de catálogo disponible; vuelve a pedir la propuesta.");
-      }
-      resolucion = await resolverPlanConBackend({
-        backend: "python",
-        plan: planDeclarativo,
-        allowlist: contextoPlan.allowlist,
-        catalogSnapshotId: contextoPlan.catalogSnapshotId,
-        loraAllowlist: loraCatalogAllowlist,
-        requestId: generationRequestId,
-        correlationId: generationCorrelationId,
-        signal: request.signal,
-      });
-    } else {
-      const whitelist = new Map<string, Set<string>>();
-      for (const producto of productosBase) {
-        if (!producto.familiaId) continue;
-        const variantes = whitelist.get(producto.familiaId) ?? new Set<string>();
-        variantes.add(producto.id);
-        whitelist.set(producto.familiaId, variantes);
-      }
-      resolucion = await resolverPlanConBackend({
-        backend: "next",
-        pool: getRagPool(),
-        plan: planDeclarativo,
-        whitelist,
-        loraAllowlist: loraCatalogAllowlist,
-      });
+    if (!contextoPlan.catalogSnapshotId) {
+      throw new PlanBackendNoDisponibleError("SIN_SNAPSHOT_CATALOGO", "La propuesta aprobada no tiene un snapshot de catálogo disponible; vuelve a pedir la propuesta.");
     }
+    const resolucion: ResolucionPlan = await resolverPlan({
+      plan: planDeclarativo,
+      allowlist: contextoPlan.allowlist,
+      catalogSnapshotId: contextoPlan.catalogSnapshotId,
+      loraAllowlist: loraCatalogAllowlist,
+      requestId: generationRequestId,
+      correlationId: generationCorrelationId,
+      signal: request.signal,
+    });
     const planResuelto = resolucion.resuelto;
     const cotizacionPlan = resolucion.cotizacion;
     if (body.planHash && body.planHash !== planResuelto.plan_hash) throw new Error("Plan hash does not match the validated server plan.");
@@ -791,7 +794,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     if (!preflight.ok) throw new Error(`La estimación de materiales no es válida: ${preflight.errors.join("; ")}`);
     // La puerta física la decide `physicalWarningsForPlan` por estructura
     // lineal, sobre el plan resuelto de cualquiera de los dos backends.
-    const physicalWarnings = physicalWarningsForPlan(planResuelto);
+    const physicalWarnings = advertenciasPuertaFisica(planResuelto.advertencias);
     if (physicalWarnings.length > 0) throw new Error(`La estimación de materiales no es compatible con la escala solicitada: ${physicalWarnings.join("; ")}`);
     if (IMAGE_DEBUG) console.info(formatMaterialEstimateLog(materialEstimate));
     const aspecto = body.aspecto ?? "3:2";
@@ -809,6 +812,41 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // rompería el diseño que el cliente ya aprobó; el plan es la única
     // autoridad de qué se muestra.
     const blueprint = addCreativeCatalogRelationships(decidedBlueprint, productos);
+    // FRONTERA PLAN / ESCENOGRAFÍA (2026-09-16). El plan aprobado sigue siendo
+    // el único dueño de los ELEMENTOS: el blueprint de referencia que manda el
+    // navegador nunca se convierte en un elemento de escena (sus ids REF_* no
+    // existen en las cajas del plan, EST_*). Se lee solo para la ESCENOGRAFÍA:
+    // lo que el cliente conserva de su propia foto (bancos, flores,
+    // mobiliario, cortinas, luces, bases, mesas). Entra en el prompt con su
+    // caja y el cliente la enciende o la apaga, pero NUNCA toca cotización,
+    // materiales ni `plan_hash` — ni siquiera entra en el `SceneSpec`, así que
+    // no cambia `sceneSpecHash`, ni la geometría auditada, ni el QA.
+    // Es dato del navegador: se valida contra el esquema, se filtra por
+    // categoría y por nombre en inglés plano sin letreros, y se limita a
+    // `SCENERY_LIMIT` (reference-structure.ts).
+    const referenciaAnalizada = body.blueprint === undefined ? undefined : ReferenceBlueprintV2Schema.safeParse(body.blueprint);
+    // Un elemento de la foto que una estructura del plan ya materializa lo
+    // dibuja el plan: no puede volver a entrar como escenografía y duplicarse.
+    const materializedReferenceIds = new Set<string>([
+      ...blueprint.elements.map((element) => element.element_id),
+      ...planResuelto.plan.estructuras.map((estructura) => estructura.referencia_element_id).filter((id): id is string => Boolean(id)),
+    ]);
+    const escenografiaDetectada: SceneryItem[] = referenciaAnalizada?.success
+      ? sceneryFromReference(referenciaAnalizada.data, materializedReferenceIds)
+      : [];
+    const escenografia = applySceneryVisibility(escenografiaDetectada, visibilidadEscenografia(body.escenografia));
+    const escenografiaVisible = escenografia.filter((item) => item.visible);
+    /** Lo que el servidor eligió y qué quedó encendido, para que el cliente vea el mismo estado. */
+    const escenografiaRespuesta = escenografia.length
+      ? escenografia.map((item) => ({ element_id: item.elementId, source_image_id: item.sourceImageId, name: item.name, category: item.category, bbox: item.bbox, visible: item.visible }))
+      : undefined;
+    const escenografiaParaEscena = escenografiaVisible.map((item) => ({
+      element_id: item.elementId,
+      name: item.name,
+      category: item.category,
+      target_bbox: item.bbox,
+      depth_layer: item.depthLayer,
+    }));
     const productosConMateriales = productos.map((producto) => {
       const compra = planResuelto.compras.find((item) => item.variant_id === producto.id);
       return compra ? { ...producto, paquetes: compra.paquetes, unidadesPaquete: compra.unidades_paquete } : producto;
@@ -853,6 +891,9 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       createdBy: previous ? "revision" : "server_default",
       planHash: planResuelto?.plan_hash,
       catalogOnly: true,
+      // La puerta `catalogOnly` sigue cerrada para los elementos del plan: la
+      // escenografía llega por su propio parámetro, nunca como elemento.
+      scenography: escenografiaParaEscena,
     });
     if (body.sceneSpec) {
       const submittedScene = SceneSpecSchema.parse(body.sceneSpec);
@@ -966,7 +1007,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
         espera_linea_de_color: tieneContratoDeColor(element),
       })),
     };
-    const promptBase = { sceneSpec: transformedSceneSpec, inputs: selected.promptInputs, revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount: selected.droppedCatalogProductIds.length, droppedCompositionReferenceCount: selected.droppedReferenceCount, creatividad: creatividad.nivel, officialStructures: qaPlan?.officialStructures };
+    const promptBase = { sceneSpec: transformedSceneSpec, inputs: selected.promptInputs, revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount: selected.droppedCatalogProductIds.length, droppedCompositionReferenceCount: selected.droppedReferenceCount, creatividad: creatividad.nivel, officialStructures: qaPlan?.officialStructures, scenography: escenografiaParaEscena };
     const providerPrompt = buildImagePrompt(promptBase);
     if (planResuelto) {
       const coherencia = verificarCoherenciaPrompt(providerPrompt, planResuelto, escenaParaCoherencia);
@@ -1000,15 +1041,9 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       }
     }
     const promptFormat = resolveLoraPromptFormat(body.promptFormat, usarLora ? resolvedLoras?.[0]?.trigger : undefined);
-    // Styling seen in the reference that the catalog does not sell (lights,
-    // foliage) is drawn when the analysis kept it as relevant and no plan
-    // structure materializes it. It never reaches the quote or the plan.
-    const referenceForStyling = usarLora && body.blueprint !== undefined ? ReferenceBlueprintV2Schema.safeParse(body.blueprint) : undefined;
-    const materializedReferenceIds = new Set<string>([
-      ...transformedSceneSpec.elements.map((element) => element.element_id),
-      ...(planResuelto?.plan.estructuras.map((estructura) => estructura.referencia_element_id).filter((id): id is string => Boolean(id)) ?? []),
-    ]);
-    const ambientDecor = referenceForStyling?.success ? ambientDecorFromReference(referenceForStyling.data, materializedReferenceIds) : [];
+    // Mismo dueño que el prompt de Gemini: la escenografía que el cliente dejó
+    // encendida. El caption LoRA solo admite tres nombres de styling.
+    const ambientDecor = escenografiaVisible.map((item) => item.name).slice(0, 3);
     const productPromptCompilation = compileProductPrompt({
       sceneSpec: transformedSceneSpec,
       visualContext,
@@ -1141,7 +1176,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // advertencia "no conforme" en vez de esconder el resultado.
     if (planResuelto && !usarLora && bloquearPorQa(qa, generationRequestId)) return respuestaNoConforme(`NON_CONFORME: la imagen no fue observada conforme al plan aprobado${qa.retry_reasons.length ? ` — ${qa.retry_reasons.join("; ")}` : ""}.`, generationRequestId, { qa, plan: planResuelto, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash });
     const debug = IMAGE_DEBUG;
-    return Response.json({ imagen: `data:${result.imagen.mime};base64,${result.imagen.base64}`, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, plan: planResuelto, qa, loraPreflight: usarLora ? loraPreflight : undefined, loraPromptVersion: usarLora ? "v2" : undefined, loraPromptHash: usarLora ? hashPrompt(promptPrincipal) : undefined, compilerVersion: usarLora ? LORA_CAPTION_COMPILER_VERSION : undefined, loraProductRuntimeVersion: usarLora ? LORA_PRODUCT_RUNTIME_VERSION : undefined, productPromptCompilation: { resolved_concepts: productPromptCompilation.resolved_concepts, unresolved_products: productPromptCompilation.unresolved_products, vocabulary_version: productPromptCompilation.vocabulary_version, compiler_version: productPromptCompilation.compiler_version, legacy: productPromptCompilation.legacy, diagnostics: productPromptCompilation.diagnostics }, retried, proveedor, modoImagen: usarLora ? "lora" : "proveedor_base", promptFormat: usarLora ? promptFormat : undefined, seed: loraSeed, creatividad: usarLora ? { nivel: creatividad.nivel, nombre: creatividad.nombre, guidance_scale: creatividad.guidanceScale, pistas_prompt: creatividad.pistasPrompt } : undefined, loraJsonPreflight: jsonPreflight, ambientDecor: ambientDecor.length ? ambientDecor : undefined, imagenAlternativa: loraJsonImage && effectiveJsonPrompt ? { formato: "json", imagen: `data:${loraJsonImage.mime};base64,${loraJsonImage.base64}`, prompt: effectiveJsonPrompt, qa: "no_evaluada" } : undefined, cotizacion, interactionId: result.interactionId, prompt: promptPrincipal, prompts: usarLora && promptFormat === "ambos" && effectiveJsonPrompt ? { "LoRA Sempertex · texto": effectiveLoraPrompt, "LoRA Sempertex · JSON": effectiveJsonPrompt } : { [usarLora ? (promptFormat === "json" ? "LoRA Sempertex · JSON" : "LoRA Sempertex") : "Gemini · Nano Banana 2"]: promptPrincipal }, productAuthority: productAuthority.length ? productAuthority : undefined, ...(debug ? { visualContext, droppedImageIds: selected.droppedImageIds, aspectTransform, loraSelection: resolvedLoras?.map((lora) => ({ artifactId: lora.artifactId, specialization: lora.specialization, scale: lora.scale, trigger: lora.trigger })) } : {}) });
+    return Response.json({ imagen: `data:${result.imagen.mime};base64,${result.imagen.base64}`, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, plan: planResuelto, qa, loraPreflight: usarLora ? loraPreflight : undefined, loraPromptVersion: usarLora ? "v2" : undefined, loraPromptHash: usarLora ? hashPrompt(promptPrincipal) : undefined, compilerVersion: usarLora ? LORA_CAPTION_COMPILER_VERSION : undefined, loraProductRuntimeVersion: usarLora ? LORA_PRODUCT_RUNTIME_VERSION : undefined, productPromptCompilation: { resolved_concepts: productPromptCompilation.resolved_concepts, unresolved_products: productPromptCompilation.unresolved_products, vocabulary_version: productPromptCompilation.vocabulary_version, compiler_version: productPromptCompilation.compiler_version, legacy: productPromptCompilation.legacy, diagnostics: productPromptCompilation.diagnostics }, retried, proveedor, modoImagen: usarLora ? "lora" : "proveedor_base", promptFormat: usarLora ? promptFormat : undefined, seed: loraSeed, creatividad: usarLora ? { nivel: creatividad.nivel, nombre: creatividad.nombre, guidance_scale: creatividad.guidanceScale, pistas_prompt: creatividad.pistasPrompt } : undefined, loraJsonPreflight: jsonPreflight, ambientDecor: ambientDecor.length ? ambientDecor : undefined, escenografia: escenografiaRespuesta, imagenAlternativa: loraJsonImage && effectiveJsonPrompt ? { formato: "json", imagen: `data:${loraJsonImage.mime};base64,${loraJsonImage.base64}`, prompt: effectiveJsonPrompt, qa: "no_evaluada" } : undefined, cotizacion, interactionId: result.interactionId, prompt: promptPrincipal, prompts: usarLora && promptFormat === "ambos" && effectiveJsonPrompt ? { "LoRA Sempertex · texto": effectiveLoraPrompt, "LoRA Sempertex · JSON": effectiveJsonPrompt } : { [usarLora ? (promptFormat === "json" ? "LoRA Sempertex · JSON" : "LoRA Sempertex") : "Gemini · Nano Banana 2"]: promptPrincipal }, productAuthority: productAuthority.length ? productAuthority : undefined, ...(debug ? { visualContext, droppedImageIds: selected.droppedImageIds, aspectTransform, loraSelection: resolvedLoras?.map((lora) => ({ artifactId: lora.artifactId, specialization: lora.specialization, scale: lora.scale, trigger: lora.trigger })) } : {}) });
   } catch (error) {
     // Los campos legacy (`error`, `causa`, sobre operational.v1) se conservan:
     // el smoke los compara. `ui_error` (ui-error.v1) es lo que ve el cliente.

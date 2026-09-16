@@ -202,6 +202,12 @@
           "waste_reserve": 3
         }
       ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 6000,
+          "estructura_id": "EST_01_COLUMNA"
+        }
+      ],
       "estructuras": [
         {
           "eje_m": 1.4,
@@ -497,6 +503,12 @@
           "used": 30,
           "variant_id": "V-RED-12",
           "waste_reserve": 3
+        }
+      ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 6000,
+          "estructura_id": "EST_01_COLUMNA"
         }
       ],
       "estructuras": [

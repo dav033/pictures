@@ -198,6 +198,12 @@
           "waste_reserve": 8
         }
       ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 18400,
+          "estructura_id": "EST_01_ARCO"
+        }
+      ],
       "estructuras": [
         {
           "eje_m": 6.21,
@@ -602,6 +608,12 @@
           "used": 92,
           "variant_id": "V-RED-12",
           "waste_reserve": 8
+        }
+      ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 18400,
+          "estructura_id": "EST_01_ARCO"
         }
       ],
       "estructuras": [

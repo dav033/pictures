@@ -3,13 +3,45 @@
  * modelo qué tamaños tiene cada producto y qué mezcla sí cabe, para que el
  * reintento converja en vez de cambiar productos a ciegas.
  *
- * Sin red ni proveedores. Run: npx tsx --conditions=react-server scripts/test-plan-cobertura-tamanos.ts
+ * Sin red ni proveedores. El plan lo resuelve Python desde el paso 5 del
+ * ADR-0023: esa llamada la responde un doble de transporte
+ * (scripts/lib/resolutor-python-falso.ts) al que cada caso le declara el
+ * veredicto del resolutor. Lo que se prueba aquí es lo que Next hace con él.
+ * Run: npx tsx --conditions=react-server scripts/test-plan-cobertura-tamanos.ts
  */
 import assert from "node:assert/strict";
 import type { Pool } from "pg";
+import {
+  instalarResolutorPythonFalso,
+  prepararEntornoPythonFalso,
+  SNAPSHOT_FALSO,
+  type PlanRecibido,
+  type VeredictoResolucion,
+} from "./lib/resolutor-python-falso";
 
-process.env.PYTHON_BACKEND_ENABLED = "false";
-process.env.PYTHON_BACKEND_KILL_SWITCH = "true";
+prepararEntornoPythonFalso();
+
+/**
+ * Veredicto del resolutor para los casos de este fichero: una estructura que
+ * sigue pidiendo `organica_fina` con un producto que solo tiene R-12 vuelve
+ * SIN_COBERTURA en los cuatro tamaños que faltan. Qué tamaños exige cada mezcla
+ * es de Python (y lo fijan los vectores dorados); aquí solo hace falta que el
+ * rechazo llegue para ver qué construye Next con él.
+ */
+const TAMANOS_ORGANICA_FINA = ["R-5", "R-9", "R-18", "R-24"];
+function veredictoPorMezcla(plan: PlanRecibido): VeredictoResolucion {
+  return {
+    sinCobertura: plan.estructuras.flatMap((estructura) => (
+      estructura.mezcla === "organica_fina"
+        ? estructura.materiales.flatMap((material) => TAMANOS_ORGANICA_FINA.map((tamano) => ({
+            estructura_id: estructura.estructura_id,
+            product_id: material.product_id,
+            tamano,
+          })))
+        : []
+    )),
+  };
+}
 
 let casos = 0;
 function ok(nombre: string): void {
@@ -18,7 +50,7 @@ function ok(nombre: string): void {
 }
 
 async function main(): Promise<void> {
-  const { mezclasCompatiblesConDiametros } = await import("../src/lib/plan/resolver");
+  const { mezclasCompatiblesConDiametros } = await import("../src/lib/plan/mezclas");
   const { coberturaPorProducto, crearEstadoConversacion, crearRegistroHerramientas } = await import("../src/lib/ia/registro-herramientas");
   const { detectarJergaInterna } = await import("../src/lib/ia/jerga-interna");
   type ProductoCandidato = import("../src/lib/rag/chat/buscar").ProductoCandidato;
@@ -80,13 +112,15 @@ async function main(): Promise<void> {
   ]);
   ok("cobertura por producto: faltantes, disponibles del turno y mezclas que caben");
 
-  // 3. Rechazo real y reintento que converge (backend Next, Pool falso).
+  // 3. Rechazo real y reintento que converge (Pool falso y resolutor doble).
   const filas = [
     { product_id: "P-ROJO", variant_id: "P-ROJO-R12", sku: "SKU-R12", producto_titulo: "Globo rojo", variante_titulo: "R-12", precio: 10000, unidades_paq: 50, disponible: true, producto_disponible: true, codigo_tamano: "R-12", forma: "redondo", diam_pulg: 12, colores_producto: ["rojo"], colores_variante: ["rojo"], acabados_producto: [], descripcion: "Globo rojo R-12", imagen: null },
   ];
   const pool = { query: async (sql: string) => (sql.includes("catalog_variants") ? { rows: filas } : { rows: [] }) } as unknown as Pool;
   const confirmar = () => {
+    instalarResolutorPythonFalso({ veredicto: veredictoPorMezcla });
     const estado = crearEstadoConversacion({}, "un arco rojo");
+    estado.ragCatalogSnapshotId = SNAPSHOT_FALSO;
     estado.ragCandidatos = [soloDoce];
     estado.ragIdsRecuperados.add("P-ROJO");
     estado.ragVariantIdsRecuperados.set("P-ROJO", new Set(["P-ROJO-R12"]));
@@ -144,7 +178,9 @@ async function main(): Promise<void> {
 
   const filaAzul = { ...filas[0]!, product_id: "P-AZUL", variant_id: "P-AZUL-R12", producto_titulo: "Globo Fashion Azul Rey", colores_producto: ["azul"], colores_variante: ["azul"] };
   const poolAzul = { query: async (sql: string) => (sql.includes("catalog_variants") ? { rows: [filaAzul] } : { rows: [] }) } as unknown as Pool;
+  instalarResolutorPythonFalso({ veredicto: veredictoPorMezcla });
   const estadoAzul = crearEstadoConversacion({}, "Evento corporativo: un arco de globos azul rey");
+  estadoAzul.ragCatalogSnapshotId = SNAPSHOT_FALSO;
   estadoAzul.ragCandidatos = [candidato("P-AZUL", [12], "azul")];
   estadoAzul.ragIdsRecuperados.add("P-AZUL");
   estadoAzul.ragVariantIdsRecuperados.set("P-AZUL", new Set(["P-AZUL-R12"]));
@@ -272,7 +308,9 @@ async function main(): Promise<void> {
     colores_producto: [color], colores_variante: [color], acabados_producto: [] as string[], descripcion: `Globo ${color} R-${diametro}`, imagen: null,
   });
   const poolDosProductos = { query: async (sql: string) => (sql.includes("catalog_variants") ? { rows: [fila("P-ROSADO", 12, "rosado"), fila("P-DORADO", 24, "dorado")] } : { rows: [] }) } as unknown as Pool;
+  instalarResolutorPythonFalso({ veredicto: veredictoPorMezcla });
   const estadoQuitado = crearEstadoConversacion({}, "un arco para un cumpleaños");
+  estadoQuitado.ragCatalogSnapshotId = SNAPSHOT_FALSO;
   estadoQuitado.ragCandidatos = [candidato("P-ROSADO", [12], "rosado"), candidato("P-DORADO", [24], "dorado")];
   estadoQuitado.ragIdsRecuperados.add("P-ROSADO").add("P-DORADO");
   estadoQuitado.ragVariantIdsRecuperados.set("P-ROSADO", new Set(["P-ROSADO-R12"]));
@@ -324,7 +362,9 @@ async function main(): Promise<void> {
 
   const filaVioleta = { ...filas[0]!, product_id: "P-VIOLETA", variant_id: "P-VIOLETA-R12", producto_titulo: "Globo Latex Redondo Fashion Violeta", colores_producto: ["violeta", "morado"], colores_variante: ["violeta"] };
   const poolVioleta = { query: async (sql: string) => (sql.includes("catalog_variants") ? { rows: [filaVioleta] } : { rows: [] }) } as unknown as Pool;
+  instalarResolutorPythonFalso({ veredicto: veredictoPorMezcla });
   const estadoVioleta = crearEstadoConversacion({}, "Quiero un arco morado");
+  estadoVioleta.ragCatalogSnapshotId = SNAPSHOT_FALSO;
   estadoVioleta.ragCandidatos = [violeta];
   estadoVioleta.ragIdsRecuperados.add("P-VIOLETA");
   estadoVioleta.ragVariantIdsRecuperados.set("P-VIOLETA", new Set(["P-VIOLETA-R12"]));

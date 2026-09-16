@@ -1,161 +1,87 @@
 import assert from "node:assert/strict";
-import type { Pool } from "pg";
 import { buildImagePrompt } from "../src/lib/ia/build-image-prompt";
 import { evaluateSceneQa } from "../src/lib/ia/image-qa";
 import {
-  estimateFromPlan,
+  MaterialEstimateSchema,
   designQuantityForProduct,
-  physicalWarningsForPlan,
   purchaseForProduct,
   validateMaterialEstimate,
-  wasteOnlySavingsCop,
-  type DesignMaterialEstimate,
 } from "../src/lib/materiales/estimacion";
-import { resolverPlan } from "../src/lib/plan/resolver";
-import type { PlanResuelto } from "../src/lib/plan/resuelto";
-import { PlanDecoracionSchema } from "../src/lib/plan/tipos";
+import { planFijado } from "./lib/planes-fijados";
 import type { SceneSpec } from "../src/lib/ia/scene-spec";
 
-type Purchase = DesignMaterialEstimate["purchases"][number];
-type EstimateLine = DesignMaterialEstimate["balloons"][number];
-function purchase(overrides: Pick<Purchase, "product_id" | "variant_id" | "design_quantity" | "units_per_package" | "package_count" | "purchase_cost">): Purchase {
-  const purchaseQuantity = overrides.package_count * overrides.units_per_package;
-  return {
-    ...overrides,
-    waste_reserve: 0,
-    required_quantity: overrides.design_quantity,
-    waste_adjusted_quantity: overrides.design_quantity,
-    purchase_quantity: purchaseQuantity,
-    used: overrides.design_quantity,
-    leftover_inventory: purchaseQuantity - overrides.design_quantity,
-    consumption_cost: 0,
-    additional_package_for_waste: false,
-    operational_surplus: purchaseQuantity - overrides.design_quantity,
-    potential_surplus: purchaseQuantity - overrides.design_quantity,
-  };
-}
-function line(productId: string, variantId: string, designQuantity: number, sizeInches: number | null): EstimateLine {
-  return {
-    product_id: productId,
-    variant_id: variantId,
-    color: null,
-    finish: null,
-    size_inches: sizeInches,
-    shape: null,
-    design_quantity: designQuantity,
-    waste_reserve: 0,
-    required_quantity: designQuantity,
-    waste_adjusted_quantity: designQuantity,
-  };
-}
+/**
+ * Lo que sigue vivo en TypeScript del estimado de materiales: la validación de
+ * frontera (`validateMaterialEstimate`) y las dos consultas que la UI y el
+ * prompt hacen sobre un estimado ya calculado (`designQuantityForProduct`,
+ * `purchaseForProduct`).
+ *
+ * Lo que este script probaba y ya no tiene sujeto (ADR-0023, pasos 5 y 6):
+ *
+ * - `physicalWarningsForPlan`: la puerta física por estructura (banda de
+ *   globos/metro por eje y densidad, su escalado con la mezcla efectiva, el
+ *   caso "pared + guirnalda" y el arco "solo R-24"). Portada a Python en el
+ *   paso 4 y cubierta por `services/ai-api/tests/test_physical_gate.py`. Next
+ *   conserva la política de bloqueo, no la medición: las advertencias llegan en
+ *   `advertencias` con el prefijo `puerta_fisica:`.
+ * - `estimateFromPlan` y `wasteOnlySavingsCop`: el cálculo del estimado y la
+ *   atribución del ahorro a la merma. Son reglas de conteo, y Python es su
+ *   único dueño desde el paso 5.
+ * - El recálculo de fórmulas comerciales dentro de `validateMaterialEstimate`
+ *   (paso 6). Lo que queda de esa puerta —esquema, no-negativos y capacidad ≥
+ *   demanda por línea— se comprueba abajo sobre un estimado congelado.
+ *
+ * El estimado de entrada es el del plan congelado "pared + guirnalda"
+ * (`scripts/lib/planes-fijados.ts`), el mismo escenario que motivó la puerta
+ * física, para que las consultas se hagan sobre dos estructuras que suman su
+ * demanda en un solo producto.
+ * Run: npx tsx --conditions=react-server scripts/test-material-consistency.ts
+ */
 
-// Golden vector 09: a non-geometric backdrop (design 1, 1 per package) never
-// contributes, while a balloon line whose merma crosses a package boundary does.
-const telon = purchase({ product_id: "P-TELON", variant_id: "V-TELON", design_quantity: 1, units_per_package: 1, package_count: 1, purchase_cost: 20_000 });
-const balloonCrossing = purchase({ product_id: "P-BAL", variant_id: "V-BAL-R12", design_quantity: 60, units_per_package: 7, package_count: 9, purchase_cost: 13_500 });
-assert.equal(wasteOnlySavingsCop([], [line("P-TELON", "V-TELON", 1, null)], [telon]), 0);
-assert.equal(wasteOnlySavingsCop([line("P-BAL", "V-BAL-R12", 60, 12)], [line("P-TELON", "V-TELON", 1, null)], [balloonCrossing, telon]), 1_500);
-// A purchase that no estimate line classifies as a balloon is not eligible either.
-assert.equal(wasteOnlySavingsCop([], [], [telon]), 0);
-// A special element is excluded even when it shares the balloon product.
-assert.equal(
-  wasteOnlySavingsCop([line("P-BAL", "V-BAL-R12", 60, 12)], [line("P-BAL", "V-TELON", 1, null)], [{ ...telon, product_id: "P-BAL" }]),
-  0,
-);
+function main(): void {
+  const { materialEstimate: estimate } = planFijado("material-pared-guirnalda");
 
-// Two balloon lines with a fractional package price (100 / 3) round once at the
-// end: 33.33 + 33.33 = 66.67 -> 67, never 33 + 33 = 66. The comparison is
-// against the packages actually bought (3 exact), so the design quantity fits
-// the purchase: a line whose capacity was below its design was not a real
-// purchase and hid how many packages the merma really added.
-const fractionalA = purchase({ product_id: "P-BAL", variant_id: "V-BAL-A", design_quantity: 30, units_per_package: 10, package_count: 3, purchase_cost: 100 });
-const fractionalB = purchase({ product_id: "P-BAL", variant_id: "V-BAL-B", design_quantity: 30, units_per_package: 10, package_count: 3, purchase_cost: 100 });
-assert.equal(
-  wasteOnlySavingsCop([line("P-BAL", "V-BAL-A", 30, 12), line("P-BAL", "V-BAL-B", 30, 12)], [], [fractionalA, fractionalB]),
-  67,
-);
-
-async function comprobarPuertaFisica(): Promise<PlanResuelto> {
-  // --- Puerta física por estructura (ADR 0022) -------------------------------
-  // Antes `estimateFromPlan` dividía TODOS los globos instalados (la pared, cuyo
-  // eje es 0, incluida) entre el eje sumado de las piezas lineales: "pared +
-  // guirnalda" daba 161 globos/m y `confirmar_plan_decoracion` devolvía
-  // ESTIMACION_INCONSISTENTE en Next mientras Python aceptaba el mismo plan.
-  const filasFisicas = [
-    { product_id: "P-GLOBOS", variant_id: "V-BLANCO-12", sku: "SKU-BLANCO-12", producto_titulo: "Globo blanco", variante_titulo: "R-12", precio: 10_000, unidades_paq: 50, disponible: true, producto_disponible: true, codigo_tamano: "R-12", forma: "redondo", diam_pulg: 12, colores_producto: ["blanco"], colores_variante: ["blanco"], descripcion: "Globo látex blanco R-12.", imagen: null },
-  ];
-  const poolFisico = { query: async () => ({ rows: filasFisicas }) } as unknown as Pool;
-  const whitelistFisica = new Map<string, ReadonlySet<string>>([["P-GLOBOS", new Set(["V-BLANCO-12"])]]);
-  const materialBlanco = [{ product_id: "P-GLOBOS", color: "blanco", participacion: 1, rol_material: "principal" as const }];
-  const planFisico = await resolverPlan(poolFisico, PlanDecoracionSchema.parse({
-    plan_version: "1.0",
-    plan_id: "33333333-3333-4333-8333-333333333333",
-    concepto: { titulo: "Pared con guirnalda", descripcion: "Pared de globos con una guirnalda encima.", paleta: ["blanco"] },
-    espacio: { tipo: "salón", fuente: "cliente" },
-    estructuras: [
-      { estructura_id: "EST_01_GUIRNALDA", nombre: "Guirnalda superior", tipo: "guirnalda", rol_escena: "acento", ubicacion: "arco_central", medidas: { largo_m: 2.5 }, repeticiones: 1, densidad: "lujosa", mezcla: "clasica", materiales: materialBlanco, porque: "Remata la pared." },
-      { estructura_id: "EST_02_PARED", nombre: "Pared de globos", tipo: "pared", rol_escena: "focal", ubicacion: "fondo_pared", medidas: { ancho_m: 2.4, alto_m: 2.4 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales: materialBlanco, porque: "Fondo de fotos." },
-    ],
-    supuestos: [],
-  }), whitelistFisica);
-  const guirnalda = planFisico.estructuras.find((estructura) => estructura.tipo === "guirnalda")!;
-  const pared = planFisico.estructuras.find((estructura) => estructura.tipo === "pared")!;
-  assert.ok(pared.total_unidades > guirnalda.total_unidades * 4, `${pared.total_unidades} vs ${guirnalda.total_unidades}`);
-  assert.deepEqual(physicalWarningsForPlan(planFisico), [], "pared + guirnalda es un plan válido y confirmable");
-  const estimacionFisica = estimateFromPlan(planFisico);
-  // Una sola regla de densidad: la de la estructura con más globos de diseño
-  // (antes TypeScript decía "lujosa si alguna lo es" y Python la primera).
-  assert.equal(estimacionFisica.design.density, "media");
-  assert.equal(estimacionFisica.design.visual_density, "medium");
-  // La guirnalda sí se revisa contra su propio eje y su propia densidad.
-  const guirnaldaEscasa = {
-    ...planFisico,
-    estructuras: planFisico.estructuras.map((estructura) => estructura.tipo !== "guirnalda" ? estructura : {
-      ...estructura,
-      lineas: estructura.lineas.map((linea, indice) => ({ ...linea, unidades: indice === 0 ? 5 : 0 })),
-      total_unidades: 5,
-    }),
-  };
-  const avisosEscasos = physicalWarningsForPlan(guirnaldaEscasa);
-  assert.equal(avisosEscasos.length, 1, avisosEscasos.join(" | "));
-  assert.match(avisosEscasos[0]!, /^EST_01_GUIRNALDA: estimated material quantity appears too low for high density over 2\.50 m \(5 installed balloons\)$/);
-  const guirnaldaExcesiva = {
-    ...planFisico,
-    estructuras: planFisico.estructuras.map((estructura) => estructura.tipo !== "guirnalda" ? estructura : {
-      ...estructura,
-      lineas: estructura.lineas.map((linea, indice) => ({ ...linea, unidades: indice === 0 ? 900 : 0 })),
-      total_unidades: 900,
-    }),
-  };
-  assert.match(physicalWarningsForPlan(guirnaldaExcesiva)[0] ?? "", /EST_01_GUIRNALDA: estimated material quantity appears unusually high/);
-  return planFisico;
-}
-
-async function comprobarEstimacionDelPlan(planFisico: PlanResuelto): Promise<void> {
-  // --- La estimación resuelta por el backend alimenta prompt y QA -----------
-  // Desde el paso 1 del ADR 0023 toda imagen sale de una propuesta aprobada, así
-  // que estas comprobaciones parten de `estimateFromPlan` en vez de una
-  // estimación armada en TypeScript a partir de piezas sueltas.
-  const estimate = estimateFromPlan(planFisico);
-  assert.equal(estimate.balloons.reduce((sum, item) => sum + item.design_quantity, 0), 403);
-  // La demanda de las dos estructuras se suma por producto, se busque por
-  // producto o por variante.
-  assert.equal(designQuantityForProduct(estimate, "P-GLOBOS"), 403);
-  assert.equal(designQuantityForProduct(estimate, "V-BLANCO-12"), 403);
-  assert.equal(purchaseForProduct(estimate, "P-GLOBOS")?.required_quantity, 436);
-  assert.equal(purchaseForProduct(estimate, "P-GLOBOS")?.purchase_quantity, 450);
-  assert.equal(purchaseForProduct(estimate, "P-GLOBOS")?.leftover_inventory, 14);
-  assert.equal(purchaseForProduct(estimate, "P-GLOBOS")?.purchase_cost, 90_000);
-  assert.equal(estimate.totals.required_quantity, 436);
-  assert.equal(estimate.totals.purchase_quantity, 450);
-  assert.equal(estimate.totals.target_waste_reserve, 33);
-  assert.equal(estimate.totals.covered_waste_reserve, 33);
-  assert.equal(estimate.totals.uncovered_waste_reserve, 0);
-  // Los 9 paquetes (450 unidades) ya cubren los 436 con merma, así que la merma
-  // no añadió ningún paquete y no hay ahorro que atribuirle.
-  assert.equal(estimate.totals.waste_only_savings_cop, 0);
+  // --- Frontera: un estimado válido pasa la puerta ---------------------------
   assert.equal(validateMaterialEstimate(estimate).ok, true);
 
+  // --- Las dos consultas que hacen la UI y el prompt -------------------------
+  // La demanda de las dos estructuras se suma por producto, se busque por
+  // producto o por variante.
+  const demanda = estimate.balloons.reduce((sum, item) => sum + item.design_quantity, 0);
+  assert.equal(designQuantityForProduct(estimate, "P-GLOBOS"), demanda);
+  assert.equal(designQuantityForProduct(estimate, "V-BLANCO-12"), demanda);
+  assert.equal(designQuantityForProduct(estimate, "P-INEXISTENTE"), 0);
+  const compra = purchaseForProduct(estimate, "P-GLOBOS");
+  assert.ok(compra, "la compra del único producto del plan se encuentra por product_id");
+  assert.equal(purchaseForProduct(estimate, "V-BLANCO-12")?.variant_id, compra.variant_id);
+  assert.equal(purchaseForProduct(estimate, "P-INEXISTENTE"), undefined);
+  // Capacidad ≥ demanda con merma: es la invariante que la puerta comprueba.
+  assert.ok(compra.purchase_quantity >= compra.required_quantity, `${compra.purchase_quantity} < ${compra.required_quantity}`);
+  // Lo que sobra tras cubrir diseño + la reserva de merma realmente cubierta.
+  assert.equal(compra.leftover_inventory, compra.purchase_quantity - compra.required_quantity);
+
+  // --- Frontera: un estimado incoherente no pasa -----------------------------
+  // Una compra que no cubre su propia demanda de diseño no es una compra real.
+  const sinCapacidad = {
+    ...estimate,
+    purchases: estimate.purchases.map((item) => ({ ...item, purchase_quantity: item.design_quantity - 1 })),
+  };
+  const fallo = validateMaterialEstimate(sinCapacidad);
+  assert.equal(fallo.ok, false, "capacidad por debajo de la demanda tiene que fallar");
+
+  // Un negativo tampoco pasa la frontera, pero quien lo rechaza es el esquema:
+  // desde el paso 6 `validateMaterialEstimate` solo comprueba el invariante que
+  // el esquema no puede expresar (capacidad ≥ demanda), no los tipos.
+  const negativo = {
+    ...estimate,
+    balloons: estimate.balloons.map((item, indice) => indice === 0 ? { ...item, design_quantity: -1 } : item),
+  };
+  assert.equal(MaterialEstimateSchema.safeParse(negativo).success, false, "una cantidad negativa tiene que fallar");
+
+  // --- El estimado resuelto por el backend alimenta prompt y QA -------------
+  // Desde el paso 1 del ADR-0023 toda imagen sale de una propuesta aprobada, así
+  // que estas comprobaciones parten del estimado del plan, no de una estimación
+  // armada en TypeScript a partir de piezas sueltas.
   const scene = {
     schema_version: "1.0",
     generation_mode: "text_to_image",
@@ -181,80 +107,21 @@ async function comprobarEstimacionDelPlan(planFisico: PlanResuelto): Promise<voi
     metadata: { created_by: "server_default" },
   } as unknown as SceneSpec;
   const prompt = buildImagePrompt({ sceneSpec: scene });
-  assert.match(prompt, /approximately 403 installed balloons/i);
-  assert.match(prompt, /Purchase capacity \(450\) includes waste/i);
+  assert.match(prompt, new RegExp(`approximately ${demanda} installed balloons`, "i"));
+  assert.match(prompt, new RegExp(`Purchase capacity \\(${estimate.totals.purchase_quantity}\\) includes waste`, "i"));
   assert.match(prompt, /Neither surplus nor unused package units may appear/);
   assert.doesNotMatch(prompt, /use those 50 units/i);
 
   const qa = evaluateSceneQa(scene, { materialScaleConsistent: false, materialScaleReason: "render is clearly several times denser" }, estimate);
   assert.equal(qa.pass, false);
   assert.ok(qa.retry_reasons.some((reason) => /material scale mismatch/i.test(reason)));
+
+  console.log("[PASS] material consistency — validación de frontera del estimado y consultas por producto; el estimado del plan aprobado alimenta prompt y QA");
 }
 
-async function comprobarTamanoObligatorioGrande(): Promise<void> {
-  // --- Tamaño obligatorio grande + puerta física (W1.1 + W1.3) --------------
-  // Los umbrales por metro están calibrados contra mezclas donde R-12 domina el
-  // volumen. Desde que el total sale de la mezcla efectiva, un arco "solo R-24"
-  // cuenta 52 globos (8,37/m) donde la mezcla completa contaba 119 (19,16/m) y
-  // caía por debajo del mínimo de densidad media (8,4/m): el plan resolvía bien
-  // pero `confirmar_plan_decoracion` devolvía ESTIMACION_INCONSISTENTE y
-  // /api/generate lanzaba un error. La banda se escala ahora con el mismo
-  // modelo que produjo el conteo.
-  const filas = [5, 9, 12, 18, 24].map((pulgadas) => ({
-    product_id: "P-GLOBOS", variant_id: `V-BLANCO-${pulgadas}`, sku: `SKU-BLANCO-${pulgadas}`, producto_titulo: "Globo blanco", variante_titulo: `R-${pulgadas}`, precio: 10_000, unidades_paq: 50, disponible: true, producto_disponible: true, codigo_tamano: `R-${pulgadas}`, forma: "redondo", diam_pulg: pulgadas, colores_producto: ["blanco"], colores_variante: ["blanco"], descripcion: `Globo látex blanco R-${pulgadas}.`, imagen: null,
-  }));
-  const pool = { query: async () => ({ rows: filas }) } as unknown as Pool;
-  const whitelist = new Map<string, ReadonlySet<string>>([["P-GLOBOS", new Set(filas.map((fila) => fila.variant_id))]]);
-  const arco = async (tamanos: string[]) => resolverPlan(pool, PlanDecoracionSchema.parse({
-    plan_version: "1.0",
-    plan_id: "55555555-5555-4555-8555-555555555555",
-    concepto: { titulo: "Arco de 24 pulgadas", descripcion: "Arco orgánico con globos grandes.", paleta: ["blanco"] },
-    espacio: { tipo: "salón", fuente: "cliente" },
-    estructuras: [
-      { estructura_id: "EST_01_ARCO", nombre: "Arco orgánico", tipo: "arco", rol_escena: "focal", ubicacion: "arco_central", medidas: { ancho_m: 3, alto_m: 2.4 }, repeticiones: 1, densidad: "media", mezcla: "organica_fina", materiales: [{ product_id: "P-GLOBOS", color: "blanco", participacion: 1, rol_material: "principal" }], porque: "Es el foco." },
-    ],
-    supuestos: [],
-    ...(tamanos.length ? { restricciones: { colores: [], acabados: [], estructuras: [], tamanos: tamanos.map((valor) => ({ valor, procedencia: "explicito", texto_original: `solo globos ${valor}`, polaridad: "obligatorio" })) } } : {}),
-  }), whitelist);
-
-  const completo = await arco([]);
-  assert.equal(completo.estructuras[0]!.total_unidades, 119);
-  assert.deepEqual(physicalWarningsForPlan(completo), []);
-  const soloR24 = await arco(["R-24"]);
-  assert.deepEqual(soloR24.sin_cobertura, [], "el plan resuelve: el catálogo tiene R-24");
-  assert.equal(soloR24.estructuras[0]!.total_unidades, 52);
-  assert.deepEqual(physicalWarningsForPlan(soloR24), [], "antes: 52 globos / 6,21 m = 8,37 < 8,4 bloqueaba un plan válido");
-  // La puerta no se apaga: con la banda escalada (×0,435) el mínimo de la
-  // estructura es 3,65 globos/m y un conteo absurdo sigue avisando.
-  const soloR24Escaso = {
-    ...soloR24,
-    estructuras: soloR24.estructuras.map((estructura) => ({
-      ...estructura,
-      lineas: estructura.lineas.map((linea, indice) => ({ ...linea, unidades: indice === 0 ? 5 : 0 })),
-      total_unidades: 5,
-    })),
-  };
-  assert.match(physicalWarningsForPlan(soloR24Escaso)[0] ?? "", /^EST_01_ARCO: estimated material quantity appears too low for medium density over 6\.21 m \(5 installed balloons\)$/);
-  const soloR24Excesivo = {
-    ...soloR24,
-    estructuras: soloR24.estructuras.map((estructura) => ({
-      ...estructura,
-      lineas: estructura.lineas.map((linea, indice) => ({ ...linea, unidades: indice === 0 ? 400 : 0 })),
-      total_unidades: 400,
-    })),
-  };
-  assert.match(physicalWarningsForPlan(soloR24Excesivo)[0] ?? "", /^EST_01_ARCO: estimated material quantity appears unusually high/);
-  // El parseo estricto comparte dueño con Python: "R-12.5" no es un tamaño y la
-  // restricción se ignora en los dos backends (antes TypeScript cotizaba 100
-  // globos "R-12.5" y Python los 119 de la mezcla completa).
-  const noNumerico = await arco(["R-12.5"]);
-  assert.equal(noNumerico.estructuras[0]!.total_unidades, 119);
-  assert.deepEqual(physicalWarningsForPlan(noNumerico), []);
-}
-
-comprobarPuertaFisica().then(comprobarEstimacionDelPlan).then(comprobarTamanoObligatorioGrande).then(() => {
-  console.log("[PASS] material consistency regression — la estimación del plan aprobado alimenta prompt y QA, puerta física por estructura y con tamaño obligatorio grande");
-}).catch((error: unknown) => {
-  console.error("[FAIL] puerta física por estructura", error instanceof Error ? error.message : error);
+try {
+  main();
+} catch (error: unknown) {
+  console.error("[FAIL] material consistency", error instanceof Error ? error.message : error);
   process.exitCode = 1;
-});
+}

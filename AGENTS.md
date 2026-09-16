@@ -94,3 +94,100 @@ These rules apply throughout this repository. Keep the generated Next.js block a
 - Enforce layer boundaries with scoped import rules and additional cycle/dynamic-import checks where needed. Roll stricter checks into legacy code with an explicit baseline rather than mass suppressions.
 - Verify the remote deployment script and branch protections before claiming deployment is gated. Document controls as pending until implemented and tested.
 - Keep this file authoritative. Add scoped `AGENTS.md` files only for genuinely distinct rules, without duplicating or contradicting root instructions.
+
+## Domain ownership and operational rules (consolidated 2026-09-16)
+
+These were spread across ADRs and plan documents that no longer exist. They are
+rules, not history: breaking one has caused a production-visible failure before.
+
+### Python owns the commercial rules
+
+`services/ai-api/app/plan.py` is the single owner of counting, measurements,
+material estimation and quoting. TypeScript must not reimplement, recompute or
+"verify" any of it by recalculating. It maps, validates the boundary and decides
+policy (what to do with a plan), never the numbers.
+
+- There is no TypeScript resolver and no backend selector. `resolverPlan` in
+  `src/lib/plan/resolver-backend.ts` is the only door. Recovery is deploying the
+  previous revision of the app and `ai-api` together, not an environment
+  variable.
+- A boundary gate validates what a schema cannot express. It never re-derives a
+  business formula to compare it: that creates a second owner. `validateMaterialEstimate`
+  used to recompute fourteen totals and cost a failed proposal and a morning of
+  diagnosis when the two definitions drifted apart.
+- Known debt, with a removal condition: `src/lib/plan/mezclas.ts` still holds the
+  mix table, the mandatory-size regex and `sustitucionAdmisible`, all three
+  mirrored in `plan.py`. The third decides what can be sold. The clean exit is
+  exporting them to the `plan-decoracion.v1` contract the way
+  `x-geometria-estructuras-oficiales` already is, and having Python read them
+  from there.
+
+### Contracts change in one direction
+
+Zod schema in `src/lib/ia/contracts/domain-v1.ts` → `npm run contracts:export:domain`
+→ `uv run --directory services/ai-api python scripts/generate_models.py` →
+regenerate the golden vectors. Never the other way: a field added only to Python
+is rejected by `additionalProperties: false`, and a field added only to the
+contract makes a running service's responses invalid.
+
+Anything added inside `estructuras` or `compras` changes `plan_hash`, because the
+canonical JSON is `{plan, snapshot}` and the snapshot carries them. Derived data
+for the UI goes outside the snapshot, or every approved plan in flight breaks.
+
+### Golden vectors
+
+`contracts/domain/v1/golden/plan-resolution/*.json` lock the resolver's numbers.
+`expected_python` belongs to the resolver and regenerates with
+`REGRESION_ACTUALIZAR=1 pytest tests/test_plan_regresion.py`. `expected` is a
+frozen oracle: it is edited by hand, deliberately, and the commit says why.
+
+Never regenerate an expectation from the implementation under test to make a
+suite pass. That turns the suite into a mirror that would accept any behaviour,
+including a broken one. This repo had exactly that for months through an
+`--update` flag.
+
+### Running locally
+
+```
+cd services/ai-api && uv run --system-certs --env-file ../../.env.local \
+  uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+PORT=3010 npm run dev
+```
+
+`--reload` is not optional. Without it uvicorn keeps serving the `plan.py` it
+loaded at startup; this caused two separate production-visible failures on
+2026-09-16, hours apart. Do not use `set -a; . ../../.env.local`: `APP_PASSWORD`
+has unquoted metacharacters and the shell fails without exporting anything.
+
+Verification before calling anything done:
+
+```
+npx tsc --noEmit && npm run -s lint && npm run plan:test
+uv run --directory services/ai-api pytest -q
+uv run --directory services/ai-api ruff check app tests && mypy app
+```
+
+### Evaluation runs against paid providers
+
+- A run declares a spending cap up front and stops at it; the runner supports
+  preview, budget, concurrency, deadline and resume.
+- Telemetry is disabled during evaluation runs so they do not pollute production
+  series.
+- No images, no absolute paths and no customer data enter the repository.
+  Evaluation inputs live outside it.
+- Estimated cost is labelled estimated. Reported usage comes from the provider.
+- Anything a loop cannot decide alone — licensing, spending beyond the cap,
+  taxonomy changes, promoting a prompt variant — goes to a person.
+
+### Standing decisions
+
+- Structure taxonomy is **12 classes**: dense/non-dense variants and plain
+  `semiarco` were retired; every half-arch is organic. Parts of `docs/` that said
+  16 were deleted rather than corrected.
+- The reference analysis prompt for production is byte-frozen. Candidate variants
+  append their rules only on request so the production hash and its cache key stay
+  identical. Changing it invalidates the evaluation baseline.
+- Scenery (non-balloon elements detected in the customer's photo) enters the image
+  prompt and nothing else. The plan owns what is built and charged; scenery is
+  what is preserved from the photo. It never touches quoting, materials or
+  `plan_hash`.

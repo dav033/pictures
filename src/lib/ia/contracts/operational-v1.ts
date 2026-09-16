@@ -166,13 +166,20 @@ export function decidirIdempotencia(existingBodySha256: string | undefined, body
   return existingBodySha256 === bodySha256 ? "replay" : "conflict";
 }
 
-export function seleccionarBackendMigracion(env: Record<string, string | undefined> = process.env): BackendSelectionV1 {
-  const killSwitch = esVerdadero(env.PYTHON_BACKEND_KILL_SWITCH);
-  const enabled = esVerdadero(env.PYTHON_BACKEND_ENABLED);
+/**
+ * Ya no hay selección: Python es el único backend de dominio (ADR-0023 paso 5).
+ * `PYTHON_BACKEND_ENABLED` y `PYTHON_BACKEND_KILL_SWITCH` desaparecieron con él;
+ * la recuperación es desplegar la revisión anterior, no cambiar una variable.
+ *
+ * El contrato `backend-selection.v1` se conserva porque la ruta de diagnóstico
+ * `/internal/v1/echo` lo publica y los smoke de despliegue lo verifican: sigue
+ * diciendo qué backend atendió, y ahora solo hay uno.
+ */
+export function seleccionarBackendMigracion(): BackendSelectionV1 {
   return BackendSelectionV1Schema.parse({
     schema_version: OPERATIONAL_CONTRACT_VERSION,
-    backend: enabled && !killSwitch ? "python" : "next",
-    kill_switch: killSwitch,
+    backend: "python",
+    kill_switch: false,
   });
 }
 

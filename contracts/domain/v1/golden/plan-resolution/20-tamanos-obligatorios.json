@@ -496,6 +496,16 @@
           "waste_reserve": 14
         }
       ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 27220,
+          "estructura_id": "EST_01_ARCO"
+        },
+        {
+          "consumo_cop": 18720,
+          "estructura_id": "EST_02_COLUMNA"
+        }
+      ],
       "estructuras": [
         {
           "eje_m": 6.21,
@@ -1309,6 +1319,16 @@
           "used": 3,
           "variant_id": "V-DORADO-18",
           "waste_reserve": 14
+        }
+      ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 27220,
+          "estructura_id": "EST_01_ARCO"
+        },
+        {
+          "consumo_cop": 18720,
+          "estructura_id": "EST_02_COLUMNA"
         }
       ],
       "estructuras": [

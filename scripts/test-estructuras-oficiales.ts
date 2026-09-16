@@ -21,7 +21,6 @@ import {
 } from "../src/lib/plan/estructuras-oficiales";
 import { parseDetectedStructure, referenceStructureSemantics, shapeDescription } from "../src/lib/ia/reference-structure";
 import { compileLoraCaption } from "../src/lib/ia/lora-caption-compiler";
-import { calcularMedidas } from "../src/lib/medidas/geometria";
 import { buildVisualContext } from "../src/lib/ia/visual-context";
 
 let passed = 0;
@@ -169,23 +168,16 @@ pass("official variants reach both LoRA wordings and keep separate pieces separa
   pass("estructura_oficial is validated in Next, exported for Python, bound to the plan hash and read by the compiler");
 }
 
-// 7. Balloon count per official variant (same table in Next and Python, see golden vector 11).
-{
-  const medidas = { anchoM: 2.4, altoM: 2.2 };
-  const arco = calcularMedidas({ figura: "arco", ...medidas, densidad: "media", mezcla: "clasica" });
-  const asimetrico = calcularMedidas({ figura: "arco", ...medidas, densidad: "media", mezcla: "clasica", estructuraOficial: "arco_asimetrico" });
-  const aro = calcularMedidas({ figura: "arco", ...medidas, densidad: "media", mezcla: "clasica", estructuraOficial: "aro_circular" });
-  const sinVariante = calcularMedidas({ figura: "arco", ...medidas, densidad: "media", mezcla: "clasica", estructuraOficial: "arco" });
-  assert.equal(sinVariante.totalGlobos, arco.totalGlobos, "a plain official arch keeps the base geometry");
-  assert.equal(asimetrico.ejeM, arco.ejeM, "an asymmetrical arch has the same axis");
-  assert.ok(Math.abs(asimetrico.totalGlobos - arco.totalGlobos * 0.7) <= 1, `tapered band: ${asimetrico.totalGlobos} vs ${arco.totalGlobos}`);
-  assert.equal(aro.ejeM, Math.round(Math.PI * 2.2 * 100) / 100, "hoop axis is the circumference inscribed in width x height");
-  assert.ok(aro.totalGlobos > arco.totalGlobos);
-  assert.ok(asimetrico.supuestos.some((supuesto) => supuesto.startsWith("asimétrico")) && aro.supuestos.some((supuesto) => supuesto.startsWith("aro circular")), "variant assumptions are visible");
-  const columna = calcularMedidas({ figura: "columna", altoM: 1.8, densidad: "media", mezcla: "clasica" });
-  assert.equal(calcularMedidas({ figura: "columna", altoM: 1.8, densidad: "media", mezcla: "clasica", estructuraOficial: "columna_asimetrica" }).totalGlobos, columna.totalGlobos, "an irregular column keeps its volume");
-  assert.ok(calcularMedidas({ figura: "columna", altoM: 1.8, densidad: "sencilla", mezcla: "clasica", estructuraOficial: "columna_no_densa" }).totalGlobos < columna.totalGlobos, "non-dense uses the lower density");
-  pass("balloon count follows the official variant: tapered asymmetry, hoop circumference, lighter density");
-}
+// 7. Balloon count per official variant: se fue con `calcularMedidas` (ADR-0023,
+// paso 5). El conteo por variante oficial es una regla de geometría y su único
+// dueño es Python: la banda estrechada del arco asimétrico y la igualdad del
+// arco oficial con el arco base están en
+// `services/ai-api/tests/test_plan.py::test_official_structure_is_accepted_and_bound_to_the_plan_hash`,
+// y el eje del aro, el eje compartido del arco asimétrico y el volumen de la
+// columna irregular quedan congelados en los vectores dorados 10 y 11.
+// Lo que NO tiene equivalente en Python y se pierde aquí: los `supuestos`
+// legibles por variante ("asimétrico…", "aro circular…"), que el resolutor
+// Python no emite, y la caída de densidad de `columna_no_densa`, que ningún
+// vector dorado usa.
 
 console.log(`\nEstructuras oficiales: ${passed} checks OK`);

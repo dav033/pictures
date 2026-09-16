@@ -364,11 +364,14 @@ async function main(): Promise<void> {
       // constantes de src/lib/ia/feature-flags.ts (RAG_USE_VECTOR,
       // RAG_RERANK_ENABLED, ...) ya se evaluaron al importar este módulo, así
       // que asignarlas aquí no tendría efecto. GEMINI_API_KEY vacía anula el
-      // embedding de consulta vía Gemini; el kill switch (precedencia absoluta
-      // en seleccionarBackendMigracion) anula el embedding y el rerank vía
-      // Python. ramas_con_proveedor_usadas verifica que así fue.
+      // embedding de consulta vía Gemini; sin PYTHON_BACKEND_URL el adaptador
+      // no puede salir a la red, así que el embedding y el rerank vía Python
+      // tampoco corren. Antes eso lo hacía PYTHON_BACKEND_KILL_SWITCH, que el
+      // paso 5 del ADR-0023 retiró. La garantía dura sigue siendo
+      // ramas_con_proveedor_usadas: un caso que usó una rama con proveedor
+      // falla, se haya llegado a la red o no.
       process.env.GEMINI_API_KEY = "";
-      process.env.PYTHON_BACKEND_KILL_SWITCH = "true";
+      process.env.PYTHON_BACKEND_URL = "";
       const fixture = JSON.parse(await readFile(fixturePath, "utf8")) as Fixture;
       const { resultados, fallosFixture, metrics } = await correrFixture(pool, fixture);
       const fallos = [...fallosFixture, ...resultados.filter((r) => !r.ok).map((f) => ({ id: f.id, detalle: f.detalle }))];

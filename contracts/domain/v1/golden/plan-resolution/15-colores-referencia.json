@@ -502,6 +502,20 @@
           "waste_reserve": 13
         }
       ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 21240,
+          "estructura_id": "EST_01_ARCO"
+        },
+        {
+          "consumo_cop": 5400,
+          "estructura_id": "EST_02_COLUMNA"
+        },
+        {
+          "consumo_cop": 1800,
+          "estructura_id": "EST_03_BOUQUET"
+        }
+      ],
       "estructuras": [
         {
           "eje_m": 5.52,
@@ -1379,6 +1393,20 @@
           "used": 9,
           "variant_id": "V-F15-PLATEADO-12",
           "waste_reserve": 13
+        }
+      ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 21240,
+          "estructura_id": "EST_01_ARCO"
+        },
+        {
+          "consumo_cop": 5400,
+          "estructura_id": "EST_02_COLUMNA"
+        },
+        {
+          "consumo_cop": 1800,
+          "estructura_id": "EST_03_BOUQUET"
         }
       ],
       "estructuras": [

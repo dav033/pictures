@@ -994,6 +994,20 @@
           "waste_reserve": 15
         }
       ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 71960,
+          "estructura_id": "EST_01_PARED"
+        },
+        {
+          "consumo_cop": 21800,
+          "estructura_id": "EST_02_GUIRNALDA"
+        },
+        {
+          "consumo_cop": 24960,
+          "estructura_id": "EST_03_CENTRO_MESA"
+        }
+      ],
       "estructuras": [
         {
           "eje_m": 0,
@@ -2641,6 +2655,20 @@
           "used": 8,
           "variant_id": "V-VERDE-9",
           "waste_reserve": 15
+        }
+      ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 71960,
+          "estructura_id": "EST_01_PARED"
+        },
+        {
+          "consumo_cop": 21800,
+          "estructura_id": "EST_02_GUIRNALDA"
+        },
+        {
+          "consumo_cop": 24960,
+          "estructura_id": "EST_03_CENTRO_MESA"
         }
       ],
       "estructuras": [

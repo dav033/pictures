@@ -2,7 +2,11 @@
  * A4 (docs/mejoras/PLAN-ESTRUCTURAS-Y-UX.md): el texto que el asistente puede
  * trasladar al cliente no contiene jerga interna.
  *
- * Invariantes deterministas, sin red ni proveedores:
+ * Invariantes deterministas, sin red ni proveedores. El plan lo resuelve
+ * Python desde el paso 5 del ADR-0023, así que esa llamada la responde un doble
+ * de transporte (scripts/lib/resolutor-python-falso.ts): el sujeto de este
+ * fichero es el texto que ve el cliente, no el conteo.
+ *
  * - el detector reconoce la jerga prohibida y deja pasar el texto normal;
  * - cada `mensaje_cliente` y cada error de restricciones está limpio;
  * - las ramas ok:false reales de confirmar_plan_decoracion traen mensaje_cliente limpio;
@@ -12,9 +16,14 @@
  */
 import assert from "node:assert/strict";
 import type { Pool } from "pg";
+import {
+  instalarResolutorPythonFalso,
+  prepararEntornoPythonFalso,
+  SNAPSHOT_FALSO,
+  type VeredictoResolucion,
+} from "./lib/resolutor-python-falso";
 
-process.env.PYTHON_BACKEND_ENABLED = "false";
-process.env.PYTHON_BACKEND_KILL_SWITCH = "true";
+prepararEntornoPythonFalso();
 
 let casos = 0;
 function ok(nombre: string): void {
@@ -137,11 +146,14 @@ async function main(): Promise<void> {
     estructuras,
     supuestos: [],
   });
-  const registroPara = (solicitud: string, opciones: { catalogoLoraNoDisponible?: string } = {}) => {
+  const registroPara = (solicitud: string, opciones: { catalogoLoraNoDisponible?: string; veredicto?: VeredictoResolucion } = {}) => {
+    const { veredicto, ...resto } = opciones;
+    instalarResolutorPythonFalso(veredicto ? { veredicto: () => veredicto } : {});
     const estado = crearEstadoConversacion({}, solicitud);
+    estado.ragCatalogSnapshotId = SNAPSHOT_FALSO;
     estado.ragIdsRecuperados.add("P-GLOBOS");
     estado.ragVariantIdsRecuperados.set("P-GLOBOS", new Set(filas.map((fila) => fila.variant_id)));
-    return crearRegistroHerramientas(estado, { pool, ...opciones }).confirmar_plan_decoracion!;
+    return crearRegistroHerramientas(estado, { pool, ...resto }).confirmar_plan_decoracion!;
   };
   const revisarRechazo = (salida: unknown, contexto: string): string => {
     assert.ok(typeof salida === "object" && salida !== null, contexto);
@@ -155,7 +167,11 @@ async function main(): Promise<void> {
   const statusVistos = new Set<string>();
   statusVistos.add(revisarRechazo(await registroPara("un arco rojo")({ concepto: {} }, llamada), "plan inválido"));
   statusVistos.add(revisarRechazo(await registroPara("Quiero 2 arcos rojos")(argsPlan([estructuraArco()]), llamada), "restricciones"));
-  statusVistos.add(revisarRechazo(await registroPara("un arco rojo y dorado, presupuesto máximo 5.000 pesos")(argsPlan([estructuraArco()]), llamada), "presupuesto"));
+  // El techo y el delta los decide el resolutor Python; lo que se comprueba
+  // aquí es que el mensaje con el que Next se lo cuenta al cliente está limpio.
+  statusVistos.add(revisarRechazo(await registroPara("un arco rojo y dorado, presupuesto máximo 5.000 pesos", {
+    veredicto: { comercial: { estado: "PRESUPUESTO_EXCEDIDO", techo_cop: 5_000, delta_cop: 19_000 } },
+  })(argsPlan([estructuraArco()]), llamada), "presupuesto"));
   statusVistos.add(revisarRechazo(await registroPara("un arco rojo", { catalogoLoraNoDisponible: "LORA_VOCABULARY_ALLOWLIST_EMPTY" })(argsPlan([estructuraArco()]), llamada), "catálogo LoRA bloqueado"));
   assert.ok(statusVistos.has("RESTRICCIONES_INCONSISTENTES"), [...statusVistos].join(","));
   assert.ok(statusVistos.has("PRESUPUESTO_EXCEDIDO"), [...statusVistos].join(","));
@@ -164,7 +180,9 @@ async function main(): Promise<void> {
 
   // 4b. Texto al agotar vueltas: con un plan ya verificado no se dice "me enredé".
   const { textoAlAgotarVueltas } = await import("../src/lib/ia/registro-herramientas");
+  instalarResolutorPythonFalso();
   const estadoConPlan = crearEstadoConversacion({}, "un arco rojo");
+  estadoConPlan.ragCatalogSnapshotId = SNAPSHOT_FALSO;
   estadoConPlan.ragIdsRecuperados.add("P-GLOBOS");
   estadoConPlan.ragVariantIdsRecuperados.set("P-GLOBOS", new Set(filas.map((fila) => fila.variant_id)));
   const confirmada = await crearRegistroHerramientas(estadoConPlan, { pool }).confirmar_plan_decoracion!(argsPlan([estructuraArco({ nombre: "Arco rojo", densidad: "sencilla", medidas: { ancho_m: 1.5, alto_m: 1.8 } })]), llamada);

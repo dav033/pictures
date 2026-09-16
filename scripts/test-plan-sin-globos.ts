@@ -10,13 +10,14 @@
  * - Cardinalidad de evento abierto: cuenta instancias y respeta composición o
  *   presupuesto explícitos (causa de bucles en eval/chat/jerga-v001.json).
  *
- * Sin red ni proveedores. Run: npx tsx --conditions=react-server scripts/test-plan-sin-globos.ts
+ * Sin red ni proveedores: ninguna de estas ramas llega a resolver un plan, así
+ * que no necesita seleccionar backend. Forzaba `PYTHON_BACKEND_ENABLED=false`
+ * por precaución; esas variables desaparecen con el paso 5 del ADR-0023 y se
+ * comprobó que el resultado no cambia sin ellas.
+ * Run: npx tsx --conditions=react-server scripts/test-plan-sin-globos.ts
  */
 import assert from "node:assert/strict";
 import type { Pool } from "pg";
-
-process.env.PYTHON_BACKEND_ENABLED = "false";
-process.env.PYTHON_BACKEND_KILL_SWITCH = "true";
 
 let casos = 0;
 function ok(nombre: string): void {

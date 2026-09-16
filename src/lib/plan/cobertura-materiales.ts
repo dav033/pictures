@@ -1,4 +1,4 @@
-import type { Mezcla } from "@/lib/medidas/geometria";
+import type { Mezcla } from "@/lib/plan/mezclas";
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "./composicion";
 import type { PlanDecoracion } from "./tipos";
 

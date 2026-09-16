@@ -1,6 +1,6 @@
 import "server-only";
 import type { Pool } from "pg";
-import type { LineaDespiece } from "@/lib/medidas/geometria";
+import type { LineaDespiece } from "@/lib/plan/mezclas";
 
 export type LineaResuelta = {
   productId: string;

@@ -65,7 +65,7 @@ async function main(): Promise<void> {
   const port = crearImagenGemini();
   const tareas: Array<() => Promise<Record<string, unknown>>> = [];
   for (const escenario of ESCENARIOS.filter((item) => opciones.escenarios.includes(item.id))) {
-    const escena = await resolverEscenario(escenario);
+    const escena = resolverEscenario(escenario);
     const dir = path.join(opciones.out, escenario.id);
     await mkdir(dir, { recursive: true });
     for (const nivel of opciones.niveles) {

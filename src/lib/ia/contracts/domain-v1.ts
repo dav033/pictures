@@ -364,6 +364,22 @@ export const PlanResueltoV1Schema = z.object({
   sustituciones: z.array(z.object({ estructura_id: idSchema, pedido: z.string(), entregado: z.string(), motivo: z.string() }).strict()),
   sin_cobertura: z.array(z.object({ estructura_id: idSchema, product_id: idSchema, tamano: z.string() }).strict()),
   advertencias: z.array(z.string()),
+  /**
+   * Consumo imputado a cada estructura, para que la tarjeta muestre el peso
+   * relativo de cada pieza. NO es un precio: los paquetes se compran una sola
+   * vez para todo el plan, así que la suma de estos valores no es el total, que
+   * es `totales.total_cop`. `consumo_cop` va nulo cuando alguna línea de la
+   * estructura no tiene compra con paquete utilizable, para no enseñar una
+   * cifra incompleta.
+   *
+   * Va FUERA del snapshot que firma `plan_hash` a propósito: es información
+   * derivada para la UI, y meterla dentro cambiaría el hash de cada plan ya
+   * aprobado. Lo calculaba la propia tarjeta en TypeScript hasta ADR-0023.
+   */
+  costes_por_estructura: z.array(z.object({
+    estructura_id: idSchema,
+    consumo_cop: copSchema.nullable(),
+  }).strict()),
 }).strict();
 
 const quoteLineSchema = z.object({

@@ -942,6 +942,12 @@
           "waste_reserve": 0
         }
       ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 34320,
+          "estructura_id": "EST_01_CENTRO_MESA"
+        }
+      ],
       "estructuras": [
         {
           "eje_m": 0.5,
@@ -2069,6 +2075,12 @@
           "used": 10,
           "variant_id": "V-ROSA-9",
           "waste_reserve": 0
+        }
+      ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 34320,
+          "estructura_id": "EST_01_CENTRO_MESA"
         }
       ],
       "estructuras": [

@@ -2,9 +2,12 @@
  * Shared gating for the live Python smoke scripts.
  *
  * A smoke that was asked to run must never turn a broken environment into a
- * successful `[SKIP]`. It is "required" when the Python backend is enabled,
- * when `--require-python` is passed, or when `PYTHON_SMOKE_REQUIRED=true`.
- * Only a genuinely unconfigured run (neither enabled nor required) may skip.
+ * successful `[SKIP]`. It is "required" when `--require-python` is passed or
+ * `PYTHON_SMOKE_REQUIRED=true`. Only a run nobody asked for may skip.
+ *
+ * `PYTHON_BACKEND_ENABLED` used to make a run required too; it disappeared with
+ * the kill switch (ADR-0023 step 5), so what marks a run as required is now the
+ * explicit flag, not a leftover of the migration selector.
  */
 
 type Entorno = Record<string, string | undefined>;
@@ -16,9 +19,7 @@ export function esVerdadero(value: string | undefined): boolean {
 }
 
 export function smokePythonRequerido(env: Entorno = process.env, argv: readonly string[] = process.argv): boolean {
-  return esVerdadero(env.PYTHON_BACKEND_ENABLED)
-    || esVerdadero(env.PYTHON_SMOKE_REQUIRED)
-    || argv.includes("--require-python");
+  return esVerdadero(env.PYTHON_SMOKE_REQUIRED) || argv.includes("--require-python");
 }
 
 export type DecisionSmoke =
@@ -53,8 +54,6 @@ function problemaBase(env: Entorno): string | null {
   if (!rawUrl || !secret || Buffer.byteLength(secret, "utf8") < 32) {
     return "faltan PYTHON_BACKEND_URL o INTERNAL_HMAC_SECRET válido (mínimo 32 bytes)";
   }
-  if (!esVerdadero(env.PYTHON_BACKEND_ENABLED)) return "PYTHON_BACKEND_ENABLED no está activo";
-  if (esVerdadero(env.PYTHON_BACKEND_KILL_SWITCH)) return "PYTHON_BACKEND_KILL_SWITCH está activo";
   let url: URL;
   try {
     url = new URL(rawUrl);

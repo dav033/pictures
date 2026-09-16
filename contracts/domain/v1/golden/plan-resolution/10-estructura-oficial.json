@@ -204,6 +204,20 @@
           "waste_reserve": 8
         }
       ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 6000,
+          "estructura_id": "EST_01_COLUMNA"
+        },
+        {
+          "consumo_cop": 6000,
+          "estructura_id": "EST_02_COLUMNA"
+        },
+        {
+          "consumo_cop": 6000,
+          "estructura_id": "EST_03_COLUMNA"
+        }
+      ],
       "estructuras": [
         {
           "eje_m": 1.4,
@@ -677,6 +691,20 @@
           "used": 90,
           "variant_id": "V-RED-12",
           "waste_reserve": 8
+        }
+      ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 6000,
+          "estructura_id": "EST_01_COLUMNA"
+        },
+        {
+          "consumo_cop": 6000,
+          "estructura_id": "EST_02_COLUMNA"
+        },
+        {
+          "consumo_cop": 6000,
+          "estructura_id": "EST_03_COLUMNA"
         }
       ],
       "estructuras": [

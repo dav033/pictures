@@ -4398,6 +4398,36 @@
       "items": {
         "type": "string"
       }
+    },
+    "costes_por_estructura": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "estructura_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "consumo_cop": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "estructura_id",
+          "consumo_cop"
+        ],
+        "additionalProperties": false
+      }
     }
   },
   "required": [
@@ -4412,7 +4442,8 @@
     "merma_log",
     "sustituciones",
     "sin_cobertura",
-    "advertencias"
+    "advertencias",
+    "costes_por_estructura"
   ],
   "additionalProperties": false
 }

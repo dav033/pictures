@@ -80,11 +80,9 @@ function expectedDimensions(): number {
 }
 
 async function checkPgvector(): Promise<Resultado> {
-  const truthy = (value: string | undefined): boolean =>
-    value === "1" || value?.toLowerCase() === "true" || value?.toLowerCase() === "on";
-  const pythonCanaryConfigured = process.env.RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED === "true"
-    && truthy(process.env.PYTHON_BACKEND_ENABLED)
-    && !truthy(process.env.PYTHON_BACKEND_KILL_SWITCH);
+  // Python es el único backend desde el paso 5 del ADR-0023: el canario depende
+  // solo de su propia bandera, no del selector que se retiró con el kill switch.
+  const pythonCanaryConfigured = process.env.RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED === "true";
   if (
     (!process.env.GEMINI_API_KEY?.trim() && !pythonCanaryConfigured)
     || process.env.RAG_USE_VECTOR !== "true"
@@ -131,11 +129,7 @@ async function checkGeminiEmbeddings(): Promise<Resultado> {
 }
 
 async function checkEmbeddingProvenance(): Promise<Resultado> {
-  const truthy = (value: string | undefined): boolean =>
-    value === "1" || value?.toLowerCase() === "true" || value?.toLowerCase() === "on";
-  const pythonCanaryConfigured = process.env.RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED === "true"
-    && truthy(process.env.PYTHON_BACKEND_ENABLED)
-    && !truthy(process.env.PYTHON_BACKEND_KILL_SWITCH);
+  const pythonCanaryConfigured = process.env.RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED === "true";
   if (process.env.RAG_USE_VECTOR !== "true" || (!process.env.GEMINI_API_KEY?.trim() && !pythonCanaryConfigured)) {
     return {
       nombre: "Provenance de embeddings",
@@ -173,15 +167,8 @@ async function checkEmbeddingProvenance(): Promise<Resultado> {
 }
 
 async function checkPythonQueryEmbeddings(): Promise<Resultado> {
-  const [{ RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED, RAG_USE_VECTOR }, { seleccionarBackendPython }] = await Promise.all([
-    import("../src/lib/ia/feature-flags"),
-    import("../src/lib/ia/python-adapter"),
-  ]);
-  if (
-    !RAG_USE_VECTOR
-    || !RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED
-    || seleccionarBackendPython().backend !== "python"
-  ) {
+  const { RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED, RAG_USE_VECTOR } = await import("../src/lib/ia/feature-flags");
+  if (!RAG_USE_VECTOR || !RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED) {
     return {
       nombre: "Python query embeddings",
       estado: "SKIPPED_OPTIONAL",

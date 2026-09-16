@@ -6,8 +6,8 @@
  *
  *   npm run smoke:rutas-python-local -- --phase=python-on --state <archivo> [--paid-image]
  *
- * Phases: python-on (P0-P4, saves the final plan to --state), kill-switch and
- * python-down (require Next restarted by the operator; read --state).
+ * Phases: python-on (P0-P4, saves the final plan to --state) and python-down
+ * (requires Next restarted by the operator; reads --state).
  * Any failed assertion or misconfiguration prints [FAIL] and exits 1.
  */
 import type { Pool } from "pg";
@@ -20,7 +20,7 @@ import { faseEditar } from "./lib/smoke-rutas/fase-editar";
 import { faseFastapi } from "./lib/smoke-rutas/fase-fastapi";
 import { faseGenerar } from "./lib/smoke-rutas/fase-generar";
 import { echoPython, preflightFastapi, preflightSesion } from "./lib/smoke-rutas/fase-preflight";
-import { faseKillSwitch, fasePythonDown } from "./lib/smoke-rutas/fases-rollback";
+import { fasePythonDown } from "./lib/smoke-rutas/fases-rollback";
 import { ClienteNext } from "./lib/smoke-rutas/http";
 import { guardarEstado, leerEstado, verificarTokenPlan, type PlanSmoke } from "./lib/smoke-rutas/plan";
 import { AbortoFase, prefijo, Reporte } from "./lib/smoke-rutas/reporte";
@@ -61,8 +61,7 @@ async function ejecutar(config: ConfigSmoke, reporte: Reporte, pool: Pool): Prom
   }
   const estado = await leerEstado(config.statePath);
   reporte.exigir("estado.snapshot coincide", estado.snapshot_id === ctx.snapshotId, `estado=${estado.snapshot_id}`);
-  if (config.fase === "kill-switch") await faseKillSwitch(ctx, estado);
-  else await fasePythonDown(ctx, estado);
+  await fasePythonDown(ctx, estado);
 }
 
 async function main(): Promise<void> {

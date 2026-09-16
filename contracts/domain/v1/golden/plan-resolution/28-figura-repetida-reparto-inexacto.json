@@ -272,6 +272,12 @@
           "waste_reserve": 0
         }
       ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 8000,
+          "estructura_id": "EST_01_FIGURA"
+        }
+      ],
       "estructuras": [
         {
           "eje_m": null,
@@ -702,6 +708,12 @@
           "used": 30,
           "variant_id": "V-F28-ROSADO-9",
           "waste_reserve": 0
+        }
+      ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 8000,
+          "estructura_id": "EST_01_FIGURA"
         }
       ],
       "estructuras": [

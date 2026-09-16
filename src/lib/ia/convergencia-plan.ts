@@ -1,7 +1,7 @@
 import type { ProductoCandidato } from "@/lib/rag/chat/buscar";
 import type { DisponibilidadProducto } from "@/lib/plan/cobertura-materiales";
 import { coloresRealesProducto, coloresRealesVariante } from "@/lib/plan/colores-producto";
-import { mezclasCompatiblesConDiametros } from "@/lib/plan/resolver";
+import { mezclasCompatiblesConDiametros } from "@/lib/plan/mezclas";
 import type { PlanDecoracion } from "@/lib/plan/tipos";
 
 /**

@@ -9,14 +9,17 @@
  * - Media #4: a photo without balloons at a faithful creativity level: the tool
  *   refuses to build and the assistant asks which pieces the customer wants.
  *
- * No network, no database, no providers.
+ * No network, no database, no providers. El plan lo resuelve Python desde el
+ * paso 5 del ADR-0023: esa llamada la responde un doble de transporte
+ * (scripts/lib/resolutor-python-falso.ts). El sujeto de este fichero son las
+ * reglas de referencia que aplica Next antes y después de resolver.
  * Run: npx tsx --conditions=react-server scripts/test-plan-auditoria-referencia.ts
  */
 import assert from "node:assert/strict";
 import type { Pool } from "pg";
+import { instalarResolutorPythonFalso, prepararEntornoPythonFalso, veredictoColoresReferencia, SNAPSHOT_FALSO } from "./lib/resolutor-python-falso";
 
-process.env.PYTHON_BACKEND_ENABLED = "false";
-process.env.PYTHON_BACKEND_KILL_SWITCH = "true";
+prepararEntornoPythonFalso();
 
 let casos = 0;
 function ok(nombre: string): void {
@@ -78,8 +81,10 @@ async function main(): Promise<void> {
     productId, titulo: productId, categoria, colores: [color], acabados: [], ocasiones: [], disponible: true, imagen: null,
     variantes: variantes.map((variante) => ({ variantId: variante.variantId, sku: null, titulo: null, precio: 5000, disponible: true, codigoTamano: variante.diamPulg ? `R-${variante.diamPulg}` : null, diamPulg: variante.diamPulg, forma: variante.diamPulg ? "redondo" : null, colores: [color] })),
   });
-  const herramienta = (solicitud: string, candidatos: ProductoCandidato[], blueprint: Blueprint | undefined, creatividad: 0 | 1 | 2 | 3 | 4 | 5 = 0, filas: unknown[] = []) => {
+  const herramienta = (solicitud: string, candidatos: ProductoCandidato[], blueprint: Blueprint | undefined, creatividad: 0 | 1 | 2 | 3 | 4 | 5 = 0, filas: unknown[] = [], imagenes: Record<string, string> = {}) => {
+    instalarResolutorPythonFalso({ veredicto: veredictoColoresReferencia, imagenes });
     const estado = crearEstadoConversacion({}, solicitud, blueprint);
+    estado.ragCatalogSnapshotId = SNAPSHOT_FALSO;
     estado.ragCandidatos = candidatos;
     for (const c of candidatos) {
       estado.ragIdsRecuperados.add(c.productId);
@@ -177,31 +182,21 @@ async function main(): Promise<void> {
   assert.deepEqual(detectarJergaInterna(String(rechazoFigura.mensaje_cliente)), [], String(rechazoFigura.mensaje_cliente));
   ok("confirmar_plan_decoracion rechaza la figura cotizada con 1 globo (F13)");
 
-  // Both resolvers never quote a declared material at 0 units (golden vector
-  // 14-figura-cuatro-materiales locks the same numbers for TypeScript and Python).
-  const { resolverPlan } = await import("../src/lib/plan/resolver");
-  const poolFigura = { query: async () => ({ rows: filasFigura }) } as unknown as Pool;
-  const whitelistFigura = new Map(filasFigura.map((fila) => [fila.product_id, new Set([fila.variant_id])]));
+  // Plan de una sola figura, reutilizado más abajo por las medidas del espacio.
   const planSoloFigura = PlanDecoracionSchema.parse({
     plan_version: "1.0", plan_id: "14141414-1414-4141-8141-141414141414",
     concepto: { titulo: "Safari", descripcion: "Figura", paleta: ["negro"] }, espacio: { tipo: "salón", fuente: "supuesto" },
     estructuras: [{ ...figura(1, 2), rol_escena: "focal" }], supuestos: [],
   });
-  const resueltoFigura = await resolverPlan(poolFigura, planSoloFigura, whitelistFigura);
-  assert.deepEqual(resueltoFigura.estructuras[0]!.lineas.map((linea) => [linea.color, linea.unidades]), [["negro", 1], ["amarillo", 1], ["naranja", 1], ["blanco", 1]], "F13: every material of the figure is bought");
-  ok("resolver: ningún material declarado queda en 0 al repartir");
 
-  // plan_hash covers the resolved lines: a plan that already bought every
-  // material must keep the pre-audit largest-remainder split, or plans approved
-  // before the change fail at generation ("Plan hash does not match").
-  const figuraDosColores = { ...figura(10, 1, 2), rol_escena: "focal", materiales: figura(10, 1, 2).materiales.map((material, index) => ({ ...material, participacion: index === 0 ? 0.55 : 0.45 })) };
-  const planDosColores = PlanDecoracionSchema.parse({ ...planSoloFigura, estructuras: [figuraDosColores] });
-  const resueltoDosColores = await resolverPlan(poolFigura, planDosColores, whitelistFigura);
-  assert.deepEqual(resueltoDosColores.estructuras[0]!.lineas.map((linea) => linea.unidades), [6, 4], "0.55/0.45 of 10 stays 6/4");
-  const figuraCasiUnColor = { ...figura(10, 1, 3), rol_escena: "focal", materiales: figura(10, 1, 3).materiales.map((material, index) => ({ ...material, participacion: [0.9, 0.05, 0.05][index]! })) };
-  const resueltoCasiUnColor = await resolverPlan(poolFigura, PlanDecoracionSchema.parse({ ...planSoloFigura, estructuras: [figuraCasiUnColor] }), whitelistFigura);
-  assert.deepEqual(resueltoCasiUnColor.estructuras[0]!.lineas.map((linea) => linea.unidades), [8, 1, 1], "a material left at 0 takes one unit from the largest");
-  ok("resolver: el reparto de planes que ya compraban cada material no cambia (plan_hash estable)");
+  // Aquí vivían dos bloques sobre el REPARTO de unidades entre los materiales de
+  // una figura: que ningún material declarado se quede en 0 y que el reparto por
+  // resto mayor (0,55/0,45 → 6/4; 0,9/0,05/0,05 → 8/1/1) no cambie, porque entra
+  // en `plan_hash`. Los dos llamaban al resolutor TypeScript, que el paso 5 del
+  // ADR-0023 borró. El reparto es una regla de conteo y su único dueño es Python:
+  // lo fijan los vectores dorados 14-figura-cuatro-materiales y
+  // 28-figura-repetida-reparto-inexacto, que recorre `test_plan_parity.py`.
+  // Rehacerlos aquí contra un doble sería afirmar la aritmética del propio doble.
 
   // ---------------------------------------------------------------------------
   // Alta #3: dominant colors of the photo.
@@ -308,7 +303,9 @@ async function main(): Promise<void> {
       }
       return { rows: filasSemiarco };
     } } as unknown as Pool;
+    instalarResolutorPythonFalso({ veredicto: veredictoColoresReferencia });
     const estado = crearEstadoConversacion({}, solicitud, semiarcosFoto);
+    estado.ragCatalogSnapshotId = SNAPSHOT_FALSO;
     estado.ragCandidatos = candidatos;
     for (const c of candidatos) {
       estado.ragIdsRecuperados.add(c.productId);
@@ -392,7 +389,7 @@ async function main(): Promise<void> {
   assert.equal(aplicarFuenteMedidasEspacio(PlanDecoracionSchema.parse({ ...planSoloFigura, espacio: { ...espacioFoto, fuente: "cliente" } }), false).espacio.fuente, "supuesto", "the model cannot claim the customer's numbers");
   const sinMedidas = PlanDecoracionSchema.parse({ ...planSoloFigura, espacio: { tipo: "salon_eventos", fuente: "foto" } });
   assert.equal(aplicarFuenteMedidasEspacio(sinMedidas, false), sinMedidas, "without numbers nothing changes");
-  const { estado: estadoEspacio, confirmar: confirmarEspacio } = herramienta("Quiero un arco blanco para la primera comunión", [candidato("P-BLANCO", "globo_latex", "blanco", [{ variantId: "V-BLANCO-12", diamPulg: 12 }])], undefined, 2, [{ ...filasColumna[0]!, product_id: "P-BLANCO", variant_id: "V-BLANCO-12", colores_producto: ["blanco"], colores_variante: ["blanco"], imagen: "https://cdn.shopify.test/blanco-12.jpg" }]);
+  const { estado: estadoEspacio, confirmar: confirmarEspacio } = herramienta("Quiero un arco blanco para la primera comunión", [candidato("P-BLANCO", "globo_latex", "blanco", [{ variantId: "V-BLANCO-12", diamPulg: 12 }])], undefined, 2, [{ ...filasColumna[0]!, product_id: "P-BLANCO", variant_id: "V-BLANCO-12", colores_producto: ["blanco"], colores_variante: ["blanco"] }], { "P-BLANCO": "https://cdn.shopify.test/blanco-12.jpg" });
   const espacioConfirmado = await confirmarEspacio({ ...argsArco, espacio: espacioFoto }, llamada) as Record<string, unknown>;
   assert.equal(espacioConfirmado.ok, true, JSON.stringify(espacioConfirmado).slice(0, 400));
   assert.deepEqual(estadoEspacio.planResuelto?.plan.espacio, { ...espacioFoto, fuente: "supuesto" }, "the signed plan says estimated, never measured from the photo");

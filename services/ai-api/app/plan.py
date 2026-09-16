@@ -80,7 +80,7 @@ _BAND_WIDTH: dict[str, float] = {
 }
 # Geometry of official structure variants (aro circular, asymmetrical arches).
 # Owned by src/lib/plan/estructuras-oficiales.ts and exported into the
-# plan-decoracion.v1 contract, so both resolvers read the same table.
+# plan-decoracion.v1 contract, which is where this resolver reads it from.
 _OFFICIAL_GEOMETRY: dict[str, dict[str, object]] = cast(
     dict[str, dict[str, object]],
     contract_schema("PlanDecoracion").get("x-geometria-estructuras-oficiales", {}),
@@ -323,7 +323,7 @@ _SILVER_TITLE = re.compile(r"\b(?:plata|plateado|plateada|silver)\b")
 
 
 def _product_colors(title: str, colors: Sequence[str]) -> tuple[str, ...]:
-    """Real colors of a catalog product; mirror of ``coloresRealesProducto``.
+    """Real colors of a catalog product.
 
     The derived catalog colors file grey balloons under "plateado" (Fashion
     Gris), but grey is not silver: a product whose title names "gris" and not
@@ -339,7 +339,7 @@ def _product_colors(title: str, colors: Sequence[str]) -> tuple[str, ...]:
 def _variant_real_colors(
     title: str, variant_colors: Sequence[str], product_colors: Sequence[str]
 ) -> tuple[str, ...]:
-    """Real colors of ONE variant; mirror of ``coloresRealesVariante``.
+    """Real colors of ONE variant.
 
     A product's derived colors come from its tags, which are Shopify color
     FAMILIES ("Fashion Violeta" is tagged MORADOS), so merging them with the
@@ -410,7 +410,7 @@ def _candidate(row: Mapping[str, object], snapshot_id: str) -> Candidate | None:
 
 
 def _normalize_space_source(space: Mapping[str, object]) -> dict[str, object]:
-    """A space measured "from the photo" is an estimate; mirror of ``normalizarFuenteEspacio``.
+    """A space measured "from the photo" is an estimate.
 
     The model does not measure photos: ``fuente: "foto"`` only states that the
     type of space was seen in a photo. Any of ``ancho_m``/``alto_m``/``largo_m``
@@ -588,7 +588,7 @@ def _total_globos(
     official: str | None = None,
     proportions: Sequence[tuple[int, float]] | None = None,
 ) -> tuple[float, int]:
-    """Mirror of ``calcularMedidas`` in ``src/lib/medidas/geometria.ts``.
+    """Axis and total balloon count of one structure.
 
     ``proportions`` is the effective mix when the customer fixed sizes: it
     decides the weighted balloon area and the dominant diameter, while the band
@@ -622,12 +622,13 @@ _QUOTA_TOLERANCE = 1e-6
 
 
 def _hamilton(total: int, quotas: Sequence[float], tiebreaks: Sequence[float]) -> list[int]:
-    """Largest remainder split, mirror of ``repartirHamilton`` in geometria.ts.
+    """Largest remainder split.
 
     Ties are broken by larger remainder, larger ``tiebreak`` (the diameter on
     the size margin, 0 on the material margin) and finally lower index. The
-    color name no longer takes part: ``localeCompare`` in TypeScript and
-    codepoint order in Python split the same plan differently.
+    color name deliberately takes no part: sorting it split the same plan
+    differently depending on the collation used, so the tiebreak was made to
+    depend only on numbers and position.
 
     The quotas must add up to the total; otherwise the split would be a made-up
     count (the unrenormalized mandatory sizes case).
@@ -658,7 +659,7 @@ def _hamilton(total: int, quotas: Sequence[float], tiebreaks: Sequence[float]) -
 def _apportion_margins(
     total: int, proportions: Sequence[tuple[int, float]], shares: Sequence[float]
 ) -> list[list[int]]:
-    """Both-margin integer split of one instance, mirror of ``repartirPorMargenes``.
+    """Both-margin integer split of one instance.
 
     The size totals come from the effective mix and the material totals from
     ``participacion``; the size x material matrix respects both. A single
@@ -729,16 +730,17 @@ def _apportion_margins(
 _MANDATORY_SIZE = re.compile(
     r"^[ \t\n\r\f\v]*R?-?(\d{1,3})[ \t\n\r\f\v]*$", re.IGNORECASE | re.ASCII
 )
-"""Mirror of ``TAMANO_OBLIGATORIO`` in ``src/lib/medidas/geometria.ts``.
+"""What counts as a mandatory size in ``restricciones.tamanos[].valor``.
 
-``restricciones.tamanos[].valor`` is free text from the model: only a positive
-integer of up to three digits, with "R-", "R" or no prefix. TypeScript read it
-with ``Number(...)`` and Python with ``int(...)``: both accepted "R-12" and
-differed on decimals, exponents, hexadecimal, underscores, non-ASCII digits and
-the empty string. Since the effective mix decides the TOTAL, that difference
-changed counts, costs and ``plan_hash`` between the two backends. ``re.ASCII``
-is what keeps ``\\d`` on ASCII digits, like JavaScript without the ``u`` flag.
-Anything else is ignored, never rounded and never a plan rejection.
+That value is free text from the model: only a positive integer of up to three
+digits is accepted, with "R-", "R" or no prefix. The grammar is spelled out as
+a regex instead of leaning on a numeric parser because the two backends that
+used to resolve plans parsed it differently -- they agreed on "R-12" and
+disagreed on decimals, exponents, hexadecimal, underscores, non-ASCII digits
+and the empty string -- and since the effective mix decides the TOTAL, that
+disagreement moved counts, costs and ``plan_hash``. ``re.ASCII`` is what keeps
+``\\d`` on ASCII digits. Anything else is ignored, never rounded and never a
+plan rejection.
 """
 
 
@@ -769,7 +771,7 @@ def _required_sizes(plan: Mapping[str, object]) -> set[int]:
 def _effective_proportions(
     mix: str, sizes: set[int]
 ) -> tuple[tuple[tuple[int, float], ...], tuple[int, ...]]:
-    """Effective mix when the customer fixes sizes, mirror of ``proporcionesEfectivas``.
+    """Effective mix when the customer fixes sizes.
 
     The customer's size restriction belongs to the whole plan, not to one
     structure: the mix sizes inside the required set, renormalized to 1, and
@@ -807,7 +809,7 @@ PHYSICAL_GATE_PREFIX = "puerta_fisica:"
 
 
 def _balloons_per_meter_factor(mix: str, proportions: Sequence[tuple[int, float]]) -> float:
-    """Mirror of ``factorGlobosPorMetro`` in ``src/lib/medidas/geometria.ts``.
+    """Factor de globos por metro entre la mezcla del plan y la efectiva.
 
     Cuántas veces cambia el modelo los globos por metro al pasar de la mezcla
     del plan a la mezcla efectiva de ``restricciones.tamanos``. λ, el ancho de
@@ -831,10 +833,52 @@ def _balloons_per_meter_factor(mix: str, proportions: Sequence[tuple[int, float]
     return effective / base if base > 0 and effective > 0 else 1.0
 
 
+def _imputed_structure_costs(
+    structures: Sequence[Mapping[str, object]], purchases: Sequence[Mapping[str, object]]
+) -> list[dict[str, object]]:
+    """Coste imputado a cada estructura, para la tarjeta del cliente.
+
+    NO es un precio: los paquetes se compran una sola vez para todo el plan, así
+    que repartirlos entre estructuras no reconstruye ningún cobro real. Es una
+    imputación de consumo —unidades de la línea × precio del paquete ÷ unidades
+    por paquete— que sirve para que el cliente vea el peso relativo de cada
+    pieza. El total que se cobra es `totales.total_cop`, y no es la suma de
+    estos valores.
+
+    Lo calculaba TypeScript en la propia tarjeta (ADR-0023 §Riesgo): un número
+    comercial que ningún resolutor firmaba. Ahora tiene dueño.
+
+    `consumo_cop` es `None` cuando alguna línea de la estructura no tiene compra
+    con paquete utilizable; la UI no muestra cifra en ese caso, en vez de
+    enseñar una incompleta.
+    """
+    por_variante = {str(compra.get("variant_id")): compra for compra in purchases}
+    costes: list[dict[str, object]] = []
+    for structure in structures:
+        total = 0.0
+        completo = True
+        lineas = _mappings(structure.get("lineas"))
+        for line in lineas:
+            compra = por_variante.get(str(line.get("variant_id")))
+            unidades_paquete = _integer(compra.get("unidades_paquete")) if compra else None
+            precio = _integer(compra.get("precio_paquete")) if compra else None
+            if compra is None or not unidades_paquete or unidades_paquete <= 0 or precio is None:
+                completo = False
+                break
+            total += (_integer(line.get("unidades")) or 0) * precio / unidades_paquete
+        costes.append(
+            {
+                "estructura_id": _text(structure.get("estructura_id")),
+                "consumo_cop": _round_half_up(total) if completo and lineas else None,
+            }
+        )
+    return costes
+
+
 def _physical_warnings(
     plan: Mapping[str, object], structures: Sequence[Mapping[str, object]]
 ) -> list[str]:
-    """Mirror of ``physicalWarningsForPlan`` in ``src/lib/materiales/estimacion.ts``.
+    """Puerta física del plan resuelto: globos por metro fuera de banda.
 
     Cada estructura lineal se compara contra su propia densidad y su propio eje
     por instancia. Los umbrales son heurísticos sin calibrar: son una
@@ -981,7 +1025,7 @@ def _optimizar_cobertura(
     opciones: Sequence[Mapping[str, object]],
     merma: float = 0.0,
 ) -> dict[str, object] | None:
-    """Port of ``optimizarCobertura`` with the same bounded exhaustive search."""
+    """Cheapest mix of presentations covering the units, by bounded search."""
     candidatas: list[dict[str, object]] = []
     for option in opciones:
         variant_id = option.get("variant_id")
@@ -1114,7 +1158,7 @@ def _relabelled_color(line: Mapping[str, object], requested: str | None) -> str 
 
 
 def _line_color(candidate: Candidate, color: str | None) -> str | None:
-    """Color a line is labelled with; mirror of ``colorDeLinea``.
+    """Color a line is labelled with.
 
     The requested color wins, except when it only matched a family color of the
     product (its tags) and the chosen variant has exactly one real color: the
@@ -1172,7 +1216,7 @@ def _line(
 
 
 def _distribute_units(total: int, materials: Sequence[Mapping[str, object]]) -> list[int]:
-    """Split ``unidades_declaradas`` by ``participacion``; mirror of ``repartirUnidades``.
+    """Split ``unidades_declaradas`` by ``participacion``.
 
     Largest remainder (ties by position), as before the reference audit, so a
     plan that already bought every material resolves to the same lines and
@@ -1219,7 +1263,7 @@ def _reference_color_substitutions(
     line_colors: Sequence[object],
     equivalent_colors: Sequence[object] = (),
 ) -> list[dict[str, object]]:
-    """Photo colors a structure does not buy; mirror of ``sustitucionesColorReferencia``.
+    """Photo colors a structure does not buy.
 
     ``colores_referencia`` holds the dominant colors of the reference element the
     structure materializes, written by the Next server from the turn blueprint.
@@ -1445,7 +1489,7 @@ def _resolve_structures(
         lines: list[dict[str, object]] = []
         # Colors the plan asked for that ``_line_color`` relabelled with the
         # variant's real color: the photo comparison still counts them as
-        # delivered (mirror of ``coloresEquivalentes`` in resolver.ts).
+        # delivered.
         equivalent_colors: list[str] = []
         axis: float | None = None
         before_missing = len(uncovered)
@@ -1630,7 +1674,7 @@ def _reoptimize_presentations(
     candidates_by_product: Mapping[str, Sequence[Candidate]],
     allowlist: Mapping[str, set[str]],
 ) -> dict[str, int]:
-    """Buy each product+size+color once for the whole plan; mirror of ``reoptimizarPresentaciones``.
+    """Buy each product+size+color once for the whole plan.
 
     The need of every structure is added up and covered with the cheapest
     combination of allowlisted presentations (x12, x20, x50...). Each structure
@@ -1906,12 +1950,12 @@ def _consolidate(
 
 
 def _waste_extra_packages(design_quantity: int, units_per_package: int, packages: int) -> int:
-    """Packages bought above the design's minimum cover, mirror of ``paquetesExtraPorMerma``.
+    """Packages bought above the design's minimum cover.
 
     Every package of a flagged line used to be reported as an additional waste
     package (golden 08 said 10 where 1 was added). ``design-material-estimate-v1``
-    does not store the base count, so it is derived from the line's own fields
-    and TypeScript's ``validateMaterialEstimate`` recomputes the same value.
+    does not store the base count, so it is derived here from the line's own
+    fields; golden vector 08 locks the derivation in ``test_plan_regresion.py``.
     """
     if units_per_package <= 0:
         return 0
@@ -1921,7 +1965,7 @@ def _waste_extra_packages(design_quantity: int, units_per_package: int, packages
 def _waste_only_savings(
     design_quantity: int, units_per_package: int, packages: int, package_price: float
 ) -> float:
-    """Mirror of ``ahorroSoloMermaCop`` in ``src/lib/plan/optimizar-materiales.ts``.
+    """Saving of one purchase line against buying it with the full merma.
 
     The naive purchase (every line with its full merma) minus what was actually
     bought. It used to compare against the design's minimum cover and ignore the
@@ -1939,14 +1983,13 @@ def _material_waste_only_savings(
     special: Sequence[Mapping[str, object]],
     purchase_lines: Sequence[Mapping[str, object]],
 ) -> int:
-    """Mirror of ``wasteOnlySavingsCop`` in ``src/lib/materiales/estimacion.ts``.
+    """Waste-only saving of the material estimate, over its purchase lines.
 
     MERMA models balloons bursting while inflated and mounted, so only balloon
     purchases can avoid a waste-only package. A purchase whose variant is a
     special element is never eligible; otherwise it is eligible when its variant
-    or its product appears among the balloon lines. TypeScript's
-    ``validateMaterialEstimate`` recomputes this total from the same lines, so
-    both rules must stay identical.
+    or its product appears among the balloon lines. Which purchases are eligible
+    is a commercial rule and this resolver is its only owner (ADR-0023).
     """
     special_variants = {line.get("variant_id") for line in special}
     balloon_variants = {line.get("variant_id") for line in balloons}
@@ -1978,10 +2021,9 @@ def _plan_density(
     """Plan structure that decides ``design.density`` / ``visual_density``.
 
     The structure with the most design balloons wins; ties keep the first one in
-    plan order. Mirror of ``planDensity`` in ``src/lib/materiales/estimacion.ts``:
-    TypeScript used "lujosa if any structure is lujosa" and Python the first
-    structure, so the same mixed plan reached the image prompt with a different
-    density depending on the backend.
+    plan order. The two earlier rules -- "lujosa if any structure is lujosa" and
+    "whatever the first structure says" -- sent the same mixed plan to the image
+    prompt with a different density, so the dominant structure decides.
     """
     inputs = _mappings(plan.get("estructuras"))
     if not inputs:
@@ -2240,8 +2282,8 @@ def _build_resolved(
         package_count = int(cast(int, purchase["paquetes"]))
         # The surplus that matters here is the design purchase's, before the
         # waste reserve bought anything: a package bought on purpose for the
-        # reserve is not an oversized purchase. TypeScript checks it in that
-        # order (resolver.ts), and the parity vector 24 showed the difference.
+        # reserve is not an oversized purchase. Golden vector 24 is the case
+        # that distinguishes this order from measuring the surplus afterwards.
         base_packages = package_count - _waste_extra_packages(
             design, candidate.units_per_package, package_count
         )
@@ -2267,7 +2309,7 @@ def _build_resolved(
     )
     # Real saving: the naive purchase (every purchase with its full merma)
     # against what was actually bought, extra reserve packages included. Same
-    # rule as ``wasteOnlySavingsCop`` over the estimate.
+    # rule as ``_material_waste_only_savings`` over the estimate.
     waste_only_savings = _round_half_up(
         sum(
             _waste_only_savings(
@@ -2374,6 +2416,7 @@ def _build_resolved(
             substitutions, ("estructura_id", "pedido", "entregado", "motivo")
         ),
         "sin_cobertura": _unique_dicts(uncovered, ("estructura_id", "product_id", "tamano")),
+        "costes_por_estructura": _imputed_structure_costs(structures, purchases),
         "advertencias": list(dict.fromkeys(warnings)),
     }
     PlanResuelto.model_validate(result)

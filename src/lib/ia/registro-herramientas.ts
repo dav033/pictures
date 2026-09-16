@@ -2,7 +2,7 @@ import "server-only";
 import type { RegistroHerramientas } from "@sempertex/agente-core";
 import type { Pool } from "pg";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
-import { tamanosObligatorios } from "@/lib/medidas/geometria";
+import { advertenciasPuertaFisica, mezclasCompatiblesConDiametros, tamanosObligatorios } from "@/lib/plan/mezclas";
 import { getRagPool } from "@/lib/rag/db";
 import { buscarCatalogoRag, type ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { avisoFiltrosBusqueda, filtrosDurosDeBusqueda } from "@/lib/rag/chat/filtros-turno";
@@ -31,8 +31,7 @@ import {
   mensajeClienteSinCobertura,
 } from "@/lib/ia/mensajes-cliente";
 import { PythonPlanMappingError } from "@/lib/plan/python-mapper";
-import { resolverPlanConBackend, type ResolucionPlan } from "@/lib/plan/resolver-backend";
-import { mezclasCompatiblesConDiametros } from "@/lib/plan/resolver";
+import { resolverPlan, type ResolucionPlan } from "@/lib/plan/resolver-backend";
 import { canonizarColoresPlan } from "@/lib/plan/colores-catalogo";
 import { coloresVigentes, extraerRestriccionesConversacion } from "@/lib/plan/restricciones-conversacion";
 import { digitoDeFiguraNumero, numerosPedidos, validarNumerosPedidos } from "@/lib/plan/numeros-pedidos";
@@ -44,10 +43,10 @@ import { coloresElementoReferencia, coloresFotoParaBusqueda, coloresReferenciaOm
 import { buscarGlobosPorColor } from "@/lib/rag/catalog/globos-por-color";
 import { buscarNumerosPorDigito, digitosBuscados } from "@/lib/rag/catalog/numeros-por-digito";
 import { RAG_ENABLED, featureEnabled } from "@/lib/ia/feature-flags";
-import { isPythonAdapterError, seleccionarBackendPython } from "@/lib/ia/python-adapter";
+import { isPythonAdapterError } from "@/lib/ia/python-adapter";
 import { AllowlistProductoVarianteError } from "@/lib/plan/allowlist-producto-variante";
 import { sceneShadowPipeline } from "@/lib/scene/orchestrator";
-import { physicalWarningsForPlan, validateMaterialEstimate } from "@/lib/materiales/estimacion";
+import { validateMaterialEstimate } from "@/lib/materiales/estimacion";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
 import { ajustarCoberturaPlan, avisosClienteAjustes, mezclasAdmisiblesEstructura, type AjusteCobertura } from "@/lib/plan/cobertura-materiales";
@@ -747,7 +746,6 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       }));
     }
     const planningStart = Date.now();
-    const backendPlan = seleccionarBackendPython().backend;
     // Same-turn allowlist: only the variants the model actually saw in this
     // turn. It travels signed with the plan so /api/generate and
     // /api/plan-editar can restate it without trusting the browser.
@@ -769,11 +767,10 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       return { ok: false, status: "BACKEND_NO_DISPONIBLE", accion_requerida: accionRequerida, mensaje_cliente: mensajeCliente };
     };
     const FALLO_TECNICO = "No se pudo verificar el plan contra el catálogo comercial. Dile al cliente que hubo un problema técnico y que vuelva a intentarlo; no inventes precios, no confirmes el plan y no generes ninguna imagen.";
-    // When the Python resolver is the selected commercial authority it needs
-    // the published snapshot of this turn, and there is no implicit fallback
-    // to TypeScript: answering with a plan the operator never verified would
-    // hide a broken cutover. PYTHON_BACKEND_KILL_SWITCH is the rollback.
-    if (backendPlan === "python" && !snapshotTurno) {
+    // Python es la única autoridad comercial (ADR-0023 paso 5) y necesita el
+    // snapshot publicado de este turno. No hay reserva: responder con un plan
+    // que nadie verificó escondería un corte roto.
+    if (!snapshotTurno) {
       return fallarPorBackend(
         "SIN_SNAPSHOT_CATALOGO",
         "el turno no tiene un snapshot de catálogo publicado",
@@ -781,35 +778,27 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         MENSAJE_CLIENTE_SIN_BUSQUEDA,
       );
     }
-    const resolverPlan = (plan: PlanDecoracion) => backendPlan === "python" && snapshotTurno
-      ? resolverPlanConBackend({
-          backend: "python",
-          plan,
-          allowlist: allowlistTurno,
-          catalogSnapshotId: snapshotTurno,
-          loraAllowlist: options.catalogAllowlist,
-          requestId: estado.ragRequestId,
-          correlationId: correlacionPython.success ? correlacionPython.data : estado.ragRequestId,
-          ...(options.signal ? { signal: options.signal } : {}),
-        })
-      : resolverPlanConBackend({
-          backend: "next",
-          pool: ragPool,
-          plan,
-          whitelist: estado.ragVariantIdsRecuperados,
-          loraAllowlist: options.catalogAllowlist,
-        });
+    const resolverPlanDelTurno = (plan: PlanDecoracion) =>
+      resolverPlan({
+        plan,
+        allowlist: allowlistTurno,
+        catalogSnapshotId: snapshotTurno,
+        loraAllowlist: options.catalogAllowlist,
+        requestId: estado.ragRequestId,
+        correlationId: correlacionPython.success ? correlacionPython.data : estado.ragRequestId,
+        ...(options.signal ? { signal: options.signal } : {}),
+      });
     let resolucion: ResolucionPlan;
     const avisosConvergencia: string[] = [];
     try {
-      resolucion = await resolverPlan(planCanonico);
+      resolucion = await resolverPlanDelTurno(planCanonico);
       // Convergence: after repeated refusals the materials without size
       // coverage leave the structure (with a notice) instead of another
       // SIN_COBERTURA refusal (convergencia-plan.ts).
       if (estado.rechazosPlan >= RECHAZOS_PARA_CONVERGER && resolucion.resuelto.sin_cobertura.length > 0) {
         const reparado = quitarMaterialesSinCobertura(planCanonico, resolucion.resuelto.sin_cobertura);
         if (reparado.cambiado) {
-          const reintento = await resolverPlan(reparado.plan);
+          const reintento = await resolverPlanDelTurno(reparado.plan);
           if (reintento.resuelto.sin_cobertura.length === 0 && reintento.resuelto.compras.length > 0) {
             planCanonico = reparado.plan;
             resolucion = reintento;
@@ -848,7 +837,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     const estimateValidation = validateMaterialEstimate(materialEstimate);
     // Un solo dueño de la puerta física sobre el plan resuelto de cualquiera de
     // los dos backends (estimacion.ts), por estructura lineal y con su densidad.
-    const physicalWarnings = physicalWarningsForPlan(resuelto);
+    const physicalWarnings = advertenciasPuertaFisica(resuelto.advertencias);
     const auditarResuelto = (status: string, error?: string) => encolarEscrituraObservabilidad(auditarPlan({
       requestId: estado.ragRequestId,
       planHash: resuelto.plan_hash,
@@ -918,7 +907,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     resuelto.approval_token = crearTokenPlan({
       planHash: resuelto.plan_hash,
       requestId: estado.ragRequestId,
-      backend: resolucion.backend,
+      backend: "python",
       catalogSnapshotId: snapshotTurno,
       allowlist: allowlistTurno,
       // The image of this plan is generated with the level it was designed with.

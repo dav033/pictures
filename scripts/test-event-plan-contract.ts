@@ -3,13 +3,15 @@ import type { Pool } from "pg";
 import { crearEstadoConversacion, crearRegistroHerramientas } from "../src/lib/ia/registro-herramientas";
 import { parseEventIntent } from "../src/lib/rag/query-parser/parse-event";
 import type { EventMatchEvidence } from "../src/lib/rag/retrieval/types";
+import { instalarResolutorPythonFalso, prepararEntornoPythonFalso, SNAPSHOT_FALSO } from "./lib/resolutor-python-falso";
 
 async function main(): Promise<void> {
-// Offline contract of the TypeScript plan path: the backend selection is read
-// from process.env on every call, so an ambient PYTHON_BACKEND_ENABLED=true
-// would silently route this stubbed pool through Python.
-process.env.PYTHON_BACKEND_ENABLED = "false";
-process.env.PYTHON_BACKEND_KILL_SWITCH = "true";
+// Offline contract of the plan path. El sujeto es el contrato de evento
+// abierto, no el resolutor: desde el paso 5 del ADR-0023 resolver un plan es
+// una llamada al servicio Python, y aquí la responde un doble de transporte
+// (scripts/lib/resolutor-python-falso.ts). Sin red y sin proceso levantado.
+prepararEntornoPythonFalso();
+instalarResolutorPythonFalso();
 const solicitud = "Festival Lunaria elegante verde y blanco para 30 personas. No es boda";
 const intent = parseEventIntent(solicitud);
 assert.equal(intent.event_label, "Festival Lunaria");
@@ -25,6 +27,7 @@ const pool = {
 } as unknown as Pool;
 
 const estado = crearEstadoConversacion({}, solicitud);
+estado.ragCatalogSnapshotId = SNAPSHOT_FALSO;
 for (const [productId, variantId] of [["P-VERDE", "V-VERDE"], ["P-BLANCO", "V-BLANCO"]]) {
   estado.ragIdsRecuperados.add(productId);
   estado.ragVariantIdsRecuperados.set(productId, new Set([variantId]));
@@ -63,7 +66,7 @@ const respuesta = await confirmar({
   ],
   supuestos: [],
 }, llamada);
-assert.equal(respuesta.ok, true);
+assert.equal(respuesta.ok, true, JSON.stringify(respuesta).slice(0, 600));
 assert.equal(estado.planResuelto?.event_label, "Festival Lunaria");
 assert.equal(estado.planResuelto?.original_request, solicitud);
 assert.deepEqual(new Set(estado.planResuelto?.event_match_levels), new Set(["thematic", "adaptable"]));

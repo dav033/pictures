@@ -1,7 +1,7 @@
 import { AMBIENTACION_IMAGEN, perfilCreatividad, type AmbientacionImagen, type NivelCreatividad } from "./creatividad";
 import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { describirMezclaDeColor, mezclaDeColorDeEstructura } from "./mezcla-color-escena";
-import { tableSupportedElements, type SceneSpec } from "./scene-spec";
+import { tableSupportedElements, type SceneryElement, type SceneSpec } from "./scene-spec";
 import { buildLoraImagePromptV2, compileLoraCaption, GROUPING_ONLY_CONTEXT, type LoraVisualClause } from "./lora-caption-compiler";
 import { findSeparateSidePieces } from "./separate-side-pieces";
 import {
@@ -51,6 +51,14 @@ export type ImagePromptInput = {
    * rule buried in the middle of the prompt.
    */
   correctiveInstruction?: string;
+  /**
+   * Escenografía conservada de la foto de referencia que el cliente dejó
+   * encendida (frontera plan/escenografía, scene-spec.ts). Solo abre la
+   * excepción a las prohibiciones generales de flores, muebles y luces: nunca
+   * es un elemento del plan, no se cotiza y no entra en el contrato de
+   * cardinalidad ni en el de color.
+   */
+  scenography?: readonly SceneryElement[];
 };
 
 /**
@@ -234,10 +242,18 @@ function materialEstimateContract(sceneSpec: SceneSpec): string {
  * decoration.  This contract describes the *scene architecture* without
  * inventing any catalog objects.
  */
-function decorationCompositionContract(sceneSpec: SceneSpec, visualContext?: VisualContext, styling: readonly AmbientacionImagen[] = []): string[] {
+function decorationCompositionContract(sceneSpec: SceneSpec, visualContext?: VisualContext, styling: readonly AmbientacionImagen[] = [], scenography: readonly SceneryElement[] = []): string[] {
   const categories = new Set(sceneSpec.elements.map((element) => element.category));
   const tableSupports = tableSupportedElements(sceneSpec);
-  const stylingException = styling.length ? " (except the non-catalog styling allowed in CREATIVITY LEVEL)" : "";
+  // Las prohibiciones generales de este contrato son lo primero y más fuerte
+  // que lee el modelo. Sin nombrar aquí la escenografía conservada, el prompt
+  // se contradice consigo mismo y el modelo borra justo lo que el cliente
+  // decidió mantener de su propia foto.
+  const exceptions = [
+    ...(styling.length ? ["the non-catalog styling allowed in CREATIVITY LEVEL"] : []),
+    ...(scenography.length ? ["the preserved scene context listed below"] : []),
+  ];
+  const stylingException = exceptions.length ? ` (except ${exceptions.join(" and ")})` : "";
   const hasBackdrop = [...categories].some((category) => ["backdrop", "curtain", "drape", "panel"].includes(category));
   const hasBalloonStructure = categories.has("balloon_structure");
   const hasTableProduct = categories.has("tableware") || categories.has("furniture");
@@ -274,8 +290,19 @@ function decorationCompositionContract(sceneSpec: SceneSpec, visualContext?: Vis
     ...(tableSupports.length
       ? [`TABLE SUPPORT EXCEPTION: ${tableSupports.length} approved table-top structure(s) stand on plain event tables with simple tablecloths, one table per table-top structure. Those tables are their physical support, not added furniture; never replace them with boxes, crates, pedestals, or the floor, and add no chairs, food, or place settings.`]
       : []),
+    ...(scenography.length ? [scenographyContract(scenography)] : []),
   ];
   return layers;
+}
+
+/**
+ * Escenografía: lo que se conserva de la foto del cliente. Es contexto del
+ * lugar, no decoración cotizada, así que se nombra con su sitio observado y se
+ * excluye explícitamente del conteo de estructuras y del catálogo.
+ */
+function scenographyContract(scenography: readonly SceneryElement[]): string {
+  const items = scenography.map((item) => `${item.name} (${placementDescription(item.target_bbox, item.category)})`).join("; ");
+  return `PRESERVED SCENE CONTEXT — the customer chose to keep these objects from their own reference photo: ${items}. Render them as existing venue context in that place and at believable scale. They are NOT catalog products, NOT quoted decoration, and NOT part of the structure count: never attach balloons, lettering, logos, prices or packaging to them, never turn one into a decorative structure, and never let them take the focal zone from the approved installation.`;
 }
 
 /**
@@ -427,7 +454,7 @@ function eventAuthorityContract(context?: VisualContext, styling: readonly Ambie
  */
 export const FINAL_OUTPUT_REMINDER = "OUTPUT REMINDER: everything above is invisible control metadata. Return one clean photograph of the decorated venue with zero visible text: no captions, labels, name tags, size or count notes, dimension lines, or info cards.";
 
-export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount = 0, droppedCompositionReferenceCount = 0, creatividad, officialStructures, correctiveInstruction }: ImagePromptInput): string {
+export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount = 0, droppedCompositionReferenceCount = 0, creatividad, officialStructures, correctiveInstruction, scenography = [] }: ImagePromptInput): string {
   // Keep prompt construction useful for lightweight visual eval fixtures that
   // provide only approved elements. Production callers still pass the full
   // server-validated SceneSpec.
@@ -445,7 +472,7 @@ export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, 
   const environmentCues = visualContext ? buildPositiveEnvironmentCues(visualContext) : [];
   const failureConditions = visualContext ? buildVisualFailureConditions(visualContext) : [];
   const styling = stylingOf(creatividad);
-  const compositionContract = decorationCompositionContract(sceneSpec, visualContext, styling);
+  const compositionContract = decorationCompositionContract(sceneSpec, visualContext, styling, scenography);
   const creativity = creativityContract(creatividad);
   const scaleInstruction = balloonScaleInstruction(sizeMixBlock);
   const materialContract = materialEstimateContract(sceneSpec);
@@ -574,7 +601,7 @@ PHOTOREALISTIC INTEGRATION
 ${list(sceneSpec.positive_prompt.photorealistic_integration)}
 
 MUST NOT INCLUDE
-- No decorative object absent from the automatic element allowlist.
+- No decorative object absent from the automatic element allowlist${scenography.length ? ", other than the PRESERVED SCENE CONTEXT kept from the customer's own photo" : ""}.
 ${list(sceneSpec.negative_prompt.forbidden_elements)}
 
 FORBIDDEN VENUE CHANGES

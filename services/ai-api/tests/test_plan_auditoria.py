@@ -7,8 +7,9 @@
   carries ``colores_referencia`` per structure and the resolver records every
   missing color in ``sustituciones``.
 
-The TypeScript resolver implements the same rules; the golden vectors
-``14-figura-cuatro-materiales`` and ``15-colores-referencia`` lock the parity.
+Both rules belong to this resolver alone (ADR-0023 step 5); the golden vectors
+``14-figura-cuatro-materiales`` and ``15-colores-referencia`` lock their numbers
+against regression in ``test_plan_regresion.py``.
 """
 
 from __future__ import annotations

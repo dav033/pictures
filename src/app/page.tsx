@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Lock } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -555,6 +555,10 @@ export default function Page() {
   const [fotoEspacio, setFotoEspacio] = useState<(Imagen & { aspecto: PeticionImagen["aspecto"] }) | null>(null);
   const [imagenesReferencia, setImagenesReferencia] = useState<Imagen[]>([]);
   const [referenceDraft, setReferenceDraft] = useState<ReferenceDraft | null>(null);
+  // Escenografía de la foto que el cliente apagó (`element_id`s del análisis).
+  // Solo decide qué DIBUJA la imagen: no toca el plan, los materiales, la
+  // cotización ni `plan_hash`. La escenografía no se vende ni se compra.
+  const [escenografiaApagada, setEscenografiaApagada] = useState<string[]>([]);
   // Ciclo del análisis de la foto (onEstado del controlador): el estado pinta
   // las ayudas; `esperaAnalisis` lo lee sin cierres viejos al enviar y generar.
   const [estadoAnalisis, setEstadoAnalisis] = useState<EstadoAnalisisReferencia>("idle");
@@ -576,6 +580,7 @@ export default function Page() {
   const fotoEspacioRef = useRef<(Imagen & { aspecto: PeticionImagen["aspecto"] }) | null>(null);
   const imagenesReferenciaRef = useRef<Imagen[]>([]);
   const referenceDraftRef = useRef<ReferenceDraft | null>(null);
+  const escenografiaApagadaRef = useRef<string[]>([]);
   const briefRef = useRef<Brief>({});
   const solicitudUsuarioRef = useRef("");
   // Ids de la selección compartida (chat + /catalogo) reflejados en la última
@@ -656,6 +661,17 @@ export default function Page() {
   useEffect(() => {
     referenceDraftRef.current = referenceDraft;
   }, [referenceDraft]);
+
+  useEffect(() => {
+    escenografiaApagadaRef.current = escenografiaApagada;
+  }, [escenografiaApagada]);
+
+  /** Enciende o apaga un chip de escenografía: todos sus elementos a la vez. */
+  const alternarEscenografia = useCallback((elementIds: readonly string[], visible: boolean) => {
+    setEscenografiaApagada((previo) => visible
+      ? previo.filter((id) => !elementIds.includes(id))
+      : [...new Set([...previo, ...elementIds])]);
+  }, []);
 
   useEffect(() => {
     seleccionRef.current = seleccion;
@@ -1104,6 +1120,8 @@ export default function Page() {
     setImagenes([]);
     setReferenceDraft(null);
     referenceDraftRef.current = null;
+    setEscenografiaApagada([]);
+    escenografiaApagadaRef.current = [];
     setEstadoAnalisis("idle");
     esperaAnalisis.notificar("idle");
     setUltimaQa(null);
@@ -1275,6 +1293,11 @@ export default function Page() {
               : undefined,
             aspecto: fotoEspacioRef.current?.aspecto ?? aspectoActivoRef.current,
             blueprint: referenceDraftRef.current?.blueprint ?? referenceDraft?.blueprint,
+            // Escenografía que el cliente apagó. Solo cambia lo que dibuja la
+            // imagen: el servidor no la cotiza ni la mete en el plan.
+            escenografia: escenografiaApagadaRef.current.length
+              ? escenografiaApagadaRef.current.map((elementId) => ({ element_id: elementId, visible: false }))
+              : undefined,
             previousGeneratedImage:
               (override?.instruccion ?? ajuste.trim()) && ultimaImagenGenerada
                 ? ultimaImagenGenerada
@@ -1671,6 +1694,10 @@ export default function Page() {
         onDraft={(draft) => {
           referenceDraftRef.current = draft;
           setReferenceDraft(draft);
+          // Otro análisis son otros `element_id`: lo que el cliente apagó en la
+          // foto anterior no puede arrastrarse a la nueva.
+          setEscenografiaApagada([]);
+          escenografiaApagadaRef.current = [];
         }}
         onEstado={(estado) => {
           esperaAnalisis.notificar(estado);
@@ -1908,6 +1935,8 @@ export default function Page() {
                           modoDev={esModoDev}
                           onAprobar={m.plan.plan_hash === planActual?.plan_hash ? () => aprobarPlan(m.plan!, m.id) : undefined}
                           onPlanActualizado={m.plan.plan_hash === planActual?.plan_hash ? (plan, cotizacion) => actualizarPlanEnMensaje(m.id, plan, cotizacion) : undefined}
+                          escenografiaApagada={escenografiaApagada}
+                          onEscenografiaToggle={alternarEscenografia}
                           loraMode={loraModeParaBadge}
                         />
                       )}

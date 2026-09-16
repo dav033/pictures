@@ -379,6 +379,16 @@
           "waste_reserve": 11
         }
       ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 21710,
+          "estructura_id": "EST_01_ARCO"
+        },
+        {
+          "consumo_cop": 3200,
+          "estructura_id": "EST_02_KIT"
+        }
+      ],
       "estructuras": [
         {
           "eje_m": 5.52,
@@ -986,6 +996,16 @@
           "used": 71,
           "variant_id": "V-25-VIOLETA-12",
           "waste_reserve": 11
+        }
+      ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 21710,
+          "estructura_id": "EST_01_ARCO"
+        },
+        {
+          "consumo_cop": 3200,
+          "estructura_id": "EST_02_KIT"
         }
       ],
       "estructuras": [

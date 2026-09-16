@@ -11,14 +11,17 @@
  * - D5 "Marco vino y plata": grey and pink shown as photo colors, dropped silently.
  * - D6 /api/generate without X-Request-ID; character names in plan titles.
  *
- * No network, no database, no providers.
+ * No network, no database, no providers. El plan lo resuelve Python desde el
+ * paso 5 del ADR-0023 y esa llamada la responde un doble de transporte
+ * (scripts/lib/resolutor-python-falso.ts): el sujeto de estos defectos es lo
+ * que Next decide antes y después de resolver, no el conteo.
  * Run: npx tsx --conditions=react-server scripts/test-segunda-e2e-backend.ts
  */
 import assert from "node:assert/strict";
 import type { Pool } from "pg";
+import { instalarResolutorPythonFalso, prepararEntornoPythonFalso, veredictoColoresReferencia, SNAPSHOT_FALSO } from "./lib/resolutor-python-falso";
 
-process.env.PYTHON_BACKEND_ENABLED = "false";
-process.env.PYTHON_BACKEND_KILL_SWITCH = "true";
+prepararEntornoPythonFalso();
 
 let casos = 0;
 function ok(nombre: string): void {
@@ -157,7 +160,9 @@ async function main(): Promise<void> {
       }
       return { rows: filas };
     } } as unknown as Pool;
+    instalarResolutorPythonFalso({ veredicto: veredictoColoresReferencia });
     const estado = crearEstadoConversacion({}, solicitud, blueprintTurno);
+    estado.ragCatalogSnapshotId = SNAPSHOT_FALSO;
     estado.ragCandidatos = candidatos;
     for (const c of candidatos) {
       estado.ragIdsRecuperados.add(c.productId);

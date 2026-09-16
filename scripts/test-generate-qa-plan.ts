@@ -1,12 +1,8 @@
 import assert from "node:assert/strict";
-import type { Pool } from "pg";
-import { resolverPlan } from "@/lib/plan/resolver";
-import { PlanDecoracionSchema } from "@/lib/plan/tipos";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { planBlueprint } from "@/lib/plan/blueprint";
 import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/scene-spec";
 import { cajasDeEstructuras, ubicacionDeInstancia } from "@/lib/plan/ubicaciones";
-import { estimateFromPlan } from "@/lib/materiales/estimacion";
 import { buildCorrectiveRetryPrompt, buildQaObserverPrompt, type SceneQaObservation } from "@/lib/ia/image-qa";
 import { buildImagePrompt, FINAL_OUTPUT_REMINDER } from "@/lib/ia/build-image-prompt";
 import { approvedPlanQaInputs, buildGenerationQa, type QaObserver } from "@/lib/ia/generation-qa";
@@ -14,22 +10,21 @@ import { compileProductPrompt } from "@/lib/ia/lora-product-runtime";
 import { preflightLoraPrompt } from "@/lib/ia/lora-prompt-preflight";
 import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
 import type { VisualContext } from "@/lib/ia/visual-context";
+import { planFijado } from "./lib/planes-fijados";
 
 /**
  * Iteration 3, step 3 wiring: /api/generate must hand the approved plan to the
  * visual QA (observer instruction and evaluation) and compile the LoRA prompt
  * with the same plan map, or the separate-side-pieces question is never asked
  * in production. Deterministic, no network: the observer is injected.
+ *
+ * El plan aprobado sale de `scripts/lib/planes-fijados.ts` (ADR-0023, paso 5:
+ * Python es el único dueño del conteo). Este test nunca comprobó el resolutor;
+ * sólo necesita un plan resuelto que tenga un semiarco a un lado y una columna
+ * al otro, y una lateral repetida 2, 4 y 6 veces.
  * Run: npx tsx --conditions=react-server scripts/test-generate-qa-plan.ts
  */
 
-const rows = [
-  { product_id: "P-GLOBOS", variant_id: "V-R-12-ROJO", sku: "SKU-R-12-ROJO", producto_titulo: "Globo rojo", variante_titulo: "R-12", precio: 10000, unidades_paq: 50, disponible: true, producto_disponible: true, codigo_tamano: "R-12", forma: "redondo", diam_pulg: 12, colores_producto: ["rojo"], colores_variante: ["rojo"], descripcion: "Globo látex rojo R-12." },
-  { product_id: "P-GLOBOS", variant_id: "V-R-12-DORADO", sku: "SKU-R-12-DORADO", producto_titulo: "Globo dorado", variante_titulo: "R-12", precio: 10500, unidades_paq: 50, disponible: true, producto_disponible: true, codigo_tamano: "R-12", forma: "redondo", diam_pulg: 12, colores_producto: ["dorado"], colores_variante: ["dorado"], descripcion: "Globo látex dorado metalizado R-12." },
-];
-// Same mocked pool shape as scripts/test-image-qa-piezas-separadas.ts: the resolver only reads `rows`.
-const pool = { query: async () => ({ rows }) } as unknown as Pool;
-const whitelist = new Map<string, ReadonlySet<string>>([["P-GLOBOS", new Set(rows.map((row) => row.variant_id))]]);
 const materiales = [
   { product_id: "P-GLOBOS", color: "rojo", participacion: 0.6, rol_material: "principal" },
   { product_id: "P-GLOBOS", color: "dorado", participacion: 0.4, rol_material: "secundario" },
@@ -38,21 +33,8 @@ const IMAGE = { base64: "iVBORw0KGgo=", mime: "image/png" };
 const HASHES = { planHash: "plan-hash", sceneSpecHash: "scene-hash" };
 const CONTEXT: VisualContext = { venueKind: "indoor", lightingKind: "night", palette: ["rojo", "dorado"] };
 
-const ESTRUCTURAS_BASE = [
-  { estructura_id: "EST_01_SEMIARCO", nombre: "Semiarco derecho", tipo: "semiarco", rol_escena: "focal", ubicacion: "lateral_derecho", medidas: { ancho_m: 1.2, alto_m: 2.2 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales, porque: "Pieza principal a un lado." },
-  { estructura_id: "EST_02_COLUMNA", nombre: "Columna izquierda", tipo: "columna", rol_escena: "soporte", ubicacion: "lateral_izquierdo", medidas: { alto_m: 1.8 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales, porque: "Pieza baja al otro lado, separada." },
-];
-
-async function approvedScene(estructuras: unknown[] = ESTRUCTURAS_BASE, planId = "dddddddd-dddd-4ddd-8ddd-dddddddddddd"): Promise<{ plan: PlanResuelto; scene: SceneSpec }> {
-  const declared = PlanDecoracionSchema.parse({
-    plan_version: "1.0",
-    plan_id: planId,
-    concepto: { titulo: "Cumpleaños rojo y dorado", descripcion: "Piezas de globos en el salón.", paleta: ["rojo", "dorado"] },
-    espacio: { tipo: "salón", fuente: "supuesto" },
-    estructuras,
-    supuestos: [],
-  });
-  const plan = await resolverPlan(pool, declared, whitelist);
+function approvedScene(fixture: string): { plan: PlanResuelto; scene: SceneSpec } {
+  const { plan, materialEstimate } = planFijado(fixture);
   assert.equal(plan.sin_cobertura.length, 0);
   const blueprint = planBlueprint(plan);
   const scene = buildApprovedSceneSpec({
@@ -60,7 +42,7 @@ async function approvedScene(estructuras: unknown[] = ESTRUCTURAS_BASE, planId =
     aspectRatio: "3:2",
     targetBoxes: Object.fromEntries(Object.entries(cajasDeEstructuras(plan.plan.estructuras)).map(([id, layout]) => [id, layout.bbox])),
     catalogProducts: Object.fromEntries(blueprint.elements.map((element) => [element.element_id, (element.model_decision?.bill_of_materials ?? []).map((line) => ({ id: line.catalog_product_id, name: line.catalog_product_id, description: "", category: "balloon", share: line.share, role: line.role }))])),
-    materialEstimate: estimateFromPlan(plan),
+    materialEstimate,
     generationMode: "text_to_image",
     createdBy: "server_default",
     planHash: plan.plan_hash,
@@ -80,7 +62,7 @@ function recordingObserver(verdict: SceneQaObservation["sidePiecesSeparation"]):
 }
 
 async function main(): Promise<void> {
-  const { plan, scene } = await approvedScene();
+  const { plan, scene } = approvedScene("qa-semiarco-columna");
   const qaPlan = approvedPlanQaInputs(plan);
   assert.ok(qaPlan, "an approved plan yields QA plan inputs");
 
@@ -236,10 +218,8 @@ async function main(): Promise<void> {
   //    `expectedBilateralPairs` emparejaba cada izquierda con la MISMA derecha,
   //    así que salía "relaciones bilaterales 1/2" -> LORA_PREFLIGHT_FAILED.
   for (const repeticiones of [2, 4, 6]) {
-    const lateralRepetida = await approvedScene([
-      { estructura_id: "EST_01_ARCO", nombre: "Arco principal", tipo: "arco", rol_escena: "focal", ubicacion: "arco_central", medidas: { ancho_m: 3, alto_m: 2.6 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales, porque: "Pieza focal." },
-      { estructura_id: "EST_02_COLUMNAS", nombre: "Columnas laterales", tipo: "columna", rol_escena: "soporte", ubicacion: "lateral_izquierdo", medidas: { alto_m: 1.8 }, repeticiones, densidad: "media", mezcla: "clasica", materiales, porque: "Columnas a los dos lados." },
-    ], "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee");
+    const lateralRepetida = approvedScene(`qa-lateral-repetida-x${repeticiones}`);
+    assert.equal(lateralRepetida.plan.estructuras.find((estructura) => estructura.estructura_id === "EST_02_COLUMNAS")?.repeticiones, repeticiones);
     const planLateral = approvedPlanQaInputs(lateralRepetida.plan)!;
     const caption = compileProductPrompt({ sceneSpec: lateralRepetida.scene, visualContext: CONTEXT, vocabulary: PRODUCT_VOCABULARY, trigger: "eventdecor_style_v2", officialStructures: planLateral.officialStructures });
     // Todas las instancias del mismo grupo son UNA instrucción espejo, no la misma frase repetida.

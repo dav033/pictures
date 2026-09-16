@@ -76,6 +76,44 @@ const SceneElementSchema = z
     }
   });
 
+/**
+ * FRONTERA PLAN / ESCENOGRAFÍA — regla de negocio (2026-09-16).
+ *
+ * El PLAN es el único dueño de lo que se construye y se cobra: vive en
+ * `SceneSpec.elements`, pasa por `catalogOnly`, entra en la cotización, en los
+ * materiales y en `plan_hash`.
+ *
+ * La ESCENOGRAFÍA es lo que se conserva de la foto de referencia (bancos,
+ * flores, mobiliario, cortinas, luces, bases, mesas): entra en el prompt de
+ * imagen, lleva caja, el cliente la enciende o la apaga, y NUNCA toca
+ * cotización, materiales, `plan_hash` ni el plan. No se vende, no se cotiza,
+ * no se compra.
+ *
+ * Por eso viaja en su propio canal y JAMÁS dentro de `SceneSpec`: no entra en
+ * `elements` (un elemento de catálogo inventado tiene que seguir fallando en
+ * `catalogOnly`, la puerta que impide que el modelo se invente productos), ni
+ * en `sceneSpecHash`, ni en la geometría auditada, ni en el QA de instancias.
+ * Aquí no hay `catalog_product_id`, ni `quantity`, ni `required`, ni
+ * `identity_constraints`: no hay nada que comprar.
+ *
+ * `buildApprovedSceneSpec` solo la recibe para dos cosas, ambas de texto:
+ * no meterla en `negative_prompt.forbidden_elements` y abrir la excepción a
+ * las prohibiciones generales de flores, muebles y luces del prompt.
+ */
+export const SceneryElementSchema = z
+  .object({
+    element_id: texto(80),
+    /** Nombre en inglés plano, sin texto ni letreros (reference-structure.ts). */
+    name: texto(160),
+    category: texto(80),
+    /** Caja observada en la foto de referencia, normalizada [0,1]. */
+    target_bbox: BBoxSchema,
+    depth_layer: z.number().int().min(0).max(99),
+  })
+  .strict();
+
+export type SceneryElement = z.infer<typeof SceneryElementSchema>;
+
 export const SceneSpecSchema = z
   .object({
     schema_version: z.enum(["1.0", "1.1"]),
@@ -319,6 +357,12 @@ export function buildApprovedSceneSpec(input: {
   planHash?: string;
   catalogOnly?: boolean;
   materialEstimate?: DesignMaterialEstimate;
+  /**
+   * Escenografía conservada de la foto que el cliente dejó encendida (ver
+   * `SceneryElementSchema`). No se cotiza, no se compra y no entra en
+   * `elements`: solo deja de estar prohibida y abre su excepción en el texto.
+   */
+  scenography?: readonly SceneryElement[];
 }): SceneSpec {
   ReferenceBlueprintV2Schema.parse(input.blueprint);
   const elements = input.blueprint.elements
@@ -430,9 +474,26 @@ export function buildApprovedSceneSpec(input: {
   }));
 
   const approvedIds = new Set(safeElements.map((element) => element.element_id));
+  // Frontera plan/escenografía: lo que el cliente decidió CONSERVAR de la foto
+  // no puede acabar en "no dibujes esto". Antes, cualquier elemento no
+  // aprobado del blueprint se traducía en un prohibido literal, así que un
+  // banco detectado en la referencia entraba al prompt como "bench (furniture)"
+  // bajo MUST NOT INCLUDE. La escenografía nunca es un elemento del plan, así
+  // que aquí solo hace falta excluir su id para el caso en que el llamador
+  // pase el blueprint de la referencia en vez del blueprint del plan.
+  const scenography = (input.scenography ?? []).map((item) => SceneryElementSchema.parse(item));
+  const scenographyIds = new Set(scenography.map((item) => item.element_id));
   const forbidden = input.blueprint.elements
-    .filter((element) => !approvedIds.has(element.element_id))
+    .filter((element) => !approvedIds.has(element.element_id) && !scenographyIds.has(element.element_id))
     .map((element) => `${element.name} (${element.category})`);
+  // Las prohibiciones generales que vive el SceneSpec ("no añadas flores,
+  // muebles, luces") son ciertas salvo para la escenografía encendida: sin
+  // esta excepción el prompt se contradice y el modelo borra lo que el cliente
+  // pidió conservar. El CONTENIDO de la escenografía (qué es y dónde va) lo
+  // escribe `build-image-prompt.ts`, que es su único dueño; aquí solo se abre
+  // la excepción, sin nombrar ninguna pieza, para que encender o apagar un
+  // chip no cambie el resto del registro de escena aprobado.
+  const hayEscenografia = scenography.length > 0;
   const richScene = safeElements.every((element) => element.source_type === "reference_only" || Boolean(element.catalog_visual));
   const scene: SceneSpec = {
     schema_version: richScene ? "1.1" : "1.0",
@@ -461,14 +522,14 @@ export function buildApprovedSceneSpec(input: {
             `Treat the untouched areas as a hard constraint, not a style reference: do not regenerate, reinterpret, relight, or redraw them even if that would look more polished.`.slice(0, 320),
           ]
         : [],
-      photorealistic_integration: ["Act as an event designer: turn the selected products into a polished, creative, usable party installation.", "Render every catalog-backed scene element visibly; each quoted product is mandatory, even when it is a backdrop or small accent.", "Respect the installed design quantities in the material estimate. Package capacity, merma, and closed-package surplus are procurement data only; never add them to the visible decoration. Balloon diameter is controlled only by the hard size constraint, never by creative scale changes.", "Treat the product list as ingredients, not a layout: group compatible balloons into an arch, garland, columns, or balanced clusters; use overlap and depth instead of spacing one object per product, and obey the hard balloon-size constraint supplied by the image prompt.", "Use accent kits, signs, and themed props as integrated focal-point details; never show product packaging or a catalog cutout as the decoration.", "Preserve each catalog product's supplied color exactly; reference palette cannot recolor catalog items.", "Place curtain, drape, backdrop, and panel elements as rear background surfaces behind the balloon decoration, spanning their target boxes.", "Place string lights and other lighting elements in the rear backdrop zone behind or around the decoration; never move them to the ceiling unless the catalog product is explicitly a ceiling light.", "Render only supplied catalog products as physical objects from the venue camera angle.", "Match perspective, scale, focus, white balance, light direction, contact shadows, occlusion, and surface contact.", "Use natural overlap and depth between layers; every item must touch, hang from, rest on, or clearly belong to the installation.", "Do not leave loose single balloons floating in empty space when they can be grouped into the main installation.", "Use only the selected catalog allowlist and preserved venue objects; do not add generic tables, empty furniture, flowers, plants, food, gifts, props, signs, lights, or extra balloons.", "Rebuild the scene from catalog products; never reproduce the reference image as a collage."],
+      photorealistic_integration: ["Act as an event designer: turn the selected products into a polished, creative, usable party installation.", "Render every catalog-backed scene element visibly; each quoted product is mandatory, even when it is a backdrop or small accent.", "Respect the installed design quantities in the material estimate. Package capacity, merma, and closed-package surplus are procurement data only; never add them to the visible decoration. Balloon diameter is controlled only by the hard size constraint, never by creative scale changes.", "Treat the product list as ingredients, not a layout: group compatible balloons into an arch, garland, columns, or balanced clusters; use overlap and depth instead of spacing one object per product, and obey the hard balloon-size constraint supplied by the image prompt.", "Use accent kits, signs, and themed props as integrated focal-point details; never show product packaging or a catalog cutout as the decoration.", "Preserve each catalog product's supplied color exactly; reference palette cannot recolor catalog items.", "Place curtain, drape, backdrop, and panel elements as rear background surfaces behind the balloon decoration, spanning their target boxes.", "Place string lights and other lighting elements in the rear backdrop zone behind or around the decoration; never move them to the ceiling unless the catalog product is explicitly a ceiling light.", "Render only supplied catalog products as physical objects from the venue camera angle.", "Match perspective, scale, focus, white balance, light direction, contact shadows, occlusion, and surface contact.", "Use natural overlap and depth between layers; every item must touch, hang from, rest on, or clearly belong to the installation.", "Do not leave loose single balloons floating in empty space when they can be grouped into the main installation.", `Use only the selected catalog allowlist and preserved venue objects; do not add generic tables, empty furniture, flowers, plants, food, gifts, props, signs, lights, or extra balloons${hayEscenografia ? " beyond the PRESERVED SCENE CONTEXT above" : ""}.`, "Rebuild the scene from catalog products; never reproduce the reference image as a collage."],
     },
     negative_prompt: {
       forbidden_elements: [
         ...forbidden,
         "generic or empty tables, chairs, furniture vignettes, isolated balloon arches, or loose garlands",
         "generic garden/forest/park backgrounds, empty landscapes, or unrelated outdoor scenes",
-        "unselected signs, flowers, plants, lights, people, text, logos, or commercial/event props beyond installed design quantities",
+        `unselected signs, flowers, plants, lights, people, text, logos, or commercial/event props beyond installed design quantities${hayEscenografia ? " and beyond the preserved scene context" : ""}`.slice(0, 240),
       ],
       forbidden_venue_changes: input.venueImageId
         ? ["Do not move, replace, redesign, widen, narrow, repaint, relight, or rebuild any part of the supplied venue photo outside the editable regions — treat it as a fixed photo you are drawing on top of, not a description to reinterpret.".slice(0, 240)]

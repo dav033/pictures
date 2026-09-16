@@ -19,11 +19,11 @@ import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { esSustitucionDeColor } from "@/lib/plan/colores-referencia";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import {
-  ambientacionCliente,
   coloresCliente,
   compararLineasPorTamanoCliente,
   contar,
   describirEstructuraCliente,
+  escenografiaCliente,
   esEstructuraDeGlobos,
   faltantesCliente,
   medidasCortasCliente,
@@ -92,6 +92,14 @@ type Props = {
   fotoEspacio?: { base64: string; mime: string };
   /** Si llega, "Ver cotización" lo llama en vez de abrir el diálogo propio de la tarjeta. */
   onVerCotizacion?: () => void;
+  /**
+   * `element_id`s de la escenografía que el cliente apagó: no se dibujan en la
+   * imagen. Nunca afecta al plan, a los materiales ni a `plan_hash` — la
+   * escenografía no se vende, no se cotiza y no se compra.
+   */
+  escenografiaApagada?: readonly string[];
+  /** Enciende o apaga un chip de escenografía (todos sus elementos a la vez). */
+  onEscenografiaToggle?: (elementIds: readonly string[], visible: boolean) => void;
 };
 
 const CASCADA: Variants = {
@@ -213,7 +221,7 @@ function ListaOpciones({ opciones, guardando, onCambiar, ariaLabel, listId, acti
   );
 }
 
-export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, generando = false, qaSolicitado = false, onPlanActualizado, loraMode, modoDev = false, referenceBlueprint, imagenesReferencia, fotoEspacio, onVerCotizacion }: Props) {
+export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, generando = false, qaSolicitado = false, onPlanActualizado, loraMode, modoDev = false, referenceBlueprint, imagenesReferencia, fotoEspacio, onVerCotizacion, escenografiaApagada = [], onEscenografiaToggle }: Props) {
   const reducir = useReducedMotion();
   const [detalleAbierto, setDetalleAbierto] = useState(false);
   const [estructuraAbierta, setEstructuraAbierta] = useState<string | null>(plan.estructuras[0]?.estructura_id ?? null);
@@ -283,9 +291,16 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   const coloresPlan = [...new Set(vistasEstructura.flatMap((vista) => vista.colores.map((muestra) => muestra.color)))];
   const resumenPlan = resumenPlanCliente(vistasEstructura.map((vista) => vista.paraDescribir), coloresPlan);
   const soloGlobos = plan.estructuras.every((estructura) => esEstructuraDeGlobos(estructura.tipo));
-  const ambientacion = referenceBlueprint
-    ? ambientacionCliente(referenceBlueprint, new Set(plan.plan.estructuras.map((estructura) => estructura.referencia_element_id).filter((id): id is string => Boolean(id))))
+  // Escenografía: lo que se conserva de la foto del cliente. Entra en la
+  // imagen, el cliente la enciende o la apaga, y nunca se cotiza — no toca el
+  // plan, los materiales ni `plan_hash`.
+  const escenografia = referenceBlueprint
+    ? escenografiaCliente(referenceBlueprint, new Set(plan.plan.estructuras.map((estructura) => estructura.referencia_element_id).filter((id): id is string => Boolean(id))))
     : [];
+  // El chip se apaga entero: sus elementos entran y salen juntos.
+  const escenografiaApagadaSet = new Set(escenografiaApagada);
+  const chipEncendido = (chip: { elementIds: string[]; visiblePorDefecto: boolean }) =>
+    chip.visiblePorDefecto && chip.elementIds.every((id) => !escenografiaApagadaSet.has(id));
   const textosSustitucion = sustitucionesCliente(sustituciones.filter((item) => !esSustitucionDeColor(item)), descripcionesPorId);
   const textosColorReferencia = sustitucionesCliente(sustituciones.filter(esSustitucionDeColor), descripcionesPorId);
   const textosFaltantes = faltantesCliente(sinCobertura, descripcionesPorId);
@@ -768,11 +783,27 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
         </motion.div>
       )}
 
-      {ambientacion.length > 0 && (
+      {escenografia.length > 0 && (
         <motion.div variants={ENTRADA_CASCADA} data-testid="plan-ambientacion" className="flex flex-wrap items-center gap-x-2 gap-y-1.5 px-4 pt-3 text-xs text-texto-suave @xl:px-5.5">
           <span>En la imagen también pondré</span>
-          <ul className="contents" aria-label="Ambientación incluida en la imagen">
-            {ambientacion.map((etiqueta) => <li key={etiqueta} className="rounded-full bg-superficie-suave px-2.5 py-0.5 text-texto ring-1 ring-borde-suave ring-inset">{etiqueta}</li>)}
+          <ul className="contents" aria-label="Escenografía de tu foto que va en la imagen; se puede quitar">
+            {escenografia.map((chip) => {
+              const encendido = chipEncendido(chip);
+              return (
+                <li key={chip.etiqueta} className="contents">
+                  <button
+                    type="button"
+                    aria-pressed={encendido}
+                    disabled={!onEscenografiaToggle}
+                    onClick={() => onEscenografiaToggle?.(chip.elementIds, !encendido)}
+                    title={encendido ? `Quitar ${chip.etiqueta.toLowerCase()} de la imagen` : `Poner ${chip.etiqueta.toLowerCase()} en la imagen`}
+                    className={`rounded-full px-2.5 py-0.5 ring-1 ring-inset transition-colors focus-visible:outline-2 focus-visible:outline-acento disabled:cursor-default ${encendido ? "bg-superficie-suave text-texto ring-borde-suave" : "text-texto-suave line-through ring-borde-suave hover:text-texto"}`}
+                  >
+                    {chip.etiqueta}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
           <span>· no se cotizan</span>
         </motion.div>

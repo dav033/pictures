@@ -512,6 +512,16 @@
           "waste_reserve": 3
         }
       ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 22803,
+          "estructura_id": "EST_01_ARCO"
+        },
+        {
+          "consumo_cop": 36078,
+          "estructura_id": "EST_02_COLUMNAS"
+        }
+      ],
       "estructuras": [
         {
           "eje_m": 3.15,
@@ -1352,6 +1362,16 @@
           "used": 47,
           "variant_id": "V-PLATA-12-X50",
           "waste_reserve": 3
+        }
+      ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 22803,
+          "estructura_id": "EST_01_ARCO"
+        },
+        {
+          "consumo_cop": 36078,
+          "estructura_id": "EST_02_COLUMNAS"
         }
       ],
       "estructuras": [

@@ -171,10 +171,8 @@ export function isPythonAdapterError(error: unknown): error is PythonAdapterErro
   return error instanceof PythonAdapterError;
 }
 
-export function seleccionarBackendPython(
-  env: AdapterEnvironment = process.env,
-): BackendSelectionV1 {
-  return seleccionarBackendMigracion(env);
+export function seleccionarBackendPython(): BackendSelectionV1 {
+  return seleccionarBackendMigracion();
 }
 
 export interface PythonOperationInput {
@@ -332,11 +330,6 @@ async function llamarPythonOperacion(
   const requestId = z.string().uuid().parse(input.requestId);
   const correlationId = z.string().uuid().parse(input.correlationId);
   const env = input.env ?? process.env;
-  const selection = seleccionarBackendPython(env);
-  if (selection.backend !== "python") {
-    throw errorFor("PYTHON_BACKEND_NOT_SELECTED", 409, requestId, correlationId);
-  }
-
   const { url: baseUrl, secret } = readPythonConfig(env, requestId, correlationId);
   const target = endpointUrl(baseUrl, path);
   const scopes = [...(input.scopes ?? [defaultScope])];

@@ -261,34 +261,131 @@ export function ambientDecorName(raw: string): string | undefined {
 
 export type AmbientDecorItem = { elementId: string; name: string };
 
+/* ---------------------------------------------------------------------------
+ * FRONTERA PLAN / ESCENOGRAFÍA — regla de negocio (2026-09-16)
+ *
+ * El PLAN es el único dueño de lo que se construye y se cobra. La
+ * ESCENOGRAFÍA es lo que se conserva de la foto de referencia: entra en el
+ * prompt de imagen, lleva caja, el cliente la enciende o la apaga, y NUNCA
+ * toca cotización, materiales, `plan_hash` ni el plan. No se vende, no se
+ * cotiza, no se compra.
+ *
+ * Por eso la escenografía viaja por su propio canal (`SceneSpec.scenography`,
+ * un campo aparte de `SceneSpec.elements`) y jamás como un elemento del
+ * blueprint: la puerta `catalogOnly` de `buildApprovedSceneSpec` sigue
+ * rechazando cualquier elemento del plan sin producto de catálogo, que es lo
+ * que impide que el modelo se invente productos.
+ * ------------------------------------------------------------------------- */
+
+/** Categorías de escenografía: lo que se ve en la foto y el catálogo no vende. */
+const SCENERY_EXTRA_CATEGORIES = ["curtain", "drape"] as const;
+export const SCENERY_CATEGORIES: ReadonlySet<string> = new Set([...AMBIENT_CATEGORIES, ...SCENERY_EXTRA_CATEGORIES]);
+
+/** Cuántas piezas de escenografía como máximo llegan al prompt y a la tarjeta. */
+export const SCENERY_LIMIT = 6;
+
+export type SceneryItem = {
+  elementId: string;
+  sourceImageId: string;
+  /** Nombre renderizable en inglés (el mismo filtro que la ambientación LoRA). */
+  name: string;
+  category: ReferenceBlueprintV2["elements"][number]["category"];
+  /** Caja en la foto de referencia, normalizada [0,1]. */
+  bbox: ReferenceBBox;
+  depthLayer: number;
+  /** Valor por defecto del interruptor del cliente, antes de sus cambios. */
+  visibleByDefault: boolean;
+};
+
+/** Confianza mínima de detección para dibujar escenografía (regla histórica de la ambientación LoRA). */
+const SCENERY_MIN_CONFIDENCE = 0.6;
+
 /**
- * Styling seen in the reference that the catalog does not sell (string
- * lights, foliage, props). It is rendered only when the analysis kept it as
- * relevant (approved) with enough confidence, it is not already materialized
- * by an approved plan structure, and its name is plain English without text
- * or signage (the image model would invent lettering). Never quoted.
+ * Escenografía de la foto: elementos que el catálogo no vende (luces, flores,
+ * mobiliario, bases, mesas, cortinas) y que ninguna estructura del plan
+ * materializa. Solo entra lo que el análisis aprobó, con confianza suficiente
+ * y con un nombre en inglés plano sin letreros ni texto (el modelo de imagen
+ * inventaría tipografía). Nunca se cotiza.
+ *
+ * VALOR POR DEFECTO DEL INTERRUPTOR — `composition_relevance`. El análisis ya
+ * pide ese juicio por elemento (`STRUCTURE_DETECTION_RULES`) y ya lo aplica en
+ * la frontera: `candidatos-referencia.ts` convierte `minor` (despreciable) en
+ * `model_decision.action = "omit"`, así que un elemento `minor` nunca llega
+ * aprobado al blueprint. Lo que sobrevive es lo que el modelo llamó
+ * `essential` (define la composición) o `supporting` (styling claramente
+ * visible junto a la decoración): justo la escenografía que tiene sentido
+ * dibujar, y por eso llega encendida. El orden y el recorte a `limit` los
+ * decide después la confianza de detección y el área en la foto.
+ *
+ * El valor literal (`essential` vs `supporting`) NO viaja hoy en el blueprint:
+ * añadirlo a `ReferenceElementSchema` obliga a re-exportar
+ * `contracts/domain/v1/reference-blueprint.schema.json` y a regenerar
+ * `services/ai-api/app/generated_models.py`. Cuando ese campo exista, este es
+ * el único punto que hay que tocar para separar los dos niveles.
  */
-export function ambientDecorSelection(
+export function sceneryFromReference(
   blueprint: ReferenceBlueprintV2,
   materializedElementIds: ReadonlySet<string>,
-  limit = 3,
-): AmbientDecorItem[] {
+  limit = SCENERY_LIMIT,
+): SceneryItem[] {
   const seen = new Set<string>();
-  const items: AmbientDecorItem[] = [];
+  const items: SceneryItem[] = [];
   const candidates = blueprint.elements
     .filter((element) => element.approved
-      && AMBIENT_CATEGORIES.has(element.category)
-      && element.detection_confidence >= 0.6
+      && SCENERY_CATEGORIES.has(element.category)
+      && element.detection_confidence >= SCENERY_MIN_CONFIDENCE
       && !materializedElementIds.has(element.element_id))
     .sort((a, b) => b.detection_confidence - a.detection_confidence || b.reference_bbox.width * b.reference_bbox.height - a.reference_bbox.width * a.reference_bbox.height);
   for (const element of candidates) {
     const name = ambientDecorName(element.name);
     if (!name || seen.has(name)) continue;
     seen.add(name);
-    items.push({ elementId: element.element_id, name });
+    items.push({
+      elementId: element.element_id,
+      sourceImageId: element.source_image_id,
+      name,
+      category: element.category,
+      bbox: element.reference_bbox,
+      depthLayer: element.depth_layer,
+      visibleByDefault: true,
+    });
     if (items.length >= limit) break;
   }
   return items;
+}
+
+/**
+ * Aplica el interruptor del cliente sobre los valores por defecto del
+ * servidor. El cliente solo puede ENCENDER o APAGAR lo que el servidor ya
+ * eligió: un id que no esté en la lista no añade nada a la escena.
+ */
+export function applySceneryVisibility(
+  items: readonly SceneryItem[],
+  overrides: ReadonlyMap<string, boolean> | undefined,
+): Array<SceneryItem & { visible: boolean }> {
+  return items.map((item) => ({ ...item, visible: overrides?.get(item.elementId) ?? item.visibleByDefault }));
+}
+
+/**
+ * Styling seen in the reference that the catalog does not sell (string
+ * lights, foliage, props). It is rendered only when the analysis kept it as
+ * relevant (approved) with enough confidence, it is not already materialized
+ * by an approved plan structure, and its name is plain English without text
+ * or signage (the image model would invent lettering). Never quoted.
+ *
+ * Proyección de `sceneryFromReference` (dueña de la regla) sobre las
+ * categorías históricas de ambientación del caption LoRA: una cortina es
+ * escenografía, pero el caption LoRA nunca la nombró como styling.
+ */
+export function ambientDecorSelection(
+  blueprint: ReferenceBlueprintV2,
+  materializedElementIds: ReadonlySet<string>,
+  limit = 3,
+): AmbientDecorItem[] {
+  return sceneryFromReference(blueprint, materializedElementIds, Number.POSITIVE_INFINITY)
+    .filter((item) => AMBIENT_CATEGORIES.has(item.category))
+    .slice(0, limit)
+    .map((item) => ({ elementId: item.elementId, name: item.name }));
 }
 
 export function ambientDecorFromReference(

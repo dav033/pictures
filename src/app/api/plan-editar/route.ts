@@ -11,7 +11,7 @@ import { colorDeCatalogo } from "@/lib/plan/colores-catalogo";
 import { coloresRealesVariante } from "@/lib/plan/colores-producto";
 import { PlanEditError } from "@/lib/plan/edicion-error";
 import { admitirVariantePython, exigirContextoPython, recomendarAlternativasPython } from "@/lib/plan/edicion-python";
-import { PlanBackendNoDisponibleError, resolverPlanConBackend } from "@/lib/plan/resolver-backend";
+import { PlanBackendNoDisponibleError, resolverPlan } from "@/lib/plan/resolver-backend";
 import { PlanDecoracionSchema, type MaterialPlan, type PlanDecoracion } from "@/lib/plan/tipos";
 import { LoraModeSlugSchema } from "@/lib/lora/schema";
 import { resolveLoraModeDatasetAllowlist } from "@/lib/lora/mode-resolver";
@@ -532,27 +532,26 @@ export async function POST(request: Request) {
     if (!aprobacionBase) throw new PlanEditError(409, MENSAJE_APROBACION_INVALIDA);
 
     const contextoPlan = abrirContextoExigido(base.approval_token);
-    const backend = contextoPlan.backend;
-    // Kill switch first: a Python plan never reaches TypeScript resolution or SQL.
-    const snapshotPython = backend === "python" ? exigirContextoPython(contextoPlan) : null;
+    // Una propuesta con procedencia "next" ya no se puede re-resolver: ese
+    // resolutor desapareció (ADR-0023 paso 5). Los tokens caducan a las 24 h.
+    if (contextoPlan.backend !== "python") {
+      throw new PlanEditError(409, MENSAJE_APROBACION_INVALIDA);
+    }
+    const snapshotPython = exigirContextoPython(contextoPlan);
+    const whitelist = mapaDesdeAllowlist(contextoPlan.allowlist);
     const catalogAllowlist = await resolverCatalogAllowlist();
-    const whitelist = backend === "next"
-      ? await whitelistDesdeBase(pool, base)
-      : mapaDesdeAllowlist(contextoPlan.allowlist);
     const correlationId = correlationDesde(base.request_id ?? aprobacionBase.requestId);
 
-    const resolver = (plan: PlanDecoracion, allowlistPython: ContextoPlan["allowlist"]) => snapshotPython === null
-      ? resolverPlanConBackend({ backend: "next", pool, plan, whitelist, loraAllowlist: catalogAllowlist })
-      : resolverPlanConBackend({
-          backend: "python",
-          plan,
-          allowlist: allowlistPython,
-          catalogSnapshotId: snapshotPython,
-          loraAllowlist: catalogAllowlist,
-          requestId: crypto.randomUUID(),
-          correlationId,
-          signal: request.signal,
-        });
+    const resolver = (plan: PlanDecoracion, allowlistPython: ContextoPlan["allowlist"]) =>
+      resolverPlan({
+        plan,
+        allowlist: allowlistPython,
+        catalogSnapshotId: snapshotPython,
+        loraAllowlist: catalogAllowlist,
+        requestId: crypto.randomUUID(),
+        correlationId,
+        signal: request.signal,
+      });
 
     const planBaseVerificado = await resolver(base.plan, contextoPlan.allowlist);
     if (planBaseVerificado.resuelto.plan_hash !== base.plan_hash) {
@@ -571,12 +570,9 @@ export async function POST(request: Request) {
       if (catalogAllowlist && !catalogAllowlist.variantIds.includes(variante.variant_id)) {
         throw new PlanEditError(409, `LORA_DATASET_ALLOWLIST_REJECTED: ${variante.variant_id}`);
       }
-      if (snapshotPython === null) {
-        coloresVariante = await agregarVarianteAWhitelist(pool, whitelist, variante);
-      } else {
-        // Python plans: Python admits the pair in the signed snapshot; Next never runs catalog SQL.
-        coloresVariante = await admitirVariantePython({ variante, catalogSnapshotId: snapshotPython, whitelist, correlationId, signal: request.signal });
-      }
+      // El resolutor admite el par dentro del snapshot firmado; Next no
+      // consulta el catálogo por SQL.
+      coloresVariante = await admitirVariantePython({ variante, catalogSnapshotId: snapshotPython, whitelist, correlationId, signal: request.signal });
     }
     const planEditado = aplicarEdicion(base, body.edicion, coloresVariante);
     const allowlistFinal = allowlistDesdeMapa(whitelist);
@@ -601,7 +597,7 @@ export async function POST(request: Request) {
     resuelto.approval_token = crearTokenPlan({
       planHash: resuelto.plan_hash,
       requestId,
-      backend,
+      backend: "python",
       catalogSnapshotId: contextoPlan.catalogSnapshotId,
       allowlist: allowlistFinal,
       ...(contextoPlan.creatividad === null ? {} : { creatividad: contextoPlan.creatividad }),

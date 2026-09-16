@@ -17,7 +17,6 @@ import {
   llamarPythonEmbedding,
   llamarPythonPlanResolution,
   llamarPythonRerank,
-  seleccionarBackendPython,
 } from "../src/lib/ia/python-adapter";
 import type { PlanDecoracion } from "../src/lib/plan/tipos";
 import { POST } from "../src/app/api/internal/ai/echo/route";
@@ -25,8 +24,10 @@ import { POST } from "../src/app/api/internal/ai/echo/route";
 const SECRET = "local-only-secret-0123456789abcdef";
 const REQUEST_ID = "00000000-0000-4000-8000-000000000001";
 const CORRELATION_ID = "00000000-0000-4000-8000-000000000002";
+// Ya no hay selector de linaje: Python es el único backend de dominio
+// (ADR-0023 paso 5). Lo que el adaptador sigue leyendo del entorno es su
+// destino y su secreto de firma.
 const BASE_ENV = {
-  PYTHON_BACKEND_ENABLED: "true",
   PYTHON_BACKEND_URL: "http://python.test",
   INTERNAL_HMAC_SECRET: SECRET,
 };
@@ -132,37 +133,6 @@ async function withEnvironment<T>(
       else process.env[key] = value;
     }
   }
-}
-
-async function testEndpointSelection(): Promise<void> {
-  assert.equal(seleccionarBackendPython({}).backend, "next");
-  assert.equal(seleccionarBackendPython({ PYTHON_BACKEND_ENABLED: "true" }).backend, "python");
-  assert.equal(seleccionarBackendPython({
-    ...BASE_ENV,
-    PYTHON_BACKEND_KILL_SWITCH: "true",
-  }).backend, "next");
-
-  const defaultResponse = await withEnvironment({
-    PYTHON_BACKEND_ENABLED: undefined,
-    PYTHON_BACKEND_KILL_SWITCH: undefined,
-    PYTHON_BACKEND_URL: undefined,
-    INTERNAL_HMAC_SECRET: undefined,
-  }, () => POST(new Request("http://next.test/api/internal/ai/echo", {
-    method: "POST",
-    body: JSON.stringify({ message: "next" }),
-  })));
-  assert.equal(defaultResponse.status, 200);
-  assert.equal((await defaultResponse.json()).backend, "next");
-
-  const killResponse = await withEnvironment({
-    ...BASE_ENV,
-    PYTHON_BACKEND_KILL_SWITCH: "true",
-  }, () => POST(new Request("http://next.test/api/internal/ai/echo", {
-    method: "POST",
-    body: JSON.stringify({ message: "kill" }),
-  })));
-  assert.equal(killResponse.status, 200);
-  assert.equal((await killResponse.json()).backend, "next");
 }
 
 async function testEnabledHeadersAndNonce(): Promise<void> {
@@ -735,7 +705,7 @@ async function testCatalogRecommendationsEnvelope(): Promise<void> {
   );
 }
 
-async function testRouteEnabledAndMissingConfig(): Promise<void> {
+async function testRouteAndMissingConfig(): Promise<void> {
   const originalFetch = globalThis.fetch;
   try {
     let routeCalls = 0;
@@ -744,10 +714,7 @@ async function testRouteEnabledAndMissingConfig(): Promise<void> {
       return successResponse({ message: "python-route" });
     };
     globalThis.fetch = routeFetch;
-    const response = await withEnvironment({
-      ...BASE_ENV,
-      PYTHON_BACKEND_KILL_SWITCH: undefined,
-    }, () => POST(new Request("http://next.test/api/internal/ai/echo", {
+    const response = await withEnvironment(BASE_ENV, () => POST(new Request("http://next.test/api/internal/ai/echo", {
       method: "POST",
       headers: {
         "x-request-id": REQUEST_ID,
@@ -767,10 +734,7 @@ async function testRouteEnabledAndMissingConfig(): Promise<void> {
       { detail: { code: "invalid_signature" } },
       { status: 401 },
     );
-    const authFailure = await withEnvironment({
-      ...BASE_ENV,
-      PYTHON_BACKEND_KILL_SWITCH: undefined,
-    }, () => POST(new Request("http://next.test/api/internal/ai/echo", {
+    const authFailure = await withEnvironment(BASE_ENV, () => POST(new Request("http://next.test/api/internal/ai/echo", {
       method: "POST",
       body: JSON.stringify({ message: "no-fallback" }),
     })));
@@ -778,10 +742,8 @@ async function testRouteEnabledAndMissingConfig(): Promise<void> {
     assert.equal((await authFailure.json()).code, "PYTHON_AUTH_FAILED");
 
     const missing = await withEnvironment({
-      PYTHON_BACKEND_ENABLED: "true",
       PYTHON_BACKEND_URL: undefined,
       INTERNAL_HMAC_SECRET: undefined,
-      PYTHON_BACKEND_KILL_SWITCH: undefined,
     }, () => POST(new Request("http://next.test/api/internal/ai/echo", {
       method: "POST",
       body: JSON.stringify({ message: "missing" }),
@@ -794,7 +756,6 @@ async function testRouteEnabledAndMissingConfig(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  await testEndpointSelection();
   await testEnabledHeadersAndNonce();
   await testStableFailures();
   await testRerankEnvelopeAndPermutation();
@@ -804,7 +765,7 @@ async function main(): Promise<void> {
   await testPlanResolutionEnvelope();
   await testPlanResolutionDomainError();
   await testCatalogRecommendationsEnvelope();
-  await testRouteEnabledAndMissingConfig();
+  await testRouteAndMissingConfig();
   console.log("Python adapter: OK");
 }
 

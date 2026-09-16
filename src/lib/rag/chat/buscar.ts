@@ -267,9 +267,7 @@ export async function buscarCatalogoRag(
   opciones: OpcionesBusquedaRag = {},
 ): Promise<ResultadoBusquedaRag> {
   const rerankDeadlineAt = opciones.rerankDeadlineAt ?? Date.now() + RERANK_DEADLINE_MS;
-  if (seleccionarBackendPython().backend === "python") {
-    return buscarCatalogoPython(mensaje, { ...opciones, rerankDeadlineAt });
-  }
+  return buscarCatalogoPython(mensaje, { ...opciones, rerankDeadlineAt });
   const t0 = Date.now();
   const parseado = await interpretarConsulta(mensaje);
   // Semantic retrieval uses component text. Hard SQL filters come only from

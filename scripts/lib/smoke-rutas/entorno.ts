@@ -6,9 +6,15 @@ import path from "node:path";
  * a skip. Values are validated here, but secrets are never printed.
  */
 
-export type Fase = "python-on" | "kill-switch" | "python-down";
+/**
+ * `kill-switch` desapareció con `PYTHON_BACKEND_KILL_SWITCH` (ADR-0023 paso 5):
+ * ya no hay una variable que devuelva las rutas a TypeScript, así que tampoco
+ * hay una fase que comprobarlo. La reversión que sí existe —Python caído, sin
+ * reserva en Next— la cubre `python-down`.
+ */
+export type Fase = "python-on" | "python-down";
 
-const FASES: readonly Fase[] = ["python-on", "kill-switch", "python-down"];
+const FASES: readonly Fase[] = ["python-on", "python-down"];
 const PUERTO_PROHIBIDO = "3000";
 const MIN_SECRET_BYTES = 32;
 
@@ -101,10 +107,6 @@ export function leerConfig(argv: readonly string[], env: Entorno): { config: Con
   if (!env.PLAN_APPROVAL_SECRET?.trim()) errores.push("falta PLAN_APPROVAL_SECRET (debe ser el mismo de Next)");
   const hmac = env.INTERNAL_HMAC_SECRET?.trim() ?? "";
   if (Buffer.byteLength(hmac, "utf8") < MIN_SECRET_BYTES) errores.push("INTERNAL_HMAC_SECRET falta o tiene menos de 32 bytes");
-  // The smoke process itself signs calls to FastAPI in every phase, so its own
-  // selection must be Python regardless of how Next was restarted.
-  if (!esVerdadero(env.PYTHON_BACKEND_ENABLED)) errores.push("PYTHON_BACKEND_ENABLED debe ser true en el proceso del smoke");
-  if (esVerdadero(env.PYTHON_BACKEND_KILL_SWITCH)) errores.push("PYTHON_BACKEND_KILL_SWITCH debe ser false en el proceso del smoke");
 
   const imagenPagada = argv.includes("--paid-image") || esVerdadero(env.SMOKE_ALLOW_PAID_IMAGE);
   const reutilizarChat = argv.includes("--reuse-chat-plan");

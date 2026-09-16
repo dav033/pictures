@@ -63,16 +63,15 @@ const contexto = OperationalContextV1Schema.parse({
   scopes: [],
 });
 assert.equal(contexto.deadline_ms, 75_000);
-assert.deepEqual(seleccionarBackendMigracion({ PYTHON_BACKEND_ENABLED: "true" }), {
+// El selector ya no lee el entorno: Python es el único backend de dominio
+// (ADR-0023 paso 5). La matriz PYTHON_BACKEND_ENABLED/PYTHON_BACKEND_KILL_SWITCH
+// que se probaba aquí murió con el kill switch; lo que sigue vivo es que
+// `backend-selection.v1` se emite bien, porque /internal/v1/echo lo publica.
+assert.deepEqual(seleccionarBackendMigracion(), {
   schema_version: "operational.v1",
   backend: "python",
   kill_switch: false,
 });
-assert.deepEqual(seleccionarBackendMigracion({ PYTHON_BACKEND_ENABLED: "true", PYTHON_BACKEND_KILL_SWITCH: "true" }), {
-  schema_version: "operational.v1",
-  backend: "next",
-  kill_switch: true,
-});
-assert.equal(BackendSelectionV1Schema.parse(seleccionarBackendMigracion()).backend, "next");
+assert.equal(BackendSelectionV1Schema.parse(seleccionarBackendMigracion()).backend, "python");
 
 console.log("Operational boundary: OK");

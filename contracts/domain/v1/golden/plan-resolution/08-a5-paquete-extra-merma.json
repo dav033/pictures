@@ -168,6 +168,12 @@
           "waste_reserve": 5
         }
       ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 12857,
+          "estructura_id": "EST_01_MERMA"
+        }
+      ],
       "estructuras": [
         {
           "eje_m": 2.8,
@@ -459,6 +465,12 @@
           "used": 60,
           "variant_id": "V-A5-WASTE-R12-X7",
           "waste_reserve": 5
+        }
+      ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 12857,
+          "estructura_id": "EST_01_MERMA"
         }
       ],
       "estructuras": [

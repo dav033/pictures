@@ -1,0 +1,253 @@
+{
+  "plan_resuelto": {
+    "plan": {
+      "plan_version": "1.0",
+      "plan_id": "c0000003-0000-4000-8000-000000000003",
+      "concepto": {
+        "titulo": "Baby shower azul",
+        "descripcion": "Guirnalda sencilla en la pared.",
+        "paleta": [
+          "azul"
+        ],
+        "momento_dia": "día"
+      },
+      "espacio": {
+        "tipo": "casa",
+        "fuente": "supuesto"
+      },
+      "estructuras": [
+        {
+          "estructura_id": "EST_01_GUIRNALDA",
+          "nombre": "Guirnalda de pared",
+          "tipo": "guirnalda",
+          "rol_escena": "focal",
+          "ubicacion": "fondo_pared",
+          "medidas": {
+            "largo_m": 2.5,
+            "ancho_m": 2.5
+          },
+          "repeticiones": 1,
+          "densidad": "sencilla",
+          "mezcla": "clasica",
+          "materiales": [
+            {
+              "product_id": "P-CALIBRACION-LATEX",
+              "color": "azul",
+              "participacion": 1,
+              "rol_material": "principal"
+            }
+          ],
+          "porque": "Foco sencillo."
+        }
+      ],
+      "supuestos": [
+        "medidas asumidas para guirnalda: 2.5 m × 2.5 m — no nos diste el tamaño del espacio"
+      ],
+      "referencia_omitida": []
+    },
+    "plan_hash": "896a8957ed4fb728253ae40f386179ef3127d602fa0cd251e6b5b526e08268f0",
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_GUIRNALDA",
+        "nombre": "Guirnalda de pared",
+        "tipo": "guirnalda",
+        "ubicacion": "fondo_pared",
+        "repeticiones": 1,
+        "eje_m": 2.5,
+        "total_unidades": 42,
+        "lineas": [
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_GUIRNALDA"
+            },
+            "product_id": "P-CALIBRACION-LATEX",
+            "variant_id": "V-R-12-AZUL",
+            "sku": "SKU-R-12-AZUL",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": 1000,
+            "unidades_inferidas": false,
+            "titulo": "Globo Latex Redondo Azul — R-12 / PAQUETE X 50",
+            "color": "azul",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": null,
+            "unidades": 42,
+            "imagen": null,
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 42,
+            "pct": 100
+          }
+        ],
+        "supuestos": [
+          "medidas asumidas para guirnalda: 2.5 m × 2.5 m — no nos diste el tamaño del espacio"
+        ]
+      }
+    ],
+    "compras": [
+      {
+        "variant_id": "V-R-12-AZUL",
+        "product_id": "P-CALIBRACION-LATEX",
+        "sku": "SKU-R-12-AZUL",
+        "sku_original": null,
+        "source_snapshot_id": null,
+        "source_variant_id": null,
+        "inventory_quantity": 1000,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Azul — R-12 / PAQUETE X 50",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "azul",
+        "unidades_necesarias": 42,
+        "design_quantity": 42,
+        "waste_reserve": 4,
+        "required_quantity": 46,
+        "unidades_con_merma": 46,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 42,
+        "leftover_inventory": 4,
+        "consumption_cost": 12880,
+        "purchase_cost": 14000,
+        "additional_package_for_waste": false,
+        "sobrante": 8,
+        "precio_paquete": 14000,
+        "subtotal": 14000,
+        "estructuras": [
+          "EST_01_GUIRNALDA"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_GUIRNALDA"
+          }
+        ],
+        "imagen": null
+      }
+    ],
+    "totales": {
+      "globos_por_tamano": {
+        "R-12": 42
+      },
+      "total_unidades": 42,
+      "total_cop": 14000,
+      "design_quantity": 42,
+      "target_waste_reserve": 4,
+      "covered_waste_reserve": 4,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 8,
+      "purchase_cost": 14000,
+      "consumption_cost": 12880,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "ahorro_paquetes_cop": 0,
+      "incluye_iva": true,
+      "merma_porcentaje": 8
+    },
+    "sustituciones": [],
+    "sin_cobertura": [],
+    "advertencias": [],
+    "comercial": {
+      "estado": "APROBACION_REQUERIDA",
+      "delta_cop": 0
+    },
+    "alternativas": [
+      {
+        "familia_id": "P-CALIBRACION-LATEX",
+        "titulo": "Globo Latex Redondo Azul",
+        "total_cop": 14000,
+        "ahorro_cop": 0,
+        "etiqueta": "economica"
+      }
+    ],
+    "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 42\nTarget waste reserve: 4\nNatural package surplus: 8\nUsable waste coverage: 4\nAdditional packages required for waste: 0\nGlobo Latex Redondo Azul — R-12 / PAQUETE X 50: design=42, required=46, package=50, packages=1, purchased=50, natural surplus=8, waste reserve=4, leftover inventory=4",
+    "costes_por_estructura": [
+      {
+        "estructura_id": "EST_01_GUIRNALDA",
+        "consumo_cop": 11760
+      }
+    ]
+  },
+  "material_estimate": {
+    "version": "design-material-estimate-v1",
+    "design": {
+      "type": "guirnalda",
+      "shape": "clasica",
+      "dimensions_m": {
+        "width": 2.5,
+        "height": null,
+        "length": 2.5
+      },
+      "installation_length_m": 2.5,
+      "density": "sencilla",
+      "visual_density": "low",
+      "visual_scale": "medium",
+      "cluster_count": 1
+    },
+    "balloons": [
+      {
+        "structure_id": "EST_01_GUIRNALDA",
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-12-AZUL",
+        "color": "azul",
+        "finish": null,
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 42,
+        "waste_reserve": 0,
+        "required_quantity": 42,
+        "waste_adjusted_quantity": 42
+      }
+    ],
+    "special_elements": [],
+    "purchases": [
+      {
+        "product_id": "P-CALIBRACION-LATEX",
+        "variant_id": "V-R-12-AZUL",
+        "design_quantity": 42,
+        "waste_reserve": 4,
+        "required_quantity": 46,
+        "waste_adjusted_quantity": 46,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 42,
+        "leftover_inventory": 4,
+        "consumption_cost": 12880,
+        "purchase_cost": 14000,
+        "additional_package_for_waste": false,
+        "operational_surplus": 4,
+        "potential_surplus": 8
+      }
+    ],
+    "totals": {
+      "design_quantity": 42,
+      "target_waste_reserve": 4,
+      "covered_waste_reserve": 4,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 8,
+      "required_quantity": 46,
+      "consumption_cost": 12880,
+      "purchase_cost": 14000,
+      "waste_only_savings_cop": 0,
+      "additional_waste_packages": 0,
+      "waste_adjusted_quantity": 46,
+      "purchase_quantity": 50,
+      "operational_surplus": 4,
+      "potential_surplus": 8
+    },
+    "warnings": []
+  }
+}

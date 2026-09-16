@@ -222,6 +222,24 @@
           "waste_reserve": 16
         }
       ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 11600,
+          "estructura_id": "EST_01_SEMIARCO"
+        },
+        {
+          "consumo_cop": 8200,
+          "estructura_id": "EST_02_SEMIARCO"
+        },
+        {
+          "consumo_cop": 7800,
+          "estructura_id": "EST_03_COLUMNA"
+        },
+        {
+          "consumo_cop": 11600,
+          "estructura_id": "EST_04_SEMIARCO"
+        }
+      ],
       "estructuras": [
         {
           "eje_m": 2.73,
@@ -790,6 +808,24 @@
           "used": 196,
           "variant_id": "V-RED-12",
           "waste_reserve": 16
+        }
+      ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 11600,
+          "estructura_id": "EST_01_SEMIARCO"
+        },
+        {
+          "consumo_cop": 8200,
+          "estructura_id": "EST_02_SEMIARCO"
+        },
+        {
+          "consumo_cop": 7800,
+          "estructura_id": "EST_03_COLUMNA"
+        },
+        {
+          "consumo_cop": 11600,
+          "estructura_id": "EST_04_SEMIARCO"
         }
       ],
       "estructuras": [

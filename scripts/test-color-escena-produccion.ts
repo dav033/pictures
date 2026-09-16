@@ -21,15 +21,18 @@
  * (control negativo, para que no vuelva a pasar en verde si alguien la
  * reintroduce).
  *
- * Determinista y sin red: catálogo y plan salen de los vectores golden.
+ * Determinista y sin red: catálogo y plan salen de los vectores golden. El plan
+ * y su estimado son los **congelados** del bloque `expected` del vector
+ * (`planFijadoDeVector`), no el resultado de volver a resolverlo: lo que aquí
+ * se comprueba es el color que llega a la escena, no el resolutor que lo
+ * produjo, y así la prueba sobrevive al paso 5 del ADR-0023 sin pedir red.
  * Run: npx tsx --conditions=react-server scripts/test-color-escena-produccion.ts
  */
 import assert from "node:assert/strict";
 import { basename } from "node:path";
-import { estimateFromPlan } from "@/lib/materiales/estimacion";
 import { verificarCoherenciaPrompt } from "@/lib/plan/coherencia";
 import { coloresDeProduccionPorVariante, escenaDeVector } from "./lib/escena-de-vector";
-import { loadVectors, resolverVector, type CatalogRow, type GoldenVector } from "./lib/vectores-golden";
+import { loadVectors, planFijadoDeVector, type CatalogRow, type GoldenVector } from "./lib/vectores-golden";
 
 /** Los dos vectores cuyo catálogo separa el color de la variante del de la familia. */
 const VECTORES_DE_COLOR_DIVERGENTE = ["19-gris-no-es-plateado", "25-color-variante-primero"] as const;
@@ -50,9 +53,9 @@ function coloresReglaAnterior(fila: CatalogRow): string[] {
   return variante.length ? variante : producto.length === 1 ? producto : [];
 }
 
-async function coherenciaDelVector(vector: GoldenVector, colores: ReadonlyMap<string, readonly string[]>) {
-  const plan = await resolverVector(vector);
-  const { prompt, coherencia } = escenaDeVector(plan, estimateFromPlan(plan), colores);
+function coherenciaDelVector(vector: GoldenVector, colores: ReadonlyMap<string, readonly string[]>) {
+  const { plan, materialEstimate } = planFijadoDeVector(vector);
+  const { prompt, coherencia } = escenaDeVector(plan, materialEstimate, colores);
   return verificarCoherenciaPrompt(prompt, plan, coherencia);
 }
 
@@ -64,13 +67,13 @@ async function main(): Promise<void> {
   for (const { file, vector } of vectores) {
     const nombre = basename(file, ".json");
     vistos.add(nombre);
-    const plan = await resolverVector(vector);
+    const { plan, materialEstimate } = planFijadoDeVector(vector);
     // Una estructura que no compró nada no tiene producto de catálogo con el
     // que armar la escena; eso lo cubre `plan:test-invariantes` con su omisión.
     if (plan.estructuras.some((estructura) => estructura.lineas.length === 0)) continue;
 
     const colores = await coloresDeProduccionPorVariante(vector.catalog_rows);
-    const { prompt, coherencia: escena } = escenaDeVector(plan, estimateFromPlan(plan), colores);
+    const { prompt, coherencia: escena } = escenaDeVector(plan, materialEstimate, colores);
     const resultado = verificarCoherenciaPrompt(prompt, plan, escena);
     assert.equal(
       resultado.ok,
@@ -100,7 +103,7 @@ async function main(): Promise<void> {
     assert.ok(vistos.has(nombre), `falta el vector ${nombre}, que es el que da sentido a esta prueba`);
     const { vector } = vectores.find((candidato) => basename(candidato.file, ".json") === nombre)!;
     const anteriores = new Map(vector.catalog_rows.map((fila) => [fila.variant_id, coloresReglaAnterior(fila)]));
-    const resultado = await coherenciaDelVector(vector, anteriores);
+    const resultado = coherenciaDelVector(vector, anteriores);
     assert.equal(resultado.ok, false, `${nombre}: la regla de color anterior tendría que romper la puerta de coherencia y no la rompió`);
     assert.ok(
       resultado.errores.some((error) => error.includes("no son los comprados")),

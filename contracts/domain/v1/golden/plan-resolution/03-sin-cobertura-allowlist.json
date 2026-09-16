@@ -83,6 +83,12 @@
         "estado": "APROBACION_REQUERIDA"
       },
       "compras": [],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": null,
+          "estructura_id": "EST_01_COLUMNA"
+        }
+      ],
       "estructuras": [
         {
           "eje_m": 1.4,
@@ -232,6 +238,12 @@
         "estado": "APROBACION_REQUERIDA"
       },
       "compras": [],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": null,
+          "estructura_id": "EST_01_COLUMNA"
+        }
+      ],
       "estructuras": [
         {
           "eje_m": 1.4,

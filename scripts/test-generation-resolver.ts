@@ -1,13 +1,23 @@
 import { existsSync } from "node:fs";
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { getDb } from "../src/lib/db";
 import { classifyGenerationIds, normalizeGenerationSources } from "../src/lib/generacion/provenance";
-import { crearTokenAprobacion } from "../src/lib/plan/aprobacion";
-import { resolverPlan } from "../src/lib/plan/resolver";
-import { PlanDecoracionSchema } from "../src/lib/plan/tipos";
 import { resolverProductosParaGeneracion } from "../src/lib/rag/generate-products";
+
+/**
+ * Lo que este arnés probaba y ya no tiene sujeto en TypeScript (ADR-0023 paso 5):
+ * los tres casos que resolvían un plan con `resolverPlan(pool, plan, whitelist)`
+ * para firmar su `plan_hash` y mandarlo a /api/generate —el hash que sobrevive a
+ * la revalidación contra el catálogo, la frontera "pasa la validación y se para
+ * sin llave de proveedor", el payload malformado y la regresión R-12→R-24. Ese
+ * resolutor ya no existe: /api/generate resuelve llamando al servicio Python, y
+ * reproducirlos aquí exigiría un FastAPI levantado, que es justo lo que ejercitan
+ * `plan:test-python-allowlist` y `smoke:rutas-python-local`. Lo que queda aquí es
+ * lo que sigue siendo de Next y de PostgreSQL: la procedencia de las fuentes, la
+ * resolución de productos contra el catálogo real y el rechazo en cerrado de una
+ * generación sin propuesta aprobada.
+ */
 
 for (const archivo of [".env.local", ".env"]) {
   if (existsSync(archivo)) process.loadEnvFile(archivo);
@@ -205,116 +215,6 @@ async function main(): Promise<void> {
     assert.equal(sinPropuesta.status, 400);
     assert.match(sinPropuesta.error ?? "", /APROBACION_REQUERIDA/);
     console.log("[PASS] HTTP /api/generate: una petición sin propuesta aprobada se rechaza sin llamar al proveedor.");
-
-    const { rows: planRows } = await pool.query<{ product_id: string; variant_id: string }>(
-      `SELECT p.product_id, v.variant_id
-         FROM catalog_products p
-         JOIN catalog_variants v ON v.product_id = p.product_id
-        WHERE p.status = 'ACTIVE'
-          AND p.available = true
-          AND v.available = true
-          AND v.price > 0
-          AND NULLIF(to_jsonb(v)->>'unidades_paq', '')::integer > 0
-        ORDER BY v.variant_id
-        LIMIT 1`,
-    );
-    assert.ok(planRows[0], "La base RAG debe tener una variante cotizable para probar el hash aprobado.");
-    const planParaHash = PlanDecoracionSchema.parse({
-      plan_version: "1.0",
-      plan_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
-      concepto: { titulo: "Hash aprobado", descripcion: "Prueba de revalidación antes de generar.", paleta: [] },
-      espacio: { tipo: "salón", fuente: "supuesto" },
-      estructuras: [{
-        estructura_id: "EST_01_ACCESORIO",
-        nombre: "Pieza aprobada",
-        tipo: "accesorio",
-        rol_escena: "focal",
-        ubicacion: "fondo_pared",
-        medidas: {},
-        repeticiones: 1,
-        densidad: "sencilla",
-        mezcla: "clasica",
-        materiales: [{ product_id: planRows[0]!.product_id, variant_id: planRows[0]!.variant_id, participacion: 1, rol_material: "principal" }],
-        unidades_declaradas: 1,
-        porque: "Fixture de hash.",
-      }],
-      supuestos: [],
-    });
-    const planAprobado = await resolverPlan(pool, planParaHash, new Map([[planRows[0]!.product_id, new Set([planRows[0]!.variant_id])]]));
-    assert.equal(planAprobado.sin_cobertura.length, 0);
-    const requestId = randomUUID();
-    const token = crearTokenAprobacion(planAprobado.plan_hash, requestId);
-    const approvedPlanBoundary = await postGenerate({
-      ragVariantIds: [planRows[0]!.variant_id],
-      planHash: planAprobado.plan_hash,
-      plan: { ...planAprobado, request_id: requestId, approval_token: token },
-    });
-    assert.notEqual(approvedPlanBoundary.error && /Plan hash does not match/i.test(approvedPlanBoundary.error), true);
-    console.log("[PASS] HTTP /api/generate: un plan aprobado conserva el hash al revalidarse con la whitelist del catálogo.");
-
-    // Evidencia de frontera sin proveedor pagado: con la propuesta aprobada, la
-    // petición supera la validación de catálogo y se detiene en la ausencia de
-    // llave, no antes.
-    assert.ok(approvedPlanBoundary.error && !/could not be validated/i.test(approvedPlanBoundary.error));
-    assert.match(approvedPlanBoundary.error ?? "", /llave/i);
-    console.log("[PASS] HTTP /api/generate: con propuesta aprobada se pasa la validación de catálogo y se para sin proveedor configurado.");
-
-    const invalidBoundary = await postGenerate({
-      productIds: "no-es-array",
-      planHash: planAprobado.plan_hash,
-      plan: { ...planAprobado, request_id: requestId, approval_token: token },
-    });
-    assert.equal(invalidBoundary.status, 400);
-    assert.match(invalidBoundary.error ?? "", /productIds must be an array/i);
-    console.log("[PASS] HTTP /api/generate: payload malformado devuelve 400 sin llegar al proveedor.");
-
-    const { rows: r24Rows } = await pool.query<{ product_id: string; variant_id: string }>(
-      `SELECT p.product_id, v.variant_id
-         FROM catalog_products p
-         JOIN catalog_variants v ON v.product_id = p.product_id
-        WHERE p.title ILIKE '%Diamantes Dorados Fashion Transparente%'
-          AND v.codigo_tamano = 'R-24' AND v.available = true
-        LIMIT 1`,
-    );
-    if (!r24Rows[0]) {
-      console.log("[N/A] prueba HTTP R-24: el producto del incidente no está en este snapshot de catálogo.");
-      return;
-    }
-    const declarativePlan = PlanDecoracionSchema.parse({
-      plan_version: "1.0",
-      plan_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
-      concepto: { titulo: "Regresión R-24", descripcion: "No sustituir columnas R-12 por R-24.", paleta: ["dorado"] },
-      espacio: { tipo: "jardín", fuente: "supuesto" },
-      estructuras: [{
-        estructura_id: "EST_01_COLUMNAS",
-        nombre: "Columnas de entrada",
-        tipo: "columna",
-        rol_escena: "focal",
-        ubicacion: "entrada",
-        medidas: { alto_m: 1.8 },
-        repeticiones: 2,
-        densidad: "media",
-        mezcla: "clasica",
-        materiales: [{ product_id: r24Rows[0].product_id, participacion: 1, rol_material: "principal" }],
-        porque: "Caso que antes cotizaba 29 paquetes gigantes.",
-      }],
-      supuestos: [],
-    });
-    const planValidado = await resolverPlan(pool, declarativePlan, new Map([[r24Rows[0].product_id, new Set([r24Rows[0].variant_id])]]));
-    const hash = planValidado.plan_hash;
-    const invalidSizeBoundary = await postGenerate({
-      ragVariantIds: [r24Rows[0].variant_id],
-      planHash: hash,
-      plan: {
-        plan: declarativePlan,
-        plan_hash: hash,
-        approval_token: crearTokenAprobacion(hash, randomUUID()),
-        compras: [{ variant_id: r24Rows[0].variant_id }],
-      },
-    });
-    assert.equal(invalidSizeBoundary.status, 400);
-    assert.match(invalidSizeBoundary.error ?? "", /sin cobertura/i);
-    console.log("[PASS] HTTP /api/generate: R-12→R-24 se bloquea antes de llamar al proveedor o emitir cotización.");
   } finally {
     if (previousApiKey === undefined) delete process.env.GEMINI_API_KEY;
     else process.env.GEMINI_API_KEY = previousApiKey;

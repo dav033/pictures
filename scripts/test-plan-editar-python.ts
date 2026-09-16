@@ -9,8 +9,6 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-process.env.PYTHON_BACKEND_ENABLED = "true";
-process.env.PYTHON_BACKEND_KILL_SWITCH = "false";
 process.env.PYTHON_BACKEND_URL = "http://python.test";
 process.env.INTERNAL_HMAC_SECRET = "local-only-secret-0123456789abcdef";
 process.env.DATABASE_URL = "postgresql://demo:demo@127.0.0.1:5432/demo_rag";
@@ -484,21 +482,10 @@ async function main(): Promise<void> {
   assert.equal(materialesAgregados.at(-1)!.color, "azul", "agregar canoniza el color del cliente");
   console.log("[PASS] edición: el color sale del catálogo y de la variante elegida, nunca de la pieza anterior");
 
-  // --- 7. Kill switch: a Python token never falls back to TypeScript, in any mode.
-  process.env.PYTHON_BACKEND_KILL_SWITCH = "true";
-  llamadas = instalarFetch(() => { throw new Error("con kill switch no debe llamarse a Python"); });
-  for (const cuerpo of [
-    reemplazo({ product_id: "prod-rojo", variant_id: "var-rojo-12" }),
-    { modo: "recomendadas", variant_id: "var-rojo-12", approval_token: tokenPython },
-    { modo: "buscar", consulta: "globo rojo", approval_token: tokenPython },
-  ]) {
-    r = await editar(cuerpo);
-    assert.equal(r.status, 409, `modo ${String(cuerpo.modo)}`);
-    assert.equal(r.cuerpo.causa, "PYTHON_NO_SELECCIONADO", `modo ${String(cuerpo.modo)}`);
-  }
-  assert.equal(llamadas.length, 0);
-  process.env.PYTHON_BACKEND_KILL_SWITCH = "false";
-  console.log("[PASS] kill switch: token Python → 409 PYTHON_NO_SELECCIONADO en los tres modos sin fallback");
+  // El bloque 7 probaba el kill switch: con `PYTHON_BACKEND_KILL_SWITCH=true`
+  // un token Python daba 409 PYTHON_NO_SELECCIONADO en los tres modos sin
+  // caer a TypeScript. El paso 5 del ADR-0023 retiró el switch y con él esa
+  // causa, así que la rama no existe y no hay nada que afirmar.
 
   assert.deepEqual(abrirContextoPlan(tokenPython)?.allowlist, allowlistFirmada, "el token original sigue intacto");
 }

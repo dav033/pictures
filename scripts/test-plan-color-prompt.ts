@@ -1,17 +1,14 @@
 import assert from "node:assert/strict";
-import type { Pool } from "pg";
-import { resolverPlan } from "@/lib/plan/resolver";
-import { PlanDecoracionSchema } from "@/lib/plan/tipos";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { planBlueprint } from "@/lib/plan/blueprint";
 import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/scene-spec";
 import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
-import { estimateFromPlan } from "@/lib/materiales/estimacion";
 import { buildImagePrompt, placementDescription, promptElementName, tieneContratoDeColor } from "@/lib/ia/build-image-prompt";
 import { buildQaObserverPrompt, qaPlanInputsFromPlan } from "@/lib/ia/image-qa";
 import { compileLoraCaption, GROUPING_ONLY_CONTEXT, translateLoraColor } from "@/lib/ia/lora-caption-compiler";
 import { verificarCoherenciaPrompt, verificarColoresCaptionLora, type EscenaParaCoherencia } from "@/lib/plan/coherencia";
 import { bloqueMezclaPorEstructura } from "@/lib/ia/tamano-fisico";
+import { planFijado, type PlanFijadoDeFixture } from "./lib/planes-fijados";
 
 /**
  * La proporción de color por estructura tiene que llegar al prompt de imagen.
@@ -21,8 +18,9 @@ import { bloqueMezclaPorEstructura } from "@/lib/ia/tamano-fisico";
  * las líneas del despiece (el acento podía ir primero) y `composition` se
  * cortaba con `slice(0, 240)` a mitad de fragmento.
  *
- * Determinista y sin red: PlanDecoracion -> resolverPlan (pool simulado) ->
- * planBlueprint -> SceneSpec.
+ * Determinista y sin red: plan congelado (`scripts/lib/planes-fijados.ts`,
+ * ADR-0023 paso 5) -> planBlueprint -> SceneSpec. El sujeto de este test es el
+ * blueprint y el prompt, nunca el resolutor: los planes son entradas.
  * Run: npx tsx --conditions=react-server scripts/test-plan-color-prompt.ts
  */
 
@@ -57,29 +55,16 @@ const rows = PRODUCTOS.flatMap((producto) => TAMANOS.map((tamano) => ({
   acabados_producto: [producto.acabado],
   descripcion: `Globo látex ${producto.color} ${tamano.codigo}.`,
 })));
-// Pool simulado con la misma forma que scripts/test-generate-qa-plan.ts: el resolver solo lee `rows`.
-const pool = { query: async () => ({ rows }) } as unknown as Pool;
-const whitelist = new Map<string, ReadonlySet<string>>(
-  PRODUCTOS.map((producto) => [producto.productId, new Set(rows.filter((row) => row.product_id === producto.productId).map((row) => row.variant_id))] as const),
-);
+// El catálogo sigue aquí: de él salen los colores por variante que la escena
+// necesita. Lo que ya no vive aquí es el plan resuelto (ADR-0023, paso 5).
 
-type Material = { product_id: string; color: string; participacion: number; rol_material: string };
-
-async function planResuelto(planId: string, estructuras: unknown[]): Promise<PlanResuelto> {
-  const declarado = PlanDecoracionSchema.parse({
-    plan_version: "1.0",
-    plan_id: planId,
-    concepto: { titulo: "Prueba de color", descripcion: "Mezcla de color por estructura.", paleta: ["blanco", "dorado", "rosado"] },
-    espacio: { tipo: "salón", fuente: "supuesto" },
-    estructuras,
-    supuestos: [],
-  });
-  const resuelto = await resolverPlan(pool, declarado, whitelist);
-  assert.equal(resuelto.sin_cobertura.length, 0, `el plan debe resolver sin huecos: ${JSON.stringify(resuelto.sin_cobertura)}`);
-  return resuelto;
+function planResuelto(fixture: string): PlanFijadoDeFixture {
+  const fijado = planFijado(fixture);
+  assert.equal(fijado.plan.sin_cobertura.length, 0, `el plan debe resolver sin huecos: ${JSON.stringify(fijado.plan.sin_cobertura)}`);
+  return fijado;
 }
 
-function escenaDe(plan: PlanResuelto): SceneSpec {
+function escenaDe({ plan, materialEstimate }: PlanFijadoDeFixture): SceneSpec {
   const blueprint = planBlueprint(plan);
   return buildApprovedSceneSpec({
     blueprint,
@@ -94,7 +79,7 @@ function escenaDe(plan: PlanResuelto): SceneSpec {
       share: linea.share,
       role: linea.role,
     }))])),
-    materialEstimate: estimateFromPlan(plan),
+    materialEstimate,
     generationMode: "text_to_image",
     createdBy: "server_default",
     planHash: plan.plan_hash,
@@ -131,18 +116,11 @@ function sizeMixDe(plan: PlanResuelto, escena: SceneSpec): string | undefined {
   }))) ?? undefined;
 }
 
-const materiales: Material[] = [
-  { product_id: "P-BLANCO", color: "blanco", participacion: 0.6, rol_material: "principal" },
-  { product_id: "P-DORADO", color: "dorado", participacion: 0.25, rol_material: "secundario" },
-  { product_id: "P-ROSADO", color: "rosado", participacion: 0.15, rol_material: "acento" },
-];
-
-async function main(): Promise<void> {
+function main(): void {
   // 1. Arco de tres materiales y cinco tamaños: la mezcla por color no se
   //    parte por tamaño y el color dominante encabeza.
-  const plan = await planResuelto("11111111-1111-4111-8111-111111111111", [
-    { estructura_id: "EST_01_ARCO", nombre: "Arco principal", tipo: "arco", rol_escena: "focal", ubicacion: "arco_central", medidas: { ancho_m: 2.4, alto_m: 2.2 }, repeticiones: 1, densidad: "media", mezcla: "organica_fina", materiales, porque: "Pieza principal." },
-  ]);
+  const fijadoArco = planResuelto("color-arco-tres-materiales");
+  const plan: PlanResuelto = fijadoArco.plan;
   const blueprint = planBlueprint(plan);
   const arco = blueprint.elements[0]!;
   const unidadesPorColor = new Map<string, number>();
@@ -175,40 +153,29 @@ async function main(): Promise<void> {
 
   // 2. El SceneSpec conserva ese orden en resolved_colors (antes lo rehacía
   //    con el orden del bill_of_materials, es decir el de las variantes).
-  const escena = escenaDe(plan);
+  const escena = escenaDe(fijadoArco);
   assert.deepEqual(escena.elements[0]!.resolved_colors, esperado, "el scene spec conserva el orden de dominancia del elemento");
   console.log("[PASS] buildApprovedSceneSpec: resolved_colors multi-material conserva el orden del elemento");
 
   // 3. Manda la dominancia, no el orden en que el plan declaró los
   //    materiales: aquí el acento va declarado primero y las líneas del
   //    despiece lo listan primero, pero el prompt nombra antes al dominante.
-  const acentoPrimero = await planResuelto("22222222-2222-4222-8222-222222222222", [
-    { estructura_id: "EST_01_ARCO", nombre: "Arco principal", tipo: "arco", rol_escena: "focal", ubicacion: "arco_central", medidas: { ancho_m: 2.4, alto_m: 2.2 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales: [
-      { product_id: "P-DORADO", color: "dorado", participacion: 0.2, rol_material: "acento" },
-      { product_id: "P-BLANCO", color: "blanco", participacion: 0.8, rol_material: "principal" },
-    ], porque: "Blanco dominante con acento dorado." },
-  ]);
+  const fijadoAcentoPrimero = planResuelto("color-acento-primero");
+  const acentoPrimero = fijadoAcentoPrimero.plan;
   assert.equal([...new Set(acentoPrimero.estructuras[0]!.lineas.map((linea) => linea.color))][0], "dorado", "el despiece sí lista primero el acento");
   const arcoDosColores = planBlueprint(acentoPrimero).elements[0]!;
   assert.deepEqual(arcoDosColores.appearance.resolved_colors, ["blanco", "dorado"]);
   assert.match(arcoDosColores.appearance.composition, /^80% principal \(blanco\); 20% acento \(dorado\)$/, arcoDosColores.appearance.composition);
-  assert.deepEqual(escenaDe(acentoPrimero).elements[0]!.resolved_colors, ["blanco", "dorado"]);
+  assert.deepEqual(escenaDe(fijadoAcentoPrimero).elements[0]!.resolved_colors, ["blanco", "dorado"]);
   console.log("[PASS] planBlueprint: 80/20 se lee como 80/20 y el dominante encabeza aunque el acento se declare primero");
 
   // 4. La proporción y el acabado de ESTA estructura llegan al prompt de
   //    imagen y al QA. El conteo global de la escena sumaba las columnas
   //    doradas al arco, así que el dorado parecía dominante, y el prompt
   //    prometía "material percentages in the scene spec" que no existían.
-  const conColumnas = await planResuelto("33333333-3333-4333-8333-333333333333", [
-    { estructura_id: "EST_01_ARCO", nombre: "Arco principal", tipo: "arco", rol_escena: "focal", ubicacion: "arco_central", medidas: { ancho_m: 2.4, alto_m: 2.2 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales: [
-      { product_id: "P-BLANCO", color: "blanco", participacion: 0.85, rol_material: "principal" },
-      { product_id: "P-DORADO", color: "dorado", participacion: 0.15, rol_material: "acento" },
-    ], porque: "Arco mayormente blanco." },
-    { estructura_id: "EST_02_COLUMNAS", nombre: "Columnas laterales", tipo: "columna", rol_escena: "soporte", ubicacion: "lateral_izquierdo", medidas: { alto_m: 1.8 }, repeticiones: 2, densidad: "media", mezcla: "clasica", materiales: [
-      { product_id: "P-DORADO", color: "dorado", participacion: 1, rol_material: "principal" },
-    ], porque: "Columnas doradas a los lados." },
-  ]);
-  const escenaColumnas = escenaDe(conColumnas);
+  const fijadoColumnas = planResuelto("color-arco-con-columnas");
+  const conColumnas = fijadoColumnas.plan;
+  const escenaColumnas = escenaDe(fijadoColumnas);
   const prompt = buildImagePrompt({ sceneSpec: escenaColumnas, sizeMixBlock: sizeMixDe(conColumnas, escenaColumnas) });
   const lineaArco = prompt.split("\n").find((linea) => linea.includes("APPROVED COLOR VARIETY"))!;
   assert.ok(lineaArco.indexOf("blanco (~85%") < lineaArco.indexOf("dorado (~15%"), lineaArco);
@@ -224,7 +191,7 @@ async function main(): Promise<void> {
   assert.equal(verificarCoherenciaPrompt(prompt, conColumnas).ok, true, JSON.stringify(verificarCoherenciaPrompt(prompt, conColumnas).errores));
 
   // El observador recibe exactamente la misma mezcla.
-  const qa = buildQaObserverPrompt(escenaColumnas, estimateFromPlan(conColumnas), qaPlanInputsFromPlan(conColumnas.plan.estructuras));
+  const qa = buildQaObserverPrompt(escenaColumnas, fijadoColumnas.materialEstimate, qaPlanInputsFromPlan(conColumnas.plan.estructuras));
   assert.match(qa, /EST_01_ARCO: [^\n]*color mix=mostly blanco \(~85%, matte\) with dorado \(~15%, high-shine chrome\) as accents;/, qa);
   assert.doesNotMatch(qa, /material description above/, "la instrucción ya no apunta a una descripción inexistente");
   assert.match(qa, /inverted dominant\/accent share/);
@@ -269,18 +236,9 @@ async function main(): Promise<void> {
   //     medidas. Indexar las líneas del prompt por nombre se quedaba con la
   //     ÚLTIMA y hacía fallar cerrado un prompt correcto (route.ts aborta la
   //     generación antes de llamar al proveedor).
-  const homonimas = await planResuelto("44444444-4444-4444-8444-444444444444", [
-    { estructura_id: "EST_01_ARCO", nombre: "Arco principal", tipo: "arco", rol_escena: "focal", ubicacion: "arco_central", medidas: { ancho_m: 2.4, alto_m: 2.2 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales: [
-      { product_id: "P-ROSADO", color: "rosado", participacion: 1, rol_material: "principal" },
-    ], porque: "Pieza focal." },
-    { estructura_id: "EST_02_COL", nombre: "Columna", tipo: "columna", rol_escena: "soporte", ubicacion: "lateral_izquierdo", medidas: { alto_m: 1.8 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales: [
-      { product_id: "P-BLANCO", color: "blanco", participacion: 1, rol_material: "principal" },
-    ], porque: "Columna blanca a la izquierda." },
-    { estructura_id: "EST_03_COL", nombre: "Columna", tipo: "columna", rol_escena: "soporte", ubicacion: "lateral_derecho", medidas: { alto_m: 1.8 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales: [
-      { product_id: "P-DORADO", color: "dorado", participacion: 1, rol_material: "principal" },
-    ], porque: "Columna dorada a la derecha." },
-  ]);
-  const escenaHomonimas = escenaDe(homonimas);
+  const fijadoHomonimas = planResuelto("color-homonimas");
+  const homonimas = fijadoHomonimas.plan;
+  const escenaHomonimas = escenaDe(fijadoHomonimas);
   const sizeMixHomonimas = sizeMixDe(homonimas, escenaHomonimas);
   assert.ok(sizeMixHomonimas, "el plan con columnas tiene bloque de tamaños");
   const promptHomonimas = buildImagePrompt({ sceneSpec: escenaHomonimas, sizeMixBlock: sizeMixHomonimas });
@@ -321,7 +279,9 @@ async function main(): Promise<void> {
   console.log("[PASS] sin líneas del estimado para la estructura, el prompt no inventa proporciones");
 }
 
-main().catch((error) => {
+try {
+  main();
+} catch (error: unknown) {
   console.error(error);
   process.exit(1);
-});
+}

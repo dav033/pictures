@@ -3,8 +3,8 @@
  * paths owned by Python (design E2), against the local FastAPI service and the
  * local PostgreSQL catalog. Not part of `plan:test`: it needs running services.
  *
- * Fail-closed: a run that is required (PYTHON_BACKEND_ENABLED=true, or
- * --require-python / PYTHON_SMOKE_REQUIRED) and cannot reach FastAPI fails.
+ * Fail-closed: a run that is required (--require-python / PYTHON_SMOKE_REQUIRED)
+ * and cannot reach FastAPI fails.
  */
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
@@ -35,7 +35,7 @@ async function main(): Promise<void> {
   const [
     { llamarPythonCatalogSearch, llamarPythonCatalogRecommendations, isPythonAdapterError },
     { allowlistDesdeMapa, abrirContextoPlan, crearTokenPlan, verificarTokenAprobacion },
-    { resolverPlanConBackend },
+    { resolverPlan },
     { AllowlistProductoVarianteError },
     { PlanDecoracionSchema },
     { POST: editar },
@@ -108,8 +108,7 @@ async function main(): Promise<void> {
       ],
       supuestos: [],
     });
-    const resolver = (plan: ReturnType<typeof construirPlan>, entradas: typeof allowlist) => resolverPlanConBackend({
-      backend: "python",
+    const resolver = (plan: ReturnType<typeof construirPlan>, entradas: typeof allowlist) => resolverPlan({
       plan,
       allowlist: entradas,
       catalogSnapshotId: S,

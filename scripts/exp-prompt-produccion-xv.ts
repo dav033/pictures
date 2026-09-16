@@ -1,13 +1,10 @@
-import type { Pool } from "pg";
-import { resolverPlan } from "@/lib/plan/resolver";
-import { PlanDecoracionSchema, type PlanDecoracion } from "@/lib/plan/tipos";
 import { planBlueprint } from "@/lib/plan/blueprint";
 import { buildApprovedSceneSpec } from "@/lib/ia/scene-spec";
 import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
-import { estimateFromPlan } from "@/lib/materiales/estimacion";
 import { buildVisualContext } from "@/lib/ia/visual-context";
 import { compileLoraCaption } from "@/lib/ia/lora-caption-compiler";
 import { preflightLoraPrompt } from "@/lib/ia/lora-prompt-preflight";
+import { planFijado } from "./lib/planes-fijados";
 import { PROMPT_V2 } from "./exp-fal-lib";
 
 /**
@@ -15,16 +12,19 @@ import { PROMPT_V2 } from "./exp-fal-lib";
  *
  * Los pasos 0 a 3 validaron un STRING de prompt contra fal, tomado de la salida
  * de demostración de `proto-lora-caption-v3.ts`. Eso no prueba que el camino de
- * producción emita ese texto. Este script recorre la cadena real —
- * `resolverPlan` -> `planBlueprint` -> `buildApprovedSceneSpec` ->
- * `compileLoraCaption` — sobre un plan XV de cuatro estructuras (arco central,
- * dos columnas laterales y centro de mesa) e imprime:
+ * producción emita ese texto. Este script recorre la cadena real — plan
+ * resuelto -> `planBlueprint` -> `buildApprovedSceneSpec` -> `compileLoraCaption`
+ * — sobre un plan XV de cuatro estructuras (arco central, dos columnas
+ * laterales y centro de mesa) e imprime:
  *
  *   - el prompt v2 que saldría hacia fal.ai
  *   - el resultado del preflight, que puede bloquear la generación
- *   - el diff contra el string que efectivamente se testeó
+ *   - el diff contra el string que efectivamente se teó.
  *
- * No llama a fal.ai ni gasta un centavo.
+ * El plan resuelto es un fixture congelado (`scripts/lib/planes-fijados.ts`):
+ * el paso 5 del ADR-0023 deja a Python como único dueño del conteo y retira el
+ * resolutor TypeScript. Lo que este script inspecciona es el prompt, no el
+ * conteo. No llama a fal.ai ni gasta un centavo.
  */
 
 const rows = [
@@ -32,36 +32,14 @@ const rows = [
   { product_id: "P-GLOBOS", variant_id: "V-R-12-ORO-ROSA", sku: "SKU-R-12-ORO-ROSA", producto_titulo: "Globo oro rosa", variante_titulo: "R-12", precio: 10500, unidades_paq: 50, disponible: true, producto_disponible: true, codigo_tamano: "R-12", forma: "redondo", diam_pulg: 12, colores_producto: ["dorado rosa"], colores_variante: ["dorado rosa"], descripcion: "Globo látex metalizado oro rosa R-12." },
   { product_id: "P-GLOBOS", variant_id: "V-R-5-ORO-ROSA", sku: "SKU-R-5-ORO-ROSA", producto_titulo: "Globo oro rosa", variante_titulo: "R-5", precio: 6000, unidades_paq: 100, disponible: true, producto_disponible: true, codigo_tamano: "R-5", forma: "redondo", diam_pulg: 5, colores_producto: ["dorado rosa"], colores_variante: ["dorado rosa"], descripcion: "Globo látex metalizado oro rosa R-5." },
 ];
-const pool = { query: async () => ({ rows }) } as unknown as Pool;
-const whitelist = new Map<string, ReadonlySet<string>>([["P-GLOBOS", new Set(rows.map((r) => r.variant_id))]]);
 
-const materiales = [
-  { product_id: "P-GLOBOS", color: "rosado", participacion: 0.6, rol_material: "principal" as const },
-  { product_id: "P-GLOBOS", color: "dorado rosa", participacion: 0.4, rol_material: "secundario" as const },
-];
-
-const plan: PlanDecoracion = PlanDecoracionSchema.parse({
-  plan_version: "1.0",
-  plan_id: "55555555-5555-5555-8555-555555555555",
-  concepto: { titulo: "XV años rosa y oro rosa", descripcion: "Arco central con dos columnas laterales y centro de mesa.", paleta: ["rosado", "dorado rosa"] },
-  espacio: { tipo: "salón", fuente: "supuesto" },
-  estructuras: [
-    { estructura_id: "EST_01_ARCO", nombre: "Arco central", tipo: "arco", rol_escena: "focal", ubicacion: "arco_central", medidas: { ancho_m: 3, alto_m: 2.4 }, repeticiones: 1, densidad: "lujosa", mezcla: "organica_gruesa", materiales, porque: "Foco de la escena." },
-    { estructura_id: "EST_02_COL_IZQ", nombre: "Columna izquierda", tipo: "columna", rol_escena: "soporte", ubicacion: "lateral_izquierdo", medidas: { ancho_m: 0.5, alto_m: 2 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales, porque: "Enmarca el arco." },
-    { estructura_id: "EST_03_COL_DER", nombre: "Columna derecha", tipo: "columna", rol_escena: "soporte", ubicacion: "lateral_derecho", medidas: { ancho_m: 0.5, alto_m: 2 }, repeticiones: 1, densidad: "media", mezcla: "clasica", materiales, porque: "Enmarca el arco." },
-    { estructura_id: "EST_04_CENTRO", nombre: "Centro de mesa", tipo: "centro_mesa", rol_escena: "acento", ubicacion: "sobre_mesa_principal", medidas: { ancho_m: 0.6, alto_m: 0.4 }, repeticiones: 1, densidad: "sencilla", mezcla: "clasica", materiales: [{ product_id: "P-GLOBOS", color: "dorado rosa", participacion: 1, rol_material: "principal" as const }], porque: "Acento sobre la mesa principal." },
-  ],
-  supuestos: [],
-});
-
-async function main(): Promise<void> {
-  const resultado = await resolverPlan(pool, plan, whitelist);
+function main(): void {
+  const { plan: resultado, materialEstimate } = planFijado("xv-produccion-cuatro-estructuras");
   console.log(`sin_cobertura: ${resultado.sin_cobertura.length}`);
 
   const blueprint = planBlueprint(resultado);
   const cajas = cajasDeEstructuras(resultado.plan.estructuras);
   const targetBoxes = Object.fromEntries(Object.entries(cajas).map(([id, layout]) => [id, layout.bbox]));
-  const materialEstimate = estimateFromPlan(resultado);
   const catalogProducts = Object.fromEntries(
     blueprint.elements
       .filter((element) => element.source_type === "catalog_backed")
@@ -102,7 +80,9 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error) => {
+try {
+  main();
+} catch (error: unknown) {
   console.error(error);
   process.exit(1);
-});
+}

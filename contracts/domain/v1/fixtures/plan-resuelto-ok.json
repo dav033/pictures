@@ -127,5 +127,8 @@
   "merma_log": "Reserva distribuida sobre variantes compatibles.",
   "sustituciones": [],
   "sin_cobertura": [],
-  "advertencias": []
+  "advertencias": [],
+  "costes_por_estructura": [
+    { "estructura_id": "EST_01_ARCO", "consumo_cop": 5760 }
+  ]
 }

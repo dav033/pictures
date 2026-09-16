@@ -560,6 +560,16 @@
           "waste_reserve": 0
         }
       ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 640,
+          "estructura_id": "EST_01_FIGURA"
+        },
+        {
+          "consumo_cop": 960,
+          "estructura_id": "EST_02_BOUQUET"
+        }
+      ],
       "estructuras": [
         {
           "eje_m": null,
@@ -1530,6 +1540,16 @@
           "used": 4,
           "variant_id": "V-F14-NEGRO-9",
           "waste_reserve": 0
+        }
+      ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 640,
+          "estructura_id": "EST_01_FIGURA"
+        },
+        {
+          "consumo_cop": 960,
+          "estructura_id": "EST_02_BOUQUET"
         }
       ],
       "estructuras": [

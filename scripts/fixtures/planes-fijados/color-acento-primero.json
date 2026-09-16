@@ -1,0 +1,344 @@
+{
+  "plan_resuelto": {
+    "plan": {
+      "plan_version": "1.0",
+      "plan_id": "22222222-2222-4222-8222-222222222222",
+      "concepto": {
+        "titulo": "Prueba de color",
+        "descripcion": "Mezcla de color por estructura.",
+        "paleta": [
+          "blanco",
+          "dorado",
+          "rosado"
+        ]
+      },
+      "espacio": {
+        "tipo": "salón",
+        "fuente": "supuesto"
+      },
+      "estructuras": [
+        {
+          "estructura_id": "EST_01_ARCO",
+          "nombre": "Arco principal",
+          "tipo": "arco",
+          "rol_escena": "focal",
+          "ubicacion": "arco_central",
+          "medidas": {
+            "ancho_m": 2.4,
+            "alto_m": 2.2
+          },
+          "repeticiones": 1,
+          "densidad": "media",
+          "mezcla": "clasica",
+          "materiales": [
+            {
+              "product_id": "P-DORADO",
+              "color": "dorado",
+              "participacion": 0.2,
+              "rol_material": "acento"
+            },
+            {
+              "product_id": "P-BLANCO",
+              "color": "blanco",
+              "participacion": 0.8,
+              "rol_material": "principal"
+            }
+          ],
+          "porque": "Blanco dominante con acento dorado."
+        }
+      ],
+      "supuestos": [],
+      "referencia_omitida": []
+    },
+    "plan_hash": "afc7c5bc82eba58720c0b09ffa1fbc693b2696f25b20f9c97a5b2aadb6910a75",
+    "estructuras": [
+      {
+        "estructura_id": "EST_01_ARCO",
+        "nombre": "Arco principal",
+        "tipo": "arco",
+        "ubicacion": "arco_central",
+        "repeticiones": 1,
+        "eje_m": 5.46,
+        "total_unidades": 116,
+        "lineas": [
+          {
+            "estructura_id": "EST_01_ARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_ARCO"
+            },
+            "product_id": "P-DORADO",
+            "variant_id": "V-P-DORADO-R-12",
+            "sku": "SKU-P-DORADO-R-12",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": null,
+            "unidades_inferidas": null,
+            "titulo": "Globo dorado — R-12",
+            "color": "dorado",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "reflex",
+            "unidades": 23,
+            "sustitucion": null
+          },
+          {
+            "estructura_id": "EST_01_ARCO",
+            "origen": {
+              "kind": "estructura",
+              "id": "EST_01_ARCO"
+            },
+            "product_id": "P-BLANCO",
+            "variant_id": "V-P-BLANCO-R-12",
+            "sku": "SKU-P-BLANCO-R-12",
+            "sku_original": null,
+            "source_snapshot_id": null,
+            "source_variant_id": null,
+            "inventory_quantity": null,
+            "unidades_inferidas": null,
+            "titulo": "Globo blanco — R-12",
+            "color": "blanco",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12,
+            "diam_cm": 30.5,
+            "forma": "redondo",
+            "acabado": "fashion",
+            "unidades": 93,
+            "sustitucion": null
+          }
+        ],
+        "mezcla_real": [
+          {
+            "diam_pulg": 12,
+            "forma": "redondo",
+            "unidades": 116,
+            "pct": 100
+          }
+        ],
+        "supuestos": []
+      }
+    ],
+    "compras": [
+      {
+        "variant_id": "V-P-BLANCO-R-12",
+        "product_id": "P-BLANCO",
+        "sku": "SKU-P-BLANCO-R-12",
+        "sku_original": null,
+        "source_snapshot_id": null,
+        "source_variant_id": null,
+        "inventory_quantity": null,
+        "unidades_inferidas": null,
+        "titulo": "Globo blanco — R-12",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "blanco",
+        "unidades_necesarias": 93,
+        "design_quantity": 93,
+        "waste_reserve": 0,
+        "required_quantity": 93,
+        "unidades_con_merma": 93,
+        "unidades_paquete": 50,
+        "paquetes": 2,
+        "purchase_quantity": 100,
+        "used": 93,
+        "leftover_inventory": 7,
+        "consumption_cost": 18600,
+        "purchase_cost": 20000,
+        "additional_package_for_waste": false,
+        "sobrante": 7,
+        "precio_paquete": 10000,
+        "subtotal": 20000,
+        "estructuras": [
+          "EST_01_ARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          }
+        ]
+      },
+      {
+        "variant_id": "V-P-DORADO-R-12",
+        "product_id": "P-DORADO",
+        "sku": "SKU-P-DORADO-R-12",
+        "sku_original": null,
+        "source_snapshot_id": null,
+        "source_variant_id": null,
+        "inventory_quantity": null,
+        "unidades_inferidas": null,
+        "titulo": "Globo dorado — R-12",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "color": "dorado",
+        "unidades_necesarias": 23,
+        "design_quantity": 23,
+        "waste_reserve": 10,
+        "required_quantity": 33,
+        "unidades_con_merma": 33,
+        "unidades_paquete": 50,
+        "paquetes": 1,
+        "purchase_quantity": 50,
+        "used": 23,
+        "leftover_inventory": 17,
+        "consumption_cost": 6600,
+        "purchase_cost": 10000,
+        "additional_package_for_waste": false,
+        "sobrante": 27,
+        "precio_paquete": 10000,
+        "subtotal": 10000,
+        "estructuras": [
+          "EST_01_ARCO"
+        ],
+        "elementos_origen": [
+          {
+            "kind": "estructura",
+            "id": "EST_01_ARCO"
+          }
+        ]
+      }
+    ],
+    "totales": {
+      "globos_por_tamano": {
+        "R-12": 116
+      },
+      "total_unidades": 116,
+      "total_cop": 30000,
+      "design_quantity": 116,
+      "target_waste_reserve": 10,
+      "covered_waste_reserve": 10,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 34,
+      "purchase_cost": 30000,
+      "consumption_cost": 25200,
+      "waste_only_savings_cop": 10000,
+      "additional_waste_packages": 0,
+      "ahorro_paquetes_cop": 0,
+      "incluye_iva": true,
+      "merma_porcentaje": 8
+    },
+    "sustituciones": [],
+    "sin_cobertura": [],
+    "advertencias": [
+      "sobrante_alto:V-P-DORADO-R-12"
+    ],
+    "comercial": {
+      "estado": "APROBACION_REQUERIDA",
+      "delta_cop": 0
+    },
+    "alternativas": [],
+    "merma_log": "MERMA / PACKAGE OPTIMIZATION\nTotal design balloons: 116\nTarget waste reserve: 10\nNatural package surplus: 34\nUsable waste coverage: 10\nAdditional packages required for waste: 0\nGlobo blanco — R-12: design=93, required=93, package=50, packages=2, purchased=100, natural surplus=7, waste reserve=0, leftover inventory=7\nGlobo dorado — R-12: design=23, required=33, package=50, packages=1, purchased=50, natural surplus=27, waste reserve=10, leftover inventory=17",
+    "costes_por_estructura": [
+      {
+        "estructura_id": "EST_01_ARCO",
+        "consumo_cop": 23200
+      }
+    ]
+  },
+  "material_estimate": {
+    "version": "design-material-estimate-v1",
+    "design": {
+      "type": "arco",
+      "shape": "clasica",
+      "dimensions_m": {
+        "width": 2.4,
+        "height": 2.2,
+        "length": null
+      },
+      "installation_length_m": 5.46,
+      "density": "media",
+      "visual_density": "medium",
+      "visual_scale": "very_large",
+      "cluster_count": 1
+    },
+    "balloons": [
+      {
+        "structure_id": "EST_01_ARCO",
+        "product_id": "P-DORADO",
+        "variant_id": "V-P-DORADO-R-12",
+        "color": "dorado",
+        "finish": "reflex",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 23,
+        "waste_reserve": 0,
+        "required_quantity": 23,
+        "waste_adjusted_quantity": 23
+      },
+      {
+        "structure_id": "EST_01_ARCO",
+        "product_id": "P-BLANCO",
+        "variant_id": "V-P-BLANCO-R-12",
+        "color": "blanco",
+        "finish": "fashion",
+        "size_inches": 12,
+        "shape": "redondo",
+        "design_quantity": 93,
+        "waste_reserve": 0,
+        "required_quantity": 93,
+        "waste_adjusted_quantity": 93
+      }
+    ],
+    "special_elements": [],
+    "purchases": [
+      {
+        "product_id": "P-BLANCO",
+        "variant_id": "V-P-BLANCO-R-12",
+        "design_quantity": 93,
+        "waste_reserve": 0,
+        "required_quantity": 93,
+        "waste_adjusted_quantity": 93,
+        "units_per_package": 50,
+        "package_count": 2,
+        "purchase_quantity": 100,
+        "used": 93,
+        "leftover_inventory": 7,
+        "consumption_cost": 18600,
+        "purchase_cost": 20000,
+        "additional_package_for_waste": false,
+        "operational_surplus": 7,
+        "potential_surplus": 7
+      },
+      {
+        "product_id": "P-DORADO",
+        "variant_id": "V-P-DORADO-R-12",
+        "design_quantity": 23,
+        "waste_reserve": 10,
+        "required_quantity": 33,
+        "waste_adjusted_quantity": 33,
+        "units_per_package": 50,
+        "package_count": 1,
+        "purchase_quantity": 50,
+        "used": 23,
+        "leftover_inventory": 17,
+        "consumption_cost": 6600,
+        "purchase_cost": 10000,
+        "additional_package_for_waste": false,
+        "operational_surplus": 17,
+        "potential_surplus": 27
+      }
+    ],
+    "totals": {
+      "design_quantity": 116,
+      "target_waste_reserve": 10,
+      "covered_waste_reserve": 10,
+      "uncovered_waste_reserve": 0,
+      "natural_package_surplus": 34,
+      "required_quantity": 126,
+      "consumption_cost": 25200,
+      "purchase_cost": 30000,
+      "waste_only_savings_cop": 10000,
+      "additional_waste_packages": 0,
+      "waste_adjusted_quantity": 126,
+      "purchase_quantity": 150,
+      "operational_surplus": 24,
+      "potential_surplus": 34
+    },
+    "warnings": [
+      "sobrante_alto:V-P-DORADO-R-12"
+    ]
+  }
+}

@@ -25,13 +25,11 @@ export const RECOMENDACIONES_MAX_PRODUCTOS = 12;
 const MENSAJE_REFERENCIA_NO_ENCONTRADA = "No se encontró la variante para recomendar alternativas.";
 
 /**
- * A plan produced by Python can only be edited through Python, pinned to the
- * signed snapshot. There is no TypeScript fallback: the kill switch answers 409.
+ * Un plan solo se puede editar contra el snapshot firmado con el que se
+ * resolvió. `PYTHON_NO_SELECCIONADO` desapareció con el kill switch (ADR-0023
+ * paso 5): ya no hay otro backend al que no poder volver.
  */
 export function exigirContextoPython(contexto: ContextoPlan): string {
-  if (seleccionarBackendPython().backend !== "python") {
-    throw new PlanBackendNoDisponibleError("PYTHON_NO_SELECCIONADO", "El backend que produjo este plan ya no está disponible; vuelve a pedir la propuesta.");
-  }
   if (!contexto.catalogSnapshotId) {
     throw new PlanBackendNoDisponibleError("SIN_SNAPSHOT_CATALOGO", "La propuesta aprobada no tiene un snapshot de catálogo disponible; vuelve a pedir la propuesta.");
   }

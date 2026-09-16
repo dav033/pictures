@@ -164,7 +164,7 @@ caso("errores tipados se clasifican por clase, no por texto", () => {
   assert.equal(clasificarErrorServidor(new ErrorIA("timeout", "gemini", "t", true)).code, "TIEMPO_AGOTADO");
   assert.equal(clasificarErrorServidor(new ErrorIA("filtrado", "gemini", "f", false)).code, "CONTENIDO_NO_PERMITIDO");
   assert.equal(clasificarErrorServidor(new ErrorIA("sin_llave", "gemini", "k", false)).code, "SERVICIO_NO_DISPONIBLE");
-  assert.equal(clasificarErrorServidor(new PlanBackendNoDisponibleError("PYTHON_NO_SELECCIONADO", "x")).code, "PROPUESTA_DESACTUALIZADA");
+  assert.equal(clasificarErrorServidor(new PlanBackendNoDisponibleError("SIN_SNAPSHOT_CATALOGO", "x")).code, "PROPUESTA_DESACTUALIZADA");
   assert.equal(clasificarErrorServidor(new AllowlistProductoVarianteError()).code, "PROPUESTA_DESACTUALIZADA");
   assert.equal(clasificarErrorServidor(new NonCommercialSourceRejectedError("p1", "seed_demo", "editorial_reference")).code, "PRODUCTO_NO_DISPONIBLE");
   assert.equal(clasificarErrorServidor(new PlanEditError(409, "El catálogo cambió.")).code, "PROPUESTA_DESACTUALIZADA");

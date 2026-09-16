@@ -29,7 +29,7 @@ function seccion(prompt: string, encabezado: string): string {
 async function main(): Promise<void> {
   // 1. Every level yields a different prompt; the quoted structures are locked.
   for (const escenario of ESCENARIOS) {
-    const escena = await resolverEscenario(escenario);
+    const escena = resolverEscenario(escenario);
     const prompts = new Map(NIVELES_CREATIVIDAD.map((nivel) => [nivel, promptParaNivel(escenario, escena, nivel).prompt]));
     assert.equal(new Set(prompts.values()).size, NIVELES_CREATIVIDAD.length, `${escenario.id}: before the calibration levels 0, 1, 3, 4 and 5 sent the same prompt`);
     const bloqueados = (prompt: string) => [
@@ -91,14 +91,14 @@ async function main(): Promise<void> {
   // Form: an approved arch is an inverted U unless the plan declares a hoop; a wall garland is anchored.
   {
     const xv = ESCENARIOS.find((item) => item.id === "xv-arco-columnas")!;
-    const escenaXv = await resolverEscenario(xv);
+    const escenaXv = resolverEscenario(xv);
     const instancias = (prompt: string) => seccion(prompt, "INSTANCE CONTRACT");
     assert.match(instancias(promptParaNivel(xv, escenaXv, 0).prompt), /Arco orgánico[^\n]*inverted-U arch[^\n]*never a round hoop/);
     assert.doesNotMatch(instancias(promptParaNivel(xv, escenaXv, 0).prompt), /Columna izquierda[^\n]*inverted-U/, "columns get no arch form");
     const aro = { ...escenaXv, qaPlan: { officialStructures: new Map([["EST_01_ARCO", "aro_circular"]]) } };
     assert.doesNotMatch(promptParaNivel(xv, aro, 0).prompt, /inverted-U arch/, "a declared circular hoop keeps its form");
     const baby = ESCENARIOS.find((item) => item.id === "baby-guirnalda-mono")!;
-    assert.match(instancias(promptParaNivel(baby, await resolverEscenario(baby), 3).prompt), /mounted flat against the wall[^\n]*never floats/);
+    assert.match(instancias(promptParaNivel(baby, resolverEscenario(baby), 3).prompt), /mounted flat against the wall[^\n]*never floats/);
   }
   ok("forma: el arco es una U invertida salvo aro declarado y la guirnalda de pared va anclada");
 
@@ -111,7 +111,7 @@ async function main(): Promise<void> {
   assert.equal(esAmbientacionPermitida(5, "loose balloons tied to the dessert table"), false);
   assert.equal(esAmbientacionPermitida(5, "floral backdrop"), false);
   assert.equal(esAmbientacionPermitida(5, "happy birthday sign on the cake table"), false);
-  const escena = await resolverEscenario(ESCENARIOS[0]!);
+  const escena = resolverEscenario(ESCENARIOS[0]!);
   const observacion = {
     presentElementIds: escena.sceneSpec.elements.map((element) => element.element_id),
     unexpectedElements: ["lit candles along the floor", "white curtain backdrop behind the arch"],
@@ -122,7 +122,7 @@ async function main(): Promise<void> {
   assert.doesNotMatch(buildQaObserverPrompt(escena.sceneSpec, escena.materialEstimate, escena.qaPlan, 1), /Allowed non-catalog styling/);
   assert.match(buildQaObserverPrompt(escena.sceneSpec, escena.materialEstimate, escena.qaPlan, 5), /Allowed non-catalog styling for this image: [^\n]*dessert table/);
   assert.match(buildQaObserverPrompt(escena.sceneSpec, escena.materialEstimate, escena.qaPlan), /backdrop, curtain, drape/, "the observer is told which invented objects to list");
-  const boda = await resolverEscenario(ESCENARIOS.find((item) => item.id === "boda-cinco-piezas")!);
+  const boda = resolverEscenario(ESCENARIOS.find((item) => item.id === "boda-cinco-piezas")!);
   const conMesas = { presentElementIds: boda.sceneSpec.elements.map((element) => element.element_id), unexpectedElements: ["tables_with_white_cloths", "chairs around the tables", "balloons on the table legs"] };
   assert.deepEqual(evaluateSceneQa(boda.sceneSpec, conMesas, undefined, boda.qaPlan, 0).unexpected_elements, ["chairs around the tables", "balloons on the table legs"], "centerpiece tables are the requested support");
   assert.equal(evaluateSceneQa(escena.sceneSpec, { ...observacion, unexpectedElements: ["tables with white tablecloths"] }, undefined, escena.qaPlan, 0).unexpected_elements.length, 1, "without centerpieces a table is still an extra");

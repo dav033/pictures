@@ -1,7 +1,7 @@
 import { UBICACIONES, type Ubicacion } from "./composicion";
 import { esParLateral } from "./ubicaciones";
 import { ESTRUCTURAS_OFICIALES, identificarEstructuraOficial, UBICACION_PARA_CLIENTE, type EstructuraOficialId } from "./estructuras-oficiales";
-import { ambientDecorSelection } from "@/lib/ia/reference-structure";
+import { ambientDecorSelection, sceneryFromReference } from "@/lib/ia/reference-structure";
 import { esSustitucionDeColor } from "./colores-referencia";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import { clasificarAcabados, clasificarColores, type PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
@@ -500,6 +500,52 @@ const AMBIENTACION_POR_CATEGORIA: Readonly<Record<string, string>> = {
   tableware: "Mesa de postres",
 };
 
+function etiquetaAmbientacion(nombre: string, categoria: string): string {
+  return AMBIENTACION_POR_PALABRA.find(([patron]) => patron.test(nombre))?.[1]
+    ?? AMBIENTACION_POR_CATEGORIA[categoria]
+    ?? "Detalles decorativos";
+}
+
+export type ChipEscenografia = {
+  /** "Luces", "Flores", "Mobiliario": lo que el cliente ve y pulsa. */
+  etiqueta: string;
+  /** Elementos del análisis que ese chip enciende o apaga. */
+  elementIds: string[];
+  /** Estado por defecto que calculó la selección (todos encendidos hoy). */
+  visiblePorDefecto: boolean;
+};
+
+/**
+ * Chips en español de la escenografía de la referencia: lo que se conserva de
+ * la foto del cliente y la imagen dibuja SIN cotizar. La selección es la de
+ * `sceneryFromReference` (dueña de la regla, la misma que usa /api/generate);
+ * aquí solo se nombra cada elemento elegido en palabras del cliente y se
+ * agrupan los que comparten etiqueta, porque el interruptor que ve el cliente
+ * es el chip, no el elemento suelto.
+ *
+ * `elementIds` es lo que viaja al servidor: la etiqueta española es lossy
+ * (varios elementos caen en "Luces") y no identifica nada.
+ */
+export function escenografiaCliente(blueprint: ReferenceBlueprintV2, materializados: ReadonlySet<string>): ChipEscenografia[] {
+  // En el orden del análisis (el de la foto), no en el de la selección: es el
+  // mismo orden con el que la tarjeta nombra el resto de la referencia.
+  const elegidos = new Map(sceneryFromReference(blueprint, materializados).map((item) => [item.elementId, item] as const));
+  const chips: ChipEscenografia[] = [];
+  for (const elemento of blueprint.elements) {
+    const item = elegidos.get(elemento.element_id);
+    if (!item) continue;
+    const etiqueta = etiquetaAmbientacion(item.name, elemento.category);
+    const existente = chips.find((chip) => chip.etiqueta === etiqueta);
+    if (existente) {
+      existente.elementIds.push(item.elementId);
+      existente.visiblePorDefecto = existente.visiblePorDefecto || item.visibleByDefault;
+      continue;
+    }
+    chips.push({ etiqueta, elementIds: [item.elementId], visiblePorDefecto: item.visibleByDefault });
+  }
+  return chips;
+}
+
 /**
  * Chips en español de la ambientación de la referencia que la imagen dibuja
  * sin cotizar. La selección es la de `ambientDecorSelection` (dueña de la
@@ -512,9 +558,7 @@ export function ambientacionCliente(blueprint: ReferenceBlueprintV2, materializa
   for (const elemento of blueprint.elements) {
     const nombre = elegidos.get(elemento.element_id);
     if (nombre === undefined) continue;
-    const etiqueta = AMBIENTACION_POR_PALABRA.find(([patron]) => patron.test(nombre))?.[1]
-      ?? AMBIENTACION_POR_CATEGORIA[elemento.category]
-      ?? "Detalles decorativos";
+    const etiqueta = etiquetaAmbientacion(nombre, elemento.category);
     if (!etiquetas.includes(etiqueta)) etiquetas.push(etiqueta);
   }
   return etiquetas;
