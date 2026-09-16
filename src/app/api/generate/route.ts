@@ -37,7 +37,6 @@ function requireResolvedLoras(loras: ResolvedLoraApplication[] | undefined): Res
 import { buildVisualContext, completarEscenaConPlan } from "@/lib/ia/visual-context";
 import { ErrorIA, type ImageInput, type Imagen, type ImagenEtiquetada, type PeticionImagen, type ProveedorId } from "@/lib/ia/tipos";
 import { ReferenceBlueprintV2Schema, unidadesMaterialDeElemento, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
-import type { ResultadoMedidas } from "@/lib/medidas/geometria";
 import { resolverProductosParaGeneracion } from "@/lib/rag/generate-products";
 import { productosPorIdConFuente } from "@/lib/products";
 import { isPythonAdapterError, pythonErrorBody, seleccionarBackendPython } from "@/lib/ia/python-adapter";
@@ -84,7 +83,6 @@ type Body = {
   usarLora?: boolean;
   loraSelection?: unknown;
   loraMode?: unknown;
-  medidas?: ResultadoMedidas;
   fotoEspacio?: Imagen;
   imagenesReferencia?: Imagen[];
   aspecto?: PeticionImagen["aspecto"];

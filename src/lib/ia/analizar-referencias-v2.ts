@@ -51,8 +51,8 @@ export type ReferenceCatalogItem = Pick<Producto, "id" | "nombre" | "categoria" 
  * `legacy` is retained only for the historical fixture that validates the
  * old catalog-matching behavior; no production route may select it.
  *
- * `perceptual`: never matches or invents a catalog id. Used when
- * PLAN_DECORACION_ENABLED is on (plan de integración de referencias visuales,
+ * `perceptual`: never matches or invents a catalog id. It is the mode the
+ * DISEÑO DE DECORACIÓN chat uses (plan de integración de referencias visuales,
  * R3) — the chat model is the only one allowed to turn a detected element
  * into a real product, via buscar_catalogo_rag against the validated
  * PostgreSQL catalog. The two catalogs this module could otherwise match

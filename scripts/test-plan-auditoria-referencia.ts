@@ -120,8 +120,8 @@ async function main(): Promise<void> {
   estadoRespondido.referenciaSinGlobosPreguntada = true;
   const respondido = await confirmarRespondido(argsArco, llamada) as Record<string, unknown>;
   assert.notEqual(respondido.status, "REFERENCIA_SIN_GLOBOS", "the tool does not ask twice");
-  assert.match(construirSistema({ ragEnabled: true, franjasEnabled: false, planEnabled: true }), /FOTO SIN GLOBOS/, "the system prompt states the rule");
-  assert.match(construirSistema({ ragEnabled: true, franjasEnabled: false, planEnabled: true }), /piezas iguales en la foto" [\s\S]*repeticiones[\s\S]*nunca un número de globos/, "blueprint quantity is pieces, never balloons");
+  assert.match(construirSistema({ ragEnabled: true, franjasEnabled: false }), /FOTO SIN GLOBOS/, "the system prompt states the rule");
+  assert.match(construirSistema({ ragEnabled: true, franjasEnabled: false }), /piezas iguales en la foto" [\s\S]*repeticiones[\s\S]*nunca un número de globos/, "blueprint quantity is pieces, never balloons");
   const repeticionesSchema = (HERRAMIENTAS_PLAN[0]!.esquema as { properties: { estructuras: { items: { properties: { repeticiones: { description?: string } } } } } }).properties.estructuras.items.properties.repeticiones;
   assert.match(repeticionesSchema.description ?? "", /No es un número de globos/);
   ok("foto sin globos: confirmar_plan_decoracion pide aclaración y el prompt lo refleja");

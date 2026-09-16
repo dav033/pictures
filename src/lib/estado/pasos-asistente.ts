@@ -9,7 +9,6 @@ export type PasoAsistente = { id: string; texto: string; estado: EstadoPaso };
 const FRASES: Readonly<Record<string, { en_curso: string; listo: string }>> = {
   guardar_brief: { en_curso: "Entendiendo tu idea", listo: "Entendí tu idea" },
   buscar_catalogo_rag: { en_curso: "Buscando globos en el catálogo", listo: "Busqué globos disponibles en el catálogo" },
-  calcular_medidas: { en_curso: "Calculando medidas", listo: "Calculé las medidas" },
   confirmar_seleccion_rag: { en_curso: "Confirmando los globos elegidos", listo: "Confirmé los globos elegidos" },
   confirmar_plan_decoracion: { en_curso: "Armando la propuesta con medidas y cantidades", listo: "Armé la propuesta con medidas y cantidades" },
 };

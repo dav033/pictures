@@ -132,7 +132,7 @@ console.log("[PASS] persistencia de adjuntos: miniaturas livianas, ids estables 
 
 // Creatividad tras recargar (E2E real 2): el nivel viaja con la conversación guardada.
 {
-  const guardado = JSON.parse(JSON.stringify({ mensajes: [{ id: "m1" }], brief: null, ultimasMedidas: null, creatividad: 0 })) as unknown;
+  const guardado = JSON.parse(JSON.stringify({ mensajes: [{ id: "m1" }], brief: null, creatividad: 0 })) as unknown;
   assert.equal(creatividadGuardada(guardado), 0, "«Fiel» (0) se restaura aunque sea falsy");
   assert.equal(creatividadGuardada({ creatividad: 4 }), 4);
   assert.equal(creatividadGuardada({ mensajes: [] }), null, "conversación anterior sin nivel → por defecto");

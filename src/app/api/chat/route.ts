@@ -7,7 +7,7 @@ import { construirSistema } from "@/lib/ia/prompt-sistema";
 import { parseNivelCreatividad } from "@/lib/ia/creatividad";
 import { sugerenciaEscenaDelTurno } from "@/lib/ia/sugerencia-escena-chat";
 import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
-import { RAG_ENABLED, RAG_FRANJAS_ENABLED, PLAN_DECORACION_ENABLED } from "@/lib/ia/feature-flags";
+import { RAG_ENABLED, RAG_FRANJAS_ENABLED } from "@/lib/ia/feature-flags";
 import type { Brief, ChatMessage } from "@/lib/types";
 import { LoraModeSlugSchema } from "@/lib/lora/schema";
 import { resolveLoraModeDatasetAllowlist } from "@/lib/lora/mode-resolver";
@@ -203,10 +203,7 @@ export async function POST(request: Request) {
     const id = resolverProveedor({ override: proveedor, cookie: cookieProveedor });
     chat = await chatDe(id);
 
-    // Solo se pasa al modelo con el plan de decoración activo — sin él, el
-    // chat sigue el camino legado y este bloque solo agregaría tokens sin
-    // que ninguna herramienta sepa qué hacer con los element_id.
-    referenceBlueprint = PLAN_DECORACION_ENABLED && rawReferenceBlueprint
+    referenceBlueprint = rawReferenceBlueprint
       ? ReferenceBlueprintV2Schema.parse(rawReferenceBlueprint)
       : undefined;
     const loraMode = rawLoraMode == null ? null : LoraModeSlugSchema.parse(rawLoraMode);
@@ -364,7 +361,6 @@ export async function POST(request: Request) {
               decoraciones: r.decoraciones,
               categorias: r.categorias,
               filtrosCategorias: r.filtrosCategorias,
-              medidas: r.medidas,
               cotizacion: r.cotizacion,
               proveedor: r.proveedor,
               modelo: r.modelo,

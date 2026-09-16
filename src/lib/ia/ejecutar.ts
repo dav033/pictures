@@ -1,7 +1,6 @@
 import "server-only";
 import { ejecutarConversacion as core, ejecutarConversacionStream as coreStream } from "@sempertex/agente-core";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
-import type { ResultadoMedidas } from "@/lib/medidas/geometria";
 import type { ItemRechazado, ItemValidado } from "@/lib/rag/chat/validar";
 import type { ProductoCandidato } from "@/lib/rag/chat/buscar";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
@@ -64,7 +63,6 @@ export type ResultadoConversacion = {
   decoraciones: DecoracionConProductos[];
   categorias: Faceta[];
   filtrosCategorias?: FiltrosCatalogo;
-  medidas?: ResultadoMedidas;
   cotizacion?: Cotizacion;
   proveedor: ChatPort["id"];
   modelo: string;
@@ -124,7 +122,6 @@ function empaquetar(estado: EstadoConversacion, texto: string, proveedor: ChatPo
     decoraciones: estado.decoraciones,
     categorias: estado.categoriasSugeridas,
     filtrosCategorias: estado.filtrosCategorias,
-    medidas: estado.medidas,
     cotizacion: estado.cotizacion,
     proveedor,
     modelo,

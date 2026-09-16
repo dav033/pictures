@@ -1,5 +1,4 @@
 import type { Brief } from "@/lib/types";
-import { PLAN_DECORACION_ENABLED } from "@/lib/ia/feature-flags";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import { ALCANCE_POR_CATEGORIA_REFERENCIA } from "@/lib/rag/taxonomy/alcance-referencia";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
@@ -80,23 +79,7 @@ MODO RAG (activo)
 
 TAMAÑOS DE GLOBO
 - Cada variante de buscar_catalogo_rag trae "tamano" (código, ej. R-12) y "diametro_pulgadas" (número real). La búsqueda filtra por tamaño solo cuando su propio mensaje lo nombra ("globo latex dorado 24 pulgadas"); si el cliente pidió un tamaño, nómbralo en esa búsqueda.
-- Si la búsqueda trae "limite_busqueda", sus resultados están limitados a ese tamaño o forma: nunca le digas al cliente que no hay un color "en otros tamaños" o "en ningún tamaño" con esa búsqueda; para afirmarlo busca antes sin ese límite.
-- confirmar_seleccion_rag puede devolver "sustituciones" (un tamaño exacto no existía en ese producto/color y se usó el más cercano) o "sin_cobertura" (un tamaño del cálculo que ningún producto elegido pudo cubrir) — si vienen no vacíos, cuéntaselo al cliente con honestidad en una frase, igual que cualquier otra sustitución (ver HONESTIDAD AL SUSTITUIR). Nunca lo omitas ni lo redondees a "quedó perfecto".`;
-
-/**
- * Ruta legacy (sin modo DISEÑO DE DECORACIÓN): ahí `calcular_medidas` sigue
- * siendo la única forma de estimar cantidades físicas y de mandar un despiece
- * por `confirmar_seleccion_rag`. En modo diseño la herramienta ni siquiera se
- * expone (`herramientasActivas`): reparte los colores por partes iguales, no
- * conoce `estructura_oficial` ni `repeticiones`, y sus totales contradicen los
- * que cotiza `confirmar_plan_decoracion`.
- */
-export const BLOQUE_MEDIDAS_LEGACY = `
-
-MEDIDAS FÍSICAS (fuera del modo DISEÑO DE DECORACIÓN)
-- calcular_medidas: úsala cuando una estructura necesite cantidades físicas; es un estimado preliminar, no un precio ni una promesa.
-- Si el cliente NO pidió un tamaño y vas a decorar una figura (arco, guirnalda, columna, pared, centro de mesa): llama calcular_medidas PRIMERO, y en confirmar_seleccion_rag manda ese producto con {product_id, usar_despiece: true} en vez de escoger tú una sola variante de tamaño — el backend arma la mezcla real de tamaños (varios diámetros, en las proporciones que salen del cálculo geométrico) usando ESE producto/color. NUNCA elijas una sola variante (ej. siempre R-12) para representar una figura completa: sin mezcla de tamaños real, la imagen generada se ve como globos sueltos del mismo tamaño, no como una instalación de decorador.
-- Si calculaste medidas con varios colores, manda un ítem "usar_despiece" por cada color (mismo texto que le pasaste a calcular_medidas en "color").`;
+- Si la búsqueda trae "limite_busqueda", sus resultados están limitados a ese tamaño o forma: nunca le digas al cliente que no hay un color "en otros tamaños" o "en ningún tamaño" con esa búsqueda; para afirmarlo busca antes sin ese límite.`;
 
 // Sólo se agrega si RAG_FRANJAS_ENABLED. Cuando brief.presupuesto trae una
 // franja resuelta, el backend ya
@@ -137,7 +120,7 @@ DISEÑO DE LA DECORACIÓN (activo)
 - EL TECHO MANDA SOBRE ESE RANGO. Las 3–5 estructuras son el default de un brief sin restricción de presupuesto, NO una obligación. Si hay techo, el número de estructuras sale del techo: con presupuestos ajustados, una sola pieza bien resuelta que cabe es una propuesta correcta, y varias que no caben es una propuesta fallida. Los globos se venden por paquete cerrado, así que cada estructura adicional suma paquetes enteros aunque use pocas unidades: es la razón principal por la que un plan se pasa. Empieza por lo que cabe y crece solo si sobra techo.
 - En cada estructura orgánica usa la mezcla de tamaños que calcule el backend cuando el catálogo tenga cobertura; combina tamaños grandes, medianos y pequeños solo dentro de los diámetros reales resueltos. Si el cliente fija explícitamente un único tamaño, respétalo sin inventar otros.
 - Tú decides estructura, ubicación, producto y proporción; los precios nunca los mandas tú. En las estructuras con geometría (arco, semiarco, guirnalda, columna, pared, centro de mesa) no mandes variant_id, tamaños de globo ni cantidades: el backend calcula R-5/R-9/R-12/R-18/R-24, cantidades, sustituciones, paquetes y total desde la geometría y el catálogo real.
-- EN ESTE MODO NO USES calcular_medidas: no está disponible y sus cantidades no son las que se cotizan. Las cantidades y los tamaños que le menciones al cliente salen solo de estructuras[].total_unidades y estructuras[].tamanos de la última respuesta ok:true de confirmar_plan_decoracion; mientras no tengas una, no le des números de globos.
+- NUNCA CALCULES NI ESTIMES CANTIDADES TÚ: las cantidades y los tamaños que le menciones al cliente salen solo de estructuras[].total_unidades y estructuras[].tamanos de la última respuesta ok:true de confirmar_plan_decoracion; mientras no tengas una, no le des números de globos.
 - Si el cliente pidió un tamaño, color o acabado explícito, consérvalo como restricción obligatoria del plan; no lo sustituyas en silencio. Registra el acabado en materiales[].acabado. Si no hay cobertura exacta, confirmar_plan_decoracion debe bloquearlo o devolver la sustitución declarada.
 - Si no hay medidas, confirma el plan igual: el sistema usa medidas por defecto y las muestra como supuesto explícito.
 - Las piezas sin geometría sí llevan cantidades: Bouquet y Figura (que se arman con tipo kit), y también kit, backdrop y accesorio, necesitan variant_id en cada material y unidades_declaradas (el total de globos, o de piezas si es un kit empaquetado, sumando las repeticiones). Ejemplos: ${EJEMPLO_UNIDADES_DECLARADAS}.
@@ -249,7 +232,7 @@ export function bloqueCreatividad(nivel: NivelCreatividad | undefined, sugerenci
   return `\n\nCREATIVIDAD DEL DISEÑO: nivel ${perfil.nivel} de 5 (${perfil.nombre})\n- ${perfil.instruccionDiseno}${escena}`;
 }
 
-export function construirSistema(opts: { ragEnabled: boolean; franjasEnabled: boolean; planEnabled?: boolean; brief?: Brief; referenceBlueprint?: ReferenceBlueprintV2; catalogAllowlist?: CatalogAllowlist; catalogoLoraNoDisponible?: boolean; creatividad?: NivelCreatividad; sugerenciaEscena?: SugerenciaEscena }): string {
+export function construirSistema(opts: { ragEnabled: boolean; franjasEnabled: boolean; brief?: Brief; referenceBlueprint?: ReferenceBlueprintV2; catalogAllowlist?: CatalogAllowlist; catalogoLoraNoDisponible?: boolean; creatividad?: NivelCreatividad; sugerenciaEscena?: SugerenciaEscena }): string {
   const contexto =
     opts.brief && Object.keys(opts.brief).length ? `\n\nDatos del evento que ya conoces: ${JSON.stringify(opts.brief)}` : "";
   const alcanceCatalogo = opts.catalogoLoraNoDisponible
@@ -261,17 +244,13 @@ export function construirSistema(opts: { ragEnabled: boolean; franjasEnabled: bo
     SYSTEM_PROMPT_BASE +
     BLOQUE_SELECCION +
     (opts.ragEnabled ? BLOQUE_RAG : "") +
-    // calcular_medidas solo existe fuera del modo diseño: con el plan activo la
-    // herramienta no se expone y sus cantidades contradicen la cotización.
-    (opts.ragEnabled && !(opts.planEnabled ?? PLAN_DECORACION_ENABLED) ? BLOQUE_MEDIDAS_LEGACY : "") +
     (opts.ragEnabled && opts.franjasEnabled ? BLOQUE_FRANJAS : "") +
-    (opts.ragEnabled && (opts.planEnabled ?? PLAN_DECORACION_ENABLED) ? BLOQUE_PLAN + GUIA_ESTRUCTURAS_OFICIALES : "") +
-    // El bloque de referencia solo tiene sentido junto al modo plan: es ahí
-    // donde confirmar_plan_decoracion sabe leer referencia_element_id /
-    // referencia_omitida. Auto-gateado aquí (no solo en el caller) para que
-    // construirSistema sea consistente aunque alguien lo llame distinto.
-    (opts.ragEnabled && (opts.planEnabled ?? PLAN_DECORACION_ENABLED) && opts.referenceBlueprint ? bloqueReferencia(opts.referenceBlueprint) : "") +
-    (opts.ragEnabled && (opts.planEnabled ?? PLAN_DECORACION_ENABLED) ? bloqueCreatividad(opts.creatividad, opts.sugerenciaEscena) : "") +
+    (opts.ragEnabled ? BLOQUE_PLAN + GUIA_ESTRUCTURAS_OFICIALES : "") +
+    // El bloque de referencia describe cómo confirmar_plan_decoracion lee
+    // referencia_element_id / referencia_omitida, así que acompaña siempre al
+    // catálogo RAG.
+    (opts.ragEnabled && opts.referenceBlueprint ? bloqueReferencia(opts.referenceBlueprint) : "") +
+    (opts.ragEnabled ? bloqueCreatividad(opts.creatividad, opts.sugerenciaEscena) : "") +
     alcanceCatalogo +
     contexto
   );

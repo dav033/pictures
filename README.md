@@ -21,7 +21,7 @@ Requisitos: Node 22 o superior (CI usa 22), npm, Python 3.11 o superior con [uv]
 2. **Variables** (`.env.local`, ignorado por git). Parte de `.env.local.example`. Los valores sensibles están en el servidor de producción.
    - `DATABASE_URL` y `CATALOG_DATABASE_URL`: URL de Neon **entre comillas simples**. Contiene `&channel_binding=require`, y sin comillas `set -a; . .env.local` corta la variable.
    - `APP_PASSWORD`, `PLAN_APPROVAL_SECRET`, `INTERNAL_HMAC_SECRET`, `GEMINI_API_KEY`, `FAL_KEY`, `SHOPIFY_WEBHOOK_SECRET`, `HAPPIA_*` / `HAPPIE_*`.
-   - Flags igual que en producción: `IA_PROVEEDOR=gemini`, `RAG_ENABLED=true`, `PLAN_DECORACION_ENABLED=true`, `PYTHON_BACKEND_ENABLED=true`, `RAG_USE_VECTOR=true`, `RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED=true`, `RAG_FRANJAS_ENABLED=true`, y los modelos `GEMINI_CHAT_MODEL`, `GEMINI_IMAGE_MODEL`, `GEMINI_EMBEDDING_MODEL`, `GEMINI_EMBEDDING_DIMENSIONS`.
+   - Flags igual que en producción: `IA_PROVEEDOR=gemini`, `RAG_ENABLED=true`, `PYTHON_BACKEND_ENABLED=true`, `RAG_USE_VECTOR=true`, `RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED=true`, `RAG_FRANJAS_ENABLED=true`, y los modelos `GEMINI_CHAT_MODEL`, `GEMINI_IMAGE_MODEL`, `GEMINI_EMBEDDING_MODEL`, `GEMINI_EMBEDDING_DIMENSIONS`.
    - Sin `RAG_ENABLED` el chat responde «El servicio no respondió» (`RAG_UNAVAILABLE`).
 3. **Backend Python** (uvicorn no lee dotenv):
    ```bash

@@ -56,9 +56,14 @@ export async function resolverVariantesPorDespiece(
 
 /**
  * Fase 3.5: mismo contrato que `resolverVariantesPorDespiece`, pero para N
- * ítems `usar_despiece` de un mismo turno de `confirmar_seleccion_rag` en UNA
- * sola consulta en vez de una por ítem. El resultado preserva el orden y el
- * tamaño de `grupos` (una entrada de salida por cada entrada de entrada).
+ * despieces de un mismo turno en UNA sola consulta en vez de una por ítem. El
+ * resultado preserva el orden y el tamaño de `grupos` (una entrada de salida
+ * por cada entrada de entrada).
+ *
+ * Sin consumidor de producción desde ADR-0023 paso 2: su único llamador era la
+ * expansión `usar_despiece` de `confirmar_seleccion_rag`, que se borró junto al
+ * modo legacy. Hoy solo lo ejercitan `scripts/test-resolver-tamanos.ts` y la
+ * puerta `selection/resolver-pg` de `scripts/eval-e2e-rag-v2.ts`.
  */
 export async function resolverVariantesPorDespieceBatch(
   pool: Pool,

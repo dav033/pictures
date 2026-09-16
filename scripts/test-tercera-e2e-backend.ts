@@ -268,7 +268,7 @@ async function main(): Promise<void> {
   assert.equal(avisoFiltrosBusqueda(r12), null);
   assert.match(String(avisoFiltrosBusqueda(filtrosDurosDeBusqueda({ mensaje: "globo dorado 24 pulgadas", solicitudOriginal: boda, brief: {} }))), /No le digas al cliente que el catálogo no tiene/);
   assert.deepEqual(filtrosDurosDeBusqueda({ mensaje: "globo azul", solicitudOriginal: "40 en azul y plateado", brief: {}, coloresRetirados: ["plateado"] }).colores, ["azul"]);
-  assert.match(construirSistema({ ragEnabled: true, franjasEnabled: false, planEnabled: true }), /limite_busqueda/, "the prompt forbids claiming total unavailability from a filtered search");
+  assert.match(construirSistema({ ragEnabled: true, franjasEnabled: false }), /limite_busqueda/, "the prompt forbids claiming total unavailability from a filtered search");
   ok("D3: el filtro de tamaño sale de cada búsqueda, no de la solicitud original");
 
   // ---------------------------------------------------------------------------
@@ -306,7 +306,7 @@ async function main(): Promise<void> {
   assert.deepEqual(consultas[0]?.slice(1), [["V1"], "S1"], "the lookup stays inside the LoRA pool and snapshot");
   assert.match(ACCION_NUMEROS_EN_CATALOGO, /ofrécele el color que sí existe/);
   assert.match(ACCION_NUMERO_INCORRECTO, /ofrécele al cliente el color en que sí está ese dígito/);
-  assert.match(construirSistema({ ragEnabled: true, franjasEnabled: false, planEnabled: true }), /numeros_en_catalogo/);
+  assert.match(construirSistema({ ragEnabled: true, franjasEnabled: false }), /numeros_en_catalogo/);
   ok("D5: un dígito sin el color pedido ofrece el color disponible en vez de solo decir que no hay");
 
   console.log(`\n${casos} casos OK`);

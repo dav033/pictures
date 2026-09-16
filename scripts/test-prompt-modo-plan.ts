@@ -4,9 +4,9 @@
  * contradecir lo que cotiza confirmar_plan_decoracion.
  *
  * Invariantes deterministas, sin red ni proveedores:
- * - en modo diseño no se expone ni se recomienda calcular_medidas, y las
- *   cantidades que se le dicen al cliente salen del último plan ok:true;
- * - fuera del modo diseño el flujo legacy conserva calcular_medidas y usar_despiece.
+ * - DISEÑO DE DECORACIÓN es el único modo: `calcular_medidas` y `usar_despiece`
+ *   ya no existen (ADR-0023, paso 2) y las cantidades que se le dicen al
+ *   cliente salen del último plan ok:true.
  *
  * Run: npx tsx --conditions=react-server scripts/test-prompt-modo-plan.ts
  */
@@ -23,38 +23,30 @@ async function main(): Promise<void> {
   const { construirSistema } = await import("../src/lib/ia/prompt-sistema");
   const { crearEstadoConversacion, crearRegistroHerramientas, herramientasActivas } = await import("../src/lib/ia/registro-herramientas");
 
-  const modoPlan = construirSistema({ ragEnabled: true, franjasEnabled: false, planEnabled: true });
-  const modoLegacy = construirSistema({ ragEnabled: true, franjasEnabled: false, planEnabled: false });
+  const modoPlan = construirSistema({ ragEnabled: true, franjasEnabled: false });
 
-  // 1. Modo diseño: sin calcular_medidas ni despiece por confirmar_seleccion_rag.
-  assert.doesNotMatch(modoPlan, /calcular_medidas PRIMERO/);
+  // 1. El prompt no menciona el despiece legacy por ningún lado: nombrar una
+  //    herramienta que ya no existe es tan dañino como recomendarla.
+  assert.doesNotMatch(modoPlan, /calcular_medidas/);
   assert.doesNotMatch(modoPlan, /usar_despiece/);
-  assert.match(modoPlan, /NO USES calcular_medidas/);
+  assert.doesNotMatch(modoPlan, /MEDIDAS FÍSICAS/);
+  assert.match(modoPlan, /NUNCA CALCULES NI ESTIMES CANTIDADES TÚ/);
   assert.match(modoPlan, /total_unidades[\s\S]{0,200}ok:true de confirmar_plan_decoracion/);
-  ok("modo diseño: el prompt no pide calcular_medidas y las cantidades salen del último plan ok:true");
+  ok("el prompt no nombra calcular_medidas y las cantidades salen del último plan ok:true");
 
-  // 2. Flujo legacy intacto: ahí calcular_medidas sigue siendo el camino.
-  assert.match(modoLegacy, /calcular_medidas PRIMERO/);
-  assert.match(modoLegacy, /usar_despiece/);
-  assert.match(modoLegacy, /calcular_medidas: úsala cuando una estructura necesite cantidades físicas/);
-  assert.doesNotMatch(modoLegacy, /NO USES calcular_medidas/);
-  ok("fuera del modo diseño el prompt conserva calcular_medidas y el despiece legacy");
-
-  // 3. Herramientas expuestas por flags (el handler sigue registrado siempre).
-  const nombres = (flags: { ragEnabled?: boolean; planEnabled?: boolean }) => herramientasActivas(flags).map((herramienta) => herramienta.nombre);
-  assert.ok(!nombres({ ragEnabled: true, planEnabled: true }).includes("calcular_medidas"), nombres({ ragEnabled: true, planEnabled: true }).join(", "));
-  assert.ok(nombres({ ragEnabled: true, planEnabled: true }).includes("confirmar_plan_decoracion"));
-  assert.ok(nombres({ ragEnabled: true, planEnabled: false }).includes("calcular_medidas"));
-  assert.ok(!nombres({ ragEnabled: true, planEnabled: false }).includes("confirmar_plan_decoracion"));
-  assert.deepEqual(nombres({ ragEnabled: false, planEnabled: true }), []);
+  // 2. Herramientas expuestas: una sola lista, sin handler de calcular_medidas.
+  const nombres = (flags: { ragEnabled?: boolean }) => herramientasActivas(flags).map((herramienta) => herramienta.nombre);
+  assert.ok(!nombres({ ragEnabled: true }).includes("calcular_medidas"), nombres({ ragEnabled: true }).join(", "));
+  assert.ok(nombres({ ragEnabled: true }).includes("confirmar_plan_decoracion"));
+  assert.deepEqual(nombres({ ragEnabled: false }), []);
   const pool = { query: async () => ({ rows: [] }) } as unknown as Pool;
   const registro = crearRegistroHerramientas(crearEstadoConversacion({}, "un arco rojo"), { pool });
-  assert.equal(typeof registro.calcular_medidas, "function", "el handler legacy sigue registrado");
-  ok("herramientasActivas: sin calcular_medidas en modo diseño, con él en el flujo legacy");
+  assert.ok(!("calcular_medidas" in registro), "el handler legacy ya no está registrado");
+  ok("herramientasActivas: una sola lista, sin calcular_medidas ni su handler");
 
-  // 3b. Revisión W3-2: las descripciones que viajan en el mismo request tampoco
-  //     pueden mandar al modelo a una herramienta que ese modo no expone.
-  const herramientasPlanActivas = herramientasActivas({ ragEnabled: true, planEnabled: true });
+  // 2b. Revisión W3-2: las descripciones que viajan en el mismo request tampoco
+  //     pueden mandar al modelo a una herramienta que no existe.
+  const herramientasPlanActivas = herramientasActivas({ ragEnabled: true });
   for (const herramienta of herramientasPlanActivas) {
     assert.doesNotMatch(herramienta.descripcion, /calcular_medidas/, herramienta.nombre);
     assert.doesNotMatch(JSON.stringify(herramienta.esquema), /usar_despiece|calcular_medidas/, herramienta.nombre);
@@ -62,12 +54,9 @@ async function main(): Promise<void> {
   const seleccionPlan = herramientasPlanActivas.find((herramienta) => herramienta.nombre === "confirmar_seleccion_rag")!;
   assert.doesNotMatch(seleccionPlan.descripcion, /usar_despiece/);
   assert.match(seleccionPlan.descripcion, /los calcula confirmar_plan_decoracion/);
-  const seleccionLegacy = herramientasActivas({ ragEnabled: true, planEnabled: false }).find((herramienta) => herramienta.nombre === "confirmar_seleccion_rag")!;
-  assert.match(seleccionLegacy.descripcion, /usar_despiece únicamente después de calcular_medidas/);
-  assert.match(JSON.stringify(seleccionLegacy.esquema), /usar_despiece/, "el flujo legacy conserva el campo");
-  ok("modo diseño: ninguna descripción ni esquema activo menciona calcular_medidas ni usar_despiece");
+  ok("ninguna descripción ni esquema activo menciona calcular_medidas ni usar_despiece");
 
-  // 4. Regla acotada de variant_id/unidades_declaradas: las estructuras con
+  // 3. Regla acotada de variant_id/unidades_declaradas: las estructuras con
   //    geometría no llevan cantidades, Bouquet/Figura y las piezas de catálogo sí.
   const { ESTRUCTURAS_OFICIALES, EJEMPLO_UNIDADES_DECLARADAS } = await import("../src/lib/plan/estructuras-oficiales");
   const { HERRAMIENTAS_PLAN } = await import("../src/lib/ia/herramientas");
@@ -89,7 +78,7 @@ async function main(): Promise<void> {
   assert.match(perfilCreatividad(5).instruccionDiseno ?? "", /no inventes precios \(las cantidades de las estructuras con geometría las calcula el sistema/);
   ok("regla acotada: geometría sin cantidades, Bouquet/Figura con unidades_declaradas del mínimo de la tabla");
 
-  // 5. Notas de costo de los acentos y lectura de "clear" en la foto.
+  // 4. Notas de costo de los acentos y lectura de "clear" en la foto.
   const { ReferenceBlueprintV2Schema } = await import("../src/lib/ia/reference-blueprint");
   assert.match(modoPlan, /paquete cerrado en CADA tamaño de la mezcla[\s\S]{0,200}0,2 o más/);
   const blueprint = ReferenceBlueprintV2Schema.parse({
@@ -110,7 +99,7 @@ async function main(): Promise<void> {
     palette: { observed: ["rosado"], priority: ["rosado"] },
     unresolved_decisions: [],
   });
-  const conReferencia = construirSistema({ ragEnabled: true, franjasEnabled: false, planEnabled: true, referenceBlueprint: blueprint });
+  const conReferencia = construirSistema({ ragEnabled: true, franjasEnabled: false, referenceBlueprint: blueprint });
   assert.match(conReferencia, /"clear" junto a un color, como "clear pink", es la línea Cristal de ese color/);
   assert.match(conReferencia, /"clear" solo sí es transparente/);
   ok("notas de costo del acento pequeño y lectura de 'clear' con color en la foto");

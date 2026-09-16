@@ -12,7 +12,6 @@ import { PromptModal } from "@/components/PromptModal";
 import { Markdown } from "@/components/Markdown";
 import { ProductoCard } from "@/components/ProductoCard";
 import { TarjetaCotizacion } from "@/components/TarjetaCotizacion";
-import { TarjetaMedidas } from "@/components/TarjetaMedidas";
 import { TarjetaPlanDecoracion } from "@/components/TarjetaPlanDecoracion";
 import { GenerationQaSummary } from "@/components/references/GenerationQaSummary";
 import { ReferenceAnalysisController } from "@/components/references/ReferenceAnalysisController";
@@ -23,7 +22,6 @@ import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { Imagen, PeticionImagen } from "@/lib/ia/tipos";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import type { LoraModeSlug } from "@/lib/lora/schema";
-import type { ResultadoMedidas } from "@/lib/medidas/geometria";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import type { ItemRechazado, ItemValidado } from "@/lib/rag/chat/validar";
 import type { ImageQaReport } from "@/lib/ia/image-qa";
@@ -91,7 +89,6 @@ type Mensaje = {
   categorias?: Faceta[];
   /** Filtros que produjeron `categorias` (ocasión, colores…) — se reusan al navegar a un tipo puntual sin pasar por la IA. */
   categoriasFiltros?: FiltrosCatalogo;
-  medidas?: ResultadoMedidas;
   plan?: PlanResuelto;
   /** Brief del evento `fin` de esta respuesta: la cabecera distingue si cambió después de la última propuesta. */
   brief?: Brief;
@@ -171,7 +168,6 @@ type DatosFin = {
   decoraciones?: DecoracionConProductos[];
   categorias?: Faceta[];
   filtrosCategorias?: FiltrosCatalogo;
-  medidas?: ResultadoMedidas;
   cotizacion?: Cotizacion;
   /** Piezas que la IA decidió proponer por su cuenta — dispara /api/generate sin que el cliente haga clic. */
   seleccionIA?: Producto[];
@@ -515,7 +511,6 @@ export default function Page() {
   const [ajuste, setAjuste] = useState("");
   const [cargandoChat, setCargandoChat] = useState(false);
   const [generando, setGenerando] = useState(false);
-  const [planDecoracionActivo, setPlanDecoracionActivo] = useState(false);
   const [segundosGeneracion, setSegundosGeneracion] = useState(0);
   const [error, setError] = useState<ErrorVisible | null>(null);
   // Último intento de generación, para "Reintentar" y "Generar con estilo
@@ -545,10 +540,6 @@ export default function Page() {
   // reglas de React, así que este valor se actualiza junto con el ref.
   const [loraModeParaBadge, setLoraModeParaBadge] = useState<LoraModeSlug>("training_1");
   const [proveedoresDisponibles, setProveedoresDisponibles] = useState<ProveedorId[]>(["gemini"]);
-  // Últimas medidas calculadas en el chat: se le pasan al prompt de imagen
-  // como referencia de escala (§3.6 del plan) — sin esto, un arco de 3 m
-  // sale del mismo tamaño que uno de juguete en la imagen generada.
-  const [ultimasMedidas, setUltimasMedidas] = useState<ResultadoMedidas | null>(null);
   const [cargadoDeStorage, setCargadoDeStorage] = useState(false);
   // Las tarjetas clicables y la propuesta autónoma de la IA conviven siempre
   // en la misma conversación — ya no hay un perfil de conversación que elegir.
@@ -692,7 +683,6 @@ export default function Page() {
           briefRef.current = datos.brief;
           setBrief(datos.brief);
         }
-        if (datos.ultimasMedidas) setUltimasMedidas(datos.ultimasMedidas);
         // El siguiente turno se valida con el mismo nivel con el que se armó la conversación.
         const nivelGuardado = creatividadGuardada(datos);
         if (nivelGuardado !== null) {
@@ -733,10 +723,10 @@ export default function Page() {
       try {
         // Las fotos van como miniaturas livianas y con tope: sessionStorage tiene
         // un límite de pocos MB y un fallo aquí dejaría la conversación sin persistir.
-        sessionStorage.setItem(CLAVE_CHAT, JSON.stringify({ mensajes: aligerarAdjuntos(mensajes, miniaturasRef.current), brief, ultimasMedidas, creatividad }));
+        sessionStorage.setItem(CLAVE_CHAT, JSON.stringify({ mensajes: aligerarAdjuntos(mensajes, miniaturasRef.current), brief, creatividad }));
       } catch {
         try {
-          sessionStorage.setItem(CLAVE_CHAT, JSON.stringify({ mensajes: mensajes.map((mensaje) => ({ ...mensaje, adjuntos: undefined })), brief, ultimasMedidas, creatividad }));
+          sessionStorage.setItem(CLAVE_CHAT, JSON.stringify({ mensajes: mensajes.map((mensaje) => ({ ...mensaje, adjuntos: undefined })), brief, creatividad }));
         } catch {
           // sessionStorage no disponible — se sigue sin persistencia.
         }
@@ -755,7 +745,7 @@ export default function Page() {
         // Sin miniatura esa foto no se guarda; la conversación sí.
       }
     })).then(() => guardarChatRef.current?.());
-  }, [mensajes, brief, ultimasMedidas, creatividad, cargadoDeStorage]);
+  }, [mensajes, brief, creatividad, cargadoDeStorage]);
 
   useEffect(() => {
     fetch("/api/ia/salud")
@@ -764,7 +754,6 @@ export default function Page() {
         const disponibles = (data.proveedores ?? [])
           .filter((p: { disponible: boolean }) => p.disponible)
           .map((p: { id: ProveedorId }) => p.id);
-        setPlanDecoracionActivo(Boolean(data.planDecoracionActivo));
         if (disponibles.length) {
           setProveedoresDisponibles(disponibles);
           setProveedor(data.predeterminado ?? disponibles[0]);
@@ -819,7 +808,6 @@ export default function Page() {
     const decoracionesRecomendadas: DecoracionConProductos[] = datos.decoraciones ?? [];
     registrarConocidos(recomendaciones);
     for (const d of decoracionesRecomendadas) registrarConocidos(d.productos);
-    if (datos.medidas) setUltimasMedidas(datos.medidas);
 
     const seleccionIA = datos.seleccionIA ?? [];
 
@@ -847,7 +835,6 @@ export default function Page() {
         decoraciones: decoracionesRecomendadas.length ? decoracionesRecomendadas : undefined,
         categorias: datos.categorias?.length ? datos.categorias : undefined,
         categoriasFiltros: datos.categorias?.length ? datos.filtrosCategorias : undefined,
-        medidas: datos.medidas ?? undefined,
         referenceBlueprint: datos.referenceBlueprint ?? (datos.plan ? referenceDraftRef.current?.blueprint : undefined),
         plan: datos.plan,
         brief: datos.brief,
@@ -1101,14 +1088,13 @@ export default function Page() {
     entradaRef.current?.focus();
   }
 
-  /** Arranca de cero: conversación, brief, medidas, selección e imágenes generadas. */
+  /** Arranca de cero: conversación, brief, selección e imágenes generadas. */
   function limpiarTodo() {
     if (cargandoChat || generando) return;
     setMensajes([SALUDO]);
     briefRef.current = {};
     solicitudUsuarioRef.current = "";
     setBrief({});
-    setUltimasMedidas(null);
     setImagenes([]);
     setReferenceDraft(null);
     referenceDraftRef.current = null;
@@ -1155,7 +1141,7 @@ export default function Page() {
    * `generando` se libera.
    */
   async function generar(override: GenerarOverride) {
-    if (planDecoracionActivo && imagenesReferenciaRef.current.length > 0 && !override?.plan) return;
+    if (imagenesReferenciaRef.current.length > 0 && !override?.plan) return;
     const ultimaValidacion = [...mensajes]
       .reverse()
       .find((mensaje) => mensaje.role === "assistant" && mensaje.ragValidados?.length)?.ragValidados ?? [];
@@ -1265,7 +1251,6 @@ export default function Page() {
             loraMode: usarLoraEnIntento ? loraModeRef.current ?? undefined : undefined,
             promptFormat: promptFormatParaGenerar(formatoPromptLora, usarLoraEnIntento),
             creatividad: creatividadRef.current,
-            medidas: ultimasMedidas ?? undefined,
             // Adjuntos del cliente, leídos de los refs (no del estado
             // directamente): no son de un modo en particular, van en cualquier
             // generación, manual o automática, y deben reflejar lo último que
@@ -1904,7 +1889,6 @@ export default function Page() {
                         </div>
                       )}
 
-                      {m.medidas && <TarjetaMedidas medidas={m.medidas} />}
                       {m.plan && (
                         <TarjetaPlanDecoracion
                           plan={m.plan}

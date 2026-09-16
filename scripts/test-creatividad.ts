@@ -31,7 +31,7 @@ assert.equal(defecto.instruccionDiseno, "");
 assert.equal(defecto.estructurasExtraConReferencia, 0);
 assert.deepEqual(defecto.pistasPrompt, []);
 assert.equal(defecto.guidanceScale, 3.5);
-const base = { ragEnabled: true, franjasEnabled: false, planEnabled: true };
+const base = { ragEnabled: true, franjasEnabled: false };
 assert.equal(construirSistema({ ...base, creatividad: 2 }), construirSistema(base), "level 2 leaves the system prompt unchanged");
 ok("el nivel 2 reproduce el comportamiento anterior");
 
@@ -56,7 +56,7 @@ assert.equal(bloqueCreatividad(2), "");
 assert.match(bloqueCreatividad(0), /nivel 0 de 5 \(Fiel\)/);
 assert.match(bloqueCreatividad(4), /nivel 4 de 5 \(Muy creativo\)[\s\S]*hasta 2 acentos/);
 assert.match(construirSistema({ ...base, creatividad: 5 }), /CREATIVIDAD DEL DISEÑO: nivel 5 de 5/);
-assert.doesNotMatch(construirSistema({ ...base, planEnabled: false, creatividad: 5 }), /CREATIVIDAD DEL DISEÑO/, "without the design mode there is no plan to shape");
+assert.doesNotMatch(construirSistema({ ...base, ragEnabled: false, creatividad: 5 }), /CREATIVIDAD DEL DISEÑO/, "without the catalog there is no plan to shape");
 ok("el prompt del chat lleva la regla de diseño del nivel");
 
 // 4. Untrusted input: the contract validates it and the routes fall back to the default.

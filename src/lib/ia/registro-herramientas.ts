@@ -2,7 +2,7 @@ import "server-only";
 import type { RegistroHerramientas } from "@sempertex/agente-core";
 import type { Pool } from "pg";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
-import { calcularMedidas, tamanosObligatorios, type Figura, type ResultadoMedidas } from "@/lib/medidas/geometria";
+import { tamanosObligatorios } from "@/lib/medidas/geometria";
 import { getRagPool } from "@/lib/rag/db";
 import { buscarCatalogoRag, type ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { buscarCatalogoRagConPresupuesto, type PoolItemPresupuesto, type ResultadoBusquedaPresupuesto } from "@/lib/rag/chat/buscar-presupuesto";
@@ -13,7 +13,6 @@ import { parseEventSearchIntent } from "@/lib/rag/query-parser/event-search";
 import { aProductoValidado, validarSeleccion, type ItemRechazado, type ItemValidado, type SeleccionSolicitada } from "@/lib/rag/chat/validar";
 import { actualizarResultadoBusqueda, encolarEscrituraObservabilidad, registrarBusqueda, registrarPlanAudit, registrarSeleccion, type HechosPeticionPlan } from "@/lib/rag/observability/log";
 import { resolverFranja } from "@/lib/rag/presupuesto/resolver";
-import { resolverVariantesPorDespieceBatch, type GrupoDespiece } from "@/lib/rag/tamanos/resolver";
 import { PlanDecoracionSchema, type PlanDecoracion } from "@/lib/plan/tipos";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { aplicarColoresReferencia, extraerRestriccionesUsuario, validarCardinalidadEventoAbierto, validarCoberturaReferencia, validarEstructurasDeGlobosConGlobos, validarEstructurasFueraDeReferencia, validarPresenciaGlobos, validarRangoCreatividad, validarReferenciaSinGlobos, validarRestriccionesPlan, validarUnidadesDeclaradas, MENSAJE_CLIENTE_REFERENCIA_SIN_GLOBOS } from "@/lib/plan/restricciones";
@@ -47,7 +46,7 @@ import { aplicarFuenteMedidasEspacio, clienteDioMedidasEspacio } from "@/lib/pla
 import { coloresElementoReferencia, coloresFotoParaBusqueda, coloresReferenciaOmitidos, esSustitucionDeColor, productosGloboPorColor, type ProductoColorDisponible } from "@/lib/plan/colores-referencia";
 import { buscarGlobosPorColor } from "@/lib/rag/catalog/globos-por-color";
 import { buscarNumerosPorDigito, digitosBuscados } from "@/lib/rag/catalog/numeros-por-digito";
-import { PLAN_DECORACION_ENABLED, RAG_ENABLED, RAG_FRANJAS_ENABLED, featureEnabled } from "@/lib/ia/feature-flags";
+import { RAG_ENABLED, RAG_FRANJAS_ENABLED, featureEnabled } from "@/lib/ia/feature-flags";
 import { isPythonAdapterError, seleccionarBackendPython } from "@/lib/ia/python-adapter";
 import { AllowlistProductoVarianteError } from "@/lib/plan/allowlist-producto-variante";
 import { sceneShadowPipeline } from "@/lib/scene/orchestrator";
@@ -58,7 +57,7 @@ import { ajustarCoberturaPlan, avisosClienteAjustes, mezclasAdmisiblesEstructura
 import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "@/lib/plan/composicion";
 import { ACCION_PLAN_NO_CONVERGE, disponibilidadDelTurno, quitarMaterialesSinCobertura, RECHAZOS_MAXIMOS, RECHAZOS_PARA_CONVERGER, unirCandidatosTurno } from "./convergencia-plan";
 import { normalizarArgsBrief } from "./brief-herramienta";
-import { HERRAMIENTAS_PLAN, HERRAMIENTAS_RAG, HERRAMIENTAS_RAG_MODO_PLAN } from "./herramientas";
+import { HERRAMIENTAS_PLAN, HERRAMIENTAS_RAG } from "./herramientas";
 import type { ReferenceBlueprintV2 } from "./reference-blueprint";
 import type { Herramienta } from "./tipos";
 import { z } from "zod";
@@ -70,8 +69,7 @@ import { z } from "zod";
  * de todas formas se sobrescriben por completo en cada llamada nueva. Se
  * excluye deliberadamente cualquier herramienta que toque
  * `seleccionFinalIA`/`planResuelto`/`cotizacion` o que dependa del orden de
- * ejecución (`guardar_brief`, `calcular_medidas`,
- * `confirmar_seleccion_rag`,
+ * ejecución (`guardar_brief`, `confirmar_seleccion_rag`,
  * `confirmar_plan_decoracion`). `ejecutarConversacion`/`ejecutarConversacionStream`
  * solo paralelizan una vuelta si CADA llamada de esa vuelta está en este
  * set Y ningún nombre se repite (ver `puedeParalelizarse` en agente-core) —
@@ -83,23 +81,15 @@ export const HERRAMIENTAS_SOLO_LECTURA = new Set([
 ]);
 
 /**
- * Herramientas expuestas al modelo según los flags activos (los parámetros
- * existen para poder probar cada combinación sin tocar el entorno).
- *
- * En modo diseño `calcular_medidas` no se expone: reparte los colores por
- * partes iguales, no conoce `estructura_oficial` ni `repeticiones` y sus totales
- * contradicen los que cotiza `confirmar_plan_decoracion` — con el plan en
- * pantalla el cliente veía dos conteos distintos del mismo arco. El handler
- * sigue registrado para el flujo legacy y sus pruebas. `HERRAMIENTAS_RAG_MODO_PLAN`
- * quita además el despiece de `confirmar_seleccion_rag`, que sin esa herramienta
- * solo podía terminar en un rechazo que el modelo no puede corregir.
+ * Herramientas expuestas al modelo (el parámetro existe para poder probar
+ * el catálogo apagado sin tocar el entorno). DISEÑO DE DECORACIÓN es el único
+ * modo: las cantidades y los tamaños de una estructura tienen un solo dueño,
+ * `confirmar_plan_decoracion`.
  */
-export function herramientasActivas(flags: { ragEnabled?: boolean; planEnabled?: boolean } = {}): Herramienta[] {
+export function herramientasActivas(flags: { ragEnabled?: boolean } = {}): Herramienta[] {
   const ragEnabled = flags.ragEnabled ?? RAG_ENABLED;
-  const planEnabled = flags.planEnabled ?? PLAN_DECORACION_ENABLED;
   if (!ragEnabled) return [];
-  if (!planEnabled) return HERRAMIENTAS_RAG;
-  return [...HERRAMIENTAS_RAG_MODO_PLAN, ...HERRAMIENTAS_PLAN];
+  return [...HERRAMIENTAS_RAG, ...HERRAMIENTAS_PLAN];
 }
 
 // Se permiten varias búsquedas por turno porque una referencia puede contener
@@ -135,7 +125,6 @@ export type EstadoConversacion = {
   // sin la categoría en sí. El cliente los reusa para navegar directo a un
   // tipo puntual sin pasarle otro turno al modelo (§ page.tsx navegarCategoria).
   filtrosCategorias?: FiltrosCatalogo;
-  medidas?: ResultadoMedidas;
   cotizacion?: Cotizacion;
   // Piezas que la IA decidió proponer por su cuenta — solo se llenan si
   // `confirmar_seleccion_rag` resolvió al menos un id real; el frontend usa
@@ -1042,37 +1031,6 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       return { ok: true, brief: estado.brief, ...(descartadas.length ? { campos_ignorados: descartadas } : {}) };
     },
 
-    calcular_medidas: async (args) => {
-      const a = args as {
-        figura: Figura;
-        ancho_m?: number;
-        alto_m?: number;
-        largo_m?: number;
-        densidad?: "sencilla" | "media" | "lujosa";
-        colores?: string[];
-        mezcla?: "clasica" | "organica_fina" | "organica_gruesa" | "solo_grandes";
-      };
-      const resultado = calcularMedidas({
-        figura: a.figura,
-        anchoM: a.ancho_m,
-        altoM: a.alto_m,
-        largoM: a.largo_m,
-        densidad: a.densidad,
-        colores: a.colores,
-        mezcla: a.mezcla,
-      });
-      estado.medidas = resultado;
-      return {
-        figura: resultado.figura,
-        eje_m: resultado.ejeM,
-        despiece: resultado.despiece,
-        total_globos: resultado.totalGlobos,
-        supuestos: resultado.supuestos,
-        confianza: resultado.confianza,
-        aviso: resultado.aviso,
-      };
-    },
-
     buscar_catalogo_rag: async (args) => {
       if (catalogoBloqueado) return respuestaCatalogoLoraNoDisponible(catalogoBloqueado);
       // Component text drives lexical/semantic retrieval. Customer constraints
@@ -1313,89 +1271,14 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       const seleccionCruda = Array.isArray(args.seleccion) ? args.seleccion : [];
       const pool = ragPool;
 
-      // Ítems normales (tamaño explícito) pasan tal cual. Ítems
-      // "usar_despiece" (plan de tamaños F3, "mezcla de diseñador") se
-      // expanden ANTES de validar: el LLM decidió producto+color, el
-      // resolver determinístico decide cuánto de cada tamaño según el
-      // despiece geométrico de calcular_medidas — nunca al revés, o vuelve
-      // a caer en que el LLM elija una sola variante a ojo.
-      const sustituciones: { product_id: string; pedido: string; entregado: string; motivo: string }[] = [];
-      const sinCobertura: { product_id: string; tamano: string }[] = [];
-      const rechazosExpansion: ItemRechazado[] = [];
-
-      // Fase 3.5: los ítems `usar_despiece` de este turno se recolectan
-      // primero (sin tocar la DB) y se resuelven todos en UNA sola consulta
-      // batch en vez de una por ítem — antes cada `usar_despiece` de la
-      // selección disparaba su propio round-trip a Postgres dentro de este
-      // `for`. `porIndice` conserva el orden exacto de `seleccionCruda`: un
-      // ítem normal produce una entrada, un `usar_despiece` produce N (una
-      // por tamaño resuelto), pero la posición relativa entre ítems no
-      // relacionados con el despiece no debe cambiar frente al código previo.
-      const porIndice: SeleccionSolicitada[][] = [];
-      const indicesDespiece: number[] = [];
-      const gruposDespiece: GrupoDespiece[] = [];
-      const productIdPorIndiceDespiece: string[] = [];
-      const razonPorIndiceDespiece: (string | undefined)[] = [];
-
-      for (const cruda of seleccionCruda as Record<string, unknown>[]) {
-        const productId = String(cruda.product_id ?? "");
-        if (cruda.usar_despiece !== true) {
-          porIndice.push([{
-            productId,
-            variantId: String(cruda.variant_id ?? ""),
-            cantidad: Number(cruda.cantidad ?? 0),
-            razon: typeof cruda.razon === "string" ? cruda.razon : undefined,
-          }]);
-          continue;
-        }
-
-        if (!estado.medidas) {
-          rechazosExpansion.push({ productId, variantId: "", motivo: "usar_despiece sin haber llamado calcular_medidas en este turno" });
-          porIndice.push([]);
-          continue;
-        }
-        const colorArg = typeof cruda.color === "string" ? cruda.color : undefined;
-        const despieceTieneColores = estado.medidas.despiece.some((l) => l.color);
-        if (despieceTieneColores && !colorArg) {
-          rechazosExpansion.push({ productId, variantId: "", motivo: "calculaste medidas con varios colores; usar_despiece necesita 'color' para saber qué parte del despiece cubre este producto" });
-          porIndice.push([]);
-          continue;
-        }
-        const lineasDelColor = estado.medidas.despiece.filter((l) => (colorArg ? l.color === colorArg : true));
-        if (lineasDelColor.length === 0) {
-          rechazosExpansion.push({ productId, variantId: "", motivo: `ningún tamaño del despiece corresponde al color '${colorArg}'` });
-          porIndice.push([]);
-          continue;
-        }
-
-        const whitelist = estado.ragVariantIdsRecuperados.get(productId) ?? new Set<string>();
-        porIndice.push([]); // se rellena abajo tras resolver el batch
-        indicesDespiece.push(porIndice.length - 1);
-        gruposDespiece.push({ productId, despiece: lineasDelColor, whitelistVariantIds: whitelist });
-        productIdPorIndiceDespiece.push(productId);
-        razonPorIndiceDespiece.push(typeof cruda.razon === "string" ? cruda.razon : undefined);
-      }
-
-      if (gruposDespiece.length > 0) {
-        const resueltos = await resolverVariantesPorDespieceBatch(pool, gruposDespiece);
-        for (let i = 0; i < indicesDespiece.length; i++) {
-          const productId = productIdPorIndiceDespiece[i]!;
-          const razon = razonPorIndiceDespiece[i];
-          const resuelto = resueltos[i]!;
-          porIndice[indicesDespiece[i]!] = resuelto.lineas.map((linea) => ({
-            productId: linea.productId,
-            variantId: linea.variantId,
-            cantidad: linea.cantidad,
-            razon,
-          }));
-          for (const linea of resuelto.lineas) {
-            if (linea.sustitucion) sustituciones.push({ product_id: productId, ...linea.sustitucion });
-          }
-          for (const faltante of resuelto.sinCobertura) sinCobertura.push({ product_id: productId, tamano: faltante.tamano });
-        }
-      }
-
-      const seleccion: SeleccionSolicitada[] = porIndice.flat();
+      // Cada ítem trae su variante explícita: las cantidades y los tamaños de
+      // una estructura los calcula confirmar_plan_decoracion (ADR-0023).
+      const seleccion: SeleccionSolicitada[] = (seleccionCruda as Record<string, unknown>[]).map((cruda) => ({
+        productId: String(cruda.product_id ?? ""),
+        variantId: String(cruda.variant_id ?? ""),
+        cantidad: Number(cruda.cantidad ?? 0),
+        razon: typeof cruda.razon === "string" ? cruda.razon : undefined,
+      }));
 
       const t0 = Date.now();
       const resultado = await validarSeleccion(
@@ -1405,7 +1288,6 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         estado.ragCatalogSnapshotId,
         { signal: options.signal, correlationId: options.correlationId ?? estado.ragRequestId },
       );
-      resultado.rechazados = [...resultado.rechazados, ...rechazosExpansion];
       estado.ragValidados = resultado.validados;
       estado.ragRechazados = resultado.rechazados;
       estado.ragTotal = resultado.total;
@@ -1464,11 +1346,6 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
           cantidad: v.cantidad,
         })),
         rechazados: resultado.rechazados,
-        // Plan de tamaños F3: nunca sustituir en silencio. Si vienen no
-        // vacíos, el LLM está instruido (herramientas.ts) a decírselos al
-        // cliente tal cual, igual que cualquier otra sustitución honesta.
-        sustituciones,
-        sin_cobertura: sinCobertura,
         fase: "propuesta_visual; la cotizacion llega despues de generar la imagen",
         ...(estado.ragFranja
           ? {

@@ -57,11 +57,6 @@ export const RAG_RERANK_ENABLED = process.env.RAG_RERANK_ENABLED === "true";
 export const RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED =
   process.env.RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED === "true";
 
-// --- Plan capability flags -----------------------------------------------
-
-/** Default: ON ("false" is the explicit rollback value). */
-export const PLAN_DECORACION_ENABLED = process.env.PLAN_DECORACION_ENABLED !== "false";
-
 // --- Image QA flags --------------------------------------------------------
 
 /**

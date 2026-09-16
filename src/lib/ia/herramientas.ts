@@ -11,39 +11,29 @@ const SELECCION_PROPIEDADES = {
 } as const;
 
 /**
- * `confirmar_seleccion_rag` cambia con el modo porque el despiece legacy sale
- * de `calcular_medidas`, y en DISEÑO DE DECORACIÓN esa herramienta no se expone
- * (`herramientasActivas`): allí `usar_despiece` solo podía terminar en el
- * rechazo "usar_despiece sin haber llamado calcular_medidas en este turno", que
- * el modelo no puede corregir. En ese modo el campo no existe y la descripción
- * manda las cantidades a confirmar_plan_decoracion.
+ * DISEÑO DE DECORACIÓN es el único modo: las cantidades y los tamaños de una
+ * estructura los calcula `confirmar_plan_decoracion`, así que esta herramienta
+ * no tiene despiece propio.
  */
-function confirmarSeleccionRag(conDespiece: boolean): Herramienta {
-  return {
-    nombre: "confirmar_seleccion_rag",
-    descripcion:
-      "Confirma la selección final usando únicamente product_id y variant_id recuperados por buscar_catalogo_rag en este mismo turno. Nunca incluyas precio: el backend lo calcula desde PostgreSQL. Usa una variante explícita cuando el cliente pidió tamaño; " +
-      (conDespiece
-        ? "usa usar_despiece únicamente después de calcular_medidas cuando el cliente no pidió tamaño específico."
-        : "en el modo DISEÑO DE DECORACIÓN no hay despiece: las cantidades y los tamaños de una estructura los calcula confirmar_plan_decoracion."),
-    esquema: {
-      type: "object",
-      required: ["seleccion"],
-      properties: {
-        seleccion: {
-          type: "array",
-          items: {
-            type: "object",
-            required: ["product_id"],
-            properties: conDespiece
-              ? { ...SELECCION_PROPIEDADES, usar_despiece: { type: "boolean" } }
-              : { ...SELECCION_PROPIEDADES },
-          },
+const CONFIRMAR_SELECCION_RAG: Herramienta = {
+  nombre: "confirmar_seleccion_rag",
+  descripcion:
+    "Confirma la selección final usando únicamente product_id y variant_id recuperados por buscar_catalogo_rag en este mismo turno. Nunca incluyas precio: el backend lo calcula desde PostgreSQL. Usa una variante explícita cuando el cliente pidió tamaño; en el modo DISEÑO DE DECORACIÓN no hay despiece: las cantidades y los tamaños de una estructura los calcula confirmar_plan_decoracion.",
+  esquema: {
+    type: "object",
+    required: ["seleccion"],
+    properties: {
+      seleccion: {
+        type: "array",
+        items: {
+          type: "object",
+          required: ["product_id"],
+          properties: { ...SELECCION_PROPIEDADES },
         },
       },
     },
-  };
-}
+  },
+};
 
 /**
  * Registro único de herramientas expuestas al pipeline RAG y al planificador.
@@ -79,34 +69,8 @@ export const HERRAMIENTAS_RAG: Herramienta[] = [
       },
     },
   },
-  confirmarSeleccionRag(true),
-  {
-    nombre: "calcular_medidas",
-    descripcion: "Calcula un despiece físico preliminar para una estructura de decoración. El backend usa estas cantidades para resolver tamaños reales del catálogo; nunca inventes cantidades ni precios.",
-    esquema: {
-      type: "object",
-      required: ["figura"],
-      properties: {
-        figura: { type: "string", enum: ["arco", "guirnalda", "columna", "pared", "centro_mesa"] },
-        ancho_m: { type: "number" },
-        alto_m: { type: "number" },
-        largo_m: { type: "number" },
-        densidad: { type: "string", enum: [...DENSIDADES], default: "media" },
-        colores: { type: "array", items: { type: "string" } },
-        mezcla: { type: "string", enum: [...MEZCLAS], default: "organica_fina" },
-      },
-    },
-  },
+  CONFIRMAR_SELECCION_RAG,
 ];
-
-/**
- * Las mismas herramientas RAG como las ve el modo DISEÑO DE DECORACIÓN: sin
- * `calcular_medidas` (sus cantidades contradicen las que cotiza el plan) y sin
- * el camino de despiece que dependía de ella.
- */
-export const HERRAMIENTAS_RAG_MODO_PLAN: Herramienta[] = HERRAMIENTAS_RAG
-  .filter((herramienta) => herramienta.nombre !== "calcular_medidas")
-  .map((herramienta) => (herramienta.nombre === "confirmar_seleccion_rag" ? confirmarSeleccionRag(false) : herramienta));
 
 export const HERRAMIENTAS_PLAN: Herramienta[] = [
   {
