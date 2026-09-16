@@ -64,7 +64,7 @@ function prop(entrada: NonNullable<PlanResueltoV1["props"]>[number]): PropResuel
  * unknown value is a broken response, not something to coerce silently.
  */
 export function planResueltoDesdePython(payload: PlanResueltoV1): PlanResuelto {
-  const { schema_version: contrato, estructuras, props, ...resto } = payload;
+  const { schema_version: contrato, estructuras, props, costes_por_estructura: costesPorEstructura, ...resto } = payload;
   // This mapper is where the transport marker is dropped, so it states which
   // contract it accepted instead of discarding it silently.
   if (contrato !== PLAN_RESUELTO_CONTRACT_VERSION) {
@@ -73,6 +73,9 @@ export function planResueltoDesdePython(payload: PlanResueltoV1): PlanResuelto {
   return {
     ...resto,
     estructuras: estructuras.map(estructura),
+    // Se nombra en vez de viajar dentro de `...resto`: es el consumo por estructura que
+    // la tarjeta muestra, y pasarlo sin declararlo fue lo que obligo a recalcularlo en React.
+    costes_por_estructura: costesPorEstructura,
     ...(props === undefined ? {} : { props: props.map(prop) }),
   };
 }

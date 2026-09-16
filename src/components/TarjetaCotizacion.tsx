@@ -97,8 +97,10 @@ export function TarjetaCotizacion({ cotizacion, editable = false, onAplicar, ref
           <p className="mt-0.5 text-sm text-texto-suave">Los globos se venden en paquetes cerrados.</p>
         </div>
         <p className="text-right">
-          <span className="block text-xs text-texto-suave">{cotizacion.incluyeIva ? "Total con IVA" : "Total sin IVA"}</span>
-          <span className="block text-2xl font-semibold tracking-tight tabular-nums text-texto"><NumeroAnimado valor={borrador.total} formato="pesos" /></span>
+          {/* Fuera de edicion manda el total que firmo Python; `borrador.total` es una re-suma
+              local y solo vale como vista previa mientras el cliente ajusta paquetes. */}
+          <span className="block text-xs text-texto-suave">{editando ? "Nuevo total estimado" : cotizacion.incluyeIva ? "Total con IVA" : "Total sin IVA"}</span>
+          <span className="block text-2xl font-semibold tracking-tight tabular-nums text-texto"><NumeroAnimado valor={editando ? borrador.total : cotizacion.total} formato="pesos" /></span>
         </p>
       </div>
 

@@ -366,6 +366,13 @@ const plan: PlanResuelto = {
   merma_log: "fixture",
   sustituciones: [sustitucion("EST_01_SEMIARCO"), sustitucion("EST_02_COLUMNA")],
   sin_cobertura: [],
+  // Lo firma Python. `compras` esta vacio a proposito: la formula vieja de TypeScript
+  // repartia el paquete y habria devuelto `null` aqui, asi que si alguien la reintroduce
+  // el importe desaparece de la tarjeta y la asercion de mas abajo falla.
+  costes_por_estructura: [
+    { estructura_id: "EST_01_SEMIARCO", consumo_cop: 128400 },
+    { estructura_id: "EST_02_COLUMNA", consumo_cop: null },
+  ],
   advertencias: [],
 };
 
@@ -452,7 +459,10 @@ ok("modo dev conserva los datos crudos");
   assert.ok(botones.length >= 8, `se esperaban botones Modificar/Quitar con nombre accesible, hay ${botones.length}`);
   assert.ok(botones.includes(`aria-label="Modificar Globo Latex Redondo Fashion Azul Rey de 5 pulgadas"`), botones.join(" | "));
   for (const atributo of atributos) {
-    assert.doesNotMatch(atributo, /\bB2b\b|R-\d|PAQUETE/i, `atributo con código de catálogo: ${atributo}`);
+    // `PAQUETE X 20` es el codigo del catalogo; "paquete" a secas es castellano llano y ya
+    // se le dice al cliente ("los globos se venden en paquetes cerrados"). Sin la `X`, el
+    // patron marcaba tambien la prosa normal.
+    assert.doesNotMatch(atributo, /\bB2b\b|R-\d|PAQUETE X/i, `atributo con código de catálogo: ${atributo}`);
   }
   ok("nombres accesibles de Modificar/Quitar sin códigos del catálogo");
 }

@@ -165,5 +165,12 @@ export type PlanResuelto = {
   merma_log: string;
   sustituciones: Array<{ estructura_id: string; pedido: string; entregado: string; motivo: string }>;
   sin_cobertura: Array<{ estructura_id: string; product_id: string; tamano: string }>;
+  /**
+   * Consumo imputado a cada estructura, tal como lo firma Python. Vive FUERA del
+   * snapshot que hashea `plan_hash`, así que añadirlo no invalida planes en vuelo.
+   * `consumo_cop` es `null` cuando alguna línea de la estructura no tiene compra
+   * consolidada: la UI no reparte el paquete por su cuenta.
+   */
+  costes_por_estructura: Array<{ estructura_id: string; consumo_cop: number | null }>;
   advertencias: string[];
 };

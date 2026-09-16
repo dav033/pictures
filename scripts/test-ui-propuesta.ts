@@ -102,7 +102,9 @@ const blueprint = blueprintDe([
   assert.match(texto, /Ancho 3 m Alto 2,5 m Fondo 0,5 m Globos unos 123/);
   assert.match(texto, /Mezcla de tamaños/);
   assert.match(texto, /Globos que lleva/);
-  assert.match(texto, /Esta pieza suma unos \$ [\d.]+/);
+  // Importe exacto de `costes_por_estructura`, que firma Python. Con un `[\d.]+` suelto,
+  // reintroducir el reparto de paquetes en React pasaba desapercibido.
+  assert.match(texto, /Esta pieza suma unos \$ 58\.334/);
   assert.match(texto, /Marco focal impactante/, "la explicación (porque) va en el detalle");
   ok("propuesta con foto: recortes por pieza, contadores, ambientación y detalle con datos reales");
 }

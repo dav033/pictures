@@ -1222,5 +1222,15 @@
   "event_relaxations": [
     "evento sin señal verificable en título, descripción o tags"
   ],
-  "approval_token": "fixture-sin-firma-no-aprobable"
+  "approval_token": "fixture-sin-firma-no-aprobable",
+  "costes_por_estructura": [
+    {
+      "estructura_id": "EST_01_ARCO",
+      "consumo_cop": 58334
+    },
+    {
+      "estructura_id": "EST_02_COLUMNAS",
+      "consumo_cop": 38657
+    }
+  ]
 }

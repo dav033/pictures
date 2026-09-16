@@ -311,7 +311,9 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   // Data URLs of the turn's photos, built once per attachment set.
   const urlsReferencia = useMemo(() => new Map((imagenesReferencia ?? []).map((imagen) => [imagen, urlImagen(imagen)])), [imagenesReferencia]);
   const elementosReferencia = new Map((referenceBlueprint?.elements ?? []).map((elemento) => [elemento.element_id, elemento]));
-  const compraPorVariante = new Map(plan.compras.map((compra) => [compra.variant_id, compra]));
+  // Consumo imputado por estructura, tal como lo firma Python. Antes se repartia aqui el
+  // paquete entre estructuras, que era la misma formula mantenida en dos idiomas.
+  const consumoPorEstructura = new Map(plan.costes_por_estructura.map((coste) => [coste.estructura_id, coste.consumo_cop]));
   const imagenLinea = (variantId: string, propia?: string | null): string | undefined => propia ?? imagenesCatalogo[variantId];
 
   function recorteDe(declarada: (typeof vistasEstructura)[number]["declarada"]) {
@@ -320,17 +322,6 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     const imagen = imagenDeReferencia(imagenesReferencia, elemento.source_image_id);
     const src = imagen ? urlsReferencia.get(imagen) : undefined;
     return src ? { src, caja: elemento.reference_bbox } : null;
-  }
-
-  /** Consumption value of a structure's balloons; null when a line has no purchase price. */
-  function sumaPieza(estructura: PlanResuelto["estructuras"][number]): number | null {
-    let suma = 0;
-    for (const linea of estructura.lineas) {
-      const compra = compraPorVariante.get(linea.variant_id);
-      if (!compra || compra.unidades_paquete <= 0) return null;
-      suma += (linea.unidades * compra.precio_paquete) / compra.unidades_paquete;
-    }
-    return estructura.lineas.length ? Math.round(suma) : null;
   }
 
   const piezas = vistasEstructura.map(({ estructura, declarada, oficial, paraDescribir, colores }, indice): PiezaPropuestaVista & { recorteCrudo: ReturnType<typeof recorteDe> } => {
@@ -873,7 +864,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
                 lineas={lineasVisiblesPorVariante(estructura.lineas)}
                 imagenDe={(linea) => imagenLinea(linea.variant_id, linea.imagen)}
                 fotoAusente={(linea) => Boolean(imagenesAusentes[linea.variant_id])}
-                sumaCop={sumaPieza(estructura)}
+                sumaCop={consumoPorEstructura.get(estructura.estructura_id) ?? null}
                 editable={editorDisponible}
                 onAgregar={() => abrirEditor("agregar", estructura.estructura_id)}
                 onEditar={(linea) => abrirEditor("reemplazar", estructura.estructura_id, linea)}

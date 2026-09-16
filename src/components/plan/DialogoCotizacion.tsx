@@ -126,7 +126,10 @@ export function DialogoCotizacion({ plan, abierto, onAbiertoChange, imagenDe, on
   const reducir = useReducedMotion();
   const techo = plan.comercial.techo_cop;
   const total = plan.totales.total_cop;
-  const excede = plan.comercial.estado === "PRESUPUESTO_EXCEDIDO" || (techo != null && total > techo);
+  // El veredicto de presupuesto y su delta son de Python. Volver a compararlos aqui
+  // (`total > techo`) crearia un segundo dueno de la regla, que es el patron que ya
+  // costo un incidente en `validateMaterialEstimate`.
+  const excede = plan.comercial.estado === "PRESUPUESTO_EXCEDIDO";
   const comprados = plan.compras.reduce((suma, compra) => suma + compra.purchase_quantity, 0);
   const enDecoracion = plan.totales.design_quantity;
 
@@ -190,7 +193,7 @@ export function DialogoCotizacion({ plan, abierto, onAbiertoChange, imagenDe, on
                     </div>
                     <p className={`mt-2 inline-flex items-center gap-1.5 text-[13px] ${excede ? "text-aviso" : "text-exito"}`}>
                       {excede ? <TriangleAlert className="size-3.5" aria-hidden="true" /> : <Check className="size-3.5" aria-hidden="true" />}
-                      {excede ? `Se pasa de tu presupuesto por ${pesos.format(Math.max(plan.comercial.delta_cop, total - techo))}` : "Cabe en tu presupuesto"}
+                      {excede ? `Se pasa de tu presupuesto por ${pesos.format(plan.comercial.delta_cop)}` : "Cabe en tu presupuesto"}
                     </p>
                   </div>
                 ) : (
