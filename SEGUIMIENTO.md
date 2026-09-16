@@ -263,3 +263,67 @@ aplicadas en Neon el 2026-09-16; LoRA con foto pasa por `/edit`.
   de por `catalogBlueprint`, y la retirada de las prohibiciones contradictorias
   del prompt. **Conviene medirlo antes de darlo por bueno**; el arnés de
   evaluación está montado.
+
+---
+
+## 7. Editar una propuesta desde el chat (lo más urgente del producto)
+
+Observado el 2026-09-16 probando con una foto de baby shower (semiarco blanco con
+acentos dorados y hojas verdes sobre pared de follaje).
+
+### E.1 Pedir un cambio rehace el plan entero
+
+El cliente pide un cambio de distribución y la respuesta es **una propuesta
+nueva**: cambian los colores (de verde y dorado a dorado y blanco), las piezas y
+las medidas que ya había aceptado. No es que el modelo desobedezca: es que la
+conversación **no tiene forma de editar**. Solo sabe crear planes.
+
+Existe `/api/plan-editar` con acciones acotadas (`reemplazar`, `agregar`) por
+`estructura_id` y `variant_id`, que preserva todo lo que no se menciona y
+re-firma el plan. Pero solo se dispara desde el editor de la tarjeta
+(`TarjetaPlanDecoracion`). Un mensaje de chat siempre entra por
+`confirmar_plan_decoracion`, que construye un plan desde cero.
+
+**Cómo arreglarlo:**
+
+1. Con una propuesta aprobada en la conversación, distinguir dos intenciones:
+   **ajustar** lo que hay ("más dorado", "el arco más grande", "quita las hojas")
+   frente a **diseñar otra cosa** ("mejor algo para un cumpleaños"). El plan ya
+   guarda su procedencia firmada, así que el turno sabe si hay algo que editar.
+2. Una intención de ajuste va a una edición acotada, no a `confirmar_plan_decoracion`.
+   Lo que el cliente no nombra **no se toca**: mismas estructuras, mismas
+   medidas, mismos materiales salvo el cambio pedido.
+3. Solo si el cliente pide explícitamente otro diseño se empieza de cero, y
+   conviene decírselo ("te armo una propuesta nueva") en vez de sustituirla en
+   silencio.
+4. Que el cambio sea visible: la tarjeta nueva debería decir qué cambió respecto
+   a la anterior, no aparecer como si fuera la primera.
+
+Riesgo a vigilar: la intención la clasifica el modelo, y una clasificación
+errónea borra una propuesta aceptada. Ante la duda, editar es lo reversible;
+rehacer no. Y la edición ya tiene su propia puerta de allowlist firmada, así que
+no abre superficie nueva.
+
+### E.2 El ajuste debe ocurrir en el chat, no en una caja aparte
+
+Hoy el ajuste vive en un campo separado bajo la imagen ("Ajuste: 'más velas',
+'de noche'…") que llama a `generar()` con `instruccion`. Es una segunda
+conversación paralela a la conversación. Debe ser un mensaje más del chat, con
+su respuesta en el hilo.
+
+### E.3 La distribución de color no se compara con la referencia
+
+En la foto el blanco domina y el dorado es acento; en la imagen generada el
+dorado ocupa la mitad inferior. Las hojas verdes y la pared de follaje
+desaparecen.
+
+Hoy se comprueba que los colores de la foto **estén** (`coloresReferenciaOmitidos`,
+y ver §3.A sobre el vocabulario), pero nada compara **en qué proporción**. El
+plan declara `participacion` por material y nadie contrasta ese reparto con lo
+observado en la referencia. El QA visual sí lo detecta después —en una corrida
+anterior marcó `appearance failure` en las dos piezas— pero llega tarde y no
+bloquea.
+
+Pendiente de decidir: si la proporción de la referencia debe ser una
+restricción del plan (y entonces el guard la defiende como a los colores), o
+solo una advertencia. Lo primero es más fiel; lo segundo deja más margen creativo.
