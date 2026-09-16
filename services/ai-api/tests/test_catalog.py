@@ -227,8 +227,15 @@ async def test_catalog_lexical_search_matches_any_meaningful_term(message: str) 
         )
     )
 
-    assert len(pool.connection.fetch_calls) == 1
-    query, args = pool.connection.fetch_calls[0]
+    # A requested color filter first checks which colors the snapshot actually
+    # stocks (_resolve_colors), so it can resolve one that is not sold to the
+    # nearest one that is; the fake connection has none, so "rosa" passes
+    # through unresolved and the main query below is unchanged.
+    assert len(pool.connection.fetch_calls) == 2
+    presence_query, presence_args = pool.connection.fetch_calls[0]
+    assert "SELECT DISTINCT color" in presence_query
+    assert presence_args == ("products_catalog:test",)
+    query, args = pool.connection.fetch_calls[1]
     normalized = " ".join(query.split())
     # Regression: plainto_tsquery over the whole message ANDed every word.
     assert "plainto_tsquery('simple'" not in normalized
@@ -260,6 +267,119 @@ async def test_catalog_lexical_search_matches_any_meaningful_term(message: str) 
     assert args[4] == message.strip().lower()
     assert args[5] == 15 * 16
     assert len(args) == 6
+
+
+class FakeColorResolutionConnection:
+    """Distinguishes the two queries a color filter now triggers: which colors
+    the snapshot stocks (`SELECT DISTINCT color`), and the candidate rows for
+    whichever colors `_resolve_colors` decided to search."""
+
+    def __init__(self, present_colors: list[str], candidate_rows: list[dict[str, object]]) -> None:
+        self.present_colors = present_colors
+        self.candidate_rows = candidate_rows
+        self.fetch_calls: list[tuple[str, tuple[object, ...]]] = []
+
+    async def fetchval(self, _query: str, *args: object) -> object:
+        return args[0] if args else "products_catalog:test"
+
+    async def fetch(self, query: str, *args: object) -> list[dict[str, object]]:
+        self.fetch_calls.append((query, args))
+        if "SELECT DISTINCT color" in query:
+            return [{"color": color} for color in self.present_colors]
+        return self.candidate_rows
+
+
+class FakeColorResolutionPool:
+    def __init__(self, present_colors: list[str], candidate_rows: list[dict[str, object]]) -> None:
+        self.connection = FakeColorResolutionConnection(present_colors, candidate_rows)
+
+    def acquire(self) -> AbstractAsyncContextManager[FakeColorResolutionConnection]:
+        connection = self.connection
+
+        class Acquire:
+            async def __aenter__(self) -> FakeColorResolutionConnection:
+                return connection
+
+            async def __aexit__(self, *_args: object) -> None:
+                return None
+
+        return Acquire()
+
+
+def _red_balloon_row(color: str = "rojo") -> dict[str, object]:
+    return {
+        "product_id": "P-ROJO",
+        "title": "Globo latex rojo",
+        "derived": {"category": "globo_latex", "colors": [color], "finishes": [], "occasions": []},
+        "product_available": True,
+        "image": None,
+        "variant_id": "V-ROJO-12",
+        "sku": "SKU-ROJO-12",
+        "variant_title": "R-12",
+        "price": 4000,
+        "variant_available": True,
+        "sku_ambiguous": False,
+        "codigo_tamano": "R-12",
+        "diam_pulg": 12,
+        "forma": "redondo",
+        "derived_colors": [color],
+        "score": 1.0,
+    }
+
+
+@pytest.mark.anyio
+async def test_catalog_search_resolves_a_color_the_snapshot_lacks_to_the_nearest_stocked_one() -> None:
+    """Bug: a photo's dominant color ("burdeos") has no exact catalog product
+    and the search returned nothing for it, so the color silently vanished
+    from the plan. The catalog now resolves it to the nearest color it truly
+    stocks, by chromatic distance (x-tonos-colores-catalogo, owned by
+    similitud-color.ts) rather than a hand-kept synonym table, and reports the
+    substitution instead of dropping the request.
+    """
+    pool = FakeColorResolutionPool(present_colors=["rojo"], candidate_rows=[_red_balloon_row("rojo")])
+    store = CatalogStore("postgresql://demo:demo@localhost/demo", pool=pool)
+
+    result = await store.search(
+        _request(message="globo latex burdeos", filters={"available": True, "colors": ["burdeos"]})
+    )
+
+    assert result["color_substitutions"] == [{"pedido": "burdeos", "entregado": "rojo"}]
+    assert result["status"] == "OK"
+    candidates = cast(list[dict[str, object]], result["candidates"])
+    assert [candidate["product_id"] for candidate in candidates] == ["P-ROJO"]
+    # The main query searched for the resolved color, never the literal word
+    # the snapshot does not sell.
+    _presence_query, _presence_args = pool.connection.fetch_calls[0]
+    _main_query, main_args = pool.connection.fetch_calls[1]
+    assert main_args[1] == ["rojo"]
+
+
+@pytest.mark.anyio
+async def test_catalog_search_keeps_an_exact_color_request_untouched() -> None:
+    pool = FakeColorResolutionPool(present_colors=["rojo"], candidate_rows=[_red_balloon_row("rojo")])
+    store = CatalogStore("postgresql://demo:demo@localhost/demo", pool=pool)
+
+    result = await store.search(
+        _request(message="globo latex rojo", filters={"available": True, "colors": ["rojo"]})
+    )
+
+    assert result["color_substitutions"] == []
+    assert result["status"] == "OK"
+
+
+@pytest.mark.anyio
+async def test_catalog_search_reports_no_substitution_when_nothing_close_is_stocked() -> None:
+    """The snapshot has nothing at all: the requested color passes through
+    unresolved so the search still reports NO_MATCH honestly."""
+    pool = FakeColorResolutionPool(present_colors=[], candidate_rows=[])
+    store = CatalogStore("postgresql://demo:demo@localhost/demo", pool=pool)
+
+    result = await store.search(
+        _request(message="globo latex burdeos", filters={"available": True, "colors": ["burdeos"]})
+    )
+
+    assert result["color_substitutions"] == []
+    assert result["status"] == "NO_MATCH"
 
 
 def test_group_candidates_only_contains_rows_returned_by_sql() -> None:

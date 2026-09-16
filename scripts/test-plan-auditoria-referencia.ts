@@ -294,12 +294,22 @@ async function main(): Promise<void> {
   const transparentes = [candidato("P-TRANSP", "globo_latex", "transparente", [{ variantId: "V-TRANSP-12", diamPulg: 12 }])];
   const rosaYPlata = [candidato("P-ROSADO", "globo_latex", "rosado", [{ variantId: "V-ROSADO-12", diamPulg: 12 }]), candidato("P-PLATA", "globo_latex", "plateado", [{ variantId: "V-PLATA-12", diamPulg: 12 }])];
   const confirmarSemiarco = (solicitud: string, candidatos: ProductoCandidato[], filasColor: Array<{ color: string; product_id: string; titulo: string }>, allowlistVariantes?: string[]) => {
+    // consultasPresencia: buscarGlobosPorColor's first query, "which colors does
+    // the pool truly have" (fixture: the distinct colors of filasColor).
+    // consultasColor: its second query, for products of the colors it resolved
+    // requested colors to -- the literal requested word only when it is itself
+    // present; the nearest present one otherwise (colorCatalogoMasCercano).
+    const consultasPresencia: unknown[][] = [];
     const consultasColor: unknown[][] = [];
     const poolColores = { query: async (sql: string, params: unknown[] = []) => {
+      if (/SELECT DISTINCT color/.test(sql)) {
+        consultasPresencia.push(params);
+        return { rows: [...new Set(filasColor.map((fila) => fila.color))].map((color) => ({ color })) };
+      }
       if (/unnest\(\$1::text\[\]\) AS color/.test(sql)) {
         consultasColor.push(params);
-        const pedidos = params[0] as string[];
-        return { rows: filasColor.filter((fila) => pedidos.includes(fila.color)) };
+        const resueltos = params[0] as string[];
+        return { rows: filasColor.filter((fila) => resueltos.includes(fila.color)) };
       }
       return { rows: filasSemiarco };
     } } as unknown as Pool;
@@ -313,7 +323,7 @@ async function main(): Promise<void> {
     }
     const catalogAllowlist = allowlistVariantes ? { entries: [], productIds: [], variantIds: allowlistVariantes } : undefined;
     const registro = crearRegistroHerramientas(estado, { pool: poolColores, creatividad: 0, ...(catalogAllowlist ? { catalogAllowlist } : {}) });
-    return { estado, consultasColor, confirmar: (colores: string[]) => registro.confirmar_plan_decoracion!(argsSemiarco(colores), llamada) as Promise<Record<string, unknown>> };
+    return { estado, consultasPresencia, consultasColor, confirmar: (colores: string[]) => registro.confirmar_plan_decoracion!(argsSemiarco(colores), llamada) as Promise<Record<string, unknown>> };
   };
 
   // Pure rule.
@@ -334,7 +344,8 @@ async function main(): Promise<void> {
   const omitidosTurno = rechazoTurno.colores_omitidos as Array<{ color: string; productos: Array<{ product_id: string; en_busqueda: boolean }> }>;
   assert.deepEqual(omitidosTurno.map((item) => item.color), ["rosado", "plateado"]);
   assert.deepEqual(omitidosTurno[0]!.productos, [{ product_id: "P-ROSADO", titulo: "P-ROSADO", en_busqueda: true }]);
-  assert.deepEqual(turno.consultasColor.map((params) => params[0]), [["gris"]], "the catalog is only asked for the colors the turn search did not return");
+  assert.equal(turno.consultasPresencia.length, 1, "the catalog is only asked for the colors the turn search did not return");
+  assert.deepEqual(turno.consultasColor, [], "grey has no exact or nearby stocked color in this catalog, so no product query runs");
   assert.equal(rechazoTurno.accion_requerida, ACCION_COLORES_REFERENCIA_OMITIDOS);
   assert.match(String(rechazoTurno.accion_requerida), /un solo color/);
   assert.equal(rechazoTurno.mensaje_cliente, MENSAJE_CLIENTE_COLORES_REFERENCIA);
@@ -354,9 +365,17 @@ async function main(): Promise<void> {
   ], ["V-TRANSP-12", "V-ROSADO-12", "V-PLATA-12"]);
   const rechazoLora = await lora.confirmar(["transparente"]);
   assert.equal(rechazoLora.status, "COLORES_REFERENCIA_OMITIDOS", JSON.stringify(rechazoLora).slice(0, 400));
-  assert.deepEqual((rechazoLora.colores_omitidos as Array<{ productos: Array<{ en_busqueda: boolean }> }>)[0]!.productos.map((item) => item.en_busqueda), [false]);
+  const omitidosLora = rechazoLora.colores_omitidos as Array<{ color: string; productos: Array<{ product_id: string; en_busqueda: boolean }> }>;
+  assert.deepEqual(omitidosLora[0]!.productos.map((item) => item.en_busqueda), [false]);
+  // Bug fix: grey ("gris") has no exact catalog product, but the pool has
+  // silver ("plateado") -- same neutral family in similitud-color.ts -- so it
+  // now borrows it by chromatic distance instead of disappearing.
+  assert.deepEqual(omitidosLora.map((item) => item.color), ["rosado", "plateado", "gris"], "grey resolves to the nearest stocked color instead of being dropped");
+  assert.deepEqual(omitidosLora.find((item) => item.color === "gris")?.productos.map((item) => item.product_id), ["P-PLATA"], "grey borrows silver's real products, not a synonym table");
+  assert.equal(lora.consultasPresencia.length, 1);
   assert.equal(lora.consultasColor.length, 1);
-  assert.deepEqual(lora.consultasColor[0]![0], ["rosado", "plateado", "gris"]);
+  // The literal word "gris" is never queried: it resolved to "plateado" before the product lookup.
+  assert.deepEqual(lora.consultasColor[0]![0], ["rosado", "plateado"]);
   assert.deepEqual(lora.consultasColor[0]![1], ["V-TRANSP-12", "V-ROSADO-12", "V-PLATA-12"], "the lookup never leaves the LoRA pool");
 
   // The catalog really lacks them: the plan goes on with the notices.

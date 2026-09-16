@@ -154,6 +154,12 @@ async function main(): Promise<void> {
   const confirmarTurno = (solicitud: string, blueprintTurno: Blueprint, candidatos: ProductoCandidato[], filas: unknown[], lookup: Array<{ color: string; product_id: string; titulo: string }>) => {
     const consultasColor: unknown[][] = [];
     const pool = { query: async (sql: string, params: unknown[] = []) => {
+      // buscarGlobosPorColor first checks which colors the pool truly stocks
+      // (fixture: the distinct colors of `lookup`), then queries products of
+      // whatever it resolved the requested colors to (colorCatalogoMasCercano).
+      if (/SELECT DISTINCT color/.test(sql)) {
+        return { rows: [...new Set(lookup.map((item) => item.color))].map((color) => ({ color })) };
+      }
       if (/unnest\(\$1::text\[\]\) AS color/.test(sql)) {
         consultasColor.push(params);
         return { rows: lookup.filter((item) => (params[0] as string[]).includes(item.color)) };

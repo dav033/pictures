@@ -244,6 +244,27 @@
       "type": "integer",
       "minimum": 0,
       "maximum": 9007199254740991
+    },
+    "color_substitutions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "pedido": {
+            "type": "string",
+            "minLength": 1
+          },
+          "entregado": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "pedido",
+          "entregado"
+        ],
+        "additionalProperties": false
+      }
     }
   },
   "required": [

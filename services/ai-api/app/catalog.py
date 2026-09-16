@@ -22,7 +22,7 @@ from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, StrictInt, field
 
 from app.operational_models import OperationalRequest
 from app.postgres_store import validate_database_url
-from app.generated_models import CatalogRecommendationsResult
+from app.generated_models import CatalogRecommendationsResult, contract_schema
 from app.recommendations import (
     CATALOG_RECOMMENDATIONS_RESULT_SCHEMA_VERSION,
     CatalogRecommendationError,
@@ -56,6 +56,23 @@ NonNegativeNumber = Annotated[
     FiniteFloat,
     Field(ge=0, le=MAX_SAFE_INTEGER),
 ]
+
+# Chromatic-distance table owned by src/lib/rag/catalog/similitud-color.ts and
+# exported into the catalog-search.v1 contract as x-tonos-colores-catalogo
+# (the same pattern _OFFICIAL_GEOMETRY in plan.py uses for the structure
+# geometry table). A requested color the active snapshot does not stock is
+# resolved to the nearest one it does by this table, never by a hand-kept
+# synonym list, so TypeScript and Python cannot drift on what "close enough"
+# means -- one table, read independently by each runtime.
+_TONE_CONTRACT: Mapping[str, object] = cast(
+    Mapping[str, object], contract_schema("CatalogSearch").get("x-tonos-colores-catalogo", {})
+)
+_HUES: Mapping[str, float] = cast(Mapping[str, float], _TONE_CONTRACT.get("hues", {}))
+_NEUTRAL_FAMILIES: tuple[frozenset[str], ...] = tuple(
+    frozenset(familia)
+    for familia in cast(Sequence[Sequence[str]], _TONE_CONTRACT.get("familias_neutras", ()))
+)
+_FAMILY_SCORE: float = cast(float, _TONE_CONTRACT.get("puntuacion_familia", 0.35))
 
 
 class SearchFilters(BaseModel):
@@ -484,6 +501,7 @@ class CatalogStore:
         retrieval_started = time.perf_counter()
         sku_status = "not_sku"
 
+        color_substitutions: list[dict[str, str]] = []
         async with self._reading(pool) as connection:
             snapshot_id = await self._selection_snapshot(connection, operation.catalog_snapshot_id)
             if snapshot_id is None:
@@ -494,9 +512,12 @@ class CatalogStore:
                     parse_ms,
                     _elapsed_ms(retrieval_started),
                 )
+            resolved_colors, color_substitutions = await _resolve_colors(
+                connection, operation.filters.colors, str(snapshot_id)
+            )
             if extracted_sku is not None:
                 rows, sku_status = await self._exact_rows(
-                    connection, operation, extracted_sku, str(snapshot_id)
+                    connection, operation, extracted_sku, str(snapshot_id), resolved_colors
                 )
                 if sku_status == "ambiguous":
                     return _empty_result(
@@ -507,7 +528,9 @@ class CatalogStore:
                         _elapsed_ms(retrieval_started),
                     )
             else:
-                rows = await self._lexical_rows(connection, operation, str(snapshot_id))
+                rows = await self._lexical_rows(
+                    connection, operation, str(snapshot_id), resolved_colors
+                )
 
         candidates = _group_candidates(rows, operation.limit)
         result_status = "OK" if candidates else "NO_MATCH"
@@ -529,6 +552,7 @@ class CatalogStore:
             "catalog_snapshot_id": str(snapshot_id) if snapshot_id is not None else None,
             "latency_parse_ms": parse_ms,
             "latency_retrieval_ms": _elapsed_ms(retrieval_started),
+            "color_substitutions": color_substitutions,
         }
 
     async def select(self, operation: CatalogSelectionRequest) -> dict[str, object]:
@@ -734,6 +758,7 @@ class CatalogStore:
         operation: CatalogSearchRequest,
         sku: str,
         snapshot_id: str,
+        resolved_colors: Sequence[str] | None = None,
     ) -> tuple[
         Sequence[Mapping[str, object]], Literal["unique", "ambiguous", "not_found", "filtered_out"]
     ]:
@@ -747,7 +772,7 @@ class CatalogStore:
         if _sku_result(identity_rows) == "ambiguous":
             return [], "ambiguous"
 
-        base, params = _base_query(operation, snapshot_id)
+        base, params = _base_query(operation, snapshot_id, resolved_colors)
         sku_position = len(params) + 1
         sku_expression = (
             "UPPER(COALESCE(v.sku_original, v.sku, ''))"
@@ -812,6 +837,7 @@ class CatalogStore:
         connection: CatalogConnection,
         operation: CatalogSearchRequest,
         snapshot_id: str,
+        resolved_colors: Sequence[str] | None = None,
     ) -> Sequence[Mapping[str, object]]:
         """Rank rows that match ANY meaningful query term, or the whole message by trigram.
 
@@ -824,7 +850,7 @@ class CatalogStore:
         the fraction of distinct meaningful terms a product matches, so a product
         covering more of the request ranks first.
         """
-        base, params = _base_query(operation, snapshot_id)
+        base, params = _base_query(operation, snapshot_id, resolved_colors)
         params.append(lexical_terms(operation.message))
         terms_position = len(params)
         params.append(operation.message.strip().lower())
@@ -926,7 +952,11 @@ def _looks_like_sku(value: str) -> bool:
     )
 
 
-def _base_query(operation: CatalogSearchRequest, snapshot_id: str) -> tuple[str, list[object]]:
+def _base_query(
+    operation: CatalogSearchRequest,
+    snapshot_id: str,
+    resolved_colors: Sequence[str] | None = None,
+) -> tuple[str, list[object]]:
     filters = operation.filters
     clauses = ["p.status = 'ACTIVE'", "p.source_snapshot_id = $1", "v.source_snapshot_id = $1"]
     params: list[object] = [snapshot_id]
@@ -953,8 +983,13 @@ def _base_query(operation: CatalogSearchRequest, snapshot_id: str) -> tuple[str,
     if filters.finishes:
         params.append(_normalized_values(filters.finishes))
         clauses.append(f"p.derived->'finishes' ?| ${len(params)}::text[]")
-    if filters.colors:
-        params.append(_normalized_values(filters.colors))
+    # resolved_colors is filters.colors with every color the snapshot does not
+    # stock replaced by the nearest one it does (_resolve_colors): the filter
+    # a customer's exact word never matches still returns the closest catalog
+    # reality instead of NO_MATCH.
+    colors = filters.colors if resolved_colors is None else resolved_colors
+    if colors:
+        params.append(_normalized_values(colors))
         position = len(params)
         clauses.append(
             "((cardinality(v.derived_colors) > 0 AND v.derived_colors && "
@@ -972,6 +1007,103 @@ def _base_query(operation: CatalogSearchRequest, snapshot_id: str) -> tuple[str,
         clauses.append(f"p.product_id = ANY(${len(params)}::text[])")
 
     return "WHERE " + " AND ".join(clauses), params
+
+
+def _same_neutral_family(one: str, other: str) -> bool:
+    return any(one in family and other in family for family in _NEUTRAL_FAMILIES)
+
+
+def _circular_hue_distance(one: float, other: float) -> float:
+    difference = abs(one - other)
+    return min(difference, 360 - difference) / 180
+
+
+def _chromatic_distance(requested: str, candidate: str) -> float:
+    """Mirrors ``puntuacionCromatica`` (similitud-color.ts) for a single pair.
+
+    Lower is closer; an exact match is 0. Two colors with no shared hue and no
+    shared neutral family default to 0.7 -- an unrelated color, not a perfect
+    or an impossible match.
+    """
+    if requested == candidate:
+        return 0.0
+    scores: list[float] = []
+    hue_requested = _HUES.get(requested)
+    hue_candidate = _HUES.get(candidate)
+    if hue_requested is not None and hue_candidate is not None:
+        scores.append(_circular_hue_distance(hue_requested, hue_candidate))
+    if _same_neutral_family(requested, candidate):
+        scores.append(_FAMILY_SCORE)
+    return min(scores) if scores else 0.7
+
+
+def _nearest_present_color(requested: str, present: Sequence[str]) -> str | None:
+    """The color of ``present`` closest to ``requested`` by ``_chromatic_distance``.
+
+    Ties break alphabetically for a deterministic result. ``None`` when
+    ``present`` is empty.
+    """
+    if not present:
+        return None
+    return min(present, key=lambda candidate: (_chromatic_distance(requested, candidate), candidate))
+
+
+async def _resolve_colors(
+    connection: CatalogConnection,
+    requested_colors: Sequence[str],
+    snapshot_id: str,
+) -> tuple[list[str] | None, list[dict[str, str]]]:
+    """Requested colors the snapshot does not stock, resolved to the nearest it does.
+
+    Presence is checked against the published snapshot's active, available
+    rows -- never against the static vocabulary table (``_HUES``), which only
+    says what color WORDS the catalog taxonomy knows, not what is actually in
+    stock. ``None`` (not an empty list) when nothing was requested, so callers
+    can tell "no color filter" apart from "every requested color is exact".
+    """
+    normalized_requested = [
+        value.strip().lower() for value in requested_colors if value.strip()
+    ]
+    if not normalized_requested:
+        return None, []
+    rows = await connection.fetch(
+        """
+        SELECT DISTINCT color
+          FROM catalog_variants v
+          JOIN catalog_products p ON p.product_id = v.product_id
+         CROSS JOIN LATERAL unnest(v.derived_colors) AS color
+         WHERE p.status = 'ACTIVE'
+           AND p.source_snapshot_id = $1
+           AND v.source_snapshot_id = $1
+           AND p.available = TRUE
+           AND v.available = TRUE
+        """,
+        snapshot_id,
+    )
+    present: set[str] = set()
+    for row in rows:
+        color = row.get("color")
+        if isinstance(color, str) and color.strip():
+            present.add(color.strip().lower())
+    resolved: list[str] = []
+    substitutions: list[dict[str, str]] = []
+    seen_substitutions: set[str] = set()
+    for requested in normalized_requested:
+        if requested in present:
+            resolved.append(requested)
+            continue
+        nearest = _nearest_present_color(requested, sorted(present))
+        if nearest is None:
+            # No substitute exists either: keep the request as-is so the
+            # search still reports NO_MATCH honestly instead of silently
+            # dropping the filter.
+            resolved.append(requested)
+            continue
+        resolved.append(nearest)
+        if requested not in seen_substitutions:
+            seen_substitutions.add(requested)
+            substitutions.append({"pedido": requested, "entregado": nearest})
+    return resolved, substitutions
 
 
 def _recommendation_query(
@@ -1227,6 +1359,7 @@ def _empty_result(
         "catalog_snapshot_id": str(snapshot_id) if snapshot_id is not None else None,
         "latency_parse_ms": parse_ms,
         "latency_retrieval_ms": retrieval_ms,
+        "color_substitutions": [],
     }
 
 

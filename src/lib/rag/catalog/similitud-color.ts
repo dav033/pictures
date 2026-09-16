@@ -1,4 +1,13 @@
-const HUES: Record<string, number> = {
+/**
+ * Hue degrees per catalog color word. Exported (with `FAMILIAS_NEUTRAS` and
+ * `PUNTUACION_FAMILIA`) into the `catalog-search.v1` domain contract as
+ * `x-tonos-colores-catalogo` (`scripts/export-domain-contract-schemas.ts`), the
+ * same pattern `estructuras-oficiales.ts` uses for `x-geometria-estructuras-oficiales`:
+ * this table is the one source, and `services/ai-api/app/catalog.py` reads it
+ * from the exported contract to resolve a requested color the active snapshot
+ * does not stock to the nearest one it does, instead of dropping it silently.
+ */
+export const HUES: Record<string, number> = {
   rojo: 0,
   burdeos: 350,
   coral: 12,
@@ -79,4 +88,54 @@ export function puntuacionCromatica(actuales: string[], candidatas: string[]): n
     }
   }
   return puntuaciones.length ? Math.min(...puntuaciones) : 0.7;
+}
+
+/** Shape of `x-tonos-colores-catalogo` in the exported `catalog-search.v1` contract. */
+export type TonosColoresCatalogoContrato = {
+  hues: Record<string, number>;
+  familias_neutras: string[][];
+  puntuacion_familia: number;
+};
+
+/**
+ * The chromatic-distance table as the JSON Schema extension the domain
+ * contract export injects into `catalog-search.v1`. `services/ai-api/app/catalog.py`
+ * reads it back with `contract_schema("CatalogSearch")` to pick, for a
+ * requested color the snapshot does not stock, the nearest one it does.
+ */
+export function tonosColoresCatalogo(): TonosColoresCatalogoContrato {
+  return {
+    hues: { ...HUES },
+    familias_neutras: FAMILIAS_NEUTRAS.map((familia) => [...familia]),
+    puntuacion_familia: PUNTUACION_FAMILIA,
+  };
+}
+
+/**
+ * Nearest color of `disponibles` to `pedido`, by the same ranking
+ * `puntuacionCromatica` uses (exact match wins outright; otherwise the
+ * smallest distance, ties broken alphabetically for a deterministic result).
+ * `undefined` when `disponibles` is empty. Used by the reference-color guard
+ * (`colores-referencia.ts`/`globos-por-color.ts`) to decide which catalog
+ * color a photo color the snapshot lacks can borrow -- the same table and
+ * algorithm structure `catalog.py` reads from the exported contract, so
+ * neither side can drift from the other's notion of "close enough": one
+ * table, computed independently in each runtime, like the structure geometry
+ * table in `estructuras-oficiales.ts`.
+ */
+export function colorCatalogoMasCercano(pedido: string, disponibles: readonly string[]): string | undefined {
+  const normalizado = normalizarColor(pedido);
+  const opciones = [...new Set(disponibles.map(normalizarColor).filter(Boolean))];
+  if (!normalizado || opciones.length === 0) return undefined;
+  if (opciones.includes(normalizado)) return normalizado;
+  let mejor: string | undefined;
+  let mejorPuntuacion = Infinity;
+  for (const opcion of opciones) {
+    const puntuacion = puntuacionCromatica([normalizado], [opcion]);
+    if (puntuacion < mejorPuntuacion || (puntuacion === mejorPuntuacion && (mejor === undefined || opcion < mejor))) {
+      mejorPuntuacion = puntuacion;
+      mejor = opcion;
+    }
+  }
+  return mejor;
 }

@@ -131,5 +131,49 @@
     "allowlist",
     "limit"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "x-tonos-colores-catalogo": {
+    "hues": {
+      "rojo": 0,
+      "burdeos": 350,
+      "coral": 12,
+      "naranja": 30,
+      "dorado": 44,
+      "dorado rosa": 12,
+      "champagne": 42,
+      "amarillo": 52,
+      "cafe": 28,
+      "beige": 38,
+      "crema": 48,
+      "nude": 24,
+      "verde": 120,
+      "menta": 155,
+      "turquesa": 180,
+      "azul": 220,
+      "lila": 270,
+      "violeta": 276,
+      "morado": 280,
+      "fucsia": 320,
+      "rosado": 335
+    },
+    "familias_neutras": [
+      [
+        "blanco",
+        "crema",
+        "beige",
+        "nude",
+        "transparente"
+      ],
+      [
+        "plateado",
+        "gris",
+        "negro"
+      ],
+      [
+        "dorado",
+        "champagne"
+      ]
+    ],
+    "puntuacion_familia": 0.35
+  }
 }

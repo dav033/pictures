@@ -547,6 +547,7 @@ export interface PythonCatalogSearchResult {
   catalog_snapshot_id: string | null;
   latency_parse_ms: number;
   latency_retrieval_ms: number;
+  color_substitutions?: Array<{ pedido: string; entregado: string }>;
   replayed?: boolean;
 }
 
@@ -677,6 +678,11 @@ const catalogCandidateSchema = z.object({
   variants: z.array(catalogVariantSchema),
 }).strict();
 
+const catalogColorSubstitutionSchema = z.object({
+  pedido: z.string().min(1),
+  entregado: z.string().min(1),
+}).strict();
+
 const catalogPayloadResultSchema = z.object({
   operation_schema_version: z.literal("catalog-search-result.v1"),
   status: z.enum(["OK", "NO_MATCH", "AMBIGUOUS_SKU"]),
@@ -689,6 +695,10 @@ const catalogPayloadResultSchema = z.object({
   catalog_snapshot_id: z.string().min(1).nullable(),
   latency_parse_ms: z.number().int().nonnegative(),
   latency_retrieval_ms: z.number().int().nonnegative(),
+  // A requested color the active snapshot does not stock, resolved by Python
+  // to the nearest one it has (catalog.py, x-tonos-colores-catalogo). Optional:
+  // every mock payload in the test scripts predates this field.
+  color_substitutions: z.array(catalogColorSubstitutionSchema).optional(),
 }).strict();
 
 const catalogSelectionItemSchema = z.object({

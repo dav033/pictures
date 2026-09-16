@@ -24,8 +24,11 @@ from typing import cast
 import pytest
 
 from app.plan import (
+    Candidate,
     PlanResolutionRequest,
     _distribute_units,
+    _line,
+    _relabelled_color,
     _reference_color_substitutions,
     resolve_plan,
 )
@@ -117,6 +120,78 @@ def test_reference_colors_are_quiet_when_covered_absent_or_uncovered() -> None:
     assert _reference_color_substitutions("EST_01_ARCO", None, ["blanco"]) == []
     # No resolved line: the resolver reports the structure as uncovered instead.
     assert _reference_color_substitutions("EST_01_ARCO", ["lila"], []) == []
+
+
+def _rojo_unico_candidato() -> Candidate:
+    """A round balloon whose only real color is "rojo" -- the shape the trap
+    below needs: a plan color that only matches the product's family tag, not
+    its one real color, so `_line_color` relabels the line.
+    """
+    return Candidate(
+        product_id="P-ROJO",
+        variant_id="V-ROJO-12",
+        sku="SKU-ROJO-12",
+        sku_original=None,
+        source_snapshot_id="snap",
+        source_variant_id=None,
+        inventory_quantity=None,
+        unidades_inferidas=None,
+        title="Globo latex rojo",
+        price=1000,
+        units_per_package=12,
+        size_code="R-12",
+        shape="redondo",
+        diameter_inches=12.0,
+        colors=("rojo",),
+        variant_colors=("rojo",),
+        finishes=(),
+        image=None,
+    )
+
+
+def test_trap_declaring_the_photo_color_on_the_material_swallows_the_substitution() -> None:
+    """Documented trap (not fixed by this resolver -- by the
+    ACCION_COLORES_REFERENCIA_OMITIDOS tool instruction, registro-herramientas.ts):
+    if a plan declares the PHOTO's color ("burdeos") on a material whose only
+    real color is "rojo", `_line_color` relabels the line to "rojo" and
+    `_relabelled_color` forgives the mismatch, feeding "burdeos" into
+    `equivalent_colors`. `_reference_color_substitutions` then counts
+    "burdeos" as covered and never reports the loss: the same silent-color-loss
+    bug, reintroduced through the relabelling path instead of a missing
+    catalog color. The next test is the fix: declaring the real delivered
+    color instead of the photo's word.
+    """
+    candidate = _rojo_unico_candidato()
+    line = _line("EST_01_ARCO", candidate, 10, "burdeos")
+    assert line["color"] == "rojo", "the single real color always wins the label"
+    relabelled = _relabelled_color(line, "burdeos")
+    assert relabelled == "burdeos"
+    substitutions = _reference_color_substitutions(
+        "EST_01_ARCO", ["burdeos"], [line["color"]], [relabelled]
+    )
+    assert substitutions == [], "trap: equivalent_colors swallows the notice"
+
+
+def test_declaring_the_real_delivered_color_lets_the_substitution_fire() -> None:
+    """Fix pinned: the tool instruction now tells the model to declare the
+    product's REAL color ("rojo"), never the photo's word, on the material.
+    `colores_referencia` still says "burdeos" (the photo did not change), so it
+    honestly diverges from what was bought and the substitution notice fires.
+    """
+    candidate = _rojo_unico_candidato()
+    line = _line("EST_01_ARCO", candidate, 10, "rojo")
+    assert line["color"] == "rojo"
+    relabelled = _relabelled_color(line, "rojo")
+    assert relabelled is None, "no relabelling: the plan already declared the real color"
+    substitutions = _reference_color_substitutions("EST_01_ARCO", ["burdeos"], [line["color"]], [])
+    assert substitutions == [
+        {
+            "estructura_id": "EST_01_ARCO",
+            "pedido": "burdeos",
+            "entregado": "rojo",
+            "motivo": "La foto de referencia muestra burdeos y esta pieza no lo lleva: se armó con rojo.",
+        }
+    ]
 
 
 @pytest.mark.anyio

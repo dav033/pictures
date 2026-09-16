@@ -162,6 +162,17 @@ const CatalogSearchCandidateV1Schema = z.object({
   variants: z.array(CatalogSearchVariantV1Schema),
 }).strict();
 
+/**
+ * A requested `filters.colors` entry the active snapshot does not stock,
+ * resolved by Python (`catalog.py`, `x-tonos-colores-catalogo`) to the
+ * nearest color it actually has. Optional: older responses and every hand-built
+ * test payload predate this field and still validate without it.
+ */
+const CatalogSearchColorSubstitutionV1Schema = z.object({
+  pedido: z.string().min(1),
+  entregado: z.string().min(1),
+}).strict();
+
 export const CatalogSearchResultV1Schema = z.object({
   operation_schema_version: z.literal(CATALOG_SEARCH_RESULT_CONTRACT_VERSION),
   status: z.enum(["OK", "NO_MATCH", "AMBIGUOUS_SKU"]),
@@ -171,6 +182,7 @@ export const CatalogSearchResultV1Schema = z.object({
   catalog_snapshot_id: idSchema.nullable(),
   latency_parse_ms: z.number().int().nonnegative(),
   latency_retrieval_ms: z.number().int().nonnegative(),
+  color_substitutions: z.array(CatalogSearchColorSubstitutionV1Schema).optional(),
 }).strict();
 
 /**
