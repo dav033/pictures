@@ -3,7 +3,7 @@ import type { Pool } from "pg";
 import { resolverPlan } from "@/lib/plan/resolver";
 import { PlanDecoracionSchema } from "@/lib/plan/tipos";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
-import { planBlueprint } from "@/app/api/generate/route";
+import { planBlueprint } from "@/lib/plan/blueprint";
 import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/scene-spec";
 import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
 import { estimateFromPlan } from "@/lib/materiales/estimacion";

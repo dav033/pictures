@@ -37,7 +37,7 @@
  * `Pool` que usa `scripts/test-paridad-plan-python.ts` (`scripts/lib/vectores-golden.ts`).
  * Run: npx tsx --conditions=react-server scripts/test-invariantes-plan.ts
  */
-import { planBlueprint } from "@/app/api/generate/route";
+import { planBlueprint } from "@/lib/plan/blueprint";
 import { buildImagePrompt, placementDescription, promptElementName, tieneContratoDeColor } from "@/lib/ia/build-image-prompt";
 import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/scene-spec";
 import { bloqueMezclaPorEstructura } from "@/lib/ia/tamano-fisico";

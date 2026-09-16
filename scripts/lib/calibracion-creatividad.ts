@@ -12,7 +12,7 @@
  * scripts/calibrar-creatividad-gemini.ts.
  */
 import type { Pool } from "pg";
-import { planBlueprint } from "@/app/api/generate/route";
+import { planBlueprint } from "@/lib/plan/blueprint";
 import { buildImagePrompt } from "@/lib/ia/build-image-prompt";
 import { perfilCreatividad, type NivelCreatividad } from "@/lib/ia/creatividad";
 import { approvedPlanQaInputs } from "@/lib/ia/generation-qa";
