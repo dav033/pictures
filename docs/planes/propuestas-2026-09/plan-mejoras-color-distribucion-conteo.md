@@ -73,6 +73,49 @@ Cada frente trabaja en su propio worktree y rama (`mejoras/w1-conteo`, `mejoras/
 
 Fusionar las ramas y regenerar los vectores golden después de fusionar (W1 cambia los conteos de los vectores de W2). Añadir `plan:test-paridad-python` y las pruebas deterministas de prompts a `plan:test`, corregir la cabecera obsoleta del script de paridad y añadir una prueba de invariantes sobre los vectores (líneas ↔ compras ↔ estimado ↔ cotización ↔ bloques de prompt). Correr lint, build de workspaces, `tsc --noEmit`, `plan:test`, pytest, ruff y mypy.
 
+## Estado de ejecución (2026-09-15, rama `mejoras/integracion`)
+
+Los cuatro frentes se ejecutaron en su worktree desde `e738610` y están fusionados.
+
+| Frente | Commits | Merge | Estado |
+|---|---|---|---|
+| W1 — conteo y reparto | `76a976d..8ade851` (8) | `0fae9cc` | completo, incluidos los cinco vectores nuevos (20–24) y el ADR del reparto |
+| W2 — color | `c045697..5297627` (8) | `6e10809` | completo, con los vectores `25-color-variante-primero` y `26-variant-override-sin-color` |
+| W3 — prompting del plan | `07631c4..b01f198` (11) | `240b849` | completo |
+| W4 — prompt de imagen, QA y ubicación | `7cb8c34..482c228` (13) | `86e10ca` | completo |
+| W5 — integración | `2e3a23b`, `ae57c38`, `715a946`, `a40562b`, `d11a7a7` | — | completo salvo lo que queda listado abajo |
+
+Lo que hizo la integración, además de fusionar:
+
+- El vector de tamaños mal escritos pasó a `27-` para dejar 25 y 26 a la rama de color, y su campo `name` interno se corrigió (`715a946`). No había otras referencias al nombre viejo.
+- **No hizo falta regenerar vectores.** Se corrieron `scripts/test-paridad-plan-python.ts --update` y `PARIDAD_ACTUALIZAR=1 pytest tests/test_plan_parity.py` sobre los 27 vectores y el diff quedó vacío: los cambios de reparto y de reserva de merma de W1 no mueven ninguna cifra de los vectores de W2 (arco de dos materiales con mezcla clásica, `repeticiones` 1 y sin tamaños obligatorios) ni de los demás. Se documentó en la cabecera del script que el orden correcto es `--update` y después pytest, porque `--update` reescribe el archivo entero con `JSON.stringify` y normaliza `12.0` a `12` dentro de `expected_python`.
+- `plan:test` pasó de 47 a 60 agregados (`a40562b`): entraron `plan:test-color-prompt`, `plan:test-paridad-python` (la comparación cruzada TS↔Python, que hasta ahora pasaba pero no corría en CI), `plan:test-referencia-cobertura`, `ia:test-prompts`, `ia:test-creatividad`, `ia:test-escena-plan`, `ia:test-escena-plan-imagen`, `ia:test-qa-piezas-separadas`, `ui:test-presentacion-plan`, `ia:test-lora-compiler`, `ia:test-lora-v004-compactacion` y `lora:test-product-runtime`. `.github/workflows/checks.yml` ya ejecuta `npm run plan:test`, así que no hizo falta añadir pasos al workflow. Con esto queda cerrado D14.
+- Prueba nueva de invariantes cruzadas (`d11a7a7`): `plan:test-invariantes` recorre los 27 vectores y comprueba líneas ↔ despiece ↔ estimado ↔ compras ↔ cotización ↔ bloque de tamaños ↔ color del prompt. Los vectores cuya forma no admite una invariante se omiten con la razón impresa (12 omisiones hoy). `scripts/lib/vectores-golden.ts` pasa a ser el dueño único de cargar y resolver los vectores para las dos suites.
+
+Comprobaciones ejecutadas en este worktree y su resultado real:
+
+| Comprobación | Resultado |
+|---|---|
+| `npm run lint` | verde (0 errores, 30 avisos preexistentes) |
+| `npm run build --workspaces --if-present` | verde |
+| `npx tsc --noEmit` | limpio |
+| `npm run contracts:check` | verde (9 contratos de chat, 30 de dominio) |
+| `npm run plan:test` | verde, 60 agregados, **96 s** |
+| `plan:test-paridad` / `plan:test-paridad-python` | 27/27 y 27/27 |
+| `plan:test-invariantes` | 27 vectores, 12 invariantes omitidas con razón, 0 fallos |
+| `pytest` (services/ai-api) | 171 pasadas, 4 omitidas (necesitan Postgres) |
+| `ruff check` / `ruff format --check` | verde / 31 archivos ya formateados |
+| `mypy app scripts` | verde (15 archivos) |
+| `npm run build` (app Next) | **bloqueado en este worktree**, ver abajo |
+
+### Pendiente y limitaciones
+
+- **`npm run build` no se puede correr aquí.** Falla en 6 s con `TurbopackInternalError: Symlink [project]/node_modules is invalid, it points out of the filesystem root`: el `node_modules` del worktree es una junction al del árbol principal y Turbopack no la acepta. No es un fallo de código ni de configuración de entorno; hay que correr el build en un checkout con su propio `node_modules` antes de desplegar.
+- **El TS2304 `LayoutProps` de `src/app/layout.tsx` no es deuda de código.** Se comprobó moviendo `.next/types` y volviendo a ponerlo: sin los tipos de ruta que genera Next el error aparece, con ellos `npx tsc --noEmit` queda completamente limpio. Un worktree recién creado no los tiene hasta que corre `next dev` o `next build`.
+- **Hueco de datos en los vectores:** ninguno reparte unidades que no sean divisibles entre sus `repeticiones`, así que la regla "una cantidad exacta por instancia solo se anuncia cuando el reparto es exacto" del bloque de tamaños está escrita pero todavía no tiene dato que la ejercite. Se cerraría con un vector de pieza repetida con `unidades_declaradas` no divisible.
+- **`plan_hash` cambia** con el reparto de W1: los planes aprobados antes del despliegue con varios colores o con tamaños obligatorios se tienen que volver a aprobar (ya estaba en Reversión).
+- Sigue sin correrse nada pagado: ninguna mejora de calidad visual de Gemini o del LoRA está declarada.
+
 ## Fuera de alcance (decisiones pendientes, no se implementan)
 
 - **Campo `patron_color`** (espiral, franjas, bloques, degradado): requiere ADR, medir la demanda y comprobar que Gemini y el LoRA sepan dibujarlo.
