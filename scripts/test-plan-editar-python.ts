@@ -112,6 +112,7 @@ async function main(): Promise<void> {
   const { crearTokenPlan, abrirContextoPlan } = await import("../src/lib/plan/aprobacion");
   const { POST } = await import("../src/app/api/plan-editar/route");
   const { ordenarRecomendacionesPorColor } = await import("../src/lib/plan/recomendaciones-orden");
+  const { RECOMENDACIONES_MAX_PRODUCTOS } = await import("../src/lib/plan/edicion-python");
   const { AllowlistProductoVarianteError } = await import("../src/lib/plan/allowlist-producto-variante");
   const { UiErrorV1Schema } = await import("../src/lib/ia/contracts/ui-error-v1");
   const { getRagPool } = await import("../src/lib/rag/db");
@@ -167,6 +168,62 @@ async function main(): Promise<void> {
   assert.deepEqual(ordenarRecomendacionesPorColor(empate, { productId: "ref", colores: [] }).map((p) => p.productId), ["p1", "p2"], "empate total conserva el orden de entrada");
   assert.deepEqual(ordenarRecomendacionesPorColor([], { productId: "ref", colores: ["rojo"] }), []);
   console.log("[PASS] ordenarRecomendacionesPorColor: comparador color→familia→título→precio, estable y sin mutar");
+
+  // --- W2.3 (D8): el mismo color es el más cercano, no el más lejano.
+  // puntuacionCromatica devolvía 1 (la peor nota) con coincidencia exacta, así
+  // que un Reflex Rojo quedaba detrás de coral, naranja y azul para un Fashion
+  // Rojo y se caía de los 12 productos que muestra la tarjeta.
+  const mismoColor = [
+    producto("prod-azul", "A azul", [variante("va-azul", 10, ["azul"])]),
+    producto("prod-rojo-2", "B rojo", [variante("vr2-rojo", 10, ["rojo"])]),
+    producto("prod-coral", "C coral", [variante("vc-coral", 10, ["coral"])]),
+  ];
+  assert.deepEqual(
+    ordenarRecomendacionesPorColor(mismoColor, { productId: "prod-rojo", colores: ["rojo"] }).map((p) => p.productId),
+    ["prod-rojo-2", "prod-coral", "prod-azul"],
+    "rojo exacto primero, luego coral, luego azul",
+  );
+  // Familias de neutros: gris es plata apagada, dorado no.
+  assert.deepEqual(
+    ordenarRecomendacionesPorColor(
+      [producto("prod-dorado", "A dorado", [variante("vd", 10, ["dorado"])]), producto("prod-gris", "B gris", [variante("vg", 10, ["gris"])])],
+      { productId: "prod-plata", colores: ["plateado"] },
+    ).map((p) => p.productId),
+    ["prod-gris", "prod-dorado"],
+  );
+  // Con más candidatos que el tope de la tarjeta, la alternativa del mismo
+  // color tiene que seguir dentro de los 12 que se muestran.
+  const tonos = ["azul", "verde", "turquesa", "menta", "morado", "lila", "violeta", "amarillo", "naranja", "beige", "cafe", "crema", "nude", "champagne"];
+  const muchos = [
+    ...tonos.map((tono, indice) => producto(`prod-${tono}`, `${String(indice).padStart(2, "0")} ${tono}`, [variante(`v-${tono}`, 10, [tono])])),
+    producto("prod-reflex-rojo", "Z Reflex Rojo", [variante("v-reflex-rojo", 10, ["rojo"])]),
+  ];
+  const doce = ordenarRecomendacionesPorColor(muchos, { productId: "prod-rojo", colores: ["rojo"] }).slice(0, RECOMENDACIONES_MAX_PRODUCTOS);
+  assert.equal(doce[0]!.productId, "prod-reflex-rojo", "el mismo color encabeza las recomendaciones");
+  assert.ok(doce.length === RECOMENDACIONES_MAX_PRODUCTOS && doce.some((p) => p.productId === "prod-reflex-rojo"));
+  // Invariante de las familias de neutros: dos colores de la misma familia
+  // nunca puntúan como un color desconocido (0,7), tengan tono o no. El bloque
+  // de arriba solo ejercía plateado/gris, los dos sin tono, así que la familia
+  // dorado/champagne no la cubría nada: quien le quitara el tono a un miembro
+  // de una familia no habría notado el cambio.
+  const { puntuacionCromatica, FAMILIAS_NEUTRAS, PUNTUACION_FAMILIA } = await import("../src/lib/rag/catalog/similitud-color");
+  for (const familia of FAMILIAS_NEUTRAS) {
+    for (const uno of familia) {
+      for (const otro of familia) {
+        if (uno === otro) continue;
+        assert.ok(
+          puntuacionCromatica([uno], [otro]) <= PUNTUACION_FAMILIA,
+          `${uno}/${otro} deben quedar dentro del techo de su familia (${PUNTUACION_FAMILIA})`,
+        );
+      }
+    }
+  }
+  // La distancia de tono sigue mandando cuando los dos colores la tienen: el
+  // techo de familia no puede alejar un par que el tono ya acerca.
+  assert.ok(puntuacionCromatica(["dorado"], ["champagne"]) < PUNTUACION_FAMILIA);
+  assert.equal(puntuacionCromatica(["plateado"], ["gris"]), PUNTUACION_FAMILIA);
+  assert.equal(puntuacionCromatica(["gris"], ["dorado"]), 0.7, "familias distintas siguen siendo color desconocido");
+  console.log("[PASS] ordenarRecomendacionesPorColor: coincidencia exacta primero y familias de neutros");
 
   // --- 1. aplicar: Python rejects a variant paired with a product that does not own it.
   let llamadas = instalarFetch((llamada) => llamada.path === "/internal/v1/plan/resolve"
@@ -376,6 +433,56 @@ async function main(): Promise<void> {
   const lineaCotizada = ((r.cuerpo.cotizacion as Json).lineas as Json[])[0]!;
   assert.equal(lineaCotizada.foto, FOTO, "photo from the consolidated purchase");
   console.log("[PASS] la cotización editada trae la foto de catálogo de cada compra");
+
+  // --- 6e. W2.5 (D8): el color que escribe la edición.
+  // El editor manda texto libre y llegaba al plan sin tocar: "azul rey" no
+  // coincidía con ninguna variante del resolver geométrico (SIN_COBERTURA), y
+  // la tarjeta conservaba el color de la pieza reemplazada, así que unos globos
+  // azules se cotizaban como "rosado".
+  const AZUL = { product_id: "prod-azul", variant_id: "var-azul-12", product_title: "Globo Latex Redondo Fashion Azul", colors: ["azul"] };
+  const planEnviado = (registro: Llamada[]): Json => {
+    const resueltas = registro.filter((llamada) => llamada.path === "/internal/v1/plan/resolve");
+    assert.equal(resueltas.length, 2, "se resuelve el plan base y el editado");
+    const plan = resueltas[1]!.body.plan;
+    assert.ok(esObjeto(plan));
+    return plan;
+  };
+  const colorDelOverride = (plan: Json): unknown => {
+    const estructuras = plan.estructuras as Array<Json & { variant_overrides?: Json[] }>;
+    const overrides = estructuras[0]!.variant_overrides ?? [];
+    assert.equal(overrides.length, 1, JSON.stringify(overrides));
+    return overrides[0]!.color;
+  };
+  const editarConColor = async (color: string | undefined): Promise<Llamada[]> => {
+    const registro = instalarFetch((llamada) => llamada.path === "/internal/v1/plan/resolve"
+      ? sobre(llamada, payloadResolucion())
+      : sobre(llamada, seleccionAdmitida(AZUL)));
+    const respuesta = await editar({
+      modo: "aplicar",
+      base: { ...base, approval_token: tokenPython },
+      edicion: { accion: "reemplazar", estructura_id: "EST_01_ARCO", objetivo_variant_id: "var-rojo-12", variante: { product_id: AZUL.product_id, variant_id: AZUL.variant_id, ...(color === undefined ? {} : { color }) } },
+    });
+    assert.equal(respuesta.status, 200, JSON.stringify(respuesta.cuerpo).slice(0, 300));
+    return registro;
+  };
+  assert.equal(colorDelOverride(planEnviado(await editarConColor("rosado"))), "azul", "el color viejo de la tarjeta no puede etiquetar la variante nueva");
+  assert.equal(colorDelOverride(planEnviado(await editarConColor("azul rey"))), "azul", "el texto libre pasa por el vocabulario del catálogo");
+  assert.equal(colorDelOverride(planEnviado(await editarConColor(undefined))), "azul", "sin color se usa el único color de la variante");
+
+  // Una variante con varios colores conserva lo que escribió el cliente,
+  // canonizado: rechazarla bloquearía una edición que el catálogo sí permite.
+  const llamadasVarios = instalarFetch((llamada) => llamada.path === "/internal/v1/plan/resolve"
+    ? sobre(llamada, payloadResolucion())
+    : sobre(llamada, seleccionAdmitida({ ...AZUL, colors: ["azul", "turquesa"] })));
+  r = await editar({
+    modo: "aplicar",
+    base: { ...base, approval_token: tokenPython },
+    edicion: { accion: "agregar", estructura_id: "EST_01_ARCO", participacion: 0.2, variante: { product_id: AZUL.product_id, variant_id: AZUL.variant_id, color: "azul rey" } },
+  });
+  assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 300));
+  const materialesAgregados = (planEnviado(llamadasVarios).estructuras as Array<Json & { materiales: Json[] }>)[0]!.materiales;
+  assert.equal(materialesAgregados.at(-1)!.color, "azul", "agregar canoniza el color del cliente");
+  console.log("[PASS] edición: el color sale del catálogo y de la variante elegida, nunca de la pieza anterior");
 
   // --- 7. Kill switch: a Python token never falls back to TypeScript, in any mode.
   process.env.PYTHON_BACKEND_KILL_SWITCH = "true";

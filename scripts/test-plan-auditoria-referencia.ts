@@ -414,6 +414,33 @@ async function main(): Promise<void> {
   ok("colores de la foto: vocabulario de vino y rosa viejo");
 
   // ---------------------------------------------------------------------------
+  // W2.2 (D7): the label parser lost the hue of "clear pink", never split on
+  // punctuation, sent "hot pink" to rosado and dropped single-word shades.
+  // Punctuation joins colors: the fold turned "/" and "," into a space before
+  // the split, so only the first color of the label survived.
+  assert.deepEqual(coloresDominantesReferencia(["gold/white"]), ["dorado", "blanco"]);
+  assert.deepEqual(coloresDominantesReferencia(["white, gold, silver, pink"]), ["blanco", "dorado", "plateado"], "the 3-color cap still applies");
+  assert.deepEqual(coloresDominantesReferencia(["blush+gold"]), ["rosado", "dorado"]);
+  // Transparency is a finish: "clear pink" is the Cristal line in pink, and
+  // claiming transparente as well would demand a material the photo never had.
+  assert.deepEqual(coloresDominantesReferencia(["clear pink"]), ["rosado"]);
+  assert.deepEqual(coloresDominantesReferencia(["crystal blue"]), ["azul"]);
+  assert.deepEqual(coloresDominantesReferencia(["clear"]), ["transparente"], "a lone clear is still the color transparente");
+  assert.deepEqual(coloresDominantesReferencia(["transparent"]), ["transparente"]);
+  assert.deepEqual(coloresDominantesReferencia(["hot pink", "neon pink"]), ["fucsia"], "the catalog sells these as fucsia, not rosado");
+  for (const [etiqueta, esperado] of [["navy", "azul"], ["navy blue", "azul"], ["sage", "verde"], ["sage green", "verde"], ["emerald", "verde"], ["lime", "verde"], ["olive", "verde"], ["plum", "morado"], ["mauve", "lila"]] as const) {
+    assert.deepEqual(coloresDominantesReferencia([etiqueta]), [esperado], `photo label ${etiqueta}`);
+  }
+  // Names with no clear catalog color stay unmapped: inventing one buys the
+  // wrong balloon, and the substitution notice is not worth a wrong purchase.
+  for (const etiqueta of ["copper", "bronze", "taupe", "terracotta"]) assert.deepEqual(coloresDominantesReferencia([etiqueta]), [], `photo label ${etiqueta}`);
+  // A Cristal Rosado material quoted as "rosado" covers a "clear pink" photo.
+  assert.deepEqual(sustitucionesColorReferencia("EST_01_ARCO", coloresDominantesReferencia(["clear pink"]), ["rosado"]), []);
+  const { coloresFotoParaBusqueda } = await import("../src/lib/plan/colores-referencia");
+  assert.deepEqual(coloresFotoParaBusqueda(blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "Clear pink arch", "balloon_structure", ["clear pink", "navy"])])), ["rosado", "azul"]);
+  ok("colores de la foto: puntuación, cristal con tono, fucsia y tonos en inglés de una palabra");
+
+  // ---------------------------------------------------------------------------
   // E2E 2026-09-14 (D9b): raw model wording reached the structure detail.
   const { sanearPorque } = await import("../src/lib/plan/porque-cliente");
   const casosPorque: ReadonlyArray<readonly [string, string]> = [

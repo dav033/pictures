@@ -1,6 +1,6 @@
 import type { ProductoCandidato } from "@/lib/rag/chat/buscar";
 import type { DisponibilidadProducto } from "@/lib/plan/cobertura-materiales";
-import { coloresRealesProducto } from "@/lib/plan/colores-producto";
+import { coloresRealesProducto, coloresRealesVariante } from "@/lib/plan/colores-producto";
 import { mezclasCompatiblesConDiametros } from "@/lib/plan/resolver";
 import type { PlanDecoracion } from "@/lib/plan/tipos";
 
@@ -53,9 +53,17 @@ export function disponibilidadDelTurno(candidatos: readonly ProductoCandidato[])
   const disponibilidad = new Map<string, DisponibilidadProducto>();
   for (const candidato of candidatos) {
     const redondas = candidato.variantes.filter((variante) => variante.disponible && variante.forma === "redondo" && variante.diamPulg != null);
+    const colores = coloresRealesProducto(candidato.titulo, [...candidato.colores, ...candidato.variantes.flatMap((variante) => variante.colores)]);
     disponibilidad.set(candidato.productId, {
       titulo: candidato.titulo,
-      colores: coloresRealesProducto(candidato.titulo, [...candidato.colores, ...candidato.variantes.flatMap((variante) => variante.colores)]),
+      colores,
+      // Coverage rule 1 needs the color the balloon really is, and a product's
+      // colors carry the color families of its tags. Without round variants
+      // (a foil number, a kit) there is no variant color to read: the product's
+      // colors stay, as before.
+      coloresVariante: redondas.length
+        ? [...new Set(redondas.flatMap((variante) => coloresRealesVariante(candidato.titulo, variante.colores, candidato.colores)))]
+        : colores,
       mezclas: mezclasCompatiblesConDiametros([...new Set(redondas.map((variante) => variante.diamPulg!))]),
       acabados: candidato.acabados,
     });

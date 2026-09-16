@@ -147,7 +147,7 @@ const fold = (text: string): string =>
 
 const escapeRegExp = (value: string): string => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-type Alias<T extends string> = { value: T; aliases: readonly string[] };
+export type Alias<T extends string> = { value: T; aliases: readonly string[] };
 
 const COLORS: readonly Alias<(typeof PALETA_COLORES_V2)[number]>[] = [
   { value: "dorado rosa", aliases: ["dorado rosa", "oro rosa", "rose gold", "rosé gold"] },
@@ -181,6 +181,14 @@ const COLORS: readonly Alias<(typeof PALETA_COLORES_V2)[number]>[] = [
   // red") are longer than "rojo"/"red" at the same span, so they stay one color.
   { value: "burdeos", aliases: ["burdeos", "vino", "borgona", "burgundy", "rojo vino", "vino tinto", "vinotinto", "granate", "marsala", "wine", "wine red", "maroon", "bordeaux", "oxblood"] },
 ];
+
+/**
+ * Alias de cada color del catálogo. La taxonomía es la dueña de los sinónimos de
+ * color, así que el vocabulario de colores del cliente (`plan/restricciones.ts`)
+ * se deriva de aquí en vez de mantener una segunda lista a mano. Solo lectura:
+ * agregar un alias aquí cambia también lo que el cliente puede exigir.
+ */
+export const ALIAS_COLORES_V2: readonly Alias<(typeof PALETA_COLORES_V2)[number]>[] = COLORS;
 
 const FINISHES: readonly Alias<(typeof ACABADOS_CATALOGO_V2)[number]>[] = [
   { value: "satin", aliases: ["satin", "satín", "satinado"] },

@@ -228,6 +228,7 @@ class Candidate:
     shape: str | None
     diameter_inches: float | None
     colors: tuple[str, ...]
+    variant_colors: tuple[str, ...]
     finishes: tuple[str, ...]
     image: str | None
 
@@ -335,6 +336,22 @@ def _product_colors(title: str, colors: Sequence[str]) -> tuple[str, ...]:
     return tuple(dict.fromkeys(("gris", *(color for color in folded if color != "plateado"))))
 
 
+def _variant_real_colors(
+    title: str, variant_colors: Sequence[str], product_colors: Sequence[str]
+) -> tuple[str, ...]:
+    """Real colors of ONE variant; mirror of ``coloresRealesVariante``.
+
+    A product's derived colors come from its tags, which are Shopify color
+    FAMILIES ("Fashion Violeta" is tagged MORADOS), so merging them with the
+    variant's own colors made a one-color balloon look multi-color. The variant's
+    colors win when it has any; otherwise the merged set is kept, never an empty
+    list (products with no variant colors and several product colors would
+    become uncoverable).
+    """
+    own = tuple(color for color in variant_colors if _normalize(color))
+    return _product_colors(title, own if own else (*variant_colors, *product_colors))
+
+
 def _candidate(row: Mapping[str, object], snapshot_id: str) -> Candidate | None:
     source_snapshot = _text(row.get("source_snapshot_id"))
     product_id = _text(row.get("product_id"))
@@ -381,6 +398,11 @@ def _candidate(row: Mapping[str, object], snapshot_id: str) -> Candidate | None:
         colors=_product_colors(
             product_title,
             _strings(row.get("colores_variante")) + _strings(row.get("colores_producto")),
+        ),
+        variant_colors=_variant_real_colors(
+            product_title,
+            _strings(row.get("colores_variante")),
+            _strings(row.get("colores_producto")),
         ),
         finishes=_strings(row.get("acabados_producto")),
         image=_valid_image(row.get("imagen")),
@@ -983,6 +1005,29 @@ def _choose(
     )
 
 
+def _relabelled_color(line: Mapping[str, object], requested: str | None) -> str | None:
+    """The color the plan asked for when ``_line_color`` relabelled the line."""
+    label = line.get("color")
+    if requested and isinstance(label, str) and _normalize(requested) != _normalize(label):
+        return requested
+    return None
+
+
+def _line_color(candidate: Candidate, color: str | None) -> str | None:
+    """Color a line is labelled with; mirror of ``colorDeLinea``.
+
+    The requested color wins, except when it only matched a family color of the
+    product (its tags) and the chosen variant has exactly one real color: the
+    line then says the color the balloon actually is. Which products a color
+    request accepts does not change; that is still ``_compatible``.
+    """
+    if not color:
+        return candidate.variant_colors[0] if candidate.variant_colors else None
+    if len(candidate.variant_colors) != 1 or _normalize(color) in candidate.variant_colors:
+        return color
+    return candidate.variant_colors[0]
+
+
 def _line(
     origin_id: str,
     candidate: Candidate,
@@ -1014,7 +1059,7 @@ def _line(
         "inventory_quantity": candidate.inventory_quantity,
         "unidades_inferidas": candidate.unidades_inferidas,
         "titulo": candidate.title,
-        "color": color or (candidate.colors[0] if candidate.colors else None),
+        "color": _line_color(candidate, color),
         "tamano_codigo": candidate.size_code,
         "diam_pulg": delivered_diameter,
         "diam_cm": round(delivered_diameter * 2.54, 1) if delivered_diameter is not None else None,
@@ -1069,14 +1114,19 @@ def _join_colors(colors: Sequence[str]) -> str:
 
 
 def _reference_color_substitutions(
-    structure_id: str, reference_colors: object, line_colors: Sequence[object]
+    structure_id: str,
+    reference_colors: object,
+    line_colors: Sequence[object],
+    equivalent_colors: Sequence[object] = (),
 ) -> list[dict[str, object]]:
     """Photo colors a structure does not buy; mirror of ``sustitucionesColorReferencia``.
 
     ``colores_referencia`` holds the dominant colors of the reference element the
     structure materializes, written by the Next server from the turn blueprint.
     A structure without resolved lines is reported as uncovered, not as a color
-    change.
+    change. ``equivalent_colors`` are the colors the plan asked for on lines that
+    ``_line_color`` relabelled: they only make the comparison tolerant, and the
+    customer is always told the colors the lines actually say.
     """
     delivered: list[str] = []
     for color in line_colors:
@@ -1085,6 +1135,11 @@ def _reference_color_substitutions(
             delivered.append(normalized)
     if not delivered or not isinstance(reference_colors, list):
         return []
+    covered = set(delivered)
+    for color in equivalent_colors:
+        normalized = _normalize(color) if isinstance(color, str) else ""
+        if normalized:
+            covered.add(normalized)
     requested: list[str] = []
     for color in reference_colors:
         normalized = _normalize(color) if isinstance(color, str) else ""
@@ -1098,7 +1153,7 @@ def _reference_color_substitutions(
             "motivo": f"La foto de referencia muestra {color} y esta pieza no lo lleva: se armó con {_join_colors(delivered)}.",
         }
         for color in requested
-        if color not in delivered
+        if color not in covered
     ]
 
 
@@ -1288,6 +1343,10 @@ def _resolve_structures(
         structure_id = _text(raw_structure.get("estructura_id")) or ""
         structure_type = _text(raw_structure.get("tipo")) or ""
         lines: list[dict[str, object]] = []
+        # Colors the plan asked for that ``_line_color`` relabelled with the
+        # variant's real color: the photo comparison still counts them as
+        # delivered (mirror of ``coloresEquivalentes`` in resolver.ts).
+        equivalent_colors: list[str] = []
         axis: float | None = None
         before_missing = len(uncovered)
         materials = _mappings(raw_structure.get("materiales"))
@@ -1381,6 +1440,9 @@ def _resolve_structures(
                     float(cast(float, demand["pulgadas"])),
                 )
                 lines.append(resolved_line)
+                relabelled = _relabelled_color(resolved_line, line_color)
+                if relabelled:
+                    equivalent_colors.append(relabelled)
                 replacement_info = resolved_line.get("sustitucion")
                 if isinstance(replacement_info, dict):
                     substitutions.append({"estructura_id": structure_id, **replacement_info})
@@ -1406,12 +1468,18 @@ def _resolve_structures(
                         }
                     )
                     continue
-                lines.append(_line(structure_id, candidate, quantity, _text(material.get("color"))))
+                material_color = _text(material.get("color"))
+                material_line = _line(structure_id, candidate, quantity, material_color)
+                lines.append(material_line)
+                relabelled = _relabelled_color(material_line, material_color)
+                if relabelled:
+                    equivalent_colors.append(relabelled)
         substitutions.extend(
             _reference_color_substitutions(
                 structure_id,
                 raw_structure.get("colores_referencia"),
                 [line.get("color") for line in lines],
+                equivalent_colors,
             )
         )
         total_units = sum(_integer(line.get("unidades")) or 0 for line in lines)

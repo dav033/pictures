@@ -580,7 +580,13 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       aplicarColoresReferencia(cobertura.plan, estado.referenceBlueprint),
       clienteDioMedidasEspacio(estado.solicitudOriginal, estado.brief.espacio),
     )));
-    const erroresDeIntencion = validarRestriccionesPlan(planCanonico, estado.restriccionesUsuario);
+    const erroresDeIntencion = validarRestriccionesPlan(
+      planCanonico,
+      estado.restriccionesUsuario,
+      // A color the server itself replaced (rule 1) still covers what the
+      // customer asked for: the balloon bought is the one that color matched.
+      cobertura.ajustes.flatMap((ajuste) => (ajuste.tipo === "color_material" ? [{ antes: ajuste.antes, despues: ajuste.despues }] : [])),
+    );
     // Default level: historical rule (open events). Any other level the
     // customer chose: its structure range for every event type.
     const erroresDeCardinalidad = perfil.nivel === CREATIVIDAD_POR_DEFECTO
