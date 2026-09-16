@@ -1292,11 +1292,13 @@ export default function Page() {
             fotoEspacio: fotoEspacioRef.current
               ? { base64: fotoEspacioRef.current.base64, mime: fotoEspacioRef.current.mime }
               : undefined,
-            // Las referencias de estilo solo las analiza Gemini (panel de
-            // referencias y chat); su resultado llega aquí como `blueprint` y
-            // como plan. El LoRA genera desde texto, así que nunca recibe los
-            // píxeles: enviarlos solo provocaba el rechazo del servidor.
-            imagenesReferencia: !usarLoraEnIntento && imagenesReferenciaRef.current.length
+            // El panel y el chat analizan las referencias, pero el adaptador
+            // LoRA también las necesita cuando usa /edit: el blueprint lleva
+            // la composición de forma textual y los píxeles aportan la
+            // relación visual que el modelo no puede reconstruir solo con el
+            // plan. `/api/generate` limita y etiqueta estas imágenes antes de
+            // enviarlas al proveedor.
+            imagenesReferencia: imagenesReferenciaRef.current.length
               ? imagenesReferenciaRef.current
               : undefined,
             aspecto: fotoEspacioRef.current?.aspecto ?? aspectoActivoRef.current,

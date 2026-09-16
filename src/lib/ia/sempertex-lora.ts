@@ -261,19 +261,19 @@ function validarUnaAplicacion(loras: LoraApplication[]): void {
  * sin recorte.
  */
 const FRASE_POR_ROL: Readonly<Record<ImageInput["role"], string>> = {
-  venue_base: "One input image is a photograph of the real venue: keep its architecture, camera angle, crop and ambient light, and install the decoration inside it.",
-  composition_reference: "One input image is a composition reference: take only its framing, density and spatial layout from it, never its objects, products or colors.",
-  element_reference: "One input image is a composition reference: take only its framing, density and spatial layout from it, never its objects, products or colors.",
-  style_reference: "One input image is a style reference: take only its mood and lighting from it, never its objects, products or colors.",
-  palette_reference: "One input image is a palette reference: take only its ambient palette from it, never its objects or products.",
-  catalog_product_reference: "One input image shows a balloon product: take only its color, finish, material and size from it, never its arrangement, packaging or background.",
-  previous_generated_result: "One input image is the previous result: keep it as the base and change only what the description above asks for.",
+  venue_base: "real venue photo: preserve its architecture, camera angle, crop and ambient light; install the decoration inside it.",
+  composition_reference: "composition reference: use only its framing, density and spatial layout; never its objects, products or colors.",
+  element_reference: "composition reference: use only its framing, density and spatial layout; never its objects, products or colors.",
+  style_reference: "style reference: use only its mood and lighting; never its objects, products or colors.",
+  palette_reference: "palette reference: use only its ambient palette; never its objects or products.",
+  catalog_product_reference: "balloon product photo: use only its color, finish, material and size; never its arrangement, packaging or background.",
+  previous_generated_result: "previous result: keep it as the base and change only the requested delta.",
 };
 
 /**
  * Longitud máxima del prompt que llega a `/edit`. Es el presupuesto del caption
  * más largo (`LORA_JSON_PROMPT_MAX_LENGTH`, 1800) más el bloque fijo de
- * INPUT IMAGES con sus cuatro roles distintos (menos de 700 caracteres).
+ * INPUT IMAGES con hasta cuatro entradas etiquetadas (menos de 700 caracteres).
  * Superarla significa que algo ajeno se coló en el prompt, no que el diseño sea
  * grande, así que la ruta falla cerrada antes de llamar al proveedor.
  */
@@ -281,12 +281,12 @@ export const LORA_EDIT_PROMPT_MAX_LENGTH = 2500;
 
 /**
  * Prompt final que recibe `/edit`: el caption compilado más una guía de frases
- * fijas en inglés, una por rol distinto de imagen de entrada. Puro y sin ids,
+ * fijas en inglés, una por imagen de entrada y con su posición explícita. Puro y sin ids,
  * para poder pasarlo por el preflight antes de llamar al proveedor.
  */
 export function buildLoraEditPrompt(prompt: string, references: readonly ImageInput[]): string {
   if (!references.length) return prompt;
-  const frases = [...new Set(references.map((image) => FRASE_POR_ROL[image.role]))];
+  const frases = references.map((image, index) => `Input image ${index + 1}: ${FRASE_POR_ROL[image.role]}`);
   return `${prompt}\n\nINPUT IMAGES\n${frases.join("\n")}\nRebuild one cohesive photorealistic event scene. Never output a collage, product board, isolated cutouts, or separate samples.`;
 }
 

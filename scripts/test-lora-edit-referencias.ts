@@ -41,13 +41,14 @@ assert.deepEqual(findLoraPromptLanguageLeaks(promptEdit), [], promptEdit);
 assert.deepEqual(findLoraPromptProductLeaks(promptEdit), [], promptEdit);
 assert.ok(promptEdit.startsWith(CAPTION), "el caption compilado sigue primero");
 assert.match(promptEdit, /INPUT IMAGES/);
-assert.match(promptEdit, /photograph of the real venue/);
-assert.match(promptEdit, /shows a balloon product/);
+assert.match(promptEdit, /Input image 1: real venue photo/);
+assert.match(promptEdit, /Input image 2: balloon product photo/);
 // Sin imágenes de entrada el prompt no cambia: el camino texto a imagen validado queda igual.
 assert.equal(buildLoraEditPrompt(CAPTION, []), CAPTION);
-// Una frase por ROL distinto, no una por imagen.
+// Cada imagen queda etiquetada por posición: el proveedor necesita distinguir
+// el espacio de la referencia visual aunque compartan el mismo tipo de rol.
 const dosProductos = buildLoraEditPrompt(CAPTION, [referenciasSucias[1]!, { ...referenciasSucias[1]!, id: "CATALOG_02" }]);
-assert.equal(dosProductos.split("shows a balloon product").length - 1, 1, dosProductos);
+assert.equal((dosProductos.match(/Input image \d+: balloon product photo/g) ?? []).length, 2, dosProductos);
 // Cabe sin recorte incluso con los cuatro roles que activan /edit.
 const cuatroRoles = buildLoraEditPrompt("x".repeat(LORA_JSON_PROMPT_MAX_LENGTH), [
   img("venue_base", 1, "V"),
