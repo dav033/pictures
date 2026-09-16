@@ -600,7 +600,7 @@ export default function Page() {
   const generacionIntervalRef = useRef<number | null>(null);
   const paginaMontadaRef = useRef(true);
 
-  const finChat = useRef<HTMLDivElement>(null);
+  const logChat = useRef<HTMLDivElement>(null);
   const entradaRef = useRef<HTMLInputElement>(null);
   const [planAprobadoHash, setPlanAprobadoHash] = useState<string | null>(null);
   // Propuesta aprobada restaurada al recargar cuya imagen no cupo en sessionStorage (D5):
@@ -635,7 +635,13 @@ export default function Page() {
     // escondería el título y el compositor detrás de la galería.
     if (!mensajes.some((mensaje) => mensaje.id !== SALUDO.id)) return;
     const reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    finChat.current?.scrollIntoView({ behavior: reducido ? "auto" : "smooth" });
+    // Se desplaza el log, no un ancla con `scrollIntoView`: sin `block`, esa
+    // API alinea el elemento con el INICIO de todos sus contenedores
+    // desplazables, la ventana incluida, así que al llegar una imagen empujaba
+    // el documento hasta el tope y dejaba a la vista el hueco que queda bajo el
+    // compositor. Mover el contenedor no puede tocar la ventana.
+    const log = logChat.current;
+    if (log) log.scrollTo({ top: log.scrollHeight, behavior: reducido ? "auto" : "smooth" });
   }, [mensajes, cargandoChat]);
 
   useEffect(() => {
@@ -1769,6 +1775,7 @@ export default function Page() {
 
       <main className={`app-main ${enInicio ? "en-inicio" : ""}`}>
         <div
+          ref={logChat}
           role="log"
           aria-live="polite"
           aria-label="Conversación con el asistente"
@@ -2103,7 +2110,6 @@ export default function Page() {
 
               {analisisFoto}
           </div>
-          <div ref={finChat} />
         </div>
 
         <div className={enInicio ? "app-inicio-compositor" : "app-compositor-zona"}>

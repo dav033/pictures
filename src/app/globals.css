@@ -708,6 +708,13 @@ body {
   }
 
   .app-log {
+    /* `position: relative` no es decorativo: los textos `sr-only` de los
+       mensajes son `position: absolute` sin `top`/`left`, así que sin un
+       ancestro posicionado su bloque contenedor es el documento entero. Ahí
+       escapan al recorte de este contenedor y estiran la página: con una
+       imagen generada el documento pasaba de 900 a 1579 px y dejaba un hueco
+       vacío enorme bajo el compositor. Medido con Playwright. */
+    position: relative;
     min-height: 0;
     flex: 1 1 auto;
     overflow-y: auto;
