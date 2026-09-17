@@ -486,7 +486,11 @@ async function main(): Promise<void> {
   // resolvia a amarillo. Sustituir exige una distancia; sin ella no se sustituye.
   {
     const enStock = ["amarillo", "azul", "blanco", "rojo", "verde"];
-    assert.equal(colorCatalogoMasCercano("burdeos", enStock), "rojo", "burdeos tiene tono (350) y rojo esta a 10 grados");
+    // El catalogo no vende un globo redondo liso en burdeos, asi que este es el
+    // caso real: la sustitucion tiene que encontrar rojo. Con el modelo de tono
+    // salia por estar a 10 grados; con la distancia perceptual sale porque es
+    // el unico del stock dentro del umbral (deltaE 41 de 45).
+    assert.equal(colorCatalogoMasCercano("burdeos", enStock), "rojo", "el burdeos, que no se vende, cae en rojo");
     assert.equal(colorCatalogoMasCercano("rojo", enStock), "rojo", "un color exacto se devuelve tal cual");
     assert.equal(colorCatalogoMasCercano("frambuesa", enStock), undefined, "la tabla no conoce frambuesa: no hay distancia que medir");
     assert.equal(colorCatalogoMasCercano("burdeos", []), undefined, "sin stock no hay a que parecerse");

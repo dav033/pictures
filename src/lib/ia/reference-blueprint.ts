@@ -39,9 +39,27 @@ const QuantitySchema = z
   .strict()
   .refine((value) => value.max >= value.min, "quantity.max must be >= quantity.min");
 
+/**
+ * Participación medida de un color del catálogo dentro de la caja del elemento
+ * (fase 2.1). `observed_colors` son NOMBRES que el analizador propone y su orden
+ * es el orden en que los escribió; esto es la fracción de píxeles, medida.
+ */
+const MeasuredColorSchema = z
+  .object({
+    color: texto(40),
+    share: z.number().min(0).max(1),
+  })
+  .strict();
+
 const AppearanceSchema = z
   .object({
     observed_colors: z.array(texto(80)).max(8),
+    /**
+     * Opcional: los blueprints anteriores a la fase 2.1 y las referencias que
+     * no traen píxeles (una descripción sin foto) no la tienen. Ordenada de
+     * mayor a menor participación.
+     */
+    measured_colors: z.array(MeasuredColorSchema).max(12).optional(),
     resolved_colors: z.array(texto(80)).max(8),
     color_policy: z.enum(["match_reference", "adapt_to_event_palette", "custom"]),
     material: texto(160),

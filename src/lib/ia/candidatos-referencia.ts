@@ -355,7 +355,24 @@ export function mergeCandidates(inventory: Candidate[], audit: Candidate[]): Can
       const current = merged[match];
       const strongerCategory = current.category === "other" && finding.category !== "other" ? finding.category : current.category;
       const strongerRole = current.scene_role === "midground" && finding.scene_role !== "midground" ? finding.scene_role : current.scene_role;
-      merged[match] = { ...current, structure: finding.structure ?? current.structure, shape: finding.structure ? finding.shape : current.shape, category: strongerCategory, scene_role: strongerRole, name: current.name === "unidentified decorative element" ? finding.name : current.name, visible_evidence: finding.visible_evidence, uncertainties: [...new Set([...current.uncertainties, ...finding.uncertainties])].slice(0, 8) };
+      // El color es el campo que más varía entre las dos pasadas y era el único
+      // que el verificador no podía tocar (fase 2.8): la segunda pasada existe
+      // justamente para corregir a la primera y estaba ciega aquí.
+      //
+      // La regla es la misma que usan `category` y `scene_role` arriba: el
+      // verificador solo gana cuando el inventario trae el valor vacío, que es
+      // su forma de "no vi nada". Si los dos vieron algo y no coinciden, no hay
+      // manera de saber cuál acierta desde aquí, así que se conserva el del
+      // inventario y el desacuerdo se anota — perderlo en silencio es lo que
+      // hacía antes.
+      const desacuerdoColor =
+        current.observed_colors.length > 0 &&
+        finding.observed_colors.length > 0 &&
+        finding.observed_colors.join("|").toLowerCase() !== current.observed_colors.join("|").toLowerCase()
+          ? [`verifier read the colors as ${finding.observed_colors.join(", ")}`]
+          : [];
+      const coloresObservados = current.observed_colors.length === 0 ? finding.observed_colors : current.observed_colors;
+      merged[match] = { ...current, structure: finding.structure ?? current.structure, shape: finding.structure ? finding.shape : current.shape, category: strongerCategory, scene_role: strongerRole, name: current.name === "unidentified decorative element" ? finding.name : current.name, observed_colors: coloresObservados, visible_evidence: finding.visible_evidence, uncertainties: [...new Set([...current.uncertainties, ...finding.uncertainties, ...desacuerdoColor])].slice(0, 8) };
     } else {
       // A verifier-only finding is approved only when the verifier is confident
       // and it is not a second copy of a piece already in the inventory: F10

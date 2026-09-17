@@ -1,6 +1,12 @@
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import { clasificarColores, PALETA_COLORES_V2, plegarTexto } from "@/lib/rag/taxonomy/v2";
 
+/** Lo que una apariencia aporta al color: los nombres que el analizador escribió y, si hay foto, la medida. */
+type AparienciaColor = {
+  observed_colors: readonly string[];
+  measured_colors?: ReadonlyArray<{ color: string; share: number }>;
+};
+
 /**
  * Dominant colors of a reference photo versus the colors a plan actually buys
  * (audit finding Alta #3). Regression: a burgundy photo became a silver and
@@ -63,20 +69,38 @@ const SEPARADOR_PUNTUACION = /[,;/&+]/;
 const SEPARADOR_COLORES = /\s*\b(?:and|with|plus|y|e|con)\b\s*/;
 
 /**
+ * Disyunción dentro de una etiqueta observada ("pink or coral"): el analizador
+ * no decidió. La taxonomía compartida sí detecta la ambigüedad, pero con los
+ * marcadores del español ("rojo o azul"), y estas etiquetas las escribe el
+ * analizador en inglés, así que allí nunca disparaban. Se separa aquí, en el
+ * módulo que es dueño de leer etiquetas de foto, en vez de meter inglés en una
+ * taxonomía que sirve para el texto que lee el cliente.
+ */
+const SEPARADOR_AMBIGUO = /\s*\b(?:or|o|u)\b\s*/;
+
+/**
  * Catalog-vocabulary color of one part of an observed label. A part is ONE
  * color: a shade written with two color words ("mint green", "wine red",
  * "silver grey") keeps its first, more specific word, so it does not report a
  * second color the photo never had.
  */
-function colorDeParte(parte: string): string | undefined {
+function coloresDeParte(parte: string): string[] {
   let texto = parte;
   for (const [patron, color] of SINONIMOS_FOTO) texto = texto.replace(patron, color);
   const sinTransparencia = texto.replace(TRANSPARENCIA, " ");
   const transparente = sinTransparencia !== texto;
   texto = sinTransparencia;
   const clasificacion = clasificarColores(texto);
-  const conocido = clasificacion.status === "unknown" ? undefined : clasificacion.values.find((color) => color !== "multicolor");
-  return conocido ?? (GRIS.test(texto) ? "gris" : transparente ? "transparente" : undefined);
+  const utiles = clasificacion.values.filter((color) => color !== "multicolor");
+  // Ambiguo es el analizador diciendo "es uno de estos" ("pink or coral"). Antes
+  // se resolvía tomando el primero, que es resolver por orden de lista y no por
+  // la foto; el resultado era que la mitad de las veces se compraba el otro. Si
+  // no decidió, no decidimos por él: entran los dos y la foto —o el cliente— lo
+  // desempata.
+  if (clasificacion.status === "ambiguous" && utiles.length > 1) return utiles;
+  const conocido = clasificacion.status === "unknown" ? undefined : utiles[0];
+  const unico = conocido ?? (GRIS.test(texto) ? "gris" : transparente ? "transparente" : undefined);
+  return unico ? [unico] : [];
 }
 
 /** Catalog-vocabulary colors of one observed label, in reading order. */
@@ -84,16 +108,66 @@ function coloresDeEtiqueta(etiqueta: string): string[] {
   const colores: string[] = [];
   for (const bruto of etiqueta.split(SEPARADOR_PUNTUACION)) {
     for (const parte of plegarTexto(bruto).split(SEPARADOR_COLORES)) {
-      const color = colorDeParte(parte);
-      if (color) colores.push(color);
+      // Una parte ambigua aporta TODAS sus alternativas: si el analizador no
+      // eligió, elegir por él acierta la mitad de las veces.
+      for (const alternativa of parte.split(SEPARADOR_AMBIGUO)) colores.push(...coloresDeParte(alternativa));
     }
   }
   return colores;
 }
 
-export function coloresDominantesReferencia(observados: readonly string[]): string[] {
+/**
+ * Los colores medidos de una apariencia, en orden de participación, cuando la
+ * medición de la fase 2.1 corrió sobre esa foto. `undefined` cuando no hay
+ * píxeles que medir (un blueprint viejo, o una referencia descrita sin foto).
+ *
+ * `observed_colors` es el orden en que el analizador escribió los nombres;
+ * `measured_colors` es la fracción de píxeles de la caja del elemento. Cuando
+ * las dos existen manda la medida, porque el problema que la fase 2.1 arregla es
+ * exactamente que el orden de redacción se estaba tomando por dominancia.
+ */
+function coloresMedidos(apariencia: AparienciaColor | undefined, soloCatalogo: boolean): string[] | undefined {
+  const medidos = apariencia?.measured_colors;
+  if (!medidos?.length) return undefined;
   const colores: string[] = [];
-  for (const etiqueta of observados) {
+  for (const entrada of [...medidos].sort((uno, otro) => otro.share - uno.share)) {
+    if (soloCatalogo && !COLORES_CATALOGO.has(entrada.color)) continue;
+    if (!colores.includes(entrada.color)) colores.push(entrada.color);
+  }
+  return colores.length ? colores : undefined;
+}
+
+/**
+ * Los colores medidos de toda la foto: los de cada elemento aprobado, sumados
+ * por participación en vez de concatenados. Sin sumar, un elemento pequeño con
+ * tres colores pesaría lo mismo que el arco que ocupa media foto.
+ *
+ * No filtra al catálogo: esto es lo que se le enseña al cliente como "los
+ * colores de tu foto", y un `gris` que el catálogo no vende tiene que aparecer
+ * para poder reportarse como perdido, no desaparecer.
+ */
+function coloresMedidosDeFoto(blueprint: Pick<ReferenceBlueprintV2, "elements"> | undefined): string[] | undefined {
+  const aprobados = blueprint?.elements.filter((elemento) => elemento.approved && elemento.appearance.measured_colors?.length) ?? [];
+  if (!aprobados.length) return undefined;
+  const suma = new Map<string, number>();
+  for (const elemento of aprobados) {
+    // El área de la caja pondera: un color que domina un elemento diminuto no
+    // domina la foto.
+    const area = elemento.reference_bbox.width * elemento.reference_bbox.height;
+    for (const entrada of elemento.appearance.measured_colors ?? []) {
+      suma.set(entrada.color, (suma.get(entrada.color) ?? 0) + entrada.share * area);
+    }
+  }
+  const colores = [...suma.entries()].sort((uno, otro) => otro[1] - uno[1] || (uno[0] < otro[0] ? -1 : 1)).map(([color]) => color);
+  return colores.length ? colores : undefined;
+}
+
+export function coloresDominantesReferencia(apariencia: AparienciaColor | readonly string[]): string[] {
+  const entrada: AparienciaColor = Array.isArray(apariencia) ? { observed_colors: apariencia } : (apariencia as AparienciaColor);
+  const medidos = coloresMedidos(entrada, true);
+  if (medidos) return medidos.slice(0, MAX_COLORES_REFERENCIA);
+  const colores: string[] = [];
+  for (const etiqueta of entrada.observed_colors) {
     for (const color of coloresDeEtiqueta(etiqueta)) {
       if (!colores.includes(color)) colores.push(color);
     }
@@ -111,6 +185,11 @@ export const MAX_COLORES_FOTO_CLIENTE = 5;
 
 export function coloresFotoCliente(blueprint: Pick<ReferenceBlueprintV2, "palette" | "elements"> | undefined): string[] {
   if (!blueprint) return [];
+  // La medida manda sobre `palette.observed`, que es una segunda salida del
+  // modelo tan inestable como la primera: en cinco corridas de la misma foto dio
+  // cuatro paletas distintas (G1).
+  const medidos = coloresMedidosDeFoto(blueprint);
+  if (medidos) return medidos.slice(0, MAX_COLORES_FOTO_CLIENTE);
   const observados = blueprint.palette.observed.length
     ? blueprint.palette.observed
     : blueprint.elements.filter((elemento) => elemento.approved).flatMap((elemento) => elemento.appearance.observed_colors);
@@ -126,7 +205,7 @@ export function coloresFotoCliente(blueprint: Pick<ReferenceBlueprintV2, "palett
 /** Dominant colors of one approved reference element (what `colores_referencia` starts with). */
 export function coloresElementoReferencia(blueprint: Pick<ReferenceBlueprintV2, "elements"> | undefined, elementId: string | undefined): string[] {
   const elemento = elementId ? blueprint?.elements.find((item) => item.approved && item.element_id === elementId) : undefined;
-  return elemento ? coloresDominantesReferencia(elemento.appearance.observed_colors) : [];
+  return elemento ? coloresDominantesReferencia(elemento.appearance) : [];
 }
 
 const COLORES_CATALOGO: ReadonlySet<string> = new Set(PALETA_COLORES_V2);
@@ -141,7 +220,7 @@ export function coloresFotoParaBusqueda(blueprint: Pick<ReferenceBlueprintV2, "p
   if (!blueprint) return [];
   const estructuras = blueprint.elements.filter((elemento) => elemento.approved && elemento.category === "balloon_structure");
   const colores = estructuras.length
-    ? [...new Set(estructuras.flatMap((elemento) => coloresDominantesReferencia(elemento.appearance.observed_colors)))]
+    ? [...new Set(estructuras.flatMap((elemento) => coloresDominantesReferencia(elemento.appearance)))]
     : coloresFotoCliente(blueprint).slice(0, MAX_COLORES_REFERENCIA);
   return colores.filter((color) => COLORES_CATALOGO.has(color));
 }

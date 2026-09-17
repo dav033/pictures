@@ -54,6 +54,57 @@ export const PALETA_COLORES_V2 = [
 ] as const;
 
 /**
+ * Color nominal de cada entrada de la paleta, en hex.
+ *
+ * Es una aproximación de pantalla para reconocer la paleta, no un color medido
+ * de fábrica ni de una foto de producto. Vive aquí, junto a la paleta, porque
+ * lo leen dos consumidores que no deben divergir: la muestra visual que ve el
+ * cliente (`presentacion-cliente.ts`) y la distancia cromática que decide qué
+ * color sustituye a cuál (`similitud-color.ts`, y su espejo en `catalog.py` a
+ * través del contrato). Una segunda copia haría que el cliente viera un tono y
+ * el catálogo midiera otro.
+ */
+export const HEX_COLORES_V2: Readonly<Record<(typeof PALETA_COLORES_V2)[number], string>> = {
+  dorado: "#c9a227",
+  "dorado rosa": "#d4a59a",
+  plateado: "#b8bcc4",
+  rojo: "#d32f2f",
+  azul: "#1f4fbf",
+  rosado: "#f2a7c3",
+  verde: "#2e9d57",
+  blanco: "#ffffff",
+  negro: "#1b1b1b",
+  morado: "#7b3fa0",
+  naranja: "#f28c28",
+  amarillo: "#f5d33a",
+  fucsia: "#d6247a",
+  transparente: "#ffffff",
+  multicolor: "#ffffff",
+  lila: "#c7a4e0",
+  turquesa: "#1fb5b0",
+  beige: "#e6d3b3",
+  cafe: "#7a4b2a",
+  champagne: "#e8d3a2",
+  violeta: "#8a4fd1",
+  coral: "#f6765e",
+  menta: "#a6e3c8",
+  crema: "#f6ecd2",
+  nude: "#e0b89c",
+  burdeos: "#7d1d34",
+};
+
+/**
+ * "gris" no es un color del catálogo (no se vende un globo gris liso), pero el
+ * analizador lo observa en las fotos y la sustitución tiene que poder medirlo
+ * para mandarlo a plateado en vez de a negro. Se mantiene fuera de la paleta a
+ * propósito: se puede medir, no se puede comprar.
+ */
+export const HEX_COLORES_OBSERVABLES: Readonly<Record<string, string>> = {
+  ...HEX_COLORES_V2,
+  gris: "#8e9295",
+};
+
+/**
  * El LoRA de estilo Sempertex se entrenó con captions 100% en inglés
  * (según el corpus de captions vigente) — pasarle un color en español
  * queda fuera de esa distribución igual que un prompt con secciones
@@ -165,10 +216,17 @@ const COLORS: readonly Alias<(typeof PALETA_COLORES_V2)[number]>[] = [
   { value: "naranja", aliases: ["naranja", "naranjas", "orange"] },
   { value: "amarillo", aliases: ["amarillo", "amarillos", "amarilla", "amarillas", "yellow"] },
   { value: "fucsia", aliases: ["fucsia", "magenta", "fuchsia"] },
-  { value: "transparente", aliases: ["transparente", "transparentes", "transparent", "crystal"] },
+  // "clear" es la palabra que escribe el analizador de fotos cuando ve un globo
+  // burbuja, y faltaba: una referencia con burbujas transparentes perdía ese
+  // color antes de llegar al catálogo. "cristal" NO va aquí a propósito, va en
+  // los acabados: el catálogo tiene cinco `Cristal Pastel <color>`, donde
+  // Cristal es el acabado translúcido SOBRE un color, y ponerlo como color
+  // haría que esos cinco productos se leyeran a la vez como transparentes y
+  // como su color real.
+  { value: "transparente", aliases: ["transparente", "transparentes", "transparent", "crystal", "clear"] },
   { value: "multicolor", aliases: ["multicolor", "surtido", "rainbow", "arcoiris"] },
-  { value: "lila", aliases: ["lila"] },
-  { value: "turquesa", aliases: ["turquesa", "turquesa"] },
+  { value: "lila", aliases: ["lila", "lilas", "lilac", "lavender", "lavanda"] },
+  { value: "turquesa", aliases: ["turquesa", "turquesas", "turquoise"] },
   { value: "beige", aliases: ["beige", "arena"] },
   { value: "cafe", aliases: ["cafe", "marron", "marrón", "chocolate", "brown"] },
   { value: "champagne", aliases: ["champagne", "champana", "champaña"] },
@@ -198,7 +256,10 @@ const FINISHES: readonly Alias<(typeof ACABADOS_CATALOGO_V2)[number]>[] = [
   { value: "mate", aliases: ["mate", "matte"] },
   { value: "reflex", aliases: ["reflex", "reflectivo", "reflectante"] },
   { value: "perlado", aliases: ["perlado", "perlados", "perla", "pearl"] },
-  { value: "transparente", aliases: ["transparente", "translucido", "crystal"] },
+  // "cristal" es el nombre de la familia del catálogo (`Cristal Pastel <color>`)
+  // y pertenece a este eje, no al de color: así `Cristal Pastel Rosado` se lee
+  // como acabado cristal + color rosado, que es lo que es.
+  { value: "transparente", aliases: ["transparente", "translucido", "crystal", "cristal"] },
 ];
 
 const PATTERNS: readonly Alias<(typeof PATRONES_CATALOGO_V2)[number]>[] = [

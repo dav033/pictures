@@ -199,29 +199,35 @@ async function main(): Promise<void> {
   const doce = ordenarRecomendacionesPorColor(muchos, { productId: "prod-rojo", colores: ["rojo"] }).slice(0, RECOMENDACIONES_MAX_PRODUCTOS);
   assert.equal(doce[0]!.productId, "prod-reflex-rojo", "el mismo color encabeza las recomendaciones");
   assert.ok(doce.length === RECOMENDACIONES_MAX_PRODUCTOS && doce.some((p) => p.productId === "prod-reflex-rojo"));
-  // Invariante de las familias de neutros: dos colores de la misma familia
-  // nunca puntúan como un color desconocido (0,7), tengan tono o no. El bloque
-  // de arriba solo ejercía plateado/gris, los dos sin tono, así que la familia
-  // dorado/champagne no la cubría nada: quien le quitara el tono a un miembro
-  // de una familia no habría notado el cambio.
-  const { puntuacionCromatica, FAMILIAS_NEUTRAS, PUNTUACION_FAMILIA } = await import("../src/lib/rag/catalog/similitud-color");
-  for (const familia of FAMILIAS_NEUTRAS) {
-    for (const uno of familia) {
-      for (const otro of familia) {
-        if (uno === otro) continue;
-        assert.ok(
-          puntuacionCromatica([uno], [otro]) <= PUNTUACION_FAMILIA,
-          `${uno}/${otro} deben quedar dentro del techo de su familia (${PUNTUACION_FAMILIA})`,
-        );
-      }
-    }
+  // Invariantes de la distancia perceptual. Sustituyen a las que fijaban las
+  // familias de neutros: con ΔE sobre CIELAB no hacen falta familias, porque la
+  // luminosidad ya separa lo que el tono solo no separaba. Lo que sigue
+  // importando es el ORDEN, no el número.
+  const { puntuacionCromatica, colorCatalogoMasCercano, PUNTUACION_DESCONOCIDA } = await import("../src/lib/rag/catalog/similitud-color");
+  assert.equal(puntuacionCromatica(["rojo"], ["rojo"]), 0, "una coincidencia exacta es la mejor nota posible");
+  // Un neutro está mucho más cerca de otro neutro que de un color con tono.
+  assert.ok(
+    puntuacionCromatica(["plateado"], ["gris"]) < puntuacionCromatica(["gris"], ["dorado"]),
+    "plateado/gris deben quedar más cerca que gris/dorado",
+  );
+  // El defecto que motivó el cambio: gris empataba con negro y plateado en 0,35
+  // y el desempate alfabético mandaba el gris a negro. Una foto gris mate
+  // compraba globos negros.
+  assert.equal(
+    colorCatalogoMasCercano("gris", ["negro", "plateado", "blanco", "dorado"]),
+    "plateado",
+    "el gris resuelve a plateado, no a negro",
+  );
+  // Pares que el modelo de solo tono daba por casi idénticos y no lo son.
+  for (const [uno, otro] of [["naranja", "cafe"], ["dorado", "crema"], ["fucsia", "rosado"]] as const) {
+    assert.ok(
+      puntuacionCromatica([uno], [otro]) >= PUNTUACION_DESCONOCIDA,
+      `${uno}/${otro} no pueden contar como sustitución: el tono los confundía, la luminosidad no`,
+    );
   }
-  // La distancia de tono sigue mandando cuando los dos colores la tienen: el
-  // techo de familia no puede alejar un par que el tono ya acerca.
-  assert.ok(puntuacionCromatica(["dorado"], ["champagne"]) < PUNTUACION_FAMILIA);
-  assert.equal(puntuacionCromatica(["plateado"], ["gris"]), PUNTUACION_FAMILIA);
-  assert.equal(puntuacionCromatica(["gris"], ["dorado"]), 0.7, "familias distintas siguen siendo color desconocido");
-  console.log("[PASS] ordenarRecomendacionesPorColor: coincidencia exacta primero y familias de neutros");
+  // Y los que sí son parecidos siguen siéndolo.
+  assert.ok(puntuacionCromatica(["violeta"], ["morado"]) < PUNTUACION_DESCONOCIDA, "violeta y morado siguen siendo intercambiables");
+  console.log("[PASS] ordenarRecomendacionesPorColor: coincidencia exacta primero y distancia perceptual");
 
   // --- 1. aplicar: Python rejects a variant paired with a product that does not own it.
   let llamadas = instalarFetch((llamada) => llamada.path === "/internal/v1/plan/resolve"

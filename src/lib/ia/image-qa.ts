@@ -28,7 +28,14 @@ export type ImageQaReport = {
   unexpected_elements: string[];
   text_artifacts: string[];
   annotation_artifacts: string[];
-  venue_preservation: { camera_ok: boolean; architecture_ok: boolean; outside_region_similarity: number | null };
+  venue_preservation: {
+    camera_ok: boolean;
+    architecture_ok: boolean;
+    /** Medida sobre píxeles. `null` = no se pudo medir, que no es lo mismo que 0. */
+    outside_region_similarity: number | null;
+    /** Lo que el modelo opinó. No decide reintentos (fase 0.4). */
+    outside_region_similarity_reported_by_model: number | null;
+  };
   composition: {
     layering_ok: boolean;
     reference_relationships_ok: boolean;
@@ -73,7 +80,13 @@ export type SceneQaObservation = {
   perspectiveOk?: boolean;
   contactShadowsOk?: boolean;
   pastedArtifacts?: string[];
-  outsideRegionSimilarity?: number | null;
+  /**
+   * Lo que el modelo DICE que se parece el fondo. No decide nada (fase 0.4):
+   * es una opinión, no una medida, y durante un tiempo una alucinación suya
+   * podía disparar un reintento —es decir, una llamada pagada. Se sigue
+   * reportando porque discrepar de la medida determinista es información.
+   */
+  outsideRegionSimilarityReportedByModel?: number | null;
   confidence?: number | null;
   renderedVisualScale?: DesignMaterialEstimate["design"]["visual_scale"] | null;
   observedBalloonCountRange?: { min: number; max: number } | null;
@@ -137,7 +150,7 @@ export function parseVisionObservation(raw: unknown): SceneQaObservation {
     perspectiveOk: observado.perspective_ok,
     contactShadowsOk: observado.contact_shadows_ok,
     pastedArtifacts: observado.pasted_artifacts,
-    outsideRegionSimilarity: observado.outside_region_similarity,
+    outsideRegionSimilarityReportedByModel: observado.outside_region_similarity,
     confidence: observado.confidence,
     renderedVisualScale: observado.rendered_visual_scale,
     observedBalloonCountRange: observado.observed_balloon_count_min != null && observado.observed_balloon_count_max != null
@@ -343,7 +356,15 @@ function separateSidePiecesOutcome(sceneSpec: SceneSpec, separation: SceneQaObse
   return pieces ? { ok: separation === "separate", pieces } : undefined;
 }
 
-export function evaluateSceneQa(sceneSpec: SceneSpec, observation: SceneQaObservation = {}, estimate?: DesignMaterialEstimate, plan?: QaPlanInputs, creatividad?: NivelCreatividad): ImageQaReport {
+/**
+ * Similitud del fondo MEDIDA sobre los píxeles, no opinada por el modelo
+ * (fase 0.4). `null` cuando no se pudo medir —sin foto del espacio, o con
+ * tamaños distintos, que es cuando `outsideRegionSimilarity` devuelve 0 y ese 0
+ * significa "incomparable", no "cambió todo".
+ */
+export type SimilitudFondoMedida = number | null;
+
+export function evaluateSceneQa(sceneSpec: SceneSpec, observation: SceneQaObservation = {}, estimate?: DesignMaterialEstimate, plan?: QaPlanInputs, creatividad?: NivelCreatividad, similitudFondoMedida: SimilitudFondoMedida = null): ImageQaReport {
   const present = new Set(observation.presentElementIds ?? []);
   const observedIds = observation.presentElementIds ?? [];
   const expectedIds = new Set(sceneSpec.elements.map((element) => element.element_id));
@@ -386,7 +407,10 @@ export function evaluateSceneQa(sceneSpec: SceneSpec, observation: SceneQaObserv
     ...(materialConsistent === false ? [`material scale mismatch: ${observation.materialScaleReason ?? "render is substantially larger or denser than the installed estimate"}`] : []),
     ...unknownObserved.map((item) => `unexpected observed instance: ${item}`),
     ...duplicateObserved.map((item) => `duplicate observed instance: ${item}`),
-    ...(sceneSpec.generation_mode === "edit_venue" && observation.outsideRegionSimilarity !== null && observation.outsideRegionSimilarity !== undefined && observation.outsideRegionSimilarity < 0.9 ? ["outside edit region changed"] : []),
+    // Solo la medida decide. Sin medida no se dispara el motivo en vez de caer
+    // al número del modelo: un reintento es una llamada pagada y fallar en
+    // abierto cuesta menos que fallar por una alucinación.
+    ...(sceneSpec.generation_mode === "edit_venue" && similitudFondoMedida !== null && similitudFondoMedida < 0.9 ? ["outside edit region changed"] : []),
   ].slice(0, 12);
   return {
     required_elements: requiredElements,
@@ -399,7 +423,8 @@ export function evaluateSceneQa(sceneSpec: SceneSpec, observation: SceneQaObserv
     venue_preservation: {
       camera_ok: observation.cameraOk ?? true,
       architecture_ok: observation.architectureOk ?? true,
-      outside_region_similarity: observation.outsideRegionSimilarity ?? null,
+      outside_region_similarity: similitudFondoMedida,
+      outside_region_similarity_reported_by_model: observation.outsideRegionSimilarityReportedByModel ?? null,
     },
     composition: {
       layering_ok: observation.layeringOk ?? true,

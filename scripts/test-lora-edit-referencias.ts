@@ -64,10 +64,17 @@ console.log("[PASS] buildLoraEditPrompt: frases fijas en inglés, sin ids ni dat
 // Con venue real, LoRA presenta decoración aislada y Gemini recibe únicamente
 // espacio + resultado LoRA: ninguna referencia ambientada puede reemplazar fondo.
 const presentacion = promptPresentacionLora(CAPTION);
-assert.match(presentacion, /only approved quoted structures/);
-assert.match(presentacion, /uneven staggered clusters and nonmatching tops/);
-assert.match(presentacion, /soft pastel, not hot pink/);
-assert.match(presentacion, /No backdrop, drapes, furniture/);
+// Fase 3.2: el cierre es la cláusula declarativa que §5b midió (aislamiento 7
+// contra 4 del bloque de prohibiciones), no una lista de negaciones en un
+// registro que el corpus nunca usa.
+assert.match(presentacion, /set against a plain white studio backdrop, no floor visible\.$/);
+assert.doesNotMatch(presentacion, /No backdrop, drapes, furniture/, "el bloque de prohibiciones ya no va en la etapa 1");
+// Es una subordinada: no puede quedar «supports., set against».
+assert.doesNotMatch(presentacion, /\.,/, presentacion);
+// Las tres frases que llevaba el bloque no se perdieron, se mudaron a donde
+// pueden actuar: la asimetría al compilador, el rosa y los props a la etapa 2.
+assert.match(GEMINI_COMPOSITION_HARD_LOCK, /soft pastel pink, never saturated hot pink/);
+assert.match(GEMINI_COMPOSITION_HARD_LOCK, /drapes, tables, chairs, flowers, plants, pedestals and props/);
 const presentacionEnLimite = promptPresentacionLora("x".repeat(LORA_PROMPT_MAX_LENGTH - LORA_PRESENTATION_INSTRUCTION.length));
 assert.equal(presentacionEnLimite.length, LORA_PROMPT_MAX_LENGTH);
 const composicionGemini = inputsParaComposicionGemini(referenciasSucias[0]!, { base64: "DECORACION", mime: "image/png" });

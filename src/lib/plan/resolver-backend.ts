@@ -4,6 +4,7 @@ import type { DesignMaterialEstimate } from "@/lib/materiales/estimacion";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import { errorAllowlistDesdePython } from "./allowlist-producto-variante";
+import { canonizarColoresPlan } from "./colores-catalogo";
 import type { EntradaAllowlistPlan } from "./aprobacion";
 import { cotizacionDesdePython, planResueltoDesdePython } from "./python-mapper";
 import type { PlanResuelto } from "./resuelto";
@@ -49,10 +50,20 @@ export async function resolverPlan(entrada: EntradaResolucionPlan): Promise<Reso
     throw new Error("LORA_DATASET_ALLOWLIST_REJECTED: el modo LoRA no cubre variantes");
   }
 
+  // Los colores se canonizan AQUÍ y no en cada llamador (fase 2.7). De los tres
+  // que entran por esta puerta, solo `registro-herramientas` canonizaba: la
+  // generación y la edición mandaban a Python lo que el modelo hubiera escrito
+  // ("rosa", "azul rey"), que el resolver compara literalmente y devuelve
+  // SIN_COBERTURA. Eran dos comportamientos según el llamador, que es
+  // exactamente lo que `AGENTS.md` prohíbe. Canonizar es idempotente, así que el
+  // llamador que ya lo hacía sigue igual y conserva sus `cambios` para
+  // reportárselos al cliente.
+  const { plan } = canonizarColoresPlan(entrada.plan);
+
   let resultado: Awaited<ReturnType<typeof llamarPythonPlanResolution>>;
   try {
     resultado = await llamarPythonPlanResolution({
-      plan: entrada.plan,
+      plan,
       allowlist: entrada.allowlist.map((item) => ({ product_id: item.product_id, variant_ids: [...item.variant_ids] })),
       catalogSnapshotId: entrada.catalogSnapshotId,
       ...(entrada.loraAllowlist ? { loraVariantIds: [...entrada.loraAllowlist.variantIds] } : {}),

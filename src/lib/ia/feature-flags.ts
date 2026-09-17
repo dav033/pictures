@@ -13,7 +13,11 @@ export type FeatureFlag =
   | "IMAGE_QA_ENABLED"
   | "SCENE_PLAN_V2_SHADOW"
   | "PLAN_COST_OPTIMIZER_V2"
-  | "PLAN_BUDGET_GATE_V2";
+  | "PLAN_BUDGET_GATE_V2"
+  | "VENUE_AWARE_PLACEMENT_V1"
+  | "MEASURED_COLOR_DOMINANCE_V1"
+  | "AMBIENTE_FIESTA_V1"
+  | "REFERENCIA_EN_ETAPA1_V1";
 
 export function featureEnabled(name: FeatureFlag): boolean {
   const raw = process.env[name];
@@ -21,6 +25,21 @@ export function featureEnabled(name: FeatureFlag): boolean {
     // Scene diagnostics default OFF. The production capabilities below default
     // ON; their explicit false values remain available as kill-switches.
     if (name.startsWith("SCENE_PLAN_V2_")) return false;
+    // Default OFF: preserve the existing placement until the Phase 6.A
+    // benchmark validates the venue-aware geometry in production.
+    if (name === "VENUE_AWARE_PLACEMENT_V1") return false;
+    // Default OFF: la paleta medida sobre píxeles reemplaza el orden de
+    // redacción del analizador (fase 2.1) y cambia qué colores compra un plan,
+    // así que espera a que el benchmark lo muestre.
+    if (name === "MEASURED_COLOR_DOMINANCE_V1") return false;
+    // Default OFF: el ambiente añade objetos a una imagen que se muestra junto a
+    // un precio, así que se enciende cuando el aviso de "no cotizado" esté
+    // visible en la UI y no antes (fase 6.B).
+    if (name === "AMBIENTE_FIESTA_V1") return false;
+    // Default OFF: mandar la referencia como píxeles a la etapa 1 cambia lo que
+    // dibuja el LoRA, y elegir entre eso y editar el venue directamente exige la
+    // evaluación de 10 planes de la fase 4.
+    if (name === "REFERENCIA_EN_ETAPA1_V1") return false;
     if (name === "PLAN_COST_OPTIMIZER_V2" || name === "PLAN_BUDGET_GATE_V2") return true;
     if (name === "IMAGE_QA_ENABLED") return false;
     return true;

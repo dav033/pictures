@@ -95,3 +95,7 @@ packages/*/dist
 
 # copias .bak de reportes: respaldo local antes de regenerar, nunca versionado
 /reports/*.bak
+
+# Working directory of the benchmark harness. The committed snapshot lives in
+# informes/ instead; see informes/README.md.
+/reports/

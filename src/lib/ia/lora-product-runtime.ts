@@ -41,10 +41,29 @@ export type UnresolvedProduct = {
 /**
  * Runtime prompt integration contract, per writing-block.md §11.
  */
+/**
+ * Una talla que el plan pidió y el prompt no puede nombrar porque el concepto
+ * resuelto no la tiene en `allowed_codes` (fase 1.3).
+ *
+ * Existe como condición con nombre y no como cadena dentro de `diagnostics`
+ * porque es lo único que distingue "la imagen no muestra el topper de 36" que
+ * el cliente pidió" de "la imagen salió rara". Era la última capa capaz de
+ * notarlo y la peor en la que fallar: `diagnostics` es texto libre que nadie
+ * lee y que ningún consumidor puede comprobar.
+ */
+export type TallaOmitida = {
+  element_id: string;
+  concept_id: string;
+  /** Códigos de talla del catálogo ("R-36"), tal como el plan los pidió. */
+  size_codes: string[];
+};
+
 export type ProductPromptCompilation = {
   prompt: string;
   resolved_concepts: string[];
   unresolved_products: UnresolvedProduct[];
+  /** Vacío cuando toda talla pedida cabe en el concepto. Nunca se omite el campo. */
+  dropped_sizes: TallaOmitida[];
   vocabulary_version: string;
   compiler_version: string;
 };
@@ -116,6 +135,7 @@ type ElementResolution = {
   entries: ProductConceptClauseInput[];
   unresolved: UnresolvedProduct[];
   resolvedConceptIds: string[];
+  droppedSizes: TallaOmitida[];
   diagnostics: string[];
 };
 
@@ -140,6 +160,7 @@ function resolveElement(
   const unresolved: UnresolvedProduct[] = [];
   const resolvedConceptIds: string[] = [];
   const diagnostics: string[] = [];
+  const droppedSizes: TallaOmitida[] = [];
 
   for (const productId of productIds) {
     if (!productId.trim()) {
@@ -185,6 +206,7 @@ function resolveElement(
         .map(({ sizeCode, diameterInches }) => renderSize(diameterInches ?? diameterFromSizeCode(sizeCode), sizeCode));
       const invalidSizes = rawSizes.filter(({ sizeCode }) => !allowed.has(sizeCode)).map(({ sizeCode }) => sizeCode);
       if (invalidSizes.length) {
+        droppedSizes.push({ element_id: element.element_id, concept_id: result.concept.concept_id, size_codes: [...new Set(invalidSizes)] });
         diagnostics.push(
           `element ${element.element_id}: size(s) ${invalidSizes.join(", ")} are not in allowed_codes for ${result.concept.concept_id}; omitted from the prompt (size remains separate from concept identity, never silently accepted)`,
         );
@@ -214,10 +236,12 @@ function resolveElement(
         `element ${element.element_id}: only ${entries.length}/${productIds.length} declared product id(s) resolved; falling back to legacy rendering for this element rather than a partial canonical phrase`,
       );
     }
-    return { entries: [], unresolved, resolvedConceptIds: [], diagnostics };
+    // La talla omitida sobrevive al descarte del elemento: el cliente pidió ese
+    // diámetro igual, y que el elemento caiga a render legacy no lo devuelve.
+    return { entries: [], unresolved, resolvedConceptIds: [], droppedSizes, diagnostics };
   }
 
-  return { entries, unresolved, resolvedConceptIds, diagnostics };
+  return { entries, unresolved, resolvedConceptIds, droppedSizes, diagnostics };
 }
 
 /**
@@ -314,6 +338,9 @@ export function compileProductPrompt(input: {
       prompt: legacy.prompt,
       resolved_concepts: [],
       unresolved_products: [],
+      // Sin vocabulario activo nada se resuelve contra `allowed_codes`, así que
+      // no hay talla que se pueda haber caído por ese motivo.
+      dropped_sizes: [],
       vocabulary_version: VOCABULARY_VERSION,
       compiler_version: LORA_PRODUCT_RUNTIME_VERSION,
       legacy: true,
@@ -337,6 +364,7 @@ export function compileProductPrompt(input: {
 
   const unresolved: UnresolvedProduct[] = [];
   const resolvedConceptIds = new Set<string>();
+  const droppedSizes: TallaOmitida[] = [];
   const diagnostics: string[] = [];
   const productConcepts: ProductConceptClauseInput[] = [];
 
@@ -350,6 +378,7 @@ export function compileProductPrompt(input: {
       input.productCatalogTitles ?? new Map<string, string>(),
     );
     unresolved.push(...resolution.unresolved);
+    droppedSizes.push(...resolution.droppedSizes);
     diagnostics.push(...resolution.diagnostics);
     for (const conceptId of resolution.resolvedConceptIds) resolvedConceptIds.add(conceptId);
     productConcepts.push(...resolution.entries);
@@ -382,6 +411,7 @@ export function compileProductPrompt(input: {
     prompt: compilation.prompt,
     resolved_concepts: [...resolvedConceptIds].sort(),
     unresolved_products: unresolved,
+    dropped_sizes: droppedSizes,
     vocabulary_version: activeConcept.vocabulary_version,
     compiler_version: LORA_PRODUCT_RUNTIME_VERSION,
     legacy,

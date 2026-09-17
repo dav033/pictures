@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import re
 import time
 from collections.abc import AsyncIterator, Mapping, Sequence
@@ -67,12 +68,13 @@ NonNegativeNumber = Annotated[
 _TONE_CONTRACT: Mapping[str, object] = cast(
     Mapping[str, object], contract_schema("CatalogSearch").get("x-tonos-colores-catalogo", {})
 )
-_HUES: Mapping[str, float] = cast(Mapping[str, float], _TONE_CONTRACT.get("hues", {}))
-_NEUTRAL_FAMILIES: tuple[frozenset[str], ...] = tuple(
-    frozenset(familia)
-    for familia in cast(Sequence[Sequence[str]], _TONE_CONTRACT.get("familias_neutras", ()))
+_LAB: Mapping[str, Sequence[float]] = cast(
+    Mapping[str, Sequence[float]], _TONE_CONTRACT.get("lab", {})
 )
-_FAMILY_SCORE: float = cast(float, _TONE_CONTRACT.get("puntuacion_familia", 0.35))
+# Scale and cut-off travel with the table so both runtimes agree on what
+# "close enough" means; the defaults only matter if the contract is missing.
+_DELTA_E_SCALE: float = cast(float, _TONE_CONTRACT.get("escala", 100))
+_DELTA_E_MAX: float = cast(float, _TONE_CONTRACT.get("delta_e_maximo", 45))
 
 
 class SearchFilters(BaseModel):
@@ -1009,38 +1011,32 @@ def _base_query(
     return "WHERE " + " AND ".join(clauses), params
 
 
-def _same_neutral_family(one: str, other: str) -> bool:
-    return any(one in family and other in family for family in _NEUTRAL_FAMILIES)
-
-
-def _circular_hue_distance(one: float, other: float) -> float:
-    difference = abs(one - other)
-    return min(difference, 360 - difference) / 180
+# Distance at or above which nothing is substituted: the request is either a
+# word the table does not know, or a color too far from anything in stock to
+# offer honestly.
+_UNRELATED_DISTANCE = _DELTA_E_MAX / _DELTA_E_SCALE
 
 
 def _chromatic_distance(requested: str, candidate: str) -> float:
     """Mirrors ``puntuacionCromatica`` (similitud-color.ts) for a single pair.
 
-    Lower is closer; an exact match is 0. Two colors with no shared hue and no
-    shared neutral family default to 0.7 -- an unrelated color, not a perfect
-    or an impossible match.
+    Euclidean deltaE (CIE76) over the CIELAB values the contract carries,
+    normalised by the same scale TypeScript uses. Lower is closer; an exact
+    match is 0. A color the table does not know has no distance to measure and
+    scores ``_UNRELATED_DISTANCE``.
+
+    This replaced a hue-angle model that had no lightness axis, under which
+    ``naranja`` and ``cafe`` scored 0.011 apart and grey resolved to black.
     """
     if requested == candidate:
         return 0.0
-    scores: list[float] = []
-    hue_requested = _HUES.get(requested)
-    hue_candidate = _HUES.get(candidate)
-    if hue_requested is not None and hue_candidate is not None:
-        scores.append(_circular_hue_distance(hue_requested, hue_candidate))
-    if _same_neutral_family(requested, candidate):
-        scores.append(_FAMILY_SCORE)
-    return min(scores) if scores else 0.7
+    lab_requested = _LAB.get(requested)
+    lab_candidate = _LAB.get(candidate)
+    if lab_requested is None or lab_candidate is None:
+        return _UNRELATED_DISTANCE
+    delta = math.sqrt(sum((a - b) ** 2 for a, b in zip(lab_requested, lab_candidate, strict=True)))
+    return min(delta / _DELTA_E_SCALE, 1.0)
 
-
-# Distance _chromatic_distance returns for two colors that share neither a hue
-# nor a neutral family: "unrelated", not "far". Every candidate scoring exactly
-# this means the request is a word the tone table does not know.
-_UNRELATED_DISTANCE = 0.7
 
 
 def _nearest_present_color(requested: str, present: Sequence[str]) -> str | None:

@@ -314,6 +314,210 @@ export const PRODUCT_VOCABULARY: ProductVocabulary = [
     status: "active",
     vocabulary_version: VOCABULARY_VERSION,
   },
+  // These six live catalog-backed Fashion colours unblock product-linked scenes
+  // from LORA_PRODUCT_VOCABULARY_FAILED.
+  //
+  // CORRECTED 2026-09-17. This comment used to claim the catalog "deliberately
+  // has no single-colour round latex product for lila, turquesa, champagne,
+  // coral, menta, nude, or burdeos". Queried against the live catalog, all
+  // seven exist and are published:
+  //   lila       8634232996135  Fashion Lila            R-5..R-36
+  //   turquesa   8923545141543  Fashion Azul Turquesa   R-5..R-24
+  //   champagne  8634269401383  Reflex Champaña         R-5..R-24
+  //   coral      8634310426919  Fashion Coral Tropical  R-5..R-24
+  //   menta      9407246172455  Silk Verde Menta        R-5..R-24
+  //   nude       9885210738983  Pastel Mate Nude        R-5..R-24
+  //   burdeos    8634257539367  Metal Vinotinto         R-5, R-9, R-12
+  // champagne, coral, menta and nude are in fact already drawable through other
+  // concepts, so for them the claim was merely stale. `burdeos` was the one that
+  // cost a customer-visible failure and now has its own concept below.
+  //
+  // lila and turquesa stay undrawable for a different reason that adding a
+  // concept would NOT fix: `clasificarColores` maps neither "lilac"/"lavender"
+  // nor "turquoise" to a catalog colour, so a concept declaring them would
+  // never reach a scene. Same for grey/gray → `gris`. Those are colour-taxonomy
+  // aliases, and a taxonomy change is a person's decision, not a loop's.
+  {
+    concept_id: "balloon.round.latex.fashion.black",
+    canonical_label: "round latex balloon in black, solid Fashion finish",
+    catalog_titles: ["B2b Globo Latex Redondo Fashion Negro"],
+    visual: {
+      family: "Fashion",
+      shape: "round",
+      material: "latex",
+      color: "black",
+      finish: "Fashion matte",
+      pattern: { kind: "solid" },
+    },
+    aliases: {
+      es: ["globo latex redondo fashion negro", "globo redondo fashion negro"],
+      en: ["round fashion black balloon", "black fashion balloon"],
+      contextual: [],
+    },
+    catalog_product_ids: ["8634239516967"],
+    sizes: { separate: true, allowed_codes: ["R-5", "R-9", "R-12", "R-18", "R-24", "R-36", "R-40"] },
+    status: "active",
+    vocabulary_version: VOCABULARY_VERSION,
+  },
+  {
+    concept_id: "balloon.round.latex.fashion.purple",
+    canonical_label: "round latex balloon in purple, solid Fashion finish",
+    catalog_titles: ["B2b Globo Latex Redondo Fashion Orquidea Morada"],
+    visual: {
+      family: "Fashion",
+      shape: "round",
+      material: "latex",
+      color: "purple",
+      finish: "Fashion matte",
+      pattern: { kind: "solid" },
+    },
+    aliases: {
+      es: ["globo latex redondo fashion orquidea morada", "globo redondo fashion orquidea morada"],
+      en: ["round fashion purple balloon", "purple fashion balloon"],
+      contextual: [],
+    },
+    catalog_product_ids: ["8634302464295"],
+    sizes: { separate: true, allowed_codes: ["R-5", "R-12", "R-18", "R-24"] },
+    status: "active",
+    vocabulary_version: VOCABULARY_VERSION,
+  },
+  {
+    concept_id: "balloon.round.latex.fashion.orange",
+    canonical_label: "round latex balloon in orange, solid Fashion finish",
+    catalog_titles: [
+      "B2b Globo Latex Redondo Fashion Naranja",
+      "B2b Globo Latex Redondo Fashion Naranja Cobrizo",
+    ],
+    visual: {
+      family: "Fashion",
+      shape: "round",
+      material: "latex",
+      color: "orange",
+      finish: "Fashion matte",
+      pattern: { kind: "solid" },
+    },
+    aliases: {
+      es: [
+        "globo latex redondo fashion naranja",
+        "globo redondo fashion naranja",
+        "globo latex redondo fashion naranja cobrizo",
+        "globo redondo fashion naranja cobrizo",
+      ],
+      en: [
+        "round fashion orange balloon",
+        "orange fashion balloon",
+        "round fashion copper orange balloon",
+        "copper orange fashion balloon",
+      ],
+      contextual: [],
+    },
+    catalog_product_ids: ["8634238599463", "8901833097511"],
+    sizes: { separate: true, allowed_codes: ["R-5", "R-9", "R-12", "R-18", "R-24", "R-40"] },
+    status: "active",
+    vocabulary_version: VOCABULARY_VERSION,
+  },
+  {
+    concept_id: "balloon.round.latex.fashion.yellow",
+    canonical_label: "round latex balloon in yellow, solid Fashion finish",
+    catalog_titles: [
+      "B2b Globo Latex Redondo Fashion Amarillo",
+      "B2b Globo Latex Redondo Fashion Amarillo Miel",
+      "B2b Globo Latex Redondo Fashion Mostaza",
+    ],
+    visual: {
+      family: "Fashion",
+      shape: "round",
+      material: "latex",
+      color: "yellow",
+      finish: "Fashion matte",
+      pattern: { kind: "solid" },
+    },
+    aliases: {
+      es: [
+        "globo latex redondo fashion amarillo",
+        "globo redondo fashion amarillo",
+        "globo latex redondo fashion amarillo miel",
+        "globo redondo fashion amarillo miel",
+        "globo latex redondo fashion mostaza",
+        "globo redondo fashion mostaza",
+      ],
+      en: [
+        "round fashion yellow balloon",
+        "yellow fashion balloon",
+        "round fashion honey yellow balloon",
+        "honey yellow fashion balloon",
+        "round fashion mustard balloon",
+        "mustard fashion balloon",
+      ],
+      contextual: [],
+    },
+    catalog_product_ids: ["8634239287591", "8634225295655", "8634229948711"],
+    sizes: { separate: true, allowed_codes: ["R-5", "R-9", "R-12", "R-18", "R-24", "R-36", "R-40"] },
+    status: "active",
+    vocabulary_version: VOCABULARY_VERSION,
+  },
+  {
+    concept_id: "balloon.round.latex.fashion.brown",
+    canonical_label: "round latex balloon in brown, solid Fashion finish",
+    catalog_titles: [
+      "B2b Globo Latex Redondo Fashion Café",
+      "B2b Globo Latex Redondo Fashion Chocolate",
+      "B2b Globo Latex Redondo Fashion Moca",
+    ],
+    visual: {
+      family: "Fashion",
+      shape: "round",
+      material: "latex",
+      color: "brown",
+      finish: "Fashion matte",
+      pattern: { kind: "solid" },
+    },
+    aliases: {
+      es: [
+        "globo latex redondo fashion cafe",
+        "globo redondo fashion cafe",
+        "globo latex redondo fashion chocolate",
+        "globo redondo fashion chocolate",
+        "globo latex redondo fashion moca",
+        "globo redondo fashion moca",
+      ],
+      en: [
+        "round fashion brown balloon",
+        "brown fashion balloon",
+        "round fashion chocolate brown balloon",
+        "chocolate brown fashion balloon",
+        "round fashion mocha balloon",
+        "mocha fashion balloon",
+      ],
+      contextual: [],
+    },
+    catalog_product_ids: ["8634228834599", "8634238828839", "9874866831655"],
+    sizes: { separate: true, allowed_codes: ["R-5", "R-9", "R-12", "R-18", "R-24"] },
+    status: "active",
+    vocabulary_version: VOCABULARY_VERSION,
+  },
+  {
+    concept_id: "balloon.round.latex.fashion.cream",
+    canonical_label: "round latex balloon in cream, solid Fashion finish",
+    catalog_titles: ["B2b Globo Latex Redondo Fashion Blush Crema"],
+    visual: {
+      family: "Fashion",
+      shape: "round",
+      material: "latex",
+      color: "cream",
+      finish: "Fashion matte",
+      pattern: { kind: "solid" },
+    },
+    aliases: {
+      es: ["globo latex redondo fashion blush crema", "globo redondo fashion blush crema"],
+      en: ["round fashion cream balloon", "cream fashion balloon"],
+      contextual: [],
+    },
+    catalog_product_ids: ["10139567980839"],
+    sizes: { separate: true, allowed_codes: ["R-5", "R-9", "R-12", "R-18", "R-24"] },
+    status: "active",
+    vocabulary_version: VOCABULARY_VERSION,
+  },
   {
     concept_id: "balloon.round.latex.satin.pearl",
     canonical_label: "round latex balloon in pearl with a Satin sheen finish",
@@ -415,6 +619,38 @@ export const PRODUCT_VOCABULARY: ProductVocabulary = [
       contextual: [],
     },
     catalog_product_ids: ["20000562", "20000714", "20000883"],
+    sizes: { separate: true, allowed_codes: ["R-5", "R-9", "R-12"] },
+    status: "active",
+    vocabulary_version: VOCABULARY_VERSION,
+  },
+  {
+    // `burdeos` no tenía NINGÚN concepto, así que una referencia de vino y plata
+    // no podía dibujarse en vino: la escena caía a dorado rosa y salía rosada.
+    // El producto existe y está publicado — `B2b Globo Latex Redondo Metal
+    // Vinotinto`, product_id 8634257539367, verificado contra el catálogo vivo
+    // el 2026-09-17 — de modo que la exclusión se apoyaba en una afirmación
+    // falsa (ver el comentario corregido más arriba).
+    //
+    // Los tres códigos son las variantes que existen; hoy solo R-9 está
+    // disponible. La disponibilidad no se congela aquí a propósito: cambia a
+    // diario y el snapshot de catálogo es la autoridad al cotizar.
+    concept_id: "balloon.round.latex.metal.burgundy",
+    canonical_label: "round latex balloon in burgundy with a metallic sheen finish",
+    catalog_titles: ["B2b Globo Latex Redondo Metal Vinotinto"],
+    visual: {
+      family: "Metal",
+      shape: "round",
+      material: "latex",
+      color: "burgundy",
+      finish: "metallic sheen",
+      pattern: { kind: "solid" },
+    },
+    aliases: {
+      es: ["globo redondo metal vinotinto", "globo latex redondo metal vinotinto"],
+      en: ["round metallic burgundy balloon", "metal burgundy balloon"],
+      contextual: [],
+    },
+    catalog_product_ids: ["20000546", "20000695", "20000863"],
     sizes: { separate: true, allowed_codes: ["R-5", "R-9", "R-12"] },
     status: "active",
     vocabulary_version: VOCABULARY_VERSION,

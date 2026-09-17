@@ -1,0 +1,664 @@
+<title>Fidelidad de imagen y color</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root {
+    --ground: #f7f6f3;
+    --surface: #fffefc;
+    --sunk: #f0eee9;
+    --ink: #1b1a17;
+    --muted: #6d6862;
+    --faint: #928c84;
+    --rule: #e2ded7;
+    --accent: #0d6a63;
+    --accent-soft: #d8ebe8;
+    --ok: #2e6f3a;
+    --ok-soft: #dfead9;
+    --warn: #9a6410;
+    --warn-soft: #f4e7d0;
+    --bad: #992e28;
+    --bad-soft: #f3dedb;
+    --measure: 68ch;
+    --display: "Newsreader", Georgia, "Times New Roman", serif;
+    --body: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #17161a;
+      --surface: #1f1e23;
+      --sunk: #131216;
+      --ink: #eceae5;
+      --muted: #a09a92;
+      --faint: #7d776f;
+      --rule: #302e35;
+      --accent: #5cc0b6;
+      --accent-soft: #14312f;
+      --ok: #7fc08a;
+      --ok-soft: #1a2b1d;
+      --warn: #d9a45c;
+      --warn-soft: #302617;
+      --bad: #e0837c;
+      --bad-soft: #321d1b;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #17161a;
+    --surface: #1f1e23;
+    --sunk: #131216;
+    --ink: #eceae5;
+    --muted: #a09a92;
+    --faint: #7d776f;
+    --rule: #302e35;
+    --accent: #5cc0b6;
+    --accent-soft: #14312f;
+    --ok: #7fc08a;
+    --ok-soft: #1a2b1d;
+    --warn: #d9a45c;
+    --warn-soft: #302617;
+    --bad: #e0837c;
+    --bad-soft: #321d1b;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  .hoja {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 4rem 1.5rem 6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 3.5rem;
+  }
+  .medida { max-width: var(--measure); }
+
+  h1, h2, h3 { font-family: var(--display); font-weight: 600; text-wrap: balance; margin: 0; line-height: 1.15; }
+  h1 { font-size: clamp(2.1rem, 4.4vw, 3.1rem); letter-spacing: -0.015em; }
+  h2 { font-size: clamp(1.45rem, 2.4vw, 1.9rem); letter-spacing: -0.01em; }
+  h3 { font-size: 1.12rem; font-weight: 600; }
+  p { margin: 0 0 1rem; }
+  p:last-child { margin-bottom: 0; }
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  code { font-family: var(--mono); font-size: 0.86em; background: var(--sunk); padding: 0.1em 0.34em; border-radius: 3px; }
+  strong { font-weight: 600; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+
+  header.portada { display: flex; flex-direction: column; gap: 1.1rem; }
+  header.portada .bajada { font-family: var(--display); font-size: 1.22rem; line-height: 1.5; color: var(--muted); max-width: 60ch; }
+  .meta {
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    color: var(--faint);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1.4rem;
+    border-top: 1px solid var(--rule);
+    padding-top: 0.9rem;
+  }
+
+  section { display: flex; flex-direction: column; gap: 1.5rem; }
+  .cabecera-seccion { display: flex; flex-direction: column; gap: 0.45rem; border-top: 2px solid var(--ink); padding-top: 0.85rem; }
+
+  /* Evidencia: la convención del propio documento de plan. */
+  .ev {
+    font-family: var(--mono);
+    font-size: 0.64rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.16em 0.5em;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .ev-medido { background: var(--accent-soft); color: var(--accent); }
+  .ev-leido { background: var(--sunk); color: var(--muted); }
+  .ev-retractado { background: var(--bad-soft); color: var(--bad); }
+
+  .hallazgos { display: flex; flex-direction: column; gap: 0; }
+  .hallazgo {
+    display: grid;
+    grid-template-columns: 4.5rem 1fr;
+    gap: 0 1.2rem;
+    padding: 1.15rem 0;
+    border-bottom: 1px solid var(--rule);
+    align-items: start;
+  }
+  .hallazgo:first-child { border-top: 1px solid var(--rule); }
+  .hallazgo .clave { font-family: var(--mono); font-size: 0.82rem; font-weight: 600; color: var(--accent); padding-top: 0.12rem; }
+  .hallazgo .cuerpo { display: flex; flex-direction: column; gap: 0.4rem; }
+  .hallazgo .titulo { font-weight: 600; display: flex; flex-wrap: wrap; align-items: center; gap: 0.55rem; }
+  .hallazgo p { font-size: 0.95rem; color: var(--muted); margin: 0; max-width: 78ch; }
+
+  .desborde { overflow-x: auto; border: 1px solid var(--rule); border-radius: 4px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.875rem; }
+  th, td { text-align: left; padding: 0.62rem 0.9rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  thead th {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--faint);
+    font-weight: 600;
+    background: var(--sunk);
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num, th.num { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  td.fase { font-weight: 600; white-space: nowrap; }
+  td.banderas { font-family: var(--mono); font-size: 0.7rem; line-height: 1.4; color: var(--muted); max-width: 16rem; }
+
+  .estado { font-family: var(--mono); font-size: 0.68rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.14em 0.45em; border-radius: 2px; white-space: nowrap; }
+  .e-hecho { background: var(--ok-soft); color: var(--ok); }
+  .e-parcial { background: var(--warn-soft); color: var(--warn); }
+  .e-no { background: var(--bad-soft); color: var(--bad); }
+  .e-bloq { background: var(--sunk); color: var(--muted); }
+
+  /* Los colores del catálogo, con sus hex reales. */
+  .paleta { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .tono { display: flex; align-items: center; gap: 0.45rem; font-family: var(--mono); font-size: 0.74rem; color: var(--muted); background: var(--surface); border: 1px solid var(--rule); border-radius: 3px; padding: 0.24rem 0.5rem 0.24rem 0.28rem; }
+  .tono i { width: 0.95rem; height: 0.95rem; border-radius: 2px; border: 1px solid rgb(0 0 0 / 0.16); display: block; }
+
+  .pares { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.75rem; }
+  .par { background: var(--surface); border: 1px solid var(--rule); border-radius: 4px; padding: 0.85rem 0.95rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .par .nombres { font-family: var(--mono); font-size: 0.78rem; display: flex; align-items: center; gap: 0.4rem; }
+  .par .muestras { display: flex; gap: 0.2rem; }
+  .par .muestras i { width: 1.6rem; height: 1.1rem; border-radius: 2px; border: 1px solid rgb(0 0 0 / 0.16); display: block; }
+  .par .cifras { display: flex; gap: 1.1rem; font-family: var(--mono); font-size: 0.72rem; font-variant-numeric: tabular-nums; }
+  .par .cifras b { display: block; font-size: 0.98rem; font-weight: 600; letter-spacing: -0.01em; }
+  .par .antes b { color: var(--bad); }
+  .par .ahora b { color: var(--ok); }
+  .par .cifras span { color: var(--faint); font-size: 0.64rem; letter-spacing: 0.08em; text-transform: uppercase; }
+
+  .nota { border-left: 3px solid var(--accent); background: var(--surface); padding: 0.9rem 1.1rem; border-radius: 0 4px 4px 0; font-size: 0.93rem; }
+  .nota.alerta { border-left-color: var(--bad); }
+  .nota p { margin-bottom: 0.6rem; }
+  .nota .eyebrow { display: block; margin-bottom: 0.4rem; }
+
+  ul.limpia { margin: 0; padding-left: 1.15rem; display: flex; flex-direction: column; gap: 0.45rem; font-size: 0.95rem; color: var(--muted); }
+  ul.limpia strong { color: var(--ink); }
+
+  footer { border-top: 1px solid var(--rule); padding-top: 1.2rem; font-size: 0.84rem; color: var(--faint); font-family: var(--mono); }
+
+  @media (max-width: 620px) {
+    .hoja { padding: 2.5rem 1.1rem 4rem; gap: 2.75rem; }
+    .hallazgo { grid-template-columns: 1fr; gap: 0.35rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<div class="hoja">
+
+  <header class="portada">
+    <span class="eyebrow">Diagnóstico e implementación · rama fase-a/a0-linea-base</span>
+    <h1>Fidelidad de imagen y color</h1>
+    <p class="bajada medida">Dos problemas reportados: las imágenes que salen de foto de referencia + foto del espacio son inconsistentes y pobres, y la detección de color es inestable. Este es el origen de cada uno, medido, y lo que se cambió.</p>
+    <div class="meta">
+      <span>17 sep 2026</span>
+      <span>plan:test y pytest en verde</span>
+      <span>2 retractados por medición propia</span>
+      <span>US$1.18 en pruebas pagadas · 7 corridas</span>
+    </div>
+  </header>
+
+  <section>
+    <div class="cabecera-seccion">
+      <span class="eyebrow">Lo esencial</span>
+      <h2>Qué estaba roto, en una frase cada cosa</h2>
+    </div>
+    <div class="medida">
+      <p>El problema de color no era un modelo que ve mal: era que <strong>nadie medía nada</strong>. La paleta de una foto eran las tres primeras etiquetas que el analizador hubiera escrito, en el orden en que las escribió. Eso no es dominancia, es orden de redacción, y explica que la misma foto diera cuatro paletas distintas en cinco corridas.</p>
+      <p>El problema de imagen tampoco era Gemini: la instrucción que recibía decía <em>transferir</em> y <em>no cambiar nada</em>. Hacía exactamente eso — pegaba la decoración delante del espacio — porque era lo que se le pedía.</p>
+    </div>
+    <div class="nota alerta">
+      <span class="eyebrow">Dos afirmaciones mías que la medición tumbó</span>
+      <p><strong>F12.</strong> Dije que el vocabulario tenía 27 conceptos y que <code>negro</code> no tenía ninguno. Había contado solo las entradas escritas a mano. Reales: <strong>269 conceptos, 943 ids de producto, 17 de 26 colores</strong>, y <code>negro</code> tiene 16. Mi sonda «falló» porque usé un id de producto inventado — la resolución es por id, no por color.</p>
+      <p><strong>F5.</strong> Dije que faltaban datos en <code>allowed_codes</code>. La auditoría sobre los 268 conceptos activos devolvió <strong>cero discrepancias</strong>. El rosa palo se corta en R-18 porque no se fabrica en 36", no porque falte un dato.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="cabecera-seccion">
+      <span class="eyebrow">Problema 2 · color</span>
+      <h2>El modelo de distancia medía mal de dos formas que costaban ventas</h2>
+    </div>
+    <div class="medida">
+      <p>La distancia entre colores era un ángulo de tono y nada más. Sin luminosidad ni saturación, pares que un decorador nunca confundiría quedaban a distancia casi cero; y los colores sin tono — los neutros — empataban todos, así que <strong>el empate se rompía por orden alfabético</strong>. Por eso una foto gris mate compraba globos negros.</p>
+      <p>Ahora es ΔE (CIE76) sobre CIELAB, derivada de los hex nominales del catálogo, y la misma tabla viaja por el contrato a Python para que los dos lados midan igual.</p>
+    </div>
+    <div class="pares">
+      <div class="par">
+        <div class="nombres"><span class="muestras"><i style="background:#f28c28"></i><i style="background:#7a4b2a"></i></span> naranja · cafe</div>
+        <div class="cifras"><div class="antes"><span>antes</span><b>0.011</b></div><div class="ahora"><span>ahora ΔE</span><b>51</b></div></div>
+      </div>
+      <div class="par">
+        <div class="nombres"><span class="muestras"><i style="background:#c9a227"></i><i style="background:#f6ecd2"></i></span> dorado · crema</div>
+        <div class="cifras"><div class="antes"><span>antes</span><b>0.022</b></div><div class="ahora"><span>ahora ΔE</span><b>56</b></div></div>
+      </div>
+      <div class="par">
+        <div class="nombres"><span class="muestras"><i style="background:#d6247a"></i><i style="background:#f2a7c3"></i></span> fucsia · rosado</div>
+        <div class="cifras"><div class="antes"><span>antes</span><b>0.083</b></div><div class="ahora"><span>ahora ΔE</span><b>48</b></div></div>
+      </div>
+      <div class="par">
+        <div class="nombres"><span class="muestras"><i style="background:#8e9295"></i><i style="background:#b8bcc4"></i></span> gris → plateado</div>
+        <div class="cifras"><div class="antes"><span>iba a negro</span><b>51</b></div><div class="ahora"><span>va a plateado</span><b>16</b></div></div>
+      </div>
+    </div>
+    <p class="medida" style="font-size:0.9rem;color:var(--muted)">El umbral de sustitución, ΔE 45, sale de mirar los 300 pares de la paleta y no de la intuición: con 45 entra el burdeos que el catálogo no vende (cae en rojo) y queda fuera rosado→fucsia, que era justamente la patología del modelo anterior. Con 40 se pierde el burdeos; con 50 vuelve el fucsia.</p>
+  </section>
+
+  <section>
+    <div class="cabecera-seccion">
+      <span class="eyebrow">La medida nueva</span>
+      <h2>La dominancia ahora sale de los píxeles, y su umbral está medido</h2>
+    </div>
+    <div class="medida">
+      <p>El analizador sigue proponiendo <em>nombres</em> — es lo que sabe hacer — pero el <strong>orden y la participación</strong> salen de contar píxeles dentro de la caja de cada elemento. La caja importa: un arco de globos en un jardín es un 5 % de la foto, y medir la foto entera reportaría «verde» como color dominante de toda decoración al aire libre.</p>
+      <p>El radio de clasificación no se eligió, se midió. Sobre la foto de jardín del benchmark:</p>
+    </div>
+    <div class="desborde medida">
+      <table>
+        <thead><tr><th>Radio ΔE</th><th class="num">Sin clasificar</th><th class="num">verde</th><th>Lectura</th></tr></thead>
+        <tbody>
+          <tr><td class="num">&lt; 25</td><td class="num">36 %</td><td class="num">—</td><td>demasiado estrecho: la medida dice poco</td></tr>
+          <tr><td class="num">&lt; 30</td><td class="num">24 %</td><td class="num">7 %</td><td><strong>elegido</strong> — el prado queda fuera</td></tr>
+          <tr><td class="num">&lt; 35</td><td class="num">2 %</td><td class="num">24 %</td><td>el césped entra de golpe como color de catálogo</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="medida" style="font-size:0.9rem;color:var(--muted)">No es un filtro perfecto y el código lo dice: la hierba a pleno sol sí se parece a un globo verde, y ese 7 % es ella. Lo que el radio compra es que el paisaje no gane la medición.</p>
+  </section>
+
+  <section>
+    <div class="cabecera-seccion">
+      <span class="eyebrow">Problema 1 · imagen</span>
+      <h2>Hallazgos con nombre</h2>
+    </div>
+    <div class="hallazgos">
+      <div class="hallazgo">
+        <div class="clave">F4</div>
+        <div class="cuerpo">
+          <div class="titulo">Un plan de dos columnas no podía generar imagen <span class="ev ev-medido">medido</span></div>
+          <p>La cláusula bilateral solo recibía frase espejo cuando flanqueaba a otra estructura. Si las dos laterales eran lo único del plan, el caption decía «standing apart on the left» y el preflight — que falla en cerrado — mataba la petición antes de llegar al proveedor.</p>
+        </div>
+      </div>
+      <div class="hallazgo">
+        <div class="clave">F1</div>
+        <div class="cuerpo">
+          <div class="titulo">Con foto del espacio se descartaba la escenografía de la referencia <span class="ev ev-leido">leído</span></div>
+          <p>Una compuerta devolvía <code>false</code> en cuanto había venue, y con ella se caían la mesa, el pedestal, la silla y las flores que hacen que un montaje se lea como fotografía. La escenografía ya tenía su propio control: nunca toca cotización, materiales ni <code>plan_hash</code>.</p>
+        </div>
+      </div>
+      <div class="hallazgo">
+        <div class="clave">F13</div>
+        <div class="cuerpo">
+          <div class="titulo">La instrucción de composición pedía pegar, no instalar <span class="ev ev-leido">leído</span></div>
+          <p>El bloqueo decía <em>transfer</em> y <em>keep unchanged</em>. Ahora dice instalar en el objetivo asignado, re-escalar, re-iluminar y añadir sombras de contacto y soportes físicos para que no se vea pegado.</p>
+        </div>
+      </div>
+      <div class="hallazgo">
+        <div class="clave">X2</div>
+        <div class="cuerpo">
+          <div class="titulo">La clave de fal en producción estaba muerta <span class="ev ev-medido">medido</span></div>
+          <p>Hallazgo operativo real, no del plan: la única clave del repo, del servidor y de tres respaldos autenticaba pero devolvía saldo 0. El archivo de entorno del servidor ya quedó actualizado y respaldado; falta recrear el contenedor.</p>
+        </div>
+      </div>
+      <div class="hallazgo">
+        <div class="clave">F5</div>
+        <div class="cuerpo">
+          <div class="titulo">Una talla que el catálogo no fabrica desaparecía en silencio <span class="ev ev-retractado">retractado y corregido</span></div>
+          <p>Culpé a los datos del vocabulario; la auditoría sobre los 268 conceptos activos no encontró ni una discrepancia. El defecto real era que la omisión no se reportaba: ahora es una condición tipada en la respuesta y no una cadena de texto dentro de <code>diagnostics</code>.</p>
+        </div>
+      </div>
+      <div class="hallazgo">
+        <div class="clave">G1</div>
+        <div class="cuerpo">
+          <div class="titulo">La misma foto daba cuatro paletas en cinco corridas <span class="ev ev-medido">medido</span></div>
+          <p>Visible entre las dos primeras corridas del benchmark: <code>ejemplo-07</code> pasó de <code>rosado</code> a <code>gris</code> y <code>ejemplo-02</code> de <code>beige, blanco</code> a <code>crema</code>, sin que cambiara nada del camino de color. Es lo que la medición por píxeles existe para cerrar.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="cabecera-seccion">
+      <span class="eyebrow">Fase 5</span>
+      <h2>La medición que canceló un reentrenamiento de US$40</h2>
+    </div>
+    <div class="medida">
+      <p>El plan asumía que el modelo falla el acabado 0/6 porque casi ninguna foto de pedido es mate: sin contraste mate/cromado en el dataset, no hay hiperparámetro que lo arregle, y la salida sería recolectar imágenes nuevas. Contar las 356 anotaciones usables antes de gastar dice otra cosa.</p>
+    </div>
+    <div class="desborde medida">
+      <table>
+        <thead><tr><th>Propiedad</th><th class="num">Medido</th><th>Veredicto</th></tr></thead>
+        <tbody>
+          <tr><td>Imágenes con mate y brillante a la vez</td><td class="num">40 %</td><td><strong>Hipótesis falsa.</strong> El contraste está en el dataset. Re-recolectar no es la palanca.</td></tr>
+          <tr><td>Imágenes solo mate</td><td class="num">44 %</td><td>idem</td></tr>
+          <tr><td>Imágenes con razón de diámetro máx/mín ≥ 2</td><td class="num">24 %</td><td><strong>Hipótesis cierta.</strong> El modelo casi nunca vio un 5" junto a un 36".</td></tr>
+          <tr><td>Estructuras anotadas como <code>single_size</code></td><td class="num">236 / 614</td><td>idem</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="medida" style="font-size:0.9rem;color:var(--muted)">Reentrenar sigue siendo decisión de una persona, no de este trabajo. Lo que cambia es que ya no se decide a ciegas: el acabado apunta al caption o al entrenamiento, no a la colección, y el diámetro sí pide muestreo.</p>
+  </section>
+
+  <section>
+    <div class="cabecera-seccion">
+      <span class="eyebrow">Estado</span>
+      <h2>Qué se implementó, fase por fase</h2>
+    </div>
+    <div class="desborde">
+      <table>
+        <thead><tr><th>Ítem</th><th>Estado</th><th>Evidencia</th></tr></thead>
+        <tbody id="tabla-estado"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="cabecera-seccion">
+      <span class="eyebrow">Benchmark</span>
+      <h2>Evolución entre fases</h2>
+    </div>
+    <div class="medida">
+      <p>Cuatro referencias elegidas con semilla fija y la misma foto de espacio en todas las corridas, para que la única variable sea el código. Cada corrida son 4 análisis, 4 llamadas a fal, 4 composiciones y 4 QA.</p>
+    </div>
+    <div class="desborde" id="caja-benchmark"></div>
+    <div class="nota">
+      <span class="eyebrow">Cómo leer esto honestamente</span>
+      <p id="nota-benchmark"></p>
+    </div>
+  </section>
+
+  <section>
+    <div class="cabecera-seccion">
+      <span class="eyebrow">Pendiente</span>
+      <h2>Lo que no está hecho, y por qué</h2>
+    </div>
+    <ul class="limpia medida">
+      <li><strong>Fase 0.3 — corpus v004.</strong> Bloqueado y con causa identificada: ni <code>export-general-2026-08-27.json</code> ni <code>data/staging/recaption-v004/</code> están en el checkout. Lo único v004 que queda es un resumen con listas de imágenes, sin texto de caption; las 361 anotaciones v007 traen captions del contrato v3, que es otro dialecto. El corpus tiene que venir de fuera del repo.</li>
+      <li><strong>Fase 4 — la referencia como píxeles.</strong> Sigue siendo decisión de una persona, pero ya no a ciegas: con la bandera encendida el QA visual bajó de 1/4 a 0/4 sobre las mismas cuatro fotos (fases 4b → 4). Son 4 imágenes por corrida y un juez probabilístico, así que eso orienta, no cierra; la evaluación de 10 planes sigue siendo lo que decidiría. Lo que sí quedó claro es que la bandera no se enciende «porque está implementada».</li>
+      <li><strong>Ambiente de fiesta (6.B) — sin encender.</strong> Es la única bandera que la corrida de aislamiento señala con un patrón limpio: <code>pasted artifact</code> y <code>contact shadows failed</code> no salen ni una vez sin ella y salen en las dos corridas con ella. Además su aviso de «no cotizado» tiene que estar visible en la UI antes de encenderla, y no lo está.</li>
+      <li><strong>Fase 2.2 — umbral de varianza.</strong> La paleta ya sale de la medida en vez de la segunda salida inestable del modelo, pero el umbral de cinco corridas todavía no se exige.</li>
+    </ul>
+  </section>
+
+  <footer>
+    Reproducible sin red ni coste: <code>npm run plan:test</code> · <code>scripts/calibrar-dominancia.ts</code> · <code>scripts/medir-desbalance-dataset.ts</code> · <code>scripts/verificar-paridad-color.py</code><br>
+    Suite de Python, antes no ejecutada por falta de <code>uv</code> en la máquina: <code>pytest</code> <strong>210 pasan, 4 omitidas</strong> (piden un Postgres local, nunca Neon) · <code>ruff</code> limpio · <code>mypy</code> sin problemas en 11 archivos
+  </footer>
+</div>
+
+<script>
+  const ESTADO = [
+  {
+    "item": "0.2 · declarar el slot activo",
+    "estado": "parcial",
+    "evidencia": "<code>motorImagenPrevisto</code> ya se puebla; el artifact id y el estado de evaluación quedan <code>null</code> porque el resolvedor no los expone en el punto de auditoría. No se inventaron."
+  },
+  {
+    "item": "0.3 · resolver el corpus del arnés",
+    "estado": "hecho",
+    "evidencia": "<code>lora-caption-affinity.ts</code> resuelve el dataset del slot activo, acepta <code>--corpus</code>, lee las dos formas de corpus, y falla nombrando qué buscó en vez de analizar el modelo equivocado en silencio. Corre hoy contra 345 captions v007."
+  },
+  {
+    "item": "0.3 · recuperar el corpus v004",
+    "estado": "bloqueado",
+    "evidencia": "Ni el export ni <code>data/staging/recaption-v004/</code> están en el checkout. Lo único v004 que queda es un resumen con listas de imágenes, sin captions. Tiene que venir de fuera del repo."
+  },
+  {
+    "item": "0.4 · comprobación determinista del fondo",
+    "estado": "hecho",
+    "evidencia": "<code>outsideRegionSimilarity()</code> existía y no se llamaba nunca: el reintento leía un número que el modelo de visión se inventaba. Ahora decide la medida; la del modelo se conserva renombrada como opinión. Sin medida el motivo no dispara, porque un reintento es una llamada pagada."
+  },
+  {
+    "item": "0.5 · registrar lo que un diagnóstico necesita",
+    "estado": "hecho",
+    "evidencia": "Migración 026 <strong>aplicada el 17 sep 10:30 UTC</strong>: <code>plan_audit_log</code> pasó de 30 a 31 columnas y <code>diagnostico_generacion</code> existe. Importaba más de lo que parecía — el INSERT ya nombraba esa columna, y Postgres falla la sentencia COMPLETA, con el <code>catch</code> bajándolo a un <code>console.error</code>: la auditoría de planes no perdía un campo, dejaba de escribir filas en silencio."
+  },
+  {
+    "item": "0.1 · fijar la semilla para evaluación",
+    "estado": "hecho",
+    "evidencia": "<code>LORA_EVAL_SEED</code>: una semilla explícita en la petición sigue ganando, luego la de la corrida, luego el sorteo. El camino del cliente no se toca a propósito — la variación le beneficia, y poner esto en producción congelaría toda vista previa en la misma imagen, así que es variable de entorno de evaluación y no bandera de producto. Un valor mal escrito avisa y sortea, en vez de producir una corrida que <em>parece</em> determinista. 8 pruebas."
+  },
+  {
+    "item": "1.1 · cláusula bilateral",
+    "estado": "hecho",
+    "evidencia": "Un plan de dos columnas ya no muere en el preflight. 4 casos de regresión dentro de <code>plan:test</code>."
+  },
+  {
+    "item": "1.3 · la talla caída como condición con nombre",
+    "estado": "hecho",
+    "evidencia": "<code>dropped_sizes</code> tipado en la respuesta, no una cadena dentro de <code>diagnostics</code>. Sobrevive a que el elemento caiga a render legacy: el cliente pidió ese diámetro igual."
+  },
+  {
+    "item": "1.3b · conceptos de color faltantes",
+    "estado": "hecho",
+    "evidencia": "Seis conceptos con ids verificados contra el catálogo vivo."
+  },
+  {
+    "item": "1.4 · escenografía con foto del espacio",
+    "estado": "hecho",
+    "evidencia": "La compuerta muerta se eliminó entera, en vez de hacerla devolver <code>true</code>."
+  },
+  {
+    "item": "1.5 · contrato de UI contra servidor",
+    "estado": "hecho",
+    "evidencia": "El comentario dice lo que el servidor hace hoy y nombra la fase 4 como la que lo cambia."
+  },
+  {
+    "item": "2.1 · dominancia medida sobre píxeles",
+    "estado": "hecho",
+    "evidencia": "Módulo puro más un solo límite con <code>sharp</code>. <code>measured_colors</code> es un añadido opcional al blueprint, así que los blueprints viejos siguen validando y <code>plan_hash</code> no se toca. 14 pruebas. Bandera por defecto apagada."
+  },
+  {
+    "item": "2.2 · estabilizar lo que devuelve el analizador",
+    "estado": "hecho",
+    "evidencia": "Criterio de aceptación cumplido en las dos fotos de prueba: 1 paleta distinta de 5 corridas, cada color 5/5, mientras las etiquetas crudas siguen variando (<code>light pink</code> 3/5, <code>pink</code> 3/5, <code>silver</code> 3/5)."
+  },
+  {
+    "item": "2.3 + 2.4 · ΔE con eje de luminosidad",
+    "estado": "hecho",
+    "evidencia": "CIELAB por el contrato; paridad TypeScript/Python verificada, 8/8."
+  },
+  {
+    "item": "2.5 + 2.9 · decisiones de producto",
+    "estado": "hecho",
+    "evidencia": "ADR-0024. El gris se vende como plateado y se le dice al cliente; la paleta es señal registrada, no filtro duro."
+  },
+  {
+    "item": "2.6 · proporción como aviso",
+    "estado": "hecho",
+    "evidencia": "Reporta, no impone. La medida se renormaliza sobre los píxeles clasificados antes de comparar: sin eso, todo plan dispararía el aviso."
+  },
+  {
+    "item": "2.7 · canonicalización simétrica",
+    "estado": "hecho",
+    "evidencia": "De los tres llamadores de <code>resolverPlan</code> solo uno canonizaba. Ahora ocurre en la puerta, una vez; la idempotencia está probada, que es lo que permite moverlo."
+  },
+  {
+    "item": "2.8 · la segunda pasada puede corregir el color",
+    "estado": "hecho",
+    "evidencia": "El verificador gana solo donde el inventario viene vacío. Un desacuerdo entre las dos pasadas se anota en <code>uncertainties</code> en vez de perderse."
+  },
+  {
+    "item": "2.10 · rechazar la ambigüedad",
+    "estado": "hecho",
+    "evidencia": "Los marcadores de ambigüedad de la taxonomía son españoles y el analizador escribe en inglés, así que nunca disparaban. <code>mint green</code> sigue siendo un solo color."
+  },
+  {
+    "item": "3.2 · cláusula de cierre medida",
+    "estado": "hecho",
+    "evidencia": "El bloque de 290 caracteres de prohibiciones pasó a la cláusula declarativa. El presupuesto útil del caption subió de 460 a 688 caracteres."
+  },
+  {
+    "item": "3.3 · dejar de vaciar el contexto visual",
+    "estado": "hecho",
+    "evidencia": "Acotado: dos de sus tres campos SON el venue y lo filtrarían a una etapa que no debe dibujarlo. Solo vuelve <code>palette</code>, que son los colores que pidió el cliente."
+  },
+  {
+    "item": "3.4 · asimetría en el compilador",
+    "estado": "hecho",
+    "evidencia": "Corrigiendo el plan: el compilador NO emitía la frase del corpus. Primero se hizo que la emitiera, y solo entonces se quitó la suelta."
+  },
+  {
+    "item": "3.1 + 3.5 · dialecto y acabados de v004",
+    "estado": "bloqueado",
+    "evidencia": "Dependen del corpus que 0.3 no puede recuperar."
+  },
+  {
+    "item": "4 · la referencia como píxeles (opción B)",
+    "estado": "hecho",
+    "evidencia": "En modo híbrido la etapa 1 recibía CERO imágenes. La selección admite referencias de composición y rechaza el venue, el resultado previo, fotos de producto y la paleta. 5 pruebas. Bandera apagada."
+  },
+  {
+    "item": "4 · decidir entre A y B",
+    "estado": "no",
+    "evidencia": "Exige la evaluación de 10 planes contra proveedor pagado, y promover una variante de prompt es decisión de una persona."
+  },
+  {
+    "item": "5 · la medición que decide el reentrenamiento",
+    "estado": "hecho",
+    "evidencia": "Una de las dos hipótesis del plan resultó falsa. Reentrenar sigue siendo decisión de una persona, pero ya no a ciegas."
+  },
+  {
+    "item": "6.A · análisis del espacio y colocación",
+    "estado": "hecho",
+    "evidencia": "Análisis de visión del venue más colocador puro, 3 pruebas, bandera apagada. Medido por el benchmark: 4/4 casos colocados, con 4 aperturas, 3 paredes planas, 5 obstáculos y 2 anclas métricas detectadas."
+  },
+  {
+    "item": "6.A · instrucción de composición",
+    "estado": "hecho",
+    "evidencia": "De <em>transfer</em> y <em>keep unchanged</em> a instalar, re-escalar, re-iluminar y añadir sombras de contacto y soportes físicos. Va sin bandera."
+  },
+  {
+    "item": "6.B · contexto de fiesta",
+    "estado": "hecho",
+    "evidencia": "Vocabulario cerrado (un modelo elige de la lista, nunca la amplía), techo de 4 props, opt-in, y aviso explícito de no cotizado que también dispara con la escenografía de la propia foto del cliente. 8 pruebas. Bandera apagada."
+  }
+];
+  const BENCH = {
+  "corridas": [
+    {
+      "fase": "0 · línea base",
+      "commit": "dad9f6f",
+      "banderas": "sin registro",
+      "generan": "4/4",
+      "preflight": "4/4",
+      "qa": "0/4",
+      "qaBien": false,
+      "tallas": 5,
+      "colocacion": "—",
+      "gasto": "$0.168"
+    },
+    {
+      "fase": "1 · defectos",
+      "commit": "dad9f6f",
+      "banderas": "sin registro",
+      "generan": "4/4",
+      "preflight": "4/4",
+      "qa": "2/4",
+      "qaBien": true,
+      "tallas": 4,
+      "colocacion": "—",
+      "gasto": "$0.168"
+    },
+    {
+      "fase": "2 · color medido",
+      "commit": "dad9f6f",
+      "banderas": "sin registro",
+      "generan": "4/4",
+      "preflight": "4/4",
+      "qa": "2/4",
+      "qaBien": true,
+      "tallas": 7,
+      "colocacion": "4/4",
+      "gasto": "$0.168"
+    },
+    {
+      "fase": "3 · caption + 6.A",
+      "commit": "dad9f6f",
+      "banderas": "sin registro",
+      "generan": "4/4",
+      "preflight": "4/4",
+      "qa": "2/4",
+      "qaBien": true,
+      "tallas": 7,
+      "colocacion": "4/4",
+      "gasto": "$0.168"
+    },
+    {
+      "fase": "4 · todas las banderas",
+      "commit": "dad9f6f",
+      "banderas": "measured_color_dominance · venue_aware_placement · ambiente_fiesta · referencia_en_etapa1",
+      "generan": "4/4",
+      "preflight": "4/4",
+      "qa": "0/4",
+      "qaBien": false,
+      "tallas": 7,
+      "colocacion": "4/4",
+      "gasto": "$0.168"
+    },
+    {
+      "fase": "4b · sin referencia en etapa 1",
+      "commit": "dad9f6f",
+      "banderas": "measured_color_dominance · venue_aware_placement · ambiente_fiesta",
+      "generan": "4/4",
+      "preflight": "4/4",
+      "qa": "1/4",
+      "qaBien": true,
+      "tallas": 7,
+      "colocacion": "4/4",
+      "gasto": "$0.210"
+    }
+  ],
+  "nota": "Encender las cuatro banderas nuevas no mejora el QA visual: lo baja. 2/4 en la fase 3, 1/4 al añadir ambiente_fiesta (fase 4b) y 0/4 al añadir además referencia_en_etapa1 (fase 4). Dos avisos sobre esa lectura, porque sin ellos parece más firme de lo que es. Primero: son 4 imágenes por corrida juzgadas por un modelo de visión, así que la tendencia es sugerente, no establecida. Segundo: las fases 0 a 3 no registraron sus banderas. Se puede reconstruir que la dominancia medida estaba encendida en 2 y 3 (hay participaciones) y la colocación también (4/4), pero el estado de ambiente_fiesta en la fase 3 no se puede saber — y esa es justamente la razón por la que ahora existe la columna «Flags on». Lo que sí es un patrón limpio: los motivos «pasted artifact» y «contact shadows failed» no aparecen ni una vez en la fase 3 y aparecen en las DOS corridas con ambiente_fiesta encendida, lo que encaja con añadir objetos que el compositor pega en vez de instalar. Mi primera lectura culpó a referencia_en_etapa1; la corrida de aislamiento 4b la desmintió y queda retirada. Conclusión práctica, esa sí sin ambigüedad: las cuatro se quedan apagadas, que es como se entregan. El caso de measured_color_dominance nunca descansó en el QA sino en la estabilidad de la paleta — 1 paleta distinta en 5 corridas frente a 4 — y las tallas caídas que subieron de 4 a 7 siguen siendo el defecto que la paleta exacta hace visible, no uno nuevo."
+};
+
+  const clase = { hecho: "e-hecho", parcial: "e-parcial", no: "e-no", bloqueado: "e-bloq" };
+  const etiqueta = { hecho: "hecho", parcial: "parcial", no: "no", bloqueado: "bloqueado" };
+
+  document.getElementById("tabla-estado").innerHTML = ESTADO.map((fila) => `
+    <tr>
+      <td><strong>${fila.item}</strong></td>
+      <td><span class="estado ${clase[fila.estado]}">${etiqueta[fila.estado]}</span></td>
+      <td>${fila.evidencia}</td>
+    </tr>`).join("");
+
+  const cabeceras = ["Fase", "Commit", "Banderas encendidas", "Generan", "Preflight", "QA visual", "Tallas caídas", "Colocación", "Gasto"];
+  document.getElementById("caja-benchmark").innerHTML = `
+    <table>
+      <thead><tr>${cabeceras.map((h, i) => `<th${i > 2 ? ' class="num"' : ""}>${h}</th>`).join("")}</tr></thead>
+      <tbody>${BENCH.corridas.map((c) => `
+        <tr>
+          <td class="fase">${c.fase}</td>
+          <td class="num" style="color:var(--faint)">${c.commit}</td>
+          <td class="banderas">${c.banderas}</td>
+          <td class="num">${c.generan}</td>
+          <td class="num">${c.preflight}</td>
+          <td class="num" style="color:${c.qaBien ? "var(--ok)" : "var(--muted)"}">${c.qa}</td>
+          <td class="num" style="color:${c.tallas === 0 ? "var(--ok)" : "var(--warn)"}">${c.tallas}</td>
+          <td class="num">${c.colocacion}</td>
+          <td class="num">${c.gasto}</td>
+        </tr>`).join("")}</tbody>
+    </table>`;
+
+  document.getElementById("nota-benchmark").textContent = BENCH.nota;
+</script>

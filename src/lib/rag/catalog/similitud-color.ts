@@ -1,78 +1,100 @@
+import { HEX_COLORES_OBSERVABLES } from "@/lib/rag/taxonomy/v2";
+
 /**
- * Hue degrees per catalog color word. Exported (with `FAMILIAS_NEUTRAS` and
- * `PUNTUACION_FAMILIA`) into the `catalog-search.v1` domain contract as
- * `x-tonos-colores-catalogo` (`scripts/export-domain-contract-schemas.ts`), the
- * same pattern `estructuras-oficiales.ts` uses for `x-geometria-estructuras-oficiales`:
- * this table is the one source, and `services/ai-api/app/catalog.py` reads it
- * from the exported contract to resolve a requested color the active snapshot
- * does not stock to the nearest one it does, instead of dropping it silently.
+ * Distancia perceptual entre colores del catálogo. Se exporta al contrato
+ * `catalog-search.v1` como `x-tonos-colores-catalogo`
+ * (`scripts/export-domain-contract-schemas.ts`), el mismo patrón que
+ * `estructuras-oficiales.ts` usa para `x-geometria-estructuras-oficiales`:
+ * esta tabla es la única fuente, y `services/ai-api/app/catalog.py` la lee de
+ * ahí para resolver un color que el snapshot activo no tiene al más cercano que
+ * sí, en vez de dejarlo caer en silencio.
+ *
+ * MODELO. Antes esto era un ángulo de tono y nada más, y medía mal de dos
+ * formas que costaban ventas:
+ *
+ * - Sin luminosidad ni saturación, `naranja` y `cafe` distaban 0,011 —
+ *   indistinguibles—, `dorado` y `crema` 0,022, y `fucsia` y `rosado` 0,083.
+ *   Un pedido de rosa palo podía resolverse a fucsia.
+ * - Los colores sin tono (los neutros) empataban todos en 0,35 y el empate se
+ *   rompía POR ORDEN ALFABÉTICO, así que `gris` resolvía a `negro` en vez de a
+ *   `plateado`: una foto gris mate compraba globos negros.
+ *
+ * Ahora la distancia es ΔE (CIE76) sobre CIELAB, derivada de los hex nominales
+ * de la paleta. Medido: naranja/cafe 51, dorado/crema 56, fucsia/rosado 48,
+ * gris/negro 51 y gris/plateado 16 — el gris llega a plateado por un factor de
+ * tres— mientras los pares de verdad parecidos siguen juntos (violeta/morado
+ * 19). No hacen falta familias neutras: la luminosidad ya las separa.
  */
-export const HUES: Record<string, number> = {
-  rojo: 0,
-  burdeos: 350,
-  coral: 12,
-  naranja: 30,
-  dorado: 44,
-  "dorado rosa": 12,
-  champagne: 42,
-  amarillo: 52,
-  cafe: 28,
-  beige: 38,
-  crema: 48,
-  nude: 24,
-  verde: 120,
-  menta: 155,
-  turquesa: 180,
-  azul: 220,
-  lila: 270,
-  violeta: 276,
-  morado: 280,
-  fucsia: 320,
-  rosado: 335,
-};
+
+export type Lab = readonly [number, number, number];
+
+/**
+ * sRGB de 8 bits a CIELAB (D65). Se exporta porque la medición de dominancia
+ * (`dominancia-color.ts`) clasifica píxeles contra `LAB_COLORES` y tiene que
+ * usar exactamente esta conversión: con dos implementaciones, un píxel podría
+ * caer en un color distinto del que le asigna la tabla y la medida dejaría de
+ * ser comparable con la sustitución del catálogo.
+ */
+export function labDeRgb(rojo: number, verde: number, azul: number): Lab {
+  const canales = [rojo, verde, azul]
+    .map((valor) => valor / 255)
+    .map((valor) => (valor > 0.04045 ? ((valor + 0.055) / 1.055) ** 2.4 : valor / 12.92));
+  const [r, g, b] = canales as [number, number, number];
+  // sRGB -> XYZ (D65) -> CIELAB.
+  const x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047;
+  const y = r * 0.2126 + g * 0.7152 + b * 0.0722;
+  const z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883;
+  const f = (t: number): number => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+  return [116 * f(y) - 16, 500 * (f(x) - f(y)), 200 * (f(y) - f(z))];
+}
+
+function labDeHex(hex: string): Lab {
+  const entero = Number.parseInt(hex.slice(1), 16);
+  return labDeRgb((entero >> 16) & 255, (entero >> 8) & 255, entero & 255);
+}
+
+/** CIELAB de cada color medible. Incluye `gris`, que se observa aunque no se venda. */
+export const LAB_COLORES: Readonly<Record<string, Lab>> = Object.fromEntries(
+  Object.entries(HEX_COLORES_OBSERVABLES).map(([color, hex]) => [color, labDeHex(hex)]),
+);
+
+/**
+ * ΔE por encima del cual no se sustituye nada: sustituir exige una distancia,
+ * y sin ella la búsqueda debe reportar NO_MATCH honestamente en vez de ofrecer
+ * cualquier cosa.
+ *
+ * El número sale de mirar los 300 pares de la paleta, no de la intuición. En la
+ * franja que decide (38-50) están, por orden: burdeos→rojo 41, morado→lila 43,
+ * rojo→naranja 44, rosado→fucsia 48, lila→violeta 49. Con 45 entran las que un
+ * decorador aceptaría —el burdeos que el catálogo no vende cae en rojo, el
+ * morado en lila— y queda fuera rosado→fucsia, que es justamente la patología
+ * que el modelo de tono causaba: un rosa palo resuelto a fucsia. Admite 78 de
+ * 300 pares; con 40 serían 59 y se perdería el burdeos, con 50 serían 88 y
+ * volvería el fucsia.
+ */
+export const DELTA_E_MAXIMO = 45;
+
+/**
+ * Escala 0..1, para no romper a los consumidores que ordenaban con la escala
+ * anterior (`plan-editar/route.ts` la usa para rankear alternativas). 0 es
+ * idéntico; `PUNTUACION_DESCONOCIDA` marca "nada que medir".
+ */
+const ESCALA = 100;
+export const PUNTUACION_DESCONOCIDA = DELTA_E_MAXIMO / ESCALA;
 
 function normalizarColor(value: string): string {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+  return value.normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
 }
 
-function distanciaCircular(a: number, b: number): number {
-  const distancia = Math.abs(a - b);
-  return Math.min(distancia, 360 - distancia) / 180;
-}
-
-/**
- * Colors with no hue that still read as one family. Without them every neutral
- * scored 0.7, the same as an unknown color, so a grey alternative for a silver
- * piece ranked behind an orange one.
- */
-export const FAMILIAS_NEUTRAS: ReadonlyArray<ReadonlySet<string>> = [
-  new Set(["blanco", "crema", "beige", "nude", "transparente"]),
-  new Set(["plateado", "gris", "negro"]),
-  new Set(["dorado", "champagne"]),
-];
-/**
- * Techo de dos colores de la misma familia: siempre más cerca que un color
- * desconocido (0,7). No es un piso — cuando los dos tienen tono (dorado 44 y
- * champagne 42) la distancia de tono es menor y manda ella.
- */
-export const PUNTUACION_FAMILIA = 0.35;
-/**
- * Puntuación de dos colores que no comparten ni tono ni familia neutra: «no
- * relacionados», no «lejos». Que el mejor candidato llegue a esto significa que
- * no hay nada que medir.
- */
-export const PUNTUACION_DESCONOCIDA = 0.7;
-
-function mismaFamiliaNeutra(actual: string, candidata: string): boolean {
-  return FAMILIAS_NEUTRAS.some((familia) => familia.has(actual) && familia.has(candidata));
+function deltaE(uno: Lab, otro: Lab): number {
+  return Math.hypot(uno[0] - otro[0], uno[1] - otro[1], uno[2] - otro[2]);
 }
 
 /**
- * Lower scores mean a closer visual color. Unknown/neutral colors stay usable.
- *
- * An exact match scores 0: it used to return 1, the worst possible score, so
- * the same-color alternatives of a piece (Reflex Rojo for a Fashion Rojo) ranked
- * behind every other hue and fell out of the 12 the card shows.
+ * Cuanto más bajo, más cerca visualmente. Una coincidencia exacta da 0: antes
+ * devolvía 1 —la peor nota—, así que las alternativas del mismo color de una
+ * pieza (Reflex Rojo para un Fashion Rojo) quedaban detrás de cualquier otro
+ * tono y se caían de las 12 que muestra la tarjeta.
  */
 export function puntuacionCromatica(actuales: string[], candidatas: string[]): number {
   const base = actuales.map(normalizarColor).filter(Boolean);
@@ -82,52 +104,47 @@ export function puntuacionCromatica(actuales: string[], candidatas: string[]): n
 
   const puntuaciones: number[] = [];
   for (const actual of base) {
+    const labActual = LAB_COLORES[actual];
+    if (!labActual) continue;
     for (const candidata of opciones) {
-      const hueActual = HUES[actual];
-      const hueCandidata = HUES[candidata];
-      if (hueActual != null && hueCandidata != null) puntuaciones.push(distanciaCircular(hueActual, hueCandidata));
-      // La familia es un techo, no una alternativa a la distancia de tono: sin
-      // esto solo llegaban aquí los colores sin tono, así que la familia
-      // dorado/champagne era código muerto y quitarle el tono a uno de los dos
-      // los habría dejado en 0,7 (color desconocido) sin que nada lo notara.
-      if (mismaFamiliaNeutra(actual, candidata)) puntuaciones.push(PUNTUACION_FAMILIA);
+      const labCandidata = LAB_COLORES[candidata];
+      if (labCandidata) puntuaciones.push(Math.min(deltaE(labActual, labCandidata) / ESCALA, 1));
     }
   }
   return puntuaciones.length ? Math.min(...puntuaciones) : PUNTUACION_DESCONOCIDA;
 }
 
-/** Shape of `x-tonos-colores-catalogo` in the exported `catalog-search.v1` contract. */
+/** Forma de `x-tonos-colores-catalogo` en el contrato `catalog-search.v1` exportado. */
 export type TonosColoresCatalogoContrato = {
-  hues: Record<string, number>;
-  familias_neutras: string[][];
-  puntuacion_familia: number;
+  lab: Record<string, [number, number, number]>;
+  delta_e_maximo: number;
+  escala: number;
 };
 
 /**
- * The chromatic-distance table as the JSON Schema extension the domain
- * contract export injects into `catalog-search.v1`. `services/ai-api/app/catalog.py`
- * reads it back with `contract_schema("CatalogSearch")` to pick, for a
- * requested color the snapshot does not stock, the nearest one it does.
+ * La tabla de distancia cromática como la extensión de JSON Schema que la
+ * exportación del contrato inyecta en `catalog-search.v1`.
+ * `services/ai-api/app/catalog.py` la lee con `contract_schema("CatalogSearch")`
+ * para elegir, ante un color que el snapshot no tiene, el más cercano que sí.
  */
 export function tonosColoresCatalogo(): TonosColoresCatalogoContrato {
   return {
-    hues: { ...HUES },
-    familias_neutras: FAMILIAS_NEUTRAS.map((familia) => [...familia]),
-    puntuacion_familia: PUNTUACION_FAMILIA,
+    lab: Object.fromEntries(Object.entries(LAB_COLORES).map(([color, lab]) => [color, [...lab] as [number, number, number]])),
+    delta_e_maximo: DELTA_E_MAXIMO,
+    escala: ESCALA,
   };
 }
 
 /**
- * Nearest color of `disponibles` to `pedido`, by the same ranking
- * `puntuacionCromatica` uses (exact match wins outright; otherwise the
- * smallest distance, ties broken alphabetically for a deterministic result).
- * `undefined` when `disponibles` is empty. Used by the reference-color guard
- * (`colores-referencia.ts`/`globos-por-color.ts`) to decide which catalog
- * color a photo color the snapshot lacks can borrow -- the same table and
- * algorithm structure `catalog.py` reads from the exported contract, so
- * neither side can drift from the other's notion of "close enough": one
- * table, computed independently in each runtime, like the structure geometry
- * table in `estructuras-oficiales.ts`.
+ * El color de `disponibles` más cercano a `pedido`, por el mismo ranking que
+ * usa `puntuacionCromatica` (la coincidencia exacta gana; si no, la menor
+ * distancia, con desempate alfabético solo para que el resultado sea
+ * determinista). `undefined` cuando `disponibles` está vacío.
+ *
+ * Nada relacionado: el color pedido es una palabra que la tabla no conoce (el
+ * analizador se inventa algunas, «frambuesa»), así que no puntúa contra nada y
+ * ganaría el primero por orden alfabético. Así fue como una foto frambuesa
+ * acabó resolviéndose a amarillo. Sustituir exige una distancia.
  */
 export function colorCatalogoMasCercano(pedido: string, disponibles: readonly string[]): string | undefined {
   const normalizado = normalizarColor(pedido);
@@ -143,9 +160,5 @@ export function colorCatalogoMasCercano(pedido: string, disponibles: readonly st
       mejor = opcion;
     }
   }
-  // Nada relacionado: el color pedido es una palabra que la tabla no conoce (el
-  // analizador se inventa algunas, «frambuesa»), así que puntúa igual contra
-  // todos y ganaría el primero por orden alfabético. Así fue como una foto
-  // frambuesa acabó resolviéndose a amarillo. Sustituir exige una distancia.
   return mejorPuntuacion >= PUNTUACION_DESCONOCIDA ? undefined : mejor;
 }

@@ -2,6 +2,8 @@ import "server-only";
 import { createHash } from "node:crypto";
 import { ErrorIA, type ChatPort, type Herramienta, type ImagenEtiquetada, type TurnoChat } from "./tipos";
 import type { Producto } from "@/lib/types";
+import { enriquecerConDominancia } from "./dominancia-referencia";
+import { featureEnabled } from "./feature-flags";
 import { bytesBase64, registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "./telemetria-llamadas";
 import {
   analysisCacheKey,
@@ -676,7 +678,11 @@ async function ejecutarAnalisis(input: {
     console.warn("[references/analyze] audit skipped after malformed output", { request_id: telemetria?.requestId });
     return { images: [] } as Record<string, unknown>;
   });
-  const blueprint = buildBlueprint(referencias, inventoryRaw, auditRaw, mode === "perceptual" ? [] : catalogo, mode);
+  const armado = buildBlueprint(referencias, inventoryRaw, auditRaw, mode === "perceptual" ? [] : catalogo, mode);
+  // La dominancia se mide sobre los píxeles, no sobre el orden en que el modelo
+  // escribió los nombres (fase 2.1). Detrás de bandera hasta que el benchmark
+  // muestre la mejora.
+  const blueprint = featureEnabled("MEASURED_COLOR_DOMINANCE_V1") ? await enriquecerConDominancia(armado, referencias) : armado;
   return {
     blueprint,
     tieneEstructurasDeGlobos: tieneEstructurasDeGlobos(blueprint),

@@ -231,13 +231,18 @@ async function main(): Promise<void> {
   // A0.1: PLAN_NO_CONVERGE is audited, and every audit row carries the request
   // facts and the refusals counted so far (columns of migration 024).
   await esperarObservabilidadPendiente();
-  const COL = { status: 15, tieneReferencia: 21, tieneFotoEspacio: 22, loraMode: 23, motor: 24, claseRechazo: 25, rechazosTurno: 26, superficie: 27 };
+  const COL = { status: 15, tieneReferencia: 21, tieneFotoEspacio: 22, loraMode: 23, motor: 24, claseRechazo: 25, rechazosTurno: 26, superficie: 27, diagnostico: 28 };
   const statusAuditados = sinSalida.auditorias.map((fila) => `${String(fila[COL.status])}@${String(fila[COL.rechazosTurno])}`);
   const noConverge = sinSalida.auditorias.filter((fila) => fila[COL.status] === "PLAN_NO_CONVERGE");
   assert.ok(noConverge.length >= 1, `PLAN_NO_CONVERGE audited: ${statusAuditados.join(", ")}`);
   assert.ok(noConverge.every((fila) => fila[COL.rechazosTurno] === convergencia.RECHAZOS_MAXIMOS), statusAuditados.join(", "));
   for (const fila of sinSalida.auditorias) {
-    assert.equal(fila.length, 28);
+    // 29 desde la migración 026: `diagnostico_generacion` (fase 0.5 del plan de
+    // fidelidad). Esta es la ruta de chat, que no genera imagen, así que la
+    // columna viene vacía — y que venga vacía AQUÍ es parte del contrato: el
+    // diagnóstico lo escribe `/api/generate`, no el planificador.
+    assert.equal(fila.length, 29);
+    assert.equal(fila[COL.diagnostico], null, "el diagnóstico de generación es de /api/generate, no del chat");
     assert.deepEqual([fila[COL.tieneReferencia], fila[COL.tieneFotoEspacio], fila[COL.loraMode], fila[COL.superficie]], [true, false, "training_1", "/api/chat"]);
     assert.equal(fila[COL.motor], null, "motor_imagen_previsto has no server-side owner yet");
     assert.equal(fila[COL.claseRechazo], null, "clase_rechazo waits for the A4.1 classes");

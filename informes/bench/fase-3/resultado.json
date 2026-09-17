@@ -1,0 +1,630 @@
+{
+  "meta": {
+    "fase": "fase-3",
+    "fecha": "2026-09-17T10:13:16.986Z",
+    "commit": "dad9f6f467105120d9c99aeeb9a180c01a0add4d",
+    "semillaSeleccion": 20260917,
+    "espacio": {
+      "nombre": "decoracion-jardin-moderno.jpg",
+      "ancho": 1000,
+      "alto": 667
+    },
+    "slotLora": {
+      "slug": "training_1",
+      "artifactId": "v004-1000",
+      "trigger": "eventdecor_style_v2",
+      "evaluationStatus": "approved",
+      "escala": 0.8
+    },
+    "modelos": {
+      "lora": "fal-ai/flux-2/lora",
+      "imagen": "gemini-3.1-flash-image",
+      "chat": "gemini-3.6-flash"
+    },
+    "parametros": {
+      "pasos": 28,
+      "guidance": 3.5,
+      "ancho": 1024,
+      "alto": 1536
+    },
+    "gastoUsd": 0.168
+  },
+  "casos": [
+    {
+      "referencia": "ejemplo-07",
+      "titulo": "Marco vino y plata",
+      "fixturePlan": "plantilla-arco-dos-columnas",
+      "semillaImagen": 101,
+      "color": {
+        "elementos": 8,
+        "coloresCrudos": [
+          "white",
+          "burgundy",
+          "metallic silver",
+          "pink",
+          "clear",
+          "silver glitter",
+          "brown",
+          "rose gold"
+        ],
+        "paletaCatalogo": [
+          "negro",
+          "plateado",
+          "dorado rosa",
+          "burdeos",
+          "gris"
+        ],
+        "paletaBusqueda": [
+          "negro",
+          "dorado rosa",
+          "burdeos"
+        ],
+        "perdidos": [
+          "plateado",
+          "gris"
+        ],
+        "sinConcepto": [
+          "burdeos",
+          "gris"
+        ],
+        "renderizables": [
+          "negro",
+          "plateado",
+          "dorado rosa"
+        ],
+        "participaciones": [
+          {
+            "color": "negro",
+            "share": 0.4142
+          },
+          {
+            "color": "plateado",
+            "share": 0.3319
+          },
+          {
+            "color": "dorado rosa",
+            "share": 0.141
+          },
+          {
+            "color": "burdeos",
+            "share": 0.0757
+          },
+          {
+            "color": "gris",
+            "share": 0.0211
+          },
+          {
+            "color": "cafe",
+            "share": 0.0094
+          },
+          {
+            "color": "blanco",
+            "share": 0.0066
+          }
+        ]
+      },
+      "caption": {
+        "texto": "eventdecor_style_v2, an organic balloon garland arch of large and small matte black, glossy chrome rose gold and glossy chrome silver balloons as the central focal piece, two organic balloon columns of large and small matte black and glossy chrome silver balloons, one standing on the left and one on the right, flanking the main arch. set against a plain wall and floor, wide photorealistic event photograph, natural depth, grounded supports.",
+        "longitud": 443,
+        "techo": 688,
+        "tallasOmitidas": [
+          "R-36"
+        ],
+        "diagnosticos": [
+          "element EST_01_ARCO: size(s) R-36 are not in allowed_codes for balloon.round.latex.reflex.silver; omitted from the prompt (size remains separate from concept identity, never silently accepted)",
+          "element EST_01_ARCO: size(s) R-36 are not in allowed_codes for balloon.round.latex.reflex.rose_gold; omitted from the prompt (size remains separate from concept identity, never silently accepted)",
+          "element EST_02_COL_IZQ: size(s) R-36 are not in allowed_codes for balloon.round.latex.reflex.silver; omitted from the prompt (size remains separate from concept identity, never silently accepted)",
+          "element EST_03_COL_DER: size(s) R-36 are not in allowed_codes for balloon.round.latex.reflex.silver; omitted from the prompt (size remains separate from concept identity, never silently accepted)"
+        ]
+      },
+      "preflight": {
+        "ok": true,
+        "errores": []
+      },
+      "imagen": {
+        "etapa1": "reports\\bench\\fase-3\\ejemplo-07-etapa1.png",
+        "final": "reports\\bench\\fase-3\\ejemplo-07-final.png",
+        "fallo": null
+      },
+      "qa": {
+        "pass": false,
+        "retryReasons": [
+          "appearance failure EST_02_COL_IZQ",
+          "appearance failure EST_03_COL_DER"
+        ]
+      },
+      "juez": null,
+      "colocacion": {
+        "usada": true,
+        "aperturas": 3,
+        "paredesPlanas": 2,
+        "obstaculos": 4,
+        "anclasMetricas": 1,
+        "cajas": {
+          "EST_01_ARCO": {
+            "x": 0.03,
+            "y": 0.21,
+            "width": 0.24,
+            "height": 0.34
+          },
+          "EST_02_COL_IZQ": {
+            "x": 0.3235,
+            "y": 0,
+            "width": 0.153,
+            "height": 0.374
+          },
+          "EST_03_COL_DER": {
+            "x": 0.6235000000000002,
+            "y": 0,
+            "width": 0.153,
+            "height": 0.374
+          }
+        },
+        "fallo": null
+      }
+    },
+    {
+      "referencia": "ejemplo-02",
+      "titulo": "Arco rosa y dorado",
+      "fixturePlan": "plantilla-arco-dos-columnas",
+      "semillaImagen": 202,
+      "color": {
+        "elementos": 6,
+        "coloresCrudos": [
+          "white",
+          "mauve pink",
+          "light pink",
+          "beige",
+          "dusty pink",
+          "chrome gold",
+          "nude beige"
+        ],
+        "paletaCatalogo": [
+          "dorado rosa",
+          "beige",
+          "blanco",
+          "nude",
+          "crema"
+        ],
+        "paletaBusqueda": [
+          "dorado rosa",
+          "beige",
+          "nude"
+        ],
+        "perdidos": [
+          "blanco",
+          "crema"
+        ],
+        "sinConcepto": [
+          "beige",
+          "nude",
+          "crema"
+        ],
+        "renderizables": [
+          "dorado rosa",
+          "blanco"
+        ],
+        "participaciones": [
+          {
+            "color": "dorado rosa",
+            "share": 0.3291
+          },
+          {
+            "color": "beige",
+            "share": 0.1974
+          },
+          {
+            "color": "blanco",
+            "share": 0.1171
+          },
+          {
+            "color": "nude",
+            "share": 0.1168
+          },
+          {
+            "color": "crema",
+            "share": 0.0958
+          },
+          {
+            "color": "gris",
+            "share": 0.0375
+          },
+          {
+            "color": "negro",
+            "share": 0.0312
+          },
+          {
+            "color": "cafe",
+            "share": 0.0237
+          },
+          {
+            "color": "burdeos",
+            "share": 0.0226
+          },
+          {
+            "color": "champagne",
+            "share": 0.0191
+          },
+          {
+            "color": "dorado",
+            "share": 0.0095
+          },
+          {
+            "color": "rosado",
+            "share": 0.0001
+          }
+        ]
+      },
+      "caption": {
+        "texto": "eventdecor_style_v2, an organic balloon garland arch of large and small matte white and glossy chrome rose gold balloons as the central focal piece, two organic balloon columns of large and small matte white and glossy chrome rose gold balloons, one standing on the left and one on the right, flanking the main arch. set against a plain wall and floor, wide photorealistic event photograph, natural depth, grounded supports.",
+        "longitud": 424,
+        "techo": 688,
+        "tallasOmitidas": [
+          "R-36"
+        ],
+        "diagnosticos": [
+          "element EST_01_ARCO: size(s) R-36 are not in allowed_codes for balloon.round.latex.reflex.rose_gold; omitted from the prompt (size remains separate from concept identity, never silently accepted)",
+          "element EST_02_COL_IZQ: size(s) R-36 are not in allowed_codes for balloon.round.latex.reflex.rose_gold; omitted from the prompt (size remains separate from concept identity, never silently accepted)",
+          "element EST_03_COL_DER: size(s) R-36 are not in allowed_codes for balloon.round.latex.reflex.rose_gold; omitted from the prompt (size remains separate from concept identity, never silently accepted)"
+        ]
+      },
+      "preflight": {
+        "ok": true,
+        "errores": []
+      },
+      "imagen": {
+        "etapa1": "reports\\bench\\fase-3\\ejemplo-02-etapa1.png",
+        "final": "reports\\bench\\fase-3\\ejemplo-02-final.png",
+        "fallo": null
+      },
+      "qa": {
+        "pass": true,
+        "retryReasons": []
+      },
+      "juez": null,
+      "colocacion": {
+        "usada": true,
+        "aperturas": 3,
+        "paredesPlanas": 2,
+        "obstaculos": 4,
+        "anclasMetricas": 1,
+        "cajas": {
+          "EST_01_ARCO": {
+            "x": 0.03,
+            "y": 0.21,
+            "width": 0.24,
+            "height": 0.34
+          },
+          "EST_02_COL_IZQ": {
+            "x": 0.3235,
+            "y": 0,
+            "width": 0.153,
+            "height": 0.374
+          },
+          "EST_03_COL_DER": {
+            "x": 0.6235000000000002,
+            "y": 0,
+            "width": 0.153,
+            "height": 0.374
+          }
+        },
+        "fallo": null
+      }
+    },
+    {
+      "referencia": "ejemplo-01",
+      "titulo": "Columnas rosa y plata",
+      "fixturePlan": "plantilla-arco-dos-columnas",
+      "semillaImagen": 303,
+      "color": {
+        "elementos": 10,
+        "coloresCrudos": [
+          "white",
+          "light pink",
+          "pastel pink",
+          "pearl light gray",
+          "chrome silver",
+          "clear",
+          "magenta pink",
+          "green"
+        ],
+        "paletaCatalogo": [
+          "lila",
+          "gris",
+          "plateado",
+          "rosado",
+          "blanco"
+        ],
+        "paletaBusqueda": [
+          "blanco",
+          "rosado",
+          "lila"
+        ],
+        "perdidos": [
+          "gris",
+          "plateado"
+        ],
+        "sinConcepto": [
+          "lila",
+          "gris"
+        ],
+        "renderizables": [
+          "plateado",
+          "rosado",
+          "blanco"
+        ],
+        "participaciones": [
+          {
+            "color": "lila",
+            "share": 0.3098
+          },
+          {
+            "color": "gris",
+            "share": 0.1791
+          },
+          {
+            "color": "plateado",
+            "share": 0.1631
+          },
+          {
+            "color": "rosado",
+            "share": 0.1472
+          },
+          {
+            "color": "blanco",
+            "share": 0.1333
+          },
+          {
+            "color": "negro",
+            "share": 0.0381
+          },
+          {
+            "color": "dorado rosa",
+            "share": 0.0161
+          },
+          {
+            "color": "cafe",
+            "share": 0.0052
+          },
+          {
+            "color": "nude",
+            "share": 0.0045
+          },
+          {
+            "color": "burdeos",
+            "share": 0.0025
+          },
+          {
+            "color": "beige",
+            "share": 0.0005
+          },
+          {
+            "color": "crema",
+            "share": 0.0005
+          }
+        ]
+      },
+      "caption": {
+        "texto": "eventdecor_style_v2, an organic balloon garland arch of large and small matte pink, matte white and glossy chrome silver balloons as the central focal piece, two organic balloon columns of large and small matte pink and glossy chrome silver balloons, one standing on the left and one on the right, flanking the main arch. set against a plain wall and floor, wide photorealistic event photograph, natural depth, grounded supports.",
+        "longitud": 429,
+        "techo": 688,
+        "tallasOmitidas": [
+          "R-36"
+        ],
+        "diagnosticos": [
+          "element EST_01_ARCO: size(s) R-36 are not in allowed_codes for balloon.round.latex.reflex.silver; omitted from the prompt (size remains separate from concept identity, never silently accepted)",
+          "element EST_02_COL_IZQ: size(s) R-36 are not in allowed_codes for balloon.round.latex.reflex.silver; omitted from the prompt (size remains separate from concept identity, never silently accepted)",
+          "element EST_03_COL_DER: size(s) R-36 are not in allowed_codes for balloon.round.latex.reflex.silver; omitted from the prompt (size remains separate from concept identity, never silently accepted)"
+        ]
+      },
+      "preflight": {
+        "ok": true,
+        "errores": []
+      },
+      "imagen": {
+        "etapa1": "reports\\bench\\fase-3\\ejemplo-01-etapa1.png",
+        "final": "reports\\bench\\fase-3\\ejemplo-01-final.png",
+        "fallo": null
+      },
+      "qa": {
+        "pass": false,
+        "retryReasons": [
+          "missing required element EST_02_COL_IZQ",
+          "missing required element EST_03_COL_DER",
+          "placement failure EST_02_COL_IZQ",
+          "placement failure EST_03_COL_DER",
+          "appearance failure EST_02_COL_IZQ",
+          "appearance failure EST_03_COL_DER",
+          "unexpected element: extra balloon cluster attached to pillar",
+          "unexpected element: extra balloon column on right wall",
+          "reference relationships failed"
+        ]
+      },
+      "juez": null,
+      "colocacion": {
+        "usada": true,
+        "aperturas": 3,
+        "paredesPlanas": 2,
+        "obstaculos": 4,
+        "anclasMetricas": 1,
+        "cajas": {
+          "EST_01_ARCO": {
+            "x": 0.03,
+            "y": 0.21,
+            "width": 0.24,
+            "height": 0.34
+          },
+          "EST_02_COL_IZQ": {
+            "x": 0.3235,
+            "y": 0,
+            "width": 0.153,
+            "height": 0.374
+          },
+          "EST_03_COL_DER": {
+            "x": 0.6235000000000002,
+            "y": 0,
+            "width": 0.153,
+            "height": 0.374
+          }
+        },
+        "fallo": null
+      }
+    },
+    {
+      "referencia": "ejemplo-06",
+      "titulo": "Arco de colores al aire libre",
+      "fixturePlan": "plantilla-arco-dos-columnas",
+      "semillaImagen": 404,
+      "color": {
+        "elementos": 10,
+        "coloresCrudos": [
+          "pink",
+          "purple",
+          "light blue",
+          "bright pink",
+          "magenta",
+          "cyan",
+          "white",
+          "clear",
+          "blue"
+        ],
+        "paletaCatalogo": [
+          "fucsia",
+          "burdeos",
+          "gris",
+          "azul",
+          "rosado"
+        ],
+        "paletaBusqueda": [
+          "fucsia",
+          "burdeos",
+          "azul",
+          "rosado"
+        ],
+        "perdidos": [
+          "gris"
+        ],
+        "sinConcepto": [
+          "burdeos",
+          "gris"
+        ],
+        "renderizables": [
+          "fucsia",
+          "azul",
+          "rosado"
+        ],
+        "participaciones": [
+          {
+            "color": "fucsia",
+            "share": 0.3345
+          },
+          {
+            "color": "burdeos",
+            "share": 0.2375
+          },
+          {
+            "color": "gris",
+            "share": 0.1947
+          },
+          {
+            "color": "azul",
+            "share": 0.0821
+          },
+          {
+            "color": "rosado",
+            "share": 0.0487
+          },
+          {
+            "color": "morado",
+            "share": 0.0352
+          },
+          {
+            "color": "turquesa",
+            "share": 0.0327
+          },
+          {
+            "color": "lila",
+            "share": 0.0234
+          },
+          {
+            "color": "dorado rosa",
+            "share": 0.0042
+          },
+          {
+            "color": "menta",
+            "share": 0.0038
+          },
+          {
+            "color": "plateado",
+            "share": 0.0018
+          },
+          {
+            "color": "cafe",
+            "share": 0.0015
+          }
+        ]
+      },
+      "caption": {
+        "texto": "eventdecor_style_v2, an organic balloon garland arch of matte fuchsia link balloons and large and small matte navy blue and matte pink balloons as the central focal piece, two organic balloon columns of matte fuchsia link balloons and large and small matte navy blue balloons, one standing on the left and one on the right, flanking the main arch. set against a plain wall and floor, wide photorealistic event photograph, natural depth, grounded supports.",
+        "longitud": 455,
+        "techo": 688,
+        "tallasOmitidas": [
+          "R-5",
+          "R-12",
+          "R-18",
+          "R-36"
+        ],
+        "diagnosticos": [
+          "element EST_01_ARCO: size(s) R-5, R-12, R-18, R-36 are not in allowed_codes for balloon.link.latex.fashion.fuchsia; omitted from the prompt (size remains separate from concept identity, never silently accepted)",
+          "element EST_01_ARCO: size(s) R-36 are not in allowed_codes for balloon.round.latex.fashion.navy_blue; omitted from the prompt (size remains separate from concept identity, never silently accepted)",
+          "element EST_02_COL_IZQ: size(s) R-5, R-12, R-18, R-36 are not in allowed_codes for balloon.link.latex.fashion.fuchsia; omitted from the prompt (size remains separate from concept identity, never silently accepted)",
+          "element EST_02_COL_IZQ: size(s) R-36 are not in allowed_codes for balloon.round.latex.fashion.navy_blue; omitted from the prompt (size remains separate from concept identity, never silently accepted)",
+          "element EST_03_COL_DER: size(s) R-5, R-12, R-18, R-36 are not in allowed_codes for balloon.link.latex.fashion.fuchsia; omitted from the prompt (size remains separate from concept identity, never silently accepted)",
+          "element EST_03_COL_DER: size(s) R-36 are not in allowed_codes for balloon.round.latex.fashion.navy_blue; omitted from the prompt (size remains separate from concept identity, never silently accepted)"
+        ]
+      },
+      "preflight": {
+        "ok": true,
+        "errores": []
+      },
+      "imagen": {
+        "etapa1": "reports\\bench\\fase-3\\ejemplo-06-etapa1.png",
+        "final": "reports\\bench\\fase-3\\ejemplo-06-final.png",
+        "fallo": null
+      },
+      "qa": {
+        "pass": true,
+        "retryReasons": []
+      },
+      "juez": null,
+      "colocacion": {
+        "usada": true,
+        "aperturas": 3,
+        "paredesPlanas": 2,
+        "obstaculos": 4,
+        "anclasMetricas": 1,
+        "cajas": {
+          "EST_01_ARCO": {
+            "x": 0.03,
+            "y": 0.21,
+            "width": 0.24,
+            "height": 0.34
+          },
+          "EST_02_COL_IZQ": {
+            "x": 0.3235,
+            "y": 0,
+            "width": 0.153,
+            "height": 0.374
+          },
+          "EST_03_COL_DER": {
+            "x": 0.6235000000000002,
+            "y": 0,
+            "width": 0.153,
+            "height": 0.374
+          }
+        },
+        "fallo": null
+      }
+    }
+  ]
+}

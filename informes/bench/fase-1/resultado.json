@@ -1,0 +1,319 @@
+{
+  "meta": {
+    "fase": "fase-1",
+    "fecha": "2026-09-17T08:24:38.709Z",
+    "commit": "dad9f6f467105120d9c99aeeb9a180c01a0add4d",
+    "semillaSeleccion": 20260917,
+    "espacio": {
+      "nombre": "decoracion-jardin-moderno.jpg",
+      "ancho": 1000,
+      "alto": 667
+    },
+    "slotLora": {
+      "slug": "training_1",
+      "artifactId": "v004-1000",
+      "trigger": "eventdecor_style_v2",
+      "evaluationStatus": "approved",
+      "escala": 0.8
+    },
+    "modelos": {
+      "lora": "fal-ai/flux-2/lora",
+      "imagen": "gemini-3.1-flash-image",
+      "chat": "gemini-3.6-flash"
+    },
+    "parametros": {
+      "pasos": 28,
+      "guidance": 3.5,
+      "ancho": 1024,
+      "alto": 1536
+    },
+    "gastoUsd": 0.168
+  },
+  "casos": [
+    {
+      "referencia": "ejemplo-07",
+      "titulo": "Marco vino y plata",
+      "fixturePlan": "plantilla-arco-dos-columnas",
+      "semillaImagen": 101,
+      "color": {
+        "elementos": 8,
+        "coloresCrudos": [
+          "burgundy",
+          "white",
+          "metallic silver",
+          "chrome silver",
+          "rose gold",
+          "warm white",
+          "clear",
+          "brown",
+          "metallic copper"
+        ],
+        "paletaCatalogo": [
+          "burdeos",
+          "blanco",
+          "plateado",
+          "dorado rosa",
+          "gris"
+        ],
+        "paletaBusqueda": [
+          "burdeos",
+          "blanco",
+          "plateado"
+        ],
+        "perdidos": [
+          "dorado rosa",
+          "gris"
+        ],
+        "sinConcepto": [
+          "burdeos",
+          "gris"
+        ],
+        "renderizables": [
+          "blanco",
+          "plateado",
+          "dorado rosa"
+        ]
+      },
+      "caption": {
+        "texto": "eventdecor_style_v2, an organic balloon garland arch of large and small matte white, glossy chrome rose gold and glossy chrome silver balloons as the central focal piece, two organic balloon columns of large and small matte white and glossy chrome silver balloons, one standing on the left and one on the right, flanking the main arch. set against a plain wall and floor, wide photorealistic event photograph, natural depth, grounded supports.",
+        "longitud": 443,
+        "techo": 460,
+        "tallasOmitidas": [
+          "R-36"
+        ],
+        "diagnosticos": [
+          "element EST_01_ARCO: size(s) R-36 are not in allowed_codes for balloon.round.latex.reflex.silver; omitted from the prompt (size remains separate from concept identity, never silently accepted)",
+          "element EST_01_ARCO: size(s) R-36 are not in allowed_codes for balloon.round.latex.reflex.rose_gold; omitted from the prompt (size remains separate from concept identity, never silently accepted)",
+          "element EST_02_COL_IZQ: size(s) R-36 are not in allowed_codes for balloon.round.latex.reflex.silver; omitted from the prompt (size remains separate from concept identity, never silently accepted)",
+          "element EST_03_COL_DER: size(s) R-36 are not in allowed_codes for balloon.round.latex.reflex.silver; omitted from the prompt (size remains separate from concept identity, never silently accepted)"
+        ]
+      },
+      "preflight": {
+        "ok": true,
+        "errores": []
+      },
+      "imagen": {
+        "etapa1": "reports\\bench\\fase-1\\ejemplo-07-etapa1.png",
+        "final": "reports\\bench\\fase-1\\ejemplo-07-final.png",
+        "fallo": null
+      },
+      "qa": {
+        "pass": false,
+        "retryReasons": [
+          "appearance failure EST_02_COL_IZQ",
+          "appearance failure EST_03_COL_DER",
+          "outside edit region changed"
+        ]
+      },
+      "juez": null
+    },
+    {
+      "referencia": "ejemplo-02",
+      "titulo": "Arco rosa y dorado",
+      "fixturePlan": "plantilla-arco-dos-columnas",
+      "semillaImagen": 202,
+      "color": {
+        "elementos": 5,
+        "coloresCrudos": [
+          "white",
+          "cream",
+          "dusty pink",
+          "light pink",
+          "beige",
+          "off-white",
+          "matte light pink",
+          "dusty rose",
+          "chrome gold",
+          "sand"
+        ],
+        "paletaCatalogo": [
+          "rosado",
+          "dorado",
+          "crema"
+        ],
+        "paletaBusqueda": [
+          "rosado",
+          "dorado",
+          "beige"
+        ],
+        "perdidos": [
+          "crema"
+        ],
+        "sinConcepto": [
+          "crema"
+        ],
+        "renderizables": [
+          "rosado",
+          "dorado"
+        ]
+      },
+      "caption": {
+        "texto": "eventdecor_style_v2, an organic balloon garland arch of large and small matte pink and glossy chrome gold balloons as the central focal piece, two organic balloon columns of large and small matte pink and glossy chrome gold balloons, one standing on the left and one on the right, flanking the main arch. set against a plain wall and floor, wide photorealistic event photograph, natural depth, grounded supports.",
+        "longitud": 412,
+        "techo": 460,
+        "tallasOmitidas": [
+          "R-36"
+        ],
+        "diagnosticos": [
+          "element EST_01_ARCO: size(s) R-36 are not in allowed_codes for balloon.round.latex.reflex.gold; omitted from the prompt (size remains separate from concept identity, never silently accepted)",
+          "element EST_02_COL_IZQ: size(s) R-36 are not in allowed_codes for balloon.round.latex.reflex.gold; omitted from the prompt (size remains separate from concept identity, never silently accepted)",
+          "element EST_03_COL_DER: size(s) R-36 are not in allowed_codes for balloon.round.latex.reflex.gold; omitted from the prompt (size remains separate from concept identity, never silently accepted)"
+        ]
+      },
+      "preflight": {
+        "ok": true,
+        "errores": []
+      },
+      "imagen": {
+        "etapa1": "reports\\bench\\fase-1\\ejemplo-02-etapa1.png",
+        "final": "reports\\bench\\fase-1\\ejemplo-02-final.png",
+        "fallo": null
+      },
+      "qa": {
+        "pass": true,
+        "retryReasons": []
+      },
+      "juez": null
+    },
+    {
+      "referencia": "ejemplo-01",
+      "titulo": "Columnas rosa y plata",
+      "fixturePlan": "plantilla-arco-dos-columnas",
+      "semillaImagen": 303,
+      "color": {
+        "elementos": 9,
+        "coloresCrudos": [
+          "chrome silver",
+          "pastel grey",
+          "pastel pink",
+          "clear",
+          "light pink",
+          "pastel purple",
+          "white",
+          "pink",
+          "magenta",
+          "green"
+        ],
+        "paletaCatalogo": [
+          "rosado",
+          "plateado",
+          "gris",
+          "blanco"
+        ],
+        "paletaBusqueda": [
+          "plateado",
+          "rosado"
+        ],
+        "perdidos": [
+          "gris",
+          "blanco"
+        ],
+        "sinConcepto": [
+          "gris"
+        ],
+        "renderizables": [
+          "rosado",
+          "plateado",
+          "blanco"
+        ]
+      },
+      "caption": {
+        "texto": "eventdecor_style_v2, an organic balloon garland arch of large and small matte pink, matte white and glossy chrome silver balloons as the central focal piece, two organic balloon columns of large and small matte pink and glossy chrome silver balloons, one standing on the left and one on the right, flanking the main arch. set against a plain wall and floor, wide photorealistic event photograph, natural depth, grounded supports.",
+        "longitud": 429,
+        "techo": 460,
+        "tallasOmitidas": [
+          "R-36"
+        ],
+        "diagnosticos": [
+          "element EST_01_ARCO: size(s) R-36 are not in allowed_codes for balloon.round.latex.reflex.silver; omitted from the prompt (size remains separate from concept identity, never silently accepted)",
+          "element EST_02_COL_IZQ: size(s) R-36 are not in allowed_codes for balloon.round.latex.reflex.silver; omitted from the prompt (size remains separate from concept identity, never silently accepted)",
+          "element EST_03_COL_DER: size(s) R-36 are not in allowed_codes for balloon.round.latex.reflex.silver; omitted from the prompt (size remains separate from concept identity, never silently accepted)"
+        ]
+      },
+      "preflight": {
+        "ok": true,
+        "errores": []
+      },
+      "imagen": {
+        "etapa1": "reports\\bench\\fase-1\\ejemplo-01-etapa1.png",
+        "final": "reports\\bench\\fase-1\\ejemplo-01-final.png",
+        "fallo": null
+      },
+      "qa": {
+        "pass": true,
+        "retryReasons": []
+      },
+      "juez": null
+    },
+    {
+      "referencia": "ejemplo-06",
+      "titulo": "Arco de colores al aire libre",
+      "fixturePlan": "plantilla-arco-dos-columnas",
+      "semillaImagen": 404,
+      "color": {
+        "elementos": 6,
+        "coloresCrudos": [
+          "pink",
+          "sky blue",
+          "purple",
+          "blue",
+          "turquoise blue",
+          "white"
+        ],
+        "paletaCatalogo": [
+          "rosado",
+          "azul",
+          "morado",
+          "blanco"
+        ],
+        "paletaBusqueda": [
+          "rosado",
+          "azul"
+        ],
+        "perdidos": [
+          "morado",
+          "blanco"
+        ],
+        "sinConcepto": [],
+        "renderizables": [
+          "rosado",
+          "azul",
+          "morado",
+          "blanco"
+        ]
+      },
+      "caption": {
+        "texto": "eventdecor_style_v2, an organic balloon garland arch of large and small matte navy blue, matte pink and matte purple balloons as the central focal piece, two organic balloon columns of large and small matte navy blue and matte pink balloons, one standing on the left and one on the right, flanking the main arch. set against a plain wall and floor, wide photorealistic event photograph, natural depth, grounded supports.",
+        "longitud": 420,
+        "techo": 460,
+        "tallasOmitidas": [
+          "R-36"
+        ],
+        "diagnosticos": [
+          "element EST_01_ARCO: size(s) R-36 are not in allowed_codes for balloon.round.latex.fashion.navy_blue; omitted from the prompt (size remains separate from concept identity, never silently accepted)",
+          "element EST_01_ARCO: size(s) R-36 are not in allowed_codes for balloon.round.latex.fashion.purple; omitted from the prompt (size remains separate from concept identity, never silently accepted)",
+          "element EST_02_COL_IZQ: size(s) R-36 are not in allowed_codes for balloon.round.latex.fashion.navy_blue; omitted from the prompt (size remains separate from concept identity, never silently accepted)",
+          "element EST_03_COL_DER: size(s) R-36 are not in allowed_codes for balloon.round.latex.fashion.navy_blue; omitted from the prompt (size remains separate from concept identity, never silently accepted)"
+        ]
+      },
+      "preflight": {
+        "ok": true,
+        "errores": []
+      },
+      "imagen": {
+        "etapa1": "reports\\bench\\fase-1\\ejemplo-06-etapa1.png",
+        "final": "reports\\bench\\fase-1\\ejemplo-06-final.png",
+        "fallo": null
+      },
+      "qa": {
+        "pass": false,
+        "retryReasons": [
+          "missing required element EST_03_COL_DER",
+          "placement failure EST_02_COL_IZQ",
+          "appearance failure EST_01_ARCO"
+        ]
+      },
+      "juez": null
+    }
+  ]
+}

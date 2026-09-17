@@ -1,0 +1,241 @@
+{
+  "foto": "ejemplo-04",
+  "repeticiones": 5,
+  "pasadas": [
+    {
+      "observaciones": [
+        {
+          "elemento": "chrome gold balloon column",
+          "colores": [
+            "chrome gold"
+          ]
+        },
+        {
+          "elemento": "greenery wall backdrop",
+          "colores": [
+            "green",
+            "dark green"
+          ]
+        },
+        {
+          "elemento": "wooden cocktail table",
+          "colores": [
+            "warm wood",
+            "brown"
+          ]
+        },
+        {
+          "elemento": "wooden cocktail table right",
+          "colores": [
+            "warm wood",
+            "brown"
+          ]
+        },
+        {
+          "elemento": "floor floral arrangement",
+          "colores": [
+            "green",
+            "white"
+          ]
+        }
+      ],
+      "paleta": [
+        "dorado",
+        "verde"
+      ]
+    },
+    {
+      "observaciones": [
+        {
+          "elemento": "Chrome Gold Balloon Column",
+          "colores": [
+            "chrome gold"
+          ]
+        },
+        {
+          "elemento": "Faux Greenery Backdrop Wall",
+          "colores": [
+            "green",
+            "white"
+          ]
+        },
+        {
+          "elemento": "Tall Wooden Cocktail Table",
+          "colores": [
+            "natural wood",
+            "brown"
+          ]
+        },
+        {
+          "elemento": "Secondary Wooden Cocktail Table",
+          "colores": [
+            "natural wood",
+            "brown"
+          ]
+        },
+        {
+          "elemento": "Ground Floral Arrangement",
+          "colores": [
+            "green",
+            "white"
+          ]
+        }
+      ],
+      "paleta": [
+        "dorado",
+        "verde",
+        "blanco"
+      ]
+    },
+    {
+      "observaciones": [
+        {
+          "elemento": "Chrome Gold Balloon Column",
+          "colores": [
+            "chrome gold"
+          ]
+        },
+        {
+          "elemento": "Greenery Hedge Wall Backdrop",
+          "colores": [
+            "green",
+            "dark green"
+          ]
+        },
+        {
+          "elemento": "Wooden Cocktail Table",
+          "colores": [
+            "warm wood",
+            "brown"
+          ]
+        },
+        {
+          "elemento": "Wooden Cocktail Table (Right)",
+          "colores": [
+            "warm wood",
+            "brown"
+          ]
+        },
+        {
+          "elemento": "Base Foliage and Floral Arrangement",
+          "colores": [
+            "green",
+            "white"
+          ]
+        },
+        {
+          "elemento": "Glassware on Table",
+          "colores": [
+            "clear"
+          ]
+        }
+      ],
+      "paleta": [
+        "dorado",
+        "verde",
+        "blanco"
+      ]
+    },
+    {
+      "observaciones": [
+        {
+          "elemento": "Organic Balloon Column",
+          "colores": [
+            "chrome gold"
+          ]
+        },
+        {
+          "elemento": "Foliage Backdrop Wall",
+          "colores": [
+            "green",
+            "dark green"
+          ]
+        },
+        {
+          "elemento": "Wooden High-Top Table",
+          "colores": [
+            "brown",
+            "natural wood"
+          ]
+        },
+        {
+          "elemento": "Secondary Wooden Table",
+          "colores": [
+            "brown",
+            "natural wood"
+          ]
+        },
+        {
+          "elemento": "Base Floral Arrangement",
+          "colores": [
+            "green",
+            "white"
+          ]
+        },
+        {
+          "elemento": "Left Base Floral Accent",
+          "colores": [
+            "green",
+            "white"
+          ]
+        }
+      ],
+      "paleta": [
+        "dorado",
+        "verde",
+        "cafe"
+      ]
+    },
+    {
+      "observaciones": [
+        {
+          "elemento": "Gold organic balloon column",
+          "colores": [
+            "chrome gold"
+          ]
+        },
+        {
+          "elemento": "Greenery hedge backdrop wall",
+          "colores": [
+            "green",
+            "dark green"
+          ]
+        },
+        {
+          "elemento": "Wooden cocktail table",
+          "colores": [
+            "warm wood",
+            "brown"
+          ]
+        },
+        {
+          "elemento": "Wooden stool table",
+          "colores": [
+            "warm wood",
+            "brown"
+          ]
+        },
+        {
+          "elemento": "Floor floral arrangement left",
+          "colores": [
+            "green",
+            "white"
+          ]
+        },
+        {
+          "elemento": "Floor floral arrangement center",
+          "colores": [
+            "green",
+            "white"
+          ]
+        }
+      ],
+      "paleta": [
+        "dorado",
+        "verde",
+        "cafe",
+        "blanco"
+      ]
+    }
+  ]
+}

@@ -7,7 +7,7 @@ import { getGeminiClient } from "@/lib/gemini";
 import { GROUPING_ONLY_CONTEXT, LORA_CAPTION_COMPILER_VERSION, LORA_JSON_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH, translateLoraColor } from "@/lib/ia/lora-caption-compiler";
 import { includesJsonPrompt, includesTextPrompt, resolveLoraPromptFormat } from "@/lib/ia/lora-prompt-format";
 import { parseLoraSeed, resolveLoraSeed } from "@/lib/ia/lora-seed";
-import { applySceneryVisibility, debeConservarEscenografiaDeReferencia, sceneryFromReference, type SceneryItem } from "@/lib/ia/reference-structure";
+import { applySceneryVisibility, sceneryFromReference, type SceneryItem } from "@/lib/ia/reference-structure";
 import { nivelCreatividadParaGenerar, perfilCreatividad } from "@/lib/ia/creatividad";
 import { compileProductPrompt, LORA_PRODUCT_RUNTIME_VERSION, sizeConfirmationsFromMaterialLines } from "@/lib/ia/lora-product-runtime";
 import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
@@ -19,7 +19,9 @@ import { featureEnabled, IMAGE_DEBUG, IMAGE_QA_NON_BLOCKING } from "@/lib/ia/fea
 import { resolveAspectTransform } from "@/lib/ia/aspect-transform";
 import { evaluateSceneQa, buildCorrectiveRetryPrompt, type ImageQaReport } from "@/lib/ia/image-qa";
 import { approvedPlanQaInputs, buildGenerationQa } from "@/lib/ia/generation-qa";
-import { imagenDe, resolverProveedor } from "@/lib/ia/registro";
+import { analizarVenue, type VenueAnalysis } from "@/lib/ia/analizar-venue";
+import { targetBoxesFor } from "@/lib/ia/venue-placement";
+import { chatDe, imagenDe, resolverProveedor } from "@/lib/ia/registro";
 import { buildApprovedSceneSpec, SceneSpecSchema, sceneSpecHash } from "@/lib/ia/scene-spec";
 import { registrarPlanAudit } from "@/lib/rag/observability/log";
 import { buildLoraEditPrompt, DEFAULT_SEMPERTEX_LORA_TRIGGER, ensureLoraTriggers, generarConSempertexLora, loraEditApagado, LORA_EDIT_PROMPT_MAX_LENGTH, referenciasParaLoraEdit } from "@/lib/ia/sempertex-lora";
@@ -38,6 +40,8 @@ function requireResolvedLoras(loras: ResolvedLoraApplication[] | undefined): Res
 }
 import { buildVisualContext, completarEscenaConPlan } from "@/lib/ia/visual-context";
 import { GEMINI_COMPOSITION_HARD_LOCK, inputsParaComposicionGemini, LORA_PRESENTATION_INSTRUCTION, promptPresentacionLora } from "@/lib/ia/lora-gemini-composition";
+import { ambienteDeFiesta, AVISO_ESCENOGRAFIA_NO_COTIZADA, nivelAmbienteDe, requiereAvisoNoCotizado } from "@/lib/ia/ambiente-fiesta";
+import { referenciasParaEtapa1Hibrida } from "@/lib/ia/referencias-etapa1";
 import { ErrorIA, type ImageInput, type Imagen, type ImagenEtiquetada, type PeticionImagen, type ProveedorId } from "@/lib/ia/tipos";
 import { ReferenceBlueprintV2Schema, unidadesMaterialDeElemento, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import { resolverProductosParaGeneracion } from "@/lib/rag/generate-products";
@@ -107,6 +111,8 @@ type Body = {
    * no debe heredar contexto de una conversación anterior. */
   previousInteractionId?: string;
   revisionInstruction?: string;
+  /** Interruptor de ambientación (fase 6.B). `nivelAmbienteDe` valida el valor. */
+  ambiente?: unknown;
   instruccion?: string;
   plan?: PlanResuelto;
   planHash?: string;
@@ -505,29 +511,6 @@ function applyAutomaticDecisions(blueprint: ReferenceBlueprintV2, validProductId
   });
 }
 
-function automaticTargetBox(element: ReferenceBlueprintV2["elements"][number], index: number, venue: boolean) {
-  if (!venue) return element.reference_bbox;
-  if (element.scene_role === "backdrop" || element.category === "curtain" || element.category === "drape") return { x: 0.08, y: 0.04, width: 0.84, height: 0.82 };
-  if (element.scene_role === "lighting") return { x: 0.12, y: 0.05, width: 0.76, height: 0.42 };
-  if (element.scene_role === "midground" || element.category === "balloon_structure") {
-    if (index === 0) return { x: 0.12, y: 0.12, width: 0.76, height: 0.5 };
-    return index % 2 === 0
-      ? { x: 0.08, y: 0.38, width: 0.3, height: 0.5 }
-      : { x: 0.62, y: 0.38, width: 0.3, height: 0.5 };
-  }
-  if (element.scene_role === "foreground") return { x: 0.18, y: 0.56, width: 0.64, height: 0.34 };
-  return { x: 0.08 + (index % 3) * 0.3, y: 0.16 + Math.floor(index / 3) * 0.25, width: 0.24, height: 0.28 };
-}
-
-function targetBoxesFor(blueprint: ReferenceBlueprintV2, supplied: Record<string, { x: number; y: number; width: number; height: number }> | undefined, venue: boolean): Record<string, { x: number; y: number; width: number; height: number }> {
-  const boxes = { ...(supplied ?? {}) };
-  const approved = blueprint.elements.filter((element) => element.approved && element.include_policy !== "exclude");
-  for (const [index, element] of approved.entries()) {
-    if (!boxes[element.element_id]) boxes[element.element_id] = automaticTargetBox(element, index, venue);
-  }
-  return boxes;
-}
-
 function buildInputs(input: {
   portLimit: number;
   blueprint: ReferenceBlueprintV2;
@@ -776,6 +759,26 @@ async function generar(request: Request, generationRequestId: string): Promise<R
          sceneSpecHash: qa.scene_spec_hash,
          qaHash: qa.scene_spec_hash ? `${qa.scene_spec_hash}:${qa.pass === true ? "pass" : qa.pass === false ? "fail" : "unknown"}` : undefined,
          flagSnapshot: { planCostOptimizerV2: featureEnabled("PLAN_COST_OPTIMIZER_V2"), planBudgetGateV2: featureEnabled("PLAN_BUDGET_GATE_V2"), imageQaEnabled: imageQaRequested },
+         hechos: {
+           motorImagenPrevisto: usarLora ? (usarComposicionLoraGemini ? "fal+gemini" : "fal") : proveedor ?? undefined,
+           diagnosticoGeneracion: {
+             hashesEntrada: selected.inputs.map((input) => createHash("sha256").update(Buffer.from(input.base64, "base64")).digest("hex").slice(0, 16)),
+             semilla: loraSeed ?? null,
+             // El resolvedor no devuelve el estado de evaluación junto al artifact;
+             // dejar el slot nulo evita atribuir un estado que no vimos.
+             slot: null,
+             captionHash: usarLora ? hashPrompt(promptLoraParaGenerar).slice(0, 16) : null,
+             captionLongitud: usarLora ? promptLoraParaGenerar.length : null,
+             preflightOk: usarLora ? loraPreflightParaGenerar.ok : null,
+             preflightErrores: usarLora ? loraPreflightParaGenerar.errors : [],
+             tallasOmitidas: [...new Set(
+               (usarLora ? productPromptCompilation.diagnostics : [])
+                 .flatMap((linea) => /size\(s\) ([^ ]+(?:, [^ ]+)*) are not in allowed_codes/.exec(linea)?.[1]?.split(", ") ?? []),
+             )],
+             qaPass: qa.pass,
+             qaRetryReasons: qa.retry_reasons,
+           },
+         },
       });
     };
     await registrarPlanAudit(getRagPool(), {
@@ -833,10 +836,14 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       ...blueprint.elements.map((element) => element.element_id),
       ...planResuelto.plan.estructuras.map((estructura) => estructura.referencia_element_id).filter((id): id is string => Boolean(id)),
     ]);
-    // La referencia puede contener un salón completo. Si existe una foto real
-    // del espacio, esos objetos son inspiración, no contexto que se deba copiar.
-    const conservarEscenografiaReferencia = debeConservarEscenografiaDeReferencia(Boolean(venue));
-    const escenografiaDetectada: SceneryItem[] = referenciaAnalizada?.success && conservarEscenografiaReferencia
+    // La referencia puede contener un salón completo. Antes, con foto del
+    // espacio se descartaba su escenografía entera para no copiar muebles
+    // ajenos, y con eso se perdían mesa, plinto, silla y flores: justo los
+    // objetos que hacen que el montaje se lea como una fotografía. La
+    // protección que importaba nunca fue el venue sino `materializedReferenceIds`,
+    // que deja fuera lo que el plan ya construye. La escenografía no toca
+    // cotización, materiales ni `plan_hash`, y el cliente la enciende por chip.
+    const escenografiaDetectada: SceneryItem[] = referenciaAnalizada?.success
       ? sceneryFromReference(referenciaAnalizada.data, materializedReferenceIds)
       : [];
     const escenografia = applySceneryVisibility(escenografiaDetectada, visibilidadEscenografia(body.escenografia));
@@ -875,13 +882,28 @@ async function generar(request: Request, generationRequestId: string): Promise<R
         })
          .filter(([, materiales]) => materiales.length > 0),
     );
-    // Unión, no reemplazo: las cajas del plan cubren cada EST_*, pero
-    // targetBoxesFor rellena con una caja automática cualquier elemento
-    // aprobado que quedara sin caja en vez de reventar buildApprovedSceneSpec.
+    // El venue analizado decide la geometría cuando el flag está activo;
+    // targetBoxesFor conserva una degradación determinista si no hay análisis.
+    const proveedorSeleccionado = resolverProveedor({ override: body.proveedor, cookie: request.headers.get("cookie")?.match(/ia_proveedor=(gemini)/)?.[1] });
+    proveedor = proveedorSeleccionado;
+    let venueAnalysis: VenueAnalysis | undefined;
+    if (venue && featureEnabled("VENUE_AWARE_PLACEMENT_V1")) {
+      try {
+        venueAnalysis = (await analizarVenue(await chatDe(proveedorSeleccionado), venue, contextoTelemetria, request.signal)).analysis;
+      } catch (error) {
+        if (request.signal.aborted) throw error;
+        console.warn("[generate] venue analysis unavailable; using automatic placement fallback", {
+          request_id: generationRequestId,
+          error: error instanceof Error ? error.message : "unknown error",
+        });
+      }
+    }
+    // The venue analysis owns placement when available. If it fails, the pure
+    // mapper keeps the existing automatic venue boxes as a soft fallback.
     const cajasDelPlan = planResuelto
       ? Object.fromEntries(Object.entries(cajasDeEstructuras(planResuelto.plan.estructuras)).map(([id, layout]) => [id, layout.bbox]))
       : undefined;
-    const targetBoxes = targetBoxesFor(blueprint, cajasDelPlan, Boolean(venue));
+    const targetBoxes = targetBoxesFor(blueprint, cajasDelPlan, Boolean(venue), venueAnalysis);
     const sceneSpec = buildApprovedSceneSpec({
       blueprint,
       aspectRatio: aspecto,
@@ -938,8 +960,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     if (usarLora && !usarComposicionLoraGemini && loraEditApagado() && (venue || references.length || previous)) {
       throw new Error("LoRA Sempertex genera desde texto. Para editar fotos o usar referencias, cambia a Gemini.");
     }
-    proveedor = resolverProveedor({ override: body.proveedor, cookie: request.headers.get("cookie")?.match(/ia_proveedor=(gemini)/)?.[1] });
-    const port = usarLora && !usarComposicionLoraGemini ? null : await imagenDe(proveedor);
+    const port = usarLora && !usarComposicionLoraGemini ? null : await imagenDe(proveedorSeleccionado);
     const capabilities = port?.capabilities ?? {
       exactAspectRatios: ["3:2", "1:1", "2:3", "16:9"] as PeticionImagen["aspecto"][],
       totalInputImageLimit: 0,
@@ -1063,8 +1084,23 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // encendida. El caption LoRA solo admite tres nombres de styling.
     // En el pipeline híbrido LoRA no debe heredar objetos de una referencia:
     // Gemini conserva el contexto real del venue en su segunda etapa.
+    // Fase 6.B. Dos fuentes legítimas y ninguna más: la escenografía que estaba
+    // en la foto del propio cliente, y este interruptor explícito. El
+    // vocabulario del interruptor es cerrado (`ambiente-fiesta.ts`): un modelo
+    // puede elegir de la lista, nunca ampliarla.
+    const ambiente = featureEnabled("AMBIENTE_FIESTA_V1") ? ambienteDeFiesta(nivelAmbienteDe(body.ambiente)) : ambienteDeFiesta("ninguno");
     const ambientDecor = usarComposicionLoraGemini ? [] : escenografiaVisible.map((item) => item.name).slice(0, 3);
-    const visualContextLora = usarComposicionLoraGemini ? GROUPING_ONLY_CONTEXT : visualContext;
+    // Fase 3.3, con una corrección sobre lo que el plan pedía. El plan decía
+    // "deja de vaciar el contexto visual", pero de sus tres campos dos SON el
+    // venue: `venueKind` ("garden", "hall") y `lightingKind` describen el sitio
+    // del cliente, y en modo híbrido la etapa 1 es una llamada solo-texto que no
+    // debe dibujar el sitio — de eso se encarga Gemini después. Pasárselos sería
+    // el filtrado que `GROUPING_ONLY_CONTEXT` existe para evitar.
+    //
+    // `palette` no es el venue: sale de `brief.colores`, son los colores que el
+    // cliente pidió, y el compilador solo la usa cuando las cláusulas no traen
+    // color propio. Vaciarla era daño colateral, y es lo que se devuelve.
+    const visualContextLora = usarComposicionLoraGemini ? { ...GROUPING_ONLY_CONTEXT, palette: visualContext.palette } : visualContext;
     const productPromptCompilation = compileProductPrompt({
       sceneSpec: transformedSceneSpec,
       visualContext: visualContextLora,
@@ -1175,7 +1211,14 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     // share it, so the only difference between the images is the prompt
     // format. QA and the audit apply to the primary (text) image.
     const loraSeed = usarLora ? resolveLoraSeed(seedParse.seed) : undefined;
-    const generarLora = (prompt: string, intento: number) => generarConSempertexLora(prompt, aspecto, usarComposicionLoraGemini ? [] : selected.inputs, {
+    // Fase 4, opción B: en modo híbrido la etapa 1 recibía CERO imágenes, así que
+    // toda la referencia del cliente viajaba solo como texto. Detrás de bandera
+    // hasta que la evaluación de 10 planes decida entre A y B — promover una
+    // variante de prompt es decisión de una persona, no de este cambio.
+    const referenciasEtapa1 = usarComposicionLoraGemini
+      ? (featureEnabled("REFERENCIA_EN_ETAPA1_V1") ? referenciasParaEtapa1Hibrida(selected.inputs) : [])
+      : selected.inputs;
+    const generarLora = (prompt: string, intento: number) => generarConSempertexLora(prompt, aspecto, referenciasEtapa1, {
       loras: requireResolvedLoras(resolvedLoras),
       signal: request.signal,
       telemetria: { ...contextoTelemetria, intento },
@@ -1195,7 +1238,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       ? `${buildImagePrompt({
           ...promptBase,
           inputs: inputsComposicionGemini.map(({ id, role, allowed_use }) => ({ image_id: id, role, allowed_use })),
-        })}\n\n${GEMINI_COMPOSITION_HARD_LOCK}`
+        })}\n\n${GEMINI_COMPOSITION_HARD_LOCK}${ambiente.instruccion ? `\n\n${ambiente.instruccion}` : ""}`
       : undefined;
     const result: { imagen: Imagen; interactionId?: string } = loraPrimaryImage && inputsComposicionGemini && promptComposicionGemini
       ? await port!.generar({
@@ -1212,7 +1255,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       ? { imagen: loraPrimaryImage }
       : await port!.generar({ prompt: providerPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: previous, previousInteractionId, revisionMode: previous ? "revise_current_result" : "new_generation", signal: request.signal, telemetria: { ...contextoTelemetria, capacidad: "imagen_generacion" } });
     let qa: ImageQaReport | undefined;
-    qa ??= await buildGenerationQa({ sceneSpec: transformedSceneSpec, image: result.imagen, hashes: { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, telemetria: contextoTelemetria, signal: request.signal, force: imageQaRequested, plan: qaPlan, creatividad: creatividad.nivel });
+    qa ??= await buildGenerationQa({ sceneSpec: transformedSceneSpec, image: result.imagen, hashes: { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, telemetria: contextoTelemetria, signal: request.signal, force: imageQaRequested, plan: qaPlan, creatividad: creatividad.nivel, ...(venue ? { venue: { base64: venue.base64 } } : {}) });
     let retried = false;
     if (!usarLora && imageQaRequested && qa.pass === false) {
       // La corrección va DENTRO del prompt, antes del recordatorio final: al
@@ -1221,7 +1264,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       const retryPrompt = buildImagePrompt({ ...promptBase, correctiveInstruction: buildCorrectiveRetryPrompt(qa, transformedSceneSpec) });
       const retry = await port!.generar({ prompt: retryPrompt, sceneSpec: transformedSceneSpec, inputs: selected.inputs, aspecto, calidad: "alta", previousGeneratedImage: { ...result.imagen, id: "GENERATED_RESULT", descripcion: "Current generated result for one corrective retry." }, previousInteractionId: result.interactionId, revisionMode: "revise_current_result", signal: request.signal, telemetria: { ...contextoTelemetria, capacidad: "imagen_generacion_correctiva", intento: 2 } });
       retried = true;
-      qa = await buildGenerationQa({ sceneSpec: transformedSceneSpec, image: retry.imagen, hashes: { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, telemetria: { ...contextoTelemetria, intento: 2 }, signal: request.signal, force: imageQaRequested, plan: qaPlan, creatividad: creatividad.nivel });
+      qa = await buildGenerationQa({ sceneSpec: transformedSceneSpec, image: retry.imagen, hashes: { planHash: planResuelto?.plan_hash, sceneSpecHash: resolvedSceneSpecHash }, materialEstimate, telemetria: { ...contextoTelemetria, intento: 2 }, signal: request.signal, force: imageQaRequested, plan: qaPlan, creatividad: creatividad.nivel, ...(venue ? { venue: { base64: venue.base64 } } : {}) });
       await auditarImagen("IMAGEN_QA_RETRY", qa, transformedSceneSpec);
       if (bloquearPorQa(qa, generationRequestId)) return respuestaNoConforme(`NON_CONFORME: la imagen no cumple la cardinalidad o composición aprobada${qa.retry_reasons.length ? ` — ${qa.retry_reasons.join("; ")}` : ""}.`, generationRequestId, { qa, plan: planResuelto, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash });
       return Response.json({ imagen: `data:${retry.imagen.mime};base64,${retry.imagen.base64}`, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, plan: planResuelto, qa, retried, proveedor, cotizacion, interactionId: retry.interactionId, prompt: retryPrompt, prompts: { "Gemini · Nano Banana 2": retryPrompt }, productAuthority: productAuthority.length ? productAuthority : undefined });
@@ -1244,7 +1287,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       ? promptComposicionGemini ?? promptLoraParaGenerar
       : promptPrincipal;
     const debug = IMAGE_DEBUG;
-    return Response.json({ imagen: `data:${result.imagen.mime};base64,${result.imagen.base64}`, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, plan: planResuelto, qa, loraPreflight: usarLora ? loraPreflightParaGenerar : undefined, loraPromptVersion: usarLora ? "v2" : undefined, loraPromptHash: usarLora ? hashPrompt(promptLoraParaGenerar) : undefined, compilerVersion: usarLora ? LORA_CAPTION_COMPILER_VERSION : undefined, loraProductRuntimeVersion: usarLora ? LORA_PRODUCT_RUNTIME_VERSION : undefined, productPromptCompilation: { resolved_concepts: productPromptCompilation.resolved_concepts, unresolved_products: productPromptCompilation.unresolved_products, vocabulary_version: productPromptCompilation.vocabulary_version, compiler_version: productPromptCompilation.compiler_version, legacy: productPromptCompilation.legacy, diagnostics: productPromptCompilation.diagnostics }, retried, proveedor, modoImagen: usarLora ? "lora" : "proveedor_base", pipeline: usarComposicionLoraGemini ? "lora_gemini" : undefined, promptFormat: usarLora ? (usarComposicionLoraGemini ? "texto" : promptFormat) : undefined, seed: loraSeed, creatividad: usarLora ? { nivel: creatividad.nivel, nombre: creatividad.nombre, guidance_scale: creatividad.guidanceScale, pistas_prompt: creatividad.pistasPrompt } : undefined, loraJsonPreflight: jsonPreflight, ambientDecor: ambientDecor.length ? ambientDecor : undefined, escenografia: escenografiaRespuesta, imagenAlternativa: loraJsonImage && effectiveJsonPrompt ? { formato: "json", imagen: `data:${loraJsonImage.mime};base64,${loraJsonImage.base64}`, prompt: effectiveJsonPrompt, qa: "no_evaluada" } : undefined, cotizacion, interactionId: result.interactionId, prompt: promptRespuesta, prompts: promptsRespuesta, productAuthority: productAuthority.length ? productAuthority : undefined, ...(debug ? { visualContext, droppedImageIds: selected.droppedImageIds, aspectTransform, loraSelection: resolvedLoras?.map((lora) => ({ artifactId: lora.artifactId, specialization: lora.specialization, scale: lora.scale, trigger: lora.trigger })) } : {}) });
+    return Response.json({ imagen: `data:${result.imagen.mime};base64,${result.imagen.base64}`, sceneSpec: transformedSceneSpec, sceneSpecHash: resolvedSceneSpecHash, blueprint, plan: planResuelto, qa, loraPreflight: usarLora ? loraPreflightParaGenerar : undefined, loraPromptVersion: usarLora ? "v2" : undefined, loraPromptHash: usarLora ? hashPrompt(promptLoraParaGenerar) : undefined, compilerVersion: usarLora ? LORA_CAPTION_COMPILER_VERSION : undefined, loraProductRuntimeVersion: usarLora ? LORA_PRODUCT_RUNTIME_VERSION : undefined, productPromptCompilation: { resolved_concepts: productPromptCompilation.resolved_concepts, unresolved_products: productPromptCompilation.unresolved_products, vocabulary_version: productPromptCompilation.vocabulary_version, compiler_version: productPromptCompilation.compiler_version, legacy: productPromptCompilation.legacy, dropped_sizes: productPromptCompilation.dropped_sizes, diagnostics: productPromptCompilation.diagnostics }, retried, proveedor, modoImagen: usarLora ? "lora" : "proveedor_base", pipeline: usarComposicionLoraGemini ? "lora_gemini" : undefined, promptFormat: usarLora ? (usarComposicionLoraGemini ? "texto" : promptFormat) : undefined, seed: loraSeed, creatividad: usarLora ? { nivel: creatividad.nivel, nombre: creatividad.nombre, guidance_scale: creatividad.guidanceScale, pistas_prompt: creatividad.pistasPrompt } : undefined, loraJsonPreflight: jsonPreflight, ambientDecor: ambientDecor.length ? ambientDecor : undefined, ambienteFiesta: ambiente.props.length ? { nivel: ambiente.nivel, props: ambiente.props } : undefined, avisoNoCotizado: requiereAvisoNoCotizado(ambiente, escenografiaVisible) ? ambiente.aviso || AVISO_ESCENOGRAFIA_NO_COTIZADA : undefined, escenografia: escenografiaRespuesta, imagenAlternativa: loraJsonImage && effectiveJsonPrompt ? { formato: "json", imagen: `data:${loraJsonImage.mime};base64,${loraJsonImage.base64}`, prompt: effectiveJsonPrompt, qa: "no_evaluada" } : undefined, cotizacion, interactionId: result.interactionId, prompt: promptRespuesta, prompts: promptsRespuesta, productAuthority: productAuthority.length ? productAuthority : undefined, ...(debug ? { visualContext, droppedImageIds: selected.droppedImageIds, aspectTransform, loraSelection: resolvedLoras?.map((lora) => ({ artifactId: lora.artifactId, specialization: lora.specialization, scale: lora.scale, trigger: lora.trigger })) } : {}) });
   } catch (error) {
     // Los campos legacy (`error`, `causa`, sobre operational.v1) se conservan:
     // el smoke los compara. `ui_error` (ui-error.v1) es lo que ve el cliente.

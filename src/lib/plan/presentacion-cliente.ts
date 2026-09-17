@@ -4,7 +4,7 @@ import { ESTRUCTURAS_OFICIALES, identificarEstructuraOficial, UBICACION_PARA_CLI
 import { ambientDecorSelection, sceneryFromReference } from "@/lib/ia/reference-structure";
 import { esSustitucionDeColor } from "./colores-referencia";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
-import { clasificarAcabados, clasificarColores, type PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
+import { clasificarAcabados, clasificarColores, HEX_COLORES_V2, type PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 
 /**
  * Textos de la tarjeta del plan para el cliente final (C2,
@@ -205,38 +205,8 @@ export function nombreColorCliente(color: string): string {
   return NOMBRE_COLOR.get(clave) ?? clave;
 }
 
-/**
- * Muestra visual por color de la paleta del catálogo. Aproximación de
- * pantalla, no un color de fabricante: sirve para reconocer la paleta.
- */
-const MUESTRA_HEX_PALETA: Readonly<Record<(typeof PALETA_COLORES_V2)[number], string>> = {
-  dorado: "#c9a227",
-  "dorado rosa": "#d4a59a",
-  plateado: "#b8bcc4",
-  rojo: "#d32f2f",
-  azul: "#1f4fbf",
-  rosado: "#f2a7c3",
-  verde: "#2e9d57",
-  blanco: "#ffffff",
-  negro: "#1b1b1b",
-  morado: "#7b3fa0",
-  naranja: "#f28c28",
-  amarillo: "#f5d33a",
-  fucsia: "#d6247a",
-  transparente: "#ffffff",
-  multicolor: "#ffffff",
-  lila: "#c7a4e0",
-  turquesa: "#1fb5b0",
-  beige: "#e6d3b3",
-  cafe: "#7a4b2a",
-  champagne: "#e8d3a2",
-  violeta: "#8a4fd1",
-  coral: "#f6765e",
-  menta: "#a6e3c8",
-  crema: "#f6ecd2",
-  nude: "#e0b89c",
-  burdeos: "#7d1d34",
-};
+/** Muestra visual por color: la tabla vive en la taxonomía porque la comparte con la distancia cromática. */
+const MUESTRA_HEX_PALETA = HEX_COLORES_V2;
 const MUESTRA_HEX: ReadonlyMap<string, string> = new Map(Object.entries(MUESTRA_HEX_PALETA));
 
 /** Acabado del catálogo en palabras del cliente. */
@@ -298,6 +268,16 @@ export function tonoCliente(color: string, titulo: string): string {
   return extra.length ? `${base} ${extra.join(" ")}` : base;
 }
 
+/**
+ * Une color y acabado para el cliente, omitiendo el acabado cuando repite el
+ * nombre del color: en la taxonomía un globo transparente tiene además acabado
+ * `transparente`, y nadie debe leer "transparente transparente" en su
+ * cotización. Lo mismo pasaría con cualquier otro par que comparta nombre.
+ */
+export function etiquetaColorAcabado(nombre: string, acabado: string | null | undefined): string {
+  return acabado && acabado !== nombre ? `${nombre} ${acabado}` : nombre;
+}
+
 export function muestraColor(color: string, acabado: string | null, tono?: string): MuestraColor {
   const clave = color.trim().toLowerCase();
   const hex = MUESTRA_HEX.get(clave) ?? "#9ca3af";
@@ -308,7 +288,7 @@ export function muestraColor(color: string, acabado: string | null, tono?: strin
   else if (brillo) fondo = `radial-gradient(circle at 32% 28%, #ffffff 0 12%, ${hex} 45%, #00000055 100%)`;
   else if (acabado === "perlado") fondo = `radial-gradient(circle at 35% 30%, #ffffffcc 0 20%, ${hex} 70%)`;
   const conBorde = ["blanco", "transparente", "crema", "multicolor", "plateado", "beige"].includes(clave);
-  return { color: clave, etiqueta: [tono ?? nombreColorCliente(color), acabado].filter(Boolean).join(" "), fondo, conBorde };
+  return { color: clave, etiqueta: etiquetaColorAcabado(tono ?? nombreColorCliente(color), acabado), fondo, conBorde };
 }
 
 /** Colores de una estructura agrupados por color y acabado, del más usado al menos usado. */
@@ -691,7 +671,7 @@ export function coloresObservadosCliente(blueprint: ReferenceBlueprintV2, maximo
       ?? ACABADO_OBSERVADO_EXTRA.find(([patron]) => patron.test(plegado))?.[1]
       ?? null;
     const muestra = muestraColor(color, acabado === "pastel" ? null : acabado);
-    const etiqueta = [nombreColorCliente(color), acabado].filter(Boolean).join(" ");
+    const etiqueta = etiquetaColorAcabado(nombreColorCliente(color), acabado);
     const clave = etiqueta;
     if (!muestras.has(clave)) muestras.set(clave, { ...muestra, etiqueta: `${etiqueta.charAt(0).toUpperCase()}${etiqueta.slice(1)}` });
     if (muestras.size >= maximo) break;

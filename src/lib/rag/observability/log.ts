@@ -151,6 +151,19 @@ export async function registrarSeleccion(
  * de contenido sensible.
  */
 /** Request facts stored in their own plan_audit_log columns (migration 024, Plan A §A0.1). */
+export type DiagnosticoGeneracion = {
+  hashesEntrada: string[];
+  semilla: number | null;
+  slot: { slug: string; artifactId: string; evaluationStatus: string } | null;
+  captionHash: string | null;
+  captionLongitud: number | null;
+  preflightOk: boolean | null;
+  preflightErrores: string[];
+  tallasOmitidas: string[];
+  qaPass: boolean | null;
+  qaRetryReasons: string[];
+};
+
 export type HechosPeticionPlan = {
   tieneReferencia?: boolean;
   tieneFotoEspacio?: boolean;
@@ -159,6 +172,7 @@ export type HechosPeticionPlan = {
   claseRechazo?: string;
   rechazosTurno?: number;
   superficie?: string;
+  diagnosticoGeneracion?: DiagnosticoGeneracion;
 };
 
 export async function registrarPlanAudit(
@@ -195,9 +209,10 @@ export async function registrarPlanAudit(
            rag_query_refs, candidate_product_ids, selected_product_ids, geometry, cost_min_cop,
            cost_chosen_cop, ceiling_cop, delta_cop, packages, instances, status, error,
            quote_hash, scene_spec_hash, qa_hash, flag_snapshot,
-           tiene_referencia, tiene_foto_espacio, lora_mode, motor_imagen_previsto, clase_rechazo, rechazos_turno, superficie)
+           tiene_referencia, tiene_foto_espacio, lora_mode, motor_imagen_previsto, clase_rechazo, rechazos_turno, superficie,
+           diagnostico_generacion)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21,
-          $22, $23, $24, $25, $26, $27, $28)`,
+          $22, $23, $24, $25, $26, $27, $28, $29)`,
       [
         datos.requestId,
         datos.planHash ?? null,
@@ -227,6 +242,7 @@ export async function registrarPlanAudit(
          hechos.claseRechazo?.slice(0, 64) || null,
          hechos.rechazosTurno !== undefined && Number.isInteger(hechos.rechazosTurno) ? Math.min(99, Math.max(0, hechos.rechazosTurno)) : null,
          hechos.superficie?.slice(0, 200) ?? null,
+         hechos.diagnosticoGeneracion != null ? JSON.stringify(metadataAuditable(hechos.diagnosticoGeneracion)) : null,
       ],
     );
   } catch (error) {

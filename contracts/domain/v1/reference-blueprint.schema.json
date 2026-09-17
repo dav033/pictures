@@ -197,6 +197,30 @@
                   "maxLength": 80
                 }
               },
+              "measured_colors": {
+                "maxItems": 12,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "color": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 40
+                    },
+                    "share": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1
+                    }
+                  },
+                  "required": [
+                    "color",
+                    "share"
+                  ],
+                  "additionalProperties": false
+                }
+              },
               "resolved_colors": {
                 "maxItems": 8,
                 "type": "array",

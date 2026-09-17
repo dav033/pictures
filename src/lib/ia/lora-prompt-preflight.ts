@@ -182,7 +182,9 @@ export function preflightLoraPrompt(input: {
     // Con más de un par en el mismo grupo la frase es "two standing on each
     // side" en vez de "one on the left and one on the right" (el conteo no
     // cuadraría); ambas son la misma instrucción espejo del compilador.
-    return Boolean(clause?.relation?.includes("flanking") && /left and one on the right|standing on each side/i.test(prompt));
+    // La pareja puede ser ella misma la focal, y entonces no flanquea nada: lo
+    // que hay que exigir es la frase espejo, no la palabra "flanking".
+    return Boolean((clause?.bilateral || clause?.relation?.includes("flanking")) && /left and one on the right|standing on each side/i.test(prompt));
   }).length;
   const relationships = { expected: bilateralPairs.length, represented: relationshipsRepresented };
   if (relationshipsRepresented !== bilateralPairs.length) errors.push(`relaciones bilaterales ${relationshipsRepresented}/${bilateralPairs.length}`);

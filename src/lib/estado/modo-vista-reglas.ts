@@ -28,10 +28,16 @@ export type EntradaEstiloImagen = {
 
 /**
  * Si este intento usa LoRA. Decisión del usuario (2026-09-15): LoRA por defecto
- * también con foto del espacio, referencias o ajuste de imagen, que el servidor
- * envía a FLUX.2 `/edit` (sempertex-lora.ts). Antes el modo usuario pasaba a
- * estilo estándar (Gemini) en esos casos. El pedido explícito de estilo estándar
- * y el selector apagado siguen ganando.
+ * también con foto del espacio, referencias o ajuste de imagen. Antes el modo
+ * usuario pasaba a estilo estándar (Gemini) en esos casos. El pedido explícito
+ * de estilo estándar y el selector apagado siguen ganando.
+ *
+ * Qué hace el servidor con eso, que NO es lo que decía este comentario: solo
+ * con referencias o imagen previa el adaptador llega a FLUX.2 `/edit`
+ * (`sempertex-lora.ts`). Con foto del espacio entra el modo híbrido
+ * (`route.ts:913`), que manda al LoRA cero imágenes (`route.ts:1178`) y compone
+ * después con Gemini; el `/edit` con las fotos es el objetivo de la fase 4 del
+ * plan, no el comportamiento actual.
  */
 export function usarLoraEfectivo(entrada: EntradaEstiloImagen): boolean {
   return entrada.selectorLora && !entrada.estiloEstandarExplicito;

@@ -36,6 +36,7 @@ import {
 import { PythonPlanMappingError } from "@/lib/plan/python-mapper";
 import { resolverPlan, type ResolucionPlan } from "@/lib/plan/resolver-backend";
 import { canonizarColoresPlan } from "@/lib/plan/colores-catalogo";
+import { coloresSinCubrir } from "@/lib/rag/chat/relajacion-filtros";
 import { coloresVigentes, extraerRestriccionesConversacion } from "@/lib/plan/restricciones-conversacion";
 import { digitoDeFiguraNumero, numerosPedidos, validarNumerosPedidos } from "@/lib/plan/numeros-pedidos";
 import { conFotosDeCatalogo } from "@/lib/plan/cotizacion-fotos";
@@ -170,6 +171,19 @@ export type EstadoConversacion = {
   ragEventRelaxations?: string[];
   /** Any fallback that loosened a customer hard color in this turn. */
   ragColorRelaxed?: string[];
+  /**
+   * Colores de la foto que NINGÚN candidato de las búsquedas del turno ofrece
+   * (fase 2.9). Antes solo se registraba el caso en que la escalera llegaba a
+   * relajar el color, que es un caso raro: lo normal es que la búsqueda devuelva
+   * resultados de sobra y ninguno lleve el color de la foto, y eso no dejaba
+   * rastro en ninguna parte.
+   *
+   * Es una señal, no un filtro. Convertir la paleta de la foto en filtro duro
+   * vaciaría la búsqueda cada vez que el catálogo no vende ese tono, que es
+   * justo por lo que `coloresFotoParaBusqueda` ya los excluye. Lo que faltaba no
+   * era la restricción sino el registro.
+   */
+  ragColoresFotoSinCubrir?: string[];
   ragValidados?: ItemValidado[];
   ragRechazados?: ItemRechazado[];
   ragTotal?: number;
@@ -1123,6 +1137,13 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         }
       }
       estado.ragEventRelaxations = [...new Set([...(estado.ragEventRelaxations ?? []), ...respuesta.observabilidad.relaxations])];
+      // Incondicional a propósito (fase 2.9): un color de la foto que la
+      // búsqueda no puede ofrecer es la misma pérdida haya habido relajación o
+      // no, y hasta ahora solo se veía en el caso raro.
+      if (coloresContexto.length > 0) {
+        const sinCubrir = coloresSinCubrir(coloresContexto, respuesta.candidatos);
+        if (sinCubrir.length > 0) estado.ragColoresFotoSinCubrir = [...new Set([...(estado.ragColoresFotoSinCubrir ?? []), ...sinCubrir])];
+      }
       if (respuesta.filtroRelajado === "colores") {
         estado.ragColorRelaxed = [...new Set([...(estado.ragColorRelaxed ?? []), "colores"])]
       }

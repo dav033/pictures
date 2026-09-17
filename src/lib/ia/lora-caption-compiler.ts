@@ -961,6 +961,30 @@ function withApprovedColorTones(material: string, colors: string[]): string {
   return unmatched.length ? `${result} (${joinNatural(unmatched)} tones)` : result;
 }
 
+/**
+ * Cómo el corpus nombra la relación de tamaños dentro de una pieza (fase 3.4).
+ *
+ * El prompt llevaba esto como una frase suelta pegada al final —«asymmetry means
+ * uneven staggered clusters and nonmatching tops, never straight matching
+ * towers»—, que es una explicación en un registro que el modelo no vio nunca
+ * durante el entrenamiento. El corpus lo dice de otra forma, y la dice 218 veces
+ * en 180 de sus 345 captions: `mixed organically rather than graded` cuando la
+ * pieza mezcla diámetros, y `all at a single N-inch size` cuando no.
+ *
+ * No hace falta ningún dato nuevo para decidir cuál va: los propios códigos de
+ * talla confirmados de la cláusula ya lo dicen.
+ */
+function fraseRelacionTamanos(entries: ProductConceptClauseInput[], mode: CaptionRenderStep["sizes"]): string {
+  if (mode === "none") return "";
+  const tallas = new Set<string>();
+  for (const entry of entries) for (const code of entry.sizeCodes ?? []) tallas.add(code);
+  // Solo la mitad que añade información. El corpus también escribe «all at a
+  // single N-inch size», pero lo hace EN LUGAR de nombrar la talla por concepto;
+  // este compilador ya la pone entre paréntesis en cada uno, así que añadir el
+  // resumen la diría dos veces: «... (18-inch), all at a single 18-inch size».
+  return tallas.size > 1 ? "mixed organically rather than graded" : "";
+}
+
 function colorFinishPhrase(clause: LoraVisualClause, render?: CaptionRenderState): string {
   if (clause.canonicalPhrase) {
     const scenePhrase = render?.dialect === "scene_v004" && clause.canonicalEntries?.length
@@ -969,7 +993,12 @@ function colorFinishPhrase(clause: LoraVisualClause, render?: CaptionRenderState
     const phrase = scenePhrase ?? (clause.canonicalEntries?.length && render
       ? buildCanonicalPhrase(clause.canonicalEntries, render).phrase
       : clause.canonicalPhrase);
-    return withApprovedColorTones(phrase, clause.colors);
+    // La relación de tamaños va detrás de la lista de materiales, que es donde
+    // el corpus la pone. Solo en el dialecto de producto: `scene_v004` tiene su
+    // propia gramática y mezclar las dos sería inventar un tercer registro.
+    const relacion = !scenePhrase && clause.canonicalEntries?.length ? fraseRelacionTamanos(clause.canonicalEntries, render?.step.sizes ?? "all") : "";
+    const conRelacion = relacion ? `${phrase}, ${relacion}` : phrase;
+    return withApprovedColorTones(conRelacion, clause.colors);
   }
   const color = clause.colors.length ? `in ${joinNatural(clause.colors)}` : "";
   const finish = clause.finishes.length ? `with ${joinNatural(clause.finishes)} finishes` : "";
@@ -1037,14 +1066,19 @@ function renderClauseText(clause: LoraVisualClause, render?: CaptionRenderState)
     return material ? `${core} ${placement} ${material}` : `${core} ${placement}`;
   }
 
-  if (renderedCount > 1 && clause.placement === "lateral_izquierdo" && clause.relation?.startsWith("flanking")) {
+  // La pareja espejo se nombra por los dos lados aunque no flanquee nada. Sin la
+  // rama `clause.bilateral`, un plan cuyas únicas estructuras son las dos
+  // laterales caía en "standing apart on the left" (las dos a la izquierda) y el
+  // preflight lo rechazaba: la cláusula fusionada ES la focal, y `resolveRelations`
+  // descarta la focal antes de asignarle `flanking`, así que nunca tenía relación.
+  if (renderedCount > 1 && clause.placement === "lateral_izquierdo" && (clause.bilateral || clause.relation?.startsWith("flanking"))) {
     const matching = hasCanonicalProduct ? "" : " matching one another,";
     // Un grupo con más de un par ("cuatro columnas, dos a cada lado") no puede
     // decir "one on the left and one on the right": el conteo no cuadraría.
     const reparto = renderedCount > 2 && renderedCount % 2 === 0
       ? `${numberWord(renderedCount / 2)} standing on each side`
       : "one standing on the left and one on the right";
-    return `${colored},${matching} ${reparto}, ${clause.relation}`;
+    return `${colored},${matching} ${reparto}${clause.relation ? `, ${clause.relation}` : ""}`;
   }
   if (clause.relation && clause.structureType === "centro_mesa") return `${colored} ${placementPhrase} ${clause.relation}`;
   if (clause.relation) return `${colored} ${placementPhrase}, ${clause.relation}`;

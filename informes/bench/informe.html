@@ -1,0 +1,311 @@
+<title>Decoration Preview Benchmark</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Source+Sans+3:wght@300;400;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --ground:#F7F7F9;--surface:#FFF;--sunk:#EFEFF3;--rule:#DCDBE3;--rule-soft:#E9E8EE;
+  --ink:#17161C;--ink-soft:#4B4954;--ink-faint:#75727F;
+  --burdeos:#8C2F3F;--slate:#4A6572;--verde:#2F6D5A;--dorado:#9A7118;
+  --display:"Newsreader",Georgia,serif;--body:"Source Sans 3",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --ground:#131218;--surface:#1B1A22;--sunk:#232230;--rule:#34323F;--rule-soft:#2A2936;
+  --ink:#ECEAF1;--ink-soft:#B6B2C1;--ink-faint:#8B8797;
+  --burdeos:#D8798B;--slate:#9BB2BE;--verde:#6FBFA4;--dorado:#D5AC55;}}
+:root[data-theme="dark"]{
+  --ground:#131218;--surface:#1B1A22;--sunk:#232230;--rule:#34323F;--rule-soft:#2A2936;
+  --ink:#ECEAF1;--ink-soft:#B6B2C1;--ink-faint:#8B8797;
+  --burdeos:#D8798B;--slate:#9BB2BE;--verde:#6FBFA4;--dorado:#D5AC55;}
+body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+.page{max-width:1080px;margin:0 auto;padding:clamp(1.5rem,1rem+3vw,3rem) clamp(1rem,.6rem+2vw,2rem) 4rem;display:flex;flex-direction:column;gap:2.75rem}
+h1,h2,h3{font-family:var(--display);font-weight:600;line-height:1.18;text-wrap:balance;margin:0}
+h1{font-size:clamp(2rem,1.4rem+2.6vw,3rem);letter-spacing:-.015em}
+h2{font-size:clamp(1.35rem,1.15rem+.9vw,1.85rem)}
+p{margin:0;max-width:68ch}
+code,.mono{font-family:var(--mono);font-size:.86em}
+.eyebrow{font-family:var(--mono);font-size:.68rem;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-faint)}
+.meta{display:flex;flex-wrap:wrap;gap:.35rem 1.4rem;font-family:var(--mono);font-size:.72rem;color:var(--ink-faint);border-block:1px solid var(--rule);padding:.65rem 0}
+.meta b{color:var(--ink-soft);font-weight:600}
+section{display:flex;flex-direction:column;gap:1.25rem}
+.head{display:flex;flex-direction:column;gap:.4rem}
+.head p{color:var(--ink-soft)}
+.alcance{font-size:.86rem;border-left:2px solid var(--dorado);padding-left:.85rem;color:var(--ink-faint)}
+.alcance b{color:var(--ink-soft)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+.tabla-wrap{overflow-x:auto}
+th,td{text-align:left;padding:.5rem .85rem .5rem 0;border-bottom:1px solid var(--rule-soft)}
+th{font-size:.72rem;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-faint);font-weight:600}
+td.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+td.fase{font-family:var(--display);font-weight:600}
+td.flags{font-size:.74em;line-height:1.35;max-width:15rem;white-space:normal;opacity:.85}
+td.bueno{color:var(--verde)}td.malo{color:var(--burdeos)}
+.caso{border-left:3px solid var(--rule);padding:1.25rem 0 1.5rem 1.1rem;border-top:1px solid var(--rule-soft);display:flex;flex-direction:column;gap:1rem}
+.caso header{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap}
+.caso-id{display:flex;flex-direction:column;gap:.15rem}
+.caso .ref{font-family:var(--mono);font-size:.7rem;color:var(--ink-faint);letter-spacing:.08em;text-transform:uppercase}
+.caso h3{font-size:1.15rem}
+.fixture{font-family:var(--mono);font-size:.72rem;color:var(--ink-faint)}
+.estado{font-family:var(--mono);font-size:.66rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase;padding:.16rem .45rem;border:1px solid currentColor;white-space:nowrap}
+.estado.ok{color:var(--verde)}.estado.fallo{color:var(--burdeos)}
+.tira{display:grid;grid-template-columns:repeat(2,1fr);gap:.7rem}
+@media(min-width:760px){.tira{grid-template-columns:repeat(4,1fr)}}
+.tira figure{margin:0;display:flex;flex-direction:column;gap:.35rem}
+.tira img{width:100%;height:190px;object-fit:cover;border:1px solid var(--rule);display:block;background:var(--sunk)}
+.hueco{width:100%;height:190px;border:1px dashed var(--rule);display:grid;place-items:center;color:var(--ink-faint);font-family:var(--mono)}
+.tira figcaption{font-family:var(--mono);font-size:.66rem;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-faint)}
+.pistas{display:grid;gap:.55rem;margin:0}
+@media(min-width:720px){.pistas{grid-template-columns:1fr 1fr}}
+.pistas>div{display:flex;gap:.6rem;align-items:baseline;flex-wrap:wrap}
+dt{font-size:.78rem;color:var(--ink-faint);min-width:13rem}
+dd{margin:0;display:flex;flex-wrap:wrap;gap:.3rem}
+.chip{font-family:var(--mono);font-size:.72rem;padding:.1rem .4rem;border:1px solid var(--rule);color:var(--ink-soft)}
+.chip.malo{color:var(--burdeos);border-color:currentColor}
+.chip.bueno{color:var(--verde);border-color:currentColor}
+.vacio{color:var(--ink-faint)}
+details{border-top:1px solid var(--rule-soft);padding-top:.6rem}
+summary{cursor:pointer;font-family:var(--mono);font-size:.74rem;color:var(--ink-faint)}
+pre{background:var(--sunk);border:1px solid var(--rule-soft);padding:.7rem .85rem;overflow-x:auto;margin:.6rem 0 0;font-family:var(--mono);font-size:.76rem;line-height:1.55;color:var(--ink-soft);white-space:pre-wrap}
+.juez{display:flex;flex-wrap:wrap;gap:.3rem 1.2rem;font-size:.82rem;color:var(--ink-soft);border-left:2px solid var(--rule);padding-left:.8rem}
+.juez b{font-family:var(--mono);color:var(--ink)}
+.juez p{width:100%;font-size:.82rem;color:var(--ink-faint)}
+footer{border-top:1px solid var(--rule);padding-top:1rem;font-size:.82rem;color:var(--ink-faint);display:flex;flex-direction:column;gap:.3rem}
+:focus-visible{outline:2px solid var(--burdeos);outline-offset:2px}
+</style>
+
+<div class="page">
+  <header class="head">
+    <span class="eyebrow">Reference photo + space photo · measured end to end</span>
+    <h1>What the preview pipeline does today</h1>
+    <p>Four reference photos and one space photo, run through the current two-stage pipeline. The same four cases are re-run unchanged after every remediation phase, so the columns below can be read against each other.</p>
+    <p class="alcance"><b>Scope, stated up front.</b> Production builds the scene from the <em>approved plan</em>, never from the reference photo (<span class="mono">route.ts:810</span>), and a plan requires the Python resolver, a catalog snapshot and an approval token. Reproducing that here would mean writing to the production database during an evaluation run, so the scene is instead a fixed commercial template — one focal arch and two lateral columns — coloured with the palette the analyser measured in each photo. The repository's frozen plan fixtures were tried first and rejected: their product ids are synthetic and the vocabulary cannot resolve them. Consequently quantities and prices are out of scope, and the shape of the scene is the same in every case by design, so that only what a phase fixes moves between runs. Everything else is the real pipeline: the production analyser, the production caption compiler at hybrid settings, the real preflight, the approved v004 LoRA, the real Gemini composite and the real visual QA.</p>
+    <div class="meta">
+      <span><b>Phase</b> Phase 4b (isolation)</span>
+      <span><b>Commit</b> dad9f6f</span>
+      <span><b>Date</b> 2026-09-17</span>
+      <span><b>LoRA</b> v004-1000 (approved)</span>
+      <span><b>Selection seed</b> 20260917</span>
+      <span><b>Spend</b> US$0.210</span>
+    </div>
+  </header>
+
+  <section>
+    <div class="head"><span class="eyebrow">Across phases</span><h2>Evolution</h2>
+      <p>Every column is a count over the same four cases. <em>Sizes dropped</em> and both colour columns are totals, and zero is the target; the rest are out of four.</p>
+    </div>
+    <div class="tabla-wrap"><table>
+      <thead><tr><th>Phase</th><th>Commit</th><th>Flags on</th><th>Produced an image</th><th>Passed preflight</th><th>Sizes dropped</th><th>Colours with no concept</th><th>Colours truncated away</th><th>QA pass</th><th>Spend</th></tr></thead>
+      <tbody><tr>
+    <td class="fase">Baseline</td>
+    <td class="mono">dad9f6f</td>
+    <td class="mono flags">not recorded</td>
+    <td class="num bueno">4/4</td>
+    <td class="num bueno">4/4</td>
+    <td class="num malo">5</td>
+    <td class="num malo">4</td>
+    <td class="num malo">8</td>
+    <td class="num malo">0/4</td>
+    <td class="num">US$0.168</td>
+  </tr>
+<tr>
+    <td class="fase">Phase 1</td>
+    <td class="mono">dad9f6f</td>
+    <td class="mono flags">not recorded</td>
+    <td class="num bueno">4/4</td>
+    <td class="num bueno">4/4</td>
+    <td class="num malo">4</td>
+    <td class="num malo">4</td>
+    <td class="num malo">7</td>
+    <td class="num malo">2/4</td>
+    <td class="num">US$0.168</td>
+  </tr>
+<tr>
+    <td class="fase">Phase 2</td>
+    <td class="mono">dad9f6f</td>
+    <td class="mono flags">not recorded</td>
+    <td class="num bueno">4/4</td>
+    <td class="num bueno">4/4</td>
+    <td class="num malo">7</td>
+    <td class="num malo">9</td>
+    <td class="num malo">6</td>
+    <td class="num malo">2/4</td>
+    <td class="num">US$0.168</td>
+  </tr>
+<tr>
+    <td class="fase">Phase 3</td>
+    <td class="mono">dad9f6f</td>
+    <td class="mono flags">not recorded</td>
+    <td class="num bueno">4/4</td>
+    <td class="num bueno">4/4</td>
+    <td class="num malo">7</td>
+    <td class="num malo">9</td>
+    <td class="num malo">7</td>
+    <td class="num malo">2/4</td>
+    <td class="num">US$0.168</td>
+  </tr>
+<tr>
+    <td class="fase">Phase 4</td>
+    <td class="mono">dad9f6f</td>
+    <td class="mono flags">measured_color_dominance · venue_aware_placement · ambiente_fiesta · referencia_en_etapa1</td>
+    <td class="num bueno">4/4</td>
+    <td class="num bueno">4/4</td>
+    <td class="num malo">7</td>
+    <td class="num malo">9</td>
+    <td class="num malo">9</td>
+    <td class="num malo">0/4</td>
+    <td class="num">US$0.168</td>
+  </tr>
+<tr>
+    <td class="fase">Phase 4b (isolation)</td>
+    <td class="mono">dad9f6f</td>
+    <td class="mono flags">measured_color_dominance · venue_aware_placement · ambiente_fiesta</td>
+    <td class="num bueno">4/4</td>
+    <td class="num bueno">4/4</td>
+    <td class="num malo">7</td>
+    <td class="num malo">9</td>
+    <td class="num malo">7</td>
+    <td class="num malo">1/4</td>
+    <td class="num">US$0.210</td>
+  </tr></tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="head"><span class="eyebrow">Phase 4b (isolation) · case by case</span><h2>The four cases</h2>
+      <p>Reference and space are the inputs. Stage 1 is what the LoRA draws from the caption alone — no photo reaches it. Stage 2 is Gemini compositing that render onto the space.</p>
+    </div>
+    
+  <article class="caso">
+    <header>
+      <div class="caso-id">
+        <span class="ref">ejemplo-07</span>
+        <h3>Marco vino y plata</h3>
+        <span class="fixture">plan: <code>plantilla-arco-dos-columnas</code> · seed 101</span>
+      </div>
+      <span class="estado ok">generó</span>
+    </header>
+
+    <div class="tira">
+      <figure><img src="img/ref-ejemplo-07.jpg" alt="Reference photo ejemplo-07"><figcaption>Reference</figcaption></figure>
+      <figure><img src="img/espacio.jpg" alt="Space photo"><figcaption>Space</figcaption></figure>
+      <figure><img src="img/ejemplo-07-etapa1.jpg" alt="LoRA stage 1"><figcaption>Stage 1 · LoRA</figcaption></figure>
+      <figure><img src="img/ejemplo-07-final.jpg" alt="Final composite"><figcaption>Final · composited</figcaption></figure>
+    </div>
+
+    <dl class="pistas">
+      <div><dt>Palette of the photo</dt><dd><span class="chip ">negro</span><span class="chip ">plateado</span><span class="chip ">dorado rosa</span><span class="chip ">burdeos</span><span class="chip ">gris</span></dd></div>
+      <div><dt>Measured share (pixels)</dt><dd><span class="chip">negro 40%</span><span class="chip">plateado 34%</span><span class="chip">dorado rosa 16%</span><span class="chip">burdeos 7%</span><span class="chip">gris 2%</span><span class="chip">blanco 1%</span></dd></div>
+      <div><dt>No product concept exists</dt><dd><span class="chip malo">burdeos</span><span class="chip malo">gris</span></dd></div>
+      <div><dt>Dropped by the search truncation</dt><dd><span class="chip malo">plateado</span><span class="chip malo">gris</span></dd></div>
+      <div><dt>Sizes dropped from the caption</dt><dd><span class="chip malo">R-36</span></dd></div>
+      <div><dt>Preflight</dt><dd><span class="chip bueno">ok</span></dd></div>
+      <div><dt>Visual QA</dt><dd><span class="chip malo">appearance failure EST_02_COL_IZQ</span><span class="chip malo">appearance failure EST_03_COL_DER</span><span class="chip malo">contact shadows failed</span><span class="chip malo">pasted artifact: EST_01_ARCO</span><span class="chip malo">pasted artifact: EST_02_COL_IZQ</span><span class="chip malo">pasted artifact: EST_03_COL_DER</span></dd></div>
+      <div><dt>Venue-aware placement</dt><dd><span class="chip bueno">placed</span><span class="chip">2 openings</span><span class="chip">2 walls</span><span class="chip">5 obstacles</span><span class="chip">2 anchors</span></dd></div>
+    </dl>
+
+    <details><summary>Caption sent to fal · 443 of 688 chars</summary><pre>eventdecor_style_v2, an organic balloon garland arch of large and small matte black, glossy chrome rose gold and glossy chrome silver balloons as the central focal piece, two organic balloon columns of large and small matte black and glossy chrome silver balloons, one standing on the left and one on the right, flanking the main arch. set against a plain wall and floor, wide photorealistic event photograph, natural depth, grounded supports.</pre></details>
+    
+  </article>
+
+  <article class="caso">
+    <header>
+      <div class="caso-id">
+        <span class="ref">ejemplo-02</span>
+        <h3>Arco rosa y dorado</h3>
+        <span class="fixture">plan: <code>plantilla-arco-dos-columnas</code> · seed 202</span>
+      </div>
+      <span class="estado ok">generó</span>
+    </header>
+
+    <div class="tira">
+      <figure><img src="img/ref-ejemplo-02.jpg" alt="Reference photo ejemplo-02"><figcaption>Reference</figcaption></figure>
+      <figure><img src="img/espacio.jpg" alt="Space photo"><figcaption>Space</figcaption></figure>
+      <figure><img src="img/ejemplo-02-etapa1.jpg" alt="LoRA stage 1"><figcaption>Stage 1 · LoRA</figcaption></figure>
+      <figure><img src="img/ejemplo-02-final.jpg" alt="Final composite"><figcaption>Final · composited</figcaption></figure>
+    </div>
+
+    <dl class="pistas">
+      <div><dt>Palette of the photo</dt><dd><span class="chip ">dorado rosa</span><span class="chip ">beige</span><span class="chip ">blanco</span><span class="chip ">nude</span><span class="chip ">crema</span></dd></div>
+      <div><dt>Measured share (pixels)</dt><dd><span class="chip">dorado rosa 28%</span><span class="chip">beige 25%</span><span class="chip">blanco 13%</span><span class="chip">nude 12%</span><span class="chip">crema 9%</span><span class="chip">gris 4%</span><span class="chip">negro 4%</span><span class="chip">cafe 2%</span><span class="chip">champagne 1%</span><span class="chip">burdeos 1%</span><span class="chip">dorado 0%</span><span class="chip">rosado 0%</span></dd></div>
+      <div><dt>No product concept exists</dt><dd><span class="chip malo">beige</span><span class="chip malo">nude</span><span class="chip malo">crema</span></dd></div>
+      <div><dt>Dropped by the search truncation</dt><dd><span class="chip malo">blanco</span><span class="chip malo">crema</span></dd></div>
+      <div><dt>Sizes dropped from the caption</dt><dd><span class="chip malo">R-36</span></dd></div>
+      <div><dt>Preflight</dt><dd><span class="chip bueno">ok</span></dd></div>
+      <div><dt>Visual QA</dt><dd><span class="chip bueno">pass</span></dd></div>
+      <div><dt>Venue-aware placement</dt><dd><span class="chip bueno">placed</span><span class="chip">2 openings</span><span class="chip">2 walls</span><span class="chip">5 obstacles</span><span class="chip">2 anchors</span></dd></div>
+    </dl>
+
+    <details><summary>Caption sent to fal · 424 of 688 chars</summary><pre>eventdecor_style_v2, an organic balloon garland arch of large and small matte white and glossy chrome rose gold balloons as the central focal piece, two organic balloon columns of large and small matte white and glossy chrome rose gold balloons, one standing on the left and one on the right, flanking the main arch. set against a plain wall and floor, wide photorealistic event photograph, natural depth, grounded supports.</pre></details>
+    
+  </article>
+
+  <article class="caso">
+    <header>
+      <div class="caso-id">
+        <span class="ref">ejemplo-01</span>
+        <h3>Columnas rosa y plata</h3>
+        <span class="fixture">plan: <code>plantilla-arco-dos-columnas</code> · seed 303</span>
+      </div>
+      <span class="estado ok">generó</span>
+    </header>
+
+    <div class="tira">
+      <figure><img src="img/ref-ejemplo-01.jpg" alt="Reference photo ejemplo-01"><figcaption>Reference</figcaption></figure>
+      <figure><img src="img/espacio.jpg" alt="Space photo"><figcaption>Space</figcaption></figure>
+      <figure><img src="img/ejemplo-01-etapa1.jpg" alt="LoRA stage 1"><figcaption>Stage 1 · LoRA</figcaption></figure>
+      <figure><img src="img/ejemplo-01-final.jpg" alt="Final composite"><figcaption>Final · composited</figcaption></figure>
+    </div>
+
+    <dl class="pistas">
+      <div><dt>Palette of the photo</dt><dd><span class="chip ">lila</span><span class="chip ">gris</span><span class="chip ">plateado</span><span class="chip ">rosado</span><span class="chip ">blanco</span></dd></div>
+      <div><dt>Measured share (pixels)</dt><dd><span class="chip">lila 31%</span><span class="chip">gris 19%</span><span class="chip">plateado 16%</span><span class="chip">rosado 15%</span><span class="chip">blanco 13%</span><span class="chip">negro 3%</span><span class="chip">dorado rosa 2%</span><span class="chip">cafe 1%</span><span class="chip">nude 1%</span><span class="chip">burdeos 0%</span><span class="chip">beige 0%</span><span class="chip">crema 0%</span></dd></div>
+      <div><dt>No product concept exists</dt><dd><span class="chip malo">lila</span><span class="chip malo">gris</span></dd></div>
+      <div><dt>Dropped by the search truncation</dt><dd><span class="chip malo">gris</span><span class="chip malo">plateado</span></dd></div>
+      <div><dt>Sizes dropped from the caption</dt><dd><span class="chip malo">R-36</span></dd></div>
+      <div><dt>Preflight</dt><dd><span class="chip bueno">ok</span></dd></div>
+      <div><dt>Visual QA</dt><dd><span class="chip malo">placement failure EST_02_COL_IZQ</span><span class="chip malo">placement failure EST_03_COL_DER</span><span class="chip malo">appearance failure EST_02_COL_IZQ</span><span class="chip malo">appearance failure EST_03_COL_DER</span><span class="chip malo">unexpected element: extra balloon cluster near wooden post</span></dd></div>
+      <div><dt>Venue-aware placement</dt><dd><span class="chip bueno">placed</span><span class="chip">2 openings</span><span class="chip">2 walls</span><span class="chip">5 obstacles</span><span class="chip">2 anchors</span></dd></div>
+    </dl>
+
+    <details><summary>Caption sent to fal · 429 of 688 chars</summary><pre>eventdecor_style_v2, an organic balloon garland arch of large and small matte pink, matte white and glossy chrome silver balloons as the central focal piece, two organic balloon columns of large and small matte pink and glossy chrome silver balloons, one standing on the left and one on the right, flanking the main arch. set against a plain wall and floor, wide photorealistic event photograph, natural depth, grounded supports.</pre></details>
+    
+  </article>
+
+  <article class="caso">
+    <header>
+      <div class="caso-id">
+        <span class="ref">ejemplo-06</span>
+        <h3>Arco de colores al aire libre</h3>
+        <span class="fixture">plan: <code>plantilla-arco-dos-columnas</code> · seed 404</span>
+      </div>
+      <span class="estado ok">generó</span>
+    </header>
+
+    <div class="tira">
+      <figure><img src="img/ref-ejemplo-06.jpg" alt="Reference photo ejemplo-06"><figcaption>Reference</figcaption></figure>
+      <figure><img src="img/espacio.jpg" alt="Space photo"><figcaption>Space</figcaption></figure>
+      <figure><img src="img/ejemplo-06-etapa1.jpg" alt="LoRA stage 1"><figcaption>Stage 1 · LoRA</figcaption></figure>
+      <figure><img src="img/ejemplo-06-final.jpg" alt="Final composite"><figcaption>Final · composited</figcaption></figure>
+    </div>
+
+    <dl class="pistas">
+      <div><dt>Palette of the photo</dt><dd><span class="chip ">fucsia</span><span class="chip ">burdeos</span><span class="chip ">gris</span><span class="chip ">azul</span><span class="chip ">rosado</span></dd></div>
+      <div><dt>Measured share (pixels)</dt><dd><span class="chip">fucsia 34%</span><span class="chip">burdeos 23%</span><span class="chip">gris 20%</span><span class="chip">azul 9%</span><span class="chip">rosado 5%</span><span class="chip">morado 3%</span><span class="chip">turquesa 3%</span><span class="chip">lila 2%</span><span class="chip">dorado rosa 0%</span><span class="chip">menta 0%</span><span class="chip">plateado 0%</span><span class="chip">cafe 0%</span></dd></div>
+      <div><dt>No product concept exists</dt><dd><span class="chip malo">burdeos</span><span class="chip malo">gris</span></dd></div>
+      <div><dt>Dropped by the search truncation</dt><dd><span class="chip malo">gris</span></dd></div>
+      <div><dt>Sizes dropped from the caption</dt><dd><span class="chip malo">R-5</span><span class="chip malo">R-12</span><span class="chip malo">R-18</span><span class="chip malo">R-36</span></dd></div>
+      <div><dt>Preflight</dt><dd><span class="chip bueno">ok</span></dd></div>
+      <div><dt>Visual QA</dt><dd><span class="chip malo">placement failure EST_01_ARCO</span><span class="chip malo">placement failure EST_02_COL_IZQ</span><span class="chip malo">placement failure EST_03_COL_DER</span><span class="chip malo">appearance failure EST_02_COL_IZQ</span></dd></div>
+      <div><dt>Venue-aware placement</dt><dd><span class="chip bueno">placed</span><span class="chip">2 openings</span><span class="chip">2 walls</span><span class="chip">5 obstacles</span><span class="chip">2 anchors</span></dd></div>
+    </dl>
+
+    <details><summary>Caption sent to fal · 455 of 688 chars</summary><pre>eventdecor_style_v2, an organic balloon garland arch of matte fuchsia link balloons and large and small matte navy blue and matte pink balloons as the central focal piece, two organic balloon columns of matte fuchsia link balloons and large and small matte navy blue balloons, one standing on the left and one on the right, flanking the main arch. set against a plain wall and floor, wide photorealistic event photograph, natural depth, grounded supports.</pre></details>
+    
+  </article>
+  </section>
+
+  <footer>
+    <p>Judge scores order cases <em>within a single call</em>; they are not an absolute metric and never compare across runs.</p>
+    <p>Full diagnosis and the phased plan: <span class="mono">PLAN-IMAGE-AND-COLOR-FIDELITY.md</span>.</p>
+  </footer>
+</div>

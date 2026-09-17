@@ -544,7 +544,7 @@ export function aplicarColoresReferencia<T extends PlanDecoracion>(plan: T, blue
   const elementos = new Map((blueprint?.elements ?? []).filter((element) => element.approved).map((element) => [element.element_id, element]));
   const porEstructura = plan.estructuras.map((estructura) => {
     const elemento = estructura.referencia_element_id ? elementos.get(estructura.referencia_element_id) : undefined;
-    return elemento ? coloresDominantesReferencia(elemento.appearance.observed_colors) : [];
+    return elemento ? coloresDominantesReferencia(elemento.appearance) : [];
   });
   const listados = new Set(porEstructura.flat());
   const comprados = new Set(plan.estructuras.flatMap((estructura) => estructura.materiales.map((material) => normalizar(material.color ?? "").trim())).filter(Boolean));

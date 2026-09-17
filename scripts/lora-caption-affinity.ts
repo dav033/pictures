@@ -17,13 +17,48 @@ import path from "node:path";
  * iterar el compilador offline antes de gastar crédito.
  */
 
-const DATASET = path.join(process.cwd(), "data/processed/export-general-2026-08-27.json");
-const TRIGGER = /^eventdecor_style_v2,\s*/i;
+/**
+ * Corpus por defecto: las anotaciones del slot activo, no una ruta fija (fase
+ * 0.3). Antes esto apuntaba a `data/processed/export-general-2026-08-27.json`,
+ * que no está en el checkout, así que el único arnés capaz de medir la afinidad
+ * caption/corpus no podía correr contra el modelo que producción sirve.
+ *
+ * Si ninguno resuelve, el script FALLA nombrando lo que buscó. Analizar el
+ * corpus equivocado en silencio sería peor que no analizar nada: el número
+ * saldría igual de convincente y estaría midiendo otro modelo.
+ */
+const CORPUS_POR_DEFECTO = path.join(process.cwd(), "data/staging/lora-v007/anotaciones");
+const TRIGGER = /^eventdecor_style_v\d+,\s*/i;
 
 type Entrada = { texto: string };
 
-function cargarCaptions(): string[] {
-  const raw = JSON.parse(fs.readFileSync(DATASET, "utf8")) as { entradas: Entrada[] };
+/** Ruta del corpus: `--corpus <ruta>` gana sobre el slot activo. */
+export function rutaCorpus(argv: readonly string[] = process.argv): string {
+  const indice = argv.indexOf("--corpus");
+  return indice >= 0 ? argv[indice + 1] ?? CORPUS_POR_DEFECTO : CORPUS_POR_DEFECTO;
+}
+
+/**
+ * Captions del corpus. Acepta las dos formas que existen: un export único con
+ * `entradas[].texto`, y un directorio de anotaciones por imagen con
+ * `compilacion.caption` (que es la forma del slot v007).
+ */
+export function cargarCaptions(ruta: string = rutaCorpus()): string[] {
+  if (!fs.existsSync(ruta)) {
+    throw new Error(`corpus no encontrado: ${ruta}. Pasa --corpus <ruta> con el dataset del slot activo; sin él este arnés mediría otro modelo.`);
+  }
+  if (fs.statSync(ruta).isDirectory()) {
+    const captions: string[] = [];
+    for (const nombre of fs.readdirSync(ruta).filter((archivo) => archivo.endsWith(".json"))) {
+      const dato = JSON.parse(fs.readFileSync(path.join(ruta, nombre), "utf8")) as { compilacion?: { caption?: unknown } };
+      const caption = dato.compilacion?.caption;
+      if (typeof caption === "string" && caption.trim()) captions.push(caption.replace(TRIGGER, "").toLowerCase());
+    }
+    if (captions.length === 0) throw new Error(`el directorio ${ruta} no tiene ninguna anotación con \`compilacion.caption\``);
+    return captions;
+  }
+  const raw = JSON.parse(fs.readFileSync(ruta, "utf8")) as { entradas?: Entrada[] };
+  if (!raw.entradas?.length) throw new Error(`el archivo ${ruta} no tiene \`entradas[]\``);
   return raw.entradas.map((entrada) => entrada.texto.replace(TRIGGER, "").toLowerCase());
 }
 
