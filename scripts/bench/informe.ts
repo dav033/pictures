@@ -39,7 +39,7 @@ export function cargarCorridas(raiz: string): Corrida[] {
 }
 
 /** Cuenta agregada por corrida: lo que se compara de un vistazo entre fases. */
-function resumen(corrida: Corrida): { generan: number; preflight: number; tallas: number; perdidos: number; sinConcepto: number; qa: number; total: number } {
+function resumen(corrida: Corrida): { generan: number; preflight: number; tallas: number; perdidos: number; sinConcepto: number; sinLinea: number | null; estructuras: number | null; qa: number; total: number } {
   const total = corrida.casos.length;
   return {
     total,
@@ -48,6 +48,14 @@ function resumen(corrida: Corrida): { generan: number; preflight: number; tallas
     tallas: corrida.casos.reduce((n, c) => n + (c.caption?.tallasOmitidas.length ?? 0), 0),
     perdidos: corrida.casos.reduce((n, c) => n + c.color.perdidos.length, 0),
     sinConcepto: corrida.casos.reduce((n, c) => n + (c.color.sinConcepto?.length ?? 0), 0),
+    // `null` cuando NINGÚN caso lo midió: una corrida anterior a D10 no es una
+    // corrida con cero colores perdidos, y la tabla no puede sugerir que lo sea.
+    sinLinea: corrida.casos.some((c) => c.color.sinLinea !== undefined)
+      ? corrida.casos.reduce((n, c) => n + (c.color.sinLinea?.length ?? 0), 0)
+      : null,
+    estructuras: corrida.casos.some((c) => c.estructura)
+      ? corrida.casos.reduce((n, c) => n + (c.estructura?.ausentes.length ?? 0), 0)
+      : null,
     qa: corrida.casos.filter((c) => c.qa?.pass === true).length,
   };
 }
@@ -89,6 +97,8 @@ function bloqueCaso(caso: CasoBenchmark): string {
       <div><dt>Palette of the photo</dt><dd>${chips(caso.color.paletaCatalogo)}</dd></div>
       <div><dt>Measured share (pixels)</dt><dd>${caso.color.participaciones?.length ? caso.color.participaciones.map((p) => `<span class="chip">${escapar(p.color)} ${(p.share * 100).toFixed(0)}%</span>`).join("") : `<span class="vacio">not measured</span>`}</dd></div>
       <div><dt>No product concept exists</dt><dd>${chips(caso.color.sinConcepto ?? [], "malo")}</dd></div>
+      <div><dt>Drawable but never quoted</dt><dd>${caso.color.sinLinea === undefined ? `<span class="vacio">not measured</span>` : chips(caso.color.sinLinea, "malo")}</dd></div>
+      <div><dt>Shapes the fixture never builds</dt><dd>${caso.estructura ? (caso.estructura.ausentes.length ? `${chips(caso.estructura.ausentes, "malo")}<span class="chip">fixture: ${escapar(caso.estructura.escena.join(", "))}</span>` : `<span class="chip bueno">fixture covers the reference</span>`) : `<span class="vacio">not measured</span>`}</dd></div>
       <div><dt>Dropped by the search truncation</dt><dd>${chips(caso.color.perdidos, "malo")}</dd></div>
       <div><dt>Sizes dropped from the caption</dt><dd>${chips(caso.caption?.tallasOmitidas ?? [], "malo")}</dd></div>
       <div><dt>Preflight</dt><dd>${pre ? (pre.ok ? `<span class="chip bueno">ok</span>` : chips(pre.errores, "malo")) : `<span class="vacio">—</span>`}</dd></div>
@@ -121,6 +131,9 @@ function filaEvolucion(corrida: Corrida): string {
     const bien = invertido ? n === 0 : n === total;
     return `<td class="num ${bien ? "bueno" : "malo"}">${n}${invertido ? "" : `/${total}`}</td>`;
   };
+  /** Una métrica que la corrida pudo no medir: "—" no es cero. */
+  const celdaOpcional = (n: number | null): string =>
+    n === null ? `<td class="num">—</td>` : `<td class="num ${n === 0 ? "bueno" : "malo"}">${n}</td>`;
   return `<tr>
     <td class="fase">${ETIQUETA_FASE[corrida.meta.fase]}</td>
     <td class="mono">${escapar(corrida.meta.commit.slice(0, 7))}</td>
@@ -130,6 +143,8 @@ function filaEvolucion(corrida: Corrida): string {
     ${celda(r.tallas, r.total, true)}
     ${celda(r.sinConcepto, r.total, true)}
     ${celda(r.perdidos, r.total, true)}
+    ${celdaOpcional(r.sinLinea)}
+    ${celdaOpcional(r.estructuras)}
     ${celda(r.qa, r.total)}
     <td class="num">${corrida.meta.gastoUsd === null ? "—" : `US$${corrida.meta.gastoUsd.toFixed(3)}`}</td>
   </tr>`;
@@ -236,7 +251,7 @@ footer{border-top:1px solid var(--rule);padding-top:1rem;font-size:.82rem;color:
       <p>Every column is a count over the same four cases. <em>Sizes dropped</em> and both colour columns are totals, and zero is the target; the rest are out of four.</p>
     </div>
     <div class="tabla-wrap"><table>
-      <thead><tr><th>Phase</th><th>Commit</th><th>Flags on</th><th>Produced an image</th><th>Passed preflight</th><th>Sizes dropped</th><th>Colours with no concept</th><th>Colours truncated away</th><th>QA pass</th><th>Spend</th></tr></thead>
+      <thead><tr><th>Phase</th><th>Commit</th><th>Flags on</th><th>Produced an image</th><th>Passed preflight</th><th>Sizes dropped</th><th>Colours with no concept</th><th>Colours truncated away</th><th>Drawable but never quoted</th><th>Shapes not built</th><th>QA pass</th><th>Spend</th></tr></thead>
       <tbody>${corridas.map(filaEvolucion).join("\n")}</tbody>
     </table></div>
   </section>

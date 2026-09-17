@@ -60,6 +60,37 @@ export type PistaColor = {
    * el informe las distingue.
    */
   participaciones?: Array<{ color: string; share: number }>;
+  /**
+   * Colores que llegan a una línea de la escena (D10). La plantilla corta en
+   * tres colores para el arco y dos para cada columna, así que un color
+   * renderizable de más no llega a ninguna pieza. Ausente en las corridas
+   * anteriores a D10, que es distinto de medirlo y que salga vacío.
+   */
+  cotizados?: string[];
+  /**
+   * Colores que el vocabulario SÍ sabe dibujar y aun así no llegan a ninguna
+   * línea. Es la clase de defecto de D7 —detectado, plegado, y perdido
+   * después— y vive exactamente en la diferencia entre `renderizables` y
+   * `cotizados`, que el informe suponía el mismo conjunto.
+   */
+  sinLinea?: string[];
+};
+
+/**
+ * Fidelidad de estructura (D10). La escena sale SIEMPRE de la misma plantilla
+ * (un arco y dos columnas), así que una referencia cuya forma la plantilla no
+ * construye era invisible por construcción: el informe la enseñaba con un arco
+ * y nadie podía notarlo salvo mirando la foto. Esto no corrige la plantilla
+ * —fijarla es lo que hace comparables las fases— sino que pone el desajuste en
+ * un número.
+ */
+export type PistaEstructura = {
+  /** Clases que el analizador vio en la foto, en el vocabulario de 12 clases. */
+  referencia: string[];
+  /** Clases que la plantilla levanta. */
+  escena: string[];
+  /** Clases de la referencia que la plantilla nunca construye. */
+  ausentes: string[];
 };
 
 export type PistaCaption = {
@@ -119,6 +150,8 @@ export type CasoBenchmark = {
   qa: PistaQa | null;
   juez: PistaJuez | null;
   colocacion: PistaColocacion | null;
+  /** `null` cuando la corrida no llegó a construir escena; ausente antes de D10. */
+  estructura?: PistaEstructura | null;
 };
 
 export type Corrida = { meta: MetaCorrida; casos: CasoBenchmark[] };

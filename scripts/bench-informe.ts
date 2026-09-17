@@ -8,9 +8,24 @@ import { cargarCorridas, generarInforme } from "./bench/informe";
  * corrida a `reports/bench/img/`, que es donde el HTML las busca.
  *
  *   npx tsx scripts/bench-informe.ts
+ *   npx tsx scripts/bench-informe.ts --raiz informes/bench
+ *
+ * La raíz es un argumento porque las corridas viven en dos sitios y no por
+ * gusto: `reports/` es el directorio de trabajo del arnés y está ignorado por
+ * git, mientras que el snapshot que viaja con el código está en `informes/`
+ * (ver `informes/README.md`). Sin el argumento, el informe comprometido no se
+ * puede regenerar desde un checkout limpio, que es donde se leyó por primera
+ * vez.
  */
 
-const RAIZ = "reports/bench";
+function raizDeArgv(): string {
+  const indice = process.argv.indexOf("--raiz");
+  const valor = indice >= 0 ? process.argv[indice + 1] : undefined;
+  if (indice >= 0 && !valor) throw new Error("--raiz necesita una ruta.");
+  return valor ?? "reports/bench";
+}
+
+const RAIZ = raizDeArgv();
 
 function main(): void {
   const corridas = cargarCorridas(RAIZ);

@@ -12,7 +12,7 @@ import { sceneSpecHash } from "../src/lib/ia/scene-spec";
 import type { ImagenEtiquetada } from "../src/lib/ia/tipos";
 import { generar, payloadDe, resolverIdentidadLora, saldo, leerEnv } from "./exp-fal-lib";
 import { prepararEspacio } from "./bench/espacio";
-import { compilarCaption, construirEscena, repartirColores } from "./bench/escena";
+import { coloresDeEscena, compilarCaption, construirEscena, estructurasDeEscena, repartirColores } from "./bench/escena";
 import { analizarVenue } from "../src/lib/ia/analizar-venue";
 import { placeStructuresInVenue, type VenuePlacementStructure } from "../src/lib/ia/venue-placement";
 import { cargarCorridas, generarInforme } from "./bench/informe";
@@ -78,7 +78,7 @@ function elegirReferencias(cuantas: number, semilla: number): FotoEjemplo[] {
   return elegidas;
 }
 
-async function pistaColor(foto: FotoEjemplo): Promise<{ color: PistaColor; paleta: string[] }> {
+async function pistaColor(foto: FotoEjemplo): Promise<{ color: PistaColor; paleta: string[]; estructurasReferencia: string[] }> {
   const base64 = fs.readFileSync(`public/referencias-ejemplo/${foto.id}.jpg`).toString("base64");
   const referencia: ImagenEtiquetada = { id: "REF_01", mime: "image/jpeg", base64, descripcion: "Foto de referencia del cliente" };
   const chat = await chatDe("gemini");
@@ -96,6 +96,14 @@ async function pistaColor(foto: FotoEjemplo): Promise<{ color: PistaColor; palet
   const participaciones = totalArea > 0
     ? [...suma.entries()].sort((uno, otro) => otro[1] - uno[1]).map(([color, peso]) => ({ color, share: Number((peso / totalArea).toFixed(4)) }))
     : [];
+  // D10: qué formas vio el analizador. La plantilla del benchmark es fija, así
+  // que sin esto una referencia que no es un arco se informa como si lo fuera.
+  const estructurasReferencia: string[] = [];
+  for (const el of resultado.blueprint.elements) {
+    if (!el.approved) continue;
+    const clase = el.visual_semantics?.structure_type;
+    if (clase && !estructurasReferencia.includes(clase)) estructurasReferencia.push(clase);
+  }
   const paletaCatalogo = coloresFotoCliente(resultado.blueprint);
   const paletaBusqueda = coloresFotoParaBusqueda(resultado.blueprint);
   return {
@@ -110,6 +118,7 @@ async function pistaColor(foto: FotoEjemplo): Promise<{ color: PistaColor; palet
       renderizables: [],
       participaciones,
     },
+    estructurasReferencia,
   };
 }
 
@@ -192,7 +201,7 @@ async function main(): Promise<void> {
   for (const [indice, foto] of referencias.entries()) {
     const semillaImagen = 101 + indice * 101;
     process.stdout.write(`-> ${foto.id} `);
-    const { color, paleta } = await pistaColor(foto);
+    const { color, paleta, estructurasReferencia } = await pistaColor(foto);
     const reparto = repartirColores(paleta);
     color.sinConcepto = reparto.sinConcepto;
     color.renderizables = reparto.renderizables;
@@ -201,6 +210,7 @@ async function main(): Promise<void> {
     const caso: CasoBenchmark = {
       referencia: foto.id, titulo: foto.titulo, fixturePlan: "plantilla-arco-dos-columnas", semillaImagen,
       color, caption: null, preflight: null, imagen: { etapa1: null, final: null, fallo: null }, qa: null, juez: null, colocacion,
+      estructura: null,
     };
     await sharp(`public/referencias-ejemplo/${foto.id}.jpg`).resize({ width: 512 }).jpeg({ quality: 78 }).toFile(path.join(mini, `ref-${foto.id}.jpg`));
 
@@ -212,6 +222,23 @@ async function main(): Promise<void> {
     }
 
     const spec = construirEscena(reparto.renderizables, espacio.aspecto, colocacion?.usada ? colocacion.cajas : undefined);
+
+    // D10, la aserción de cotización. `renderizables` dice qué colores de la
+    // foto el vocabulario sabe dibujar; `cotizados` dice cuáles la escena pide
+    // de verdad. La plantilla usa tres colores en el arco y dos en cada columna,
+    // así que la diferencia no es vacía por construcción, y es la clase de
+    // defecto de D7: un color detectado que después no compra nada.
+    const cotizados = coloresDeEscena(spec);
+    color.cotizados = cotizados;
+    color.sinLinea = reparto.renderizables.filter((c) => !cotizados.includes(c));
+    const estructurasEscena = estructurasDeEscena(spec);
+    caso.estructura = {
+      referencia: estructurasReferencia,
+      escena: estructurasEscena,
+      ausentes: estructurasReferencia.filter((clase) => !estructurasEscena.includes(clase)),
+    };
+    if (color.sinLinea.length) process.stdout.write(`· SIN LINEA [${color.sinLinea.join(",")}] `);
+
     const compilado = compilarCaption(spec, identidad.trigger);
     caso.caption = compilado.caption;
     caso.preflight = compilado.preflight;

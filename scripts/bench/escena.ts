@@ -67,6 +67,25 @@ export function repartirColores(paleta: readonly string[]): ColoresEscena {
   return { renderizables, sinConcepto };
 }
 
+/**
+ * Los colores que la escena pide de verdad, sin repetir. Es el lado derecho de
+ * la aserción de D10: `repartirColores` dice qué PODRÍA dibujarse y esto dice
+ * qué se pidió; la plantilla recorta entre una cosa y la otra.
+ */
+export function coloresDeEscena(spec: SceneSpec): string[] {
+  return [...new Set(spec.elements.flatMap((el) => el.resolved_colors ?? []))];
+}
+
+/** Las clases de estructura que la plantilla levanta, sin repetir. */
+export function estructurasDeEscena(spec: SceneSpec): string[] {
+  const clases: string[] = [];
+  for (const el of spec.elements) {
+    const clase = el.visual_semantics?.structure_type;
+    if (clase && !clases.includes(clase)) clases.push(clase);
+  }
+  return clases;
+}
+
 type Elemento = SceneSpec["elements"][number];
 type Ubicacion = "arco_central" | "lateral_izquierdo" | "lateral_derecho";
 

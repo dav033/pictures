@@ -37,15 +37,15 @@ colour was dropped.
 | # | Symptom the customer sees | Verified cause | Owner |
 |---|---|---|---|
 | D1 | wine reference renders pink | `burdeos` had no product concept, excluded on a false premise | **fixed today** |
-| D2 | clear/bubble balloons never quoted | `transparente` has no product concept | me |
+| D2 | clear/bubble balloons never quoted | `transparente` had no product concept | **fixed**, verified 2026-09-17 (§7) |
 | D3 | clear balloons not even detected | `clear` and `cristal` are not aliases of `transparente` | **fixed today**, authorised by the user |
 | D4 | grey dropped | `grey`/`gray` are not aliases of `gris`, and `gris` has no concept | person (taxonomy + ADR-0024) |
 | D5 | lilac / turquoise dropped | not aliases either, though products exist | **fixed today**, authorised by the user |
 | D6 | wine still under-asked even with D1 fixed | `burdeos` loses the pixel vote at every radius | me, needs photos |
-| D7 | **white missing from the quote** | **not established** | me, needs one repro |
+| D7 | **white missing from the quote** | two mechanisms, both established (§3) | person (taxonomy + `plan_hash`) |
 | D8 | a frame is proposed as an arch | no `marco` class in the 12-class structure taxonomy | person (taxonomy) |
 | D9 | arch wrapped around a structural post | obstacle-aware placement ships off | person (flag) |
-| D10 | none of D7/D8 is caught before release | the benchmark uses one fixed fixture and never quotes | me |
+| D10 | none of D7/D8 is caught before release | the benchmark uses one fixed fixture and never quotes | **fixed**, 2026-09-17 (§7) |
 
 ---
 
@@ -96,42 +96,95 @@ in the concept's comment so nobody later "fixes" it by removing the exclusion.
 
 ---
 
-## 3. D7 — white is missing and I do not know why yet
+## 3. D7 — white is missing, and the cause is established
 
-This is the most important open item, because white is in almost every reference
-photo, and it is the one I refuse to guess at.
+**Settled 2026-09-17, second session.** It is not one of the three candidates as
+this section first framed them, and the third — "the analyser never wrote it" —
+is ruled out outright: `white` is the **first** raw label on `ejemplo-01`,
+`ejemplo-02` and `ejemplo-07`, and present on `ejemplo-06`, in every run.
 
-**What is ruled out.** `blanco` *is* drawable — it resolves to product
-`20000435` — and `white`, `warm white` and `off white` all classify to `blanco`.
-So this is neither a vocabulary gap nor an alias gap. Run B's reference is
-visibly half white.
+**Correction to the reproduction this section proposed.** `diagnostico_generacion`
+does **not** record the palette. Migration 026 did land (`plan_audit_log` has 31
+columns and 5 rows carry the column), but `DiagnosticoGeneracion` at
+`log.ts:154` holds input hashes, seed, caption hash and length, preflight,
+dropped sizes and the QA verdict — no colour of any kind. The SQL in the earlier
+draft returns a row that cannot answer the question. What did answer it was
+already in the repository: `informes/bench/fase-*/resultado.json` records
+`coloresCrudos`, `paletaCatalogo`, `paletaBusqueda`, `renderizables` and
+`participaciones` for four references across six runs, at no cost.
 
-**Candidate causes, in the order I would test them.**
-1. Palette truncation. The palette that reaches catalog search is capped; if
-   white ranks 4th or 5th behind pink, silver and clear, it may be cut before
-   the plan sees it. `coloresFotoParaBusqueda` is the place to look.
-2. The plan's colour distribution. `repartirColores` + the scene builder assign
-   colours per structure; with two structures and three renderable colours, one
-   colour can legitimately end up unused.
-3. The analyser never wrote it. Less likely given the photo, but it is one field
-   to read, not a theory.
+There are **two independent mechanisms**, and which one is live depends on
+`MEASURED_COLOR_DOMINANCE_V1`.
 
-**Reproduction.** Cheap now, because migration 026 landed this morning and
-`diagnostico_generacion` already records the palette per generation. Regenerate
-Run B and read the audit row:
+### Mechanism 1 — the flag is off, which is production today
 
-```sql
-SELECT request_id, diagnostico_generacion
-FROM plan_audit_log
-WHERE diagnostico_generacion IS NOT NULL
-ORDER BY created_at DESC LIMIT 1;
-```
+`coloresFotoParaBusqueda` builds the palette from each approved structure's
+`coloresDominantesReferencia`, which cuts at `MAX_COLORES_REFERENCIA = 3` **per
+element**, in the analyser's writing order. White is listed but seldom first for
+any single element, so it falls off that cut before the palettes are unioned.
 
-Three numbers settle it: the analyser's raw labels, the folded catalog palette,
-and the colours that reached the plan. Whichever boundary loses `blanco` is the
-defect. **Do not fix anything until that row has been read.**
+Measured at `fase-1` (flag off): `blanco` is in `paletaCatalogo` for
+`ejemplo-01`, `ejemplo-06` and `ejemplo-07`, and missing from `paletaBusqueda`
+for `ejemplo-01` and `ejemplo-06`.
 
-**Cost** ~30 min to reproduce, unknown to fix. **Do this first.**
+This is candidate cause 1 — truncation — confirmed. The reason reading
+`MAX_COLORES_FOTO_CLIENTE` would not have found it is that the binding cap is
+the per-element one, not the one on the final list.
+
+### Mechanism 2 — the flag is on: a photographed white is not `#ffffff`
+
+`blanco` is anchored at `#ffffff`, L*100. `plateado` sits at L*76.2 and `gris`
+at L*60.3, so the blanco/plateado watershed is at about RGB 220. A balloon is a
+curved surface: only its specular highlight reaches 240, and most of it sits
+between 170 and 215. Computed with `labDeRgb`, at the shipped classification
+radius:
+
+| pixel | classified as |
+|---|---|
+| 255,255,255 | blanco |
+| 235,232,228 | blanco |
+| 225,222,218 | blanco |
+| 215,212,208 | **plateado** |
+| 185,182,178 | **plateado** |
+| 170,167,163 | **gris** |
+
+So the measurement reads white decoration as silver and grey, and the shadow
+between balloons as `negro`. On `ejemplo-07` — a white-and-burgundy garland on a
+white curtain, with no black anywhere in the photo — the whole-image measurement
+gives `gris` 50 %, `plateado` 21 %, `negro` 13 %, and `blanco` under 2 %
+(`scripts/calibrar-dominancia.ts`). The palette that reached the plan at
+`fase-2` is `negro` at 37.8 %, dominant. Then `gris` is outside
+`PALETA_COLORES_V2` by ADR-0024, so half of the measurement is discarded a layer
+later and what survives is silver and black.
+
+That is the same photo whose first raw label is `white`. It is also, on its own,
+a sufficient explanation for why the flag measured QA-negative and ships off.
+
+### A third thing the data shows, not previously recorded
+
+`coloresFotoCliente` and `coloresFotoParaBusqueda` disagree about white **in both
+directions on the same blueprint**. At `fase-2`, `ejemplo-01`: the customer-facing
+palette ranks `blanco` fifth and last, the search palette ranks it **first**. At
+`ejemplo-07` the customer palette has no `blanco` at all while the search palette
+does. They are computed from different sources — area-weighted `measured_colors`
+over every element, against per-element dominants of approved balloon structures
+only — so they will keep disagreeing. The card the customer reads and the palette
+that buys product are not the same list, and nothing says so.
+
+### What this does not settle, deliberately
+
+Neither fix is mine to take:
+
+- Mechanism 2 is an anchor change in `HEX_COLORES_OBSERVABLES`. That table travels
+  through the contract to Python (`scripts/verificar-paridad-color.py`), so it
+  moves every classification and therefore `plan_hash`. It is a taxonomy change
+  and belongs with D4, with a person.
+- Mechanism 1 is widening or reordering a per-element cap. §9 already names that
+  as detection widening: it moves `plan_hash` and approved plans in flight must
+  keep the numbers they were approved with.
+
+**Cost** the reproduction was ~1 h and is done. The fix is a decision, not an
+estimate.
 
 ---
 
@@ -273,21 +326,45 @@ Not landed, deliberately: the eight-digit ids in this file are `sku_canonical`
 values, not Shopify product ids — checked, 3/3 matched — so they are valid and
 were left alone rather than "modernised".
 
+### Second session, same day
+
+| Item | Evidence |
+|---|---|
+| **D2 was already done** — verified, not re-implemented | `balloon.round.latex.fashion.clear` is active in `product-vocabulary-data.ts` with `color: "clear"`, `pattern.kind: "solid"` and 7 catalog ids, and `PRODUCTO_POR_COLOR["transparente"]` resolves to `20000928`. It landed with phase 1.3b ("six concepts with catalog-verified ids"), which this register did not know about. The concept this section proposed writing would have been a duplicate. Confirmed against the benchmark too: `transparente` is in `sinConcepto` at `fase-0` and gone from `fase-1` on. |
+| **D7 established** | §3, rewritten. Two mechanisms, evidence in `informes/bench/fase-*/resultado.json` and `scripts/calibrar-dominancia.ts`. Neither fix is takeable without a person. |
+| **D10 landed** | `coloresDeEscena` and `estructurasDeEscena` in `scripts/bench/escena.ts`; `cotizados`, `sinLinea` and `PistaEstructura` in `scripts/bench/tipos.ts`; computed in `bench-fidelidad.ts`; two new report rows and two new table columns in `bench/informe.ts`. 5 tests in `scripts/bench/escena.test.ts`, registered as `bench:test-cotizacion` and appended to the `plan:test` chain. |
+| the blind spot D10 actually closes | the template colours the arch with `slice(0, 3)` and each column with `slice(0, 2)`, so a fourth renderable colour reaches no piece at all while the report counted it under `renderizables`. `ejemplo-06` at `fase-1` is exactly that case — `["rosado","azul","morado","blanco"]` — and it is the first test. |
+| old runs stay honest | the new aggregates are `number | null`: a run from before D10 renders "—", not 0. A run that measured nothing and a run that lost nothing are different facts. |
+| `bench-informe.ts` takes `--raiz` | the harness works in `reports/` (now gitignored) while the committed snapshot is `informes/`, so the committed report could not be regenerated from a clean checkout. Default unchanged. |
+
+**Not done, and why.** The D7 fixes. Both move `plan_hash` — one through the ΔE
+table that crosses the contract into Python, the other through detection
+widening that §9 already rules out unilaterally. They are listed for a person
+below rather than taken quietly.
+
 ---
 
 ## 8. Order of work
 
-1. **D7 repro** — read one audit row. Blocks nothing else, settles the biggest
-   unknown, costs half an hour.
-2. **D2** — the clear-balloon concept. Independent, additive, unblocks Run B's
-   missing colour.
-3. **D10** — the quote assertion in the benchmark, so 1 and 2 stay fixed.
-4. **D3 + D4 + D5** — one taxonomy decision, with the ADR-0024 question answered
-   explicitly. Person.
-5. **D9** — confirm or reject the two-flag recommendation on a real generation.
-   Person.
-6. **D6** — measured hexes. Needs the photo set cleared.
-7. **D8** — the `marco` class, on its own estimate.
+Items 1 to 3 are done; what is left is what needs a person or a photo set.
+
+1. ~~**D7 repro**~~ — done, §3. It found two mechanisms instead of one, and
+   corrected this document's own reproduction instructions.
+2. ~~**D2**~~ — was already shipped by phase 1.3b; verified rather than rewritten.
+3. ~~**D10**~~ — the quote assertion and the structure-fidelity record are in the
+   harness, with tests, so 1 and 2 cannot silently regress.
+4. **D4 + D7 mechanism 2 + D3/D5 follow-up** — one taxonomy decision now, not
+   two. The `blanco` anchor is the same class of question as "what is grey":
+   both are about a colour label whose nominal hex is not what a camera records.
+   Person, and it moves `plan_hash`.
+5. **D7 mechanism 1** — the per-element cap at `MAX_COLORES_REFERENCIA = 3`.
+   Cheaper than 4 and independent of it, but still detection widening. Person.
+6. **D9** — confirm or reject the two-flag recommendation on a real generation.
+   Person. Blocked in practice until the fal key is rotated (§X2 of the fidelity
+   plan): the key in `.env.production` and on the server is still the exhausted
+   one.
+7. **D6** — measured hexes. Needs the photo set cleared.
+8. **D8** — the `marco` class, on its own estimate.
 
 ## 9. What this plan deliberately does not propose
 
