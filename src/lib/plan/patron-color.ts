@@ -151,6 +151,19 @@ export const PatronColorResueltoSchema = z.object({
 
 export type PatronColorResuelto = z.infer<typeof PatronColorResueltoSchema>;
 
+/**
+ * Un estilo que el editor puede ofrecer para una estructura, con sus
+ * direcciones y si admite espejo. Lo decide Python (`modos_admitidos` de la
+ * vista previa, ADR-0028 §10): la interfaz no repite esas reglas.
+ */
+export const ModoAdmitidoSchema = z.object({
+  modo: z.enum(MODOS_PATRON_COLOR),
+  direcciones: z.array(z.enum(DIRECCIONES_PATRON_COLOR)).min(1),
+  espejo: z.boolean(),
+}).strict();
+
+export type ModoAdmitido = z.infer<typeof ModoAdmitidoSchema>;
+
 /** Pista de patrón leída en la foto de referencia (ADR-0028 §7). */
 export const PistaPatronSchema = z.object({
   referencia_element_id: z.string().trim().min(1).max(80),

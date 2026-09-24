@@ -21,10 +21,12 @@ from app.patron_color import (
     PatronColorInvalido,
     conteo_por_instancia,
     material_de_color,
+    modos_admitidos,
     participaciones,
     patron_desde_pista,
     patron_resuelto,
     sugerir_patron,
+    sugerir_patron_modo,
     validar_y_expandir,
 )
 
@@ -935,3 +937,102 @@ def test_dos_acabados_del_mismo_color_son_un_solo_nombre_en_el_lora(
     estructura: EstructuraPatron, patron: dict[str, object], lora: str
 ) -> None:
     assert _textos(estructura, patron)["prompt_lora"] == lora
+
+
+# --- Estilos que ofrece el editor y su punto de partida ------------------------------
+
+_LINEAL = ["espiral", "anillos", "bloques", "degradado", "aleatorio", "flor"]
+
+
+def test_modos_admitidos_de_una_columna_sin_espejo_ni_direcciones() -> None:
+    assert modos_admitidos(_estructura()) == [
+        {"modo": modo, "direcciones": ["longitudinal"], "espejo": False} for modo in _LINEAL
+    ]
+
+
+def test_modos_admitidos_de_un_arco_llevan_espejo_menos_el_confeti() -> None:
+    admitidos = modos_admitidos(_estructura(tipo="arco"))
+
+    assert [(item["modo"], item["espejo"]) for item in admitidos] == [
+        (modo, modo != "aleatorio") for modo in _LINEAL
+    ]
+
+
+def test_modos_admitidos_de_una_pared_con_sus_direcciones() -> None:
+    assert modos_admitidos(_estructura(**PARED_3X4)) == [
+        {"modo": "anillos", "direcciones": ["longitudinal", "transversal"], "espejo": False},
+        {"modo": "bloques", "direcciones": ["longitudinal", "transversal"], "espejo": False},
+        {"modo": "degradado", "direcciones": ["longitudinal", "transversal", "diagonal"], "espejo": False},
+        {"modo": "aleatorio", "direcciones": ["longitudinal"], "espejo": False},
+        {"modo": "damero", "direcciones": ["longitudinal"], "espejo": False},
+    ]
+
+
+def test_sin_modos_para_una_pieza_sin_patron() -> None:
+    assert modos_admitidos(_estructura(tipo="kit")) == []
+    assert modos_admitidos(_estructura(colores=("blanco",))) == []
+
+
+def test_punto_de_partida_de_cada_estilo_sigue_la_participacion() -> None:
+    # 40 globos = 10 cuartetos; el negro manda (0.5), luego azul (0.3), luego blanco (0.2).
+    estructura = _estructura(total=40, partes=(0.2, 0.5, 0.3))
+
+    assert sugerir_patron_modo(estructura, "anillos")["base"] == {"modo": "anillos", "secuencia": [1, 2, 0], "largo": 1}
+    assert sugerir_patron_modo(estructura, "bloques")["base"] == {
+        "modo": "bloques",
+        "bloques": [{"material": 1, "peso": 50}, {"material": 2, "peso": 30}, {"material": 0, "peso": 20}],
+    }
+    assert sugerir_patron_modo(estructura, "degradado")["base"] == {
+        "modo": "degradado",
+        "paradas": [0, 1, 2],
+        "transicion": "suave",
+    }
+    assert sugerir_patron_modo(estructura, "flor")["base"] == {
+        "modo": "flor",
+        "fondo": 1,
+        "petalo": 2,
+        "centro": 0,
+        "separacion": 3,
+    }
+    assert sugerir_patron_modo(estructura, "espiral")["origen"] == "sugerido"
+
+
+def test_flor_de_dos_colores_lleva_el_centro_del_fondo() -> None:
+    patron = sugerir_patron_modo(_estructura(total=40, colores=("blanco", "rosado"), partes=(0.6, 0.4)), "flor")
+
+    assert patron["base"] == {"modo": "flor", "fondo": 0, "petalo": 1, "centro": 0, "separacion": 3}
+    assert "acentos" not in patron
+
+
+def test_flor_de_cuatro_colores_deja_el_menor_como_acento() -> None:
+    estructura = _estructura(total=48, colores=("blanco", "rosado", "amarillo", "verde"), partes=(0.4, 0.3, 0.2, 0.1))
+
+    patron = sugerir_patron_modo(estructura, "flor")
+
+    assert patron["acentos"] == [{"material": 3, "cada": 3, "desde": 2, "posiciones": [0]}]
+
+
+def test_espiral_de_cinco_colores_va_en_quintetos() -> None:
+    patron = sugerir_patron_modo(
+        _estructura(total=40, colores=("blanco", "negro", "azul", "rojo", "dorado")), "espiral"
+    )
+
+    assert patron["globos_por_racimo"] == 5
+    assert patron["base"] == {"modo": "espiral", "racimo": [0, 1, 2, 3, 4], "trazo": "espiral"}
+
+
+def test_damero_de_pared_con_los_colores_de_mayor_a_menor() -> None:
+    estructura = _estructura(**{**PARED_3X4, "total": 40}, partes=(0.2, 0.5, 0.3))
+
+    assert sugerir_patron_modo(estructura, "damero")["base"] == {
+        "modo": "damero",
+        "secuencia": [1, 2, 0],
+        "tamano": 1,
+    }
+
+
+def test_estilo_que_la_pieza_no_admite() -> None:
+    with pytest.raises(PatronColorInvalido) as error:
+        sugerir_patron_modo(_estructura(), "damero")
+
+    assert error.value.motivo == "modo_no_permitido"

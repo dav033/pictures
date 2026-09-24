@@ -78,8 +78,11 @@ function patronResuelto(aplicado: boolean, estructuraId = ESTRUCTURA): Json {
   };
 }
 
+/** What Python answers for the column: the styles the editor may offer (decided in Python). */
+const MODOS_ADMITIDOS = ["espiral", "anillos", "bloques", "degradado", "aleatorio", "flor"].map((modo) => ({ modo, direcciones: ["longitudinal"], espejo: false }));
+
 function resultado(llamada: Llamada, patron: Json): Response {
-  return sobre(llamada, { operation_schema_version: "plan-patron-result.v1", patron });
+  return sobre(llamada, { operation_schema_version: "plan-patron-result.v1", patron, modos_admitidos: MODOS_ADMITIDOS });
 }
 
 async function main(): Promise<void> {
@@ -111,7 +114,7 @@ async function main(): Promise<void> {
   let llamadas = instalarFetch((llamada) => resultado(llamada, patronResuelto(llamada.body.patron_color !== null)));
   let r = await pedir({ plan, estructura_id: ESTRUCTURA, patron_color: null });
   assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 300));
-  assert.deepEqual(r.cuerpo, { patron: patronResuelto(false) }, "only the pattern: nothing signed, nothing else");
+  assert.deepEqual(r.cuerpo, { patron: patronResuelto(false), modos_admitidos: MODOS_ADMITIDOS }, "the pattern and the styles Python admits: nothing signed, nothing else");
   assert.equal(llamadas.length, 1);
   const peticion = llamadas[0]!;
   assert.equal(peticion.path, RUTA_PYTHON);
@@ -148,6 +151,19 @@ async function main(): Promise<void> {
   r = await pedir({ plan, estructura_id: ESTRUCTURA, patron_color: null, participaciones: [0.5, 0.5] });
   assert.equal(r.status, 409);
   console.log("[PASS] vista previa del deslizador: participaciones llegan a Python; con patrón o bajo el 5 % → 400; sin patrón → 409");
+
+  // --- 1c. The starting point of a style (`modo`, with patron_color null).
+  llamadas = instalarFetch((llamada) => resultado(llamada, patronResuelto(false)));
+  r = await pedir({ plan, estructura_id: ESTRUCTURA, patron_color: null, modo: "anillos" });
+  assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 300));
+  assert.equal(llamadas[0]!.body.modo, "anillos");
+  llamadas = instalarFetch(() => { throw new Error("modo con patrón no debe llegar a Python"); });
+  r = await pedir({ plan, estructura_id: ESTRUCTURA, patron_color: ESPIRAL, modo: "anillos" });
+  assert.equal(r.status, 400);
+  r = await pedir({ plan, estructura_id: ESTRUCTURA, patron_color: null, modo: "rayas" });
+  assert.equal(r.status, 400);
+  assert.equal(llamadas.length, 0);
+  console.log("[PASS] punto de partida de un estilo: modo llega a Python; con patrón o desconocido → 400");
 
   // --- 2. The answer is validated: another structure, or a suggestion marked as applied, is not drawn.
   for (const patron of [patronResuelto(false, "EST_09_OTRA"), patronResuelto(true), { ...patronResuelto(false), celdas: "x" }]) {

@@ -166,6 +166,40 @@ def test_el_reparto_del_deslizador_se_dibuja_sin_guardar() -> None:
     assert any("se integraron al confeti" in aviso for aviso in cast(list[str], patron["avisos"]))
 
 
+def test_la_vista_previa_dice_que_estilos_ofrece_el_editor() -> None:
+    resultado = vista_previa_patron(_peticion(None))
+
+    modos = cast(list[dict[str, object]], resultado["modos_admitidos"])
+    assert [modo["modo"] for modo in modos] == ["espiral", "anillos", "bloques", "degradado", "aleatorio", "flor"]
+    assert all(modo["direcciones"] == ["longitudinal"] and modo["espejo"] is False for modo in modos)
+
+
+def test_el_punto_de_partida_de_un_estilo_se_pide_con_modo() -> None:
+    # Participación 0.4 / 0.3 / 0.3: los anillos van del blanco al azul.
+    peticion = PlanPatronRequest.model_validate(
+        {"context": {**CONTEXTO, "body_sha256": "a" * 64}, **_operacion(None), "modo": "anillos"}
+    )
+
+    patron = cast(dict[str, object], vista_previa_patron(peticion)["patron"])
+
+    assert patron["aplicado"] is False
+    assert cast(dict[str, object], patron["patron"])["base"] == {
+        "modo": "anillos",
+        "secuencia": [0, 1, 2],
+        "largo": 1,
+    }
+
+
+def test_modo_solo_va_sin_patron() -> None:
+    import pytest
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        PlanPatronRequest.model_validate(
+            {"context": {**CONTEXTO, "body_sha256": "a" * 64}, **_operacion(ANILLOS), "modo": "anillos"}
+        )
+
+
 def test_el_reparto_de_una_pieza_sin_patron_no_tiene_nada_que_dibujar() -> None:
     import pytest
 

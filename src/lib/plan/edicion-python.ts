@@ -16,7 +16,7 @@ import { coloresRealesProducto } from "./colores-producto";
 import { MENSAJE_UNICO_MATERIAL } from "./edicion-compatibilidad";
 import { PlanEditError, type CausaEdicionPlan } from "./edicion-error";
 import type { EdicionPlan } from "./edicion-esquemas";
-import type { PatronColor, PatronColorResuelto } from "./patron-color";
+import type { ModoAdmitido, ModoPatronColor, PatronColor, PatronColorResuelto } from "./patron-color";
 import { ordenarRecomendacionesPorColor } from "./recomendaciones-orden";
 import { PlanBackendNoDisponibleError } from "./resolver-backend";
 import type { PlanDecoracion } from "./tipos";
@@ -226,21 +226,24 @@ export async function vistaPreviaPatronPython(input: {
   patronColor: PatronColor | null;
   /** Colors slider over a confeti, while dragging (see `llamarPythonPlanPatron`). */
   participaciones?: readonly number[];
+  /** With `patronColor` null: the starting point of that style instead of the preset. */
+  modo?: ModoPatronColor;
   correlationId: string;
   signal?: AbortSignal;
-}): Promise<PatronColorResuelto> {
+}): Promise<{ patron: PatronColorResuelto; modos_admitidos: ModoAdmitido[] }> {
   try {
     const resultado = await llamarPythonPlanPatron({
       plan: input.plan,
       estructuraId: input.estructuraId,
       patronColor: input.patronColor,
       ...(input.participaciones === undefined ? {} : { participaciones: input.participaciones }),
+      ...(input.modo === undefined ? {} : { modo: input.modo }),
       requestId: crypto.randomUUID(),
       correlationId: input.correlationId,
       deadlineMs: EDICION_PYTHON_DEADLINE_MS,
       ...(input.signal ? { parentSignal: input.signal } : {}),
     });
-    return resultado.patron;
+    return { patron: resultado.patron, modos_admitidos: resultado.modos_admitidos };
   } catch (error) {
     throw rechazoDesdePython(error, RECHAZOS_VISTA_PATRON) ?? error;
   }

@@ -1023,6 +1023,7 @@ class _StoreThatWaitsForTheOtherCheck(FakePlanStore):
         return await super().fetch_catalog_identity(snapshot_id, product_ids, variant_ids)
 
 
+@pytest.mark.anyio
 async def test_snapshot_and_ownership_checks_run_together() -> None:
     # Each check is a round trip to the catalog database; a card edit resolves
     # twice, so running them together halves that wait.

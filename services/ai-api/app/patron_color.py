@@ -731,6 +731,135 @@ def sugerir_patron(estructura: EstructuraPatron) -> dict[str, object]:
     return patron
 
 
+def modos_admitidos(estructura: EstructuraPatron) -> list[dict[str, object]]:
+    """Estilos que admite la estructura, con sus direcciones y si llevan espejo.
+
+    Es lo que el editor ofrece: la misma tabla y las mismas reglas que
+    ``_validar`` aplica (§4), dichas una vez aquí para que la interfaz no
+    tenga que repetirlas. Vacía si la estructura no admite patrón.
+    """
+    if estructura.tipo not in _MODOS_POR_TIPO or len(estructura.materiales) < 2:
+        return []
+    admitidos: list[dict[str, object]] = []
+    for modo in _MODOS_POR_TIPO[estructura.tipo]:
+        direcciones = ["longitudinal"]
+        if estructura.tipo == TIPO_REJILLA and modo in ("anillos", "bloques", "degradado"):
+            direcciones.append("transversal")
+        if estructura.tipo == TIPO_REJILLA and modo == "degradado":
+            direcciones.append("diagonal")
+        admitidos.append(
+            {
+                "modo": modo,
+                "direcciones": direcciones,
+                # El espejo evalúa base y acentos desde los dos pies; el
+                # confeti lo ignora (§3), así que no se ofrece.
+                "espejo": estructura.tipo == "arco" and modo != "aleatorio",
+            }
+        )
+    return admitidos
+
+
+def _por_participacion(estructura: EstructuraPatron) -> list[int]:
+    """Índices de material de mayor a menor participación (desempate por posición)."""
+    return sorted(
+        range(len(estructura.materiales)),
+        key=lambda indice: (-Fraction(str(estructura.materiales[indice].participacion)), indice),
+    )
+
+
+def _con_acentos_para_sin_uso(
+    estructura: EstructuraPatron, patron: dict[str, object]
+) -> dict[str, object]:
+    """Cada color que la base no usa entra como acento (como con las pistas, §7)."""
+    usados = _materiales_de_base(cast(Mapping[str, object], patron["base"]))
+    sin_uso = [indice for indice in range(len(estructura.materiales)) if indice not in usados]
+    if sin_uso:
+        patron["acentos"] = [
+            {
+                "material": material,
+                "cada": 3 + orden,
+                "desde": 2 + orden,
+                **({"posiciones": [0]} if estructura.tipo != TIPO_REJILLA else {}),
+            }
+            for orden, material in enumerate(sin_uso)
+        ]
+    return patron
+
+
+def sugerir_patron_modo(estructura: EstructuraPatron, modo: str) -> dict[str, object]:
+    """Punto de partida de un estilo concreto que elige el decorador (``origen: "sugerido"``).
+
+    Parte de la ``participacion`` de la pieza: el color principal manda en el
+    fondo, el orden de los bloques o la secuencia. Los colores que el estilo no
+    usa entran como acentos. Lanza ``PatronColorInvalido`` si el estilo no se
+    arma en la estructura o dejaría un color sin globos.
+    """
+    _validar_estructura(estructura)
+    if modo not in _MODOS_POR_TIPO[estructura.tipo]:
+        opciones = ", ".join(_MODO_ES[opcion] for opcion in _MODOS_POR_TIPO[estructura.tipo])
+        raise PatronColorInvalido(
+            "modo_no_permitido",
+            f"El patrón «{_MODO_ES.get(modo, modo)}» no se arma en {_TIPO_ES[estructura.tipo]};"
+            f" elige {opciones}.",
+        )
+    cantidad = len(estructura.materiales)
+    orden = _por_participacion(estructura)
+    patron: dict[str, object] = {"version": VERSION_PATRON, "origen": "sugerido"}
+    if modo == "espiral":
+        if cantidad <= 4:
+            patron["base"] = {
+                "modo": "espiral",
+                "racimo": _racimo_sugerido(estructura),
+                "trazo": "espiral",
+            }
+        else:
+            # Cinco o seis colores: un racimo con una posición por color.
+            patron["globos_por_racimo"] = cantidad
+            patron["base"] = {
+                "modo": "espiral",
+                "racimo": list(range(cantidad)),
+                "trazo": "espiral",
+            }
+    elif modo == "anillos":
+        patron["base"] = {"modo": "anillos", "secuencia": orden, "largo": 1}
+    elif modo == "bloques":
+        pesos = {
+            cast(int, peso["material"]): peso["peso"]
+            for peso in _pesos_por_participacion(estructura, range(cantidad))
+        }
+        patron["base"] = {
+            "modo": "bloques",
+            "bloques": [{"material": indice, "peso": pesos[indice]} for indice in orden],
+        }
+    elif modo == "degradado":
+        patron["base"] = {
+            "modo": "degradado",
+            "paradas": list(range(cantidad)),
+            "transicion": "suave",
+        }
+    elif modo == "aleatorio":
+        patron["base"] = {
+            "modo": "aleatorio",
+            "pesos": _pesos_por_participacion(estructura, range(cantidad)),
+            "semilla": _semilla(estructura.estructura_id),
+        }
+    elif modo == "flor":
+        fondo, petalo = orden[0], orden[1]
+        centro = orden[2] if cantidad >= 3 else fondo
+        patron["base"] = {
+            "modo": "flor",
+            "fondo": fondo,
+            "petalo": petalo,
+            "centro": centro,
+            "separacion": SEPARACION_FLOR_PISTA,
+        }
+    else:
+        patron["base"] = {"modo": "damero", "secuencia": orden[:4], "tamano": 1}
+    patron = _con_acentos_para_sin_uso(estructura, patron)
+    validar_y_expandir(estructura, patron)
+    return patron
+
+
 def _delta_e(uno: Sequence[float], otro: Sequence[float]) -> float:
     return math.sqrt(sum((a - b) ** 2 for a, b in zip(uno, otro, strict=True)))
 
@@ -1486,6 +1615,8 @@ __all__ = [
     "MaterialPatron",
     "PatronColorInvalido",
     "TIPOS_RACIMOS",
+    "modos_admitidos",
+    "sugerir_patron_modo",
     "TIPO_REJILLA",
     "VERSION_PATRON",
     "conteo_por_instancia",

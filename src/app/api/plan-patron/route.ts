@@ -6,7 +6,7 @@ import { isPythonAdapterError, pythonErrorBody, PYTHON_MAX_BODY_BYTES } from "@/
 import { PlanEditError } from "@/lib/plan/edicion-error";
 import { vistaPreviaPatronPython } from "@/lib/plan/edicion-python";
 import { EdicionRepartoSchema } from "@/lib/plan/edicion-esquemas";
-import { PatronColorV1Schema } from "@/lib/plan/patron-color";
+import { MODOS_PATRON_COLOR, PatronColorV1Schema } from "@/lib/plan/patron-color";
 import { PlanDecoracionSchema } from "@/lib/plan/tipos";
 
 /**
@@ -26,9 +26,14 @@ const BodySchema = z.object({
   patron_color: PatronColorV1Schema.nullable(),
   /** Colors slider over a confeti while dragging: previewed, never saved here. */
   participaciones: EdicionRepartoSchema.shape.participaciones.optional(),
+  /** With `patron_color` null: the starting point of that style instead of the preset. */
+  modo: z.enum(MODOS_PATRON_COLOR).optional(),
 }).strict().refine((body) => body.participaciones === undefined || body.patron_color === null, {
   message: "participaciones y patron_color no van juntos.",
   path: ["participaciones"],
+}).refine((body) => body.modo === undefined || (body.patron_color === null && body.participaciones === undefined), {
+  message: "modo solo pide el punto de partida de un estilo.",
+  path: ["modo"],
 });
 
 /** Lo que se reenvía a Python cabe en su límite de cuerpo; un cuerpo mayor nunca llegaría. */
@@ -75,15 +80,16 @@ export async function POST(request: Request) {
 
   try {
     const body = BodySchema.parse(cuerpo.json);
-    const patron = await vistaPreviaPatronPython({
+    const { patron, modos_admitidos: modosAdmitidos } = await vistaPreviaPatronPython({
       plan: body.plan,
       estructuraId: body.estructura_id,
       patronColor: body.patron_color,
       ...(body.participaciones === undefined ? {} : { participaciones: body.participaciones }),
+      ...(body.modo === undefined ? {} : { modo: body.modo }),
       correlationId: requestIdHttp,
       signal: request.signal,
     });
-    return Response.json({ patron }, { headers: cabeceras });
+    return Response.json({ patron, modos_admitidos: modosAdmitidos }, { headers: cabeceras });
   } catch (error) {
     const uiError = traducirErrorServidor(error, isPythonAdapterError(error) ? error.requestId : requestIdHttp);
     registrarFalloUi(SUPERFICIE, uiError);

@@ -64,10 +64,12 @@ from app.patron_color import (
     MaterialPatron,
     PatronColorInvalido,
     conteo_por_instancia,
+    modos_admitidos,
     participaciones,
     patron_desde_pista,
     patron_resuelto,
     sugerir_patron,
+    sugerir_patron_modo,
     validar_y_expandir,
 )
 
@@ -2822,7 +2824,11 @@ def _structure_index(plan: Mapping[str, object], estructura_id: str) -> int:
 
 
 def patron_resuelto_de_estructura(
-    plan: Mapping[str, object], estructura_id: str, patron: Mapping[str, object] | None
+    plan: Mapping[str, object],
+    estructura_id: str,
+    patron: Mapping[str, object] | None,
+    *,
+    modo: str | None = None,
 ) -> dict[str, object]:
     """Expanded color pattern of one structure, without a catalog (ADR-0028 §10).
 
@@ -2831,7 +2837,8 @@ def patron_resuelto_de_estructura(
     the next resolution will quote. ``patron`` replaces the structure's own
     ``patron_color`` and comes back with ``aplicado: true``; ``None`` asks for
     the preset, computed without the structure's current pattern, and comes
-    back with ``aplicado: false``.
+    back with ``aplicado: false`` — the structure's preset, or with ``modo``
+    the starting point of that style (``sugerir_patron_modo``).
 
     Raises ``PlanResolutionError``: ``estructura_no_encontrada`` (404),
     ``patron_invalido`` (422, with ``estructura_id``/``motivo``/``mensaje``)
@@ -2849,11 +2856,34 @@ def patron_resuelto_de_estructura(
     _validate_plan(completed)
     context = _pattern_context(completed, _mappings(completed.get("estructuras"))[index])
     try:
-        chosen = dict(patron) if patron is not None else sugerir_patron(context)
+        chosen = (
+            dict(patron)
+            if patron is not None
+            else sugerir_patron_modo(context, modo)
+            if modo is not None
+            else sugerir_patron(context)
+        )
         resolved = patron_resuelto(context, chosen, aplicado=patron is not None)
     except PatronColorInvalido as error:
         raise _pattern_error(estructura_id, error) from error
     return cast(dict[str, object], resolved)
+
+
+def modos_admitidos_de_estructura(
+    plan: Mapping[str, object], estructura_id: str
+) -> list[dict[str, object]]:
+    """Styles the pattern editor offers for one structure (``modos_admitidos``).
+
+    Raises ``PlanResolutionError`` (``estructura_no_encontrada`` or ``invalid_plan``).
+    """
+    _validate_plan(plan)
+    index = _structure_index(plan, estructura_id)
+    completed = _complete_plan(plan)
+    context: EstructuraPatron = _pattern_context(
+        completed, _mappings(completed.get("estructuras"))[index]
+    )
+    admitidos: list[dict[str, object]] = modos_admitidos(context)
+    return admitidos
 
 
 def sincronizar_participaciones(plan: Mapping[str, object]) -> dict[str, object]:

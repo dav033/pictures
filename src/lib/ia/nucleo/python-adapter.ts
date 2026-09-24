@@ -15,7 +15,10 @@ import {
 import type { EdicionPlan } from "@/lib/plan/edicion-esquemas";
 import {
   MODOS_PATRON_COLOR,
+  ModoAdmitidoSchema,
   PatronColorResueltoSchema,
+  type ModoAdmitido,
+  type ModoPatronColor,
   type PatronColor,
   type PatronColorResuelto,
   type PistaPatron,
@@ -1135,6 +1138,8 @@ export interface PythonPlanPatronInput {
    * null): Python applies the same `repartir` the edit will, without saving.
    */
   participaciones?: readonly number[];
+  /** With `patronColor` null: the starting point of that style instead of the preset. */
+  modo?: ModoPatronColor;
   requestId: string;
   correlationId: string;
   deadlineMs?: number;
@@ -1146,6 +1151,8 @@ export interface PythonPlanPatronInput {
 
 export interface PythonPlanPatronResult {
   patron: PatronColorResuelto;
+  /** The styles the editor may offer for this structure, decided by Python. */
+  modos_admitidos: ModoAdmitido[];
   replayed?: boolean;
 }
 
@@ -1248,6 +1255,7 @@ function planEditPayloadIsConsistent(plan: PlanDecoracion, pedido: PlanDecoracio
 const planPatronPayloadResultSchema = z.object({
   operation_schema_version: z.literal("plan-patron-result.v1"),
   patron: PatronColorResueltoSchema,
+  modos_admitidos: z.array(ModoAdmitidoSchema).max(MODOS_PATRON_COLOR.length),
 }).strict();
 
 const imageGenerateUsageSchema = z.object({
@@ -2042,13 +2050,14 @@ export async function llamarPythonPlanEdit(input: PythonPlanEditInput): Promise<
  * (ADR-0028 §10), for the pattern editor. No catalog and no side effect.
  */
 export async function llamarPythonPlanPatron(input: PythonPlanPatronInput): Promise<PythonPlanPatronResult> {
-  const { plan, estructuraId, patronColor, participaciones, ...rest } = input;
+  const { plan, estructuraId, patronColor, participaciones, modo, ...rest } = input;
   const operationBody = {
     schema_version: "plan-patron.v1" as const,
     plan,
     estructura_id: estructuraId,
     patron_color: patronColor,
     ...(participaciones === undefined ? {} : { participaciones: [...participaciones] }),
+    ...(modo === undefined ? {} : { modo }),
   };
   const response = await llamarPythonOperacion(PYTHON_PLAN_PATRON_PATH, PYTHON_PLAN_PATRON_SCOPE, {
     ...rest,
@@ -2066,7 +2075,8 @@ export async function llamarPythonPlanPatron(input: PythonPlanPatronInput): Prom
   ) {
     throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
   }
-  return response.replayed ? { patron: parsed.data.patron, replayed: true } : { patron: parsed.data.patron };
+  const resultado = { patron: parsed.data.patron, modos_admitidos: parsed.data.modos_admitidos };
+  return response.replayed ? { ...resultado, replayed: true } : resultado;
 }
 
 export function pythonErrorBody(error: PythonAdapterError): {

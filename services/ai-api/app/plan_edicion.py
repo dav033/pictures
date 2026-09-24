@@ -46,6 +46,7 @@ from app.operational_models import ContractModel, OperationalRequest
 from app.patron_color import TIPO_REJILLA
 from app.plan import (
     PlanResolutionError,
+    modos_admitidos_de_estructura,
     patron_resuelto_de_estructura,
     sincronizar_participaciones,
     sugerir_patron_para_estructura,
@@ -202,6 +203,10 @@ class PlanPatronRequest(OperationalRequest):
     estructura_id: Identificador
     patron_color: dict[str, object] | None
     participaciones: list[float] | None = Field(default=None, min_length=2, max_length=6)
+    #: Con ``patron_color`` nulo, el punto de partida de ese estilo en vez del preset.
+    modo: (
+        Literal["espiral", "anillos", "bloques", "degradado", "aleatorio", "flor", "damero"] | None
+    ) = None
 
     @field_validator("participaciones")
     @classmethod
@@ -214,6 +219,10 @@ class PlanPatronRequest(OperationalRequest):
     def reparto_sin_patron(self) -> "PlanPatronRequest":
         if self.participaciones is not None and self.patron_color is not None:
             raise ValueError("participaciones y patron_color no van juntos")
+        if self.modo is not None and (
+            self.patron_color is not None or self.participaciones is not None
+        ):
+            raise ValueError("modo solo pide el punto de partida de un estilo")
         return self
 
 
@@ -746,11 +755,16 @@ def vista_previa_patron(request: PlanPatronRequest) -> dict[str, object]:
         patron = _vista_previa_reparto(request.plan, request.estructura_id, request.participaciones)
     else:
         patron = patron_resuelto_de_estructura(
-            request.plan, request.estructura_id, request.patron_color
+            request.plan, request.estructura_id, request.patron_color, modo=request.modo
         )
     if next(_PATRON_RESUELTO.iter_errors(patron), None) is not None:
         raise RuntimeError("el patrón resuelto no cumple plan-resuelto.v1")
-    return {"operation_schema_version": PLAN_PATRON_RESULT_VERSION, "patron": patron}
+    return {
+        "operation_schema_version": PLAN_PATRON_RESULT_VERSION,
+        "patron": patron,
+        # Qué estilos ofrece el editor para esta pieza: los decide Python.
+        "modos_admitidos": modos_admitidos_de_estructura(request.plan, request.estructura_id),
+    }
 
 
 __all__ = [

@@ -1,5 +1,6 @@
 import { CATALOGO_ERRORES_UI_V1, leerUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
-import { PatronColorResueltoSchema, type PatronColor, type PatronColorResuelto } from "./patron-color";
+import { z } from "zod";
+import { ModoAdmitidoSchema, PatronColorResueltoSchema, type ModoAdmitido, type ModoPatronColor, type PatronColor, type PatronColorResuelto } from "./patron-color";
 import { esCancelacion, FalloPlanEditar, mensajeErrorRespuesta } from "./peticion-plan-editar";
 import type { PlanResuelto } from "./resuelto";
 
@@ -32,7 +33,12 @@ export type PeticionVistaPatron = {
    * edición `repartir`, sin guardarlo.
    */
   participaciones?: number[];
+  /** Con `patron_color: null`: el punto de partida de ese estilo que arma Python. */
+  modo?: ModoPatronColor;
 };
+
+/** La vista previa con los estilos que Python admite para la pieza. */
+export type VistaPatronDetallada = { patron: PatronColorResuelto; modos_admitidos: ModoAdmitido[] };
 
 /**
  * Fallo de /api/plan-patron o de la acción `patron` de /api/plan-editar cuyo
@@ -140,6 +146,25 @@ export async function pedirVistaPatron(
     throw new FalloPlanPatron(respaldo, { cause: validado.success ? undefined : validado.error });
   }
   return validado.data;
+}
+
+/**
+ * Como `pedirVistaPatron`, y además los estilos que el editor puede ofrecer
+ * para la pieza (`modos_admitidos`), que decide Python.
+ */
+export async function pedirVistaPatronDetallada(
+  cuerpo: PeticionVistaPatron,
+  opciones: { signal?: AbortSignal; fetcher?: typeof fetch; respaldo?: string } = {},
+): Promise<VistaPatronDetallada> {
+  const respaldo = opciones.respaldo ?? RESPALDO_VISTA_PATRON;
+  const datos = await publicar("/api/plan-patron", cuerpo, respaldo, opciones);
+  const objeto = typeof datos === "object" && datos !== null ? (datos as Record<string, unknown>) : {};
+  const patron = PatronColorResueltoSchema.safeParse(objeto.patron);
+  const modos = z.array(ModoAdmitidoSchema).safeParse(objeto.modos_admitidos);
+  if (!patron.success || !modos.success || patron.data.estructura_id !== cuerpo.estructura_id) {
+    throw new FalloPlanPatron(respaldo, { cause: !patron.success ? patron.error : !modos.success ? modos.error : undefined });
+  }
+  return { patron: patron.data, modos_admitidos: modos.data };
 }
 
 /**
