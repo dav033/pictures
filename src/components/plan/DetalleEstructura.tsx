@@ -27,6 +27,7 @@ import { RecortePieza } from "@/components/referencia/RecortePieza";
 import type { Mezcla } from "@/lib/plan/mezclas";
 import { RepartoColores } from "./RepartoColores";
 import { BalanceTamanos } from "./BalanceTamanos";
+import type { PendientesAjustes } from "./cola-ajustes";
 import type { CajaNormalizada } from "@/components/referencia/recorte";
 import type { PatronColorResuelto } from "@/lib/plan/patron-color";
 import { BloquePatron } from "./patron/BloquePatron";
@@ -59,12 +60,14 @@ type Props = {
   /** Extras per line (training reference count). */
   extraLinea?: (linea: LineaMaterial) => ReactNode;
   modoDev?: boolean;
-  /** Applies a new color split of the piece (shares in `materiales` order). */
-  onRepartir?: (participaciones: number[]) => void;
-  /** Applies another size mix to the piece. */
-  onCambiarMezcla?: (mezcla: Mezcla) => void;
-  /** An edit of the card is in flight: the interactive controls wait. */
+  /** Saves a new color split of the piece (shares in `materiales` order); resolves the reason when it was not saved. */
+  onRepartir?: (participaciones: number[]) => Promise<string | null>;
+  /** Saves another size mix for the piece; resolves the reason when it was not saved. */
+  onCambiarMezcla?: (mezcla: Mezcla) => Promise<string | null>;
+  /** A dialog edit of the card is in flight: the interactive controls wait. */
   ocupado?: boolean;
+  /** The card's count of slider changes not in the plan yet (approving waits for them). */
+  pendientes?: PendientesAjustes;
   /**
    * Color pattern block (ADR-0028): the applied expansion from Python, its
    * numbered legend and the ways into the editor and the assembly sheet.
@@ -75,6 +78,8 @@ type Props = {
     leyenda: readonly ColorLeyenda[];
     onEditar?: () => void;
     onHojaArmado?: () => void;
+    /** Other edits are still saving: the editor opens once the plan they sign is in. */
+    ocupado?: boolean;
   };
 };
 
@@ -186,7 +191,7 @@ function CantidadTexto({ texto }: { texto: string }) {
 export function DetalleEstructura({
   idBase, estructura, declarada, oficial, abierto, onAlternar, recorte, lineas, imagenDe, fotoAusente, sumaCop,
   editable, onAgregar, onEditar, onQuitar, puedeQuitar, onVerProducto, extraLinea, modoDev = false,
-  onRepartir, onCambiarMezcla, ocupado = false, patron,
+  onRepartir, onCambiarMezcla, ocupado = false, pendientes, patron,
 }: Props) {
   const reducir = useReducedMotion();
   const [familiasAbiertas, setFamiliasAbiertas] = useState<ReadonlySet<string>>(() => new Set());
@@ -279,7 +284,7 @@ export function DetalleEstructura({
               nombrePieza={nombreVisible}
               onEditar={patron.onEditar}
               onHojaArmado={patron.onHojaArmado}
-              ocupado={ocupado}
+              ocupado={ocupado || Boolean(patron.ocupado)}
               modoDev={modoDev}
             />
           )}
@@ -288,8 +293,8 @@ export function DetalleEstructura({
             <div className="space-y-2.5">
               {onRepartir && repartoLibre && declarada.materiales.length >= 2 && declarada.materiales.every((material) => typeof material.participacion === "number") && (
                 <RepartoColores
-                  // A new plan from the resolver resets the control to what it signed.
-                  key={declarada.materiales.map((material) => `${material.variant_id ?? material.product_id}:${material.participacion}`).join("|")}
+                  // Same materials, same control: it follows the shares the resolver signs. Adding or removing a color starts it over.
+                  key={declarada.materiales.map((material) => material.variant_id ?? material.product_id).join("|")}
                   colores={declarada.materiales.map((material) => ({
                     etiqueta: material.color ? tonoCliente(material.color, material.product_id) : productoCliente(material.product_id),
                     fondo: muestraColor(material.color ?? "", null).fondo,
@@ -297,11 +302,12 @@ export function DetalleEstructura({
                   }))}
                   totalGlobos={estructura.total_unidades}
                   ocupado={ocupado}
-                  onAplicar={onRepartir}
+                  onGuardar={onRepartir}
+                  pendientes={pendientes}
                 />
               )}
               {onCambiarMezcla && (
-                <BalanceTamanos key={declarada.mezcla} mezcla={declarada.mezcla} totalGlobos={estructura.total_unidades} ocupado={ocupado} onAplicar={onCambiarMezcla} />
+                <BalanceTamanos mezcla={declarada.mezcla} totalGlobos={estructura.total_unidades} ocupado={ocupado} onGuardar={onCambiarMezcla} pendientes={pendientes} />
               )}
             </div>
           )}

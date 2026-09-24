@@ -12,6 +12,13 @@ const CLAVE_SUGERENCIA = "sugerencia";
 
 export type ErrorVista = { mensaje: string; patronInvalido: boolean };
 
+/**
+ * Qué se sabe del borrador actual: Python lo dibujó (`listo`), lo rechazó
+ * (`rechazado`, `patron_invalido`), no respondió (`fallido`: red, servidor) o
+ * todavía no contesta (`pendiente`). El autoguardado solo guarda un `listo`.
+ */
+export type EstadoBorrador = "listo" | "rechazado" | "fallido" | "pendiente";
+
 type Opciones = {
   plan: PlanResuelto["plan"];
   estructuraId: string;
@@ -27,14 +34,17 @@ type Respuesta = { claves: ReadonlySet<string>; vista: PatronColorResuelto | nul
 /**
  * Vista previa de Python para el borrador del editor: con espera tras el
  * último cambio, cancelable y a prueba de respuestas viejas (solo cuenta la
- * última petición). Mientras carga se conserva el último dibujo.
+ * última petición). Mientras carga se conserva el último dibujo. La
+ * sugerencia se pide una sola vez: volver a "sin patrón" la muestra de nuevo
+ * sin otra petición.
  */
 export function useVistaPrevia({ plan, estructuraId, patron, inicial }: Opciones): {
   vista: PatronColorResuelto | null;
-  /** Primera sugerencia de Python (cuando se pidió con `patron: null`): el punto de "Restablecer". */
+  /** Primera sugerencia de Python (cuando se pidió con `patron: null`): de ella parten los estilos si la pieza no tenía patrón. */
   sugerencia: PatronColorResuelto | null;
   cargando: boolean;
   error: ErrorVista | null;
+  estadoBorrador: EstadoBorrador;
   reintentar: () => void;
 } {
   const [respuesta, setRespuesta] = useState<Respuesta>(() => ({ claves: new Set(inicial ? [clavePatron(inicial.patron)] : []), vista: inicial }));
@@ -45,7 +55,8 @@ export function useVistaPrevia({ plan, estructuraId, patron, inicial }: Opciones
   const secuencia = useRef(0);
   const controlador = useRef<AbortController | null>(null);
   const clave = patron ? clavePatron(patron) : CLAVE_SUGERENCIA;
-  const respondida = respuesta.claves.has(clave);
+  const sugerenciaGuardada = clave === CLAVE_SUGERENCIA && sugerencia !== null && !respuesta.claves.has(clave);
+  const respondida = respuesta.claves.has(clave) || sugerenciaGuardada;
 
   useEffect(() => {
     if (respondida) {
@@ -89,5 +100,14 @@ export function useVistaPrevia({ plan, estructuraId, patron, inicial }: Opciones
   // Un diseño ya dibujado no arrastra el error de otro borrador; mientras llega
   // la respuesta del actual, el último error sigue a la vista hasta que la reemplace.
   const errorVisible = error && (error.clave === clave || !respondida) ? { mensaje: error.mensaje, patronInvalido: error.patronInvalido } : null;
-  return { vista: respuesta.vista, sugerencia, cargando: enVuelo && !respondida, error: errorVisible, reintentar };
+  const errorPropio = !respondida && error?.clave === clave ? error : null;
+  const estadoBorrador: EstadoBorrador = respondida ? "listo" : errorPropio ? (errorPropio.patronInvalido ? "rechazado" : "fallido") : "pendiente";
+  return {
+    vista: sugerenciaGuardada ? sugerencia : respuesta.vista,
+    sugerencia,
+    cargando: enVuelo && !respondida,
+    error: errorVisible,
+    estadoBorrador,
+    reintentar,
+  };
 }

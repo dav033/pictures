@@ -9,7 +9,10 @@ import { DialogoHojaArmado, EditorPatron, GraficaPatron, HojaArmado, LeyendaPatr
 import { clavePatron } from "@/components/plan/patron/borrador";
 import { estiloDe } from "@/components/plan/patron/modos";
 import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
+import type { Mezcla } from "@/lib/plan/mezclas";
 import type { PatronColor, PatronColorResuelto } from "@/lib/plan/patron-color";
+import { pedirPlanEditarPatron } from "@/lib/plan/peticion-patron";
+import { mensajeFalloPlanEditar } from "@/lib/plan/peticion-plan-editar";
 import type { EstructuraResuelta, LineaMaterial, PlanResuelto } from "@/lib/plan/resuelto";
 import planFixture from "../../../scripts/fixtures/patron-color-ui/plan-con-patrones.json";
 import galeriaFixture from "../../../scripts/fixtures/patron-color-ui/galeria.json";
@@ -22,8 +25,11 @@ import vistasFixture from "../../../scripts/fixtures/patron-color-ui/vistas-prev
  * responden con lo que Python devolvió al generar las fixtures
  * (`scripts/fixtures/patron-color-ui`), buscando el patrón pedido o, si no
  * está grabado, el de su estilo; un patrón pintado a mano no cambia el
- * conteo aquí. Solo para control visual; la protege la misma sesión que el
- * resto de la app (`src/proxy.ts`), como `/laboratorio-referencias`.
+ * conteo aquí. La edición firma cada plan con un hash falso nuevo, como el
+ * servidor, para ejercitar el autoguardado (patrón, colores y tamaños); se
+ * puede volver lenta o hacer fallar. Solo para control visual; la protege la
+ * misma sesión que el resto de la app (`src/proxy.ts`), como
+ * `/laboratorio-referencias`.
  */
 
 /** Qué rechaza la Python simulada: nada, solo la sugerencia (pieza sin preset posible) o todo patrón. */
@@ -45,6 +51,46 @@ type PiezaGaleria = {
 const PLAN_INICIAL = planFixture as unknown as PlanResuelto;
 const GALERIA = galeriaFixture as unknown as PiezaGaleria[];
 const VISTAS = vistasFixture as unknown as VistasPrevias;
+
+/** Cómo responde la edición simulada: al ritmo normal, lenta (~1,5 s) o sin conexión. */
+type Guardado = "normal" | "lento" | "falla";
+const ESPERA_GUARDADO_MS: Record<Guardado, number> = { normal: 450, lento: 1500, falla: 600 };
+
+let firmas = 0;
+
+/** Lo que hace el servidor al editar: un plan nuevo con su propio hash y su token de aprobación. */
+function firmado(plan: PlanResuelto): PlanResuelto {
+  firmas += 1;
+  return { ...plan, plan_hash: `lab-${Date.now().toString(36)}-${firmas}`, approval_token: `lab-token-${firmas}` };
+}
+
+/** Una estructura declarada del plan cambiada por `cambio`; el resto igual. */
+function conEstructura(actual: PlanResuelto, id: string, cambio: (estructura: EstructuraDeclarada) => EstructuraDeclarada): PlanResuelto {
+  const estructuras = actual.plan.estructuras.map((estructura) => (estructura.estructura_id === id ? cambio(estructura) : estructura));
+  return { ...actual, plan: { ...actual.plan, estructuras } as PlanResuelto["plan"] };
+}
+
+type EdicionSimulada = { accion?: string; estructura_id?: string; patron_color?: PatronColor | null; participaciones?: number[]; mezcla?: Mezcla };
+
+/** La edición que la tarjeta pide a /api/plan-editar, aplicada sobre la base que manda (la última firmada). */
+function editarSimulado(base: PlanResuelto, edicion: EdicionSimulada): PlanResuelto | null {
+  const id = edicion.estructura_id;
+  if (!id) return null;
+  switch (edicion.accion) {
+    case "patron":
+      return conPatronAplicado(base, id, edicion.patron_color ?? null);
+    case "repartir": {
+      const participaciones = edicion.participaciones ?? [];
+      return conEstructura(base, id, (estructura) => ({ ...estructura, materiales: estructura.materiales.map((material, indice) => ({ ...material, participacion: participaciones[indice] ?? material.participacion })) }));
+    }
+    case "mezcla": {
+      const mezcla = edicion.mezcla;
+      return mezcla ? conEstructura(base, id, (estructura) => ({ ...estructura, mezcla })) : null;
+    }
+    default:
+      return null;
+  }
+}
 
 function respuestaJson(cuerpo: unknown, status = 200): Response {
   return new Response(JSON.stringify(cuerpo), { status, headers: { "Content-Type": "application/json" } });
@@ -97,15 +143,20 @@ export default function LaboratorioPatronesPage() {
   const [plan, setPlan] = useState<PlanResuelto>(PLAN_INICIAL);
   const [aprobado, setAprobado] = useState(false);
   const [rechazar, setRechazar] = useState<Rechazo>("ninguno");
+  const [guardado, setGuardado] = useState<Guardado>("normal");
   const [editor, setEditor] = useState<string | null>(null);
   const [hoja, setHoja] = useState<string | null>(null);
+  // Qué firmó la edición simulada, en orden: deja ver que el autoguardado junta los cambios.
+  const [firmadas, setFirmadas] = useState<string[]>([]);
   const rechazarRef = useRef(rechazar);
+  const guardadoRef = useRef(guardado);
   const planRef = useRef(plan);
 
   useEffect(() => {
     rechazarRef.current = rechazar;
+    guardadoRef.current = guardado;
     planRef.current = plan;
-  }, [rechazar, plan]);
+  }, [rechazar, guardado, plan]);
 
   // Respuestas simuladas de /api/plan-patron y de la acción `patron` de /api/plan-editar.
   useEffect(() => {
@@ -121,17 +172,19 @@ export default function LaboratorioPatronesPage() {
         return vista ? respuestaJson({ patron: vista }) : respuestaJson({ error: "estructura_no_encontrada" }, 404);
       }
       if (url.includes("/api/plan-editar") && typeof init?.body === "string") {
-        const cuerpo = JSON.parse(init.body) as { edicion?: { accion?: string; estructura_id?: string; patron_color?: PatronColor | null } };
+        const cuerpo = JSON.parse(init.body) as { modo?: string; base?: PlanResuelto; edicion?: EdicionSimulada };
         const edicion = cuerpo.edicion;
-        if (edicion?.accion === "patron" && edicion.estructura_id) {
-          await new Promise((listo) => window.setTimeout(listo, 450));
+        if (cuerpo.modo === "aplicar" && cuerpo.base && edicion && ["patron", "repartir", "mezcla"].includes(edicion.accion ?? "")) {
+          const modo = guardadoRef.current;
+          await new Promise((listo) => window.setTimeout(listo, ESPERA_GUARDADO_MS[modo]));
+          if (modo === "falla") throw new TypeError("Failed to fetch");
           // Como lo responde /api/plan-editar: la causa estable y la frase de Python.
-          if (rechazarRef.current === "todo" && edicion.patron_color) return respuestaJson({ ...RECHAZO_PYTHON, error: RECHAZO_PYTHON.mensaje, causa: "PATRON_INVALIDO" }, 422);
-          const actual = planRef.current;
-          const id = edicion.estructura_id;
-          const patron = edicion.patron_color ?? null;
-          const siguiente = conPatronAplicado(actual, id, patron);
-          return respuestaJson({ plan: siguiente });
+          if (edicion.accion === "patron" && rechazarRef.current === "todo" && edicion.patron_color) return respuestaJson({ ...RECHAZO_PYTHON, error: RECHAZO_PYTHON.mensaje, causa: "PATRON_INVALIDO" }, 422);
+          const siguiente = editarSimulado(cuerpo.base, edicion);
+          if (!siguiente) return respuestaJson({ error: "estructura_no_encontrada" }, 404);
+          const nuevo = firmado(siguiente);
+          setFirmadas((previas) => [...previas, `${edicion.accion} sobre ${cuerpo.base?.plan_hash ?? "?"}`]);
+          return respuestaJson({ plan: nuevo });
         }
       }
       return original(entrada, init);
@@ -156,6 +209,9 @@ export default function LaboratorioPatronesPage() {
         <div className="min-w-0">
           <h1 className="text-base font-semibold">Laboratorio · Patrones de color</h1>
           <p className="text-xs text-texto-suave">Fixtures sin Python: la vista previa y la edición se simulan; el conteo no cambia al editar.</p>
+          <p data-testid="registro-firmas" data-firmas={firmadas.length} className="text-[11px] text-texto-suave">
+            Ediciones firmadas: {firmadas.length}{firmadas.length ? ` · última: ${firmadas.at(-1)}` : ""} · plan {plan.plan_hash.slice(0, 18)}
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <label className="inline-flex items-center gap-2 text-xs text-texto-suave">
@@ -164,6 +220,14 @@ export default function LaboratorioPatronesPage() {
               <option value="ninguno">nada</option>
               <option value="sugerencia">solo la sugerencia</option>
               <option value="todo">todo patrón</option>
+            </select>
+          </label>
+          <label className="inline-flex items-center gap-2 text-xs text-texto-suave">
+            Guardado
+            <select value={guardado} onChange={(evento) => setGuardado(evento.target.value as Guardado)} className="ui-input h-8 w-auto py-0 text-xs" data-testid="simular-guardado">
+              <option value="normal">normal</option>
+              <option value="lento">lento (1,5 s)</option>
+              <option value="falla">falla (sin conexión)</option>
             </select>
           </label>
           <Link href="/" className="ui-button-ghost rounded-lg px-2 py-1.5">← Volver al chat</Link>
@@ -234,18 +298,25 @@ export default function LaboratorioPatronesPage() {
       {estructuraEditor && declaradaEditor && (
         <EditorPatron
           key={estructuraEditor.estructura_id}
-          onCerrar={() => setEditor(null)}
           plan={plan.plan}
           estructura={estructuraEditor}
           declarada={declaradaEditor}
           oficial={identificarEstructuraOficial({ tipo: estructuraEditor.tipo, ubicacion: estructuraEditor.ubicacion, nombre: estructuraEditor.nombre, estructura_oficial: declaradaEditor.estructura_oficial, densidad: declaradaEditor.densidad })}
           resuelto={(plan.patrones_color ?? []).find((entrada) => entrada.estructura_id === estructuraEditor.estructura_id && entrada.aplicado) ?? null}
-          onAplicar={async (patron) => {
-            await new Promise((listo) => window.setTimeout(listo, 400));
-            if (rechazar === "todo" && patron) return RECHAZO_PYTHON.mensaje;
-            setPlan((actual) => conPatronAplicado(actual, estructuraEditor.estructura_id, patron));
-            setEditor(null);
-            return null;
+          aprobada={aprobado}
+          onCerrar={() => setEditor(null)}
+          // Sin la tarjeta: la misma edición simulada, cada una sobre el último plan firmado.
+          onGuardar={async (patron) => {
+            try {
+              const datos = await pedirPlanEditarPatron({ modo: "aplicar", base: planRef.current, edicion: { accion: "patron", estructura_id: estructuraEditor.estructura_id, patron_color: patron } }, "No se pudo actualizar la pieza.") as { plan?: PlanResuelto };
+              if (!datos.plan) return "No se pudo actualizar la pieza.";
+              planRef.current = datos.plan;
+              setPlan(datos.plan);
+              setAprobado(false);
+              return null;
+            } catch (error) {
+              return mensajeFalloPlanEditar(error, "No se pudo actualizar la pieza.");
+            }
           }}
         />
       )}

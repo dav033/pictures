@@ -1,66 +1,92 @@
 "use client";
 
-import { useState, type KeyboardEvent } from "react";
+import { useEffect, useState, type KeyboardEvent } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion, useReducedMotion } from "motion/react";
-import { Redo2, RotateCcw, Undo2, X } from "lucide-react";
+import { Redo2, Undo2, X } from "lucide-react";
 import type { PatronColor, PatronColorResuelto, PintadoPatronColor } from "@/lib/plan/patron-color";
 import type { EstructuraResuelta, PlanResuelto } from "@/lib/plan/resuelto";
 import type { EstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { productoCliente, ubicacionCliente } from "@/lib/plan/presentacion-cliente";
 import { useFocoDeRetorno } from "@/components/ui/foco-retorno";
+import type { ResumenAutoguardado } from "../autoguardado";
+import { useAutoguardado } from "../usarAutoguardado";
+import { vistaDeAutoguardado, type VistaEstadoGuardado } from "../EstadoGuardado";
 import { celdasConPendientes, conPintado, enPropuesta, mismoDiseno, pintadosPendientes, sinPintados } from "./borrador";
 import { leyendaPatron } from "./leyenda";
 import { ControlesPatron, GaleriaEstilos } from "./ControlesPatron";
 import { LienzoPatron, ResumenVistaPatron, type ModoVistaPatron } from "./PanelVistaPatron";
 import type { Pincel } from "./GraficaPatron";
 import { useVistaPrevia } from "./usarVistaPrevia";
+import { PieEditorPatron } from "./PieEditorPatron";
 
 type EstructuraDeclarada = PlanResuelto["plan"]["estructuras"][number];
 
 type Props = {
-  onCerrar: () => void;
-  /** Plan declarado: la vista previa se pide sobre él. */
+  /** Cierra el editor; `fin` resuelve cuando termina lo que quedaba por guardar. */
+  onCerrar: (fin: Promise<ResumenAutoguardado<PatronColor | null>>) => void;
+  /** Plan declarado: la vista previa se pide sobre el que había al abrir. */
   plan: PlanResuelto["plan"];
   estructura: EstructuraResuelta;
+  /** La estructura del plan de ahora: su `patron_color` es lo que ya está guardado. */
   declarada: EstructuraDeclarada;
   oficial?: EstructuraOficial;
-  /** Expansión aplicada que ya trae el plan (`plan_resuelto.patrones_color`). */
+  /** Expansión aplicada que traía el plan al abrir (`plan_resuelto.patrones_color`). */
   resuelto: PatronColorResuelto | null;
-  /** Aplica el patrón (o lo quita con `null`); devuelve el mensaje de error o `null` si salió bien. */
-  onAplicar: (patron: PatronColor | null) => Promise<string | null>;
+  /** Guarda el patrón en la propuesta (o lo quita con `null`); resuelve el motivo si no se guardó. */
+  onGuardar: (patron: PatronColor | null) => Promise<string | null>;
+  /** La propuesta estaba aprobada: la imagen no se regenera sola. */
+  aprobada?: boolean;
 };
 
-type Historia = { pasado: PatronColor[]; presente: PatronColor | null; futuro: PatronColor[]; grupo: string | null };
+/** `presente: null` = la pieza sin patrón (se ve la sugerencia de Python, que no está en el plan hasta que el decorador la toca). */
+type Historia = { pasado: (PatronColor | null)[]; presente: PatronColor | null; futuro: (PatronColor | null)[]; grupo: string | null };
 
 const MAX_HISTORIA = 60;
+/** Pausa sin cambios antes de guardar: un arrastre o varios toques seguidos son un solo guardado. */
+const ESPERA_GUARDADO_MS = 700;
 
 /**
  * Editor del patrón de color de una pieza (ADR-0028 §13): hoja inferior en
  * móvil, dos columnas en escritorio. A la izquierda lo que devuelve Python
  * (vista pseudo-3D o gráfica numerada con pincel, conteo y avisos); a la
- * derecha los estilos y parámetros del patrón declarativo. Deshacer es local;
- * "Aplicar patrón" pasa por la edición del plan de siempre.
+ * derecha los estilos y parámetros del patrón declarativo.
+ *
+ * Sin botón "Aplicar": cada borrador que Python dibuja sin rechazo se guarda
+ * solo en la propuesta tras una pausa corta (`useAutoguardado`), por la misma
+ * edición del plan de siempre. Deshacer y rehacer son locales y lo que dejan
+ * también se guarda. Abrir para mirar no cambia la propuesta: la sugerencia
+ * de Python ("Crear patrón") es solo una vista hasta que el decorador la
+ * retoca o pulsa "Usar sugerencia", y cerrar sin tocar nada no guarda nada.
+ * "Quitar patrón" guarda la pieza sin patrón al instante.
  */
-export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, resuelto, onAplicar }: Props) {
+export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, resuelto, onGuardar, aprobada = false }: Props) {
   const reducir = useReducedMotion();
   const focoRetorno = useFocoDeRetorno();
-  const inicial = declarada.patron_color ?? null;
+  // Lo que había al abrir: "Restablecer" vuelve aquí y la vista previa se pide sobre ese plan.
+  const [inicio] = useState(() => ({ patron: declarada.patron_color ?? null, resuelto, plan }));
+  const patronEnPlan = declarada.patron_color ?? null;
   const leyenda = leyendaPatron(declarada.materiales, estructura.lineas);
-  const [historia, setHistoria] = useState<Historia>({ pasado: [], presente: inicial, futuro: [], grupo: null });
+  const [historia, setHistoria] = useState<Historia>({ pasado: [], presente: inicio.patron, futuro: [], grupo: null });
   const [modo, setModo] = useState<ModoVistaPatron>("vista");
   const [pincel, setPincel] = useState<Pincel>({ material: leyenda.length > 1 ? 1 : 0, alcance: "globo" });
-  const [aplicando, setAplicando] = useState(false);
-  const [errorAplicar, setErrorAplicar] = useState<string | null>(null);
-  const { vista, sugerencia, cargando, error, reintentar } = useVistaPrevia({
-    plan,
+  const { vista, sugerencia, cargando, error, estadoBorrador, reintentar } = useVistaPrevia({
+    plan: inicio.plan,
     estructuraId: estructura.estructura_id,
-    // Sin patrón en el plan, el borrador empieza siendo la sugerencia que devuelva Python.
     patron: historia.presente,
-    inicial: inicial && resuelto ? resuelto : null,
+    inicial: inicio.patron && inicio.resuelto ? inicio.resuelto : null,
   });
+  const { estado: guardado, control: autoguardado } = useAutoguardado<PatronColor | null>({
+    enPlan: inicio.patron,
+    iguales: mismoDiseno,
+    esperaMs: ESPERA_GUARDADO_MS,
+    validar: true,
+    guardar: onGuardar,
+  });
+  // Sin patrón en el borrador, los controles parten de la sugerencia a la vista; tocarlos la vuelve del decorador y se guarda.
   const borrador = historia.presente ?? vista?.patron ?? null;
-  const puntoDePartida = inicial ?? sugerencia?.patron ?? null;
+  const sugerenciaSinUsar = historia.presente === null && estadoBorrador === "listo" && vista !== null ? vista.patron : null;
+  const puntoDePartida = inicio.patron ?? sugerencia?.patron ?? null;
   const geometria = vista?.geometria ?? (declarada.tipo === "pared" ? "rejilla" : "racimos");
   const globosPorRacimo = borrador?.globos_por_racimo
     ?? (borrador?.base.modo === "espiral" ? borrador.base.racimo.length : vista?.geometria === "racimos" ? vista.columnas : 4);
@@ -69,42 +95,48 @@ export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, r
   const nombrePieza = oficial?.nombre ?? productoCliente(estructura.nombre);
   const medidas = declarada.medidas;
   const proporcion = medidas?.alto_m && medidas.ancho_m ? medidas.alto_m / medidas.ancho_m : undefined;
-  const sinCambios = enPropuesta(borrador, inicial);
   // El conteo a la vista es el de la última respuesta de Python, que puede ir detrás del borrador.
-  const conteoEnPropuesta = enPropuesta(vista?.patron, inicial);
-  const puedeAplicar = Boolean(borrador) && !aplicando && !error?.patronInvalido && !sinCambios;
+  const conteoEnPropuesta = enPropuesta(vista?.patron, patronEnPlan);
+  const motivoRechazo = estadoBorrador === "rechazado" ? error?.mensaje ?? null : null;
   const contexto = {
     participaciones: declarada.materiales.map((material) => material.participacion ?? 0),
     globosPorRacimo,
     referencia: puntoDePartida,
   };
 
-  function cambiar(siguiente: PatronColor, grupo?: string): void {
-    setErrorAplicar(null);
+  // Cada borrador nuevo va al autoguardado; quitar el patrón no necesita vista previa ni pausa.
+  useEffect(() => {
+    autoguardado.cambiar(historia.presente, historia.presente === null ? { inmediato: true, valido: true } : undefined);
+  }, [autoguardado, historia.presente]);
+
+  // Solo se guarda lo que Python dibujó; lo que rechazó se queda en el editor.
+  useEffect(() => {
+    if (historia.presente === null) return;
+    if (estadoBorrador === "listo") autoguardado.validar(historia.presente, { ok: true });
+    else if (motivoRechazo) autoguardado.validar(historia.presente, { ok: false, motivo: motivoRechazo });
+  }, [autoguardado, historia.presente, estadoBorrador, motivoRechazo]);
+
+  function cambiar(siguiente: PatronColor | null, grupo?: string): void {
     setHistoria((actual) => {
-      const presente = actual.presente ?? borrador;
-      if (!presente) return { ...actual, presente: siguiente };
       // Un deslizador arrastrado es un solo paso de deshacer.
       if (grupo && grupo === actual.grupo) return { ...actual, presente: siguiente, futuro: [] };
-      return { pasado: [...actual.pasado, presente].slice(-MAX_HISTORIA), presente: siguiente, futuro: [], grupo: grupo ?? null };
+      return { pasado: [...actual.pasado, actual.presente].slice(-MAX_HISTORIA), presente: siguiente, futuro: [], grupo: grupo ?? null };
     });
   }
 
   function deshacer(): void {
     setHistoria((actual) => {
-      const previo = actual.pasado.at(-1);
-      const presente = actual.presente ?? borrador;
-      if (!previo || !presente) return actual;
-      return { pasado: actual.pasado.slice(0, -1), presente: previo, futuro: [presente, ...actual.futuro], grupo: null };
+      const [previo] = actual.pasado.slice(-1);
+      if (previo === undefined) return actual;
+      return { pasado: actual.pasado.slice(0, -1), presente: previo, futuro: [actual.presente, ...actual.futuro], grupo: null };
     });
   }
 
   function rehacer(): void {
     setHistoria((actual) => {
       const [siguiente, ...resto] = actual.futuro;
-      const presente = actual.presente ?? borrador;
-      if (!siguiente || !presente) return actual;
-      return { pasado: [...actual.pasado, presente], presente: siguiente, futuro: resto, grupo: null };
+      if (siguiente === undefined) return actual;
+      return { pasado: [...actual.pasado, actual.presente], presente: siguiente, futuro: resto, grupo: null };
     });
   }
 
@@ -121,24 +153,23 @@ export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, r
     }
   }
 
-  async function aplicar(patron: PatronColor | null): Promise<void> {
-    if (aplicando) return;
-    setAplicando(true);
-    setErrorAplicar(null);
-    const fallo = await onAplicar(patron);
-    // Si salió bien, la tarjeta cierra el editor con el plan nuevo.
-    if (fallo) {
-      setErrorAplicar(fallo);
-      setAplicando(false);
-    }
-  }
-
   function pintar(pintado: PintadoPatronColor): void {
     if (borrador) cambiar(conPintado(borrador, pintado));
   }
 
+  // Cerrar no espera al servidor: lo pendiente se guarda ya y la tarjeta cuenta
+  // cómo terminó; lo que no llegó por un fallo lo puede reintentar desde ahí.
+  function cerrar(): void {
+    onCerrar(autoguardado.cerrar());
+  }
+
+  const estadoGuardado: VistaEstadoGuardado = estadoBorrador === "fallido" && guardado.fase === "esperando" && error
+    // Sin vista previa (red, servidor) no se sabe si Python lo acepta: reintentar es pedirla otra vez.
+    ? { tipo: "error", motivo: error.mensaje, onReintentar: reintentar }
+    : vistaDeAutoguardado(guardado, patronEnPlan ? "Cambios guardados en tu propuesta" : "Tu propuesta quedó sin patrón en esta pieza", autoguardado.reintentar);
+
   return (
-    <Dialog.Root open onOpenChange={(abierto) => { if (!abierto && !aplicando) onCerrar(); }}>
+    <Dialog.Root open onOpenChange={(abierto) => { if (!abierto) cerrar(); }}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-overlay backdrop-blur-[2px]" />
         <Dialog.Content asChild {...focoRetorno} onKeyDown={atajos}>
@@ -156,16 +187,16 @@ export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, r
                 <Dialog.Title className="mt-0.5 truncate text-lg font-semibold tracking-tight text-texto md:text-xl">
                   {nombrePieza} <span className="font-normal text-texto-suave">{ubicacionCliente(estructura)}</span>
                 </Dialog.Title>
-                <Dialog.Description className="mt-0.5 text-xs text-texto-suave">Elige un estilo, ajusta sus colores o pinta {declarada.tipo === "pared" ? "globo por globo" : "racimo por racimo"} en la gráfica.</Dialog.Description>
+                <Dialog.Description className="mt-0.5 text-xs text-texto-suave">Elige un estilo, ajusta sus colores o pinta {declarada.tipo === "pared" ? "globo por globo" : "racimo por racimo"} en la gráfica. Cada cambio se guarda solo.</Dialog.Description>
               </div>
               <div className="flex shrink-0 items-center gap-1">
-                <button type="button" onClick={deshacer} disabled={!historia.pasado.length || aplicando} aria-label="Deshacer" title="Deshacer (Ctrl+Z)" className="ui-icon-button">
+                <button type="button" onClick={deshacer} disabled={!historia.pasado.length} aria-label="Deshacer" title="Deshacer (Ctrl+Z)" className="ui-icon-button">
                   <Undo2 className="size-4" aria-hidden="true" />
                 </button>
-                <button type="button" onClick={rehacer} disabled={!historia.futuro.length || aplicando} aria-label="Rehacer" title="Rehacer (Ctrl+Shift+Z)" className="ui-icon-button">
+                <button type="button" onClick={rehacer} disabled={!historia.futuro.length} aria-label="Rehacer" title="Rehacer (Ctrl+Shift+Z)" className="ui-icon-button">
                   <Redo2 className="size-4" aria-hidden="true" />
                 </button>
-                <Dialog.Close disabled={aplicando} aria-label="Cerrar editor de patrón" className="ml-1 grid size-10 place-items-center rounded-xl bg-acento-suave text-texto hover:text-acento focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento disabled:opacity-50">
+                <Dialog.Close aria-label="Cerrar editor de patrón" className="ml-1 grid size-10 place-items-center rounded-xl bg-acento-suave text-texto hover:text-acento focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">
                   <X className="size-4" aria-hidden="true" />
                 </Dialog.Close>
               </div>
@@ -194,7 +225,6 @@ export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, r
                   cargando={cargando}
                   error={error}
                   onReintentar={reintentar}
-                  deshabilitado={aplicando}
                 />
               </section>
               <section aria-label="Conteo del patrón" className="order-3 shrink-0 border-t border-borde-suave bg-superficie-suave px-4 py-3 empty:hidden md:order-none md:col-start-1 md:row-start-2 md:max-h-72 md:overflow-y-auto md:border-b-0 md:border-r md:px-6 md:pb-4 md:pt-1">
@@ -209,14 +239,13 @@ export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, r
                     geometria={geometria}
                     contexto={contexto}
                     onCambiar={cambiar}
-                    deshabilitado={aplicando}
                   />
                 ) : error && !cargando ? (
                   // Python no pudo sugerir un patrón para esta pieza (p. ej. un
                   // color con tan poca participación que el preset lo deja sin
                   // globos): el decorador elige el estilo y Python lo valida.
                   <div className="@container">
-                    <GaleriaEstilos patron={null} tipo={declarada.tipo} contexto={contexto} onCambiar={cambiar} deshabilitado={aplicando} />
+                    <GaleriaEstilos patron={null} tipo={declarada.tipo} contexto={contexto} onCambiar={cambiar} />
                   </div>
                 ) : (
                   <div className="space-y-2" aria-hidden="true">
@@ -226,30 +255,18 @@ export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, r
               </section>
             </div>
 
-            <footer className="border-t border-borde-suave bg-superficie px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] pt-3 md:px-6 md:pb-4">
-              {errorAplicar && <p role="alert" className="mb-2 rounded-xl bg-error-suave px-3 py-2 text-xs font-medium text-error">{errorAplicar}</p>}
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                {inicial ? (
-                  <button type="button" onClick={() => void aplicar(null)} disabled={aplicando} aria-label="Quitar patrón" className="h-10 rounded-[0.8rem] px-2.5 text-[13px] font-medium text-texto-suave hover:bg-error-suave hover:text-error focus-visible:outline-2 focus-visible:outline-acento disabled:opacity-50 sm:px-3">
-                    {/* En 360 px los tres botones caben en una fila solo con la etiqueta corta. */}
-                    Quitar<span className="hidden sm:inline"> patrón</span>
-                  </button>
-                ) : <span className="text-xs text-texto-suave">{borrador ? "Aún no está en tu propuesta: aplícalo para que cuente en tu cotización." : ""}</span>}
-                <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-                  <button
-                    type="button"
-                    onClick={() => { if (puntoDePartida) cambiar(puntoDePartida); }}
-                    disabled={!puntoDePartida || !borrador || aplicando || mismoDiseno(borrador, puntoDePartida)}
-                    className="inline-flex h-10 items-center gap-1.5 rounded-[0.8rem] px-2 text-[13px] font-medium text-texto-suave hover:bg-superficie-2 hover:text-texto focus-visible:outline-2 focus-visible:outline-acento disabled:opacity-40 sm:px-3"
-                  >
-                    <RotateCcw className="size-3.5" aria-hidden="true" />Restablecer
-                  </button>
-                  <button type="button" data-testid="aplicar-patron" onClick={() => { if (borrador) void aplicar(borrador); }} disabled={!puedeAplicar} className="ui-button-primary ui-pressable h-10 px-3.5 sm:px-4">
-                    {aplicando ? "Aplicando…" : sinCambios ? "Sin cambios" : "Aplicar patrón"}
-                  </button>
-                </div>
-              </div>
-            </footer>
+            <PieEditorPatron
+              estado={estadoGuardado}
+              avisoRegenerar={aprobada && guardado.fase !== "quieto"}
+              puedeQuitar={historia.presente !== null}
+              // Lo que tenía la pieza al abrir; sin patrón, la sugerencia vuelve a ser solo una vista.
+              puedeRestablecer={!mismoDiseno(historia.presente, inicio.patron)}
+              tituloRestablecer={inicio.patron ? "Volver al patrón que tenía la pieza al abrir" : "Volver a como estaba al abrir: sin patrón en tu propuesta"}
+              onQuitar={() => cambiar(null)}
+              onRestablecer={() => cambiar(inicio.patron)}
+              onUsarSugerencia={sugerenciaSinUsar ? () => cambiar(sugerenciaSinUsar) : undefined}
+              onListo={cerrar}
+            />
           </motion.div>
         </Dialog.Content>
       </Dialog.Portal>

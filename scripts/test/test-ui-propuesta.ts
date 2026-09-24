@@ -15,7 +15,10 @@ import { EstadoError, PasosAsistente } from "@/components/propuesta/index";
 import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
-import { ControlesPatron, GaleriaEstilos, GraficaPatron, HojaArmado, leyendaPatron, ResumenPatron } from "@/components/plan/patron";
+import { ControlesPatron, GaleriaEstilos, GraficaPatron, HojaArmado, leyendaPatron, PieEditorPatron, ResumenPatron } from "@/components/plan/patron";
+import { crearAutoguardado, type Reloj } from "@/components/plan/autoguardado";
+import { crearColaAjustes, crearPendientesAjustes } from "@/components/plan/cola-ajustes";
+import { vistaDeAutoguardado, type VistaEstadoGuardado } from "@/components/plan/EstadoGuardado";
 import { conPintado, editar, enPropuesta, patronDeEstilo, pintadosPendientes } from "@/components/plan/patron/borrador";
 import { admitePatron, MODOS_POR_TIPO } from "@/components/plan/patron/modos";
 import { FalloPlanPatron, MENSAJE_PATRON_INVALIDO, pedirPlanEditarPatron, pedirVistaPatron } from "@/lib/plan/peticion-patron";
@@ -511,8 +514,463 @@ async function probarPeticionPatron(): Promise<void> {
   ok("aplicar el patrón: el rechazo de Python llega con su frase");
 }
 
+// 8. Autoguardado (sin "Aplicar"): el editor de patrón y los deslizadores
+// guardan solos. El planificador es puro: reloj falso y guardados que la
+// prueba resuelve a mano.
+
+/** Deja correr las promesas pendientes (los `.then` del planificador y de la cola). */
+function vaciarPromesas(): Promise<void> {
+  return new Promise((listo) => setImmediate(listo));
+}
+
+function relojFalso(): { reloj: Reloj; avanzar: (ms: number) => Promise<void> } {
+  let ahora = 0;
+  let siguienteId = 0;
+  let tareas: Array<{ id: number; en: number; accion: () => void }> = [];
+  const reloj: Reloj = (accion, ms) => {
+    const id = ++siguienteId;
+    tareas.push({ id, en: ahora + ms, accion });
+    return () => {
+      tareas = tareas.filter((tarea) => tarea.id !== id);
+    };
+  };
+  async function avanzar(ms: number): Promise<void> {
+    const fin = ahora + ms;
+    for (;;) {
+      tareas.sort((a, b) => a.en - b.en || a.id - b.id);
+      const tarea = tareas[0];
+      if (!tarea || tarea.en > fin) break;
+      tareas.shift();
+      ahora = tarea.en;
+      tarea.accion();
+      await vaciarPromesas();
+    }
+    ahora = fin;
+    await vaciarPromesas();
+  }
+  return { reloj, avanzar };
+}
+
+type Patronito = { estilo: string; origen?: string } | null;
+/** Igualdad de diseño como `mismoDiseno`: el origen no cuenta. */
+const mismoPatronito = (a: Patronito, b: Patronito): boolean => (a === null || b === null ? a === b : a.estilo === b.estilo);
+
+function banco(opciones: { enPlan?: Patronito; validar?: boolean; alPendiente?: (pendiente: boolean) => void } = {}) {
+  const { reloj, avanzar } = relojFalso();
+  const llamadas: Array<{ valor: Patronito; resolver: (motivo: string | null) => void }> = [];
+  const control = crearAutoguardado<Patronito>({
+    enPlan: opciones.enPlan ?? { estilo: "espiral" },
+    iguales: mismoPatronito,
+    esperaMs: 700,
+    validar: opciones.validar ?? true,
+    reloj,
+    alPendiente: opciones.alPendiente,
+    guardar: (valor) => new Promise((resolver) => llamadas.push({ valor, resolver })),
+  });
+  const guardados = () => llamadas.map((llamada) => llamada.valor?.estilo ?? "sin patrón");
+  async function responder(indice: number, motivo: string | null = null): Promise<void> {
+    llamadas[indice]!.resolver(motivo);
+    await vaciarPromesas();
+  }
+  return { control, avanzar, llamadas, guardados, responder };
+}
+
+async function probarAutoguardado(): Promise<void> {
+  // Pausa: una ráfaga de cambios es un solo guardado, 700 ms después del último.
+  {
+    const { control, avanzar, guardados, responder } = banco({ validar: false });
+    assert.equal(control.estado().fase, "quieto", "antes del primer cambio no hay nada que decir");
+    control.cambiar({ estilo: "anillos" });
+    await avanzar(300);
+    control.cambiar({ estilo: "bloques" });
+    assert.equal(control.estado().fase, "esperando", "un cambio en espera ya se anuncia como guardándose");
+    await avanzar(690);
+    assert.deepEqual(guardados(), [], "la pausa se cuenta desde el último cambio");
+    await avanzar(10);
+    assert.deepEqual(guardados(), ["bloques"], "solo se guarda el último");
+    assert.equal(control.estado().fase, "guardando");
+    await responder(0);
+    assert.deepEqual(control.estado(), { fase: "guardado", motivo: null, guardados: 1 });
+  }
+  ok("autoguardado: espera a que el borrador deje de cambiar");
+
+  // Nunca se guarda un borrador que la vista previa no aprobó.
+  {
+    const { control, avanzar, guardados, responder } = banco();
+    const flores = { estilo: "flores" };
+    control.cambiar(flores);
+    await avanzar(2000);
+    assert.deepEqual(guardados(), [], "sin vista previa todavía, espera");
+    control.validar(flores, { ok: true });
+    assert.deepEqual(guardados(), ["flores"], "con la pausa cumplida, la vista previa buena lo guarda al llegar");
+    await responder(0);
+    const damero = { estilo: "damero" };
+    control.cambiar(damero);
+    control.validar(damero, { ok: false, motivo: "Negro no aparece en el patrón." });
+    await avanzar(5000);
+    assert.deepEqual(guardados(), ["flores"], "un borrador que Python rechazó no se guarda");
+    assert.deepEqual(control.estado(), { fase: "rechazado", motivo: "Negro no aparece en el patrón.", guardados: 1 });
+    control.validar({ estilo: "otro" }, { ok: true });
+    await avanzar(1000);
+    assert.deepEqual(guardados(), ["flores"], "la vista previa de otro borrador no lo aprueba");
+    const anillos = { estilo: "anillos" };
+    control.cambiar(anillos);
+    control.validar(anillos, { ok: true });
+    await avanzar(700);
+    assert.deepEqual(guardados(), ["flores", "anillos"], "el siguiente borrador válido se guarda solo");
+  }
+  ok("autoguardado: solo lo que Python dibujó sin rechazo");
+
+  // Un guardado a la vez; lo que cambia mientras vuela se junta y va después, solo lo último.
+  {
+    const { control, avanzar, guardados, responder } = banco({ validar: false });
+    control.cambiar({ estilo: "anillos" }, { inmediato: true });
+    assert.deepEqual(guardados(), ["anillos"]);
+    control.cambiar({ estilo: "bloques" });
+    await avanzar(800);
+    control.cambiar({ estilo: "degradado" });
+    await avanzar(800);
+    assert.deepEqual(guardados(), ["anillos"], "no sale otro guardado con uno en vuelo (ni se cancela el que vuela)");
+    assert.equal(control.estado().fase, "guardando");
+    await responder(0);
+    assert.deepEqual(guardados(), ["anillos", "degradado"], "al terminar se guarda solo el último cambio");
+    await responder(1);
+    assert.deepEqual(control.estado(), { fase: "guardado", motivo: null, guardados: 2 });
+  }
+  ok("autoguardado: un guardado en vuelo, los cambios de mientras se juntan");
+
+  // Lo que el plan ya lleva no se guarda; volver al de antes con uno en vuelo sí.
+  {
+    const { control, avanzar, guardados, responder } = banco({ enPlan: { estilo: "espiral", origen: "sugerido" }, validar: false });
+    control.cambiar({ estilo: "espiral", origen: "decorador" }, { inmediato: true });
+    await avanzar(1000);
+    assert.deepEqual(guardados(), [], "mismo diseño que el plan (aunque cambie el origen): nada que guardar");
+    assert.equal(control.estado().fase, "quieto");
+    control.cambiar({ estilo: "anillos" }, { inmediato: true });
+    control.cambiar({ estilo: "espiral" });
+    await avanzar(700);
+    await responder(0);
+    assert.deepEqual(guardados(), ["anillos", "espiral"], "deshacer mientras vuela: el plan va a cambiar, así que el de antes se vuelve a guardar");
+    await responder(1);
+    control.cambiar({ estilo: "espiral", origen: "decorador" });
+    await avanzar(700);
+    assert.deepEqual(guardados(), ["anillos", "espiral"], "igual a lo último guardado: nada");
+    assert.equal(control.estado().fase, "guardado");
+  }
+  ok("autoguardado: no repite lo que el plan ya tiene");
+
+  // Tras un "Deshacer" de la tarjeta, volver a elegir el valor deshecho es un cambio (la mezcla de tamaños es un string).
+  {
+    const { reloj, avanzar } = relojFalso();
+    const guardadas: string[] = [];
+    const tamanos = crearAutoguardado<string>({ enPlan: "organica_fina", iguales: (a, b) => a === b, esperaMs: 600, reloj, guardar: async (mezcla) => { guardadas.push(mezcla); return null; } });
+    tamanos.cambiar("clasica", { inmediato: true });
+    await vaciarPromesas();
+    assert.deepEqual(guardadas, ["clasica"]);
+    tamanos.sincronizar("organica_fina");
+    tamanos.cambiar("clasica");
+    assert.equal(tamanos.estado().fase, "esperando", "el control no vuelve de golpe a lo que tiene el plan");
+    await avanzar(600);
+    assert.deepEqual(guardadas, ["clasica", "clasica"], "la mezcla deshecha, elegida otra vez, se guarda");
+    tamanos.sincronizar("clasica");
+    tamanos.cambiar("solo_grandes");
+    await avanzar(400);
+    tamanos.cambiar("solo_grandes");
+    await avanzar(200);
+    assert.deepEqual(guardadas, ["clasica", "clasica", "solo_grandes"], "un efecto que repite el mismo valor sigue sin ser un cambio: no alarga la pausa");
+  }
+  ok("autoguardado: tras deshacer, el mismo valor se puede volver a elegir");
+
+  // Pendiente: desde que el cambio espera su pausa hasta que el plan lo tiene (o falla). Aprobar espera a esto.
+  {
+    const avisos: boolean[] = [];
+    const { control, avanzar, responder } = banco({ validar: false, alPendiente: (pendiente) => avisos.push(pendiente) });
+    control.cambiar({ estilo: "anillos" });
+    assert.deepEqual(avisos, [true], "esperar la pausa ya cuenta como pendiente, antes de llegar a la cola");
+    await avanzar(700);
+    assert.deepEqual(avisos, [true], "de esperar a guardando sigue pendiente sin avisar otra vez");
+    await responder(0);
+    assert.deepEqual(avisos, [true, false]);
+    control.cambiar({ estilo: "bloques" }, { inmediato: true });
+    await responder(1, "No pudimos conectarnos.");
+    assert.deepEqual(avisos, [true, false, true, false], "un fallo deja de estar pendiente: se ve el error");
+    control.cambiar({ estilo: "anillos" });
+    assert.deepEqual(avisos, [true, false, true, false], "volver a lo que el plan ya tiene no deja nada pendiente");
+
+    const cantidades: number[] = [];
+    const contador = crearPendientesAjustes((cantidad) => cantidades.push(cantidad));
+    const colores = contador.avisador();
+    const tamanos = contador.avisador();
+    colores(true);
+    colores(true);
+    tamanos(true);
+    colores(false);
+    tamanos(false);
+    tamanos(false);
+    assert.deepEqual(cantidades, [1, 2, 1, 0], "cada control cuenta una vez mientras tenga algo sin guardar");
+    assert.equal(contador.cantidad(), 0);
+  }
+  ok("autoguardado: avisa mientras hay un cambio sin guardar, también en la pausa");
+
+  // Error: el plan se queda como estaba, el motivo a la vista con Reintentar; otro cambio reintenta solo.
+  {
+    const { control, avanzar, guardados, responder } = banco({ validar: false });
+    control.cambiar({ estilo: "anillos" }, { inmediato: true });
+    await responder(0, "No pudimos conectarnos.");
+    assert.deepEqual(control.estado(), { fase: "error", motivo: "No pudimos conectarnos.", guardados: 0 });
+    control.reintentar();
+    assert.deepEqual(guardados(), ["anillos", "anillos"], "Reintentar vuelve a mandar el mismo borrador");
+    await responder(1);
+    assert.equal(control.estado().fase, "guardado");
+    control.cambiar({ estilo: "bloques" }, { inmediato: true });
+    await responder(2, "No pudimos conectarnos.");
+    control.cambiar({ estilo: "flores" });
+    assert.equal(control.estado().fase, "esperando", "un cambio nuevo deja atrás el error");
+    await avanzar(700);
+    assert.deepEqual(guardados(), ["anillos", "anillos", "bloques", "flores"]);
+    await responder(3);
+    assert.deepEqual(control.estado(), { fase: "guardado", motivo: null, guardados: 2 });
+    const roto = crearAutoguardado<number>({ enPlan: 0, iguales: (a, b) => a === b, esperaMs: 10, guardar: () => Promise.reject(new Error("x")) });
+    roto.cambiar(1, { inmediato: true });
+    await vaciarPromesas();
+    assert.deepEqual(roto.estado(), { fase: "error", motivo: "No se pudo guardar el cambio.", guardados: 0 }, "un guardado que revienta no se da por bueno");
+  }
+  ok("autoguardado: los errores se ven y se reintentan");
+
+  // Cerrar: lo que esperaba sale ya (aunque falte la vista previa: el servidor valida) y la sesión avisa al terminar.
+  {
+    const { control, llamadas, guardados, responder } = banco();
+    const anillos = { estilo: "anillos" };
+    control.cambiar(anillos);
+    control.validar(anillos, { ok: true });
+    let resumen: unknown = null;
+    void control.cerrar().then((valor) => { resumen = valor; });
+    assert.deepEqual(guardados(), ["anillos"], "cerrar no espera la pausa");
+    await vaciarPromesas();
+    assert.equal(resumen, null, "el resumen llega cuando termina el guardado");
+    await responder(0);
+    assert.deepEqual(resumen, { guardados: 1, error: null, sinGuardar: null });
+    control.cambiar({ estilo: "flores" }, { inmediato: true });
+    assert.equal(llamadas.length, 1, "cerrado, ya no escucha cambios");
+
+    // Lo que no llegó al guardarse vuelve en el resumen: la tarjeta lo puede reintentar (y sabe si fue un rechazo de Python).
+    const sinVista = banco();
+    const bloques = { estilo: "bloques" };
+    sinVista.control.cambiar(bloques);
+    const fin = sinVista.control.cerrar();
+    assert.deepEqual(sinVista.guardados(), ["bloques"], "sin vista previa todavía: se manda y Python decide");
+    await sinVista.responder(0, "Negro no aparece en el patrón.");
+    assert.deepEqual(await fin, { guardados: 0, error: "Negro no aparece en el patrón.", sinGuardar: { valor: bloques } }, "si no quedó, la tarjeta lo dice");
+
+    const caido = banco({ validar: false });
+    const flores = { estilo: "flores" };
+    caido.control.cambiar(flores, { inmediato: true });
+    await caido.responder(0, "No pudimos conectarnos.");
+    assert.equal(caido.control.estado().fase, "error");
+    const cierreCaido = await caido.control.cerrar();
+    assert.deepEqual(cierreCaido, { guardados: 0, error: "No pudimos conectarnos.", sinGuardar: { valor: flores } }, "cerrar con un fallo a la vista no pierde el borrador: vuelve para reintentarlo");
+    assert.equal(cierreCaido.sinGuardar?.valor, flores, "el mismo borrador, no una copia");
+
+    const rechazado = banco();
+    const damero = { estilo: "damero" };
+    rechazado.control.cambiar(damero);
+    rechazado.control.validar(damero, { ok: false, motivo: "No se puede armar así." });
+    assert.deepEqual(await rechazado.control.cerrar(), { guardados: 0, error: "No se puede armar así.", sinGuardar: null }, "un rechazo de la vista previa no se ofrece para reintentar");
+    assert.deepEqual(rechazado.guardados(), [], "un rechazado tampoco se manda al cerrar");
+
+    const quieto = banco();
+    assert.deepEqual(await quieto.control.cerrar(), { guardados: 0, error: null, sinGuardar: null }, "sin cambios, cerrar termina al instante");
+  }
+  ok("autoguardado: cerrar guarda lo pendiente y resume la sesión");
+
+  // Quitar el patrón: sin vista previa ni pausa.
+  {
+    const { control, guardados } = banco();
+    control.cambiar(null, { inmediato: true, valido: true });
+    assert.deepEqual(guardados(), ["sin patrón"]);
+  }
+  ok("autoguardado: quitar el patrón se guarda al instante");
+
+  // Cola de la tarjeta: cada edición sale sobre el plan que firmó la anterior, aunque se encolen a la vez.
+  {
+    type Plan = { hash: string };
+    const p0: Plan = { hash: "p0" };
+    const pendientes: number[] = [];
+    const cola = crearColaAjustes<Plan>(p0, (cantidad) => pendientes.push(cantidad));
+    const bases: string[] = [];
+    const firmar = (hash: string) => async (base: Plan): Promise<Plan> => {
+      bases.push(base.hash);
+      await vaciarPromesas();
+      return { hash };
+    };
+    const primera = cola.encolar(firmar("p1"));
+    const segunda = cola.encolar(firmar("p2"));
+    const fallida = cola.encolar(async (base) => {
+      bases.push(base.hash);
+      throw new Error("sin conexión");
+    });
+    const cuarta = cola.encolar(firmar("p3"));
+    assert.equal(cola.pendientes(), 4);
+    assert.equal((await primera).hash, "p1");
+    assert.equal((await segunda).hash, "p2");
+    await assert.rejects(fallida, /sin conexión/, "el fallo lo recibe quien encoló");
+    assert.equal((await cuarta).hash, "p3");
+    await vaciarPromesas();
+    assert.deepEqual(bases, ["p0", "p1", "p2", "p2"], "cada una sobre la anterior; la que falla no cambia la base");
+    assert.equal(cola.base().hash, "p3");
+    assert.equal(pendientes.at(-1), 0);
+    const atrasado = p0;
+    cola.sincronizar(atrasado);
+    assert.equal(cola.base().hash, "p3", "un render atrasado (un plan que la cola ya vio) no pisa la última firma");
+    cola.sincronizar({ hash: "del chat" });
+    assert.equal(cola.base().hash, "del chat", "un plan nuevo que llega de fuera sí es la base");
+
+    // El autoguardado encadena sus guardados por la cola: el segundo sale sobre el plan que firmó el primero.
+    const reloj = relojFalso();
+    const colaPatron = crearColaAjustes<Plan>(p0);
+    const basesPatron: string[] = [];
+    const liberar: Array<() => void> = [];
+    const patron = crearAutoguardado<string>({
+      enPlan: "espiral",
+      iguales: (a, b) => a === b,
+      esperaMs: 700,
+      reloj: reloj.reloj,
+      guardar: (valor) => colaPatron.encolar(async (base) => {
+        basesPatron.push(`${valor}@${base.hash}`);
+        await new Promise<void>((listo) => liberar.push(listo));
+        return { hash: `${base.hash}+${valor}` };
+      }).then(() => null, () => "falló"),
+    });
+    patron.cambiar("anillos", { inmediato: true });
+    await vaciarPromesas();
+    patron.cambiar("bloques");
+    await reloj.avanzar(700);
+    liberar.shift()!();
+    await vaciarPromesas();
+    await vaciarPromesas();
+    liberar.shift()!();
+    await vaciarPromesas();
+    assert.deepEqual(basesPatron, ["anillos@p0", "bloques@p0+anillos"], "el segundo guardado usa el plan que devolvió el primero");
+    assert.equal(colaPatron.base().hash, "p0+anillos+bloques");
+  }
+  ok("cola de la tarjeta: una edición a la vez, cada una sobre la última firma");
+
+  // "Deshacer" solo mientras la edición (o la sesión del editor) sea lo último que cambió el plan.
+  {
+    type Plan = { hash: string };
+    const p0: Plan = { hash: "p0" };
+    const cola = crearColaAjustes<Plan>(p0);
+    const firmar = (paso: string) => async (base: Plan): Promise<Plan> => ({ hash: `${base.hash}+${paso}` });
+    const liberar: Array<() => void> = [];
+    const firmarLento = (paso: string) => (base: Plan): Promise<Plan> => new Promise((listo) => liberar.push(() => listo({ hash: `${base.hash}+${paso}` })));
+    const publicados: string[] = [];
+    const publicar = (plan: Plan) => { publicados.push(plan.hash); };
+
+    const sola = cola.tramo();
+    assert.equal(sola.deshacible(), false, "sin ediciones no hay qué deshacer");
+    await sola.encolar(firmar("colores"));
+    await vaciarPromesas();
+    assert.equal(sola.deshacible(), true);
+    assert.equal(await sola.deshacer(publicar), true);
+    assert.deepEqual(publicados, ["p0"], "vuelve al plan de antes, publicado en su turno");
+    assert.equal(cola.base(), p0);
+    assert.equal(sola.deshacible(), false, "deshecho una vez, no se deshace dos");
+
+    // El caso del revisor: colores guardados con su Deshacer, tamaño en vuelo, Deshacer de los colores.
+    const colores = cola.tramo();
+    await colores.encolar(firmar("colores"));
+    const tamano = cola.tramo().encolar(firmarLento("tamaño"));
+    await vaciarPromesas();
+    assert.equal(colores.deshacible(), false, "con otra edición en camino, el Deshacer anterior no se ofrece");
+    const vuelta = colores.deshacer(publicar);
+    liberar.shift()!();
+    await tamano;
+    assert.equal(await vuelta, false, "si igual se pulsa, la vuelta atrás no pisa lo que llegó después");
+    assert.equal(cola.base().hash, "p0+colores+tamaño", "el cambio de tamaño sigue en el plan");
+    assert.deepEqual(publicados, ["p0"], "y no se publicó ningún plan viejo");
+
+    // Si la otra edición falla, el plan sigue siendo el de esta: sí se puede deshacer.
+    const quitar = cola.tramo();
+    await quitar.encolar(firmar("quitar"));
+    await assert.rejects(cola.encolar(async () => { throw new Error("sin conexión"); }));
+    await vaciarPromesas();
+    assert.equal(quitar.deshacible(), true);
+
+    // Sesión del editor: guardado, otra pieza entre medio, guardado. Deshacer la sesión borraría la otra pieza.
+    const sesion = cola.tramo();
+    await sesion.encolar(firmar("patrón1"));
+    await cola.tramo().encolar(firmar("mezcla"));
+    await sesion.encolar(firmar("patrón2"));
+    await vaciarPromesas();
+    assert.equal(sesion.deshacible(), false, "una edición ajena entre dos guardados de la sesión");
+    const antesDelIntento = cola.base();
+    assert.equal(await sesion.deshacer(() => assert.fail("no publica un plan que borre la mezcla")), false);
+    assert.equal(cola.base(), antesDelIntento);
+
+    // Sesión limpia: vuelve al plan de antes de su primer guardado que salió bien (un fallo no cuenta).
+    const limpia = cola.tramo();
+    const antes = cola.base();
+    await assert.rejects(limpia.encolar(async () => { throw new Error("sin conexión"); }));
+    await limpia.encolar(firmar("patrón1"));
+    await limpia.encolar(firmar("patrón2"));
+    await vaciarPromesas();
+    assert.equal(limpia.deshacible(), true);
+    assert.equal(await limpia.deshacer(publicar), true);
+    assert.equal(cola.base(), antes);
+
+    // Un plan que llega del chat reemplaza la base: la edición anterior ya no se deshace.
+    const ultima = cola.tramo();
+    await ultima.encolar(firmar("x"));
+    cola.sincronizar({ hash: "del chat" });
+    assert.equal(ultima.deshacible(), false);
+    assert.equal(await ultima.deshacer(publicar), false);
+    assert.equal(cola.base().hash, "del chat");
+  }
+  ok("cola de la tarjeta: Deshacer nunca borra una edición posterior");
+
+  // Pie del editor y deslizadores: sin "Aplicar"; el estado del guardado a la vista.
+  {
+    const pie = (estado: VistaEstadoGuardado, extra: Partial<React.ComponentProps<typeof PieEditorPatron>> = {}) => renderToStaticMarkup(React.createElement(PieEditorPatron, {
+      estado, avisoRegenerar: false, puedeQuitar: true, puedeRestablecer: true, tituloRestablecer: "Volver", onQuitar: () => undefined, onRestablecer: () => undefined, onListo: () => undefined, ...extra,
+    }));
+    const quieto = pie(null);
+    const textoQuieto = textoVisible(quieto);
+    assert.doesNotMatch(textoQuieto, /Aplicar/, "el editor ya no tiene Aplicar");
+    assert.match(textoQuieto, /Quitar patrón Restablecer Listo/);
+    assert.doesNotMatch(textoQuieto, /Guardando|guardad|No se guardó/, "antes del primer cambio el pie no dice nada");
+    assert.match(quieto, /role="status" aria-live="polite"[^>]*data-testid="estado-patron"/, "la región que anuncia el guardado existe desde el principio");
+    assert.match(textoVisible(pie({ tipo: "guardando" })), /Guardando…/);
+    assert.match(textoVisible(pie(vistaDeAutoguardado({ fase: "guardado", motivo: null, guardados: 2 }, "Cambios guardados en tu propuesta", () => undefined))), /Cambios guardados en tu propuesta/);
+    const conError = pie(vistaDeAutoguardado({ fase: "error", motivo: "No pudimos conectarnos.", guardados: 0 }, "x", () => undefined));
+    assert.match(textoVisible(conError), /No se guardó: No pudimos conectarnos\. Reintentar/);
+    const rechazo = textoVisible(pie(vistaDeAutoguardado({ fase: "rechazado", motivo: "Negro no aparece en el patrón.", guardados: 0 }, "x", () => undefined)));
+    assert.match(rechazo, /No se guardó: Negro no aparece en el patrón\./);
+    assert.doesNotMatch(rechazo, /Reintentar/, "reintentar un rechazo de Python daría lo mismo");
+    assert.equal(vistaDeAutoguardado({ fase: "esperando", motivo: null, guardados: 0 }, "x", () => undefined)?.tipo, "guardando");
+    assert.match(textoVisible(pie({ tipo: "guardando" }, { avisoRegenerar: true })), /La imagen se actualiza cuando pulses Regenerar visual/);
+    assert.doesNotMatch(textoVisible(pie(null, { puedeQuitar: false })), /Quitar patrón/, "sin patrón no hay qué quitar");
+    // "Crear patrón": abrir para mirar no guarda la sugerencia; se dice y se puede usar tal cual.
+    const sugerencia = pie(null, { puedeQuitar: false, puedeRestablecer: false, onUsarSugerencia: () => undefined });
+    assert.match(textoVisible(sugerencia), /Es una sugerencia: entra en tu propuesta cuando la ajustes o la uses\. Usar sugerencia/);
+    assert.match(sugerencia, /<button type="button" data-testid="usar-sugerencia"/, "usarla es un botón");
+    assert.doesNotMatch(textoVisible(sugerencia), /Guardando/, "sin un gesto del decorador no se está guardando nada");
+    assert.doesNotMatch(textoQuieto, /Usar sugerencia|Es una sugerencia/, "con un patrón propio no se ofrece");
+
+    const deslizadores = renderToStaticMarkup(React.createElement(TarjetaPlanDecoracion, { plan: fixture, onPlanActualizado: () => undefined }));
+    const textoDeslizadores = textoVisible(deslizadores);
+    assert.ok((deslizadores.match(/data-testid="reparto-colores"/g) ?? []).length >= 1, "el reparto de colores sigue en el detalle");
+    assert.ok((deslizadores.match(/data-testid="balance-tamanos"/g) ?? []).length >= 1);
+    assert.doesNotMatch(textoDeslizadores, /Aplicar colores|Aplicar tamaños|Aplicando…|se recalculan al aplicar/, "los deslizadores guardan solos al soltar");
+    assert.match(deslizadores, /role="status" aria-live="polite"[^>]*data-testid="estado-reparto-colores"/);
+    assert.match(deslizadores, /role="status" aria-live="polite"[^>]*data-testid="estado-balance-tamanos"/);
+    assert.match(deslizadores, /role="slider"[^>]*tabindex="0"/, "el reparto se sigue moviendo con el teclado");
+  }
+  ok("pie del editor y deslizadores: sin Aplicar, con el estado del guardado");
+}
+
 probarPeticionPatron()
-  .then(() => console.log(`\n${casos} casos OK (propuesta, cotización, análisis de foto y patrón de color)`))
+  .then(probarAutoguardado)
+  .then(() => console.log(`\n${casos} casos OK (propuesta, cotización, análisis de foto, patrón de color y autoguardado)`))
   .catch((error: unknown) => {
     console.error(error);
     process.exit(1);

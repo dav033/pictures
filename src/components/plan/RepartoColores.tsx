@@ -1,8 +1,10 @@
 "use client";
 
-import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { RotateCcw } from "lucide-react";
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { motion, useReducedMotion } from "motion/react";
+import { useAutoguardado } from "./usarAutoguardado";
+import { EstadoGuardado, vistaDeAutoguardado } from "./EstadoGuardado";
+import type { PendientesAjustes } from "./cola-ajustes";
 
 export type ColorReparto = { etiqueta: string; fondo: string; participacion: number };
 
@@ -11,12 +13,18 @@ type Props = {
   /** Balloons of the piece, to preview roughly how many each color would get. */
   totalGlobos: number;
   ocupado?: boolean;
-  /** New shares (fractions adding up to 1), in the same order as `colores`. */
-  onAplicar: (participaciones: number[]) => void;
+  /** Saves new shares (fractions adding up to 1, in `colores` order); resolves the reason when it was not saved. */
+  onGuardar: (participaciones: number[]) => Promise<string | null>;
+  /** The card's count of unsaved changes: approving waits for this one too. */
+  pendientes?: PendientesAjustes;
 };
 
 /** Smallest share in whole percent: below it, removing the color is the honest action. */
 const MINIMO = 5;
+/** Arrow keys save after this pause, so holding one is a single edit. */
+const ESPERA_TECLADO_MS = 600;
+/** Local values stay on screen while they are not in the plan yet. */
+const FASES_PROPIAS = new Set(["esperando", "guardando", "error", "rechazado"]);
 
 /** Fractions to whole percents that add up to exactly 100 (largest remainder). */
 function aPorcentajes(fracciones: readonly number[]): number[] {
@@ -33,33 +41,51 @@ function aPorcentajes(fracciones: readonly number[]): number[] {
   return enteros;
 }
 
+function mismosValores(a: readonly number[], b: readonly number[]): boolean {
+  return a.length === b.length && a.every((valor, indice) => valor === b[indice]);
+}
+
+/** `actuales` with the border after segment `indice` moved to `limite` percent (cumulative), within the neighbours' minimums. */
+function conLimite(actuales: readonly number[], indice: number, limite: number): readonly number[] {
+  const antes = actuales.slice(0, indice).reduce((suma, valor) => suma + valor, 0);
+  const par = actuales[indice]! + actuales[indice + 1]!;
+  const izquierda = Math.round(Math.min(Math.max(limite - antes, MINIMO), par - MINIMO));
+  if (izquierda === actuales[indice]) return actuales;
+  const siguientes = [...actuales];
+  siguientes[indice] = izquierda;
+  siguientes[indice + 1] = par - izquierda;
+  return siguientes;
+}
+
 /**
  * Colors of one piece as a bar the customer drags: each divider moves the
  * border between two neighbouring colors, by pointer or with the arrow keys
- * (Shift for 5 %). Counts shown while dragging are an estimate; the real ones
- * come back from the resolver when the change is applied.
+ * (Shift for 5 %). Counts shown while dragging are an estimate. The change is
+ * saved on its own when the divider is released (or after a short pause with
+ * the keyboard); the real counts come back from the resolver.
  */
-export function RepartoColores({ colores, totalGlobos, ocupado = false, onAplicar }: Props) {
+export function RepartoColores({ colores, totalGlobos, ocupado = false, onGuardar, pendientes }: Props) {
   const reducir = useReducedMotion();
-  const inicial = aPorcentajes(colores.map((color) => color.participacion));
-  const [valores, setValores] = useState<number[]>(inicial);
+  const enPlan = aPorcentajes(colores.map((color) => color.participacion));
+  const clavePlan = enPlan.join(",");
+  const [local, setLocal] = useState<readonly number[] | null>(null);
   const [arrastrando, setArrastrando] = useState<number | null>(null);
+  // Latest values while dragging: several pointer moves can arrive before React paints.
+  const arrastreRef = useRef<readonly number[] | null>(null);
   const barraRef = useRef<HTMLDivElement>(null);
-  const cambiado = valores.some((valor, indice) => valor !== inicial[indice]);
+  const { estado, control } = useAutoguardado<readonly number[]>({
+    enPlan,
+    iguales: mismosValores,
+    esperaMs: ESPERA_TECLADO_MS,
+    guardar: (valores) => onGuardar(valores.map((valor) => valor / 100)),
+    pendientes,
+  });
+  const valores = local && (arrastrando !== null || FASES_PROPIAS.has(estado.fase)) ? local : enPlan;
 
-  /** Moves the border after segment `indice` to `limite` percent (cumulative), within the neighbours' minimums. */
-  function moverLimite(indice: number, limite: number): void {
-    setValores((actuales) => {
-      const antes = actuales.slice(0, indice).reduce((suma, valor) => suma + valor, 0);
-      const par = actuales[indice]! + actuales[indice + 1]!;
-      const izquierda = Math.round(Math.min(Math.max(limite - antes, MINIMO), par - MINIMO));
-      if (izquierda === actuales[indice]) return actuales;
-      const siguientes = [...actuales];
-      siguientes[indice] = izquierda;
-      siguientes[indice + 1] = par - izquierda;
-      return siguientes;
-    });
-  }
+  // Another edit (or "Deshacer") changed the plan: what it carries now is the reference.
+  useEffect(() => {
+    control.sincronizar(clavePlan.split(",").map(Number));
+  }, [control, clavePlan]);
 
   function limiteDesdePuntero(evento: PointerEvent<HTMLElement>): number | null {
     const barra = barraRef.current?.getBoundingClientRect();
@@ -67,19 +93,30 @@ export function RepartoColores({ colores, totalGlobos, ocupado = false, onAplica
     return ((evento.clientX - barra.left) / barra.width) * 100;
   }
 
+  function soltar(): void {
+    const final = arrastreRef.current;
+    arrastreRef.current = null;
+    setArrastrando(null);
+    if (final) control.cambiar(final, { inmediato: true });
+  }
+
   function teclado(indice: number, evento: KeyboardEvent<HTMLElement>): void {
+    if (ocupado) return;
     const paso = evento.shiftKey ? 5 : 1;
     const delta = evento.key === "ArrowRight" || evento.key === "ArrowUp" ? paso : evento.key === "ArrowLeft" || evento.key === "ArrowDown" ? -paso : 0;
     if (!delta) return;
     evento.preventDefault();
     const limite = valores.slice(0, indice + 1).reduce((suma, valor) => suma + valor, 0);
-    moverLimite(indice, limite + delta);
+    const siguientes = conLimite(valores, indice, limite + delta);
+    if (siguientes === valores) return;
+    setLocal(siguientes);
+    control.cambiar(siguientes);
   }
 
   // Cumulative position of each divider, in percent of the bar.
   const limites = valores.slice(0, -1).map((_, indice) => valores.slice(0, indice + 1).reduce((suma, valor) => suma + valor, 0));
   return (
-    <div className="rounded-2xl bg-superficie-suave p-3 ring-1 ring-borde-suave ring-inset">
+    <div className="rounded-2xl bg-superficie-suave p-3 ring-1 ring-borde-suave ring-inset" data-testid="reparto-colores">
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
         <p className="text-[13px] font-semibold text-texto">Colores de la pieza</p>
         <p className="text-xs text-texto-suave">Arrastra para cambiar cuánto lleva de cada color</p>
@@ -118,15 +155,22 @@ export function RepartoColores({ colores, totalGlobos, ocupado = false, onAplica
               onPointerDown={(evento) => {
                 if (ocupado) return;
                 evento.currentTarget.setPointerCapture(evento.pointerId);
+                arrastreRef.current = valores;
+                setLocal(valores);
                 setArrastrando(indice);
               }}
               onPointerMove={(evento) => {
-                if (arrastrando !== indice) return;
+                const actuales = arrastreRef.current;
+                if (arrastrando !== indice || !actuales) return;
                 const limite = limiteDesdePuntero(evento);
-                if (limite !== null) moverLimite(indice, limite);
+                if (limite === null) return;
+                const siguientes = conLimite(actuales, indice, limite);
+                if (siguientes === actuales) return;
+                arrastreRef.current = siguientes;
+                setLocal(siguientes);
               }}
-              onPointerUp={() => setArrastrando(null)}
-              onPointerCancel={() => setArrastrando(null)}
+              onPointerUp={soltar}
+              onPointerCancel={soltar}
               className={`group absolute top-1/2 z-10 grid h-12 w-7 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize place-items-center focus-visible:outline-none ${ocupado ? "pointer-events-none opacity-60" : ""}`}
               style={{ left: `${limites[indice]}%` }}
             >
@@ -141,38 +185,18 @@ export function RepartoColores({ colores, totalGlobos, ocupado = false, onAplica
         })}
       </div>
 
-      <ul className="mt-3 flex flex-wrap gap-x-3 gap-y-1.5 text-xs text-texto-suave" aria-label="Globos aproximados por color">
-        {colores.map((color, indice) => (
-          <li key={`${indice}-${color.etiqueta}`} className="inline-flex items-center gap-1.5">
-            <span aria-hidden="true" className="size-3 rounded-full ring-1 ring-black/10" style={{ background: color.fondo }} />
-            <span className="text-texto">{color.etiqueta}</span>
-            <span className="tabular-nums">≈ {Math.round((totalGlobos * valores[indice]!) / 100)} globos</span>
-          </li>
-        ))}
-      </ul>
-
-      <AnimatePresence initial={false}>
-        {cambiado && (
-          <motion.div
-            initial={reducir ? false : { opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
-          >
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-              <p className="text-[11px] text-texto-suave">Las cantidades exactas y el precio se recalculan al aplicar.</p>
-              <div className="flex gap-2">
-                <button type="button" disabled={ocupado} onClick={() => setValores(inicial)} className="inline-flex h-8 items-center gap-1 rounded-lg px-2.5 text-xs font-medium text-texto-suave hover:text-texto disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-acento">
-                  <RotateCcw className="size-3.5" aria-hidden="true" />Restablecer
-                </button>
-                <button type="button" disabled={ocupado} onClick={() => onAplicar(valores.map((valor) => valor / 100))} className="ui-pressable inline-flex h-8 items-center rounded-lg bg-acento px-3 text-xs font-semibold text-sobre-acento hover:bg-acento-hover disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">
-                  {ocupado ? "Aplicando…" : "Aplicar colores"}
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+        <ul className="flex flex-wrap gap-x-3 gap-y-1.5 text-xs text-texto-suave" aria-label="Globos aproximados por color">
+          {colores.map((color, indice) => (
+            <li key={`${indice}-${color.etiqueta}`} className="inline-flex items-center gap-1.5">
+              <span aria-hidden="true" className="size-3 rounded-full ring-1 ring-black/10" style={{ background: color.fondo }} />
+              <span className="text-texto">{color.etiqueta}</span>
+              <span className="tabular-nums">≈ {Math.round((totalGlobos * valores[indice]!) / 100)} globos</span>
+            </li>
+          ))}
+        </ul>
+        <EstadoGuardado estado={vistaDeAutoguardado(estado, "Guardado", control.reintentar)} efimero compacto className="ml-auto" data-testid="estado-reparto-colores" />
+      </div>
     </div>
   );
 }

@@ -4,6 +4,7 @@ export { GraficaPatron, type Pincel } from "./GraficaPatron";
 export { DialogoHojaArmado, HojaArmado, type PropsHojaArmado } from "./HojaArmado";
 export { LeyendaPatron, MuestraNumero } from "./LeyendaPatron";
 export { MiniPatron } from "./MiniPatron";
+export { PieEditorPatron } from "./PieEditorPatron";
 export { ControlesPatron, GaleriaEstilos } from "./ControlesPatron";
 export { ResumenPatron } from "./ResumenPatron";
 export { VistaPatron } from "./VistaPatron";
