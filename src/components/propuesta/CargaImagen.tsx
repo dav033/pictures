@@ -20,6 +20,8 @@ type Props = {
   conMarco?: boolean;
   /** The proposal's colors, so the balloon being inflated is one of its own. */
   colores?: readonly string[];
+  /** A wait of up to two minutes needs a way out. */
+  onCancelar?: () => void;
 };
 
 /**
@@ -27,7 +29,7 @@ type Props = {
  * the phase text changes. Replaces a bare shimmer box that gave no sense of
  * what was happening during a wait of up to two minutes.
  */
-export function CargaImagen({ segundos, conMarco = true, colores = [] }: Props) {
+export function CargaImagen({ segundos, conMarco = true, colores = [], onCancelar }: Props) {
   const reducir = useReducedMotion();
   const fase = faseCargaImagen(segundos);
   const color = colores.length ? colores[Math.floor(segundos / 6) % colores.length]! : "var(--acento)";
@@ -61,6 +63,15 @@ export function CargaImagen({ segundos, conMarco = true, colores = [] }: Props) 
         </AnimatePresence>
         <span className="puntos" aria-hidden="true"><span /><span /><span /></span>
         <span className="text-xs text-texto-suave tabular-nums">{segundos} s · puede tardar hasta 2 min</span>
+        {onCancelar && (
+          <button
+            type="button"
+            onClick={onCancelar}
+            className="ml-auto rounded-full px-2.5 py-1 text-xs font-medium text-texto-suave ring-1 ring-borde-suave ring-inset hover:bg-superficie-suave hover:text-texto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"
+          >
+            Cancelar
+          </button>
+        )}
       </p>
       {conMarco ? (
         <div className="brillo-carga relative grid aspect-[3/2] w-full place-items-center rounded-2xl" aria-hidden="true">

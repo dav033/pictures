@@ -57,6 +57,7 @@ import { CabeceraApp } from "@/components/ui/shell/CabeceraApp";
 import { Compositor } from "@/components/ui/shell/Compositor";
 import { EsperaAsistente } from "@/components/ui/shell/EsperaAsistente";
 import { CargaImagen } from "@/components/propuesta/CargaImagen";
+import { CierrePropuesta } from "@/components/propuesta/CierrePropuesta";
 import { coloresCliente } from "@/lib/plan/presentacion-cliente";
 import { DialogoEjemplos, GaleriaEjemplos } from "@/components/ui/shell/GaleriaEjemplos";
 import { HojaSeleccion } from "@/components/ui/shell/HojaSeleccion";
@@ -601,6 +602,8 @@ export default function Page() {
   // no dependa del closure de un render viejo: timeout, abort y desmontaje
   // deben dejar la UI en estado idle incluso si la API devuelve 4xx/5xx.
   const generacionAbortRef = useRef<AbortController | null>(null);
+  // Set when the customer stops the image on purpose: that is not an error.
+  const generacionCanceladaRef = useRef(false);
   const chatAbortRef = useRef<AbortController | null>(null);
   const generacionIntervalRef = useRef<number | null>(null);
   const paginaMontadaRef = useRef(true);
@@ -1415,6 +1418,10 @@ export default function Page() {
         setAjuste("");
       } catch (reason) {
         if (controlador.signal.aborted) {
+          if (generacionCanceladaRef.current) {
+            generacionCanceladaRef.current = false;
+            return;
+          }
           if (paginaMontadaRef.current) setError({ ui: errorLocal("OPERACION_CANCELADA", "El cliente canceló /api/generate."), origen: "generacion" });
           return;
         }
@@ -1560,6 +1567,13 @@ export default function Page() {
       const reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       document.querySelector("[data-testid='bloque-visualizacion']")?.scrollIntoView({ behavior: reducido ? "auto" : "smooth", block: "start" });
     }, 350);
+  }
+
+  /** Stops waiting for the image. The approval is only recorded when an image comes back, so the proposal can be approved again. */
+  function cancelarGeneracion(): void {
+    if (!generacionAbortRef.current) return;
+    generacionCanceladaRef.current = true;
+    generacionAbortRef.current.abort();
   }
 
   function actualizarPlanEnMensaje(mensajeId: string, plan: PlanResuelto, cotizacion?: Cotizacion): void {
@@ -1953,10 +1967,14 @@ export default function Page() {
                           loraMode={loraModeParaBadge}
                         />
                       )}
-                      {m.cotizacion && (
+                      {/* With a proposal, its card already shows the price and "Ver
+                          cotización": the quote card appears once, as the final one,
+                          when the proposal is approved. */}
+                      {m.cotizacion && (!m.plan || planAprobadoHash === m.plan.plan_hash) && (
                         <TarjetaCotizacion
                           cotizacion={m.cotizacion}
                           referenceBlueprint={m.referenceBlueprint}
+                          final={Boolean(m.plan)}
                         />
                       )}
 
@@ -2076,7 +2094,7 @@ export default function Page() {
                     )}
                   </div>
 
-                  {generando && <CargaImagen segundos={segundosGeneracion} conMarco={imagenes.length === 0} colores={coloresPlanActual} />}
+                  {generando && <CargaImagen segundos={segundosGeneracion} conMarco={imagenes.length === 0} colores={coloresPlanActual} onCancelar={cancelarGeneracion} />}
 
                   {imagenes.map((src, i) => (
                     <button
@@ -2094,6 +2112,7 @@ export default function Page() {
                   {imagenes.length > 0 && (
                     <>
                       <p className="text-xs text-texto-suave">Imagen referencial generada con IA. No es un render contractual.</p>
+                      {planActualAprobado && !generando && imagenes[0] && <CierrePropuesta imagen={imagenes[0]} totalCop={planActual?.totales.total_cop} />}
                       {seleccionPendiente && !generando && !planActual && (
                         <p className="rounded-xl bg-acento-suave px-3 py-2 text-xs font-medium text-acento">
                           Tu selección cambió: regenera para verla reflejada en la imagen.

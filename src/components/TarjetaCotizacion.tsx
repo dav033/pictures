@@ -5,7 +5,7 @@
 
 import { Fragment, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { RotateCcw, Trash2 } from "lucide-react";
+import { BadgeCheck, RotateCcw, Trash2 } from "lucide-react";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import { useBorradorCotizacion, type LineaBorrador } from "@/lib/estado/borrador-cotizacion";
@@ -27,6 +27,8 @@ type Props = {
   /** Confirmed lines are handed back to the parent, which owns regeneration. */
   onAplicar?: (lineas: LineaBorrador[]) => void;
   referenceBlueprint?: ReferenceBlueprintV2;
+  /** The quote of an approved proposal: said so, instead of replacing the draft in silence. */
+  final?: boolean;
 };
 
 function tamanoLinea(linea: LineaBorrador): string | null {
@@ -63,7 +65,7 @@ export function filasBorrador(lineas: readonly LineaBorrador[], editando: boolea
  * packages bought, leftovers and price. The customer can still adjust packages
  * or remove lines; the parent owns regeneration.
  */
-export function TarjetaCotizacion({ cotizacion, editable = false, onAplicar, referenceBlueprint }: Props) {
+export function TarjetaCotizacion({ cotizacion, editable = false, onAplicar, referenceBlueprint, final = false }: Props) {
   const borrador = useBorradorCotizacion(cotizacion);
   const [editando, setEditando] = useState(false);
   const reducir = useReducedMotion();
@@ -85,7 +87,8 @@ export function TarjetaCotizacion({ cotizacion, editable = false, onAplicar, ref
 
   return (
     <motion.section
-      aria-label="Cotización"
+      aria-label={final ? "Cotización final" : "Cotización"}
+      data-testid="tarjeta-cotizacion"
       initial={reducir ? false : { opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
@@ -93,7 +96,10 @@ export function TarjetaCotizacion({ cotizacion, editable = false, onAplicar, ref
     >
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-1 px-4 pt-4 @xl:px-5.5">
         <div>
-          <p className="text-xs font-medium text-acento">Tu cotización</p>
+          <p className="flex items-center gap-1.5 text-xs font-medium text-acento">
+            {final && <BadgeCheck className="size-3.5" aria-hidden="true" />}
+            {final ? "Tu cotización final" : "Tu cotización"}
+          </p>
           <p className="mt-0.5 text-sm text-texto-suave">Los globos se venden en paquetes cerrados.</p>
         </div>
         <p className="text-right">
