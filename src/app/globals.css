@@ -1218,3 +1218,83 @@ body {
   transform: translateY(-4px);
   box-shadow: 0 18px 40px var(--sombra);
 }
+
+/* ==========================================================================
+   HOJA DE ARMADO (patrón de color, ADR-0028): al imprimir sale solo la hoja.
+   El diálogo vive en un portal, hijo directo de <body>; todo lo demás se
+   oculta y el diálogo pierde su caja fija para paginar. La hoja se imprime
+   siempre en claro: sus tokens se fijan aquí aunque la app esté en oscuro.
+   ========================================================================== */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+  }
+
+  body:has(> .hoja-armado-dialogo) > :not(.hoja-armado-dialogo):not(:has(.hoja-armado-dialogo)),
+  .hoja-armado-fondo,
+  .hoja-armado-no-imprimir {
+    display: none !important;
+  }
+
+  .hoja-armado-dialogo,
+  .hoja-armado-scroll {
+    /* <body> es flex en columna: con márgenes automáticos la hoja se encogería. */
+    display: block !important;
+    position: static !important;
+    inset: auto !important;
+    margin: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    transform: none !important;
+    translate: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+
+  .hoja-armado {
+    --fondo: #ffffff;
+    --superficie: #ffffff;
+    --superficie-suave: #faf8fd;
+    --superficie-2: #efe9f8;
+    --borde: #d9cfe8;
+    --borde-suave: #e8e1f2;
+    --texto: #1c1425;
+    --texto-suave: #4f465c;
+    --texto-tenue: #6b6178;
+    --acento: #5530b8;
+    --acento-suave: #ece3fb;
+    --aviso: #8f5f12;
+    --aviso-suave: #fff3d8;
+    color: var(--texto);
+  }
+
+  .hoja-armado,
+  .hoja-armado * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Chrome rasteriza cada sombra al imprimir: sin ellas el PDF pesa decenas de veces menos. */
+  .hoja-armado * {
+    box-shadow: none !important;
+  }
+
+  .hoja-armado-bloque,
+  .hoja-armado tr {
+    break-inside: avoid;
+  }
+
+  .hoja-armado h3 {
+    break-after: avoid;
+  }
+}

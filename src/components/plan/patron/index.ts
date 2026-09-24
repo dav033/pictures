@@ -1,0 +1,11 @@
+export { BloquePatron } from "./BloquePatron";
+export { EditorPatron } from "./EditorPatron";
+export { GraficaPatron, type Pincel } from "./GraficaPatron";
+export { DialogoHojaArmado, HojaArmado, type PropsHojaArmado } from "./HojaArmado";
+export { LeyendaPatron, MuestraNumero } from "./LeyendaPatron";
+export { MiniPatron } from "./MiniPatron";
+export { ControlesPatron, GaleriaEstilos } from "./ControlesPatron";
+export { ResumenPatron } from "./ResumenPatron";
+export { VistaPatron } from "./VistaPatron";
+export { leyendaPatron, type ColorLeyenda } from "./leyenda";
+export { admitePatron, estilosParaTipo } from "./modos";

@@ -1,0 +1,6789 @@
+[
+  {
+    "id": "columna-espiral",
+    "titulo": "Columna · espiral de cuartetos",
+    "estructura": {
+      "estructura_id": "EST_01_COLUMNA",
+      "nombre": "Columnas en espiral",
+      "tipo": "columna",
+      "rol_escena": "focal",
+      "ubicacion": "lateral_izquierdo",
+      "medidas": {
+        "ancho_m": 0.6,
+        "alto_m": 2.2
+      },
+      "repeticiones": 2,
+      "densidad": "media",
+      "mezcla": "clasica",
+      "materiales": [
+        {
+          "product_id": "P-BLANCO",
+          "color": "blanco",
+          "acabado": "fashion",
+          "participacion": 0.5,
+          "rol_material": "principal"
+        },
+        {
+          "product_id": "P-NEGRO",
+          "color": "negro",
+          "acabado": "fashion",
+          "participacion": 0.25,
+          "rol_material": "secundario"
+        },
+        {
+          "product_id": "P-AZUL",
+          "color": "azul",
+          "acabado": "reflex",
+          "participacion": 0.25,
+          "rol_material": "acento"
+        }
+      ],
+      "porque": "Enmarcan la entrada con la espiral clásica de tres colores.",
+      "estructura_oficial": "columna",
+      "patron_color": {
+        "version": "patron-color.v1",
+        "origen": "referencia",
+        "base": {
+          "modo": "espiral",
+          "racimo": [
+            0,
+            1,
+            0,
+            2
+          ],
+          "trazo": "espiral"
+        }
+      }
+    },
+    "lineas": [
+      {
+        "estructura_id": "EST_01_COLUMNA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_01_COLUMNA"
+        },
+        "product_id": "P-BLANCO",
+        "variant_id": "V-BLANCO-12",
+        "sku": "SKU-V-BLANCO-12",
+        "sku_original": "SHOP-V-BLANCO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-BLANCO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+        "color": "blanco",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 48,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_01_COLUMNA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_01_COLUMNA"
+        },
+        "product_id": "P-NEGRO",
+        "variant_id": "V-NEGRO-12",
+        "sku": "SKU-V-NEGRO-12",
+        "sku_original": "SHOP-V-NEGRO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-NEGRO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50",
+        "color": "negro",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 24,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_01_COLUMNA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_01_COLUMNA"
+        },
+        "product_id": "P-AZUL",
+        "variant_id": "V-AZUL-12",
+        "sku": "SKU-V-AZUL-12",
+        "sku_original": "SHOP-V-AZUL-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-AZUL-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Reflex Azul — R-12 / PAQUETE X 50",
+        "color": "azul",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "reflex",
+        "unidades": 24,
+        "imagen": null,
+        "sustitucion": null
+      }
+    ],
+    "resuelto": {
+      "estructura_id": "EST_01_COLUMNA",
+      "aplicado": true,
+      "patron": {
+        "version": "patron-color.v1",
+        "origen": "referencia",
+        "base": {
+          "modo": "espiral",
+          "racimo": [
+            0,
+            1,
+            0,
+            2
+          ],
+          "trazo": "espiral"
+        }
+      },
+      "geometria": "racimos",
+      "filas": 12,
+      "columnas": 4,
+      "repeticiones": 2,
+      "globos_por_instancia": 48,
+      "celdas": [
+        [
+          0,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          1,
+          0,
+          2
+        ]
+      ],
+      "extras": [],
+      "conteo": [
+        {
+          "material": 0,
+          "color": "blanco",
+          "acabado": "fashion",
+          "unidades_por_instancia": 24,
+          "unidades_total": 48
+        },
+        {
+          "material": 1,
+          "color": "negro",
+          "acabado": "fashion",
+          "unidades_por_instancia": 12,
+          "unidades_total": 24
+        },
+        {
+          "material": 2,
+          "color": "azul",
+          "acabado": "reflex",
+          "unidades_por_instancia": 12,
+          "unidades_total": 24
+        }
+      ],
+      "pasos": [
+        {
+          "desde": 1,
+          "hasta": 12,
+          "celdas": [
+            0,
+            1,
+            0,
+            2
+          ],
+          "extras": []
+        }
+      ],
+      "nombre": "Espiral",
+      "descripcion": "Cuartetos iguales de blanco (1), negro (2), blanco (1) y azul (3) que se encajan girando 1/8 de vuelta en cada capa: los colores forman espirales continuas de la base a la punta.",
+      "instrucciones": [
+        "Infla cada globo con el calibrador para que todos queden del mismo tamaño.",
+        "Arma parejas (dos globos amarrados por el cuello) y une dos parejas para formar cada cuarteto.",
+        "Dentro de cada cuarteto respeta el orden de colores: blanco (1), negro (2), blanco (1), azul (3).",
+        "Encaja cada cuarteto sobre el anterior girándolo 1/8 de vuelta, siempre en el mismo sentido: así aparece la espiral.",
+        "Sigue la gráfica numerada: cada número es un color de la leyenda."
+      ],
+      "prompt_gemini": "COLOR PATTERN — build it from identical four-balloon clusters (matte white, matte black, matte white, high-shine chrome blue around each cluster) rotated one eighth of a turn per layer so the colors form continuous diagonal spiral stripes winding from base to top; keep the order unbroken and do not randomize.",
+      "prompt_lora": "wrapped in a spiral of white, black and blue stripes winding from base to top",
+      "avisos": [
+        "Con cuartetos completos cada pieza lleva 48 globos; las medidas daban 47."
+      ]
+    }
+  },
+  {
+    "id": "columna-zigzag",
+    "titulo": "Columna · zig-zag",
+    "estructura": {
+      "estructura_id": "EST_02_COLUMNA",
+      "nombre": "Columnas en espiral",
+      "tipo": "columna",
+      "rol_escena": "focal",
+      "ubicacion": "lateral_izquierdo",
+      "medidas": {
+        "ancho_m": 0.6,
+        "alto_m": 2.2
+      },
+      "repeticiones": 1,
+      "densidad": "media",
+      "mezcla": "clasica",
+      "materiales": [
+        {
+          "product_id": "P-BLANCO",
+          "color": "blanco",
+          "acabado": "fashion",
+          "participacion": 0.5,
+          "rol_material": "principal"
+        },
+        {
+          "product_id": "P-FUCSIA",
+          "color": "fucsia",
+          "acabado": "fashion",
+          "participacion": 0.5,
+          "rol_material": "secundario"
+        }
+      ],
+      "porque": "Enmarcan la entrada con la espiral clásica de tres colores.",
+      "estructura_oficial": "columna",
+      "patron_color": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "espiral",
+          "racimo": [
+            0,
+            1,
+            0,
+            1
+          ],
+          "trazo": "zigzag"
+        }
+      }
+    },
+    "lineas": [
+      {
+        "estructura_id": "EST_02_COLUMNA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_02_COLUMNA"
+        },
+        "product_id": "P-BLANCO",
+        "variant_id": "V-BLANCO-12",
+        "sku": "SKU-V-BLANCO-12",
+        "sku_original": "SHOP-V-BLANCO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-BLANCO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+        "color": "blanco",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 24,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_02_COLUMNA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_02_COLUMNA"
+        },
+        "product_id": "P-FUCSIA",
+        "variant_id": "V-FUCSIA-12",
+        "sku": "SKU-V-FUCSIA-12",
+        "sku_original": "SHOP-V-FUCSIA-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-FUCSIA-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Fucsia — R-12 / PAQUETE X 50",
+        "color": "fucsia",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 24,
+        "imagen": null,
+        "sustitucion": null
+      }
+    ],
+    "resuelto": {
+      "estructura_id": "EST_02_COLUMNA",
+      "aplicado": true,
+      "patron": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "espiral",
+          "racimo": [
+            0,
+            1,
+            0,
+            1
+          ],
+          "trazo": "zigzag"
+        }
+      },
+      "geometria": "racimos",
+      "filas": 12,
+      "columnas": 4,
+      "repeticiones": 1,
+      "globos_por_instancia": 48,
+      "celdas": [
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ]
+      ],
+      "extras": [],
+      "conteo": [
+        {
+          "material": 0,
+          "color": "blanco",
+          "acabado": "fashion",
+          "unidades_por_instancia": 24,
+          "unidades_total": 24
+        },
+        {
+          "material": 1,
+          "color": "fucsia",
+          "acabado": "fashion",
+          "unidades_por_instancia": 24,
+          "unidades_total": 24
+        }
+      ],
+      "pasos": [
+        {
+          "desde": 1,
+          "hasta": 12,
+          "celdas": [
+            0,
+            1,
+            0,
+            1
+          ],
+          "extras": []
+        }
+      ],
+      "nombre": "Zig-zag",
+      "descripcion": "Cuartetos iguales de blanco (1), fucsia (2), blanco (1) y fucsia (2) que giran dos capas hacia la izquierda y dos hacia la derecha: los colores forman un zigzag de la base a la punta.",
+      "instrucciones": [
+        "Infla cada globo con el calibrador para que todos queden del mismo tamaño.",
+        "Arma parejas (dos globos amarrados por el cuello) y une dos parejas para formar cada cuarteto.",
+        "Dentro de cada cuarteto respeta el orden de colores: blanco (1), fucsia (2), blanco (1), fucsia (2).",
+        "Gira los cuartetos de dos en dos: dos hacia la izquierda y los dos siguientes hacia la derecha, 1/8 de vuelta cada vez, para dibujar el zigzag.",
+        "Sigue la gráfica numerada: cada número es un color de la leyenda."
+      ],
+      "prompt_gemini": "COLOR PATTERN — identical four-balloon clusters (matte white, matte fuchsia, matte white, matte fuchsia around each cluster) turned left for two layers and right for the next two, so the stripes zigzag from base to top; keep the order unbroken.",
+      "prompt_lora": "with zigzag chevron stripes of white and fuchsia running from base to top",
+      "avisos": [
+        "Con cuartetos completos cada pieza lleva 48 globos; las medidas daban 47."
+      ]
+    }
+  },
+  {
+    "id": "columna-rectas",
+    "titulo": "Columna · franjas rectas",
+    "estructura": {
+      "estructura_id": "EST_03_COLUMNA",
+      "nombre": "Columnas en espiral",
+      "tipo": "columna",
+      "rol_escena": "focal",
+      "ubicacion": "lateral_izquierdo",
+      "medidas": {
+        "ancho_m": 0.6,
+        "alto_m": 2.2
+      },
+      "repeticiones": 1,
+      "densidad": "media",
+      "mezcla": "clasica",
+      "materiales": [
+        {
+          "product_id": "P-TURQUESA",
+          "color": "turquesa",
+          "acabado": "fashion",
+          "participacion": 0.5,
+          "rol_material": "principal"
+        },
+        {
+          "product_id": "P-BLANCO",
+          "color": "blanco",
+          "acabado": "fashion",
+          "participacion": 0.5,
+          "rol_material": "secundario"
+        }
+      ],
+      "porque": "Enmarcan la entrada con la espiral clásica de tres colores.",
+      "estructura_oficial": "columna",
+      "patron_color": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "espiral",
+          "racimo": [
+            0,
+            1,
+            0,
+            1
+          ],
+          "trazo": "recto"
+        }
+      }
+    },
+    "lineas": [
+      {
+        "estructura_id": "EST_03_COLUMNA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_03_COLUMNA"
+        },
+        "product_id": "P-TURQUESA",
+        "variant_id": "V-TURQUESA-12",
+        "sku": "SKU-V-TURQUESA-12",
+        "sku_original": "SHOP-V-TURQUESA-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-TURQUESA-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Turquesa — R-12 / PAQUETE X 50",
+        "color": "turquesa",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 24,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_03_COLUMNA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_03_COLUMNA"
+        },
+        "product_id": "P-BLANCO",
+        "variant_id": "V-BLANCO-12",
+        "sku": "SKU-V-BLANCO-12",
+        "sku_original": "SHOP-V-BLANCO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-BLANCO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+        "color": "blanco",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 24,
+        "imagen": null,
+        "sustitucion": null
+      }
+    ],
+    "resuelto": {
+      "estructura_id": "EST_03_COLUMNA",
+      "aplicado": true,
+      "patron": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "espiral",
+          "racimo": [
+            0,
+            1,
+            0,
+            1
+          ],
+          "trazo": "recto"
+        }
+      },
+      "geometria": "racimos",
+      "filas": 12,
+      "columnas": 4,
+      "repeticiones": 1,
+      "globos_por_instancia": 48,
+      "celdas": [
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ]
+      ],
+      "extras": [],
+      "conteo": [
+        {
+          "material": 0,
+          "color": "turquesa",
+          "acabado": "fashion",
+          "unidades_por_instancia": 24,
+          "unidades_total": 24
+        },
+        {
+          "material": 1,
+          "color": "blanco",
+          "acabado": "fashion",
+          "unidades_por_instancia": 24,
+          "unidades_total": 24
+        }
+      ],
+      "pasos": [
+        {
+          "desde": 1,
+          "hasta": 12,
+          "celdas": [
+            0,
+            1,
+            0,
+            1
+          ],
+          "extras": []
+        }
+      ],
+      "nombre": "Franjas rectas",
+      "descripcion": "Cuartetos iguales de turquesa (1), blanco (2), turquesa (1) y blanco (2) que se apilan alternando su posición en cada capa: cada color forma una franja recta de la base a la punta.",
+      "instrucciones": [
+        "Infla cada globo con el calibrador para que todos queden del mismo tamaño.",
+        "Arma parejas (dos globos amarrados por el cuello) y une dos parejas para formar cada cuarteto.",
+        "Dentro de cada cuarteto respeta el orden de colores: turquesa (1), blanco (2), turquesa (1), blanco (2).",
+        "Alterna la posición de los cuartetos en cada capa (sin giro, 1/8 de vuelta, sin giro…) para que cada color forme una franja recta.",
+        "Sigue la gráfica numerada: cada número es un color de la leyenda."
+      ],
+      "prompt_gemini": "COLOR PATTERN — identical four-balloon clusters (matte turquoise, matte white, matte turquoise, matte white around each cluster) stacked without rotation so each color runs as a straight stripe from base to top.",
+      "prompt_lora": "composed of straight stripes of turquoise and white balloons running from base to top",
+      "avisos": [
+        "Con cuartetos completos cada pieza lleva 48 globos; las medidas daban 47."
+      ]
+    }
+  },
+  {
+    "id": "arco-flores",
+    "titulo": "Arco · flores",
+    "estructura": {
+      "estructura_id": "EST_04_ARCO",
+      "nombre": "Arco de flores",
+      "tipo": "arco",
+      "rol_escena": "focal",
+      "ubicacion": "arco_central",
+      "medidas": {
+        "ancho_m": 3,
+        "alto_m": 2.5
+      },
+      "repeticiones": 1,
+      "densidad": "media",
+      "mezcla": "clasica",
+      "materiales": [
+        {
+          "product_id": "P-BLANCO",
+          "color": "blanco",
+          "acabado": "fashion",
+          "participacion": 0.510638,
+          "rol_material": "principal"
+        },
+        {
+          "product_id": "P-ROSADO",
+          "color": "rosado",
+          "acabado": "fashion",
+          "participacion": 0.453901,
+          "rol_material": "secundario"
+        },
+        {
+          "product_id": "P-AMARILLO",
+          "color": "amarillo",
+          "acabado": "fashion",
+          "participacion": 0.035461,
+          "rol_material": "acento"
+        }
+      ],
+      "porque": "Marco principal con margaritas rosadas entre racimos blancos.",
+      "estructura_oficial": "arco",
+      "patron_color": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "flor",
+          "fondo": 0,
+          "petalo": 1,
+          "centro": 2,
+          "separacion": 3
+        }
+      }
+    },
+    "lineas": [
+      {
+        "estructura_id": "EST_04_ARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_04_ARCO"
+        },
+        "product_id": "P-BLANCO",
+        "variant_id": "V-BLANCO-12",
+        "sku": "SKU-V-BLANCO-12",
+        "sku_original": "SHOP-V-BLANCO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-BLANCO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+        "color": "blanco",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 72,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_04_ARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_04_ARCO"
+        },
+        "product_id": "P-ROSADO",
+        "variant_id": "V-ROSADO-12",
+        "sku": "SKU-V-ROSADO-12",
+        "sku_original": "SHOP-V-ROSADO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-ROSADO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Rosado — R-12 / PAQUETE X 50",
+        "color": "rosado",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 64,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_04_ARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_04_ARCO"
+        },
+        "product_id": "P-AMARILLO",
+        "variant_id": "V-AMARILLO-12",
+        "sku": "SKU-V-AMARILLO-12",
+        "sku_original": "SHOP-V-AMARILLO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-AMARILLO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Amarillo — R-12 / PAQUETE X 50",
+        "color": "amarillo",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 5,
+        "imagen": null,
+        "sustitucion": null
+      }
+    ],
+    "resuelto": {
+      "estructura_id": "EST_04_ARCO",
+      "aplicado": true,
+      "patron": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "flor",
+          "fondo": 0,
+          "petalo": 1,
+          "centro": 2,
+          "separacion": 3
+        }
+      },
+      "geometria": "racimos",
+      "filas": 34,
+      "columnas": 4,
+      "repeticiones": 1,
+      "globos_por_instancia": 141,
+      "celdas": [
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ]
+      ],
+      "extras": [
+        {
+          "fila": 4,
+          "material": 2
+        },
+        {
+          "fila": 10,
+          "material": 2
+        },
+        {
+          "fila": 16,
+          "material": 2
+        },
+        {
+          "fila": 22,
+          "material": 2
+        },
+        {
+          "fila": 28,
+          "material": 2
+        }
+      ],
+      "conteo": [
+        {
+          "material": 0,
+          "color": "blanco",
+          "acabado": "fashion",
+          "unidades_por_instancia": 72,
+          "unidades_total": 72
+        },
+        {
+          "material": 1,
+          "color": "rosado",
+          "acabado": "fashion",
+          "unidades_por_instancia": 64,
+          "unidades_total": 64
+        },
+        {
+          "material": 2,
+          "color": "amarillo",
+          "acabado": "fashion",
+          "unidades_por_instancia": 5,
+          "unidades_total": 5
+        }
+      ],
+      "pasos": [
+        {
+          "desde": 1,
+          "hasta": 3,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 4,
+          "hasta": 4,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 5,
+          "hasta": 5,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": [
+            2
+          ]
+        },
+        {
+          "desde": 6,
+          "hasta": 6,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 7,
+          "hasta": 9,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 10,
+          "hasta": 10,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 11,
+          "hasta": 11,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": [
+            2
+          ]
+        },
+        {
+          "desde": 12,
+          "hasta": 12,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 13,
+          "hasta": 15,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 16,
+          "hasta": 16,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 17,
+          "hasta": 17,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": [
+            2
+          ]
+        },
+        {
+          "desde": 18,
+          "hasta": 18,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 19,
+          "hasta": 21,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 22,
+          "hasta": 22,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 23,
+          "hasta": 23,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": [
+            2
+          ]
+        },
+        {
+          "desde": 24,
+          "hasta": 24,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 25,
+          "hasta": 27,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 28,
+          "hasta": 28,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 29,
+          "hasta": 29,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": [
+            2
+          ]
+        },
+        {
+          "desde": 30,
+          "hasta": 30,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 31,
+          "hasta": 33,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 34,
+          "hasta": 34,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        }
+      ],
+      "nombre": "Flores",
+      "descripcion": "Flores: cada 3 cuartetos de fondo blanco (1), tres cuartetos de rosado (2) forman una flor con un globo amarillo (3) en el centro.",
+      "instrucciones": [
+        "Infla cada globo con el calibrador para que todos queden del mismo tamaño.",
+        "Arma parejas (dos globos amarrados por el cuello) y une dos parejas para formar cada cuarteto.",
+        "Deja 3 cuartetos de fondo (blanco (1)) entre flor y flor.",
+        "Cada flor son tres cuartetos de pétalos (rosado (2)); el globo del centro (amarillo (3)) va en el cuarteto de pétalos del medio.",
+        "Sigue la gráfica numerada: cada número es un color de la leyenda."
+      ],
+      "prompt_gemini": "COLOR PATTERN — every 3 matte white clusters, three matte pink clusters form a flower with one matte yellow balloon at its center; repeat from the left base over the top to the right base.",
+      "prompt_lora": "with daisy flowers of pink petals and a yellow center set between white clusters",
+      "avisos": [
+        "Con cuartetos completos y los centros de las flores cada pieza lleva 141 globos; las medidas daban 136."
+      ]
+    }
+  },
+  {
+    "id": "arco-degrade-espejo",
+    "titulo": "Arco orgánico · degradé con espejo",
+    "estructura": {
+      "estructura_id": "EST_05_ARCO",
+      "nombre": "Arco orgánico",
+      "tipo": "arco",
+      "rol_escena": "focal",
+      "ubicacion": "arco_central",
+      "medidas": {
+        "ancho_m": 3,
+        "alto_m": 2.4
+      },
+      "repeticiones": 1,
+      "densidad": "media",
+      "mezcla": "organica_fina",
+      "materiales": [
+        {
+          "product_id": "P-BLANCO",
+          "color": "blanco",
+          "acabado": "fashion",
+          "participacion": 0.214286,
+          "rol_material": "principal"
+        },
+        {
+          "product_id": "P-PERLA",
+          "color": "rosado",
+          "acabado": "perlado",
+          "participacion": 0.52381,
+          "rol_material": "secundario"
+        },
+        {
+          "product_id": "P-FUCSIA",
+          "color": "fucsia",
+          "acabado": "fashion",
+          "participacion": 0.261904,
+          "rol_material": "secundario"
+        }
+      ],
+      "porque": "Marco principal con margaritas rosadas entre racimos blancos.",
+      "estructura_oficial": "arco_asimetrico",
+      "patron_color": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "degradado",
+          "paradas": [
+            2,
+            1,
+            0
+          ],
+          "transicion": "suave"
+        },
+        "simetria": "espejo"
+      }
+    },
+    "lineas": [
+      {
+        "estructura_id": "EST_05_ARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_05_ARCO"
+        },
+        "product_id": "P-BLANCO",
+        "variant_id": "V-BLANCO-5",
+        "sku": "SKU-V-BLANCO-5",
+        "sku_original": "SHOP-V-BLANCO-5",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-BLANCO-5",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 50",
+        "color": "blanco",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "diam_cm": 12.7,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 4,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_05_ARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_05_ARCO"
+        },
+        "product_id": "P-PERLA",
+        "variant_id": "V-PERLA-5",
+        "sku": "SKU-V-PERLA-5",
+        "sku_original": "SHOP-V-PERLA-5",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-PERLA-5",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Perlado Rosado — R-5 / PAQUETE X 50",
+        "color": "rosado",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "diam_cm": 12.7,
+        "forma": "redondo",
+        "acabado": "perlado",
+        "unidades": 9,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_05_ARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_05_ARCO"
+        },
+        "product_id": "P-FUCSIA",
+        "variant_id": "V-FUCSIA-5",
+        "sku": "SKU-V-FUCSIA-5",
+        "sku_original": "SHOP-V-FUCSIA-5",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-FUCSIA-5",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Fucsia — R-5 / PAQUETE X 50",
+        "color": "fucsia",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "diam_cm": 12.7,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 5,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_05_ARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_05_ARCO"
+        },
+        "product_id": "P-BLANCO",
+        "variant_id": "V-BLANCO-9",
+        "sku": "SKU-V-BLANCO-9",
+        "sku_original": "SHOP-V-BLANCO-9",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-BLANCO-9",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Blanco — R-9 / PAQUETE X 50",
+        "color": "blanco",
+        "tamano_codigo": "R-9",
+        "diam_pulg": 9,
+        "diam_cm": 22.9,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 3,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_05_ARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_05_ARCO"
+        },
+        "product_id": "P-PERLA",
+        "variant_id": "V-PERLA-9",
+        "sku": "SKU-V-PERLA-9",
+        "sku_original": "SHOP-V-PERLA-9",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-PERLA-9",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Perlado Rosado — R-9 / PAQUETE X 50",
+        "color": "rosado",
+        "tamano_codigo": "R-9",
+        "diam_pulg": 9,
+        "diam_cm": 22.9,
+        "forma": "redondo",
+        "acabado": "perlado",
+        "unidades": 8,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_05_ARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_05_ARCO"
+        },
+        "product_id": "P-FUCSIA",
+        "variant_id": "V-FUCSIA-9",
+        "sku": "SKU-V-FUCSIA-9",
+        "sku_original": "SHOP-V-FUCSIA-9",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-FUCSIA-9",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Fucsia — R-9 / PAQUETE X 50",
+        "color": "fucsia",
+        "tamano_codigo": "R-9",
+        "diam_pulg": 9,
+        "diam_cm": 22.9,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 4,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_05_ARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_05_ARCO"
+        },
+        "product_id": "P-BLANCO",
+        "variant_id": "V-BLANCO-12",
+        "sku": "SKU-V-BLANCO-12",
+        "sku_original": "SHOP-V-BLANCO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-BLANCO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+        "color": "blanco",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 10,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_05_ARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_05_ARCO"
+        },
+        "product_id": "P-PERLA",
+        "variant_id": "V-PERLA-12",
+        "sku": "SKU-V-PERLA-12",
+        "sku_original": "SHOP-V-PERLA-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-PERLA-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Perlado Rosado — R-12 / PAQUETE X 50",
+        "color": "rosado",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "perlado",
+        "unidades": 23,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_05_ARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_05_ARCO"
+        },
+        "product_id": "P-FUCSIA",
+        "variant_id": "V-FUCSIA-12",
+        "sku": "SKU-V-FUCSIA-12",
+        "sku_original": "SHOP-V-FUCSIA-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-FUCSIA-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Fucsia — R-12 / PAQUETE X 50",
+        "color": "fucsia",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 12,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_05_ARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_05_ARCO"
+        },
+        "product_id": "P-BLANCO",
+        "variant_id": "V-BLANCO-18",
+        "sku": "SKU-V-BLANCO-18",
+        "sku_original": "SHOP-V-BLANCO-18",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-BLANCO-18",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Blanco — R-18 / PAQUETE X 25",
+        "color": "blanco",
+        "tamano_codigo": "R-18",
+        "diam_pulg": 18,
+        "diam_cm": 45.7,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 1,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_05_ARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_05_ARCO"
+        },
+        "product_id": "P-PERLA",
+        "variant_id": "V-PERLA-18",
+        "sku": "SKU-V-PERLA-18",
+        "sku_original": "SHOP-V-PERLA-18",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-PERLA-18",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Perlado Rosado — R-18 / PAQUETE X 25",
+        "color": "rosado",
+        "tamano_codigo": "R-18",
+        "diam_pulg": 18,
+        "diam_cm": 45.7,
+        "forma": "redondo",
+        "acabado": "perlado",
+        "unidades": 2,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_05_ARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_05_ARCO"
+        },
+        "product_id": "P-FUCSIA",
+        "variant_id": "V-FUCSIA-18",
+        "sku": "SKU-V-FUCSIA-18",
+        "sku_original": "SHOP-V-FUCSIA-18",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-FUCSIA-18",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Fucsia — R-18 / PAQUETE X 25",
+        "color": "fucsia",
+        "tamano_codigo": "R-18",
+        "diam_pulg": 18,
+        "diam_cm": 45.7,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 1,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_05_ARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_05_ARCO"
+        },
+        "product_id": "P-PERLA",
+        "variant_id": "V-PERLA-24",
+        "sku": "SKU-V-PERLA-24",
+        "sku_original": "SHOP-V-PERLA-24",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-PERLA-24",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Perlado Rosado — R-24 / PAQUETE X 10",
+        "color": "rosado",
+        "tamano_codigo": "R-24",
+        "diam_pulg": 24,
+        "diam_cm": 61,
+        "forma": "redondo",
+        "acabado": "perlado",
+        "unidades": 2,
+        "imagen": null,
+        "sustitucion": null
+      }
+    ],
+    "resuelto": {
+      "estructura_id": "EST_05_ARCO",
+      "aplicado": true,
+      "patron": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "degradado",
+          "paradas": [
+            2,
+            1,
+            0
+          ],
+          "transicion": "suave"
+        },
+        "simetria": "espejo"
+      },
+      "geometria": "racimos",
+      "filas": 21,
+      "columnas": 4,
+      "repeticiones": 1,
+      "globos_por_instancia": 84,
+      "celdas": [
+        [
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          1
+        ],
+        [
+          2,
+          1,
+          2,
+          1
+        ],
+        [
+          2,
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          0
+        ],
+        [
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          1,
+          2,
+          1
+        ],
+        [
+          2,
+          2,
+          2,
+          1
+        ],
+        [
+          2,
+          2,
+          2,
+          2
+        ]
+      ],
+      "extras": [],
+      "conteo": [
+        {
+          "material": 0,
+          "color": "blanco",
+          "acabado": "fashion",
+          "unidades_por_instancia": 18,
+          "unidades_total": 18
+        },
+        {
+          "material": 1,
+          "color": "rosado",
+          "acabado": "perlado",
+          "unidades_por_instancia": 44,
+          "unidades_total": 44
+        },
+        {
+          "material": 2,
+          "color": "fucsia",
+          "acabado": "fashion",
+          "unidades_por_instancia": 22,
+          "unidades_total": 22
+        }
+      ],
+      "pasos": [
+        {
+          "desde": 1,
+          "hasta": 1,
+          "celdas": [
+            2,
+            2,
+            2,
+            2
+          ],
+          "extras": []
+        },
+        {
+          "desde": 2,
+          "hasta": 2,
+          "celdas": [
+            2,
+            2,
+            2,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 3,
+          "hasta": 3,
+          "celdas": [
+            2,
+            1,
+            2,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 4,
+          "hasta": 5,
+          "celdas": [
+            2,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 6,
+          "hasta": 6,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 7,
+          "hasta": 8,
+          "celdas": [
+            1,
+            1,
+            1,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 9,
+          "hasta": 9,
+          "celdas": [
+            1,
+            0,
+            1,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 10,
+          "hasta": 10,
+          "celdas": [
+            1,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 11,
+          "hasta": 11,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 12,
+          "hasta": 12,
+          "celdas": [
+            1,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 13,
+          "hasta": 13,
+          "celdas": [
+            1,
+            0,
+            1,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 14,
+          "hasta": 15,
+          "celdas": [
+            1,
+            1,
+            1,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 16,
+          "hasta": 16,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 17,
+          "hasta": 18,
+          "celdas": [
+            2,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 19,
+          "hasta": 19,
+          "celdas": [
+            2,
+            1,
+            2,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 20,
+          "hasta": 20,
+          "celdas": [
+            2,
+            2,
+            2,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 21,
+          "hasta": 21,
+          "celdas": [
+            2,
+            2,
+            2,
+            2
+          ],
+          "extras": []
+        }
+      ],
+      "nombre": "Degradé",
+      "descripcion": "Degradé desde cada pie hasta la clave, en espejo de fucsia (3) a blanco (1) pasando por rosado (2), con transiciones mezcladas.",
+      "instrucciones": [
+        "Infla cada globo con el calibrador para que todos queden del mismo tamaño.",
+        "Arma parejas (dos globos amarrados por el cuello) y une dos parejas para formar cada cuarteto.",
+        "Ordena los cuartetos del tono inicial, fucsia (3), al final, blanco (1); en cada transición mezcla globos de los dos tonos para que el cambio sea suave.",
+        "Sigue la gráfica numerada: cada número es un color de la leyenda."
+      ],
+      "prompt_gemini": "COLOR PATTERN — a gradual ombré from both bases up to the top, mirrored on each side: matte fuchsia, blending through pearl pink into matte white; soft mixed transition zones, no hard lines.",
+      "prompt_lora": "in an ombre gradient from fuchsia through pink to white from both bases up to the top, mirrored on each side",
+      "avisos": []
+    }
+  },
+  {
+    "id": "semiarco-escalonado",
+    "titulo": "Semiarco orgánico · degradé escalonado",
+    "estructura": {
+      "estructura_id": "EST_06_SEMIARCO",
+      "nombre": "Semiarco",
+      "tipo": "semiarco",
+      "rol_escena": "focal",
+      "ubicacion": "lateral_derecho",
+      "medidas": {
+        "ancho_m": 1.6,
+        "alto_m": 2.4
+      },
+      "repeticiones": 1,
+      "densidad": "media",
+      "mezcla": "organica_fina",
+      "materiales": [
+        {
+          "product_id": "P-AZUL",
+          "color": "azul",
+          "acabado": "reflex",
+          "participacion": 0.272727,
+          "rol_material": "principal"
+        },
+        {
+          "product_id": "P-TURQUESA",
+          "color": "turquesa",
+          "acabado": "fashion",
+          "participacion": 0.181818,
+          "rol_material": "secundario"
+        },
+        {
+          "product_id": "P-MENTA",
+          "color": "menta",
+          "acabado": "pastel",
+          "participacion": 0.272727,
+          "rol_material": "secundario"
+        },
+        {
+          "product_id": "P-BLANCO",
+          "color": "blanco",
+          "acabado": "fashion",
+          "participacion": 0.272728,
+          "rol_material": "secundario"
+        }
+      ],
+      "porque": "Marco principal con margaritas rosadas entre racimos blancos.",
+      "estructura_oficial": "semiarco_asimetrico",
+      "patron_color": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "degradado",
+          "paradas": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "transicion": "escalonada"
+        }
+      }
+    },
+    "lineas": [
+      {
+        "estructura_id": "EST_06_SEMIARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_06_SEMIARCO"
+        },
+        "product_id": "P-AZUL",
+        "variant_id": "V-AZUL-5",
+        "sku": "SKU-V-AZUL-5",
+        "sku_original": "SHOP-V-AZUL-5",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-AZUL-5",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Reflex Azul — R-5 / PAQUETE X 50",
+        "color": "azul",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "diam_cm": 12.7,
+        "forma": "redondo",
+        "acabado": "reflex",
+        "unidades": 3,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_06_SEMIARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_06_SEMIARCO"
+        },
+        "product_id": "P-TURQUESA",
+        "variant_id": "V-TURQUESA-5",
+        "sku": "SKU-V-TURQUESA-5",
+        "sku_original": "SHOP-V-TURQUESA-5",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-TURQUESA-5",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Turquesa — R-5 / PAQUETE X 50",
+        "color": "turquesa",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "diam_cm": 12.7,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 2,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_06_SEMIARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_06_SEMIARCO"
+        },
+        "product_id": "P-MENTA",
+        "variant_id": "V-MENTA-5",
+        "sku": "SKU-V-MENTA-5",
+        "sku_original": "SHOP-V-MENTA-5",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-MENTA-5",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Pastel Menta — R-5 / PAQUETE X 50",
+        "color": "menta",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "diam_cm": 12.7,
+        "forma": "redondo",
+        "acabado": "pastel",
+        "unidades": 2,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_06_SEMIARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_06_SEMIARCO"
+        },
+        "product_id": "P-BLANCO",
+        "variant_id": "V-BLANCO-5",
+        "sku": "SKU-V-BLANCO-5",
+        "sku_original": "SHOP-V-BLANCO-5",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-BLANCO-5",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Blanco — R-5 / PAQUETE X 50",
+        "color": "blanco",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "diam_cm": 12.7,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 2,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_06_SEMIARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_06_SEMIARCO"
+        },
+        "product_id": "P-AZUL",
+        "variant_id": "V-AZUL-9",
+        "sku": "SKU-V-AZUL-9",
+        "sku_original": "SHOP-V-AZUL-9",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-AZUL-9",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Reflex Azul — R-9 / PAQUETE X 50",
+        "color": "azul",
+        "tamano_codigo": "R-9",
+        "diam_pulg": 9,
+        "diam_cm": 22.9,
+        "forma": "redondo",
+        "acabado": "reflex",
+        "unidades": 2,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_06_SEMIARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_06_SEMIARCO"
+        },
+        "product_id": "P-TURQUESA",
+        "variant_id": "V-TURQUESA-9",
+        "sku": "SKU-V-TURQUESA-9",
+        "sku_original": "SHOP-V-TURQUESA-9",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-TURQUESA-9",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Turquesa — R-9 / PAQUETE X 50",
+        "color": "turquesa",
+        "tamano_codigo": "R-9",
+        "diam_pulg": 9,
+        "diam_cm": 22.9,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 2,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_06_SEMIARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_06_SEMIARCO"
+        },
+        "product_id": "P-MENTA",
+        "variant_id": "V-MENTA-9",
+        "sku": "SKU-V-MENTA-9",
+        "sku_original": "SHOP-V-MENTA-9",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-MENTA-9",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Pastel Menta — R-9 / PAQUETE X 50",
+        "color": "menta",
+        "tamano_codigo": "R-9",
+        "diam_pulg": 9,
+        "diam_cm": 22.9,
+        "forma": "redondo",
+        "acabado": "pastel",
+        "unidades": 2,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_06_SEMIARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_06_SEMIARCO"
+        },
+        "product_id": "P-BLANCO",
+        "variant_id": "V-BLANCO-9",
+        "sku": "SKU-V-BLANCO-9",
+        "sku_original": "SHOP-V-BLANCO-9",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-BLANCO-9",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Blanco — R-9 / PAQUETE X 50",
+        "color": "blanco",
+        "tamano_codigo": "R-9",
+        "diam_pulg": 9,
+        "diam_cm": 22.9,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 2,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_06_SEMIARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_06_SEMIARCO"
+        },
+        "product_id": "P-AZUL",
+        "variant_id": "V-AZUL-12",
+        "sku": "SKU-V-AZUL-12",
+        "sku_original": "SHOP-V-AZUL-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-AZUL-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Reflex Azul — R-12 / PAQUETE X 50",
+        "color": "azul",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "reflex",
+        "unidades": 6,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_06_SEMIARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_06_SEMIARCO"
+        },
+        "product_id": "P-TURQUESA",
+        "variant_id": "V-TURQUESA-12",
+        "sku": "SKU-V-TURQUESA-12",
+        "sku_original": "SHOP-V-TURQUESA-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-TURQUESA-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Turquesa — R-12 / PAQUETE X 50",
+        "color": "turquesa",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 4,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_06_SEMIARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_06_SEMIARCO"
+        },
+        "product_id": "P-MENTA",
+        "variant_id": "V-MENTA-12",
+        "sku": "SKU-V-MENTA-12",
+        "sku_original": "SHOP-V-MENTA-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-MENTA-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Pastel Menta — R-12 / PAQUETE X 50",
+        "color": "menta",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "pastel",
+        "unidades": 6,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_06_SEMIARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_06_SEMIARCO"
+        },
+        "product_id": "P-BLANCO",
+        "variant_id": "V-BLANCO-12",
+        "sku": "SKU-V-BLANCO-12",
+        "sku_original": "SHOP-V-BLANCO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-BLANCO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+        "color": "blanco",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 7,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_06_SEMIARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_06_SEMIARCO"
+        },
+        "product_id": "P-AZUL",
+        "variant_id": "V-AZUL-18",
+        "sku": "SKU-V-AZUL-18",
+        "sku_original": "SHOP-V-AZUL-18",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-AZUL-18",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Reflex Azul — R-18 / PAQUETE X 25",
+        "color": "azul",
+        "tamano_codigo": "R-18",
+        "diam_pulg": 18,
+        "diam_cm": 45.7,
+        "forma": "redondo",
+        "acabado": "reflex",
+        "unidades": 1,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_06_SEMIARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_06_SEMIARCO"
+        },
+        "product_id": "P-MENTA",
+        "variant_id": "V-MENTA-18",
+        "sku": "SKU-V-MENTA-18",
+        "sku_original": "SHOP-V-MENTA-18",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-MENTA-18",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Pastel Menta — R-18 / PAQUETE X 25",
+        "color": "menta",
+        "tamano_codigo": "R-18",
+        "diam_pulg": 18,
+        "diam_cm": 45.7,
+        "forma": "redondo",
+        "acabado": "pastel",
+        "unidades": 1,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_06_SEMIARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_06_SEMIARCO"
+        },
+        "product_id": "P-MENTA",
+        "variant_id": "V-MENTA-24",
+        "sku": "SKU-V-MENTA-24",
+        "sku_original": "SHOP-V-MENTA-24",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-MENTA-24",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Pastel Menta — R-24 / PAQUETE X 10",
+        "color": "menta",
+        "tamano_codigo": "R-24",
+        "diam_pulg": 24,
+        "diam_cm": 61,
+        "forma": "redondo",
+        "acabado": "pastel",
+        "unidades": 1,
+        "imagen": null,
+        "sustitucion": null
+      }
+    ],
+    "resuelto": {
+      "estructura_id": "EST_06_SEMIARCO",
+      "aplicado": true,
+      "patron": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "degradado",
+          "paradas": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "transicion": "escalonada"
+        }
+      },
+      "geometria": "racimos",
+      "filas": 11,
+      "columnas": 4,
+      "repeticiones": 1,
+      "globos_por_instancia": 43,
+      "celdas": [
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          3,
+          3,
+          3,
+          3
+        ],
+        [
+          3,
+          3,
+          3,
+          3
+        ],
+        [
+          3,
+          3,
+          3,
+          3
+        ]
+      ],
+      "extras": [],
+      "conteo": [
+        {
+          "material": 0,
+          "color": "azul",
+          "acabado": "reflex",
+          "unidades_por_instancia": 12,
+          "unidades_total": 12
+        },
+        {
+          "material": 1,
+          "color": "turquesa",
+          "acabado": "fashion",
+          "unidades_por_instancia": 8,
+          "unidades_total": 8
+        },
+        {
+          "material": 2,
+          "color": "menta",
+          "acabado": "pastel",
+          "unidades_por_instancia": 12,
+          "unidades_total": 12
+        },
+        {
+          "material": 3,
+          "color": "blanco",
+          "acabado": "fashion",
+          "unidades_por_instancia": 11,
+          "unidades_total": 11
+        }
+      ],
+      "pasos": [
+        {
+          "desde": 1,
+          "hasta": 3,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 4,
+          "hasta": 5,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 6,
+          "hasta": 8,
+          "celdas": [
+            2,
+            2,
+            2,
+            2
+          ],
+          "extras": []
+        },
+        {
+          "desde": 9,
+          "hasta": 11,
+          "celdas": [
+            3,
+            3,
+            3,
+            3
+          ],
+          "extras": []
+        }
+      ],
+      "nombre": "Degradé",
+      "descripcion": "Degradé por franjas de la base a la punta: azul (1), luego turquesa (2), luego menta (3), luego blanco (4); cada franja de un solo color.",
+      "instrucciones": [
+        "Infla cada globo con el calibrador para que todos queden del mismo tamaño.",
+        "Arma parejas (dos globos amarrados por el cuello) y une dos parejas para formar cada cuarteto.",
+        "Ordena los cuartetos por franjas del tono inicial, azul (1), al final, blanco (4); cada franja va de un solo tono, sin mezclar.",
+        "Sigue la gráfica numerada: cada número es un color de la leyenda."
+      ],
+      "prompt_gemini": "COLOR PATTERN — stepped ombré bands from the base to the open tip: high-shine chrome blue, then matte turquoise, then mint, then matte white; each band a single solid color.",
+      "prompt_lora": "in stepped ombre bands from blue through turquoise and mint to white from the base to the open tip",
+      "avisos": [
+        "La gráfica tiene 44 posiciones y la mezcla de varios tamaños da 43 globos por pieza: el conteo por color reparte esos 43 en la proporción de la gráfica, con al menos uno por color."
+      ]
+    }
+  },
+  {
+    "id": "guirnalda-anillos",
+    "titulo": "Guirnalda · anillos",
+    "estructura": {
+      "estructura_id": "EST_07_GUIRNALDA",
+      "nombre": "Guirnalda de mesa",
+      "tipo": "guirnalda",
+      "rol_escena": "focal",
+      "ubicacion": "sobre_mesa_principal",
+      "medidas": {
+        "largo_m": 3.5
+      },
+      "repeticiones": 1,
+      "densidad": "media",
+      "mezcla": "clasica",
+      "materiales": [
+        {
+          "product_id": "P-ROJO",
+          "color": "rojo",
+          "acabado": "fashion",
+          "participacion": 0.368421,
+          "rol_material": "principal"
+        },
+        {
+          "product_id": "P-BLANCO",
+          "color": "blanco",
+          "acabado": "fashion",
+          "participacion": 0.315789,
+          "rol_material": "secundario"
+        },
+        {
+          "product_id": "P-AZUL",
+          "color": "azul",
+          "acabado": "reflex",
+          "participacion": 0.31579,
+          "rol_material": "secundario"
+        }
+      ],
+      "porque": "Remata la mesa principal con destellos dorados.",
+      "estructura_oficial": "guirnalda",
+      "patron_color": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "anillos",
+          "secuencia": [
+            0,
+            1,
+            2
+          ],
+          "largo": 1
+        }
+      }
+    },
+    "lineas": [
+      {
+        "estructura_id": "EST_07_GUIRNALDA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_07_GUIRNALDA"
+        },
+        "product_id": "P-ROJO",
+        "variant_id": "V-ROJO-12",
+        "sku": "SKU-V-ROJO-12",
+        "sku_original": "SHOP-V-ROJO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-ROJO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Rojo — R-12 / PAQUETE X 50",
+        "color": "rojo",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 28,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_07_GUIRNALDA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_07_GUIRNALDA"
+        },
+        "product_id": "P-BLANCO",
+        "variant_id": "V-BLANCO-12",
+        "sku": "SKU-V-BLANCO-12",
+        "sku_original": "SHOP-V-BLANCO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-BLANCO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+        "color": "blanco",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 24,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_07_GUIRNALDA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_07_GUIRNALDA"
+        },
+        "product_id": "P-AZUL",
+        "variant_id": "V-AZUL-12",
+        "sku": "SKU-V-AZUL-12",
+        "sku_original": "SHOP-V-AZUL-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-AZUL-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Reflex Azul — R-12 / PAQUETE X 50",
+        "color": "azul",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "reflex",
+        "unidades": 24,
+        "imagen": null,
+        "sustitucion": null
+      }
+    ],
+    "resuelto": {
+      "estructura_id": "EST_07_GUIRNALDA",
+      "aplicado": true,
+      "patron": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "anillos",
+          "secuencia": [
+            0,
+            1,
+            2
+          ],
+          "largo": 1
+        }
+      },
+      "geometria": "racimos",
+      "filas": 19,
+      "columnas": 4,
+      "repeticiones": 1,
+      "globos_por_instancia": 76,
+      "celdas": [
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "extras": [],
+      "conteo": [
+        {
+          "material": 0,
+          "color": "rojo",
+          "acabado": "fashion",
+          "unidades_por_instancia": 28,
+          "unidades_total": 28
+        },
+        {
+          "material": 1,
+          "color": "blanco",
+          "acabado": "fashion",
+          "unidades_por_instancia": 24,
+          "unidades_total": 24
+        },
+        {
+          "material": 2,
+          "color": "azul",
+          "acabado": "reflex",
+          "unidades_por_instancia": 24,
+          "unidades_total": 24
+        }
+      ],
+      "pasos": [
+        {
+          "desde": 1,
+          "hasta": 1,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 2,
+          "hasta": 2,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 3,
+          "hasta": 3,
+          "celdas": [
+            2,
+            2,
+            2,
+            2
+          ],
+          "extras": []
+        },
+        {
+          "desde": 4,
+          "hasta": 4,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 5,
+          "hasta": 5,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 6,
+          "hasta": 6,
+          "celdas": [
+            2,
+            2,
+            2,
+            2
+          ],
+          "extras": []
+        },
+        {
+          "desde": 7,
+          "hasta": 7,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 8,
+          "hasta": 8,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 9,
+          "hasta": 9,
+          "celdas": [
+            2,
+            2,
+            2,
+            2
+          ],
+          "extras": []
+        },
+        {
+          "desde": 10,
+          "hasta": 10,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 11,
+          "hasta": 11,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 12,
+          "hasta": 12,
+          "celdas": [
+            2,
+            2,
+            2,
+            2
+          ],
+          "extras": []
+        },
+        {
+          "desde": 13,
+          "hasta": 13,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 14,
+          "hasta": 14,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 15,
+          "hasta": 15,
+          "celdas": [
+            2,
+            2,
+            2,
+            2
+          ],
+          "extras": []
+        },
+        {
+          "desde": 16,
+          "hasta": 16,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 17,
+          "hasta": 17,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 18,
+          "hasta": 18,
+          "celdas": [
+            2,
+            2,
+            2,
+            2
+          ],
+          "extras": []
+        },
+        {
+          "desde": 19,
+          "hasta": 19,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        }
+      ],
+      "nombre": "Anillos",
+      "descripcion": "Cada cuarteto va de un solo color, en el orden rojo (1) → blanco (2) → azul (3), 1 cuarteto por color, repitiéndose de un extremo al otro.",
+      "instrucciones": [
+        "Infla cada globo con el calibrador para que todos queden del mismo tamaño.",
+        "Arma parejas (dos globos amarrados por el cuello) y une dos parejas para formar cada cuarteto.",
+        "Arma cada cuarteto de un solo color y cambia de color cada 1 cuarteto, en este orden: rojo (1) → blanco (2) → azul (3).",
+        "Sigue la gráfica numerada: cada número es un color de la leyenda."
+      ],
+      "prompt_gemini": "COLOR PATTERN — each cluster is a single color; clusters follow the order matte red → matte white → high-shine chrome blue, 1 cluster per color, repeating along its length.",
+      "prompt_lora": "built with stacked bands of red, white and blue repeating along its length",
+      "avisos": [
+        "Con cuartetos completos cada pieza lleva 76 globos; las medidas daban 75."
+      ]
+    }
+  },
+  {
+    "id": "aro-anillos-acento",
+    "titulo": "Aro circular · anillos con acento",
+    "estructura": {
+      "estructura_id": "EST_08_ARCO",
+      "nombre": "Aro circular",
+      "tipo": "arco",
+      "rol_escena": "focal",
+      "ubicacion": "arco_central",
+      "medidas": {
+        "ancho_m": 2,
+        "alto_m": 2
+      },
+      "repeticiones": 1,
+      "densidad": "media",
+      "mezcla": "clasica",
+      "materiales": [
+        {
+          "product_id": "P-PLATEADO",
+          "color": "plateado",
+          "acabado": "reflex",
+          "participacion": 0.463235,
+          "rol_material": "principal"
+        },
+        {
+          "product_id": "P-NEGRO",
+          "color": "negro",
+          "acabado": "fashion",
+          "participacion": 0.470588,
+          "rol_material": "secundario"
+        },
+        {
+          "product_id": "P-DORADO",
+          "color": "dorado",
+          "acabado": "reflex",
+          "participacion": 0.066177,
+          "rol_material": "acento"
+        }
+      ],
+      "porque": "Marco principal con margaritas rosadas entre racimos blancos.",
+      "estructura_oficial": "aro_circular",
+      "patron_color": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "anillos",
+          "secuencia": [
+            0,
+            1
+          ],
+          "largo": 2
+        },
+        "acentos": [
+          {
+            "material": 2,
+            "cada": 4,
+            "desde": 2,
+            "posiciones": [
+              0
+            ]
+          }
+        ]
+      }
+    },
+    "lineas": [
+      {
+        "estructura_id": "EST_08_ARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_08_ARCO"
+        },
+        "product_id": "P-PLATEADO",
+        "variant_id": "V-PLATEADO-12",
+        "sku": "SKU-V-PLATEADO-12",
+        "sku_original": "SHOP-V-PLATEADO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-PLATEADO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Reflex Plateado — R-12 / PAQUETE X 50",
+        "color": "plateado",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "reflex",
+        "unidades": 63,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_08_ARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_08_ARCO"
+        },
+        "product_id": "P-NEGRO",
+        "variant_id": "V-NEGRO-12",
+        "sku": "SKU-V-NEGRO-12",
+        "sku_original": "SHOP-V-NEGRO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-NEGRO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50",
+        "color": "negro",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 64,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_08_ARCO",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_08_ARCO"
+        },
+        "product_id": "P-DORADO",
+        "variant_id": "V-DORADO-12",
+        "sku": "SKU-V-DORADO-12",
+        "sku_original": "SHOP-V-DORADO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-DORADO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50",
+        "color": "dorado",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "reflex",
+        "unidades": 9,
+        "imagen": null,
+        "sustitucion": null
+      }
+    ],
+    "resuelto": {
+      "estructura_id": "EST_08_ARCO",
+      "aplicado": true,
+      "patron": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "anillos",
+          "secuencia": [
+            0,
+            1
+          ],
+          "largo": 2
+        },
+        "acentos": [
+          {
+            "material": 2,
+            "cada": 4,
+            "desde": 2,
+            "posiciones": [
+              0
+            ]
+          }
+        ]
+      },
+      "geometria": "racimos",
+      "filas": 34,
+      "columnas": 4,
+      "repeticiones": 1,
+      "globos_por_instancia": 136,
+      "celdas": [
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          0
+        ]
+      ],
+      "extras": [],
+      "conteo": [
+        {
+          "material": 0,
+          "color": "plateado",
+          "acabado": "reflex",
+          "unidades_por_instancia": 63,
+          "unidades_total": 63
+        },
+        {
+          "material": 1,
+          "color": "negro",
+          "acabado": "fashion",
+          "unidades_por_instancia": 64,
+          "unidades_total": 64
+        },
+        {
+          "material": 2,
+          "color": "dorado",
+          "acabado": "reflex",
+          "unidades_por_instancia": 9,
+          "unidades_total": 9
+        }
+      ],
+      "pasos": [
+        {
+          "desde": 1,
+          "hasta": 1,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 2,
+          "hasta": 2,
+          "celdas": [
+            2,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 3,
+          "hasta": 4,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 5,
+          "hasta": 5,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 6,
+          "hasta": 6,
+          "celdas": [
+            2,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 7,
+          "hasta": 8,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 9,
+          "hasta": 9,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 10,
+          "hasta": 10,
+          "celdas": [
+            2,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 11,
+          "hasta": 12,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 13,
+          "hasta": 13,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 14,
+          "hasta": 14,
+          "celdas": [
+            2,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 15,
+          "hasta": 16,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 17,
+          "hasta": 17,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 18,
+          "hasta": 18,
+          "celdas": [
+            2,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 19,
+          "hasta": 20,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 21,
+          "hasta": 21,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 22,
+          "hasta": 22,
+          "celdas": [
+            2,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 23,
+          "hasta": 24,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 25,
+          "hasta": 25,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 26,
+          "hasta": 26,
+          "celdas": [
+            2,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 27,
+          "hasta": 28,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 29,
+          "hasta": 29,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 30,
+          "hasta": 30,
+          "celdas": [
+            2,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 31,
+          "hasta": 32,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 33,
+          "hasta": 33,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 34,
+          "hasta": 34,
+          "celdas": [
+            2,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        }
+      ],
+      "nombre": "Anillos",
+      "descripcion": "Cada cuarteto va de un solo color, en el orden plateado (1) → negro (2), 2 cuartetos por color, repitiéndose del pie izquierdo, por la clave, al pie derecho.",
+      "instrucciones": [
+        "Infla cada globo con el calibrador para que todos queden del mismo tamaño.",
+        "Arma parejas (dos globos amarrados por el cuello) y une dos parejas para formar cada cuarteto.",
+        "Arma cada cuarteto de un solo color y cambia de color cada 2 cuartetos, en este orden: plateado (1) → negro (2).",
+        "Acento: cada 4 cuartetos, empezando en el cuarteto 2, lleva dorado (3) en la posición 1.",
+        "Sigue la gráfica numerada: cada número es un color de la leyenda."
+      ],
+      "prompt_gemini": "COLOR PATTERN — each cluster is a single color; clusters follow the order high-shine chrome silver → matte black, 2 clusters per color, repeating from the left base over the top to the right base. Every 4th cluster (starting at cluster 2) carries high-shine chrome gold.",
+      "prompt_lora": "built with stacked bands of silver and black repeating from the left base over the top to the right base, with evenly spaced gold accent clusters",
+      "avisos": [
+        "Con cuartetos completos cada pieza lleva 136 globos; las medidas daban 134."
+      ]
+    }
+  },
+  {
+    "id": "centro-mesa-bloques",
+    "titulo": "Centro de mesa · bloques",
+    "estructura": {
+      "estructura_id": "EST_09_CENTRO_MESA",
+      "nombre": "Centro de mesa",
+      "tipo": "centro_mesa",
+      "rol_escena": "focal",
+      "ubicacion": "mesas_invitados",
+      "medidas": {
+        "ancho_m": 0.4,
+        "alto_m": 0.6
+      },
+      "repeticiones": 8,
+      "densidad": "media",
+      "mezcla": "clasica",
+      "materiales": [
+        {
+          "product_id": "P-DORADO",
+          "color": "dorado",
+          "acabado": "reflex",
+          "participacion": 0.333333,
+          "rol_material": "principal"
+        },
+        {
+          "product_id": "P-BLANCO",
+          "color": "blanco",
+          "acabado": "fashion",
+          "participacion": 0.666667,
+          "rol_material": "secundario"
+        }
+      ],
+      "porque": "Enmarcan la entrada con la espiral clásica de tres colores.",
+      "estructura_oficial": "centro_mesa",
+      "patron_color": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "bloques",
+          "bloques": [
+            {
+              "material": 1,
+              "peso": 60
+            },
+            {
+              "material": 0,
+              "peso": 40
+            }
+          ]
+        }
+      }
+    },
+    "lineas": [
+      {
+        "estructura_id": "EST_09_CENTRO_MESA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_09_CENTRO_MESA"
+        },
+        "product_id": "P-DORADO",
+        "variant_id": "V-DORADO-12",
+        "sku": "SKU-V-DORADO-12",
+        "sku_original": "SHOP-V-DORADO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-DORADO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50",
+        "color": "dorado",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "reflex",
+        "unidades": 32,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_09_CENTRO_MESA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_09_CENTRO_MESA"
+        },
+        "product_id": "P-BLANCO",
+        "variant_id": "V-BLANCO-12",
+        "sku": "SKU-V-BLANCO-12",
+        "sku_original": "SHOP-V-BLANCO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-BLANCO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+        "color": "blanco",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 64,
+        "imagen": null,
+        "sustitucion": null
+      }
+    ],
+    "resuelto": {
+      "estructura_id": "EST_09_CENTRO_MESA",
+      "aplicado": true,
+      "patron": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "bloques",
+          "bloques": [
+            {
+              "material": 1,
+              "peso": 60
+            },
+            {
+              "material": 0,
+              "peso": 40
+            }
+          ]
+        }
+      },
+      "geometria": "racimos",
+      "filas": 3,
+      "columnas": 4,
+      "repeticiones": 8,
+      "globos_por_instancia": 12,
+      "celdas": [
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "extras": [],
+      "conteo": [
+        {
+          "material": 0,
+          "color": "dorado",
+          "acabado": "reflex",
+          "unidades_por_instancia": 4,
+          "unidades_total": 32
+        },
+        {
+          "material": 1,
+          "color": "blanco",
+          "acabado": "fashion",
+          "unidades_por_instancia": 8,
+          "unidades_total": 64
+        }
+      ],
+      "pasos": [
+        {
+          "desde": 1,
+          "hasta": 2,
+          "celdas": [
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 3,
+          "hasta": 3,
+          "celdas": [
+            0,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        }
+      ],
+      "nombre": "Bloques",
+      "descripcion": "Bloques de color sólido de abajo arriba: blanco (2) ~67 %, dorado (1) ~33 %.",
+      "instrucciones": [
+        "Infla cada globo con el calibrador para que todos queden del mismo tamaño.",
+        "Arma parejas (dos globos amarrados por el cuello) y une dos parejas para formar cada cuarteto.",
+        "Arma los bloques en orden: 2 cuartetos de blanco (2), luego 1 cuarteto de dorado (1).",
+        "Sigue la gráfica numerada: cada número es un color de la leyenda."
+      ],
+      "prompt_gemini": "COLOR PATTERN — solid color blocks in this order from the bottom up: matte white (~67%), high-shine chrome gold (~33%); clean transitions between blocks.",
+      "prompt_lora": "color-blocked in sections of white, then gold from the bottom up",
+      "avisos": [
+        "Con cuartetos completos cada pieza lleva 12 globos; las medidas daban 13."
+      ]
+    }
+  },
+  {
+    "id": "pared-damero",
+    "titulo": "Pared · damero",
+    "estructura": {
+      "estructura_id": "EST_10_PARED",
+      "nombre": "Pared degradé",
+      "tipo": "pared",
+      "rol_escena": "focal",
+      "ubicacion": "fondo_pared",
+      "medidas": {
+        "ancho_m": 1.8,
+        "alto_m": 1.8
+      },
+      "repeticiones": 1,
+      "densidad": "media",
+      "mezcla": "clasica",
+      "materiales": [
+        {
+          "product_id": "P-NEGRO",
+          "color": "negro",
+          "acabado": "fashion",
+          "participacion": 0.5,
+          "rol_material": "principal"
+        },
+        {
+          "product_id": "P-BLANCO",
+          "color": "blanco",
+          "acabado": "fashion",
+          "participacion": 0.5,
+          "rol_material": "secundario"
+        }
+      ],
+      "porque": "Fondo para fotos que pasa de lila a blanco en diagonal.",
+      "estructura_oficial": "pared_densa",
+      "patron_color": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "damero",
+          "secuencia": [
+            0,
+            1
+          ],
+          "tamano": 1
+        }
+      }
+    },
+    "lineas": [
+      {
+        "estructura_id": "EST_10_PARED",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_10_PARED"
+        },
+        "product_id": "P-NEGRO",
+        "variant_id": "V-NEGRO-12",
+        "sku": "SKU-V-NEGRO-12",
+        "sku_original": "SHOP-V-NEGRO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-NEGRO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50",
+        "color": "negro",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 98,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_10_PARED",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_10_PARED"
+        },
+        "product_id": "P-BLANCO",
+        "variant_id": "V-BLANCO-12",
+        "sku": "SKU-V-BLANCO-12",
+        "sku_original": "SHOP-V-BLANCO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-BLANCO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+        "color": "blanco",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 98,
+        "imagen": null,
+        "sustitucion": null
+      }
+    ],
+    "resuelto": {
+      "estructura_id": "EST_10_PARED",
+      "aplicado": true,
+      "patron": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "damero",
+          "secuencia": [
+            0,
+            1
+          ],
+          "tamano": 1
+        }
+      },
+      "geometria": "rejilla",
+      "filas": 14,
+      "columnas": 14,
+      "repeticiones": 1,
+      "globos_por_instancia": 196,
+      "celdas": [
+        [
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0
+        ]
+      ],
+      "extras": [],
+      "conteo": [
+        {
+          "material": 0,
+          "color": "negro",
+          "acabado": "fashion",
+          "unidades_por_instancia": 98,
+          "unidades_total": 98
+        },
+        {
+          "material": 1,
+          "color": "blanco",
+          "acabado": "fashion",
+          "unidades_por_instancia": 98,
+          "unidades_total": 98
+        }
+      ],
+      "pasos": [
+        {
+          "desde": 1,
+          "hasta": 1,
+          "celdas": [
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 2,
+          "hasta": 2,
+          "celdas": [
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 3,
+          "hasta": 3,
+          "celdas": [
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 4,
+          "hasta": 4,
+          "celdas": [
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 5,
+          "hasta": 5,
+          "celdas": [
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 6,
+          "hasta": 6,
+          "celdas": [
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 7,
+          "hasta": 7,
+          "celdas": [
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 8,
+          "hasta": 8,
+          "celdas": [
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 9,
+          "hasta": 9,
+          "celdas": [
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 10,
+          "hasta": 10,
+          "celdas": [
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 11,
+          "hasta": 11,
+          "celdas": [
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 12,
+          "hasta": 12,
+          "celdas": [
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 13,
+          "hasta": 13,
+          "celdas": [
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 14,
+          "hasta": 14,
+          "celdas": [
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            0
+          ],
+          "extras": []
+        }
+      ],
+      "nombre": "Damero",
+      "descripcion": "Damero de negro (1) y blanco (2), alternando globo a globo.",
+      "instrucciones": [
+        "Infla cada globo con el calibrador para que todos queden del mismo tamaño.",
+        "Arma la pared fila por fila, de arriba abajo, siguiendo la gráfica numerada: cada número es un color de la leyenda."
+      ],
+      "prompt_gemini": "COLOR PATTERN — a checkerboard of alternating matte black and matte white balloons.",
+      "prompt_lora": "in a checkerboard of black and white",
+      "avisos": [
+        "Con la rejilla completa (14 × 14) la pared lleva 196 globos; las medidas daban 189."
+      ]
+    }
+  },
+  {
+    "id": "pared-diagonal",
+    "titulo": "Pared · degradé diagonal",
+    "estructura": {
+      "estructura_id": "EST_11_PARED",
+      "nombre": "Pared degradé",
+      "tipo": "pared",
+      "rol_escena": "focal",
+      "ubicacion": "fondo_pared",
+      "medidas": {
+        "ancho_m": 2,
+        "alto_m": 2.2
+      },
+      "repeticiones": 1,
+      "densidad": "media",
+      "mezcla": "clasica",
+      "materiales": [
+        {
+          "product_id": "P-LILA",
+          "color": "lila",
+          "acabado": "fashion",
+          "participacion": 0.164706,
+          "rol_material": "principal"
+        },
+        {
+          "product_id": "P-ROSADO",
+          "color": "rosado",
+          "acabado": "fashion",
+          "participacion": 0.670588,
+          "rol_material": "secundario"
+        },
+        {
+          "product_id": "P-BLANCO",
+          "color": "blanco",
+          "acabado": "fashion",
+          "participacion": 0.164706,
+          "rol_material": "secundario"
+        }
+      ],
+      "porque": "Fondo para fotos que pasa de lila a blanco en diagonal.",
+      "estructura_oficial": "pared_densa",
+      "patron_color": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "degradado",
+          "paradas": [
+            0,
+            1,
+            2
+          ],
+          "transicion": "suave"
+        },
+        "direccion": "diagonal"
+      }
+    },
+    "lineas": [
+      {
+        "estructura_id": "EST_11_PARED",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_11_PARED"
+        },
+        "product_id": "P-LILA",
+        "variant_id": "V-LILA-12",
+        "sku": "SKU-V-LILA-12",
+        "sku_original": "SHOP-V-LILA-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-LILA-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50",
+        "color": "lila",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 42,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_11_PARED",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_11_PARED"
+        },
+        "product_id": "P-ROSADO",
+        "variant_id": "V-ROSADO-12",
+        "sku": "SKU-V-ROSADO-12",
+        "sku_original": "SHOP-V-ROSADO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-ROSADO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Rosado — R-12 / PAQUETE X 50",
+        "color": "rosado",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 171,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_11_PARED",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_11_PARED"
+        },
+        "product_id": "P-BLANCO",
+        "variant_id": "V-BLANCO-12",
+        "sku": "SKU-V-BLANCO-12",
+        "sku_original": "SHOP-V-BLANCO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-BLANCO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+        "color": "blanco",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 42,
+        "imagen": null,
+        "sustitucion": null
+      }
+    ],
+    "resuelto": {
+      "estructura_id": "EST_11_PARED",
+      "aplicado": true,
+      "patron": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "degradado",
+          "paradas": [
+            0,
+            1,
+            2
+          ],
+          "transicion": "suave"
+        },
+        "direccion": "diagonal"
+      },
+      "geometria": "rejilla",
+      "filas": 17,
+      "columnas": 15,
+      "repeticiones": 1,
+      "globos_por_instancia": 255,
+      "celdas": [
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          1,
+          1,
+          0,
+          1,
+          0,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          0,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1,
+          1,
+          0,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2
+        ],
+        [
+          0,
+          1,
+          0,
+          1,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          1
+        ],
+        [
+          1,
+          0,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1,
+          2
+        ],
+        [
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2
+        ],
+        [
+          1,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          2,
+          2,
+          1,
+          2
+        ],
+        [
+          0,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          2
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          1,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          1,
+          2
+        ],
+        [
+          1,
+          1,
+          1,
+          1,
+          1,
+          2,
+          1,
+          2,
+          2,
+          1,
+          2,
+          1,
+          2,
+          2,
+          2
+        ]
+      ],
+      "extras": [],
+      "conteo": [
+        {
+          "material": 0,
+          "color": "lila",
+          "acabado": "fashion",
+          "unidades_por_instancia": 42,
+          "unidades_total": 42
+        },
+        {
+          "material": 1,
+          "color": "rosado",
+          "acabado": "fashion",
+          "unidades_por_instancia": 171,
+          "unidades_total": 171
+        },
+        {
+          "material": 2,
+          "color": "blanco",
+          "acabado": "fashion",
+          "unidades_por_instancia": 42,
+          "unidades_total": 42
+        }
+      ],
+      "pasos": [
+        {
+          "desde": 1,
+          "hasta": 1,
+          "celdas": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            1,
+            0,
+            1,
+            0,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 2,
+          "hasta": 2,
+          "celdas": [
+            0,
+            1,
+            0,
+            1,
+            0,
+            0,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 3,
+          "hasta": 3,
+          "celdas": [
+            0,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 4,
+          "hasta": 4,
+          "celdas": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 5,
+          "hasta": 5,
+          "celdas": [
+            0,
+            1,
+            0,
+            1,
+            1,
+            0,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            2,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 6,
+          "hasta": 6,
+          "celdas": [
+            0,
+            0,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            2,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 7,
+          "hasta": 7,
+          "celdas": [
+            1,
+            0,
+            0,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            2
+          ],
+          "extras": []
+        },
+        {
+          "desde": 8,
+          "hasta": 8,
+          "celdas": [
+            0,
+            1,
+            0,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            2,
+            1,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 9,
+          "hasta": 9,
+          "celdas": [
+            1,
+            0,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            2,
+            1,
+            1,
+            1,
+            1,
+            2,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 10,
+          "hasta": 10,
+          "celdas": [
+            1,
+            1,
+            1,
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            2,
+            1,
+            2,
+            1,
+            1,
+            2
+          ],
+          "extras": []
+        },
+        {
+          "desde": 11,
+          "hasta": 11,
+          "celdas": [
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            2,
+            1,
+            2,
+            1,
+            2
+          ],
+          "extras": []
+        },
+        {
+          "desde": 12,
+          "hasta": 12,
+          "celdas": [
+            1,
+            0,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            2,
+            1,
+            1,
+            2,
+            1,
+            2,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 13,
+          "hasta": 13,
+          "celdas": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            2,
+            1,
+            2,
+            2,
+            1,
+            2
+          ],
+          "extras": []
+        },
+        {
+          "desde": 14,
+          "hasta": 14,
+          "celdas": [
+            0,
+            1,
+            1,
+            1,
+            1,
+            2,
+            1,
+            1,
+            1,
+            1,
+            2,
+            1,
+            2,
+            2,
+            2
+          ],
+          "extras": []
+        },
+        {
+          "desde": 15,
+          "hasta": 15,
+          "celdas": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            2,
+            1,
+            2,
+            1,
+            1,
+            2,
+            1,
+            2,
+            2
+          ],
+          "extras": []
+        },
+        {
+          "desde": 16,
+          "hasta": 16,
+          "celdas": [
+            1,
+            1,
+            1,
+            1,
+            2,
+            1,
+            1,
+            2,
+            1,
+            2,
+            1,
+            2,
+            2,
+            1,
+            2
+          ],
+          "extras": []
+        },
+        {
+          "desde": 17,
+          "hasta": 17,
+          "celdas": [
+            1,
+            1,
+            1,
+            1,
+            1,
+            2,
+            1,
+            2,
+            2,
+            1,
+            2,
+            1,
+            2,
+            2,
+            2
+          ],
+          "extras": []
+        }
+      ],
+      "nombre": "Degradé",
+      "descripcion": "Degradé en diagonal, de la esquina superior izquierda a la inferior derecha de lila (1) a blanco (3) pasando por rosado (2), con transiciones mezcladas.",
+      "instrucciones": [
+        "Infla cada globo con el calibrador para que todos queden del mismo tamaño.",
+        "Arma la pared fila por fila, de arriba abajo, siguiendo la gráfica numerada: cada número es un color de la leyenda.",
+        "El degradé avanza en diagonal: en cada fila, pon cada tono donde lo marca la gráfica numerada."
+      ],
+      "prompt_gemini": "COLOR PATTERN — a gradual ombré diagonally from the top left corner to the bottom right corner: matte lilac, blending through matte pink into matte white; soft mixed transition zones, no hard lines.",
+      "prompt_lora": "in an ombre gradient from lilac through pink to white diagonally from the top left corner to the bottom right corner",
+      "avisos": [
+        "Con la rejilla completa (17 × 15) la pared lleva 255 globos; las medidas daban 257."
+      ]
+    }
+  },
+  {
+    "id": "columna-confeti",
+    "titulo": "Columna orgánica · confeti",
+    "estructura": {
+      "estructura_id": "EST_12_COLUMNA",
+      "nombre": "Columna orgánica",
+      "tipo": "columna",
+      "rol_escena": "focal",
+      "ubicacion": "lateral_izquierdo",
+      "medidas": {
+        "ancho_m": 0.6,
+        "alto_m": 2.2
+      },
+      "repeticiones": 1,
+      "densidad": "media",
+      "mezcla": "organica_fina",
+      "materiales": [
+        {
+          "product_id": "P-ROSADO",
+          "color": "rosado",
+          "acabado": "fashion",
+          "participacion": 0.5,
+          "rol_material": "principal"
+        },
+        {
+          "product_id": "P-LILA",
+          "color": "lila",
+          "acabado": "fashion",
+          "participacion": 0.295455,
+          "rol_material": "secundario"
+        },
+        {
+          "product_id": "P-DORADO",
+          "color": "dorado",
+          "acabado": "reflex",
+          "participacion": 0.204545,
+          "rol_material": "acento"
+        }
+      ],
+      "porque": "Enmarcan la entrada con la espiral clásica de tres colores.",
+      "estructura_oficial": "columna_asimetrica",
+      "patron_color": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "aleatorio",
+          "pesos": [
+            {
+              "material": 0,
+              "peso": 50
+            },
+            {
+              "material": 1,
+              "peso": 30
+            },
+            {
+              "material": 2,
+              "peso": 20
+            }
+          ],
+          "semilla": 7
+        }
+      }
+    },
+    "lineas": [
+      {
+        "estructura_id": "EST_12_COLUMNA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_12_COLUMNA"
+        },
+        "product_id": "P-ROSADO",
+        "variant_id": "V-ROSADO-5",
+        "sku": "SKU-V-ROSADO-5",
+        "sku_original": "SHOP-V-ROSADO-5",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-ROSADO-5",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Rosado — R-5 / PAQUETE X 50",
+        "color": "rosado",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "diam_cm": 12.7,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 4,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_12_COLUMNA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_12_COLUMNA"
+        },
+        "product_id": "P-LILA",
+        "variant_id": "V-LILA-5",
+        "sku": "SKU-V-LILA-5",
+        "sku_original": "SHOP-V-LILA-5",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-LILA-5",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Lila — R-5 / PAQUETE X 50",
+        "color": "lila",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "diam_cm": 12.7,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 3,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_12_COLUMNA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_12_COLUMNA"
+        },
+        "product_id": "P-DORADO",
+        "variant_id": "V-DORADO-5",
+        "sku": "SKU-V-DORADO-5",
+        "sku_original": "SHOP-V-DORADO-5",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-DORADO-5",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Reflex Dorado — R-5 / PAQUETE X 50",
+        "color": "dorado",
+        "tamano_codigo": "R-5",
+        "diam_pulg": 5,
+        "diam_cm": 12.7,
+        "forma": "redondo",
+        "acabado": "reflex",
+        "unidades": 2,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_12_COLUMNA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_12_COLUMNA"
+        },
+        "product_id": "P-ROSADO",
+        "variant_id": "V-ROSADO-9",
+        "sku": "SKU-V-ROSADO-9",
+        "sku_original": "SHOP-V-ROSADO-9",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-ROSADO-9",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Rosado — R-9 / PAQUETE X 50",
+        "color": "rosado",
+        "tamano_codigo": "R-9",
+        "diam_pulg": 9,
+        "diam_cm": 22.9,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 4,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_12_COLUMNA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_12_COLUMNA"
+        },
+        "product_id": "P-LILA",
+        "variant_id": "V-LILA-9",
+        "sku": "SKU-V-LILA-9",
+        "sku_original": "SHOP-V-LILA-9",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-LILA-9",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Lila — R-9 / PAQUETE X 50",
+        "color": "lila",
+        "tamano_codigo": "R-9",
+        "diam_pulg": 9,
+        "diam_cm": 22.9,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 2,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_12_COLUMNA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_12_COLUMNA"
+        },
+        "product_id": "P-DORADO",
+        "variant_id": "V-DORADO-9",
+        "sku": "SKU-V-DORADO-9",
+        "sku_original": "SHOP-V-DORADO-9",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-DORADO-9",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Reflex Dorado — R-9 / PAQUETE X 50",
+        "color": "dorado",
+        "tamano_codigo": "R-9",
+        "diam_pulg": 9,
+        "diam_cm": 22.9,
+        "forma": "redondo",
+        "acabado": "reflex",
+        "unidades": 2,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_12_COLUMNA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_12_COLUMNA"
+        },
+        "product_id": "P-ROSADO",
+        "variant_id": "V-ROSADO-12",
+        "sku": "SKU-V-ROSADO-12",
+        "sku_original": "SHOP-V-ROSADO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-ROSADO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Rosado — R-12 / PAQUETE X 50",
+        "color": "rosado",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 11,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_12_COLUMNA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_12_COLUMNA"
+        },
+        "product_id": "P-LILA",
+        "variant_id": "V-LILA-12",
+        "sku": "SKU-V-LILA-12",
+        "sku_original": "SHOP-V-LILA-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-LILA-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Lila — R-12 / PAQUETE X 50",
+        "color": "lila",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 7,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_12_COLUMNA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_12_COLUMNA"
+        },
+        "product_id": "P-DORADO",
+        "variant_id": "V-DORADO-12",
+        "sku": "SKU-V-DORADO-12",
+        "sku_original": "SHOP-V-DORADO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-DORADO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Reflex Dorado — R-12 / PAQUETE X 50",
+        "color": "dorado",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "reflex",
+        "unidades": 5,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_12_COLUMNA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_12_COLUMNA"
+        },
+        "product_id": "P-ROSADO",
+        "variant_id": "V-ROSADO-18",
+        "sku": "SKU-V-ROSADO-18",
+        "sku_original": "SHOP-V-ROSADO-18",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-ROSADO-18",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Rosado — R-18 / PAQUETE X 25",
+        "color": "rosado",
+        "tamano_codigo": "R-18",
+        "diam_pulg": 18,
+        "diam_cm": 45.7,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 1,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_12_COLUMNA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_12_COLUMNA"
+        },
+        "product_id": "P-LILA",
+        "variant_id": "V-LILA-18",
+        "sku": "SKU-V-LILA-18",
+        "sku_original": "SHOP-V-LILA-18",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-LILA-18",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Lila — R-18 / PAQUETE X 25",
+        "color": "lila",
+        "tamano_codigo": "R-18",
+        "diam_pulg": 18,
+        "diam_cm": 45.7,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 1,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_12_COLUMNA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_12_COLUMNA"
+        },
+        "product_id": "P-ROSADO",
+        "variant_id": "V-ROSADO-24",
+        "sku": "SKU-V-ROSADO-24",
+        "sku_original": "SHOP-V-ROSADO-24",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-ROSADO-24",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Rosado — R-24 / PAQUETE X 10",
+        "color": "rosado",
+        "tamano_codigo": "R-24",
+        "diam_pulg": 24,
+        "diam_cm": 61,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 1,
+        "imagen": null,
+        "sustitucion": null
+      }
+    ],
+    "resuelto": {
+      "estructura_id": "EST_12_COLUMNA",
+      "aplicado": true,
+      "patron": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "aleatorio",
+          "pesos": [
+            {
+              "material": 0,
+              "peso": 50
+            },
+            {
+              "material": 1,
+              "peso": 30
+            },
+            {
+              "material": 2,
+              "peso": 20
+            }
+          ],
+          "semilla": 7
+        }
+      },
+      "geometria": "racimos",
+      "filas": 11,
+      "columnas": 4,
+      "repeticiones": 1,
+      "globos_por_instancia": 43,
+      "celdas": [
+        [
+          2,
+          1,
+          1,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          2,
+          1
+        ],
+        [
+          0,
+          0,
+          1,
+          0
+        ],
+        [
+          1,
+          0,
+          1,
+          0
+        ],
+        [
+          1,
+          1,
+          0,
+          2
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          2,
+          2,
+          2,
+          0
+        ],
+        [
+          2,
+          2,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          0,
+          0
+        ]
+      ],
+      "extras": [],
+      "conteo": [
+        {
+          "material": 0,
+          "color": "rosado",
+          "acabado": "fashion",
+          "unidades_por_instancia": 21,
+          "unidades_total": 21
+        },
+        {
+          "material": 1,
+          "color": "lila",
+          "acabado": "fashion",
+          "unidades_por_instancia": 13,
+          "unidades_total": 13
+        },
+        {
+          "material": 2,
+          "color": "dorado",
+          "acabado": "reflex",
+          "unidades_por_instancia": 9,
+          "unidades_total": 9
+        }
+      ],
+      "pasos": [
+        {
+          "desde": 1,
+          "hasta": 1,
+          "celdas": [
+            2,
+            1,
+            1,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 2,
+          "hasta": 2,
+          "celdas": [
+            2,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 3,
+          "hasta": 3,
+          "celdas": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 4,
+          "hasta": 4,
+          "celdas": [
+            0,
+            1,
+            2,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 5,
+          "hasta": 5,
+          "celdas": [
+            0,
+            0,
+            1,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 6,
+          "hasta": 6,
+          "celdas": [
+            1,
+            0,
+            1,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 7,
+          "hasta": 7,
+          "celdas": [
+            1,
+            1,
+            0,
+            2
+          ],
+          "extras": []
+        },
+        {
+          "desde": 8,
+          "hasta": 8,
+          "celdas": [
+            0,
+            1,
+            0,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 9,
+          "hasta": 9,
+          "celdas": [
+            2,
+            2,
+            2,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 10,
+          "hasta": 10,
+          "celdas": [
+            2,
+            2,
+            0,
+            0
+          ],
+          "extras": []
+        },
+        {
+          "desde": 11,
+          "hasta": 11,
+          "celdas": [
+            1,
+            0,
+            0,
+            0
+          ],
+          "extras": []
+        }
+      ],
+      "nombre": "Confeti",
+      "descripcion": "Confeti: rosado (1), lila (2) y dorado (3) repartidos salteados, sin formar líneas.",
+      "instrucciones": [
+        "Infla cada globo con el calibrador para que todos queden del mismo tamaño.",
+        "Arma parejas (dos globos amarrados por el cuello) y une dos parejas para formar cada cuarteto.",
+        "Reparte los colores salteados, evitando que un mismo color forme líneas o manchas; la gráfica numerada propone un lugar para cada globo.",
+        "Sigue la gráfica numerada: cada número es un color de la leyenda."
+      ],
+      "prompt_gemini": "",
+      "prompt_lora": "",
+      "avisos": [
+        "La gráfica tiene 44 posiciones y la mezcla de varios tamaños da 43 globos por pieza: el conteo por color reparte esos 43 en la proporción de la gráfica, con al menos uno por color."
+      ]
+    }
+  },
+  {
+    "id": "columna-pintada",
+    "titulo": "Columna · acento y pintada a mano",
+    "estructura": {
+      "estructura_id": "EST_13_COLUMNA",
+      "nombre": "Columnas en espiral",
+      "tipo": "columna",
+      "rol_escena": "focal",
+      "ubicacion": "lateral_izquierdo",
+      "medidas": {
+        "ancho_m": 0.6,
+        "alto_m": 1.8
+      },
+      "repeticiones": 1,
+      "densidad": "media",
+      "mezcla": "clasica",
+      "materiales": [
+        {
+          "product_id": "P-BLANCO",
+          "color": "blanco",
+          "acabado": "fashion",
+          "participacion": 0.325,
+          "rol_material": "principal"
+        },
+        {
+          "product_id": "P-NEGRO",
+          "color": "negro",
+          "acabado": "fashion",
+          "participacion": 0.35,
+          "rol_material": "secundario"
+        },
+        {
+          "product_id": "P-AZUL",
+          "color": "azul",
+          "acabado": "reflex",
+          "participacion": 0.325,
+          "rol_material": "acento"
+        }
+      ],
+      "porque": "Enmarcan la entrada con la espiral clásica de tres colores.",
+      "estructura_oficial": "columna",
+      "patron_color": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "espiral",
+          "racimo": [
+            0,
+            1,
+            0,
+            1
+          ],
+          "trazo": "espiral"
+        },
+        "acentos": [
+          {
+            "material": 2,
+            "cada": 4,
+            "desde": 3
+          }
+        ],
+        "pintados": [
+          {
+            "fila": 0,
+            "material": 2
+          },
+          {
+            "fila": 5,
+            "columna": 2,
+            "material": 2
+          },
+          {
+            "fila": 40,
+            "material": 2
+          }
+        ]
+      }
+    },
+    "lineas": [
+      {
+        "estructura_id": "EST_13_COLUMNA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_13_COLUMNA"
+        },
+        "product_id": "P-BLANCO",
+        "variant_id": "V-BLANCO-12",
+        "sku": "SKU-V-BLANCO-12",
+        "sku_original": "SHOP-V-BLANCO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-BLANCO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Blanco — R-12 / PAQUETE X 50",
+        "color": "blanco",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 13,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_13_COLUMNA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_13_COLUMNA"
+        },
+        "product_id": "P-NEGRO",
+        "variant_id": "V-NEGRO-12",
+        "sku": "SKU-V-NEGRO-12",
+        "sku_original": "SHOP-V-NEGRO-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-NEGRO-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Fashion Negro — R-12 / PAQUETE X 50",
+        "color": "negro",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "fashion",
+        "unidades": 14,
+        "imagen": null,
+        "sustitucion": null
+      },
+      {
+        "estructura_id": "EST_13_COLUMNA",
+        "origen": {
+          "kind": "estructura",
+          "id": "EST_13_COLUMNA"
+        },
+        "product_id": "P-AZUL",
+        "variant_id": "V-AZUL-12",
+        "sku": "SKU-V-AZUL-12",
+        "sku_original": "SHOP-V-AZUL-12",
+        "source_snapshot_id": "products_catalog:fixture-patrones-ui",
+        "source_variant_id": "SOURCE-V-AZUL-12",
+        "inventory_quantity": 900,
+        "unidades_inferidas": false,
+        "titulo": "Globo Latex Redondo Reflex Azul — R-12 / PAQUETE X 50",
+        "color": "azul",
+        "tamano_codigo": "R-12",
+        "diam_pulg": 12,
+        "diam_cm": 30.5,
+        "forma": "redondo",
+        "acabado": "reflex",
+        "unidades": 13,
+        "imagen": null,
+        "sustitucion": null
+      }
+    ],
+    "resuelto": {
+      "estructura_id": "EST_13_COLUMNA",
+      "aplicado": true,
+      "patron": {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+          "modo": "espiral",
+          "racimo": [
+            0,
+            1,
+            0,
+            1
+          ],
+          "trazo": "espiral"
+        },
+        "acentos": [
+          {
+            "material": 2,
+            "cada": 4,
+            "desde": 3
+          }
+        ],
+        "pintados": [
+          {
+            "fila": 0,
+            "material": 2
+          },
+          {
+            "fila": 5,
+            "columna": 2,
+            "material": 2
+          },
+          {
+            "fila": 40,
+            "material": 2
+          }
+        ]
+      },
+      "geometria": "racimos",
+      "filas": 10,
+      "columnas": 4,
+      "repeticiones": 1,
+      "globos_por_instancia": 40,
+      "celdas": [
+        [
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          2,
+          1
+        ],
+        [
+          2,
+          2,
+          2,
+          2
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          0,
+          1
+        ]
+      ],
+      "extras": [],
+      "conteo": [
+        {
+          "material": 0,
+          "color": "blanco",
+          "acabado": "fashion",
+          "unidades_por_instancia": 13,
+          "unidades_total": 13
+        },
+        {
+          "material": 1,
+          "color": "negro",
+          "acabado": "fashion",
+          "unidades_por_instancia": 14,
+          "unidades_total": 14
+        },
+        {
+          "material": 2,
+          "color": "azul",
+          "acabado": "reflex",
+          "unidades_por_instancia": 13,
+          "unidades_total": 13
+        }
+      ],
+      "pasos": [
+        {
+          "desde": 1,
+          "hasta": 1,
+          "celdas": [
+            2,
+            2,
+            2,
+            2
+          ],
+          "extras": []
+        },
+        {
+          "desde": 2,
+          "hasta": 2,
+          "celdas": [
+            0,
+            1,
+            0,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 3,
+          "hasta": 3,
+          "celdas": [
+            2,
+            2,
+            2,
+            2
+          ],
+          "extras": []
+        },
+        {
+          "desde": 4,
+          "hasta": 5,
+          "celdas": [
+            0,
+            1,
+            0,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 6,
+          "hasta": 6,
+          "celdas": [
+            0,
+            1,
+            2,
+            1
+          ],
+          "extras": []
+        },
+        {
+          "desde": 7,
+          "hasta": 7,
+          "celdas": [
+            2,
+            2,
+            2,
+            2
+          ],
+          "extras": []
+        },
+        {
+          "desde": 8,
+          "hasta": 10,
+          "celdas": [
+            0,
+            1,
+            0,
+            1
+          ],
+          "extras": []
+        }
+      ],
+      "nombre": "Espiral",
+      "descripcion": "Cuartetos iguales de blanco (1), negro (2), blanco (1) y negro (2) que se encajan girando 1/8 de vuelta en cada capa: los colores forman espirales continuas de la base a la punta.",
+      "instrucciones": [
+        "Infla cada globo con el calibrador para que todos queden del mismo tamaño.",
+        "Arma parejas (dos globos amarrados por el cuello) y une dos parejas para formar cada cuarteto.",
+        "Dentro de cada cuarteto respeta el orden de colores: blanco (1), negro (2), blanco (1), negro (2).",
+        "Encaja cada cuarteto sobre el anterior girándolo 1/8 de vuelta, siempre en el mismo sentido: así aparece la espiral.",
+        "Acento: cada 4 cuartetos, empezando en el cuarteto 3, lleva azul (3) en todos sus globos.",
+        "Hay globos pintados a mano: respétalos tal cual aparecen en la gráfica numerada.",
+        "Sigue la gráfica numerada: cada número es un color de la leyenda."
+      ],
+      "prompt_gemini": "COLOR PATTERN — build it from identical four-balloon clusters (matte white, matte black, matte white, matte black around each cluster) rotated one eighth of a turn per layer so the colors form continuous diagonal spiral stripes winding from base to top; keep the order unbroken and do not randomize. Every 4th cluster (starting at cluster 3) carries high-shine chrome blue. Some clusters were hand-painted by the decorator; follow the per-cluster color map exactly.",
+      "prompt_lora": "wrapped in a spiral of white and black stripes winding from base to top, with evenly spaced blue accent clusters",
+      "avisos": [
+        "1 pintado quedó fuera de la estructura",
+        "Con cuartetos completos cada pieza lleva 40 globos; las medidas daban 39."
+      ]
+    }
+  }
+]

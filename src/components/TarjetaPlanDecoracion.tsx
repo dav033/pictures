@@ -52,6 +52,12 @@ import { GlobosCelebracion } from "@/components/propuesta/GlobosCelebracion";
 import { AjustesPropuesta, type AjustePropuesta } from "@/components/plan/AjustesPropuesta";
 import { PanelEspacio } from "@/components/referencia/PanelEspacio";
 import { imagenDeReferencia, urlImagen } from "@/components/referencia/recorte";
+import { EditorPatron } from "@/components/plan/patron/EditorPatron";
+import { DialogoHojaArmado } from "@/components/plan/patron/HojaArmado";
+import { leyendaPatron } from "@/components/plan/patron/leyenda";
+import { admitePatron } from "@/components/plan/patron/modos";
+import type { PatronColor } from "@/lib/plan/patron-color";
+import { pedirPlanEditarPatron } from "@/lib/plan/peticion-patron";
 
 const RESPALDO_RECOMENDACIONES = "No pudimos cargar opciones parecidas. Intenta de nuevo o busca en todo el catálogo.";
 
@@ -268,6 +274,9 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   const [guardandoEdicion, setGuardandoEdicion] = useState(false);
   const [errorEdicion, setErrorEdicion] = useState<string | null>(null);
   const [opcionBusquedaActiva, setOpcionBusquedaActiva] = useState(-1);
+  // Color pattern editor and assembly sheet (ADR-0028), one structure at a time.
+  const [patronEditando, setPatronEditando] = useState<string | null>(null);
+  const [hojaArmado, setHojaArmado] = useState<string | null>(null);
   const disparadorModalRef = useRef<HTMLButtonElement | null>(null);
   const volverDetalleRef = useRef<HTMLButtonElement | null>(null);
   const busquedaCatalogoRef = useRef<HTMLInputElement | null>(null);
@@ -288,6 +297,8 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   // Presentation for the end customer: names, locations and colors derive from
   // the official structure catalog and the resolved plan, never from free text.
   const declaradasPorId = new Map(plan.plan.estructuras.map((estructura) => [estructura.estructura_id, estructura]));
+  // Only applied patterns describe the plan; a suggestion lives in the editor until it is applied.
+  const patronesAplicados = new Map((plan.patrones_color ?? []).filter((patron) => patron.aplicado).map((patron) => [patron.estructura_id, patron]));
   const vistasEstructura = plan.estructuras.map((estructura) => {
     const declarada = declaradasPorId.get(estructura.estructura_id);
     const oficial = identificarEstructuraOficial({ tipo: estructura.tipo, densidad: declarada?.densidad, ubicacion: estructura.ubicacion, nombre: estructura.nombre, estructura_oficial: declarada?.estructura_oficial });
@@ -299,9 +310,15 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       paraDescribir,
       descripcion: describirEstructuraCliente(paraDescribir, "definido"),
       colores: coloresCliente(estructura.lineas),
+      // Numbered legend of the pattern: material index + 1, in `materiales` order.
+      leyenda: leyendaPatron(declarada?.materiales ?? [], estructura.lineas),
+      patron: patronesAplicados.get(estructura.estructura_id),
+      admitePatron: Boolean(declarada && admitePatron(estructura.tipo, declarada.materiales.length)),
     };
   });
   const descripcionesPorId = new Map(vistasEstructura.map((vista) => [vista.estructura.estructura_id, vista.descripcion]));
+  const vistaEditorPatron = patronEditando ? vistasEstructura.find((vista) => vista.estructura.estructura_id === patronEditando) : undefined;
+  const vistaHojaArmado = hojaArmado ? vistasEstructura.find((vista) => vista.estructura.estructura_id === hojaArmado) : undefined;
   const coloresPlan = [...new Set(vistasEstructura.flatMap((vista) => vista.colores.map((muestra) => muestra.color)))];
   const resumenPlan = resumenPlanCliente(vistasEstructura.map((vista) => vista.paraDescribir), coloresPlan);
   const soloGlobos = plan.estructuras.every((estructura) => esEstructuraDeGlobos(estructura.tipo));
@@ -338,7 +355,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     return src ? { src, caja: elemento.reference_bbox } : null;
   }
 
-  const piezas = vistasEstructura.map(({ estructura, declarada, oficial, paraDescribir, colores }, indice): PiezaPropuestaVista & { recorteCrudo: ReturnType<typeof recorteDe> } => {
+  const piezas = vistasEstructura.map(({ estructura, declarada, oficial, paraDescribir, colores, leyenda, patron }, indice): PiezaPropuestaVista & { recorteCrudo: ReturnType<typeof recorteDe> } => {
     const recorte = recorteDe(declarada);
     const ubicacionCorta = mayusculaInicial(ubicacionCortaCliente(estructura.ubicacion, estructura.repeticiones));
     return {
@@ -353,6 +370,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       colores,
       recorte: recorte ? { ...recorte, alt: `${oficial?.nombre ?? productoCliente(estructura.nombre)} de tu foto de referencia, ${ubicacionCorta.toLowerCase()}` } : null,
       recorteCrudo: recorte,
+      patron: patron ? { resuelto: patron, leyenda } : undefined,
     };
   });
   const conFotos = piezas.some((pieza) => pieza.recorte);
@@ -389,7 +407,8 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       ? "revisión pendiente"
       : techo != null ? "dentro de tu presupuesto" : null;
   const aprobarDeshabilitado = aprobado || generando || plan.comercial.estado === "PRESUPUESTO_EXCEDIDO" || plan.sin_cobertura.length > 0;
-  const textoAprobar = generando ? "Generando…" : aprobado ? "Aprobación registrada" : plan.sin_cobertura.length > 0 ? "Faltan piezas disponibles" : "Aprobar y ver cómo queda";
+  // After an edit on an approved proposal the image is stale: approving again regenerates it (never on its own).
+  const textoAprobar = generando ? "Generando…" : aprobado ? "Aprobación registrada" : plan.sin_cobertura.length > 0 ? "Faltan piezas disponibles" : editadoTrasAprobar ? "Regenerar visual" : "Aprobar y ver cómo queda";
   const ajustes: AjustePropuesta[] = [
     ...textosFaltantes.map((texto): AjustePropuesta => ({ tipo: "faltante", texto })),
     ...textosColorReferencia.map((texto): AjustePropuesta => ({ tipo: "color", texto })),
@@ -572,26 +591,46 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   }
 
   /**
-   * The card's interactive controls (color split, size balance): one edit,
-   * the new total and a way back to the plan the server had signed.
+   * The card's interactive controls (color split, size balance, color
+   * pattern): one edit, the new total and a way back to the plan the server
+   * had signed. Returns the error shown to the customer, or `null` when the
+   * edit was applied; `enDialogo` leaves the error to the dialog that asked,
+   * and `pedir` swaps the request (the pattern one reads Python's rejection).
    */
-  async function aplicarAjusteDirecto(edicion: Record<string, unknown>, texto: string): Promise<void> {
-    if (!onPlanActualizado || guardandoEdicion) return;
+  async function aplicarAjusteDirecto(edicion: Record<string, unknown>, texto: string, opciones: { enDialogo?: boolean; pedir?: typeof pedirPlanEditar } = {}): Promise<string | null> {
+    if (!onPlanActualizado) return "Esta propuesta ya no se puede editar.";
+    if (guardandoEdicion) return "Espera a que termine el cambio anterior.";
     const anterior = plan;
+    const pedir = opciones.pedir ?? pedirPlanEditar;
     setGuardandoEdicion(true);
     setErrorEdicion(null);
     try {
-      const datos = await pedirPlanEditar({ modo: "aplicar", base: plan, edicion, loraMode }, "No se pudo actualizar la pieza.") as { plan?: PlanResuelto; cotizacion?: Cotizacion };
+      const datos = await pedir({ modo: "aplicar", base: plan, edicion, loraMode }, "No se pudo actualizar la pieza.") as { plan?: PlanResuelto; cotizacion?: Cotizacion };
       if (!datos.plan) throw new FalloPlanEditar(mensajeErrorRespuesta(datos, "No se pudo actualizar la pieza."));
       planEditado(datos.plan, datos.cotizacion, texto, () => {
         onPlanActualizado(anterior);
         setAvisoEdicion({ id: ++secuenciaAvisoRef.current, texto: `Volví a como estaba. Total: ${pesos.format(anterior.totales.total_cop)}.` });
       });
+      return null;
     } catch (error) {
-      setErrorEdicion(mensajeFalloPlanEditar(error, "No se pudo actualizar la pieza."));
+      const mensaje = mensajeFalloPlanEditar(error, "No se pudo actualizar la pieza.");
+      if (!opciones.enDialogo) setErrorEdicion(mensaje);
+      return mensaje;
     } finally {
       setGuardandoEdicion(false);
     }
+  }
+
+  /** Applies (or removes, with `null`) a structure's color pattern from its editor; the editor closes on success. */
+  async function aplicarPatron(estructuraId: string, patron: PatronColor | null): Promise<string | null> {
+    const fallo = await aplicarAjusteDirecto(
+      { accion: "patron", estructura_id: estructuraId, patron_color: patron },
+      patron ? "Listo, apliqué el patrón de color." : "Listo, quité el patrón de color.",
+      // A rejected pattern shows Python's own sentence in the editor ("Negro no aparece…").
+      { enDialogo: true, pedir: pedirPlanEditarPatron },
+    );
+    if (!fallo) setPatronEditando(null);
+    return fallo;
   }
 
   async function aplicarEdicion(evento?: FormEvent<HTMLFormElement>) {
@@ -968,7 +1007,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
           {!editorAbierto && errorEdicion && !seleccionCatalogo && <p role="alert" className="rounded-xl bg-error-suave px-3 py-2 text-xs font-medium text-error">{errorEdicion}</p>}
 
           <ol className="space-y-2.5" aria-label="Piezas de la decoración">
-            {vistasEstructura.map(({ estructura, declarada, oficial }, indice) => (
+            {vistasEstructura.map(({ estructura, declarada, oficial, leyenda, patron, admitePatron: conPatron }, indice) => (
               <DetalleEstructura
                 key={estructura.estructura_id}
                 idBase={`${editorId}-pieza-${indice}`}
@@ -989,6 +1028,12 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
                 puedeQuitar={(linea) => lineaQuitable(linea, lineasVisiblesPorVariante(estructura.lineas), declarada?.materiales)}
                 onRepartir={editorDisponible ? (participaciones) => void aplicarAjusteDirecto({ accion: "repartir", estructura_id: estructura.estructura_id, participaciones }, "Listo, cambié la distribución de colores.") : undefined}
                 onCambiarMezcla={editorDisponible ? (mezcla) => void aplicarAjusteDirecto({ accion: "mezcla", estructura_id: estructura.estructura_id, mezcla }, "Listo, cambié los tamaños de la pieza.") : undefined}
+                patron={conPatron || patron ? {
+                  resuelto: patron,
+                  leyenda,
+                  onEditar: editorDisponible && conPatron ? () => setPatronEditando(estructura.estructura_id) : undefined,
+                  onHojaArmado: patron ? () => setHojaArmado(estructura.estructura_id) : undefined,
+                } : undefined}
                 ocupado={guardandoEdicion}
                 onVerProducto={(linea, disparador) => { disparadorModalRef.current = disparador; setSeleccionCatalogo({ linea, estructuraId: estructura.estructura_id, estructura: estructura.nombre }); setIntercambioAbierto(false); setRecomendaciones([]); setResultadosCatalogo([]); setErrorEdicion(null); }}
                 modoDev={modoDev}
@@ -1070,7 +1115,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
 
       {editadoTrasAprobar && !aprobado && onAprobar && !bloqueo && (
         <p data-testid="plan-reaprobar" role="status" className="border-t border-borde-suave bg-acento-suave px-4 py-2.5 text-xs font-medium text-acento @xl:px-5.5">
-          Tu propuesta cambió: apruébala de nuevo para ver cómo queda.
+          Cambiaste la propuesta: la imagen no se actualiza sola. Toca «Regenerar visual» cuando quieras verla.
         </p>
       )}
 
@@ -1090,6 +1135,31 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       )}
 
       <GlobosCelebracion disparo={celebracion} colores={coloresCelebracion} />
+
+      {vistaEditorPatron?.declarada && editorDisponible && (
+        <EditorPatron
+          key={vistaEditorPatron.estructura.estructura_id}
+          onCerrar={() => setPatronEditando(null)}
+          plan={plan.plan}
+          estructura={vistaEditorPatron.estructura}
+          declarada={vistaEditorPatron.declarada}
+          oficial={vistaEditorPatron.oficial}
+          resuelto={vistaEditorPatron.patron ?? null}
+          onAplicar={(patron) => aplicarPatron(vistaEditorPatron.estructura.estructura_id, patron)}
+        />
+      )}
+      {vistaHojaArmado?.patron && (
+        <DialogoHojaArmado
+          abierto
+          onAbiertoChange={(abierta) => { if (!abierta) setHojaArmado(null); }}
+          resuelto={vistaHojaArmado.patron}
+          leyenda={vistaHojaArmado.leyenda}
+          estructura={vistaHojaArmado.estructura}
+          declarada={vistaHojaArmado.declarada}
+          oficial={vistaHojaArmado.oficial}
+          tituloPlan={plan.plan.concepto.titulo}
+        />
+      )}
 
       {!onVerCotizacion && (
         <DialogoCotizacion

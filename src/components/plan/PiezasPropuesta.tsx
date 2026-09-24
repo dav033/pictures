@@ -11,6 +11,9 @@ import { RecortePieza } from "@/components/referencia/RecortePieza";
 import type { CajaNormalizada } from "@/components/referencia/recorte";
 import { NumeroAnimado } from "@/components/propuesta/NumeroAnimado";
 import { MuestrasColor } from "@/components/propuesta/MuestrasColor";
+import type { PatronColorResuelto } from "@/lib/plan/patron-color";
+import { MiniPatron } from "./patron/MiniPatron";
+import type { ColorLeyenda } from "./patron/leyenda";
 
 export const ENTRADA_CASCADA: Variants = {
   oculto: { opacity: 0, y: 8 },
@@ -30,7 +33,20 @@ export type PiezaPropuestaVista = {
   unidad: "globos" | "piezas";
   colores: MuestraColor[];
   recorte: { src: string; caja: CajaNormalizada; alt: string } | null;
+  /** Applied color pattern: the card shows its strip instead of loose color dots. */
+  patron?: { resuelto: PatronColorResuelto; leyenda: readonly ColorLeyenda[] };
 };
+
+/** The pattern strip with its name, or the piece's colors when it has no pattern. */
+function ColoresPieza({ pieza, retraso, className = "" }: { pieza: PiezaPropuestaVista; retraso?: number; className?: string }) {
+  if (!pieza.patron) return <MuestrasColor muestras={pieza.colores} retraso={retraso} className={className} etiqueta={`Colores de ${pieza.titulo}`} />;
+  return (
+    <span className={`flex min-w-0 items-center gap-2 ${className}`}>
+      <MiniPatron resuelto={pieza.patron.resuelto} leyenda={pieza.patron.leyenda} className="h-7 w-auto max-w-[7.5rem] shrink-0" />
+      <span className="truncate text-xs font-medium text-texto-suave">{pieza.patron.resuelto.nombre}</span>
+    </span>
+  );
+}
 
 type PropsTarjeta = {
   pieza: PiezaPropuestaVista;
@@ -84,7 +100,7 @@ export function TarjetaPiezaFoto({ pieza, retraso, controles, onAbrir }: PropsTa
             <NumeroAnimado valor={pieza.globos} retraso={retraso + 0.3} className="text-xl leading-none font-semibold tracking-tight tabular-nums text-texto @xl:text-[28px]" />
             <span className="text-xs text-texto-suave">{pieza.unidad}</span>
           </span>
-          <MuestrasColor muestras={pieza.colores} retraso={retraso + 0.4} etiqueta={`Colores de ${pieza.titulo}`} />
+          <ColoresPieza pieza={pieza} retraso={retraso + 0.4} />
         </span>
       </button>
     </motion.li>
@@ -107,7 +123,7 @@ export function ChipEstructura({ pieza, controles, onAbrir }: Omit<PropsTarjeta,
         <span className="min-w-0">
           <span className="block truncate text-sm font-semibold text-texto">{pieza.titulo}</span>
           <span className="block truncate text-xs text-texto-suave">{pieza.subtitulo}</span>
-          <MuestrasColor muestras={pieza.colores} className="mt-1.5" etiqueta={`Colores de ${pieza.titulo}`} />
+          <ColoresPieza pieza={pieza} className="mt-1.5" />
         </span>
       </button>
     </motion.li>

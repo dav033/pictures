@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Lock } from "lucide-react";
+import { Lock, RefreshCw } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ETIQUETA_FORMATO_PROMPT, esSeleccionFormatoPrompt, FORMATO_PROMPT_AUTOMATICO, OPCIONES_FORMATO_PROMPT, promptFormatParaGenerar, type SeleccionFormatoPrompt } from "@/lib/lora/formato-prompt-cliente";
 import { CREATIVIDAD_POR_DEFECTO, type NivelCreatividad } from "@/lib/ia/escena/creatividad";
@@ -614,6 +614,9 @@ export default function Page() {
   const logChat = useRef<HTMLDivElement>(null);
   const entradaRef = useRef<HTMLInputElement>(null);
   const [planAprobadoHash, setPlanAprobadoHash] = useState<string | null>(null);
+  // Propuesta editada después de generar su imagen: la imagen ya no la refleja.
+  // Se ofrece "Regenerar visual" junto a ella; nunca se regenera sola (ADR-0028).
+  const [visualDesactualizada, setVisualDesactualizada] = useState<{ mensajeId: string; planHash: string } | null>(null);
   // Propuesta aprobada restaurada al recargar cuya imagen no cupo en sessionStorage (D5):
   // se avisa «Ya generaste esta imagen» en vez de volver a ofrecer «Aprobar».
   const [imagenNoGuardadaHash, setImagenNoGuardadaHash] = useState<string | null>(null);
@@ -1580,6 +1583,7 @@ export default function Page() {
   }
 
   function actualizarPlanEnMensaje(mensajeId: string, plan: PlanResuelto, cotizacion?: Cotizacion): void {
+    if (planAprobadoHash && imagenes.length > 0) setVisualDesactualizada({ mensajeId, planHash: planAprobadoHash });
     setPlanAprobadoHash(null);
     setMensajes((previos) => previos.map((mensaje) => mensaje.id === mensajeId ? { ...mensaje, plan, cotizacion: cotizacion ?? mensaje.cotizacion } : mensaje));
   }
@@ -2097,6 +2101,19 @@ export default function Page() {
                     )}
                   </div>
 
+                  {visualDesactualizada && planActual && planActualEntry?.id === visualDesactualizada.mensajeId && planActual.plan_hash !== visualDesactualizada.planHash && !planActualAprobado && !generando && imagenes.length > 0 && (
+                    <div data-testid="visual-desactualizada" role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-acento-suave px-3 py-2 text-xs text-acento">
+                      <span className="font-medium">Cambiaste la propuesta: esta imagen es de la versión anterior.</span>
+                      <button
+                        type="button"
+                        onClick={() => aprobarPlan(planActual, planActualEntry.id)}
+                        disabled={cargandoChat || planActual.comercial.estado === "PRESUPUESTO_EXCEDIDO" || planActual.sin_cobertura.length > 0}
+                        className="ui-button-primary ui-pressable min-h-8 px-3 py-1 text-xs"
+                      >
+                        <RefreshCw className="size-3.5" aria-hidden="true" />Regenerar visual
+                      </button>
+                    </div>
+                  )}
                   {generando && <CargaImagen segundos={segundosGeneracion} conMarco={imagenes.length === 0} colores={coloresPlanActual} onCancelar={cancelarGeneracion} />}
 
                   {imagenes.map((src, i) => (

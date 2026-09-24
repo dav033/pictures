@@ -28,6 +28,9 @@ import type { Mezcla } from "@/lib/plan/mezclas";
 import { RepartoColores } from "./RepartoColores";
 import { BalanceTamanos } from "./BalanceTamanos";
 import type { CajaNormalizada } from "@/components/referencia/recorte";
+import type { PatronColorResuelto } from "@/lib/plan/patron-color";
+import { BloquePatron } from "./patron/BloquePatron";
+import type { ColorLeyenda } from "./patron/leyenda";
 
 const pesos = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
 
@@ -62,6 +65,17 @@ type Props = {
   onCambiarMezcla?: (mezcla: Mezcla) => void;
   /** An edit of the card is in flight: the interactive controls wait. */
   ocupado?: boolean;
+  /**
+   * Color pattern block (ADR-0028): the applied expansion from Python, its
+   * numbered legend and the ways into the editor and the assembly sheet.
+   * Absent for pieces that cannot carry a pattern.
+   */
+  patron?: {
+    resuelto?: PatronColorResuelto;
+    leyenda: readonly ColorLeyenda[];
+    onEditar?: () => void;
+    onHojaArmado?: () => void;
+  };
 };
 
 /** Pieces whose balloons come from the geometry, so their colors and sizes can be rebalanced. */
@@ -172,7 +186,7 @@ function CantidadTexto({ texto }: { texto: string }) {
 export function DetalleEstructura({
   idBase, estructura, declarada, oficial, abierto, onAlternar, recorte, lineas, imagenDe, fotoAusente, sumaCop,
   editable, onAgregar, onEditar, onQuitar, puedeQuitar, onVerProducto, extraLinea, modoDev = false,
-  onRepartir, onCambiarMezcla, ocupado = false,
+  onRepartir, onCambiarMezcla, ocupado = false, patron,
 }: Props) {
   const reducir = useReducedMotion();
   const [familiasAbiertas, setFamiliasAbiertas] = useState<ReadonlySet<string>>(() => new Set());
@@ -194,6 +208,9 @@ export function DetalleEstructura({
     { etiqueta: deGlobos ? "Globos" : "Piezas", valor: `unos ${Math.round(estructura.total_unidades)}` },
   ];
   const pequenosRellenan = tramos.length >= 2 && tramos[0]!.unidades > tramos[tramos.length - 1]!.unidades;
+  // With a pattern, the grid decides how much of each color goes in; only confetti still takes a color split.
+  const repartoLibre = !declarada?.patron_color || declarada.patron_color.base.modo === "aleatorio";
+  const proporcion = declarada?.medidas.alto_m && declarada.medidas.ancho_m ? declarada.medidas.alto_m / declarada.medidas.ancho_m : undefined;
   const idCuerpo = `${idBase}-cuerpo`;
 
   return (
@@ -250,9 +267,26 @@ export function DetalleEstructura({
             </div>
           )}
 
+          {patron && (
+            <BloquePatron
+              resuelto={patron.resuelto}
+              leyenda={patron.leyenda}
+              tipo={estructura.tipo}
+              oficialId={oficial?.id ?? declarada?.estructura_oficial}
+              espejo={estructura.ubicacion === "lateral_derecho"}
+              proporcion={proporcion}
+              repeticiones={estructura.repeticiones}
+              nombrePieza={nombreVisible}
+              onEditar={patron.onEditar}
+              onHojaArmado={patron.onHojaArmado}
+              ocupado={ocupado}
+              modoDev={modoDev}
+            />
+          )}
+
           {editable && declarada && TIPOS_GEOMETRICOS.has(estructura.tipo) && (onRepartir || onCambiarMezcla) && (
             <div className="space-y-2.5">
-              {onRepartir && declarada.materiales.length >= 2 && declarada.materiales.every((material) => typeof material.participacion === "number") && (
+              {onRepartir && repartoLibre && declarada.materiales.length >= 2 && declarada.materiales.every((material) => typeof material.participacion === "number") && (
                 <RepartoColores
                   // A new plan from the resolver resets the control to what it signed.
                   key={declarada.materiales.map((material) => `${material.variant_id ?? material.product_id}:${material.participacion}`).join("|")}
