@@ -3,7 +3,7 @@
 /* Catalog images come from runtime URLs and already carry explicit dimensions. */
 /* eslint-disable @next/next/no-img-element */
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { ChevronDown, Pencil, Plus, Trash2 } from "lucide-react";
 import type { EstructuraResuelta, LineaMaterial, PlanResuelto } from "@/lib/plan/resuelto";
@@ -68,6 +68,81 @@ function mosaicosMedidas(tipo: string, medidas: EstructuraDeclarada["medidas"] |
   return mosaicos;
 }
 
+/** "12″" for a size chip. */
+function tamanoCorto(linea: LineaMaterial): string {
+  const pulgadas = linea.diam_pulg ?? Number(/(\d+(?:[.,]\d+)?)/.exec(linea.tamano_codigo ?? "")?.[1]?.replace(",", "."));
+  return Number.isFinite(pulgadas) && pulgadas ? `${pulgadas}″` : linea.tamano_codigo ?? "";
+}
+
+/**
+ * Lines of the same catalog product in the same color are one family: the
+ * sizes are variants of it. Grouped so a piece with five sizes of "Fashion
+ * Rosado" reads as one row instead of five (2026-09-24). Sizes stay in
+ * ascending order.
+ */
+function familiasDeLineas(lineas: readonly LineaMaterial[]): Array<{ clave: string; lineas: LineaMaterial[]; unidades: number }> {
+  const familias = new Map<string, { clave: string; lineas: LineaMaterial[]; unidades: number }>();
+  for (const linea of lineas) {
+    const clave = `${linea.product_id}|${linea.color ?? ""}`;
+    const familia = familias.get(clave) ?? { clave, lineas: [], unidades: 0 };
+    familia.lineas.push(linea);
+    familia.unidades += linea.unidades;
+    familias.set(clave, familia);
+  }
+  for (const familia of familias.values()) familia.lineas.sort((a, b) => (a.diam_pulg ?? 0) - (b.diam_pulg ?? 0));
+  return [...familias.values()];
+}
+
+type AccionesLinea = Pick<Props, "imagenDe" | "fotoAusente" | "editable" | "onEditar" | "onQuitar" | "puedeQuitar" | "onVerProducto" | "extraLinea">;
+
+/** One size of one product, with its photo, units and the edit/remove actions. */
+function FilaLinea({ linea, detalle, compacta = false, imagenDe, fotoAusente, editable, onEditar, onQuitar, puedeQuitar, onVerProducto, extraLinea }: { linea: LineaMaterial; detalle: string; compacta?: boolean } & AccionesLinea) {
+  const imagen = imagenDe(linea);
+  const nombreAccesible = productoConTamanoCliente(linea.titulo, linea.tamano_codigo);
+  return (
+    <div className={`flex items-center gap-2 rounded-xl border border-borde-suave bg-superficie pr-2.5 ${compacta ? "p-1.5" : "p-2"}`}>
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        onClick={(evento) => onVerProducto(linea, evento.currentTarget)}
+        className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"
+      >
+        {compacta ? null : imagen ? (
+          <img src={imagen} alt="" width={44} height={44} loading="lazy" className="size-11 shrink-0 rounded-lg bg-white object-contain" />
+        ) : (
+          <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-lg bg-superficie-2 text-center text-[9px] leading-tight text-texto-suave">{fotoAusente(linea) ? "Sin foto" : "Cargando…"}</span>
+        )}
+        <span className="min-w-0 flex-1">
+          {compacta ? (
+            <span className="block truncate text-[13px] text-texto">{detalle}</span>
+          ) : (
+            <>
+              <span className="block truncate text-sm font-medium text-texto">{productoCliente(linea.titulo)}</span>
+              <span className="mt-0.5 block truncate text-xs text-texto-suave">{detalle}</span>
+            </>
+          )}
+        </span>
+        <span className="shrink-0 text-sm font-semibold tabular-nums text-texto">
+          {linea.unidades}<span className="sr-only"> {linea.unidades === 1 ? "unidad" : "unidades"}</span>
+        </span>
+      </button>
+      {extraLinea?.(linea)}
+      {editable && (
+        <span className="flex shrink-0 items-center">
+          <button type="button" title={`Modificar ${nombreAccesible}`} aria-label={`Modificar ${nombreAccesible}`} onClick={() => onEditar(linea)} className="grid size-8 place-items-center rounded-lg text-texto-suave hover:bg-acento-suave hover:text-acento focus-visible:outline-2 focus-visible:outline-acento">
+            <Pencil className="size-3.5" aria-hidden="true" />
+          </button>
+          {(puedeQuitar?.(linea) ?? true) && (
+            <button type="button" title={`Quitar ${nombreAccesible}`} aria-label={`Quitar ${nombreAccesible}`} onClick={() => onQuitar(linea)} className="grid size-8 place-items-center rounded-lg text-texto-suave hover:bg-error-suave hover:text-error focus-visible:outline-2 focus-visible:outline-acento">
+              <Trash2 className="size-3.5" aria-hidden="true" />
+            </button>
+          )}
+        </span>
+      )}
+    </div>
+  );
+}
+
 /** "unos 85 globos" with the number emphasized; other phrasings stay as text. */
 function CantidadTexto({ texto }: { texto: string }) {
   const partes = /^(unos )([\d.]+)( .+)$/.exec(texto);
@@ -86,6 +161,14 @@ export function DetalleEstructura({
   editable, onAgregar, onEditar, onQuitar, puedeQuitar, onVerProducto, extraLinea, modoDev = false,
 }: Props) {
   const reducir = useReducedMotion();
+  const [familiasAbiertas, setFamiliasAbiertas] = useState<ReadonlySet<string>>(() => new Set());
+  const alternarFamilia = (clave: string) => setFamiliasAbiertas((actuales) => {
+    const siguientes = new Set(actuales);
+    if (siguientes.has(clave)) siguientes.delete(clave);
+    else siguientes.add(clave);
+    return siguientes;
+  });
+  const acciones = { imagenDe, fotoAusente, editable, onEditar, onQuitar, puedeQuitar, onVerProducto, extraLinea };
   const nombreVisible = oficial?.nombre ?? productoCliente(estructura.nombre);
   const medidasTexto = medidasCliente(estructura.tipo, declarada?.medidas);
   const cantidad = cantidadCliente(estructura.total_unidades, estructura.repeticiones, estructura.tipo);
@@ -156,45 +239,68 @@ export function DetalleEstructura({
           <div>
             <p className="text-[13px] font-semibold text-texto">{deGlobos ? "Globos que lleva" : "Piezas que lleva"}</p>
             <ul className="mt-2 space-y-2">
-              {lineas.map((linea) => {
-                const imagen = imagenDe(linea);
-                const acabado = acabadoCliente(linea.acabado, linea.titulo);
-                const detalle = [linea.tamano_codigo ? pulgadasCliente(linea.tamano_codigo) : null, linea.color ? [tonoCliente(linea.color, linea.titulo), acabado].filter(Boolean).join(" ") : null].filter(Boolean).join(" · ");
-                const nombreAccesible = productoConTamanoCliente(linea.titulo, linea.tamano_codigo);
+              {familiasDeLineas(lineas).map((familia) => {
+                const primera = familia.lineas[0]!;
+                const acabado = acabadoCliente(primera.acabado, primera.titulo);
+                const tono = primera.color ? [tonoCliente(primera.color, primera.titulo), acabado].filter(Boolean).join(" ") : null;
+                if (familia.lineas.length === 1) {
+                  return (
+                    <li key={familia.clave}>
+                      <FilaLinea linea={primera} detalle={[primera.tamano_codigo ? pulgadasCliente(primera.tamano_codigo) : null, tono].filter(Boolean).join(" · ")} {...acciones} />
+                    </li>
+                  );
+                }
+                const abiertaFamilia = familiasAbiertas.has(familia.clave);
+                const imagen = familia.lineas.map(imagenDe).find(Boolean);
+                const idTamanos = `${idBase}-familia-${familia.clave.replace(/[^a-z0-9]/gi, "")}`;
                 return (
-                  <li key={linea.variant_id} className="flex items-center gap-2 rounded-xl border border-borde-suave bg-superficie p-2 pr-2.5">
+                  <li key={familia.clave} className="rounded-xl border border-borde-suave bg-superficie">
                     <button
                       type="button"
-                      aria-haspopup="dialog"
-                      onClick={(evento) => onVerProducto(linea, evento.currentTarget)}
-                      className="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"
+                      aria-expanded={abiertaFamilia}
+                      aria-controls={idTamanos}
+                      onClick={() => alternarFamilia(familia.clave)}
+                      className="flex w-full min-w-0 items-center gap-3 rounded-xl p-2 pr-2.5 text-left hover:bg-superficie-suave focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"
                     >
                       {imagen ? (
                         <img src={imagen} alt="" width={44} height={44} loading="lazy" className="size-11 shrink-0 rounded-lg bg-white object-contain" />
                       ) : (
-                        <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-lg bg-superficie-2 text-center text-[9px] leading-tight text-texto-suave">{fotoAusente(linea) ? "Sin foto" : "Cargando…"}</span>
+                        <span aria-hidden className="grid size-11 shrink-0 place-items-center rounded-lg bg-superficie-2 text-center text-[9px] leading-tight text-texto-suave">{familia.lineas.every(fotoAusente) ? "Sin foto" : "Cargando…"}</span>
                       )}
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-medium text-texto">{productoCliente(linea.titulo)}</span>
-                        <span className="mt-0.5 block truncate text-xs text-texto-suave">{detalle}</span>
+                        <span className="block truncate text-sm font-medium text-texto">{productoCliente(primera.titulo)}</span>
+                        {tono && <span className="mt-0.5 block truncate text-xs text-texto-suave">{tono}</span>}
+                        {/* Every size of the family at a glance: the list used to repeat the product once per size. */}
+                        <span className="mt-1 flex flex-wrap gap-1" aria-label={`Tamaños: ${familia.lineas.map((linea) => `${tamanoCorto(linea)} ${linea.unidades}`).join(", ")}`}>
+                          {familia.lineas.map((linea) => (
+                            <span key={linea.variant_id} aria-hidden="true" className="rounded-full bg-superficie-suave px-1.5 py-px text-[11px] tabular-nums text-texto-suave ring-1 ring-borde-suave ring-inset">
+                              <span className="font-semibold text-texto">{tamanoCorto(linea)}</span> {linea.unidades}
+                            </span>
+                          ))}
+                        </span>
                       </span>
-                      <span className="shrink-0 text-sm font-semibold tabular-nums text-texto">
-                        {linea.unidades}<span className="sr-only"> {linea.unidades === 1 ? "unidad" : "unidades"}</span>
+                      <span className="shrink-0 text-right">
+                        <span className="block text-sm font-semibold tabular-nums text-texto">{familia.unidades}<span className="sr-only"> unidades en total</span></span>
+                        <span className="block text-[11px] text-texto-suave">{familia.lineas.length} tamaños</span>
                       </span>
+                      <ChevronDown aria-hidden="true" className={`size-4 shrink-0 text-texto-suave transition-transform duration-200 ${abiertaFamilia ? "rotate-180" : ""}`} />
                     </button>
-                    {extraLinea?.(linea)}
-                    {editable && (
-                      <span className="flex shrink-0 items-center">
-                        <button type="button" title={`Modificar ${nombreAccesible}`} aria-label={`Modificar ${nombreAccesible}`} onClick={() => onEditar(linea)} className="grid size-8 place-items-center rounded-lg text-texto-suave hover:bg-acento-suave hover:text-acento focus-visible:outline-2 focus-visible:outline-acento">
-                          <Pencil className="size-3.5" aria-hidden="true" />
-                        </button>
-                        {(puedeQuitar?.(linea) ?? true) && (
-                          <button type="button" title={`Quitar ${nombreAccesible}`} aria-label={`Quitar ${nombreAccesible}`} onClick={() => onQuitar(linea)} className="grid size-8 place-items-center rounded-lg text-texto-suave hover:bg-error-suave hover:text-error focus-visible:outline-2 focus-visible:outline-acento">
-                            <Trash2 className="size-3.5" aria-hidden="true" />
-                          </button>
-                        )}
-                      </span>
-                    )}
+                    <motion.ul
+                      id={idTamanos}
+                      inert={!abiertaFamilia}
+                      initial={false}
+                      animate={{ height: abiertaFamilia ? "auto" : 0, opacity: abiertaFamilia ? 1 : 0 }}
+                      transition={reducir ? { duration: 0 } : { height: { duration: 0.3, ease: [0.23, 1, 0.32, 1] }, opacity: { duration: 0.2 } }}
+                      style={{ overflow: "hidden" }}
+                      aria-label={`Tamaños de ${productoCliente(primera.titulo)}`}
+                      className="space-y-1.5 px-2"
+                    >
+                      {familia.lineas.map((linea, posicion) => (
+                        <li key={linea.variant_id} className={posicion === familia.lineas.length - 1 ? "pb-2" : undefined}>
+                          <FilaLinea linea={linea} detalle={linea.tamano_codigo ? pulgadasCliente(linea.tamano_codigo) : tamanoCorto(linea)} compacta {...acciones} />
+                        </li>
+                      ))}
+                    </motion.ul>
                   </li>
                 );
               })}
