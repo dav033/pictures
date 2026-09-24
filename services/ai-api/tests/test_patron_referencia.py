@@ -441,3 +441,17 @@ def test_route_maps_domain_errors_with_the_provider_reason(monkeypatch: pytest.M
     detail = response.json()["detail"]
     assert detail["code"] == "patron_referencia_empty_response"
     assert detail["provider_detail"] == "finish_reason=MAX_TOKENS"
+
+
+def test_provider_schema_has_no_max_items() -> None:
+    """gemini-3.6-flash answers 400 INVALID_ARGUMENT to a response_schema with
+    `maxItems` (measured 2026-09-24); the caps live in `validar_pistas`."""
+
+    def claves(nodo: object) -> set[str]:
+        if isinstance(nodo, dict):
+            return set(nodo) | {clave for valor in nodo.values() for clave in claves(valor)}
+        if isinstance(nodo, list):
+            return {clave for valor in nodo for clave in claves(valor)}
+        return set()
+
+    assert "maxItems" not in claves(RESPONSE_SCHEMA)

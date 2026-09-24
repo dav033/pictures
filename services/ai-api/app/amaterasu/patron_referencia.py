@@ -139,12 +139,15 @@ confianza: a number from 0 to 1 for how sure you are of the pattern (not of the 
 
 Return exactly one entry per listed element_id and never an element that is not listed."""
 
+# Sin `maxItems`: Gemini (gemini-3.6-flash) responde 400 INVALID_ARGUMENT a un
+# response_schema que lo lleva (medido 2026-09-24; `minimum`/`maximum` sí los
+# acepta). Los topes de elementos y colores los aplica `validar_pistas` sobre
+# la salida, que es donde se validan de todos modos.
 RESPONSE_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
         "pistas": {
             "type": "array",
-            "maxItems": MAX_ELEMENTOS,
             "items": {
                 "type": "object",
                 "properties": {
@@ -152,13 +155,11 @@ RESPONSE_SCHEMA: dict[str, object] = {
                     "modo": {"type": "string", "enum": [*MODOS, MODO_NINGUNO]},
                     "colores": {
                         "type": "array",
-                        "maxItems": MAX_COLORES,
                         "items": {"type": "string", "enum": list(PALETA)},
                     },
                     "globos_por_racimo": {"type": "integer", "minimum": 1, "maximum": 8},
                     "pesos": {
                         "type": "array",
-                        "maxItems": MAX_COLORES,
                         "items": {"type": "integer", "minimum": 1, "maximum": 100},
                     },
                     "confianza": {"type": "number", "minimum": 0, "maximum": 1},
