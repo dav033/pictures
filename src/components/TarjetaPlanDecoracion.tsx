@@ -5,8 +5,8 @@
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { motion, useReducedMotion, type Variants } from "motion/react";
-import { ArrowLeftRight, ChevronDown, Plus, Search, X } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
+import { ArrowLeftRight, Check, ChevronDown, Plus, Search, X } from "lucide-react";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { ProductoCandidato, VarianteCandidata } from "@/lib/rag/chat/buscar";
@@ -27,6 +27,7 @@ import {
   esEstructuraDeGlobos,
   faltantesCliente,
   medidasCortasCliente,
+  muestraColor,
   nombreConCantidadCliente,
   paquetesCliente,
   piezasVistasEnReferencia,
@@ -230,6 +231,11 @@ function ListaOpciones({ opciones, guardando, onCambiar, ariaLabel, listId, acti
 
 export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, generando = false, onPlanActualizado, loraMode, modoDev = false, referenceBlueprint, imagenesReferencia, fotoEspacio, onVerCotizacion, escenografiaApagada = [], onEscenografiaToggle, onPedirAjuste }: Props) {
   const [celebracion, setCelebracion] = useState(0);
+  // Feedback after an edit: what changed, the new total and, for a removal, a way back.
+  const [avisoEdicion, setAvisoEdicion] = useState<{ id: number; texto: string; deshacer?: () => void } | null>(null);
+  // An edit resets the approval; the customer is told instead of finding a button that changed.
+  const [editadoTrasAprobar, setEditadoTrasAprobar] = useState(false);
+  const secuenciaAvisoRef = useRef(0);
   const reducir = useReducedMotion();
   const [detalleAbierto, setDetalleAbierto] = useState(false);
   const [estructuraAbierta, setEstructuraAbierta] = useState<string | null>(plan.estructuras[0]?.estructura_id ?? null);
@@ -558,6 +564,13 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     }
   }
 
+  function planEditado(nuevo: PlanResuelto, cotizacion: Cotizacion | undefined, texto: string, deshacer?: () => void): void {
+    if (!onPlanActualizado) return;
+    if (aprobado) setEditadoTrasAprobar(true);
+    onPlanActualizado(nuevo, cotizacion);
+    setAvisoEdicion({ id: ++secuenciaAvisoRef.current, texto: `${texto} Nuevo total: ${pesos.format(nuevo.totales.total_cop)}.`, deshacer });
+  }
+
   async function aplicarEdicion(evento?: FormEvent<HTMLFormElement>) {
     evento?.preventDefault();
     if (!onPlanActualizado || guardandoEdicion || !estructuraSeleccionada) return;
@@ -579,7 +592,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
         "No se pudo actualizar el plan.",
       ) as { plan?: PlanResuelto; cotizacion?: Cotizacion };
        if (!datos.plan) throw new FalloPlanEditar(mensajeErrorRespuesta(datos, "No se pudo actualizar el plan."));
-       onPlanActualizado(datos.plan, datos.cotizacion);
+       planEditado(datos.plan, datos.cotizacion, modoEdicion === "agregar" ? "Listo, agregué el globo." : "Listo, cambié el globo.");
       cerrarEditor();
     } catch (error) {
       setErrorEdicion(mensajeFalloPlanEditar(error, "No se pudo actualizar el plan."));
@@ -595,7 +608,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     try {
       const datos = await pedirPlanEditar({ modo: "aplicar", base: plan, edicion: { accion: "reemplazar", estructura_id: seleccionCatalogo.estructuraId, objetivo_variant_id: seleccionCatalogo.linea.variant_id, variante: { product_id: opcion.candidato.productId, variant_id: opcion.variante.variantId, color: opcion.variante.colores[0] ?? undefined } }, loraMode }, "No se pudo cambiar la pieza.") as { plan?: PlanResuelto; cotizacion?: Cotizacion };
        if (!datos.plan) throw new FalloPlanEditar(mensajeErrorRespuesta(datos, "No se pudo cambiar la pieza."));
-       onPlanActualizado(datos.plan, datos.cotizacion);
+       planEditado(datos.plan, datos.cotizacion, "Listo, cambié el globo.");
        setIntercambioAbierto(false);
        setSeleccionCatalogo(null);
        requestAnimationFrame(() => disparadorModalRef.current?.focus());
@@ -608,13 +621,20 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
 
   async function quitarVariante(estructuraId: string, linea: PlanResuelto["estructuras"][number]["lineas"][number]) {
     if (!onPlanActualizado || guardandoEdicion) return;
-    if (!window.confirm(`¿Quitar ${productoCliente(linea.titulo)} de ${descripcionesPorId.get(estructuraId) ?? "la decoración"}?`)) return;
+    // No browser dialog: the removal happens and can be undone for a few
+    // seconds by restoring the plan the server had already signed.
+    const anterior = plan;
+    const nombre = productoCliente(linea.titulo);
+    const pieza = descripcionesPorId.get(estructuraId) ?? "la decoración";
     setGuardandoEdicion(true);
     setErrorEdicion(null);
     try {
       const datos = await pedirPlanEditar({ modo: "aplicar", base: plan, edicion: { accion: "quitar", estructura_id: estructuraId, objetivo_variant_id: linea.variant_id }, loraMode }, "No se pudo quitar la pieza.") as { plan?: PlanResuelto; cotizacion?: Cotizacion };
        if (!datos.plan) throw new FalloPlanEditar(mensajeErrorRespuesta(datos, "No se pudo quitar la pieza."));
-       onPlanActualizado(datos.plan, datos.cotizacion);
+       planEditado(datos.plan, datos.cotizacion, `Quité ${nombre} de ${pieza}.`, () => {
+         onPlanActualizado(anterior);
+         setAvisoEdicion({ id: ++secuenciaAvisoRef.current, texto: `Volví a poner ${nombre}. Total: ${pesos.format(anterior.totales.total_cop)}.` });
+       });
     } catch (error) {
       setErrorEdicion(mensajeFalloPlanEditar(error, "No se pudo quitar la pieza."));
       setEditorAbierto(true);
@@ -722,6 +742,19 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   }, [loraMode, modoDev]);
 
   useEffect(() => () => peticionEvidenciaRef.current?.abort(), []);
+
+  // The edit notice (and its "Deshacer") stays a few seconds, then gets out of the way.
+  useEffect(() => {
+    if (!avisoEdicion) return;
+    const fin = window.setTimeout(() => setAvisoEdicion((actual) => (actual?.id === avisoEdicion.id ? null : actual)), 6000);
+    return () => window.clearTimeout(fin);
+  }, [avisoEdicion]);
+
+  // Approved again: the "your proposal changed" notice has done its job.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- deliberado: el aviso depende de un cambio de la prop `aprobado`.
+    if (aprobado) setEditadoTrasAprobar(false);
+  }, [aprobado]);
 
   useEffect(() => {
     if (!editorAbierto) return;
@@ -860,18 +893,52 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h3 id={`${editorId}-titulo`} className="text-sm font-semibold text-texto">Ajusta la propuesta</h3>
-                  <p className="mt-0.5 text-xs text-texto-suave">Busca una variante real, elige el tamaño/color y guarda el cambio. La cotización se recalcula y cualquier aprobación anterior se reinicia.</p>
+                  <p className="mt-0.5 text-xs text-texto-suave">Busca el globo que quieres, elige su tamaño y color, y guárdalo. El total se actualiza al instante.</p>
                 </div>
                 <button type="button" aria-label="Cerrar editor del plan" onClick={cerrarEditor} className="rounded-md p-1 text-texto-suave hover:bg-superficie hover:text-texto focus-visible:outline-2 focus-visible:outline-acento"><X className="size-4" aria-hidden="true" /></button>
               </div>
               <div className="grid gap-2 sm:grid-cols-2">
-                <label className="text-xs text-texto-suave">Estructura<select name="estructura-plan" value={estructuraEdicion} onChange={(evento) => { setEstructuraEdicion(evento.target.value); setObjetivoEdicion(null); setVarianteEdicion(null); }} className="mt-1 w-full rounded-md border border-borde bg-superficie px-2 py-2 text-sm text-texto focus-visible:outline-2 focus-visible:outline-acento">{plan.plan.estructuras.map((estructura) => <option key={estructura.estructura_id} value={estructura.estructura_id}>{descripcionesPorId.get(estructura.estructura_id) ?? estructura.nombre}</option>)}</select></label>
-                <label className="text-xs text-texto-suave">Acción<select name="accion-plan" value={modoEdicion} onChange={(evento) => { setModoEdicion(evento.target.value as ModoEdicion); setObjetivoEdicion(null); setVarianteEdicion(null); }} className="mt-1 w-full rounded-md border border-borde bg-superficie px-2 py-2 text-sm text-texto focus-visible:outline-2 focus-visible:outline-acento"><option value="agregar">Agregar una pieza</option><option value="reemplazar">Reemplazar una pieza</option></select></label>
+                <label className="text-xs text-texto-suave">¿En qué pieza?<select name="estructura-plan" value={estructuraEdicion} onChange={(evento) => { setEstructuraEdicion(evento.target.value); setObjetivoEdicion(null); setVarianteEdicion(null); }} className="mt-1 w-full rounded-md border border-borde bg-superficie px-2 py-2 text-sm text-texto focus-visible:outline-2 focus-visible:outline-acento">{plan.plan.estructuras.map((estructura) => <option key={estructura.estructura_id} value={estructura.estructura_id}>{descripcionesPorId.get(estructura.estructura_id) ?? estructura.nombre}</option>)}</select></label>
+                <label className="text-xs text-texto-suave">¿Qué quieres hacer?<select name="accion-plan" value={modoEdicion} onChange={(evento) => { setModoEdicion(evento.target.value as ModoEdicion); setObjetivoEdicion(null); setVarianteEdicion(null); }} className="mt-1 w-full rounded-md border border-borde bg-superficie px-2 py-2 text-sm text-texto focus-visible:outline-2 focus-visible:outline-acento"><option value="agregar">Agregar un globo</option><option value="reemplazar">Cambiar un globo</option></select></label>
               </div>
-              {modoEdicion === "reemplazar" && <label className="block text-xs text-texto-suave">Pieza a reemplazar<select name="objetivo-plan" value={objetivoEdicion ?? ""} onChange={(evento) => setObjetivoEdicion(evento.target.value || null)} className="mt-1 w-full rounded-md border border-borde bg-superficie px-2 py-2 text-sm text-texto focus-visible:outline-2 focus-visible:outline-acento"><option value="">Elige una pieza</option>{lineasVisiblesPorVariante(plan.estructuras.find((estructura) => estructura.estructura_id === estructuraEdicion)?.lineas ?? []).map((linea) => <option key={linea.variant_id} value={linea.variant_id}>{[productoCliente(linea.titulo), linea.tamano_codigo ? pulgadasCliente(linea.tamano_codigo) : null, linea.color].filter(Boolean).join(" · ")}</option>)}</select></label>}
-              <form onSubmit={buscarVariantes} className="flex gap-2"><label htmlFor={`${editorId}-buscar`} className="sr-only">Buscar variante del catálogo</label><input id={`${editorId}-buscar`} name="consulta-variante-plan" autoComplete="off" value={consultaEdicion} onChange={(evento) => setConsultaEdicion(evento.target.value)} placeholder="Ej. globo rojo de 5 pulgadas…" className="min-w-0 flex-1 rounded-md border border-borde bg-superficie px-2.5 py-2 text-sm text-texto outline-none placeholder:text-texto-tenue focus-visible:border-acento focus-visible:outline-2 focus-visible:outline-acento" /><button type="submit" disabled={buscandoEdicion || !consultaEdicion.trim()} className="ui-pressable inline-flex shrink-0 items-center gap-1 rounded-md bg-acento px-3 py-2 text-sm font-semibold text-sobre-acento disabled:opacity-50"><Search className="size-3.5" aria-hidden="true" />{buscandoEdicion ? "Buscando…" : "Buscar"}</button></form>
+              {modoEdicion === "reemplazar" && <label className="block text-xs text-texto-suave">¿Qué globo cambias?<select name="objetivo-plan" value={objetivoEdicion ?? ""} onChange={(evento) => setObjetivoEdicion(evento.target.value || null)} className="mt-1 w-full rounded-md border border-borde bg-superficie px-2 py-2 text-sm text-texto focus-visible:outline-2 focus-visible:outline-acento"><option value="">Elige un globo</option>{lineasVisiblesPorVariante(plan.estructuras.find((estructura) => estructura.estructura_id === estructuraEdicion)?.lineas ?? []).map((linea) => <option key={linea.variant_id} value={linea.variant_id}>{[productoCliente(linea.titulo), linea.tamano_codigo ? pulgadasCliente(linea.tamano_codigo) : null, linea.color].filter(Boolean).join(" · ")}</option>)}</select></label>}
+              <form onSubmit={buscarVariantes} className="flex gap-2"><label htmlFor={`${editorId}-buscar`} className="sr-only">Buscar un globo en el catálogo</label><input id={`${editorId}-buscar`} name="consulta-variante-plan" autoComplete="off" value={consultaEdicion} onChange={(evento) => setConsultaEdicion(evento.target.value)} placeholder="Ej. globo rojo de 5 pulgadas…" className="min-w-0 flex-1 rounded-md border border-borde bg-superficie px-2.5 py-2 text-sm text-texto outline-none placeholder:text-texto-tenue focus-visible:border-acento focus-visible:outline-2 focus-visible:outline-acento" /><button type="submit" disabled={buscandoEdicion || !consultaEdicion.trim()} className="ui-pressable inline-flex shrink-0 items-center gap-1 rounded-md bg-acento px-3 py-2 text-sm font-semibold text-sobre-acento disabled:opacity-50"><Search className="size-3.5" aria-hidden="true" />{buscandoEdicion ? "Buscando…" : "Buscar"}</button></form>
               {candidatosEdicion.length > 0 && <ul className="space-y-2" aria-label="Resultados del catálogo">{candidatosEdicion.map((candidato) => <li key={candidato.productId} className="rounded-md border border-borde bg-superficie/70 p-2"><p className="text-xs font-semibold text-texto">{productoCliente(candidato.titulo)}</p><div className="mt-1.5 flex flex-wrap gap-1.5">{candidato.variantes.map((variante) => { const elegido = varianteEdicion?.variantId === variante.variantId; return <button key={variante.variantId} type="button" aria-pressed={elegido} onClick={() => elegirVariante(candidato, variante)} className={`rounded-md border px-2 py-1 text-left text-[11px] transition-colors focus-visible:outline-2 focus-visible:outline-acento ${elegido ? "border-acento bg-acento-suave text-acento" : "border-borde text-texto hover:bg-fondo"}`}><span className="font-semibold">{variante.codigoTamano ? pulgadasCliente(variante.codigoTamano) : variante.titulo ?? "Variante"}</span><span className="ml-1 text-texto-suave">{pesos.format(variante.precio)}{variante.colores.length ? ` · ${variante.colores.join(", ")}` : ""}</span></button>; })}</div></li>)}</ul>}
-              {varianteEdicion && <form onSubmit={aplicarEdicion} className="grid gap-2 rounded-md bg-superficie p-2 sm:grid-cols-[1fr_8rem_auto] sm:items-end"><label className="text-xs text-texto-suave">Color en la estructura<input name="color-variante-plan" autoComplete="off" value={colorEdicion} onChange={(evento) => setColorEdicion(evento.target.value)} placeholder="Según catálogo…" className="mt-1 w-full rounded-md border border-borde bg-fondo px-2 py-1.5 text-sm text-texto focus-visible:outline-2 focus-visible:outline-acento" /></label>{modoEdicion === "agregar" ? <label className="text-xs text-texto-suave">Participación<input name="participacion-variante-plan" type="number" min="2" max="79" inputMode="numeric" value={participacionEdicion} onChange={(evento) => setParticipacionEdicion(evento.target.value)} className="mt-1 w-full rounded-md border border-borde bg-fondo px-2 py-1.5 text-sm text-texto focus-visible:outline-2 focus-visible:outline-acento" /></label> : <span /> }<button type="submit" disabled={guardandoEdicion} data-testid="guardar-edicion-plan" className="ui-pressable rounded-md bg-acento px-3 py-2 text-sm font-semibold text-sobre-acento disabled:opacity-50">{guardandoEdicion ? "Guardando…" : modoEdicion === "agregar" ? "Agregar al plan" : "Reemplazar"}</button></form>}
+              {varianteEdicion && (
+                <form onSubmit={aplicarEdicion} className="space-y-3 rounded-xl bg-superficie p-3">
+                  {varianteEdicion.colores.length > 1 ? (
+                    <fieldset>
+                      <legend className="text-xs text-texto-suave">¿De qué color?</legend>
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {varianteEdicion.colores.map((color) => {
+                          const elegido = colorEdicion === color;
+                          return (
+                            <button key={color} type="button" aria-pressed={elegido} onClick={() => setColorEdicion(color)} className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs ring-1 ring-inset transition-colors focus-visible:outline-2 focus-visible:outline-acento ${elegido ? "bg-acento-suave font-semibold text-acento ring-acento" : "text-texto ring-borde-suave hover:bg-superficie-suave"}`}>
+                              <span aria-hidden="true" className="size-3.5 rounded-full ring-1 ring-black/10" style={{ background: muestraColor(color, null).fondo }} />
+                              {color}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </fieldset>
+                  ) : varianteEdicion.colores.length === 1 ? (
+                    <p className="flex items-center gap-1.5 text-xs text-texto-suave">
+                      <span aria-hidden="true" className="size-3.5 rounded-full ring-1 ring-black/10" style={{ background: muestraColor(varianteEdicion.colores[0]!, null).fondo }} />
+                      Color: <span className="font-medium text-texto">{varianteEdicion.colores[0]}</span>
+                    </p>
+                  ) : (
+                    <label className="block text-xs text-texto-suave">Color (opcional)<input name="color-variante-plan" autoComplete="off" value={colorEdicion} onChange={(evento) => setColorEdicion(evento.target.value)} placeholder="Según catálogo…" className="mt-1 w-full rounded-md border border-borde bg-fondo px-2 py-1.5 text-sm text-texto focus-visible:outline-2 focus-visible:outline-acento" /></label>
+                  )}
+                  {modoEdicion === "agregar" && (
+                    <label className="block text-xs text-texto-suave">
+                      <span className="flex items-center justify-between">Cuánto de la pieza lleva este globo<output className="font-semibold tabular-nums text-texto">{participacionEdicion}%</output></span>
+                      <input name="participacion-variante-plan" type="range" min="2" max="79" step="1" value={participacionEdicion} onChange={(evento) => setParticipacionEdicion(evento.target.value)} className="mt-1.5 w-full accent-[var(--acento)]" />
+                      <span className="mt-0.5 flex justify-between text-[11px] text-texto-tenue"><span>Un toque</span><span>Protagonista</span></span>
+                    </label>
+                  )}
+                  <button type="submit" disabled={guardandoEdicion} data-testid="guardar-edicion-plan" className="ui-pressable w-full rounded-lg bg-acento px-3 py-2 text-sm font-semibold text-sobre-acento disabled:opacity-50 sm:w-auto">{guardandoEdicion ? "Guardando…" : modoEdicion === "agregar" ? "Agregar a la pieza" : "Cambiar el globo"}</button>
+                </form>
+              )}
               {errorEdicion && <p role="alert" aria-live="polite" className="text-xs font-medium text-error">{errorEdicion}</p>}
             </section>
           )}
@@ -951,6 +1018,35 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
           )}
         </div>
       </motion.div>
+
+      <AnimatePresence>
+        {avisoEdicion && (
+          <motion.div
+            key={avisoEdicion.id}
+            role="status"
+            initial={reducir ? false : { opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+            className="overflow-hidden border-t border-borde-suave bg-exito-suave"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-xs text-texto @xl:px-5.5">
+              <span className="flex items-center gap-1.5"><Check className="size-3.5 text-exito" aria-hidden="true" />{avisoEdicion.texto}</span>
+              {avisoEdicion.deshacer && (
+                <button type="button" onClick={avisoEdicion.deshacer} className="rounded-full px-2.5 py-1 font-semibold text-acento underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">
+                  Deshacer
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {editadoTrasAprobar && !aprobado && onAprobar && !bloqueo && (
+        <p data-testid="plan-reaprobar" role="status" className="border-t border-borde-suave bg-acento-suave px-4 py-2.5 text-xs font-medium text-acento @xl:px-5.5">
+          Tu propuesta cambió: apruébala de nuevo para ver cómo queda.
+        </p>
+      )}
 
       {onAprobar && bloqueo && (
         <div data-testid="plan-aprobacion-bloqueada" role="status" className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-borde-suave bg-aviso-suave px-4 py-2.5 text-xs text-aviso @xl:px-5.5">
