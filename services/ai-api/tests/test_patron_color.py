@@ -701,6 +701,39 @@ def test_pista_con_racimo_propio_repite_los_colores_hasta_k() -> None:
     assert patron["base"] == {"modo": "espiral", "racimo": [1, 0, 1], "trazo": "espiral"}
 
 
+def test_pista_de_confeti_reparte_todos_los_colores_sin_acentos() -> None:
+    # La foto nombró blanco y negro; el azul de la pieza entra como peso del
+    # confeti (por su participación), nunca como acento: un acento encima de un
+    # confeti bloqueaba su deslizador de colores.
+    estructura = _estructura(partes=(0.6, 0.3, 0.1))
+
+    patron = patron_desde_pista(estructura, _pista("aleatorio", ["blanco", "negro"]))
+
+    assert patron == {
+        "version": "patron-color.v1",
+        "origen": "referencia",
+        "base": {
+            "modo": "aleatorio",
+            "pesos": [
+                {"material": 0, "peso": 60},
+                {"material": 1, "peso": 30},
+                {"material": 2, "peso": 10},
+            ],
+            "semilla": _semilla(estructura.estructura_id),
+        },
+    }
+
+
+def test_pista_de_flor_con_cuatro_colores_deja_el_cuarto_como_acento() -> None:
+    # La flor usa los tres primeros; el cuarto color nombrado no queda sin uso.
+    estructura = _estructura(total=48, colores=("blanco", "rosado", "amarillo", "verde"))
+
+    patron = patron_desde_pista(estructura, _pista("flor", ["blanco", "rosado", "amarillo", "verde"]))
+
+    assert patron is not None
+    assert patron["acentos"] == [{"material": 3, "cada": 3, "desde": 2, "posiciones": [0]}]
+
+
 def test_pista_con_mas_de_cuatro_colores_sin_usar_se_descarta() -> None:
     estructura = _estructura(colores=("blanco", "negro", "azul", "rojo", "verde", "dorado"))
 

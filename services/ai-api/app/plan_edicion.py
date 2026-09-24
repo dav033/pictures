@@ -80,10 +80,7 @@ AVISO_PATRON_SUGERIDO = (
 # `String.prototype.trim` de JavaScript: espacios de Unicode (Zs), tabuladores,
 # fines de línea y BOM. `str.strip()` sin argumentos no es lo mismo (quita
 # \x1c-\x1f y \x85, y no el BOM).
-_ESPACIOS_JS = (
-    "\t\n\v\f\r            "
-    "      　﻿"
-)
+_ESPACIOS_JS = "\t\n\v\f\r                  　﻿"
 
 # La vista previa devuelve lo mismo que `plan_resuelto.patrones_color[]`.
 _PATRON_RESUELTO = Draft7Validator(
@@ -193,12 +190,31 @@ class PlanEditRequest(OperationalRequest):
 
 
 class PlanPatronRequest(OperationalRequest):
-    """``plan-patron.v1``: expandir un patrón (o, con ``None``, sugerir uno)."""
+    """``plan-patron.v1``: expandir un patrón (o, con ``None``, sugerir uno).
+
+    Con ``participaciones`` (y ``patron_color`` nulo) es la vista previa del
+    deslizador de colores sobre un confeti: el mismo ``repartir`` que aplicará
+    la edición, sin guardarlo, para dibujar la pieza mientras se arrastra.
+    """
 
     schema_version: Literal["plan-patron.v1"]
     plan: dict[str, object]
     estructura_id: Identificador
     patron_color: dict[str, object] | None
+    participaciones: list[float] | None = Field(default=None, min_length=2, max_length=6)
+
+    @field_validator("participaciones")
+    @classmethod
+    def validar_participaciones(cls, valores: list[float] | None) -> list[float] | None:
+        if valores is not None and any(not 0.05 <= valor < 1 for valor in valores):
+            raise ValueError("cada participación va de 0.05 a menos de 1")
+        return valores
+
+    @model_validator(mode="after")
+    def reparto_sin_patron(self) -> "PlanPatronRequest":
+        if self.participaciones is not None and self.patron_color is not None:
+            raise ValueError("participaciones y patron_color no van juntos")
+        return self
 
 
 @dataclass(frozen=True, slots=True)
@@ -288,9 +304,7 @@ def normalizar_participaciones(
     return resultado
 
 
-def indice_material_para_linea(
-    materiales: Sequence[Mapping[str, object]], linea: LineaBase
-) -> int:
+def indice_material_para_linea(materiales: Sequence[Mapping[str, object]], linea: LineaBase) -> int:
     """Material que produjo una línea: por variante exacta; si no, por producto y color."""
     for indice, material in enumerate(materiales):
         mismo_producto = material.get("product_id") == linea.product_id
@@ -299,9 +313,10 @@ def indice_material_para_linea(
     color = _normalizar(linea.color or "")
     for indice, material in enumerate(materiales):
         propio = material.get("color")
-        if material.get("product_id") == linea.product_id and _normalizar(
-            "" if propio is None else str(propio)
-        ) == color:
+        if (
+            material.get("product_id") == linea.product_id
+            and _normalizar("" if propio is None else str(propio)) == color
+        ):
             return indice
     return -1
 
@@ -460,22 +475,26 @@ def _editar_materiales(
     estructura["materiales"] = materiales
 
 
-def _repartir(estructura: dict[str, object], participaciones: Sequence[float]) -> None:
+_AVISO_CAPAS_CONFETI = (
+    "Los acentos y los globos pintados a mano se integraron al confeti para respetar"
+    " el reparto que elegiste."
+)
+
+
+def _repartir(estructura: dict[str, object], participaciones: Sequence[float]) -> list[str]:
     """Solo cambian las participaciones; con confeti, también sus pesos (conserva la semilla).
 
     Los pesos de un confeti son su reparto solo cuando la base llena toda la
-    rejilla. Con ``acentos`` o ``pintados`` encima, esas celdas ya tienen color
-    (un acento fija un mínimo de su color) y el reparto pedido no se traduce a
-    pesos: la rejilla podría moverse al revés de lo pedido. Ese reparto se
-    cambia en el editor de patrón: ``patron_activo``, como con otro modo.
+    rejilla: con ``acentos`` o ``pintados`` encima, esas celdas ya tienen color
+    y el reparto pedido no saldría (un acento fija un mínimo de su color y el
+    deslizador movería la rejilla al revés de lo pedido). El deslizador es la
+    forma de decir "así se reparte este confeti", así que las capas se integran
+    al confeti (se quitan) y se avisa. Con otro modo el reparto se cambia en el
+    editor de patrón: ``patron_activo``.
     """
     patron = cast(dict[str, object] | None, estructura.get("patron_color"))
     base = cast(dict[str, object], patron["base"]) if patron is not None else None
-    if (
-        patron is not None
-        and base is not None
-        and (base.get("modo") != "aleatorio" or patron.get("acentos") or patron.get("pintados"))
-    ):
+    if patron is not None and base is not None and base.get("modo") != "aleatorio":
         raise PlanResolutionError("patron_activo", 409)
     materiales = _materiales(estructura)
     if len(materiales) != len(participaciones):
@@ -487,12 +506,18 @@ def _repartir(estructura: dict[str, object], participaciones: Sequence[float]) -
         ]
     )
     estructura["materiales"] = normalizados
-    if patron is not None and base is not None:
-        pesos = [
-            {"material": indice, "peso": _peso(_participacion(material))}
-            for indice, material in enumerate(normalizados)
-        ]
-        estructura["patron_color"] = {**patron, "base": {**base, "pesos": pesos}}
+    if patron is None or base is None:
+        return []
+    pesos = [
+        {"material": indice, "peso": _peso(_participacion(material))}
+        for indice, material in enumerate(normalizados)
+    ]
+    capas = bool(patron.get("acentos") or patron.get("pintados"))
+    sin_capas = {
+        clave: valor for clave, valor in patron.items() if clave not in ("acentos", "pintados")
+    }
+    estructura["patron_color"] = {**sin_capas, "base": {**base, "pesos": pesos}}
+    return [_AVISO_CAPAS_CONFETI] if capas else []
 
 
 # --- Patrón tras cambiar los colores (§9) ------------------------------------------
@@ -645,7 +670,7 @@ def editar_plan(
         else:
             estructura["patron_color"] = copy.deepcopy(edicion.patron_color)
     elif isinstance(edicion, EdicionReparto):
-        _repartir(estructura, edicion.participaciones)
+        avisos = _repartir(estructura, edicion.participaciones)
     elif isinstance(edicion, EdicionMezcla):
         estructura["mezcla"] = edicion.mezcla
     else:
@@ -675,14 +700,54 @@ def ejecutar_edicion(request: PlanEditRequest) -> dict[str, object]:
     }
 
 
+def _vista_previa_reparto(
+    plan: Mapping[str, object], estructura_id: str, participaciones: Sequence[float]
+) -> dict[str, object]:
+    """El confeti de la estructura tras ``repartir``, sin guardar nada.
+
+    Es la misma edición que aplicará ``/plan/edit``; una estructura sin patrón
+    no tiene nada que dibujar (``sin_patron``) y otro modo es ``patron_activo``.
+    """
+    estructura = next(
+        (
+            item
+            for item in cast(list[Mapping[str, object]], plan.get("estructuras", []))
+            if isinstance(item, Mapping) and item.get("estructura_id") == estructura_id
+        ),
+        None,
+    )
+    if estructura is not None and estructura.get("patron_color") is None:
+        raise PlanResolutionError("sin_patron", 409)
+    editado = editar_plan(
+        plan,
+        EdicionReparto(
+            accion="repartir", estructura_id=estructura_id, participaciones=list(participaciones)
+        ),
+    )
+    nuevo = next(
+        item
+        for item in cast(list[dict[str, object]], editado.plan["estructuras"])
+        if item.get("estructura_id") == estructura_id
+    )
+    patron: dict[str, object] = patron_resuelto_de_estructura(
+        editado.plan, estructura_id, cast(dict[str, object], nuevo["patron_color"])
+    )
+    if editado.avisos:
+        patron["avisos"] = [*editado.avisos, *cast(list[str], patron["avisos"])]
+    return patron
+
+
 def vista_previa_patron(request: PlanPatronRequest) -> dict[str, object]:
     """``plan-patron-result.v1``: el patrón dado expandido, o la sugerencia con ``None``.
 
     Sin catálogo; la rejilla y el conteo son los que dará la próxima resolución.
     """
-    patron = patron_resuelto_de_estructura(
-        request.plan, request.estructura_id, request.patron_color
-    )
+    if request.participaciones is not None:
+        patron = _vista_previa_reparto(request.plan, request.estructura_id, request.participaciones)
+    else:
+        patron = patron_resuelto_de_estructura(
+            request.plan, request.estructura_id, request.patron_color
+        )
     if next(_PATRON_RESUELTO.iter_errors(patron), None) is not None:
         raise RuntimeError("el patrón resuelto no cumple plan-resuelto.v1")
     return {"operation_schema_version": PLAN_PATRON_RESULT_VERSION, "patron": patron}

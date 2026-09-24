@@ -323,8 +323,8 @@ sin `patron_color`:
    patrón del modo de la pista (`espiral`: el racimo es la lista de colores
    repetida/recortada a `k`; `anillos`: `secuencia`, `largo: 1`; `bloques`:
    pesos de la pista o iguales; `degradado`: paradas, suave; `aleatorio`:
-   pesos por `participacion`; `flor`: [fondo, pétalo, centro]; `damero`:
-   secuencia, tamaño 1). Materiales sin usar entran como `acentos` (`cada:
+   pesos por `participacion` de **todos** los materiales (nunca acentos); `flor`: [fondo, pétalo, centro]; `damero`:
+   secuencia, tamaño 1). Materiales sin usar por la base armada entran como `acentos` (`cada:
    3 + j`, `desde: 2 + j`, `posiciones: [0]` en racimos), hasta 4. Si aun así
    queda alguno sin uso, o el patrón no es válido para el tipo → preset.
    `origen: "referencia"`.
@@ -427,11 +427,11 @@ más:
 
 - `patron`: valida (sección 4, con la geometría de la estructura) y fija o
   quita el campo; sincroniza `participacion`.
-- `repartir` en estructura con patrón: si el modo es `aleatorio` sin
-  `acentos` ni `pintados`, reescribe `pesos` con `max(1, round_half_up(p *
-  100))` y conserva `semilla`; con otro modo, o con acentos o pintados (sus
-  celdas tienen color fijo y el reparto no se traduce a pesos) →
-  `patron_activo` (409).
+- `repartir` en estructura con patrón: si el modo es `aleatorio`, reescribe
+  `pesos` con `max(1, round_half_up(p * 100))` y conserva `semilla`; si el
+  confeti tenía `acentos` o `pintados`, se integran al confeti (se quitan, con
+  aviso), porque con color fijo encima el reparto pedido no saldría. Con otro
+  modo → `patron_activo` (409).
 - `agregar` en estructura con patrón: el material nuevo entra al final; si el
   modo es `aleatorio`, el color nuevo toma su parte `p` de la base
   (`max(1, round_half_up(p * 100))`) y los pesos que ya estaban se escalan a
@@ -459,8 +459,11 @@ formato válido."):
 ## 10. Vista previa: `POST /internal/v1/plan/patron`
 
 Scope `plan.patron`. Petición `plan-patron.v1`: `{schema_version, plan:
-PlanDecoracion, estructura_id, patron_color: PatronColorV1 | null}` (null =
-sugerir). Respuesta `plan-patron-result.v1`: `{operation_schema_version,
+PlanDecoracion, estructura_id, patron_color: PatronColorV1 | null,
+participaciones?: number[]}` (null = sugerir). `participaciones` (con
+`patron_color` nulo) es la vista previa del deslizador de colores sobre un
+confeti mientras se arrastra: el mismo `repartir` de la edición, sin guardar
+(`sin_patron` 409 si la pieza no tiene patrón). Respuesta `plan-patron-result.v1`: `{operation_schema_version,
 patron: PatronColorResuelto}`. Sin catálogo; usa las mismas funciones que la
 resolución (misma rejilla y conteo que dará `resolve`). Errores:
 `patron_invalido` 422, `invalid_plan` 422, `estructura_no_encontrada` 404.

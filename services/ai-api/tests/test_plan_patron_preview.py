@@ -123,6 +123,73 @@ def test_un_patron_dado_se_expande_como_aplicado() -> None:
     assert _conteo(resultado) == [(16, 32), (12, 24), (12, 24)]
 
 
+CONFETI = {
+    "version": "patron-color.v1",
+    "origen": "referencia",
+    "base": {
+        "modo": "aleatorio",
+        "pesos": [{"material": 0, "peso": 40}, {"material": 1, "peso": 30}, {"material": 2, "peso": 30}],
+        "semilla": 7,
+    },
+    "acentos": [{"material": 2, "cada": 3, "desde": 2, "posiciones": [0]}],
+}
+
+
+def _peticion_reparto(participaciones: list[float], columna: Mapping[str, object]) -> PlanPatronRequest:
+    return PlanPatronRequest.model_validate(
+        {
+            "context": {**CONTEXTO, "body_sha256": "a" * 64},
+            "schema_version": "plan-patron.v1",
+            "plan": {**_plan(), "estructuras": [dict(columna)]},
+            "estructura_id": COLUMNA,
+            "patron_color": None,
+            "participaciones": participaciones,
+        }
+    )
+
+
+def test_el_reparto_del_deslizador_se_dibuja_sin_guardar() -> None:
+    # Mientras se arrastra: el mismo `repartir` de la edición sobre el confeti,
+    # sin tocar el plan. 40 celdas por 50/25/25 → 20, 10 y 10 por columna.
+    resultado = vista_previa_patron(_peticion_reparto([0.5, 0.25, 0.25], _columna(patron_color=CONFETI)))
+
+    patron = cast(dict[str, object], resultado["patron"])
+    assert patron["aplicado"] is True
+    assert cast(dict[str, object], patron["patron"])["base"] == {
+        "modo": "aleatorio",
+        "pesos": [{"material": 0, "peso": 50}, {"material": 1, "peso": 25}, {"material": 2, "peso": 25}],
+        "semilla": 7,
+    }
+    assert _conteo(resultado) == [(20, 40), (10, 20), (10, 20)]
+    # El acento de la foto se integró al confeti, y la vista previa lo dice.
+    assert "acentos" not in cast(dict[str, object], patron["patron"])
+    assert any("se integraron al confeti" in aviso for aviso in cast(list[str], patron["avisos"]))
+
+
+def test_el_reparto_de_una_pieza_sin_patron_no_tiene_nada_que_dibujar() -> None:
+    import pytest
+
+    from app.plan import PlanResolutionError
+
+    with pytest.raises(PlanResolutionError) as error:
+        vista_previa_patron(_peticion_reparto([0.5, 0.25, 0.25], _columna()))
+    assert (error.value.code, error.value.status_code) == ("sin_patron", 409)
+
+
+def test_reparto_y_patron_no_van_juntos() -> None:
+    import pytest
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        PlanPatronRequest.model_validate(
+            {
+                "context": {**CONTEXTO, "body_sha256": "a" * 64},
+                **_operacion(ANILLOS),
+                "participaciones": [0.5, 0.25, 0.25],
+            }
+        )
+
+
 def _post(
     operation: Mapping[str, object], nonce: str, *, scope: str = "plan.patron"
 ) -> tuple[int, dict[str, object]]:

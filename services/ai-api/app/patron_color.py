@@ -784,9 +784,12 @@ def _base_de_pista(
     if modo == "degradado":
         return {"modo": "degradado", "paradas": indices, "transicion": "suave"}
     if modo == "aleatorio":
+        # Un confeti reparte todos los colores de la pieza por su participación:
+        # los que la foto no nombró también entran como peso, nunca como acentos
+        # (un acento encima de un confeti bloquearía su deslizador de colores).
         return {
             "modo": "aleatorio",
-            "pesos": _pesos_por_participacion(estructura, _distintos(indices)),
+            "pesos": _pesos_por_participacion(estructura, list(range(len(estructura.materiales)))),
             "semilla": _semilla(estructura.estructura_id),
         }
     if modo == "flor":
@@ -801,6 +804,22 @@ def _base_de_pista(
             "separacion": SEPARACION_FLOR_PISTA,
         }
     return {"modo": "damero", "secuencia": indices, "tamano": 1}
+
+
+def _materiales_de_base(base: Mapping[str, object]) -> set[int]:
+    """Índices de material que nombra una base declarativa, en cualquier modo."""
+    usados: set[int] = set()
+    for clave in ("racimo", "secuencia", "paradas"):
+        usados.update(_enteros(base.get(clave, [])))
+    for clave in ("bloques", "pesos"):
+        lista = base.get(clave)
+        for item in lista if isinstance(lista, list) else []:
+            if isinstance(item, Mapping):
+                usados.add(_entero(item.get("material")))
+    for clave in ("fondo", "petalo", "centro"):
+        if base.get(clave) is not None:
+            usados.add(_entero(base[clave]))
+    return usados
 
 
 def patron_desde_pista(
@@ -830,7 +849,10 @@ def patron_desde_pista(
     patron: dict[str, object] = {"version": VERSION_PATRON, "origen": "referencia", "base": base}
     if pista.get("globos_por_racimo") is not None and estructura.tipo != TIPO_REJILLA:
         patron["globos_por_racimo"] = _entero(pista["globos_por_racimo"])
-    sin_uso = [indice for indice in range(len(estructura.materiales)) if indice not in indices]
+    # Sin uso respecto del patrón que de verdad se armó: la espiral recorta la
+    # lista a k, la flor usa tres colores y el confeti ya reparte todos.
+    usados = _materiales_de_base(base)
+    sin_uso = [indice for indice in range(len(estructura.materiales)) if indice not in usados]
     if len(sin_uso) > 4:
         return None
     if sin_uso:

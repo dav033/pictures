@@ -770,18 +770,32 @@ def _confeti(
         {"pintados": [{"fila": 0, "material": 2}, {"fila": 9, "columna": 3, "material": 1}]},
     ],
 )
-def test_repartir_un_confeti_con_acentos_o_pintados_es_patron_activo(
+def test_repartir_un_confeti_con_acentos_o_pintados_los_integra_y_avisa(
     capas: dict[str, object],
 ) -> None:
-    # Sus pesos ya no son su reparto: las celdas de encima tienen color fijo y
-    # convertir el deslizador en pesos podía mover la rejilla al revés de lo
-    # pedido (subir el blanco al 40 % lo bajaba del 27,5 % al 20 %).
+    # Con capas encima los pesos no son el reparto (el acento fija un mínimo de
+    # azul): el deslizador dice "así se reparte este confeti", así que las capas
+    # se integran al confeti y el reparto sale tal cual se pidió.
     confeti = _confeti([(2, 10), (0, 50), (1, 40)], **capas)
     plan = _plan(_con_patron(_columna(), confeti, (0.275, 0.175, 0.55)))
 
-    assert _rechazo(
+    resultado = _editar(
         plan, {"accion": "repartir", "estructura_id": COLUMNA, "participaciones": [0.4, 0.3, 0.3]}
-    )[:2] == ("patron_activo", 409)
+    )
+
+    patron = cast(dict[str, object], _estructura(resultado.plan, COLUMNA)["patron_color"])
+    assert "acentos" not in patron and "pintados" not in patron
+    assert patron["base"] == {
+        "modo": "aleatorio",
+        "pesos": [{"material": 0, "peso": 40}, {"material": 1, "peso": 30}, {"material": 2, "peso": 30}],
+        "semilla": 7,
+    }
+    # 40 celdas de un solo tamaño por 40/30/30: 16, 12 y 12 globos, justo lo pedido.
+    assert _partes(resultado.plan, COLUMNA) == [0.4, 0.3, 0.3]
+    assert resultado.avisos == (
+        "Los acentos y los globos pintados a mano se integraron al confeti para respetar"
+        " el reparto que elegiste.",
+    )
 
 
 # --- agregar con patrón -------------------------------------------------------------------

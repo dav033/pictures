@@ -5,6 +5,7 @@ import { construirUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 import { isPythonAdapterError, pythonErrorBody, PYTHON_MAX_BODY_BYTES } from "@/lib/ia/nucleo/python-adapter";
 import { PlanEditError } from "@/lib/plan/edicion-error";
 import { vistaPreviaPatronPython } from "@/lib/plan/edicion-python";
+import { EdicionRepartoSchema } from "@/lib/plan/edicion-esquemas";
 import { PatronColorV1Schema } from "@/lib/plan/patron-color";
 import { PlanDecoracionSchema } from "@/lib/plan/tipos";
 
@@ -23,7 +24,12 @@ const BodySchema = z.object({
   plan: PlanDecoracionSchema,
   estructura_id: z.string().trim().min(1).max(160),
   patron_color: PatronColorV1Schema.nullable(),
-}).strict();
+  /** Colors slider over a confeti while dragging: previewed, never saved here. */
+  participaciones: EdicionRepartoSchema.shape.participaciones.optional(),
+}).strict().refine((body) => body.participaciones === undefined || body.patron_color === null, {
+  message: "participaciones y patron_color no van juntos.",
+  path: ["participaciones"],
+});
 
 /** Lo que se reenvía a Python cabe en su límite de cuerpo; un cuerpo mayor nunca llegaría. */
 const LIMITE_CUERPO_BYTES = PYTHON_MAX_BODY_BYTES;
@@ -73,6 +79,7 @@ export async function POST(request: Request) {
       plan: body.plan,
       estructuraId: body.estructura_id,
       patronColor: body.patron_color,
+      ...(body.participaciones === undefined ? {} : { participaciones: body.participaciones }),
       correlationId: requestIdHttp,
       signal: request.signal,
     });

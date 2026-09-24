@@ -127,7 +127,27 @@ async function main(): Promise<void> {
   assert.equal(r.status, 200);
   assert.equal((r.cuerpo.patron as Json).aplicado, true);
   assert.deepEqual(llamadas[1]!.body.patron_color, ESPIRAL);
+  assert.equal("participaciones" in peticion.body, false, "no slider preview unless asked");
   console.log("[PASS] vista previa: petición plan-patron.v1 con scope plan.patron y deadline corto; respuesta {patron}");
+
+  // --- 1b. Colors slider over a confeti while dragging: `participaciones` reach
+  // Python with patron_color null, and its answer is the structure's own pattern.
+  llamadas = instalarFetch((llamada) => resultado(llamada, patronResuelto(true)));
+  r = await pedir({ plan, estructura_id: ESTRUCTURA, patron_color: null, participaciones: [0.5, 0.25, 0.25] });
+  assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 300));
+  assert.equal((r.cuerpo.patron as Json).aplicado, true);
+  assert.deepEqual(llamadas[0]!.body.participaciones, [0.5, 0.25, 0.25]);
+  assert.equal(llamadas[0]!.body.patron_color, null);
+  llamadas = instalarFetch(() => { throw new Error("un reparto con patrón no debe llegar a Python"); });
+  r = await pedir({ plan, estructura_id: ESTRUCTURA, patron_color: ESPIRAL, participaciones: [0.5, 0.25, 0.25] });
+  assert.equal(r.status, 400);
+  r = await pedir({ plan, estructura_id: ESTRUCTURA, patron_color: null, participaciones: [0.99, 0.01] });
+  assert.equal(r.status, 400, "each share keeps the slider's 5 % floor");
+  assert.equal(llamadas.length, 0);
+  instalarFetch(() => rechazoPython("sin_patron", 409));
+  r = await pedir({ plan, estructura_id: ESTRUCTURA, patron_color: null, participaciones: [0.5, 0.5] });
+  assert.equal(r.status, 409);
+  console.log("[PASS] vista previa del deslizador: participaciones llegan a Python; con patrón o bajo el 5 % → 400; sin patrón → 409");
 
   // --- 2. The answer is validated: another structure, or a suggestion marked as applied, is not drawn.
   for (const patron of [patronResuelto(false, "EST_09_OTRA"), patronResuelto(true), { ...patronResuelto(false), celdas: "x" }]) {

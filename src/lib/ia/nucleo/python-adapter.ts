@@ -1130,6 +1130,11 @@ export interface PythonPlanPatronInput {
   estructuraId: string;
   /** `null` asks for the suggested pattern of a structure. */
   patronColor: PatronColor | null;
+  /**
+   * The colors slider over a confeti, while dragging (with `patronColor`
+   * null): Python applies the same `repartir` the edit will, without saving.
+   */
+  participaciones?: readonly number[];
   requestId: string;
   correlationId: string;
   deadlineMs?: number;
@@ -2037,12 +2042,13 @@ export async function llamarPythonPlanEdit(input: PythonPlanEditInput): Promise<
  * (ADR-0028 §10), for the pattern editor. No catalog and no side effect.
  */
 export async function llamarPythonPlanPatron(input: PythonPlanPatronInput): Promise<PythonPlanPatronResult> {
-  const { plan, estructuraId, patronColor, ...rest } = input;
+  const { plan, estructuraId, patronColor, participaciones, ...rest } = input;
   const operationBody = {
     schema_version: "plan-patron.v1" as const,
     plan,
     estructura_id: estructuraId,
     patron_color: patronColor,
+    ...(participaciones === undefined ? {} : { participaciones: [...participaciones] }),
   };
   const response = await llamarPythonOperacion(PYTHON_PLAN_PATRON_PATH, PYTHON_PLAN_PATRON_SCOPE, {
     ...rest,
@@ -2051,11 +2057,12 @@ export async function llamarPythonPlanPatron(input: PythonPlanPatronInput): Prom
     scopes: [PYTHON_PLAN_PATRON_SCOPE],
   });
   const parsed = planPatronPayloadResultSchema.safeParse(response.payload);
-  // The answer is about the structure asked for, and a suggestion is never "aplicado".
+  // The answer is about the structure asked for, and a suggestion is never
+  // "aplicado" (a slider preview draws the structure's own pattern, so it is).
   if (
     !parsed.success
     || parsed.data.patron.estructura_id !== estructuraId
-    || parsed.data.patron.aplicado !== (patronColor !== null)
+    || parsed.data.patron.aplicado !== (patronColor !== null || participaciones !== undefined)
   ) {
     throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
   }

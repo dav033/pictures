@@ -162,6 +162,10 @@ const RECHAZOS_EDICION: Readonly<Record<string, Rechazo>> = {
 const RECHAZOS_VISTA_PATRON: Readonly<Record<string, Rechazo>> = {
   estructura_no_encontrada: RECHAZOS_EDICION.estructura_no_encontrada!,
   invalid_plan: { status: 422, mensaje: "El patrón de color no tiene un formato válido." },
+  // Slider preview (`participaciones`): same answers the edit gives for them.
+  reparto_no_corresponde: RECHAZOS_EDICION.reparto_no_corresponde!,
+  patron_activo: RECHAZOS_EDICION.patron_activo!,
+  sin_patron: { status: 409, mensaje: "Esta pieza no tiene un patrón de color que dibujar." },
 };
 
 /**
@@ -220,6 +224,8 @@ export async function vistaPreviaPatronPython(input: {
   plan: PlanDecoracion;
   estructuraId: string;
   patronColor: PatronColor | null;
+  /** Colors slider over a confeti, while dragging (see `llamarPythonPlanPatron`). */
+  participaciones?: readonly number[];
   correlationId: string;
   signal?: AbortSignal;
 }): Promise<PatronColorResuelto> {
@@ -228,6 +234,7 @@ export async function vistaPreviaPatronPython(input: {
       plan: input.plan,
       estructuraId: input.estructuraId,
       patronColor: input.patronColor,
+      ...(input.participaciones === undefined ? {} : { participaciones: input.participaciones }),
       requestId: crypto.randomUUID(),
       correlationId: input.correlationId,
       deadlineMs: EDICION_PYTHON_DEADLINE_MS,

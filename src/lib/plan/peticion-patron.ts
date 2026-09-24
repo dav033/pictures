@@ -26,6 +26,12 @@ export type PeticionVistaPatron = {
   estructura_id: string;
   /** `null` pide la sugerencia de Python para una estructura sin patrón. */
   patron_color: PatronColor | null;
+  /**
+   * Deslizador de colores sobre un confeti, mientras se arrastra (con
+   * `patron_color: null`): Python dibuja el mismo reparto que guardará la
+   * edición `repartir`, sin guardarlo.
+   */
+  participaciones?: number[];
 };
 
 /**
