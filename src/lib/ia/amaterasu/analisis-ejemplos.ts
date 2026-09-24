@@ -8,7 +8,7 @@ import type { ImagenEtiquetada } from "@/lib/ia/nucleo/tipos";
  * The gallery sends each file untouched, so its bytes are the same in every
  * browser: the same photo always shows the same pieces and boxes, instantly
  * and without a provider call. Regenerate with
- * `npx tsx scripts/generar-analisis-ejemplos.ts` when the parser version changes.
+ * `npx tsx scripts/ops/generar-analisis-ejemplos.ts` when the parser version changes.
  */
 export type AnalisisEjemplo = {
   id: string;

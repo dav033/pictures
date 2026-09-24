@@ -52,7 +52,7 @@ export function resolverProveedor(pistas: {
  * PLAN_RENDIMIENTO_RAG.md Fase 4: gemini-3.6-flash razona en "medium" por
  * defecto también en el turno de CHAT (no solo en el parser de intención),
  * y era el mayor bloque de latencia del turno completo. Se midió con
- * scripts/eval-chat-thinking.ts contra 7 diálogos reales (elección de
+ * scripts/eval/eval-chat-thinking.ts contra 7 diálogos reales (elección de
  * herramienta, honestidad ante NO_MATCH/SKU inexistente, guardar_brief,
  * franjas de presupuesto) — "low" y "minimal" dieron 7/7 estables en 2
  * repeticiones cada uno, sin ninguna regresión estructural. "low" activado

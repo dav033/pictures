@@ -250,9 +250,9 @@ export async function persistStagedCatalog(
 // Enriquecimiento con evidencia (Tarea 03.1, PLAN_ARQUITECTURA_ESCENA_COMPLETA_
 // RAG.md, Plan 03). Escritura DELIBERADAMENTE separada de
 // `persistStagedCatalog()` de arriba: esa función sigue exactamente igual
-// (mismo comportamiento para `scripts/import-cdn-catalog.ts` y cualquier otro
+// (mismo comportamiento para `scripts/catalogo/import-cdn-catalog.ts` y cualquier otro
 // llamador), y `persistSceneCapabilities()` es un flujo de escritura aditivo
-// nuevo que un caller (p. ej. `scripts/enrich-scene-capabilities.ts`) invoca
+// nuevo que un caller (p. ej. `scripts/catalogo/enrich-scene-capabilities.ts`) invoca
 // explícitamente, ya sea sobre el catálogo recién publicado por
 // `persistStagedCatalog()` o sobre el catálogo ya publicado previamente por
 // cualquiera de los dos pipelines de importación. Nunca se ejecuta como

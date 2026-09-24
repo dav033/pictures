@@ -68,7 +68,7 @@ jobs:
       - run: npm run plan:test
       - run: npm run chat:test-historial
       - run: npm run happie:test-webhook
-      - run: npx tsx scripts/test-idempotency-store.ts
+      - run: npx tsx scripts/test/test-idempotency-store.ts
 
   python-quality:
     runs-on: ubuntu-latest

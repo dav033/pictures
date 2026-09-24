@@ -5,7 +5,7 @@
  *
  * `computeCoverageReport` es la versión real y con criterio que reemplaza,
  * para futuras olas (Plan 05 la usará formalmente), la heurística
- * deliberadamente tosca de `scripts/eval-scene-baseline.ts` (Ola 0, hecha
+ * deliberadamente tosca de `scripts/eval/eval-scene-baseline.ts` (Ola 0, hecha
  * solo para demostrar el problema "solo arco" antes de que existiera este
  * motor). No modifica ni depende de ese script.
  *

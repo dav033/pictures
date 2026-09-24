@@ -9,7 +9,7 @@
  * —son la jerga del prompt, las restricciones, la cobertura de tamaños, el
  * brief y el contrato de eventos—, así que en vez de volverlos dependientes de
  * red y de un proceso levantado se les stubea `globalThis.fetch`, igual que ya
- * hacían `scripts/test-plan-editar-python.ts` y `scripts/test-catalog-allowlist.ts`.
+ * hacían `scripts/test/test-plan-editar-python.ts` y `scripts/test/test-catalog-allowlist.ts`.
  *
  * Qué NO es. No es una segunda implementación de las reglas de conteo: no
  * reparte por participación, no elige tamaños por mezcla, no calcula merma y no

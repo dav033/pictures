@@ -16,7 +16,7 @@
  * Este archivo es el ÚNICO dueño de la tabla de mezclas, los diámetros
  * estándar, el tope de sustitución y la gramática de los tamaños obligatorios.
  * `reglasMezclas()` los exporta al contrato `plan-decoracion.v1` como
- * `x-reglas-mezclas` (`scripts/export-domain-contract-schemas.ts`), el mismo
+ * `x-reglas-mezclas` (`scripts/ops/export-domain-contract-schemas.ts`), el mismo
  * patrón que `x-geometria-estructuras-oficiales`, y `plan.py` los lee de ahí.
  * Cambiar un valor es: editarlo aquí, `npm run contracts:export:domain` y
  * `generate_models.py`; los vectores dorados dicen si movió alguna cifra.

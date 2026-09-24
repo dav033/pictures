@@ -1,17 +1,17 @@
 """Fase 8.1 (plan Fase 8): suite de evaluacion del RAG en pytest.
 
-Reemplaza `npm run rag:eval` (scripts/eval-retrieval.ts, Fase 3B, muestreo
+Reemplaza `npm run rag:eval` (scripts/eval/eval-retrieval.ts, Fase 3B, muestreo
 `ORDER BY random()` no reproducible) por una suite reproducible: el fixture
 que corre (eval/rag/fixture-live-catalog.json, generado por
-scripts/eval-rag-fixture.ts) es determinista y versionado en git, y esta
+scripts/eval/eval-rag-fixture.ts) es determinista y versionado en git, y esta
 suite corre la evaluacion en varios procesos INDEPENDIENTES para reportar
 si el resultado varia entre corridas.
 
 No usa eval/rag/queries-v2.jsonl + ground-truth-v2.jsonl (el corpus "v2" de
 bench-rag-v2.ts / eval-rag-v2.ts) a proposito: ese corpus depende de una
-fila publicada en `rag_source_snapshots`, que scripts/import-cdn-catalog.ts
+fila publicada en `rag_source_snapshots`, que scripts/catalogo/import-cdn-catalog.ts
 escribe pero el pipeline que de verdad usa `npm run rag:sync`
-(scripts/import-shopify-catalog.ts) no. Al momento de escribir esto
+(scripts/catalogo/import-shopify-catalog.ts) no. Al momento de escribir esto
 `rag_source_snapshots` esta vacia tanto en Neon como en el Postgres local
 -- ese corpus no puede correr contra ninguna base real disponible. Es un
 hallazgo real y preexistente, documentado en
@@ -58,7 +58,7 @@ def _run_fixture_once(fixture_path: Path = FIXTURE_PATH) -> dict[str, Any]:
             "npx",
             "tsx",
             "--conditions=react-server",
-            "scripts/eval-rag-fixture.ts",
+            "scripts/eval/eval-rag-fixture.ts",
             "--run",
             "--fixture",
             str(fixture_path),
@@ -72,7 +72,7 @@ def _run_fixture_once(fixture_path: Path = FIXTURE_PATH) -> dict[str, Any]:
     )
     lines = [line for line in result.stdout.strip().splitlines() if line.strip()]
     assert lines, (
-        "scripts/eval-rag-fixture.ts --run no imprimio ninguna linea de salida.\n"
+        "scripts/eval/eval-rag-fixture.ts --run no imprimio ninguna linea de salida.\n"
         f"exit_code={result.returncode}\nstdout={result.stdout}\nstderr={result.stderr}"
     )
     try:
@@ -91,7 +91,7 @@ def _run_fixture_once(fixture_path: Path = FIXTURE_PATH) -> dict[str, Any]:
 def fixture_metadata() -> dict[str, Any]:
     assert FIXTURE_PATH.exists(), (
         f"{FIXTURE_PATH} no existe -- generarlo con "
-        "`npx tsx --conditions=react-server scripts/eval-rag-fixture.ts --generate` "
+        "`npx tsx --conditions=react-server scripts/eval/eval-rag-fixture.ts --generate` "
         "contra el Postgres local"
     )
     data = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
@@ -116,7 +116,7 @@ def test_fixture_is_versioned_and_covers_required_categories(
     )
     # "sku" puede quedar vacia si el Postgres usado para generar el fixture
     # no tiene sku_original poblado (pipeline legado, ver
-    # scripts/eval-rag-fixture.ts). nombre/filtro/sin_resultado no dependen
+    # scripts/eval/eval-rag-fixture.ts). nombre/filtro/sin_resultado no dependen
     # de esa columna y sí deben estar presentes siempre.
     for categoria_obligatoria in ("nombre", "filtro", "sin_resultado"):
         assert any(caso["categoria"] == categoria_obligatoria for caso in casos), (

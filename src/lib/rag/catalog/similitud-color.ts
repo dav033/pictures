@@ -3,7 +3,7 @@ import { HEX_COLORES_OBSERVABLES } from "@/lib/rag/taxonomy/v2";
 /**
  * Distancia perceptual entre colores del catálogo. Se exporta al contrato
  * `catalog-search.v1` como `x-tonos-colores-catalogo`
- * (`scripts/export-domain-contract-schemas.ts`), el mismo patrón que
+ * (`scripts/ops/export-domain-contract-schemas.ts`), el mismo patrón que
  * `estructuras-oficiales.ts` usa para `x-geometria-estructuras-oficiales`:
  * esta tabla es la única fuente, y `services/ai-api/app/catalog.py` la lee de
  * ahí para resolver un color que el snapshot activo no tiene al más cercano que

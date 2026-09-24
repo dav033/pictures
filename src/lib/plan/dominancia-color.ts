@@ -49,7 +49,7 @@ export type MedicionDominancia = {
  * generoso. Este decide si un píxel ES de ese color, y ahí ser generoso
  * convierte cualquier cosa en catálogo.
  *
- * El número está medido, no elegido: `scripts/calibrar-dominancia.ts` imprime el
+ * El número está medido, no elegido: `scripts/eval/calibrar-dominancia.ts` imprime el
  * reparto real de cada radio candidato sobre las cuatro fotos de referencia y
  * sobre una foto de jardín. El corte aparece solo y es nítido. En la foto de
  * jardín, con radio 30 el césped deja el 24 % de la imagen sin clasificar y

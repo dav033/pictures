@@ -8,7 +8,7 @@
  * lo que el lado TypeScript sigue necesitando de ellos: cargarlos y leer su
  * bloque `expected` como fixture congelado. Con el resolutor TypeScript se
  * fueron el comparador de paridad (`scripts/test-paridad-plan-python.ts`), la
- * suite de invariantes (`scripts/test-invariantes-plan.ts`), el doble del
+ * suite de invariantes (`scripts/test/test-invariantes-plan.ts`), el doble del
  * `Pool` que ambas usaban y el generador de las tres formas de la UI.
  *
  * Módulo importable a propósito (AGENTS.md, "Keep scripts import-safe"): aquí

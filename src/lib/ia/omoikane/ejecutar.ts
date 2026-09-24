@@ -50,7 +50,7 @@ function hechosDelTurno(opts: { referenceBlueprint?: ReferenceBlueprintV2; telem
  * @sempertex/agente-core: conserva la firma pública exacta que tenía antes
  * de esa extracción (mismos parámetros, mismo `ResultadoConversacion`
  * "gordo" con `recomendaciones`/`ragCandidatos`/etc.) para que
- * `src/app/api/chat/route.ts` y `scripts/eval-chat-thinking.ts` no tengan
+ * `src/app/api/chat/route.ts` y `scripts/eval/eval-chat-thinking.ts` no tengan
  * que cambiar. Todo lo que antes vivía como `EstadoConversacion` mutable
  * dentro del loop ahora vive en `./registro-herramientas`, capturado en el
  * closure del `registro` que se le pasa al motor — el motor genérico nunca

@@ -148,7 +148,7 @@ export default async function ConfiguracionLoraPage() {
         {!datos ? (
           <section className="rounded-[1.25rem] border border-aviso bg-aviso-suave p-5 text-sm leading-6">
             Todavía no hay análisis de composición. Generalo con{" "}
-            <code className="break-all rounded bg-superficie-2 px-1.5 py-0.5 text-xs">npx tsx scripts/analizar-composicion-lora.ts</code>.
+            <code className="break-all rounded bg-superficie-2 px-1.5 py-0.5 text-xs">npx tsx scripts/lora/analizar-composicion-lora.ts</code>.
           </section>
         ) : (
           <>

@@ -1,6 +1,6 @@
 /**
  * Contrato del benchmark de fidelidad. Lo consume el generador de informe
- * (`scripts/bench/informe.ts`) y lo produce el arnés (`scripts/bench-fidelidad.ts`).
+ * (`scripts/bench/informe.ts`) y lo produce el arnés (`scripts/bench/bench-fidelidad.ts`).
  *
  * Una corrida por fase del plan. El informe compara corridas entre sí, así que
  * los campos NO pueden cambiar de significado entre fases: si una fase necesita

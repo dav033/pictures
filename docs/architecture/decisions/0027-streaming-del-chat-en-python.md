@@ -165,7 +165,7 @@ en el salto Next→Python, así que la ruta tiene su propio techo
 ## Pendiente antes de encender el flag
 
 - Medir latencia (p50/p95 del turno completo) con flag encendido vs apagado
-  sobre los diálogos de `scripts/eval-chat-thinking.ts`, no con una muestra.
+  sobre los diálogos de `scripts/eval/eval-chat-thinking.ts`, no con una muestra.
 - Correr la misma comparación flag-on/off con conversaciones de varias vueltas
   que usen imágenes y `ajustar_plan_decoracion`.
 - Probar el chat en el navegador con una sesión real (la verificación de arriba

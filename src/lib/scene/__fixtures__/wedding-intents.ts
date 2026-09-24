@@ -8,7 +8,7 @@
  * este archivo debe adaptarse a él sin perder los escenarios aquí
  * registrados. La forma de abajo es una proyección deliberadamente reducida
  * de `EventIntentV2` — solo los campos que necesita el diagnóstico de
- * cobertura de `scripts/eval-scene-baseline.ts`.
+ * cobertura de `scripts/eval/eval-scene-baseline.ts`.
  *
  * Los 8 escenarios corresponden exactamente a los escenarios E2E
  * obligatorios de la sección 12 del plan (E2E-1 .. E2E-8), registrados aquí

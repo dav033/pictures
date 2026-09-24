@@ -14,7 +14,7 @@ import type { UiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
  * Next buffers a proxied body only up to `experimental.proxyClientMaxBodySize`
  * (default 10 MB); a larger body arrives truncated and used to fail as
  * malformed JSON ("Recarga la página"). Must equal the value in next.config.ts
- * (checked by scripts/test-reference-analyze-route.ts).
+ * (checked by scripts/test/test-reference-analyze-route.ts).
  */
 export const LIMITE_CUERPO_ANALISIS_BYTES = 10 * 1024 * 1024;
 export const MAX_IMAGENES_REFERENCIA = 3;

@@ -859,7 +859,7 @@ const SCENE_V004_ONE_SIDED_PLACEMENTS: Partial<Record<LoraPlacement, string>> = 
 /**
  * Diameters of the confirmed sizes ("12-inch") as the dataset words it: large,
  * small, or both. v004 judged size by eye and RELATIVE to the piece itself
- * (scripts/recaption-v004.ts), so any mix of two diameters is "large and
+ * (scripts/lora/recaption-v004.ts), so any mix of two diameters is "large and
  * small"; the absolute thresholds only describe a single-diameter piece.
  * Before this, a 5" + 12" mix read entirely "small" and 12" + 18" entirely
  * "large", because 10"-15" matched neither threshold.

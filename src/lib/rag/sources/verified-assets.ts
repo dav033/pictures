@@ -17,7 +17,7 @@
  *
  * DISTINCIÓN EXIGIDA por la Tarea 03.2: "no hay fila" vs. "hay fila pero sin
  * oferta verificada" — ver `SceneFunctionCoverageResult`. Esto es lo que le
- * permite a `scripts/audit-scene-catalog.ts` reportar brechas con razón
+ * permite a `scripts/catalogo/audit-scene-catalog.ts` reportar brechas con razón
  * precisa (¿nadie etiquetó ningún producto con esta función? ¿o sí, pero
  * ninguno tiene oferta comercial verificada?) en vez de un mensaje genérico.
  *
@@ -44,7 +44,7 @@ export type Queryable = Pick<Pool, "query">;
  * Umbral mínimo de confianza (`catalog_product_capabilities.confidence`,
  * sección 5.3/8.1) para que una capacidad candidata cuente como cobertura
  * real de un slot. Por debajo de este umbral, la capacidad existe como dato
- * (fue derivada por `scripts/enrich-scene-capabilities.ts`, Tarea 03.1) pero
+ * (fue derivada por `scripts/catalogo/enrich-scene-capabilities.ts`, Tarea 03.1) pero
  * es demasiado incierta para ofrecerse como candidato elegible — se trata
  * como si la fila de capacidad no existiera para efectos de esta consulta,
  * nunca se "redondea hacia arriba".
@@ -296,7 +296,7 @@ function mapComponentKindToServiceFeeKind(
  * del usuario), no por catálogo — no son auditables desde esta capa. Un slot
  * cuyo `allowed_sources` incluye `venue_existing` puede terminar cubierto en
  * producción sin pasar por esta función; el auditor de catálogo (Tarea 03.2,
- * `scripts/audit-scene-catalog.ts`) debe reportarlo como "posible con
+ * `scripts/catalogo/audit-scene-catalog.ts`) debe reportarlo como "posible con
  * venue_existing, sin evidencia de catálogo" y no como cobertura confirmada
  * — inventar esa confirmación aquí violaría la sección 6.4.
  */

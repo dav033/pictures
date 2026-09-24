@@ -3,7 +3,7 @@
  * cadena que `/api/generate`.
  *
  * Único dueño de ese cableado para las dos suites que lo necesitan
- * (`scripts/test-invariantes-plan.ts` y `scripts/test-color-escena-produccion.ts`).
+ * (`scripts/test/test-invariantes-plan.ts` y `scripts/test/test-color-escena-produccion.ts`).
  * Lo que importa aquí es de dónde salen los colores: en producción no salen del
  * plan, salen de `resolverProductosParaGeneracion` -> `Producto.colores`, y esa
  * es la lista que acaba en `appearance.resolved_colors` del SceneSpec y que

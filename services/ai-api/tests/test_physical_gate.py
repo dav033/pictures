@@ -1,6 +1,6 @@
 """Puerta física del plan resuelto (ADR-0023 paso 4).
 
-Espejo de los casos de `scripts/test-material-consistency.ts`, que es donde la
+Espejo de los casos de `scripts/test/test-material-consistency.ts`, que es donde la
 regla estaba cubierta mientras vivía en TypeScript. Los textos se afirman
 completos a propósito: son lo que lee el modelo para corregir el plan, y el
 puerto no debe cambiarlos ni un byte.

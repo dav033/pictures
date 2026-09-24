@@ -7,7 +7,7 @@ import path from "node:path";
  * Estado real del LoRA en producción y de qué está hecho su entrenamiento.
  *
  * Se lee de `data/processed/lora-v004-composicion.json`, que genera
- * `scripts/analizar-composicion-lora.ts` contando sobre los 154 captions
+ * `scripts/lora/analizar-composicion-lora.ts` contando sobre los 154 captions
  * del dataset. Es contable porque el recaptionado usó vocabulario controlado;
  * si el dataset cambia, hay que volver a correr ese script.
  */

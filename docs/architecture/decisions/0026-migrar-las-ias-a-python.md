@@ -121,7 +121,7 @@ ya ve el navegador). Se planea aparte cuando las 4 anteriores estén validadas.
   schema real de `IntentQuerySchema`, respuesta real re-validada con
   `IntentQuerySchema.parse` del lado TypeScript) — así se encontraron los tres
   problemas de compatibilidad del schema descritos arriba.
-  Pendiente de quien lo despliegue: correr `scripts/eval-query-parser.ts` /
+  Pendiente de quien lo despliegue: correr `scripts/eval/eval-query-parser.ts` /
   `eval-query-parser-v2.ts` / `eval-tamanos.ts` con el flag encendido contra
   un Python real y comparar contra el flag apagado, con más variedad de casos
   que la prueba manual de esta sesión, antes de activar el flag por defecto.

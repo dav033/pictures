@@ -29,7 +29,7 @@ export type ResultadoNormalizacion =
        * COMPLETA_RAG.md), derivadas determinísticamente del mismo `producto` ya
        * normalizado — campo aditivo: los llamadores existentes que solo
        * desestructuran `{ producto, variantes }` (p. ej.
-       * `scripts/import-shopify-catalog.ts`) siguen funcionando sin cambios.
+       * `scripts/catalogo/import-shopify-catalog.ts`) siguen funcionando sin cambios.
        */
       capabilities: DeriveSceneCapabilitiesResult;
     }

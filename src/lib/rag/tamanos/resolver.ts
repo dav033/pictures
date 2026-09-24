@@ -62,8 +62,8 @@ export async function resolverVariantesPorDespiece(
  *
  * Sin consumidor de producción desde ADR-0023 paso 2: su único llamador era la
  * expansión `usar_despiece` de `confirmar_seleccion_rag`, que se borró junto al
- * modo legacy. Hoy solo lo ejercitan `scripts/test-resolver-tamanos.ts` y la
- * puerta `selection/resolver-pg` de `scripts/eval-e2e-rag-v2.ts`.
+ * modo legacy. Hoy solo lo ejercitan `scripts/test/test-resolver-tamanos.ts` y la
+ * puerta `selection/resolver-pg` de `scripts/eval/eval-e2e-rag-v2.ts`.
  */
 export async function resolverVariantesPorDespieceBatch(
   pool: Pool,

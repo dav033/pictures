@@ -14,7 +14,7 @@
  * owner of the counting rules and removes the TypeScript resolver, and these
  * scenarios never checked the count — they check the prompt built from it.
  * Import-safe: no network, no database. The paid CLI is
- * scripts/calibrar-creatividad-gemini.ts.
+ * scripts/eval/calibrar-creatividad-gemini.ts.
  */
 import { planBlueprint } from "@/lib/plan/blueprint";
 import { buildImagePrompt } from "@/lib/ia/uzume/build-image-prompt";
