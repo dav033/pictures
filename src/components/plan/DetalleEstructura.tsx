@@ -14,6 +14,7 @@ import {
   esEstructuraDeGlobos,
   medidasCliente,
   metrosCliente,
+  muestraColor,
   productoCliente,
   productoConTamanoCliente,
   pulgadasCliente,
@@ -23,6 +24,9 @@ import {
 import { IconoEstructura } from "./IconoEstructura";
 import { BarraTamanos, tramosPorTamano } from "./BarraTamanos";
 import { RecortePieza } from "@/components/referencia/RecortePieza";
+import type { Mezcla } from "@/lib/plan/mezclas";
+import { RepartoColores } from "./RepartoColores";
+import { BalanceTamanos } from "./BalanceTamanos";
 import type { CajaNormalizada } from "@/components/referencia/recorte";
 
 const pesos = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
@@ -52,7 +56,16 @@ type Props = {
   /** Extras per line (training reference count). */
   extraLinea?: (linea: LineaMaterial) => ReactNode;
   modoDev?: boolean;
+  /** Applies a new color split of the piece (shares in `materiales` order). */
+  onRepartir?: (participaciones: number[]) => void;
+  /** Applies another size mix to the piece. */
+  onCambiarMezcla?: (mezcla: Mezcla) => void;
+  /** An edit of the card is in flight: the interactive controls wait. */
+  ocupado?: boolean;
 };
+
+/** Pieces whose balloons come from the geometry, so their colors and sizes can be rebalanced. */
+const TIPOS_GEOMETRICOS = new Set(["arco", "semiarco", "guirnalda", "columna", "pared", "centro_mesa"]);
 
 /** Measurement tiles for the structure, only those present in the plan. */
 function mosaicosMedidas(tipo: string, medidas: EstructuraDeclarada["medidas"] | undefined): Array<{ etiqueta: string; valor: string }> {
@@ -159,6 +172,7 @@ function CantidadTexto({ texto }: { texto: string }) {
 export function DetalleEstructura({
   idBase, estructura, declarada, oficial, abierto, onAlternar, recorte, lineas, imagenDe, fotoAusente, sumaCop,
   editable, onAgregar, onEditar, onQuitar, puedeQuitar, onVerProducto, extraLinea, modoDev = false,
+  onRepartir, onCambiarMezcla, ocupado = false,
 }: Props) {
   const reducir = useReducedMotion();
   const [familiasAbiertas, setFamiliasAbiertas] = useState<ReadonlySet<string>>(() => new Set());
@@ -233,6 +247,28 @@ export function DetalleEstructura({
               </div>
               <BarraTamanos tramos={tramos} variante="detalle" retraso={0.1} />
               {modoDev && <p className="mt-1 text-[11px] text-texto-suave">{estructura.nombre} · {estructura.mezcla_real.map((linea) => `R-${linea.diam_pulg} · ${linea.unidades} (${Math.round(linea.pct)}%)`).join(" · ")}</p>}
+            </div>
+          )}
+
+          {editable && declarada && TIPOS_GEOMETRICOS.has(estructura.tipo) && (onRepartir || onCambiarMezcla) && (
+            <div className="space-y-2.5">
+              {onRepartir && declarada.materiales.length >= 2 && declarada.materiales.every((material) => typeof material.participacion === "number") && (
+                <RepartoColores
+                  // A new plan from the resolver resets the control to what it signed.
+                  key={declarada.materiales.map((material) => `${material.variant_id ?? material.product_id}:${material.participacion}`).join("|")}
+                  colores={declarada.materiales.map((material) => ({
+                    etiqueta: material.color ? tonoCliente(material.color, material.product_id) : productoCliente(material.product_id),
+                    fondo: muestraColor(material.color ?? "", null).fondo,
+                    participacion: material.participacion ?? 0,
+                  }))}
+                  totalGlobos={estructura.total_unidades}
+                  ocupado={ocupado}
+                  onAplicar={onRepartir}
+                />
+              )}
+              {onCambiarMezcla && (
+                <BalanceTamanos key={declarada.mezcla} mezcla={declarada.mezcla} totalGlobos={estructura.total_unidades} ocupado={ocupado} onAplicar={onCambiarMezcla} />
+              )}
             </div>
           )}
 

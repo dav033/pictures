@@ -488,6 +488,26 @@ async function main(): Promise<void> {
   assert.equal(materialesAgregados.at(-1)!.color, "azul", "agregar canoniza el color del cliente");
   console.log("[PASS] edición: el color sale del catálogo y de la variante elegida, nunca de la pieza anterior");
 
+  // --- 6f. 2026-09-24: the card's sliders. "mezcla" only changes the piece's
+  // size mix and Python counts it; "repartir" only accepts one share per
+  // color of the piece, none under 5 %.
+  const llamadasMezcla = instalarFetch((llamada) => sobre(llamada, payloadResolucion()));
+  r = await editar({ modo: "aplicar", base: { ...base, approval_token: tokenPython }, edicion: { accion: "mezcla", estructura_id: "EST_01_ARCO", mezcla: "solo_grandes" } });
+  assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 300));
+  const planMezcla = planEnviado(llamadasMezcla);
+  const estructuraMezcla = (planMezcla.estructuras as Json[])[0]!;
+  const estructuraBase = ((base.plan as Json).estructuras as Json[])[0]!;
+  assert.equal(estructuraMezcla.mezcla, "solo_grandes");
+  assert.deepEqual({ ...estructuraMezcla, mezcla: estructuraBase.mezcla }, estructuraBase, "nada más de la pieza cambia");
+  assert.equal(llamadasMezcla.some((llamada) => llamada.path !== "/internal/v1/plan/resolve"), false, "sin variante nueva no se admite nada");
+
+  instalarFetch((llamada) => sobre(llamada, payloadResolucion()));
+  r = await editar({ modo: "aplicar", base: { ...base, approval_token: tokenPython }, edicion: { accion: "repartir", estructura_id: "EST_01_ARCO", participaciones: [0.5, 0.5] } });
+  assert.equal(r.status, 409, "one share per color of the piece (it has one material)");
+  r = await editar({ modo: "aplicar", base: { ...base, approval_token: tokenPython }, edicion: { accion: "repartir", estructura_id: "EST_01_ARCO", participaciones: [0.97, 0.03] } });
+  assert.equal(r.status, 400, "a color under 5 % is a removal, not a split");
+  console.log("[PASS] edición desde los deslizadores: mezcla y reparto de colores");
+
   // El bloque 7 probaba el kill switch: con `PYTHON_BACKEND_KILL_SWITCH=true`
   // un token Python daba 409 PYTHON_NO_SELECCIONADO en los tres modos sin
   // caer a TypeScript. El paso 5 del ADR-0023 retiró el switch y con él esa

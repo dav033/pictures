@@ -64,3 +64,36 @@ export const EdicionSchema = z.object({
 });
 
 export type Edicion = z.infer<typeof EdicionSchema>;
+
+/** Smallest share a color keeps when redistributing: below it, removing the color is the honest action. */
+export const PARTICIPACION_MINIMA_REPARTO = 0.05;
+
+/**
+ * Redistribution of the colors of one structure from the proposal card's
+ * slider: the new `participacion` of each material, in the order of the
+ * structure's `materiales`. Only the HTTP editor offers it; the chat tool
+ * keeps `EdicionSchema`. Python resolves the counts, as for any edit.
+ */
+export const EdicionRepartoSchema = z.object({
+  accion: z.literal("repartir"),
+  estructura_id: z.string().trim().min(1).max(160),
+  participaciones: z.array(z.number().min(PARTICIPACION_MINIMA_REPARTO).lt(1)).min(2).max(6),
+}).strict();
+
+export type EdicionReparto = z.infer<typeof EdicionRepartoSchema>;
+
+/**
+ * Size balance of one structure from the card's "más pequeños ↔ más grandes"
+ * slider: it picks one of the existing mixes (`mezclas.ts`). The contract and
+ * the resolver are unchanged; Python counts the balloons of the new mix.
+ */
+export const EdicionMezclaSchema = z.object({
+  accion: z.literal("mezcla"),
+  estructura_id: z.string().trim().min(1).max(160),
+  mezcla: z.enum(["clasica", "organica_fina", "organica_gruesa", "solo_grandes"]),
+}).strict();
+
+export type EdicionMezcla = z.infer<typeof EdicionMezclaSchema>;
+
+/** Every edit the plan editor applies. */
+export type EdicionPlan = Edicion | EdicionReparto | EdicionMezcla;

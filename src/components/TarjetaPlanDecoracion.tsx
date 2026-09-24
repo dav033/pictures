@@ -571,6 +571,29 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     setAvisoEdicion({ id: ++secuenciaAvisoRef.current, texto: `${texto} Nuevo total: ${pesos.format(nuevo.totales.total_cop)}.`, deshacer });
   }
 
+  /**
+   * The card's interactive controls (color split, size balance): one edit,
+   * the new total and a way back to the plan the server had signed.
+   */
+  async function aplicarAjusteDirecto(edicion: Record<string, unknown>, texto: string): Promise<void> {
+    if (!onPlanActualizado || guardandoEdicion) return;
+    const anterior = plan;
+    setGuardandoEdicion(true);
+    setErrorEdicion(null);
+    try {
+      const datos = await pedirPlanEditar({ modo: "aplicar", base: plan, edicion, loraMode }, "No se pudo actualizar la pieza.") as { plan?: PlanResuelto; cotizacion?: Cotizacion };
+      if (!datos.plan) throw new FalloPlanEditar(mensajeErrorRespuesta(datos, "No se pudo actualizar la pieza."));
+      planEditado(datos.plan, datos.cotizacion, texto, () => {
+        onPlanActualizado(anterior);
+        setAvisoEdicion({ id: ++secuenciaAvisoRef.current, texto: `Volví a como estaba. Total: ${pesos.format(anterior.totales.total_cop)}.` });
+      });
+    } catch (error) {
+      setErrorEdicion(mensajeFalloPlanEditar(error, "No se pudo actualizar la pieza."));
+    } finally {
+      setGuardandoEdicion(false);
+    }
+  }
+
   async function aplicarEdicion(evento?: FormEvent<HTMLFormElement>) {
     evento?.preventDefault();
     if (!onPlanActualizado || guardandoEdicion || !estructuraSeleccionada) return;
@@ -964,6 +987,9 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
                 onEditar={(linea) => abrirEditor("reemplazar", estructura.estructura_id, linea)}
                 onQuitar={(linea) => void quitarVariante(estructura.estructura_id, linea)}
                 puedeQuitar={(linea) => lineaQuitable(linea, lineasVisiblesPorVariante(estructura.lineas), declarada?.materiales)}
+                onRepartir={editorDisponible ? (participaciones) => void aplicarAjusteDirecto({ accion: "repartir", estructura_id: estructura.estructura_id, participaciones }, "Listo, cambié la distribución de colores.") : undefined}
+                onCambiarMezcla={editorDisponible ? (mezcla) => void aplicarAjusteDirecto({ accion: "mezcla", estructura_id: estructura.estructura_id, mezcla }, "Listo, cambié los tamaños de la pieza.") : undefined}
+                ocupado={guardandoEdicion}
                 onVerProducto={(linea, disparador) => { disparadorModalRef.current = disparador; setSeleccionCatalogo({ linea, estructuraId: estructura.estructura_id, estructura: estructura.nombre }); setIntercambioAbierto(false); setRecomendaciones([]); setResultadosCatalogo([]); setErrorEdicion(null); }}
                 modoDev={modoDev}
                 extraLinea={(linea) => {

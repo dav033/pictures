@@ -17,7 +17,7 @@ import {
   aplicarEdicionPlan,
   correlationDesde,
 } from "@/lib/plan/aplicar-edicion";
-import { BasePlanSchema, EdicionSchema } from "@/lib/plan/edicion-esquemas";
+import { BasePlanSchema, EdicionMezclaSchema, EdicionRepartoSchema, EdicionSchema } from "@/lib/plan/edicion-esquemas";
 
 const BodySchema = z.discriminatedUnion("modo", [
   z.object({
@@ -32,7 +32,7 @@ const BodySchema = z.discriminatedUnion("modo", [
     }).strict().optional(),
   }).strict(),
   z.object({ modo: z.literal("recomendadas"), variant_id: z.string().trim().min(1).max(160), approval_token: z.string().min(1), loraMode: LoraModeSlugSchema.optional() }).strict(),
-  z.object({ modo: z.literal("aplicar"), base: BasePlanSchema, edicion: EdicionSchema, loraMode: LoraModeSlugSchema.optional() }).strict(),
+  z.object({ modo: z.literal("aplicar"), base: BasePlanSchema, edicion: z.union([EdicionSchema, EdicionRepartoSchema, EdicionMezclaSchema]), loraMode: LoraModeSlugSchema.optional() }).strict(),
 ]);
 
 function serializarCandidatos(candidatos: readonly ProductoCandidato[]) {

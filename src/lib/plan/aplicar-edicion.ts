@@ -14,7 +14,7 @@ import { resolverPlan } from "./resolver-backend";
 import { PlanDecoracionSchema, type MaterialPlan, type PlanDecoracion } from "./tipos";
 import type { PlanResuelto } from "./resuelto";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
-import type { BasePlan, Edicion } from "./edicion-esquemas";
+import type { BasePlan, EdicionPlan, EdicionMezcla, EdicionReparto } from "./edicion-esquemas";
 
 /**
  * Applies one edit (agregar/reemplazar/quitar) to an already-approved plan,
@@ -103,10 +103,40 @@ function colorDeEdicion(color: string | undefined, coloresVariante: readonly str
   return pedido && normalizar(pedido) === normalizar(unico) ? pedido : unico;
 }
 
+/**
+ * Pure: the structure keeps its materials and roles, only their shares change
+ * (normalized to add up to 1). The number of shares must match the materials,
+ * or the slider was built from another version of the plan.
+ */
+function aplicarReparto(base: BasePlan, edicion: EdicionReparto): PlanDecoracion {
+  const estructura = base.plan.estructuras.find((item) => item.estructura_id === edicion.estructura_id);
+  if (!estructura) throw new PlanEditError(404, "No se encontró la estructura seleccionada.");
+  if (estructura.materiales.length !== edicion.participaciones.length) {
+    throw new PlanEditError(409, "La distribución no corresponde a los colores actuales de la pieza. Vuelve a abrirla e inténtalo otra vez.");
+  }
+  const materiales = normalizarParticipaciones(estructura.materiales.map((material, indice) => ({ ...material, participacion: edicion.participaciones[indice]! })));
+  return PlanDecoracionSchema.parse({
+    ...base.plan,
+    estructuras: base.plan.estructuras.map((item) => item.estructura_id === estructura.estructura_id ? { ...item, materiales } : item),
+  });
+}
+
+/** Pure: the structure keeps everything but its size mix. */
+function aplicarMezcla(base: BasePlan, edicion: EdicionMezcla): PlanDecoracion {
+  const estructura = base.plan.estructuras.find((item) => item.estructura_id === edicion.estructura_id);
+  if (!estructura) throw new PlanEditError(404, "No se encontró la estructura seleccionada.");
+  return PlanDecoracionSchema.parse({
+    ...base.plan,
+    estructuras: base.plan.estructuras.map((item) => item.estructura_id === estructura.estructura_id ? { ...item, mezcla: edicion.mezcla } : item),
+  });
+}
+
 /** Pure: builds the edited `PlanDecoracion` from the base envelope, the
  * requested edit and the real colors of the admitted variant. Never touches
  * the network or the database. */
-function aplicarEdicion(base: BasePlan, edicion: Edicion, coloresVariante: readonly string[]): PlanDecoracion {
+function aplicarEdicion(base: BasePlan, edicion: EdicionPlan, coloresVariante: readonly string[]): PlanDecoracion {
+  if (edicion.accion === "repartir") return aplicarReparto(base, edicion);
+  if (edicion.accion === "mezcla") return aplicarMezcla(base, edicion);
   const estructura = base.plan.estructuras.find((item) => item.estructura_id === edicion.estructura_id);
   if (!estructura) throw new PlanEditError(404, "No se encontró la estructura seleccionada.");
   const colorVariante = edicion.accion === "quitar" ? undefined : colorDeEdicion(edicion.variante?.color, coloresVariante);
@@ -189,7 +219,7 @@ function aplicarEdicion(base: BasePlan, edicion: Edicion, coloresVariante: reado
 
 export type AplicarEdicionInput = {
   base: BasePlan;
-  edicion: Edicion;
+  edicion: EdicionPlan;
   /** Already resolved by the caller (HTTP route or chat turn) — never derived here from a request body. */
   catalogAllowlist: CatalogAllowlist | null;
   /** Preferred correlation id (e.g. the chat turn's); falls back to the plan's own request id. */
@@ -236,7 +266,8 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
   }
 
   let coloresVariante: string[] = [];
-  if (edicion.accion !== "quitar") {
+  // Only adding or replacing brings a new variant to admit; removing and redistributing do not.
+  if (edicion.accion === "agregar" || edicion.accion === "reemplazar") {
     const variante = edicion.variante!;
     // Se exige la variante exacta: que el producto esté entrenado no dice
     // nada del tamaño concreto, y aceptarlo por `product_id` dejaba pasar
@@ -281,7 +312,11 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
     planHash: resuelto.plan_hash,
     restricciones: resuelto.plan.restricciones,
     selectedProductIds: resuelto.compras.map((compra) => compra.variant_id),
-    geometry: { accion: edicion.accion, estructura_id: edicion.estructura_id, objetivo_variant_id: edicion.objetivo_variant_id, nueva_variant_id: edicion.variante?.variant_id },
+    geometry: edicion.accion === "repartir"
+      ? { accion: edicion.accion, estructura_id: edicion.estructura_id, participaciones: edicion.participaciones }
+      : edicion.accion === "mezcla"
+        ? { accion: edicion.accion, estructura_id: edicion.estructura_id, mezcla: edicion.mezcla }
+        : { accion: edicion.accion, estructura_id: edicion.estructura_id, objetivo_variant_id: edicion.objetivo_variant_id, nueva_variant_id: edicion.variante?.variant_id },
     costChosenCop: resuelto.totales.total_cop,
     ceilingCop: resuelto.comercial.techo_cop,
     deltaCop: resuelto.comercial.delta_cop,
