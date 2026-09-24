@@ -148,7 +148,7 @@ function uniqueStrings(values: string[]): string[] {
 }
 
 function textoLexical(semanticQuery: string): string {
-  // `buscarPorRol` appends a role hint after an em dash. It is useful for a
+  // A query may carry a role hint after an em dash. It is useful for a
   // vector preference but its prose tokens are not catalog terms; requiring
   // every one of them in plainto_tsquery would erase valid category matches.
   return semanticQuery.split(/[—–]/, 1)[0]?.trim() || semanticQuery.trim();

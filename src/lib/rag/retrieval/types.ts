@@ -11,22 +11,8 @@ export type FiltrosDuros = {
   diametrosPulgadas?: number[];
 };
 
-/** Rol que un candidato cumple dentro de una búsqueda por rol
- * (`retrieval/por-rol.ts`): cada rol se busca por separado, con sus propias
- * categorías y su propio tope de precio por variante. */
+/** Rol que un candidato cumple dentro de la escena. */
 export type RolPresupuesto = "focal" | "soporte" | "relleno" | "acento" | "servicio";
-
-/** Cuota de un rol para `buscarPorRol`: cuántas piezas admite y con qué tope
- * de precio por variante, más las categorías que puede tocar (y las que
- * admite si la escalera de relajación tiene que ampliarlas). */
-export type CuotaPlan = {
-  rol: RolPresupuesto;
-  max: number;
-  /** Precio máximo en COP para UNA variante de este rol. */
-  topeCop: number;
-  categorias: readonly string[];
-  categoriasRelajacion: readonly string[];
-};
 
 /** Variantes permitidas de un producto real; vacío = producto sin variantes explícitas. */
 export type CatalogAllowlistEntry = {

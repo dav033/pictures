@@ -319,9 +319,8 @@ desaparecen.
 Hoy se comprueba que los colores de la foto **estén** (`coloresReferenciaOmitidos`,
 y ver §3.A sobre el vocabulario), pero nada compara **en qué proporción**. El
 plan declara `participacion` por material y nadie contrasta ese reparto con lo
-observado en la referencia. El QA visual sí lo detecta después —en una corrida
-anterior marcó `appearance failure` en las dos piezas— pero llega tarde y no
-bloquea.
+observado en la referencia. El QA visual, que lo detectaba después de generar
+(y tarde), se retiró el 2026-09-21 (ADR-0025): hoy nada lo comprueba.
 
 Pendiente de decidir: si la proporción de la referencia debe ser una
 restricción del plan (y entonces el guard la defiende como a los colores), o
