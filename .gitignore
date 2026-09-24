@@ -73,6 +73,7 @@ yarn-error.log*
 !/data/staging/lora-v007/anotaciones/
 !/data/staging/lora-v007/captions/
 !/data/staging/lora-v007/aprobadas.json
+!/data/staging/lora-v007/conceptos-propuestos.json
 
 /public/uploads
 

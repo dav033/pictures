@@ -44,7 +44,7 @@ const DATASET_DIR = path.join(process.cwd(), "data", "staging", "lora-v007");
 const ANNOTATIONS_DIR = path.join(DATASET_DIR, "anotaciones");
 const CAPTIONS_DIR = path.join(DATASET_DIR, "captions");
 const APPROVED_SELECTION_PATH = path.join(DATASET_DIR, "aprobadas.json");
-const PROPOSED_VOCABULARY_PATH = path.join(process.cwd(), "reports", "lora-vocabulary-v002", "conceptos-propuestos.json");
+const PROPOSED_VOCABULARY_PATH = path.join(DATASET_DIR, "conceptos-propuestos.json");
 
 type Annotation = {
   image_id?: unknown;
