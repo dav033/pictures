@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { planBlueprint } from "@/lib/plan/blueprint";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
-import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/scene-spec";
+import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
-import { compileLoraCaption } from "@/lib/ia/lora-caption-compiler";
-import { buildImagePrompt } from "@/lib/ia/build-image-prompt";
-import type { VisualContext } from "@/lib/ia/visual-context";
+import { compileLoraCaption } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
+import { buildImagePrompt } from "@/lib/ia/uzume/build-image-prompt";
+import type { VisualContext } from "@/lib/ia/escena/visual-context";
 import { planFijado } from "./lib/planes-fijados";
 
 /**

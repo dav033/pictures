@@ -1,4 +1,4 @@
-import type { ReferenceBlueprintV2 } from "../ia/reference-blueprint";
+import type { ReferenceBlueprintV2 } from "../ia/referencia/reference-blueprint";
 import { ALCANCE_POR_CATEGORIA_REFERENCIA, type AlcanceReferencia } from "../rag/taxonomy/alcance-referencia";
 import type { CompraConsolidada, PlanResuelto } from "./resuelto";
 import type { MotivoOmissionReferencia } from "./tipos";

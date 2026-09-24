@@ -1,5 +1,5 @@
-import { porcentajesMayorResto } from "./tamano-fisico";
-import type { SceneSpec } from "./scene-spec";
+import { porcentajesMayorResto } from "../escena/tamano-fisico";
+import type { SceneSpec } from "../escena/scene-spec";
 
 /**
  * Proporción y acabado de color POR ESTRUCTURA para el modelo de imagen y para

@@ -6,7 +6,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { InterruptorTema } from "@/components/ui/interruptor-tema";
-import type { Imagen, PeticionImagen, ProveedorId } from "@/lib/ia/tipos";
+import type { Imagen, PeticionImagen, ProveedorId } from "@/lib/ia/nucleo/tipos";
 import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
 
 type Prueba = {

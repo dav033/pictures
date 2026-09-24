@@ -5,7 +5,7 @@ import type { EventSearchIntent } from "../query-parser/event-search";
 import type { IntentQuery } from "../query-parser/schema";
 import type { ObservabilidadBusqueda } from "../observability/types";
 import type { CatalogAllowlist } from "../retrieval/types";
-import { llamarPythonCatalogSearch } from "@/lib/ia/python-adapter";
+import { llamarPythonCatalogSearch } from "@/lib/ia/nucleo/python-adapter";
 import { candidatoDesdePython } from "./candidato-python";
 import { coloresRealesProducto } from "@/lib/plan/colores-producto";
 import { recorrerEscalera } from "./relajacion-filtros";

@@ -14,8 +14,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import type { Pool } from "pg";
-import { crearEstadoConversacion, crearRegistroHerramientas } from "../src/lib/ia/registro-herramientas";
-import { FalloTecnicoTurnoError } from "../src/lib/ia/fallo-tecnico-turno";
+import { crearEstadoConversacion, crearRegistroHerramientas } from "../src/lib/ia/herramientas/registro-herramientas";
+import { FalloTecnicoTurnoError } from "../src/lib/ia/herramientas/fallo-tecnico-turno";
 import { uiErrorDesdeChatV1 } from "../src/lib/ia/contracts/ui-error-v1";
 import { prepararEntornoPythonFalso, SNAPSHOT_FALSO } from "./lib/resolutor-python-falso";
 
@@ -111,7 +111,7 @@ async function main(): Promise<void> {
   ok("el error llega como ui-error.v1 con acción de salida");
 
   // 4. El segundo dueño del texto de fallo técnico ya no existe.
-  const mensajesCliente = readFileSync("src/lib/ia/mensajes-cliente.ts", "utf8");
+  const mensajesCliente = readFileSync("src/lib/ia/herramientas/mensajes-cliente.ts", "utf8");
   assert.doesNotMatch(mensajesCliente, /Intentemos de nuevo en un momento/, "MENSAJE_CLIENTE_VERIFICACION_FALLIDA era un dueño paralelo a ui-error.v1");
   const rutaChat = readFileSync("src/app/api/chat/route.ts", "utf8");
   assert.match(rutaChat, /FalloTecnicoTurnoError\) return "RAG_UNAVAILABLE"/, "la ruta debe traducir el fallo técnico a un código que ui-error.v1 conozca");

@@ -17,12 +17,12 @@
  * scripts/calibrar-creatividad-gemini.ts.
  */
 import { planBlueprint } from "@/lib/plan/blueprint";
-import { buildImagePrompt } from "@/lib/ia/build-image-prompt";
-import { perfilCreatividad, type NivelCreatividad } from "@/lib/ia/creatividad";
-import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
-import { buildApprovedSceneSpec, SceneSpecSchema, type SceneSpec } from "@/lib/ia/scene-spec";
-import { bloqueMezclaPorEstructura } from "@/lib/ia/tamano-fisico";
-import { buildVisualContext, completarEscenaConPlan, type VisualContext } from "@/lib/ia/visual-context";
+import { buildImagePrompt } from "@/lib/ia/uzume/build-image-prompt";
+import { perfilCreatividad, type NivelCreatividad } from "@/lib/ia/escena/creatividad";
+import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
+import { buildApprovedSceneSpec, SceneSpecSchema, type SceneSpec } from "@/lib/ia/escena/scene-spec";
+import { bloqueMezclaPorEstructura } from "@/lib/ia/escena/tamano-fisico";
+import { buildVisualContext, completarEscenaConPlan, type VisualContext } from "@/lib/ia/escena/visual-context";
 import type { DesignMaterialEstimate } from "@/lib/materiales/estimacion";
 import { verificarCoherenciaPrompt } from "@/lib/plan/coherencia";
 import type { PlanResuelto } from "@/lib/plan/resuelto";

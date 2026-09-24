@@ -1,5 +1,5 @@
 /**
- * Offline, no network, no LLM: `planVigenteDelTurno` (src/lib/ia/registro-herramientas.ts)
+ * Offline, no network, no LLM: `planVigenteDelTurno` (src/lib/ia/herramientas/registro-herramientas.ts)
  * is the non-model evidence that decides `hayPropuestaVigente` for §7 "editar
  * una propuesta desde el chat" — it must never trust the browser's plan
  * without verifying the signed token first (signature, TTL,
@@ -34,7 +34,7 @@ function leerFixture(nombre: string): Json {
 }
 
 async function main(): Promise<void> {
-  const { planVigenteDelTurno } = await import("../src/lib/ia/registro-herramientas");
+  const { planVigenteDelTurno } = await import("../src/lib/ia/herramientas/registro-herramientas");
   const { crearTokenPlan } = await import("../src/lib/plan/aprobacion");
   const { BasePlanSchema } = await import("../src/lib/plan/edicion-esquemas");
 

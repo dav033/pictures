@@ -1,6 +1,6 @@
 /**
  * Offline checks for the chat tool `ajustar_plan_decoracion`
- * (src/lib/ia/registro-herramientas.ts) — §7 "editar una propuesta desde el
+ * (src/lib/ia/herramientas/registro-herramientas.ts) — §7 "editar una propuesta desde el
  * chat". Same fixtures, same Python transport double and the same cases
  * `scripts/test-plan-editar-python.ts` already covers for the HTTP route
  * (agregar/reemplazar/quitar, allowlist rejection, tampered token,
@@ -80,7 +80,7 @@ function seleccionAdmitida(cambios: Json): Json {
 async function main(): Promise<void> {
   const { crearTokenPlan } = await import("../src/lib/plan/aprobacion");
   const { BasePlanSchema } = await import("../src/lib/plan/edicion-esquemas");
-  const { crearEstadoConversacion, crearRegistroHerramientas, herramientasActivas } = await import("../src/lib/ia/registro-herramientas");
+  const { crearEstadoConversacion, crearRegistroHerramientas, herramientasActivas } = await import("../src/lib/ia/herramientas/registro-herramientas");
   const { AllowlistProductoVarianteError } = await import("../src/lib/plan/allowlist-producto-variante");
   const { getRagPool } = await import("../src/lib/rag/db");
   // Every tested path must stay off PostgreSQL: any query fails the test loudly.

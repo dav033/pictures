@@ -1,5 +1,5 @@
-import { ErrorIA } from "@/lib/ia/tipos";
-import { isPythonAdapterError, type PythonAdapterErrorCode } from "@/lib/ia/python-adapter";
+import { ErrorIA } from "@/lib/ia/nucleo/tipos";
+import { isPythonAdapterError, type PythonAdapterErrorCode } from "@/lib/ia/nucleo/python-adapter";
 
 /**
  * Maps a failed Next -> Python call (transport, auth, deadline) to the same

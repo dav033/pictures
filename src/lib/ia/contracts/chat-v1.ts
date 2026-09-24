@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ReferenceBlueprintV2Schema } from "@/lib/ia/reference-blueprint";
+import { ReferenceBlueprintV2Schema } from "@/lib/ia/referencia/reference-blueprint";
 import { LoraModeSlugSchema } from "@/lib/lora/schema";
 import { BasePlanSchema } from "@/lib/plan/edicion-esquemas";
 
@@ -57,7 +57,7 @@ export const ChatRequestV1Schema = z.object({
   imagenesReferencia: z.array(imageSchema).max(8).optional(),
   referenceBlueprint: ReferenceBlueprintV2Schema.optional(),
   loraMode: LoraModeSlugSchema.optional(),
-  /** Creativity calibration 0-5 chosen in the UI (see src/lib/ia/creatividad.ts); absent = default level. */
+  /** Creativity calibration 0-5 chosen in the UI (see src/lib/ia/escena/creatividad.ts); absent = default level. */
   creatividad: z.number().int().min(0).max(5).optional(),
   /**
    * The proposal the browser currently shows (§7 "editar una propuesta desde
@@ -66,7 +66,7 @@ export const ChatRequestV1Schema = z.object({
    * omits it behaves exactly as before. Never trusted at face value — the
    * server re-verifies the signed `approval_token`/`plan_hash` before
    * treating it as a real editable proposal (`planVigenteDelTurno` in
-   * src/lib/ia/registro-herramientas.ts).
+   * src/lib/ia/herramientas/registro-herramientas.ts).
    */
   planVigente: BasePlanSchema.optional(),
 }).strict();

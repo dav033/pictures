@@ -342,7 +342,7 @@ async function main(): Promise<void> {
 
   // --- Chat with an unusable LoRA pool: conversation continues, catalog tools fail closed.
   const { causaCatalogoLora, STATUS_CATALOGO_LORA_NO_DISPONIBLE } = await import("../src/lib/lora/catalogo-no-disponible");
-  const { crearEstadoConversacion, crearRegistroHerramientas } = await import("../src/lib/ia/registro-herramientas");
+  const { crearEstadoConversacion, crearRegistroHerramientas } = await import("../src/lib/ia/herramientas/registro-herramientas");
   const { construirSistema } = await import("../src/lib/ia/omoikane/prompt-sistema");
   assert.equal(causaCatalogoLora(new Error("LORA_VOCABULARY_ALLOWLIST_EMPTY: ninguna variante")), "LORA_VOCABULARY_ALLOWLIST_EMPTY");
   assert.equal(causaCatalogoLora(new Error("LORA_MODE_NOT_CONFIGURED: training_2")), "LORA_MODE_NOT_CONFIGURED");

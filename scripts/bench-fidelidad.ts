@@ -3,19 +3,19 @@ import path from "node:path";
 import { execSync } from "node:child_process";
 import sharp from "sharp";
 import { analizarReferenciasV2 } from "../src/lib/ia/amaterasu/analizar-referencias-v2";
-import { chatDe, imagenDe } from "../src/lib/ia/registro";
+import { chatDe, imagenDe } from "../src/lib/ia/nucleo/registro";
 import { coloresFotoCliente, coloresFotoParaBusqueda } from "../src/lib/plan/colores-referencia";
-import { buildImagePrompt } from "../src/lib/ia/build-image-prompt";
+import { buildImagePrompt } from "../src/lib/ia/uzume/build-image-prompt";
 import { GEMINI_COMPOSITION_HARD_LOCK, inputsParaComposicionGemini } from "../src/lib/ia/uzume/lora-gemini-composition";
-import type { ImagenEtiquetada } from "../src/lib/ia/tipos";
+import type { ImagenEtiquetada } from "../src/lib/ia/nucleo/tipos";
 import { generar, payloadDe, resolverIdentidadLora, saldo, leerEnv } from "./exp-fal-lib";
 import { prepararEspacio } from "./bench/espacio";
 import { coloresDeEscena, compilarCaption, construirEscena, estructurasDeEscena, repartirColores } from "./bench/escena";
-import { analizarVenue } from "../src/lib/ia/analizar-venue";
-import { placeStructuresInVenue, type VenuePlacementStructure } from "../src/lib/ia/venue-placement";
+import { analizarVenue } from "../src/lib/ia/amaterasu/analizar-venue";
+import { placeStructuresInVenue, type VenuePlacementStructure } from "../src/lib/ia/uzume/venue-placement";
 import { cargarCorridas, generarInforme } from "./bench/informe";
-import { featureEnabled, type FeatureFlag } from "../src/lib/ia/feature-flags";
-import { semillaDeEvaluacion } from "../src/lib/ia/lora-seed";
+import { featureEnabled, type FeatureFlag } from "../src/lib/ia/nucleo/feature-flags";
+import { semillaDeEvaluacion } from "../src/lib/ia/kagutsuchi/lora-seed";
 import type { CasoBenchmark, Corrida, FaseBenchmark, PistaColocacion, PistaColor } from "./bench/tipos";
 
 /**

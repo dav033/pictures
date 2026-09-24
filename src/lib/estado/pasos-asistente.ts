@@ -1,7 +1,7 @@
 /**
  * Pasos en vivo del asistente (maqueta ChatNormal): cada evento SSE
  * `herramienta` se traduce a una frase de cliente, sin nombres técnicos.
- * Las herramientas existentes están en src/lib/ia/registro-herramientas.ts.
+ * Las herramientas existentes están en src/lib/ia/herramientas/registro-herramientas.ts.
  */
 export type EstadoPaso = "en_curso" | "listo" | "fallido";
 export type PasoAsistente = { id: string; texto: string; estado: EstadoPaso };

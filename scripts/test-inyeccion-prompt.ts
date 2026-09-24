@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import sharp from "sharp";
 import { crearChatGemini } from "@sempertex/agente-core/gemini";
 import { analizarReferenciasV2 } from "../src/lib/ia/amaterasu/analizar-referencias-v2";
-import type { ImagenEtiquetada } from "../src/lib/ia/tipos";
+import type { ImagenEtiquetada } from "../src/lib/ia/nucleo/tipos";
 
 for (const archivo of [".env.local", ".env"]) {
   if (existsSync(archivo)) process.loadEnvFile(archivo);

@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { compilarDescriptorProductoPerceptual, assertDescriptorPerceptualSeguro } from "../src/lib/lora/descriptor-perceptual";
-import { SceneSpecSchema } from "../src/lib/ia/scene-spec";
-import { compileLoraCaption } from "../src/lib/ia/lora-caption-compiler";
-import { preflightLoraPrompt } from "../src/lib/ia/lora-prompt-preflight";
-import { buildVisualContext } from "../src/lib/ia/visual-context";
+import { SceneSpecSchema } from "../src/lib/ia/escena/scene-spec";
+import { compileLoraCaption } from "../src/lib/ia/kagutsuchi/lora-caption-compiler";
+import { preflightLoraPrompt } from "../src/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { buildVisualContext } from "../src/lib/ia/escena/visual-context";
 import { ensureLoraTriggers } from "../src/lib/ia/kagutsuchi/sempertex-lora";
 
 const concept = {

@@ -11,7 +11,7 @@
  * Any failed assertion or misconfiguration prints [FAIL] and exits 1.
  */
 import type { Pool } from "pg";
-import { isPythonAdapterError } from "../src/lib/ia/python-adapter";
+import { isPythonAdapterError } from "../src/lib/ia/nucleo/python-adapter";
 import { leerConfig, type ConfigSmoke } from "./lib/smoke-rutas/entorno";
 import type { Contexto } from "./lib/smoke-rutas/contexto";
 import { contarNonces, crearPool, snapshotsPublicados } from "./lib/smoke-rutas/evidencia-db";

@@ -43,7 +43,7 @@ async function main(): Promise<void> {
     { ordenarRecomendacionesPorColor },
     { getRagPool },
   ] = await Promise.all([
-    import("../src/lib/ia/python-adapter"),
+    import("../src/lib/ia/nucleo/python-adapter"),
     import("../src/lib/plan/aprobacion"),
     import("../src/lib/plan/resolver-backend"),
     import("../src/lib/plan/allowlist-producto-variante"),

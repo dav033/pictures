@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { ThinkingLevel } from "@google/genai";
 import type { ImagenAdjunta, Mensaje } from "@sempertex/agente-core";
-import { ErrorIA } from "@/lib/ia/tipos";
-import type { FragmentoChat, PeticionChat } from "@/lib/ia/tipos";
+import { ErrorIA } from "@/lib/ia/nucleo/tipos";
+import type { FragmentoChat, PeticionChat } from "@/lib/ia/nucleo/tipos";
 import { crearChatGeminiPython } from "./chat-python";
 
 const REQUEST_ID = "00000000-0000-4000-8000-000000000001";

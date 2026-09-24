@@ -7,7 +7,7 @@ import { Fragment, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { RotateCcw, Trash2 } from "lucide-react";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
-import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
+import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import { useBorradorCotizacion, type LineaBorrador } from "@/lib/estado/borrador-cotizacion";
 import { idsSinFoto, useImagenesCatalogo } from "@/lib/estado/imagenes-catalogo";
 import { agruparComprasCliente, paquetesCliente, partesPaquetesCliente, productoCliente, pulgadasCliente, sobranteCliente } from "@/lib/plan/presentacion-cliente";

@@ -30,7 +30,7 @@ import type { ConsultaRetrieval, FiltrosDuros } from "./types";
 import { embeberTexto } from "../embeddings";
 import type { SlotQuery } from "./slot-query-planner";
 import type { SlotCandidate } from "@/lib/scene/tipos";
-import { RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED, RAG_USE_VECTOR } from "@/lib/ia/feature-flags";
+import { RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED, RAG_USE_VECTOR } from "@/lib/ia/nucleo/feature-flags";
 
 // ---------------------------------------------------------------------------
 // Tipos de brecha (sección 9.3 / 9.4)

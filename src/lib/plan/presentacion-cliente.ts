@@ -1,9 +1,9 @@
 import { UBICACIONES, type Ubicacion } from "./composicion";
 import { esParLateral } from "./ubicaciones";
 import { ESTRUCTURAS_OFICIALES, identificarEstructuraOficial, UBICACION_PARA_CLIENTE, type EstructuraOficialId } from "./estructuras-oficiales";
-import { ambientDecorSelection, sceneryFromReference } from "@/lib/ia/reference-structure";
+import { ambientDecorSelection, sceneryFromReference } from "@/lib/ia/referencia/reference-structure";
 import { esSustitucionDeColor } from "./colores-referencia";
-import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
+import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import { clasificarAcabados, clasificarColores, HEX_COLORES_V2, type PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 
 /**

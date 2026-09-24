@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { DETECTED_DENSITIES, DETECTED_OUTLINES, DETECTED_OVERHANGS, DETECTED_POSITIONS, DETECTED_STRUCTURE_TYPES, type DetectedStructure } from "@/lib/ia/reference-structure";
+import { DETECTED_DENSITIES, DETECTED_OUTLINES, DETECTED_OVERHANGS, DETECTED_POSITIONS, DETECTED_STRUCTURE_TYPES, type DetectedStructure } from "@/lib/ia/referencia/reference-structure";
 import { FAMILIAS_V2, familiaDesdeDetectorV1 } from "./familia-v1-v2";
 
 /**

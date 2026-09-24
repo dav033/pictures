@@ -1,5 +1,5 @@
-import { guardarAjusteGlobal, proveedoresDisponibles } from "@/lib/ia/registro";
-import type { ProveedorId } from "@/lib/ia/tipos";
+import { guardarAjusteGlobal, proveedoresDisponibles } from "@/lib/ia/nucleo/registro";
+import type { ProveedorId } from "@/lib/ia/nucleo/tipos";
 import { isAuthenticatedRequest, isSameOriginRequest } from "@/lib/auth/request";
 import { z } from "zod";
 

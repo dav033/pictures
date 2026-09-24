@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { dentroDe, ejecutarCli } from "../../../src/lib/eval/estructuras/cli-reconocimiento";
-import { VARIANTES_RECONOCEDOR, type VarianteReconocedor } from "../../../src/lib/ia/reference-structure";
+import { VARIANTES_RECONOCEDOR, type VarianteReconocedor } from "../../../src/lib/ia/referencia/reference-structure";
 
 /**
  * Recognition runner CLI (Plan A §A0.3). Preview by default; spending requires
@@ -30,7 +30,7 @@ function cargarEntorno(): void {
 }
 
 async function sistemaActual(variante: VarianteReconocedor) {
-  const { chatDe } = await import("../../../src/lib/ia/registro");
+  const { chatDe } = await import("../../../src/lib/ia/nucleo/registro");
   const { analysisConfigHash, ANALYSIS_PARSER_VERSION, sistemaAnalisis } = await import("../../../src/lib/ia/amaterasu/analizar-referencias-v2");
   // Creating the port makes no request; it only reads model and thinking settings.
   const chat = await chatDe("gemini");
@@ -65,7 +65,7 @@ async function main(): Promise<void> {
     sistemaSinProveedor: () => inicial,
     crearAnalizador: async ({ raizImagenes, crudos, variante: varianteAnalizador }) => {
       // telemetria-llamadas configures Postgres persistence when imported: import it first, then disable.
-      await import("../../../src/lib/ia/telemetria-llamadas");
+      await import("../../../src/lib/ia/nucleo/telemetria-llamadas");
       const { configurarPersistenciaTelemetria } = await import("@sempertex/agente-core");
       configurarPersistenciaTelemetria(undefined);
       const { crearAnalizadorV13 } = await import("../../../src/lib/eval/estructuras/adaptador-v13");

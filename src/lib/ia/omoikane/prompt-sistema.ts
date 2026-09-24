@@ -1,9 +1,9 @@
 import type { Brief } from "@/lib/types";
-import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
+import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import { ALCANCE_POR_CATEGORIA_REFERENCIA } from "@/lib/rag/taxonomy/alcance-referencia";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import { EJEMPLO_UNIDADES_DECLARADAS, GUIA_ESTRUCTURAS_OFICIALES, identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
-import { perfilCreatividad, type NivelCreatividad, type SugerenciaEscena } from "@/lib/ia/creatividad";
+import { perfilCreatividad, type NivelCreatividad, type SugerenciaEscena } from "@/lib/ia/escena/creatividad";
 
 /**
  * Compartido por producción y los arneses de evaluación para evitar que el

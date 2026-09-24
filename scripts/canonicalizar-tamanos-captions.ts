@@ -4,7 +4,7 @@
 // "12-inch" entre captions y a veces dentro del mismo caption.
 //
 // Por qué importa, y no es cosmético: en INFERENCIA la app nunca dice "R-12". El prompt de
-// imagen se arma en src/lib/ia/tamano-fisico.ts, que traduce el SKU a pulgadas+cm antes de
+// imagen se arma en src/lib/ia/escena/tamano-fisico.ts, que traduce el SKU a pulgadas+cm antes de
 // mandarlo ("12-inch (30.5 cm) round latex balloon") justamente porque -- como dice el
 // comentario de ese archivo -- "un modelo de imagen no sabe qué es R-12". Si el LoRA se
 // entrena con captions que dicen `R-12` a secas, aprende a asociar el estilo a un token que

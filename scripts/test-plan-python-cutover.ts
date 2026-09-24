@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { abrirContextoPlan } from "../src/lib/plan/aprobacion";
-import { crearEstadoConversacion, crearRegistroHerramientas } from "../src/lib/ia/registro-herramientas";
-import { isPythonAdapterError } from "../src/lib/ia/python-adapter";
+import { crearEstadoConversacion, crearRegistroHerramientas } from "../src/lib/ia/herramientas/registro-herramientas";
+import { isPythonAdapterError } from "../src/lib/ia/nucleo/python-adapter";
 import { decidirSmoke, exigirReadyz, problemaPostgresLocal } from "./lib/python-smoke-preflight";
 
 function esObjeto(value: unknown): value is Record<string, unknown> {

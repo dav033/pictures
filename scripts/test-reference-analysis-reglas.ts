@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { analizarReferenciasV2 } from "@/lib/ia/amaterasu/analizar-referencias-v2";
-import { ReferenceBlueprintV2Schema, unidadesMaterialDeElemento, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
-import { normalizeFinishColors, tieneElementosAprobados, tieneEstructurasDeGlobos } from "@/lib/ia/reference-structure";
-import type { ChatPort, Herramienta, PeticionChat, TurnoChat } from "@/lib/ia/tipos";
+import { ReferenceBlueprintV2Schema, unidadesMaterialDeElemento, type ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
+import { normalizeFinishColors, tieneElementosAprobados, tieneEstructurasDeGlobos } from "@/lib/ia/referencia/reference-structure";
+import type { ChatPort, Herramienta, PeticionChat, TurnoChat } from "@/lib/ia/nucleo/tipos";
 
 /**
  * Deterministic normalization rules of the reference analysis (auditoría

@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { PythonAdapterError, type PythonAdapterErrorCode } from "@/lib/ia/python-adapter";
-import { ErrorIA } from "@/lib/ia/tipos";
-import type { ImageInput, PeticionImagen } from "@/lib/ia/tipos";
+import { PythonAdapterError, type PythonAdapterErrorCode } from "@/lib/ia/nucleo/python-adapter";
+import { ErrorIA } from "@/lib/ia/nucleo/tipos";
+import type { ImageInput, PeticionImagen } from "@/lib/ia/nucleo/tipos";
 import { construirInput, errorIADeAdaptador } from "./imagen-python";
 
 const REQUEST_ID = "00000000-0000-4000-8000-000000000001";

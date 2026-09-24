@@ -12,7 +12,7 @@ import { ubicarEtiquetas } from "@/components/referencia/etiquetas-analisis";
 import { lineaQuitable } from "@/lib/plan/presentacion-cliente";
 import { idsSinFoto } from "@/lib/estado/imagenes-catalogo";
 import { EstadoError, PasosAsistente } from "@/components/propuesta";
-import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
+import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 

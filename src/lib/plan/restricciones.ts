@@ -1,9 +1,9 @@
 import type { Brief } from "@/lib/types";
-import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
+import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import { ALCANCE_POR_CATEGORIA_REFERENCIA } from "@/lib/rag/taxonomy/alcance-referencia";
 import { ALIAS_COLORES_V2, type ACABADOS_CATALOGO_V2 } from "@/lib/rag/taxonomy/v2";
-import { CREATIVIDAD_POR_DEFECTO, perfilCreatividad, type NivelCreatividad } from "@/lib/ia/creatividad";
-import { tieneEstructurasDeGlobos } from "@/lib/ia/reference-structure";
+import { CREATIVIDAD_POR_DEFECTO, perfilCreatividad, type NivelCreatividad } from "@/lib/ia/escena/creatividad";
+import { tieneEstructurasDeGlobos } from "@/lib/ia/referencia/reference-structure";
 import { coloresDominantesReferencia, coloresFotoCliente } from "./colores-referencia";
 import { identificarEstructuraOficial } from "./estructuras-oficiales";
 import type { PlanDecoracion, RestriccionesUsuario, TipoEstructura } from "./tipos";

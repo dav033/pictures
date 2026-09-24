@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { VenueAnalysis } from "./analizar-venue";
+import type { VenueAnalysis } from "../amaterasu/analizar-venue";
 import { placeStructuresInVenue, type VenuePlacementStructure } from "./venue-placement";
 
 const box = (x: number, y: number, width: number, height: number) => ({ x, y, width, height });

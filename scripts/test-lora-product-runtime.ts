@@ -5,19 +5,19 @@
  * Run: npx tsx scripts/test-lora-product-runtime.ts
  *
  * No network access. No paid calls. Pure in-process assertions against
- * src/lib/ia/lora-product-runtime.ts, src/lib/ia/lora-caption-compiler.ts,
- * and src/lib/ia/lora-prompt-preflight.ts.
+ * src/lib/ia/kagutsuchi/lora-product-runtime.ts, src/lib/ia/kagutsuchi/lora-caption-compiler.ts,
+ * and src/lib/ia/kagutsuchi/lora-prompt-preflight.ts.
  */
 import assert from "node:assert/strict";
-import type { SceneSpec } from "../src/lib/ia/scene-spec";
+import type { SceneSpec } from "../src/lib/ia/escena/scene-spec";
 import { readFileSync } from "node:fs";
-import { compileLoraCaption, LORA_JSON_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH } from "../src/lib/ia/lora-caption-compiler";
-import { resolveLoraPromptFormat } from "../src/lib/ia/lora-prompt-format";
-import { ReferenceBlueprintV2Schema } from "../src/lib/ia/reference-blueprint";
-import { ambientDecorFromReference, ambientDecorName, parseDetectedStructure, referenceStructureSemantics, shapeDescription } from "../src/lib/ia/reference-structure";
-import { compileProductPrompt, sizeConfirmationsFromMaterialLines, type ElementSizeConfirmation } from "../src/lib/ia/lora-product-runtime";
-import { findLoraPromptLanguageLeaks, findLoraPromptProductLeaks, preflightLoraPrompt } from "../src/lib/ia/lora-prompt-preflight";
-import { buildVisualContext } from "../src/lib/ia/visual-context";
+import { compileLoraCaption, LORA_JSON_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH } from "../src/lib/ia/kagutsuchi/lora-caption-compiler";
+import { resolveLoraPromptFormat } from "../src/lib/ia/kagutsuchi/lora-prompt-format";
+import { ReferenceBlueprintV2Schema } from "../src/lib/ia/referencia/reference-blueprint";
+import { ambientDecorFromReference, ambientDecorName, parseDetectedStructure, referenceStructureSemantics, shapeDescription } from "../src/lib/ia/referencia/reference-structure";
+import { compileProductPrompt, sizeConfirmationsFromMaterialLines, type ElementSizeConfirmation } from "../src/lib/ia/kagutsuchi/lora-product-runtime";
+import { findLoraPromptLanguageLeaks, findLoraPromptProductLeaks, preflightLoraPrompt } from "../src/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { buildVisualContext } from "../src/lib/ia/escena/visual-context";
 import { PRODUCT_VOCABULARY } from "../src/lib/lora/product-vocabulary-data";
 import { aDescriptorPerceptual } from "../src/lib/lora/descriptor-perceptual";
 import { resolveProductConcept, VOCABULARY_VERSION, type ProductVocabulary } from "../src/lib/lora/product-vocabulary";
@@ -663,9 +663,9 @@ console.log("15. Accented catalog titles resolve and sources carry no mojibake")
   assert.ok(mojibake.test("quinceaÃ±era"), "the mojibake detector must flag UTF-8 decoded as Windows-1252");
   assert.ok(!mojibake.test("quinceañera celebración ®"), "correct UTF-8 text must not be flagged");
   const sources = [
-    "src/lib/ia/lora-prompt-preflight.ts",
-    "src/lib/ia/lora-product-runtime.ts",
-    "src/lib/ia/lora-caption-compiler.ts",
+    "src/lib/ia/kagutsuchi/lora-prompt-preflight.ts",
+    "src/lib/ia/kagutsuchi/lora-product-runtime.ts",
+    "src/lib/ia/kagutsuchi/lora-caption-compiler.ts",
     "src/lib/lora/product-vocabulary.ts",
     "src/lib/lora/product-vocabulary-data.ts",
     "src/lib/lora/product-vocabulary-catalog-data.ts",

@@ -1,12 +1,12 @@
 import { ApiError } from "@google/genai";
 import { getGeminiClient } from "@/lib/gemini";
 import { conReintento } from "@sempertex/agente-core";
-import { registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/telemetria-llamadas";
-import { RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED, RAG_USE_VECTOR } from "@/lib/ia/feature-flags";
+import { registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/nucleo/telemetria-llamadas";
+import { RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED, RAG_USE_VECTOR } from "@/lib/ia/nucleo/feature-flags";
 import {
   isPythonAdapterError,
   llamarPythonEmbedding,
-} from "@/lib/ia/python-adapter";
+} from "@/lib/ia/nucleo/python-adapter";
 import { sha256Body } from "@/lib/ia/contracts/operational-v1";
 
 export const MODELO_EMBEDDING = "gemini-embedding-2";

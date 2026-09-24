@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { PythonAdapterError, type PythonAdapterErrorCode } from "@/lib/ia/python-adapter";
-import { ErrorIA } from "@/lib/ia/tipos";
-import { errorIADeTransportePython as errorIADeAdaptador } from "@/lib/ia/error-ia-python";
+import { PythonAdapterError, type PythonAdapterErrorCode } from "@/lib/ia/nucleo/python-adapter";
+import { ErrorIA } from "@/lib/ia/nucleo/tipos";
+import { errorIADeTransportePython as errorIADeAdaptador } from "@/lib/ia/nucleo/error-ia-python";
 import { crearChatTurnoPython } from "./chat-python";
 
 const REQUEST_ID = "00000000-0000-4000-8000-000000000001";

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { sugerenciaEscenaDelTurno } from "../src/lib/ia/sugerencia-escena-chat";
+import { sugerenciaEscenaDelTurno } from "../src/lib/ia/herramientas/sugerencia-escena-chat";
 
 /**
  * /api/chat scene suggestion at creativity 4-5: a venue photo attached to the

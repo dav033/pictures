@@ -361,7 +361,7 @@ async function main(): Promise<void> {
     if (args.includes("--run")) {
       // Sin proveedor real: mismo patrón que scripts/bench-rag-v2.ts --no-key.
       // Solo sirven los interruptores que search.ts lee EN CADA LLAMADA: las
-      // constantes de src/lib/ia/feature-flags.ts (RAG_USE_VECTOR,
+      // constantes de src/lib/ia/nucleo/feature-flags.ts (RAG_USE_VECTOR,
       // RAG_RERANK_ENABLED, ...) ya se evaluaron al importar este módulo, así
       // que asignarlas aquí no tendría efecto. GEMINI_API_KEY vacía anula el
       // embedding de consulta vía Gemini; sin PYTHON_BACKEND_URL el adaptador

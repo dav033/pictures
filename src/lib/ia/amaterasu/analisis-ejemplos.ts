@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import analisisEjemplos from "./analisis-ejemplos.json";
 import type { AnalisisV2Resultado } from "./analizar-referencias-v2";
-import type { ImagenEtiquetada } from "@/lib/ia/tipos";
+import type { ImagenEtiquetada } from "@/lib/ia/nucleo/tipos";
 
 /**
  * Reviewed analyses of the 10 gallery photos (`public/referencias-ejemplo/`).

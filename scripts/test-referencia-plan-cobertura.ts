@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { construirSistema, serializeReferenceBlueprint } from "@/lib/ia/omoikane/prompt-sistema";
-import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
+import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import { construirCoberturaReferencia } from "@/lib/plan/desglose";
 import { validarCoberturaReferencia } from "@/lib/plan/restricciones";
 import { PlanDecoracionSchema, type PlanDecoracion } from "@/lib/plan/tipos";

@@ -1,4 +1,4 @@
-import type { DetectedStructure } from "@/lib/ia/reference-structure";
+import type { DetectedStructure } from "@/lib/ia/referencia/reference-structure";
 
 /**
  * Step 1 of Fundamentos §4.7: detector v1 `structure_type` → `familia` v2.

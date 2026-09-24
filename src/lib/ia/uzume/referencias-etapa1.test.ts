@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { MAX_REFERENCIAS_ETAPA1, referenciasParaEtapa1Hibrida } from "./referencias-etapa1";
-import type { ImageInput } from "./tipos";
+import type { ImageInput } from "../nucleo/tipos";
 
 const entrada = (role: ImageInput["role"], priority: number, id: string = role): ImageInput =>
   ({ id, mime: "image/jpeg", base64: "", descripcion: id, role, priority, allowed_use: "" }) as ImageInput;

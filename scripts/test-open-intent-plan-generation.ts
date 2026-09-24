@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { buildImagePrompt } from "../src/lib/ia/build-image-prompt";
-import { buildVisualContext, buildVisualSceneLock } from "../src/lib/ia/visual-context";
+import { buildImagePrompt } from "../src/lib/ia/uzume/build-image-prompt";
+import { buildVisualContext, buildVisualSceneLock } from "../src/lib/ia/escena/visual-context";
 import { parseEventIntent } from "../src/lib/rag/query-parser/parse-event";
 import { expandIntentToProgram, selectSceneRecipeId } from "../src/lib/scene/recipes";
-import type { SceneSpec } from "../src/lib/ia/scene-spec";
+import type { SceneSpec } from "../src/lib/ia/escena/scene-spec";
 import { extraerRestriccionesUsuario, validarCardinalidadEventoAbierto, validarRestriccionesPlan } from "../src/lib/plan/restricciones";
 import { PlanDecoracionSchema } from "../src/lib/plan/tipos";
 

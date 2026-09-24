@@ -1,5 +1,5 @@
 import "server-only";
-import { llamarPythonPlanResolution } from "@/lib/ia/python-adapter";
+import { llamarPythonPlanResolution } from "@/lib/ia/nucleo/python-adapter";
 import type { DesignMaterialEstimate } from "@/lib/materiales/estimacion";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";

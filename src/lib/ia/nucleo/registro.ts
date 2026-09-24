@@ -3,7 +3,7 @@ import { ThinkingLevel } from "@google/genai";
 import { guardarMeta, obtenerMeta } from "@/lib/db";
 import { ErrorIA } from "./tipos";
 import type { ChatPort, ImagenPort, ProveedorId } from "./tipos";
-import { CHAT_PYTHON_ENABLED, GEMINI_IMAGE_PYTHON_ENABLED } from "@/lib/ia/feature-flags";
+import { CHAT_PYTHON_ENABLED, GEMINI_IMAGE_PYTHON_ENABLED } from "@/lib/ia/nucleo/feature-flags";
 
 const CLAVE_META = "ia_proveedor";
 
@@ -81,7 +81,7 @@ export async function chatDe(id: ProveedorId): Promise<ChatPort> {
  */
 export async function chatOmoikaneDe(id: ProveedorId, ids: { requestId: string; correlationId: string }): Promise<ChatPort> {
   if (CHAT_PYTHON_ENABLED) {
-    const { crearChatGeminiPython } = await import("./omoikane/chat-python");
+    const { crearChatGeminiPython } = await import("../omoikane/chat-python");
     return crearChatGeminiPython({ ...ids, thinkingLevel: thinkingLevelDeChatDesdeEnv() });
   }
   return chatDe(id);
@@ -94,9 +94,9 @@ export async function imagenDe(id: ProveedorId): Promise<ImagenPort> {
   // para generación de imagen (generate/route.ts y laboratorio-referencias),
   // así que el flag vive aquí en vez de duplicarse en cada llamador.
   if (GEMINI_IMAGE_PYTHON_ENABLED) {
-    const { crearImagenGeminiPython } = await import("./uzume/imagen-python");
+    const { crearImagenGeminiPython } = await import("../uzume/imagen-python");
     return crearImagenGeminiPython();
   }
-  const { crearImagenGemini } = await import("./uzume/imagen");
+  const { crearImagenGemini } = await import("../uzume/imagen");
   return crearImagenGemini();
 }

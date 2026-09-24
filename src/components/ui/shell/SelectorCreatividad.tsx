@@ -2,7 +2,7 @@
 
 import * as SelectPrimitive from "@radix-ui/react-select";
 import { Check, ChevronDown } from "lucide-react";
-import { NIVELES_CREATIVIDAD, parseNivelCreatividad, perfilCreatividad, type NivelCreatividad } from "@/lib/ia/creatividad";
+import { NIVELES_CREATIVIDAD, parseNivelCreatividad, perfilCreatividad, type NivelCreatividad } from "@/lib/ia/escena/creatividad";
 
 type Props = {
   valor: NivelCreatividad;
@@ -12,7 +12,7 @@ type Props = {
 /**
  * Creatividad compacta de la cabecera: desplegable accesible (Radix Select,
  * teclado y lector de pantalla) con los mismos niveles 0–5 de
- * src/lib/ia/creatividad.ts. El disparador muestra solo el nombre del nivel;
+ * src/lib/ia/escena/creatividad.ts. El disparador muestra solo el nombre del nivel;
  * cada opción suma su descripción de una línea.
  */
 export function SelectorCreatividad({ valor, onCambiar }: Props) {

@@ -1,5 +1,5 @@
-import type { ReferenceElement, ReferenceBBox } from "./reference-blueprint";
-import type { VenueAnalysis } from "./analizar-venue";
+import type { ReferenceElement, ReferenceBBox } from "../referencia/reference-blueprint";
+import type { VenueAnalysis } from "../amaterasu/analizar-venue";
 
 export type VenuePlacementStructure = Pick<ReferenceElement, "element_id" | "category" | "scene_role" | "reference_bbox" | "visual_semantics" | "approved" | "include_policy">;
 export type PlacementBox = ReferenceBBox;

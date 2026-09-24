@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { LORA_PROMPT_FORMATS } from "@/lib/ia/lora-prompt-format";
+import { LORA_PROMPT_FORMATS } from "@/lib/ia/kagutsuchi/lora-prompt-format";
 import {
   ETIQUETA_FORMATO_PROMPT,
   esSeleccionFormatoPrompt,

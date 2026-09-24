@@ -1,4 +1,4 @@
-import type { SceneSpec } from "./scene-spec";
+import type { SceneSpec } from "../escena/scene-spec";
 import type { LoraVisualClause } from "./lora-caption-compiler";
 import { LORA_PROMPT_MAX_LENGTH, translateLoraColor } from "./lora-caption-compiler";
 import type { ProductVocabulary } from "@/lib/lora/product-vocabulary";

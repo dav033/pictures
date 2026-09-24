@@ -1,21 +1,21 @@
 /**
- * Creativity calibration 0-5 (src/lib/ia/creatividad.ts): one table read by
+ * Creativity calibration 0-5 (src/lib/ia/escena/creatividad.ts): one table read by
  * the chat, the plan validation and the LoRA generation.
  * Run: npx tsx --conditions=react-server scripts/test-creatividad.ts
  */
 import assert from "node:assert/strict";
-import { CREATIVIDAD_POR_DEFECTO, NIVELES_CREATIVIDAD, nivelCreatividadParaGenerar, parseNivelCreatividad, perfilCreatividad } from "../src/lib/ia/creatividad";
+import { CREATIVIDAD_POR_DEFECTO, NIVELES_CREATIVIDAD, nivelCreatividadParaGenerar, parseNivelCreatividad, perfilCreatividad } from "../src/lib/ia/escena/creatividad";
 import { abrirContextoPlan, crearTokenPlan, verificarTokenAprobacion } from "../src/lib/plan/aprobacion";
 import { bloqueCreatividad, construirSistema } from "../src/lib/ia/omoikane/prompt-sistema";
 import { ChatRequestV1Schema, parseChatRequestV1 } from "../src/lib/ia/contracts/chat-v1";
 import { guidanceScaleSeguro } from "../src/lib/ia/kagutsuchi/sempertex-lora";
-import { ReferenceBlueprintV2Schema } from "../src/lib/ia/reference-blueprint";
+import { ReferenceBlueprintV2Schema } from "../src/lib/ia/referencia/reference-blueprint";
 import { validarEstructurasFueraDeReferencia, validarRangoCreatividad } from "../src/lib/plan/restricciones";
 import { PlanDecoracionSchema } from "../src/lib/plan/tipos";
-import { compileLoraCaption } from "../src/lib/ia/lora-caption-compiler";
-import { findLoraPromptLanguageLeaks } from "../src/lib/ia/lora-prompt-preflight";
-import { buildVisualContext } from "../src/lib/ia/visual-context";
-import type { SceneSpec } from "../src/lib/ia/scene-spec";
+import { compileLoraCaption } from "../src/lib/ia/kagutsuchi/lora-caption-compiler";
+import { findLoraPromptLanguageLeaks } from "../src/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { buildVisualContext } from "../src/lib/ia/escena/visual-context";
+import type { SceneSpec } from "../src/lib/ia/escena/scene-spec";
 
 let casos = 0;
 function ok(nombre: string): void {

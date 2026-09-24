@@ -34,8 +34,8 @@ const poolVacio = { query: async () => ({ rows: [] }) } as unknown as Pool;
 (globalThis as { __ragPool?: Pool }).__ragPool = poolVacio;
 
 async function main(): Promise<void> {
-  const { crearEstadoConversacion, crearRegistroHerramientas } = await import("../src/lib/ia/registro-herramientas");
-  const { ReferenceBlueprintV2Schema } = await import("../src/lib/ia/reference-blueprint");
+  const { crearEstadoConversacion, crearRegistroHerramientas } = await import("../src/lib/ia/herramientas/registro-herramientas");
+  const { ReferenceBlueprintV2Schema } = await import("../src/lib/ia/referencia/reference-blueprint");
   const { PlanDecoracionSchema } = await import("../src/lib/plan/tipos");
   const { detectarJergaInterna } = await import("../src/lib/ia/omoikane/jerga-interna");
   const { construirSistema } = await import("../src/lib/ia/omoikane/prompt-sistema");
@@ -44,7 +44,7 @@ async function main(): Promise<void> {
   const coloresReferencia = await import("../src/lib/plan/colores-referencia");
   const restricciones = await import("../src/lib/plan/restricciones");
   type ProductoCandidato = import("../src/lib/rag/chat/buscar").ProductoCandidato;
-  type Blueprint = import("../src/lib/ia/reference-blueprint").ReferenceBlueprintV2;
+  type Blueprint = import("../src/lib/ia/referencia/reference-blueprint").ReferenceBlueprintV2;
 
   const elemento = (id: string, name: string, category: string, colores: string[], approved = true) => ({
     element_id: id, source_image_id: "REF_01", name, category,
@@ -196,8 +196,8 @@ async function main(): Promise<void> {
   // ---------------------------------------------------------------------------
   // D2 + D3: the final text of a turn.
   const texto = await import("../src/lib/ia/omoikane/texto-final-turno");
-  type Mensaje = import("../src/lib/ia/tipos").Mensaje;
-  const { mensajeClienteSinCobertura, mensajeClienteRestricciones } = await import("../src/lib/ia/mensajes-cliente");
+  type Mensaje = import("../src/lib/ia/nucleo/tipos").Mensaje;
+  const { mensajeClienteSinCobertura, mensajeClienteRestricciones } = await import("../src/lib/ia/herramientas/mensajes-cliente");
   const sinCobertura = mensajeClienteSinCobertura([{ estructura_id: "EST_01", tamano: "R-24" }], new Map([["EST_01", "Arco asimétrico"]]));
   const historialSinCobertura: Mensaje[] = [
     { rol: "usuario", texto: "Quiero decorar los 40 de mi esposo en azul y plateado" },
@@ -236,7 +236,7 @@ async function main(): Promise<void> {
 
   // Through the chat wrapper: a model that ends with "" or with a false claim.
   const { ejecutarConversacionStream } = await import("../src/lib/ia/omoikane/ejecutar");
-  type ChatPort = import("../src/lib/ia/tipos").ChatPort;
+  type ChatPort = import("../src/lib/ia/nucleo/tipos").ChatPort;
   const chatQueResponde = (respuesta: string): ChatPort => ({
     id: "gemini",
     modelo: "falso",

@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import type { SceneSpec } from "../src/lib/ia/scene-spec";
-import { compileLoraCaption, translateLoraColor } from "../src/lib/ia/lora-caption-compiler";
-import { findLoraPromptLanguageLeaks, preflightLoraPrompt } from "../src/lib/ia/lora-prompt-preflight";
-import { buildVisualContext } from "../src/lib/ia/visual-context";
+import type { SceneSpec } from "../src/lib/ia/escena/scene-spec";
+import { compileLoraCaption, translateLoraColor } from "../src/lib/ia/kagutsuchi/lora-caption-compiler";
+import { findLoraPromptLanguageLeaks, preflightLoraPrompt } from "../src/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { buildVisualContext } from "../src/lib/ia/escena/visual-context";
 
 type ElementOptions = {
   id: string;

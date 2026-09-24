@@ -1,6 +1,6 @@
 import type { GenerarEstructurado, RegistrarTelemetriaRecomendacion } from "@sempertex/happie-package-ia";
 import type { FlujoIA } from "@sempertex/agente-core";
-import { HAPPIE_PYTHON_ENABLED } from "@/lib/ia/feature-flags";
+import { HAPPIE_PYTHON_ENABLED } from "@/lib/ia/nucleo/feature-flags";
 import { generadorHappiePython } from "./generador-python";
 import { idsDeSolicitud, telemetriaRecomendacion } from "./telemetria";
 

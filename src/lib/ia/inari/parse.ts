@@ -3,10 +3,10 @@ import { z } from "zod";
 import { getGeminiClient, MODELO_CHAT } from "@/lib/gemini";
 import { interpretarConsultaDeterminista, mergeGeminiIntent, type DeterministicParse } from "@/lib/rag/query-parser/deterministic";
 import { IntentQuerySchema, type IntentQuery } from "@/lib/rag/query-parser/schema";
-import { idsTelemetria, registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/telemetria-llamadas";
-import { INTENT_PARSER_PYTHON_ENABLED } from "@/lib/ia/feature-flags";
-import { isPythonAdapterError, llamarPythonIntentParse } from "@/lib/ia/python-adapter";
-import { esquemaRaizParaGoogle } from "@/lib/ia/esquema-google";
+import { idsTelemetria, registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/nucleo/telemetria-llamadas";
+import { INTENT_PARSER_PYTHON_ENABLED } from "@/lib/ia/nucleo/feature-flags";
+import { isPythonAdapterError, llamarPythonIntentParse } from "@/lib/ia/nucleo/python-adapter";
+import { esquemaRaizParaGoogle } from "@/lib/ia/nucleo/esquema-google";
 
 const JSON_SCHEMA = z.toJSONSchema(IntentQuerySchema, { target: "draft-7" });
 

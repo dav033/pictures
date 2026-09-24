@@ -3,7 +3,7 @@ import { crearChatGemini } from "@sempertex/agente-core/gemini";
 import { ejecutarConversacion, type ResultadoConversacion } from "../src/lib/ia/omoikane/ejecutar";
 import { construirSistema } from "../src/lib/ia/omoikane/prompt-sistema";
 import type { Brief } from "../src/lib/types";
-import type { Mensaje as MensajeIA } from "../src/lib/ia/tipos";
+import type { Mensaje as MensajeIA } from "../src/lib/ia/nucleo/tipos";
 
 // El .env se carga con `--env-file` en el comando npm (rag:eval-chat), NO con
 // process.loadEnvFile aquí: este script importa ejecutar.ts, que importa

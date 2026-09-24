@@ -13,7 +13,7 @@ import {
 } from "../src/lib/ia/contracts/ui-error-v1";
 import { ErrorCodeV1Schema } from "../src/lib/ia/contracts/chat-v1";
 import { clasificarErrorServidor, traducirErrorServidor } from "../src/lib/errores-ui/traducir-error-servidor";
-import { ErrorIA } from "../src/lib/ia/tipos";
+import { ErrorIA } from "../src/lib/ia/nucleo/tipos";
 import { PlanEditError } from "../src/lib/plan/edicion-error";
 import { PlanBackendNoDisponibleError } from "../src/lib/plan/resolver-backend";
 import { AllowlistProductoVarianteError } from "../src/lib/plan/allowlist-producto-variante";

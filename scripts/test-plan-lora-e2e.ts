@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { planBlueprint } from "@/lib/plan/blueprint";
-import { buildApprovedSceneSpec } from "@/lib/ia/scene-spec";
+import { buildApprovedSceneSpec } from "@/lib/ia/escena/scene-spec";
 import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
-import { buildVisualContext } from "@/lib/ia/visual-context";
-import { compileLoraCaption } from "@/lib/ia/lora-caption-compiler";
-import { preflightLoraPrompt } from "@/lib/ia/lora-prompt-preflight";
+import { buildVisualContext } from "@/lib/ia/escena/visual-context";
+import { compileLoraCaption } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
+import { preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { planFijadoDesdeVector } from "./lib/vectores-golden";
 
 /**

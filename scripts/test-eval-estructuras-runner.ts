@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { parseDetectedStructure } from "../src/lib/ia/reference-structure";
+import { parseDetectedStructure } from "../src/lib/ia/referencia/reference-structure";
 import { SupuestoTokensSchema, TablaPreciosSchema } from "../src/lib/eval/estructuras/costo";
 import { claveCorrida, ejecutarCorrida, planificarCorrida, type Analizador, type ConfiguracionRunner, type ItemSuite } from "../src/lib/eval/estructuras/runner";
 import type { PrediccionEstructurasV1 } from "../src/lib/eval/estructuras/prediccion";

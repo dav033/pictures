@@ -4,7 +4,7 @@ import {
   parseEchoPayload,
   pythonErrorBody,
   PythonAdapterError,
-} from "@/lib/ia/python-adapter";
+} from "@/lib/ia/nucleo/python-adapter";
 import {
   leerContextoOperativo,
   sha256Body,

@@ -1,8 +1,8 @@
-import { buildImagePrompt } from "@/lib/ia/build-image-prompt";
-import { imagenDe, resolverProveedor } from "@/lib/ia/registro";
-import { buildApprovedSceneSpec } from "@/lib/ia/scene-spec";
-import { ErrorIA, type Imagen, type ImagenEtiquetada, type PeticionImagen, type ProveedorId } from "@/lib/ia/tipos";
-import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
+import { buildImagePrompt } from "@/lib/ia/uzume/build-image-prompt";
+import { imagenDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
+import { buildApprovedSceneSpec } from "@/lib/ia/escena/scene-spec";
+import { ErrorIA, type Imagen, type ImagenEtiquetada, type PeticionImagen, type ProveedorId } from "@/lib/ia/nucleo/tipos";
+import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 
 export const maxDuration = 120;
 

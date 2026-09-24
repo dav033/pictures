@@ -51,7 +51,7 @@ function ok(nombre: string): void {
 
 async function main(): Promise<void> {
   const { mezclasCompatiblesConDiametros } = await import("../src/lib/plan/mezclas");
-  const { coberturaPorProducto, crearEstadoConversacion, crearRegistroHerramientas } = await import("../src/lib/ia/registro-herramientas");
+  const { coberturaPorProducto, crearEstadoConversacion, crearRegistroHerramientas } = await import("../src/lib/ia/herramientas/registro-herramientas");
   const { detectarJergaInterna } = await import("../src/lib/ia/omoikane/jerga-interna");
   type ProductoCandidato = import("../src/lib/rag/chat/buscar").ProductoCandidato;
 
@@ -66,7 +66,7 @@ async function main(): Promise<void> {
   // 1b. W3.5: lo que la descripción de `mezcla` le recomienda al modelo tiene
   //     que ser lo que el resolver puede cubrir (sustitucionAdmisible), o el
   //     plan sale directo a SIN_COBERTURA.
-  const { HERRAMIENTAS_PLAN: herramientasPlan } = await import("../src/lib/ia/herramientas");
+  const { HERRAMIENTAS_PLAN: herramientasPlan } = await import("../src/lib/ia/herramientas/herramientas");
   const descripcionMezcla = String((herramientasPlan[0]!.esquema as { properties: { estructuras: { items: { properties: Record<string, { description?: string }> } } } }).properties.estructuras.items.properties.mezcla!.description);
   const recomendaciones = [
     { diametros: [5, 9, 12, 18], mezcla: "organica_fina" as const, organicaFina: true },
@@ -193,7 +193,7 @@ async function main(): Promise<void> {
 
   // 5. W3.2: ruido de redondeo de las participaciones y rol principal coherente
   //    con la participación, antes de que el esquema gaste un rechazo.
-  const { normalizarParticipacionesPlan } = await import("../src/lib/ia/registro-herramientas");
+  const { normalizarParticipacionesPlan } = await import("../src/lib/ia/herramientas/registro-herramientas");
   const conMateriales = (materiales: Array<Record<string, unknown>>) => ({
     estructuras: [{ estructura_id: "EST_01_ARCO", materiales }],
   });
@@ -220,7 +220,7 @@ async function main(): Promise<void> {
   ]));
   assert.deepEqual((rolInvertido.args.estructuras as Array<{ materiales: Array<{ rol_material: string }> }>)[0]!.materiales.map((material) => material.rol_material), ["secundario", "principal"]);
   assert.deepEqual(rolInvertido.ajustes, [{ tipo: "rol_principal_reasignado", estructura_id: "EST_01_ARCO", product_id: "B" }]);
-  const { HERRAMIENTAS_PLAN } = await import("../src/lib/ia/herramientas");
+  const { HERRAMIENTAS_PLAN } = await import("../src/lib/ia/herramientas/herramientas");
   const materialPlan = (HERRAMIENTAS_PLAN[0]!.esquema as { properties: { estructuras: { items: { properties: { materiales: { items: { properties: Record<string, { description?: string; minimum?: number }> } } } } } } }).properties.estructuras.items.properties.materiales.items.properties;
   assert.match(String(materialPlan.participacion!.description), /suman exactamente 1/);
   assert.match(String(materialPlan.rol_material!.description), /principal = el material con mayor participacion/);
@@ -340,7 +340,7 @@ async function main(): Promise<void> {
   //    MORADOS, así que la regla 1 no disparaba y el plan cotizaba globos
   //    violeta como "morado", con ese color en la cotización y en el prompt.
   const { coloresRealesVariante } = await import("../src/lib/plan/colores-producto");
-  const { disponibilidadDelTurno } = await import("../src/lib/ia/convergencia-plan");
+  const { disponibilidadDelTurno } = await import("../src/lib/ia/herramientas/convergencia-plan");
   assert.deepEqual(coloresRealesVariante("Globo Latex Redondo Fashion Violeta", ["violeta"], ["violeta", "morado"]), ["violeta"]);
   assert.deepEqual(coloresRealesVariante("Globo Latex Redondo Fashion Merlot", [], ["rojo", "burdeos"]), ["rojo", "burdeos"], "sin colores de variante se conserva el conjunto del producto, nunca vacío");
   assert.deepEqual(coloresRealesVariante("Globo Latex Redondo Fashion Gris", [], ["plateado"]), ["gris"], "la corrección de gris sigue aplicando");

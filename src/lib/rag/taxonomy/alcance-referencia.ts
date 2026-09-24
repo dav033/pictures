@@ -1,4 +1,4 @@
-import type { ReferenceElement } from "@/lib/ia/reference-blueprint";
+import type { ReferenceElement } from "@/lib/ia/referencia/reference-blueprint";
 import { CATEGORIAS_CATALOGO_V2, type CategoriaCatalogoV2 } from "./v2";
 
 export type AlcanceReferencia = "cubierto" | "parcial" | "emulable" | "fuera_de_catalogo";

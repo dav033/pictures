@@ -1,6 +1,6 @@
 import type { Brief, ChatMessage } from "@/lib/types";
-import { sugerenciaEscena, type NivelCreatividad, type SugerenciaEscena } from "./creatividad";
-import { escenaEspecificada } from "./visual-context";
+import { sugerenciaEscena, type NivelCreatividad, type SugerenciaEscena } from "../escena/creatividad";
+import { escenaEspecificada } from "../escena/visual-context";
 
 /**
  * Scene suggestion for one /api/chat turn. Only the customer's messages count

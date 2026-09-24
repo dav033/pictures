@@ -1,15 +1,15 @@
-import { AMBIENTACION_IMAGEN, perfilCreatividad, type AmbientacionImagen, type NivelCreatividad } from "./creatividad";
+import { AMBIENTACION_IMAGEN, perfilCreatividad, type AmbientacionImagen, type NivelCreatividad } from "../escena/creatividad";
 import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { describirMezclaDeColor, mezclaDeColorDeEstructura } from "./mezcla-color-escena";
-import { tableSupportedElements, type SceneryElement, type SceneSpec } from "./scene-spec";
-import { buildLoraImagePromptV2, compileLoraCaption, GROUPING_ONLY_CONTEXT, type LoraVisualClause } from "./lora-caption-compiler";
+import { tableSupportedElements, type SceneryElement, type SceneSpec } from "../escena/scene-spec";
+import { buildLoraImagePromptV2, compileLoraCaption, GROUPING_ONLY_CONTEXT, type LoraVisualClause } from "../kagutsuchi/lora-caption-compiler";
 import { findSeparateSidePieces } from "./separate-side-pieces";
 import {
   buildPositiveEnvironmentCues,
   buildVisualFailureConditions,
   buildVisualSceneLock,
   type VisualContext,
-} from "./visual-context";
+} from "../escena/visual-context";
 
 export type PromptImageInput = {
   image_id: string;

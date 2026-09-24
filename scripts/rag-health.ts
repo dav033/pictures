@@ -167,7 +167,7 @@ async function checkEmbeddingProvenance(): Promise<Resultado> {
 }
 
 async function checkPythonQueryEmbeddings(): Promise<Resultado> {
-  const { RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED, RAG_USE_VECTOR } = await import("../src/lib/ia/feature-flags");
+  const { RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED, RAG_USE_VECTOR } = await import("../src/lib/ia/nucleo/feature-flags");
   if (!RAG_USE_VECTOR || !RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED) {
     return {
       nombre: "Python query embeddings",

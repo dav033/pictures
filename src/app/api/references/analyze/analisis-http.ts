@@ -1,5 +1,5 @@
 import type { AnalisisV2Resultado } from "@/lib/ia/amaterasu/analizar-referencias-v2";
-import { ErrorIA, type Imagen, type ImagenEtiquetada, type ProveedorId } from "@/lib/ia/tipos";
+import { ErrorIA, type Imagen, type ImagenEtiquetada, type ProveedorId } from "@/lib/ia/nucleo/tipos";
 import { traducirErrorServidor } from "@/lib/errores-ui/traducir-error-servidor";
 import type { UiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 

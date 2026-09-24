@@ -6,9 +6,9 @@
  * Run: npx tsx --conditions=react-server scripts/test-creatividad-imagen.ts
  */
 import assert from "node:assert/strict";
-import { AMBIENTACION_IMAGEN, esAmbientacionPermitida, NIVELES_CREATIVIDAD, perfilCreatividad, type NivelCreatividad } from "../src/lib/ia/creatividad";
-import { FINAL_OUTPUT_REMINDER, promptElementName } from "../src/lib/ia/build-image-prompt";
-import { buildVisualContext } from "../src/lib/ia/visual-context";
+import { AMBIENTACION_IMAGEN, esAmbientacionPermitida, NIVELES_CREATIVIDAD, perfilCreatividad, type NivelCreatividad } from "../src/lib/ia/escena/creatividad";
+import { FINAL_OUTPUT_REMINDER, promptElementName } from "../src/lib/ia/uzume/build-image-prompt";
+import { buildVisualContext } from "../src/lib/ia/escena/visual-context";
 import { ESCENARIOS, promptParaNivel, resolverEscenario } from "./lib/calibracion-creatividad";
 
 let casos = 0;

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
-import { VisualSemanticsSchema } from "./lora-semantics";
+import { VisualSemanticsSchema } from "../escena/lora-semantics";
 import {
   CatalogVisualDescriptorSchema,
   PhysicalFormSchema,
@@ -8,7 +8,7 @@ import {
   QuantitySemanticsSchema,
   SceneAnchorSchema,
   SceneElementKindSchema,
-} from "./scene-visual-contract";
+} from "../escena/scene-visual-contract";
 
 const texto = (max: number) => z.string().trim().min(1).max(max);
 

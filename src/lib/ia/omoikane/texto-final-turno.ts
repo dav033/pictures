@@ -1,4 +1,4 @@
-import type { Mensaje } from "@/lib/ia/tipos";
+import type { Mensaje } from "@/lib/ia/nucleo/tipos";
 
 /**
  * Final customer text of a chat turn (E2E 2026-09-15). Two regressions:

@@ -1,8 +1,8 @@
-import type { SceneElement, SceneSpec } from "./scene-spec";
-import { buildLoraEnvironmentCues, type VisualContext } from "./visual-context";
+import type { SceneElement, SceneSpec } from "../escena/scene-spec";
+import { buildLoraEnvironmentCues, type VisualContext } from "../escena/visual-context";
 import { clasificarColores, PALETA_COLORES_EN_V2 } from "@/lib/rag/taxonomy/v2";
-import type { LoraDensity, LoraDesignRole, LoraPlacement, LoraStructureType, VisualSemantics } from "./lora-semantics";
-import type { PhysicalForm, PhysicalRelation, SceneElementKind, QuantitySemantics } from "./scene-visual-contract";
+import type { LoraDensity, LoraDesignRole, LoraPlacement, LoraStructureType, VisualSemantics } from "../escena/lora-semantics";
+import type { PhysicalForm, PhysicalRelation, SceneElementKind, QuantitySemantics } from "../escena/scene-visual-contract";
 import { identificarEstructuraOficial, type EstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 
 export const LORA_CAPTION_COMPILER_VERSION = "lora-caption-v2.6-compact-budget" as const;
@@ -34,7 +34,7 @@ type CaptionStructureType = LoraStructureType | "bouquet";
 
 /**
  * A single element's resolved canonical product concept, supplied by the
- * caller (see src/lib/ia/lora-product-runtime.ts). This is the ONLY channel
+ * caller (see src/lib/ia/kagutsuchi/lora-product-runtime.ts). This is the ONLY channel
  * through which product identity can override the legacy color/finish
  * translation for an element — the compiler never resolves concepts itself
  * and never receives or renders a `concept_id`, only the already-rendered

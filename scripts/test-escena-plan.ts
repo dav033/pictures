@@ -1,21 +1,21 @@
 /**
  * Creativity -> image: the venue and time of day recorded in the approved plan
  * reach the visual context and the LoRA prompt of /api/generate, only where the
- * customer left them open (src/lib/ia/visual-context.ts completarEscenaConPlan).
+ * customer left them open (src/lib/ia/escena/visual-context.ts completarEscenaConPlan).
  * Run: npx tsx --conditions=react-server scripts/test-escena-plan.ts
  */
 import assert from "node:assert/strict";
-import type { NivelCreatividad } from "../src/lib/ia/creatividad";
-import { compileLoraCaption } from "../src/lib/ia/lora-caption-compiler";
-import { findLoraPromptLanguageLeaks } from "../src/lib/ia/lora-prompt-preflight";
-import { SceneSpecSchema } from "../src/lib/ia/scene-spec";
+import type { NivelCreatividad } from "../src/lib/ia/escena/creatividad";
+import { compileLoraCaption } from "../src/lib/ia/kagutsuchi/lora-caption-compiler";
+import { findLoraPromptLanguageLeaks } from "../src/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { SceneSpecSchema } from "../src/lib/ia/escena/scene-spec";
 import {
   buildLoraEnvironmentCues,
   buildVisualContext,
   buildVisualFailureConditions,
   buildVisualSceneLock,
   completarEscenaConPlan,
-} from "../src/lib/ia/visual-context";
+} from "../src/lib/ia/escena/visual-context";
 import { PlanDecoracionSchema } from "../src/lib/plan/tipos";
 import type { Brief } from "../src/lib/types";
 

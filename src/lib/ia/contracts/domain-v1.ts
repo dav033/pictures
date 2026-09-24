@@ -14,8 +14,8 @@ import {
   InternalRequestSignatureV1Schema,
   OperationalContextV1Schema,
 } from "./operational-v1";
-import { ReferenceBlueprintV2Schema } from "@/lib/ia/reference-blueprint";
-import { SceneSpecSchema } from "@/lib/ia/scene-spec";
+import { ReferenceBlueprintV2Schema } from "@/lib/ia/referencia/reference-blueprint";
+import { SceneSpecSchema } from "@/lib/ia/escena/scene-spec";
 import { MaterialEstimateSchema } from "@/lib/materiales/estimacion";
 import {
   PlanDecoracion1_1Schema,

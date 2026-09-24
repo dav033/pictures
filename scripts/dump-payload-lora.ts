@@ -1,5 +1,5 @@
 import { generarConSempertexLora, type LoraApplication } from "@/lib/ia/kagutsuchi/sempertex-lora";
-import type { ImageInput } from "@/lib/ia/tipos";
+import type { ImageInput } from "@/lib/ia/nucleo/tipos";
 
 /**
  * Imprime el payload LITERAL que la app le manda al LoRA Sempertex.

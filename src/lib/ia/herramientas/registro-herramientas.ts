@@ -2,7 +2,7 @@ import "server-only";
 import type { RegistroHerramientas } from "@sempertex/agente-core";
 import type { Pool } from "pg";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
-import { FalloTecnicoTurnoError } from "@/lib/ia/fallo-tecnico-turno";
+import { FalloTecnicoTurnoError } from "@/lib/ia/herramientas/fallo-tecnico-turno";
 import { advertenciasPuertaFisica, mezclasCompatiblesConDiametros, tamanosObligatorios } from "@/lib/plan/mezclas";
 import { getRagPool } from "@/lib/rag/db";
 import { buscarCatalogoRag, type ProductoCandidato } from "@/lib/rag/chat/buscar";
@@ -14,7 +14,7 @@ import { actualizarResultadoBusqueda, encolarEscrituraObservabilidad, registrarB
 import { PlanDecoracionSchema, type PlanDecoracion } from "@/lib/plan/tipos";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { aplicarColoresReferencia, extraerRestriccionesUsuario, validarCardinalidadEventoAbierto, validarCoberturaReferencia, validarEstructurasDeGlobosConGlobos, validarEstructurasFueraDeReferencia, validarPresenciaGlobos, validarRangoCreatividad, validarReferenciaSinGlobos, validarRestriccionesPlan, validarUnidadesDeclaradas, MENSAJE_CLIENTE_REFERENCIA_SIN_GLOBOS } from "@/lib/plan/restricciones";
-import { CREATIVIDAD_POR_DEFECTO, perfilCreatividad, type NivelCreatividad } from "@/lib/ia/creatividad";
+import { CREATIVIDAD_POR_DEFECTO, perfilCreatividad, type NivelCreatividad } from "@/lib/ia/escena/creatividad";
 import { parseEventIntent } from "@/lib/rag/query-parser/parse-event";
 import type { CatalogAllowlist, EventMatchEvidence, EventMatchLevel } from "@/lib/rag/retrieval/types";
 import { abrirContextoPlan, allowlistDesdeMapa, crearTokenPlan, verificarTokenAprobacion } from "@/lib/plan/aprobacion";
@@ -32,7 +32,7 @@ import {
   mensajeClientePresupuesto,
   mensajeClienteRestricciones,
   mensajeClienteSinCobertura,
-} from "@/lib/ia/mensajes-cliente";
+} from "@/lib/ia/herramientas/mensajes-cliente";
 import { PythonPlanMappingError } from "@/lib/plan/python-mapper";
 import { resolverPlan, type ResolucionPlan } from "@/lib/plan/resolver-backend";
 import { canonizarColoresPlan } from "@/lib/plan/colores-catalogo";
@@ -46,8 +46,8 @@ import { aplicarFuenteMedidasEspacio, clienteDioMedidasEspacio } from "@/lib/pla
 import { coloresElementoReferencia, coloresFotoParaBusqueda, coloresReferenciaOmitidos, esSustitucionDeColor, productosGloboPorColor, type ProductoColorDisponible } from "@/lib/plan/colores-referencia";
 import { buscarGlobosPorColor } from "@/lib/rag/catalog/globos-por-color";
 import { buscarNumerosPorDigito, digitosBuscados } from "@/lib/rag/catalog/numeros-por-digito";
-import { RAG_ENABLED, featureEnabled } from "@/lib/ia/feature-flags";
-import { isPythonAdapterError } from "@/lib/ia/python-adapter";
+import { RAG_ENABLED, featureEnabled } from "@/lib/ia/nucleo/feature-flags";
+import { isPythonAdapterError } from "@/lib/ia/nucleo/python-adapter";
 import { AllowlistProductoVarianteError } from "@/lib/plan/allowlist-producto-variante";
 import { sceneShadowPipeline } from "@/lib/scene/orchestrator";
 import { validateMaterialEstimate } from "@/lib/materiales/estimacion";
@@ -58,8 +58,8 @@ import { TIPOS_ESTRUCTURA_GEOMETRICOS } from "@/lib/plan/composicion";
 import { ACCION_PLAN_NO_CONVERGE, disponibilidadDelTurno, quitarMaterialesSinCobertura, RECHAZOS_MAXIMOS, RECHAZOS_PARA_CONVERGER, unirCandidatosTurno } from "./convergencia-plan";
 import { normalizarArgsBrief } from "./brief-herramienta";
 import { AJUSTAR_PLAN_DECORACION, HERRAMIENTAS_PLAN, HERRAMIENTAS_RAG } from "./herramientas";
-import type { ReferenceBlueprintV2 } from "./reference-blueprint";
-import type { Herramienta } from "./tipos";
+import type { ReferenceBlueprintV2 } from "../referencia/reference-blueprint";
+import type { Herramienta } from "../nucleo/tipos";
 import { z } from "zod";
 
 /**

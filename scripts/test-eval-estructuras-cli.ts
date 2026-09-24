@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { parseDetectedStructure } from "../src/lib/ia/reference-structure";
+import { parseDetectedStructure } from "../src/lib/ia/referencia/reference-structure";
 import { ejecutarCli, leerArgumentos, type DependenciasCli } from "../src/lib/eval/estructuras/cli-reconocimiento";
 import type { Analizador } from "../src/lib/eval/estructuras/runner";
 

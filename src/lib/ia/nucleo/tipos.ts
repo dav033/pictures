@@ -63,7 +63,7 @@ export type PeticionImagen = {
   /** Fotos reales de producto — deben verse tal cual, no reinterpretadas. */
   /** Referencias de estilo del cliente — solo guían paleta/ambiente/textura, nunca aportan objetos nuevos. */
   inputs: ImageInput[];
-  sceneSpec?: import("./scene-spec").SceneSpec;
+  sceneSpec?: import("../escena/scene-spec").SceneSpec;
   previousGeneratedImage?: ImagenEtiquetada;
   /** Id de la interacción anterior (solo Gemini) — encadena de verdad esta
    * llamada con la anterior en la misma revisión, en vez de depender solo

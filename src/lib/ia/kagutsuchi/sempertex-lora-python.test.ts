@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { PythonAdapterError, type PythonAdapterErrorCode } from "@/lib/ia/python-adapter";
+import { PythonAdapterError, type PythonAdapterErrorCode } from "@/lib/ia/nucleo/python-adapter";
 import { errorDeAdaptadorLora, ProveedorImagenNoDisponibleError } from "./sempertex-lora";
 
 const REQUEST_ID = "00000000-0000-4000-8000-000000000001";

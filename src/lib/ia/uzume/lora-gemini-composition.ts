@@ -1,4 +1,4 @@
-import type { ImageInput, Imagen, ImagenEtiquetada } from "@/lib/ia/tipos";
+import type { ImageInput, Imagen, ImagenEtiquetada } from "@/lib/ia/nucleo/tipos";
 
 /**
  * Cierre del caption de la etapa 1. Cuenta contra el presupuesto antes de

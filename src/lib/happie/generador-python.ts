@@ -1,6 +1,6 @@
 import type { GenerarEstructurado } from "@sempertex/happie-package-ia";
-import { esquemaRaizParaGoogle } from "@/lib/ia/esquema-google";
-import { llamarPythonHappieGenerate, type PythonHappieGeneratePurpose } from "@/lib/ia/python-adapter";
+import { esquemaRaizParaGoogle } from "@/lib/ia/nucleo/esquema-google";
+import { llamarPythonHappieGenerate, type PythonHappieGeneratePurpose } from "@/lib/ia/nucleo/python-adapter";
 import type { IdsHappie } from "./telemetria";
 
 /** Mismo techo que ya acota `solicitud.signal` en el camino directo. */

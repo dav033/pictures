@@ -1,4 +1,4 @@
-import { NIVELES_CREATIVIDAD, type NivelCreatividad } from "@/lib/ia/creatividad";
+import { NIVELES_CREATIVIDAD, type NivelCreatividad } from "@/lib/ia/escena/creatividad";
 
 /**
  * Nivel de creatividad de la conversación guardada en sessionStorage junto con

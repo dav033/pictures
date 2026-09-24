@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { ChartColumn, FlaskConical, LayoutGrid, ListChecks, Monitor, Moon, Settings2, Shield, Sun, Trash2 } from "lucide-react";
 import { OPCIONES_TEMA } from "@/lib/tema/tema";
 import { useTema } from "@/lib/tema/use-tema";
-import type { NivelCreatividad } from "@/lib/ia/creatividad";
+import type { NivelCreatividad } from "@/lib/ia/escena/creatividad";
 import type { ModoVista } from "@/lib/estado/modo-vista";
 import { SwitchModoVista } from "@/components/modo/SwitchModoVista";
 import { InterruptorTema } from "@/components/ui/interruptor-tema";

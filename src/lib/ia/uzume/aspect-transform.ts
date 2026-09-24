@@ -1,4 +1,4 @@
-import type { PeticionImagen, ProviderCapabilities } from "./tipos";
+import type { PeticionImagen, ProviderCapabilities } from "../nucleo/tipos";
 
 export type AspectTransform = {
   requested: PeticionImagen["aspecto"];

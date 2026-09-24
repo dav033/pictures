@@ -8,18 +8,18 @@ import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import type { BasePlan } from "@/lib/plan/edicion-esquemas";
 import { referenciaSinGlobosYaPreguntada } from "@/lib/plan/restricciones";
-import { crearEstadoConversacion, crearRegistroHerramientas, HERRAMIENTAS_SOLO_LECTURA, herramientasActivas, textoAlAgotarVueltas, VUELTAS_MAX } from "@/lib/ia/registro-herramientas";
-import type { EstadoConversacion } from "@/lib/ia/registro-herramientas";
-import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
-import { sanearBrief } from "@/lib/ia/brief-herramienta";
-import { cierreAnticipado, disponibilidadDelTurno } from "@/lib/ia/convergencia-plan";
+import { crearEstadoConversacion, crearRegistroHerramientas, HERRAMIENTAS_SOLO_LECTURA, herramientasActivas, textoAlAgotarVueltas, VUELTAS_MAX } from "@/lib/ia/herramientas/registro-herramientas";
+import type { EstadoConversacion } from "@/lib/ia/herramientas/registro-herramientas";
+import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
+import { sanearBrief } from "@/lib/ia/herramientas/brief-herramienta";
+import { cierreAnticipado, disponibilidadDelTurno } from "@/lib/ia/herramientas/convergencia-plan";
 import { colorDeCatalogo } from "@/lib/plan/colores-catalogo";
 import { coloresFotoParaBusqueda } from "@/lib/plan/colores-referencia";
 import { textoFinalTurno } from "./texto-final-turno";
-import type { ChatPort, Mensaje } from "@/lib/ia/tipos";
+import type { ChatPort, Mensaje } from "@/lib/ia/nucleo/tipos";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import type { FlujoIA } from "@sempertex/agente-core";
-import type { NivelCreatividad } from "@/lib/ia/creatividad";
+import type { NivelCreatividad } from "@/lib/ia/escena/creatividad";
 
 type TelemetriaConversacion = {
   flujo: FlujoIA;

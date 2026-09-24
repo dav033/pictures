@@ -52,7 +52,7 @@
  * Determinista y sin red.
  * Run: npx tsx --conditions=react-server scripts/test-invariantes-plan.ts
  */
-import { bloqueMezclaPorEstructura } from "@/lib/ia/tamano-fisico";
+import { bloqueMezclaPorEstructura } from "@/lib/ia/escena/tamano-fisico";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import { validateMaterialEstimate, type DesignMaterialEstimate } from "@/lib/materiales/estimacion";
 import { verificarCoherenciaPrompt } from "@/lib/plan/coherencia";

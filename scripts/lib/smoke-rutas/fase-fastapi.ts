@@ -8,7 +8,7 @@ import {
   PYTHON_PLAN_RESOLUTION_PATH,
   PYTHON_PLAN_RESOLUTION_SCOPE,
   PYTHON_CATALOG_SEARCH_SCOPE,
-} from "../../../src/lib/ia/python-adapter";
+} from "../../../src/lib/ia/nucleo/python-adapter";
 import { firmarRequestInterna, sha256Body } from "../../../src/lib/ia/contracts/operational-v1";
 import { PlanDecoracionSchema, type PlanDecoracion } from "../../../src/lib/plan/tipos";
 import type { Contexto } from "./contexto";

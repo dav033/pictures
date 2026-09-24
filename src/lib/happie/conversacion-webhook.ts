@@ -7,8 +7,8 @@ import {
   HappieConversationRequestV1Schema,
   HappieConversationStateV1Schema,
 } from "@/lib/ia/contracts/happie-v1";
-import { HAPPIE_PYTHON_ENABLED } from "@/lib/ia/feature-flags";
-import { idsTelemetria, registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/telemetria-llamadas";
+import { HAPPIE_PYTHON_ENABLED } from "@/lib/ia/nucleo/feature-flags";
+import { idsTelemetria, registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/nucleo/telemetria-llamadas";
 import { generadorHappiePython } from "./generador-python";
 import { correlacionValida } from "./telemetria";
 

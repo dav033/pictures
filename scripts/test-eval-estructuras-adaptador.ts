@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createHash, randomBytes } from "node:crypto";
 import { crearAnalizadorV13, detectarDetecciones } from "@/lib/eval/estructuras/adaptador-v13";
 import type { ItemSuite } from "@/lib/eval/estructuras/runner";
-import type { ChatPort, PeticionChat, TurnoChat } from "@/lib/ia/tipos";
+import type { ChatPort, PeticionChat, TurnoChat } from "@/lib/ia/nucleo/tipos";
 
 /**
  * Plan A §A0.3: v13 adapter over the production analyzer with a simulated

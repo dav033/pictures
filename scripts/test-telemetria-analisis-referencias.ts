@@ -6,9 +6,9 @@ import { ThinkingLevel } from "@google/genai";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { analizarReferenciasV2, analysisConfigHash, sistemaAnalisis, type PaseObservado } from "@/lib/ia/amaterasu/analizar-referencias-v2";
-import { STRUCTURE_RULES_V14_CANDIDATE, STRUCTURE_RULES_V15_CANDIDATE, STRUCTURE_RULES_V16_CANDIDATE } from "@/lib/ia/reference-structure";
+import { STRUCTURE_RULES_V14_CANDIDATE, STRUCTURE_RULES_V15_CANDIDATE, STRUCTURE_RULES_V16_CANDIDATE } from "@/lib/ia/referencia/reference-structure";
 import { MANIFIESTO_REFERENCIAS_EJEMPLO } from "@/lib/referencias-ejemplo/manifiesto";
-import type { ChatPort, PeticionChat, TurnoChat } from "@/lib/ia/tipos";
+import type { ChatPort, PeticionChat, TurnoChat } from "@/lib/ia/nucleo/tipos";
 
 /**
  * Plan A §A0.1: per-pass telemetry of the reference analysis with a simulated

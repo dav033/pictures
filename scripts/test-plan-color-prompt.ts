@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { planBlueprint } from "@/lib/plan/blueprint";
-import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/scene-spec";
+import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
-import { buildImagePrompt, placementDescription, promptElementName, tieneContratoDeColor } from "@/lib/ia/build-image-prompt";
-import { compileLoraCaption, GROUPING_ONLY_CONTEXT, translateLoraColor } from "@/lib/ia/lora-caption-compiler";
+import { buildImagePrompt, placementDescription, promptElementName, tieneContratoDeColor } from "@/lib/ia/uzume/build-image-prompt";
+import { compileLoraCaption, GROUPING_ONLY_CONTEXT, translateLoraColor } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
 import { verificarCoherenciaPrompt, verificarColoresCaptionLora, type EscenaParaCoherencia } from "@/lib/plan/coherencia";
-import { bloqueMezclaPorEstructura } from "@/lib/ia/tamano-fisico";
+import { bloqueMezclaPorEstructura } from "@/lib/ia/escena/tamano-fisico";
 import { planFijado, type PlanFijadoDeFixture } from "./lib/planes-fijados";
 
 /**

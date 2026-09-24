@@ -1,8 +1,8 @@
 import { getGeminiClient, MODELO_IMAGEN } from "@/lib/gemini";
-import { ErrorIA } from "@/lib/ia/tipos";
-import type { Imagen, ImageInput, ImagenPort, PeticionImagen } from "@/lib/ia/tipos";
+import { ErrorIA } from "@/lib/ia/nucleo/tipos";
+import type { Imagen, ImageInput, ImagenPort, PeticionImagen } from "@/lib/ia/nucleo/tipos";
 import { bytesDeBase64 } from "@sempertex/agente-core";
-import { registrarGemini, resultadoTelemetria } from "@/lib/ia/telemetria-llamadas";
+import { registrarGemini, resultadoTelemetria } from "@/lib/ia/nucleo/telemetria-llamadas";
 
 type EntradaGemini =
   | { type: "text"; text: string }

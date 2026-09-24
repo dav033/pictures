@@ -1,17 +1,17 @@
 import "server-only";
 import { createHash } from "node:crypto";
-import { ErrorIA, type ChatPort, type Herramienta, type ImagenEtiquetada, type TurnoChat } from "@/lib/ia/tipos";
+import { ErrorIA, type ChatPort, type Herramienta, type ImagenEtiquetada, type TurnoChat } from "@/lib/ia/nucleo/tipos";
 import type { Producto } from "@/lib/types";
 import { enriquecerConDominancia } from "./dominancia-referencia";
-import { featureEnabled } from "@/lib/ia/feature-flags";
+import { featureEnabled } from "@/lib/ia/nucleo/feature-flags";
 import { bytesDeBase64 } from "@sempertex/agente-core";
-import { registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/telemetria-llamadas";
+import { registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/nucleo/telemetria-llamadas";
 import {
   analysisCacheKey,
   ReferenceBlueprintV2Schema,
   stableElementId,
   type ReferenceBlueprintV2,
-} from "@/lib/ia/reference-blueprint";
+} from "@/lib/ia/referencia/reference-blueprint";
 import {
   attachedStructureContainers,
   DETECTED_STRUCTURE_TOOL_SCHEMA,
@@ -24,11 +24,11 @@ import {
   type VarianteReconocedor,
   tieneElementosAprobados,
   tieneEstructurasDeGlobos,
-} from "@/lib/ia/reference-structure";
+} from "@/lib/ia/referencia/reference-structure";
 import { analisisFijoDeEjemplo } from "./analisis-ejemplos";
-import { category, mergeCandidates, normalize, object, parseCandidates, stringList, stringValue, toolArgs, type Candidate } from "@/lib/ia/candidatos-referencia";
+import { category, mergeCandidates, normalize, object, parseCandidates, stringList, stringValue, toolArgs, type Candidate } from "@/lib/ia/referencia/candidatos-referencia";
 
-export { inferReferenceLayer, VERIFIER_MIN_CONFIDENCE } from "@/lib/ia/candidatos-referencia";
+export { inferReferenceLayer, VERIFIER_MIN_CONFIDENCE } from "@/lib/ia/referencia/candidatos-referencia";
 
 export type AnalisisV2Resultado = {
   blueprint: ReferenceBlueprintV2;

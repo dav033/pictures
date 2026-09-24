@@ -6,7 +6,7 @@
  * owner of that rule for the chat.
  */
 
-import { MENSAJE_CLIENTE_CATALOGO_NO_DISPONIBLE } from "@/lib/ia/mensajes-cliente";
+import { MENSAJE_CLIENTE_CATALOGO_NO_DISPONIBLE } from "@/lib/ia/herramientas/mensajes-cliente";
 
 export const STATUS_CATALOGO_LORA_NO_DISPONIBLE = "CATALOGO_LORA_NO_DISPONIBLE" as const;
 

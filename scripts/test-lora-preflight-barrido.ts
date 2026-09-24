@@ -10,11 +10,11 @@
  * Sin red ni llamadas pagadas. Run: npx tsx scripts/test-lora-preflight-barrido.ts [--detalle]
  */
 import assert from "node:assert/strict";
-import type { SceneSpec } from "../src/lib/ia/scene-spec";
-import { LORA_PROMPT_MAX_LENGTH } from "../src/lib/ia/lora-caption-compiler";
-import { compileProductPrompt, type ElementSizeConfirmation } from "../src/lib/ia/lora-product-runtime";
-import { preflightLoraPrompt } from "../src/lib/ia/lora-prompt-preflight";
-import { buildVisualContext } from "../src/lib/ia/visual-context";
+import type { SceneSpec } from "../src/lib/ia/escena/scene-spec";
+import { LORA_PROMPT_MAX_LENGTH } from "../src/lib/ia/kagutsuchi/lora-caption-compiler";
+import { compileProductPrompt, type ElementSizeConfirmation } from "../src/lib/ia/kagutsuchi/lora-product-runtime";
+import { preflightLoraPrompt } from "../src/lib/ia/kagutsuchi/lora-prompt-preflight";
+import { buildVisualContext } from "../src/lib/ia/escena/visual-context";
 import { ensureLoraTriggers } from "../src/lib/ia/kagutsuchi/sempertex-lora";
 import { PRODUCT_VOCABULARY } from "../src/lib/lora/product-vocabulary-data";
 

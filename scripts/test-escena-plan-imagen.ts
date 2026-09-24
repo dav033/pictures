@@ -1,6 +1,6 @@
 /**
  * Plan scene -> image, review regressions of completarEscenaConPlan
- * (src/lib/ia/visual-context.ts): a place the customer named in free text and a
+ * (src/lib/ia/escena/visual-context.ts): a place the customer named in free text and a
  * venue photo keep winning over the plan's assumed scene, the chat and the
  * generation read "specified" from text/brief with one function (the chat does
  * not pass its venue photo yet), and the levels that fill the
@@ -8,13 +8,13 @@
  * Run: npx tsx --conditions=react-server scripts/test-escena-plan-imagen.ts
  */
 import assert from "node:assert/strict";
-import { buildImagePrompt } from "../src/lib/ia/build-image-prompt";
-import { NIVELES_CREATIVIDAD, sugerenciaEscena, type NivelCreatividad } from "../src/lib/ia/creatividad";
-import { compileLoraCaption } from "../src/lib/ia/lora-caption-compiler";
-import { findLoraPromptLanguageLeaks } from "../src/lib/ia/lora-prompt-preflight";
+import { buildImagePrompt } from "../src/lib/ia/uzume/build-image-prompt";
+import { NIVELES_CREATIVIDAD, sugerenciaEscena, type NivelCreatividad } from "../src/lib/ia/escena/creatividad";
+import { compileLoraCaption } from "../src/lib/ia/kagutsuchi/lora-caption-compiler";
+import { findLoraPromptLanguageLeaks } from "../src/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { bloqueCreatividad } from "../src/lib/ia/omoikane/prompt-sistema";
-import { SceneSpecSchema, type SceneSpec } from "../src/lib/ia/scene-spec";
-import { buildVisualContext, buildVisualSceneLock, completarEscenaConPlan, escenaEspecificada, type EscenaDelPlan } from "../src/lib/ia/visual-context";
+import { SceneSpecSchema, type SceneSpec } from "../src/lib/ia/escena/scene-spec";
+import { buildVisualContext, buildVisualSceneLock, completarEscenaConPlan, escenaEspecificada, type EscenaDelPlan } from "../src/lib/ia/escena/visual-context";
 import type { Brief } from "../src/lib/types";
 
 let casos = 0;

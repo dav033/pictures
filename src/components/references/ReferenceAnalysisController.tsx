@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Imagen, ProveedorId } from "@/lib/ia/tipos";
-import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
-import { ReferenceBlueprintV2Schema } from "@/lib/ia/reference-blueprint";
+import type { Imagen, ProveedorId } from "@/lib/ia/nucleo/tipos";
+import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
+import { ReferenceBlueprintV2Schema } from "@/lib/ia/referencia/reference-blueprint";
 import { CATALOGO_ERRORES_UI_V1, leerUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
-import { tieneElementosAprobados, tieneEstructurasDeGlobos } from "@/lib/ia/reference-structure";
+import { tieneElementosAprobados, tieneEstructurasDeGlobos } from "@/lib/ia/referencia/reference-structure";
 import { esperarDuracionMinima, type EstadoAnalisisReferencia } from "@/lib/estado/espera-analisis";
 import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
 import { ReferenceReviewPanel, type ReferenceDraft } from "./ReferenceReviewPanel";

@@ -15,9 +15,9 @@
  * al cargar. Determinista y sin red: el catálogo entra por un doble del `Pool`.
  */
 import type { Pool } from "pg";
-import { buildImagePrompt, placementDescription, promptElementName, tieneContratoDeColor } from "@/lib/ia/build-image-prompt";
-import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/scene-spec";
-import { bloqueMezclaPorEstructura } from "@/lib/ia/tamano-fisico";
+import { buildImagePrompt, placementDescription, promptElementName, tieneContratoDeColor } from "@/lib/ia/uzume/build-image-prompt";
+import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/escena/scene-spec";
+import { bloqueMezclaPorEstructura } from "@/lib/ia/escena/tamano-fisico";
 import type { DesignMaterialEstimate } from "@/lib/materiales/estimacion";
 import { planBlueprint } from "@/lib/plan/blueprint";
 import type { EscenaParaCoherencia } from "@/lib/plan/coherencia";

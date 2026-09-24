@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { analizarReferenciasV2 } from "../src/lib/ia/amaterasu/analizar-referencias-v2";
-import { chatDe } from "../src/lib/ia/registro";
+import { chatDe } from "../src/lib/ia/nucleo/registro";
 import { coloresFotoCliente } from "../src/lib/plan/colores-referencia";
-import type { ImagenEtiquetada } from "../src/lib/ia/tipos";
+import type { ImagenEtiquetada } from "../src/lib/ia/nucleo/tipos";
 
 /**
  * ¿Cuánto varía la detección de color sobre LA MISMA foto?

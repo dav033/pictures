@@ -1,20 +1,20 @@
-import { FalloTecnicoTurnoError } from "@/lib/ia/fallo-tecnico-turno";
-import { chatOmoikaneDe, resolverProveedor } from "@/lib/ia/registro";
-import { ErrorIA } from "@/lib/ia/tipos";
-import type { Imagen, Mensaje } from "@/lib/ia/tipos";
+import { FalloTecnicoTurnoError } from "@/lib/ia/herramientas/fallo-tecnico-turno";
+import { chatOmoikaneDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
+import { ErrorIA } from "@/lib/ia/nucleo/tipos";
+import type { Imagen, Mensaje } from "@/lib/ia/nucleo/tipos";
 import { ejecutarConversacionStream } from "@/lib/ia/omoikane/ejecutar";
 import { limitarHistorialChat } from "@/lib/ia/omoikane/historial-chat";
 import { construirSistema } from "@/lib/ia/omoikane/prompt-sistema";
-import { parseNivelCreatividad } from "@/lib/ia/creatividad";
-import { sugerenciaEscenaDelTurno } from "@/lib/ia/sugerencia-escena-chat";
-import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
-import { RAG_ENABLED } from "@/lib/ia/feature-flags";
+import { parseNivelCreatividad } from "@/lib/ia/escena/creatividad";
+import { sugerenciaEscenaDelTurno } from "@/lib/ia/herramientas/sugerencia-escena-chat";
+import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
+import { RAG_ENABLED } from "@/lib/ia/nucleo/feature-flags";
 import type { Brief, ChatMessage } from "@/lib/types";
 import { LoraModeSlugSchema } from "@/lib/lora/schema";
 import { resolveLoraModeDatasetAllowlist } from "@/lib/lora/mode-resolver";
 import { causaCatalogoLora } from "@/lib/lora/catalogo-no-disponible";
 import { RagUnavailableError } from "@/lib/rag/retrieval/search";
-import { isPythonAdapterError } from "@/lib/ia/python-adapter";
+import { isPythonAdapterError } from "@/lib/ia/nucleo/python-adapter";
 import {
   CHAT_SSE_CONTRACT_VERSION,
   ERROR_CONTRACT_VERSION,

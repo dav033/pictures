@@ -1,11 +1,11 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import { z } from "zod";
-import { ErrorIA, type ChatPort, type Herramienta, type ImagenEtiquetada, type TurnoChat } from "./tipos";
-import { analysisCacheKey } from "./reference-blueprint";
+import { ErrorIA, type ChatPort, type Herramienta, type ImagenEtiquetada, type TurnoChat } from "../nucleo/tipos";
+import { analysisCacheKey } from "../referencia/reference-blueprint";
 import { bytesDeBase64 } from "@sempertex/agente-core";
-import { registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "./telemetria-llamadas";
-import { toolArgs } from "./candidatos-referencia";
+import { registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "../nucleo/telemetria-llamadas";
+import { toolArgs } from "../referencia/candidatos-referencia";
 
 const PointSchema = z.object({ x: z.number().min(0).max(1), y: z.number().min(0).max(1) }).strict();
 const BBoxSchema = z.object({

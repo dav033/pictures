@@ -1,5 +1,5 @@
-import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
-import { tieneElementosAprobados, tieneEstructurasDeGlobos } from "@/lib/ia/reference-structure";
+import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
+import { tieneElementosAprobados, tieneEstructurasDeGlobos } from "@/lib/ia/referencia/reference-structure";
 import {
   ambientacionCliente,
   coloresObservadosCliente,

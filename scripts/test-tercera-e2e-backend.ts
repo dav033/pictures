@@ -59,11 +59,11 @@ const poolVacio = { query: async () => ({ rows: [] }) } as unknown as Pool;
 (globalThis as { __ragPool?: Pool }).__ragPool = poolVacio;
 
 async function main(): Promise<void> {
-  const { crearEstadoConversacion, crearRegistroHerramientas, ACCION_NUMERO_INCORRECTO, ACCION_NUMEROS_EN_CATALOGO } = await import("../src/lib/ia/registro-herramientas");
+  const { crearEstadoConversacion, crearRegistroHerramientas, ACCION_NUMERO_INCORRECTO, ACCION_NUMEROS_EN_CATALOGO } = await import("../src/lib/ia/herramientas/registro-herramientas");
   const { ChatFinishEventV1Schema } = await import("../src/lib/ia/contracts/chat-v1");
-  const { ReferenceBlueprintV2Schema } = await import("../src/lib/ia/reference-blueprint");
-  const brief = await import("../src/lib/ia/brief-herramienta");
-  const convergencia = await import("../src/lib/ia/convergencia-plan");
+  const { ReferenceBlueprintV2Schema } = await import("../src/lib/ia/referencia/reference-blueprint");
+  const brief = await import("../src/lib/ia/herramientas/brief-herramienta");
+  const convergencia = await import("../src/lib/ia/herramientas/convergencia-plan");
   const { filtrosDurosDeBusqueda, avisoFiltrosBusqueda } = await import("../src/lib/rag/chat/filtros-turno");
   const { coloresRealesProducto } = await import("../src/lib/plan/colores-producto");
   const { candidatoDesdePython } = await import("../src/lib/rag/chat/candidato-python");
@@ -73,7 +73,7 @@ async function main(): Promise<void> {
   const { construirSistema } = await import("../src/lib/ia/omoikane/prompt-sistema");
   const { ejecutarConversacionStream } = await import("@sempertex/agente-core");
   type ProductoCandidato = import("../src/lib/rag/chat/buscar").ProductoCandidato;
-  type Blueprint = import("../src/lib/ia/reference-blueprint").ReferenceBlueprintV2;
+  type Blueprint = import("../src/lib/ia/referencia/reference-blueprint").ReferenceBlueprintV2;
   type ChatPort = import("@sempertex/agente-core").ChatPort;
   type FragmentoChat = import("@sempertex/agente-core").FragmentoChat;
 

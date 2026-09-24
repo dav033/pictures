@@ -4,7 +4,7 @@ import {
   isPythonAdapterError,
   llamarPythonCatalogSearch,
   llamarPythonPlanResolution,
-} from "../src/lib/ia/python-adapter";
+} from "../src/lib/ia/nucleo/python-adapter";
 import { PlanDecoracionSchema } from "../src/lib/plan/tipos";
 import { decidirSmoke, exigirReadyz } from "./lib/python-smoke-preflight";
 

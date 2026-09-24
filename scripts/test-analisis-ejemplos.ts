@@ -3,10 +3,10 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { ANALISIS_EJEMPLOS, analisisFijoDeEjemplo, sha256Base64 } from "@/lib/ia/amaterasu/analisis-ejemplos";
 import { analizarReferenciasV2, ANALYSIS_PARSER_VERSION } from "@/lib/ia/amaterasu/analizar-referencias-v2";
-import { ReferenceBlueprintV2Schema } from "@/lib/ia/reference-blueprint";
-import { tieneEstructurasDeGlobos } from "@/lib/ia/reference-structure";
+import { ReferenceBlueprintV2Schema } from "@/lib/ia/referencia/reference-blueprint";
+import { tieneEstructurasDeGlobos } from "@/lib/ia/referencia/reference-structure";
 import { MANIFIESTO_REFERENCIAS_EJEMPLO } from "@/lib/referencias-ejemplo/manifiesto";
-import type { ChatPort, PeticionChat, TurnoChat } from "@/lib/ia/tipos";
+import type { ChatPort, PeticionChat, TurnoChat } from "@/lib/ia/nucleo/tipos";
 
 /**
  * Stored analyses of the gallery photos, `box_2d` boxes and the audit

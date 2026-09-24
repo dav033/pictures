@@ -1,4 +1,4 @@
-import type { LoraPlacement } from "./lora-semantics";
+import type { LoraPlacement } from "../escena/lora-semantics";
 
 /**
  * The fields of a caption clause this rule reads. `LoraVisualClause` satisfies

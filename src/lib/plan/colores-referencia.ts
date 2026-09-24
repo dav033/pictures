@@ -1,4 +1,4 @@
-import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
+import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import { clasificarColores, PALETA_COLORES_V2, plegarTexto } from "@/lib/rag/taxonomy/v2";
 
 /** Lo que una apariencia aporta al color: los nombres que el analizador escribió y, si hay foto, la medida. */

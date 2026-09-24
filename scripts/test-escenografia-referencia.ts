@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { ReferenceBlueprintV2Schema } from "@/lib/ia/reference-blueprint";
-import { applySceneryVisibility, sceneryFromReference } from "@/lib/ia/reference-structure";
-import { buildApprovedSceneSpec, sceneSpecHash, type SceneryElement, type SceneSpec } from "@/lib/ia/scene-spec";
-import { buildImagePrompt } from "@/lib/ia/build-image-prompt";
+import { ReferenceBlueprintV2Schema } from "@/lib/ia/referencia/reference-blueprint";
+import { applySceneryVisibility, sceneryFromReference } from "@/lib/ia/referencia/reference-structure";
+import { buildApprovedSceneSpec, sceneSpecHash, type SceneryElement, type SceneSpec } from "@/lib/ia/escena/scene-spec";
+import { buildImagePrompt } from "@/lib/ia/uzume/build-image-prompt";
 import { escenografiaCliente } from "@/lib/plan/presentacion-cliente";
 
 /**

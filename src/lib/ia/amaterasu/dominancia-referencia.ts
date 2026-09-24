@@ -1,7 +1,7 @@
 import { medirDominanciaElemento, type MuestraPixeles } from "@/lib/plan/dominancia-color";
 import { decodificarPixeles } from "./decodificar-pixeles";
-import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
-import type { ImagenEtiquetada } from "@/lib/ia/tipos";
+import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
+import type { ImagenEtiquetada } from "@/lib/ia/nucleo/tipos";
 
 /**
  * Rellena `appearance.measured_colors` de cada elemento del blueprint midiendo

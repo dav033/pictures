@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import type { Pool } from "pg";
-import { crearEstadoConversacion, crearRegistroHerramientas } from "../src/lib/ia/registro-herramientas";
+import { crearEstadoConversacion, crearRegistroHerramientas } from "../src/lib/ia/herramientas/registro-herramientas";
 import { parseEventIntent } from "../src/lib/rag/query-parser/parse-event";
 import type { EventMatchEvidence } from "../src/lib/rag/retrieval/types";
 import { instalarResolutorPythonFalso, prepararEntornoPythonFalso, SNAPSHOT_FALSO } from "./lib/resolutor-python-falso";

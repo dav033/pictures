@@ -19,8 +19,8 @@ import {
   RAG_USE_TRIGRAM as USE_TRIGRAM,
   RAG_RERANK_ENABLED as USE_RERANK,
   RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED,
-} from "@/lib/ia/feature-flags";
-import { llamarPythonRerank } from "@/lib/ia/python-adapter";
+} from "@/lib/ia/nucleo/feature-flags";
+import { llamarPythonRerank } from "@/lib/ia/nucleo/python-adapter";
 
 const BRANCH_LIMIT = Number(process.env.RAG_BRANCH_LIMIT ?? 40);
 const FINAL_LIMIT = Number(process.env.RAG_FINAL_LIMIT ?? 15);

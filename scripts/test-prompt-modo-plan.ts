@@ -21,7 +21,7 @@ function ok(nombre: string): void {
 
 async function main(): Promise<void> {
   const { construirSistema } = await import("../src/lib/ia/omoikane/prompt-sistema");
-  const { crearEstadoConversacion, crearRegistroHerramientas, herramientasActivas } = await import("../src/lib/ia/registro-herramientas");
+  const { crearEstadoConversacion, crearRegistroHerramientas, herramientasActivas } = await import("../src/lib/ia/herramientas/registro-herramientas");
 
   const modoPlan = construirSistema({ ragEnabled: true });
 
@@ -59,8 +59,8 @@ async function main(): Promise<void> {
   // 3. Regla acotada de variant_id/unidades_declaradas: las estructuras con
   //    geometría no llevan cantidades, Bouquet/Figura y las piezas de catálogo sí.
   const { ESTRUCTURAS_OFICIALES, EJEMPLO_UNIDADES_DECLARADAS } = await import("../src/lib/plan/estructuras-oficiales");
-  const { HERRAMIENTAS_PLAN } = await import("../src/lib/ia/herramientas");
-  const { perfilCreatividad } = await import("../src/lib/ia/creatividad");
+  const { HERRAMIENTAS_PLAN } = await import("../src/lib/ia/herramientas/herramientas");
+  const { perfilCreatividad } = await import("../src/lib/ia/escena/creatividad");
   assert.doesNotMatch(modoPlan, /Nunca mandes tamaños de globo, cantidades de globos/);
   assert.match(modoPlan, /estructuras con geometría \(arco, semiarco, guirnalda, columna, pared, centro de mesa\) no mandes variant_id, tamaños de globo ni cantidades/);
   assert.match(modoPlan, /Bouquet y Figura \(que se arman con tipo kit\), y también kit, backdrop y accesorio, necesitan variant_id en cada material y unidades_declaradas/);
@@ -79,7 +79,7 @@ async function main(): Promise<void> {
   ok("regla acotada: geometría sin cantidades, Bouquet/Figura con unidades_declaradas del mínimo de la tabla");
 
   // 4. Notas de costo de los acentos y lectura de "clear" en la foto.
-  const { ReferenceBlueprintV2Schema } = await import("../src/lib/ia/reference-blueprint");
+  const { ReferenceBlueprintV2Schema } = await import("../src/lib/ia/referencia/reference-blueprint");
   assert.match(modoPlan, /paquete cerrado en CADA tamaño de la mezcla[\s\S]{0,200}0,2 o más/);
   const blueprint = ReferenceBlueprintV2Schema.parse({
     schema_version: "2.0",

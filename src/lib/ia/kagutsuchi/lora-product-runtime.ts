@@ -1,5 +1,5 @@
-import type { SceneElement, SceneSpec } from "./scene-spec";
-import type { VisualContext } from "./visual-context";
+import type { SceneElement, SceneSpec } from "../escena/scene-spec";
+import type { VisualContext } from "../escena/visual-context";
 import {
   captionDialectForTrigger,
   compileLoraCaption,

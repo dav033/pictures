@@ -33,12 +33,12 @@ function ok(nombre: string): void {
 
 async function main(): Promise<void> {
   const { detectarJergaInterna } = await import("../src/lib/ia/omoikane/jerga-interna");
-  const mensajes = await import("../src/lib/ia/mensajes-cliente");
+  const mensajes = await import("../src/lib/ia/herramientas/mensajes-cliente");
   const { validarRestriccionesPlan, validarCardinalidadEventoAbierto, extraerRestriccionesUsuario } = await import("../src/lib/plan/restricciones");
   const { PlanDecoracionSchema } = await import("../src/lib/plan/tipos");
-  const { crearEstadoConversacion, crearRegistroHerramientas } = await import("../src/lib/ia/registro-herramientas");
+  const { crearEstadoConversacion, crearRegistroHerramientas } = await import("../src/lib/ia/herramientas/registro-herramientas");
   const { construirSistema } = await import("../src/lib/ia/omoikane/prompt-sistema");
-  const { HERRAMIENTAS_RAG, HERRAMIENTAS_PLAN } = await import("../src/lib/ia/herramientas");
+  const { HERRAMIENTAS_RAG, HERRAMIENTAS_PLAN } = await import("../src/lib/ia/herramientas/herramientas");
 
   const limpio = (texto: string, contexto: string) => assert.deepEqual(detectarJergaInterna(texto), [], `${contexto}: "${texto}"`);
 
@@ -179,7 +179,7 @@ async function main(): Promise<void> {
   ok(`confirmar_plan_decoracion: rechazos reales con mensaje_cliente limpio (${[...statusVistos].join(", ")})`);
 
   // 4b. Texto al agotar vueltas: con un plan ya verificado no se dice "me enredé".
-  const { textoAlAgotarVueltas } = await import("../src/lib/ia/registro-herramientas");
+  const { textoAlAgotarVueltas } = await import("../src/lib/ia/herramientas/registro-herramientas");
   instalarResolutorPythonFalso();
   const estadoConPlan = crearEstadoConversacion({}, "un arco rojo");
   estadoConPlan.ragCatalogSnapshotId = SNAPSHOT_FALSO;

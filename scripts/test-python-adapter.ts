@@ -23,7 +23,7 @@ import {
   llamarPythonPlanResolution,
   llamarPythonReferenceTurn,
   llamarPythonRerank,
-} from "../src/lib/ia/python-adapter";
+} from "../src/lib/ia/nucleo/python-adapter";
 import type { PlanDecoracion } from "../src/lib/plan/tipos";
 import { POST } from "../src/app/api/internal/ai/echo/route";
 

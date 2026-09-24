@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
 import { analizarReferenciasV2, type PaseObservado } from "@/lib/ia/amaterasu/analizar-referencias-v2";
-import { mergeCandidates, object, parseCandidates } from "@/lib/ia/candidatos-referencia";
-import { stableElementId } from "@/lib/ia/reference-blueprint";
-import type { VarianteReconocedor } from "@/lib/ia/reference-structure";
-import type { ChatPort } from "@/lib/ia/tipos";
+import { mergeCandidates, object, parseCandidates } from "@/lib/ia/referencia/candidatos-referencia";
+import { stableElementId } from "@/lib/ia/referencia/reference-blueprint";
+import type { VarianteReconocedor } from "@/lib/ia/referencia/reference-structure";
+import type { ChatPort } from "@/lib/ia/nucleo/tipos";
 import type { DeteccionV1 } from "./prediccion";
 import type { Analizador, ItemSuite, PaseResultado, ResultadoAnalisis } from "./runner";
 

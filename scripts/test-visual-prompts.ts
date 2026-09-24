@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
-import { buildImagePrompt, buildLoraImagePrompt } from "../src/lib/ia/build-image-prompt";
-import { bloqueMezclaTamanos } from "../src/lib/ia/tamano-fisico";
-import type { SceneSpec } from "../src/lib/ia/scene-spec";
+import { buildImagePrompt, buildLoraImagePrompt } from "../src/lib/ia/uzume/build-image-prompt";
+import { bloqueMezclaTamanos } from "../src/lib/ia/escena/tamano-fisico";
+import type { SceneSpec } from "../src/lib/ia/escena/scene-spec";
 import {
   buildPositiveEnvironmentCues,
   buildVisualContext,
   buildVisualSceneLock,
-} from "../src/lib/ia/visual-context";
+} from "../src/lib/ia/escena/visual-context";
 
 const christmasNight = buildVisualContext({
   brief: {},

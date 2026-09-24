@@ -1,4 +1,4 @@
-import type { Imagen } from "@/lib/ia/tipos";
+import type { Imagen } from "@/lib/ia/nucleo/tipos";
 import type { AdjuntosTurno, ImagenTurno } from "@/lib/estado/persistencia-adjuntos";
 
 export type AdjuntosGeneracion = {

@@ -1,6 +1,6 @@
 import { ZodError } from "zod";
-import { ErrorIA } from "@/lib/ia/tipos";
-import { isPythonAdapterError } from "@/lib/ia/python-adapter";
+import { ErrorIA } from "@/lib/ia/nucleo/tipos";
+import { isPythonAdapterError } from "@/lib/ia/nucleo/python-adapter";
 import { NonCommercialSourceRejectedError } from "@/lib/generacion/provenance";
 import { AllowlistProductoVarianteError } from "@/lib/plan/allowlist-producto-variante";
 import { PlanBackendNoDisponibleError } from "@/lib/plan/resolver-backend";

@@ -17,7 +17,7 @@ import { esCancelacion, FalloPlanEditar, mensajeErrorRespuesta, mensajeFalloPlan
 import { mensajeErrorCliente } from "@/lib/estado/mensaje-error-cliente";
 import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { esSustitucionDeColor } from "@/lib/plan/colores-referencia";
-import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
+import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import {
   coloresCliente,
   compararLineasPorTamanoCliente,

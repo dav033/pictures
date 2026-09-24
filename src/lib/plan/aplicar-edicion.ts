@@ -21,7 +21,7 @@ import type { BasePlan, Edicion } from "./edicion-esquemas";
  * re-verified and re-resolved against Python — the same logic
  * `src/app/api/plan-editar/route.ts`'s `modo: "aplicar"` used to run inline.
  * Moved here so the chat tool `ajustar_plan_decoracion`
- * (`src/lib/ia/registro-herramientas.ts`) can call the exact same code
+ * (`src/lib/ia/herramientas/registro-herramientas.ts`) can call the exact same code
  * instead of re-implementing the approval/re-resolution checks.
  *
  * No `Request`/`Response`: throws `PlanEditError` (business rejection, safe to

@@ -1,7 +1,7 @@
 "use client";
 
-import type { Imagen } from "@/lib/ia/tipos";
-import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
+import type { Imagen } from "@/lib/ia/nucleo/tipos";
+import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import { AnalisisFoto } from "@/components/referencia/AnalisisFoto";
 
 export type ReferenceDraft = {

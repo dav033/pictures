@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { buscarCatalogoRag, type ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { getRagPool } from "@/lib/rag/db";
-import { isPythonAdapterError, pythonErrorBody } from "@/lib/ia/python-adapter";
+import { isPythonAdapterError, pythonErrorBody } from "@/lib/ia/nucleo/python-adapter";
 import { PythonPlanMappingError } from "@/lib/plan/python-mapper";
 import { AllowlistProductoVarianteError } from "@/lib/plan/allowlist-producto-variante";
 import { PlanEditError } from "@/lib/plan/edicion-error";
@@ -103,7 +103,7 @@ export async function POST(request: Request) {
 
     // The signed-approval / re-resolution / admission logic lives in
     // `aplicarEdicionPlan` (src/lib/plan/aplicar-edicion.ts) so the chat tool
-    // `ajustar_plan_decoracion` (src/lib/ia/registro-herramientas.ts) can call
+    // `ajustar_plan_decoracion` (src/lib/ia/herramientas/registro-herramientas.ts) can call
     // the exact same checks instead of a second implementation.
     const catalogAllowlist = await resolverCatalogAllowlist();
     const { plan: resuelto, cotizacion } = await aplicarEdicionPlan({

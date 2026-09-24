@@ -1,9 +1,9 @@
-import type { ImageInput, Imagen, PeticionImagen } from "@/lib/ia/tipos";
+import type { ImageInput, Imagen, PeticionImagen } from "@/lib/ia/nucleo/tipos";
 import type { LoraSpecialization } from "@/lib/lora/schema";
-import { idsTelemetria, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/telemetria-llamadas";
+import { idsTelemetria, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/nucleo/telemetria-llamadas";
 import { bytesDeBase64, registrarLlamadaIA } from "@sempertex/agente-core";
-import { LORA_GENERATION_PYTHON_ENABLED } from "@/lib/ia/feature-flags";
-import { isPythonAdapterError, llamarPythonLoraGenerate } from "@/lib/ia/python-adapter";
+import { LORA_GENERATION_PYTHON_ENABLED } from "@/lib/ia/nucleo/feature-flags";
+import { isPythonAdapterError, llamarPythonLoraGenerate } from "@/lib/ia/nucleo/python-adapter";
 
 const TEXT_ENDPOINT = "https://queue.fal.run/fal-ai/flux-2/lora";
 const EDIT_ENDPOINT = "https://queue.fal.run/fal-ai/flux-2/lora/edit";

@@ -1,4 +1,4 @@
-import type { ImageInput } from "./tipos";
+import type { ImageInput } from "../nucleo/tipos";
 
 /**
  * Qué imágenes recibe la etapa 1 (el LoRA) cuando el modo híbrido está activo.

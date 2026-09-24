@@ -219,7 +219,7 @@ ya ve el navegador). Se planea aparte cuando las 4 anteriores estén validadas.
   reportar la misma causa (`sin_llave`/`cuota`/`filtrado`/`timeout`) que
   reportaría una falla directa contra Gemini — sin esto, el flag habría
   cambiado silenciosamente la experiencia de error del cliente.
-- `src/lib/ia/registro.ts`: a diferencia de Amaterasu (que ramificó en la
+- `src/lib/ia/nucleo/registro.ts`: a diferencia de Amaterasu (que ramificó en la
   ruta HTTP porque `chatDe()` también sirve a Omoikane), el flag de Uzume
   vive dentro de `imagenDe()` mismo — es el único punto de entrada para
   generación de imagen y ninguna otra IA lo usa, así que no hacía falta
@@ -361,7 +361,7 @@ partes de texto, instrucción de sistema, schema, `ThinkingLevel.MINIMAL`,
   cuando `HAPPIE_PYTHON_ENABLED` está encendido: en las tres rutas del
   recomendador vía `iaRecomendacionHappie` y en el extractor del chat, que
   ahora también pasa por el puerto y dejó de importar `@google/genai`.
-- `paraGoogleSchema` salió de `inari/parse.ts` a `src/lib/ia/esquema-google.ts`
+- `paraGoogleSchema` salió de `inari/parse.ts` a `src/lib/ia/nucleo/esquema-google.ts`
   para que Inari y Happie adapten el schema igual.
 - `x-correlation-id` del cliente externo solo se adopta si es UUID
   (`correlacionValida`): el boundary Python lo exige, y el camino directo no.

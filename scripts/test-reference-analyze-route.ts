@@ -13,7 +13,7 @@ import {
 } from "../src/app/api/references/analyze/analisis-http";
 import { ApiError } from "@google/genai";
 import { categorizarError } from "@sempertex/agente-core/gemini";
-import { ErrorIA } from "../src/lib/ia/tipos";
+import { ErrorIA } from "../src/lib/ia/nucleo/tipos";
 import { UiErrorV1Schema } from "../src/lib/ia/contracts/ui-error-v1";
 import type { AnalisisV2Resultado } from "../src/lib/ia/amaterasu/analizar-referencias-v2";
 

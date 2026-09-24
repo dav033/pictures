@@ -5,7 +5,7 @@ import {
   ReferenceBlueprintV2Schema,
   type ReferenceBlueprintV2,
   type ReferenceElement,
-} from "./reference-blueprint";
+} from "../referencia/reference-blueprint";
 import { MaterialEstimateSchema, type DesignMaterialEstimate } from "@/lib/materiales/estimacion";
 import { VisualSemanticsSchema } from "./lora-semantics";
 import {

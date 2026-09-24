@@ -1,7 +1,7 @@
 import "server-only";
-import type { ChatPort, FragmentoChat, PeticionChat, TurnoChat } from "@/lib/ia/tipos";
-import { errorIADeTransportePython } from "@/lib/ia/error-ia-python";
-import { llamarPythonReferenceTurn, type PythonReferenceTurnImage } from "@/lib/ia/python-adapter";
+import type { ChatPort, FragmentoChat, PeticionChat, TurnoChat } from "@/lib/ia/nucleo/tipos";
+import { errorIADeTransportePython } from "@/lib/ia/nucleo/error-ia-python";
+import { llamarPythonReferenceTurn, type PythonReferenceTurnImage } from "@/lib/ia/nucleo/python-adapter";
 
 const IMAGE_MIME_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 

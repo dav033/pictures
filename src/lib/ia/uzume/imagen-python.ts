@@ -1,15 +1,15 @@
 import "server-only";
 import { MODELO_IMAGEN } from "@/lib/gemini";
-import { ErrorIA } from "@/lib/ia/tipos";
-import type { Imagen, ImageInput, ImagenPort, PeticionImagen } from "@/lib/ia/tipos";
+import { ErrorIA } from "@/lib/ia/nucleo/tipos";
+import type { Imagen, ImageInput, ImagenPort, PeticionImagen } from "@/lib/ia/nucleo/tipos";
 import { bytesDeBase64 } from "@sempertex/agente-core";
-import { idsTelemetria, registrarGemini, resultadoTelemetria } from "@/lib/ia/telemetria-llamadas";
-import { errorIADeTransportePython } from "@/lib/ia/error-ia-python";
+import { idsTelemetria, registrarGemini, resultadoTelemetria } from "@/lib/ia/nucleo/telemetria-llamadas";
+import { errorIADeTransportePython } from "@/lib/ia/nucleo/error-ia-python";
 import {
   isPythonAdapterError,
   llamarPythonImageGenerate,
   type PythonImageGenerateInputBlock,
-} from "@/lib/ia/python-adapter";
+} from "@/lib/ia/nucleo/python-adapter";
 
 /**
  * Maps a failed Python call to the same `ErrorIA` causas the direct Gemini

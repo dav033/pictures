@@ -6,7 +6,7 @@ import { TarjetaCotizacion, filasBorrador } from "@/components/TarjetaCotizacion
 import { FilasCotizacion, fraseCompra, gruposCotizacionPlan } from "@/components/plan/DialogoCotizacion";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import { TarjetaPlanDecoracion } from "@/components/TarjetaPlanDecoracion";
-import { ReferenceBlueprintV2Schema } from "@/lib/ia/reference-blueprint";
+import { ReferenceBlueprintV2Schema } from "@/lib/ia/referencia/reference-blueprint";
 import {
   acabadoCliente,
   ambientacionCliente,

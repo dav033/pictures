@@ -29,15 +29,15 @@ function ok(nombre: string): void {
 }
 
 async function main(): Promise<void> {
-  const { crearEstadoConversacion, crearRegistroHerramientas } = await import("../src/lib/ia/registro-herramientas");
+  const { crearEstadoConversacion, crearRegistroHerramientas } = await import("../src/lib/ia/herramientas/registro-herramientas");
   const { detectarJergaInterna } = await import("../src/lib/ia/omoikane/jerga-interna");
   const { construirSistema } = await import("../src/lib/ia/omoikane/prompt-sistema");
-  const { HERRAMIENTAS_PLAN } = await import("../src/lib/ia/herramientas");
+  const { HERRAMIENTAS_PLAN } = await import("../src/lib/ia/herramientas/herramientas");
   const restricciones = await import("../src/lib/plan/restricciones");
-  const { ReferenceBlueprintV2Schema } = await import("../src/lib/ia/reference-blueprint");
+  const { ReferenceBlueprintV2Schema } = await import("../src/lib/ia/referencia/reference-blueprint");
   const { PlanDecoracionSchema } = await import("../src/lib/plan/tipos");
   type ProductoCandidato = import("../src/lib/rag/chat/buscar").ProductoCandidato;
-  type Blueprint = import("../src/lib/ia/reference-blueprint").ReferenceBlueprintV2;
+  type Blueprint = import("../src/lib/ia/referencia/reference-blueprint").ReferenceBlueprintV2;
 
   const elemento = (id: string, imagen: string, name: string, category: string, colores: string[], extra: Record<string, unknown> = {}) => ({
     element_id: id, source_image_id: imagen, name, category,
@@ -267,7 +267,7 @@ async function main(): Promise<void> {
   // E2E 2026-09-14 (D1): "Semiarcos rosa y plata" quoted 100 % transparent with
   // three color notices while the catalog had pink and silver balloons.
   const { coloresReferenciaOmitidos, productosGloboPorColor } = await import("../src/lib/plan/colores-referencia");
-  const { ACCION_COLORES_REFERENCIA_OMITIDOS, MENSAJE_CLIENTE_COLORES_REFERENCIA } = await import("../src/lib/ia/registro-herramientas");
+  const { ACCION_COLORES_REFERENCIA_OMITIDOS, MENSAJE_CLIENTE_COLORES_REFERENCIA } = await import("../src/lib/ia/herramientas/registro-herramientas");
   // Palette as the analyzer reported it for that photo (it does not list the clear accents).
   const semiarcosFoto = ReferenceBlueprintV2Schema.parse({
     ...blueprintDe(["REF_01"], [

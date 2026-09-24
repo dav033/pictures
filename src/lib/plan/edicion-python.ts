@@ -3,7 +3,7 @@ import {
   isPythonAdapterError,
   llamarPythonCatalogRecommendations,
   llamarPythonCatalogSelection,
-} from "@/lib/ia/python-adapter";
+} from "@/lib/ia/nucleo/python-adapter";
 import type { ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { candidatoDesdePython } from "@/lib/rag/chat/candidato-python";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";

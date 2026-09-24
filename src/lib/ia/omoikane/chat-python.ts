@@ -8,15 +8,15 @@ import {
   nivelPensamientoTelemetria,
 } from "@sempertex/agente-core/gemini";
 import { DEADLINE_MAX_MS } from "@/lib/ia/contracts/operational-v1";
-import { errorIADeTransportePython } from "@/lib/ia/error-ia-python";
+import { errorIADeTransportePython } from "@/lib/ia/nucleo/error-ia-python";
 import {
   isPythonAdapterError,
   llamarPythonChatTurnStream,
   type PythonChatTurnStreamEvent,
   type PythonChatTurnStreamInput,
-} from "@/lib/ia/python-adapter";
-import { ErrorIA } from "@/lib/ia/tipos";
-import type { ChatPort, FragmentoChat, PeticionChat, TurnoChat } from "@/lib/ia/tipos";
+} from "@/lib/ia/nucleo/python-adapter";
+import { ErrorIA } from "@/lib/ia/nucleo/tipos";
+import type { ChatPort, FragmentoChat, PeticionChat, TurnoChat } from "@/lib/ia/nucleo/tipos";
 
 type EventoError = Extract<PythonChatTurnStreamEvent, { type: "error" }>;
 type EventoFin = Extract<PythonChatTurnStreamEvent, { type: "end" }>;

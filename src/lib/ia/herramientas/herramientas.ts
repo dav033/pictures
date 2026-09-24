@@ -1,4 +1,4 @@
-import type { Herramienta } from "./tipos";
+import type { Herramienta } from "../nucleo/tipos";
 import { DENSIDADES, MEZCLAS, ROLES_ESCENA, ROLES_MATERIAL, TIPOS_ESTRUCTURA, UBICACIONES } from "@/lib/plan/tipos";
 import { EJEMPLO_UNIDADES_DECLARADAS, ESTRUCTURAS_OFICIALES_IDS } from "@/lib/plan/estructuras-oficiales";
 

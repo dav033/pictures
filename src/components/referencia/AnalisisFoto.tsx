@@ -5,7 +5,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
+import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import type { PiezaVistaEnReferencia } from "@/lib/plan/presentacion-cliente";
 import { MuestrasColor } from "@/components/propuesta/MuestrasColor";
 import { EstadoError } from "@/components/propuesta/EstadoError";

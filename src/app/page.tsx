@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Lock } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ETIQUETA_FORMATO_PROMPT, esSeleccionFormatoPrompt, FORMATO_PROMPT_AUTOMATICO, OPCIONES_FORMATO_PROMPT, promptFormatParaGenerar, type SeleccionFormatoPrompt } from "@/lib/lora/formato-prompt-cliente";
-import { CREATIVIDAD_POR_DEFECTO, type NivelCreatividad } from "@/lib/ia/creatividad";
+import { CREATIVIDAD_POR_DEFECTO, type NivelCreatividad } from "@/lib/ia/escena/creatividad";
 import { DecoracionCard } from "@/components/DecoracionCard";
 import { Lightbox } from "@/components/Lightbox";
 import { PromptModal } from "@/components/PromptModal";
@@ -18,8 +18,8 @@ import type { ReferenceDraft } from "@/components/references/ReferenceReviewPane
 import { PasosAsistente } from "@/components/propuesta";
 import { useSeleccion } from "@/lib/estado/seleccion";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
-import type { Imagen, PeticionImagen } from "@/lib/ia/tipos";
-import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
+import type { Imagen, PeticionImagen } from "@/lib/ia/nucleo/tipos";
+import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import type { LoraModeSlug } from "@/lib/lora/schema";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import type { ItemRechazado, ItemValidado } from "@/lib/rag/chat/validar";
@@ -524,7 +524,7 @@ export default function Page() {
   // Formato del prompt LoRA: automático (lo resuelve el servidor por el trigger
   // y no se envía), texto (entrenado), JSON o ambos (dos imágenes para comparar).
   const [formatoPromptLora, setFormatoPromptLora] = useState<SeleccionFormatoPrompt>(FORMATO_PROMPT_AUTOMATICO);
-  // Calibración de creatividad 0–5 (src/lib/ia/creatividad.ts): la leen el
+  // Calibración de creatividad 0–5 (src/lib/ia/escena/creatividad.ts): la leen el
   // chat (diseño) y la generación (prompt LoRA). El ref evita cierres viejos
   // en los callbacks que arman las peticiones.
   const [creatividad, setCreatividad] = useState<NivelCreatividad>(CREATIVIDAD_POR_DEFECTO);

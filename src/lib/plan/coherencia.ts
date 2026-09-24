@@ -1,4 +1,4 @@
-import { descripcionFisicaTamano } from "@/lib/ia/tamano-fisico";
+import { descripcionFisicaTamano } from "@/lib/ia/escena/tamano-fisico";
 import type { PlanResuelto } from "./resuelto";
 
 export type ResultadoCoherencia = { ok: boolean; errores: string[] };

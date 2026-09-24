@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { DETECTED_STRUCTURE_TYPES, parseDetectedStructure } from "../src/lib/ia/reference-structure";
+import { DETECTED_STRUCTURE_TYPES, parseDetectedStructure } from "../src/lib/ia/referencia/reference-structure";
 import { FAMILIAS_V2, familiaDesdeDetectorV1 } from "../src/lib/eval/estructuras/familia-v1-v2";
 import { instanciasDesdeDetecciones, leerPrediccionesJsonl, lineaJsonl, PrediccionEstructurasV1Schema, type PrediccionEstructurasV1 } from "../src/lib/eval/estructuras/prediccion";
 

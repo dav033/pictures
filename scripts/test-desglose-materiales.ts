@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { ReferenceBlueprintV2Schema } from "../src/lib/ia/reference-blueprint";
+import { ReferenceBlueprintV2Schema } from "../src/lib/ia/referencia/reference-blueprint";
 import { construirDesglose } from "../src/lib/plan/desglose";
 import { planFijado } from "./lib/planes-fijados";
 

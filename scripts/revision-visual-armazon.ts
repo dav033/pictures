@@ -15,7 +15,7 @@
 import { mkdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { chromium, type Browser, type BrowserContext, type Page } from "playwright";
-import { ReferenceBlueprintV2Schema } from "../src/lib/ia/reference-blueprint";
+import { ReferenceBlueprintV2Schema } from "../src/lib/ia/referencia/reference-blueprint";
 
 const argumento = (nombre: string) => {
   const indice = process.argv.indexOf(nombre);

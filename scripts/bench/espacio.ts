@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import sharp from "sharp";
-import type { ImagenEtiquetada } from "../../src/lib/ia/tipos";
+import type { ImagenEtiquetada } from "../../src/lib/ia/nucleo/tipos";
 
 /**
  * Prepara la foto del espacio igual que lo hace el navegador antes de mandarla

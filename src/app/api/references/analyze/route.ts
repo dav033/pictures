@@ -1,8 +1,8 @@
 import { analizarReferenciasV2 } from "@/lib/ia/amaterasu/analizar-referencias-v2";
 import { crearChatTurnoPython } from "@/lib/ia/amaterasu/chat-python";
-import { chatDe, resolverProveedor } from "@/lib/ia/registro";
-import type { ProveedorId } from "@/lib/ia/tipos";
-import { REFERENCE_ANALYSIS_PYTHON_ENABLED } from "@/lib/ia/feature-flags";
+import { chatDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
+import type { ProveedorId } from "@/lib/ia/nucleo/tipos";
+import { REFERENCE_ANALYSIS_PYTHON_ENABLED } from "@/lib/ia/nucleo/feature-flags";
 import { registrarFalloUi } from "@/lib/errores-ui/traducir-error-servidor";
 import { cuerpoExito, leerCuerpo, referenciasEtiquetadas, respuestaError, validarCuerpo } from "./analisis-http";
 

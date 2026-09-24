@@ -1,4 +1,4 @@
-import { LORA_PROMPT_FORMATS, type LoraPromptFormat } from "@/lib/ia/lora-prompt-format";
+import { LORA_PROMPT_FORMATS, type LoraPromptFormat } from "@/lib/ia/kagutsuchi/lora-prompt-format";
 
 /**
  * Selector del formato del prompt LoRA en el navegador (modo dev).

@@ -13,9 +13,9 @@
  *
  * Puro: sin proveedor, HTTP, base de datos ni entorno.
  */
-import { porcentajesMayorResto } from "@/lib/ia/tamano-fisico";
-import { joinWithinLimit } from "@/lib/ia/scene-spec";
-import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
+import { porcentajesMayorResto } from "@/lib/ia/escena/tamano-fisico";
+import { joinWithinLimit } from "@/lib/ia/escena/scene-spec";
+import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import { cajasDeEstructuras, ubicacionDeInstancia } from "@/lib/plan/ubicaciones";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 

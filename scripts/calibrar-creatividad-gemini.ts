@@ -18,7 +18,7 @@ import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { NIVELES_CREATIVIDAD, type NivelCreatividad } from "@/lib/ia/creatividad";
+import { NIVELES_CREATIVIDAD, type NivelCreatividad } from "@/lib/ia/escena/creatividad";
 import { crearImagenGemini } from "@/lib/ia/uzume/imagen";
 import { ESCENARIOS, promptParaNivel, resolverEscenario } from "./lib/calibracion-creatividad";
 

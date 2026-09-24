@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { buildImagePrompt } from "@/lib/ia/build-image-prompt";
-import { ReferenceBlueprintV2Schema } from "@/lib/ia/reference-blueprint";
-import { buildApprovedSceneSpec, resolveElementColors } from "@/lib/ia/scene-spec";
-import { resolveAspectTransform } from "@/lib/ia/aspect-transform";
+import { buildImagePrompt } from "@/lib/ia/uzume/build-image-prompt";
+import { ReferenceBlueprintV2Schema } from "@/lib/ia/referencia/reference-blueprint";
+import { buildApprovedSceneSpec, resolveElementColors } from "@/lib/ia/escena/scene-spec";
+import { resolveAspectTransform } from "@/lib/ia/uzume/aspect-transform";
 
 const blueprint = ReferenceBlueprintV2Schema.parse({
   schema_version: "2.0",

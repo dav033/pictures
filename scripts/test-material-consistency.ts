@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { buildImagePrompt } from "../src/lib/ia/build-image-prompt";
+import { buildImagePrompt } from "../src/lib/ia/uzume/build-image-prompt";
 import {
   MaterialEstimateSchema,
   designQuantityForProduct,
@@ -7,7 +7,7 @@ import {
   validateMaterialEstimate,
 } from "../src/lib/materiales/estimacion";
 import { planFijado } from "./lib/planes-fijados";
-import type { SceneSpec } from "../src/lib/ia/scene-spec";
+import type { SceneSpec } from "../src/lib/ia/escena/scene-spec";
 
 /**
  * Lo que sigue vivo en TypeScript del estimado de materiales: la validación de

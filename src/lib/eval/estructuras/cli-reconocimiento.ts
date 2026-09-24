@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { isAbsolute, relative, resolve } from "node:path";
 import { z } from "zod";
-import { VARIANTES_RECONOCEDOR, type VarianteReconocedor } from "@/lib/ia/reference-structure";
+import { VARIANTES_RECONOCEDOR, type VarianteReconocedor } from "@/lib/ia/referencia/reference-structure";
 import { SupuestoTokensSchema, TablaPreciosSchema } from "./costo";
 import { leerPrediccionesJsonl, lineaJsonl, type PrediccionEstructurasV1 } from "./prediccion";
 import { resumirCorrida } from "./resumen-corrida";

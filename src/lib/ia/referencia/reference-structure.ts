@@ -1,5 +1,5 @@
 import type { ReferenceBBox, ReferenceBlueprintV2 } from "./reference-blueprint";
-import type { LoraDensity, LoraDesignRole, LoraPlacement, LoraStructureType, VisualSemantics } from "./lora-semantics";
+import type { LoraDensity, LoraDesignRole, LoraPlacement, LoraStructureType, VisualSemantics } from "../escena/lora-semantics";
 
 /**
  * Typed structure detection for reference images.

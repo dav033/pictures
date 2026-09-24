@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { buildImagePrompt } from "../src/lib/ia/build-image-prompt";
-import { bloqueMezclaPorEstructura, type EstructuraMezclaTamanos } from "../src/lib/ia/tamano-fisico";
+import { buildImagePrompt } from "../src/lib/ia/uzume/build-image-prompt";
+import { bloqueMezclaPorEstructura, type EstructuraMezclaTamanos } from "../src/lib/ia/escena/tamano-fisico";
 import { verificarCoherenciaPrompt } from "../src/lib/plan/coherencia";
 import type { PlanResuelto } from "../src/lib/plan/resuelto";
-import type { SceneSpec } from "../src/lib/ia/scene-spec";
+import type { SceneSpec } from "../src/lib/ia/escena/scene-spec";
 
 /** Lo que route.ts le pasa al bloque: nombre, repeticiones y unidades por diámetro. */
 function bloqueDelPlan(plan: PlanResuelto): string | null {

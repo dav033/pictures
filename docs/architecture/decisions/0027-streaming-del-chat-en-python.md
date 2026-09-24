@@ -117,10 +117,10 @@ proveedor.
 
 `chatDe()` también lo usa Amaterasu (ADR-0026, Fase 2). El flag
 `CHAT_PYTHON_ENABLED` se lee en un punto de entrada propio,
-`chatOmoikaneDe()` en `src/lib/ia/registro.ts`, que solo llama `/api/chat`.
+`chatOmoikaneDe()` en `src/lib/ia/nucleo/registro.ts`, que solo llama `/api/chat`.
 La lectura de `GEMINI_CHAT_THINKING_LEVEL` sigue en un único lugar para ambos
 caminos. La tabla de errores de transporte que ya usaba Amaterasu se movió a
-`src/lib/ia/error-ia-python.ts` para compartirla, en vez de copiarla.
+`src/lib/ia/nucleo/error-ia-python.ts` para compartirla, en vez de copiarla.
 
 ### 8. Límite de cuerpo de 25 MB, solo en esta ruta
 

@@ -1,4 +1,4 @@
-import { isPythonAdapterError } from "@/lib/ia/python-adapter";
+import { isPythonAdapterError } from "@/lib/ia/nucleo/python-adapter";
 
 /**
  * Stable cause reported to the browser when a plan pairs a variant with a

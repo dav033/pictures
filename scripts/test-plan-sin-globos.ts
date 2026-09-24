@@ -26,10 +26,10 @@ function ok(nombre: string): void {
 }
 
 async function main(): Promise<void> {
-  const { crearEstadoConversacion, crearRegistroHerramientas } = await import("../src/lib/ia/registro-herramientas");
+  const { crearEstadoConversacion, crearRegistroHerramientas } = await import("../src/lib/ia/herramientas/registro-herramientas");
   const { detectarJergaInterna } = await import("../src/lib/ia/omoikane/jerga-interna");
   const { extraerRestriccionesUsuario, permitePropuestaSinGlobos, validarCardinalidadEventoAbierto, validarEstructurasDeGlobosConGlobos, validarEstructurasFueraDeReferencia, validarPresenciaGlobos } = await import("../src/lib/plan/restricciones");
-  const { ReferenceBlueprintV2Schema } = await import("../src/lib/ia/reference-blueprint");
+  const { ReferenceBlueprintV2Schema } = await import("../src/lib/ia/referencia/reference-blueprint");
   const { PlanDecoracionSchema } = await import("../src/lib/plan/tipos");
   type ProductoCandidato = import("../src/lib/rag/chat/buscar").ProductoCandidato;
 

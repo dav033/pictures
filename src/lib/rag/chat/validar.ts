@@ -1,7 +1,7 @@
 import type { Pool } from "pg";
 import type { Producto } from "@/lib/types";
 import { nombreCategoria } from "@/lib/shopify/derivar";
-import { llamarPythonCatalogSelection } from "@/lib/ia/python-adapter";
+import { llamarPythonCatalogSelection } from "@/lib/ia/nucleo/python-adapter";
 
 /**
  * Lo único que el LLM puede mandar por cada pieza elegida (plan §4.5). A

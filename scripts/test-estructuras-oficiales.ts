@@ -7,7 +7,7 @@
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import type { SceneSpec } from "../src/lib/ia/scene-spec";
+import type { SceneSpec } from "../src/lib/ia/escena/scene-spec";
 import { TIPOS_ESTRUCTURA_1_0 } from "../src/lib/plan/composicion";
 import { PlanDecoracionSchema } from "../src/lib/plan/tipos";
 import {
@@ -18,9 +18,9 @@ import {
   incoherenciasEstructuraOficial,
   resumenEstructuraParaCliente,
 } from "../src/lib/plan/estructuras-oficiales";
-import { parseDetectedStructure, referenceStructureSemantics, shapeDescription } from "../src/lib/ia/reference-structure";
-import { compileLoraCaption } from "../src/lib/ia/lora-caption-compiler";
-import { buildVisualContext } from "../src/lib/ia/visual-context";
+import { parseDetectedStructure, referenceStructureSemantics, shapeDescription } from "../src/lib/ia/referencia/reference-structure";
+import { compileLoraCaption } from "../src/lib/ia/kagutsuchi/lora-caption-compiler";
+import { buildVisualContext } from "../src/lib/ia/escena/visual-context";
 
 let passed = 0;
 function pass(name: string) {

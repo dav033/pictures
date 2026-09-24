@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { planBlueprint } from "@/lib/plan/blueprint";
-import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/scene-spec";
+import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { cajasDeEstructuras, ubicacionDeInstancia } from "@/lib/plan/ubicaciones";
-import { compileProductPrompt } from "@/lib/ia/lora-product-runtime";
-import { preflightLoraPrompt } from "@/lib/ia/lora-prompt-preflight";
+import { compileProductPrompt } from "@/lib/ia/kagutsuchi/lora-product-runtime";
+import { preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
-import type { VisualContext } from "@/lib/ia/visual-context";
+import type { VisualContext } from "@/lib/ia/escena/visual-context";
 import { planFijado } from "./lib/planes-fijados";
 
 /**
