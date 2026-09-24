@@ -14,8 +14,8 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { z } from "zod";
-import { detectarJergaInterna } from "../src/lib/ia/jerga-interna";
-import { construirSistema } from "../src/lib/ia/prompt-sistema";
+import { detectarJergaInterna } from "../src/lib/ia/omoikane/jerga-interna";
+import { construirSistema } from "../src/lib/ia/omoikane/prompt-sistema";
 
 const CasoSchema = z.object({ id: z.string().min(1), mensaje: z.string().min(1), loraMode: z.string().optional() }).strict();
 const SuiteSchema = z.object({ version: z.string(), descripcion: z.string(), criterio: z.string(), seguimiento: z.string(), casos: z.array(CasoSchema).min(1) }).strict();

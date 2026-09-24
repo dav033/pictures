@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { ErrorIA, type ChatPort, type PeticionChat, type TurnoChat } from "@/lib/ia/tipos";
-import { analizarReferenciasV2, type ReferenceCatalogItem } from "@/lib/ia/analizar-referencias-v2";
+import { analizarReferenciasV2, type ReferenceCatalogItem } from "@/lib/ia/amaterasu/analizar-referencias-v2";
 
 /**
  * R3 — modo perceptual: con el plan de decoración activo, el análisis de

@@ -20,7 +20,7 @@ function ok(nombre: string): void {
 }
 
 async function main(): Promise<void> {
-  const { construirSistema } = await import("../src/lib/ia/prompt-sistema");
+  const { construirSistema } = await import("../src/lib/ia/omoikane/prompt-sistema");
   const { crearEstadoConversacion, crearRegistroHerramientas, herramientasActivas } = await import("../src/lib/ia/registro-herramientas");
 
   const modoPlan = construirSistema({ ragEnabled: true });

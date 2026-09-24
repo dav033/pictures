@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { buildImagePrompt } from "@/lib/ia/build-image-prompt";
 import { ReferenceBlueprintV2Schema } from "@/lib/ia/reference-blueprint";
 import { buildApprovedSceneSpec, resolveElementColors } from "@/lib/ia/scene-spec";
-import { evaluateSceneQa } from "@/lib/ia/image-qa";
 import { resolveAspectTransform } from "@/lib/ia/aspect-transform";
 
 const blueprint = ReferenceBlueprintV2Schema.parse({
@@ -57,18 +56,6 @@ assert.match(prompt, /Only a selected catalog-backed signage product may contain
 assert.match(prompt, /commercial\/event objects absent from the selected catalog allowlist/);
 assert.doesNotMatch(prompt, /visible wall or garden structure/);
 assert.doesNotMatch(prompt, /references never provide objects/i);
-// El fondo lo decide la medida de píxeles, no el número que el modelo escribe
-// (fase 0.4). El modelo puede gritar 0.1 y no pasa nada; la medida sí manda.
-assert.ok(!evaluateSceneQa({ ...scene, generation_mode: "text_to_image" }, {}, undefined, undefined, undefined, 0.1).retry_reasons.includes("outside edit region changed"));
-assert.ok(evaluateSceneQa(scene, {}, undefined, undefined, undefined, 0.1).retry_reasons.includes("outside edit region changed"));
-assert.ok(!evaluateSceneQa(scene, { outsideRegionSimilarityReportedByModel: 0.1 }).retry_reasons.includes("outside edit region changed"), "la opinion del modelo no puede disparar un reintento pagado");
-assert.ok(!evaluateSceneQa(scene, {}, undefined, undefined, undefined, null).retry_reasons.includes("outside edit region changed"), "sin medida no se dispara el motivo");
-assert.equal(evaluateSceneQa(scene, { outsideRegionSimilarityReportedByModel: 0.1 }, undefined, undefined, undefined, 0.97).venue_preservation.outside_region_similarity, 0.97);
-assert.equal(evaluateSceneQa(scene, { outsideRegionSimilarityReportedByModel: 0.1 }, undefined, undefined, undefined, 0.97).venue_preservation.outside_region_similarity_reported_by_model, 0.1);
-const textQa = evaluateSceneQa(scene, { textArtifacts: ["heading with measurements"], annotationArtifacts: ["element ID callout"] });
-assert.equal(textQa.pass, false);
-assert.deepEqual(textQa.text_artifacts, ["heading with measurements"]);
-assert.match(textQa.retry_reasons.join(" | "), /unapproved text or logo|annotation artifact/);
 assert.match(buildImagePrompt({ sceneSpec: { ...scene, generation_mode: "revise_current_result" }, revisionInstruction: "make curtain ivory" }), /REVISION DELTA/);
 assert.equal(resolveAspectTransform("16:9", { exactAspectRatios: ["3:2", "1:1", "2:3"], totalInputImageLimit: 16, objectFidelityInputLimit: 5, highFidelityInputSupport: false, multiTurnSupport: false }).strategy, "pad");
 

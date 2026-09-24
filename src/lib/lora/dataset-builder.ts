@@ -106,26 +106,3 @@ export function splitStructureCandidates(candidates: StructureCandidate[]): Map<
   return new Map(candidates.map((candidate) => [candidate.key, byGroup.get(candidate.groupKey) ?? "train"]));
 }
 
-export function buildStructureCaption(input: {
-  structureType: LoraStructureType;
-  quantity?: number;
-  geometry: string;
-  support: string;
-  colors?: string[];
-  relation?: string;
-  placement: string;
-  environment?: string;
-}): string {
-  const parts = [
-    TRIGGER,
-    `${input.quantity && input.quantity > 1 ? `${input.quantity} ` : ""}${input.structureType}`,
-    input.geometry,
-    input.support,
-    ...(input.colors ?? []),
-    input.relation,
-    input.placement,
-    input.environment,
-  ].filter(Boolean);
-  return parts.join(", ");
-}
-

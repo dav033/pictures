@@ -25,7 +25,7 @@
     "deadline_ms": {
       "type": "integer",
       "exclusiveMinimum": 0,
-      "maximum": 75000
+      "maximum": 110000
     },
     "body_sha256": {
       "type": "string",

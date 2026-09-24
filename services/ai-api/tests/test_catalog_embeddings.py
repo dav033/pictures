@@ -3,7 +3,7 @@ import asyncio
 import httpx
 import pytest
 
-from app.catalog_embeddings import (
+from app.watatsumi.catalog_embeddings import (
     DEFAULT_EMBEDDING_MODEL,
     EmbeddingSettings,
     embed_with_retry,

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { construirSistema, serializeReferenceBlueprint } from "@/lib/ia/prompt-sistema";
+import { construirSistema, serializeReferenceBlueprint } from "@/lib/ia/omoikane/prompt-sistema";
 import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import { construirCoberturaReferencia } from "@/lib/plan/desglose";
 import { validarCoberturaReferencia } from "@/lib/plan/restricciones";

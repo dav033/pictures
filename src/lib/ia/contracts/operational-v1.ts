@@ -3,7 +3,16 @@ import { z } from "zod";
 
 export const OPERATIONAL_CONTRACT_VERSION = "operational.v1" as const;
 export const DEADLINE_DEFAULT_MS = 75_000;
-export const DEADLINE_MAX_MS = 75_000;
+/**
+ * Raised from 75_000 for Kagutsuchi (docs/architecture/decisions/0026): the
+ * direct TypeScript fal.ai path already budgets 105s of wall-clock time for
+ * submit+poll+download (sempertex-lora.ts), and that request already sits
+ * inside the browser-facing /api/generate call today. Routing the same round
+ * trip through this boundary needs a ceiling that can fit it plus margin; the
+ * default for every other operation is unaffected since they never ask for
+ * more than DEADLINE_DEFAULT_MS.
+ */
+export const DEADLINE_MAX_MS = 110_000;
 const FIRMA_SKEW_SECONDS = 300;
 const MIN_SECRET_BYTES = 32;
 
@@ -38,10 +47,6 @@ export const BackendSelectionV1Schema = z.object({
 export type OperationalContextV1 = z.infer<typeof OperationalContextV1Schema>;
 export type InternalRequestSignatureV1 = z.infer<typeof InternalRequestSignatureV1Schema>;
 export type BackendSelectionV1 = z.infer<typeof BackendSelectionV1Schema>;
-
-function esVerdadero(value: string | undefined): boolean {
-  return value === "1" || value?.toLowerCase() === "true" || value?.toLowerCase() === "on";
-}
 
 function clampDeadline(value: number): number {
   return Math.min(DEADLINE_MAX_MS, Math.max(1, Math.trunc(value)));

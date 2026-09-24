@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { bytesBase64, resultadoTelemetria } from "./telemetria-llamadas";
+import { bytesDeBase64 } from "@sempertex/agente-core";
+import { resultadoTelemetria } from "./telemetria-llamadas";
 
 test("cuenta bytes base64 sin guardar contenido", () => {
-  assert.equal(bytesBase64("YQ=="), 1);
-  assert.equal(bytesBase64("YWI="), 2);
-  assert.equal(bytesBase64("YWJj"), 3);
+  assert.equal(bytesDeBase64("YQ=="), 1);
+  assert.equal(bytesDeBase64("YWI="), 2);
+  assert.equal(bytesDeBase64("YWJj"), 3);
+  assert.equal(bytesDeBase64(""), 0);
+  assert.equal(bytesDeBase64(" YW\nJj "), 3);
 });
 
 test("clasifica cancelación y timeout sin copiar mensajes", () => {

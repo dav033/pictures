@@ -99,7 +99,7 @@ console.log("[PASS] contexto del evento: solo lo que trae el brief");
 }
 
 // Errores.
-const todas = new Set<AccionUiV1>(["reintentar", "generar_estilo_estandar", "revisar_propuesta", "pedir_nueva_propuesta", "ajustar_propuesta", "activar_validacion_visual", "revisar_adjuntos"]);
+const todas = new Set<AccionUiV1>(["reintentar", "generar_estilo_estandar", "revisar_propuesta", "pedir_nueva_propuesta", "ajustar_propuesta", "revisar_adjuntos"]);
 const sinSaldo = presentarError(construirUiErrorV1("VISTA_PREVIA_NO_DISPONIBLE", { mensaje: "fal 403 Exhausted balance" }), "generacion", todas);
 assert.equal(sinSaldo.mensaje.startsWith("La vista previa de la imagen no está disponible por ahora"), true);
 assert.deepEqual(sinSaldo.acciones, [], "fal sin saldo: sin Reintentar");

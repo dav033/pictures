@@ -4,6 +4,7 @@ import { z } from "zod";
 import { DomainContractSchemas } from "../src/lib/ia/contracts/domain-v1";
 import { geometriaEstructurasOficiales, reglasJsonSchemaEstructuraOficial } from "../src/lib/plan/estructuras-oficiales";
 import { tonosColoresCatalogo } from "../src/lib/rag/catalog/similitud-color";
+import { reglasMezclas } from "../src/lib/plan/mezclas";
 
 const outputDirectory = path.join(process.cwd(), "contracts", "domain", "v1");
 const checkOnly = process.argv.includes("--check");
@@ -69,12 +70,19 @@ async function main(): Promise<void> {
       },
     });
     // Plan resolvers in both languages read the balloon geometry of official
-    // structure variants from this one table (estructuras-oficiales.ts).
+    // structure variants from this one table (estructuras-oficiales.ts), and
+    // plan.py reads the mix table, standard diameters, substitution cap and
+    // mandatory-size grammar from mezclas.ts through `x-reglas-mezclas`.
     // catalog.py reads the chromatic-distance table from this same search
     // contract to resolve a requested color the snapshot does not stock to
     // the nearest one it does (similitud-color.ts).
     const jsonSchema = entry.id === "plan-decoracion.v1"
-      ? { $id: entry.id, ...generated, "x-geometria-estructuras-oficiales": geometriaEstructurasOficiales() }
+      ? {
+          $id: entry.id,
+          ...generated,
+          "x-geometria-estructuras-oficiales": geometriaEstructurasOficiales(),
+          "x-reglas-mezclas": reglasMezclas(),
+        }
       : entry.id === "catalog-search.v1"
       ? { $id: entry.id, ...generated, "x-tonos-colores-catalogo": tonosColoresCatalogo() }
       : { $id: entry.id, ...generated };

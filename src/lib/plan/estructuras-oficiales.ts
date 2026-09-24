@@ -199,12 +199,6 @@ export const UBICACION_PARA_CLIENTE: Readonly<Record<string, string>> = {
   esquina: "en una esquina",
 };
 
-export const DENSIDAD_PARA_CLIENTE: Readonly<Record<DensidadEstructura, string>> = {
-  sencilla: "ligera",
-  media: "equilibrada",
-  lujosa: "abundante",
-};
-
 /** Resumen informativo para el cliente, ej. "Semiarco asimétrico · a la izquierda · 1,8 m de alto". */
 export function resumenEstructuraParaCliente(estructura: EstructuraPlanLigera & { altoM?: number }): string {
   const oficial = identificarEstructuraOficial(estructura);

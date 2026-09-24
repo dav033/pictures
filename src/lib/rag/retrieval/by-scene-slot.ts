@@ -31,7 +31,6 @@ import { embeberTexto } from "../embeddings";
 import type { SlotQuery } from "./slot-query-planner";
 import type { SlotCandidate } from "@/lib/scene/tipos";
 import { RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED, RAG_USE_VECTOR } from "@/lib/ia/feature-flags";
-import { seleccionarBackendPython } from "@/lib/ia/python-adapter";
 
 // ---------------------------------------------------------------------------
 // Tipos de brecha (sección 9.3 / 9.4)
@@ -183,8 +182,7 @@ async function retrieveSingleSlot(
     const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY?.trim());
     const hasPythonEmbedding =
       RAG_USE_VECTOR
-      && RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED
-      && seleccionarBackendPython().backend === "python";
+      && RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED;
     if (RAG_USE_VECTOR && (hasGeminiKey || hasPythonEmbedding)) {
       try {
         embeddingPrecalculado = await embeberTexto(semanticQuery, "RETRIEVAL_QUERY");

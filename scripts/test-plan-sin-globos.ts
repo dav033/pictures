@@ -27,7 +27,7 @@ function ok(nombre: string): void {
 
 async function main(): Promise<void> {
   const { crearEstadoConversacion, crearRegistroHerramientas } = await import("../src/lib/ia/registro-herramientas");
-  const { detectarJergaInterna } = await import("../src/lib/ia/jerga-interna");
+  const { detectarJergaInterna } = await import("../src/lib/ia/omoikane/jerga-interna");
   const { extraerRestriccionesUsuario, permitePropuestaSinGlobos, validarCardinalidadEventoAbierto, validarEstructurasDeGlobosConGlobos, validarEstructurasFueraDeReferencia, validarPresenciaGlobos } = await import("../src/lib/plan/restricciones");
   const { ReferenceBlueprintV2Schema } = await import("../src/lib/ia/reference-blueprint");
   const { PlanDecoracionSchema } = await import("../src/lib/plan/tipos");

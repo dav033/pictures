@@ -39,13 +39,4 @@ export async function limpiarDerivadosDeFotos(imageIds: string[]): Promise<numbe
   return removed;
 }
 
-export async function limpiarDerivadosDeOrden(numero: string): Promise<number> {
-  const prefix = `${numero}-`;
-  let removed = 0;
-  for (const root of DERIVED_ROOTS) {
-    removed += await removeMatchingFiles(root, (baseName) => baseName.startsWith(prefix) && /^\d+-\d+$/.test(baseName));
-  }
-  return removed;
-}
-
 

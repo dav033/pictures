@@ -73,11 +73,6 @@ const DEFAULT_SCALES: Record<LoraSpecialization, number> = {
   structure: 0.6,
 };
 
-export function parseLoraSelection(value: unknown): LoraSelection | null {
-  const parsed = LoraSelectionSchema.safeParse(value);
-  return parsed.success ? parsed.data : null;
-}
-
 function isCompletedRun(status: string | null): boolean {
   return status === "succeeded" || status === "completed";
 }

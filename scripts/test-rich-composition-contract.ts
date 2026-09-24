@@ -4,7 +4,7 @@ import { SceneSpecSchema } from "../src/lib/ia/scene-spec";
 import { compileLoraCaption } from "../src/lib/ia/lora-caption-compiler";
 import { preflightLoraPrompt } from "../src/lib/ia/lora-prompt-preflight";
 import { buildVisualContext } from "../src/lib/ia/visual-context";
-import { ensureLoraTriggers } from "../src/lib/ia/sempertex-lora";
+import { ensureLoraTriggers } from "../src/lib/ia/kagutsuchi/sempertex-lora";
 
 const concept = {
   concept_id: "fixture.halloween.printed.balloon",

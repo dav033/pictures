@@ -6,7 +6,7 @@ Supersedes: nothing. Complements ADR-0023 (Python owns the plan's numbers).
 
 ## Problem
 
-Phase 2 of `PLAN-IMAGE-AND-COLOR-FIDELITY.md` found that the colour path had no
+Phase 2 of the image and colour fidelity plan (since deleted) found that the colour path had no
 owner for three questions, and answered all three by accident:
 
 1. **What is grey?** `gris` is in the analyser's output, in the neutral family and

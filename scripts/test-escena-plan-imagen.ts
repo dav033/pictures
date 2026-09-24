@@ -12,7 +12,7 @@ import { buildImagePrompt } from "../src/lib/ia/build-image-prompt";
 import { NIVELES_CREATIVIDAD, sugerenciaEscena, type NivelCreatividad } from "../src/lib/ia/creatividad";
 import { compileLoraCaption } from "../src/lib/ia/lora-caption-compiler";
 import { findLoraPromptLanguageLeaks } from "../src/lib/ia/lora-prompt-preflight";
-import { bloqueCreatividad } from "../src/lib/ia/prompt-sistema";
+import { bloqueCreatividad } from "../src/lib/ia/omoikane/prompt-sistema";
 import { SceneSpecSchema, type SceneSpec } from "../src/lib/ia/scene-spec";
 import { buildVisualContext, buildVisualSceneLock, completarEscenaConPlan, escenaEspecificada, type EscenaDelPlan } from "../src/lib/ia/visual-context";
 import type { Brief } from "../src/lib/types";

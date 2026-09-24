@@ -537,25 +537,3 @@ export type ResolutionDiagnostic = {
   result: ResolutionResult;
 };
 
-/**
- * Resolves a batch of inputs and returns per-input diagnostics, useful for
- * caption/prompt compilers and audit scripts that need to report every
- * unresolved item explicitly rather than silently dropping it.
- */
-export function resolveProductConceptsWithDiagnostics(
-  inputs: ResolutionInput[],
-  vocabulary: ProductVocabulary,
-): ResolutionDiagnostic[] {
-  const indexes = buildLookupIndexes(vocabulary);
-  return inputs.map((input) => ({ input, result: resolveProductConcept(input, vocabulary, indexes) }));
-}
-
-/**
- * Parses and validates a raw vocabulary array against the schema. Throws a
- * zod error (with full path context) on the first structural violation.
- */
-export function parseProductVocabulary(raw: unknown): ProductVocabulary {
-  return productVocabularySchema.parse(raw);
-}
-
-

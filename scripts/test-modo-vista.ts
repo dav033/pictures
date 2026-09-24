@@ -5,7 +5,7 @@
  */
 import assert from "node:assert/strict";
 import { interpretarModoVista, modoVistaDesdeQuery } from "../src/lib/estado/modo-vista";
-import { abrirPromptAutomaticamente, qaVisualEfectivo, usarLoraEfectivo } from "../src/lib/estado/modo-vista-reglas";
+import { abrirPromptAutomaticamente, usarLoraEfectivo } from "../src/lib/estado/modo-vista-reglas";
 
 assert.equal(interpretarModoVista(null), "usuario", "sin preferencia guardada: modo usuario");
 assert.equal(interpretarModoVista(undefined), "usuario");
@@ -22,10 +22,6 @@ assert.equal(modoVistaDesdeQuery("?dev=si"), null);
 console.log("[PASS] modo de vista: default usuario, solo 'dev' activa dev, ?dev=1/0 explícitos");
 
 // B2: reglas de comportamiento por modo.
-assert.equal(qaVisualEfectivo("usuario", false), true, "modo usuario: revisión visual siempre activa");
-assert.equal(qaVisualEfectivo("dev", false), false, "modo dev: manda la casilla");
-assert.equal(qaVisualEfectivo("dev", true), true);
-
 const base = { selectorLora: true, estiloEstandarExplicito: false, hayFotoEspacio: false, hayReferencias: false, esAjusteDeImagen: false };
 assert.equal(usarLoraEfectivo({ ...base, modo: "usuario" }), true, "sin adjuntos ni ajuste: LoRA por defecto");
 assert.equal(usarLoraEfectivo({ ...base, modo: "usuario", hayFotoEspacio: true }), true, "foto del espacio: LoRA por /edit (decisión 2026-09-15)");
@@ -38,4 +34,4 @@ assert.equal(usarLoraEfectivo({ ...base, modo: "usuario", selectorLora: false })
 assert.equal(abrirPromptAutomaticamente("usuario", true), false);
 assert.equal(abrirPromptAutomaticamente("dev", true), true);
 assert.equal(abrirPromptAutomaticamente("dev", false), false);
-console.log("[PASS] reglas por modo: QA obligatorio y estilo por capacidad en modo usuario; prompt solo en dev");
+console.log("[PASS] reglas por modo: estilo por capacidad en modo usuario; prompt solo en dev");

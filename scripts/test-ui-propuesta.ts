@@ -82,7 +82,7 @@ const blueprint = blueprintDe([
   const plan: PlanResuelto = structuredClone(fixture);
   plan.plan.estructuras[0]!.referencia_element_id = "REF_01_E01";
   plan.plan.estructuras[1]!.referencia_element_id = "REF_01_E02";
-  const html = renderToStaticMarkup(React.createElement(TarjetaPlanDecoracion, { plan, referenceBlueprint: blueprint, imagenesReferencia: [{ base64: PIXEL, mime: "image/png" }], onAprobar: () => undefined, qaSolicitado: true }));
+  const html = renderToStaticMarkup(React.createElement(TarjetaPlanDecoracion, { plan, referenceBlueprint: blueprint, imagenesReferencia: [{ base64: PIXEL, mime: "image/png" }], onAprobar: () => undefined }));
   const texto = textoVisible(html);
   assert.match(texto, /Basada en tu foto/);
   assert.match(texto, /2 de 2 piezas incluidas/);
@@ -124,7 +124,7 @@ const blueprint = blueprintDe([
   const plan: PlanResuelto = structuredClone(fixture);
   const columnas = plan.plan.estructuras[1]!;
   columnas.materiales = [{ ...columnas.materiales[0]!, participacion: 1 }];
-  const html = renderToStaticMarkup(React.createElement(TarjetaPlanDecoracion, { plan, onPlanActualizado: () => undefined, onAprobar: () => undefined, qaSolicitado: true }));
+  const html = renderToStaticMarkup(React.createElement(TarjetaPlanDecoracion, { plan, onPlanActualizado: () => undefined, onAprobar: () => undefined }));
   const quitar = [...html.matchAll(/aria-label="Quitar ([^"]+)"/g)].map((m) => m[1]!);
   const modificar = [...html.matchAll(/aria-label="Modificar ([^"]+)"/g)].length;
   const lineasArco = new Set(plan.estructuras[0]!.lineas.map((linea) => linea.variant_id)).size;

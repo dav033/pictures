@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { limitarHistorialChat } from "../src/lib/ia/historial-chat";
+import { limitarHistorialChat } from "../src/lib/ia/omoikane/historial-chat";
 
 const mensajes = [
   { role: "user" as const, content: "uno" },

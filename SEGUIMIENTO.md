@@ -222,8 +222,7 @@ cercano se menciona de pasada, lejano se pregunta antes de seguir.
 Los documentos del plan se borraron al consolidar. Lo que sigue es lo que queda
 pendiente; las guardas de una corrida de evaluación (tope de gasto, nada de
 imágenes ni rutas en el repo, telemetría apagada, qué decide una persona) están
-en `AGENTS.md`. El protocolo del bucle sobrevive en
-`docs/planes/estructuras-2026-09/prompts/fase-a-loop.md`.
+en `AGENTS.md`.
 
 Decisiones tomadas que siguen vigentes: taxonomía de 12 clases; excepción
 `dt7-excepcion-interna-20260915` que autorizó mandar a Gemini 68 fotos sin

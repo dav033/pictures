@@ -2,8 +2,8 @@
  * PAID calibration run: creativity levels 0-5 on the standard Gemini image
  * path, text only (no venue, reference or catalog photos). For every scenario
  * of scripts/lib/calibracion-creatividad.ts, level and repetition it builds the
- * /api/generate prompt, calls the app's Gemini image port and the visual QA
- * observer, and writes image, prompt and QA under --out (outside the repo).
+ * /api/generate prompt, calls the app's Gemini image port, and writes image
+ * and prompt under --out (outside the repo).
  * Gemini image has no seed control: a repetition is a fresh draw of the same
  * prompt, which measures the noise between levels.
  *
@@ -19,11 +19,10 @@ import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { NIVELES_CREATIVIDAD, type NivelCreatividad } from "@/lib/ia/creatividad";
-import { crearImagenGemini } from "@/lib/ia/gemini/imagen";
-import { buildGenerationQa } from "@/lib/ia/generation-qa";
+import { crearImagenGemini } from "@/lib/ia/uzume/imagen";
 import { ESCENARIOS, promptParaNivel, resolverEscenario } from "./lib/calibracion-creatividad";
 
-type Opciones = { out: string; dry: boolean; qa: boolean; reps: number; niveles: NivelCreatividad[]; escenarios: string[]; concurrencia: number };
+type Opciones = { out: string; dry: boolean; reps: number; niveles: NivelCreatividad[]; escenarios: string[]; concurrencia: number };
 
 function parseArgs(argv: string[]): Opciones {
   const valor = (flag: string) => {
@@ -44,7 +43,7 @@ function parseArgs(argv: string[]): Opciones {
   const escenarios = (valor("--scenarios") ?? ESCENARIOS.map((escenario) => escenario.id).join(",")).split(",");
   const desconocidos = escenarios.filter((id) => !ESCENARIOS.some((escenario) => escenario.id === id));
   if (desconocidos.length) throw new Error(`Escenarios desconocidos: ${desconocidos.join(", ")}`);
-  return { out: resolved, dry: argv.includes("--dry"), qa: !argv.includes("--no-qa"), reps, niveles: niveles as NivelCreatividad[], escenarios, concurrencia };
+  return { out: resolved, dry: argv.includes("--dry"), reps, niveles: niveles as NivelCreatividad[], escenarios, concurrencia };
 }
 
 async function enParalelo<T>(tareas: Array<() => Promise<T>>, limite: number): Promise<T[]> {
@@ -85,12 +84,9 @@ async function main(): Promise<void> {
           try {
             const result = await port.generar({ prompt, sceneSpec: escena.sceneSpec, inputs: [], aspecto: "3:2", calidad: "borrador", revisionMode: "new_generation", telemetria: { superficie: "calibracion-creatividad" } });
             await writeFile(`${base}.jpg`, Buffer.from(result.imagen.base64, "base64"));
-            const qa = opciones.qa
-              ? await buildGenerationQa({ sceneSpec: escena.sceneSpec, image: result.imagen, hashes: { planHash: escena.plan.plan_hash, sceneSpecHash: promptHash }, materialEstimate: escena.materialEstimate, force: true, plan: escena.qaPlan, creatividad: nivel })
-              : null;
-            const salida = { ...resumen, modelo: result.modelo, ms: Date.now() - inicio, qa };
+            const salida = { ...resumen, modelo: result.modelo, ms: Date.now() - inicio };
             await writeFile(`${base}.json`, JSON.stringify(salida, null, 2));
-            console.log(`${escenario.id} n${nivel} r${rep}: ok ${Math.round((Date.now() - inicio) / 1000)}s qa=${qa?.pass ?? "-"} ${qa?.retry_reasons.slice(0, 3).join(" | ") ?? ""}`);
+            console.log(`${escenario.id} n${nivel} r${rep}: ok ${Math.round((Date.now() - inicio) / 1000)}s`);
             return salida;
           } catch (error) {
             const mensaje = error instanceof Error ? error.message : String(error);

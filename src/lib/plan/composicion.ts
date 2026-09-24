@@ -32,14 +32,6 @@ export const TIPOS_ESTRUCTURA_GEOMETRICOS = [
 ] as const;
 export type TipoEstructuraGeometrico = typeof TIPOS_ESTRUCTURA_GEOMETRICOS[number];
 
-export function esTipoGeometrico(tipo: TipoEstructura): tipo is TipoEstructuraGeometrico {
-  return (TIPOS_ESTRUCTURA_GEOMETRICOS as readonly string[]).includes(tipo);
-}
-
-export function esEscultura(tipo: TipoEstructura): tipo is "escultura" {
-  return tipo === "escultura";
-}
-
 /**
  * Alias que un brief o un LLM puede escribir para pedir una escultura sin
  * usar la palabra canónica. Normalizan siempre a `escultura`; nunca crean un
@@ -49,14 +41,6 @@ export const ALIASES_ESCULTURA: readonly string[] = [
   "figura", "personaje", "animal", "numero", "número", "letra",
   "forma tematica", "forma temática", "escultura de globos",
 ];
-
-/** Normaliza un texto de tipo estructural a un `TipoEstructura` canónico, o `null` si no coincide con nada conocido. */
-export function normalizarTipoEstructura(valor: string): TipoEstructura | null {
-  const normalizado = valor.trim().toLowerCase();
-  if ((TIPOS_ESTRUCTURA as readonly string[]).includes(normalizado)) return normalizado as TipoEstructura;
-  if (ALIASES_ESCULTURA.includes(normalizado)) return "escultura";
-  return null;
-}
 
 // ---------------------------------------------------------------------------
 // Ubicaciones

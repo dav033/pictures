@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { writeFileSync } from "node:fs";
 import { Pool } from "pg";
 import { buscarCatalogoRag } from "../src/lib/rag/chat/buscar";
-import { interpretarConsulta } from "../src/lib/rag/query-parser/parse";
+import { interpretarConsulta } from "../src/lib/ia/inari/parse";
 
 for (const archivo of [".env.local", ".env"]) {
   if (existsSync(archivo)) process.loadEnvFile(archivo);

@@ -1,8 +1,7 @@
 import type { ImageInput } from "./tipos";
 
 /**
- * Qué imágenes recibe la etapa 1 (el LoRA) cuando el modo híbrido está activo
- * (fase 4, opción B, de PLAN-IMAGE-AND-COLOR-FIDELITY.md).
+ * Qué imágenes recibe la etapa 1 (el LoRA) cuando el modo híbrido está activo.
  *
  * HOY LA ETAPA 1 NO RECIBE NINGUNA. Con foto del espacio, `route.ts` llama al
  * LoRA con `[]` y toda la referencia del cliente viaja solo como texto: lo que

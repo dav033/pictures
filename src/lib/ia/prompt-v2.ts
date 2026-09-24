@@ -68,14 +68,6 @@ function describeRelationships(item: SceneItemV2): string[] {
   });
 }
 
-function describeVisibility(item: SceneItemV2): string {
-  switch (item.visibility) {
-    case "visible": return "fully visible decorative element";
-    case "support_hidden": return "structural support — hidden from view";
-    case "context_preserved": return "existing venue element — preserve as-is";
-  }
-}
-
 function describeSource(item: SceneItemV2): string {
   switch (item.source_class) {
     case "purchase": return "catalog product (verified, quotable)";

@@ -52,7 +52,7 @@ function ok(nombre: string): void {
 async function main(): Promise<void> {
   const { mezclasCompatiblesConDiametros } = await import("../src/lib/plan/mezclas");
   const { coberturaPorProducto, crearEstadoConversacion, crearRegistroHerramientas } = await import("../src/lib/ia/registro-herramientas");
-  const { detectarJergaInterna } = await import("../src/lib/ia/jerga-interna");
+  const { detectarJergaInterna } = await import("../src/lib/ia/omoikane/jerga-interna");
   type ProductoCandidato = import("../src/lib/rag/chat/buscar").ProductoCandidato;
 
   // 1. Mezclas compatibles con la misma sustitución admisible del resolver.

@@ -20,7 +20,7 @@ import {
   RAG_RERANK_ENABLED as USE_RERANK,
   RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED,
 } from "@/lib/ia/feature-flags";
-import { llamarPythonRerank, seleccionarBackendPython } from "@/lib/ia/python-adapter";
+import { llamarPythonRerank } from "@/lib/ia/python-adapter";
 
 const BRANCH_LIMIT = Number(process.env.RAG_BRANCH_LIMIT ?? 40);
 const FINAL_LIMIT = Number(process.env.RAG_FINAL_LIMIT ?? 15);
@@ -210,7 +210,7 @@ async function rerankResults(
   consulta: ConsultaRetrieval,
   sortedResults: ResultadoRetrieval[],
 ): Promise<{ results: ResultadoRetrieval[]; status: RerankStatus }> {
-  if (!USE_RERANK || seleccionarBackendPython().backend !== "python") {
+  if (!USE_RERANK) {
     return { results: sortedResults, status: "SKIPPED_OPTIONAL" };
   }
   if (!consulta.semanticQuery.trim() || sortedResults.length < 2) {
@@ -734,8 +734,7 @@ export async function buscarHibrido(pool: Pool, consulta: ConsultaRetrieval): Pr
   const hasPrecalculatedVector = Array.isArray(consulta.embeddingPrecalculado) && consulta.embeddingPrecalculado.length > 0;
   const vectorRequested = !consulta.embeddingFallido && USE_VECTOR;
   const hasGeminiKey = Boolean(process.env.GEMINI_API_KEY?.trim()) || Boolean(getGeminiClient());
-  const hasPythonQueryEmbedding =
-    RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED && seleccionarBackendPython().backend === "python";
+  const hasPythonQueryEmbedding = RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED;
   const skipVectorForExactSku = consultaTieneSku(consulta.semanticQuery);
   if (
     vectorRequested

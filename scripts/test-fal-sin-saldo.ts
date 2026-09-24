@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { configurarPersistenciaTelemetria } from "@sempertex/agente-core";
 import { CATALOGO_ERRORES_UI_V1, UiErrorCodeV1Schema } from "../src/lib/ia/contracts/ui-error-v1";
 import { clasificarErrorServidor, traducirErrorServidor } from "../src/lib/errores-ui/traducir-error-servidor";
-import { generarConSempertexLora, ProveedorImagenNoDisponibleError, type LoraApplication } from "../src/lib/ia/sempertex-lora";
+import { generarConSempertexLora, ProveedorImagenNoDisponibleError, type LoraApplication } from "../src/lib/ia/kagutsuchi/sempertex-lora";
 
 /**
  * fal.ai without balance answers the queue submission with 403 ("User is

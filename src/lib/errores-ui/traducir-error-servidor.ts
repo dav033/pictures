@@ -6,7 +6,7 @@ import { AllowlistProductoVarianteError } from "@/lib/plan/allowlist-producto-va
 import { PlanBackendNoDisponibleError } from "@/lib/plan/resolver-backend";
 import { PythonPlanMappingError } from "@/lib/plan/python-mapper";
 import { PlanEditError } from "@/lib/plan/edicion-error";
-import { ProveedorImagenNoDisponibleError } from "@/lib/ia/sempertex-lora";
+import { ProveedorImagenNoDisponibleError } from "@/lib/ia/kagutsuchi/sempertex-lora";
 import { construirUiErrorV1, type UiErrorCodeV1, type UiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 
 /**
@@ -36,8 +36,6 @@ const CODIGOS_POR_PREFIJO: Readonly<Record<string, UiErrorCodeV1>> = {
   LORA_DATASET_ALLOWLIST_REJECTED: "ESTILO_SIN_PRODUCTOS",
   APROBACION_REQUERIDA: "APROBACION_REQUERIDA",
   PRESUPUESTO_EXCEDIDO: "PRESUPUESTO_EXCEDIDO",
-  IMAGE_QA_REQUIRED: "VALIDACION_VISUAL_REQUERIDA",
-  NON_CONFORME: "IMAGEN_NO_FIEL",
   REFERENCE_IMAGE_TOO_LARGE: "ADJUNTO_INVALIDO",
   REFERENCE_IMAGE_UNREADABLE: "ADJUNTO_INVALIDO",
   REFERENCE_IMAGE_EMPTY: "ADJUNTO_INVALIDO",
@@ -92,7 +90,6 @@ const CODIGOS_POR_INICIO: ReadonlyArray<readonly [string, UiErrorCodeV1]> = [
   ["El prompt no coincide con el plan resuelto", "PROPUESTA_INCOMPLETA"],
   ["Approve at least one element before generating", "PROPUESTA_INCOMPLETA"],
   ["LoRA Sempertex genera desde texto", "ESTILO_NO_ADMITE_FOTOS"],
-  ["imageQaRequested debe ser booleano", "SOLICITUD_INVALIDA"],
   ["catalogSnapshotId must not be blank", "SOLICITUD_INVALIDA"],
   ["An ID cannot be present in both productIds and ragVariantIds", "SOLICITUD_INVALIDA"],
   ["El payload de generación es demasiado grande", "ADJUNTO_INVALIDO"],

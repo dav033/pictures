@@ -31,7 +31,7 @@ function cargarEntorno(): void {
 
 async function sistemaActual(variante: VarianteReconocedor) {
   const { chatDe } = await import("../../../src/lib/ia/registro");
-  const { analysisConfigHash, ANALYSIS_PARSER_VERSION, sistemaAnalisis } = await import("../../../src/lib/ia/analizar-referencias-v2");
+  const { analysisConfigHash, ANALYSIS_PARSER_VERSION, sistemaAnalisis } = await import("../../../src/lib/ia/amaterasu/analizar-referencias-v2");
   // Creating the port makes no request; it only reads model and thinking settings.
   const chat = await chatDe("gemini");
   const { systemPromptHash } = sistemaAnalisis([], "perceptual", variante);

@@ -1,12 +1,11 @@
 import { ApiError } from "@google/genai";
 import { getGeminiClient } from "@/lib/gemini";
-import { conReintento } from "@/lib/retry";
+import { conReintento } from "@sempertex/agente-core";
 import { registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/telemetria-llamadas";
 import { RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED, RAG_USE_VECTOR } from "@/lib/ia/feature-flags";
 import {
   isPythonAdapterError,
   llamarPythonEmbedding,
-  seleccionarBackendPython,
 } from "@/lib/ia/python-adapter";
 import { sha256Body } from "@/lib/ia/contracts/operational-v1";
 
@@ -46,7 +45,6 @@ export async function embeberTexto(
   if (
     tarea === "RETRIEVAL_QUERY"
     && RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED
-    && seleccionarBackendPython().backend === "python"
   ) {
     const requestId = telemetria?.requestId ?? crypto.randomUUID();
     const correlationId = telemetria?.correlationId ?? requestId;
@@ -176,7 +174,7 @@ export async function embeddingOpcional(
 ): Promise<number[] | undefined> {
   const vectorEnabled = RAG_USE_VECTOR && (
     Boolean(process.env.GEMINI_API_KEY?.trim())
-    || (RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED && seleccionarBackendPython().backend === "python")
+    || RAG_PYTHON_QUERY_EMBEDDINGS_ENABLED
   );
   if (!vectorEnabled || !query.trim()) return undefined;
   try {

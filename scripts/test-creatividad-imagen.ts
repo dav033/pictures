@@ -2,12 +2,11 @@
  * Creativity on the standard (Gemini) image path, rules fixed by the
  * 2026-09-15 calibration (README, Iteración 5). Deterministic, no network: the
  * prompts are built from the calibration plans with the same chain as
- * /api/generate and the QA observer is not called.
+ * /api/generate.
  * Run: npx tsx --conditions=react-server scripts/test-creatividad-imagen.ts
  */
 import assert from "node:assert/strict";
 import { AMBIENTACION_IMAGEN, esAmbientacionPermitida, NIVELES_CREATIVIDAD, perfilCreatividad, type NivelCreatividad } from "../src/lib/ia/creatividad";
-import { buildQaObserverPrompt, evaluateSceneQa } from "../src/lib/ia/image-qa";
 import { FINAL_OUTPUT_REMINDER, promptElementName } from "../src/lib/ia/build-image-prompt";
 import { buildVisualContext } from "../src/lib/ia/visual-context";
 import { ESCENARIOS, promptParaNivel, resolverEscenario } from "./lib/calibracion-creatividad";
@@ -95,14 +94,15 @@ async function main(): Promise<void> {
     const instancias = (prompt: string) => seccion(prompt, "INSTANCE CONTRACT");
     assert.match(instancias(promptParaNivel(xv, escenaXv, 0).prompt), /Arco orgánico[^\n]*inverted-U arch[^\n]*never a round hoop/);
     assert.doesNotMatch(instancias(promptParaNivel(xv, escenaXv, 0).prompt), /Columna izquierda[^\n]*inverted-U/, "columns get no arch form");
-    const aro = { ...escenaXv, qaPlan: { officialStructures: new Map([["EST_01_ARCO", "aro_circular"]]) } };
+    const aro = { ...escenaXv, officialStructures: new Map([["EST_01_ARCO", "aro_circular"]]) };
     assert.doesNotMatch(promptParaNivel(xv, aro, 0).prompt, /inverted-U arch/, "a declared circular hoop keeps its form");
     const baby = ESCENARIOS.find((item) => item.id === "baby-guirnalda-mono")!;
     assert.match(instancias(promptParaNivel(baby, resolverEscenario(baby), 3).prompt), /mounted flat against the wall[^\n]*never floats/);
   }
   ok("forma: el arco es una U invertida salvo aro declarado y la guirnalda de pared va anclada");
 
-  // 4. QA: allowed styling is not an unexpected element; extras still fail.
+  // 4. La ambientación permitida por nivel sigue siendo una regla del perfil de creatividad,
+  // aunque el observador visual que la consumía para juzgar la imagen ya no existe.
   assert.equal(esAmbientacionPermitida(4, "fresh flower arrangement on the floor"), true);
   assert.equal(esAmbientacionPermitida(4, "a few guests in the background"), true);
   assert.equal(esAmbientacionPermitida(4, "flower_arrangements_on_floor"), true, "snake_case observer answers");
@@ -111,33 +111,7 @@ async function main(): Promise<void> {
   assert.equal(esAmbientacionPermitida(5, "loose balloons tied to the dessert table"), false);
   assert.equal(esAmbientacionPermitida(5, "floral backdrop"), false);
   assert.equal(esAmbientacionPermitida(5, "happy birthday sign on the cake table"), false);
-  const escena = resolverEscenario(ESCENARIOS[0]!);
-  const observacion = {
-    presentElementIds: escena.sceneSpec.elements.map((element) => element.element_id),
-    unexpectedElements: ["lit candles along the floor", "white curtain backdrop behind the arch"],
-  };
-  assert.deepEqual(evaluateSceneQa(escena.sceneSpec, observacion, undefined, escena.qaPlan, 4).unexpected_elements, ["white curtain backdrop behind the arch"]);
-  assert.equal(evaluateSceneQa(escena.sceneSpec, observacion, undefined, escena.qaPlan, 0).unexpected_elements.length, 2);
-  assert.equal(evaluateSceneQa(escena.sceneSpec, observacion, undefined, escena.qaPlan).unexpected_elements.length, 2, "without a level nothing is allowed");
-  assert.doesNotMatch(buildQaObserverPrompt(escena.sceneSpec, escena.materialEstimate, escena.qaPlan, 1), /Allowed non-catalog styling/);
-  assert.match(buildQaObserverPrompt(escena.sceneSpec, escena.materialEstimate, escena.qaPlan, 5), /Allowed non-catalog styling for this image: [^\n]*dessert table/);
-  assert.match(buildQaObserverPrompt(escena.sceneSpec, escena.materialEstimate, escena.qaPlan), /backdrop, curtain, drape/, "the observer is told which invented objects to list");
-  const boda = resolverEscenario(ESCENARIOS.find((item) => item.id === "boda-cinco-piezas")!);
-  const conMesas = { presentElementIds: boda.sceneSpec.elements.map((element) => element.element_id), unexpectedElements: ["tables_with_white_cloths", "chairs around the tables", "balloons on the table legs"] };
-  assert.deepEqual(evaluateSceneQa(boda.sceneSpec, conMesas, undefined, boda.qaPlan, 0).unexpected_elements, ["chairs around the tables", "balloons on the table legs"], "centerpiece tables are the requested support");
-  assert.equal(evaluateSceneQa(escena.sceneSpec, { ...observacion, unexpectedElements: ["tables with white tablecloths"] }, undefined, escena.qaPlan, 0).unexpected_elements.length, 1, "without centerpieces a table is still an extra");
-  assert.match(buildQaObserverPrompt(boda.sceneSpec, boda.materialEstimate, boda.qaPlan, 0), /Plain tables that hold the expected table-top structures/);
-  assert.doesNotMatch(buildQaObserverPrompt(escena.sceneSpec, escena.materialEstimate, escena.qaPlan, 0), /Plain tables that hold/);
-  ok("QA: la ambientación del nivel y las mesas de los centros no son extras; cortinas, globos sueltos y letreros siguen fallando");
-
-  // 5. With a reference or venue photo its setting is context, not an extra (prod 2026-09-15: 422 for "pink arch backdrop wall").
-  const conFoto = { ...escena.qaPlan!, photoSetting: true };
-  const deLaFoto = { ...observacion, unexpectedElements: ["pink arch backdrop wall", "white sheer curtain backdrop", "floor spotlights", "white lattice window frame", "loose balloons on the floor", "happy birthday neon sign", "extra balloon column on the right"] };
-  assert.deepEqual(evaluateSceneQa(escena.sceneSpec, deLaFoto, undefined, conFoto, 2).unexpected_elements, ["loose balloons on the floor", "happy birthday neon sign", "extra balloon column on the right"]);
-  assert.equal(evaluateSceneQa(escena.sceneSpec, deLaFoto, undefined, escena.qaPlan, 2).unexpected_elements.length, 7, "without a photo the setting is still an extra");
-  assert.match(buildQaObserverPrompt(escena.sceneSpec, escena.materialEstimate, conFoto, 2), /recreates a customer photo/);
-  assert.doesNotMatch(buildQaObserverPrompt(escena.sceneSpec, escena.materialEstimate, escena.qaPlan, 2), /recreates a customer photo/);
-  ok("QA: con foto de referencia o del espacio, su ambientación no es un extra; globos, estructuras y letreros extra siguen fallando");
+  ok("la ambientación permitida por nivel sigue clasificando estilo esperado vs. extra inventado");
 
   console.log(`${casos} casos`);
 }

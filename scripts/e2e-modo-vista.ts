@@ -62,8 +62,7 @@ async function nuevaPagina(browser: Browser, cookie: { name: string; value: stri
   });
   await page.route("**/api/generate", async (route) => {
     cuerposGenerate.push(JSON.parse(route.request().postData() ?? "{}"));
-    const qa = { pass: false, confidence: "vision_assisted", retry_reasons: ["placement failure EST_02_COLUMNAS#2"], scene_spec_hash: "fixture", observed_instances: [] };
-    await route.fulfill({ status: 200, headers: { "content-type": "application/json" }, body: JSON.stringify({ imagen: `data:image/png;base64,${PNG_1PX}`, modoImagen: "lora", prompts: { "LoRA Sempertex": "prompt técnico" }, prompt: "prompt técnico", qa, plan: PLAN }) });
+    await route.fulfill({ status: 200, headers: { "content-type": "application/json" }, body: JSON.stringify({ imagen: `data:image/png;base64,${PNG_1PX}`, modoImagen: "lora", prompts: { "LoRA Sempertex": "prompt técnico" }, prompt: "prompt técnico", plan: PLAN }) });
   });
   return { page, errores, cuerposGenerate, cerrar: () => context.close() };
 }
@@ -105,7 +104,6 @@ async function contenidoPorModo(browser: Browser, cookie: { name: string; value:
   const hay = async (locator: ReturnType<Page["locator"]>) => (await locator.count()) > 0;
 
   check(t("selector de modelo solo en dev"), (await hay(page.locator("#selector-modelo"))) === esDev);
-  check(t("casilla de validación visual solo en dev"), (await hay(page.getByText("Validar visualmente"))) === esDev);
   // Iteración 4: los enlaces viven en el menú "⋯" de la cabecera de una sola línea.
   await page.getByTestId("menu-app").click();
   await page.getByRole("menu").waitFor();
@@ -123,7 +121,7 @@ async function contenidoPorModo(browser: Browser, cookie: { name: string; value:
   check(t("id de pieza descartada solo en dev"), (await hay(page.getByText("46594221277479"))) === esDev);
   if (!esDev) check(t("aviso humano de pieza descartada"), await hay(page.getByText("Una pieza que te propuse ya no está disponible")));
   const textoAprobar = (await page.getByTestId("aprobar-generar-plan").innerText()).trim();
-  check(t("aprobar: dev exige la casilla, usuario no"), esDev ? textoAprobar === "Activa la validación visual" : textoAprobar === "Aprobar y ver cómo queda", textoAprobar);
+  check(t("aprobar: mismo texto en ambos modos, sin QA obligatorio"), textoAprobar === "Aprobar y ver cómo queda", textoAprobar);
 
   if (!esDev) {
     // Sin dock duplicado: aprobar vive dentro de la tarjeta de la propuesta.
@@ -131,12 +129,10 @@ async function contenidoPorModo(browser: Browser, cookie: { name: string; value:
     await page.getByTestId("aprobar-generar-plan").click();
     await page.locator("img[alt^='Visualización']").first().waitFor({ timeout: 30_000 });
     await page.waitForTimeout(500);
-    const cuerpo = (cuerposGenerate[0] ?? {}) as { imageQaRequested?: unknown; usarLora?: unknown; loraMode?: unknown };
-    check(t("aprobar envía revisión visual obligatoria"), cuerpo.imageQaRequested === true);
+    const cuerpo = (cuerposGenerate[0] ?? {}) as { usarLora?: unknown; loraMode?: unknown };
     check(t("sin adjuntos usa LoRA con modo"), cuerpo.usarLora === true && typeof cuerpo.loraMode === "string");
     check(t("el modal del prompt no se abre solo"), (await page.getByRole("dialog").count()) === 0);
     check(t("sin 'Generada con' ni 'Ver prompt usado'"), !(await hay(page.getByText("Ver prompt usado"))) && !(await hay(page.getByText(/Generada con/))));
-    check(t("sin razones técnicas del QA y con aviso humano"), !(await hay(page.getByText("placement failure"))) && (await hay(page.getByTestId("aviso-imagen-no-fiel"))));
   }
   check(t("sin errores de runtime"), errores.length === 0, errores.join(" | "));
   await cerrar();

@@ -4,7 +4,6 @@ import { planBlueprint } from "@/lib/plan/blueprint";
 import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/scene-spec";
 import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
 import { buildImagePrompt, placementDescription, promptElementName, tieneContratoDeColor } from "@/lib/ia/build-image-prompt";
-import { buildQaObserverPrompt, qaPlanInputsFromPlan } from "@/lib/ia/image-qa";
 import { compileLoraCaption, GROUPING_ONLY_CONTEXT, translateLoraColor } from "@/lib/ia/lora-caption-compiler";
 import { verificarCoherenciaPrompt, verificarColoresCaptionLora, type EscenaParaCoherencia } from "@/lib/plan/coherencia";
 import { bloqueMezclaPorEstructura } from "@/lib/ia/tamano-fisico";
@@ -100,6 +99,11 @@ function escenaParaCoherencia(escena: SceneSpec): EscenaParaCoherencia {
   };
 }
 
+/** Mirror of the route's private officialStructuresDePlan (src/app/api/generate/route.ts), for the same prompt vocabulary as the catalog. */
+function officialStructuresDeEstructuras(estructuras: ReadonlyArray<{ estructura_id: string; estructura_oficial?: string }>): ReadonlyMap<string, string> {
+  return new Map(estructuras.flatMap((estructura) => estructura.estructura_oficial ? [[estructura.estructura_id, estructura.estructura_oficial] as const] : []));
+}
+
 /** El mismo bloque de tamaños que arma route.ts, necesario para la coherencia. */
 function sizeMixDe(plan: PlanResuelto, escena: SceneSpec): string | undefined {
   const ubicaciones = new Map<string, string>();
@@ -170,7 +174,7 @@ function main(): void {
   console.log("[PASS] planBlueprint: 80/20 se lee como 80/20 y el dominante encabeza aunque el acento se declare primero");
 
   // 4. La proporción y el acabado de ESTA estructura llegan al prompt de
-  //    imagen y al QA. El conteo global de la escena sumaba las columnas
+  //    imagen. El conteo global de la escena sumaba las columnas
   //    doradas al arco, así que el dorado parecía dominante, y el prompt
   //    prometía "material percentages in the scene spec" que no existían.
   const fijadoColumnas = planResuelto("color-arco-con-columnas");
@@ -189,15 +193,7 @@ function main(): void {
   assert.equal(lineasColumnas.length, 2, prompt);
   for (const linea of lineasColumnas) assert.doesNotMatch(linea, /~\d+%/, linea);
   assert.equal(verificarCoherenciaPrompt(prompt, conColumnas).ok, true, JSON.stringify(verificarCoherenciaPrompt(prompt, conColumnas).errores));
-
-  // El observador recibe exactamente la misma mezcla.
-  const qa = buildQaObserverPrompt(escenaColumnas, fijadoColumnas.materialEstimate, qaPlanInputsFromPlan(conColumnas.plan.estructuras));
-  assert.match(qa, /EST_01_ARCO: [^\n]*color mix=mostly blanco \(~85%, matte\) with dorado \(~15%, high-shine chrome\) as accents;/, qa);
-  assert.doesNotMatch(qa, /material description above/, "la instrucción ya no apunta a una descripción inexistente");
-  assert.match(qa, /inverted dominant\/accent share/);
-  // Una estructura monocolor no inventa una mezcla.
-  assert.match(qa, /EST_02_COLUMNAS#1: [^\n]*colors=dorado; bbox=/, qa);
-  console.log("[PASS] colorVarietyContract y QA describen la misma mezcla por estructura, con acabado y dominancia");
+  console.log("[PASS] colorVarietyContract describe la mezcla por estructura, con acabado y dominancia");
 
   // 4b. `verificarCoherenciaPrompt` comprueba el color por estructura de forma
   //     estructural. Una búsqueda de subcadenas no sirve: el bloque global
@@ -222,7 +218,7 @@ function main(): void {
 
   // 4c. El caption del LoRA nunca pasa por el prompt de imagen: se comprueba
   //     sobre las cláusulas compiladas, con el mismo traductor de color.
-  const clausulas = compileLoraCaption({ sceneSpec: escenaColumnas, visualContext: GROUPING_ONLY_CONTEXT, officialStructures: qaPlanInputsFromPlan(conColumnas.plan.estructuras).officialStructures }).clauses;
+  const clausulas = compileLoraCaption({ sceneSpec: escenaColumnas, visualContext: GROUPING_ONLY_CONTEXT, officialStructures: officialStructuresDeEstructuras(conColumnas.plan.estructuras) }).clauses;
   const captionOk = verificarColoresCaptionLora(conColumnas, escenaCoherencia, { clausulas, traducirColor: translateLoraColor });
   assert.equal(captionOk.ok, true, JSON.stringify(captionOk.errores));
   const clausulasSinDorado = clausulas.map((clausula) => clausula.elementIds.includes("EST_01_ARCO") ? { ...clausula, colors: clausula.colors.filter((color) => color !== "gold") } : clausula);

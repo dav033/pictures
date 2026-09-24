@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { configurarPersistenciaTelemetria } from "@sempertex/agente-core";
 import { LORA_SEED_MAX, parseLoraSeed, resolveLoraSeed } from "../src/lib/ia/lora-seed";
-import { generarConSempertexLora, type LoraApplication } from "../src/lib/ia/sempertex-lora";
+import { generarConSempertexLora, type LoraApplication } from "../src/lib/ia/kagutsuchi/sempertex-lora";
 
 /**
  * Optional `seed` for /api/generate (LoRA path), used to calibrate creativity

@@ -248,7 +248,6 @@ export const LoraTrainingRunStatusSchema = z.enum([
 ]);
 export type LoraTrainingRunStatus = z.infer<typeof LoraTrainingRunStatusSchema>;
 
-export const LoraArtifactStatusSchema = z.enum(["pending", "backed_up", "invalid"]);
 export const LoraEvaluationVerdictSchema = z.enum(["pending", "approved", "rejected"]);
 
 export const LoraTrainingReceiptSchema = z.object({
@@ -292,10 +291,3 @@ export const LoraTrainingReceiptSchema = z.object({
 });
 export type LoraTrainingReceipt = z.infer<typeof LoraTrainingReceiptSchema>;
 
-export const LoraJobKindSchema = z.enum([
-  "dataset_export",
-  "training_sync",
-  "weight_backup",
-  "evaluation",
-]);
-export const LoraJobStatusSchema = z.enum(["pending", "running", "succeeded", "failed"]);

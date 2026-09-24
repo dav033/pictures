@@ -34,9 +34,7 @@ function isHalfArch(piece: SidePieceCandidate): boolean {
  * Owner of this rule. Pending, bounded migration: the caption compiler still
  * keeps a private copy (`separateLateralPieces`/`separatePiecesPhrase` in
  * lora-caption-compiler.ts) that should call this function and map `kind` to
- * its phrase. Until then scripts/test-image-qa-piezas-separadas.ts asserts
- * that the compiled prompt and QA agree on every fixture; that parity check
- * must stay green, and the copy is removed once the compiler calls this.
+ * its phrase; the copy is removed once the compiler calls this.
  */
 export function findSeparateSidePieces<T extends SidePieceCandidate>(clauses: readonly T[]): SeparateSidePieces<T> | undefined {
   const pieces = clauses.filter((clause) => (clause.structureType === "semiarco" || clause.structureType === "columna") && !clause.bilateral);

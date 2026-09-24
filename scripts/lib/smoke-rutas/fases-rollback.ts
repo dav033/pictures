@@ -28,7 +28,7 @@ function espera(ctx: Contexto, nombre: string, respuesta: RespuestaHttp, status:
 async function operacionesPlan(ctx: Contexto, estado: EstadoSmoke, etiqueta: string): Promise<{ generar: RespuestaHttp; aplicar: RespuestaHttp; recomendadas: RespuestaHttp; buscarConToken: RespuestaHttp }> {
   const plan = estado.plan;
   const linea = lineas(plan)[0]!;
-  const generar = await llamarGenerar(ctx, `${etiqueta}.generate`, cuerpoGenerar(plan, { usarLora: true, imageQaRequested: false }));
+  const generar = await llamarGenerar(ctx, `${etiqueta}.generate`, cuerpoGenerar(plan, { usarLora: true }));
   const aplicar = await llamarEditar(ctx, `${etiqueta}.aplicar`, { modo: "aplicar", base: plan, edicion: { accion: "quitar", estructura_id: linea.estructura_id, objetivo_variant_id: linea.variant_id } });
   const recomendadas = await llamarEditar(ctx, `${etiqueta}.recomendadas`, { modo: "recomendadas", variant_id: linea.variant_id, approval_token: plan.approval_token });
   const buscarConToken = await llamarEditar(ctx, `${etiqueta}.buscar con token`, { modo: "buscar", consulta: "globo latex redondo fashion blanco", approval_token: plan.approval_token });

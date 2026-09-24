@@ -21,7 +21,6 @@ export const ETIQUETA_ACCION_ERROR: Readonly<Record<AccionUiV1, string>> = {
   revisar_propuesta: "Ver propuesta",
   pedir_nueva_propuesta: "Pedir la propuesta de nuevo",
   ajustar_propuesta: "Ajustar propuesta",
-  activar_validacion_visual: "Activar revisión de calidad",
   revisar_adjuntos: "Revisar imágenes",
 };
 
@@ -35,7 +34,6 @@ const TITULO_POR_CODIGO: Partial<Readonly<Record<UiErrorCodeV1, string>>> = {
   PRESUPUESTO_EXCEDIDO: "La propuesta supera tu presupuesto",
   OPERACION_CANCELADA: "Creación de la imagen cancelada",
   PROPUESTA_DESACTUALIZADA: "La propuesta cambió",
-  IMAGEN_NO_FIEL: "La imagen no quedó fiel",
   CONTENIDO_NO_PERMITIDO: "No pude crear esto así",
 };
 
@@ -47,7 +45,7 @@ const TITULO_POR_ORIGEN: Readonly<Record<OrigenError, string>> = {
 };
 
 /** Códigos que no son una falla de la conversación: la propuesta sigue siendo válida. */
-const CODIGOS_AVISO: ReadonlySet<UiErrorCodeV1> = new Set(["VISTA_PREVIA_NO_DISPONIBLE", "OPERACION_CANCELADA", "VALIDACION_VISUAL_REQUERIDA"]);
+const CODIGOS_AVISO: ReadonlySet<UiErrorCodeV1> = new Set(["VISTA_PREVIA_NO_DISPONIBLE", "OPERACION_CANCELADA"]);
 
 /**
  * Traduce un ui-error.v1 (del servidor o local) a lo que muestra `EstadoError`.

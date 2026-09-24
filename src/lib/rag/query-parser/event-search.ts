@@ -179,6 +179,3 @@ export function parseEventSearchIntent(mensaje: string): EventSearchIntent {
   });
 }
 
-// Spanish alias used by retrieval callers; both names remain public to avoid
-// coupling callers to a single wording choice.
-export const interpretarConsultaEvento = parseEventSearchIntent;

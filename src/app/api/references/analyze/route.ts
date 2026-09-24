@@ -1,6 +1,8 @@
-import { analizarReferenciasV2 } from "@/lib/ia/analizar-referencias-v2";
+import { analizarReferenciasV2 } from "@/lib/ia/amaterasu/analizar-referencias-v2";
+import { crearChatTurnoPython } from "@/lib/ia/amaterasu/chat-python";
 import { chatDe, resolverProveedor } from "@/lib/ia/registro";
 import type { ProveedorId } from "@/lib/ia/tipos";
+import { REFERENCE_ANALYSIS_PYTHON_ENABLED } from "@/lib/ia/feature-flags";
 import { registrarFalloUi } from "@/lib/errores-ui/traducir-error-servidor";
 import { cuerpoExito, leerCuerpo, referenciasEtiquetadas, respuestaError, validarCuerpo } from "./analisis-http";
 
@@ -17,7 +19,11 @@ export async function POST(request: Request) {
     const body = validarCuerpo(await leerCuerpo(request));
     const cookie = request.headers.get("cookie")?.match(/ia_proveedor=(gemini)/)?.[1];
     id = resolverProveedor({ override: body.proveedor, cookie });
-    const chat = await chatDe(id);
+    // Fase 2 de ADR-0026: flag de capacidad propio de Amaterasu, gradual e
+    // independiente de las demás IAs -- ver crearChatTurnoPython.
+    const chat = REFERENCE_ANALYSIS_PYTHON_ENABLED
+      ? crearChatTurnoPython({ requestId, correlationId })
+      : await chatDe(id);
     const references = referenciasEtiquetadas(body.images);
     // La descripción visual no decide productos. El chat resuelve después
     // cada elemento mediante buscar_catalogo_rag contra PostgreSQL validado.

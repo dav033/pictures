@@ -5,7 +5,7 @@ import {
   TAXONOMY_VERSION,
   type TaxonomyStatus,
 } from "@/lib/rag/taxonomy/v2";
-import { interpretarConsulta, interpretarConsultaLocal } from "@/lib/rag/query-parser/parse";
+import { interpretarConsulta, interpretarConsultaLocal } from "@/lib/ia/inari/parse";
 import { IntentQuerySchema, type IntentQuery } from "@/lib/rag/query-parser/schema";
 import { canonicalizeCatalog } from "@/lib/rag/catalog/canonicalize";
 import { ProductsCatalogSourceSchema, type ProductsCatalogSource } from "@/lib/rag/sources/contracts";

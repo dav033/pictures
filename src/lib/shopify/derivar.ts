@@ -292,14 +292,3 @@ export function limpiarTitulo(titulo: string): string {
     .trim();
 }
 
-/** Quita las etiquetas HTML de body_html para poder indexarlo en FTS5. */
-export function textoPlano(html: string | null): string | null {
-  if (!html) return null;
-  const texto = html
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  return texto.length > 0 ? texto : null;
-}

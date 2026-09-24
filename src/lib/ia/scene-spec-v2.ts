@@ -18,7 +18,7 @@
 import { z } from "zod";
 import type { ResolvedScenePlan, ResolvedItemLine } from "@/lib/scene/resolver";
 import type { SpatialConstraint } from "@/lib/scene/tipos";
-import { zoneLayout, seatingBBox, visibilityPolicy, type BBox, type SpatialLayoutInstruction, type VisibilityPolicy } from "./scene-layout";
+import { zoneLayout, seatingBBox, visibilityPolicy, type BBox, type VisibilityPolicy } from "./scene-layout";
 
 // ---------------------------------------------------------------------------
 // Tipos Zod

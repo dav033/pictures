@@ -23,8 +23,6 @@ export const UiErrorCodeV1Schema = z.enum([
   "PROPUESTA_DESACTUALIZADA",
   "PROPUESTA_INCOMPLETA",
   "PRESUPUESTO_EXCEDIDO",
-  "VALIDACION_VISUAL_REQUERIDA",
-  "IMAGEN_NO_FIEL",
   "PRODUCTO_NO_DISPONIBLE",
   "ADJUNTO_INVALIDO",
   "SOLICITUD_INVALIDA",
@@ -52,7 +50,6 @@ export const AccionUiV1Schema = z.enum([
   "revisar_propuesta",
   "pedir_nueva_propuesta",
   "ajustar_propuesta",
-  "activar_validacion_visual",
   "revisar_adjuntos",
 ]);
 export type AccionUiV1 = z.infer<typeof AccionUiV1Schema>;
@@ -138,18 +135,6 @@ export const CATALOGO_ERRORES_UI_V1: Readonly<Record<UiErrorCodeV1, EntradaCatal
     accion_sugerida: "ajustar_propuesta",
     acciones_alternativas: [],
     retryable: false,
-  },
-  VALIDACION_VISUAL_REQUERIDA: {
-    mensaje_usuario: "Para crear la imagen de esta propuesta hay que activar la revisión de calidad.",
-    accion_sugerida: "activar_validacion_visual",
-    acciones_alternativas: [],
-    retryable: false,
-  },
-  IMAGEN_NO_FIEL: {
-    mensaje_usuario: "La imagen no quedó fiel a la propuesta. Podemos intentarlo otra vez.",
-    accion_sugerida: "reintentar",
-    acciones_alternativas: [],
-    retryable: true,
   },
   PRODUCTO_NO_DISPONIBLE: {
     mensaje_usuario: "Una de las piezas elegidas ya no está disponible. Elige otra o pide la propuesta de nuevo.",

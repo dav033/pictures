@@ -3,9 +3,6 @@ import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { planBlueprint } from "@/lib/plan/blueprint";
 import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/scene-spec";
 import { cajasDeEstructuras, ubicacionDeInstancia } from "@/lib/plan/ubicaciones";
-import { buildCorrectiveRetryPrompt, buildQaObserverPrompt, type SceneQaObservation } from "@/lib/ia/image-qa";
-import { buildImagePrompt, FINAL_OUTPUT_REMINDER } from "@/lib/ia/build-image-prompt";
-import { approvedPlanQaInputs, buildGenerationQa, type QaObserver } from "@/lib/ia/generation-qa";
 import { compileProductPrompt } from "@/lib/ia/lora-product-runtime";
 import { preflightLoraPrompt } from "@/lib/ia/lora-prompt-preflight";
 import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
@@ -13,15 +10,16 @@ import type { VisualContext } from "@/lib/ia/visual-context";
 import { planFijado } from "./lib/planes-fijados";
 
 /**
- * Iteration 3, step 3 wiring: /api/generate must hand the approved plan to the
- * visual QA (observer instruction and evaluation) and compile the LoRA prompt
- * with the same plan map, or the separate-side-pieces question is never asked
- * in production. Deterministic, no network: the observer is injected.
+ * Lo que queda de la verificación de "iteration 3, step 3" tras eliminar el QA
+ * visual: la ubicación de instancias repetidas (`ubicaciones.ts`) y el
+ * preflight del prompt LoRA para laterales repetidas un número par de veces.
+ * Ninguna de las dos depende del observador visual que se borró; ambas siguen
+ * vivas y necesitaban cobertura propia, así que este archivo se editó en vez
+ * de borrarse. Deterministic, no network.
  *
  * El plan aprobado sale de `scripts/lib/planes-fijados.ts` (ADR-0023, paso 5:
  * Python es el único dueño del conteo). Este test nunca comprobó el resolutor;
- * sólo necesita un plan resuelto que tenga un semiarco a un lado y una columna
- * al otro, y una lateral repetida 2, 4 y 6 veces.
+ * sólo necesita un plan resuelto con una lateral repetida.
  * Run: npx tsx --conditions=react-server scripts/test-generate-qa-plan.ts
  */
 
@@ -29,8 +27,6 @@ const materiales = [
   { product_id: "P-GLOBOS", color: "rojo", participacion: 0.6, rol_material: "principal" },
   { product_id: "P-GLOBOS", color: "dorado", participacion: 0.4, rol_material: "secundario" },
 ];
-const IMAGE = { base64: "iVBORw0KGgo=", mime: "image/png" };
-const HASHES = { planHash: "plan-hash", sceneSpecHash: "scene-hash" };
 const CONTEXT: VisualContext = { venueKind: "indoor", lightingKind: "night", palette: ["rojo", "dorado"] };
 
 function approvedScene(fixture: string): { plan: PlanResuelto; scene: SceneSpec } {
@@ -51,107 +47,16 @@ function approvedScene(fixture: string): { plan: PlanResuelto; scene: SceneSpec 
   return { plan, scene };
 }
 
-/** Observer double: records the instruction built from exactly what the generation QA handed it. */
-function recordingObserver(verdict: SceneQaObservation["sidePiecesSeparation"]): { observe: QaObserver; instructions: string[] } {
-  const instructions: string[] = [];
-  const observe: QaObserver = async (sceneSpec, _image, estimate, _telemetria, _signal, _force, plan) => {
-    instructions.push(buildQaObserverPrompt(sceneSpec, estimate, plan));
-    return { presentElementIds: sceneSpec.elements.map((element) => element.element_id), sidePiecesSeparation: verdict };
-  };
-  return { observe, instructions };
+/** Mirror of the route's private officialStructuresDePlan (src/app/api/generate/route.ts), for the same prompt vocabulary as the catalog. */
+function officialStructuresDePlan(plan: PlanResuelto): ReadonlyMap<string, string> {
+  return new Map(plan.plan.estructuras.flatMap((estructura) => estructura.estructura_oficial ? [[estructura.estructura_id, estructura.estructura_oficial] as const] : []));
 }
 
 async function main(): Promise<void> {
-  const { plan, scene } = approvedScene("qa-semiarco-columna");
-  const qaPlan = approvedPlanQaInputs(plan);
-  assert.ok(qaPlan, "an approved plan yields QA plan inputs");
-
-  // 1. With the approved plan, the observer is asked about the separation and "merged" fails.
-  const merged = recordingObserver("merged");
-  const failed = await buildGenerationQa({ sceneSpec: scene, image: IMAGE, hashes: HASHES, plan: qaPlan, force: true, observe: merged.observe });
-  assert.equal(merged.instructions.length, 1);
-  assert.match(merged.instructions[0]!, /separate_side_pieces/, "the generation QA asks the observer about separate side pieces");
-  assert.match(merged.instructions[0]!, /EST_01_SEMIARCO/);
-  assert.match(merged.instructions[0]!, /EST_02_COLUMNA/);
-  assert.equal(failed.pass, false, JSON.stringify(failed.retry_reasons));
-  assert.ok(failed.retry_reasons.some((reason) => /merged into one arch/.test(reason)), JSON.stringify(failed.retry_reasons));
-  assert.equal(failed.composition.separate_side_pieces_ok, false);
-  assert.equal(failed.confidence, "vision_assisted");
-  assert.equal(failed.plan_hash, HASHES.planHash);
-  assert.equal(failed.scene_spec_hash, HASHES.sceneSpecHash);
-  console.log("[PASS] generation QA: approved semiarco+columna plan asks about separation and 'merged' -> pass=false");
-
-  const separate = recordingObserver("separate");
-  const passed = await buildGenerationQa({ sceneSpec: scene, image: IMAGE, hashes: HASHES, plan: qaPlan, force: true, observe: separate.observe });
-  assert.equal(passed.pass, true, JSON.stringify(passed.retry_reasons));
-  assert.equal(passed.composition.separate_side_pieces_ok, true);
-  console.log("[PASS] generation QA: 'separate' -> pass=true");
-
-  // 2. Without an approved plan there is nothing to pair: no question, no criterion.
-  assert.equal(approvedPlanQaInputs(undefined), undefined);
-  const noPlan = recordingObserver("merged");
-  const unplanned = await buildGenerationQa({ sceneSpec: scene, image: IMAGE, hashes: { sceneSpecHash: "scene-hash" }, plan: approvedPlanQaInputs(undefined), force: true, observe: noPlan.observe });
-  assert.doesNotMatch(noPlan.instructions[0]!, /separate_side_pieces/);
-  assert.equal(unplanned.pass, true, JSON.stringify(unplanned.retry_reasons));
-  console.log("[PASS] generation QA: no approved plan -> separation neither asked nor evaluated");
-
-  // 3. No observation (QA disabled or provider unavailable): unknown, never a fabricated pass.
-  const unobserved = await buildGenerationQa({ sceneSpec: scene, image: IMAGE, hashes: HASHES, plan: qaPlan, force: false, observe: async () => null });
-  assert.equal(unobserved.pass, null);
-  assert.equal(unobserved.confidence, "unknown");
-  assert.equal(unobserved.observed_instances, null);
-  console.log("[PASS] generation QA: no observation -> pass=null, confidence=unknown");
-
-  // 4. Corrective retry: readable names and placement instead of ids, inserted
-  //    before FINAL_OUTPUT_REMINDER instead of concatenated after it.
-  const conDetalle = await buildGenerationQa({
-    sceneSpec: scene,
-    image: IMAGE,
-    hashes: HASHES,
-    plan: qaPlan,
-    force: true,
-    observe: async (sceneSpec) => ({
-      presentElementIds: sceneSpec.elements.map((element) => element.element_id),
-      appearanceFailures: ["EST_01_SEMIARCO"],
-      appearanceDetails: [{ element_id: "EST_01_SEMIARCO", aspect: "color_proportion", note: "el dorado ocupa la mitad de la pieza" }],
-    }),
-  });
-  assert.equal(conDetalle.pass, false);
-  const correccion = buildCorrectiveRetryPrompt(conDetalle, scene);
-  assert.doesNotMatch(correccion, /EST_\d|CATALOG_/, correccion);
-  assert.match(correccion, /“Semiarco derecho” in the .+ area of the composition/, correccion);
-  assert.match(correccion, /the approved color shares are inverted/, correccion);
-  assert.match(correccion, /observed: el dorado ocupa la mitad de la pieza/, correccion);
-  const promptReintento = buildImagePrompt({ sceneSpec: scene, correctiveInstruction: correccion });
-  assert.ok(promptReintento.endsWith(FINAL_OUTPUT_REMINDER), "el recordatorio final sigue siendo lo último que lee el modelo");
-  assert.ok(promptReintento.includes("CORRECTIVE RETRY — HIGHEST PRIORITY"), promptReintento.slice(-800));
-  assert.ok(promptReintento.indexOf("CORRECTIVE RETRY") < promptReintento.indexOf(FINAL_OUTPUT_REMINDER));
-  assert.equal(buildCorrectiveRetryPrompt(passed, scene), "", "una imagen conforme no lleva instrucción correctiva");
-
-  //    La nota la escribe el observador, cuya propia instrucción le enumera los
-  //    element_id, así que citarlos en ella es el caso normal: también hay que
-  //    traducirlos, y tachar los que no existan en la escena.
-  const conIdsEnLaNota = await buildGenerationQa({
-    sceneSpec: scene,
-    image: IMAGE,
-    hashes: HASHES,
-    plan: qaPlan,
-    force: true,
-    observe: async (sceneSpec) => ({
-      presentElementIds: sceneSpec.elements.map((element) => element.element_id),
-      appearanceFailures: ["EST_01_SEMIARCO"],
-      appearanceDetails: [{ element_id: "EST_01_SEMIARCO", aspect: "color_proportion", note: "EST_01_SEMIARCO shows CATALOG_01 gold on half of the piece, unlike EST_99_FANTASMA" }],
-    }),
-  });
-  const correccionConIds = buildCorrectiveRetryPrompt(conIdsEnLaNota, scene);
-  assert.doesNotMatch(correccionConIds, /EST_\d|EST_[A-Z]|CATALOG_|VENUE_|EDIT_/, correccionConIds);
-  assert.match(correccionConIds, /observed: “Semiarco derecho” in the .+ shows gold on half of the piece, unlike\./, correccionConIds);
-  console.log("[PASS] corrective retry: nombres legibles, sin ids (tampoco en la nota del observador) y antes del recordatorio final");
-
-  // 5. Ubicación de las instancias repetidas (ubicaciones.ts). Solo se
+  // 1. Ubicación de las instancias repetidas (ubicaciones.ts). Solo se
   //    reflejaban las laterales repetidas exactamente dos veces; cualquier
   //    otra repartía la caja en tajadas horizontales estrechas del mismo lado,
-  //    y el QA marcaba como fallo de ubicación un render simétrico correcto.
+  //    lo que producía un render simétrico incorrecto.
   const estructura = (ubicacion: string, repeticiones: number) => ({
     estructura_id: "EST_01", nombre: "Columnas", tipo: "columna", rol_escena: "soporte",
     ubicacion, repeticiones, medidas: { alto_m: 1.8 }, densidad: "media", mezcla: "clasica", materiales, porque: "x",
@@ -206,12 +111,7 @@ async function main(): Promise<void> {
   }
   console.log("[PASS] ubicaciones: laterales pares reparten a los dos lados y las centradas ×2 van en espejo");
 
-  // 6. One owner: the prompt compiled with the same plan map asks the image model for the gap.
-  const compiled = compileProductPrompt({ sceneSpec: scene, visualContext: CONTEXT, vocabulary: PRODUCT_VOCABULARY, trigger: "eventdecor_style_v2", officialStructures: qaPlan.officialStructures });
-  assert.match(compiled.prompt, /stand apart with an open gap between them/, compiled.prompt);
-  console.log("[PASS] the LoRA prompt compiled with the same plan inputs requests the separation QA checks");
-
-  // 7. Una lateral repetida un número par de veces (el caso motivador: cuatro
+  // 2. Una lateral repetida un número par de veces (el caso motivador: cuatro
   //    columnas, dos a cada lado) tiene que llegar entera hasta el preflight,
   //    que es lo que route.ts consulta antes de la llamada pagada. El
   //    compilador emitía la frase de par una vez POR PAR y
@@ -220,8 +120,8 @@ async function main(): Promise<void> {
   for (const repeticiones of [2, 4, 6]) {
     const lateralRepetida = approvedScene(`qa-lateral-repetida-x${repeticiones}`);
     assert.equal(lateralRepetida.plan.estructuras.find((estructura) => estructura.estructura_id === "EST_02_COLUMNAS")?.repeticiones, repeticiones);
-    const planLateral = approvedPlanQaInputs(lateralRepetida.plan)!;
-    const caption = compileProductPrompt({ sceneSpec: lateralRepetida.scene, visualContext: CONTEXT, vocabulary: PRODUCT_VOCABULARY, trigger: "eventdecor_style_v2", officialStructures: planLateral.officialStructures });
+    const officialStructures = officialStructuresDePlan(lateralRepetida.plan);
+    const caption = compileProductPrompt({ sceneSpec: lateralRepetida.scene, visualContext: CONTEXT, vocabulary: PRODUCT_VOCABULARY, trigger: "eventdecor_style_v2", officialStructures });
     // Todas las instancias del mismo grupo son UNA instrucción espejo, no la misma frase repetida.
     const bilaterales = caption.clauses.filter((clause) => clause.bilateral);
     assert.equal(bilaterales.length, 1, JSON.stringify(caption.clauses.map((clause) => clause.elementIds)));

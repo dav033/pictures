@@ -3,7 +3,8 @@ import { createHash } from "node:crypto";
 import { z } from "zod";
 import { ErrorIA, type ChatPort, type Herramienta, type ImagenEtiquetada, type TurnoChat } from "./tipos";
 import { analysisCacheKey } from "./reference-blueprint";
-import { bytesBase64, registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "./telemetria-llamadas";
+import { bytesDeBase64 } from "@sempertex/agente-core";
+import { registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "./telemetria-llamadas";
 import { toolArgs } from "./candidatos-referencia";
 
 const PointSchema = z.object({ x: z.number().min(0).max(1), y: z.number().min(0).max(1) }).strict();
@@ -270,7 +271,7 @@ async function executeAnalysis(input: {
   systemPromptHash: string;
 }): Promise<VenueAnalysisResult> {
   const { chat, venue, telemetria, signal, key, systemPromptHash } = input;
-  const bytesImagenEntrada = bytesBase64(venue.base64);
+  const bytesImagenEntrada = bytesDeBase64(venue.base64);
   const config = configHash(chat, systemPromptHash);
 
   const executeStep = async (capacidad: typeof INVENTORY_CAPABILITY | typeof AUDIT_CAPABILITY, request: Parameters<ChatPort["turno"]>[0], attempt: number): Promise<TurnoChat> => {

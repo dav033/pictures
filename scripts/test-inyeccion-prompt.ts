@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import sharp from "sharp";
-import { crearChatGemini } from "../src/lib/ia/gemini/chat";
-import { analizarReferenciasV2 } from "../src/lib/ia/analizar-referencias-v2";
+import { crearChatGemini } from "@sempertex/agente-core/gemini";
+import { analizarReferenciasV2 } from "../src/lib/ia/amaterasu/analizar-referencias-v2";
 import type { ImagenEtiquetada } from "../src/lib/ia/tipos";
 
 for (const archivo of [".env.local", ".env"]) {

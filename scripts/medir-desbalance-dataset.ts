@@ -1,6 +1,5 @@
 /**
- * La medición que la fase 5 de PLAN-IMAGE-AND-COLOR-FIDELITY.md exige ANTES de
- * decidir un reentrenamiento.
+ * La medición que hace falta ANTES de decidir un reentrenamiento.
  *
  * El informe de rechazo de v007 es específico: color 6/6, acabado 0/6, diámetro
  * 0/6. La hipótesis del plan es que los dos fallos son propiedades del dataset y

@@ -1,10 +1,7 @@
 import type { Pool } from "pg";
 import type { Producto } from "@/lib/types";
 import { nombreCategoria } from "@/lib/shopify/derivar";
-import {
-  llamarPythonCatalogSelection,
-  seleccionarBackendPython,
-} from "@/lib/ia/python-adapter";
+import { llamarPythonCatalogSelection } from "@/lib/ia/python-adapter";
 
 /**
  * Lo único que el LLM puede mandar por cada pieza elegida (plan §4.5). A
@@ -61,32 +58,6 @@ export type OpcionesValidacion = {
 };
 
 export type WhitelistRecuperada = ReadonlyMap<string, ReadonlySet<string>>;
-
-type FilaVariante = {
-  product_id: string;
-  variant_id: string;
-  sku: string | null;
-  producto_titulo: string;
-  variante_titulo: string | null;
-  precio: string;
-  variante_disponible: boolean;
-  inventario: number | null;
-  imagen_principal: string | null;
-  handle: string | null;
-  producto_tipo: string | null;
-  categoria: string | null;
-  colores_producto: unknown;
-  colores_variante: unknown;
-  descripcion: string | null;
-  unidades_paq: number | null;
-  codigo_tamano: string | null;
-  forma: string | null;
-  diam_pulg: number | null;
-};
-
-function strings(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.length > 0) : [];
-}
 
 /** Proyección visual segura: todo dato comercial proviene de ItemValidado/PG. */
 export function aProductoValidado(item: ItemValidado, paquetes = item.cantidad): Producto {

@@ -63,15 +63,26 @@ MAX_SAFE_INTEGER = 9_007_199_254_740_991
 MAX_PLAN_LORA_VARIANTS = 2048
 
 _EXTERIOR = re.compile(r"jard[ií]n|exterior|terraza|playa|patio|campo", re.IGNORECASE)
-_DIAMETROS_ESTANDAR = (5, 9, 12, 18, 24)
 _GEOMETRIC_TYPES = {"arco", "semiarco", "guirnalda", "columna", "pared", "centro_mesa"}
 _DENSITY_LAMBDA = {"sencilla": 2.8, "media": 3.6, "lujosa": 4.5}
+# Mix table, standard diameters, substitution cap and mandatory-size grammar.
+# Owned by src/lib/plan/mezclas.ts and exported into the plan-decoracion.v1
+# contract as ``x-reglas-mezclas``; this resolver reads them from there. There
+# is no default: counting without the mix table would be wrong, not degraded.
+_MIX_RULES: dict[str, object] = cast(
+    dict[str, object], contract_schema("PlanDecoracion")["x-reglas-mezclas"]
+)
 _MIXES: dict[str, tuple[tuple[int, float], ...]] = {
-    "clasica": ((12, 1.0),),
-    "organica_fina": ((5, 0.21), (9, 0.18), (12, 0.54), (18, 0.05), (24, 0.02)),
-    "organica_gruesa": ((9, 0.25), (12, 0.45), (18, 0.2), (24, 0.1)),
-    "solo_grandes": ((18, 0.6), (24, 0.4)),
+    mix: tuple(
+        (int(size["pulgadas"]), float(size["proporcion"]))
+        for size in cast(list[dict[str, float]], sizes)
+    )
+    for mix, sizes in cast(dict[str, object], _MIX_RULES["mezclas"]).items()
 }
+_DIAMETROS_ESTANDAR: tuple[int, ...] = tuple(
+    int(size) for size in cast(list[int], _MIX_RULES["diametros_estandar"])
+)
+_MAX_SUBSTITUTION_RATIO = float(cast(float, _MIX_RULES["razon_maxima_sustitucion"]))
 _BAND_WIDTH: dict[str, float] = {
     "clasica": 1.3,
     "organica_fina": 1.02,
@@ -728,7 +739,7 @@ def _apportion_margins(
 
 
 _MANDATORY_SIZE = re.compile(
-    r"^[ \t\n\r\f\v]*R?-?(\d{1,3})[ \t\n\r\f\v]*$", re.IGNORECASE | re.ASCII
+    cast(str, _MIX_RULES["patron_tamano_obligatorio"]), re.IGNORECASE | re.ASCII
 )
 """What counts as a mandatory size in ``restricciones.tamanos[].valor``.
 
@@ -740,7 +751,9 @@ disagreed on decimals, exponents, hexadecimal, underscores, non-ASCII digits
 and the empty string -- and since the effective mix decides the TOTAL, that
 disagreement moved counts, costs and ``plan_hash``. ``re.ASCII`` is what keeps
 ``\\d`` on ASCII digits. Anything else is ignored, never rounded and never a
-plan rejection.
+plan rejection. The pattern comes from the contract (``mezclas.ts``, source
+``^[ \\t\\n\\r\\f\\v]*R?-?(\\d{1,3})[ \\t\\n\\r\\f\\v]*$``); the flags are fixed on
+both sides.
 """
 
 
@@ -988,7 +1001,7 @@ def _admissible_substitution(requested: float, available: float) -> bool:
         return False
     return (
         abs(requested_index - available_index) == 1
-        and max(requested, available) / min(requested, available) <= 1.5
+        and max(requested, available) / min(requested, available) <= _MAX_SUBSTITUTION_RATIO
     )
 
 

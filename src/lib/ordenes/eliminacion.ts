@@ -2,7 +2,7 @@ import "server-only";
 
 import { readdir, rm } from "node:fs/promises";
 import path from "node:path";
-import { limpiarDerivadosDeFoto, limpiarDerivadosDeOrden } from "./limpiar-derivados";
+import { limpiarDerivadosDeFoto } from "./limpiar-derivados";
 import { directorioOrdenes } from "./directorio";
 
 export async function eliminarFotoDeOrden(numero: string, indice: number, limpiarDerivado = true): Promise<number> {
@@ -18,10 +18,5 @@ export async function eliminarFotoDeOrden(numero: string, indice: number, limpia
     rm(path.join(carpetaOrden, `feedback-${indice}.json`), { force: true }),
   ]);
   return limpiarDerivado ? limpiarDerivadosDeFoto(numero, indice) : 0;
-}
-
-export async function eliminarOrden(numero: string): Promise<number> {
-  await rm(path.join(/*turbopackIgnore: true*/ directorioOrdenes(), numero), { recursive: true, force: true });
-  return limpiarDerivadosDeOrden(numero);
 }
 

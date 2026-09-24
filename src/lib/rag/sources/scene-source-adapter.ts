@@ -157,12 +157,6 @@ export const SUPPLIER_ONBOARDING_REQUIREMENTS: readonly SupplierRequirement[] = 
   },
 ] as const;
 
-export function supplierRequirementsFor(sourceClass: "catalog_sale" | "catalog_rental"): SupplierRequirement[] {
-  return SUPPLIER_ONBOARDING_REQUIREMENTS.filter(
-    (requirement) => requirement.appliesTo === "all" || (requirement.appliesTo === "rental_only" && sourceClass === "catalog_rental"),
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Validación de forma — nunca se inventa disponibilidad/precio (sección 6.4).
 // ---------------------------------------------------------------------------

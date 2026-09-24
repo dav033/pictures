@@ -1,12 +1,10 @@
 import assert from "node:assert/strict";
 import { extraerRestriccionesUsuario, MAX_TEXTO_ORIGINAL } from "../src/lib/plan/restricciones";
 import { PlanDecoracionSchema, RestriccionesUsuarioSchema } from "../src/lib/plan/tipos";
-import { evaluateSceneQa } from "../src/lib/ia/image-qa";
-import type { SceneSpec } from "../src/lib/ia/scene-spec";
 import { cajasDeEstructuras } from "../src/lib/plan/ubicaciones";
 
 /**
- * Restricciones del cliente, contrato del plan, ubicaciones y QA de escena.
+ * Restricciones del cliente, contrato del plan y ubicaciones.
  *
  * Lo que este script probaba y ya no tiene sujeto (ADR-0023, paso 5): la
  * búsqueda global de paquetes (`optimizarCobertura`) y el reparto de la reserva
@@ -137,20 +135,4 @@ const cajas = cajasDeEstructuras([{
 assert.ok(cajas["EST_01_ARCO#1"] && cajas["EST_01_ARCO#2"]);
 assert.notEqual(cajas["EST_01_ARCO#1"]!.bbox.x, cajas["EST_01_ARCO#2"]!.bbox.x);
 
-// La QA no acepta el blueprint como evidencia: si falta una instancia física,
-// el resultado debe fallar aunque la otra instancia sí esté presente.
-const escena = {
-  elements: [
-    { element_id: "EST_01_ARCO#1" },
-    { element_id: "EST_01_ARCO#2" },
-  ],
-} as SceneSpec;
-const qa = evaluateSceneQa(escena, { presentElementIds: ["EST_01_ARCO#1"] });
-assert.equal(qa.pass, false);
-assert.deepEqual(qa.required_elements.map((item) => item.present), [true, false]);
-assert.match(qa.retry_reasons.join(" | "), /EST_01_ARCO#2/);
-const qaConExtra = evaluateSceneQa(escena, { presentElementIds: ["EST_01_ARCO#1", "EST_01_ARCO#2", "INVENTADA"] });
-assert.equal(qaConExtra.pass, false);
-assert.match(qaConExtra.retry_reasons.join(" | "), /INVENTADA/);
-
-console.log("[PASS] restricciones del cliente, contrato del plan, ubicaciones repetidas y QA de escena");
+console.log("[PASS] restricciones del cliente, contrato del plan y ubicaciones repetidas");

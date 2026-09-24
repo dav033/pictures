@@ -6,7 +6,7 @@ import {
   HappiePackageRecommendationResponseV1Schema,
 } from "@/lib/ia/contracts/happie-v1";
 import { isAuthenticatedRequest, isSameOriginRequest } from "@/lib/auth/request";
-import { telemetriaRecomendacion } from "@/lib/happie/telemetria";
+import { iaRecomendacionHappie } from "@/lib/happie/ia-recomendacion";
 
 export async function POST(request: Request) {
   if (!isAuthenticatedRequest(request) || !isSameOriginRequest(request)) {
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     const cliente = new HappiaClient(config);
     const { packages } = await cliente.listarPackages(request.signal);
 
-    const resultado = await recomendarPaquetes({ descripcionEvento: parsed.data.descripcionEvento, paquetes: packages, signal: request.signal, registrarTelemetria: telemetriaRecomendacion(request, "happie_paquetes") });
+    const resultado = await recomendarPaquetes({ descripcionEvento: parsed.data.descripcionEvento, paquetes: packages, signal: request.signal, ...iaRecomendacionHappie(request, "happie_paquetes") });
 
     return Response.json(HappiePackageRecommendationResponseV1Schema.parse({ schema_version: HAPPIE_CONTRACT_VERSION, ...resultado }));
   } catch {

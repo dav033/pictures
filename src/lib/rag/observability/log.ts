@@ -160,8 +160,6 @@ export type DiagnosticoGeneracion = {
   preflightOk: boolean | null;
   preflightErrores: string[];
   tallasOmitidas: string[];
-  qaPass: boolean | null;
-  qaRetryReasons: string[];
 };
 
 export type HechosPeticionPlan = {

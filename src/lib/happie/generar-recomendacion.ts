@@ -13,7 +13,7 @@ import {
   HappieRecommendationRequestV1Schema,
   HappieRecommendationResponseV1Schema,
 } from "@/lib/ia/contracts/happie-v1";
-import { telemetriaRecomendacion } from "./telemetria";
+import { iaRecomendacionHappie } from "./ia-recomendacion";
 
 /**
  * El schema del contrato versionado es la fuente única. `main` había vuelto a
@@ -112,7 +112,7 @@ export async function generarRecomendacion(
       coincidenciaExacta,
       maxRecomendaciones: Math.max(1, Math.min(3, Math.trunc(maxRecomendaciones))),
       signal: request.signal,
-      registrarTelemetria: telemetriaRecomendacion(request, flujo),
+      ...iaRecomendacionHappie(request, flujo),
     });
 
     const baseUrlFinal = baseUrl ?? baseUrlPorDefecto(config.baseUrl);

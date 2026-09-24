@@ -37,8 +37,8 @@ async function main(): Promise<void> {
   const { crearEstadoConversacion, crearRegistroHerramientas } = await import("../src/lib/ia/registro-herramientas");
   const { ReferenceBlueprintV2Schema } = await import("../src/lib/ia/reference-blueprint");
   const { PlanDecoracionSchema } = await import("../src/lib/plan/tipos");
-  const { detectarJergaInterna } = await import("../src/lib/ia/jerga-interna");
-  const { construirSistema } = await import("../src/lib/ia/prompt-sistema");
+  const { detectarJergaInterna } = await import("../src/lib/ia/omoikane/jerga-interna");
+  const { construirSistema } = await import("../src/lib/ia/omoikane/prompt-sistema");
   const relajacion = await import("../src/lib/rag/chat/relajacion-filtros");
   const { extraerFiltrosDurosBusqueda } = await import("../src/lib/rag/query-parser/hard-filters");
   const coloresReferencia = await import("../src/lib/plan/colores-referencia");
@@ -195,7 +195,7 @@ async function main(): Promise<void> {
 
   // ---------------------------------------------------------------------------
   // D2 + D3: the final text of a turn.
-  const texto = await import("../src/lib/ia/texto-final-turno");
+  const texto = await import("../src/lib/ia/omoikane/texto-final-turno");
   type Mensaje = import("../src/lib/ia/tipos").Mensaje;
   const { mensajeClienteSinCobertura, mensajeClienteRestricciones } = await import("../src/lib/ia/mensajes-cliente");
   const sinCobertura = mensajeClienteSinCobertura([{ estructura_id: "EST_01", tamano: "R-24" }], new Map([["EST_01", "Arco asimétrico"]]));
@@ -235,7 +235,7 @@ async function main(): Promise<void> {
   assert.match(construirSistema({ ragEnabled: true }), /CAMBIOS DEL CLIENTE[\s\S]*Nunca digas que cambiaste/);
 
   // Through the chat wrapper: a model that ends with "" or with a false claim.
-  const { ejecutarConversacionStream } = await import("../src/lib/ia/ejecutar");
+  const { ejecutarConversacionStream } = await import("../src/lib/ia/omoikane/ejecutar");
   type ChatPort = import("../src/lib/ia/tipos").ChatPort;
   const chatQueResponde = (respuesta: string): ChatPort => ({
     id: "gemini",

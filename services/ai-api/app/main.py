@@ -18,17 +18,47 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from types import ModuleType
-from typing import Awaitable, Callable, Literal, Protocol, TypeVar, cast
+from typing import AsyncGenerator, AsyncIterator, Awaitable, Callable, Literal, Protocol, TypeVar, cast
 from uuid import UUID
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 from pydantic import Field, ValidationError, field_validator, model_validator
 
 from app.generated_models import InternalRequestSignature, OperationalContext
+from app.amaterasu.turno import (
+    REFERENCE_TURN_SCOPE,
+    ReferenceTurnError,
+    ReferenceTurnRequest,
+    ejecutar_turno_gemini,
+)
 from app.catalog import CATALOG_SCOPE, CatalogSearchRequest, CatalogStore
-from app.catalog_embeddings import (
+from app.happie.generacion import (
+    HAPPIE_GENERATE_SCOPE,
+    HappieGenerateError,
+    HappieGenerateRequest,
+    generar_happie_gemini,
+)
+from app.inari.parse import (
+    INTENT_PARSE_SCOPE,
+    IntentParseError,
+    IntentParseRequest,
+    interpretar_consulta_gemini,
+)
+from app.omoikane.turno_stream import (
+    CHAT_TURN_STREAM_SCOPE,
+    ChatTurnError,
+    ChatTurnStreamRequest,
+    abrir_turno_stream,
+)
+from app.kagutsuchi.lora import (
+    LORA_GENERATE_SCOPE,
+    LoraGenerateError,
+    LoraGenerateRequest,
+    generar_lora_fal,
+)
+from app.watatsumi.catalog_embeddings import (
     DEFAULT_EMBEDDING_DIMENSIONS,
     DEFAULT_EMBEDDING_MODEL,
     EmbeddingSettings,
@@ -42,6 +72,12 @@ from app.recommendations import (
     CatalogRecommendationsRequest,
 )
 from app.selection import CatalogSelectionError, CatalogSelectionRequest
+from app.uzume.interaction import (
+    IMAGE_GENERATE_SCOPE,
+    ImageGenerateError,
+    ImageGenerateRequest,
+    crear_interaccion_gemini,
+)
 from app.operational_store import InMemoryOperationalStore, StoredHttpResponse
 from app.operational_models import ContractModel, OperationalRequest
 from app.plan import (
@@ -59,6 +95,19 @@ DEFAULT_SCOPE = "ai.echo"
 DEFAULT_RERANK_SCOPE = "ai.rerank"
 DEFAULT_EMBEDDING_SCOPE = "ai.embedding"
 MAX_BODY_BYTES = 64 * 1024
+# Reference-image analysis (Amaterasu) can carry up to 3 images under the
+# same 10MB cap Next already enforces client-side
+# (LIMITE_CUERPO_ANALISIS_BYTES in analisis-http.ts); this is the same ceiling
+# on the Next -> Python hop, not a target size -- every other operation's
+# payload stays a few KB regardless of the cap being this high.
+MAX_BODY_BYTES_IMAGENES = 11 * 1024 * 1024
+# The customer chat turn: the same 25MB ceiling /api/chat already accepts from
+# the browser (venue photo + style references on the first turn), so a chat
+# that works on the direct path does not fail on the Next -> Python hop.
+MAX_BODY_BYTES_CHAT = 25 * 1024 * 1024
+# Happie's package recommendation sends the active Happia catalog as JSON text
+# in one call. The cap is a ceiling for that catalog, not a target size.
+MAX_BODY_BYTES_HAPPIE = 4 * 1024 * 1024
 _SHA256_RE = re.compile(r"^[a-f0-9]{64}$")
 _SCOPE_RE = re.compile(r"^[a-zA-Z0-9._:/-]+$")
 _LOCAL_ENVIRONMENTS = {"development", "test", "local"}
@@ -80,6 +129,9 @@ class Settings:
     max_clock_skew_seconds: int = 300
     nonce_namespace: str = "ai-api"
     max_body_bytes: int = MAX_BODY_BYTES
+    max_body_bytes_imagenes: int = MAX_BODY_BYTES_IMAGENES
+    max_body_bytes_chat: int = MAX_BODY_BYTES_CHAT
+    max_body_bytes_happie: int = MAX_BODY_BYTES_HAPPIE
     database_url: str | None = None
     catalog_database_url: str | None = None
 
@@ -169,6 +221,15 @@ class InMemoryMetrics:
 EchoHandler = Callable[[EchoRequest], Awaitable[dict[str, object]]]
 RerankHandler = Callable[[RerankRequest], Awaitable[dict[str, object]]]
 EmbeddingHandler = Callable[[EmbeddingRequest], Awaitable[dict[str, object]]]
+IntentParseHandler = Callable[[IntentParseRequest], Awaitable[dict[str, object]]]
+HappieGenerateHandler = Callable[[HappieGenerateRequest], Awaitable[dict[str, object]]]
+ReferenceTurnHandler = Callable[[ReferenceTurnRequest], Awaitable[dict[str, object]]]
+ImageGenerateHandler = Callable[[ImageGenerateRequest], Awaitable[dict[str, object]]]
+LoraGenerateHandler = Callable[[LoraGenerateRequest], Awaitable[dict[str, object]]]
+# Not awaited: it validates what can fail before the stream opens (raising an
+# HTTPException) and returns the event generator the boundary drains.
+ChatTurnStreamHandler = Callable[[ChatTurnStreamRequest], AsyncGenerator[dict[str, object], None]]
+OperationalStreamOpener = Callable[[OperationalRequest], AsyncGenerator[dict[str, object], None]]
 OperationalHandler = Callable[[OperationalRequest], Awaitable[dict[str, object]]]
 
 
@@ -288,6 +349,59 @@ async def _default_embedding_handler(payload: EmbeddingRequest) -> dict[str, obj
             ],
         }
     }
+
+
+async def _default_intent_parse_handler(payload: IntentParseRequest) -> dict[str, object]:
+    try:
+        result = await interpretar_consulta_gemini(payload)
+    except IntentParseError as error:
+        raise _error(error.code, error.status_code) from None
+    return {"payload": result}
+
+
+async def _default_happie_generate_handler(payload: HappieGenerateRequest) -> dict[str, object]:
+    try:
+        result = await generar_happie_gemini(payload)
+    except HappieGenerateError as error:
+        raise _error(error.code, error.status_code) from None
+    return {"payload": result}
+
+
+async def _default_reference_turn_handler(payload: ReferenceTurnRequest) -> dict[str, object]:
+    try:
+        result = await ejecutar_turno_gemini(payload)
+    except ReferenceTurnError as error:
+        raise _error(error.code, error.status_code) from None
+    return {"payload": result}
+
+
+async def _default_image_generate_handler(payload: ImageGenerateRequest) -> dict[str, object]:
+    try:
+        result = await crear_interaccion_gemini(payload)
+    except ImageGenerateError as error:
+        raise _error(error.code, error.status_code) from None
+    return {"payload": result}
+
+
+async def _default_lora_generate_handler(payload: LoraGenerateRequest) -> dict[str, object]:
+    try:
+        result = await generar_lora_fal(payload)
+    except LoraGenerateError as error:
+        details: dict[str, object] = {}
+        if error.provider_status is not None:
+            details["provider_status"] = error.provider_status
+        if error.provider_detail is not None:
+            details["provider_detail"] = error.provider_detail
+        raise _error(error.code, error.status_code, details or None) from None
+    return {"payload": result}
+
+
+def _default_chat_turn_stream_handler(payload: ChatTurnStreamRequest) -> AsyncGenerator[dict[str, object], None]:
+    try:
+        # mypy sees imported callables as Any here (follow_imports = "skip").
+        return cast(AsyncGenerator[dict[str, object], None], abrir_turno_stream(payload))
+    except ChatTurnError as error:
+        raise _error(error.code, error.status_code) from None
 
 
 def _run_bounded_rerank(payload: RerankRequest) -> dict[str, object]:
@@ -600,25 +714,37 @@ def _detail_code(exception: HTTPException) -> str:
 def _detail_metadata(exception: HTTPException) -> dict[str, object]:
     if not isinstance(exception.detail, dict):
         return {}
+    metadata: dict[str, object] = {}
     attempts = exception.detail.get("attempts")
-    if not isinstance(attempts, list):
-        return {}
-    safe_attempts: list[dict[str, object]] = []
-    for item in attempts:
-        if not isinstance(item, dict):
-            continue
-        attempt = item.get("attempt")
-        result = item.get("result")
-        elapsed_ms = item.get("elapsed_ms")
-        if (
-            isinstance(attempt, int)
-            and attempt > 0
-            and result in {"ok", "error"}
-            and isinstance(elapsed_ms, int)
-            and elapsed_ms >= 0
-        ):
-            safe_attempts.append({"attempt": attempt, "result": result, "elapsed_ms": elapsed_ms})
-    return {"attempts": safe_attempts} if safe_attempts else {}
+    if isinstance(attempts, list):
+        safe_attempts: list[dict[str, object]] = []
+        for item in attempts:
+            if not isinstance(item, dict):
+                continue
+            attempt = item.get("attempt")
+            result = item.get("result")
+            elapsed_ms = item.get("elapsed_ms")
+            if (
+                isinstance(attempt, int)
+                and attempt > 0
+                and result in {"ok", "error"}
+                and isinstance(elapsed_ms, int)
+                and elapsed_ms >= 0
+            ):
+                safe_attempts.append({"attempt": attempt, "result": result, "elapsed_ms": elapsed_ms})
+        if safe_attempts:
+            metadata["attempts"] = safe_attempts
+    # Kagutsuchi's account-rejected fal.ai responses (see LoraGenerateError):
+    # the real provider status/detail, distinct from this exception's own
+    # boundary status_code, so the TypeScript wrapper can rebuild
+    # ProveedorImagenNoDisponibleError with fal's actual 401/402/403.
+    provider_status = exception.detail.get("provider_status")
+    if isinstance(provider_status, int) and not isinstance(provider_status, bool):
+        metadata["provider_status"] = provider_status
+    provider_detail = exception.detail.get("provider_detail")
+    if isinstance(provider_detail, str) and provider_detail:
+        metadata["provider_detail"] = provider_detail[:300]
+    return metadata
 
 
 async def _store_failure(
@@ -651,29 +777,28 @@ async def _store_failure(
         )
 
 
-async def _handle_operational_request(
+async def _admit_operational_request(
     request: Request,
     *,
-    operation: str,
     model: type[OperationalRequest],
     scope: str,
-    handler: OperationalHandler,
-) -> Response:
-    """Shared auth/idempotency/deadline/error-mapping boundary for every
-    /internal/v1/* operation. `scope` is the required scope for THIS
-    operation -- it is never read from a single app-wide setting, so two
-    routes (e.g. echo and rerank) can require different scopes."""
+    max_body_bytes: int | None,
+) -> tuple[OperationalRequest, float]:
+    """Body cap, HMAC, schema, signed body hash, scope and deadline -- the
+    checks every /internal/v1/* route runs before touching its handler,
+    shared by the single-response and the streaming boundary."""
 
     runtime_settings: Settings = request.app.state.settings
+    effective_max_body_bytes = max_body_bytes if max_body_bytes is not None else runtime_settings.max_body_bytes
     content_length = request.headers.get("content-length")
     if (
         content_length
         and content_length.isdigit()
-        and int(content_length) > runtime_settings.max_body_bytes
+        and int(content_length) > effective_max_body_bytes
     ):
         raise _error("body_too_large", 413)
     raw_body = await request.body()
-    if len(raw_body) > runtime_settings.max_body_bytes:
+    if len(raw_body) > effective_max_body_bytes:
         raise _error("body_too_large", 413)
 
     await _authorize(request, raw_body, runtime_settings, required_scope=scope)
@@ -684,7 +809,109 @@ async def _handle_operational_request(
         raise _invalid_request()
     if scope not in context.scopes:
         raise _error("insufficient_scope", 403)
-    timeout_seconds = _deadline_seconds(context)
+    return payload, _deadline_seconds(context)
+
+
+_STREAM_TERMINAL_EVENTS = frozenset({"end", "error"})
+
+
+def _ndjson_line(event: dict[str, object]) -> bytes:
+    return (json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n").encode("utf-8")
+
+
+async def _handle_operational_stream(
+    request: Request,
+    *,
+    operation: str,
+    model: type[OperationalRequest],
+    scope: str,
+    open_stream: OperationalStreamOpener,
+    max_body_bytes: int | None = None,
+) -> Response:
+    """Streaming counterpart of `_handle_operational_request`: identical
+    admission (HMAC, schema, signed body hash, scope, deadline), then an
+    NDJSON body with one event per line that always ends with exactly one
+    `end` or `error` event. Failures detected before the stream opens are
+    ordinary HTTP errors. Once the 200 is sent, failures are `error` events.
+
+    There is deliberately no idempotency here: a replay would re-run or
+    re-send a turn whose text the client already showed and the provider
+    already charged, so a request carrying an idempotency key is rejected
+    instead of being silently executed twice.
+    """
+
+    payload, timeout_seconds = await _admit_operational_request(
+        request, model=model, scope=scope, max_body_bytes=max_body_bytes
+    )
+    if payload.context.idempotency_key is not None:
+        raise _error("idempotency_not_supported", 422)
+    events = open_stream(payload)
+    metrics = request.app.state.metrics
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + timeout_seconds
+
+    async def body() -> AsyncIterator[bytes]:
+        terminal = False
+        try:
+            while not terminal:
+                remaining = deadline - loop.time()
+                if remaining <= 0:
+                    raise asyncio.TimeoutError
+                try:
+                    event = await asyncio.wait_for(events.__anext__(), timeout=remaining)
+                except StopAsyncIteration:
+                    break
+                terminal = event.get("type") in _STREAM_TERMINAL_EVENTS
+                yield _ndjson_line(event)
+        except asyncio.TimeoutError:
+            metrics.increment(f"{operation}.timeout")
+            terminal = True
+            yield _ndjson_line({"type": "error", "code": "deadline_exceeded", "phase": "stream"})
+        except asyncio.CancelledError:
+            # Next disconnected (the browser left, or its own deadline fired).
+            # Re-raised so Starlette finishes the cancellation; `finally`
+            # closes the provider stream on the way out.
+            metrics.increment(f"{operation}.cancelled")
+            raise
+        except Exception:
+            logger.error("stream failed", extra={"request_id": request.state.request_id})
+            terminal = True
+            yield _ndjson_line({"type": "error", "code": "internal_error", "phase": "stream"})
+        finally:
+            await events.aclose()
+        if not terminal:
+            logger.error("stream ended without a terminal event", extra={"request_id": request.state.request_id})
+            yield _ndjson_line({"type": "error", "code": "internal_error", "phase": "stream"})
+            return
+        metrics.increment(f"{operation}.completed")
+
+    return StreamingResponse(
+        body(),
+        media_type="application/x-ndjson",
+        headers={**_response_headers(request), "cache-control": "no-store"},
+    )
+
+
+async def _handle_operational_request(
+    request: Request,
+    *,
+    operation: str,
+    model: type[OperationalRequest],
+    scope: str,
+    handler: OperationalHandler,
+    max_body_bytes: int | None = None,
+) -> Response:
+    """Shared auth/idempotency/deadline/error-mapping boundary for every
+    /internal/v1/* operation. `scope` is the required scope for THIS
+    operation -- it is never read from a single app-wide setting, so two
+    routes (e.g. echo and rerank) can require different scopes.
+    `max_body_bytes` overrides the default cap for one route (Amaterasu's
+    reference images); every other route keeps the small default."""
+
+    payload, timeout_seconds = await _admit_operational_request(
+        request, model=model, scope=scope, max_body_bytes=max_body_bytes
+    )
+    context = payload.context
     # Idempotency covers the operation payload, not volatile transport
     # fields such as request_id, correlation_id, or deadline_at. The
     # adapter supplies that stable operation hash in the signed context.
@@ -820,6 +1047,12 @@ def create_app(
     echo_handler: EchoHandler | None = None,
     rerank_handler: RerankHandler | None = None,
     embedding_handler: EmbeddingHandler | None = None,
+    intent_parse_handler: IntentParseHandler | None = None,
+    happie_generate_handler: HappieGenerateHandler | None = None,
+    reference_turn_handler: ReferenceTurnHandler | None = None,
+    image_generate_handler: ImageGenerateHandler | None = None,
+    lora_generate_handler: LoraGenerateHandler | None = None,
+    chat_turn_stream_handler: ChatTurnStreamHandler | None = None,
 ) -> FastAPI:
     current_settings = settings or Settings.from_env()
     default_store: object | None = None
@@ -889,6 +1122,12 @@ def create_app(
     handler = echo_handler or _default_echo_handler
     rerank_handler_fn = rerank_handler or _default_rerank_handler
     embedding_handler_fn = embedding_handler or _default_embedding_handler
+    intent_parse_handler_fn = intent_parse_handler or _default_intent_parse_handler
+    happie_generate_handler_fn = happie_generate_handler or _default_happie_generate_handler
+    reference_turn_handler_fn = reference_turn_handler or _default_reference_turn_handler
+    image_generate_handler_fn = image_generate_handler or _default_image_generate_handler
+    lora_generate_handler_fn = lora_generate_handler or _default_lora_generate_handler
+    chat_turn_stream_handler_fn = chat_turn_stream_handler or _default_chat_turn_stream_handler
 
     @application.middleware("http")
     async def request_context(
@@ -1068,6 +1307,71 @@ def create_app(
             model=PlanResolutionRequest,
             scope=PLAN_RESOLUTION_SCOPE,
             handler=handler,
+        )
+
+    @application.post("/internal/v1/ia/intent-parse")
+    async def ia_intent_parse(request: Request) -> Response:
+        return await _handle_operational_request(
+            request,
+            operation="ia.intent_parse",
+            model=IntentParseRequest,
+            scope=INTENT_PARSE_SCOPE,
+            handler=cast(OperationalHandler, intent_parse_handler_fn),
+        )
+
+    @application.post("/internal/v1/ia/happie-generate")
+    async def ia_happie_generate(request: Request) -> Response:
+        return await _handle_operational_request(
+            request,
+            operation="ia.happie_generate",
+            model=HappieGenerateRequest,
+            scope=HAPPIE_GENERATE_SCOPE,
+            handler=cast(OperationalHandler, happie_generate_handler_fn),
+            max_body_bytes=current_settings.max_body_bytes_happie,
+        )
+
+    @application.post("/internal/v1/ia/reference-turn")
+    async def ia_reference_turn(request: Request) -> Response:
+        return await _handle_operational_request(
+            request,
+            operation="ia.reference_turn",
+            model=ReferenceTurnRequest,
+            scope=REFERENCE_TURN_SCOPE,
+            handler=cast(OperationalHandler, reference_turn_handler_fn),
+            max_body_bytes=current_settings.max_body_bytes_imagenes,
+        )
+
+    @application.post("/internal/v1/ia/image-generate")
+    async def ia_image_generate(request: Request) -> Response:
+        return await _handle_operational_request(
+            request,
+            operation="ia.image_generate",
+            model=ImageGenerateRequest,
+            scope=IMAGE_GENERATE_SCOPE,
+            handler=cast(OperationalHandler, image_generate_handler_fn),
+            max_body_bytes=current_settings.max_body_bytes_imagenes,
+        )
+
+    @application.post("/internal/v1/ia/lora-generate")
+    async def ia_lora_generate(request: Request) -> Response:
+        return await _handle_operational_request(
+            request,
+            operation="ia.lora_generate",
+            model=LoraGenerateRequest,
+            scope=LORA_GENERATE_SCOPE,
+            handler=cast(OperationalHandler, lora_generate_handler_fn),
+            max_body_bytes=current_settings.max_body_bytes_imagenes,
+        )
+
+    @application.post("/internal/v1/ia/chat-turn-stream")
+    async def ia_chat_turn_stream(request: Request) -> Response:
+        return await _handle_operational_stream(
+            request,
+            operation="ia.chat_turn_stream",
+            model=ChatTurnStreamRequest,
+            scope=CHAT_TURN_STREAM_SCOPE,
+            open_stream=cast(OperationalStreamOpener, chat_turn_stream_handler_fn),
+            max_body_bytes=current_settings.max_body_bytes_chat,
         )
 
     return application

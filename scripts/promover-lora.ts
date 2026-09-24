@@ -50,7 +50,7 @@ function main(): void {
     if (!previa) { console.error("No hay URL anterior registrada para revertir."); process.exit(1); }
     escribirLinea("SEMPERTEX_LORA_URL", previa);
     console.log(`Revertido a ${previa}`);
-    console.log("Acordate de volver loraScale() a su valor anterior en src/lib/ia/sempertex-lora.ts.");
+    console.log("Acordate de volver loraScale() a su valor anterior en src/lib/ia/kagutsuchi/sempertex-lora.ts.");
     return;
   }
 
@@ -85,7 +85,7 @@ function main(): void {
   console.log(`\nAPROBADO. .env.local actualizado (copia en .env.local.bak)`);
   console.log(`  antes : ${anterior ?? "(sin definir)"}`);
   console.log(`  ahora : ${proc.url_fal}`);
-  console.log(`\nFALTA A MANO — subir la escala en src/lib/ia/sempertex-lora.ts, funcion loraScale():`);
+  console.log(`\nFALTA A MANO — subir la escala en src/lib/ia/kagutsuchi/sempertex-lora.ts, funcion loraScale():`);
   console.log(`  el default está en 0.3 (control de daños del v2). Con ${aprobadas}/6 a 0,8, subilo a 0.8`);
   console.log(`  y actualizá el comentario de arriba con la tasa nueva.`);
   console.log(`\nDespués:`);

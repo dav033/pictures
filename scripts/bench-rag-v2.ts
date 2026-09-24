@@ -698,7 +698,7 @@ export async function runBenchmark(options: Options): Promise<{ gates: Gate[]; f
     const snapshot = await loadSnapshot(pool, corpus.snapshotId, corpus.hash);
     const [{ buscarHibrido }, { interpretarConsultaLocal }] = await Promise.all([
       import("../src/lib/rag/retrieval/search"),
-      import("../src/lib/rag/query-parser/parse"),
+      import("../src/lib/ia/inari/parse"),
     ]);
     const parseStabilityFailures: string[] = [];
     for (const query of queries) {

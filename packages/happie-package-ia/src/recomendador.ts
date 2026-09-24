@@ -68,6 +68,72 @@ export type TelemetriaRecomendacion = {
 
 export type RegistrarTelemetriaRecomendacion = (evento: TelemetriaRecomendacion) => void;
 
+/** Lo que el recomendador le pide al proveedor: un único mensaje de usuario
+ * con `partes` de texto y salida JSON restringida por `jsonSchema` (el export
+ * draft-7 de Zod, sin adaptar). */
+export interface SolicitudGeneracionEstructurada {
+  modelo: string;
+  instruccionSistema: string;
+  partes: string[];
+  jsonSchema: Record<string, unknown>;
+  signal: AbortSignal;
+}
+
+export interface UsoGeneracion {
+  promptTokenCount?: number;
+  candidatesTokenCount?: number;
+  thoughtsTokenCount?: number;
+  cachedContentTokenCount?: number;
+  toolUsePromptTokenCount?: number;
+}
+
+export interface ResultadoGeneracionEstructurada {
+  texto: string | undefined;
+  uso?: UsoGeneracion;
+}
+
+/**
+ * Puerto hacia el proveedor. Por defecto el paquete llama a Gemini directo;
+ * la app puede inyectar otra implementación (el servicio Python, ADR-0026)
+ * sin que el paquete importe nada de ella. El prompt, el schema y el filtro
+ * de ids siguen siendo de este paquete en ambos casos.
+ */
+export type GenerarEstructurado = (solicitud: SolicitudGeneracionEstructurada) => Promise<ResultadoGeneracionEstructurada>;
+
+/** Implementación directa del puerto: una llamada a Gemini, sin reintentos,
+ * con el mismo timeout de 25 s que acota `solicitud.signal`. */
+export function crearGeneradorGemini(apiKey: string): GenerarEstructurado {
+  return async (solicitud) => {
+    const client = new GoogleGenAI({ apiKey });
+    const respuesta = await client.models.generateContent({
+      model: solicitud.modelo,
+      contents: [{ role: "user", parts: solicitud.partes.map((text) => ({ text })) }],
+      config: {
+        // `signal` combina el del caller con un timeout propio de 25 s, así que
+        // sustituye al `input.signal` que se pasaba suelto: cubre también el caso
+        // en que el caller no cancele nunca.
+        abortSignal: solicitud.signal,
+        httpOptions: { timeout: 25_000, retryOptions: { attempts: 1 } },
+        systemInstruction: solicitud.instruccionSistema,
+        responseMimeType: "application/json",
+        responseJsonSchema: solicitud.jsonSchema,
+        thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+      },
+    });
+    return { texto: respuesta.text, uso: respuesta.usageMetadata };
+  };
+}
+
+function resultadoDeFallo(error: unknown, signal: AbortSignal): TelemetriaRecomendacion["resultado"] {
+  // Un abort del timeout propio o del caller se reporta por su causa, no por
+  // el error que haya envuelto el proveedor (el adaptador Python lo traduce a
+  // su propio código).
+  const causa: unknown = signal.aborted ? signal.reason : error;
+  if (causa instanceof Error && causa.name === "TimeoutError") return "timeout";
+  if (causa instanceof Error && causa.name === "AbortError") return "cancelado";
+  return "error";
+}
+
 export interface RecomendarPaquetesInput {
   descripcionEvento: string;
   paquetes: HappiaPackage[];
@@ -77,6 +143,8 @@ export interface RecomendarPaquetesInput {
   modelo?: string;
   signal?: AbortSignal;
   registrarTelemetria?: RegistrarTelemetriaRecomendacion;
+  /** Sin valor: Gemini directo con `apiKey`/`GEMINI_API_KEY`. */
+  generar?: GenerarEstructurado;
 }
 
 export function registrarTelemetriaSeguro(registrar: RegistrarTelemetriaRecomendacion | undefined, evento: TelemetriaRecomendacion): void {
@@ -108,7 +176,8 @@ function paqueteAContexto(paquete: HappiaPackage) {
 export async function recomendarPaquetes(input: RecomendarPaquetesInput): Promise<RecomendacionResultado> {
   input.signal?.throwIfAborted();
   const apiKey = input.apiKey ?? process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+  const generar = input.generar ?? (apiKey ? crearGeneradorGemini(apiKey) : undefined);
+  if (!generar) {
     throw new Error("Falta GEMINI_API_KEY (o apiKey) para generar recomendaciones.");
   }
   const paquetesActivos = input.paquetes.filter((p) => p.is_active);
@@ -119,39 +188,22 @@ export async function recomendarPaquetes(input: RecomendarPaquetesInput): Promis
   const maxRecomendaciones = input.maxRecomendaciones ?? 3;
   const { schema, jsonSchema } = construirSchema(maxRecomendaciones);
 
-  const client = new GoogleGenAI({ apiKey });
   const contenido = JSON.stringify(paquetesActivos.map(paqueteAContexto));
   const signal = AbortSignal.any([...(input.signal ? [input.signal] : []), AbortSignal.timeout(25_000)]);
   const modelo = input.modelo ?? MODELO_POR_DEFECTO;
   const inicio = Date.now();
 
-  const respuesta = await client.models.generateContent({
-    model: modelo,
-    contents: [
-      {
-        role: "user",
-        parts: [
-          { text: `Descripción del cliente: ${input.descripcionEvento}` },
-          { text: `Paquetes disponibles (JSON): ${contenido}` },
-        ],
-      },
+  const respuesta = await generar({
+    modelo,
+    instruccionSistema: construirInstruccion(maxRecomendaciones),
+    partes: [
+      `Descripción del cliente: ${input.descripcionEvento}`,
+      `Paquetes disponibles (JSON): ${contenido}`,
     ],
-    config: {
-      // `signal` combina el del caller con un timeout propio de 25 s, así que
-      // sustituye al `input.signal` que se pasaba suelto: cubre también el caso
-      // en que el caller no cancele nunca.
-      abortSignal: signal,
-      httpOptions: { timeout: 25_000, retryOptions: { attempts: 1 } },
-      systemInstruction: construirInstruccion(maxRecomendaciones),
-      responseMimeType: "application/json",
-      responseJsonSchema: jsonSchema,
-      thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
-    },
+    jsonSchema,
+    signal,
   }).catch((error: unknown) => {
-    const resultado = error instanceof Error && error.name === "TimeoutError"
-      ? "timeout" as const
-      : error instanceof Error && error.name === "AbortError" ? "cancelado" as const : "error" as const;
-    registrarTelemetriaSeguro(input.registrarTelemetria, { modelo, ms: Date.now() - inicio, resultado });
+    registrarTelemetriaSeguro(input.registrarTelemetria, { modelo, ms: Date.now() - inicio, resultado: resultadoDeFallo(error, signal) });
     signal.throwIfAborted();
     throw error;
   });
@@ -160,14 +212,14 @@ export async function recomendarPaquetes(input: RecomendarPaquetesInput): Promis
     modelo,
     ms: Date.now() - inicio,
     resultado: "ok",
-    tokensEntrada: respuesta.usageMetadata?.promptTokenCount,
-    tokensSalida: respuesta.usageMetadata?.candidatesTokenCount,
-    tokensPensamiento: respuesta.usageMetadata?.thoughtsTokenCount,
-    tokensCacheados: respuesta.usageMetadata?.cachedContentTokenCount,
-    tokensPromptHerramientas: respuesta.usageMetadata?.toolUsePromptTokenCount,
+    tokensEntrada: respuesta.uso?.promptTokenCount,
+    tokensSalida: respuesta.uso?.candidatesTokenCount,
+    tokensPensamiento: respuesta.uso?.thoughtsTokenCount,
+    tokensCacheados: respuesta.uso?.cachedContentTokenCount,
+    tokensPromptHerramientas: respuesta.uso?.toolUsePromptTokenCount,
   });
 
-  const texto = respuesta.text;
+  const texto = respuesta.texto;
   if (!texto) {
     throw new Error("Respuesta vacia del proveedor.");
   }
@@ -204,6 +256,7 @@ export interface RecomendarPaquetesEstructuradoInput {
   modelo?: string;
   signal?: AbortSignal;
   registrarTelemetria?: RegistrarTelemetriaRecomendacion;
+  generar?: GenerarEstructurado;
 }
 
 /**
@@ -232,6 +285,7 @@ export function recomendarPaquetesEstructurado(
     modelo: input.modelo,
     signal: input.signal,
     registrarTelemetria: input.registrarTelemetria,
+    generar: input.generar,
   });
 }
 
@@ -280,6 +334,7 @@ export interface RecomendarPaquetesConFiltrosInput {
   modelo?: string;
   signal?: AbortSignal;
   registrarTelemetria?: RegistrarTelemetriaRecomendacion;
+  generar?: GenerarEstructurado;
 }
 
 /**
@@ -315,5 +370,6 @@ export function recomendarPaquetesConFiltros(
     modelo: input.modelo,
     signal: input.signal,
     registrarTelemetria: input.registrarTelemetria,
+    generar: input.generar,
   });
 }

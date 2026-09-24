@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { analizarReferenciasV2 } from "../src/lib/ia/analizar-referencias-v2";
+import { analizarReferenciasV2 } from "../src/lib/ia/amaterasu/analizar-referencias-v2";
 import { chatDe } from "../src/lib/ia/registro";
 import { coloresFotoCliente } from "../src/lib/plan/colores-referencia";
 import type { ImagenEtiquetada } from "../src/lib/ia/tipos";

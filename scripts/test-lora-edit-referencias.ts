@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { buildLoraEditPrompt, loraEditApagado, LORA_EDIT_PROMPT_MAX_LENGTH, referenciasParaLoraEdit } from "../src/lib/ia/sempertex-lora";
+import { buildLoraEditPrompt, loraEditApagado, LORA_EDIT_PROMPT_MAX_LENGTH, referenciasParaLoraEdit } from "../src/lib/ia/kagutsuchi/sempertex-lora";
 import { findLoraPromptLanguageLeaks, findLoraPromptProductLeaks } from "../src/lib/ia/lora-prompt-preflight";
 import { descripcionProductoParaImagen, nombreProductoParaImagen } from "../src/lib/ia/producto-para-imagen";
 import { LORA_JSON_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH } from "../src/lib/ia/lora-caption-compiler";
-import { GEMINI_COMPOSITION_HARD_LOCK, inputsParaComposicionGemini, LORA_PRESENTATION_INSTRUCTION, promptPresentacionLora } from "../src/lib/ia/lora-gemini-composition";
+import { GEMINI_COMPOSITION_HARD_LOCK, inputsParaComposicionGemini, LORA_PRESENTATION_INSTRUCTION, promptPresentacionLora } from "../src/lib/ia/uzume/lora-gemini-composition";
 import type { ImageInput } from "../src/lib/ia/tipos";
 
 /** LoRA /edit wiring (user decision 2026-09-15): which requests go to /edit and the off switch. */

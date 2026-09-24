@@ -5,10 +5,8 @@ import {
   OperationalContextV1Schema,
   crearDeadlineSignal,
   firmarRequestInterna,
-  seleccionarBackendMigracion,
   sha256Body,
 } from "@/lib/ia/contracts/operational-v1";
-import type { BackendSelectionV1 } from "@/lib/ia/contracts/operational-v1";
 import {
   CATALOG_RECOMMENDATIONS_CONTRACT_VERSION,
   CatalogRecommendationsResultV1Schema,
@@ -31,9 +29,27 @@ export const PYTHON_PLAN_RESOLUTION_PATH = "/internal/v1/plan/resolve";
 export const PYTHON_PLAN_RESOLUTION_SCOPE = "plan.resolve";
 export const PYTHON_CATALOG_RECOMMENDATIONS_PATH = "/internal/v1/catalog/recommendations";
 export const PYTHON_CATALOG_RECOMMENDATIONS_SCOPE = "catalog.recommendations";
+export const PYTHON_INTENT_PARSE_PATH = "/internal/v1/ia/intent-parse";
+export const PYTHON_INTENT_PARSE_SCOPE = "ia.intent_parse";
+export const PYTHON_HAPPIE_GENERATE_PATH = "/internal/v1/ia/happie-generate";
+export const PYTHON_HAPPIE_GENERATE_SCOPE = "ia.happie_generate";
+export const PYTHON_REFERENCE_TURN_PATH = "/internal/v1/ia/reference-turn";
+export const PYTHON_REFERENCE_TURN_SCOPE = "ia.reference_turn";
+export const PYTHON_IMAGE_GENERATE_PATH = "/internal/v1/ia/image-generate";
+export const PYTHON_IMAGE_GENERATE_SCOPE = "ia.image_generate";
+export const PYTHON_LORA_GENERATE_PATH = "/internal/v1/ia/lora-generate";
+export const PYTHON_LORA_GENERATE_SCOPE = "ia.lora_generate";
+export const PYTHON_CHAT_TURN_STREAM_PATH = "/internal/v1/ia/chat-turn-stream";
+export const PYTHON_CHAT_TURN_STREAM_SCOPE = "ia.chat_turn_stream";
 export const PYTHON_EMBEDDING_MODEL = "gemini-embedding-2";
 export const PYTHON_EMBEDDING_DIMENSIONS = 768;
 export const PYTHON_MAX_BODY_BYTES = 64 * 1024;
+/** Reference-image analysis (Amaterasu) only -- same 10MB cap Next already enforces client-side (LIMITE_CUERPO_ANALISIS_BYTES in analisis-http.ts). */
+export const PYTHON_MAX_BODY_BYTES_IMAGENES = 11 * 1024 * 1024;
+/** Omoikane's chat turn only -- just above the 25_000_000-byte body /api/chat/route.ts already accepts from the browser, so the same photos fit on the Next -> Python hop. */
+export const PYTHON_MAX_BODY_BYTES_CHAT = 25 * 1024 * 1024;
+/** Happie's package recommendation only -- it carries the active Happia catalog as JSON text (MAX_BODY_BYTES_HAPPIE in main.py). */
+export const PYTHON_MAX_BODY_BYTES_HAPPIE = 4 * 1024 * 1024;
 
 /**
  * Stable domain error codes reported by POST /internal/v1/plan/resolve
@@ -130,6 +146,26 @@ function upstreamEmbeddingAttempts(value: unknown): PythonEmbeddingAttempt[] | u
   return parsed.success ? parsed.data : undefined;
 }
 
+/**
+ * Generic passthrough for a domain error's original provider status/detail
+ * (Kagutsuchi's account-rejected fal.ai responses -- see
+ * ProveedorImagenNoDisponibleError in kagutsuchi/sempertex-lora.ts, which
+ * needs the real 401/402/403 fal returned, not the boundary's own 502/503).
+ * Not specific to one operation: any future domain error can populate these
+ * two fields the same way Python's `_detail_metadata` already does.
+ */
+function upstreamProviderStatus(value: unknown): number | undefined {
+  if (!isJsonObject(value) || !isJsonObject(value.detail)) return undefined;
+  const parsed = z.number().int().positive().safeParse(value.detail.provider_status);
+  return parsed.success ? parsed.data : undefined;
+}
+
+function upstreamProviderDetail(value: unknown): string | undefined {
+  if (!isJsonObject(value) || !isJsonObject(value.detail)) return undefined;
+  const parsed = z.string().min(1).safeParse(value.detail.provider_detail);
+  return parsed.success ? parsed.data : undefined;
+}
+
 export class PythonAdapterError extends Error {
   readonly code: PythonAdapterErrorCode;
   /**
@@ -146,6 +182,9 @@ export class PythonAdapterError extends Error {
   readonly correlationId: string;
   readonly retryable: boolean;
   readonly attempts?: PythonEmbeddingAttempt[];
+  /** See upstreamProviderStatus/upstreamProviderDetail above. */
+  readonly providerStatus?: number;
+  readonly providerDetail?: string;
 
   constructor(input: {
     code: PythonAdapterErrorCode;
@@ -154,6 +193,8 @@ export class PythonAdapterError extends Error {
     correlationId: string;
     attempts?: PythonEmbeddingAttempt[];
     domainCode?: string;
+    providerStatus?: number;
+    providerDetail?: string;
   }) {
     super(ERROR_MESSAGES[input.code]);
     this.name = "PythonAdapterError";
@@ -164,15 +205,13 @@ export class PythonAdapterError extends Error {
     this.retryable = RETRYABLE_CODES.has(input.code);
     this.attempts = input.attempts;
     this.domainCode = input.domainCode;
+    this.providerStatus = input.providerStatus;
+    this.providerDetail = input.providerDetail;
   }
 }
 
 export function isPythonAdapterError(error: unknown): error is PythonAdapterError {
   return error instanceof PythonAdapterError;
-}
-
-export function seleccionarBackendPython(): BackendSelectionV1 {
-  return seleccionarBackendMigracion();
 }
 
 export interface PythonOperationInput {
@@ -185,6 +224,8 @@ export interface PythonOperationInput {
   deadlineMs?: number;
   idempotencyKey?: string;
   scopes?: readonly string[];
+  /** Overrides PYTHON_MAX_BODY_BYTES for one call (Amaterasu's reference images). */
+  maxBodyBytes?: number;
   parentSignal?: AbortSignal;
   env?: AdapterEnvironment;
   fetchImpl?: typeof fetch;
@@ -211,8 +252,10 @@ function errorFor(
   correlationId: string,
   attempts?: PythonEmbeddingAttempt[],
   domainCode?: string,
+  providerStatus?: number,
+  providerDetail?: string,
 ): PythonAdapterError {
-  return new PythonAdapterError({ code, status, requestId, correlationId, attempts, domainCode });
+  return new PythonAdapterError({ code, status, requestId, correlationId, attempts, domainCode, providerStatus, providerDetail });
 }
 
 function normalizeDeadlineMs(value: number | undefined): number {
@@ -277,11 +320,13 @@ function mapUpstreamError(
 ): PythonAdapterError {
   const code = upstreamCode(body);
   const attempts = upstreamEmbeddingAttempts(body);
+  const providerStatus = upstreamProviderStatus(body);
+  const providerDetail = upstreamProviderDetail(body);
   // The upstream domain code travels on the error so a caller can tell apart
   // failures that all classify as the same transport outcome (see
   // PythonAdapterError.domainCode).
   const upstream = (adapterCode: PythonAdapterErrorCode, adapterStatus: number): PythonAdapterError =>
-    errorFor(adapterCode, adapterStatus, requestId, correlationId, attempts, code);
+    errorFor(adapterCode, adapterStatus, requestId, correlationId, attempts, code, providerStatus, providerDetail);
   if (status === 401 && (code === "nonce_replay" || code === "replay")) {
     return upstream("PYTHON_REPLAY", 401);
   }
@@ -316,17 +361,43 @@ function readJsonObject(value: unknown): JsonObject | undefined {
   return isJsonObject(value) ? value : undefined;
 }
 
+type DeadlinePython = ReturnType<typeof crearDeadlineSignal>;
+
+interface PeticionPythonAbierta {
+  response: Response;
+  requestId: string;
+  correlationId: string;
+  /** Owned by the caller from here on: it must `dispose()` it once the body is consumed. */
+  deadline: DeadlinePython;
+}
+
+function normalizarErrorPython(error: unknown, requestId: string, correlationId: string): PythonAdapterError {
+  if (error instanceof PythonAdapterError) return error;
+  if (error instanceof z.ZodError) return errorFor("PYTHON_INVALID_REQUEST", 422, requestId, correlationId);
+  return errorFor("PYTHON_UNAVAILABLE", 502, requestId, correlationId);
+}
+
+/** Maps a failure while the request or its body was in flight, once the deadline signal may have fired. */
+function errorDeTransporte(error: unknown, deadline: DeadlinePython, requestId: string, correlationId: string): PythonAdapterError {
+  if (deadline.wasDeadlineExceeded()) return errorFor("PYTHON_BACKEND_TIMEOUT", 504, requestId, correlationId);
+  if (deadline.signal.aborted) return errorFor("PYTHON_REQUEST_CANCELLED", 499, requestId, correlationId);
+  if (error instanceof PythonAdapterError) return error;
+  return errorFor("PYTHON_UNAVAILABLE", 502, requestId, correlationId);
+}
+
 /**
  * Shared Next -> Python boundary for every /internal/v1/* operation: HMAC
  * signing, deadline, nonce, idempotency headers and upstream error mapping
  * are identical across operations. Only `path` (which endpoint) and the
  * default `scope` (when the caller does not pass explicit scopes) vary.
+ * Returns only OK responses; how the body is read (one JSON envelope, or an
+ * NDJSON stream) is the caller's.
  */
-async function llamarPythonOperacion(
+async function abrirPeticionPython(
   path: string,
   defaultScope: string,
   input: PythonOperationInput,
-): Promise<PythonOperationResponse> {
+): Promise<PeticionPythonAbierta> {
   const requestId = z.string().uuid().parse(input.requestId);
   const correlationId = z.string().uuid().parse(input.correlationId);
   const env = input.env ?? process.env;
@@ -355,7 +426,8 @@ async function llamarPythonOperacion(
       context,
       ...operationBody,
     });
-    if (new TextEncoder().encode(body).byteLength > PYTHON_MAX_BODY_BYTES) {
+    const maxBodyBytes = input.maxBodyBytes ?? PYTHON_MAX_BODY_BYTES;
+    if (new TextEncoder().encode(body).byteLength > maxBodyBytes) {
       throw errorFor("PYTHON_PAYLOAD_TOO_LARGE", 413, requestId, correlationId);
     }
 
@@ -394,24 +466,37 @@ async function llamarPythonOperacion(
         cache: "no-store",
       });
     } catch (error) {
-      if (deadline.wasDeadlineExceeded()) {
-        throw errorFor("PYTHON_BACKEND_TIMEOUT", 504, requestId, correlationId);
-      }
-      if (deadline.signal.aborted) {
-        throw errorFor("PYTHON_REQUEST_CANCELLED", 499, requestId, correlationId);
-      }
-      if (error instanceof PythonAdapterError) throw error;
-      throw errorFor("PYTHON_UNAVAILABLE", 502, requestId, correlationId);
+      throw errorDeTransporte(error, deadline, requestId, correlationId);
     }
 
+    if (!response.ok) {
+      let errorBody: unknown;
+      try {
+        errorBody = await response.json();
+      } catch {
+        errorBody = undefined;
+      }
+      throw mapUpstreamError(response.status, errorBody, requestId, correlationId);
+    }
+    return { response, requestId, correlationId, deadline };
+  } catch (error) {
+    deadline.dispose();
+    throw normalizarErrorPython(error, requestId, correlationId);
+  }
+}
+
+async function llamarPythonOperacion(
+  path: string,
+  defaultScope: string,
+  input: PythonOperationInput,
+): Promise<PythonOperationResponse> {
+  const { response, requestId, correlationId, deadline } = await abrirPeticionPython(path, defaultScope, input);
+  try {
     let responseBody: unknown;
     try {
       responseBody = await response.json();
     } catch {
       responseBody = undefined;
-    }
-    if (!response.ok) {
-      throw mapUpstreamError(response.status, responseBody, requestId, correlationId);
     }
     const parsed = responseSchema.safeParse(responseBody);
     const replayed = response.headers.get("x-idempotency-result") === "replay";
@@ -424,11 +509,64 @@ async function llamarPythonOperacion(
     }
     return replayed ? { ...parsed.data, replayed: true } : parsed.data;
   } catch (error) {
-    if (error instanceof PythonAdapterError) throw error;
-    if (error instanceof z.ZodError) {
-      throw errorFor("PYTHON_INVALID_REQUEST", 422, requestId, correlationId);
+    throw normalizarErrorPython(error, requestId, correlationId);
+  } finally {
+    deadline.dispose();
+  }
+}
+
+/**
+ * Streaming counterpart of `llamarPythonOperacion`: same signing and error
+ * mapping, then yields each NDJSON line of the body as parsed JSON (not yet
+ * validated -- that belongs to the operation). Returning early (the consumer
+ * stopped, or the terminal event arrived) cancels the body reader, which
+ * closes the connection; Python sees the disconnect and closes the provider
+ * stream.
+ */
+async function* leerPythonNdjson(
+  path: string,
+  defaultScope: string,
+  input: PythonOperationInput,
+): AsyncGenerator<unknown, void, undefined> {
+  const { response, requestId, correlationId, deadline } = await abrirPeticionPython(path, defaultScope, input);
+  try {
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!response.body || !contentType.startsWith("application/x-ndjson")) {
+      throw errorFor("PYTHON_INVALID_RESPONSE", 502, requestId, correlationId);
     }
-    throw errorFor("PYTHON_UNAVAILABLE", 502, requestId, correlationId);
+    const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+    const parsear = (linea: string): unknown => {
+      try {
+        return JSON.parse(linea) as unknown;
+      } catch {
+        throw errorFor("PYTHON_INVALID_RESPONSE", 502, requestId, correlationId);
+      }
+    };
+    try {
+      let pendiente = "";
+      while (true) {
+        let lectura: ReadableStreamReadResult<string>;
+        try {
+          lectura = await reader.read();
+        } catch (error) {
+          throw errorDeTransporte(error, deadline, requestId, correlationId);
+        }
+        if (lectura.done) break;
+        pendiente += lectura.value;
+        let salto = pendiente.indexOf("\n");
+        while (salto >= 0) {
+          const linea = pendiente.slice(0, salto).trim();
+          pendiente = pendiente.slice(salto + 1);
+          if (linea) yield parsear(linea);
+          salto = pendiente.indexOf("\n");
+        }
+      }
+      if (pendiente.trim()) yield parsear(pendiente.trim());
+    } finally {
+      await reader.cancel().catch(() => undefined);
+    }
+  } catch (error) {
+    throw normalizarErrorPython(error, requestId, correlationId);
   } finally {
     deadline.dispose();
   }
@@ -484,6 +622,213 @@ export interface PythonEmbeddingResult {
   task_type: "RETRIEVAL_QUERY";
   attempts: PythonEmbeddingAttempt[];
   replayed?: boolean;
+}
+
+export interface PythonIntentParseInput {
+  message: string;
+  systemInstruction: string;
+  /** `z.toJSONSchema(IntentQuerySchema, { target: "draft-7" })` -- Python stays schema-agnostic and just forwards this to Gemini. */
+  responseJsonSchema: Record<string, unknown>;
+  model?: string;
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  idempotencyKey?: string;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+export interface PythonIntentParseUsage {
+  prompt_token_count?: number;
+  candidates_token_count?: number;
+  thoughts_token_count?: number;
+  cached_content_token_count?: number;
+  total_token_count?: number;
+}
+
+export interface PythonIntentParseResult {
+  text: string;
+  model: string;
+  usage: PythonIntentParseUsage | null;
+  replayed?: boolean;
+}
+
+export type PythonHappieGeneratePurpose = "conversation_extract" | "package_recommend";
+
+export interface PythonHappieGenerateInput {
+  purpose: PythonHappieGeneratePurpose;
+  /** Text parts of the single user message, in order. */
+  parts: string[];
+  systemInstruction: string;
+  /** Already adapted with `paraGoogleSchema`; Python forwards it to Gemini untouched. */
+  responseJsonSchema: Record<string, unknown>;
+  model?: string;
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+export interface PythonHappieGenerateUsage extends PythonIntentParseUsage {
+  tool_use_prompt_token_count?: number;
+}
+
+export interface PythonHappieGenerateResult {
+  text: string;
+  model: string;
+  usage: PythonHappieGenerateUsage | null;
+}
+
+export interface PythonReferenceTurnImage {
+  id: string;
+  mime: "image/png" | "image/jpeg" | "image/webp";
+  base64: string;
+  descripcion?: string;
+}
+
+export interface PythonReferenceTurnTool {
+  name: string;
+  description: string;
+  parametersJsonSchema: Record<string, unknown>;
+}
+
+export interface PythonReferenceTurnInput {
+  systemInstruction: string;
+  message: string;
+  images: PythonReferenceTurnImage[];
+  tools: PythonReferenceTurnTool[];
+  temperature?: number;
+  maxOutputTokens?: number;
+  model?: string;
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  idempotencyKey?: string;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+export interface PythonReferenceTurnToolCall {
+  name: string;
+  args: Record<string, unknown>;
+}
+
+export interface PythonReferenceTurnResult {
+  text: string;
+  toolCalls: PythonReferenceTurnToolCall[];
+  model: string;
+  usage: PythonIntentParseUsage | null;
+  finishReason: string | null;
+  blockReason: string | null;
+  replayed?: boolean;
+}
+
+export type PythonImageGenerateInputBlock =
+  | { type: "text"; text: string }
+  | { type: "image"; data: string; mimeType: "image/png" | "image/jpeg" | "image/webp" };
+
+export interface PythonImageGenerateInput {
+  model?: string;
+  input: PythonImageGenerateInputBlock[];
+  store?: boolean;
+  previousInteractionId?: string;
+  aspectRatio: "1:1" | "2:3" | "3:2" | "16:9";
+  imageSize: "1K" | "2K";
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  idempotencyKey?: string;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+export interface PythonImageGenerateUsage {
+  total_input_tokens?: number;
+  total_output_tokens?: number;
+  total_thought_tokens?: number;
+  total_cached_tokens?: number;
+  total_tool_use_tokens?: number;
+  total_tokens?: number;
+}
+
+export interface PythonImageGenerateResult {
+  imageBase64: string;
+  model: string;
+  interactionId: string | null;
+  usage: PythonImageGenerateUsage | null;
+  replayed?: boolean;
+}
+
+export interface PythonLoraSpec {
+  path: string;
+  scale: number;
+}
+
+export interface PythonLoraGenerateInput {
+  mode: "text" | "edit";
+  prompt: string;
+  loras: PythonLoraSpec[];
+  guidanceScale: number;
+  numInferenceSteps: number;
+  imageWidth: number;
+  imageHeight: number;
+  seed?: number;
+  /** `data:<mime>;base64,<...>` strings, already built by referenciasParaLoraEdit's caller -- empty for mode "text". */
+  imageDataUrls: string[];
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  idempotencyKey?: string;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+export interface PythonLoraGenerateResult {
+  imageBase64: string;
+  mime: string;
+  providerRequestId: string | null;
+  endpoint: string;
+  replayed?: boolean;
+}
+
+export interface PythonChatTurnTool {
+  name: string;
+  description: string;
+  parametersJsonSchema: Record<string, unknown>;
+}
+
+/**
+ * No `idempotencyKey`: the Python route rejects one, because replaying a
+ * streamed turn would repeat text the customer already saw and a provider
+ * charge (see `_handle_operational_stream` in services/ai-api/app/main.py).
+ */
+export interface PythonChatTurnStreamInput {
+  systemInstruction: string;
+  /** Gemini `Content` JSON exactly as `historialAContents` (agente-core) builds it. */
+  contents: unknown[];
+  tools: PythonChatTurnTool[];
+  thinkingLevel?: "low" | "minimal";
+  temperature?: number;
+  maxOutputTokens?: number;
+  model?: string;
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
 }
 
 export interface PythonCatalogSearchFilters {
@@ -644,6 +989,93 @@ const rerankPayloadResultSchema = z.object({
   order: z.array(z.string().min(1)),
   scores: z.record(z.string().min(1), z.number().finite()),
 });
+
+const intentParseUsageSchema = z.object({
+  prompt_token_count: z.number().int().nonnegative().optional(),
+  candidates_token_count: z.number().int().nonnegative().optional(),
+  thoughts_token_count: z.number().int().nonnegative().optional(),
+  cached_content_token_count: z.number().int().nonnegative().optional(),
+  total_token_count: z.number().int().nonnegative().optional(),
+}).strict();
+
+const intentParsePayloadResultSchema = z.object({
+  text: z.string().min(1),
+  model: z.string().min(1),
+  usage: intentParseUsageSchema.nullable(),
+}).strict();
+
+const happieGeneratePayloadResultSchema = z.object({
+  text: z.string().min(1),
+  model: z.string().min(1),
+  usage: intentParseUsageSchema.extend({
+    tool_use_prompt_token_count: z.number().int().nonnegative().optional(),
+  }).strict().nullable(),
+}).strict();
+
+const referenceTurnToolCallSchema = z.object({
+  name: z.string().min(1),
+  args: z.record(z.string(), z.unknown()),
+}).strict();
+
+const referenceTurnPayloadResultSchema = z.object({
+  text: z.string(),
+  tool_calls: z.array(referenceTurnToolCallSchema),
+  model: z.string().min(1),
+  usage: intentParseUsageSchema.nullable(),
+  finish_reason: z.string().nullable(),
+  block_reason: z.string().nullable(),
+}).strict();
+
+const imageGenerateUsageSchema = z.object({
+  total_input_tokens: z.number().int().nonnegative().optional(),
+  total_output_tokens: z.number().int().nonnegative().optional(),
+  total_thought_tokens: z.number().int().nonnegative().optional(),
+  total_cached_tokens: z.number().int().nonnegative().optional(),
+  total_tool_use_tokens: z.number().int().nonnegative().optional(),
+  total_tokens: z.number().int().nonnegative().optional(),
+}).strict();
+
+const imageGeneratePayloadResultSchema = z.object({
+  image_base64: z.string().min(1),
+  model: z.string().min(1),
+  interaction_id: z.string().nullable(),
+  usage: imageGenerateUsageSchema.nullable(),
+}).strict();
+
+const chatTurnStreamEventSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("text"), delta: z.string().min(1) }).strict(),
+  z.object({
+    type: z.literal("end"),
+    text: z.string(),
+    tool_calls: z.array(z.object({
+      id: z.string().min(1).nullable(),
+      name: z.string().min(1),
+      args: z.record(z.string(), z.unknown()),
+      thought_signature: z.string().min(1).nullable(),
+    }).strict()),
+    usage_metadata: z.record(z.string(), z.number().int().nonnegative()),
+    model: z.string().min(1),
+    finish_reason: z.string().nullable(),
+    block_reason: z.string().nullable(),
+  }).strict(),
+  z.object({
+    type: z.literal("error"),
+    code: z.string().min(1),
+    /** "open": nothing reached the provider's output yet, so the turn may be retried. */
+    phase: z.enum(["open", "stream"]),
+    provider_status: z.number().int().positive().nullable().optional(),
+    provider_message: z.string().nullable().optional(),
+  }).strict(),
+]);
+
+export type PythonChatTurnStreamEvent = z.infer<typeof chatTurnStreamEventSchema>;
+
+const loraGeneratePayloadResultSchema = z.object({
+  image_base64: z.string().min(1),
+  mime: z.enum(["image/png", "image/jpeg", "image/webp"]),
+  provider_request_id: z.string().min(1).nullable(),
+  endpoint: z.string().min(1),
+}).strict();
 
 const embeddingPayloadResultSchema = z.object({
   values: z.array(z.number().finite()).min(1),
@@ -837,18 +1269,18 @@ function catalogSelectionPayloadIsConsistent(
     allowlistByProduct.set(entry.product_id, variantIds);
   }
 
+  // Identity only: every requested pair comes back exactly once, validated
+  // lines stay inside the signed allowlist with the requested quantity. The
+  // subtotal, total and status are Python's (catalog.py) and are not
+  // recomputed here -- re-deriving a formula to compare it would make Next a
+  // second owner (AGENTS.md, the `validateMaterialEstimate` incident).
   const returnedPairs = new Set<string>();
-  let total = 0;
   for (const item of payload.validados) {
     const key = selectionPairKey(item.product_id, item.variant_id);
     const requested = requestedByPair.get(key);
     if (!requested || returnedPairs.has(key)) return false;
     if (item.quantity !== requested.quantity) return false;
     if (!allowlistByProduct.get(item.product_id)?.has(item.variant_id)) return false;
-    const subtotal = item.unit_price_cop * item.quantity;
-    if (!Number.isSafeInteger(subtotal) || item.subtotal_cop !== subtotal) return false;
-    total += subtotal;
-    if (!Number.isSafeInteger(total)) return false;
     returnedPairs.add(key);
   }
   for (const item of payload.rechazados) {
@@ -856,11 +1288,8 @@ function catalogSelectionPayloadIsConsistent(
     if (!requestedByPair.has(key) || returnedPairs.has(key)) return false;
     returnedPairs.add(key);
   }
-  if (returnedPairs.size !== requestedByPair.size || payload.total_cop !== total) return false;
-  if (payload.validados.length > 0 && payload.catalog_snapshot_id === null) return false;
-
-  const expectedStatus = payload.rechazados.length === 0 ? "ok" : payload.validados.length > 0 ? "partial" : "empty";
-  return payload.status === expectedStatus;
+  if (returnedPairs.size !== requestedByPair.size) return false;
+  return !(payload.validados.length > 0 && payload.catalog_snapshot_id === null);
 }
 
 /**
@@ -919,6 +1348,247 @@ export async function llamarPythonEmbedding(
   return response.replayed
     ? { ...parsed.data, replayed: true }
     : parsed.data;
+}
+
+/**
+ * The one Gemini call Inari's parser makes (src/lib/ia/inari/parse.ts). Python
+ * receives the already-built prompt and JSON schema and does nothing but the
+ * provider round trip -- the deterministic-first parse and the merge of local
+ * and remote results stay in TypeScript, unchanged.
+ */
+export async function llamarPythonIntentParse(
+  input: PythonIntentParseInput,
+): Promise<PythonIntentParseResult> {
+  const { message, systemInstruction, responseJsonSchema, model, ...rest } = input;
+  const operationPayload = {
+    schema_version: "intent-parse.v1" as const,
+    message,
+    system_instruction: systemInstruction,
+    response_json_schema: responseJsonSchema,
+    ...(model === undefined ? {} : { model }),
+  };
+  const response = await llamarPythonOperacion(PYTHON_INTENT_PARSE_PATH, PYTHON_INTENT_PARSE_SCOPE, {
+    ...rest,
+    payload: operationPayload,
+    operationBody: operationPayload,
+  });
+  const parsed = intentParsePayloadResultSchema.safeParse(response.payload);
+  if (!parsed.success) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  return response.replayed
+    ? { ...parsed.data, replayed: true }
+    : parsed.data;
+}
+
+/**
+ * One of Happie's two structured-output Gemini calls: the conversation
+ * extractor (src/lib/happie/conversacion-webhook.ts) or the package
+ * recommender (packages/happie-package-ia, through the generator the app
+ * injects). Python only makes the provider round trip; prompts, the state
+ * machine, the package id filter and the Zod validation stay in TypeScript.
+ * No idempotency key: the call has no side effect to reconcile, and the
+ * direct path never retried it either.
+ */
+export async function llamarPythonHappieGenerate(
+  input: PythonHappieGenerateInput,
+): Promise<PythonHappieGenerateResult> {
+  const { purpose, parts, systemInstruction, responseJsonSchema, model, ...rest } = input;
+  const operationPayload = {
+    schema_version: "happie-generate.v1" as const,
+    purpose,
+    parts,
+    system_instruction: systemInstruction,
+    response_json_schema: responseJsonSchema,
+    ...(model === undefined ? {} : { model }),
+  };
+  const response = await llamarPythonOperacion(PYTHON_HAPPIE_GENERATE_PATH, PYTHON_HAPPIE_GENERATE_SCOPE, {
+    ...rest,
+    payload: operationPayload,
+    operationBody: operationPayload,
+    maxBodyBytes: PYTHON_MAX_BODY_BYTES_HAPPIE,
+  });
+  const parsed = happieGeneratePayloadResultSchema.safeParse(response.payload);
+  if (!parsed.success) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  return parsed.data;
+}
+
+/**
+ * The one Gemini tool-calling turn Amaterasu's inventory and audit passes
+ * make (src/lib/ia/amaterasu/analizar-referencias-v2.ts, via the ChatPort
+ * `src/lib/ia/amaterasu/chat-python.ts` wraps around this). Python only makes
+ * the provider round trip; the retry-on-malformed loop, the blueprint
+ * assembly and everything else stays in TypeScript, unchanged. Uses
+ * `maxBodyBytes: PYTHON_MAX_BODY_BYTES_IMAGENES` since reference photos are
+ * far larger than every other operation's payload.
+ */
+export async function llamarPythonReferenceTurn(
+  input: PythonReferenceTurnInput,
+): Promise<PythonReferenceTurnResult> {
+  const { systemInstruction, message, images, tools, temperature, maxOutputTokens, model, ...rest } = input;
+  const operationPayload = {
+    schema_version: "reference-turn.v1" as const,
+    system_instruction: systemInstruction,
+    message,
+    images: images.map((image) => ({ id: image.id, mime: image.mime, base64: image.base64, descripcion: image.descripcion ?? "" })),
+    tools: tools.map((tool) => ({ name: tool.name, description: tool.description, parameters_json_schema: tool.parametersJsonSchema })),
+    ...(temperature === undefined ? {} : { temperature }),
+    ...(maxOutputTokens === undefined ? {} : { max_output_tokens: maxOutputTokens }),
+    ...(model === undefined ? {} : { model }),
+  };
+  const response = await llamarPythonOperacion(PYTHON_REFERENCE_TURN_PATH, PYTHON_REFERENCE_TURN_SCOPE, {
+    ...rest,
+    payload: operationPayload,
+    operationBody: operationPayload,
+    maxBodyBytes: PYTHON_MAX_BODY_BYTES_IMAGENES,
+  });
+  const parsed = referenceTurnPayloadResultSchema.safeParse(response.payload);
+  if (!parsed.success) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  const result: PythonReferenceTurnResult = {
+    text: parsed.data.text,
+    toolCalls: parsed.data.tool_calls,
+    model: parsed.data.model,
+    usage: parsed.data.usage,
+    finishReason: parsed.data.finish_reason,
+    blockReason: parsed.data.block_reason,
+  };
+  return response.replayed ? { ...result, replayed: true } : result;
+}
+
+/**
+ * The one Gemini Interactions call `crearImagenGemini`'s `generar()` makes
+ * (src/lib/ia/uzume/imagen.ts, via the ImagenPort
+ * src/lib/ia/uzume/imagen-python.ts wraps around this). `input` travels
+ * already fully composed (prompt + per-image role/allowed_use labels) --
+ * Python never decides what a reference image is for, only sends it. Uses
+ * `maxBodyBytes: PYTHON_MAX_BODY_BYTES_IMAGENES` since reference/product
+ * images are far larger than every other operation's payload.
+ */
+export async function llamarPythonImageGenerate(
+  input: PythonImageGenerateInput,
+): Promise<PythonImageGenerateResult> {
+  const { model, input: blocks, store, previousInteractionId, aspectRatio, imageSize, ...rest } = input;
+  const operationPayload = {
+    schema_version: "image-generate.v1" as const,
+    input: blocks.map((block) => block.type === "text"
+      ? { type: "text" as const, text: block.text }
+      : { type: "image" as const, data: block.data, mime_type: block.mimeType }),
+    store: store ?? true,
+    ...(previousInteractionId === undefined ? {} : { previous_interaction_id: previousInteractionId }),
+    aspect_ratio: aspectRatio,
+    image_size: imageSize,
+    ...(model === undefined ? {} : { model }),
+  };
+  const response = await llamarPythonOperacion(PYTHON_IMAGE_GENERATE_PATH, PYTHON_IMAGE_GENERATE_SCOPE, {
+    ...rest,
+    payload: operationPayload,
+    operationBody: operationPayload,
+    maxBodyBytes: PYTHON_MAX_BODY_BYTES_IMAGENES,
+  });
+  const parsed = imageGeneratePayloadResultSchema.safeParse(response.payload);
+  if (!parsed.success) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  const result: PythonImageGenerateResult = {
+    imageBase64: parsed.data.image_base64,
+    model: parsed.data.model,
+    interactionId: parsed.data.interaction_id,
+    usage: parsed.data.usage,
+  };
+  return response.replayed ? { ...result, replayed: true } : result;
+}
+
+/**
+ * The submit -> poll -> download sequence against fal.ai's queue that
+ * `generarConSempertexLora` makes directly today
+ * (src/lib/ia/kagutsuchi/sempertex-lora.ts). `prompt`, `loras`, `mode` and
+ * every sizing/guidance value already reflect TypeScript's composition
+ * (buildLoraEditPrompt, ensureLoraTriggers, referenciasParaLoraEdit,
+ * guidanceScaleSeguro) -- Python only talks to the provider and applies the
+ * SSRF allow-list. Uses `maxBodyBytes: PYTHON_MAX_BODY_BYTES_IMAGENES` (up to
+ * 4 reference images for `/edit`) and a `deadlineMs` above the shared
+ * default: fal.ai's own queue can legitimately take up to 105s
+ * (submit + poll + download), the same budget the direct path already
+ * spends inside the browser-facing /api/generate call.
+ */
+export async function llamarPythonLoraGenerate(
+  input: PythonLoraGenerateInput,
+): Promise<PythonLoraGenerateResult> {
+  const { mode, prompt, loras, guidanceScale, numInferenceSteps, imageWidth, imageHeight, seed, imageDataUrls, deadlineMs, ...rest } = input;
+  const operationPayload = {
+    schema_version: "lora-generate.v1" as const,
+    mode,
+    prompt,
+    loras,
+    guidance_scale: guidanceScale,
+    num_inference_steps: numInferenceSteps,
+    image_width: imageWidth,
+    image_height: imageHeight,
+    ...(seed === undefined ? {} : { seed }),
+    image_data_urls: imageDataUrls,
+  };
+  const response = await llamarPythonOperacion(PYTHON_LORA_GENERATE_PATH, PYTHON_LORA_GENERATE_SCOPE, {
+    ...rest,
+    payload: operationPayload,
+    operationBody: operationPayload,
+    maxBodyBytes: PYTHON_MAX_BODY_BYTES_IMAGENES,
+    deadlineMs: deadlineMs ?? DEADLINE_MAX_MS,
+  });
+  const parsed = loraGeneratePayloadResultSchema.safeParse(response.payload);
+  if (!parsed.success) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  const result: PythonLoraGenerateResult = {
+    imageBase64: parsed.data.image_base64,
+    mime: parsed.data.mime,
+    providerRequestId: parsed.data.provider_request_id,
+    endpoint: parsed.data.endpoint,
+  };
+  return response.replayed ? { ...result, replayed: true } : result;
+}
+
+/**
+ * One streamed Gemini turn of Omoikane's chat
+ * (services/ai-api/app/omoikane/turno_stream.py). Yields validated events and
+ * guarantees the stream ended with exactly one terminal event (`end` or
+ * `error`); anything else -- a malformed line, a truncated body -- is
+ * PYTHON_INVALID_RESPONSE. It never retries: whether an `error` with phase
+ * "open" is retried is the ChatPort's decision
+ * (src/lib/ia/omoikane/chat-python.ts).
+ */
+export async function* llamarPythonChatTurnStream(
+  input: PythonChatTurnStreamInput,
+): AsyncGenerator<PythonChatTurnStreamEvent, void, undefined> {
+  const { systemInstruction, contents, tools, thinkingLevel, temperature, maxOutputTokens, model, ...rest } = input;
+  const operationPayload = {
+    schema_version: "chat-turn-stream.v1" as const,
+    system_instruction: systemInstruction,
+    contents,
+    tools: tools.map((tool) => ({ name: tool.name, description: tool.description, parameters_json_schema: tool.parametersJsonSchema })),
+    ...(thinkingLevel === undefined ? {} : { thinking_level: thinkingLevel }),
+    ...(temperature === undefined ? {} : { temperature }),
+    ...(maxOutputTokens === undefined ? {} : { max_output_tokens: maxOutputTokens }),
+    ...(model === undefined ? {} : { model }),
+  };
+  const lineas = leerPythonNdjson(PYTHON_CHAT_TURN_STREAM_PATH, PYTHON_CHAT_TURN_STREAM_SCOPE, {
+    ...rest,
+    payload: operationPayload,
+    operationBody: operationPayload,
+    maxBodyBytes: PYTHON_MAX_BODY_BYTES_CHAT,
+  });
+  for await (const linea of lineas) {
+    const parsed = chatTurnStreamEventSchema.safeParse(linea);
+    if (!parsed.success) {
+      throw errorFor("PYTHON_INVALID_RESPONSE", 502, input.requestId, input.correlationId);
+    }
+    yield parsed.data;
+    if (parsed.data.type !== "text") return;
+  }
+  throw errorFor("PYTHON_INVALID_RESPONSE", 502, input.requestId, input.correlationId);
 }
 
 export async function llamarPythonCatalogSearch(

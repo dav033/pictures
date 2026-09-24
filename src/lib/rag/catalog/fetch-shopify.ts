@@ -1,4 +1,4 @@
-import { conReintento } from "@/lib/retry";
+import { conReintento } from "@sempertex/agente-core";
 import type { ProductoInventarioCDN, ProductoPublico } from "@/lib/shopify/tipos";
 
 /**

@@ -354,15 +354,6 @@ export type ColorBreakdown = {
   secondary_colors: (typeof PALETA_COLORES_V2)[number][];
 };
 
-export function clasificarColoresCompuestos(text: string): ColorBreakdown {
-  const match = clasificarColores(text);
-  return {
-    status: match.status,
-    base_color: match.values[0] ?? null,
-    secondary_colors: match.values.slice(1),
-  };
-}
-
 export function clasificarAcabados(text: string): TaxonomyMatch<(typeof ACABADOS_CATALOGO_V2)[number]> {
   return matchAliases(text, FINISHES);
 }

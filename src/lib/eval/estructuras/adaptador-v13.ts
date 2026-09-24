@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { analizarReferenciasV2, type PaseObservado } from "@/lib/ia/analizar-referencias-v2";
+import { analizarReferenciasV2, type PaseObservado } from "@/lib/ia/amaterasu/analizar-referencias-v2";
 import { mergeCandidates, object, parseCandidates } from "@/lib/ia/candidatos-referencia";
 import { stableElementId } from "@/lib/ia/reference-blueprint";
 import type { VarianteReconocedor } from "@/lib/ia/reference-structure";

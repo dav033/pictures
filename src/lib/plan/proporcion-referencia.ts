@@ -1,6 +1,6 @@
 /**
  * Contraste entre la proporción de color que la foto TIENE y la que el plan
- * DECLARA (fase 2.6 de PLAN-IMAGE-AND-COLOR-FIDELITY.md).
+ * DECLARA.
  *
  * Hasta la fase 2.1 esto no se podía ni plantear: la paleta de una foto era una
  * lista sin orden, así que no había un número contra el que comparar
@@ -87,33 +87,3 @@ export function desviacionesProporcion(
   return desviaciones.sort((uno, otro) => Math.abs(otro.delta) - Math.abs(uno.delta) || (uno.color < otro.color ? -1 : 1));
 }
 
-/** Estructura del plan vista desde aquí: solo lo que la comparación necesita. */
-type EstructuraComparable = {
-  estructura_id: string;
-  referencia_element_id?: string;
-  materiales: ReadonlyArray<{ color?: string; participacion?: number }>;
-};
-
-/** Elemento del blueprint visto desde aquí. */
-type ElementoComparable = {
-  element_id: string;
-  approved: boolean;
-  appearance: { measured_colors?: ReadonlyArray<{ color: string; share: number }> };
-};
-
-/**
- * Todas las desviaciones de un plan contra la foto que lo originó. Vacío cuando
- * la medición de la fase 2.1 no corrió: sin números medidos no hay comparación
- * que hacer, y fabricar una desde las etiquetas del analizador sería volver a
- * tratar el orden de redacción como si fuera una proporción.
- */
-export function desviacionesProporcionPlan(
-  estructuras: readonly EstructuraComparable[],
-  elementos: readonly ElementoComparable[],
-): DesviacionProporcion[] {
-  const porId = new Map(elementos.filter((elemento) => elemento.approved).map((elemento) => [elemento.element_id, elemento]));
-  return estructuras.flatMap((estructura) => {
-    const medidos = estructura.referencia_element_id ? porId.get(estructura.referencia_element_id)?.appearance.measured_colors : undefined;
-    return medidos?.length ? desviacionesProporcion(estructura.estructura_id, medidos, estructura.materiales) : [];
-  });
-}

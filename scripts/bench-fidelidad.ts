@@ -2,13 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { execSync } from "node:child_process";
 import sharp from "sharp";
-import { analizarReferenciasV2 } from "../src/lib/ia/analizar-referencias-v2";
+import { analizarReferenciasV2 } from "../src/lib/ia/amaterasu/analizar-referencias-v2";
 import { chatDe, imagenDe } from "../src/lib/ia/registro";
 import { coloresFotoCliente, coloresFotoParaBusqueda } from "../src/lib/plan/colores-referencia";
 import { buildImagePrompt } from "../src/lib/ia/build-image-prompt";
-import { GEMINI_COMPOSITION_HARD_LOCK, inputsParaComposicionGemini } from "../src/lib/ia/lora-gemini-composition";
-import { buildGenerationQa } from "../src/lib/ia/generation-qa";
-import { sceneSpecHash } from "../src/lib/ia/scene-spec";
+import { GEMINI_COMPOSITION_HARD_LOCK, inputsParaComposicionGemini } from "../src/lib/ia/uzume/lora-gemini-composition";
 import type { ImagenEtiquetada } from "../src/lib/ia/tipos";
 import { generar, payloadDe, resolverIdentidadLora, saldo, leerEnv } from "./exp-fal-lib";
 import { prepararEspacio } from "./bench/espacio";
@@ -30,7 +28,6 @@ const BANDERAS_MEDIDAS: readonly FeatureFlag[] = [
   "VENUE_AWARE_PLACEMENT_V1",
   "AMBIENTE_FIESTA_V1",
   "REFERENCIA_EN_ETAPA1_V1",
-  "IMAGE_QA_ENABLED",
 ];
 
 /**
@@ -136,7 +133,7 @@ async function main(): Promise<void> {
     console.log(`[DRY-RUN] fase=${fase} seed=${semillaSeleccion} lora=${identidad.artifactId} (${identidad.evaluationStatus})`);
     console.log(`  espacio: ${rutaEspacio || "(falta --espacio)"}`);
     referencias.forEach((f, i) => console.log(`  caso ${i + 1}: ${f.id} · ${f.titulo} · seed imagen ${101 + i * 101}`));
-    console.log(`  llamadas pagadas previstas: ${cuantas} analisis (2 Gemini c/u) + ${cuantas} fal + ${cuantas} composicion Gemini + ${cuantas} QA`);
+    console.log(`  llamadas pagadas previstas: ${cuantas} analisis (2 Gemini c/u) + ${cuantas} fal + ${cuantas} composicion Gemini`);
     return;
   }
 
@@ -265,13 +262,7 @@ async function main(): Promise<void> {
       caso.imagen.final = archivoFinal;
       await sharp(Buffer.from(final.imagen.base64, "base64")).resize({ width: 512 }).jpeg({ quality: 78 }).toFile(path.join(mini, `${foto.id}-final.jpg`));
 
-      const qa = await buildGenerationQa({
-        sceneSpec: spec, image: final.imagen,
-        hashes: { sceneSpecHash: sceneSpecHash(spec) },
-        force: true, plan: { officialStructures: new Map<string, string>(), photoSetting: true },
-      });
-      caso.qa = { pass: qa.pass, retryReasons: qa.retry_reasons };
-      console.log(`· ok · preflight ${compilado.preflight.ok ? "ok" : "FALLA"} · qa ${qa.pass === null ? "n/d" : qa.pass}`);
+      console.log(`· ok · preflight ${compilado.preflight.ok ? "ok" : "FALLA"}`);
     } catch (error) {
       caso.imagen.fallo = String(error).slice(0, 200);
       console.log(`· FALLO ${caso.imagen.fallo}`);

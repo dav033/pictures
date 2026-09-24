@@ -18,7 +18,7 @@ import { allowlistSinVariante, contextoVerificado, firmaManipulada, refirmar, SN
 export const RUTA_GENERAR = "/api/generate";
 const TIMEOUT_IMAGEN_MS = 300_000;
 
-export function cuerpoGenerar(plan: PlanSmoke, opciones: { usarLora: boolean; imageQaRequested: boolean }): Record<string, unknown> {
+export function cuerpoGenerar(plan: PlanSmoke, opciones: { usarLora: boolean }): Record<string, unknown> {
   return {
     productIds: [],
     ragVariantIds: plan.compras.map((compra) => compra.variant_id),
@@ -26,7 +26,6 @@ export function cuerpoGenerar(plan: PlanSmoke, opciones: { usarLora: boolean; im
     planHash: plan.plan_hash,
     brief: {},
     solicitudUsuario: "Smoke local: columna de globos redondos blancos",
-    imageQaRequested: opciones.imageQaRequested,
     usarLora: opciones.usarLora,
     aspecto: "3:2",
   };
@@ -47,7 +46,7 @@ export async function faseGenerar(ctx: Contexto, plan: PlanSmoke): Promise<void>
   const reporte: Reporte = ctx.reporte;
   const contexto = contextoVerificado(plan.approval_token);
   reporte.exigir("P4.contexto token", contexto !== null, "token del plan final verificable");
-  const conPlan = (planEnviado: PlanSmoke) => cuerpoGenerar(planEnviado, { usarLora: true, imageQaRequested: false });
+  const conPlan = (planEnviado: PlanSmoke) => cuerpoGenerar(planEnviado, { usarLora: true });
 
   const desde = new Date(Date.now() - 1_000);
   const gate = await llamarGenerar(ctx, "P4.generate gate LoRA", conPlan(plan));
@@ -85,18 +84,15 @@ async function generacionPagada(ctx: Contexto, plan: PlanSmoke): Promise<void> {
   const reporte: Reporte = ctx.reporte;
   const inicio = new Date();
   const inicioMs = Date.now();
-  const respuesta = await llamarGenerar(ctx, "P4.generate PAGADA", cuerpoGenerar(plan, { usarLora: false, imageQaRequested: true }), TIMEOUT_IMAGEN_MS);
+  const respuesta = await llamarGenerar(ctx, "P4.generate PAGADA", cuerpoGenerar(plan, { usarLora: false }), TIMEOUT_IMAGEN_MS);
   const segundos = Math.round((Date.now() - inicioMs) / 1000);
   const json = esRegistro(respuesta.json) ? respuesta.json : {};
   const planDevuelto = esRegistro(json.plan) ? campoTexto(json.plan, "plan_hash") : undefined;
-  const qa = esRegistro(json.qa) ? json.qa : undefined;
-  const qaResumen = qa ? `pass=${String(qa.pass)} confidence=${String(qa.confidence)} retry_reasons=${resumen(qa.retry_reasons, 300)}` : "(sin qa)";
-  reporte.info(`P4.generate PAGADA status=${respuesta.status} duración=${segundos}s proveedor=${campoTexto(json, "proveedor") ?? "-"} retried=${String(json.retried)} plan_hash_devuelto=${prefijo(planDevuelto)} qa: ${qaResumen}`);
+  reporte.info(`P4.generate PAGADA status=${respuesta.status} duración=${segundos}s proveedor=${campoTexto(json, "proveedor") ?? "-"} plan_hash_devuelto=${prefijo(planDevuelto)}`);
 
   if (respuesta.status === 200) {
     reporte.check("P4.generate pagada → 200", typeof json.imagen === "string" && json.imagen.startsWith("data:image/"), "imagen data URL presente");
     reporte.check("P4.generate pagada plan_hash eco", planDevuelto === plan.plan_hash, `devuelto=${prefijo(planDevuelto)} enviado=${prefijo(plan.plan_hash)}`);
-    reporte.check("P4.generate pagada qa.pass", qa?.pass === true, qaResumen);
     const match = typeof json.imagen === "string" ? /^data:image\/([a-z0-9.+-]+);base64,(.+)$/i.exec(json.imagen) : null;
     if (reporte.check("P4.generate pagada imagen decodificable", match !== null, match ? `mime=image/${match[1]}` : "data URL inesperada") && match) {
       const extension = match[1]!.toLowerCase() === "jpeg" ? "jpg" : match[1]!.toLowerCase();
@@ -105,13 +101,9 @@ async function generacionPagada(ctx: Contexto, plan: PlanSmoke): Promise<void> {
       await writeFile(destino, bytes);
       reporte.info(`P4.imagen guardada en ${destino} (${bytes.length} bytes)`);
     }
-  } else if (respuesta.status === 422 && errorEmpiezaCon(respuesta, "NON_CONFORME")) {
-    // Image-quality outcome: the plan was revalidated and the provider ran; QA rejected the image.
-    reporte.check("P4.generate pagada revalidación OK (422 NON_CONFORME es resultado de calidad de imagen)", planDevuelto === plan.plan_hash, `plan_hash eco=${prefijo(planDevuelto)} error=${resumen(json.error, 300)}`);
-    reporte.info("P4.RESULTADO_CALIDAD_IMAGEN NON_CONFORME (no es fallo de revalidación)");
   } else {
     reporte.fail("P4.generate pagada", detalleRespuesta(respuesta, 400));
   }
-  const filasQa = await esperarAuditoria(ctx.pool, { requestId: plan.request_id, planHash: plan.plan_hash, estados: ["IMAGEN_QA", "IMAGEN_QA_RETRY"], desde: inicio }, 5_000);
-  reporte.info(`P4.audit imagen filas=${filasQa.map((fila) => fila.status).join(",") || "(ninguna)"}`);
+  const filasImagen = await esperarAuditoria(ctx.pool, { requestId: plan.request_id, planHash: plan.plan_hash, estados: ["IMAGEN_GENERADA"], desde: inicio }, 5_000);
+  reporte.info(`P4.audit imagen filas=${filasImagen.map((fila) => fila.status).join(",") || "(ninguna)"}`);
 }

@@ -10,7 +10,6 @@ import { readFileSync } from "node:fs";
 import type { SceneSpec } from "../src/lib/ia/scene-spec";
 import { TIPOS_ESTRUCTURA_1_0 } from "../src/lib/plan/composicion";
 import { PlanDecoracionSchema } from "../src/lib/plan/tipos";
-import { planHash } from "../src/lib/plan/hash";
 import {
   ESTRUCTURAS_OFICIALES,
   ESTRUCTURAS_OFICIALES_IDS,
@@ -143,7 +142,6 @@ pass("official variants reach both LoRA wordings and keep separate pieces separa
   const aceptado = PlanDecoracionSchema.parse(conEstructura({ estructura_oficial: "arco_asimetrico" }));
   assert.equal(aceptado.estructuras[0]!.estructura_oficial, "arco_asimetrico");
   assert.equal(identificarEstructuraOficial({ ...aceptado.estructuras[0]!, nombre: "Arco principal" })?.id, "arco_asimetrico", "the declared field wins over the name");
-  assert.notEqual(planHash(aceptado), planHash(PlanDecoracionSchema.parse(fixture.plan)), "the official structure is part of the approved plan");
   for (const [cambios, campo] of [
     [{ estructura_oficial: "columna_asimetrica" }, "tipo"],
     [{ estructura_oficial: "arco_no_denso" }, "densidad"],
@@ -165,7 +163,7 @@ pass("official variants reach both LoRA wordings and keep separate pieces separa
     officialStructures: new Map([["EST_01_COLUMNA", "columna_asimetrica"]]),
   });
   assert.match(declarada.prompt, /asymmetrical organic balloon column/, "repeated instances inherit the declared official structure");
-  pass("estructura_oficial is validated in Next, exported for Python, bound to the plan hash and read by the compiler");
+  pass("estructura_oficial is validated in Next, exported for Python and read by the compiler");
 }
 
 // 7. Balloon count per official variant: se fue con `calcularMedidas` (ADR-0023,

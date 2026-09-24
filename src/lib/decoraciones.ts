@@ -1,7 +1,6 @@
 import "server-only";
 import type { DatabaseSync } from "node:sqlite";
 import { getDb } from "./db";
-import { obtenerProductos } from "./products";
 import { borrarImagen, nuevoId } from "./store";
 import type { Decoracion } from "./types";
 
@@ -43,30 +42,6 @@ export function obtenerDecoraciones(): Decoracion[] {
     .prepare("SELECT * FROM decoraciones ORDER BY rowid")
     .all() as unknown as FilaDecoracion[];
   return filas.map((fila) => filaADecoracion(db, fila));
-}
-
-/**
- * Filtra decoraciones por el estilo de los productos que las componen. Una
- * decoración sin elementos (todavía) no se puede filtrar por estilo, así que
- * se muestra siempre — mejor mostrarla de más que perderla por falta de datos.
- */
-export function buscarDecoraciones(filtros: { estilos?: string[] }): Decoracion[] {
-  const decoraciones = obtenerDecoraciones();
-  if (!filtros.estilos?.length) return decoraciones;
-
-  const productoPorId = new Map(obtenerProductos().map((p) => [p.id, p]));
-
-  const coincide = (d: Decoracion) => {
-    if (d.elementos.length === 0) return true;
-    return d.elementos.some((id) => {
-      const producto = productoPorId.get(id);
-      return producto ? filtros.estilos!.some((e) => producto.estilos.includes(e)) : false;
-    });
-  };
-
-  const resultado = decoraciones.filter(coincide);
-  // No dejamos al cliente sin opciones solo porque el filtro de estilo no pegó.
-  return resultado.length > 0 ? resultado : decoraciones;
 }
 
 export function crearDecoracion(datos: Omit<Decoracion, "id">): Decoracion {

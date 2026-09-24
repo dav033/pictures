@@ -32,12 +32,12 @@ function ok(nombre: string): void {
 }
 
 async function main(): Promise<void> {
-  const { detectarJergaInterna } = await import("../src/lib/ia/jerga-interna");
+  const { detectarJergaInterna } = await import("../src/lib/ia/omoikane/jerga-interna");
   const mensajes = await import("../src/lib/ia/mensajes-cliente");
   const { validarRestriccionesPlan, validarCardinalidadEventoAbierto, extraerRestriccionesUsuario } = await import("../src/lib/plan/restricciones");
   const { PlanDecoracionSchema } = await import("../src/lib/plan/tipos");
   const { crearEstadoConversacion, crearRegistroHerramientas } = await import("../src/lib/ia/registro-herramientas");
-  const { construirSistema } = await import("../src/lib/ia/prompt-sistema");
+  const { construirSistema } = await import("../src/lib/ia/omoikane/prompt-sistema");
   const { HERRAMIENTAS_RAG, HERRAMIENTAS_PLAN } = await import("../src/lib/ia/herramientas");
 
   const limpio = (texto: string, contexto: string) => assert.deepEqual(detectarJergaInterna(texto), [], `${contexto}: "${texto}"`);

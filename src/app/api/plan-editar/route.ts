@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { buscarCatalogoRag, type ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { getRagPool } from "@/lib/rag/db";
-import { puntuacionCromatica } from "@/lib/rag/catalog/similitud-color";
 import { isPythonAdapterError, pythonErrorBody } from "@/lib/ia/python-adapter";
 import { PythonPlanMappingError } from "@/lib/plan/python-mapper";
 import { AllowlistProductoVarianteError } from "@/lib/plan/allowlist-producto-variante";
@@ -47,163 +46,6 @@ function serializarCandidatos(candidatos: readonly ProductoCandidato[]) {
   }));
 }
 
-type RecomendacionRow = {
-  product_id: string;
-  title: string;
-  derived: Record<string, unknown>;
-  product_available: boolean;
-  imagen_principal: string | null;
-  variant_id: string;
-  sku: string | null;
-  variante_titulo: string | null;
-  price: string | number;
-  variante_disponible: boolean;
-  codigo_tamano: string | null;
-  diam_pulg: string | number | null;
-  forma: string | null;
-  colores: string[];
-};
-
-function derivedStrings(derived: Record<string, unknown>, key: string): string[] {
-  const value = derived[key];
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
-}
-
-function agruparRecomendaciones(rows: RecomendacionRow[]): ProductoCandidato[] {
-  const porProducto = new Map<string, ProductoCandidato>();
-  for (const row of rows) {
-    const producto = porProducto.get(row.product_id) ?? {
-      productId: row.product_id,
-      titulo: row.title,
-      categoria: typeof row.derived.category === "string" ? row.derived.category : null,
-      colores: derivedStrings(row.derived, "colors"),
-      acabados: derivedStrings(row.derived, "finishes"),
-      ocasiones: derivedStrings(row.derived, "occasions"),
-      disponible: row.product_available,
-      imagen: row.imagen_principal,
-      variantes: [],
-    };
-    producto.variantes.push({
-      variantId: row.variant_id,
-      sku: row.sku,
-      titulo: row.variante_titulo,
-      precio: Number(row.price),
-      disponible: row.variante_disponible,
-      codigoTamano: row.codigo_tamano,
-      diamPulg: row.diam_pulg == null ? null : Number(row.diam_pulg),
-      forma: row.forma,
-      colores: row.colores ?? [],
-    });
-    porProducto.set(row.product_id, producto);
-  }
-  return [...porProducto.values()];
-}
-
-function cercaniaCromatica(colores: string[], actuales: string[]): number {
-  return puntuacionCromatica(actuales, colores);
-}
-
-/**
- * `buscarRecomendaciones` no acepta allowlist en su SQL (recorre familia +
- * tamaño físico, no está indexado por dataset). Se filtra después: un
- * producto queda solo si su product_id está permitido, y dentro de él solo
- * las variantes cubiertas — nunca se enseña una variante que el modo LoRA
- * activo no puede renderizar, aunque el producto sí tenga alguna cubierta.
- */
-function filtrarPorAllowlist(candidatos: ProductoCandidato[], allowlist: CatalogAllowlist | null): ProductoCandidato[] {
-  if (!allowlist) return candidatos;
-  const variantes = new Set(allowlist.variantIds);
-  return candidatos.flatMap((candidato) => {
-    const variantesPermitidas = candidato.variantes.filter((variante) => variantes.has(variante.variantId));
-    return variantesPermitidas.length ? [{ ...candidato, variantes: variantesPermitidas }] : [];
-  });
-}
-
-/**
- * Legacy recommendations for plans produced by the Next backend (rollback path).
- * Python plans never reach this SQL: they use `recomendarAlternativasPython`.
- */
-async function buscarRecomendaciones(pool: ReturnType<typeof getRagPool>, variantId: string): Promise<ProductoCandidato[]> {
-  const actual = await pool.query<{
-    product_id: string;
-    derived: Record<string, unknown>;
-    codigo_tamano: string | null;
-    diam_pulg: string | number | null;
-    forma: string | null;
-    derived_colors: string[];
-  }>(
-    `SELECT p.product_id, p.derived, v.codigo_tamano, v.diam_pulg, v.forma, v.derived_colors
-       FROM catalog_variants v
-       JOIN catalog_products p ON p.product_id = v.product_id
-      WHERE v.variant_id = $1
-        AND p.status = 'ACTIVE'`,
-    [variantId],
-  );
-  const referencia = actual.rows[0];
-  if (!referencia) throw new PlanEditError(404, "No se encontró la variante para recomendar alternativas.");
-
-  const codigoTamano = referencia.codigo_tamano;
-  const diamPulg = referencia.diam_pulg == null ? null : Number(referencia.diam_pulg);
-  const forma = referencia.forma;
-  const categoria = typeof referencia.derived.category === "string" ? referencia.derived.category : null;
-  const coloresActuales = referencia.derived_colors ?? [];
-  const params: unknown[] = [variantId];
-  const filtrosFisicos = codigoTamano
-    ? (() => {
-        params.push(codigoTamano);
-        return `v.codigo_tamano = $${params.length}::text`;
-      })()
-    : diamPulg != null
-      ? (() => {
-          params.push(diamPulg);
-          return `v.diam_pulg = $${params.length}::numeric`;
-        })()
-      : "TRUE";
-  const filtroForma = forma
-    ? (() => {
-        params.push(forma);
-        return `AND v.forma = $${params.length}::text`;
-      })()
-    : "";
-  params.push(referencia.product_id);
-  const productParam = `$${params.length}::text`;
-  const filtroFamilia = categoria
-    ? (() => {
-        params.push(categoria);
-        return `AND (p.product_id = ${productParam} OR p.derived->>'category' = $${params.length}::text)`;
-      })()
-    : `AND p.product_id = ${productParam}`;
-  const { rows } = await pool.query<RecomendacionRow>(
-    `SELECT p.product_id, p.title, p.derived, p.available AS product_available, p.image_urls[1] AS imagen_principal,
-            v.variant_id, v.sku, v.title AS variante_titulo, v.price, v.available AS variante_disponible,
-            v.codigo_tamano, v.diam_pulg, v.forma, v.derived_colors AS colores
-       FROM catalog_variants v
-       JOIN catalog_products p ON p.product_id = v.product_id
-      WHERE p.status = 'ACTIVE'
-        AND p.available = true
-       AND v.available = true
-       AND v.variant_id <> $1::text
-       AND ${filtrosFisicos}
-        ${filtroForma}
-        ${filtroFamilia}
-      ORDER BY CASE WHEN p.product_id = ${productParam} THEN 0 ELSE 1 END,
-               p.title ASC,
-               v.price ASC
-      LIMIT 100`,
-    params,
-  );
-
-  rows.sort((a, b) => {
-    const familiaA = a.product_id === referencia.product_id ? 0 : 1;
-    const familiaB = b.product_id === referencia.product_id ? 0 : 1;
-    const colorA = cercaniaCromatica(a.colores ?? [], coloresActuales);
-    const colorB = cercaniaCromatica(b.colores ?? [], coloresActuales);
-    return colorA - colorB || familiaA - familiaB || a.title.localeCompare(b.title) || Number(a.price) - Number(b.price);
-  });
-
-  return agruparRecomendaciones(rows);
-}
-
 function requestIdDe(request: Request): string {
   const cabecera = request.headers.get("x-request-id");
   return z.string().uuid().safeParse(cabecera).success ? cabecera! : crypto.randomUUID();
@@ -244,21 +86,19 @@ export async function POST(request: Request) {
     }
 
     if (body.modo === "recomendadas") {
+      // Python owns which alternatives are sellable (/catalog/recommendations).
+      // A token without a signed catalog snapshot (the retired Next backend)
+      // is rejected with SIN_SNAPSHOT_CATALOGO instead of falling back to SQL.
       const contextoPlan = abrirContextoExigido(body.approval_token);
-      if (contextoPlan.backend === "python") {
-        exigirContextoPython(contextoPlan);
-        const candidatos = await recomendarAlternativasPython({
-          contexto: contextoPlan,
-          variantId: body.variant_id,
-          catalogAllowlist: await resolverCatalogAllowlist(),
-          correlationId: correlationDesde(contextoPlan.requestId),
-          signal: request.signal,
-        });
-        return Response.json({ candidatos }, { headers: cabeceras });
-      }
-      const catalogAllowlist = await resolverCatalogAllowlist();
-      const candidatos = filtrarPorAllowlist(await buscarRecomendaciones(pool, body.variant_id), catalogAllowlist);
-      return Response.json({ candidatos: candidatos.slice(0, 12) }, { headers: cabeceras });
+      exigirContextoPython(contextoPlan);
+      const candidatos = await recomendarAlternativasPython({
+        contexto: contextoPlan,
+        variantId: body.variant_id,
+        catalogAllowlist: await resolverCatalogAllowlist(),
+        correlationId: correlationDesde(contextoPlan.requestId),
+        signal: request.signal,
+      });
+      return Response.json({ candidatos }, { headers: cabeceras });
     }
 
     // The signed-approval / re-resolution / admission logic lives in

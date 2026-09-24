@@ -14,12 +14,17 @@ export type {
   RecomendarPaquetesConFiltrosInput,
   TelemetriaRecomendacion,
   RegistrarTelemetriaRecomendacion,
+  GenerarEstructurado,
+  SolicitudGeneracionEstructurada,
+  ResultadoGeneracionEstructurada,
+  UsoGeneracion,
 } from "./recomendador";
 export {
   recomendarPaquetes,
   recomendarPaquetesEstructurado,
   recomendarPaquetesConFiltros,
   registrarTelemetriaSeguro,
+  crearGeneradorGemini,
 } from "./recomendador";
 
 export type { TipoEventoCurado } from "./tipos-curados";

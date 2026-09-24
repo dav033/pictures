@@ -19,8 +19,6 @@
 import { planBlueprint } from "@/lib/plan/blueprint";
 import { buildImagePrompt } from "@/lib/ia/build-image-prompt";
 import { perfilCreatividad, type NivelCreatividad } from "@/lib/ia/creatividad";
-import { approvedPlanQaInputs } from "@/lib/ia/generation-qa";
-import type { QaPlanInputs } from "@/lib/ia/image-qa";
 import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import { buildApprovedSceneSpec, SceneSpecSchema, type SceneSpec } from "@/lib/ia/scene-spec";
 import { bloqueMezclaPorEstructura } from "@/lib/ia/tamano-fisico";
@@ -108,6 +106,11 @@ export const ESCENARIOS: readonly EscenarioCalibracion[] = [
   },
 ];
 
+/** Mirror of the route's private officialStructuresDePlan (src/app/api/generate/route.ts), for the same prompt vocabulary as the catalog. */
+function officialStructuresDePlan(plan: PlanResuelto): ReadonlyMap<string, string> | undefined {
+  return new Map(plan.plan.estructuras.flatMap((estructura) => estructura.estructura_oficial ? [[estructura.estructura_id, estructura.estructura_oficial] as const] : []));
+}
+
 /** Mirror of the route's private addCreativeCatalogRelationships for plan blueprints (no kits, no backdrop, no lighting). */
 function relacionesCreativas(blueprint: ReferenceBlueprintV2): ReferenceBlueprintV2 {
   const active = blueprint.elements.filter((element) => element.approved && element.include_policy !== "exclude");
@@ -127,7 +130,7 @@ export type EscenaResuelta = {
   plan: PlanResuelto;
   sceneSpec: SceneSpec;
   materialEstimate: DesignMaterialEstimate;
-  qaPlan: QaPlanInputs | undefined;
+  officialStructures: ReadonlyMap<string, string> | undefined;
   sizeMixBlock: string | undefined;
 };
 
@@ -163,7 +166,7 @@ export function resolverEscenario(escenario: EscenarioCalibracion): EscenaResuel
     repeticiones: estructura.repeticiones,
     mezcla_real: estructura.mezcla_real.map((linea) => ({ diamPulg: linea.diam_pulg, forma: linea.forma, unidades: linea.unidades })),
   }))) ?? undefined;
-  return { plan, sceneSpec, materialEstimate, qaPlan: approvedPlanQaInputs(plan), sizeMixBlock };
+  return { plan, sceneSpec, materialEstimate, officialStructures: officialStructuresDePlan(plan), sizeMixBlock };
 }
 
 export type PromptCalibracion = { prompt: string; visualContext: VisualContext; nivel: NivelCreatividad };
@@ -181,7 +184,7 @@ export function promptParaNivel(escenario: EscenarioCalibracion, escena: EscenaR
     }).filter((material): material is string => Boolean(material)),
     pieceMatchLevels: [],
   });
-  const prompt = buildImagePrompt({ sceneSpec: escena.sceneSpec, inputs: [], visualContext, sizeMixBlock: escena.sizeMixBlock, creatividad: creatividad.nivel, officialStructures: escena.qaPlan?.officialStructures });
+  const prompt = buildImagePrompt({ sceneSpec: escena.sceneSpec, inputs: [], visualContext, sizeMixBlock: escena.sizeMixBlock, creatividad: creatividad.nivel, officialStructures: escena.officialStructures });
   const coherencia = verificarCoherenciaPrompt(prompt, escena.plan);
   if (!coherencia.ok) throw new Error(`${escenario.id} nivel ${nivel}: ${coherencia.errores.join("; ")}`);
   return { prompt, visualContext, nivel };

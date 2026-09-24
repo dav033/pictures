@@ -17,12 +17,15 @@ from app.main import (
     MAX_BODY_BYTES,
     EchoRequest,
     EmbeddingRequest,
+    IntentParseRequest,
+    LoraGenerateRequest,
     RerankRequest,
     Settings,
     build_signature,
     create_app,
 )
 from app import main as main_module
+from app.happie.generacion import HappieGenerateRequest
 from app.operational_store import InMemoryOperationalStore
 
 
@@ -147,6 +150,39 @@ def _embedding_body(
             json.dumps(operation_payload, separators=(",", ":"), ensure_ascii=False).encode()
         ).hexdigest(),
         "scopes": scopes or ["ai.embedding"],
+    }
+    if idempotency_key is not None:
+        context["idempotency_key"] = idempotency_key
+    return json.dumps(
+        {"context": context, **operation_payload},
+        separators=(",", ":"),
+    ).encode()
+
+
+def _intent_parse_body(
+    scopes: list[str] | None = None,
+    *,
+    message: str = "algo elegante en dorado y blanco",
+    idempotency_key: str | None = None,
+    request_id: str = "00000000-0000-0000-0000-000000000000",
+    correlation_id: str = "ffffffff-ffff-ffff-ffff-ffffffffffff",
+) -> bytes:
+    operation_payload: dict[str, object] = {
+        "schema_version": "intent-parse.v1",
+        "message": message,
+        "system_instruction": "Interpretas mensajes de clientes.",
+        "response_json_schema": {"type": "object"},
+    }
+    context: dict[str, object] = {
+        "schema_version": "operational.v1",
+        "request_id": request_id,
+        "correlation_id": correlation_id,
+        "deadline_at": "2030-01-01T00:00:00Z",
+        "deadline_ms": 1000,
+        "body_sha256": hashlib.sha256(
+            json.dumps(operation_payload, separators=(",", ":"), ensure_ascii=False).encode()
+        ).hexdigest(),
+        "scopes": scopes or ["ia.intent_parse"],
     }
     if idempotency_key is not None:
         context["idempotency_key"] = idempotency_key
@@ -482,6 +518,405 @@ def test_embedding_failure_preserves_attempts_for_idempotency_replay() -> None:
     assert first.json()["detail"]["attempts"] == expected_attempts
     assert replay.status_code == 503
     assert replay.json()["detail"]["attempts"] == expected_attempts
+
+
+async def _stub_intent_parse_handler(payload: IntentParseRequest) -> dict[str, object]:
+    return {
+        "payload": {
+            "text": json.dumps({"filtros_duros": {}, "semantic_query": payload.message}),
+            "model": payload.model,
+            "usage": {"prompt_token_count": 3, "candidates_token_count": 2},
+        }
+    }
+
+
+def test_intent_parse_requires_its_own_scope_and_returns_text() -> None:
+    client = TestClient(
+        create_app(
+            Settings(environment="test", hmac_secret=SECRET),
+            intent_parse_handler=_stub_intent_parse_handler,
+        )
+    )
+    body = _intent_parse_body()
+    response = client.post(
+        "/internal/v1/ia/intent-parse",
+        content=body,
+        headers=_headers(body, ["ia.intent_parse"], path="/internal/v1/ia/intent-parse"),
+    )
+    assert response.status_code == 200
+    assert "semantic_query" in response.json()["payload"]["text"]
+
+    bad_scope_body = _intent_parse_body(["ai.rerank"])
+    bad_scope = client.post(
+        "/internal/v1/ia/intent-parse",
+        content=bad_scope_body,
+        headers=_headers(bad_scope_body, ["ai.rerank"], path="/internal/v1/ia/intent-parse"),
+    )
+    assert bad_scope.status_code == 403
+
+
+def _happie_generate_body(scopes: list[str] | None = None, *, catalog_chars: int = 10) -> bytes:
+    operation_payload: dict[str, object] = {
+        "schema_version": "happie-generate.v1",
+        "purpose": "package_recommend",
+        "parts": ["Descripción del cliente: boda para 80", "Paquetes disponibles (JSON): " + "x" * catalog_chars],
+        "system_instruction": "Recomiendas paquetes de eventos.",
+        "response_json_schema": {"type": "object"},
+    }
+    context: dict[str, object] = {
+        "schema_version": "operational.v1",
+        "request_id": "00000000-0000-0000-0000-000000000000",
+        "correlation_id": "ffffffff-ffff-ffff-ffff-ffffffffffff",
+        "deadline_at": "2030-01-01T00:00:00Z",
+        "deadline_ms": 1000,
+        "body_sha256": hashlib.sha256(
+            json.dumps(operation_payload, separators=(",", ":"), ensure_ascii=False).encode()
+        ).hexdigest(),
+        "scopes": scopes or ["ia.happie_generate"],
+    }
+    return json.dumps({"context": context, **operation_payload}, separators=(",", ":")).encode()
+
+
+async def _stub_happie_generate_handler(payload: HappieGenerateRequest) -> dict[str, object]:
+    return {
+        "payload": {
+            "text": json.dumps({"recomendaciones": [], "resumen": payload.purpose}),
+            "model": payload.model,
+            "usage": None,
+        }
+    }
+
+
+def test_happie_generate_requires_its_own_scope_and_accepts_a_catalog_above_64kb() -> None:
+    client = TestClient(
+        create_app(
+            Settings(environment="test", hmac_secret=SECRET),
+            happie_generate_handler=_stub_happie_generate_handler,
+        )
+    )
+    path = "/internal/v1/ia/happie-generate"
+    # A Happia catalog does not fit the 64KB cap the other text operations share.
+    body = _happie_generate_body(catalog_chars=MAX_BODY_BYTES * 2)
+    response = client.post(path, content=body, headers=_headers(body, ["ia.happie_generate"], path=path))
+    assert response.status_code == 200
+    assert json.loads(response.json()["payload"]["text"])["resumen"] == "package_recommend"
+
+    bad_scope_body = _happie_generate_body(["ia.intent_parse"])
+    bad_scope = client.post(
+        path,
+        content=bad_scope_body,
+        headers=_headers(
+            bad_scope_body,
+            ["ia.intent_parse"],
+            nonce=UUID("00000000-0000-4000-8000-0000000000a1"),
+            path=path,
+        ),
+    )
+    assert bad_scope.status_code == 403
+
+
+def _lora_generate_body(
+    scopes: list[str] | None = None,
+    *,
+    idempotency_key: str | None = None,
+    request_id: str = "00000000-0000-0000-0000-000000000000",
+    correlation_id: str = "ffffffff-ffff-ffff-ffff-ffffffffffff",
+) -> bytes:
+    operation_payload: dict[str, object] = {
+        "schema_version": "lora-generate.v1",
+        "mode": "text",
+        "prompt": "eventdecor_style_v3, arco de globos dorados en la entrada",
+        "loras": [{"path": "loras/eventdecor-style-v3.safetensors", "scale": 1.0}],
+        "guidance_scale": 3.5,
+        "num_inference_steps": 28,
+        "image_width": 1536,
+        "image_height": 1024,
+        "image_data_urls": [],
+    }
+    context: dict[str, object] = {
+        "schema_version": "operational.v1",
+        "request_id": request_id,
+        "correlation_id": correlation_id,
+        "deadline_at": "2030-01-01T00:00:00Z",
+        "deadline_ms": 1000,
+        "body_sha256": hashlib.sha256(
+            json.dumps(operation_payload, separators=(",", ":"), ensure_ascii=False).encode()
+        ).hexdigest(),
+        "scopes": scopes or ["ia.lora_generate"],
+    }
+    if idempotency_key is not None:
+        context["idempotency_key"] = idempotency_key
+    return json.dumps(
+        {"context": context, **operation_payload},
+        separators=(",", ":"),
+    ).encode()
+
+
+async def _stub_lora_generate_handler(payload: LoraGenerateRequest) -> dict[str, object]:
+    return {
+        "payload": {
+            "image_base64": "aGVsbG8=",
+            "mime": "image/png",
+            "provider_request_id": "req_123",
+            "endpoint": "flux-2/lora" if payload.mode == "text" else "flux-2/lora/edit",
+        }
+    }
+
+
+async def _failed_lora_generate_handler(payload: LoraGenerateRequest) -> dict[str, object]:
+    del payload
+    raise main_module._error(
+        "lora_account_saldo_agotado",
+        503,
+        {"provider_status": 402, "provider_detail": "insufficient balance"},
+    )
+
+
+def test_lora_generate_requires_its_own_scope_and_returns_image() -> None:
+    client = TestClient(
+        create_app(
+            Settings(environment="test", hmac_secret=SECRET),
+            lora_generate_handler=_stub_lora_generate_handler,
+        )
+    )
+    body = _lora_generate_body()
+    response = client.post(
+        "/internal/v1/ia/lora-generate",
+        content=body,
+        headers=_headers(body, ["ia.lora_generate"], path="/internal/v1/ia/lora-generate"),
+    )
+    assert response.status_code == 200
+    assert response.json()["payload"]["endpoint"] == "flux-2/lora"
+
+    bad_scope_body = _lora_generate_body(["ai.rerank"])
+    bad_scope = client.post(
+        "/internal/v1/ia/lora-generate",
+        content=bad_scope_body,
+        headers=_headers(bad_scope_body, ["ai.rerank"], path="/internal/v1/ia/lora-generate"),
+    )
+    assert bad_scope.status_code == 403
+
+
+def test_lora_generate_propagates_provider_status_and_detail_on_account_rejection() -> None:
+    client = TestClient(
+        create_app(
+            Settings(environment="test", hmac_secret=SECRET),
+            lora_generate_handler=_failed_lora_generate_handler,
+        )
+    )
+    body = _lora_generate_body()
+    response = client.post(
+        "/internal/v1/ia/lora-generate",
+        content=body,
+        headers=_headers(body, ["ia.lora_generate"], path="/internal/v1/ia/lora-generate"),
+    )
+    assert response.status_code == 503
+    detail = response.json()["detail"]
+    assert detail["code"] == "lora_account_saldo_agotado"
+    assert detail["provider_status"] == 402
+    assert detail["provider_detail"] == "insufficient balance"
+
+
+CHAT_STREAM_PATH = "/internal/v1/ia/chat-turn-stream"
+
+
+def _chat_stream_body(
+    scopes: list[str] | None = None,
+    *,
+    idempotency_key: str | None = None,
+    deadline_ms: int = 1000,
+) -> bytes:
+    operation_payload: dict[str, object] = {
+        "schema_version": "chat-turn-stream.v1",
+        "system_instruction": "Eres un asesor de decoración.",
+        "contents": [{"role": "user", "parts": [{"text": "hola"}]}],
+    }
+    context: dict[str, object] = {
+        "schema_version": "operational.v1",
+        "request_id": "00000000-0000-0000-0000-000000000000",
+        "correlation_id": "ffffffff-ffff-ffff-ffff-ffffffffffff",
+        "deadline_at": "2030-01-01T00:00:00Z",
+        "deadline_ms": deadline_ms,
+        "body_sha256": hashlib.sha256(
+            json.dumps(operation_payload, separators=(",", ":"), ensure_ascii=False).encode()
+        ).hexdigest(),
+        "scopes": scopes or ["ia.chat_turn_stream"],
+    }
+    if idempotency_key is not None:
+        context["idempotency_key"] = idempotency_key
+    return json.dumps({"context": context, **operation_payload}, separators=(",", ":")).encode()
+
+
+def _chat_stream_client(handler: object) -> TestClient:
+    return TestClient(
+        create_app(Settings(environment="test", hmac_secret=SECRET), chat_turn_stream_handler=handler)  # type: ignore[arg-type]
+    )
+
+
+def _post_chat_stream(client: TestClient, body: bytes, scopes: list[str] | None = None) -> object:
+    return client.post(
+        CHAT_STREAM_PATH,
+        content=body,
+        headers=_headers(body, scopes or ["ia.chat_turn_stream"], path=CHAT_STREAM_PATH),
+    )
+
+
+def _ndjson(response: object) -> list[dict[str, object]]:
+    return [json.loads(line) for line in response.text.splitlines() if line]  # type: ignore[attr-defined]
+
+
+def _events_handler(*events: dict[str, object]):  # type: ignore[no-untyped-def]
+    def open_stream(payload: object):  # type: ignore[no-untyped-def]
+        del payload
+
+        async def generator():  # type: ignore[no-untyped-def]
+            for event in events:
+                yield event
+
+        return generator()
+
+    return open_stream
+
+
+def test_chat_stream_streams_ndjson_events_and_requires_its_scope() -> None:
+    client = _chat_stream_client(_events_handler(
+        {"type": "text", "delta": "Hola"},
+        {"type": "end", "text": "Hola", "tool_calls": [], "usage_metadata": {}, "model": "m", "finish_reason": "STOP", "block_reason": None},
+        {"type": "text", "delta": "nunca se envía"},
+    ))
+    response = _post_chat_stream(client, _chat_stream_body())
+
+    assert response.status_code == 200  # type: ignore[attr-defined]
+    assert response.headers["content-type"].startswith("application/x-ndjson")  # type: ignore[attr-defined]
+    assert response.headers["cache-control"] == "no-store"  # type: ignore[attr-defined]
+    assert response.headers["x-request-id"]  # type: ignore[attr-defined]
+    events = _ndjson(response)
+    assert [event["type"] for event in events] == ["text", "end"]
+
+    bad_scope_body = _chat_stream_body(["ai.rerank"])
+    assert _post_chat_stream(client, bad_scope_body, ["ai.rerank"]).status_code == 403  # type: ignore[attr-defined]
+
+
+def test_chat_stream_rejects_idempotency_keys_instead_of_replaying_a_turn() -> None:
+    client = _chat_stream_client(_events_handler({"type": "end", "text": "", "tool_calls": []}))
+    response = _post_chat_stream(client, _chat_stream_body(idempotency_key="turno-1"))
+
+    assert response.status_code == 422  # type: ignore[attr-defined]
+    assert response.json()["detail"]["code"] == "idempotency_not_supported"  # type: ignore[attr-defined]
+
+
+def test_chat_stream_failure_before_opening_is_a_plain_http_error() -> None:
+    def open_stream(payload: object):  # type: ignore[no-untyped-def]
+        del payload
+        raise main_module._error("chat_turn_unavailable", 503)
+
+    response = _post_chat_stream(_chat_stream_client(open_stream), _chat_stream_body())
+
+    assert response.status_code == 503  # type: ignore[attr-defined]
+    assert response.json()["detail"]["code"] == "chat_turn_unavailable"  # type: ignore[attr-defined]
+
+
+def test_chat_stream_without_terminal_event_ends_with_an_error_event() -> None:
+    response = _post_chat_stream(_chat_stream_client(_events_handler({"type": "text", "delta": "a medias"})), _chat_stream_body())
+
+    events = _ndjson(response)
+    assert events[0] == {"type": "text", "delta": "a medias"}
+    assert events[-1] == {"type": "error", "code": "internal_error", "phase": "stream"}
+
+
+def test_chat_stream_enforces_the_signed_deadline() -> None:
+    def open_stream(payload: object):  # type: ignore[no-untyped-def]
+        del payload
+
+        async def generator():  # type: ignore[no-untyped-def]
+            yield {"type": "text", "delta": "empezando"}
+            await asyncio.sleep(5)
+            yield {"type": "end", "text": "", "tool_calls": []}
+
+        return generator()
+
+    response = _post_chat_stream(_chat_stream_client(open_stream), _chat_stream_body(deadline_ms=200))
+
+    events = _ndjson(response)
+    assert events[0]["type"] == "text"
+    assert events[-1] == {"type": "error", "code": "deadline_exceeded", "phase": "stream"}
+
+
+def test_chat_stream_disconnect_closes_the_event_generator() -> None:
+    closed = threading.Event()
+
+    def open_stream(payload: object):  # type: ignore[no-untyped-def]
+        del payload
+
+        async def generator():  # type: ignore[no-untyped-def]
+            try:
+                yield {"type": "text", "delta": "primero"}
+                await asyncio.sleep(30)
+                yield {"type": "end", "text": "", "tool_calls": []}
+            finally:
+                closed.set()
+
+        return generator()
+
+    app = create_app(Settings(environment="test", hmac_secret=SECRET), chat_turn_stream_handler=open_stream)  # type: ignore[arg-type]
+    body = _chat_stream_body(deadline_ms=60000)
+    headers = _headers(body, ["ia.chat_turn_stream"], path=CHAT_STREAM_PATH)
+
+    async def run() -> list[dict[str, object]]:
+        first_chunk = asyncio.Event()
+        request_sent = False
+        sent: list[dict[str, object]] = []
+
+        async def receive() -> dict[str, object]:
+            nonlocal request_sent
+            if not request_sent:
+                request_sent = True
+                return {"type": "http.request", "body": body, "more_body": False}
+            await first_chunk.wait()
+            return {"type": "http.disconnect"}
+
+        async def send(message: dict[str, object]) -> None:
+            sent.append(message)
+            if message["type"] == "http.response.body" and message.get("body"):
+                first_chunk.set()
+
+        scope = {
+            "type": "http",
+            "asgi": {"version": "3.0"},
+            "http_version": "1.1",
+            "method": "POST",
+            "scheme": "http",
+            "path": CHAT_STREAM_PATH,
+            "raw_path": CHAT_STREAM_PATH.encode(),
+            "query_string": b"",
+            "root_path": "",
+            "headers": [(key.lower().encode(), value.encode()) for key, value in headers.items()],
+            "client": ("127.0.0.1", 1234),
+            "server": ("127.0.0.1", 8000),
+        }
+        async with main_module_lifespan(app):
+            await asyncio.wait_for(app(scope, receive, send), timeout=10)
+        return sent
+
+    sent = asyncio.run(run())
+
+    assert sent[0]["status"] == 200
+    assert closed.is_set(), "a disconnect must close the generator (and with it the provider stream)"
+
+
+class main_module_lifespan:
+    """Runs the app's lifespan around a raw ASGI call, as uvicorn would."""
+
+    def __init__(self, app: object) -> None:
+        self._app = app
+        self._context: object = None
+
+    async def __aenter__(self) -> None:
+        self._context = self._app.router.lifespan_context(self._app)  # type: ignore[attr-defined]
+        await self._context.__aenter__()  # type: ignore[attr-defined]
+
+    async def __aexit__(self, *exc: object) -> None:
+        await self._context.__aexit__(*exc)  # type: ignore[attr-defined]
 
 
 def test_rerank_requires_valid_hmac_and_its_own_scope() -> None:

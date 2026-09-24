@@ -1,5 +1,5 @@
 import "server-only";
-import type { OrigenLineaPlan, PlanResuelto } from "@/lib/plan/resuelto";
+import type { OrigenLineaPlan } from "@/lib/plan/resuelto";
 
 export type LineaCotizada = {
   /**

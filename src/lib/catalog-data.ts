@@ -181,37 +181,6 @@ export const CATALOGO_SEED: Producto[] = [
   },
 ];
 
-/** Pura: sin fs, se puede importar desde componentes de cliente o de servidor. */
-export function filtrarProductos(
-  lista: Producto[],
-  filtros: {
-    categorias?: string[];
-    estilos?: string[];
-    colores?: string[];
-    presupuesto_max?: number;
-  },
-): Producto[] {
-  const { categorias, estilos, colores, presupuesto_max } = filtros;
-
-  const coincide = (p: Producto) => {
-    if (categorias?.length && !categorias.includes(p.categoria)) return false;
-    if (estilos?.length && !estilos.some((e) => p.estilos.includes(e))) return false;
-    if (colores?.length && !colores.some((c) => p.colores.includes(c))) return false;
-    if (presupuesto_max && p.precio > presupuesto_max) return false;
-    return true;
-  };
-
-  const resultado = lista.filter(coincide);
-
-  // Nunca devolvemos vacío en el demo: relajamos el color, que es el filtro más
-  // restrictivo, antes que dejar al cliente sin opciones.
-  if (resultado.length === 0 && colores?.length) {
-    return filtrarProductos(lista, { ...filtros, colores: undefined });
-  }
-
-  return resultado;
-}
-
 export function seleccionarProductos(lista: Producto[], ids: string[]): Producto[] {
   return ids
     .map((id) => lista.find((p) => p.id === id))

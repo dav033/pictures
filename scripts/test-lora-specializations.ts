@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { assertLoraCompatibility, LoraCompatibilityError } from "../src/lib/lora/compatibility";
 import { auditStructureCandidates, type StructureCandidate } from "../src/lib/lora/dataset-builder";
-import { ensureLoraTriggers } from "../src/lib/ia/sempertex-lora";
+import { ensureLoraTriggers } from "../src/lib/ia/kagutsuchi/sempertex-lora";
 
 const candidate = (key: string, sha256: string, groupKey: string, structureTypes: StructureCandidate["structureTypes"], quality?: StructureCandidate["quality"]): StructureCandidate => ({
   key,

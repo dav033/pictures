@@ -115,12 +115,14 @@ policy (what to do with a plan), never the numbers.
   business formula to compare it: that creates a second owner. `validateMaterialEstimate`
   used to recompute fourteen totals and cost a failed proposal and a morning of
   diagnosis when the two definitions drifted apart.
-- Known debt, with a removal condition: `src/lib/plan/mezclas.ts` still holds the
-  mix table, the mandatory-size regex and `sustitucionAdmisible`, all three
-  mirrored in `plan.py`. The third decides what can be sold. The clean exit is
-  exporting them to the `plan-decoracion.v1` contract the way
-  `x-geometria-estructuras-oficiales` already is, and having Python read them
-  from there.
+- The mix table, standard diameters, substitution cap and mandatory-size regex
+  have one owner, `src/lib/plan/mezclas.ts`, exported into `plan-decoracion.v1`
+  as `x-reglas-mezclas` (the `x-geometria-estructuras-oficiales` pattern);
+  `plan.py` reads them from there. Only the two-line shape of
+  `sustitucionAdmisible` (adjacent step, ratio cap) exists in both languages,
+  and `services/ai-api/tests/test_reglas_mezclas.py` requires Python to match
+  the exported `sustituciones_admisibles` table pair by pair. Change a value in
+  `mezclas.ts`, then regenerate the contract and the models.
 
 ### Contracts change in one direction
 

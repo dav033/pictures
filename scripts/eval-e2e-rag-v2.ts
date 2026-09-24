@@ -198,7 +198,7 @@ async function main(): Promise<void> {
   // Dynamic imports keep module-level flags (RAG_USE_VECTOR, Gemini) aligned
   // with --no-key before production retrieval code is loaded.
   const [parserModule, searchModule, browseModule, validationModule, resolverModule] = await Promise.all([
-    import("../src/lib/rag/query-parser/parse"),
+    import("../src/lib/ia/inari/parse"),
     import("../src/lib/rag/retrieval/search"),
     import("../src/lib/rag/chat/buscar"),
     import("../src/lib/rag/chat/validar"),

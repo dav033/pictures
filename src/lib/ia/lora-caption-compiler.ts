@@ -1263,9 +1263,9 @@ function buildJsonPrompt(parts: CaptionParts, ambientDecor: readonly string[]): 
 /**
  * Contexto visual neutro para los consumidores que solo necesitan la
  * AGRUPACIÓN del compilador (qué elementos forman un par reflejado, qué
- * estructura oficial es cada uno) y descartan la redacción: el QA visual
- * (image-qa.ts) y la cláusula de piezas laterales del prompt de imagen. Vive
- * aquí para que los dos lean exactamente la misma agrupación.
+ * estructura oficial es cada uno) y descartan la redacción: la cláusula de
+ * piezas laterales del prompt de imagen y otros lectores de agrupación. Vive
+ * aquí para que todos lean exactamente la misma agrupación.
  */
 export const GROUPING_ONLY_CONTEXT: VisualContext = { venueKind: "unknown", lightingKind: "unspecified", palette: [] };
 

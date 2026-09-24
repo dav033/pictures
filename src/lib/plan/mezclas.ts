@@ -13,22 +13,19 @@
  * - `tamanosObligatorios`, para avisar de que lo que falta de cubrir es
  *   justamente el tamaño que pidió el cliente.
  *
- * DEUDA CONOCIDA, con condición de retirada. Tres cosas de aquí siguen
- * existiendo también en `plan.py`:
+ * Este archivo es el ÚNICO dueño de la tabla de mezclas, los diámetros
+ * estándar, el tope de sustitución y la gramática de los tamaños obligatorios.
+ * `reglasMezclas()` los exporta al contrato `plan-decoracion.v1` como
+ * `x-reglas-mezclas` (`scripts/export-domain-contract-schemas.ts`), el mismo
+ * patrón que `x-geometria-estructuras-oficiales`, y `plan.py` los lee de ahí.
+ * Cambiar un valor es: editarlo aquí, `npm run contracts:export:domain` y
+ * `generate_models.py`; los vectores dorados dicen si movió alguna cifra.
  *
- * - la tabla `MEZCLAS` (`_MIXES`);
- * - el regex `TAMANO_OBLIGATORIO` (`_MANDATORY_SIZE`);
- * - y `sustitucionAdmisible` con `DIAMETROS_ESTANDAR` (`_admissible_substitution`,
- *   `_DIAMETROS_ESTANDAR`), que es la más delicada de las tres porque no es una
- *   tabla sino una regla ejecutable, y decide qué se puede vender: de ella sale
- *   `mezclas_compatibles`, que es lo que el modelo usa para elegir producto. Si
- *   Python cambiara el tope de 1.5 y esto no, el chat le prometería al cliente
- *   mezclas que el resolutor rechaza después, en bucle.
- *
- * La salida limpia es exportarlas al contrato `plan-decoracion.v1` como ya se
- * hace con `x-geometria-estructuras-oficiales`, que Python lee desde ahí, y que
- * este módulo lea del mismo sitio. Hasta entonces, cualquier cambio hay que
- * hacerlo en los dos lados.
+ * Lo que sigue escrito en los dos lenguajes es solo la FORMA de la regla de
+ * sustitución (escalón contiguo y razón máxima), dos líneas por lado. El
+ * contrato lleva además la tabla `sustituciones_admisibles` que produce esta
+ * implementación, y `services/ai-api/tests/test_reglas_mezclas.py` exige que
+ * la de Python dé exactamente lo mismo par por par.
  */
 
 export type Mezcla = "clasica" | "organica_fina" | "organica_gruesa" | "solo_grandes";
@@ -73,6 +70,9 @@ export function pulgadasDeMezcla(mezcla: Mezcla): number[] {
 
 const DIAMETROS_ESTANDAR = [5, 9, 12, 18, 24] as const;
 
+/** Cuánto puede crecer (o encoger) un globo al servirse con el escalón contiguo. */
+const RAZON_MAXIMA_SUSTITUCION = 1.5;
+
 /**
  * Un tamaño se puede servir con el escalón contiguo si no crece más de la mitad.
  * Sin ese tope, un R-5 que no existía se sustituía por un R-24 y convertía una
@@ -83,7 +83,7 @@ function sustitucionAdmisible(pedido: number, disponible: number): boolean {
   const pedidoIndex = DIAMETROS_ESTANDAR.indexOf(pedido as (typeof DIAMETROS_ESTANDAR)[number]);
   const disponibleIndex = DIAMETROS_ESTANDAR.indexOf(disponible as (typeof DIAMETROS_ESTANDAR)[number]);
   if (pedidoIndex < 0 || disponibleIndex < 0 || Math.abs(pedidoIndex - disponibleIndex) !== 1) return false;
-  return Math.max(pedido, disponible) / Math.min(pedido, disponible) <= 1.5;
+  return Math.max(pedido, disponible) / Math.min(pedido, disponible) <= RAZON_MAXIMA_SUSTITUCION;
 }
 
 /**
@@ -121,6 +121,36 @@ export function tamanosObligatorios(
     if (valor > 0) pulgadas.add(valor);
   }
   return [...pulgadas].sort((a, b) => a - b);
+}
+
+/** Lo que viaja en `plan-decoracion.v1` como `x-reglas-mezclas`. */
+export type ReglasMezclasContrato = {
+  mezclas: Record<Mezcla, ProporcionTamano[]>;
+  diametros_estandar: number[];
+  razon_maxima_sustitucion: number;
+  /** Diámetros disponibles que sirven cada diámetro estándar pedido, además del mismo. */
+  sustituciones_admisibles: Record<string, number[]>;
+  /**
+   * Fuente del regex, sin banderas. Las banderas son fijas: sin distinguir
+   * mayúsculas, y `\d` solo en dígitos ASCII (lo que ya hace JS; Python
+   * necesita `re.ASCII`).
+   */
+  patron_tamano_obligatorio: string;
+};
+
+export function reglasMezclas(): ReglasMezclasContrato {
+  return {
+    mezclas: MEZCLAS,
+    diametros_estandar: [...DIAMETROS_ESTANDAR],
+    razon_maxima_sustitucion: RAZON_MAXIMA_SUSTITUCION,
+    sustituciones_admisibles: Object.fromEntries(
+      DIAMETROS_ESTANDAR.map((pedido) => [
+        String(pedido),
+        DIAMETROS_ESTANDAR.filter((disponible) => disponible !== pedido && sustitucionAdmisible(pedido, disponible)),
+      ]),
+    ),
+    patron_tamano_obligatorio: TAMANO_OBLIGATORIO.source,
+  };
 }
 
 /**

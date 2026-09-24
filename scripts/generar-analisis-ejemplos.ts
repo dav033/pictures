@@ -1,5 +1,5 @@
 /**
- * Regenerates `src/lib/ia/analisis-ejemplos.json`: the reviewed analysis of
+ * Regenerates `src/lib/ia/amaterasu/analisis-ejemplos.json`: the reviewed analysis of
  * every gallery photo. Runs the real analysis (Gemini) against a running app,
  * so review the boxes before committing (see `analisisFijoDeEjemplo`).
  *
@@ -7,8 +7,8 @@
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { ANALISIS_EJEMPLOS, sha256Base64, type AnalisisEjemplo, type ArchivoAnalisisEjemplos } from "../src/lib/ia/analisis-ejemplos";
-import { ANALYSIS_PARSER_VERSION } from "../src/lib/ia/analizar-referencias-v2";
+import { ANALISIS_EJEMPLOS, sha256Base64, type AnalisisEjemplo, type ArchivoAnalisisEjemplos } from "../src/lib/ia/amaterasu/analisis-ejemplos";
+import { ANALYSIS_PARSER_VERSION } from "../src/lib/ia/amaterasu/analizar-referencias-v2";
 import { MANIFIESTO_REFERENCIAS_EJEMPLO } from "../src/lib/referencias-ejemplo/manifiesto";
 
 const argumento = (nombre: string) => {

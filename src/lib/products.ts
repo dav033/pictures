@@ -1,6 +1,6 @@
 import "server-only";
 import { aProducto, variantesPorIds } from "./shopify/consultas";
-import { filtrarProductos, seleccionarProductos } from "./catalog-data";
+import { seleccionarProductos } from "./catalog-data";
 import { getDb } from "./db";
 import { borrarImagen, nuevoId } from "./store";
 import type { Categoria, Producto } from "./types";
@@ -38,10 +38,6 @@ export function obtenerProductos(): Producto[] {
     .prepare("SELECT * FROM productos ORDER BY rowid")
     .all() as unknown as FilaProducto[];
   return filas.map(filaAProducto);
-}
-
-export function buscarProductos(filtros: Parameters<typeof filtrarProductos>[1]): Producto[] {
-  return filtrarProductos(obtenerProductos(), filtros);
 }
 
 /**

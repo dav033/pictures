@@ -1,7 +1,6 @@
 /**
  * Contexto de fiesta: lo que hace que un jardín con tres estructuras de globos
- * se lea como un evento y no como un catálogo (fase 6.B de
- * PLAN-IMAGE-AND-COLOR-FIDELITY.md).
+ * se lea como un evento y no como un catálogo.
  *
  * EL PROBLEMA NO ERA QUE APARECIERAN OBJETOS. La lista de prohibiciones que hay
  * hoy en el prompt es el instinto correcto aplicado en el nivel equivocado: lo

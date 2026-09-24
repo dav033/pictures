@@ -7,7 +7,7 @@ import { GoogleGenAI } from "@google/genai";
  * todas las imágenes, que es lo único que hace comparables sus números: la
  * escala se recalibra con el conjunto que se le presenta, así que sirve para
  * ORDENAR dentro de esta llamada y nunca como métrica absoluta ni para comparar
- * con otra corrida (mismo patrón que `image-qa.ts`).
+ * con otra corrida.
  *
  * Una llamada PAGADA a Gemini.
  *   npx tsx --env-file=.env.local scripts/diag-juez-registro.ts reports/lora-debug/registro-caption-v004

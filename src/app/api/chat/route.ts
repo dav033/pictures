@@ -1,10 +1,10 @@
 import { FalloTecnicoTurnoError } from "@/lib/ia/fallo-tecnico-turno";
-import { chatDe, resolverProveedor } from "@/lib/ia/registro";
+import { chatOmoikaneDe, resolverProveedor } from "@/lib/ia/registro";
 import { ErrorIA } from "@/lib/ia/tipos";
 import type { Imagen, Mensaje } from "@/lib/ia/tipos";
-import { ejecutarConversacionStream } from "@/lib/ia/ejecutar";
-import { limitarHistorialChat } from "@/lib/ia/historial-chat";
-import { construirSistema } from "@/lib/ia/prompt-sistema";
+import { ejecutarConversacionStream } from "@/lib/ia/omoikane/ejecutar";
+import { limitarHistorialChat } from "@/lib/ia/omoikane/historial-chat";
+import { construirSistema } from "@/lib/ia/omoikane/prompt-sistema";
 import { parseNivelCreatividad } from "@/lib/ia/creatividad";
 import { sugerenciaEscenaDelTurno } from "@/lib/ia/sugerencia-escena-chat";
 import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
@@ -226,7 +226,7 @@ export async function POST(request: Request) {
   try {
     if (!RAG_ENABLED) throw new RagUnavailableError({});
     const id = resolverProveedor({ override: proveedor, cookie: cookieProveedor });
-    chat = await chatDe(id);
+    chat = await chatOmoikaneDe(id, { requestId, correlationId });
 
     referenceBlueprint = rawReferenceBlueprint
       ? ReferenceBlueprintV2Schema.parse(rawReferenceBlueprint)

@@ -15,7 +15,7 @@ import { ApiError } from "@google/genai";
 import { categorizarError } from "@sempertex/agente-core/gemini";
 import { ErrorIA } from "../src/lib/ia/tipos";
 import { UiErrorV1Schema } from "../src/lib/ia/contracts/ui-error-v1";
-import type { AnalisisV2Resultado } from "../src/lib/ia/analizar-referencias-v2";
+import type { AnalisisV2Resultado } from "../src/lib/ia/amaterasu/analizar-referencias-v2";
 
 /**
  * Transport of /api/references/analyze without server or provider: body size

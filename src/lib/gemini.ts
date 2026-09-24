@@ -18,5 +18,3 @@ export function getGeminiClient(): GoogleGenAI | null {
   return clienteCacheado.cliente;
 }
 
-export const FALTA_GEMINI_API_KEY =
-  "No hay GEMINI_API_KEY configurada. Copia .env.example a .env.local, pon tu llave de Gemini y reinicia el servidor.";

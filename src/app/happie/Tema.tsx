@@ -300,10 +300,6 @@ export function ArtePaquete({
   );
 }
 
-export function colorMiniatura(nombre: string): string {
-  return FONDOS[derivarTemaId(nombre)];
-}
-
 /** Un tipo de evento (ej. "Boda", "XV años") no es el nombre de un paquete
  * puntual, así que no tiene palabra clave de estilo que derivar — cada tipo
  * curado (ver `tiposEventoCurados` en @sempertex/happie-package-ia) tiene su

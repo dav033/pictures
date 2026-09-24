@@ -70,7 +70,7 @@ async function main(): Promise<void> {
   const { buscarNumerosPorDigito, digitosBuscados } = await import("../src/lib/rag/catalog/numeros-por-digito");
   const { buscarGlobosPorColor } = await import("../src/lib/rag/catalog/globos-por-color");
   const { esperarObservabilidadPendiente } = await import("../src/lib/rag/observability/log");
-  const { construirSistema } = await import("../src/lib/ia/prompt-sistema");
+  const { construirSistema } = await import("../src/lib/ia/omoikane/prompt-sistema");
   const { ejecutarConversacionStream } = await import("@sempertex/agente-core");
   type ProductoCandidato = import("../src/lib/rag/chat/buscar").ProductoCandidato;
   type Blueprint = import("../src/lib/ia/reference-blueprint").ReferenceBlueprintV2;

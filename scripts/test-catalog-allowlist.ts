@@ -343,7 +343,7 @@ async function main(): Promise<void> {
   // --- Chat with an unusable LoRA pool: conversation continues, catalog tools fail closed.
   const { causaCatalogoLora, STATUS_CATALOGO_LORA_NO_DISPONIBLE } = await import("../src/lib/lora/catalogo-no-disponible");
   const { crearEstadoConversacion, crearRegistroHerramientas } = await import("../src/lib/ia/registro-herramientas");
-  const { construirSistema } = await import("../src/lib/ia/prompt-sistema");
+  const { construirSistema } = await import("../src/lib/ia/omoikane/prompt-sistema");
   assert.equal(causaCatalogoLora(new Error("LORA_VOCABULARY_ALLOWLIST_EMPTY: ninguna variante")), "LORA_VOCABULARY_ALLOWLIST_EMPTY");
   assert.equal(causaCatalogoLora(new Error("LORA_MODE_NOT_CONFIGURED: training_2")), "LORA_MODE_NOT_CONFIGURED");
   assert.equal(causaCatalogoLora(new Error("connect ECONNREFUSED 127.0.0.1:5432")), null, "un fallo de base de datos no se degrada");

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { vistaAnalisisFoto } from "@/components/referencia/textos-analisis";
-import { analizarReferenciasV2 } from "@/lib/ia/analizar-referencias-v2";
+import { analizarReferenciasV2 } from "@/lib/ia/amaterasu/analizar-referencias-v2";
 import type { ChatPort, PeticionChat, TurnoChat } from "@/lib/ia/tipos";
 import { ReferenceBlueprintV2Schema } from "@/lib/ia/reference-blueprint";
 import { construirCoberturaReferencia } from "@/lib/plan/desglose";

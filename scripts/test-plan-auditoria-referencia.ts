@@ -30,8 +30,8 @@ function ok(nombre: string): void {
 
 async function main(): Promise<void> {
   const { crearEstadoConversacion, crearRegistroHerramientas } = await import("../src/lib/ia/registro-herramientas");
-  const { detectarJergaInterna } = await import("../src/lib/ia/jerga-interna");
-  const { construirSistema } = await import("../src/lib/ia/prompt-sistema");
+  const { detectarJergaInterna } = await import("../src/lib/ia/omoikane/jerga-interna");
+  const { construirSistema } = await import("../src/lib/ia/omoikane/prompt-sistema");
   const { HERRAMIENTAS_PLAN } = await import("../src/lib/ia/herramientas");
   const restricciones = await import("../src/lib/plan/restricciones");
   const { ReferenceBlueprintV2Schema } = await import("../src/lib/ia/reference-blueprint");
@@ -392,13 +392,11 @@ async function main(): Promise<void> {
   // ---------------------------------------------------------------------------
   // E2E 2026-09-14 (D2): a venue photo came back as 3 × 3 × 2,5 m "measured from
   // the photo". The model does not measure: those numbers are estimates.
-  const { aplicarFuenteMedidasEspacio, clienteDioMedidasEspacio, completarMedidas, normalizarFuenteEspacio } = await import("../src/lib/plan/medidas-defecto");
+  // The resolver's own normalization (foto + measures -> supuesto) is locked in
+  // Python by golden vector 17; what stays here is the server's signing policy.
+  const { aplicarFuenteMedidasEspacio, clienteDioMedidasEspacio } = await import("../src/lib/plan/medidas-defecto");
   const espacioFoto = { tipo: "salon_eventos", ancho_m: 3, largo_m: 3, alto_m: 2.5, fuente: "foto" as const };
-  assert.deepEqual(normalizarFuenteEspacio(espacioFoto), { ...espacioFoto, fuente: "supuesto" }, "numbers with source photo are an estimate");
-  assert.deepEqual(normalizarFuenteEspacio({ tipo: "salon_eventos", fuente: "foto" as const }), { tipo: "salon_eventos", fuente: "foto" }, "the type seen in the photo stays");
-  assert.deepEqual(normalizarFuenteEspacio({ ...espacioFoto, fuente: "cliente" as const }).fuente, "cliente");
   const planEspacio = PlanDecoracionSchema.parse({ ...planSoloFigura, espacio: espacioFoto });
-  assert.equal(completarMedidas(planEspacio).espacio.fuente, "supuesto", "the resolver normalization (golden vector 17 locks Python)");
   assert.equal(clienteDioMedidasEspacio("Quiero algo así para la primera comunión"), false);
   assert.equal(clienteDioMedidasEspacio("El salón mide 10 x 8"), true);
   assert.equal(clienteDioMedidasEspacio("Un techo de 5,5 metros de alto"), true);

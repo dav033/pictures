@@ -332,13 +332,6 @@ const STRUCTURE_DESCRIPTORS: Record<string, string> = {
   escultura: "balloon sculpture",
 };
 
-function visualLabel(element: ReferenceElement, materials: Array<{ visual?: CatalogVisualDescriptor }>): string {
-  if (element.physical_form?.descripcion_perceptual_en) return element.physical_form.descripcion_perceptual_en;
-  const descriptors = materials.map((material) => material.visual?.descriptor_perceptual_en).filter((value): value is string => Boolean(value));
-  const structure = STRUCTURE_DESCRIPTORS[element.visual_semantics?.structure_type ?? ""] ?? "catalog-backed decoration";
-  return descriptors.length ? `${structure} made from ${descriptors.join(" and ")}` : structure;
-}
-
 export function buildApprovedSceneSpec(input: {
   blueprint: ReferenceBlueprintV2;
   aspectRatio: SceneSpec["canvas"]["aspect_ratio"];
@@ -387,7 +380,6 @@ export function buildApprovedSceneSpec(input: {
       const productName = element.name;
       const isMultiMaterial = materials.length > 1;
       const catalogVisuals = materials.map((material) => material.visual).filter((visual): visual is CatalogVisualDescriptor => Boolean(visual));
-      const modelDescriptor = visualLabel(element, materials);
       const elementKind = element.element_kind ?? (element.category === "backdrop" ? "backdrop" : "balloon_structure");
       const quantitySemantics = element.quantity_semantics ?? "material_units";
       return {

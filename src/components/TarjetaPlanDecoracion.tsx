@@ -76,7 +76,6 @@ type Props = {
   onAprobar?: () => void;
   aprobado?: boolean;
   generando?: boolean;
-  qaSolicitado?: boolean;
   onPlanActualizado?: (plan: PlanResuelto, cotizacion?: Cotizacion) => void;
   /** Modo LoRA activo: el editor de piezas debe respetar el mismo allowlist
    * de dataset que ya aplica el chat, o se puede agregar/reemplazar una
@@ -221,7 +220,7 @@ function ListaOpciones({ opciones, guardando, onCambiar, ariaLabel, listId, acti
   );
 }
 
-export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, generando = false, qaSolicitado = false, onPlanActualizado, loraMode, modoDev = false, referenceBlueprint, imagenesReferencia, fotoEspacio, onVerCotizacion, escenografiaApagada = [], onEscenografiaToggle }: Props) {
+export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, generando = false, onPlanActualizado, loraMode, modoDev = false, referenceBlueprint, imagenesReferencia, fotoEspacio, onVerCotizacion, escenografiaApagada = [], onEscenografiaToggle }: Props) {
   const reducir = useReducedMotion();
   const [detalleAbierto, setDetalleAbierto] = useState(false);
   const [estructuraAbierta, setEstructuraAbierta] = useState<string | null>(plan.estructuras[0]?.estructura_id ?? null);
@@ -374,8 +373,8 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     : plan.comercial.estado === "APROBACION_REQUERIDA"
       ? "revisión pendiente"
       : techo != null ? "dentro de tu presupuesto" : null;
-  const aprobarDeshabilitado = aprobado || generando || !qaSolicitado || plan.comercial.estado === "PRESUPUESTO_EXCEDIDO" || plan.sin_cobertura.length > 0;
-  const textoAprobar = generando ? "Generando…" : aprobado ? "Aprobación registrada" : !qaSolicitado ? "Activa la validación visual" : plan.sin_cobertura.length > 0 ? "Faltan piezas disponibles" : "Aprobar y ver cómo queda";
+  const aprobarDeshabilitado = aprobado || generando || plan.comercial.estado === "PRESUPUESTO_EXCEDIDO" || plan.sin_cobertura.length > 0;
+  const textoAprobar = generando ? "Generando…" : aprobado ? "Aprobación registrada" : plan.sin_cobertura.length > 0 ? "Faltan piezas disponibles" : "Aprobar y ver cómo queda";
 
   function abrirPieza(estructuraId: string): void {
     setDetalleAbierto(true);

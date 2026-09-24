@@ -1,4 +1,4 @@
-import { generarConSempertexLora, type LoraApplication } from "@/lib/ia/sempertex-lora";
+import { generarConSempertexLora, type LoraApplication } from "@/lib/ia/kagutsuchi/sempertex-lora";
 import type { ImageInput } from "@/lib/ia/tipos";
 
 /**

@@ -13,9 +13,15 @@ import {
   llamarPythonCatalogRecommendations,
   llamarPythonCatalogSearch,
   llamarPythonCatalogSelection,
+  llamarPythonChatTurnStream,
   llamarPythonEcho,
   llamarPythonEmbedding,
+  llamarPythonImageGenerate,
+  llamarPythonIntentParse,
+  llamarPythonHappieGenerate,
+  llamarPythonLoraGenerate,
   llamarPythonPlanResolution,
+  llamarPythonReferenceTurn,
   llamarPythonRerank,
 } from "../src/lib/ia/python-adapter";
 import type { PlanDecoracion } from "../src/lib/plan/tipos";
@@ -387,6 +393,426 @@ async function testEmbeddingEnvelope(): Promise<void> {
   );
 }
 
+async function testIntentParseEnvelope(): Promise<void> {
+  const calls: CapturedCall[] = [];
+  const schema = { type: "object", properties: { semantic_query: { type: "string" } } };
+  const fetchImpl: typeof fetch = async (input, init) => {
+    calls.push({ input, init });
+    return successResponse({
+      text: JSON.stringify({ semantic_query: "ramo de rosas" }),
+      model: "gemini-3.6-flash",
+      usage: { prompt_token_count: 12, candidates_token_count: 4 },
+    });
+  };
+  const result = await llamarPythonIntentParse({
+    message: "algo con rosas rojas",
+    systemInstruction: "Interpretas mensajes de clientes.",
+    responseJsonSchema: schema,
+    model: "gemini-3.6-flash",
+    requestId: REQUEST_ID,
+    correlationId: CORRELATION_ID,
+    env: BASE_ENV,
+    fetchImpl,
+  });
+  assert.equal(result.model, "gemini-3.6-flash");
+  assert.deepEqual(JSON.parse(result.text), { semantic_query: "ramo de rosas" });
+  assert.deepEqual(result.usage, { prompt_token_count: 12, candidates_token_count: 4 });
+  assert.equal(calls.length, 1);
+  const body = JSON.parse(String(calls[0].init?.body)) as {
+    context: { body_sha256: string; scopes: string[] };
+    schema_version: string;
+    message: string;
+    system_instruction: string;
+    response_json_schema: unknown;
+    model: string;
+  };
+  const operationBody = {
+    schema_version: "intent-parse.v1",
+    message: "algo con rosas rojas",
+    system_instruction: "Interpretas mensajes de clientes.",
+    response_json_schema: schema,
+    model: "gemini-3.6-flash",
+  };
+  assert.deepEqual(
+    { schema_version: body.schema_version, message: body.message, system_instruction: body.system_instruction, response_json_schema: body.response_json_schema, model: body.model },
+    operationBody,
+  );
+  assert.equal(body.context.scopes[0], "ia.intent_parse");
+  assert.equal(body.context.body_sha256, sha256Body(JSON.stringify(operationBody)));
+  assert.equal(new URL(String(calls[0].input)).pathname, "/internal/v1/ia/intent-parse");
+
+  const emptyTextFetch: typeof fetch = async () => Response.json({
+    schema_version: "operational.v1",
+    request_id: REQUEST_ID,
+    correlation_id: CORRELATION_ID,
+    payload: { text: "", model: "gemini-3.6-flash", usage: null },
+  });
+  await assert.rejects(
+    () => llamarPythonIntentParse({
+      message: "algo",
+      systemInstruction: "sistema",
+      responseJsonSchema: schema,
+      requestId: REQUEST_ID,
+      correlationId: CORRELATION_ID,
+      env: BASE_ENV,
+      fetchImpl: emptyTextFetch,
+    }),
+    (error: unknown) => error instanceof PythonAdapterError && error.code === "PYTHON_INVALID_RESPONSE",
+  );
+}
+
+async function testHappieGenerateEnvelope(): Promise<void> {
+  const calls: CapturedCall[] = [];
+  const schema = { type: "object", properties: { resumen: { type: "string" } } };
+  const fetchImpl: typeof fetch = async (input, init) => {
+    calls.push({ input, init });
+    return successResponse({
+      text: JSON.stringify({ recomendaciones: [], resumen: "ninguno" }),
+      model: "gemini-3.6-flash",
+      usage: { prompt_token_count: 900, candidates_token_count: 30, tool_use_prompt_token_count: 0 },
+    });
+  };
+  // A Happia catalog is larger than the 64KB cap the other text operations share.
+  const catalogo = `Paquetes disponibles (JSON): ${"x".repeat(100 * 1024)}`;
+  const result = await llamarPythonHappieGenerate({
+    purpose: "package_recommend",
+    parts: ["Descripción del cliente: boda", catalogo],
+    systemInstruction: "Recomiendas paquetes.",
+    responseJsonSchema: schema,
+    model: "gemini-3.6-flash",
+    requestId: REQUEST_ID,
+    correlationId: CORRELATION_ID,
+    deadlineMs: 25_000,
+    env: BASE_ENV,
+    fetchImpl,
+  });
+  assert.equal(result.usage?.tool_use_prompt_token_count, 0);
+  assert.equal(JSON.parse(result.text).resumen, "ninguno");
+  const body = JSON.parse(String(calls[0].init?.body)) as {
+    context: { scopes: string[]; deadline_ms: number };
+    schema_version: string;
+    purpose: string;
+    parts: string[];
+    system_instruction: string;
+  };
+  assert.equal(body.schema_version, "happie-generate.v1");
+  assert.equal(body.purpose, "package_recommend");
+  assert.deepEqual(body.parts, ["Descripción del cliente: boda", catalogo]);
+  assert.equal(body.system_instruction, "Recomiendas paquetes.");
+  assert.equal(body.context.scopes[0], "ia.happie_generate");
+  assert.equal(body.context.deadline_ms, 25_000);
+  assert.equal(new URL(String(calls[0].input)).pathname, "/internal/v1/ia/happie-generate");
+
+  const unexpectedField: typeof fetch = async () => successResponse({ text: "{}", model: "m", usage: null, extra: true });
+  await assert.rejects(
+    () => llamarPythonHappieGenerate({
+      purpose: "conversation_extract",
+      parts: ["hola"],
+      systemInstruction: "sistema",
+      responseJsonSchema: schema,
+      requestId: REQUEST_ID,
+      correlationId: CORRELATION_ID,
+      env: BASE_ENV,
+      fetchImpl: unexpectedField,
+    }),
+    (error: unknown) => error instanceof PythonAdapterError && error.code === "PYTHON_INVALID_RESPONSE",
+  );
+}
+
+async function testReferenceTurnEnvelope(): Promise<void> {
+  const calls: CapturedCall[] = [];
+  const fetchImpl: typeof fetch = async (input, init) => {
+    calls.push({ input, init });
+    return successResponse({
+      text: "",
+      tool_calls: [{ name: "return_reference_inventory", args: { images: [] } }],
+      model: "gemini-3.6-flash",
+      usage: { prompt_token_count: 900, candidates_token_count: 40 },
+      finish_reason: "STOP",
+      block_reason: null,
+    });
+  };
+  const result = await llamarPythonReferenceTurn({
+    systemInstruction: "Eres un analista forense de decoracion de eventos.",
+    message: "Inventaria estas referencias.",
+    images: [{ id: "REF_01", mime: "image/png", base64: "aGVsbG8=", descripcion: "foto del cliente" }],
+    tools: [{ name: "return_reference_inventory", description: "Return inventory.", parametersJsonSchema: { type: "object" } }],
+    requestId: REQUEST_ID,
+    correlationId: CORRELATION_ID,
+    env: BASE_ENV,
+    fetchImpl,
+  });
+  assert.equal(result.model, "gemini-3.6-flash");
+  assert.deepEqual(result.toolCalls, [{ name: "return_reference_inventory", args: { images: [] } }]);
+  assert.equal(result.finishReason, "STOP");
+  assert.equal(result.blockReason, null);
+  assert.equal(calls.length, 1);
+  const body = JSON.parse(String(calls[0].init?.body)) as {
+    context: { body_sha256: string; scopes: string[] };
+    schema_version: string;
+    images: Array<{ id: string; mime: string; base64: string; descripcion: string }>;
+    tools: Array<{ name: string; description: string; parameters_json_schema: unknown }>;
+  };
+  assert.equal(body.schema_version, "reference-turn.v1");
+  assert.deepEqual(body.images, [{ id: "REF_01", mime: "image/png", base64: "aGVsbG8=", descripcion: "foto del cliente" }]);
+  assert.deepEqual(body.tools, [{ name: "return_reference_inventory", description: "Return inventory.", parameters_json_schema: { type: "object" } }]);
+  assert.equal(body.context.scopes[0], "ia.reference_turn");
+  assert.equal(new URL(String(calls[0].input)).pathname, "/internal/v1/ia/reference-turn");
+
+  const invalidResponseFetch: typeof fetch = async () => Response.json({
+    schema_version: "operational.v1",
+    request_id: REQUEST_ID,
+    correlation_id: CORRELATION_ID,
+    payload: { text: "", tool_calls: "not-an-array", model: "gemini-3.6-flash", usage: null, finish_reason: null, block_reason: null },
+  });
+  await assert.rejects(
+    () => llamarPythonReferenceTurn({
+      systemInstruction: "sistema",
+      message: "algo",
+      images: [{ id: "REF_01", mime: "image/png", base64: "aGVsbG8=" }],
+      tools: [],
+      requestId: REQUEST_ID,
+      correlationId: CORRELATION_ID,
+      env: BASE_ENV,
+      fetchImpl: invalidResponseFetch,
+    }),
+    (error: unknown) => error instanceof PythonAdapterError && error.code === "PYTHON_INVALID_RESPONSE",
+  );
+}
+
+async function testImageGenerateEnvelope(): Promise<void> {
+  const calls: CapturedCall[] = [];
+  const fetchImpl: typeof fetch = async (input, init) => {
+    calls.push({ input, init });
+    return successResponse({
+      image_base64: "aW1hZ2VkYXRh",
+      model: "gemini-3.1-flash-image",
+      interaction_id: "int_123",
+      usage: { total_input_tokens: 500, total_output_tokens: 1200 },
+    });
+  };
+  const result = await llamarPythonImageGenerate({
+    input: [
+      { type: "text", text: "Un arco de globos dorados." },
+      { type: "image", data: "aGVsbG8=", mimeType: "image/jpeg" },
+    ],
+    aspectRatio: "3:2",
+    imageSize: "2K",
+    requestId: REQUEST_ID,
+    correlationId: CORRELATION_ID,
+    env: BASE_ENV,
+    fetchImpl,
+  });
+  assert.equal(result.imageBase64, "aW1hZ2VkYXRh");
+  assert.equal(result.model, "gemini-3.1-flash-image");
+  assert.equal(result.interactionId, "int_123");
+  assert.equal(calls.length, 1);
+  const body = JSON.parse(String(calls[0].init?.body)) as {
+    context: { body_sha256: string; scopes: string[] };
+    schema_version: string;
+    store: boolean;
+    aspect_ratio: string;
+    image_size: string;
+    input: Array<{ type: string; text?: string; data?: string; mime_type?: string }>;
+  };
+  assert.equal(body.schema_version, "image-generate.v1");
+  assert.equal(body.store, true);
+  assert.equal(body.aspect_ratio, "3:2");
+  assert.equal(body.image_size, "2K");
+  assert.deepEqual(body.input, [
+    { type: "text", text: "Un arco de globos dorados." },
+    { type: "image", data: "aGVsbG8=", mime_type: "image/jpeg" },
+  ]);
+  assert.equal(body.context.scopes[0], "ia.image_generate");
+  assert.equal(new URL(String(calls[0].input)).pathname, "/internal/v1/ia/image-generate");
+
+  const previousIdFetch: typeof fetch = async (_input, init) => {
+    const parsed = JSON.parse(String(init?.body)) as { previous_interaction_id?: string };
+    assert.equal(parsed.previous_interaction_id, "int_previous");
+    return successResponse({ image_base64: "b3RyYQ==", model: "gemini-3.1-flash-image", interaction_id: "int_456", usage: null });
+  };
+  await llamarPythonImageGenerate({
+    input: [{ type: "text", text: "otra vez" }],
+    previousInteractionId: "int_previous",
+    aspectRatio: "1:1",
+    imageSize: "1K",
+    requestId: REQUEST_ID,
+    correlationId: CORRELATION_ID,
+    env: BASE_ENV,
+    fetchImpl: previousIdFetch,
+  });
+
+  const invalidResponseFetch: typeof fetch = async () => Response.json({
+    schema_version: "operational.v1",
+    request_id: REQUEST_ID,
+    correlation_id: CORRELATION_ID,
+    payload: { image_base64: "", model: "gemini-3.1-flash-image", interaction_id: null, usage: null },
+  });
+  await assert.rejects(
+    () => llamarPythonImageGenerate({
+      input: [{ type: "text", text: "algo" }],
+      aspectRatio: "1:1",
+      imageSize: "1K",
+      requestId: REQUEST_ID,
+      correlationId: CORRELATION_ID,
+      env: BASE_ENV,
+      fetchImpl: invalidResponseFetch,
+    }),
+    (error: unknown) => error instanceof PythonAdapterError && error.code === "PYTHON_INVALID_RESPONSE",
+  );
+}
+
+async function testLoraGenerateEnvelope(): Promise<void> {
+  const calls: CapturedCall[] = [];
+  const fetchImpl: typeof fetch = async (input, init) => {
+    calls.push({ input, init });
+    return successResponse({
+      image_base64: "aW1hZ2VkYXRh",
+      mime: "image/png",
+      provider_request_id: "req_123",
+      endpoint: "flux-2/lora/edit",
+    });
+  };
+  const result = await llamarPythonLoraGenerate({
+    mode: "edit",
+    prompt: "eventdecor_style_v3, arco de globos dorados",
+    loras: [{ path: "loras/eventdecor-style-v3.safetensors", scale: 1 }],
+    guidanceScale: 3.5,
+    numInferenceSteps: 28,
+    imageWidth: 1536,
+    imageHeight: 1024,
+    seed: 42,
+    imageDataUrls: ["data:image/jpeg;base64,aGVsbG8="],
+    requestId: REQUEST_ID,
+    correlationId: CORRELATION_ID,
+    env: BASE_ENV,
+    fetchImpl,
+  });
+  assert.equal(result.imageBase64, "aW1hZ2VkYXRh");
+  assert.equal(result.mime, "image/png");
+  assert.equal(result.providerRequestId, "req_123");
+  assert.equal(result.endpoint, "flux-2/lora/edit");
+  assert.equal(calls.length, 1);
+  assert.equal(new URL(String(calls[0].input)).pathname, "/internal/v1/ia/lora-generate");
+  const body = JSON.parse(String(calls[0].init?.body)) as {
+    context: { scopes: string[] };
+    schema_version: string;
+    mode: string;
+    prompt: string;
+    loras: Array<{ path: string; scale: number }>;
+    guidance_scale: number;
+    num_inference_steps: number;
+    image_width: number;
+    image_height: number;
+    seed: number;
+    image_data_urls: string[];
+  };
+  assert.equal(body.schema_version, "lora-generate.v1");
+  assert.equal(body.mode, "edit");
+  assert.deepEqual(body.loras, [{ path: "loras/eventdecor-style-v3.safetensors", scale: 1 }]);
+  assert.equal(body.guidance_scale, 3.5);
+  assert.equal(body.num_inference_steps, 28);
+  assert.equal(body.image_width, 1536);
+  assert.equal(body.image_height, 1024);
+  assert.equal(body.seed, 42);
+  assert.deepEqual(body.image_data_urls, ["data:image/jpeg;base64,aGVsbG8="]);
+  assert.equal(body.context.scopes[0], "ia.lora_generate");
+
+  const invalidResponseFetch: typeof fetch = async () => successResponse({
+    image_base64: "",
+    mime: "image/png",
+    provider_request_id: "req_1",
+    endpoint: "flux-2/lora",
+  });
+  await assert.rejects(
+    () => llamarPythonLoraGenerate({
+      mode: "text",
+      prompt: "eventdecor_style_v3, algo",
+      loras: [{ path: "loras/x.safetensors", scale: 1 }],
+      guidanceScale: 3.5,
+      numInferenceSteps: 28,
+      imageWidth: 1024,
+      imageHeight: 1024,
+      imageDataUrls: [],
+      requestId: REQUEST_ID,
+      correlationId: CORRELATION_ID,
+      env: BASE_ENV,
+      fetchImpl: invalidResponseFetch,
+    }),
+    (error: unknown) => error instanceof PythonAdapterError && error.code === "PYTHON_INVALID_RESPONSE",
+  );
+
+  const accountRejectedFetch: typeof fetch = async () => Response.json(
+    { detail: { code: "lora_account_saldo_agotado", provider_status: 402, provider_detail: "insufficient balance" } },
+    { status: 503 },
+  );
+  await assert.rejects(
+    () => llamarPythonLoraGenerate({
+      mode: "text",
+      prompt: "eventdecor_style_v3, algo",
+      loras: [{ path: "loras/x.safetensors", scale: 1 }],
+      guidanceScale: 3.5,
+      numInferenceSteps: 28,
+      imageWidth: 1024,
+      imageHeight: 1024,
+      imageDataUrls: [],
+      requestId: REQUEST_ID,
+      correlationId: CORRELATION_ID,
+      env: BASE_ENV,
+      fetchImpl: accountRejectedFetch,
+    }),
+    (error: unknown) => {
+      if (!(error instanceof PythonAdapterError)) return false;
+      assert.equal(error.domainCode, "lora_account_saldo_agotado");
+      assert.equal(error.providerStatus, 402);
+      assert.equal(error.providerDetail, "insufficient balance");
+      return true;
+    },
+  );
+}
+
+async function testChatTurnStreamEnvelope(): Promise<void> {
+  const input = (fetchImpl: typeof fetch) => ({
+    systemInstruction: "Eres un asesor.",
+    contents: [{ role: "user", parts: [{ text: "hola" }] }],
+    tools: [],
+    requestId: REQUEST_ID,
+    correlationId: CORRELATION_ID,
+    env: BASE_ENV,
+    fetchImpl,
+  });
+  const ndjson = (body: string, contentType = "application/x-ndjson") => new Response(body, { headers: { "content-type": contentType } });
+  const collect = async (fetchImpl: typeof fetch) => {
+    const events: unknown[] = [];
+    for await (const event of llamarPythonChatTurnStream(input(fetchImpl))) events.push(event);
+    return events;
+  };
+  const end = { type: "end", text: "hola", tool_calls: [], usage_metadata: {}, model: "m", finish_reason: null, block_reason: null };
+
+  const calls: CapturedCall[] = [];
+  const events = await collect(async (url, init) => {
+    calls.push({ input: url, init });
+    return ndjson(`${JSON.stringify({ type: "text", delta: "ho" })}\n\n${JSON.stringify(end)}\n${JSON.stringify({ type: "text", delta: "después del fin" })}\n`);
+  });
+  assert.deepEqual(events, [{ type: "text", delta: "ho" }, end], "stops at the terminal event, ignores blank lines");
+  assert.equal(new URL(String(calls[0].input)).pathname, "/internal/v1/ia/chat-turn-stream");
+  const body = JSON.parse(String(calls[0].init?.body)) as { context: { scopes: string[]; idempotency_key?: string }; schema_version: string };
+  assert.equal(body.schema_version, "chat-turn-stream.v1");
+  assert.deepEqual(body.context.scopes, ["ia.chat_turn_stream"]);
+  assert.equal(body.context.idempotency_key, undefined);
+
+  const invalid = (error: unknown) => error instanceof PythonAdapterError && error.code === "PYTHON_INVALID_RESPONSE";
+  await assert.rejects(() => collect(async () => ndjson(JSON.stringify(end), "application/json")), invalid, "wrong content type");
+  await assert.rejects(() => collect(async () => ndjson("{no es json\n")), invalid, "malformed line");
+  await assert.rejects(() => collect(async () => ndjson(`${JSON.stringify({ type: "text", delta: "a medias" })}\n`)), invalid, "no terminal event");
+  await assert.rejects(() => collect(async () => ndjson(`${JSON.stringify({ type: "otro" })}\n`)), invalid, "unknown event");
+  await assert.rejects(
+    () => collect(async () => Response.json({ detail: { code: "chat_turn_unavailable" } }, { status: 503 })),
+    (error: unknown) => error instanceof PythonAdapterError && error.domainCode === "chat_turn_unavailable",
+    "pre-stream HTTP error keeps its domain code",
+  );
+}
+
 async function testCatalogSearchEnvelope(): Promise<void> {
   const calls: CapturedCall[] = [];
   const filters = { available: true, categories: ["globo_latex"] };
@@ -493,17 +919,18 @@ async function testCatalogSelectionEnvelope(): Promise<void> {
   assert.equal(body.context.scopes[0], "catalog.selection");
   assert.equal(body.context.body_sha256, sha256Body(JSON.stringify(operationBody)));
 
-  const invalidSubtotalFetch: typeof fetch = async () => successResponse(
-    validCatalogSelectionPayload({ subtotal_cop: 2999 }),
-  );
+  // Python owns subtotal/total/status (AGENTS.md: a boundary gate never
+  // re-derives a business formula). What Next still checks is identity: a
+  // validated line must be a pair it asked for, inside the signed allowlist.
+  const outsideAllowlistFetch: typeof fetch = async () => successResponse(validCatalogSelectionPayload());
   await assert.rejects(
     () => llamarPythonCatalogSelection({
       items: [{ product_id: "prod-1", variant_id: "variant-1", quantity: 2 }],
-      allowlist: [{ product_id: "prod-1", variant_ids: ["variant-1"] }],
+      allowlist: [{ product_id: "prod-1", variant_ids: ["variant-2"] }],
       requestId: REQUEST_ID,
       correlationId: CORRELATION_ID,
       env: BASE_ENV,
-      fetchImpl: invalidSubtotalFetch,
+      fetchImpl: outsideAllowlistFetch,
     }),
     (error: unknown) => error instanceof PythonAdapterError && error.code === "PYTHON_INVALID_RESPONSE",
   );
@@ -760,6 +1187,12 @@ async function main(): Promise<void> {
   await testStableFailures();
   await testRerankEnvelopeAndPermutation();
   await testEmbeddingEnvelope();
+  await testIntentParseEnvelope();
+  await testHappieGenerateEnvelope();
+  await testReferenceTurnEnvelope();
+  await testImageGenerateEnvelope();
+  await testLoraGenerateEnvelope();
+  await testChatTurnStreamEnvelope();
   await testCatalogSearchEnvelope();
   await testCatalogSelectionEnvelope();
   await testPlanResolutionEnvelope();

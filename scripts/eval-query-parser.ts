@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { interpretarConsulta } from "../src/lib/rag/query-parser/parse";
+import { interpretarConsulta } from "../src/lib/ia/inari/parse";
 import type { IntentQuery } from "../src/lib/rag/query-parser/schema";
 
 for (const archivo of [".env.local", ".env"]) {

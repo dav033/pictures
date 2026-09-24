@@ -12,7 +12,7 @@ import {
   HappiePackageRecommendationResponseV1Schema,
   HappieStructuredRecommendationRequestV1Schema,
 } from "@/lib/ia/contracts/happie-v1";
-import { telemetriaRecomendacion } from "@/lib/happie/telemetria";
+import { iaRecomendacionHappie } from "@/lib/happie/ia-recomendacion";
 
 export async function POST(request: Request) {
   if (!isAuthenticatedRequest(request) || !isSameOriginRequest(request)) {
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
       coincidenciaExacta,
       necesidades,
       signal: request.signal,
-      registrarTelemetria: telemetriaRecomendacion(request, "happie_paquetes"),
+      ...iaRecomendacionHappie(request, "happie_paquetes"),
     });
 
     return Response.json(

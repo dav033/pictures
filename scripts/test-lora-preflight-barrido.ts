@@ -15,7 +15,7 @@ import { LORA_PROMPT_MAX_LENGTH } from "../src/lib/ia/lora-caption-compiler";
 import { compileProductPrompt, type ElementSizeConfirmation } from "../src/lib/ia/lora-product-runtime";
 import { preflightLoraPrompt } from "../src/lib/ia/lora-prompt-preflight";
 import { buildVisualContext } from "../src/lib/ia/visual-context";
-import { ensureLoraTriggers } from "../src/lib/ia/sempertex-lora";
+import { ensureLoraTriggers } from "../src/lib/ia/kagutsuchi/sempertex-lora";
 import { PRODUCT_VOCABULARY } from "../src/lib/lora/product-vocabulary-data";
 
 type Elemento = SceneSpec["elements"][number];

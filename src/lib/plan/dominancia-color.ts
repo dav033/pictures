@@ -2,7 +2,7 @@ import { labDeRgb, LAB_COLORES, type Lab } from "@/lib/rag/catalog/similitud-col
 
 /**
  * Cuánto ocupa cada color del catálogo en una región de una foto, medido sobre
- * los píxeles (fase 2.1 de PLAN-IMAGE-AND-COLOR-FIDELITY.md).
+ * los píxeles.
  *
  * POR QUÉ. Hasta ahora la paleta de una foto era `slice(0, 3)` de una lista sin
  * orden: las tres primeras etiquetas que el analizador hubiera escrito, en el

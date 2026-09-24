@@ -302,63 +302,6 @@ export function buscarCatalogoShopify(filtros: FiltrosCatalogo): ResultadoBusque
   };
 }
 
-/**
- * Desglose por tipo de producto de una búsqueda (mismos filtros que
- * `buscarCatalogoShopify` menos `categorias`), para cuando hay demasiados
- * resultados como para tirárselos todos de una al cliente: en vez de una
- * lista plana, se le ofrece elegir el tipo primero (§ ejecutar.ts,
- * `buscar_catalogo`).
- */
-export function categoriasDeCatalogo(filtros: FiltrosCatalogo): Faceta[] {
-  const todas = candidatas();
-  const idsTexto = filtros.texto?.trim() ? idsPorTexto(filtros.texto) : undefined;
-  const filas = sinOcasionAjena(
-    aplicarFiltros(todas, { ...filtros, categorias: undefined }, idsTexto),
-    filtros.ocasiones,
-  );
-
-  const conteo = new Map<string, number>();
-  for (const f of filas) {
-    const clave = f.categoria ?? "sin_categoria";
-    conteo.set(clave, (conteo.get(clave) ?? 0) + 1);
-  }
-
-  return [...conteo.entries()]
-    .map(([valor, total]) => ({
-      valor,
-      etiqueta: valor === "sin_categoria" ? "Otros" : nombreCategoria(valor),
-      total,
-    }))
-    .sort((a, b) => b.total - a.total);
-}
-
-/**
- * Mejor coincidencia real para una línea de despiece: tamaño exacto, color
- * si se pidió, disponible primero, y entre iguales el menor precio unitario
- * (precio del paquete / unidades) — así una cotización no queda cara solo
- * por elegir al azar entre dos paquetes del mismo tamaño (§3.5 del plan).
- */
-export function mejorVarianteParaTamano(tamano: string, color?: string): ResultadoCatalogo | null {
-  const coincidencias = candidatas().filter(
-    (f) => (f.tamano_codigo ?? "").toUpperCase() === tamano.toUpperCase(),
-  );
-  if (coincidencias.length === 0) return null;
-
-  const conColor = color
-    ? coincidencias.filter((f) => (JSON.parse(f.colores || "[]") as string[]).includes(color.toLowerCase()))
-    : [];
-  const grupo = conColor.length > 0 ? conColor : coincidencias;
-
-  grupo.sort((a, b) => {
-    const aDisp = a.disponible_variante && a.disponible_producto ? 0 : 1;
-    const bDisp = b.disponible_variante && b.disponible_producto ? 0 : 1;
-    if (aDisp !== bDisp) return aDisp - bDisp;
-    return a.precio / a.unidades_paq - b.precio / b.unidades_paq;
-  });
-
-  return filaAResultado(grupo[0]);
-}
-
 export function variantesPorIds(ids: string[]): ResultadoCatalogo[] {
   if (ids.length === 0) return [];
   const db = getDb();
@@ -399,14 +342,6 @@ export function aProducto(r: ResultadoCatalogo): Producto {
     catalogSku: r.sku ?? undefined,
     catalogProductTitle: r.productoTitulo,
   };
-}
-
-/** Catálogo compacto para que el modelo resuelva sustitutos de referencias sin intervención del cliente. */
-export function productosParaMatchingReferencia(): Producto[] {
-  return candidatas()
-    .filter((fila) => Boolean(fila.disponible_producto && fila.disponible_variante))
-    .map(filaAResultado)
-    .map(aProducto);
 }
 
 export type ProductoExplorador = {

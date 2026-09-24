@@ -13,7 +13,6 @@ import { Markdown } from "@/components/Markdown";
 import { ProductoCard } from "@/components/ProductoCard";
 import { TarjetaCotizacion } from "@/components/TarjetaCotizacion";
 import { TarjetaPlanDecoracion } from "@/components/TarjetaPlanDecoracion";
-import { GenerationQaSummary } from "@/components/references/GenerationQaSummary";
 import { ReferenceAnalysisController } from "@/components/references/ReferenceAnalysisController";
 import type { ReferenceDraft } from "@/components/references/ReferenceReviewPanel";
 import { PasosAsistente } from "@/components/propuesta";
@@ -24,7 +23,6 @@ import type { ReferenceBlueprintV2 } from "@/lib/ia/reference-blueprint";
 import type { LoraModeSlug } from "@/lib/lora/schema";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import type { ItemRechazado, ItemValidado } from "@/lib/rag/chat/validar";
-import type { ImageQaReport } from "@/lib/ia/image-qa";
 import type { Faceta, FiltrosCatalogo } from "@/lib/shopify/consultas";
 import type { Brief, DecoracionConProductos, Producto } from "@/lib/types";
 import { classifyGenerationIds, normalizeGenerationSources } from "@/lib/generacion/provenance";
@@ -34,7 +32,7 @@ import { ChatSseEventV1Schema } from "@/lib/ia/contracts/chat-v1";
 import { CATALOGO_ERRORES_UI_V1, construirUiErrorV1, leerUiErrorV1, type AccionUiV1, type UiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 import { AvisoError } from "@/components/errores/AvisoError";
 import { useModoVista } from "@/lib/estado/modo-vista";
-import { abrirPromptAutomaticamente, qaVisualEfectivo, usarLoraEfectivo } from "@/lib/estado/modo-vista-reglas";
+import { abrirPromptAutomaticamente, usarLoraEfectivo } from "@/lib/estado/modo-vista-reglas";
 import { aplicarEventoHerramienta, cerrarPasos, type PasoAsistente } from "@/lib/estado/pasos-asistente";
 import { contextoEventoConversacion } from "@/lib/estado/contexto-evento";
 import { crearEsperaAnalisis, type EstadoAnalisisReferencia } from "@/lib/estado/espera-analisis";
@@ -220,9 +218,9 @@ type ErrorVisible = { ui: UiErrorV1; origen: OrigenError };
 
 const ACCIONES_POR_ORIGEN: Readonly<Record<OrigenError, ReadonlySet<AccionUiV1>>> = {
   chat: new Set<AccionUiV1>(["reintentar", "ajustar_propuesta", "pedir_nueva_propuesta", "revisar_adjuntos"]),
-  generacion: new Set<AccionUiV1>(["reintentar", "generar_estilo_estandar", "revisar_propuesta", "pedir_nueva_propuesta", "ajustar_propuesta", "activar_validacion_visual", "revisar_adjuntos"]),
+  generacion: new Set<AccionUiV1>(["reintentar", "generar_estilo_estandar", "revisar_propuesta", "pedir_nueva_propuesta", "ajustar_propuesta", "revisar_adjuntos"]),
   catalogo: new Set<AccionUiV1>(),
-  plan: new Set<AccionUiV1>(["activar_validacion_visual", "revisar_propuesta"]),
+  plan: new Set<AccionUiV1>(["revisar_propuesta"]),
 };
 
 function errorLocal(code: Parameters<typeof construirUiErrorV1>[0], mensaje: string): UiErrorV1 {
@@ -523,10 +521,6 @@ export default function Page() {
   const ultimoIntentoGeneracionRef = useRef<{ override: GenerarOverride } | null>(null);
   const [proveedor, setProveedor] = useState<ProveedorId>("gemini");
   const [selectorIA, setSelectorIA] = useState<SelectorIA>("lora");
-  // Validación visual activa por defecto también en modo dev: sin ella no se puede aprobar.
-  const [qaVisualSolicitado, setQaVisualSolicitado] = useState(true);
-  // En modo usuario la casilla no se ve y la revisión visual va siempre activa (B2).
-  const qaEfectivo = qaVisualEfectivo(modoVista, qaVisualSolicitado);
   // Formato del prompt LoRA: automático (lo resuelve el servidor por el trigger
   // y no se envía), texto (entrenado), JSON o ambos (dos imágenes para comparar).
   const [formatoPromptLora, setFormatoPromptLora] = useState<SeleccionFormatoPrompt>(FORMATO_PROMPT_AUTOMATICO);
@@ -569,7 +563,6 @@ export default function Page() {
   const [estadoAnalisis, setEstadoAnalisis] = useState<EstadoAnalisisReferencia>("idle");
   const [esperaAnalisis] = useState(() => crearEsperaAnalisis());
   const analizandoFoto = estadoAnalisis === "analyzing";
-  const [ultimaQa, setUltimaQa] = useState<ImageQaReport | null>(null);
   const [ultimaImagenGenerada, setUltimaImagenGenerada] = useState<Imagen | null>(null);
   const [ultimaGeneracion, setUltimaGeneracion] = useState<GeneracionVisible | null>(null);
   const [promptModalAbierto, setPromptModalAbierto] = useState(false);
@@ -1137,7 +1130,6 @@ export default function Page() {
     escenografiaApagadaRef.current = [];
     setEstadoAnalisis("idle");
     esperaAnalisis.notificar("idle");
-    setUltimaQa(null);
     setUltimaImagenGenerada(null);
     setUltimaGeneracion(null);
     setPromptModalAbierto(false);
@@ -1295,7 +1287,6 @@ export default function Page() {
             solicitudUsuario,
             instruccion: (override?.instruccion ?? ajuste.trim()) || undefined,
             proveedor,
-            imageQaRequested: qaEfectivo,
             usarLora: usarLoraEnIntento,
             // El servidor ya no acepta una llamada LoRA sin modo resuelto
             // (PLAN-COMPOSICION-RICA-V001.md §1.1/§9.2: no hay fallback
@@ -1337,9 +1328,6 @@ export default function Page() {
         const data = await res.json();
 
         if (!res.ok) {
-          // El backend devuelve QA también en NON_CONFORME; conservarlo en
-          // pantalla expone la causa real sin convertir el fallo en éxito.
-          if (data.qa) setUltimaQa(data.qa);
           // ui-error.v1 es lo único que se muestra al cliente. Si la respuesta
           // no lo trae (ruta aún sin migrar), se muestra un aviso genérico y el
           // texto técnico queda solo en los detalles de modo dev.
@@ -1383,7 +1371,6 @@ export default function Page() {
         const imagenJson = typeof data.imagenAlternativa?.imagen === "string" && data.imagenAlternativa.imagen.startsWith("data:") ? data.imagenAlternativa.imagen : undefined;
         setImagenes((previas) => [data.imagen, ...(imagenJson ? [imagenJson] : []), ...previas]);
         setImagenAmpliada(null);
-        setUltimaQa(data.qa ?? null);
         // La imagen que se acaba de generar ya refleja la selección actual.
         seleccionGeneradaRef.current = seleccionRef.current;
         setSeleccionPendiente(false);
@@ -1486,9 +1473,6 @@ export default function Page() {
           ? "Ajusta la propuesta para que quede dentro de mi presupuesto."
           : "Ajusta la propuesta, por favor.");
         return;
-      case "activar_validacion_visual":
-        setQaVisualSolicitado(true);
-        return;
       case "revisar_adjuntos":
         document.getElementById("adjuntos-cliente")?.scrollIntoView({ behavior: "smooth", block: "center" });
         return;
@@ -1547,10 +1531,6 @@ export default function Page() {
   }
 
   function aprobarPlan(plan: PlanResuelto, messageId?: string): void {
-    if (!qaEfectivo) {
-      setError({ ui: errorLocal("VALIDACION_VISUAL_REQUERIDA", "aprobarPlan sin qaVisualSolicitado."), origen: "plan" });
-      return;
-    }
     if (plan.comercial.estado === "PRESUPUESTO_EXCEDIDO" || plan.sin_cobertura.length > 0 || generando || generandoGlobal) return;
     const mensajeAnclado = messageId
       ? mensajes.find((mensaje) => mensaje.id === messageId && mensaje.role === "assistant" && mensaje.plan?.plan_hash === plan.plan_hash)
@@ -1822,15 +1802,6 @@ export default function Page() {
                 </Select>
               </>
             )}
-            <label className="inline-flex items-center gap-2 text-texto" title="Hace una revisión visual adicional y puede aumentar el tiempo de respuesta">
-              <input
-                type="checkbox"
-                checked={qaVisualSolicitado}
-                onChange={(event) => setQaVisualSolicitado(event.target.checked)}
-                className="size-4 accent-acento"
-              />
-              Validar visualmente
-            </label>
           </>
         }
       />
@@ -1966,7 +1937,6 @@ export default function Page() {
                           imagenesReferencia={m.adjuntos?.referencias}
                           fotoEspacio={m.adjuntos?.fotoEspacio}
                           generando={generando && m.plan.plan_hash === planActual?.plan_hash}
-                          qaSolicitado={qaEfectivo}
                           modoDev={esModoDev}
                           onAprobar={m.plan.plan_hash === planActual?.plan_hash ? () => aprobarPlan(m.plan!, m.id) : undefined}
                           onPlanActualizado={m.plan.plan_hash === planActual?.plan_hash ? (plan, cotizacion) => actualizarPlanEnMensaje(m.id, plan, cotizacion) : undefined}
@@ -2060,7 +2030,7 @@ export default function Page() {
                   <p className="text-sm text-texto-suave">
                     Aprobaste esta propuesta y su imagen se creó, pero no se pudo guardar en este navegador al recargar la página. Si quieres verla otra vez, puedes volver a crearla.
                   </p>
-                  <button type="button" onClick={() => regenerarImagenAprobada(imagenNoGuardadaHash)} disabled={cargandoChat || !qaEfectivo} className="ui-button-secondary ui-pressable">
+                  <button type="button" onClick={() => regenerarImagenAprobada(imagenNoGuardadaHash)} disabled={cargandoChat} className="ui-button-secondary ui-pressable">
                     Volver a crear la imagen
                   </button>
                 </section>
@@ -2070,7 +2040,7 @@ export default function Page() {
                 <section aria-label="Visualización" style={{ order: ORDEN_AL_FINAL }} className="ui-card space-y-2 p-4" data-testid="aviso-vista-previa-no-disponible">
                   <h2 className="text-sm font-semibold">Aprobaste esta propuesta</h2>
                   <p className="text-sm text-texto-suave">{CATALOGO_ERRORES_UI_V1.VISTA_PREVIA_NO_DISPONIBLE.mensaje_usuario} Puedes volver a intentar la imagen más tarde.</p>
-                  <button type="button" onClick={() => regenerarImagenAprobada(vistaPreviaNoDisponibleHash)} disabled={cargandoChat || !qaEfectivo} className="ui-button-secondary ui-pressable">
+                  <button type="button" onClick={() => regenerarImagenAprobada(vistaPreviaNoDisponibleHash)} disabled={cargandoChat} className="ui-button-secondary ui-pressable">
                     Volver a intentar la imagen
                   </button>
                 </section>
@@ -2124,14 +2094,6 @@ export default function Page() {
                   {imagenes.length > 0 && (
                     <>
                       <p className="text-xs text-texto-suave">Imagen referencial generada con IA. No es un render contractual.</p>
-                      {esModoDev ? (
-                        <GenerationQaSummary qa={ultimaQa} />
-                      ) : ultimaQa?.pass === false ? (
-                        // Modo usuario: sin razones técnicas del QA, pero sin ocultar que la imagen no quedó fiel.
-                        <p className="text-xs text-texto-suave" data-testid="aviso-imagen-no-fiel">
-                          Esta imagen puede no reflejar exactamente la propuesta. Puedes generar otra versión.
-                        </p>
-                      ) : null}
                       {seleccionPendiente && !generando && !planActual && (
                         <p className="rounded-xl bg-acento-suave px-3 py-2 text-xs font-medium text-acento">
                           Tu selección cambió: regenera para verla reflejada en la imagen.
@@ -2148,7 +2110,7 @@ export default function Page() {
                             className="ui-input min-w-0 flex-1"
                           />
                           {planActualAprobado ? (
-                            <button type="button" onClick={aplicarAjusteSobrePropuesta} disabled={!ajuste.trim() || generando || !qaEfectivo} className="ui-button-primary shrink-0">
+                            <button type="button" onClick={aplicarAjusteSobrePropuesta} disabled={!ajuste.trim() || generando} className="ui-button-primary shrink-0">
                               Aplicar ajuste y regenerar
                             </button>
                           ) : null}

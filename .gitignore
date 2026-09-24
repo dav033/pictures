@@ -46,6 +46,9 @@ yarn-error.log*
 !/data/sanitized/
 !/data/captions/
 !/data/manifests/
+# Nombres reales de clientes y URLs de sus fotos (lo genera `ordenes:index`):
+# vive solo en la máquina que lo arma, nunca en git.
+/data/manifests/revie-reviews-index.json
 /data/raw/*
 /data/quarantine/*
 /data/sanitized/*
@@ -90,12 +93,7 @@ packages/*/dist
 # perfiles persistentes de navegador para scrapers con sesión propia (Playwright)
 /.playwright-profiles/
 
-# renders de depuración/evaluación del LoRA — no aportan al código, se regeneran
-/reports/lora-debug/
-
-# copias .bak de reportes: respaldo local antes de regenerar, nunca versionado
-/reports/*.bak
-
-# Working directory of the benchmark harness. The committed snapshot lives in
-# informes/ instead; see informes/README.md.
+# Output of the benchmark, evaluation and diagnostic scripts. None of it is
+# versioned: the scripts regenerate it on demand.
 /reports/
+/informes/

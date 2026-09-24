@@ -6,9 +6,9 @@
 import assert from "node:assert/strict";
 import { CREATIVIDAD_POR_DEFECTO, NIVELES_CREATIVIDAD, nivelCreatividadParaGenerar, parseNivelCreatividad, perfilCreatividad } from "../src/lib/ia/creatividad";
 import { abrirContextoPlan, crearTokenPlan, verificarTokenAprobacion } from "../src/lib/plan/aprobacion";
-import { bloqueCreatividad, construirSistema } from "../src/lib/ia/prompt-sistema";
+import { bloqueCreatividad, construirSistema } from "../src/lib/ia/omoikane/prompt-sistema";
 import { ChatRequestV1Schema, parseChatRequestV1 } from "../src/lib/ia/contracts/chat-v1";
-import { guidanceScaleSeguro } from "../src/lib/ia/sempertex-lora";
+import { guidanceScaleSeguro } from "../src/lib/ia/kagutsuchi/sempertex-lora";
 import { ReferenceBlueprintV2Schema } from "../src/lib/ia/reference-blueprint";
 import { validarEstructurasFueraDeReferencia, validarRangoCreatividad } from "../src/lib/plan/restricciones";
 import { PlanDecoracionSchema } from "../src/lib/plan/tipos";

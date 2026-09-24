@@ -265,7 +265,6 @@ footer{border-top:1px solid var(--rule);padding-top:1rem;font-size:.82rem;color:
 
   <footer>
     <p>Judge scores order cases <em>within a single call</em>; they are not an absolute metric and never compare across runs.</p>
-    <p>Full diagnosis and the phased plan: <span class="mono">PLAN-IMAGE-AND-COLOR-FIDELITY.md</span>.</p>
   </footer>
 </div>`;
 }

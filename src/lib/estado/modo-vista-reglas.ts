@@ -5,15 +5,9 @@ import type { ModoVista } from "./modo-vista";
  * docs/mejoras/PLAN-ESTRUCTURAS-Y-UX.md). Puras, sin React ni navegador.
  *
  * En modo usuario los controles técnicos no se ven, así que su valor efectivo
- * no puede depender de ellos: la revisión visual es obligatoria para aprobar
- * un plan (el servidor exige IMAGE_QA_REQUIRED) y LoRA no admite fotos ni
- * ajustes sobre la imagen previa.
+ * no puede depender de ellos: LoRA no admite fotos ni ajustes sobre la imagen
+ * previa.
  */
-
-/** Modo usuario: revisión visual siempre activa. Modo dev: lo que marque la casilla. */
-export function qaVisualEfectivo(modo: ModoVista, casillaDev: boolean): boolean {
-  return modo === "dev" ? casillaDev : true;
-}
 
 export type EntradaEstiloImagen = {
   modo: ModoVista;

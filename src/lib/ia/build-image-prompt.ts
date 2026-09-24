@@ -40,8 +40,8 @@ export type ImagePromptInput = {
    */
   creatividad?: NivelCreatividad;
   /**
-   * Declared official structure by plan structure id (QaPlanInputs of the
-   * approved plan), so a declared circular hoop is not asked to be an arch.
+   * Declared official structure by plan structure id (of the approved plan),
+   * so a declared circular hoop is not asked to be an arch.
    */
   officialStructures?: ReadonlyMap<string, string>;
   /**

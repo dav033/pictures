@@ -3,7 +3,6 @@ import {
   llamarPythonEcho,
   parseEchoPayload,
   pythonErrorBody,
-  seleccionarBackendPython,
   PythonAdapterError,
 } from "@/lib/ia/python-adapter";
 import {
@@ -77,20 +76,6 @@ export async function POST(request: Request): Promise<Response> {
         correlation_id: context.correlation_id,
       },
       { status: 400, headers },
-    );
-  }
-
-  const selection = seleccionarBackendPython();
-  if (selection.backend === "next") {
-    return Response.json(
-      {
-        schema_version: "operational.v1",
-        backend: "next",
-        request_id: context.request_id,
-        correlation_id: context.correlation_id,
-        payload,
-      },
-      { status: 200, headers },
     );
   }
 

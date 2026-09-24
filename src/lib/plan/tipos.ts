@@ -141,10 +141,6 @@ export const MOTIVOS_OMISION_REFERENCIA = [
 ] as const;
 
 export const MotivoOmissionReferenciaSchema = z.enum(MOTIVOS_OMISION_REFERENCIA);
-// Alias descriptivo para callers que hablan de tipo de motivo, sin romper el
-// nombre interno usado por el plan.
-export const MotivoTipoReferenciaSchema = MotivoOmissionReferenciaSchema;
-
 export const ReferenciaOmitidaSchema = z.object({
   element_id: z.string().trim().min(1).max(80),
   motivo: z.string().trim().min(1).max(240),

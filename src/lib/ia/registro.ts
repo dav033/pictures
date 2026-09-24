@@ -3,6 +3,7 @@ import { ThinkingLevel } from "@google/genai";
 import { guardarMeta, obtenerMeta } from "@/lib/db";
 import { ErrorIA } from "./tipos";
 import type { ChatPort, ImagenPort, ProveedorId } from "./tipos";
+import { CHAT_PYTHON_ENABLED, GEMINI_IMAGE_PYTHON_ENABLED } from "@/lib/ia/feature-flags";
 
 const CLAVE_META = "ia_proveedor";
 
@@ -69,12 +70,33 @@ function thinkingLevelDeChatDesdeEnv(): ThinkingLevel | undefined {
 
 export async function chatDe(id: ProveedorId): Promise<ChatPort> {
   void id;
-  const { crearChatGemini } = await import("./gemini/chat");
+  const { crearChatGemini } = await import("@sempertex/agente-core/gemini");
   return crearChatGemini({ thinkingLevel: thinkingLevelDeChatDesdeEnv() });
+}
+
+/**
+ * Omoikane's own entry point (only /api/chat): `chatDe()` also serves
+ * Amaterasu, so the chat's migration flag (ADR-0027) lives here instead of
+ * inside it, and Amaterasu keeps its own flag and path untouched.
+ */
+export async function chatOmoikaneDe(id: ProveedorId, ids: { requestId: string; correlationId: string }): Promise<ChatPort> {
+  if (CHAT_PYTHON_ENABLED) {
+    const { crearChatGeminiPython } = await import("./omoikane/chat-python");
+    return crearChatGeminiPython({ ...ids, thinkingLevel: thinkingLevelDeChatDesdeEnv() });
+  }
+  return chatDe(id);
 }
 
 export async function imagenDe(id: ProveedorId): Promise<ImagenPort> {
   void id;
-  const { crearImagenGemini } = await import("./gemini/imagen");
+  // Fase 3 de ADR-0026: flag de capacidad propio de Uzume, gradual e
+  // independiente de las demás IAs. `imagenDe` es el único punto de entrada
+  // para generación de imagen (generate/route.ts y laboratorio-referencias),
+  // así que el flag vive aquí en vez de duplicarse en cada llamador.
+  if (GEMINI_IMAGE_PYTHON_ENABLED) {
+    const { crearImagenGeminiPython } = await import("./uzume/imagen-python");
+    return crearImagenGeminiPython();
+  }
+  const { crearImagenGemini } = await import("./uzume/imagen");
   return crearImagenGemini();
 }

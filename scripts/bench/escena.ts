@@ -1,9 +1,9 @@
 import type { SceneSpec } from "../../src/lib/ia/scene-spec";
 import { GROUPING_ONLY_CONTEXT, LORA_PROMPT_MAX_LENGTH } from "../../src/lib/ia/lora-caption-compiler";
-import { LORA_PRESENTATION_INSTRUCTION } from "../../src/lib/ia/lora-gemini-composition";
+import { LORA_PRESENTATION_INSTRUCTION } from "../../src/lib/ia/uzume/lora-gemini-composition";
 import { compileProductPrompt, type ElementSizeConfirmation } from "../../src/lib/ia/lora-product-runtime";
 import { preflightLoraPrompt } from "../../src/lib/ia/lora-prompt-preflight";
-import { ensureLoraTriggers } from "../../src/lib/ia/sempertex-lora";
+import { ensureLoraTriggers } from "../../src/lib/ia/kagutsuchi/sempertex-lora";
 import { PRODUCT_VOCABULARY } from "../../src/lib/lora/product-vocabulary-data";
 import { clasificarColores } from "../../src/lib/rag/taxonomy/v2";
 import type { PistaCaption, PistaPreflight } from "./tipos";

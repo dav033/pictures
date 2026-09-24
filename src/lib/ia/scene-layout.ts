@@ -104,32 +104,6 @@ export type SpatialLayoutInstruction = {
 };
 
 /**
- * Deriva instrucciones espaciales concretas a partir de las restricciones
- * espaciales declaradas en los slots (SceneSlot.spatial_constraints).
- */
-export function deriveSpatialInstructions(
-  slotIds: string[],
-  spatialConstraints: Record<string, Array<{ relation: string; target_slot_id?: string; target_zone?: string; note?: string }>>,
-): SpatialLayoutInstruction[] {
-  const instructions: SpatialLayoutInstruction[] = [];
-
-  for (const slotId of slotIds) {
-    const constraints = spatialConstraints[slotId] ?? [];
-    for (const constraint of constraints) {
-      instructions.push({
-        sourceSlotId: slotId,
-        targetSlotId: constraint.target_slot_id,
-        targetZone: constraint.target_zone,
-        relation: constraint.relation,
-        instruction: constraint.note ?? `Relación espacial: ${constraint.relation}`,
-      });
-    }
-  }
-
-  return instructions;
-}
-
-/**
  * Obtiene el layout de una zona. Si no existe, devuelve un layout
  * por defecto centrado.
  */

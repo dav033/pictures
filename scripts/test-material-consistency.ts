@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { buildImagePrompt } from "../src/lib/ia/build-image-prompt";
-import { evaluateSceneQa } from "../src/lib/ia/image-qa";
 import {
   MaterialEstimateSchema,
   designQuantityForProduct,
@@ -78,7 +77,7 @@ function main(): void {
   };
   assert.equal(MaterialEstimateSchema.safeParse(negativo).success, false, "una cantidad negativa tiene que fallar");
 
-  // --- El estimado resuelto por el backend alimenta prompt y QA -------------
+  // --- El estimado resuelto por el backend alimenta el prompt ----------------
   // Desde el paso 1 del ADR-0023 toda imagen sale de una propuesta aprobada, así
   // que estas comprobaciones parten del estimado del plan, no de una estimación
   // armada en TypeScript a partir de piezas sueltas.
@@ -112,11 +111,7 @@ function main(): void {
   assert.match(prompt, /Neither surplus nor unused package units may appear/);
   assert.doesNotMatch(prompt, /use those 50 units/i);
 
-  const qa = evaluateSceneQa(scene, { materialScaleConsistent: false, materialScaleReason: "render is clearly several times denser" }, estimate);
-  assert.equal(qa.pass, false);
-  assert.ok(qa.retry_reasons.some((reason) => /material scale mismatch/i.test(reason)));
-
-  console.log("[PASS] material consistency — validación de frontera del estimado y consultas por producto; el estimado del plan aprobado alimenta prompt y QA");
+  console.log("[PASS] material consistency — validación de frontera del estimado y consultas por producto; el estimado del plan aprobado alimenta el prompt");
 }
 
 try {

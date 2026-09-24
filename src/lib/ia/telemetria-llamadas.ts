@@ -86,9 +86,3 @@ export function registrarGemini(input: {
   });
 }
 
-export function bytesBase64(base64: string): number {
-  const limpio = base64.replace(/\s/g, "");
-  if (!limpio) return 0;
-  const padding = limpio.endsWith("==") ? 2 : limpio.endsWith("=") ? 1 : 0;
-  return Math.max(0, Math.floor(limpio.length * 3 / 4) - padding);
-}

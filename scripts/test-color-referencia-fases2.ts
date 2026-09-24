@@ -1,5 +1,5 @@
 /**
- * Regresiones del camino de color de la fase 2 (PLAN-IMAGE-AND-COLOR-FIDELITY.md).
+ * Regresiones del camino de color de la foto de referencia (ADR-0024).
  *
  * Cubre lo que antes decidía el azar y ahora decide una regla:
  *  - 2.1  la dominancia medida manda sobre el orden en que el analizador escribió
