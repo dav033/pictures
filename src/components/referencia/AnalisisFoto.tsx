@@ -92,8 +92,8 @@ function RecuadroPieza({ pieza, numero, orden, posicion }: { pieza: PiezaVistaEn
             />
           )}
         </span>
-        <span className="truncate font-semibold text-texto">{pieza.nombre}</span>
-        {pieza.ubicacionCorta && <span className="truncate text-[11px] text-texto-suave sm:text-[13px]">{pieza.ubicacionCorta}</span>}
+        <span className="min-w-0 truncate font-semibold text-texto">{pieza.nombre}</span>
+        {pieza.ubicacionCorta && posicion.conExtra && <span className="shrink-0 text-texto-suave">{pieza.ubicacionCorta}</span>}
       </motion.p>
     </>
   );
@@ -130,7 +130,7 @@ export function AnalisisFoto({ imagenes, estado, blueprint, error, onReintentar,
   const piezasImagen = (vista.caso === "listo" ? vista.piezas : [])
     .map((pieza, orden) => ({ pieza, numero: orden + 1 }))
     .filter(({ pieza }) => imagenDeReferencia(imagenes, pieza.sourceImageId) === imagen);
-  const posiciones = ubicarEtiquetas(piezasImagen.map(({ pieza }) => ({ bbox: pieza.bbox, caracteres: pieza.nombre.length + (pieza.ubicacionCorta ? pieza.ubicacionCorta.length + 2 : 0) })), tamanoFoto);
+  const posiciones = ubicarEtiquetas(piezasImagen.map(({ pieza }) => ({ bbox: pieza.bbox, caracteres: pieza.nombre.length, caracteresExtra: pieza.ubicacionCorta ? pieza.ubicacionCorta.length + 2 : 0 })), tamanoFoto);
   const colores = vista.caso === "listo" || vista.caso === "sin_globos" ? vista.colores : [];
   const ambientacion = vista.caso === "listo" ? vista.ambientacion : [];
   const conVelo = vista.caso === "analizando" || vista.caso === "error" || vista.caso === "sin_elementos";

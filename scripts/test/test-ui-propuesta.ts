@@ -240,6 +240,14 @@ const blueprint = blueprintDe([
   assert.equal(sola.length, 1);
   assert.equal(sola[0]!.izquierda, 0.3);
   assert.ok(Math.abs(sola[0]!.inferior - 0.85) < 1e-9, "sin cruces la etiqueta sigue abajo a la izquierda de su recuadro");
+  // 2026-09-24: on a 245 px phone photo "Columna orgánica derecha" was cut to
+  // "Colu… d…". The name keeps its width and the place goes only if it fits.
+  const pieza = { bbox: { x: 0.45, y: 0.2, width: 0.3, height: 0.7 }, caracteres: "Columna orgánica".length, caracteresExtra: "derecha".length + 2 };
+  const movil = ubicarEtiquetas([pieza], { ancho: 245, alto: 380 })[0]!;
+  assert.ok(movil.anchoMaximo * 245 >= 44 + pieza.caracteres * 7.2, "en móvil el nombre completo cabe");
+  assert.equal(movil.conExtra, false, "en móvil la ubicación se omite antes que cortar el nombre");
+  assert.ok(movil.izquierda + movil.anchoMaximo <= 1 + 1e-9, "la etiqueta no se sale de la foto");
+  assert.equal(ubicarEtiquetas([pieza], { ancho: 739, alto: 480 })[0]!.conExtra, true, "con espacio, nombre y ubicación");
   ok("análisis de foto: etiquetas de recuadros cruzados sin solaparse");
 }
 

@@ -11,8 +11,10 @@ export type CajaNormalizada = { x: number; y: number; width: number; height: num
 
 export type EtiquetaParaUbicar = {
   bbox: CajaNormalizada;
-  /** Visible characters of the label (name + short place), to estimate its width. */
+  /** Visible characters of the label's name, to estimate its width. */
   caracteres: number;
+  /** Characters of the optional short place ("derecha"), shown only when the label fits it. */
+  caracteresExtra?: number;
 };
 
 export type PosicionEtiqueta = {
@@ -22,6 +24,8 @@ export type PosicionEtiqueta = {
   inferior: number;
   /** Maximum width, fraction of the photo width. */
   anchoMaximo: number;
+  /** Whether the short place fits after the name without cutting either. */
+  conExtra: boolean;
 };
 
 /** Rendered photo size in px; without it (server render) a typical desktop size is assumed. */
@@ -34,6 +38,12 @@ const SEPARACION_PX = 4;
 /** Pill padding + number badge + gaps, and average glyph width at 13 px. */
 const BASE_ANCHO_PX = 44;
 const ANCHO_CARACTER_PX = 7.2;
+/**
+ * A label is never narrower than this in px (or the whole photo when the
+ * photo is narrower). A fraction alone gave ~100 px on a phone and cut
+ * "Columna orgánica derecha" down to "Colu… d…" (2026-09-24).
+ */
+const ANCHO_MINIMO_PX = 200;
 
 type Rect = { izquierda: number; derecha: number; arriba: number; abajo: number };
 
@@ -56,9 +66,11 @@ export function ubicarEtiquetas(etiquetas: readonly EtiquetaParaUbicar[], tamano
   const separacion = SEPARACION_PX / alto;
   const colocadas: Rect[] = [];
 
-  return etiquetas.map(({ bbox, caracteres }) => {
-    const anchoMaximo = Math.min(1, Math.max(bbox.width, 0.46));
-    const anchoEstimado = Math.min(anchoMaximo, (BASE_ANCHO_PX + caracteres * ANCHO_CARACTER_PX) / ancho);
+  return etiquetas.map(({ bbox, caracteres, caracteresExtra = 0 }) => {
+    const anchoMaximo = Math.min(1, Math.max(bbox.width, 0.46, ANCHO_MINIMO_PX / ancho));
+    // The place is dropped before the name is cut.
+    const conExtra = caracteresExtra > 0 && (BASE_ANCHO_PX + (caracteres + caracteresExtra) * ANCHO_CARACTER_PX) / ancho <= anchoMaximo;
+    const anchoEstimado = Math.min(anchoMaximo, (BASE_ANCHO_PX + (caracteres + (conExtra ? caracteresExtra : 0)) * ANCHO_CARACTER_PX) / ancho);
     const izquierda = limitar(Math.min(bbox.x, 1 - anchoMaximo), 0, 1);
     const cabe = (inferior: number) => {
       const rect = rectDe(izquierda, inferior, anchoEstimado, altoEtiqueta);
@@ -77,6 +89,6 @@ export function ubicarEtiquetas(etiquetas: readonly EtiquetaParaUbicar[], tamano
     const libre = [...propias, ...apiladas].find(cabe);
     const inferior = libre ?? abajoDeLaCaja;
     colocadas.push(rectDe(izquierda, inferior, anchoEstimado, altoEtiqueta));
-    return { izquierda, inferior, anchoMaximo };
+    return { izquierda, inferior, anchoMaximo, conExtra };
   });
 }
