@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import type { PiezaVistaEnReferencia } from "@/lib/plan/presentacion-cliente";
+import { Sparkles } from "lucide-react";
 import { MuestrasColor } from "@/components/propuesta/MuestrasColor";
 import { EstadoError } from "@/components/propuesta/EstadoError";
 import { imagenDeReferencia, urlImagen } from "./recorte";
@@ -78,9 +79,21 @@ function RecuadroPieza({ pieza, numero, orden, posicion }: { pieza: PiezaVistaEn
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ type: "spring", stiffness: 380, damping: 20, delay: retraso + 0.45 }}
       >
-        <span className="grid size-5 shrink-0 place-items-center rounded-full bg-acento text-[11px] font-semibold text-sobre-acento">{numero}</span>
+        <span className="relative grid size-5 shrink-0 place-items-center rounded-full bg-acento text-[11px] font-semibold text-sobre-acento">
+          {numero}
+          {/* One ring bursts out of the number when the piece is found. */}
+          {!reducir && (
+            <motion.span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 rounded-full ring-2 ring-acento"
+              initial={{ opacity: 0.9, scale: 1 }}
+              animate={{ opacity: 0, scale: 2.4 }}
+              transition={{ duration: 0.7, delay: retraso + 0.55, ease: "easeOut" }}
+            />
+          )}
+        </span>
         <span className="truncate font-semibold text-texto">{pieza.nombre}</span>
-        {pieza.ubicacionCorta && <span className="hidden truncate text-texto-suave sm:inline">{pieza.ubicacionCorta}</span>}
+        {pieza.ubicacionCorta && <span className="truncate text-[11px] text-texto-suave sm:text-[13px]">{pieza.ubicacionCorta}</span>}
       </motion.p>
     </>
   );
@@ -153,6 +166,19 @@ export function AnalisisFoto({ imagenes, estado, blueprint, error, onReintentar,
             )}
           </AnimatePresence>
           {piezasImagen.map(({ pieza, numero }, orden) => <RecuadroPieza key={pieza.elementId} pieza={pieza} numero={numero} orden={orden} posicion={posiciones[orden]!} />)}
+          {vista.caso === "listo" && vista.piezas.length > 0 && (
+            <motion.p
+              aria-hidden="true"
+              className="pointer-events-none absolute left-2.5 top-2.5 z-20 inline-flex items-center gap-1.5 rounded-full bg-acento px-2.5 py-1 text-xs font-semibold text-sobre-acento shadow-[0_6px_20px_var(--sombra-acento)] sm:text-[13px]"
+              initial={reducir ? false : { opacity: 0, y: -8, scale: 0.7 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              // After the last box has drawn: the count lands as a small reward.
+              transition={{ type: "spring", stiffness: 420, damping: 16, delay: reducir ? 0 : 0.15 + Math.max(0, piezasImagen.length - 1) * 0.4 + 1.1 }}
+            >
+              <Sparkles className="size-3.5" aria-hidden="true" />
+              {vista.piezas.length === 1 ? "Encontré 1 pieza" : `Encontré ${vista.piezas.length} piezas`}
+            </motion.p>
+          )}
         </div>
         {imagenes.length > 1 && (
           <div className="absolute bottom-2 right-2 flex gap-1.5" role="group" aria-label="Fotos de referencia">

@@ -1081,7 +1081,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       sustituciones: resuelto.sustituciones,
       avisos_cliente: avisosCliente,
       ...(avisosCliente.length
-        ? { accion_requerida: "avisos_cliente trae colores de la foto o globos que la propuesta no incluye, y los ajustes de color o acabado que el sistema le hizo al plan que confirmaste: díselos al cliente en tu resumen, con tus palabras y sin omitir ninguno (no afirmes que el catálogo no tiene un color), y ofrece buscar esos colores si quiere acercarse más a la foto." }
+        ? { accion_requerida: "avisos_cliente trae colores de la foto o globos que la propuesta no incluye, y los ajustes de color o acabado que el sistema le hizo al plan que confirmaste: la tarjeta de la propuesta se los muestra al cliente uno por uno, así que no los enumeres: menciónalos en una sola frase de tu resumen, con tus palabras (no afirmes que el catálogo no tiene un color), y ofrece buscar esos colores si quiere acercarse más a la foto." }
         : {}),
       sin_cobertura: resuelto.sin_cobertura,
       advertencias: resuelto.advertencias,

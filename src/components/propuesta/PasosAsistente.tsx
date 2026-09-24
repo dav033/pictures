@@ -1,11 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { ChevronDown } from "lucide-react";
 
 export type PasoAsistente = { id: string; texto: string; estado: "en_curso" | "listo" | "fallido" };
 
 type Props = {
   pasos: PasoAsistente[];
+  /** The turn is over: a fully successful list folds into one line. */
+  terminado?: boolean;
   className?: string;
 };
 
@@ -83,8 +87,32 @@ function Indicador({ estado }: { estado: PasoAsistente["estado"] }) {
  * (maqueta ChatNormal). Each step enters from above and swaps its spinner for
  * a check when it finishes.
  */
-export function PasosAsistente({ pasos, className = "" }: Props) {
+export function PasosAsistente({ pasos, terminado = false, className = "" }: Props) {
+  const [abierto, setAbierto] = useState(false);
+  const reducir = useReducedMotion();
   if (!pasos.length) return null;
+  // Finished steps used to stay in the thread forever. When all of them went
+  // well they fold into a single line; a failed step stays visible.
+  const plegar = terminado && pasos.every((paso) => paso.estado === "listo");
+  if (plegar && !abierto) {
+    return (
+      <motion.button
+        type="button"
+        onClick={() => setAbierto(true)}
+        initial={reducir ? false : { opacity: 0, y: -4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25 }}
+        className={`inline-flex items-center gap-2 self-start rounded-full py-0.5 pr-1 text-[13px] text-texto-suave hover:text-texto focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento ${className}`}
+        aria-label={`Listo. Ver los ${pasos.length} pasos que seguí`}
+      >
+        <Indicador estado="listo" />
+        <span>Listo</span>
+        <span aria-hidden="true">·</span>
+        <span className="underline-offset-2 hover:underline">Ver cómo lo armé</span>
+        <ChevronDown className="size-3.5" aria-hidden="true" />
+      </motion.button>
+    );
+  }
   return (
     <ol className={`flex flex-col gap-2 ${className}`} aria-label="Lo que está haciendo el asistente">
         <AnimatePresence initial={false}>

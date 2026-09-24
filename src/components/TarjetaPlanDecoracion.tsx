@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion, useReducedMotion, type Variants } from "motion/react";
-import { ArrowLeftRight, ChevronDown, Palette, Plus, Search, X } from "lucide-react";
+import { ArrowLeftRight, ChevronDown, Plus, Search, X } from "lucide-react";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { ProductoCandidato, VarianteCandidata } from "@/lib/rag/chat/buscar";
@@ -47,6 +47,8 @@ import { BarraTamanos, tramosPorTamano } from "@/components/plan/BarraTamanos";
 import { ChipEstructura, ENTRADA_CASCADA, TarjetaPiezaFoto, TarjetaProducto, type PiezaPropuestaVista, type ProductoPropuestaVista } from "@/components/plan/PiezasPropuesta";
 import { NumeroAnimado } from "@/components/propuesta/NumeroAnimado";
 import { BotonAprobar } from "@/components/propuesta/BotonAprobar";
+import { GlobosCelebracion } from "@/components/propuesta/GlobosCelebracion";
+import { AjustesPropuesta, type AjustePropuesta } from "@/components/plan/AjustesPropuesta";
 import { PanelEspacio } from "@/components/referencia/PanelEspacio";
 import { imagenDeReferencia, urlImagen } from "@/components/referencia/recorte";
 
@@ -99,6 +101,12 @@ type Props = {
   escenografiaApagada?: readonly string[];
   /** Enciende o apaga un chip de escenografía (todos sus elementos a la vez). */
   onEscenografiaToggle?: (elementIds: readonly string[], visible: boolean) => void;
+  /**
+   * Le pide al asistente un ajuste en el chat. Con él, una aprobación
+   * bloqueada (presupuesto o piezas sin globos) ofrece el arreglo al lado del
+   * botón en vez de dejarlo gris sin explicación.
+   */
+  onPedirAjuste?: (mensaje: string) => void;
 };
 
 const CASCADA: Variants = {
@@ -220,7 +228,8 @@ function ListaOpciones({ opciones, guardando, onCambiar, ariaLabel, listId, acti
   );
 }
 
-export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, generando = false, onPlanActualizado, loraMode, modoDev = false, referenceBlueprint, imagenesReferencia, fotoEspacio, onVerCotizacion, escenografiaApagada = [], onEscenografiaToggle }: Props) {
+export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, generando = false, onPlanActualizado, loraMode, modoDev = false, referenceBlueprint, imagenesReferencia, fotoEspacio, onVerCotizacion, escenografiaApagada = [], onEscenografiaToggle, onPedirAjuste }: Props) {
+  const [celebracion, setCelebracion] = useState(0);
   const reducir = useReducedMotion();
   const [detalleAbierto, setDetalleAbierto] = useState(false);
   const [estructuraAbierta, setEstructuraAbierta] = useState<string | null>(plan.estructuras[0]?.estructura_id ?? null);
@@ -375,6 +384,26 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       : techo != null ? "dentro de tu presupuesto" : null;
   const aprobarDeshabilitado = aprobado || generando || plan.comercial.estado === "PRESUPUESTO_EXCEDIDO" || plan.sin_cobertura.length > 0;
   const textoAprobar = generando ? "Generando…" : aprobado ? "Aprobación registrada" : plan.sin_cobertura.length > 0 ? "Faltan piezas disponibles" : "Aprobar y ver cómo queda";
+  const ajustes: AjustePropuesta[] = [
+    ...textosFaltantes.map((texto): AjustePropuesta => ({ tipo: "faltante", texto })),
+    ...textosColorReferencia.map((texto): AjustePropuesta => ({ tipo: "color", texto })),
+    ...textosSustitucion.map((texto): AjustePropuesta => ({ tipo: "tamano", texto })),
+    ...supuestos.map((supuesto): AjustePropuesta => ({ tipo: "supuesto", texto: supuestoCliente(supuesto) })),
+  ];
+  // Why the approval is blocked, with the fix one tap away.
+  const bloqueo = aprobado || generando
+    ? null
+    : plan.comercial.estado === "PRESUPUESTO_EXCEDIDO"
+      ? { motivo: `Se pasa de tu presupuesto por ${pesos.format(plan.comercial.delta_cop)}.`, accion: "Ajustar al presupuesto", mensaje: "Ajusta la propuesta para que quepa en mi presupuesto." }
+      : plan.sin_cobertura.length > 0
+        ? { motivo: "A algunas piezas les faltan globos disponibles.", accion: "Buscar alternativas", mensaje: "Busca alternativas disponibles para las piezas a las que les faltan globos." }
+        : null;
+  const coloresCelebracion = [...new Set(vistasEstructura.flatMap((vista) => vista.colores.map((muestra) => muestra.fondo)))];
+  function aprobarConCelebracion(): void {
+    if (!onAprobar) return;
+    setCelebracion((valor) => valor + 1);
+    onAprobar();
+  }
 
   function abrirPieza(estructuraId: string): void {
     setDetalleAbierto(true);
@@ -678,7 +707,8 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   }, [solicitudImagenes]);
 
   useEffect(() => {
-    // Cuántas veces salió cada producto en el entrenamiento del LoRA (visible en ambos modos).
+    // Cuántas veces salió cada producto en el entrenamiento del LoRA (solo modo dev).
+    if (!modoDev) return;
     const controlador = new AbortController();
     const parametros = loraMode ? `?loraMode=${encodeURIComponent(loraMode)}` : "";
     fetch(`/api/lora/training-reference-counts${parametros}`, { signal: controlador.signal, cache: "no-store" })
@@ -689,7 +719,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
         setReferenciasEntrenamiento({});
       });
     return () => controlador.abort();
-  }, [loraMode]);
+  }, [loraMode, modoDev]);
 
   useEffect(() => () => peticionEvidenciaRef.current?.abort(), []);
 
@@ -799,13 +829,11 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
         </motion.div>
       )}
 
-      {textosColorReferencia.length > 0 && (
-        <motion.div variants={ENTRADA_CASCADA} data-testid="plan-avisos-color" className="mx-4 mt-3 flex items-start gap-2 rounded-xl bg-aviso-suave px-3 py-2 text-xs text-aviso @xl:mx-5.5">
-          <Palette className="mt-px size-3.5 shrink-0" aria-hidden="true" />
-          <ul className="space-y-1" aria-label="Colores de tu foto que la propuesta no lleva">{textosColorReferencia.map((texto) => <li key={texto}>{texto}</li>)}</ul>
+      {ajustes.length > 0 && (
+        <motion.div variants={ENTRADA_CASCADA} className="px-4 pt-3 @xl:px-5.5">
+          <AjustesPropuesta ajustes={ajustes} />
         </motion.div>
       )}
-      {(supuestos.length > 0 || textosSustitucion.length > 0 || textosFaltantes.length > 0) && <motion.ul variants={ENTRADA_CASCADA} data-testid="plan-avisos" className="mx-4 mt-3 space-y-1 rounded-xl bg-aviso-suave px-3 py-2 text-xs text-aviso @xl:mx-5.5" aria-label="Aclaraciones de la propuesta">{supuestos.map((supuesto) => <li key={`supuesto:${supuesto}`}>{supuestoCliente(supuesto)}</li>)}{textosSustitucion.map((texto) => <li key={`sustitucion:${texto}`}>{texto}</li>)}{textosFaltantes.map((texto) => <li key={`cobertura:${texto}`}>{texto}</li>)}</motion.ul>}
       {modoDev && plan.event_relaxations && plan.event_relaxations.length > 0 && (
         <p data-testid="plan-event-relaxations" className="mx-4 mt-3 rounded-md border border-aviso/40 bg-aviso-suave px-2.5 py-2 text-xs text-aviso @xl:mx-5.5">
           Ajustes declarados: {plan.event_relaxations.join("; ")}
@@ -872,6 +900,8 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
                 onVerProducto={(linea, disparador) => { disparadorModalRef.current = disparador; setSeleccionCatalogo({ linea, estructuraId: estructura.estructura_id, estructura: estructura.nombre }); setIntercambioAbierto(false); setRecomendaciones([]); setResultadosCatalogo([]); setErrorEdicion(null); }}
                 modoDev={modoDev}
                 extraLinea={(linea) => {
+                  // LoRA training evidence is a development tool, not something a customer reads.
+                  if (!modoDev) return null;
                   const referencias = referenciaEntrenamiento(linea);
                   return referencias && <button type="button" data-testid="linea-referencias-entrenamiento" onClick={() => abrirEvidencia(linea, referencias)} className="ui-pressable shrink-0 rounded-lg border border-acento/35 bg-acento-suave px-2 py-1.5 text-left text-[11px] font-semibold leading-4 text-acento hover:bg-acento/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento" aria-label={`Ver ${referencias.count} ${referencias.count === 1 ? "referencia" : "referencias"} de entrenamiento para ${linea.titulo}`}><span className="block tabular-nums">{referencias.count} {referencias.count === 1 ? "referencia" : "referencias"}</span><span className="block font-normal">en entrenamiento</span></button>;
                 }}
@@ -914,7 +944,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
           </button>
           {onAprobar && (
             <div className="plan-card-approval-action">
-              <BotonAprobar data-testid="aprobar-generar-plan" onClick={onAprobar} disabled={aprobarDeshabilitado} ocupado={generando} className="w-full @md:w-auto">
+              <BotonAprobar data-testid="aprobar-generar-plan" onClick={aprobarConCelebracion} disabled={aprobarDeshabilitado} ocupado={generando} className="w-full @md:w-auto">
                 {textoAprobar}
               </BotonAprobar>
             </div>
@@ -922,13 +952,30 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
         </div>
       </motion.div>
 
+      {onAprobar && bloqueo && (
+        <div data-testid="plan-aprobacion-bloqueada" role="status" className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-borde-suave bg-aviso-suave px-4 py-2.5 text-xs text-aviso @xl:px-5.5">
+          <span className="font-medium">{bloqueo.motivo}</span>
+          {onPedirAjuste && (
+            <button
+              type="button"
+              onClick={() => onPedirAjuste(bloqueo.mensaje)}
+              className="ui-pressable inline-flex items-center gap-1 rounded-full bg-superficie px-3 py-1.5 font-semibold text-acento ring-1 ring-borde-suave ring-inset hover:bg-acento-suave focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"
+            >
+              {bloqueo.accion}
+            </button>
+          )}
+        </div>
+      )}
+
+      <GlobosCelebracion disparo={celebracion} colores={coloresCelebracion} />
+
       {!onVerCotizacion && (
         <DialogoCotizacion
           plan={plan}
           abierto={cotizacionAbierta}
           onAbiertoChange={setCotizacionAbierta}
           imagenDe={(compra) => imagenLinea(compra.variant_id, compra.imagen)}
-          onAprobar={onAprobar ? () => { setCotizacionAbierta(false); onAprobar(); } : undefined}
+          onAprobar={onAprobar ? () => { setCotizacionAbierta(false); aprobarConCelebracion(); } : undefined}
           aprobarDeshabilitado={aprobarDeshabilitado}
           textoAprobar={textoAprobar}
           generando={generando}

@@ -21,7 +21,8 @@ export function SwitchModoVista({ modo, onCambiar }: Props) {
       data-testid="switch-modo-vista"
       title={esDev ? "Modo dev: se muestran controles y datos técnicos" : "Modo usuario: vista del cliente"}
       onClick={() => onCambiar(esDev ? "usuario" : "dev")}
-      className="inline-flex h-9 items-center gap-2 rounded-[0.7rem] px-2 text-[0.8125rem] text-texto-suave hover:bg-superficie-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento"
+      // A development control in the customer's header: discreet until it is on.
+      className={`inline-flex h-9 items-center gap-2 rounded-[0.7rem] px-2 text-[0.8125rem] text-texto-suave hover:bg-superficie-2 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento ${esDev ? "" : "opacity-40"}`}
     >
       <span
         aria-hidden="true"
@@ -31,7 +32,7 @@ export function SwitchModoVista({ modo, onCambiar }: Props) {
       </span>
       {/* En pantallas angostas el texto queda solo para lectores de pantalla:
           el nombre accesible sigue siendo "Modo dev". */}
-      <span className="sr-only min-[520px]:not-sr-only">Modo dev</span>
+      <span className={esDev ? "sr-only min-[520px]:not-sr-only" : "sr-only"}>Modo dev</span>
     </button>
   );
 }

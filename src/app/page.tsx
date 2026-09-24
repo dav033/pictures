@@ -56,6 +56,8 @@ import { imagenDeFotoEjemplo, type FotoEjemplo } from "@/lib/referencias-ejemplo
 import { CabeceraApp } from "@/components/ui/shell/CabeceraApp";
 import { Compositor } from "@/components/ui/shell/Compositor";
 import { EsperaAsistente } from "@/components/ui/shell/EsperaAsistente";
+import { CargaImagen } from "@/components/propuesta/CargaImagen";
+import { coloresCliente } from "@/lib/plan/presentacion-cliente";
 import { DialogoEjemplos, GaleriaEjemplos } from "@/components/ui/shell/GaleriaEjemplos";
 import { HojaSeleccion } from "@/components/ui/shell/HojaSeleccion";
 import { volarFoto } from "@/components/ui/shell/vuelo-foto";
@@ -1053,7 +1055,11 @@ export default function Page() {
           onError: (datos) => {
             hayError = true;
             setError({ ui: uiErrorDesdeEventoChat(datos), origen: "chat" });
-            setMensajes((previos) => previos.slice(0, -1));
+            // Text the customer already read stays; only an empty bubble goes.
+            setMensajes((previos) => {
+              const ultimo = previos[previos.length - 1];
+              return ultimo?.role === "assistant" && ultimo.content.trim() ? previos : previos.slice(0, -1);
+            });
           },
           onActividad: reiniciarLimiteInactividad,
         });
@@ -1548,6 +1554,12 @@ export default function Page() {
       anchorMessageId: messageId,
       adjuntos: mensajeAnclado?.adjuntos,
     });
+    // Approving used to leave the customer where they were while the image was
+    // made at the end of the thread. Take them to it once the block exists.
+    window.setTimeout(() => {
+      const reducido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      document.querySelector("[data-testid='bloque-visualizacion']")?.scrollIntoView({ behavior: reducido ? "auto" : "smooth", block: "start" });
+    }, 350);
   }
 
   function actualizarPlanEnMensaje(mensajeId: string, plan: PlanResuelto, cotizacion?: Cotizacion): void {
@@ -1568,14 +1580,6 @@ export default function Page() {
     generar(pendiente);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- generar se recrea cada render; pendienteAutoGlobal ya evita relanzar dos veces.
   }, [generando, analizandoFoto, hayPlanEnConversacion]);
-
-  /** No hay progreso real de la API — es un indicador de fase honesto por
-   * tiempo transcurrido, no un porcentaje inventado. */
-  function faseGeneracion(segundos: number): string {
-    if (segundos < 3) return "Preparando referencias…";
-    if (segundos < 45) return "Generando la imagen…";
-    return "Casi lista, terminando detalles…";
-  }
 
   function elegirDecoracion(decoracion: DecoracionConProductos) {
     agregarVarios(decoracion.productos);
@@ -1666,6 +1670,8 @@ export default function Page() {
   const planActualEntry = [...mensajes].reverse().find((mensaje) => mensaje.role === "assistant" && mensaje.plan);
   const planActual = planActualEntry?.plan;
   const planActualAprobado = Boolean(planActual && planAprobadoHash === planActual.plan_hash);
+  // The balloon inflating while the image is made is one of the proposal's own colors.
+  const coloresPlanActual = planActual ? [...new Set(planActual.estructuras.flatMap((estructura) => coloresCliente(estructura.lineas).map((muestra) => muestra.fondo)))] : [];
   const ultimoIndiceUsuario = mensajes.map((m) => m.role).lastIndexOf("user");
   // Estado inicial (maqueta EstadoInicial): todavía no hay turno del cliente.
   const enInicio = !mensajes.some((mensaje) => mensaje.id !== SALUDO.id);
@@ -1874,8 +1880,9 @@ export default function Page() {
                         </div>
                       ) : (
                         <>
-                          {m.pasos && m.pasos.length > 0 && <PasosAsistente pasos={m.pasos} />}
-                          {esUltimoStreaming && !m.content && !m.pasos?.length ? (
+                          {m.pasos && m.pasos.length > 0 && <PasosAsistente pasos={m.pasos} terminado={!esUltimoStreaming} />}
+                          {/* While the photo is being scanned, the scan is the only wait on screen. */}
+                          {esUltimoStreaming && !m.content && !m.pasos?.length && !analizandoFoto ? (
                             <EsperaAsistente />
                           ) : m.content ? (
                             <div className="msg-asistente">
@@ -1942,6 +1949,7 @@ export default function Page() {
                           onPlanActualizado={m.plan.plan_hash === planActual?.plan_hash ? (plan, cotizacion) => actualizarPlanEnMensaje(m.id, plan, cotizacion) : undefined}
                           escenografiaApagada={escenografiaApagada}
                           onEscenografiaToggle={alternarEscenografia}
+                          onPedirAjuste={m.plan.plan_hash === planActual?.plan_hash && !cargandoChat ? (texto) => void enviar(texto) : undefined}
                           loraMode={loraModeParaBadge}
                         />
                       )}
@@ -2068,15 +2076,7 @@ export default function Page() {
                     )}
                   </div>
 
-                  {generando && (
-                    <div role="status" aria-live="polite" className="space-y-2.5">
-                      <p className="flex items-center gap-2 text-sm text-texto-suave">
-                        {faseGeneracion(segundosGeneracion)} ({segundosGeneracion} s). Puede tardar hasta 2 min.
-                        <span className="puntos" aria-hidden="true"><span /><span /><span /></span>
-                      </p>
-                      {imagenes.length === 0 && <div className="brillo-carga aspect-[3/2] w-full rounded-2xl" aria-hidden="true" />}
-                    </div>
-                  )}
+                  {generando && <CargaImagen segundos={segundosGeneracion} conMarco={imagenes.length === 0} colores={coloresPlanActual} />}
 
                   {imagenes.map((src, i) => (
                     <button
