@@ -10,7 +10,7 @@ import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import { useBorradorCotizacion, type LineaBorrador } from "@/lib/estado/borrador-cotizacion";
 import { idsSinFoto, useImagenesCatalogo } from "@/lib/estado/imagenes-catalogo";
-import { agruparComprasCliente, paquetesCliente, partesPaquetesCliente, productoCliente, pulgadasCliente, sobranteCliente } from "@/lib/plan/presentacion-cliente";
+import { agruparComprasCliente, familiasEnOrden, paquetesCliente, partesPaquetesCliente, productoCliente, pulgadasCliente, sobranteCliente } from "@/lib/plan/presentacion-cliente";
 import { NumeroAnimado } from "@/components/propuesta/NumeroAnimado";
 
 const pesos = new Intl.NumberFormat("es-CO", {
@@ -110,6 +110,127 @@ export function TarjetaCotizacion({ cotizacion, editable = false, onAplicar, ref
         </p>
       </div>
 
+      {!editando && (
+        <ul className="mt-2 px-4 @xl:px-5.5" aria-label="Productos de la cotización">
+          {familiasEnOrden(filasBorrador(borrador.lineas, false), (fila) => {
+            const linea = fila.items[0]!;
+            return linea.sinReferencia ? `sin-referencia|${linea.id}` : `${linea.productId ?? linea.nombre ?? ""}|${linea.color ?? ""}`;
+          }).map((familia, indiceFamilia) => {
+            const primera = familia.items[0]!.items[0]!;
+            if (primera.sinReferencia) {
+              const detalle = [tamanoLinea(primera), primera.color].filter(Boolean).join(" · ");
+              return (
+                <li key={familia.clave} className="border-b border-borde-suave py-3 text-[13px] text-texto-suave last:border-b-0">
+                  {detalle || "Globo"} · todavía no está disponible en el catálogo
+                </li>
+              );
+            }
+            const nombre = primera.nombre ? productoCliente(primera.nombre) : primera.color || "Producto";
+            const foto = familia.items.flatMap((fila) => fila.items).map((item) => item.foto ?? (item.varianteId ? imagenesCatalogo[item.varianteId] : undefined)).find(Boolean);
+            const deLaFoto = familia.items.some((fila) => fila.items.some((item) => item.referenciaElementIds?.some((id) => elementosReferencia.has(id)) ?? false));
+            const agotado = familia.items.some((fila) => fila.items.some((item) => !item.disponible));
+            const subtotal = familia.items.reduce((suma, fila) => suma + fila.subtotal, 0);
+            if (familia.items.length === 1) {
+              const fila = familia.items[0]!;
+              const proporcion = fila.compradas > 0 ? Math.min(1, fila.necesitas / fila.compradas) : 0;
+              const detalle = [tamanoLinea(primera), primera.color].filter(Boolean).join(" · ");
+              return (
+                <motion.li
+                  key={familia.clave}
+                  initial={reducir ? false : { opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: reducir ? 0 : indiceFamilia * 0.05 }}
+                  className="grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 border-b border-borde-suave py-3 last:border-b-0 @xl:grid-cols-[3rem_minmax(0,1fr)_9.5rem_8rem_5.5rem]"
+                >
+                  <span className="row-span-2 grid size-12 place-items-center overflow-hidden rounded-xl border border-borde-suave bg-white @xl:row-span-1">
+                    {foto ? <img src={foto} alt="" width={48} height={48} loading="lazy" className="size-full object-contain" /> : <span aria-hidden className="size-full bg-superficie-2" />}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium text-texto">{nombre}</span>
+                    <span className="mt-0.5 block truncate text-xs text-texto-suave">
+                      {detalle}
+                      {deLaFoto && <span className="ml-1.5 rounded-full bg-acento-suave px-1.5 py-px text-[11px] text-acento">de tu foto</span>}
+                      {agotado && <span className="ml-1.5 text-aviso">agotado</span>}
+                    </span>
+                  </span>
+                  <span className="text-right text-sm font-semibold tabular-nums text-texto @xl:order-last">{pesos.format(fila.subtotal)}</span>
+                  <span className="col-start-2 @xl:col-start-auto">
+                    <span className="block text-[13px] text-texto">Necesitas <strong className="font-semibold tabular-nums">{numero.format(fila.necesitas)}</strong></span>
+                    <span aria-hidden="true" className="mt-1.5 block h-1 overflow-hidden rounded-full bg-superficie-2">
+                      <motion.span
+                        className="block h-full origin-left rounded-full bg-acento/80"
+                        style={{ width: `${proporcion * 100}%` }}
+                        initial={reducir ? false : { scaleX: 0 }}
+                        animate={{ scaleX: 1 }}
+                        transition={{ duration: 0.7, delay: reducir ? 0 : 0.2 + indiceFamilia * 0.05, ease: [0.23, 1, 0.32, 1] }}
+                      />
+                    </span>
+                  </span>
+                  <span className="col-span-2 col-start-2 text-[13px] text-texto @xl:col-span-1 @xl:col-start-auto">
+                    {partesPaquetesCliente(fila.paquetes).map((parte, posicion) => <Fragment key={parte}>{posicion > 0 && " + "}<span className="whitespace-nowrap">{parte}</span></Fragment>)}
+                    <span className={`block text-xs ${fila.sobrante < 0 ? "text-aviso" : "text-texto-suave"}`}>{sobranteCliente(fila.sobrante)}</span>
+                  </span>
+                </motion.li>
+              );
+            }
+            return (
+              <motion.li
+                key={familia.clave}
+                initial={reducir ? false : { opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: reducir ? 0 : indiceFamilia * 0.06 }}
+                className="border-b border-borde-suave py-3 last:border-b-0"
+              >
+                <div className="grid grid-cols-[3rem_minmax(0,1fr)_auto] items-center gap-x-3">
+                  <span className="grid size-12 place-items-center overflow-hidden rounded-xl border border-borde-suave bg-white">
+                    {foto ? <img src={foto} alt="" width={48} height={48} loading="lazy" className="size-full object-contain" /> : <span aria-hidden className="size-full bg-superficie-2" />}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-medium text-texto">{nombre}</span>
+                    <span className="mt-0.5 block truncate text-xs text-texto-suave">
+                      {[primera.color, `${familia.items.length} tamaños`].filter(Boolean).join(" · ")}
+                      {deLaFoto && <span className="ml-1.5 rounded-full bg-acento-suave px-1.5 py-px text-[11px] text-acento">de tu foto</span>}
+                      {agotado && <span className="ml-1.5 text-aviso">agotado</span>}
+                    </span>
+                  </span>
+                  <span className="text-right text-sm font-semibold tabular-nums text-texto">{pesos.format(subtotal)}</span>
+                </div>
+                {/* One compact row per size: the purchase is still per size (its own packages and leftovers). */}
+                <ul className="mt-1.5 space-y-1.5 pl-15" aria-label={`Tamaños de ${nombre}`}>
+                  {familia.items.map((fila, indice) => {
+                    const linea = fila.items[0]!;
+                    const proporcion = fila.compradas > 0 ? Math.min(1, fila.necesitas / fila.compradas) : 0;
+                    return (
+                      <li key={`${linea.id}-${indice}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 @xl:grid-cols-[6.5rem_minmax(0,1fr)_9rem_5.5rem]">
+                        <span className="text-[13px] font-medium text-texto">{tamanoLinea(linea) ?? "Sin tamaño"}</span>
+                        <span className="text-right text-[13px] tabular-nums text-texto @xl:order-last">{pesos.format(fila.subtotal)}</span>
+                        <span className="min-w-0">
+                          <span className="block text-[13px] text-texto">Necesitas <strong className="font-semibold tabular-nums">{numero.format(fila.necesitas)}</strong></span>
+                          <span aria-hidden="true" className="mt-1 block h-1 overflow-hidden rounded-full bg-superficie-2">
+                            <motion.span
+                              className="block h-full origin-left rounded-full bg-acento/80"
+                              style={{ width: `${proporcion * 100}%` }}
+                              initial={reducir ? false : { scaleX: 0 }}
+                              animate={{ scaleX: 1 }}
+                              transition={{ duration: 0.7, delay: reducir ? 0 : 0.2 + (indiceFamilia + indice) * 0.05, ease: [0.23, 1, 0.32, 1] }}
+                            />
+                          </span>
+                        </span>
+                        <span className="text-[13px] text-texto">
+                          {partesPaquetesCliente(fila.paquetes).map((parte, posicion) => <Fragment key={parte}>{posicion > 0 && " + "}<span className="whitespace-nowrap">{parte}</span></Fragment>)}
+                          <span className={`block text-xs ${fila.sobrante < 0 ? "text-aviso" : "text-texto-suave"}`}>{sobranteCliente(fila.sobrante)}</span>
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </motion.li>
+            );
+          })}
+        </ul>
+      )}
+
+      {editando && (
       <ul className="mt-2 px-4 @xl:px-5.5" aria-label="Productos de la cotización">
         {filasBorrador(borrador.lineas, editando).map((fila, indice) => {
           const linea = fila.items[0]!;
@@ -200,6 +321,7 @@ export function TarjetaCotizacion({ cotizacion, editable = false, onAplicar, ref
           );
         })}
       </ul>
+      )}
 
       <div className="mt-2 border-t border-borde-suave bg-superficie-suave px-4 py-3 @xl:px-5.5">
         <p className="text-xs text-texto-suave">

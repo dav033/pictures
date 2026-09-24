@@ -8,7 +8,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { motion, useReducedMotion } from "motion/react";
 import { Check, TriangleAlert, X } from "lucide-react";
 import type { CompraConsolidada, PlanResuelto } from "@/lib/plan/resuelto";
-import { acabadoCliente, agruparComprasCliente, esEstructuraDeGlobos, partesPaquetesCliente, productoCliente, pulgadasCliente, sobranteCliente, tonoCliente, type GrupoCompraCliente } from "@/lib/plan/presentacion-cliente";
+import { acabadoCliente, agruparComprasCliente, esEstructuraDeGlobos, familiasEnOrden, partesPaquetesCliente, productoCliente, pulgadasCliente, sobranteCliente, tonoCliente, type GrupoCompraCliente } from "@/lib/plan/presentacion-cliente";
 import { NumeroAnimado } from "@/components/propuesta/NumeroAnimado";
 import { BotonAprobar } from "@/components/propuesta/BotonAprobar";
 import { useFocoDeRetorno } from "@/components/ui/foco-retorno";
@@ -65,50 +65,125 @@ type PropsFilas = {
   imagenDe: (compra: CompraConsolidada) => string | undefined;
 };
 
-/** Rows of the quote table (rendered inside the dialog; exported for static tests). */
+/** Color and finish of a family ("blanco mate"), without the size. */
+function tonoCompra(compra: CompraConsolidada): string {
+  const acabado = acabadoCliente(null, compra.titulo);
+  return compra.color ? [tonoCliente(compra.color, compra.titulo), acabado].filter(Boolean).join(" ") : "";
+}
+
+/**
+ * Rows of the quote table (rendered inside the dialog; exported for static
+ * tests). Each product in one color is a family: a header row with its photo,
+ * name and subtotal, then one compact row per size with what it needs, the
+ * packages bought and their price. The purchase itself is still per size.
+ */
 export function FilasCotizacion({ compras, imagenDe }: PropsFilas) {
   const reducir = useReducedMotion();
+  let fila = 0;
   return (
     <div role="rowgroup">
-      {gruposCotizacionPlan(compras).map((grupo, indice) => {
-        const compra = grupo.items[0]!;
-        const imagen = grupo.items.map(imagenDe).find(Boolean);
-        const proporcion = grupo.compradas > 0 ? Math.min(1, grupo.necesitas / grupo.compradas) : 0;
-        return (
-          <motion.div
-            role="row"
-            key={grupo.clave}
-            data-variantes={grupo.items.map((item) => item.variant_id).join(" ")}
-            initial={reducir ? false : { opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, delay: reducir ? 0 : 0.08 + indice * 0.05 }}
-            className="grid grid-cols-[3.25rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 border-b border-borde-suave py-3 last:border-b-0 sm:grid-cols-[3.25rem_minmax(0,1fr)_10.5rem_8.5rem_6rem]"
-          >
-            <span role="cell" className="row-span-2 grid size-13 place-items-center overflow-hidden rounded-xl border border-borde-suave bg-white sm:row-span-1">
-              {imagen ? <img src={imagen} alt="" width={52} height={52} loading="lazy" className="size-full object-contain" /> : <span aria-hidden className="size-full bg-superficie-2" />}
-            </span>
-            <span role="cell" className="min-w-0">
-              <span className="block truncate font-medium text-texto">{productoCliente(compra.titulo)}</span>
-              <span className="mt-0.5 block truncate text-xs text-texto-suave">{detalleCompra(compra)}</span>
-            </span>
-            <span role="cell" className="text-right font-semibold tabular-nums text-texto sm:order-last">{pesos.format(grupo.subtotal)}</span>
-            <span role="cell" className="col-start-2 sm:col-start-auto">
-              <span className="block text-[13px] text-texto">Necesitas <strong className="font-semibold tabular-nums">{numero.format(grupo.necesitas)}</strong></span>
-              <span aria-hidden="true" className="mt-1.5 block h-1 overflow-hidden rounded-full bg-superficie-2">
-                <motion.span
-                  className="block h-full origin-left rounded-full bg-acento/80"
-                  style={{ width: `${proporcion * 100}%` }}
-                  initial={reducir ? false : { scaleX: 0 }}
-                  animate={{ scaleX: 1 }}
-                  transition={{ duration: 0.7, delay: reducir ? 0 : 0.25 + indice * 0.05, ease: [0.23, 1, 0.32, 1] }}
-                />
+      {familiasEnOrden(gruposCotizacionPlan(compras), (grupo) => `${grupo.items[0]!.product_id}|${grupo.items[0]!.color ?? ""}`).map((familia) => {
+        const compra = familia.items[0]!.items[0]!;
+        const imagen = familia.items.flatMap((grupo) => grupo.items).map(imagenDe).find(Boolean);
+        const subtotal = familia.items.reduce((suma, grupo) => suma + grupo.subtotal, 0);
+        const tono = tonoCompra(compra);
+        if (familia.items.length === 1) {
+          const grupo = familia.items[0]!;
+          const proporcion = grupo.compradas > 0 ? Math.min(1, grupo.necesitas / grupo.compradas) : 0;
+          const indice = fila++;
+          return (
+            <motion.div
+              role="row"
+              key={familia.clave}
+              data-variantes={grupo.items.map((item) => item.variant_id).join(" ")}
+              initial={reducir ? false : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: reducir ? 0 : 0.08 + indice * 0.05 }}
+              className="grid grid-cols-[3.25rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 border-t border-borde-suave py-3 first:border-t-0 sm:grid-cols-[3.25rem_minmax(0,1fr)_10.5rem_8.5rem_6rem]"
+            >
+              <span role="cell" className="row-span-2 grid size-13 place-items-center overflow-hidden rounded-xl border border-borde-suave bg-white sm:row-span-1">
+                {imagen ? <img src={imagen} alt="" width={52} height={52} loading="lazy" className="size-full object-contain" /> : <span aria-hidden className="size-full bg-superficie-2" />}
               </span>
-            </span>
-            <span role="cell" className="col-span-2 col-start-2 text-[13px] text-texto sm:col-span-1 sm:col-start-auto">
-              {partesPaquetesCliente(grupo.paquetes).map((parte, posicion) => <Fragment key={parte}>{posicion > 0 && " + "}<span className="whitespace-nowrap">{parte}</span></Fragment>)}
-              <span className="block text-xs text-texto-suave">{sobranteCliente(grupo.sobrante)}</span>
-            </span>
-          </motion.div>
+              <span role="cell" className="min-w-0">
+                <span className="block truncate font-medium text-texto">{productoCliente(compra.titulo)}</span>
+                <span className="mt-0.5 block truncate text-xs text-texto-suave">{detalleCompra(compra)}</span>
+              </span>
+              <span role="cell" className="text-right font-semibold tabular-nums text-texto sm:order-last">{pesos.format(grupo.subtotal)}</span>
+              <span role="cell" className="col-start-2 sm:col-start-auto">
+                <span className="block text-[13px] text-texto">Necesitas <strong className="font-semibold tabular-nums">{numero.format(grupo.necesitas)}</strong></span>
+                <span aria-hidden="true" className="mt-1.5 block h-1 overflow-hidden rounded-full bg-superficie-2">
+                  <motion.span
+                    className="block h-full origin-left rounded-full bg-acento/80"
+                    style={{ width: `${proporcion * 100}%` }}
+                    initial={reducir ? false : { scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    transition={{ duration: 0.7, delay: reducir ? 0 : 0.25 + indice * 0.05, ease: [0.23, 1, 0.32, 1] }}
+                  />
+                </span>
+              </span>
+              <span role="cell" className="col-span-2 col-start-2 text-[13px] text-texto sm:col-span-1 sm:col-start-auto">
+                {partesPaquetesCliente(grupo.paquetes).map((parte, posicion) => <Fragment key={parte}>{posicion > 0 && " + "}<span className="whitespace-nowrap">{parte}</span></Fragment>)}
+                <span className="block text-xs text-texto-suave">{sobranteCliente(grupo.sobrante)}</span>
+              </span>
+            </motion.div>
+          );
+        }
+        const indiceCabecera = fila++;
+        return (
+          <Fragment key={familia.clave}>
+            <motion.div
+              role="row"
+              initial={reducir ? false : { opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: reducir ? 0 : 0.08 + indiceCabecera * 0.05 }}
+              className="grid grid-cols-[3.25rem_minmax(0,1fr)_auto] items-center gap-x-3 border-t border-borde-suave pt-3 first:border-t-0"
+            >
+              <span role="cell" className="grid size-13 place-items-center overflow-hidden rounded-xl border border-borde-suave bg-white">
+                {imagen ? <img src={imagen} alt="" width={52} height={52} loading="lazy" className="size-full object-contain" /> : <span aria-hidden className="size-full bg-superficie-2" />}
+              </span>
+              <span role="cell" className="min-w-0">
+                <span className="block truncate font-medium text-texto">{productoCliente(compra.titulo)}</span>
+                <span className="mt-0.5 block truncate text-xs text-texto-suave">{[tono, `${familia.items.length} tamaños`].filter(Boolean).join(" · ")}</span>
+              </span>
+              <span role="cell" className="text-right font-semibold tabular-nums text-texto">{pesos.format(subtotal)}</span>
+            </motion.div>
+            {familia.items.map((grupo) => {
+              const primera = grupo.items[0]!;
+              const proporcion = grupo.compradas > 0 ? Math.min(1, grupo.necesitas / grupo.compradas) : 0;
+              const indice = fila++;
+              return (
+                <motion.div
+                  role="row"
+                  key={grupo.clave}
+                  data-variantes={grupo.items.map((item) => item.variant_id).join(" ")}
+                  initial={reducir ? false : { opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: reducir ? 0 : 0.08 + indice * 0.05 }}
+                  className="grid grid-cols-[3.25rem_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 py-2 last:pb-3 sm:grid-cols-[3.25rem_minmax(0,1fr)_10.5rem_8.5rem_6rem]"
+                >
+                  <span role="cell" aria-hidden="true" />
+                  <span role="cell" className="min-w-0 text-[13px] font-medium text-texto">{primera.tamano_codigo ? pulgadasCliente(primera.tamano_codigo) : detalleCompra(primera) || "Sin tamaño"}</span>
+                  <span role="cell" className="text-right tabular-nums text-texto sm:order-last">{pesos.format(grupo.subtotal)}</span>
+                  <span role="cell" className="col-start-2 sm:col-start-auto">
+                    <span className="block text-[13px] text-texto">Necesitas <strong className="font-semibold tabular-nums">{numero.format(grupo.necesitas)}</strong></span>
+                    <span aria-hidden="true" className="mt-1 block h-1 overflow-hidden rounded-full bg-superficie-2">
+                      <motion.span
+                        className="block h-full origin-left rounded-full bg-acento/80"
+                        style={{ width: `${proporcion * 100}%` }}
+                        initial={reducir ? false : { scaleX: 0 }}
+                        animate={{ scaleX: 1 }}
+                        transition={{ duration: 0.7, delay: reducir ? 0 : 0.25 + indice * 0.05, ease: [0.23, 1, 0.32, 1] }}
+                      />
+                    </span>
+                  </span>
+                  <span role="cell" className="col-span-2 col-start-2 text-[13px] text-texto sm:col-span-1 sm:col-start-auto">
+                    {partesPaquetesCliente(grupo.paquetes).map((parte, posicion) => <Fragment key={parte}>{posicion > 0 && " + "}<span className="whitespace-nowrap">{parte}</span></Fragment>)}
+                    <span className="block text-xs text-texto-suave">{sobranteCliente(grupo.sobrante)}</span>
+                  </span>
+                </motion.div>
+              );
+            })}
+          </Fragment>
         );
       })}
     </div>

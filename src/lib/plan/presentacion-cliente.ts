@@ -831,6 +831,22 @@ export function agruparComprasCliente<T>(items: readonly T[], leer: (item: T) =>
   return [...grupos.values()].sort((a, b) => compararLineasPorTamanoCliente(leer(a.items[0]!), leer(b.items[0]!)));
 }
 
+/**
+ * Rows of the same product in the same color, together and in their original
+ * order: a quote listed "Fashion Blanco" once per size, one after another,
+ * and the list got long (2026-09-24). The rows themselves are untouched.
+ */
+export function familiasEnOrden<T>(items: readonly T[], clave: (item: T) => string): Array<{ clave: string; items: T[] }> {
+  const familias = new Map<string, { clave: string; items: T[] }>();
+  for (const item of items) {
+    const id = clave(item);
+    const familia = familias.get(id) ?? { clave: id, items: [] };
+    familia.items.push(item);
+    familias.set(id, familia);
+  }
+  return [...familias.values()];
+}
+
 /** ["1 paquete de 50", "1 paquete de 20"]: one part per package size, to render without breaking inside a part. */
 export function partesPaquetesCliente(paquetes: ReadonlyArray<{ paquetes: number; unidades_paquete: number }>): string[] {
   return paquetes.map((paquete) => `${contar(paquete.paquetes, "paquete", "paquetes")} de ${NUMERO.format(paquete.unidades_paquete)}`);

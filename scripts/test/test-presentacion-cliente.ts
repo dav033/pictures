@@ -593,6 +593,19 @@ ok("modo dev conserva los datos crudos");
   };
   const tarjeta = textoVisible(renderToStaticMarkup(React.createElement(TarjetaCotizacion, { cotizacion })));
   assert.deepEqual(orden(tarjeta, /(\d+) pulgadas/g), [5, 9, 12], `tarjeta «Tu cotización»: ${tarjeta}`);
+
+  // 2026-09-24: the same product in three sizes is one family, not three
+  // repeated names. The purchase stays per size underneath.
+  const mismaFamilia = desordenadas.map((compra) => ({ ...compra, product_id: "blanco" }));
+  const dialogoFamilia = renderToStaticMarkup(React.createElement(FilasCotizacion, { compras: mismaFamilia, imagenDe: () => undefined }));
+  const textoFamilia = textoVisible(dialogoFamilia);
+  assert.equal([...textoFamilia.matchAll(/Fashion Blanco/g)].length, 1, textoFamilia);
+  assert.match(textoFamilia, /3 tamaños/);
+  assert.deepEqual(orden(textoFamilia, /(\d+) pulgadas/g), [5, 9, 12], textoFamilia);
+  assert.equal([...dialogoFamilia.matchAll(/role="row"/g)].length, 4, "una fila de familia y una por tamaño");
+  const tarjetaFamilia = textoVisible(renderToStaticMarkup(React.createElement(TarjetaCotizacion, { cotizacion: { ...cotizacion, lineas: cotizacion.lineas.map((linea) => ({ ...linea, productId: "blanco" })) } })));
+  assert.equal([...tarjetaFamilia.matchAll(/Fashion Blanco/g)].length, 1, tarjetaFamilia);
+  assert.deepEqual(orden(tarjetaFamilia, /(\d+) pulgadas/g), [5, 9, 12], tarjetaFamilia);
   assert.deepEqual(filasBorrador(cotizacion.lineas.map((linea) => ({ ...linea, excluida: false })), true).map((fila) => fila.items[0]!.diamPulg), [5, 9, 12], "tarjeta en edición");
 
   const html = renderToStaticMarkup(React.createElement(TarjetaPlanDecoracion, { plan }));
