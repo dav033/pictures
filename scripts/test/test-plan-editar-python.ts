@@ -37,7 +37,11 @@ function leerFixture(nombre: string): Json {
   return parsed;
 }
 
+/** Set in main(): each case starts without resolutions remembered from the previous one. */
+let olvidarResoluciones: () => void = () => {};
+
 function instalarFetch(responder: (llamada: Llamada) => Response): Llamada[] {
+  olvidarResoluciones();
   const llamadas: Llamada[] = [];
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const body: unknown = JSON.parse(String(init?.body));
@@ -143,6 +147,8 @@ async function main(): Promise<void> {
   const { AllowlistProductoVarianteError } = await import("../../src/lib/plan/allowlist-producto-variante");
   const { UiErrorV1Schema } = await import("../../src/lib/ia/contracts/ui-error-v1");
   const { getRagPool } = await import("../../src/lib/rag/db");
+  const { esperarObservabilidadPendiente } = await import("../../src/lib/rag/observability/log");
+  olvidarResoluciones = (await import("../../src/lib/plan/cache-resoluciones")).olvidarResoluciones;
   // Every tested path must stay off PostgreSQL: any query fails the test
   // loudly, except the audit INSERT of an applied edit, which is recorded
   // (never sent) so its content can be checked.
@@ -633,6 +639,8 @@ async function main(): Promise<void> {
   const planRespuesta = r.cuerpo.plan as Json;
   assert.equal(planRespuesta.request_id, REQUEST_ID);
   assert.ok(verificarTokenAprobacion(String(planRespuesta.approval_token), String(planRespuesta.plan_hash)), "re-signed for the new plan_hash");
+  // The audit is observability: it is queued, not awaited by the answer.
+  await esperarObservabilidadPendiente();
   assert.equal(auditorias.length, 1, "one audit row per applied edit");
   assert.equal(auditorias[0]![15], "PLAN_EDITED");
   assert.deepEqual(JSON.parse(String(auditorias[0]![8])), { accion: "patron", estructura_id: "EST_01_ARCO", modo: "espiral" });
@@ -642,6 +650,7 @@ async function main(): Promise<void> {
   r = await editar({ modo: "aplicar", base, edicion: { accion: "patron", estructura_id: "EST_01_ARCO", patron_color: null } });
   assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 400));
   assert.equal("avisos" in r.cuerpo, false, "no notices, no field");
+  await esperarObservabilidadPendiente();
   assert.equal(JSON.parse(String(auditorias.at(-1)![8])).modo, null);
   llamadas = instalarFetch(() => { throw new Error("una edición de patrón mal formada no debe llegar a Python"); });
   for (const edicion of [
@@ -670,6 +679,25 @@ async function main(): Promise<void> {
   assert.equal(mensajeErrorRespuesta(r.cuerpo, "No se pudo actualizar la pieza."), MENSAJE_PATRON, "the card shows Python's sentence");
   assert.deepEqual(llamadas.map((l) => l.path), [RUTA_RESOLUCION, RUTA_EDICION]);
   console.log("[PASS] acción patron: petición a Python, bandera, re-firma, auditoría {accion, estructura_id, modo}, avisos y patron_invalido con motivo/mensaje");
+
+  // --- 6i. Autosave: consecutive saves. The base of the second save is the plan
+  // the first one just resolved and signed here, so it is not resolved again;
+  // any other plan under the same hash (a tampered echo) is.
+  llamadas = instalarFetch((llamada) => llamada.path === RUTA_EDICION
+    ? sobreEdicion(llamada, (plan) => conPrimeraEstructura(plan, (estructura) => ({ ...estructura, patron_color: ESPIRAL })))
+    : sobre(llamada, payloadResolucion()));
+  r = await editar({ modo: "aplicar", base, edicion: { accion: "patron", estructura_id: "EST_01_ARCO", patron_color: ESPIRAL } });
+  assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 400));
+  const primeraGuardada = r.cuerpo.plan as Json;
+  llamadas.length = 0;
+  r = await editar({ modo: "aplicar", base: primeraGuardada, edicion: { accion: "patron", estructura_id: "EST_01_ARCO", patron_color: null } });
+  assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 400));
+  assert.deepEqual(llamadas.map((l) => l.path), [RUTA_EDICION, RUTA_RESOLUCION], "the signed base is reused: one resolution per save");
+  llamadas.length = 0;
+  const alterada = { ...primeraGuardada, plan: { ...(primeraGuardada.plan as Json), supuestos: ["otro plan bajo el mismo hash"] } };
+  r = await editar({ modo: "aplicar", base: alterada, edicion: { accion: "patron", estructura_id: "EST_01_ARCO", patron_color: null } });
+  assert.deepEqual(llamadas.map((l) => l.path).slice(0, 1), [RUTA_RESOLUCION], "a plan that is not the signed one is resolved again");
+  console.log("[PASS] guardado automático: la base recién firmada no se re-resuelve; otro plan bajo el mismo hash sí");
 
   // --- 6i. The edited plan is checked at the boundary: another plan, or shares
   // that do not add up to 1, is an invalid Python response, never signed.

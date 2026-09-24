@@ -40,7 +40,11 @@ function leerFixture(nombre: string): Json {
   return parsed;
 }
 
+/** Set in main(): each case starts without resolutions remembered from the previous one. */
+let olvidarResoluciones: () => void = () => {};
+
 function instalarFetch(responder: (llamada: Llamada) => Response): Llamada[] {
+  olvidarResoluciones();
   const llamadas: Llamada[] = [];
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const body: unknown = JSON.parse(String(init?.body));
@@ -97,6 +101,7 @@ async function main(): Promise<void> {
   const { crearEstadoConversacion, crearRegistroHerramientas, herramientasActivas } = await import("../../src/lib/ia/herramientas/registro-herramientas");
   const { AllowlistProductoVarianteError } = await import("../../src/lib/plan/allowlist-producto-variante");
   const { getRagPool } = await import("../../src/lib/rag/db");
+  olvidarResoluciones = (await import("../../src/lib/plan/cache-resoluciones")).olvidarResoluciones;
   // Every tested path must stay off PostgreSQL: any query fails the test loudly.
   Object.defineProperty(getRagPool(), "query", {
     value: () => { throw new Error("la prueba no debe consultar la base"); },

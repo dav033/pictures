@@ -9,9 +9,10 @@ import { abrirContextoPlan, allowlistDesdeMapa, crearTokenPlan, mapaDesdeAllowli
 import { conFotosDeCatalogo } from "./cotizacion-fotos";
 import { PlanEditError } from "./edicion-error";
 import { getRagPool } from "@/lib/rag/db";
-import { registrarPlanAudit } from "@/lib/rag/observability/log";
+import { encolarEscrituraObservabilidad, registrarPlanAudit } from "@/lib/rag/observability/log";
+import { claveResolucion, recordarResolucion, resolucionRecordada } from "./cache-resoluciones";
 import { resolverPlan } from "./resolver-backend";
-import type { PlanDecoracion } from "./tipos";
+import { PlanDecoracionSchema, type PlanDecoracion } from "./tipos";
 import type { PlanResuelto } from "./resuelto";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import type { BasePlan, EdicionPlan } from "./edicion-esquemas";
@@ -132,7 +133,15 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
       ...(input.signal ? { signal: input.signal } : {}),
     });
 
-  const planBaseVerificado = await resolver(base.plan, contextoPlan.allowlist);
+  const loraVariantIds = input.catalogAllowlist?.variantIds ?? null;
+  // Saving edits one after another: the base is the plan the previous edit
+  // resolved and signed here, so it is only resolved again when it is not.
+  const planBaseVerificado = resolucionRecordada(base.plan_hash, claveResolucion({
+    plan: base.plan,
+    catalogSnapshotId: snapshotPython,
+    allowlist: contextoPlan.allowlist,
+    loraVariantIds,
+  })) ?? await resolver(base.plan, contextoPlan.allowlist);
   if (planBaseVerificado.resuelto.plan_hash !== base.plan_hash) {
     throw new PlanEditError(409, "El plan base cambió desde que se mostró. Vuelve a solicitar la propuesta.");
   }
@@ -192,7 +201,13 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
     allowlist: allowlistFinal,
     ...(contextoPlan.creatividad === null ? {} : { creatividad: contextoPlan.creatividad }),
   });
-  await registrarPlanAudit(pool, {
+  const planFirmado = PlanDecoracionSchema.safeParse(resuelto.plan);
+  if (planFirmado.success) {
+    recordarResolucion(claveResolucion({ plan: planFirmado.data, catalogSnapshotId: snapshotPython, allowlist: allowlistFinal, loraVariantIds }), resolucionEditada);
+  }
+  // Observability, not part of the answer: the decorator does not wait for it
+  // (it already swallows its own failures), same as the chat's plan audits.
+  encolarEscrituraObservabilidad(registrarPlanAudit(pool, {
     requestId,
     planHash: resuelto.plan_hash,
     restricciones: resuelto.plan.restricciones,
@@ -203,7 +218,7 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
     deltaCop: resuelto.comercial.delta_cop,
     packages: { ahorro_paquetes_cop: resuelto.totales.ahorro_paquetes_cop, lineas: resuelto.compras.map((compra) => ({ variant_id: compra.variant_id, paquetes: compra.paquetes, subtotal: compra.subtotal })) },
     status: "PLAN_EDITED",
-  });
+  }));
 
   return { plan: resuelto, cotizacion: conFotosDeCatalogo(resolucionEditada.cotizacion, resuelto.compras), avisos };
 }
