@@ -226,14 +226,24 @@ const LIMITE_DETALLE_DEV = 2000;
 
 export function construirUiErrorV1(
   code: UiErrorCodeV1,
-  detalles: { mensaje: string; codigoOrigen?: string; causa?: string; requestId?: string },
+  detalles: {
+    mensaje: string;
+    codigoOrigen?: string;
+    causa?: string;
+    requestId?: string;
+    /**
+     * Customer sentence for a cause the client knows exactly, instead of the
+     * generic one of its code (e.g. photos lost on reload vs. a bad file).
+     */
+    mensajeUsuario?: string;
+  },
 ): UiErrorV1 {
   const entrada = CATALOGO_ERRORES_UI_V1[code];
   const mensaje = detalles.mensaje.trim() || entrada.mensaje_usuario;
   return UiErrorV1Schema.parse({
     schema_version: UI_ERROR_CONTRACT_VERSION,
     code,
-    mensaje_usuario: entrada.mensaje_usuario,
+    mensaje_usuario: detalles.mensajeUsuario?.trim() || entrada.mensaje_usuario,
     accion_sugerida: entrada.accion_sugerida,
     acciones_alternativas: [...entrada.acciones_alternativas],
     retryable: entrada.retryable,

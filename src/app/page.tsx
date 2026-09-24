@@ -226,9 +226,12 @@ const ACCIONES_POR_ORIGEN: Readonly<Record<OrigenError, ReadonlySet<AccionUiV1>>
   plan: new Set<AccionUiV1>(["revisar_propuesta"]),
 };
 
-function errorLocal(code: Parameters<typeof construirUiErrorV1>[0], mensaje: string): UiErrorV1 {
-  return construirUiErrorV1(code, { mensaje });
+function errorLocal(code: Parameters<typeof construirUiErrorV1>[0], mensaje: string, mensajeUsuario?: string): UiErrorV1 {
+  return construirUiErrorV1(code, { mensaje, mensajeUsuario });
 }
+
+/** The page kept only thumbnails of the photos (a reload): the file itself was fine. */
+const FOTOS_PERDIDAS_AL_RECARGAR = "La página se recargó y de tus fotos solo guardé miniaturas. Vuelve a adjuntarlas y creo la imagen.";
 
 function campoTexto(valor: unknown, campo: string): string | undefined {
   if (typeof valor !== "object" || valor === null || !(campo in valor)) return undefined;
@@ -1187,7 +1190,7 @@ export default function Page() {
       : undefined;
     if (adjuntosAnclados?.tieneMiniaturas) {
       setError({
-        ui: errorLocal("ADJUNTO_INVALIDO", "La propuesta conserva solo miniaturas. Vuelve a adjuntar las fotos originales."),
+        ui: errorLocal("ADJUNTO_INVALIDO", "La propuesta conserva solo miniaturas. Vuelve a adjuntar las fotos originales.", FOTOS_PERDIDAS_AL_RECARGAR),
         origen: "generacion",
       });
       return;
@@ -1549,7 +1552,7 @@ export default function Page() {
       ? mensajes.find((mensaje) => mensaje.id === messageId && mensaje.role === "assistant" && mensaje.plan?.plan_hash === plan.plan_hash)
       : undefined;
     if (messageId && !mensajeAnclado) {
-      setError({ ui: errorLocal("ADJUNTO_INVALIDO", "No pude recuperar las fotos de esta propuesta. Vuelve a adjuntarlas."), origen: "plan" });
+      setError({ ui: errorLocal("ADJUNTO_INVALIDO", "No pude recuperar las fotos de esta propuesta. Vuelve a adjuntarlas.", FOTOS_PERDIDAS_AL_RECARGAR), origen: "plan" });
       return;
     }
     generar({
