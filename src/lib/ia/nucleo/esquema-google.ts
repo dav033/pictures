@@ -15,6 +15,11 @@
  *   accepts strings, so a numeric const-union keeps only its `type` and loses
  *   the enum constraint. The caller's Zod schema still rejects an
  *   out-of-range value on the way back.
+ * - `exclusiveMinimum`/`exclusiveMaximum` (Zod's `.positive()`, `.gt()`) --
+ *   the Python SDK's `types.Schema` forbids them as extra fields, so the call
+ *   never leaves the process. Found live on 2026-09-24 with Happie's
+ *   extraction schema. They are dropped; the caller's Zod schema still
+ *   rejects a zero or negative value on the way back.
  *
  * Shared by every structured-output call routed through Python (Inari,
  * Happie); the caller keeps validating the result with its own Zod schema.
@@ -26,7 +31,7 @@ export function paraGoogleSchema(nodo: unknown): unknown {
   const ramas = objeto.anyOf;
   const esEnumDeConstantes = Array.isArray(ramas) && ramas.length > 0
     && ramas.every((rama) => typeof rama === "object" && rama !== null && "const" in (rama as Record<string, unknown>));
-  const clavesNoSoportadas = new Set(["$schema", "additionalProperties"]);
+  const clavesNoSoportadas = new Set(["$schema", "additionalProperties", "exclusiveMinimum", "exclusiveMaximum"]);
   const entradas = Object.entries(objeto).filter(([clave]) => !clavesNoSoportadas.has(clave) && !(esEnumDeConstantes && clave === "anyOf"));
   const base = Object.fromEntries(entradas.map(([clave, valor]) => [clave, paraGoogleSchema(valor)]));
   if (!esEnumDeConstantes) return base;

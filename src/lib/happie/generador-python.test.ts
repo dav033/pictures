@@ -110,7 +110,10 @@ test("generadorHappiePython manda las partes y el schema adaptado a Google, y ma
         $schema: "http://json-schema.org/draft-07/schema#",
         type: "object",
         additionalProperties: false,
-        properties: { acuse: { type: "string" } },
+        properties: {
+          acuse: { type: "string" },
+          invitados: { anyOf: [{ type: "integer", exclusiveMinimum: 0 }, { type: "null" }] },
+        },
       },
       signal: new AbortController().signal,
     });
@@ -118,7 +121,11 @@ test("generadorHappiePython manda las partes y el schema adaptado a Google, y ma
     assert.deepEqual(resultado.uso, { promptTokenCount: 50, candidatesTokenCount: undefined, thoughtsTokenCount: 0, cachedContentTokenCount: undefined, toolUsePromptTokenCount: undefined });
     assert.equal(cuerpo?.purpose, "conversation_extract");
     assert.deepEqual(cuerpo?.parts, ["somos 50 personas"]);
-    assert.deepEqual(cuerpo?.response_json_schema, { type: "object", properties: { acuse: { type: "string" } } });
+    // Sin $schema, additionalProperties ni exclusiveMinimum: el SDK Python los rechaza.
+    assert.deepEqual(cuerpo?.response_json_schema, {
+      type: "object",
+      properties: { acuse: { type: "string" }, invitados: { anyOf: [{ type: "integer" }, { type: "null" }] } },
+    });
   } finally {
     globalThis.fetch = fetchOriginal;
     if (entornoOriginal.url === undefined) delete process.env.PYTHON_BACKEND_URL; else process.env.PYTHON_BACKEND_URL = entornoOriginal.url;

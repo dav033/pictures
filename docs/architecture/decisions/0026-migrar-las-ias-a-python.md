@@ -343,7 +343,7 @@ ya ve el navegador). Se planea aparte cuando las 4 anteriores estén validadas.
   fal.ai o si ese presupuesto necesita revisarse — la llamada (2) de arriba
   sugiere que puede ser ajustado, no que esté roto.
 
-## Fase 5 — Happie (implementada, sin prueba en vivo)
+## Fase 5 — Happie (implementada y probada en vivo)
 
 Happie no estaba entre las 6 IAs nombradas del ADR-0025 y se encontró el
 2026-09-24 buscando llamadas directas a proveedores que hubieran quedado fuera:
@@ -381,11 +381,16 @@ partes de texto, instrucción de sistema, schema, `ThinkingLevel.MINIMAL`,
 - Verificado: `pytest`/`ruff`/`mypy` (294 tests), `tsc`, `lint`,
   `happie:test-webhook`, `plan:test` con el nuevo
   `happie:test-generador-python`, y la envoltura en
-  `contracts:test:python-adapter`. **No se hizo la llamada real** flag
-  encendido vs. apagado (se pospuso el 2026-09-24): es lo que sigue antes de
-  poder encender el flag, junto con medir el tamaño real del catálogo. El
-  schema de extracción usa `.nullable()` (`anyOf` con `type: null`), un
-  patrón que las fases anteriores no probaron en `response_schema` de Python.
+  `contracts:test:python-adapter`.
+- **Prueba real 2026-09-24** (conversación de 3 turnos que termina en una
+  recomendación, 4 llamadas por camino), flag apagado vs. encendido contra el
+  servicio local: mismos estados y mismas fases en los dos. La primera corrida
+  encendida falló con `happie_provider_error`: el `types.Schema` del SDK
+  Python rechaza `exclusiveMinimum` (lo emite `.positive()` de Zod), así que
+  la llamada no salía del proceso. `paraGoogleSchema` ahora quita
+  `exclusiveMinimum`/`exclusiveMaximum`; el `anyOf` con `type: null` de
+  `.nullable()` sí funciona. El catálogo activo de Happia midió 23 KB de JSON
+  (9 paquetes activos), muy por debajo del techo de 4MB.
 
 ## Consequences
 
