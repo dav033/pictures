@@ -33,6 +33,12 @@ from app.amaterasu.turno import (
     ReferenceTurnRequest,
     ejecutar_turno_gemini,
 )
+from app.amaterasu.patron_referencia import (
+    PATRON_REFERENCIA_SCOPE,
+    PatronReferenciaError,
+    PatronReferenciaRequest,
+    detectar_patrones_referencia,
+)
 from app.catalog import CATALOG_SCOPE, CatalogSearchRequest, CatalogStore
 from app.happie.generacion import (
     HAPPIE_GENERATE_SCOPE,
@@ -224,6 +230,7 @@ EmbeddingHandler = Callable[[EmbeddingRequest], Awaitable[dict[str, object]]]
 IntentParseHandler = Callable[[IntentParseRequest], Awaitable[dict[str, object]]]
 HappieGenerateHandler = Callable[[HappieGenerateRequest], Awaitable[dict[str, object]]]
 ReferenceTurnHandler = Callable[[ReferenceTurnRequest], Awaitable[dict[str, object]]]
+PatronReferenciaHandler = Callable[[PatronReferenciaRequest], Awaitable[dict[str, object]]]
 ImageGenerateHandler = Callable[[ImageGenerateRequest], Awaitable[dict[str, object]]]
 LoraGenerateHandler = Callable[[LoraGenerateRequest], Awaitable[dict[str, object]]]
 # Not awaited: it validates what can fail before the stream opens (raising an
@@ -372,6 +379,17 @@ async def _default_reference_turn_handler(payload: ReferenceTurnRequest) -> dict
         result = await ejecutar_turno_gemini(payload)
     except ReferenceTurnError as error:
         raise _error(error.code, error.status_code) from None
+    return {"payload": result}
+
+
+async def _default_patron_referencia_handler(payload: PatronReferenciaRequest) -> dict[str, object]:
+    try:
+        result = await detectar_patrones_referencia(payload)
+    except PatronReferenciaError as error:
+        details: dict[str, object] = {}
+        if error.provider_detail is not None:
+            details["provider_detail"] = error.provider_detail
+        raise _error(error.code, error.status_code, details or None) from None
     return {"payload": result}
 
 
@@ -744,6 +762,12 @@ def _detail_metadata(exception: HTTPException) -> dict[str, object]:
     provider_detail = exception.detail.get("provider_detail")
     if isinstance(provider_detail, str) and provider_detail:
         metadata["provider_detail"] = provider_detail[:300]
+    # patron_invalido (ADR-0028 §4): which structure, the stable rule and the
+    # decorator-facing message. The domain writes them, never the request.
+    for key, limit in (("estructura_id", 160), ("motivo", 64), ("mensaje", 400)):
+        value = exception.detail.get(key)
+        if isinstance(value, str) and value:
+            metadata[key] = value[:limit]
     return metadata
 
 
@@ -1053,6 +1077,7 @@ def create_app(
     image_generate_handler: ImageGenerateHandler | None = None,
     lora_generate_handler: LoraGenerateHandler | None = None,
     chat_turn_stream_handler: ChatTurnStreamHandler | None = None,
+    patron_referencia_handler: PatronReferenciaHandler | None = None,
 ) -> FastAPI:
     current_settings = settings or Settings.from_env()
     default_store: object | None = None
@@ -1125,6 +1150,7 @@ def create_app(
     intent_parse_handler_fn = intent_parse_handler or _default_intent_parse_handler
     happie_generate_handler_fn = happie_generate_handler or _default_happie_generate_handler
     reference_turn_handler_fn = reference_turn_handler or _default_reference_turn_handler
+    patron_referencia_handler_fn = patron_referencia_handler or _default_patron_referencia_handler
     image_generate_handler_fn = image_generate_handler or _default_image_generate_handler
     lora_generate_handler_fn = lora_generate_handler or _default_lora_generate_handler
     chat_turn_stream_handler_fn = chat_turn_stream_handler or _default_chat_turn_stream_handler
@@ -1298,7 +1324,7 @@ def create_app(
             try:
                 result = await resolve_plan(payload, cast(CatalogPlanStore, catalog))
             except PlanResolutionError as error:
-                raise _error(error.code, error.status_code) from None
+                raise _error(error.code, error.status_code, error.details) from None
             return {"payload": result}
 
         return await _handle_operational_request(
@@ -1338,6 +1364,18 @@ def create_app(
             model=ReferenceTurnRequest,
             scope=REFERENCE_TURN_SCOPE,
             handler=cast(OperationalHandler, reference_turn_handler_fn),
+            max_body_bytes=current_settings.max_body_bytes_imagenes,
+        )
+
+    @application.post("/internal/v1/ia/patron-referencia")
+    async def ia_patron_referencia(request: Request) -> Response:
+        # One reference photo per call: same body cap as the reference turn.
+        return await _handle_operational_request(
+            request,
+            operation="ia.patron_referencia",
+            model=PatronReferenciaRequest,
+            scope=PATRON_REFERENCIA_SCOPE,
+            handler=cast(OperationalHandler, patron_referencia_handler_fn),
             max_body_bytes=current_settings.max_body_bytes_imagenes,
         )
 

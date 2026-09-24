@@ -1,0 +1,5378 @@
+{
+  "allowlist": [
+    {
+      "product_id": "P-BLANCO",
+      "variant_ids": [
+        "V-BLANCO-5",
+        "V-BLANCO-9",
+        "V-BLANCO-12",
+        "V-BLANCO-18",
+        "V-BLANCO-24"
+      ]
+    },
+    {
+      "product_id": "P-ROSADO",
+      "variant_ids": [
+        "V-ROSADO-5",
+        "V-ROSADO-9",
+        "V-ROSADO-12",
+        "V-ROSADO-18",
+        "V-ROSADO-24"
+      ]
+    },
+    {
+      "product_id": "P-FUCSIA",
+      "variant_ids": [
+        "V-FUCSIA-5",
+        "V-FUCSIA-9",
+        "V-FUCSIA-12",
+        "V-FUCSIA-18",
+        "V-FUCSIA-24"
+      ]
+    }
+  ],
+  "catalog_rows": [
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-5",
+      "colores_producto": [
+        "blanco"
+      ],
+      "colores_variante": [
+        "blanco"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex blanco R-5.",
+      "diam_pulg": 5,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-blanco-5.jpg",
+      "inventory_quantity": 500,
+      "precio": 5000,
+      "product_id": "P-BLANCO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex blanco",
+      "sku": "SKU-V-BLANCO-5",
+      "sku_original": "SHOP-V-BLANCO-5",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-BLANCO-5",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-BLANCO-5",
+      "variante_titulo": "R-5 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-9",
+      "colores_producto": [
+        "blanco"
+      ],
+      "colores_variante": [
+        "blanco"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex blanco R-9.",
+      "diam_pulg": 9,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-blanco-9.jpg",
+      "inventory_quantity": 500,
+      "precio": 7000,
+      "product_id": "P-BLANCO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex blanco",
+      "sku": "SKU-V-BLANCO-9",
+      "sku_original": "SHOP-V-BLANCO-9",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-BLANCO-9",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-BLANCO-9",
+      "variante_titulo": "R-9 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "blanco"
+      ],
+      "colores_variante": [
+        "blanco"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex blanco R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 9000,
+      "product_id": "P-BLANCO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex blanco",
+      "sku": "SKU-V-BLANCO-12",
+      "sku_original": "SHOP-V-BLANCO-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-BLANCO-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-BLANCO-12",
+      "variante_titulo": "R-12 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-18",
+      "colores_producto": [
+        "blanco"
+      ],
+      "colores_variante": [
+        "blanco"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex blanco R-18.",
+      "diam_pulg": 18,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-blanco-18.jpg",
+      "inventory_quantity": 500,
+      "precio": 15000,
+      "product_id": "P-BLANCO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex blanco",
+      "sku": "SKU-V-BLANCO-18",
+      "sku_original": "SHOP-V-BLANCO-18",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-BLANCO-18",
+      "unidades_inferidas": false,
+      "unidades_paq": 25,
+      "variant_id": "V-BLANCO-18",
+      "variante_titulo": "R-18 / PAQUETE X 25"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-24",
+      "colores_producto": [
+        "blanco"
+      ],
+      "colores_variante": [
+        "blanco"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex blanco R-24.",
+      "diam_pulg": 24,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-blanco-24.jpg",
+      "inventory_quantity": 500,
+      "precio": 20000,
+      "product_id": "P-BLANCO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex blanco",
+      "sku": "SKU-V-BLANCO-24",
+      "sku_original": "SHOP-V-BLANCO-24",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-BLANCO-24",
+      "unidades_inferidas": false,
+      "unidades_paq": 10,
+      "variant_id": "V-BLANCO-24",
+      "variante_titulo": "R-24 / PAQUETE X 10"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-5",
+      "colores_producto": [
+        "rosado"
+      ],
+      "colores_variante": [
+        "rosado"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex rosado R-5.",
+      "diam_pulg": 5,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-rosado-5.jpg",
+      "inventory_quantity": 500,
+      "precio": 5000,
+      "product_id": "P-ROSADO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex rosado",
+      "sku": "SKU-V-ROSADO-5",
+      "sku_original": "SHOP-V-ROSADO-5",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-ROSADO-5",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-ROSADO-5",
+      "variante_titulo": "R-5 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-9",
+      "colores_producto": [
+        "rosado"
+      ],
+      "colores_variante": [
+        "rosado"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex rosado R-9.",
+      "diam_pulg": 9,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-rosado-9.jpg",
+      "inventory_quantity": 500,
+      "precio": 7000,
+      "product_id": "P-ROSADO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex rosado",
+      "sku": "SKU-V-ROSADO-9",
+      "sku_original": "SHOP-V-ROSADO-9",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-ROSADO-9",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-ROSADO-9",
+      "variante_titulo": "R-9 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "rosado"
+      ],
+      "colores_variante": [
+        "rosado"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex rosado R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-rosado-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 9000,
+      "product_id": "P-ROSADO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex rosado",
+      "sku": "SKU-V-ROSADO-12",
+      "sku_original": "SHOP-V-ROSADO-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-ROSADO-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-ROSADO-12",
+      "variante_titulo": "R-12 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-18",
+      "colores_producto": [
+        "rosado"
+      ],
+      "colores_variante": [
+        "rosado"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex rosado R-18.",
+      "diam_pulg": 18,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-rosado-18.jpg",
+      "inventory_quantity": 500,
+      "precio": 15000,
+      "product_id": "P-ROSADO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex rosado",
+      "sku": "SKU-V-ROSADO-18",
+      "sku_original": "SHOP-V-ROSADO-18",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-ROSADO-18",
+      "unidades_inferidas": false,
+      "unidades_paq": 25,
+      "variant_id": "V-ROSADO-18",
+      "variante_titulo": "R-18 / PAQUETE X 25"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-24",
+      "colores_producto": [
+        "rosado"
+      ],
+      "colores_variante": [
+        "rosado"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex rosado R-24.",
+      "diam_pulg": 24,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-rosado-24.jpg",
+      "inventory_quantity": 500,
+      "precio": 20000,
+      "product_id": "P-ROSADO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex rosado",
+      "sku": "SKU-V-ROSADO-24",
+      "sku_original": "SHOP-V-ROSADO-24",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-ROSADO-24",
+      "unidades_inferidas": false,
+      "unidades_paq": 10,
+      "variant_id": "V-ROSADO-24",
+      "variante_titulo": "R-24 / PAQUETE X 10"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-5",
+      "colores_producto": [
+        "fucsia"
+      ],
+      "colores_variante": [
+        "fucsia"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex fucsia R-5.",
+      "diam_pulg": 5,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-fucsia-5.jpg",
+      "inventory_quantity": 500,
+      "precio": 5000,
+      "product_id": "P-FUCSIA",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex fucsia",
+      "sku": "SKU-V-FUCSIA-5",
+      "sku_original": "SHOP-V-FUCSIA-5",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-FUCSIA-5",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-FUCSIA-5",
+      "variante_titulo": "R-5 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-9",
+      "colores_producto": [
+        "fucsia"
+      ],
+      "colores_variante": [
+        "fucsia"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex fucsia R-9.",
+      "diam_pulg": 9,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-fucsia-9.jpg",
+      "inventory_quantity": 500,
+      "precio": 7000,
+      "product_id": "P-FUCSIA",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex fucsia",
+      "sku": "SKU-V-FUCSIA-9",
+      "sku_original": "SHOP-V-FUCSIA-9",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-FUCSIA-9",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-FUCSIA-9",
+      "variante_titulo": "R-9 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "fucsia"
+      ],
+      "colores_variante": [
+        "fucsia"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex fucsia R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-fucsia-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 9000,
+      "product_id": "P-FUCSIA",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex fucsia",
+      "sku": "SKU-V-FUCSIA-12",
+      "sku_original": "SHOP-V-FUCSIA-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-FUCSIA-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-FUCSIA-12",
+      "variante_titulo": "R-12 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-18",
+      "colores_producto": [
+        "fucsia"
+      ],
+      "colores_variante": [
+        "fucsia"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex fucsia R-18.",
+      "diam_pulg": 18,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-fucsia-18.jpg",
+      "inventory_quantity": 500,
+      "precio": 15000,
+      "product_id": "P-FUCSIA",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex fucsia",
+      "sku": "SKU-V-FUCSIA-18",
+      "sku_original": "SHOP-V-FUCSIA-18",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-FUCSIA-18",
+      "unidades_inferidas": false,
+      "unidades_paq": 25,
+      "variant_id": "V-FUCSIA-18",
+      "variante_titulo": "R-18 / PAQUETE X 25"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-24",
+      "colores_producto": [
+        "fucsia"
+      ],
+      "colores_variante": [
+        "fucsia"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex fucsia R-24.",
+      "diam_pulg": 24,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-fucsia-24.jpg",
+      "inventory_quantity": 500,
+      "precio": 20000,
+      "product_id": "P-FUCSIA",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex fucsia",
+      "sku": "SKU-V-FUCSIA-24",
+      "sku_original": "SHOP-V-FUCSIA-24",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-FUCSIA-24",
+      "unidades_inferidas": false,
+      "unidades_paq": 10,
+      "variant_id": "V-FUCSIA-24",
+      "variante_titulo": "R-24 / PAQUETE X 10"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-001",
+  "description": "Arco orgánico fino de 3 × 2,4 m en degradé suave blanco → rosado → fucsia (ADR-0028). Con varios tamaños el total no cambia (119): la rejilla de 30 cuartetos da 30/60/30 celdas y el reparto por color es Hamilton(119) = 30/59/30; los tamaños salen de la mezcla y la matriz tamaño × color se rellena con esos dos márgenes. La participación declarada (0,3/0,4/0,3) se reescribe a 0,25/0,5/0,25. patrones_color avisa que la gráfica tiene 120 posiciones y la pieza 119 globos, y el fragmento LoRA va en ASCII («ombre»).",
+  "expected": {
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "blanco",
+          "design_quantity": 6,
+          "finish": null,
+          "product_id": "P-BLANCO",
+          "required_quantity": 6,
+          "shape": "redondo",
+          "size_inches": 5.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-BLANCO-5",
+          "waste_adjusted_quantity": 6,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rosado",
+          "design_quantity": 12,
+          "finish": null,
+          "product_id": "P-ROSADO",
+          "required_quantity": 12,
+          "shape": "redondo",
+          "size_inches": 5.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-ROSADO-5",
+          "waste_adjusted_quantity": 12,
+          "waste_reserve": 0
+        },
+        {
+          "color": "fucsia",
+          "design_quantity": 7,
+          "finish": null,
+          "product_id": "P-FUCSIA",
+          "required_quantity": 7,
+          "shape": "redondo",
+          "size_inches": 5.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-FUCSIA-5",
+          "waste_adjusted_quantity": 7,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 5,
+          "finish": null,
+          "product_id": "P-BLANCO",
+          "required_quantity": 5,
+          "shape": "redondo",
+          "size_inches": 9.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-BLANCO-9",
+          "waste_adjusted_quantity": 5,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rosado",
+          "design_quantity": 11,
+          "finish": null,
+          "product_id": "P-ROSADO",
+          "required_quantity": 11,
+          "shape": "redondo",
+          "size_inches": 9.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-ROSADO-9",
+          "waste_adjusted_quantity": 11,
+          "waste_reserve": 0
+        },
+        {
+          "color": "fucsia",
+          "design_quantity": 6,
+          "finish": null,
+          "product_id": "P-FUCSIA",
+          "required_quantity": 6,
+          "shape": "redondo",
+          "size_inches": 9.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-FUCSIA-9",
+          "waste_adjusted_quantity": 6,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 16,
+          "finish": null,
+          "product_id": "P-BLANCO",
+          "required_quantity": 16,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-BLANCO-12",
+          "waste_adjusted_quantity": 16,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rosado",
+          "design_quantity": 32,
+          "finish": null,
+          "product_id": "P-ROSADO",
+          "required_quantity": 32,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-ROSADO-12",
+          "waste_adjusted_quantity": 32,
+          "waste_reserve": 0
+        },
+        {
+          "color": "fucsia",
+          "design_quantity": 16,
+          "finish": null,
+          "product_id": "P-FUCSIA",
+          "required_quantity": 16,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-FUCSIA-12",
+          "waste_adjusted_quantity": 16,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 2,
+          "finish": null,
+          "product_id": "P-BLANCO",
+          "required_quantity": 2,
+          "shape": "redondo",
+          "size_inches": 18.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-BLANCO-18",
+          "waste_adjusted_quantity": 2,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rosado",
+          "design_quantity": 3,
+          "finish": null,
+          "product_id": "P-ROSADO",
+          "required_quantity": 3,
+          "shape": "redondo",
+          "size_inches": 18.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-ROSADO-18",
+          "waste_adjusted_quantity": 3,
+          "waste_reserve": 0
+        },
+        {
+          "color": "fucsia",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-FUCSIA",
+          "required_quantity": 1,
+          "shape": "redondo",
+          "size_inches": 18.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-FUCSIA-18",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-BLANCO",
+          "required_quantity": 1,
+          "shape": "redondo",
+          "size_inches": 24.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-BLANCO-24",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rosado",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-ROSADO",
+          "required_quantity": 1,
+          "shape": "redondo",
+          "size_inches": 24.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-ROSADO-24",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 1,
+        "density": "media",
+        "dimensions_m": {
+          "height": 2.4,
+          "length": null,
+          "width": 3.0
+        },
+        "installation_length_m": 6.21,
+        "shape": "organica_fina",
+        "type": "arco",
+        "visual_density": "medium",
+        "visual_scale": "large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 2880,
+          "design_quantity": 16,
+          "leftover_inventory": 34,
+          "operational_surplus": 34,
+          "package_count": 1,
+          "potential_surplus": 34,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 16,
+          "units_per_package": 50,
+          "used": 16,
+          "variant_id": "V-BLANCO-12",
+          "waste_adjusted_quantity": 16,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 1200,
+          "design_quantity": 2,
+          "leftover_inventory": 23,
+          "operational_surplus": 23,
+          "package_count": 1,
+          "potential_surplus": 23,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 15000,
+          "purchase_quantity": 25,
+          "required_quantity": 2,
+          "units_per_package": 25,
+          "used": 2,
+          "variant_id": "V-BLANCO-18",
+          "waste_adjusted_quantity": 2,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 2000,
+          "design_quantity": 1,
+          "leftover_inventory": 9,
+          "operational_surplus": 9,
+          "package_count": 1,
+          "potential_surplus": 9,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 20000,
+          "purchase_quantity": 10,
+          "required_quantity": 1,
+          "units_per_package": 10,
+          "used": 1,
+          "variant_id": "V-BLANCO-24",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 600,
+          "design_quantity": 6,
+          "leftover_inventory": 44,
+          "operational_surplus": 44,
+          "package_count": 1,
+          "potential_surplus": 44,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 5000,
+          "purchase_quantity": 50,
+          "required_quantity": 6,
+          "units_per_package": 50,
+          "used": 6,
+          "variant_id": "V-BLANCO-5",
+          "waste_adjusted_quantity": 6,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 2100,
+          "design_quantity": 5,
+          "leftover_inventory": 35,
+          "operational_surplus": 35,
+          "package_count": 1,
+          "potential_surplus": 45,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 7000,
+          "purchase_quantity": 50,
+          "required_quantity": 15,
+          "units_per_package": 50,
+          "used": 5,
+          "variant_id": "V-BLANCO-9",
+          "waste_adjusted_quantity": 15,
+          "waste_reserve": 10
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 2880,
+          "design_quantity": 16,
+          "leftover_inventory": 34,
+          "operational_surplus": 34,
+          "package_count": 1,
+          "potential_surplus": 34,
+          "product_id": "P-FUCSIA",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 16,
+          "units_per_package": 50,
+          "used": 16,
+          "variant_id": "V-FUCSIA-12",
+          "waste_adjusted_quantity": 16,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 600,
+          "design_quantity": 1,
+          "leftover_inventory": 24,
+          "operational_surplus": 24,
+          "package_count": 1,
+          "potential_surplus": 24,
+          "product_id": "P-FUCSIA",
+          "purchase_cost": 15000,
+          "purchase_quantity": 25,
+          "required_quantity": 1,
+          "units_per_package": 25,
+          "used": 1,
+          "variant_id": "V-FUCSIA-18",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 700,
+          "design_quantity": 7,
+          "leftover_inventory": 43,
+          "operational_surplus": 43,
+          "package_count": 1,
+          "potential_surplus": 43,
+          "product_id": "P-FUCSIA",
+          "purchase_cost": 5000,
+          "purchase_quantity": 50,
+          "required_quantity": 7,
+          "units_per_package": 50,
+          "used": 7,
+          "variant_id": "V-FUCSIA-5",
+          "waste_adjusted_quantity": 7,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 840,
+          "design_quantity": 6,
+          "leftover_inventory": 44,
+          "operational_surplus": 44,
+          "package_count": 1,
+          "potential_surplus": 44,
+          "product_id": "P-FUCSIA",
+          "purchase_cost": 7000,
+          "purchase_quantity": 50,
+          "required_quantity": 6,
+          "units_per_package": 50,
+          "used": 6,
+          "variant_id": "V-FUCSIA-9",
+          "waste_adjusted_quantity": 6,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 5760,
+          "design_quantity": 32,
+          "leftover_inventory": 18,
+          "operational_surplus": 18,
+          "package_count": 1,
+          "potential_surplus": 18,
+          "product_id": "P-ROSADO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 32,
+          "units_per_package": 50,
+          "used": 32,
+          "variant_id": "V-ROSADO-12",
+          "waste_adjusted_quantity": 32,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 1800,
+          "design_quantity": 3,
+          "leftover_inventory": 22,
+          "operational_surplus": 22,
+          "package_count": 1,
+          "potential_surplus": 22,
+          "product_id": "P-ROSADO",
+          "purchase_cost": 15000,
+          "purchase_quantity": 25,
+          "required_quantity": 3,
+          "units_per_package": 25,
+          "used": 3,
+          "variant_id": "V-ROSADO-18",
+          "waste_adjusted_quantity": 3,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 2000,
+          "design_quantity": 1,
+          "leftover_inventory": 9,
+          "operational_surplus": 9,
+          "package_count": 1,
+          "potential_surplus": 9,
+          "product_id": "P-ROSADO",
+          "purchase_cost": 20000,
+          "purchase_quantity": 10,
+          "required_quantity": 1,
+          "units_per_package": 10,
+          "used": 1,
+          "variant_id": "V-ROSADO-24",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 1200,
+          "design_quantity": 12,
+          "leftover_inventory": 38,
+          "operational_surplus": 38,
+          "package_count": 1,
+          "potential_surplus": 38,
+          "product_id": "P-ROSADO",
+          "purchase_cost": 5000,
+          "purchase_quantity": 50,
+          "required_quantity": 12,
+          "units_per_package": 50,
+          "used": 12,
+          "variant_id": "V-ROSADO-5",
+          "waste_adjusted_quantity": 12,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 1540,
+          "design_quantity": 11,
+          "leftover_inventory": 39,
+          "operational_surplus": 39,
+          "package_count": 1,
+          "potential_surplus": 39,
+          "product_id": "P-ROSADO",
+          "purchase_cost": 7000,
+          "purchase_quantity": 50,
+          "required_quantity": 11,
+          "units_per_package": 50,
+          "used": 11,
+          "variant_id": "V-ROSADO-9",
+          "waste_adjusted_quantity": 11,
+          "waste_reserve": 0
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 26100,
+        "covered_waste_reserve": 10,
+        "design_quantity": 119,
+        "natural_package_surplus": 426,
+        "operational_surplus": 416,
+        "potential_surplus": 426,
+        "purchase_cost": 148000,
+        "purchase_quantity": 545,
+        "required_quantity": 129,
+        "target_waste_reserve": 10,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 129,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-BLANCO-12",
+        "sobrante_alto:V-BLANCO-18",
+        "sobrante_alto:V-BLANCO-24",
+        "sobrante_alto:V-BLANCO-5",
+        "sobrante_alto:V-BLANCO-9",
+        "sobrante_alto:V-FUCSIA-12",
+        "sobrante_alto:V-FUCSIA-18",
+        "sobrante_alto:V-FUCSIA-5",
+        "sobrante_alto:V-FUCSIA-9",
+        "sobrante_alto:V-ROSADO-12",
+        "sobrante_alto:V-ROSADO-18",
+        "sobrante_alto:V-ROSADO-24",
+        "sobrante_alto:V-ROSADO-5",
+        "sobrante_alto:V-ROSADO-9"
+      ]
+    },
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-BLANCO-12",
+        "sobrante_alto:V-BLANCO-18",
+        "sobrante_alto:V-BLANCO-24",
+        "sobrante_alto:V-BLANCO-5",
+        "sobrante_alto:V-BLANCO-9",
+        "sobrante_alto:V-FUCSIA-12",
+        "sobrante_alto:V-FUCSIA-18",
+        "sobrante_alto:V-FUCSIA-5",
+        "sobrante_alto:V-FUCSIA-9",
+        "sobrante_alto:V-ROSADO-12",
+        "sobrante_alto:V-ROSADO-18",
+        "sobrante_alto:V-ROSADO-24",
+        "sobrante_alto:V-ROSADO-5",
+        "sobrante_alto:V-ROSADO-9"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 2880,
+          "design_quantity": 16,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 34,
+          "paquetes": 1,
+          "precio_paquete": 9000,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 16,
+          "sku": "SKU-V-BLANCO-12",
+          "sku_original": "SHOP-V-BLANCO-12",
+          "sobrante": 34,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-BLANCO-12",
+          "subtotal": 9000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex blanco — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 16,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 16,
+          "unidades_paquete": 50,
+          "used": 16,
+          "variant_id": "V-BLANCO-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 1200,
+          "design_quantity": 2,
+          "diam_pulg": 18.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-blanco-18.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 23,
+          "paquetes": 1,
+          "precio_paquete": 15000,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 15000,
+          "purchase_quantity": 25,
+          "required_quantity": 2,
+          "sku": "SKU-V-BLANCO-18",
+          "sku_original": "SHOP-V-BLANCO-18",
+          "sobrante": 23,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-BLANCO-18",
+          "subtotal": 15000,
+          "tamano_codigo": "R-18",
+          "titulo": "Globo latex blanco — R-18 / PAQUETE X 25",
+          "unidades_con_merma": 2,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 2,
+          "unidades_paquete": 25,
+          "used": 2,
+          "variant_id": "V-BLANCO-18",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 2000,
+          "design_quantity": 1,
+          "diam_pulg": 24.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-blanco-24.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 9,
+          "paquetes": 1,
+          "precio_paquete": 20000,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 20000,
+          "purchase_quantity": 10,
+          "required_quantity": 1,
+          "sku": "SKU-V-BLANCO-24",
+          "sku_original": "SHOP-V-BLANCO-24",
+          "sobrante": 9,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-BLANCO-24",
+          "subtotal": 20000,
+          "tamano_codigo": "R-24",
+          "titulo": "Globo latex blanco — R-24 / PAQUETE X 10",
+          "unidades_con_merma": 1,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 1,
+          "unidades_paquete": 10,
+          "used": 1,
+          "variant_id": "V-BLANCO-24",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 600,
+          "design_quantity": 6,
+          "diam_pulg": 5.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-blanco-5.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 44,
+          "paquetes": 1,
+          "precio_paquete": 5000,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 5000,
+          "purchase_quantity": 50,
+          "required_quantity": 6,
+          "sku": "SKU-V-BLANCO-5",
+          "sku_original": "SHOP-V-BLANCO-5",
+          "sobrante": 44,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-BLANCO-5",
+          "subtotal": 5000,
+          "tamano_codigo": "R-5",
+          "titulo": "Globo latex blanco — R-5 / PAQUETE X 50",
+          "unidades_con_merma": 6,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 6,
+          "unidades_paquete": 50,
+          "used": 6,
+          "variant_id": "V-BLANCO-5",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 2100,
+          "design_quantity": 5,
+          "diam_pulg": 9.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-blanco-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 35,
+          "paquetes": 1,
+          "precio_paquete": 7000,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 7000,
+          "purchase_quantity": 50,
+          "required_quantity": 15,
+          "sku": "SKU-V-BLANCO-9",
+          "sku_original": "SHOP-V-BLANCO-9",
+          "sobrante": 45,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-BLANCO-9",
+          "subtotal": 7000,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex blanco — R-9 / PAQUETE X 50",
+          "unidades_con_merma": 15,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 5,
+          "unidades_paquete": 50,
+          "used": 5,
+          "variant_id": "V-BLANCO-9",
+          "waste_reserve": 10
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "fucsia",
+          "consumption_cost": 2880,
+          "design_quantity": 16,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-fucsia-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 34,
+          "paquetes": 1,
+          "precio_paquete": 9000,
+          "product_id": "P-FUCSIA",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 16,
+          "sku": "SKU-V-FUCSIA-12",
+          "sku_original": "SHOP-V-FUCSIA-12",
+          "sobrante": 34,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-FUCSIA-12",
+          "subtotal": 9000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex fucsia — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 16,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 16,
+          "unidades_paquete": 50,
+          "used": 16,
+          "variant_id": "V-FUCSIA-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "fucsia",
+          "consumption_cost": 600,
+          "design_quantity": 1,
+          "diam_pulg": 18.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-fucsia-18.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 24,
+          "paquetes": 1,
+          "precio_paquete": 15000,
+          "product_id": "P-FUCSIA",
+          "purchase_cost": 15000,
+          "purchase_quantity": 25,
+          "required_quantity": 1,
+          "sku": "SKU-V-FUCSIA-18",
+          "sku_original": "SHOP-V-FUCSIA-18",
+          "sobrante": 24,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-FUCSIA-18",
+          "subtotal": 15000,
+          "tamano_codigo": "R-18",
+          "titulo": "Globo latex fucsia — R-18 / PAQUETE X 25",
+          "unidades_con_merma": 1,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 1,
+          "unidades_paquete": 25,
+          "used": 1,
+          "variant_id": "V-FUCSIA-18",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "fucsia",
+          "consumption_cost": 700,
+          "design_quantity": 7,
+          "diam_pulg": 5.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-fucsia-5.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 43,
+          "paquetes": 1,
+          "precio_paquete": 5000,
+          "product_id": "P-FUCSIA",
+          "purchase_cost": 5000,
+          "purchase_quantity": 50,
+          "required_quantity": 7,
+          "sku": "SKU-V-FUCSIA-5",
+          "sku_original": "SHOP-V-FUCSIA-5",
+          "sobrante": 43,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-FUCSIA-5",
+          "subtotal": 5000,
+          "tamano_codigo": "R-5",
+          "titulo": "Globo latex fucsia — R-5 / PAQUETE X 50",
+          "unidades_con_merma": 7,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 7,
+          "unidades_paquete": 50,
+          "used": 7,
+          "variant_id": "V-FUCSIA-5",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "fucsia",
+          "consumption_cost": 840,
+          "design_quantity": 6,
+          "diam_pulg": 9.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-fucsia-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 44,
+          "paquetes": 1,
+          "precio_paquete": 7000,
+          "product_id": "P-FUCSIA",
+          "purchase_cost": 7000,
+          "purchase_quantity": 50,
+          "required_quantity": 6,
+          "sku": "SKU-V-FUCSIA-9",
+          "sku_original": "SHOP-V-FUCSIA-9",
+          "sobrante": 44,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-FUCSIA-9",
+          "subtotal": 7000,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex fucsia — R-9 / PAQUETE X 50",
+          "unidades_con_merma": 6,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 6,
+          "unidades_paquete": 50,
+          "used": 6,
+          "variant_id": "V-FUCSIA-9",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "rosado",
+          "consumption_cost": 5760,
+          "design_quantity": 32,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-rosado-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 18,
+          "paquetes": 1,
+          "precio_paquete": 9000,
+          "product_id": "P-ROSADO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 32,
+          "sku": "SKU-V-ROSADO-12",
+          "sku_original": "SHOP-V-ROSADO-12",
+          "sobrante": 18,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-ROSADO-12",
+          "subtotal": 9000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex rosado — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 32,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 32,
+          "unidades_paquete": 50,
+          "used": 32,
+          "variant_id": "V-ROSADO-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "rosado",
+          "consumption_cost": 1800,
+          "design_quantity": 3,
+          "diam_pulg": 18.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-rosado-18.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 22,
+          "paquetes": 1,
+          "precio_paquete": 15000,
+          "product_id": "P-ROSADO",
+          "purchase_cost": 15000,
+          "purchase_quantity": 25,
+          "required_quantity": 3,
+          "sku": "SKU-V-ROSADO-18",
+          "sku_original": "SHOP-V-ROSADO-18",
+          "sobrante": 22,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-ROSADO-18",
+          "subtotal": 15000,
+          "tamano_codigo": "R-18",
+          "titulo": "Globo latex rosado — R-18 / PAQUETE X 25",
+          "unidades_con_merma": 3,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 3,
+          "unidades_paquete": 25,
+          "used": 3,
+          "variant_id": "V-ROSADO-18",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "rosado",
+          "consumption_cost": 2000,
+          "design_quantity": 1,
+          "diam_pulg": 24.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-rosado-24.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 9,
+          "paquetes": 1,
+          "precio_paquete": 20000,
+          "product_id": "P-ROSADO",
+          "purchase_cost": 20000,
+          "purchase_quantity": 10,
+          "required_quantity": 1,
+          "sku": "SKU-V-ROSADO-24",
+          "sku_original": "SHOP-V-ROSADO-24",
+          "sobrante": 9,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-ROSADO-24",
+          "subtotal": 20000,
+          "tamano_codigo": "R-24",
+          "titulo": "Globo latex rosado — R-24 / PAQUETE X 10",
+          "unidades_con_merma": 1,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 1,
+          "unidades_paquete": 10,
+          "used": 1,
+          "variant_id": "V-ROSADO-24",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "rosado",
+          "consumption_cost": 1200,
+          "design_quantity": 12,
+          "diam_pulg": 5.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-rosado-5.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 38,
+          "paquetes": 1,
+          "precio_paquete": 5000,
+          "product_id": "P-ROSADO",
+          "purchase_cost": 5000,
+          "purchase_quantity": 50,
+          "required_quantity": 12,
+          "sku": "SKU-V-ROSADO-5",
+          "sku_original": "SHOP-V-ROSADO-5",
+          "sobrante": 38,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-ROSADO-5",
+          "subtotal": 5000,
+          "tamano_codigo": "R-5",
+          "titulo": "Globo latex rosado — R-5 / PAQUETE X 50",
+          "unidades_con_merma": 12,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 12,
+          "unidades_paquete": 50,
+          "used": 12,
+          "variant_id": "V-ROSADO-5",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "rosado",
+          "consumption_cost": 1540,
+          "design_quantity": 11,
+          "diam_pulg": 9.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-rosado-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 39,
+          "paquetes": 1,
+          "precio_paquete": 7000,
+          "product_id": "P-ROSADO",
+          "purchase_cost": 7000,
+          "purchase_quantity": 50,
+          "required_quantity": 11,
+          "sku": "SKU-V-ROSADO-9",
+          "sku_original": "SHOP-V-ROSADO-9",
+          "sobrante": 39,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-ROSADO-9",
+          "subtotal": 7000,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex rosado — R-9 / PAQUETE X 50",
+          "unidades_con_merma": 11,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 11,
+          "unidades_paquete": 50,
+          "used": 11,
+          "variant_id": "V-ROSADO-9",
+          "waste_reserve": 0
+        }
+      ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 24700,
+          "estructura_id": "EST_01_ARCO"
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 6.21,
+          "estructura_id": "EST_01_ARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 12.7,
+              "diam_pulg": 5.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-blanco-5.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLANCO",
+              "sku": "SKU-V-BLANCO-5",
+              "sku_original": "SHOP-V-BLANCO-5",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-BLANCO-5",
+              "sustitucion": null,
+              "tamano_codigo": "R-5",
+              "titulo": "Globo latex blanco — R-5 / PAQUETE X 50",
+              "unidades": 6,
+              "unidades_inferidas": false,
+              "variant_id": "V-BLANCO-5"
+            },
+            {
+              "acabado": null,
+              "color": "rosado",
+              "diam_cm": 12.7,
+              "diam_pulg": 5.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-rosado-5.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-ROSADO",
+              "sku": "SKU-V-ROSADO-5",
+              "sku_original": "SHOP-V-ROSADO-5",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-ROSADO-5",
+              "sustitucion": null,
+              "tamano_codigo": "R-5",
+              "titulo": "Globo latex rosado — R-5 / PAQUETE X 50",
+              "unidades": 12,
+              "unidades_inferidas": false,
+              "variant_id": "V-ROSADO-5"
+            },
+            {
+              "acabado": null,
+              "color": "fucsia",
+              "diam_cm": 12.7,
+              "diam_pulg": 5.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-fucsia-5.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-FUCSIA",
+              "sku": "SKU-V-FUCSIA-5",
+              "sku_original": "SHOP-V-FUCSIA-5",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-FUCSIA-5",
+              "sustitucion": null,
+              "tamano_codigo": "R-5",
+              "titulo": "Globo latex fucsia — R-5 / PAQUETE X 50",
+              "unidades": 7,
+              "unidades_inferidas": false,
+              "variant_id": "V-FUCSIA-5"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 22.9,
+              "diam_pulg": 9.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-blanco-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLANCO",
+              "sku": "SKU-V-BLANCO-9",
+              "sku_original": "SHOP-V-BLANCO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-BLANCO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex blanco — R-9 / PAQUETE X 50",
+              "unidades": 5,
+              "unidades_inferidas": false,
+              "variant_id": "V-BLANCO-9"
+            },
+            {
+              "acabado": null,
+              "color": "rosado",
+              "diam_cm": 22.9,
+              "diam_pulg": 9.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-rosado-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-ROSADO",
+              "sku": "SKU-V-ROSADO-9",
+              "sku_original": "SHOP-V-ROSADO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-ROSADO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex rosado — R-9 / PAQUETE X 50",
+              "unidades": 11,
+              "unidades_inferidas": false,
+              "variant_id": "V-ROSADO-9"
+            },
+            {
+              "acabado": null,
+              "color": "fucsia",
+              "diam_cm": 22.9,
+              "diam_pulg": 9.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-fucsia-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-FUCSIA",
+              "sku": "SKU-V-FUCSIA-9",
+              "sku_original": "SHOP-V-FUCSIA-9",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-FUCSIA-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex fucsia — R-9 / PAQUETE X 50",
+              "unidades": 6,
+              "unidades_inferidas": false,
+              "variant_id": "V-FUCSIA-9"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLANCO",
+              "sku": "SKU-V-BLANCO-12",
+              "sku_original": "SHOP-V-BLANCO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-BLANCO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex blanco — R-12 / PAQUETE X 50",
+              "unidades": 16,
+              "unidades_inferidas": false,
+              "variant_id": "V-BLANCO-12"
+            },
+            {
+              "acabado": null,
+              "color": "rosado",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-rosado-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-ROSADO",
+              "sku": "SKU-V-ROSADO-12",
+              "sku_original": "SHOP-V-ROSADO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-ROSADO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rosado — R-12 / PAQUETE X 50",
+              "unidades": 32,
+              "unidades_inferidas": false,
+              "variant_id": "V-ROSADO-12"
+            },
+            {
+              "acabado": null,
+              "color": "fucsia",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-fucsia-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-FUCSIA",
+              "sku": "SKU-V-FUCSIA-12",
+              "sku_original": "SHOP-V-FUCSIA-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-FUCSIA-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex fucsia — R-12 / PAQUETE X 50",
+              "unidades": 16,
+              "unidades_inferidas": false,
+              "variant_id": "V-FUCSIA-12"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 45.7,
+              "diam_pulg": 18.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-blanco-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLANCO",
+              "sku": "SKU-V-BLANCO-18",
+              "sku_original": "SHOP-V-BLANCO-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-BLANCO-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex blanco — R-18 / PAQUETE X 25",
+              "unidades": 2,
+              "unidades_inferidas": false,
+              "variant_id": "V-BLANCO-18"
+            },
+            {
+              "acabado": null,
+              "color": "rosado",
+              "diam_cm": 45.7,
+              "diam_pulg": 18.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-rosado-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-ROSADO",
+              "sku": "SKU-V-ROSADO-18",
+              "sku_original": "SHOP-V-ROSADO-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-ROSADO-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex rosado — R-18 / PAQUETE X 25",
+              "unidades": 3,
+              "unidades_inferidas": false,
+              "variant_id": "V-ROSADO-18"
+            },
+            {
+              "acabado": null,
+              "color": "fucsia",
+              "diam_cm": 45.7,
+              "diam_pulg": 18.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-fucsia-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-FUCSIA",
+              "sku": "SKU-V-FUCSIA-18",
+              "sku_original": "SHOP-V-FUCSIA-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-FUCSIA-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex fucsia — R-18 / PAQUETE X 25",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-FUCSIA-18"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 61.0,
+              "diam_pulg": 24.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-blanco-24.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLANCO",
+              "sku": "SKU-V-BLANCO-24",
+              "sku_original": "SHOP-V-BLANCO-24",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-BLANCO-24",
+              "sustitucion": null,
+              "tamano_codigo": "R-24",
+              "titulo": "Globo latex blanco — R-24 / PAQUETE X 10",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-BLANCO-24"
+            },
+            {
+              "acabado": null,
+              "color": "rosado",
+              "diam_cm": 61.0,
+              "diam_pulg": 24.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-rosado-24.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-ROSADO",
+              "sku": "SKU-V-ROSADO-24",
+              "sku_original": "SHOP-V-ROSADO-24",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-ROSADO-24",
+              "sustitucion": null,
+              "tamano_codigo": "R-24",
+              "titulo": "Globo latex rosado — R-24 / PAQUETE X 10",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-ROSADO-24"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 53.78,
+              "unidades": 64
+            },
+            {
+              "diam_pulg": 5.0,
+              "forma": "redondo",
+              "pct": 21.01,
+              "unidades": 25
+            },
+            {
+              "diam_pulg": 9.0,
+              "forma": "redondo",
+              "pct": 18.49,
+              "unidades": 22
+            },
+            {
+              "diam_pulg": 18.0,
+              "forma": "redondo",
+              "pct": 5.04,
+              "unidades": 6
+            },
+            {
+              "diam_pulg": 24.0,
+              "forma": "redondo",
+              "pct": 1.68,
+              "unidades": 2
+            }
+          ],
+          "nombre": "Arco en degradé",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "arco",
+          "total_unidades": 119,
+          "ubicacion": "fondo_pared"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-001.",
+      "patrones_color": [
+        {
+          "aplicado": true,
+          "avisos": [
+            "La gráfica tiene 120 posiciones y la mezcla de varios tamaños da 119 globos por pieza: el conteo por color reparte esos 119 en la proporción de la gráfica, con al menos uno por color."
+          ],
+          "celdas": [
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              1
+            ],
+            [
+              0,
+              0,
+              0,
+              1
+            ],
+            [
+              0,
+              0,
+              0,
+              1
+            ],
+            [
+              0,
+              0,
+              0,
+              1
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              0,
+              1,
+              1,
+              1
+            ],
+            [
+              0,
+              1,
+              1,
+              1
+            ],
+            [
+              0,
+              1,
+              1,
+              1
+            ],
+            [
+              0,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              2
+            ],
+            [
+              1,
+              1,
+              1,
+              2
+            ],
+            [
+              1,
+              1,
+              1,
+              2
+            ],
+            [
+              1,
+              1,
+              1,
+              2
+            ],
+            [
+              1,
+              2,
+              1,
+              2
+            ],
+            [
+              1,
+              2,
+              1,
+              2
+            ],
+            [
+              1,
+              2,
+              1,
+              2
+            ],
+            [
+              1,
+              2,
+              2,
+              2
+            ],
+            [
+              1,
+              2,
+              2,
+              2
+            ],
+            [
+              1,
+              2,
+              2,
+              2
+            ],
+            [
+              1,
+              2,
+              2,
+              2
+            ],
+            [
+              2,
+              2,
+              2,
+              2
+            ],
+            [
+              2,
+              2,
+              2,
+              2
+            ]
+          ],
+          "columnas": 4,
+          "conteo": [
+            {
+              "acabado": null,
+              "color": "blanco",
+              "material": 0,
+              "unidades_por_instancia": 30,
+              "unidades_total": 30
+            },
+            {
+              "acabado": null,
+              "color": "rosado",
+              "material": 1,
+              "unidades_por_instancia": 59,
+              "unidades_total": 59
+            },
+            {
+              "acabado": null,
+              "color": "fucsia",
+              "material": 2,
+              "unidades_por_instancia": 30,
+              "unidades_total": 30
+            }
+          ],
+          "descripcion": "Degradé del pie izquierdo, por la clave, al pie derecho de blanco (1) a fucsia (3) pasando por rosado (2), con transiciones mezcladas.",
+          "estructura_id": "EST_01_ARCO",
+          "extras": [],
+          "filas": 30,
+          "geometria": "racimos",
+          "globos_por_instancia": 119,
+          "instrucciones": [
+            "Infla cada globo con el calibrador para que todos queden del mismo tamaño.",
+            "Arma parejas (dos globos amarrados por el cuello) y une dos parejas para formar cada cuarteto.",
+            "Ordena los cuartetos del tono inicial, blanco (1), al final, fucsia (3); en cada transición mezcla globos de los dos tonos para que el cambio sea suave.",
+            "Sigue la gráfica numerada: cada número es un color de la leyenda."
+          ],
+          "nombre": "Degradé",
+          "pasos": [
+            {
+              "celdas": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "desde": 1,
+              "extras": [],
+              "hasta": 2
+            },
+            {
+              "celdas": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "desde": 3,
+              "extras": [],
+              "hasta": 6
+            },
+            {
+              "celdas": [
+                0,
+                1,
+                0,
+                1
+              ],
+              "desde": 7,
+              "extras": [],
+              "hasta": 9
+            },
+            {
+              "celdas": [
+                0,
+                1,
+                1,
+                1
+              ],
+              "desde": 10,
+              "extras": [],
+              "hasta": 13
+            },
+            {
+              "celdas": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "desde": 14,
+              "extras": [],
+              "hasta": 17
+            },
+            {
+              "celdas": [
+                1,
+                1,
+                1,
+                2
+              ],
+              "desde": 18,
+              "extras": [],
+              "hasta": 21
+            },
+            {
+              "celdas": [
+                1,
+                2,
+                1,
+                2
+              ],
+              "desde": 22,
+              "extras": [],
+              "hasta": 24
+            },
+            {
+              "celdas": [
+                1,
+                2,
+                2,
+                2
+              ],
+              "desde": 25,
+              "extras": [],
+              "hasta": 28
+            },
+            {
+              "celdas": [
+                2,
+                2,
+                2,
+                2
+              ],
+              "desde": 29,
+              "extras": [],
+              "hasta": 30
+            }
+          ],
+          "patron": {
+            "base": {
+              "modo": "degradado",
+              "paradas": [
+                0,
+                1,
+                2
+              ],
+              "transicion": "suave"
+            },
+            "origen": "decorador",
+            "version": "patron-color.v1"
+          },
+          "prompt_gemini": "COLOR PATTERN — a gradual ombré from the left base over the top to the right base: white, blending through pink into fuchsia; soft mixed transition zones, no hard lines.",
+          "prompt_lora": "in an ombre gradient from white through pink to fuchsia from the left base over the top to the right base",
+          "repeticiones": 1
+        }
+      ],
+      "plan": {
+        "concepto": {
+          "descripcion": "Arco orgánico de blanco a fucsia pasando por rosado.",
+          "paleta": [
+            "blanco",
+            "rosado",
+            "fucsia"
+          ],
+          "titulo": "Arco en degradé"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_ARCO",
+            "materiales": [
+              {
+                "color": "blanco",
+                "participacion": 0.25,
+                "product_id": "P-BLANCO",
+                "rol_material": "principal"
+              },
+              {
+                "color": "rosado",
+                "participacion": 0.5,
+                "product_id": "P-ROSADO",
+                "rol_material": "secundario"
+              },
+              {
+                "color": "fucsia",
+                "participacion": 0.25,
+                "product_id": "P-FUCSIA",
+                "rol_material": "acento"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.4,
+              "ancho_m": 3
+            },
+            "mezcla": "organica_fina",
+            "nombre": "Arco en degradé",
+            "patron_color": {
+              "base": {
+                "modo": "degradado",
+                "paradas": [
+                  0,
+                  1,
+                  2
+                ],
+                "transicion": "suave"
+              },
+              "origen": "decorador",
+              "version": "patron-color.v1"
+            },
+            "porque": "Degradé de blanco a fucsia de un pie al otro.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "arco",
+            "ubicacion": "fondo_pared"
+          }
+        ],
+        "plan_id": "30303030-3030-4303-8303-303030303030",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "3dd3902367269bfb91d27b6ecbaefff52f7c50933cb63cf34d3d1b06f729c4bf",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 26100,
+        "covered_waste_reserve": 10,
+        "design_quantity": 119,
+        "globos_por_tamano": {
+          "R-12": 64,
+          "R-18": 6,
+          "R-24": 2,
+          "R-5": 25,
+          "R-9": 22
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 426,
+        "purchase_cost": 148000,
+        "target_waste_reserve": 10,
+        "total_cop": 148000,
+        "total_unidades": 119,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "complementosSoportados": false,
+      "consumptionCost": 26100,
+      "coveredWasteReserve": 10,
+      "incluyeIva": true,
+      "leftoverInventory": 416,
+      "lineas": [
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 16,
+          "color": "blanco",
+          "consumptionCost": 2880,
+          "designQuantity": 16,
+          "diamPulg": 12.0,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-BLANCO-12",
+          "leftoverInventory": 34,
+          "nombre": "Globo latex blanco — R-12 / PAQUETE X 50",
+          "paquetes": 1,
+          "precioPaquete": 9000,
+          "productId": "P-BLANCO",
+          "purchaseCost": 9000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 16,
+          "sobrante": 34,
+          "subtotal": 9000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 16,
+          "varianteId": "V-BLANCO-12",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 2,
+          "color": "blanco",
+          "consumptionCost": 1200,
+          "designQuantity": 2,
+          "diamPulg": 18.0,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-BLANCO-18",
+          "leftoverInventory": 23,
+          "nombre": "Globo latex blanco — R-18 / PAQUETE X 25",
+          "paquetes": 1,
+          "precioPaquete": 15000,
+          "productId": "P-BLANCO",
+          "purchaseCost": 15000,
+          "purchaseQuantity": 25,
+          "referenciaElementIds": [],
+          "requiredQuantity": 2,
+          "sobrante": 23,
+          "subtotal": 15000,
+          "tamano": "R-18",
+          "tamanoCodigo": "R-18",
+          "unidadesPaquete": 25,
+          "used": 2,
+          "varianteId": "V-BLANCO-18",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 1,
+          "color": "blanco",
+          "consumptionCost": 2000,
+          "designQuantity": 1,
+          "diamPulg": 24.0,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-BLANCO-24",
+          "leftoverInventory": 9,
+          "nombre": "Globo latex blanco — R-24 / PAQUETE X 10",
+          "paquetes": 1,
+          "precioPaquete": 20000,
+          "productId": "P-BLANCO",
+          "purchaseCost": 20000,
+          "purchaseQuantity": 10,
+          "referenciaElementIds": [],
+          "requiredQuantity": 1,
+          "sobrante": 9,
+          "subtotal": 20000,
+          "tamano": "R-24",
+          "tamanoCodigo": "R-24",
+          "unidadesPaquete": 10,
+          "used": 1,
+          "varianteId": "V-BLANCO-24",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 6,
+          "color": "blanco",
+          "consumptionCost": 600,
+          "designQuantity": 6,
+          "diamPulg": 5.0,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-BLANCO-5",
+          "leftoverInventory": 44,
+          "nombre": "Globo latex blanco — R-5 / PAQUETE X 50",
+          "paquetes": 1,
+          "precioPaquete": 5000,
+          "productId": "P-BLANCO",
+          "purchaseCost": 5000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 6,
+          "sobrante": 44,
+          "subtotal": 5000,
+          "tamano": "R-5",
+          "tamanoCodigo": "R-5",
+          "unidadesPaquete": 50,
+          "used": 6,
+          "varianteId": "V-BLANCO-5",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 5,
+          "color": "blanco",
+          "consumptionCost": 2100,
+          "designQuantity": 5,
+          "diamPulg": 9.0,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-BLANCO-9",
+          "leftoverInventory": 35,
+          "nombre": "Globo latex blanco — R-9 / PAQUETE X 50",
+          "paquetes": 1,
+          "precioPaquete": 7000,
+          "productId": "P-BLANCO",
+          "purchaseCost": 7000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 15,
+          "sobrante": 45,
+          "subtotal": 7000,
+          "tamano": "R-9",
+          "tamanoCodigo": "R-9",
+          "unidadesPaquete": 50,
+          "used": 5,
+          "varianteId": "V-BLANCO-9",
+          "wasteReserve": 10
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 16,
+          "color": "fucsia",
+          "consumptionCost": 2880,
+          "designQuantity": 16,
+          "diamPulg": 12.0,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-FUCSIA-12",
+          "leftoverInventory": 34,
+          "nombre": "Globo latex fucsia — R-12 / PAQUETE X 50",
+          "paquetes": 1,
+          "precioPaquete": 9000,
+          "productId": "P-FUCSIA",
+          "purchaseCost": 9000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 16,
+          "sobrante": 34,
+          "subtotal": 9000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 16,
+          "varianteId": "V-FUCSIA-12",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 1,
+          "color": "fucsia",
+          "consumptionCost": 600,
+          "designQuantity": 1,
+          "diamPulg": 18.0,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-FUCSIA-18",
+          "leftoverInventory": 24,
+          "nombre": "Globo latex fucsia — R-18 / PAQUETE X 25",
+          "paquetes": 1,
+          "precioPaquete": 15000,
+          "productId": "P-FUCSIA",
+          "purchaseCost": 15000,
+          "purchaseQuantity": 25,
+          "referenciaElementIds": [],
+          "requiredQuantity": 1,
+          "sobrante": 24,
+          "subtotal": 15000,
+          "tamano": "R-18",
+          "tamanoCodigo": "R-18",
+          "unidadesPaquete": 25,
+          "used": 1,
+          "varianteId": "V-FUCSIA-18",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 7,
+          "color": "fucsia",
+          "consumptionCost": 700,
+          "designQuantity": 7,
+          "diamPulg": 5.0,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-FUCSIA-5",
+          "leftoverInventory": 43,
+          "nombre": "Globo latex fucsia — R-5 / PAQUETE X 50",
+          "paquetes": 1,
+          "precioPaquete": 5000,
+          "productId": "P-FUCSIA",
+          "purchaseCost": 5000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 7,
+          "sobrante": 43,
+          "subtotal": 5000,
+          "tamano": "R-5",
+          "tamanoCodigo": "R-5",
+          "unidadesPaquete": 50,
+          "used": 7,
+          "varianteId": "V-FUCSIA-5",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 6,
+          "color": "fucsia",
+          "consumptionCost": 840,
+          "designQuantity": 6,
+          "diamPulg": 9.0,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-FUCSIA-9",
+          "leftoverInventory": 44,
+          "nombre": "Globo latex fucsia — R-9 / PAQUETE X 50",
+          "paquetes": 1,
+          "precioPaquete": 7000,
+          "productId": "P-FUCSIA",
+          "purchaseCost": 7000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 6,
+          "sobrante": 44,
+          "subtotal": 7000,
+          "tamano": "R-9",
+          "tamanoCodigo": "R-9",
+          "unidadesPaquete": 50,
+          "used": 6,
+          "varianteId": "V-FUCSIA-9",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 32,
+          "color": "rosado",
+          "consumptionCost": 5760,
+          "designQuantity": 32,
+          "diamPulg": 12.0,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-ROSADO-12",
+          "leftoverInventory": 18,
+          "nombre": "Globo latex rosado — R-12 / PAQUETE X 50",
+          "paquetes": 1,
+          "precioPaquete": 9000,
+          "productId": "P-ROSADO",
+          "purchaseCost": 9000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 32,
+          "sobrante": 18,
+          "subtotal": 9000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 32,
+          "varianteId": "V-ROSADO-12",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 3,
+          "color": "rosado",
+          "consumptionCost": 1800,
+          "designQuantity": 3,
+          "diamPulg": 18.0,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-ROSADO-18",
+          "leftoverInventory": 22,
+          "nombre": "Globo latex rosado — R-18 / PAQUETE X 25",
+          "paquetes": 1,
+          "precioPaquete": 15000,
+          "productId": "P-ROSADO",
+          "purchaseCost": 15000,
+          "purchaseQuantity": 25,
+          "referenciaElementIds": [],
+          "requiredQuantity": 3,
+          "sobrante": 22,
+          "subtotal": 15000,
+          "tamano": "R-18",
+          "tamanoCodigo": "R-18",
+          "unidadesPaquete": 25,
+          "used": 3,
+          "varianteId": "V-ROSADO-18",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 1,
+          "color": "rosado",
+          "consumptionCost": 2000,
+          "designQuantity": 1,
+          "diamPulg": 24.0,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-ROSADO-24",
+          "leftoverInventory": 9,
+          "nombre": "Globo latex rosado — R-24 / PAQUETE X 10",
+          "paquetes": 1,
+          "precioPaquete": 20000,
+          "productId": "P-ROSADO",
+          "purchaseCost": 20000,
+          "purchaseQuantity": 10,
+          "referenciaElementIds": [],
+          "requiredQuantity": 1,
+          "sobrante": 9,
+          "subtotal": 20000,
+          "tamano": "R-24",
+          "tamanoCodigo": "R-24",
+          "unidadesPaquete": 10,
+          "used": 1,
+          "varianteId": "V-ROSADO-24",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 12,
+          "color": "rosado",
+          "consumptionCost": 1200,
+          "designQuantity": 12,
+          "diamPulg": 5.0,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-ROSADO-5",
+          "leftoverInventory": 38,
+          "nombre": "Globo latex rosado — R-5 / PAQUETE X 50",
+          "paquetes": 1,
+          "precioPaquete": 5000,
+          "productId": "P-ROSADO",
+          "purchaseCost": 5000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 12,
+          "sobrante": 38,
+          "subtotal": 5000,
+          "tamano": "R-5",
+          "tamanoCodigo": "R-5",
+          "unidadesPaquete": 50,
+          "used": 12,
+          "varianteId": "V-ROSADO-5",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 11,
+          "color": "rosado",
+          "consumptionCost": 1540,
+          "designQuantity": 11,
+          "diamPulg": 9.0,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "id": "V-ROSADO-9",
+          "leftoverInventory": 39,
+          "nombre": "Globo latex rosado — R-9 / PAQUETE X 50",
+          "paquetes": 1,
+          "precioPaquete": 7000,
+          "productId": "P-ROSADO",
+          "purchaseCost": 7000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 11,
+          "sobrante": 39,
+          "subtotal": 7000,
+          "tamano": "R-9",
+          "tamanoCodigo": "R-9",
+          "unidadesPaquete": 50,
+          "used": 11,
+          "varianteId": "V-ROSADO-9",
+          "wasteReserve": 0
+        }
+      ],
+      "mermaPorcentaje": 8,
+      "plan_hash": "3dd3902367269bfb91d27b6ecbaefff52f7c50933cb63cf34d3d1b06f729c4bf",
+      "purchaseCost": 148000,
+      "targetWasteReserve": 10,
+      "total": 148000
+    }
+  },
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-001",
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "blanco",
+          "design_quantity": 6,
+          "finish": null,
+          "product_id": "P-BLANCO",
+          "required_quantity": 6,
+          "shape": "redondo",
+          "size_inches": 5.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-BLANCO-5",
+          "waste_adjusted_quantity": 6,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rosado",
+          "design_quantity": 12,
+          "finish": null,
+          "product_id": "P-ROSADO",
+          "required_quantity": 12,
+          "shape": "redondo",
+          "size_inches": 5.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-ROSADO-5",
+          "waste_adjusted_quantity": 12,
+          "waste_reserve": 0
+        },
+        {
+          "color": "fucsia",
+          "design_quantity": 7,
+          "finish": null,
+          "product_id": "P-FUCSIA",
+          "required_quantity": 7,
+          "shape": "redondo",
+          "size_inches": 5.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-FUCSIA-5",
+          "waste_adjusted_quantity": 7,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 5,
+          "finish": null,
+          "product_id": "P-BLANCO",
+          "required_quantity": 5,
+          "shape": "redondo",
+          "size_inches": 9.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-BLANCO-9",
+          "waste_adjusted_quantity": 5,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rosado",
+          "design_quantity": 11,
+          "finish": null,
+          "product_id": "P-ROSADO",
+          "required_quantity": 11,
+          "shape": "redondo",
+          "size_inches": 9.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-ROSADO-9",
+          "waste_adjusted_quantity": 11,
+          "waste_reserve": 0
+        },
+        {
+          "color": "fucsia",
+          "design_quantity": 6,
+          "finish": null,
+          "product_id": "P-FUCSIA",
+          "required_quantity": 6,
+          "shape": "redondo",
+          "size_inches": 9.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-FUCSIA-9",
+          "waste_adjusted_quantity": 6,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 16,
+          "finish": null,
+          "product_id": "P-BLANCO",
+          "required_quantity": 16,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-BLANCO-12",
+          "waste_adjusted_quantity": 16,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rosado",
+          "design_quantity": 32,
+          "finish": null,
+          "product_id": "P-ROSADO",
+          "required_quantity": 32,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-ROSADO-12",
+          "waste_adjusted_quantity": 32,
+          "waste_reserve": 0
+        },
+        {
+          "color": "fucsia",
+          "design_quantity": 16,
+          "finish": null,
+          "product_id": "P-FUCSIA",
+          "required_quantity": 16,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-FUCSIA-12",
+          "waste_adjusted_quantity": 16,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 2,
+          "finish": null,
+          "product_id": "P-BLANCO",
+          "required_quantity": 2,
+          "shape": "redondo",
+          "size_inches": 18.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-BLANCO-18",
+          "waste_adjusted_quantity": 2,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rosado",
+          "design_quantity": 3,
+          "finish": null,
+          "product_id": "P-ROSADO",
+          "required_quantity": 3,
+          "shape": "redondo",
+          "size_inches": 18.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-ROSADO-18",
+          "waste_adjusted_quantity": 3,
+          "waste_reserve": 0
+        },
+        {
+          "color": "fucsia",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-FUCSIA",
+          "required_quantity": 1,
+          "shape": "redondo",
+          "size_inches": 18.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-FUCSIA-18",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-BLANCO",
+          "required_quantity": 1,
+          "shape": "redondo",
+          "size_inches": 24.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-BLANCO-24",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "color": "rosado",
+          "design_quantity": 1,
+          "finish": null,
+          "product_id": "P-ROSADO",
+          "required_quantity": 1,
+          "shape": "redondo",
+          "size_inches": 24.0,
+          "structure_id": "EST_01_ARCO",
+          "variant_id": "V-ROSADO-24",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 1,
+        "density": "media",
+        "dimensions_m": {
+          "height": 2.4,
+          "length": null,
+          "width": 3.0
+        },
+        "installation_length_m": 6.21,
+        "shape": "organica_fina",
+        "type": "arco",
+        "visual_density": "medium",
+        "visual_scale": "large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 2880,
+          "design_quantity": 16,
+          "leftover_inventory": 34,
+          "operational_surplus": 34,
+          "package_count": 1,
+          "potential_surplus": 34,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 16,
+          "units_per_package": 50,
+          "used": 16,
+          "variant_id": "V-BLANCO-12",
+          "waste_adjusted_quantity": 16,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 1200,
+          "design_quantity": 2,
+          "leftover_inventory": 23,
+          "operational_surplus": 23,
+          "package_count": 1,
+          "potential_surplus": 23,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 15000,
+          "purchase_quantity": 25,
+          "required_quantity": 2,
+          "units_per_package": 25,
+          "used": 2,
+          "variant_id": "V-BLANCO-18",
+          "waste_adjusted_quantity": 2,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 2000,
+          "design_quantity": 1,
+          "leftover_inventory": 9,
+          "operational_surplus": 9,
+          "package_count": 1,
+          "potential_surplus": 9,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 20000,
+          "purchase_quantity": 10,
+          "required_quantity": 1,
+          "units_per_package": 10,
+          "used": 1,
+          "variant_id": "V-BLANCO-24",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 600,
+          "design_quantity": 6,
+          "leftover_inventory": 44,
+          "operational_surplus": 44,
+          "package_count": 1,
+          "potential_surplus": 44,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 5000,
+          "purchase_quantity": 50,
+          "required_quantity": 6,
+          "units_per_package": 50,
+          "used": 6,
+          "variant_id": "V-BLANCO-5",
+          "waste_adjusted_quantity": 6,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 2100,
+          "design_quantity": 5,
+          "leftover_inventory": 35,
+          "operational_surplus": 35,
+          "package_count": 1,
+          "potential_surplus": 45,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 7000,
+          "purchase_quantity": 50,
+          "required_quantity": 15,
+          "units_per_package": 50,
+          "used": 5,
+          "variant_id": "V-BLANCO-9",
+          "waste_adjusted_quantity": 15,
+          "waste_reserve": 10
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 2880,
+          "design_quantity": 16,
+          "leftover_inventory": 34,
+          "operational_surplus": 34,
+          "package_count": 1,
+          "potential_surplus": 34,
+          "product_id": "P-FUCSIA",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 16,
+          "units_per_package": 50,
+          "used": 16,
+          "variant_id": "V-FUCSIA-12",
+          "waste_adjusted_quantity": 16,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 600,
+          "design_quantity": 1,
+          "leftover_inventory": 24,
+          "operational_surplus": 24,
+          "package_count": 1,
+          "potential_surplus": 24,
+          "product_id": "P-FUCSIA",
+          "purchase_cost": 15000,
+          "purchase_quantity": 25,
+          "required_quantity": 1,
+          "units_per_package": 25,
+          "used": 1,
+          "variant_id": "V-FUCSIA-18",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 700,
+          "design_quantity": 7,
+          "leftover_inventory": 43,
+          "operational_surplus": 43,
+          "package_count": 1,
+          "potential_surplus": 43,
+          "product_id": "P-FUCSIA",
+          "purchase_cost": 5000,
+          "purchase_quantity": 50,
+          "required_quantity": 7,
+          "units_per_package": 50,
+          "used": 7,
+          "variant_id": "V-FUCSIA-5",
+          "waste_adjusted_quantity": 7,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 840,
+          "design_quantity": 6,
+          "leftover_inventory": 44,
+          "operational_surplus": 44,
+          "package_count": 1,
+          "potential_surplus": 44,
+          "product_id": "P-FUCSIA",
+          "purchase_cost": 7000,
+          "purchase_quantity": 50,
+          "required_quantity": 6,
+          "units_per_package": 50,
+          "used": 6,
+          "variant_id": "V-FUCSIA-9",
+          "waste_adjusted_quantity": 6,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 5760,
+          "design_quantity": 32,
+          "leftover_inventory": 18,
+          "operational_surplus": 18,
+          "package_count": 1,
+          "potential_surplus": 18,
+          "product_id": "P-ROSADO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 32,
+          "units_per_package": 50,
+          "used": 32,
+          "variant_id": "V-ROSADO-12",
+          "waste_adjusted_quantity": 32,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 1800,
+          "design_quantity": 3,
+          "leftover_inventory": 22,
+          "operational_surplus": 22,
+          "package_count": 1,
+          "potential_surplus": 22,
+          "product_id": "P-ROSADO",
+          "purchase_cost": 15000,
+          "purchase_quantity": 25,
+          "required_quantity": 3,
+          "units_per_package": 25,
+          "used": 3,
+          "variant_id": "V-ROSADO-18",
+          "waste_adjusted_quantity": 3,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 2000,
+          "design_quantity": 1,
+          "leftover_inventory": 9,
+          "operational_surplus": 9,
+          "package_count": 1,
+          "potential_surplus": 9,
+          "product_id": "P-ROSADO",
+          "purchase_cost": 20000,
+          "purchase_quantity": 10,
+          "required_quantity": 1,
+          "units_per_package": 10,
+          "used": 1,
+          "variant_id": "V-ROSADO-24",
+          "waste_adjusted_quantity": 1,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 1200,
+          "design_quantity": 12,
+          "leftover_inventory": 38,
+          "operational_surplus": 38,
+          "package_count": 1,
+          "potential_surplus": 38,
+          "product_id": "P-ROSADO",
+          "purchase_cost": 5000,
+          "purchase_quantity": 50,
+          "required_quantity": 12,
+          "units_per_package": 50,
+          "used": 12,
+          "variant_id": "V-ROSADO-5",
+          "waste_adjusted_quantity": 12,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 1540,
+          "design_quantity": 11,
+          "leftover_inventory": 39,
+          "operational_surplus": 39,
+          "package_count": 1,
+          "potential_surplus": 39,
+          "product_id": "P-ROSADO",
+          "purchase_cost": 7000,
+          "purchase_quantity": 50,
+          "required_quantity": 11,
+          "units_per_package": 50,
+          "used": 11,
+          "variant_id": "V-ROSADO-9",
+          "waste_adjusted_quantity": 11,
+          "waste_reserve": 0
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 26100,
+        "covered_waste_reserve": 10,
+        "design_quantity": 119,
+        "natural_package_surplus": 426,
+        "operational_surplus": 416,
+        "potential_surplus": 426,
+        "purchase_cost": 148000,
+        "purchase_quantity": 545,
+        "required_quantity": 129,
+        "target_waste_reserve": 10,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 129,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": [
+        "sobrante_alto:V-BLANCO-12",
+        "sobrante_alto:V-BLANCO-18",
+        "sobrante_alto:V-BLANCO-24",
+        "sobrante_alto:V-BLANCO-5",
+        "sobrante_alto:V-BLANCO-9",
+        "sobrante_alto:V-FUCSIA-12",
+        "sobrante_alto:V-FUCSIA-18",
+        "sobrante_alto:V-FUCSIA-5",
+        "sobrante_alto:V-FUCSIA-9",
+        "sobrante_alto:V-ROSADO-12",
+        "sobrante_alto:V-ROSADO-18",
+        "sobrante_alto:V-ROSADO-24",
+        "sobrante_alto:V-ROSADO-5",
+        "sobrante_alto:V-ROSADO-9"
+      ]
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [
+        "sobrante_alto:V-BLANCO-12",
+        "sobrante_alto:V-BLANCO-18",
+        "sobrante_alto:V-BLANCO-24",
+        "sobrante_alto:V-BLANCO-5",
+        "sobrante_alto:V-BLANCO-9",
+        "sobrante_alto:V-FUCSIA-12",
+        "sobrante_alto:V-FUCSIA-18",
+        "sobrante_alto:V-FUCSIA-5",
+        "sobrante_alto:V-FUCSIA-9",
+        "sobrante_alto:V-ROSADO-12",
+        "sobrante_alto:V-ROSADO-18",
+        "sobrante_alto:V-ROSADO-24",
+        "sobrante_alto:V-ROSADO-5",
+        "sobrante_alto:V-ROSADO-9"
+      ],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 2880,
+          "design_quantity": 16,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 34,
+          "paquetes": 1,
+          "precio_paquete": 9000,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 16,
+          "sku": "SKU-V-BLANCO-12",
+          "sku_original": "SHOP-V-BLANCO-12",
+          "sobrante": 34,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-BLANCO-12",
+          "subtotal": 9000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex blanco — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 16,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 16,
+          "unidades_paquete": 50,
+          "used": 16,
+          "variant_id": "V-BLANCO-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 1200,
+          "design_quantity": 2,
+          "diam_pulg": 18.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-blanco-18.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 23,
+          "paquetes": 1,
+          "precio_paquete": 15000,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 15000,
+          "purchase_quantity": 25,
+          "required_quantity": 2,
+          "sku": "SKU-V-BLANCO-18",
+          "sku_original": "SHOP-V-BLANCO-18",
+          "sobrante": 23,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-BLANCO-18",
+          "subtotal": 15000,
+          "tamano_codigo": "R-18",
+          "titulo": "Globo latex blanco — R-18 / PAQUETE X 25",
+          "unidades_con_merma": 2,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 2,
+          "unidades_paquete": 25,
+          "used": 2,
+          "variant_id": "V-BLANCO-18",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 2000,
+          "design_quantity": 1,
+          "diam_pulg": 24.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-blanco-24.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 9,
+          "paquetes": 1,
+          "precio_paquete": 20000,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 20000,
+          "purchase_quantity": 10,
+          "required_quantity": 1,
+          "sku": "SKU-V-BLANCO-24",
+          "sku_original": "SHOP-V-BLANCO-24",
+          "sobrante": 9,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-BLANCO-24",
+          "subtotal": 20000,
+          "tamano_codigo": "R-24",
+          "titulo": "Globo latex blanco — R-24 / PAQUETE X 10",
+          "unidades_con_merma": 1,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 1,
+          "unidades_paquete": 10,
+          "used": 1,
+          "variant_id": "V-BLANCO-24",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 600,
+          "design_quantity": 6,
+          "diam_pulg": 5.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-blanco-5.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 44,
+          "paquetes": 1,
+          "precio_paquete": 5000,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 5000,
+          "purchase_quantity": 50,
+          "required_quantity": 6,
+          "sku": "SKU-V-BLANCO-5",
+          "sku_original": "SHOP-V-BLANCO-5",
+          "sobrante": 44,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-BLANCO-5",
+          "subtotal": 5000,
+          "tamano_codigo": "R-5",
+          "titulo": "Globo latex blanco — R-5 / PAQUETE X 50",
+          "unidades_con_merma": 6,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 6,
+          "unidades_paquete": 50,
+          "used": 6,
+          "variant_id": "V-BLANCO-5",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 2100,
+          "design_quantity": 5,
+          "diam_pulg": 9.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-blanco-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 35,
+          "paquetes": 1,
+          "precio_paquete": 7000,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 7000,
+          "purchase_quantity": 50,
+          "required_quantity": 15,
+          "sku": "SKU-V-BLANCO-9",
+          "sku_original": "SHOP-V-BLANCO-9",
+          "sobrante": 45,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-BLANCO-9",
+          "subtotal": 7000,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex blanco — R-9 / PAQUETE X 50",
+          "unidades_con_merma": 15,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 5,
+          "unidades_paquete": 50,
+          "used": 5,
+          "variant_id": "V-BLANCO-9",
+          "waste_reserve": 10
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "fucsia",
+          "consumption_cost": 2880,
+          "design_quantity": 16,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-fucsia-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 34,
+          "paquetes": 1,
+          "precio_paquete": 9000,
+          "product_id": "P-FUCSIA",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 16,
+          "sku": "SKU-V-FUCSIA-12",
+          "sku_original": "SHOP-V-FUCSIA-12",
+          "sobrante": 34,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-FUCSIA-12",
+          "subtotal": 9000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex fucsia — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 16,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 16,
+          "unidades_paquete": 50,
+          "used": 16,
+          "variant_id": "V-FUCSIA-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "fucsia",
+          "consumption_cost": 600,
+          "design_quantity": 1,
+          "diam_pulg": 18.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-fucsia-18.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 24,
+          "paquetes": 1,
+          "precio_paquete": 15000,
+          "product_id": "P-FUCSIA",
+          "purchase_cost": 15000,
+          "purchase_quantity": 25,
+          "required_quantity": 1,
+          "sku": "SKU-V-FUCSIA-18",
+          "sku_original": "SHOP-V-FUCSIA-18",
+          "sobrante": 24,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-FUCSIA-18",
+          "subtotal": 15000,
+          "tamano_codigo": "R-18",
+          "titulo": "Globo latex fucsia — R-18 / PAQUETE X 25",
+          "unidades_con_merma": 1,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 1,
+          "unidades_paquete": 25,
+          "used": 1,
+          "variant_id": "V-FUCSIA-18",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "fucsia",
+          "consumption_cost": 700,
+          "design_quantity": 7,
+          "diam_pulg": 5.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-fucsia-5.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 43,
+          "paquetes": 1,
+          "precio_paquete": 5000,
+          "product_id": "P-FUCSIA",
+          "purchase_cost": 5000,
+          "purchase_quantity": 50,
+          "required_quantity": 7,
+          "sku": "SKU-V-FUCSIA-5",
+          "sku_original": "SHOP-V-FUCSIA-5",
+          "sobrante": 43,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-FUCSIA-5",
+          "subtotal": 5000,
+          "tamano_codigo": "R-5",
+          "titulo": "Globo latex fucsia — R-5 / PAQUETE X 50",
+          "unidades_con_merma": 7,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 7,
+          "unidades_paquete": 50,
+          "used": 7,
+          "variant_id": "V-FUCSIA-5",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "fucsia",
+          "consumption_cost": 840,
+          "design_quantity": 6,
+          "diam_pulg": 9.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-fucsia-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 44,
+          "paquetes": 1,
+          "precio_paquete": 7000,
+          "product_id": "P-FUCSIA",
+          "purchase_cost": 7000,
+          "purchase_quantity": 50,
+          "required_quantity": 6,
+          "sku": "SKU-V-FUCSIA-9",
+          "sku_original": "SHOP-V-FUCSIA-9",
+          "sobrante": 44,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-FUCSIA-9",
+          "subtotal": 7000,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex fucsia — R-9 / PAQUETE X 50",
+          "unidades_con_merma": 6,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 6,
+          "unidades_paquete": 50,
+          "used": 6,
+          "variant_id": "V-FUCSIA-9",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "rosado",
+          "consumption_cost": 5760,
+          "design_quantity": 32,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-rosado-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 18,
+          "paquetes": 1,
+          "precio_paquete": 9000,
+          "product_id": "P-ROSADO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 32,
+          "sku": "SKU-V-ROSADO-12",
+          "sku_original": "SHOP-V-ROSADO-12",
+          "sobrante": 18,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-ROSADO-12",
+          "subtotal": 9000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex rosado — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 32,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 32,
+          "unidades_paquete": 50,
+          "used": 32,
+          "variant_id": "V-ROSADO-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "rosado",
+          "consumption_cost": 1800,
+          "design_quantity": 3,
+          "diam_pulg": 18.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-rosado-18.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 22,
+          "paquetes": 1,
+          "precio_paquete": 15000,
+          "product_id": "P-ROSADO",
+          "purchase_cost": 15000,
+          "purchase_quantity": 25,
+          "required_quantity": 3,
+          "sku": "SKU-V-ROSADO-18",
+          "sku_original": "SHOP-V-ROSADO-18",
+          "sobrante": 22,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-ROSADO-18",
+          "subtotal": 15000,
+          "tamano_codigo": "R-18",
+          "titulo": "Globo latex rosado — R-18 / PAQUETE X 25",
+          "unidades_con_merma": 3,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 3,
+          "unidades_paquete": 25,
+          "used": 3,
+          "variant_id": "V-ROSADO-18",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "rosado",
+          "consumption_cost": 2000,
+          "design_quantity": 1,
+          "diam_pulg": 24.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-rosado-24.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 9,
+          "paquetes": 1,
+          "precio_paquete": 20000,
+          "product_id": "P-ROSADO",
+          "purchase_cost": 20000,
+          "purchase_quantity": 10,
+          "required_quantity": 1,
+          "sku": "SKU-V-ROSADO-24",
+          "sku_original": "SHOP-V-ROSADO-24",
+          "sobrante": 9,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-ROSADO-24",
+          "subtotal": 20000,
+          "tamano_codigo": "R-24",
+          "titulo": "Globo latex rosado — R-24 / PAQUETE X 10",
+          "unidades_con_merma": 1,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 1,
+          "unidades_paquete": 10,
+          "used": 1,
+          "variant_id": "V-ROSADO-24",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "rosado",
+          "consumption_cost": 1200,
+          "design_quantity": 12,
+          "diam_pulg": 5.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-rosado-5.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 38,
+          "paquetes": 1,
+          "precio_paquete": 5000,
+          "product_id": "P-ROSADO",
+          "purchase_cost": 5000,
+          "purchase_quantity": 50,
+          "required_quantity": 12,
+          "sku": "SKU-V-ROSADO-5",
+          "sku_original": "SHOP-V-ROSADO-5",
+          "sobrante": 38,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-ROSADO-5",
+          "subtotal": 5000,
+          "tamano_codigo": "R-5",
+          "titulo": "Globo latex rosado — R-5 / PAQUETE X 50",
+          "unidades_con_merma": 12,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 12,
+          "unidades_paquete": 50,
+          "used": 12,
+          "variant_id": "V-ROSADO-5",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "rosado",
+          "consumption_cost": 1540,
+          "design_quantity": 11,
+          "diam_pulg": 9.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_ARCO"
+          ],
+          "imagen": "https://cdn.example.test/v-rosado-9.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 39,
+          "paquetes": 1,
+          "precio_paquete": 7000,
+          "product_id": "P-ROSADO",
+          "purchase_cost": 7000,
+          "purchase_quantity": 50,
+          "required_quantity": 11,
+          "sku": "SKU-V-ROSADO-9",
+          "sku_original": "SHOP-V-ROSADO-9",
+          "sobrante": 39,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-ROSADO-9",
+          "subtotal": 7000,
+          "tamano_codigo": "R-9",
+          "titulo": "Globo latex rosado — R-9 / PAQUETE X 50",
+          "unidades_con_merma": 11,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 11,
+          "unidades_paquete": 50,
+          "used": 11,
+          "variant_id": "V-ROSADO-9",
+          "waste_reserve": 0
+        }
+      ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 24700,
+          "estructura_id": "EST_01_ARCO"
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 6.21,
+          "estructura_id": "EST_01_ARCO",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 12.7,
+              "diam_pulg": 5.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-blanco-5.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLANCO",
+              "sku": "SKU-V-BLANCO-5",
+              "sku_original": "SHOP-V-BLANCO-5",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-BLANCO-5",
+              "sustitucion": null,
+              "tamano_codigo": "R-5",
+              "titulo": "Globo latex blanco — R-5 / PAQUETE X 50",
+              "unidades": 6,
+              "unidades_inferidas": false,
+              "variant_id": "V-BLANCO-5"
+            },
+            {
+              "acabado": null,
+              "color": "rosado",
+              "diam_cm": 12.7,
+              "diam_pulg": 5.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-rosado-5.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-ROSADO",
+              "sku": "SKU-V-ROSADO-5",
+              "sku_original": "SHOP-V-ROSADO-5",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-ROSADO-5",
+              "sustitucion": null,
+              "tamano_codigo": "R-5",
+              "titulo": "Globo latex rosado — R-5 / PAQUETE X 50",
+              "unidades": 12,
+              "unidades_inferidas": false,
+              "variant_id": "V-ROSADO-5"
+            },
+            {
+              "acabado": null,
+              "color": "fucsia",
+              "diam_cm": 12.7,
+              "diam_pulg": 5.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-fucsia-5.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-FUCSIA",
+              "sku": "SKU-V-FUCSIA-5",
+              "sku_original": "SHOP-V-FUCSIA-5",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-FUCSIA-5",
+              "sustitucion": null,
+              "tamano_codigo": "R-5",
+              "titulo": "Globo latex fucsia — R-5 / PAQUETE X 50",
+              "unidades": 7,
+              "unidades_inferidas": false,
+              "variant_id": "V-FUCSIA-5"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 22.9,
+              "diam_pulg": 9.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-blanco-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLANCO",
+              "sku": "SKU-V-BLANCO-9",
+              "sku_original": "SHOP-V-BLANCO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-BLANCO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex blanco — R-9 / PAQUETE X 50",
+              "unidades": 5,
+              "unidades_inferidas": false,
+              "variant_id": "V-BLANCO-9"
+            },
+            {
+              "acabado": null,
+              "color": "rosado",
+              "diam_cm": 22.9,
+              "diam_pulg": 9.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-rosado-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-ROSADO",
+              "sku": "SKU-V-ROSADO-9",
+              "sku_original": "SHOP-V-ROSADO-9",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-ROSADO-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex rosado — R-9 / PAQUETE X 50",
+              "unidades": 11,
+              "unidades_inferidas": false,
+              "variant_id": "V-ROSADO-9"
+            },
+            {
+              "acabado": null,
+              "color": "fucsia",
+              "diam_cm": 22.9,
+              "diam_pulg": 9.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-fucsia-9.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-FUCSIA",
+              "sku": "SKU-V-FUCSIA-9",
+              "sku_original": "SHOP-V-FUCSIA-9",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-FUCSIA-9",
+              "sustitucion": null,
+              "tamano_codigo": "R-9",
+              "titulo": "Globo latex fucsia — R-9 / PAQUETE X 50",
+              "unidades": 6,
+              "unidades_inferidas": false,
+              "variant_id": "V-FUCSIA-9"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLANCO",
+              "sku": "SKU-V-BLANCO-12",
+              "sku_original": "SHOP-V-BLANCO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-BLANCO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex blanco — R-12 / PAQUETE X 50",
+              "unidades": 16,
+              "unidades_inferidas": false,
+              "variant_id": "V-BLANCO-12"
+            },
+            {
+              "acabado": null,
+              "color": "rosado",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-rosado-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-ROSADO",
+              "sku": "SKU-V-ROSADO-12",
+              "sku_original": "SHOP-V-ROSADO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-ROSADO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex rosado — R-12 / PAQUETE X 50",
+              "unidades": 32,
+              "unidades_inferidas": false,
+              "variant_id": "V-ROSADO-12"
+            },
+            {
+              "acabado": null,
+              "color": "fucsia",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-fucsia-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-FUCSIA",
+              "sku": "SKU-V-FUCSIA-12",
+              "sku_original": "SHOP-V-FUCSIA-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-FUCSIA-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex fucsia — R-12 / PAQUETE X 50",
+              "unidades": 16,
+              "unidades_inferidas": false,
+              "variant_id": "V-FUCSIA-12"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 45.7,
+              "diam_pulg": 18.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-blanco-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLANCO",
+              "sku": "SKU-V-BLANCO-18",
+              "sku_original": "SHOP-V-BLANCO-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-BLANCO-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex blanco — R-18 / PAQUETE X 25",
+              "unidades": 2,
+              "unidades_inferidas": false,
+              "variant_id": "V-BLANCO-18"
+            },
+            {
+              "acabado": null,
+              "color": "rosado",
+              "diam_cm": 45.7,
+              "diam_pulg": 18.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-rosado-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-ROSADO",
+              "sku": "SKU-V-ROSADO-18",
+              "sku_original": "SHOP-V-ROSADO-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-ROSADO-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex rosado — R-18 / PAQUETE X 25",
+              "unidades": 3,
+              "unidades_inferidas": false,
+              "variant_id": "V-ROSADO-18"
+            },
+            {
+              "acabado": null,
+              "color": "fucsia",
+              "diam_cm": 45.7,
+              "diam_pulg": 18.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-fucsia-18.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-FUCSIA",
+              "sku": "SKU-V-FUCSIA-18",
+              "sku_original": "SHOP-V-FUCSIA-18",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-FUCSIA-18",
+              "sustitucion": null,
+              "tamano_codigo": "R-18",
+              "titulo": "Globo latex fucsia — R-18 / PAQUETE X 25",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-FUCSIA-18"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 61.0,
+              "diam_pulg": 24.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-blanco-24.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLANCO",
+              "sku": "SKU-V-BLANCO-24",
+              "sku_original": "SHOP-V-BLANCO-24",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-BLANCO-24",
+              "sustitucion": null,
+              "tamano_codigo": "R-24",
+              "titulo": "Globo latex blanco — R-24 / PAQUETE X 10",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-BLANCO-24"
+            },
+            {
+              "acabado": null,
+              "color": "rosado",
+              "diam_cm": 61.0,
+              "diam_pulg": 24.0,
+              "estructura_id": "EST_01_ARCO",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-rosado-24.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_ARCO",
+                "kind": "estructura"
+              },
+              "product_id": "P-ROSADO",
+              "sku": "SKU-V-ROSADO-24",
+              "sku_original": "SHOP-V-ROSADO-24",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-ROSADO-24",
+              "sustitucion": null,
+              "tamano_codigo": "R-24",
+              "titulo": "Globo latex rosado — R-24 / PAQUETE X 10",
+              "unidades": 1,
+              "unidades_inferidas": false,
+              "variant_id": "V-ROSADO-24"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 53.78,
+              "unidades": 64
+            },
+            {
+              "diam_pulg": 5.0,
+              "forma": "redondo",
+              "pct": 21.01,
+              "unidades": 25
+            },
+            {
+              "diam_pulg": 9.0,
+              "forma": "redondo",
+              "pct": 18.49,
+              "unidades": 22
+            },
+            {
+              "diam_pulg": 18.0,
+              "forma": "redondo",
+              "pct": 5.04,
+              "unidades": 6
+            },
+            {
+              "diam_pulg": 24.0,
+              "forma": "redondo",
+              "pct": 1.68,
+              "unidades": 2
+            }
+          ],
+          "nombre": "Arco en degradé",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "arco",
+          "total_unidades": 119,
+          "ubicacion": "fondo_pared"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-001.",
+      "patrones_color": [
+        {
+          "aplicado": true,
+          "avisos": [
+            "La gráfica tiene 120 posiciones y la mezcla de varios tamaños da 119 globos por pieza: el conteo por color reparte esos 119 en la proporción de la gráfica, con al menos uno por color."
+          ],
+          "celdas": [
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              1
+            ],
+            [
+              0,
+              0,
+              0,
+              1
+            ],
+            [
+              0,
+              0,
+              0,
+              1
+            ],
+            [
+              0,
+              0,
+              0,
+              1
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              0,
+              1,
+              0,
+              1
+            ],
+            [
+              0,
+              1,
+              1,
+              1
+            ],
+            [
+              0,
+              1,
+              1,
+              1
+            ],
+            [
+              0,
+              1,
+              1,
+              1
+            ],
+            [
+              0,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              1
+            ],
+            [
+              1,
+              1,
+              1,
+              2
+            ],
+            [
+              1,
+              1,
+              1,
+              2
+            ],
+            [
+              1,
+              1,
+              1,
+              2
+            ],
+            [
+              1,
+              1,
+              1,
+              2
+            ],
+            [
+              1,
+              2,
+              1,
+              2
+            ],
+            [
+              1,
+              2,
+              1,
+              2
+            ],
+            [
+              1,
+              2,
+              1,
+              2
+            ],
+            [
+              1,
+              2,
+              2,
+              2
+            ],
+            [
+              1,
+              2,
+              2,
+              2
+            ],
+            [
+              1,
+              2,
+              2,
+              2
+            ],
+            [
+              1,
+              2,
+              2,
+              2
+            ],
+            [
+              2,
+              2,
+              2,
+              2
+            ],
+            [
+              2,
+              2,
+              2,
+              2
+            ]
+          ],
+          "columnas": 4,
+          "conteo": [
+            {
+              "acabado": null,
+              "color": "blanco",
+              "material": 0,
+              "unidades_por_instancia": 30,
+              "unidades_total": 30
+            },
+            {
+              "acabado": null,
+              "color": "rosado",
+              "material": 1,
+              "unidades_por_instancia": 59,
+              "unidades_total": 59
+            },
+            {
+              "acabado": null,
+              "color": "fucsia",
+              "material": 2,
+              "unidades_por_instancia": 30,
+              "unidades_total": 30
+            }
+          ],
+          "descripcion": "Degradé del pie izquierdo, por la clave, al pie derecho de blanco (1) a fucsia (3) pasando por rosado (2), con transiciones mezcladas.",
+          "estructura_id": "EST_01_ARCO",
+          "extras": [],
+          "filas": 30,
+          "geometria": "racimos",
+          "globos_por_instancia": 119,
+          "instrucciones": [
+            "Infla cada globo con el calibrador para que todos queden del mismo tamaño.",
+            "Arma parejas (dos globos amarrados por el cuello) y une dos parejas para formar cada cuarteto.",
+            "Ordena los cuartetos del tono inicial, blanco (1), al final, fucsia (3); en cada transición mezcla globos de los dos tonos para que el cambio sea suave.",
+            "Sigue la gráfica numerada: cada número es un color de la leyenda."
+          ],
+          "nombre": "Degradé",
+          "pasos": [
+            {
+              "celdas": [
+                0,
+                0,
+                0,
+                0
+              ],
+              "desde": 1,
+              "extras": [],
+              "hasta": 2
+            },
+            {
+              "celdas": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "desde": 3,
+              "extras": [],
+              "hasta": 6
+            },
+            {
+              "celdas": [
+                0,
+                1,
+                0,
+                1
+              ],
+              "desde": 7,
+              "extras": [],
+              "hasta": 9
+            },
+            {
+              "celdas": [
+                0,
+                1,
+                1,
+                1
+              ],
+              "desde": 10,
+              "extras": [],
+              "hasta": 13
+            },
+            {
+              "celdas": [
+                1,
+                1,
+                1,
+                1
+              ],
+              "desde": 14,
+              "extras": [],
+              "hasta": 17
+            },
+            {
+              "celdas": [
+                1,
+                1,
+                1,
+                2
+              ],
+              "desde": 18,
+              "extras": [],
+              "hasta": 21
+            },
+            {
+              "celdas": [
+                1,
+                2,
+                1,
+                2
+              ],
+              "desde": 22,
+              "extras": [],
+              "hasta": 24
+            },
+            {
+              "celdas": [
+                1,
+                2,
+                2,
+                2
+              ],
+              "desde": 25,
+              "extras": [],
+              "hasta": 28
+            },
+            {
+              "celdas": [
+                2,
+                2,
+                2,
+                2
+              ],
+              "desde": 29,
+              "extras": [],
+              "hasta": 30
+            }
+          ],
+          "patron": {
+            "base": {
+              "modo": "degradado",
+              "paradas": [
+                0,
+                1,
+                2
+              ],
+              "transicion": "suave"
+            },
+            "origen": "decorador",
+            "version": "patron-color.v1"
+          },
+          "prompt_gemini": "COLOR PATTERN — a gradual ombré from the left base over the top to the right base: white, blending through pink into fuchsia; soft mixed transition zones, no hard lines.",
+          "prompt_lora": "in an ombre gradient from white through pink to fuchsia from the left base over the top to the right base",
+          "repeticiones": 1
+        }
+      ],
+      "plan": {
+        "concepto": {
+          "descripcion": "Arco orgánico de blanco a fucsia pasando por rosado.",
+          "paleta": [
+            "blanco",
+            "rosado",
+            "fucsia"
+          ],
+          "titulo": "Arco en degradé"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_ARCO",
+            "materiales": [
+              {
+                "color": "blanco",
+                "participacion": 0.25,
+                "product_id": "P-BLANCO",
+                "rol_material": "principal"
+              },
+              {
+                "color": "rosado",
+                "participacion": 0.5,
+                "product_id": "P-ROSADO",
+                "rol_material": "secundario"
+              },
+              {
+                "color": "fucsia",
+                "participacion": 0.25,
+                "product_id": "P-FUCSIA",
+                "rol_material": "acento"
+              }
+            ],
+            "medidas": {
+              "alto_m": 2.4,
+              "ancho_m": 3
+            },
+            "mezcla": "organica_fina",
+            "nombre": "Arco en degradé",
+            "patron_color": {
+              "base": {
+                "modo": "degradado",
+                "paradas": [
+                  0,
+                  1,
+                  2
+                ],
+                "transicion": "suave"
+              },
+              "origen": "decorador",
+              "version": "patron-color.v1"
+            },
+            "porque": "Degradé de blanco a fucsia de un pie al otro.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "arco",
+            "ubicacion": "fondo_pared"
+          }
+        ],
+        "plan_id": "30303030-3030-4303-8303-303030303030",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "3dd3902367269bfb91d27b6ecbaefff52f7c50933cb63cf34d3d1b06f729c4bf",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 26100,
+        "covered_waste_reserve": 10,
+        "design_quantity": 119,
+        "globos_por_tamano": {
+          "R-12": 64,
+          "R-18": 6,
+          "R-24": 2,
+          "R-5": 25,
+          "R-9": 22
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 426,
+        "purchase_cost": 148000,
+        "target_waste_reserve": 10,
+        "total_cop": 148000,
+        "total_unidades": 119,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 26100,
+      "covered_waste_reserve": 10,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 416,
+      "lines": [
+        {
+          "available": true,
+          "color": "blanco",
+          "consumption_cost_cop": 2880,
+          "design_quantity": 16,
+          "diameter_inches": 12.0,
+          "id": "V-BLANCO-12",
+          "leftover_inventory": 34,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 9000,
+          "packages": 1,
+          "product_id": "P-BLANCO",
+          "purchase_cost_cop": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 16,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 9000,
+          "surplus": 34,
+          "title": "Globo latex blanco — R-12 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 16,
+          "variant_id": "V-BLANCO-12",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "blanco",
+          "consumption_cost_cop": 1200,
+          "design_quantity": 2,
+          "diameter_inches": 18.0,
+          "id": "V-BLANCO-18",
+          "leftover_inventory": 23,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 15000,
+          "packages": 1,
+          "product_id": "P-BLANCO",
+          "purchase_cost_cop": 15000,
+          "purchase_quantity": 25,
+          "required_quantity": 2,
+          "size": "R-18",
+          "size_code": "R-18",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 15000,
+          "surplus": 23,
+          "title": "Globo latex blanco — R-18 / PAQUETE X 25",
+          "units_per_package": 25,
+          "used": 2,
+          "variant_id": "V-BLANCO-18",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "blanco",
+          "consumption_cost_cop": 2000,
+          "design_quantity": 1,
+          "diameter_inches": 24.0,
+          "id": "V-BLANCO-24",
+          "leftover_inventory": 9,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 20000,
+          "packages": 1,
+          "product_id": "P-BLANCO",
+          "purchase_cost_cop": 20000,
+          "purchase_quantity": 10,
+          "required_quantity": 1,
+          "size": "R-24",
+          "size_code": "R-24",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 20000,
+          "surplus": 9,
+          "title": "Globo latex blanco — R-24 / PAQUETE X 10",
+          "units_per_package": 10,
+          "used": 1,
+          "variant_id": "V-BLANCO-24",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "blanco",
+          "consumption_cost_cop": 600,
+          "design_quantity": 6,
+          "diameter_inches": 5.0,
+          "id": "V-BLANCO-5",
+          "leftover_inventory": 44,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 5000,
+          "packages": 1,
+          "product_id": "P-BLANCO",
+          "purchase_cost_cop": 5000,
+          "purchase_quantity": 50,
+          "required_quantity": 6,
+          "size": "R-5",
+          "size_code": "R-5",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 5000,
+          "surplus": 44,
+          "title": "Globo latex blanco — R-5 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 6,
+          "variant_id": "V-BLANCO-5",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "blanco",
+          "consumption_cost_cop": 2100,
+          "design_quantity": 5,
+          "diameter_inches": 9.0,
+          "id": "V-BLANCO-9",
+          "leftover_inventory": 35,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 7000,
+          "packages": 1,
+          "product_id": "P-BLANCO",
+          "purchase_cost_cop": 7000,
+          "purchase_quantity": 50,
+          "required_quantity": 15,
+          "size": "R-9",
+          "size_code": "R-9",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 7000,
+          "surplus": 45,
+          "title": "Globo latex blanco — R-9 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 5,
+          "variant_id": "V-BLANCO-9",
+          "waste_reserve": 10
+        },
+        {
+          "available": true,
+          "color": "fucsia",
+          "consumption_cost_cop": 2880,
+          "design_quantity": 16,
+          "diameter_inches": 12.0,
+          "id": "V-FUCSIA-12",
+          "leftover_inventory": 34,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 9000,
+          "packages": 1,
+          "product_id": "P-FUCSIA",
+          "purchase_cost_cop": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 16,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 9000,
+          "surplus": 34,
+          "title": "Globo latex fucsia — R-12 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 16,
+          "variant_id": "V-FUCSIA-12",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "fucsia",
+          "consumption_cost_cop": 600,
+          "design_quantity": 1,
+          "diameter_inches": 18.0,
+          "id": "V-FUCSIA-18",
+          "leftover_inventory": 24,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 15000,
+          "packages": 1,
+          "product_id": "P-FUCSIA",
+          "purchase_cost_cop": 15000,
+          "purchase_quantity": 25,
+          "required_quantity": 1,
+          "size": "R-18",
+          "size_code": "R-18",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 15000,
+          "surplus": 24,
+          "title": "Globo latex fucsia — R-18 / PAQUETE X 25",
+          "units_per_package": 25,
+          "used": 1,
+          "variant_id": "V-FUCSIA-18",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "fucsia",
+          "consumption_cost_cop": 700,
+          "design_quantity": 7,
+          "diameter_inches": 5.0,
+          "id": "V-FUCSIA-5",
+          "leftover_inventory": 43,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 5000,
+          "packages": 1,
+          "product_id": "P-FUCSIA",
+          "purchase_cost_cop": 5000,
+          "purchase_quantity": 50,
+          "required_quantity": 7,
+          "size": "R-5",
+          "size_code": "R-5",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 5000,
+          "surplus": 43,
+          "title": "Globo latex fucsia — R-5 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 7,
+          "variant_id": "V-FUCSIA-5",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "fucsia",
+          "consumption_cost_cop": 840,
+          "design_quantity": 6,
+          "diameter_inches": 9.0,
+          "id": "V-FUCSIA-9",
+          "leftover_inventory": 44,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 7000,
+          "packages": 1,
+          "product_id": "P-FUCSIA",
+          "purchase_cost_cop": 7000,
+          "purchase_quantity": 50,
+          "required_quantity": 6,
+          "size": "R-9",
+          "size_code": "R-9",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 7000,
+          "surplus": 44,
+          "title": "Globo latex fucsia — R-9 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 6,
+          "variant_id": "V-FUCSIA-9",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "rosado",
+          "consumption_cost_cop": 5760,
+          "design_quantity": 32,
+          "diameter_inches": 12.0,
+          "id": "V-ROSADO-12",
+          "leftover_inventory": 18,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 9000,
+          "packages": 1,
+          "product_id": "P-ROSADO",
+          "purchase_cost_cop": 9000,
+          "purchase_quantity": 50,
+          "required_quantity": 32,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 9000,
+          "surplus": 18,
+          "title": "Globo latex rosado — R-12 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 32,
+          "variant_id": "V-ROSADO-12",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "rosado",
+          "consumption_cost_cop": 1800,
+          "design_quantity": 3,
+          "diameter_inches": 18.0,
+          "id": "V-ROSADO-18",
+          "leftover_inventory": 22,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 15000,
+          "packages": 1,
+          "product_id": "P-ROSADO",
+          "purchase_cost_cop": 15000,
+          "purchase_quantity": 25,
+          "required_quantity": 3,
+          "size": "R-18",
+          "size_code": "R-18",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 15000,
+          "surplus": 22,
+          "title": "Globo latex rosado — R-18 / PAQUETE X 25",
+          "units_per_package": 25,
+          "used": 3,
+          "variant_id": "V-ROSADO-18",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "rosado",
+          "consumption_cost_cop": 2000,
+          "design_quantity": 1,
+          "diameter_inches": 24.0,
+          "id": "V-ROSADO-24",
+          "leftover_inventory": 9,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 20000,
+          "packages": 1,
+          "product_id": "P-ROSADO",
+          "purchase_cost_cop": 20000,
+          "purchase_quantity": 10,
+          "required_quantity": 1,
+          "size": "R-24",
+          "size_code": "R-24",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 20000,
+          "surplus": 9,
+          "title": "Globo latex rosado — R-24 / PAQUETE X 10",
+          "units_per_package": 10,
+          "used": 1,
+          "variant_id": "V-ROSADO-24",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "rosado",
+          "consumption_cost_cop": 1200,
+          "design_quantity": 12,
+          "diameter_inches": 5.0,
+          "id": "V-ROSADO-5",
+          "leftover_inventory": 38,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 5000,
+          "packages": 1,
+          "product_id": "P-ROSADO",
+          "purchase_cost_cop": 5000,
+          "purchase_quantity": 50,
+          "required_quantity": 12,
+          "size": "R-5",
+          "size_code": "R-5",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 5000,
+          "surplus": 38,
+          "title": "Globo latex rosado — R-5 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 12,
+          "variant_id": "V-ROSADO-5",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "rosado",
+          "consumption_cost_cop": 1540,
+          "design_quantity": 11,
+          "diameter_inches": 9.0,
+          "id": "V-ROSADO-9",
+          "leftover_inventory": 39,
+          "origins": [
+            {
+              "id": "EST_01_ARCO",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 7000,
+          "packages": 1,
+          "product_id": "P-ROSADO",
+          "purchase_cost_cop": 7000,
+          "purchase_quantity": 50,
+          "required_quantity": 11,
+          "size": "R-9",
+          "size_code": "R-9",
+          "structures": [
+            "EST_01_ARCO"
+          ],
+          "subtotal_cop": 7000,
+          "surplus": 39,
+          "title": "Globo latex rosado — R-9 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 11,
+          "variant_id": "V-ROSADO-9",
+          "waste_reserve": 0
+        }
+      ],
+      "plan_hash": "3dd3902367269bfb91d27b6ecbaefff52f7c50933cb63cf34d3d1b06f729c4bf",
+      "purchase_cost_cop": 148000,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 10,
+      "total_cop": 148000,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "30-arco-organico-degradado-tres-paradas",
+  "plan": {
+    "concepto": {
+      "descripcion": "Arco orgánico de blanco a fucsia pasando por rosado.",
+      "paleta": [
+        "blanco",
+        "rosado",
+        "fucsia"
+      ],
+      "titulo": "Arco en degradé"
+    },
+    "espacio": {
+      "fuente": "cliente",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "densidad": "media",
+        "estructura_id": "EST_01_ARCO",
+        "materiales": [
+          {
+            "color": "blanco",
+            "participacion": 0.3,
+            "product_id": "P-BLANCO",
+            "rol_material": "principal"
+          },
+          {
+            "color": "rosado",
+            "participacion": 0.4,
+            "product_id": "P-ROSADO",
+            "rol_material": "secundario"
+          },
+          {
+            "color": "fucsia",
+            "participacion": 0.3,
+            "product_id": "P-FUCSIA",
+            "rol_material": "acento"
+          }
+        ],
+        "medidas": {
+          "alto_m": 2.4,
+          "ancho_m": 3
+        },
+        "mezcla": "organica_fina",
+        "nombre": "Arco en degradé",
+        "patron_color": {
+          "base": {
+            "modo": "degradado",
+            "paradas": [
+              0,
+              1,
+              2
+            ],
+            "transicion": "suave"
+          },
+          "origen": "decorador",
+          "version": "patron-color.v1"
+        },
+        "porque": "Degradé de blanco a fucsia de un pie al otro.",
+        "repeticiones": 1,
+        "rol_escena": "focal",
+        "tipo": "arco",
+        "ubicacion": "fondo_pared"
+      }
+    ],
+    "plan_id": "30303030-3030-4303-8303-303030303030",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "supuestos": []
+  }
+}

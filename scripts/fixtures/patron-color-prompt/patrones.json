@@ -1,0 +1,440 @@
+{
+  "espiral-semiarco": {
+    "estructura_id": "EST_01_SEMIARCO",
+    "aplicado": true,
+    "patron": {
+      "version": "patron-color.v1",
+      "origen": "decorador",
+      "base": {
+        "modo": "espiral",
+        "racimo": [0, 1, 0, 1],
+        "trazo": "espiral"
+      }
+    },
+    "geometria": "racimos",
+    "filas": 10,
+    "columnas": 4,
+    "repeticiones": 1,
+    "globos_por_instancia": 41,
+    "celdas": [
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1]
+    ],
+    "extras": [],
+    "conteo": [
+      {
+        "material": 0,
+        "color": "rojo",
+        "acabado": null,
+        "unidades_por_instancia": 21,
+        "unidades_total": 21
+      },
+      {
+        "material": 1,
+        "color": "dorado",
+        "acabado": null,
+        "unidades_por_instancia": 20,
+        "unidades_total": 20
+      }
+    ],
+    "pasos": [
+      {
+        "desde": 1,
+        "hasta": 10,
+        "celdas": [0, 1, 0, 1],
+        "extras": []
+      }
+    ],
+    "nombre": "Espiral",
+    "descripcion": "Racimos de cuatro globos (rojo, dorado, rojo, dorado) girados un octavo de vuelta en cada capa, de la base a la punta.",
+    "instrucciones": [
+      "Arma todos los racimos iguales y gira cada uno un octavo de vuelta respecto al anterior."
+    ],
+    "prompt_gemini": "COLOR PATTERN — build it from identical four-balloon clusters (red, gold, red, gold around each cluster) rotated one eighth of a turn per layer so the colors form continuous diagonal spiral stripes winding from the base to the open tip; keep the order unbroken and do not randomize.",
+    "prompt_lora": "wrapped in a spiral of red and gold stripes winding from the base to the open tip",
+    "avisos": []
+  },
+  "espiral-columna": {
+    "estructura_id": "EST_02_COL_IZQ",
+    "aplicado": true,
+    "patron": {
+      "version": "patron-color.v1",
+      "origen": "decorador",
+      "base": {
+        "modo": "espiral",
+        "racimo": [0, 1, 0, 1],
+        "trazo": "espiral"
+      }
+    },
+    "geometria": "racimos",
+    "filas": 10,
+    "columnas": 4,
+    "repeticiones": 1,
+    "globos_por_instancia": 40,
+    "celdas": [
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1]
+    ],
+    "extras": [],
+    "conteo": [
+      {
+        "material": 0,
+        "color": "blanco",
+        "acabado": null,
+        "unidades_por_instancia": 20,
+        "unidades_total": 20
+      },
+      {
+        "material": 1,
+        "color": "dorado",
+        "acabado": null,
+        "unidades_por_instancia": 20,
+        "unidades_total": 20
+      }
+    ],
+    "pasos": [
+      {
+        "desde": 1,
+        "hasta": 10,
+        "celdas": [0, 1, 0, 1],
+        "extras": []
+      }
+    ],
+    "nombre": "Espiral",
+    "descripcion": "Racimos de cuatro globos (blanco, dorado, blanco, dorado) girados un octavo de vuelta en cada capa, de la base hacia arriba.",
+    "instrucciones": [
+      "Arma todos los racimos iguales y gira cada uno un octavo de vuelta respecto al anterior."
+    ],
+    "prompt_gemini": "COLOR PATTERN — build it from identical four-balloon clusters (white, gold, white, gold around each cluster) rotated one eighth of a turn per layer so the colors form continuous diagonal spiral stripes winding from base to top; keep the order unbroken and do not randomize.",
+    "prompt_lora": "wrapped in a spiral of white and gold stripes winding from base to top",
+    "avisos": []
+  },
+  "anillos-columna": {
+    "estructura_id": "EST_03_COL_DER",
+    "aplicado": true,
+    "patron": {
+      "version": "patron-color.v1",
+      "origen": "decorador",
+      "base": {
+        "modo": "anillos",
+        "secuencia": [0, 1],
+        "largo": 1
+      }
+    },
+    "geometria": "racimos",
+    "filas": 10,
+    "columnas": 4,
+    "repeticiones": 1,
+    "globos_por_instancia": 40,
+    "celdas": [
+      [0, 0, 0, 0],
+      [1, 1, 1, 1],
+      [0, 0, 0, 0],
+      [1, 1, 1, 1],
+      [0, 0, 0, 0],
+      [1, 1, 1, 1],
+      [0, 0, 0, 0],
+      [1, 1, 1, 1],
+      [0, 0, 0, 0],
+      [1, 1, 1, 1]
+    ],
+    "extras": [],
+    "conteo": [
+      {
+        "material": 0,
+        "color": "blanco",
+        "acabado": null,
+        "unidades_por_instancia": 20,
+        "unidades_total": 20
+      },
+      {
+        "material": 1,
+        "color": "dorado",
+        "acabado": null,
+        "unidades_por_instancia": 20,
+        "unidades_total": 20
+      }
+    ],
+    "pasos": [
+      {
+        "desde": 1,
+        "hasta": 1,
+        "celdas": [0, 0, 0, 0],
+        "extras": []
+      },
+      {
+        "desde": 2,
+        "hasta": 2,
+        "celdas": [1, 1, 1, 1],
+        "extras": []
+      },
+      {
+        "desde": 3,
+        "hasta": 3,
+        "celdas": [0, 0, 0, 0],
+        "extras": []
+      },
+      {
+        "desde": 4,
+        "hasta": 4,
+        "celdas": [1, 1, 1, 1],
+        "extras": []
+      },
+      {
+        "desde": 5,
+        "hasta": 5,
+        "celdas": [0, 0, 0, 0],
+        "extras": []
+      },
+      {
+        "desde": 6,
+        "hasta": 6,
+        "celdas": [1, 1, 1, 1],
+        "extras": []
+      },
+      {
+        "desde": 7,
+        "hasta": 7,
+        "celdas": [0, 0, 0, 0],
+        "extras": []
+      },
+      {
+        "desde": 8,
+        "hasta": 8,
+        "celdas": [1, 1, 1, 1],
+        "extras": []
+      },
+      {
+        "desde": 9,
+        "hasta": 9,
+        "celdas": [0, 0, 0, 0],
+        "extras": []
+      },
+      {
+        "desde": 10,
+        "hasta": 10,
+        "celdas": [1, 1, 1, 1],
+        "extras": []
+      }
+    ],
+    "nombre": "Anillos",
+    "descripcion": "Cada racimo de un solo color, alternando blanco y dorado de la base hacia arriba.",
+    "instrucciones": [
+      "Arma cada racimo con los cuatro globos del mismo color y alterna los colores al subir."
+    ],
+    "prompt_gemini": "COLOR PATTERN — each cluster is a single color; clusters follow the order white → gold, 1 cluster(s) per color, repeating from base to top.",
+    "prompt_lora": "built with stacked bands of white and gold repeating from base to top",
+    "avisos": []
+  },
+  "aleatorio": {
+    "estructura_id": "EST_01_SEMIARCO",
+    "aplicado": true,
+    "patron": {
+      "version": "patron-color.v1",
+      "origen": "sugerido",
+      "base": {
+        "modo": "aleatorio",
+        "pesos": [
+          {
+            "material": 0,
+            "peso": 60
+          },
+          {
+            "material": 1,
+            "peso": 40
+          }
+        ],
+        "semilla": 1234567
+      }
+    },
+    "geometria": "racimos",
+    "filas": 10,
+    "columnas": 4,
+    "repeticiones": 1,
+    "globos_por_instancia": 41,
+    "celdas": [
+      [0, 1, 0, 0],
+      [1, 0, 0, 1],
+      [0, 0, 1, 0],
+      [1, 0, 1, 0],
+      [0, 1, 0, 0],
+      [0, 0, 1, 1],
+      [1, 0, 0, 0],
+      [0, 1, 0, 1],
+      [0, 0, 1, 0],
+      [1, 0, 0, 1]
+    ],
+    "extras": [],
+    "conteo": [
+      {
+        "material": 0,
+        "color": "rojo",
+        "acabado": null,
+        "unidades_por_instancia": 25,
+        "unidades_total": 25
+      },
+      {
+        "material": 1,
+        "color": "dorado",
+        "acabado": null,
+        "unidades_por_instancia": 16,
+        "unidades_total": 16
+      }
+    ],
+    "pasos": [],
+    "nombre": "Confeti",
+    "descripcion": "Los colores se reparten sin orden fijo, como hoy.",
+    "instrucciones": [],
+    "prompt_gemini": "",
+    "prompt_lora": "",
+    "avisos": []
+  },
+  "sugerencia": {
+    "estructura_id": "EST_01_SEMIARCO",
+    "aplicado": false,
+    "patron": {
+      "version": "patron-color.v1",
+      "origen": "sugerido",
+      "base": {
+        "modo": "espiral",
+        "racimo": [0, 1, 0, 1],
+        "trazo": "espiral"
+      }
+    },
+    "geometria": "racimos",
+    "filas": 10,
+    "columnas": 4,
+    "repeticiones": 1,
+    "globos_por_instancia": 41,
+    "celdas": [
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1]
+    ],
+    "extras": [],
+    "conteo": [
+      {
+        "material": 0,
+        "color": "rojo",
+        "acabado": null,
+        "unidades_por_instancia": 21,
+        "unidades_total": 21
+      },
+      {
+        "material": 1,
+        "color": "dorado",
+        "acabado": null,
+        "unidades_por_instancia": 20,
+        "unidades_total": 20
+      }
+    ],
+    "pasos": [
+      {
+        "desde": 1,
+        "hasta": 10,
+        "celdas": [0, 1, 0, 1],
+        "extras": []
+      }
+    ],
+    "nombre": "Espiral",
+    "descripcion": "Racimos de cuatro globos (rojo, dorado, rojo, dorado) girados un octavo de vuelta en cada capa, de la base a la punta.",
+    "instrucciones": [
+      "Arma todos los racimos iguales y gira cada uno un octavo de vuelta respecto al anterior."
+    ],
+    "prompt_gemini": "COLOR PATTERN — build it from identical four-balloon clusters (red, gold, red, gold around each cluster) rotated one eighth of a turn per layer so the colors form continuous diagonal spiral stripes winding from the base to the open tip; keep the order unbroken and do not randomize.",
+    "prompt_lora": "wrapped in a spiral of red and gold stripes winding from the base to the open tip",
+    "avisos": []
+  },
+  "espiral-dos-acabados": {
+    "estructura_id": "EST_02_COLUMNAS",
+    "aplicado": true,
+    "patron": {
+      "version": "patron-color.v1",
+      "origen": "sugerido",
+      "base": {
+        "modo": "espiral",
+        "racimo": [0, 1, 0, 1],
+        "trazo": "espiral"
+      }
+    },
+    "geometria": "racimos",
+    "filas": 10,
+    "columnas": 4,
+    "repeticiones": 2,
+    "globos_por_instancia": 40,
+    "celdas": [
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1],
+      [0, 1, 0, 1]
+    ],
+    "extras": [],
+    "conteo": [
+      {
+        "material": 0,
+        "color": "dorado",
+        "acabado": "reflex",
+        "unidades_por_instancia": 20,
+        "unidades_total": 40
+      },
+      {
+        "material": 1,
+        "color": "dorado",
+        "acabado": "mate",
+        "unidades_por_instancia": 20,
+        "unidades_total": 40
+      }
+    ],
+    "pasos": [
+      {
+        "desde": 1,
+        "hasta": 10,
+        "celdas": [0, 1, 0, 1],
+        "extras": []
+      }
+    ],
+    "nombre": "Espiral",
+    "descripcion": "Cuartetos iguales de dorado (1), dorado (2), dorado (1) y dorado (2) que se encajan girando 1/8 de vuelta en cada capa: los colores forman espirales continuas de la base a la punta.",
+    "instrucciones": [
+      "Infla cada globo con el calibrador para que todos queden del mismo tamaño.",
+      "Arma parejas (dos globos amarrados por el cuello) y une dos parejas para formar cada cuarteto.",
+      "Dentro de cada cuarteto respeta el orden de colores: dorado (1), dorado (2), dorado (1), dorado (2).",
+      "Encaja cada cuarteto sobre el anterior girándolo 1/8 de vuelta, siempre en el mismo sentido: así aparece la espiral.",
+      "Sigue la gráfica numerada: cada número es un color de la leyenda."
+    ],
+    "prompt_gemini": "COLOR PATTERN — build it from identical four-balloon clusters (high-shine chrome gold, matte gold, high-shine chrome gold, matte gold around each cluster) rotated one eighth of a turn per layer so the colors form continuous diagonal spiral stripes winding from base to top; keep the order unbroken and do not randomize.",
+    "prompt_lora": "wrapped in a spiral of gold stripes winding from base to top",
+    "avisos": [
+      "Con cuartetos completos cada pieza lleva 40 globos; las medidas daban 39."
+    ]
+  }
+}

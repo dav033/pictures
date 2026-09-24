@@ -21,7 +21,7 @@
  * artifacts"); el módulo que los lee no tiene CLI ni efectos al cargar.
  *
  * Qué NO son. No son un oráculo de conteo: ningún test de aquí afirma que el
- * total de globos de un escenario sea el correcto. Ese cerrojo son los 28
+ * total de globos de un escenario sea el correcto. Ese cerrojo son los 31
  * vectores dorados de `contracts/domain/v1/golden/plan-resolution/`, que
  * ejercita el pytest del resolutor Python (`test_plan_parity.py`).
  *

@@ -1,0 +1,1805 @@
+{
+  "allowlist": [
+    {
+      "product_id": "P-NEGRO",
+      "variant_ids": [
+        "V-NEGRO-12"
+      ]
+    },
+    {
+      "product_id": "P-BLANCO",
+      "variant_ids": [
+        "V-BLANCO-12"
+      ]
+    }
+  ],
+  "catalog_rows": [
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "negro"
+      ],
+      "colores_variante": [
+        "negro"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex negro R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-negro-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 9500,
+      "product_id": "P-NEGRO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex negro",
+      "sku": "SKU-V-NEGRO-12",
+      "sku_original": "SHOP-V-NEGRO-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-NEGRO-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-NEGRO-12",
+      "variante_titulo": "R-12 / PAQUETE X 50"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "blanco"
+      ],
+      "colores_variante": [
+        "blanco"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex blanco R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 9000,
+      "product_id": "P-BLANCO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex blanco",
+      "sku": "SKU-V-BLANCO-12",
+      "sku_original": "SHOP-V-BLANCO-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-BLANCO-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 50,
+      "variant_id": "V-BLANCO-12",
+      "variante_titulo": "R-12 / PAQUETE X 50"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-001",
+  "description": "Pared clásica de 2 × 1,5 m en damero negro y blanco de cuadros de 2 × 2 (ADR-0028). La pared es una rejilla proporcional a sus medidas: 12 filas × 15 columnas = 180 globos (las medidas daban 175), 90 de cada color aunque el plan declaraba 0,6/0,4; la participación se reescribe a 0,5/0,5.",
+  "expected": {
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "negro",
+          "design_quantity": 90,
+          "finish": null,
+          "product_id": "P-NEGRO",
+          "required_quantity": 90,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_PARED",
+          "variant_id": "V-NEGRO-12",
+          "waste_adjusted_quantity": 90,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 90,
+          "finish": null,
+          "product_id": "P-BLANCO",
+          "required_quantity": 90,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_PARED",
+          "variant_id": "V-BLANCO-12",
+          "waste_adjusted_quantity": 90,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 1,
+        "density": "media",
+        "dimensions_m": {
+          "height": 1.5,
+          "length": null,
+          "width": 2.0
+        },
+        "installation_length_m": null,
+        "shape": "clasica",
+        "type": "pared",
+        "visual_density": "medium",
+        "visual_scale": "large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 18000,
+          "design_quantity": 90,
+          "leftover_inventory": 0,
+          "operational_surplus": 0,
+          "package_count": 2,
+          "potential_surplus": 10,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 18000,
+          "purchase_quantity": 100,
+          "required_quantity": 100,
+          "units_per_package": 50,
+          "used": 90,
+          "variant_id": "V-BLANCO-12",
+          "waste_adjusted_quantity": 100,
+          "waste_reserve": 10
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 18050,
+          "design_quantity": 90,
+          "leftover_inventory": 5,
+          "operational_surplus": 5,
+          "package_count": 2,
+          "potential_surplus": 10,
+          "product_id": "P-NEGRO",
+          "purchase_cost": 19000,
+          "purchase_quantity": 100,
+          "required_quantity": 95,
+          "units_per_package": 50,
+          "used": 90,
+          "variant_id": "V-NEGRO-12",
+          "waste_adjusted_quantity": 95,
+          "waste_reserve": 5
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 36050,
+        "covered_waste_reserve": 15,
+        "design_quantity": 180,
+        "natural_package_surplus": 20,
+        "operational_surplus": 5,
+        "potential_surplus": 20,
+        "purchase_cost": 37000,
+        "purchase_quantity": 200,
+        "required_quantity": 195,
+        "target_waste_reserve": 15,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 195,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": []
+    },
+    "plan_resuelto": {
+      "advertencias": [],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 18000,
+          "design_quantity": 90,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_PARED",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_PARED"
+          ],
+          "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 0,
+          "paquetes": 2,
+          "precio_paquete": 9000,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 18000,
+          "purchase_quantity": 100,
+          "required_quantity": 100,
+          "sku": "SKU-V-BLANCO-12",
+          "sku_original": "SHOP-V-BLANCO-12",
+          "sobrante": 10,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-BLANCO-12",
+          "subtotal": 18000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex blanco — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 100,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 90,
+          "unidades_paquete": 50,
+          "used": 90,
+          "variant_id": "V-BLANCO-12",
+          "waste_reserve": 10
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "negro",
+          "consumption_cost": 18050,
+          "design_quantity": 90,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_PARED",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_PARED"
+          ],
+          "imagen": "https://cdn.example.test/v-negro-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 5,
+          "paquetes": 2,
+          "precio_paquete": 9500,
+          "product_id": "P-NEGRO",
+          "purchase_cost": 19000,
+          "purchase_quantity": 100,
+          "required_quantity": 95,
+          "sku": "SKU-V-NEGRO-12",
+          "sku_original": "SHOP-V-NEGRO-12",
+          "sobrante": 10,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-NEGRO-12",
+          "subtotal": 19000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex negro — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 95,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 90,
+          "unidades_paquete": 50,
+          "used": 90,
+          "variant_id": "V-NEGRO-12",
+          "waste_reserve": 5
+        }
+      ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 33300,
+          "estructura_id": "EST_01_PARED"
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 0.0,
+          "estructura_id": "EST_01_PARED",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "negro",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_PARED",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-negro-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_PARED",
+                "kind": "estructura"
+              },
+              "product_id": "P-NEGRO",
+              "sku": "SKU-V-NEGRO-12",
+              "sku_original": "SHOP-V-NEGRO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-NEGRO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex negro — R-12 / PAQUETE X 50",
+              "unidades": 90,
+              "unidades_inferidas": false,
+              "variant_id": "V-NEGRO-12"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_PARED",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_PARED",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLANCO",
+              "sku": "SKU-V-BLANCO-12",
+              "sku_original": "SHOP-V-BLANCO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-BLANCO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex blanco — R-12 / PAQUETE X 50",
+              "unidades": 90,
+              "unidades_inferidas": false,
+              "variant_id": "V-BLANCO-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 180
+            }
+          ],
+          "nombre": "Pared en damero",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "pared",
+          "total_unidades": 180,
+          "ubicacion": "fondo_pared"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-001.",
+      "patrones_color": [
+        {
+          "aplicado": true,
+          "avisos": [
+            "Con la rejilla completa (12 × 15) la pared lleva 180 globos; las medidas daban 175."
+          ],
+          "celdas": [
+            [
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1
+            ],
+            [
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1
+            ],
+            [
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0
+            ],
+            [
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1
+            ],
+            [
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1
+            ],
+            [
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0
+            ],
+            [
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1
+            ],
+            [
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1
+            ],
+            [
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0
+            ],
+            [
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0
+            ]
+          ],
+          "columnas": 15,
+          "conteo": [
+            {
+              "acabado": null,
+              "color": "negro",
+              "material": 0,
+              "unidades_por_instancia": 90,
+              "unidades_total": 90
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "material": 1,
+              "unidades_por_instancia": 90,
+              "unidades_total": 90
+            }
+          ],
+          "descripcion": "Damero de negro (1) y blanco (2) en cuadros de 2 × 2 globos.",
+          "estructura_id": "EST_01_PARED",
+          "extras": [],
+          "filas": 12,
+          "geometria": "rejilla",
+          "globos_por_instancia": 180,
+          "instrucciones": [
+            "Infla cada globo con el calibrador para que todos queden del mismo tamaño.",
+            "Arma la pared fila por fila, de arriba abajo, siguiendo la gráfica numerada: cada número es un color de la leyenda."
+          ],
+          "nombre": "Damero",
+          "pasos": [
+            {
+              "celdas": [
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1
+              ],
+              "desde": 1,
+              "extras": [],
+              "hasta": 2
+            },
+            {
+              "celdas": [
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0
+              ],
+              "desde": 3,
+              "extras": [],
+              "hasta": 4
+            },
+            {
+              "celdas": [
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1
+              ],
+              "desde": 5,
+              "extras": [],
+              "hasta": 6
+            },
+            {
+              "celdas": [
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0
+              ],
+              "desde": 7,
+              "extras": [],
+              "hasta": 8
+            },
+            {
+              "celdas": [
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1
+              ],
+              "desde": 9,
+              "extras": [],
+              "hasta": 10
+            },
+            {
+              "celdas": [
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0
+              ],
+              "desde": 11,
+              "extras": [],
+              "hasta": 12
+            }
+          ],
+          "patron": {
+            "base": {
+              "modo": "damero",
+              "secuencia": [
+                0,
+                1
+              ],
+              "tamano": 2
+            },
+            "origen": "decorador",
+            "version": "patron-color.v1"
+          },
+          "prompt_gemini": "COLOR PATTERN — a checkerboard of black and white squares of 2 × 2 balloons.",
+          "prompt_lora": "in a checkerboard of black and white",
+          "repeticiones": 1
+        }
+      ],
+      "plan": {
+        "concepto": {
+          "descripcion": "Pared de globos en damero negro y blanco.",
+          "paleta": [
+            "negro",
+            "blanco"
+          ],
+          "titulo": "Pared en damero"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_PARED",
+            "materiales": [
+              {
+                "color": "negro",
+                "participacion": 0.5,
+                "product_id": "P-NEGRO",
+                "rol_material": "principal"
+              },
+              {
+                "color": "blanco",
+                "participacion": 0.5,
+                "product_id": "P-BLANCO",
+                "rol_material": "secundario"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.5,
+              "ancho_m": 2
+            },
+            "mezcla": "clasica",
+            "nombre": "Pared en damero",
+            "patron_color": {
+              "base": {
+                "modo": "damero",
+                "secuencia": [
+                  0,
+                  1
+                ],
+                "tamano": 2
+              },
+              "origen": "decorador",
+              "version": "patron-color.v1"
+            },
+            "porque": "Damero blanco y negro para la mesa principal.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "pared",
+            "ubicacion": "fondo_pared"
+          }
+        ],
+        "plan_id": "31313131-3131-4313-8313-313131313131",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "c326f0fa6096e14feb32943a5d01f49a1f5abbbdd0102fc6bcb0e37d8c7918c4",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 36050,
+        "covered_waste_reserve": 15,
+        "design_quantity": 180,
+        "globos_por_tamano": {
+          "R-12": 180
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 20,
+        "purchase_cost": 37000,
+        "target_waste_reserve": 15,
+        "total_cop": 37000,
+        "total_unidades": 180,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "complementosSoportados": false,
+      "consumptionCost": 36050,
+      "coveredWasteReserve": 15,
+      "incluyeIva": true,
+      "leftoverInventory": 5,
+      "lineas": [
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 90,
+          "color": "blanco",
+          "consumptionCost": 18000,
+          "designQuantity": 90,
+          "diamPulg": 12.0,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_PARED",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_PARED"
+          ],
+          "id": "V-BLANCO-12",
+          "leftoverInventory": 0,
+          "nombre": "Globo latex blanco — R-12 / PAQUETE X 50",
+          "paquetes": 2,
+          "precioPaquete": 9000,
+          "productId": "P-BLANCO",
+          "purchaseCost": 18000,
+          "purchaseQuantity": 100,
+          "referenciaElementIds": [],
+          "requiredQuantity": 100,
+          "sobrante": 10,
+          "subtotal": 18000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 90,
+          "varianteId": "V-BLANCO-12",
+          "wasteReserve": 10
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 90,
+          "color": "negro",
+          "consumptionCost": 18050,
+          "designQuantity": 90,
+          "diamPulg": 12.0,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_PARED",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_PARED"
+          ],
+          "id": "V-NEGRO-12",
+          "leftoverInventory": 5,
+          "nombre": "Globo latex negro — R-12 / PAQUETE X 50",
+          "paquetes": 2,
+          "precioPaquete": 9500,
+          "productId": "P-NEGRO",
+          "purchaseCost": 19000,
+          "purchaseQuantity": 100,
+          "referenciaElementIds": [],
+          "requiredQuantity": 95,
+          "sobrante": 10,
+          "subtotal": 19000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 50,
+          "used": 90,
+          "varianteId": "V-NEGRO-12",
+          "wasteReserve": 5
+        }
+      ],
+      "mermaPorcentaje": 8,
+      "plan_hash": "c326f0fa6096e14feb32943a5d01f49a1f5abbbdd0102fc6bcb0e37d8c7918c4",
+      "purchaseCost": 37000,
+      "targetWasteReserve": 15,
+      "total": 37000
+    }
+  },
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-001",
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "negro",
+          "design_quantity": 90,
+          "finish": null,
+          "product_id": "P-NEGRO",
+          "required_quantity": 90,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_PARED",
+          "variant_id": "V-NEGRO-12",
+          "waste_adjusted_quantity": 90,
+          "waste_reserve": 0
+        },
+        {
+          "color": "blanco",
+          "design_quantity": 90,
+          "finish": null,
+          "product_id": "P-BLANCO",
+          "required_quantity": 90,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_PARED",
+          "variant_id": "V-BLANCO-12",
+          "waste_adjusted_quantity": 90,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 1,
+        "density": "media",
+        "dimensions_m": {
+          "height": 1.5,
+          "length": null,
+          "width": 2.0
+        },
+        "installation_length_m": null,
+        "shape": "clasica",
+        "type": "pared",
+        "visual_density": "medium",
+        "visual_scale": "large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 18000,
+          "design_quantity": 90,
+          "leftover_inventory": 0,
+          "operational_surplus": 0,
+          "package_count": 2,
+          "potential_surplus": 10,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 18000,
+          "purchase_quantity": 100,
+          "required_quantity": 100,
+          "units_per_package": 50,
+          "used": 90,
+          "variant_id": "V-BLANCO-12",
+          "waste_adjusted_quantity": 100,
+          "waste_reserve": 10
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 18050,
+          "design_quantity": 90,
+          "leftover_inventory": 5,
+          "operational_surplus": 5,
+          "package_count": 2,
+          "potential_surplus": 10,
+          "product_id": "P-NEGRO",
+          "purchase_cost": 19000,
+          "purchase_quantity": 100,
+          "required_quantity": 95,
+          "units_per_package": 50,
+          "used": 90,
+          "variant_id": "V-NEGRO-12",
+          "waste_adjusted_quantity": 95,
+          "waste_reserve": 5
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 36050,
+        "covered_waste_reserve": 15,
+        "design_quantity": 180,
+        "natural_package_surplus": 20,
+        "operational_surplus": 5,
+        "potential_surplus": 20,
+        "purchase_cost": 37000,
+        "purchase_quantity": 200,
+        "required_quantity": 195,
+        "target_waste_reserve": 15,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 195,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": []
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 18000,
+          "design_quantity": 90,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_PARED",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_PARED"
+          ],
+          "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 0,
+          "paquetes": 2,
+          "precio_paquete": 9000,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 18000,
+          "purchase_quantity": 100,
+          "required_quantity": 100,
+          "sku": "SKU-V-BLANCO-12",
+          "sku_original": "SHOP-V-BLANCO-12",
+          "sobrante": 10,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-BLANCO-12",
+          "subtotal": 18000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex blanco — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 100,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 90,
+          "unidades_paquete": 50,
+          "used": 90,
+          "variant_id": "V-BLANCO-12",
+          "waste_reserve": 10
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "negro",
+          "consumption_cost": 18050,
+          "design_quantity": 90,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_PARED",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_PARED"
+          ],
+          "imagen": "https://cdn.example.test/v-negro-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 5,
+          "paquetes": 2,
+          "precio_paquete": 9500,
+          "product_id": "P-NEGRO",
+          "purchase_cost": 19000,
+          "purchase_quantity": 100,
+          "required_quantity": 95,
+          "sku": "SKU-V-NEGRO-12",
+          "sku_original": "SHOP-V-NEGRO-12",
+          "sobrante": 10,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-NEGRO-12",
+          "subtotal": 19000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex negro — R-12 / PAQUETE X 50",
+          "unidades_con_merma": 95,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 90,
+          "unidades_paquete": 50,
+          "used": 90,
+          "variant_id": "V-NEGRO-12",
+          "waste_reserve": 5
+        }
+      ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 33300,
+          "estructura_id": "EST_01_PARED"
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 0.0,
+          "estructura_id": "EST_01_PARED",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "negro",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_PARED",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-negro-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_PARED",
+                "kind": "estructura"
+              },
+              "product_id": "P-NEGRO",
+              "sku": "SKU-V-NEGRO-12",
+              "sku_original": "SHOP-V-NEGRO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-NEGRO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex negro — R-12 / PAQUETE X 50",
+              "unidades": 90,
+              "unidades_inferidas": false,
+              "variant_id": "V-NEGRO-12"
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_PARED",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_PARED",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLANCO",
+              "sku": "SKU-V-BLANCO-12",
+              "sku_original": "SHOP-V-BLANCO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-BLANCO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex blanco — R-12 / PAQUETE X 50",
+              "unidades": 90,
+              "unidades_inferidas": false,
+              "variant_id": "V-BLANCO-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 180
+            }
+          ],
+          "nombre": "Pared en damero",
+          "repeticiones": 1,
+          "supuestos": [],
+          "tipo": "pared",
+          "total_unidades": 180,
+          "ubicacion": "fondo_pared"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-001.",
+      "patrones_color": [
+        {
+          "aplicado": true,
+          "avisos": [
+            "Con la rejilla completa (12 × 15) la pared lleva 180 globos; las medidas daban 175."
+          ],
+          "celdas": [
+            [
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1
+            ],
+            [
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1
+            ],
+            [
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0
+            ],
+            [
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1
+            ],
+            [
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1
+            ],
+            [
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0
+            ],
+            [
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0
+            ],
+            [
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1
+            ],
+            [
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1
+            ],
+            [
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0
+            ],
+            [
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0,
+              0,
+              1,
+              1,
+              0
+            ]
+          ],
+          "columnas": 15,
+          "conteo": [
+            {
+              "acabado": null,
+              "color": "negro",
+              "material": 0,
+              "unidades_por_instancia": 90,
+              "unidades_total": 90
+            },
+            {
+              "acabado": null,
+              "color": "blanco",
+              "material": 1,
+              "unidades_por_instancia": 90,
+              "unidades_total": 90
+            }
+          ],
+          "descripcion": "Damero de negro (1) y blanco (2) en cuadros de 2 × 2 globos.",
+          "estructura_id": "EST_01_PARED",
+          "extras": [],
+          "filas": 12,
+          "geometria": "rejilla",
+          "globos_por_instancia": 180,
+          "instrucciones": [
+            "Infla cada globo con el calibrador para que todos queden del mismo tamaño.",
+            "Arma la pared fila por fila, de arriba abajo, siguiendo la gráfica numerada: cada número es un color de la leyenda."
+          ],
+          "nombre": "Damero",
+          "pasos": [
+            {
+              "celdas": [
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1
+              ],
+              "desde": 1,
+              "extras": [],
+              "hasta": 2
+            },
+            {
+              "celdas": [
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0
+              ],
+              "desde": 3,
+              "extras": [],
+              "hasta": 4
+            },
+            {
+              "celdas": [
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1
+              ],
+              "desde": 5,
+              "extras": [],
+              "hasta": 6
+            },
+            {
+              "celdas": [
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0
+              ],
+              "desde": 7,
+              "extras": [],
+              "hasta": 8
+            },
+            {
+              "celdas": [
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1
+              ],
+              "desde": 9,
+              "extras": [],
+              "hasta": 10
+            },
+            {
+              "celdas": [
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0,
+                0,
+                1,
+                1,
+                0
+              ],
+              "desde": 11,
+              "extras": [],
+              "hasta": 12
+            }
+          ],
+          "patron": {
+            "base": {
+              "modo": "damero",
+              "secuencia": [
+                0,
+                1
+              ],
+              "tamano": 2
+            },
+            "origen": "decorador",
+            "version": "patron-color.v1"
+          },
+          "prompt_gemini": "COLOR PATTERN — a checkerboard of black and white squares of 2 × 2 balloons.",
+          "prompt_lora": "in a checkerboard of black and white",
+          "repeticiones": 1
+        }
+      ],
+      "plan": {
+        "concepto": {
+          "descripcion": "Pared de globos en damero negro y blanco.",
+          "paleta": [
+            "negro",
+            "blanco"
+          ],
+          "titulo": "Pared en damero"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_PARED",
+            "materiales": [
+              {
+                "color": "negro",
+                "participacion": 0.5,
+                "product_id": "P-NEGRO",
+                "rol_material": "principal"
+              },
+              {
+                "color": "blanco",
+                "participacion": 0.5,
+                "product_id": "P-BLANCO",
+                "rol_material": "secundario"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.5,
+              "ancho_m": 2
+            },
+            "mezcla": "clasica",
+            "nombre": "Pared en damero",
+            "patron_color": {
+              "base": {
+                "modo": "damero",
+                "secuencia": [
+                  0,
+                  1
+                ],
+                "tamano": 2
+              },
+              "origen": "decorador",
+              "version": "patron-color.v1"
+            },
+            "porque": "Damero blanco y negro para la mesa principal.",
+            "repeticiones": 1,
+            "rol_escena": "focal",
+            "tipo": "pared",
+            "ubicacion": "fondo_pared"
+          }
+        ],
+        "plan_id": "31313131-3131-4313-8313-313131313131",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "c326f0fa6096e14feb32943a5d01f49a1f5abbbdd0102fc6bcb0e37d8c7918c4",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 36050,
+        "covered_waste_reserve": 15,
+        "design_quantity": 180,
+        "globos_por_tamano": {
+          "R-12": 180
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 20,
+        "purchase_cost": 37000,
+        "target_waste_reserve": 15,
+        "total_cop": 37000,
+        "total_unidades": 180,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 36050,
+      "covered_waste_reserve": 15,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 5,
+      "lines": [
+        {
+          "available": true,
+          "color": "blanco",
+          "consumption_cost_cop": 18000,
+          "design_quantity": 90,
+          "diameter_inches": 12.0,
+          "id": "V-BLANCO-12",
+          "leftover_inventory": 0,
+          "origins": [
+            {
+              "id": "EST_01_PARED",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 9000,
+          "packages": 2,
+          "product_id": "P-BLANCO",
+          "purchase_cost_cop": 18000,
+          "purchase_quantity": 100,
+          "required_quantity": 100,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_PARED"
+          ],
+          "subtotal_cop": 18000,
+          "surplus": 10,
+          "title": "Globo latex blanco — R-12 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 90,
+          "variant_id": "V-BLANCO-12",
+          "waste_reserve": 10
+        },
+        {
+          "available": true,
+          "color": "negro",
+          "consumption_cost_cop": 18050,
+          "design_quantity": 90,
+          "diameter_inches": 12.0,
+          "id": "V-NEGRO-12",
+          "leftover_inventory": 5,
+          "origins": [
+            {
+              "id": "EST_01_PARED",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 9500,
+          "packages": 2,
+          "product_id": "P-NEGRO",
+          "purchase_cost_cop": 19000,
+          "purchase_quantity": 100,
+          "required_quantity": 95,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_PARED"
+          ],
+          "subtotal_cop": 19000,
+          "surplus": 10,
+          "title": "Globo latex negro — R-12 / PAQUETE X 50",
+          "units_per_package": 50,
+          "used": 90,
+          "variant_id": "V-NEGRO-12",
+          "waste_reserve": 5
+        }
+      ],
+      "plan_hash": "c326f0fa6096e14feb32943a5d01f49a1f5abbbdd0102fc6bcb0e37d8c7918c4",
+      "purchase_cost_cop": 37000,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 15,
+      "total_cop": 37000,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "31-pared-damero-dos-colores",
+  "plan": {
+    "concepto": {
+      "descripcion": "Pared de globos en damero negro y blanco.",
+      "paleta": [
+        "negro",
+        "blanco"
+      ],
+      "titulo": "Pared en damero"
+    },
+    "espacio": {
+      "fuente": "cliente",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "densidad": "media",
+        "estructura_id": "EST_01_PARED",
+        "materiales": [
+          {
+            "color": "negro",
+            "participacion": 0.6,
+            "product_id": "P-NEGRO",
+            "rol_material": "principal"
+          },
+          {
+            "color": "blanco",
+            "participacion": 0.4,
+            "product_id": "P-BLANCO",
+            "rol_material": "secundario"
+          }
+        ],
+        "medidas": {
+          "alto_m": 1.5,
+          "ancho_m": 2
+        },
+        "mezcla": "clasica",
+        "nombre": "Pared en damero",
+        "patron_color": {
+          "base": {
+            "modo": "damero",
+            "secuencia": [
+              0,
+              1
+            ],
+            "tamano": 2
+          },
+          "origen": "decorador",
+          "version": "patron-color.v1"
+        },
+        "porque": "Damero blanco y negro para la mesa principal.",
+        "repeticiones": 1,
+        "rol_escena": "focal",
+        "tipo": "pared",
+        "ubicacion": "fondo_pared"
+      }
+    ],
+    "plan_id": "31313131-3131-4313-8313-313131313131",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "supuestos": []
+  }
+}

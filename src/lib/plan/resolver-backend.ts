@@ -6,6 +6,7 @@ import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import { errorAllowlistDesdePython } from "./allowlist-producto-variante";
 import { canonizarColoresPlan } from "./colores-catalogo";
 import type { EntradaAllowlistPlan } from "./aprobacion";
+import type { PistaPatron } from "./patron-color";
 import { cotizacionDesdePython, planResueltoDesdePython } from "./python-mapper";
 import type { PlanResuelto } from "./resuelto";
 import type { PlanDecoracion } from "./tipos";
@@ -37,6 +38,15 @@ export type EntradaResolucionPlan = {
   allowlist: readonly EntradaAllowlistPlan[];
   catalogSnapshotId: string;
   loraAllowlist?: CatalogAllowlist | null;
+  /**
+   * Solo al confirmar un plan (ADR-0028 §7): Python le asigna un patrón de color
+   * a cada estructura que no lo tiene, desde la pista de la foto o su preset.
+   * La edición y la generación no lo pasan: re-resolver nunca completa, y sin
+   * estos campos la petición es la de siempre, byte a byte.
+   */
+  completarPatrones?: boolean;
+  /** Pistas de patrón leídas en la foto, por elemento de referencia. */
+  pistasPatron?: readonly PistaPatron[];
   requestId: string;
   correlationId: string;
   signal?: AbortSignal;
@@ -67,6 +77,8 @@ export async function resolverPlan(entrada: EntradaResolucionPlan): Promise<Reso
       allowlist: entrada.allowlist.map((item) => ({ product_id: item.product_id, variant_ids: [...item.variant_ids] })),
       catalogSnapshotId: entrada.catalogSnapshotId,
       ...(entrada.loraAllowlist ? { loraVariantIds: [...entrada.loraAllowlist.variantIds] } : {}),
+      ...(entrada.completarPatrones === undefined ? {} : { completarPatrones: entrada.completarPatrones }),
+      ...(entrada.pistasPatron === undefined ? {} : { pistasPatron: [...entrada.pistasPatron] }),
       requestId: entrada.requestId,
       correlationId: entrada.correlationId,
       ...(entrada.signal ? { parentSignal: entrada.signal } : {}),

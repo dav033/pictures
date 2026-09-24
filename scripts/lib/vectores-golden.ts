@@ -2,7 +2,7 @@
  * Lectura de los vectores golden de
  * `contracts/domain/v1/golden/plan-resolution`.
  *
- * Los 28 vectores son el cerrojo de regresión del resolutor, y desde el paso 5
+ * Los 31 vectores son el cerrojo de regresión del resolutor, y desde el paso 5
  * del ADR-0023 ese resolutor sólo existe en Python: quien los recorre para
  * comparar conteos es `services/ai-api/tests/test_plan_parity.py`. Aquí queda
  * lo que el lado TypeScript sigue necesitando de ellos: cargarlos y leer su

@@ -12,6 +12,7 @@ import {
   CatalogRecommendationsResultV1Schema,
   PlanResolutionResultV1Schema,
 } from "@/lib/ia/contracts/domain-v1";
+import { MODOS_PATRON_COLOR, type PistaPatron } from "@/lib/plan/patron-color";
 import type { PlanDecoracion } from "@/lib/plan/tipos";
 import { z } from "zod";
 
@@ -41,6 +42,8 @@ export const PYTHON_LORA_GENERATE_PATH = "/internal/v1/ia/lora-generate";
 export const PYTHON_LORA_GENERATE_SCOPE = "ia.lora_generate";
 export const PYTHON_CHAT_TURN_STREAM_PATH = "/internal/v1/ia/chat-turn-stream";
 export const PYTHON_CHAT_TURN_STREAM_SCOPE = "ia.chat_turn_stream";
+export const PYTHON_PATRON_REFERENCIA_PATH = "/internal/v1/ia/patron-referencia";
+export const PYTHON_PATRON_REFERENCIA_SCOPE = "ia.patron_referencia";
 export const PYTHON_EMBEDDING_MODEL = "gemini-embedding-2";
 export const PYTHON_EMBEDDING_DIMENSIONS = 768;
 export const PYTHON_MAX_BODY_BYTES = 64 * 1024;
@@ -730,6 +733,39 @@ export interface PythonReferenceTurnResult {
   replayed?: boolean;
 }
 
+/** A balloon structure the reference analysis found in one photo. */
+export interface PythonPatronReferenciaElemento {
+  elementId: string;
+  /** Plan structure type (`visual_semantics.structure_type`) or "desconocido"; context for the model only. */
+  tipo: string;
+  bbox?: { x: number; y: number; width: number; height: number };
+  coloresObservados: string[];
+}
+
+export interface PythonPatronReferenciaInput {
+  imagen: { mimeType: "image/png" | "image/jpeg" | "image/webp"; dataBase64: string };
+  /** 1..12, unique ids, all from the same photo as `imagen`. */
+  elementos: PythonPatronReferenciaElemento[];
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+/** One hint as Python validated it; "ninguno" carries no colors. */
+export type PythonPatronReferenciaPista = z.infer<typeof patronReferenciaPistaSchema>;
+
+export interface PythonPatronReferenciaResult {
+  pistas: PythonPatronReferenciaPista[];
+  modelo: string;
+  promptVersion: string;
+  usage: PythonIntentParseUsage | null;
+  replayed?: boolean;
+}
+
 export type PythonImageGenerateInputBlock =
   | { type: "text"; text: string }
   | { type: "image"; data: string; mimeType: "image/png" | "image/jpeg" | "image/webp" };
@@ -952,6 +988,9 @@ export interface PythonPlanResolutionInput {
   allowlist: PythonCatalogSearchAllowlistEntry[];
   catalogSnapshotId: string;
   loraVariantIds?: string[];
+  /** Absent unless the caller passes it: every other request stays byte-identical (ADR-0028 §7). */
+  completarPatrones?: boolean;
+  pistasPatron?: PistaPatron[];
   requestId: string;
   correlationId: string;
   deadlineMs?: number;
@@ -1025,6 +1064,44 @@ const referenceTurnPayloadResultSchema = z.object({
   finish_reason: z.string().nullable(),
   block_reason: z.string().nullable(),
 }).strict();
+
+// Local contract (ADR-0026 §3): the Pydantic side is
+// services/ai-api/app/amaterasu/patron_referencia.py, which owns the prompt,
+// the palette and the validation of the provider output.
+const patronReferenciaPistaSchema = z.object({
+  element_id: z.string().min(1).max(80),
+  modo: z.enum([...MODOS_PATRON_COLOR, "ninguno"]),
+  colores: z.array(z.string().min(1).max(80)).max(12),
+  globos_por_racimo: z.number().int().min(1).max(8).optional(),
+  pesos: z.array(z.number().int().min(1).max(100)).max(12).optional(),
+  confianza: z.number().min(0).max(1),
+}).strict();
+
+const patronReferenciaPayloadResultSchema = z.object({
+  operation_schema_version: z.literal("patron-referencia-result.v1"),
+  pistas: z.array(patronReferenciaPistaSchema).max(12),
+  modelo: z.string().min(1),
+  prompt_version: z.string().min(1),
+  usage: intentParseUsageSchema.extend({
+    tool_use_prompt_token_count: z.number().int().nonnegative().optional(),
+  }).strict().nullable(),
+}).strict();
+
+/** Hints only for elements that were asked about, once each; only "ninguno" may come without colors. */
+function patronReferenciaPayloadIsConsistent(
+  payload: z.infer<typeof patronReferenciaPayloadResultSchema>,
+  elementIds: readonly string[],
+): boolean {
+  const pedidos = new Set(elementIds);
+  const vistos = new Set<string>();
+  for (const pista of payload.pistas) {
+    if (!pedidos.has(pista.element_id) || vistos.has(pista.element_id)) return false;
+    if (pista.modo !== "ninguno" && pista.colores.length === 0) return false;
+    if (pista.pesos !== undefined && pista.pesos.length !== pista.colores.length) return false;
+    vistos.add(pista.element_id);
+  }
+  return true;
+}
 
 const imageGenerateUsageSchema = z.object({
   total_input_tokens: z.number().int().nonnegative().optional(),
@@ -1460,6 +1537,48 @@ export async function llamarPythonReferenceTurn(
 }
 
 /**
+ * Reads the color pattern of each balloon structure in one reference photo
+ * (docs/architecture/decisions/0028 §11). Unlike the reference turn, Python
+ * owns everything here -- prompt, palette, response schema and validation of
+ * the provider output; this only transports the photo and the elements the
+ * analysis already found, and checks the answer is about those elements. No
+ * idempotency key and no retry: the call has no side effect and the caller
+ * continues without hints on any failure.
+ */
+export async function llamarPythonPatronReferencia(
+  input: PythonPatronReferenciaInput,
+): Promise<PythonPatronReferenciaResult> {
+  const { imagen, elementos, ...rest } = input;
+  const operationPayload = {
+    schema_version: "patron-referencia.v1" as const,
+    imagen: { mime_type: imagen.mimeType, data_base64: imagen.dataBase64 },
+    elementos: elementos.map((elemento) => ({
+      element_id: elemento.elementId,
+      tipo: elemento.tipo,
+      ...(elemento.bbox === undefined ? {} : { bbox: elemento.bbox }),
+      colores_observados: elemento.coloresObservados,
+    })),
+  };
+  const response = await llamarPythonOperacion(PYTHON_PATRON_REFERENCIA_PATH, PYTHON_PATRON_REFERENCIA_SCOPE, {
+    ...rest,
+    payload: operationPayload,
+    operationBody: operationPayload,
+    maxBodyBytes: PYTHON_MAX_BODY_BYTES_IMAGENES,
+  });
+  const parsed = patronReferenciaPayloadResultSchema.safeParse(response.payload);
+  if (!parsed.success || !patronReferenciaPayloadIsConsistent(parsed.data, elementos.map((elemento) => elemento.elementId))) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  const result: PythonPatronReferenciaResult = {
+    pistas: parsed.data.pistas,
+    modelo: parsed.data.modelo,
+    promptVersion: parsed.data.prompt_version,
+    usage: parsed.data.usage,
+  };
+  return response.replayed ? { ...result, replayed: true } : result;
+}
+
+/**
  * The one Gemini Interactions call `crearImagenGemini`'s `generar()` makes
  * (src/lib/ia/uzume/imagen.ts, via the ImagenPort
  * src/lib/ia/uzume/imagen-python.ts wraps around this). `input` travels
@@ -1652,6 +1771,8 @@ export async function llamarPythonPlanResolution(
     allowlist,
     catalogSnapshotId,
     loraVariantIds,
+    completarPatrones,
+    pistasPatron,
     ...rest
   } = input;
   const operationBody = {
@@ -1660,6 +1781,8 @@ export async function llamarPythonPlanResolution(
     allowlist,
     catalog_snapshot_id: catalogSnapshotId,
     ...(loraVariantIds === undefined ? {} : { lora_variant_ids: loraVariantIds }),
+    ...(completarPatrones === undefined ? {} : { completar_patrones: completarPatrones }),
+    ...(pistasPatron === undefined ? {} : { pistas_patron: pistasPatron }),
   };
   const response = await llamarPythonOperacion(PYTHON_PLAN_RESOLUTION_PATH, PYTHON_PLAN_RESOLUTION_SCOPE, {
     ...rest,

@@ -4,8 +4,10 @@ import { clasificarColores, PALETA_COLORES_EN_V2 } from "@/lib/rag/taxonomy/v2";
 import type { LoraDensity, LoraDesignRole, LoraPlacement, LoraStructureType, VisualSemantics } from "../escena/lora-semantics";
 import type { PhysicalForm, PhysicalRelation, SceneElementKind, QuantitySemantics } from "../escena/scene-visual-contract";
 import { identificarEstructuraOficial, type EstructuraOficial } from "@/lib/plan/estructuras-oficiales";
+import type { PatronColorResuelto } from "@/lib/plan/patron-color";
+import { frasePatronColor } from "../uzume/mezcla-color-escena";
 
-export const LORA_CAPTION_COMPILER_VERSION = "lora-caption-v2.6-compact-budget" as const;
+export const LORA_CAPTION_COMPILER_VERSION = "lora-caption-v2.7-color-pattern" as const;
 
 /**
  * Budget for the experimental JSON prompt variant (trigger included). The
@@ -124,6 +126,12 @@ export type LoraVisualClause = {
   heightQualifier?: "shorter" | "taller";
   /** Official structure (variant such as asymmetrical or airy) recognized from the plan; see estructuras-oficiales.ts. */
   officialStructure?: EstructuraOficial;
+  /**
+   * `prompt_lora` of the clause's structure, written by Python (ADR-0028 §12)
+   * and rendered verbatim right after the material phrase. Part of the grouping
+   * key, so every element of the clause shares it; never compacted or dropped.
+   */
+  colorPattern?: string;
 };
 
 export type LoraCaptionCompilation = {
@@ -154,6 +162,8 @@ type SemanticElement = {
   semantics: Omit<VisualSemantics, "structure_type"> & { structure_type: CaptionStructureType };
   fallback: boolean;
   index: number;
+  /** Python's `prompt_lora` for this element's structure, when it has an applied pattern. */
+  colorPattern?: string;
 };
 
 const STRUCTURE_NOUNS: Record<CaptionStructureType, string> = {
@@ -248,6 +258,15 @@ const COLOR_ALIASES: Record<string, string> = {
   "verde esmeralda": "green",
   "verde lima": "lime green",
 };
+
+/**
+ * Spanish → English color names exactly as `translateLoraColor` looks them up:
+ * the taxonomy palette wins, the aliases fill what it does not carry (`gris`,
+ * `grafito`, `marron`…). Exported so the plan contract can hand Python this
+ * same table (`x-colores-en`) for the color-pattern phrase it writes into the
+ * caption (ADR-0028 §8): the palette alone left `gris` untranslated there.
+ */
+export const LORA_COLOR_NAMES_EN: Readonly<Record<string, string>> = { ...COLOR_ALIASES, ...PALETA_COLORES_EN_V2 };
 
 const FINISH_WORDS: Record<string, string> = {
   reflex: "glossy",
@@ -368,7 +387,7 @@ function physicalRelationsFor(element: SceneElement): PhysicalRelation[] {
 
 export function translateLoraColor(color: string): string {
   const key = normalized(color);
-  const direct = PALETA_COLORES_EN_V2[key as keyof typeof PALETA_COLORES_EN_V2] ?? COLOR_ALIASES[key];
+  const direct = LORA_COLOR_NAMES_EN[key];
   if (direct) return direct;
 
   // Resolve Spanish aliases such as "azul rey" or "verde esmeralda" to the
@@ -439,7 +458,8 @@ function compatibleKey(item: SemanticElement): string {
   const motifKey = item.element.catalog_visual?.pattern.motif ?? "";
   const subjectKey = item.element.physical_form?.sujeto ?? "";
   // The official variant is part of the structure: an asymmetrical column never pairs with a plain one.
-  return [semantics.structure_type, elementKindFor(item.element), colors, finishes, motifKey, subjectKey, relationKey, officialStructureOf(item)?.id ?? "", semantics.repetition_group].join(FIELD_SEP);
+  // So is the color pattern: two different patterns (or one and none) never merge into one clause.
+  return [semantics.structure_type, elementKindFor(item.element), colors, finishes, motifKey, subjectKey, relationKey, officialStructureOf(item)?.id ?? "", item.colorPattern ?? "", semantics.repetition_group].join(FIELD_SEP);
 }
 
 function officialStructureOf(item: SemanticElement): EstructuraOficial | undefined {
@@ -453,7 +473,7 @@ function officialStructureOf(item: SemanticElement): EstructuraOficial | undefin
 }
 
 function structuralKey(item: SemanticElement): string {
-  return compatibleKey(item).split(FIELD_SEP).slice(0, 8).join(FIELD_SEP);
+  return compatibleKey(item).split(FIELD_SEP).slice(0, -1).join(FIELD_SEP);
 }
 
 /**
@@ -602,6 +622,8 @@ function createClause(
     physicalRelations,
     heightM: sharedHeight(items),
     officialStructure: officialStructureOf(first),
+    // Shared by every item: the pattern is part of the grouping key.
+    ...(first.colorPattern ? { colorPattern: first.colorPattern } : {}),
   };
 }
 
@@ -996,7 +1018,9 @@ function colorFinishPhrase(clause: LoraVisualClause, render?: CaptionRenderState
     // La relación de tamaños va detrás de la lista de materiales, que es donde
     // el corpus la pone. Solo en el dialecto de producto: `scene_v004` tiene su
     // propia gramática y mezclar las dos sería inventar un tercer registro.
-    const relacion = !scenePhrase && clause.canonicalEntries?.length ? fraseRelacionTamanos(clause.canonicalEntries, render?.step.sizes ?? "all") : "";
+    // Con patrón de color no va: "mixed organically" contradiría la frase de
+    // Python que sigue a los materiales (ADR-0028 §12).
+    const relacion = !scenePhrase && !clause.colorPattern && clause.canonicalEntries?.length ? fraseRelacionTamanos(clause.canonicalEntries, render?.step.sizes ?? "all") : "";
     const conRelacion = relacion ? `${phrase}, ${relacion}` : phrase;
     return withApprovedColorTones(conRelacion, clause.colors);
   }
@@ -1045,7 +1069,10 @@ function renderClauseText(clause: LoraVisualClause, render?: CaptionRenderState)
   const rawMaterial = clause.productDescriptors.length && !hasCanonicalProduct ? "" : colorFinishPhrase(clause, materialRender);
   const noun = productIsThePiece ? rawMaterial : qualifier ? `${qualifier} ${sizedNoun}` : sizedNoun;
   // A compacted reference already reads "in matching white" ("with in matching" was ungrammatical).
-  const material = productIsThePiece ? "" : bareSceneLabel && rawMaterial && !rawMaterial.startsWith("in matching ") ? `with ${rawMaterial}` : rawMaterial;
+  const materialPhrase = productIsThePiece ? "" : bareSceneLabel && rawMaterial && !rawMaterial.startsWith("in matching ") ? `with ${rawMaterial}` : rawMaterial;
+  // Python's color pattern goes right after the material phrase, in the same
+  // clause and verbatim (ADR-0028 §12); without one this is the material phrase.
+  const material = [materialPhrase, clause.colorPattern].filter(Boolean).join(" ");
   const article = /^[aeiou]/i.test(noun) && !/^one\b/i.test(noun) ? "an" : "a";
   const core = descriptor
     ? renderedCount === 1 ? descriptor : `${numberWord(renderedCount)} ${descriptor}`
@@ -1106,9 +1133,12 @@ function dedupeEnvironment(context: VisualContext, eventPhrase?: string): string
   });
 }
 
-function groupClauses(sceneSpec: SceneSpec, productConceptsByElementId?: Map<string, ProductConceptClauseInput[]>, officialStructures?: ReadonlyMap<string, string>): LoraVisualClause[] {
+function groupClauses(sceneSpec: SceneSpec, productConceptsByElementId?: Map<string, ProductConceptClauseInput[]>, officialStructures?: ReadonlyMap<string, string>, colorPatterns?: readonly PatronColorResuelto[]): LoraVisualClause[] {
   // Repeated plan structures materialize as `<estructura_id>#<n>` elements.
-  const items = sceneSpec.elements.map((element, index) => semanticFor(element, index, sceneSpec, officialStructures?.get(element.element_id) ?? officialStructures?.get(element.element_id.split("#")[0]!)));
+  const items = sceneSpec.elements.map((element, index) => ({
+    ...semanticFor(element, index, sceneSpec, officialStructures?.get(element.element_id) ?? officialStructures?.get(element.element_id.split("#")[0]!)),
+    colorPattern: frasePatronColor(colorPatterns, element, "prompt_lora"),
+  }));
   const used = new Set<string>();
   const clauses: LoraVisualClause[] = [];
 
@@ -1181,6 +1211,8 @@ function matchVenueCue(context: VisualContext): string | undefined {
 type CaptionParts = {
   /** One rendered phrase per clause, focal first. */
   subjects: string[];
+  /** Color pattern of the clause behind each subject (same order), when it has one. */
+  subjectPatterns: Array<string | undefined>;
   structureSentence: string;
   tail: string[];
   colors: string[];
@@ -1199,7 +1231,8 @@ function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses
   const focal = clauses[0];
   const hasCanonicalSemantics = sceneSpec.elements.every((element) => Boolean(element.visual_semantics));
   const conciseClause = (clause: LoraVisualClause): LoraVisualClause => {
-    if (!hasCanonicalSemantics || !focal || clause === focal || !clause.colors.length) return clause;
+    // A patterned clause keeps its own colors: the pattern is laid out in them.
+    if (!hasCanonicalSemantics || !focal || clause === focal || !clause.colors.length || clause.colorPattern) return clause;
     const focalColors = new Set(focal.colors);
     return clause.colors.every((color) => focalColors.has(color)) ? { ...clause, colors: [] } : clause;
   };
@@ -1237,6 +1270,7 @@ function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses
   ].filter((part): part is string => Boolean(part));
   return {
     subjects: [firstClause, ...supportText, ...accentText],
+    subjectPatterns: [focal, ...supports, ...accents].map((clause) => clause?.colorPattern),
     structureSentence,
     tail,
     colors: [...new Set(clauses.flatMap((clause) => clause.colors))],
@@ -1247,12 +1281,16 @@ function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses
  * The same approved scene as a JSON object, for FLUX.2 structured prompting.
  * It carries exactly the rendered subjects, placements, relations, colors and
  * setting of the text caption (so preflight checks the same facts); only the
- * container changes. The LoRA trigger is prepended by `ensureLoraTriggers`.
+ * container changes. A patterned subject also carries its pattern, verbatim,
+ * as `color_pattern`. The LoRA trigger is prepended by `ensureLoraTriggers`.
  */
 function buildJsonPrompt(parts: CaptionParts, ambientDecor: readonly string[]): string {
   return JSON.stringify({
     scene: parts.tail.filter((part) => !/photograph|natural depth|grounded supports|floor contact/i.test(part)).join(", "),
-    subjects: parts.subjects.map((description, index) => ({ role: index === 0 ? "focal decoration" : "supporting decoration", description })),
+    subjects: parts.subjects.map((description, index) => {
+      const colorPattern = parts.subjectPatterns[index];
+      return { role: index === 0 ? "focal decoration" : "supporting decoration", description, ...(colorPattern ? { color_pattern: colorPattern } : {}) };
+    }),
     ...(ambientDecor.length ? { styling: [...ambientDecor] } : {}),
     color_palette: parts.colors,
     style: "wide photorealistic event photograph",
@@ -1297,6 +1335,12 @@ export function compileLoraCaption(input: {
   ambientDecor?: readonly string[];
   /** Plain English styling cues of the creativity level (creatividad.ts); dropped first when compacting. */
   creativeCues?: readonly string[];
+  /**
+   * `plan_resuelto.patrones_color` as Python wrote it (ADR-0028 §12). Only the
+   * `prompt_lora` of an applied pattern is inserted, verbatim; the compiler
+   * never words, expands or counts a pattern. Absent: the legacy caption.
+   */
+  colorPatterns?: readonly PatronColorResuelto[];
 }): LoraCaptionCompilation {
   const productConceptsByElementId = input.productConcepts?.length
     ? input.productConcepts.reduce((map, entry) => {
@@ -1306,13 +1350,14 @@ export function compileLoraCaption(input: {
         return map;
       }, new Map<string, ProductConceptClauseInput[]>())
     : undefined;
-  const clauses = groupClauses(input.sceneSpec, productConceptsByElementId, input.officialStructures);
+  const clauses = groupClauses(input.sceneSpec, productConceptsByElementId, input.officialStructures, input.colorPatterns);
   const triggerLengthDelta = (input.trigger?.trim().length ?? CAPTION_TRIGGER.length) - CAPTION_TRIGGER.length;
   const budget = (input.maxLength ?? LORA_PROMPT_MAX_LENGTH) - Math.max(0, triggerLengthDelta);
   let prompt = "";
   let compactionStep = 0;
   // If no step fits, the most compact rendering is returned unchanged and the
-  // preflight rejects it: the compiler never truncates structures or colors.
+  // preflight rejects it: the compiler never truncates structures, colors or a
+  // color pattern (no step touches the pattern; the tail and setting go first).
   for (const [index, step] of CAPTION_RENDER_STEPS.entries()) {
     // product_v007 has no setting to drop: its last step would repeat the previous one.
     if (step.dropSetting && input.dialect !== "scene_v004") break;

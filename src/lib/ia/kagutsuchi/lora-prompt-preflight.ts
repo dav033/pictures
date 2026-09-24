@@ -64,9 +64,13 @@ function similarApprovedHeights(a: number | undefined, b: number | undefined): b
  * solo uno tenía cláusula ("relaciones bilaterales 1/2" -> LORA_PREFLIGHT_FAILED
  * sobre un caption correcto).
  */
-function expectedBilateralPairs(sceneSpec: SceneSpec): Array<[string, string]> {
+function expectedBilateralPairs(sceneSpec: SceneSpec, clauses: readonly LoraVisualClause[]): Array<[string, string]> {
   const pairs: Array<[string, string]> = [];
   const used = new Set<string>();
+  // Same rule as the compiler's grouping key: two different color patterns (or
+  // one and none) are two designed pieces, never a mirrored pair. The pattern
+  // of an element is the one of the clause that represents it.
+  const patternOf = (elementId: string) => clauses.find((clause) => clause.elementIds.includes(elementId))?.colorPattern ?? "";
   const left = sceneSpec.elements.filter((element) => element.visual_semantics?.placement === "lateral_izquierdo");
   for (const leftElement of left) {
     const rightElement = sceneSpec.elements.find((element) =>
@@ -77,7 +81,8 @@ function expectedBilateralPairs(sceneSpec: SceneSpec): Array<[string, string]> {
       // Same rule as the compiler: sides the plan sized clearly differently
       // (±15%) or gave different roles are two designed pieces, not a mirrored pair.
       && element.visual_semantics.design_role === leftElement.visual_semantics?.design_role
-      && similarApprovedHeights(element.visual_semantics.dimensions_m?.height, leftElement.visual_semantics?.dimensions_m?.height),
+      && similarApprovedHeights(element.visual_semantics.dimensions_m?.height, leftElement.visual_semantics?.dimensions_m?.height)
+      && patternOf(element.element_id) === patternOf(leftElement.element_id),
     );
     if (!rightElement) continue;
     used.add(rightElement.element_id);
@@ -176,7 +181,7 @@ export function preflightLoraPrompt(input: {
   if (structures.represented !== structures.expected) errors.push(`cobertura estructural ${structures.represented}/${structures.expected}`);
   if (locations.represented !== locations.expected) errors.push(`cobertura de ubicaciones ${locations.represented}/${locations.expected}`);
 
-  const bilateralPairs = expectedBilateralPairs(sceneSpec);
+  const bilateralPairs = expectedBilateralPairs(sceneSpec, clauses);
   const relationshipsRepresented = bilateralPairs.filter(([left, right]) => {
     const clause = clauses.find((candidate) => candidate.elementIds.includes(left) && candidate.elementIds.includes(right));
     // Con más de un par en el mismo grupo la frase es "two standing on each
@@ -193,6 +198,11 @@ export function preflightLoraPrompt(input: {
   const representedColors = [...expectedColors].filter((color) => prompt.toLowerCase().includes(color.toLowerCase())).length;
   const colors = { expected: expectedColors.size, represented: representedColors };
   if (representedColors !== expectedColors.size) errors.push(`cobertura de colores ${representedColors}/${expectedColors.size}`);
+
+  // A color pattern written by Python (ADR-0028 §12) reaches the model verbatim
+  // or not at all: no compaction may shorten or drop it.
+  const missingPatterns = clauses.filter((clause) => clause.colorPattern && !prompt.includes(clause.colorPattern));
+  if (missingPatterns.length) errors.push(`patrón de color ausente o alterado: ${missingPatterns.map((clause) => clause.elementIds.join("+")).join(", ")}`);
 
   const knownTypeFallbacks = clauses.filter((clause) => clause.usedFallbackSemantics).length;
   if (knownTypeFallbacks) errors.push(`${knownTypeFallbacks} tipo(s) sin visual_semantics del plan, inferido(s) por nombre (${clauses.filter((clause) => clause.usedFallbackSemantics).map((clause) => clause.noun).join(", ")})`);

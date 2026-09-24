@@ -1,7 +1,7 @@
 /**
  * Invariantes cruzadas del plan sobre TODOS los vectores golden.
  *
- * Los 28 vectores de `contracts/domain/v1/golden/plan-resolution` congelan la
+ * Los 31 vectores de `contracts/domain/v1/golden/plan-resolution` congelan la
  * salida exacta del resolutor, y desde el paso 5 del ADR-0023 quien los recorre
  * comparando conteos es `services/ai-api/tests/test_plan_regresion.py`, en
  * Python. Pero un valor congelado sólo dice "esto no cambió", no "esto cuadra",

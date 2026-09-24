@@ -1,5 +1,6 @@
 import { porcentajesMayorResto } from "../escena/tamano-fisico";
 import type { SceneSpec } from "../escena/scene-spec";
+import type { PatronColorResuelto } from "@/lib/plan/patron-color";
 
 /**
  * Proporción y acabado de color POR ESTRUCTURA para el modelo de imagen y para
@@ -56,6 +57,27 @@ function acabadoEnIngles(acabado: string | null | undefined): string | null {
 /** Id de la estructura del plan a la que pertenece un elemento (`EST_02#2` -> `EST_02`). */
 export function idDeEstructura(element: SceneSpec["elements"][number]): string {
   return element.visual_semantics?.repetition_group ?? element.element_id.split("#")[0]!;
+}
+
+/**
+ * Frase del patrón de color de la estructura del elemento, tal como la escribió
+ * Python en `plan_resuelto.patrones_color` (ADR-0028 §12). Adaptador temporal
+ * hasta que el prompt de imagen migre a Python: aquí solo se busca la frase;
+ * nunca se redacta, se expande ni se cuenta un patrón.
+ *
+ * `undefined` cuando la estructura no tiene patrón aplicado (una sugerencia
+ * `aplicado: false` no es del plan) o cuando la frase viene vacía (modo
+ * aleatorio: el reparto orgánico de siempre). En ese caso el prompt no cambia.
+ */
+export function frasePatronColor(
+  patrones: readonly PatronColorResuelto[] | undefined,
+  element: SceneSpec["elements"][number],
+  campo: "prompt_gemini" | "prompt_lora",
+): string | undefined {
+  if (!patrones?.length) return undefined;
+  const estructura = idDeEstructura(element);
+  const frase = patrones.find((patron) => patron.aplicado && patron.estructura_id === estructura)?.[campo].trim();
+  return frase || undefined;
 }
 
 /**

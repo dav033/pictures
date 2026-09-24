@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
+import { PistaPatronSchema } from "../../plan/patron-color";
 import { VisualSemanticsSchema } from "../escena/lora-semantics";
 import {
   CatalogVisualDescriptorSchema,
@@ -51,6 +52,15 @@ const MeasuredColorSchema = z
   })
   .strict();
 
+/**
+ * Patrón de color que la detección en Python leyó en la foto para este
+ * elemento (ADR-0028 §11): la pista del plan sin el id, que aquí es el propio
+ * elemento. Es una pista, no una decisión: al confirmar el plan viaja como
+ * `pistas_patron` y Python decide si cubre los colores de la estructura o usa
+ * el preset. Sus colores son nombres de la paleta del catálogo.
+ */
+export const PatronColorReferenciaSchema = PistaPatronSchema.omit({ referencia_element_id: true });
+
 const AppearanceSchema = z
   .object({
     observed_colors: z.array(texto(80)).max(8),
@@ -69,6 +79,8 @@ const AppearanceSchema = z
     // dorados en la punta") — sin esto, un elemento multi-material solo tenía
     // una `shape` de texto libre sin desglose real de proporciones.
     composition: texto(240).default("single uniform material"),
+    /** Opcional: solo con la detección encendida y en estructuras de globos donde leyó un patrón. */
+    patron_color: PatronColorReferenciaSchema.optional(),
   })
   .strict();
 
@@ -233,6 +245,7 @@ export type ReferenceBlueprintV2 = z.infer<typeof ReferenceBlueprintV2Schema>;
 export type ReferenceElement = z.infer<typeof ReferenceElementSchema>;
 export type ReferenceBBox = z.infer<typeof BBoxSchema>;
 export type MaterialLine = z.infer<typeof MaterialLineSchema>;
+export type PatronColorReferencia = z.infer<typeof PatronColorReferenciaSchema>;
 
 export function stableElementId(sourceImageId: string, index: number): string {
   return `${sourceImageId}_E${String(index + 1).padStart(2, "0")}`;

@@ -1,14 +1,16 @@
 import { analizarReferenciasV2 } from "@/lib/ia/amaterasu/analizar-referencias-v2";
 import { crearChatTurnoPython } from "@/lib/ia/amaterasu/chat-python";
+import { detectarPatronesReferencia } from "@/lib/ia/amaterasu/patron-referencia";
 import { chatDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
 import type { ProveedorId } from "@/lib/ia/nucleo/tipos";
-import { REFERENCE_ANALYSIS_PYTHON_ENABLED } from "@/lib/ia/nucleo/feature-flags";
+import { PATRON_REFERENCIA_PYTHON_ENABLED, REFERENCE_ANALYSIS_PYTHON_ENABLED } from "@/lib/ia/nucleo/feature-flags";
 import { registrarFalloUi } from "@/lib/errores-ui/traducir-error-servidor";
 import { cuerpoExito, leerCuerpo, referenciasEtiquetadas, respuestaError, validarCuerpo } from "./analisis-http";
 
 export const maxDuration = 120;
 
 export async function POST(request: Request) {
+  const vencimiento = Date.now() + maxDuration * 1000;
   let id: ProveedorId | undefined;
   const requestId = crypto.randomUUID();
   const correlationHeader = request.headers.get("x-correlation-id");
@@ -28,7 +30,13 @@ export async function POST(request: Request) {
     // La descripción visual no decide productos. El chat resuelve después
     // cada elemento mediante buscar_catalogo_rag contra PostgreSQL validado.
     // `sin_cache` es el "Reintentar" de la UI: pide un análisis nuevo.
-    const result = await analizarReferenciasV2(chat, references, [], "perceptual", { requestId, correlationId, superficie: "/api/references/analyze" }, request.signal, { forzarNuevoAnalisis: body.sinCache });
+    const analisis = await analizarReferenciasV2(chat, references, [], "perceptual", { requestId, correlationId, superficie: "/api/references/analyze" }, request.signal, { forzarNuevoAnalisis: body.sinCache });
+    // ADR-0028 §11: el patrón de color de cada estructura lo lee Python en una
+    // llamada aparte (el prompt del análisis sigue congelado). Un fallo deja el
+    // blueprint sin pistas; nunca rompe el análisis.
+    const result = PATRON_REFERENCIA_PYTHON_ENABLED
+      ? { ...analisis, blueprint: await detectarPatronesReferencia(analisis.blueprint, references, { requestId, correlationId, signal: request.signal, vencimiento }) }
+      : analisis;
     return Response.json(cuerpoExito(result, references, requestId, id), { headers: { "X-Request-ID": requestId } });
   } catch (error) {
     const { status, body, uiError } = respuestaError(error, requestId);

@@ -20,6 +20,7 @@ import {
   llamarPythonIntentParse,
   llamarPythonHappieGenerate,
   llamarPythonLoraGenerate,
+  llamarPythonPatronReferencia,
   llamarPythonPlanResolution,
   llamarPythonReferenceTurn,
   llamarPythonRerank,
@@ -580,6 +581,85 @@ async function testReferenceTurnEnvelope(): Promise<void> {
   );
 }
 
+async function testPatronReferenciaEnvelope(): Promise<void> {
+  const calls: CapturedCall[] = [];
+  const pistas = [
+    { element_id: "REF_01_E01", modo: "bloques", colores: ["dorado", "blanco"], pesos: [70, 30], confianza: 0.7 },
+    { element_id: "REF_01_E02", modo: "ninguno", colores: [], confianza: 0.2 },
+  ];
+  const payload = (overrides: Record<string, unknown> = {}) => ({
+    operation_schema_version: "patron-referencia-result.v1",
+    pistas,
+    modelo: "gemini-3.6-flash",
+    prompt_version: "patron-referencia.v1:abc",
+    usage: { prompt_token_count: 1200, candidates_token_count: 80, tool_use_prompt_token_count: 0 },
+    ...overrides,
+  });
+  const fetchImpl: typeof fetch = async (input, init) => {
+    calls.push({ input, init });
+    return successResponse(payload());
+  };
+  // A real photo is far above the 64KB default cap: the call uses the image cap.
+  const dataBase64 = "A".repeat(200_000);
+  const input = {
+    imagen: { mimeType: "image/jpeg" as const, dataBase64 },
+    elementos: [
+      { elementId: "REF_01_E01", tipo: "columna", bbox: { x: 0.1, y: 0.2, width: 0.3, height: 0.6 }, coloresObservados: ["gold", "white"] },
+      { elementId: "REF_01_E02", tipo: "desconocido", coloresObservados: [] },
+    ],
+    requestId: REQUEST_ID,
+    correlationId: CORRELATION_ID,
+    env: BASE_ENV,
+  };
+  const result = await llamarPythonPatronReferencia({ ...input, fetchImpl });
+  assert.deepEqual(result.pistas, pistas);
+  assert.equal(result.modelo, "gemini-3.6-flash");
+  assert.equal(result.promptVersion, "patron-referencia.v1:abc");
+  assert.equal(result.usage?.prompt_token_count, 1200);
+  assert.equal(calls.length, 1);
+  assert.equal(new URL(String(calls[0].input)).pathname, "/internal/v1/ia/patron-referencia");
+  const body = JSON.parse(String(calls[0].init?.body)) as Record<string, unknown> & { context: { body_sha256: string; scopes: string[] } };
+  const operationBody = {
+    schema_version: "patron-referencia.v1",
+    imagen: { mime_type: "image/jpeg", data_base64: dataBase64 },
+    elementos: [
+      { element_id: "REF_01_E01", tipo: "columna", bbox: { x: 0.1, y: 0.2, width: 0.3, height: 0.6 }, colores_observados: ["gold", "white"] },
+      { element_id: "REF_01_E02", tipo: "desconocido", colores_observados: [] },
+    ],
+  };
+  assert.deepEqual({ schema_version: body.schema_version, imagen: body.imagen, elementos: body.elementos }, operationBody);
+  assert.deepEqual(body.context.scopes, ["ia.patron_referencia"]);
+  assert.equal(body.context.body_sha256, sha256Body(JSON.stringify(operationBody)));
+
+  // The answer must be about the elements that were asked, once each.
+  const invalidos: Array<Record<string, unknown>> = [
+    payload({ pistas: [{ ...pistas[0], element_id: "REF_09_E01" }] }),
+    payload({ pistas: [pistas[0], pistas[0]] }),
+    payload({ pistas: [{ ...pistas[0], colores: [] }] }),
+    payload({ pistas: [{ ...pistas[0], pesos: [70] }] }),
+    payload({ pistas: [{ ...pistas[0], modo: "arcoiris" }] }),
+    payload({ pistas: [{ ...pistas[0], confianza: 1.5 }] }),
+    payload({ operation_schema_version: "otra.v1" }),
+    payload({ extra: true }),
+  ];
+  for (const invalido of invalidos) {
+    await assert.rejects(
+      () => llamarPythonPatronReferencia({ ...input, fetchImpl: async () => successResponse(invalido) }),
+      (error: unknown) => error instanceof PythonAdapterError && error.code === "PYTHON_INVALID_RESPONSE",
+      JSON.stringify(invalido).slice(0, 200),
+    );
+  }
+  await assert.rejects(
+    () => llamarPythonPatronReferencia({
+      ...input,
+      fetchImpl: async () => Response.json({ detail: { code: "patron_referencia_empty_response", provider_detail: "finish_reason=SAFETY" } }, { status: 502 }),
+    }),
+    (error: unknown) => error instanceof PythonAdapterError
+      && error.domainCode === "patron_referencia_empty_response"
+      && error.providerDetail === "finish_reason=SAFETY",
+  );
+}
+
 async function testImageGenerateEnvelope(): Promise<void> {
   const calls: CapturedCall[] = [];
   const fetchImpl: typeof fetch = async (input, init) => {
@@ -983,6 +1063,26 @@ async function testPlanResolutionEnvelope(): Promise<void> {
   }, operationBody);
   assert.equal(body.context.scopes[0], "plan.resolve");
   assert.equal(body.context.body_sha256, sha256Body(JSON.stringify(operationBody)));
+  // ADR-0028 §7: callers that do not complete patterns send the same bytes as before.
+  assert.equal("completar_patrones" in body, false);
+  assert.equal("pistas_patron" in body, false);
+
+  const pista = { referencia_element_id: "REF_01_E01", modo: "espiral" as const, colores: ["blanco", "negro"], globos_por_racimo: 4, confianza: 0.8 };
+  await llamarPythonPlanResolution({
+    plan,
+    allowlist: [{ product_id: "prod-rojo", variant_ids: ["var-rojo-12"] }],
+    catalogSnapshotId: "products_catalog:test",
+    completarPatrones: true,
+    pistasPatron: [pista],
+    requestId: REQUEST_ID,
+    correlationId: CORRELATION_ID,
+    env: BASE_ENV,
+    fetchImpl,
+  });
+  const conPatrones = JSON.parse(String(calls[1].init?.body)) as Record<string, unknown> & { context: { body_sha256: string } };
+  assert.equal(conPatrones.completar_patrones, true);
+  assert.deepEqual(conPatrones.pistas_patron, [pista]);
+  assert.equal(conPatrones.context.body_sha256, sha256Body(JSON.stringify({ ...operationBody, completar_patrones: true, pistas_patron: [pista] })));
 
   const invalidFetch: typeof fetch = async () => successResponse({
     ...validPlanResolutionPayload(),
@@ -1190,6 +1290,7 @@ async function main(): Promise<void> {
   await testIntentParseEnvelope();
   await testHappieGenerateEnvelope();
   await testReferenceTurnEnvelope();
+  await testPatronReferenciaEnvelope();
   await testImageGenerateEnvelope();
   await testLoraGenerateEnvelope();
   await testChatTurnStreamEnvelope();

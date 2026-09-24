@@ -47,9 +47,9 @@ lógica TypeScript que esta función toque se migra.
    patrón, sus cuotas por material salen de la rejilla, no de `participacion`;
    `_complete_plan` reescribe `participacion` con las cuotas efectivas para que
    el plan eco sea veraz y resolver dos veces sea un punto fijo.
-4. **Patrón inicial: foto → preset.** Al confirmar un plan, Next pide
-   `completar_patrones: true` y manda las pistas detectadas en la foto
-   (`pistas_patron`). Python asigna el patrón de la pista si cubre los colores;
+4. **Patrón inicial: foto → preset.** Al confirmar un plan (con la bandera
+   `PATRONES_COLOR_V1` encendida), Next pide `completar_patrones: true` y manda
+   las pistas detectadas en la foto (`pistas_patron`). Python asigna el patrón de la pista si cubre los colores;
    si no, el preset de la estructura. Re-resoluciones posteriores no completan.
 5. **Derivado fuera del hash:** `plan_resuelto.patrones_color[]` (nivel
    superior, como `costes_por_estructura`) trae la rejilla, conteos, pasos,
@@ -97,6 +97,14 @@ lógica TypeScript que esta función toque se migra.
 - **Canonización de colores en TS** (`canonizarColoresPlan`) sigue antes de
   resolver; la edición en Python no canoniza. Se retira con la migración de la
   taxonomía de colores a Python.
+- **Bandera `PATRONES_COLOR_V1`** (`featureEnabled`, apagada por defecto en el
+  código). Next solo pide `completar_patrones`/`pistas_patron` al confirmar un
+  plan si está encendida. Se enciende en el mismo despliegue que la edición en
+  Python (§9) y la UI del editor, y se retira después de validarlo en
+  producción. La detección en la foto tiene su propia bandera
+  (`PATRON_REFERENCIA_PYTHON_ENABLED`); conviene encender las dos juntas.
+- **Tablas ES→EN exportadas desde TypeScript** (`x-colores-en`, `x-acabados-en`).
+  Son de solo lectura para Python hasta que la taxonomía de colores migre.
 
 ---
 
@@ -236,7 +244,7 @@ en español para el decorador. Motivos:
 | `racimo_incompleto` | `espiral` con `len(racimo) != k` |
 | `direccion_no_permitida` | transversal/diagonal fuera de pared, o diagonal con modo distinto de degradado |
 | `simetria_no_permitida` | `espejo` fuera de arco |
-| `material_sin_uso` | tras expandir, un material de la estructura queda con 0 globos (el mensaje nombra el color) |
+| `material_sin_uso` | tras expandir, un material de la estructura queda con 0 globos (el mensaje nombra el color), o con varios tamaños `T` no alcanza para un globo por color |
 | `rejilla_demasiado_grande` | más de 4000 celdas |
 
 Modos por tipo:
@@ -254,7 +262,11 @@ Modos por tipo:
   (racimos completos: el total puede subir o bajar respecto a `T` en menos de
   `k/2` racimos, y sube con los extras de flor).
 - **Varios tamaños:** `T_final = T`; totales por material
-  `_hamilton(T, [T * c_m / M], tiebreak 0)`.
+  `_hamilton(T, [T * c_m / M], tiebreak 0)`. Todo color de la gráfica es una
+  compra: si un material con celdas queda en 0, toma 1 globo del material con
+  más unidades (desempate por posición), como `plan._distribute_units`; en ese
+  caso `participacion` y la siembra de la matriz usan `unidades / T`. Si
+  `M ≠ T`, `patrones_color` lleva un aviso.
 - La matriz tamaño × material se llena con los márgenes enteros ya dados
   (refactor de `_apportion_margins` en "márgenes" + "relleno"; el camino sin
   patrón no cambia ni un byte).
@@ -315,8 +327,10 @@ sin `patron_color`:
 ## 8. Derivado: `patrones_color` en `plan-resuelto.v1`
 
 Opcional, nivel superior, **fuera del snapshot** (no entra en `plan_hash`).
-Una entrada por estructura geométrica con ≥2 materiales: `aplicado: true` si
-la estructura tiene `patron_color`, `false` (sugerencia) si no.
+Una entrada por estructura que **tiene** `patron_color` (`aplicado: true`); se
+omite entero cuando ninguna lo tiene. Las sugerencias (`aplicado: false`) solo
+las produce la vista previa (§10): emitirlas al resolver cambiaría la salida
+de todo plan sin patrón, empezando por los 28 vectores dorados.
 
 ```ts
 PatronColorResueltoSchema = z.object({
@@ -352,8 +366,16 @@ los del plan (la UI lo rotula "sugerido").
 ### Textos (Python)
 
 Nombres de color en inglés desde el contrato (`x-colores-en`, exportado desde
-`PALETA_COLORES_EN_V2` de `src/lib/rag/taxonomy/v2.ts`; acabados desde
-`x-acabados-en`). Orden de colores = orden del patrón. Máximo 4 colores
+la misma tabla con la que el compilador LoRA traduce colores,
+`LORA_COLOR_NAMES_EN` — paleta de `taxonomy/v2.ts` más sus alias —; acabados
+desde `x-acabados-en`). Un color que no esté en la tabla se nombra "catalog
+color", nunca con la palabra en español. `prompt_lora` nombra solo el color,
+sin acabado y sin repetir el mismo nombre seguido (el compilador ya dice los
+acabados en su frase de materiales, con su propio vocabulario);
+`x-acabados-en` solo se usa en `prompt_gemini`. La detección en la foto solo
+responde con `x-paleta-colores` (la paleta de `taxonomy/v2.ts`). **`prompt_lora` es inglés ASCII**
+("ombre", no "ombré"): TypeScript lo inserta tal cual y el control de idioma
+del LoRA rechaza diacríticos y palabras en español. Orden de colores = orden del patrón. Máximo 4 colores
 nombrados en una secuencia; más → "a repeating sequence of N colors".
 Plantillas (A, B, C = colores; eje = "from base to top" en columna, "from the
 left base over the top to the right base" en arco, "from the base to the open
@@ -367,7 +389,7 @@ pared):
 | espiral/recto | `composed of straight vertical stripes of A and B balloons` | `COLOR PATTERN — identical clusters (…) stacked without rotation so each color runs as a straight vertical stripe {eje}.` |
 | anillos | `built with stacked bands of A, B and C repeating {eje}` | `COLOR PATTERN — each cluster is a single color; clusters follow the order A → B → C, N cluster(s) per color, repeating {eje}.` |
 | bloques | `color-blocked in sections of A, then B, then C {eje}` | `COLOR PATTERN — solid color blocks in this order {eje}: A (~p%), B (~p%), C (~p%); clean transitions between blocks.` |
-| degradado | `in an ombré gradient from A through B to C {eje}` | `COLOR PATTERN — a gradual ombré {eje}: A, blending through B into C; soft mixed transition zones, no hard lines.` (escalonada: "stepped bands") |
+| degradado | `in an ombre gradient from A through B to C {eje}` (escalonada: `in stepped ombre bands of …`) | `COLOR PATTERN — a gradual ombré {eje}: A, blending through B into C; soft mixed transition zones, no hard lines.` (escalonada: "stepped bands") |
 | aleatorio | *(vacío: el caption orgánico de hoy)* | *(vacío: la frase orgánica de hoy)* |
 | flor | `with daisy flowers of B petals and a C center set between A clusters` | `COLOR PATTERN — every S A clusters, three B clusters form a flower with one C balloon at its center; repeat {eje}.` |
 | damero | `in a checkerboard of A and B` (3–4 colores: `with diagonal rainbow bands of A, B and C`) | `COLOR PATTERN — a checkerboard of A and B squares of T balloons` / `diagonal bands of A, B, C` |
@@ -449,12 +471,15 @@ plan cae al preset.
   `patrones_color` con `aplicado` y `prompt_gemini` no vacío, esa frase
   reemplaza la oración "Distribute them through intentional organic clusters…
   avoid flat stripes…". El prefijo `APPROVED COLOR VARIETY — use exactly these
-  catalog colors: X.` se conserva (lo parsea `coherencia.ts`).
+  catalog colors: X.` se conserva (lo parsea `coherencia.ts`). Si la línea es
+  `MONOCHROME LOCK` (dos acabados del mismo color con patrón, p. ej. dorado
+  cromado + dorado mate), el candado se conserva y la frase va detrás. El
+  elemento de la escena lleva `color_pattern` con la misma frase.
 - LoRA: `prompt_lora` se agrega a la cláusula de la estructura justo después de
   la frase de materiales; forma parte de su clave de agrupación, nunca se
   compacta ni se descarta; la cláusula no se reduce con `conciseClause`; con
-  patrón no se añade "mixed organically rather than graded". El JSON gana
-  `color_pattern: {type, sequence, direction}`.
+  patrón no se añade "mixed organically rather than graded". Cada sujeto del
+  JSON gana `color_pattern` con el mismo texto de `prompt_lora`.
 - Híbrido (etapa 2): el hard lock añade "Keep each structure's color pattern
   exactly as in the first image."
 

@@ -5,7 +5,8 @@ import { DomainContractSchemas } from "../../src/lib/ia/contracts/domain-v1";
 import { geometriaEstructurasOficiales, reglasJsonSchemaEstructuraOficial } from "../../src/lib/plan/estructuras-oficiales";
 import { tonosColoresCatalogo } from "../../src/lib/rag/catalog/similitud-color";
 import { reglasMezclas } from "../../src/lib/plan/mezclas";
-import { PALETA_COLORES_EN_V2 } from "../../src/lib/rag/taxonomy/v2";
+import { LORA_COLOR_NAMES_EN } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
+import { PALETA_COLORES_V2 } from "../../src/lib/rag/taxonomy/v2";
 import { ACABADO_EN } from "../../src/lib/ia/uzume/mezcla-color-escena";
 
 const outputDirectory = path.join(process.cwd(), "contracts", "domain", "v1");
@@ -84,10 +85,14 @@ async function main(): Promise<void> {
           ...generated,
           "x-geometria-estructuras-oficiales": geometriaEstructurasOficiales(),
           "x-reglas-mezclas": reglasMezclas(),
-          // plan.py (patron_color.py) names each color of a color pattern in the
-          // image prompt with the same ES→EN tables the TypeScript prompts use
-          // (ADR-0028); owners: taxonomy/v2.ts and mezcla-color-escena.ts.
-          "x-colores-en": { ...PALETA_COLORES_EN_V2 },
+          // patron_color.py names each color of a color pattern in the image
+          // prompts with the same ES→EN tables the TypeScript prompts use
+          // (ADR-0028): the LoRA caption's color names (palette plus aliases, so
+          // "gris" is "gray" in both) and the Gemini scene's finish words.
+          "x-colores-en": { ...LORA_COLOR_NAMES_EN },
+          // The catalog color vocabulary itself (taxonomy/v2.ts): the photo
+          // pattern detection may only answer with these names.
+          "x-paleta-colores": [...PALETA_COLORES_V2],
           "x-acabados-en": { ...ACABADO_EN },
         }
       : entry.id === "catalog-search.v1"

@@ -10,7 +10,8 @@ export type FeatureFlag =
   | "VENUE_AWARE_PLACEMENT_V1"
   | "MEASURED_COLOR_DOMINANCE_V1"
   | "AMBIENTE_FIESTA_V1"
-  | "REFERENCIA_EN_ETAPA1_V1";
+  | "REFERENCIA_EN_ETAPA1_V1"
+  | "PATRONES_COLOR_V1";
 
 export function featureEnabled(name: FeatureFlag): boolean {
   const raw = process.env[name];
@@ -33,6 +34,11 @@ export function featureEnabled(name: FeatureFlag): boolean {
     // dibuja el LoRA, y elegir entre eso y editar el venue directamente exige la
     // evaluación de 10 planes de la fase 4.
     if (name === "REFERENCIA_EN_ETAPA1_V1") return false;
+    // Default OFF: al confirmar, Python completa el patrón de color de cada
+    // estructura (ADR-0028 §7) y el patrón manda sobre el conteo por color. La
+    // edición de hoy (agregar, quitar, repartir) no sabe de patrones hasta que
+    // la edición en Python (§9) salga en el mismo despliegue.
+    if (name === "PATRONES_COLOR_V1") return false;
     return true;
   }
   return raw === "1" || raw.toLowerCase() === "true" || raw.toLowerCase() === "on";
@@ -86,6 +92,16 @@ export const CHAT_PYTHON_ENABLED = process.env.CHAT_PYTHON_ENABLED === "true";
 
 /** Default: OFF. Routes Happie's two Gemini calls (the webhook chat extractor and the package recommender) through Python; prompts, the conversation state machine and the package id filter stay in TypeScript either way. */
 export const HAPPIE_PYTHON_ENABLED = process.env.HAPPIE_PYTHON_ENABLED === "true";
+
+/**
+ * Default: OFF (docs/architecture/decisions/0028 §11). After the reference
+ * analysis, asks Python to read each balloon structure's color pattern in the
+ * photo and stores it on its blueprint element (`appearance.patron_color`).
+ * It adds one Gemini call per analyzed photo; a failure never breaks the
+ * analysis. Off: no hints, and confirmed plans take the preset pattern. The
+ * hints only reach a plan while `PATRONES_COLOR_V1` is on.
+ */
+export const PATRON_REFERENCIA_PYTHON_ENABLED = process.env.PATRON_REFERENCIA_PYTHON_ENABLED === "true";
 
 // --- LoRA capability flags -------------------------------------------------
 

@@ -11,6 +11,12 @@ The stable domain error contract for ``/internal/v1/plan/resolve`` is:
 | ``invalid_plan`` | 422 | The plan does not conform to Plan 1.0. |
 | ``catalog_snapshot_not_found`` | 422 | The requested catalog snapshot is not published. |
 | ``allowlist_product_mismatch`` | 422 | A variant is paired with a product that does not own it in the snapshot. |
+| ``patron_invalido`` | 422 | A structure's ``patron_color`` breaks a cross rule (ADR-0028 §4). |
+
+``patron_invalido`` carries ``details``: ``estructura_id``, a stable ``motivo``
+and a Spanish ``mensaje`` for the decorator. The pattern helpers used by the
+editor (``patron_resuelto_de_estructura`` and friends) also raise
+``estructura_no_encontrada`` (404).
 
 An uncovered plan is not an error. The resolver returns HTTP 200 and reports
 the missing material in ``plan_resuelto.sin_cobertura``; admissible catalog
@@ -38,7 +44,7 @@ from math import isfinite
 from typing import Literal, Protocol, cast
 from urllib.parse import urlparse
 
-from pydantic import Field, ValidationError, field_validator, model_validator
+from pydantic import ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from app.generated_models import (
     contract_schema,
@@ -50,6 +56,19 @@ from app.generated_models import (
 )
 from app.catalog import purchase_color_for_unsold
 from app.operational_models import ContractModel, OperationalRequest
+from app.patron_color import (
+    CONFIANZA_MINIMA_PISTA,
+    EstructuraPatron,
+    Expansion,
+    MaterialPatron,
+    PatronColorInvalido,
+    conteo_por_instancia,
+    participaciones,
+    patron_desde_pista,
+    patron_resuelto,
+    sugerir_patron,
+    validar_y_expandir,
+)
 
 
 PLAN_RESOLUTION_SCOPE = "plan.resolve"
@@ -149,16 +168,24 @@ class CatalogPlanStore(Protocol):
 class PlanResolutionError(Exception):
     """Stable domain error translated by the HTTP boundary.
 
-    Domain codes are limited to ``invalid_plan``,
-    ``catalog_snapshot_not_found``, and ``allowlist_product_mismatch``. Missing
-    catalog coverage is represented in the successful result, not by this
-    exception.
+    Resolution codes are ``invalid_plan``, ``catalog_snapshot_not_found``,
+    ``allowlist_product_mismatch`` and ``patron_invalido``; the pattern helpers
+    add ``estructura_no_encontrada``. ``details`` travels next to the code in
+    the error body (``patron_invalido``: ``estructura_id``, ``motivo``,
+    ``mensaje``). Missing catalog coverage is represented in the successful
+    result, not by this exception.
     """
 
-    def __init__(self, code: str, status_code: int = 422) -> None:
+    def __init__(
+        self,
+        code: str,
+        status_code: int = 422,
+        details: Mapping[str, object] | None = None,
+    ) -> None:
         super().__init__(code)
         self.code = code
         self.status_code = status_code
+        self.details: dict[str, object] | None = dict(details) if details else None
 
 
 class PlanAllowlistEntry(ContractModel):
@@ -184,6 +211,42 @@ class PlanAllowlistEntry(ContractModel):
         return normalized
 
 
+class PistaPatron(ContractModel):
+    """Color pattern read in the reference photo (``PistaPatronSchema``, ADR-0028 §7)."""
+
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    referencia_element_id: str = Field(min_length=1, max_length=80)
+    modo: Literal["espiral", "anillos", "bloques", "degradado", "aleatorio", "flor", "damero"]
+    colores: list[str] = Field(min_length=1, max_length=12)
+    globos_por_racimo: int | None = Field(default=None, ge=1, le=8)
+    pesos: list[int] | None = Field(default=None, max_length=12)
+    confianza: float = Field(ge=0, le=1)
+
+    @field_validator("referencia_element_id")
+    @classmethod
+    def normalize_element_id(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("referencia_element_id must not be blank")
+        return value
+
+    @field_validator("colores")
+    @classmethod
+    def normalize_colors(cls, values: list[str]) -> list[str]:
+        normalized = [value.strip() for value in values]
+        if any(not value or len(value) > 80 for value in normalized):
+            raise ValueError("colores must be non-blank strings of at most 80 characters")
+        return normalized
+
+    @field_validator("pesos")
+    @classmethod
+    def validate_weights(cls, values: list[int] | None) -> list[int] | None:
+        if values is not None and any(value < 1 or value > 100 for value in values):
+            raise ValueError("pesos must be integers between 1 and 100")
+        return values
+
+
 class PlanResolutionRequest(OperationalRequest):
     """Strict request carried inside the operational envelope."""
 
@@ -192,6 +255,10 @@ class PlanResolutionRequest(OperationalRequest):
     allowlist: list[PlanAllowlistEntry] = Field(max_length=256)
     catalog_snapshot_id: str = Field(min_length=1, max_length=160)
     lora_variant_ids: list[str] = Field(default_factory=list, max_length=MAX_PLAN_LORA_VARIANTS)
+    # ADR-0028 §7: Next asks for patterns once, when the plan is confirmed.
+    # Later re-resolutions keep what the plan already declares.
+    completar_patrones: bool = Field(default=False, strict=True)
+    pistas_patron: list[PistaPatron] = Field(default_factory=list, max_length=16)
 
     @field_validator("catalog_snapshot_id")
     @classmethod
@@ -435,7 +502,7 @@ def _normalize_space_source(space: Mapping[str, object]) -> dict[str, object]:
     return normalized
 
 
-def _complete_plan(raw_plan: Mapping[str, object]) -> dict[str, object]:
+def _complete_measures(raw_plan: Mapping[str, object]) -> dict[str, object]:
     plan = {key: value for key, value in raw_plan.items()}
     space = _normalize_space_source(_mapping(plan.get("espacio")))
     plan["espacio"] = space
@@ -470,6 +537,130 @@ def _complete_plan(raw_plan: Mapping[str, object]) -> dict[str, object]:
     plan["estructuras"] = structures
     plan["supuestos"] = list(dict.fromkeys(assumptions))
     return plan
+
+
+def _complete_plan(
+    raw_plan: Mapping[str, object],
+    *,
+    completar_patrones: bool = False,
+    pistas: Sequence[Mapping[str, object]] = (),
+) -> dict[str, object]:
+    """Fill default measures and make every color pattern authoritative.
+
+    With ``completar_patrones`` a geometric structure without ``patron_color``
+    gets the pattern of its photo hint, or else its preset (ADR-0028 §7).
+    Then every structure with a pattern gets ``participacion`` rewritten from
+    its grid, so the echoed plan says what is built and resolving the result
+    again is a fixed point. A plan without patterns is returned exactly as
+    before, which keeps its ``plan_hash``.
+    """
+    plan = _complete_measures(raw_plan)
+    if completar_patrones:
+        _assign_patterns(plan, pistas)
+    return _sync_participations(plan, plan)
+
+
+def _pattern_error(structure_id: str, error: PatronColorInvalido) -> PlanResolutionError:
+    return PlanResolutionError(
+        "patron_invalido",
+        422,
+        {"estructura_id": structure_id, "motivo": error.motivo, "mensaje": error.mensaje},
+    )
+
+
+def _pattern_context(
+    plan: Mapping[str, object], structure: Mapping[str, object]
+) -> EstructuraPatron:
+    """What ``patron_color`` needs from one structure of a completed plan."""
+    tipo = _text(structure.get("tipo")) or ""
+    total, single_size = 0, False
+    if tipo in _GEOMETRIC_TYPES:
+        _axis, total, proportions, _unplaced = _structure_count(plan, structure)
+        single_size = len(proportions) == 1
+    measures = _mapping(structure.get("medidas"))
+    return EstructuraPatron(
+        estructura_id=_text(structure.get("estructura_id")) or "",
+        tipo=tipo,
+        total=total,
+        un_tamano=single_size,
+        ancho_m=_number(measures.get("ancho_m")),
+        alto_m=_number(measures.get("alto_m")),
+        repeticiones=max(1, _integer(structure.get("repeticiones")) or 1),
+        materiales=tuple(
+            MaterialPatron(
+                color=_text(material.get("color")),
+                acabado=_text(material.get("acabado")),
+                participacion=_number(material.get("participacion")) or 0.0,
+            )
+            for material in _mappings(structure.get("materiales"))
+        ),
+    )
+
+
+def _expand_pattern(
+    plan: Mapping[str, object], structure: Mapping[str, object]
+) -> tuple[EstructuraPatron, Expansion]:
+    context = _pattern_context(plan, structure)
+    try:
+        return context, validar_y_expandir(context, _mapping(structure.get("patron_color")))
+    except PatronColorInvalido as error:
+        raise _pattern_error(context.estructura_id, error) from error
+
+
+def _assign_patterns(plan: dict[str, object], pistas: Sequence[Mapping[str, object]]) -> None:
+    """Photo hint first, preset otherwise (ADR-0028 §7); in place on a completed plan."""
+    for structure in cast(list[dict[str, object]], plan["estructuras"]):
+        if structure.get("patron_color") is not None:
+            continue
+        context = _pattern_context(plan, structure)
+        element_id = _text(structure.get("referencia_element_id"))
+        hint = next(
+            (
+                pista
+                for pista in pistas
+                if element_id is not None
+                and pista.get("referencia_element_id") == element_id
+                and (_number(pista.get("confianza")) or 0.0) >= CONFIANZA_MINIMA_PISTA
+            ),
+            None,
+        )
+        pattern = patron_desde_pista(context, hint) if hint is not None else None
+        if pattern is None:
+            try:
+                pattern = sugerir_patron(context)
+            except PatronColorInvalido:
+                # Not geometric, a single color, or a grid too small for the
+                # preset: the structure keeps today's organic distribution.
+                continue
+        structure["patron_color"] = pattern
+
+
+def _sync_participations(
+    measured: Mapping[str, object], target: Mapping[str, object]
+) -> dict[str, object]:
+    """``target`` with ``participacion`` rewritten from each pattern's grid (§5).
+
+    ``measured`` is the same plan with its measures completed, which is what
+    the grid is sized from; ``target`` may be that plan or the caller's own.
+    """
+    result = dict(target)
+    structures: list[object] = []
+    for measured_structure, structure in zip(
+        _mappings(measured.get("estructuras")), _mappings(target.get("estructuras")), strict=True
+    ):
+        if structure.get("patron_color") is None:
+            structures.append(structure)
+            continue
+        context, expansion = _expand_pattern(measured, measured_structure)
+        shares = participaciones(conteo_por_instancia(context, expansion))
+        synced = dict(structure)
+        synced["materiales"] = [
+            {**dict(material), "participacion": share}
+            for material, share in zip(_mappings(structure.get("materiales")), shares, strict=True)
+        ]
+        structures.append(synced)
+    result["estructuras"] = structures
+    return result
 
 
 def _ids_for_plan(
@@ -679,12 +870,8 @@ def _apportion_margins(
     accents vanished when a second color was added and the color split drifted
     on small repeated pieces.
 
-    The matrix is complete (every size x material cell exists) and no cell has a
-    cap, so while a row and a column are both short there is a cell that can
-    take the unit; both deficits, which add up to the same amount, run out
-    together. The greedy sweep is therefore enough and no augmenting path is
-    needed; if a deficit survived it fails instead of returning a matrix whose
-    margins do not close.
+    The margins are computed here and the matrix is filled by ``_fill_margins``;
+    a color pattern brings its own material margin to that same fill.
     """
     if not proportions or not shares:
         return []
@@ -696,14 +883,40 @@ def _apportion_margins(
         if share_sum > 0
         else [1 / len(shares) for _share in shares]
     )
-    size_totals = _hamilton(
+    material_totals = _hamilton(
+        total, [total * quota for quota in material_quotas], [0.0 for _quota in material_quotas]
+    )
+    return _fill_margins(
+        total, proportions, _size_totals(total, proportions), material_totals, material_quotas
+    )
+
+
+def _size_totals(total: int, proportions: Sequence[tuple[int, float]]) -> list[int]:
+    """Size margin of one instance: the effective mix, ties to the larger diameter."""
+    return _hamilton(
         total,
         [total * proportion for _diameter, proportion in proportions],
         [float(diameter) for diameter, _proportion in proportions],
     )
-    material_totals = _hamilton(
-        total, [total * quota for quota in material_quotas], [0.0 for _quota in material_quotas]
-    )
+
+
+def _fill_margins(
+    total: int,
+    proportions: Sequence[tuple[int, float]],
+    size_totals: Sequence[int],
+    material_totals: Sequence[int],
+    material_quotas: Sequence[float],
+) -> list[list[int]]:
+    """Size x material matrix whose rows and columns add up to the given margins.
+
+    The matrix is complete (every size x material cell exists) and no cell has a
+    cap, so while a row and a column are both short there is a cell that can
+    take the unit; both deficits, which add up to the same amount, run out
+    together. The greedy sweep is therefore enough and no augmenting path is
+    needed; if a deficit survived it fails instead of returning a matrix whose
+    margins do not close. ``material_quotas`` only seed the floors and the
+    order of the sweep; they must not exceed the material margins.
+    """
     matrix = [[math.floor(units * quota) for quota in material_quotas] for units in size_totals]
     missing_rows = [units - sum(matrix[row]) for row, units in enumerate(size_totals)]
     missing_columns = [
@@ -954,22 +1167,55 @@ def _physical_warnings(
     return warnings
 
 
-def _despiece_with_plan_sizes(
+def _structure_count(
     plan: Mapping[str, object], structure: Mapping[str, object]
-) -> tuple[float, list[dict[str, object]], tuple[int, ...]]:
+) -> tuple[float, int, tuple[tuple[int, float], ...], tuple[int, ...]]:
+    """Axis, balloons per instance, effective mix and unplaced mandatory sizes."""
     tipo = _text(structure.get("tipo")) or ""
     density = _text(structure.get("densidad")) or "media"
     mix = _text(structure.get("mezcla")) or "organica_fina"
     measures = _mapping(structure.get("medidas"))
     proportions, unplaced = _effective_proportions(mix, _required_sizes(plan))
-    axis, base_total = _total_globos(
+    axis, total = _total_globos(
         tipo, measures, density, mix, _text(structure.get("estructura_oficial")), proportions
     )
-    materials = _mappings(structure.get("materiales"))
-    matrix = _apportion_margins(
-        base_total,
+    return axis, total, proportions, unplaced
+
+
+def _pattern_matrix(
+    plan: Mapping[str, object],
+    structure: Mapping[str, object],
+    proportions: Sequence[tuple[int, float]],
+) -> list[list[int]]:
+    """Size x material split when a color pattern decides the colors (ADR-0028 §5).
+
+    The material margin is the grid's count (with one size the total becomes
+    the whole grid); the size margin still comes from the effective mix.
+    """
+    context, expansion = _expand_pattern(plan, structure)
+    count = conteo_por_instancia(context, expansion)
+    return _fill_margins(
+        count.total,
         proportions,
-        [_number(material.get("participacion")) or 0.0 for material in materials],
+        _size_totals(count.total, proportions),
+        count.unidades,
+        count.cuotas,
+    )
+
+
+def _despiece_with_plan_sizes(
+    plan: Mapping[str, object], structure: Mapping[str, object]
+) -> tuple[float, list[dict[str, object]], tuple[int, ...]]:
+    axis, base_total, proportions, unplaced = _structure_count(plan, structure)
+    materials = _mappings(structure.get("materiales"))
+    matrix = (
+        _pattern_matrix(plan, structure, proportions)
+        if structure.get("patron_color") is not None
+        else _apportion_margins(
+            base_total,
+            proportions,
+            [_number(material.get("participacion")) or 0.0 for material in materials],
+        )
     )
     repeats = max(1, _integer(structure.get("repeticiones")) or 1)
     # Each cell keeps its material position: two materials of the same color
@@ -2450,8 +2696,28 @@ def _build_resolved(
         "costes_por_estructura": _imputed_structure_costs(structures, purchases),
         "advertencias": list(dict.fromkeys(warnings)),
     }
+    # Derived for the editor and the assembly sheet, outside the snapshot and
+    # the hash (ADR-0028 §8). Only structures that carry a pattern: a
+    # suggestion here would change the output of every plan without one.
+    patterns = _resolved_patterns(plan)
+    if patterns:
+        result["patrones_color"] = patterns
     PlanResuelto.model_validate(result)
     return result
+
+
+def _resolved_patterns(plan: Mapping[str, object]) -> list[dict[str, object]]:
+    resolved: list[dict[str, object]] = []
+    for structure in _mappings(plan.get("estructuras")):
+        pattern = structure.get("patron_color")
+        if pattern is None:
+            continue
+        context = _pattern_context(plan, structure)
+        try:
+            resolved.append(patron_resuelto(context, _mapping(pattern), aplicado=True))
+        except PatronColorInvalido as error:
+            raise _pattern_error(context.estructura_id, error) from error
+    return resolved
 
 
 async def resolve_plan(
@@ -2459,7 +2725,11 @@ async def resolve_plan(
     catalog_store: CatalogPlanStore,
 ) -> dict[str, object]:
     """Resolve a plan and validate all three domain outputs before returning."""
-    raw_plan = _complete_plan(request.plan)
+    raw_plan = _complete_plan(
+        request.plan,
+        completar_patrones=request.completar_patrones,
+        pistas=[pista.model_dump(exclude_none=True) for pista in request.pistas_patron],
+    )
     try:
         PlanDecoracion.model_validate(raw_plan)
     except ValidationError as error:
@@ -2517,12 +2787,97 @@ async def resolve_plan(
     return result
 
 
+def _validate_plan(plan: Mapping[str, object]) -> None:
+    try:
+        PlanDecoracion.model_validate(plan)
+    except ValidationError as error:
+        raise PlanResolutionError("invalid_plan", 422) from error
+
+
+def _structure_index(plan: Mapping[str, object], estructura_id: str) -> int:
+    for index, structure in enumerate(_mappings(plan.get("estructuras"))):
+        if structure.get("estructura_id") == estructura_id:
+            return index
+    raise PlanResolutionError("estructura_no_encontrada", 404)
+
+
+def patron_resuelto_de_estructura(
+    plan: Mapping[str, object], estructura_id: str, patron: Mapping[str, object] | None
+) -> dict[str, object]:
+    """Expanded color pattern of one structure, without a catalog (ADR-0028 §10).
+
+    The plan is completed as ``resolve_plan`` completes it (without
+    ``completar_patrones``), so the grid, the counts and the texts are the ones
+    the next resolution will quote. ``patron`` replaces the structure's own
+    ``patron_color`` and comes back with ``aplicado: true``; ``None`` asks for
+    the preset, computed without the structure's current pattern, and comes
+    back with ``aplicado: false``.
+
+    Raises ``PlanResolutionError``: ``estructura_no_encontrada`` (404),
+    ``patron_invalido`` (422, with ``estructura_id``/``motivo``/``mensaje``)
+    or ``invalid_plan`` (422, the plan or the pattern breaks the contract).
+    """
+    index = _structure_index(plan, estructura_id)
+    structures = [dict(structure) for structure in _mappings(plan.get("estructuras"))]
+    if patron is None:
+        structures[index].pop("patron_color", None)
+    else:
+        structures[index]["patron_color"] = json.loads(json.dumps(patron))
+    candidate = {**dict(plan), "estructuras": structures}
+    _validate_plan(candidate)
+    completed = _complete_plan(candidate)
+    _validate_plan(completed)
+    context = _pattern_context(completed, _mappings(completed.get("estructuras"))[index])
+    try:
+        chosen = dict(patron) if patron is not None else sugerir_patron(context)
+        resolved = patron_resuelto(context, chosen, aplicado=patron is not None)
+    except PatronColorInvalido as error:
+        raise _pattern_error(estructura_id, error) from error
+    return cast(dict[str, object], resolved)
+
+
+def sincronizar_participaciones(plan: Mapping[str, object]) -> dict[str, object]:
+    """``plan`` with ``participacion`` rewritten for every structure with a pattern.
+
+    Only ``participacion`` changes: measures are completed to size each grid,
+    but the returned plan keeps the caller's own. This is what a plan edit
+    must call after touching a pattern or the materials of a patterned
+    structure, so the edited plan already says what resolution will count.
+    Raises ``PlanResolutionError`` (``invalid_plan`` or ``patron_invalido``).
+    """
+    _validate_plan(plan)
+    return _sync_participations(_complete_measures(plan), plan)
+
+
+def sugerir_patron_para_estructura(
+    plan: Mapping[str, object], estructura_id: str
+) -> dict[str, object] | None:
+    """Preset ``patron_color`` for one structure (ADR-0028 §6), or ``None``.
+
+    ``None`` when the structure admits no pattern: not geometric, a single
+    material, or a grid too small for every color of the preset. Raises
+    ``PlanResolutionError`` (``estructura_no_encontrada`` or ``invalid_plan``).
+    """
+    _validate_plan(plan)
+    index = _structure_index(plan, estructura_id)
+    measured = _complete_measures(plan)
+    context = _pattern_context(measured, _mappings(measured.get("estructuras"))[index])
+    try:
+        return cast(dict[str, object], sugerir_patron(context))
+    except PatronColorInvalido:
+        return None
+
+
 __all__ = [
     "CatalogPlanStore",
     "MERMA",
     "PLAN_RESOLUTION_SCOPE",
+    "PistaPatron",
     "PlanAllowlistEntry",
     "PlanResolutionError",
     "PlanResolutionRequest",
+    "patron_resuelto_de_estructura",
     "resolve_plan",
+    "sincronizar_participaciones",
+    "sugerir_patron_para_estructura",
 ]

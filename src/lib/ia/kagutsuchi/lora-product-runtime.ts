@@ -14,6 +14,7 @@ import {
   type ProductVocabulary,
 } from "@/lib/lora/product-vocabulary";
 import { aDescriptorPerceptual } from "@/lib/lora/descriptor-perceptual";
+import type { PatronColorResuelto } from "@/lib/plan/patron-color";
 
 /**
  * Subagent G deliverable — runtime prompt integration.
@@ -328,12 +329,14 @@ export function compileProductPrompt(input: {
   officialStructures?: ReadonlyMap<string, string>;
   /** Styling cues of the creativity level (creatividad.ts); rendered only, dropped first when compacting. */
   creativeCues?: readonly string[];
+  /** `plan_resuelto.patrones_color`, passed through untouched: the compiler inserts each applied `prompt_lora` verbatim (ADR-0028 §12). */
+  colorPatterns?: readonly PatronColorResuelto[];
 }): ProductPromptRuntimeResult {
   const vocabulary = input.vocabulary ?? [];
   const activeConcept = vocabulary.find((concept) => concept.status === "active");
 
   if (!activeConcept) {
-    const legacy = compileLoraCaption({ sceneSpec: input.sceneSpec, visualContext: input.visualContext, trigger: input.trigger, maxLength: input.maxLength, dialect: captionDialectForTrigger(input.trigger), ambientDecor: input.ambientDecor, officialStructures: input.officialStructures, creativeCues: input.creativeCues });
+    const legacy = compileLoraCaption({ sceneSpec: input.sceneSpec, visualContext: input.visualContext, trigger: input.trigger, maxLength: input.maxLength, dialect: captionDialectForTrigger(input.trigger), ambientDecor: input.ambientDecor, officialStructures: input.officialStructures, creativeCues: input.creativeCues, colorPatterns: input.colorPatterns });
     return {
       prompt: legacy.prompt,
       resolved_concepts: [],
@@ -395,6 +398,7 @@ export function compileProductPrompt(input: {
     ambientDecor: input.ambientDecor,
     officialStructures: input.officialStructures,
     creativeCues: input.creativeCues,
+    colorPatterns: input.colorPatterns,
   });
   if (compilation.compactionStep > 0) {
     diagnostics.push(`prompt compacted to render step ${compilation.compactionStep} to fit the LoRA prompt budget; every structure, placement, relation and color is kept`);

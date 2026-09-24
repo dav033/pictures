@@ -1,6 +1,6 @@
-"""Regression lock for the Python plan resolver over 28 frozen cases.
+"""Regression lock for the Python plan resolver over 31 frozen cases.
 
-``contracts/domain/v1/golden/plan-resolution`` holds 28 vectors. Each one is a
+``contracts/domain/v1/golden/plan-resolution`` holds 31 vectors. Each one is a
 whole resolution: a plan, its allowlist, the catalog rows it may buy from, and
 the ``plan-resolution-result.v1`` payload this service returns for it, stored
 under ``expected_python``. Since ADR-0023 step 5 retired the TypeScript

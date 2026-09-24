@@ -65,6 +65,7 @@
     "ia:test-lora-preflight-barrido": "tsx --conditions=react-server scripts/test/test-lora-preflight-barrido.ts",
     "ia:test-lora-v004-compactacion": "tsx --conditions=react-server scripts/test/test-lora-caption-v004-compactacion.ts",
     "ia:test-lora-bilateral": "tsx --conditions=react-server scripts/test/test-lora-caption-bilateral.ts",
+    "ia:test-patron-color-prompt": "tsx --conditions=react-server scripts/test/test-patron-color-prompt.ts",
     "plan:test-proporcion-referencia": "tsx --conditions=react-server --test src/lib/plan/proporcion-referencia.test.ts",
     "ia:test-lora-seed": "tsx --conditions=react-server --test src/lib/ia/kagutsuchi/lora-seed.test.ts",
     "ia:test-amaterasu-chat-python": "tsx --conditions=react-server --test src/lib/ia/amaterasu/chat-python.test.ts",

@@ -26,6 +26,20 @@ export const LORA_PRESENTATION_INSTRUCTION = ", set against a plain white studio
 export const GEMINI_COMPOSITION_HARD_LOCK = "COMPOSITING HARD LOCK: use the venue image as the immutable base. From the LoRA image transfer only the approved quoted structures described in AUTOMATIC SCENE SPEC. Install each structure into its assigned venue target: frame the visible opening when one is indicated, set columns and floor pieces on the real floor, and place backdrops against the real flat wall. Re-pose, re-scale and re-light the approved structures to match the venue perspective, eye level and light direction; add contact shadows and physical supports so they do not look pasted on. Keep every approved asymmetric structure visibly uneven, with staggered cluster sizes and a non-mirrored top profile; never turn them into matching straight towers. Render approved pink as soft pastel pink, never saturated hot pink. Ignore its white studio background and every unapproved object in it, including backdrop, drapes, tables, chairs, flowers, plants, pedestals and props. Do not invent, retain or add any of those objects. Keep the venue's existing architecture, plants, ground, camera and crop unchanged.";
 
 /**
+ * Lo que el hard lock añade cuando el caption de la etapa 1 llevó el patrón de
+ * color de alguna estructura (ADR-0028 §12): Gemini re-posa y re-ilumina la
+ * decoración de la imagen LoRA, y esta frase le pide que no toque su patrón.
+ * Nombra la imagen LoRA igual que el resto del hard lock: la primera imagen de
+ * entrada es el venue (`inputsParaComposicionGemini`), no la decoración.
+ */
+export const GEMINI_COMPOSITION_PATTERN_LOCK = "Keep each structure's color pattern exactly as in the LoRA image.";
+
+/** Hard lock de la etapa 2; sin patrón de color es la constante de siempre, byte a byte. */
+export function hardLockComposicionGemini(conPatronDeColor: boolean): string {
+  return conPatronDeColor ? `${GEMINI_COMPOSITION_HARD_LOCK} ${GEMINI_COMPOSITION_PATTERN_LOCK}` : GEMINI_COMPOSITION_HARD_LOCK;
+}
+
+/**
  * LoRA diseña la decoración sola; Gemini recibe luego su render y el venue.
  *
  * La cláusula de cierre es una subordinada, no una frase aparte: el corpus la

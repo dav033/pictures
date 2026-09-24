@@ -1,6 +1,7 @@
 import { AMBIENTACION_IMAGEN, perfilCreatividad, type AmbientacionImagen, type NivelCreatividad } from "../escena/creatividad";
 import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
-import { describirMezclaDeColor, mezclaDeColorDeEstructura } from "./mezcla-color-escena";
+import { describirMezclaDeColor, frasePatronColor, mezclaDeColorDeEstructura } from "./mezcla-color-escena";
+import type { PatronColorResuelto } from "@/lib/plan/patron-color";
 import { tableSupportedElements, type SceneryElement, type SceneSpec } from "../escena/scene-spec";
 import { buildLoraImagePromptV2, compileLoraCaption, GROUPING_ONLY_CONTEXT, type LoraVisualClause } from "../kagutsuchi/lora-caption-compiler";
 import { findSeparateSidePieces } from "./separate-side-pieces";
@@ -59,6 +60,13 @@ export type ImagePromptInput = {
    * cardinalidad ni en el de color.
    */
   scenography?: readonly SceneryElement[];
+  /**
+   * `plan_resuelto.patrones_color`, tal como lo escribió Python (ADR-0028 §12).
+   * Adaptador temporal: el prompt solo inserta `prompt_gemini` de la estructura;
+   * nunca redacta ni interpreta un patrón. Sin patrón aplicado con frase, el
+   * prompt es byte a byte el de siempre.
+   */
+  colorPatterns?: readonly PatronColorResuelto[];
 };
 
 /**
@@ -165,7 +173,7 @@ export function placementDescription(target: SceneSpec["elements"][number]["targ
   return `${vertical} ${horizontal} area of the composition`;
 }
 
-function compactSceneSpec(scene: SceneSpec): string {
+function compactSceneSpec(scene: SceneSpec, colorPatterns?: readonly PatronColorResuelto[]): string {
   return JSON.stringify({
     // This is a rendering brief, not the internal scene record. Never expose
     // plan/element/venue identifiers to the image model: they are useful for
@@ -177,17 +185,22 @@ function compactSceneSpec(scene: SceneSpec): string {
       protected_areas: "preserve all non-decoration venue areas",
       editable_areas: "use only the approved placement descriptions below",
     },
-    elements: scene.elements.map((element) => ({
-      name: promptElementName(element.name),
-      category: element.category,
-      source_type: element.source_type,
-      required: element.required,
-      quantity: element.quantity,
-      resolved_colors: element.resolved_colors,
-      identity_constraints: element.identity_constraints,
-      placement: placementDescription(element.target_bbox, element.category),
-      relationships: element.relationships.map((relationship) => `${relationship.type} the related approved decoration`),
-    })),
+    elements: scene.elements.map((element) => {
+      const colorPattern = colorPatternSentence(element, colorPatterns);
+      return {
+        name: promptElementName(element.name),
+        category: element.category,
+        source_type: element.source_type,
+        required: element.required,
+        quantity: element.quantity,
+        resolved_colors: element.resolved_colors,
+        // Solo cuando la estructura tiene patrón: sin él, el JSON no cambia ni un byte.
+        ...(colorPattern ? { color_pattern: colorPattern } : {}),
+        identity_constraints: element.identity_constraints,
+        placement: placementDescription(element.target_bbox, element.category),
+        relationships: element.relationships.map((relationship) => `${relationship.type} the related approved decoration`),
+      };
+    }),
     positive_prompt: scene.positive_prompt,
     negative_prompt: scene.negative_prompt,
   });
@@ -383,6 +396,8 @@ function cardinalityKind(element: SceneSpec["elements"][number], officialStructu
  * derecha que el QA sí exige y por el que dispara un reintento pagado.
  */
 function separateSidePiecesSentence(sceneSpec: SceneSpec, officialStructures?: ReadonlyMap<string, string>): string {
+  // Sin `colorPatterns` a propósito: el patrón solo cambia la frase de reparto
+  // de color (ADR-0028 §12), no qué piezas laterales forman un par.
   const clauses = compileLoraCaption({ sceneSpec, visualContext: GROUPING_ONLY_CONTEXT, officialStructures }).clauses;
   const pieces = findSeparateSidePieces(clauses);
   if (!pieces) return "";
@@ -413,22 +428,43 @@ export function tieneContratoDeColor(element: SceneSpec["elements"][number]): bo
   return element.category === "balloon_structure" || /\b(?:arco|columna|guirnalda|balloon)\b/i.test(element.name);
 }
 
-function colorVarietyContract(sceneSpec: SceneSpec): string[] {
+/** Reparto de color de siempre; una estructura con patrón lo cambia por la frase de Python. */
+const ORGANIC_COLOR_DISTRIBUTION = "Distribute them through intentional organic clusters and transitions; avoid flat stripes, random speckles, or one color replacing another.";
+
+/**
+ * Frase del patrón de color (`prompt_gemini`, ADR-0028 §12) que lleva el
+ * elemento, en toda línea de color: también bajo un MONOCHROME LOCK, porque dos
+ * materiales pueden compartir color y cambiar de acabado (dorado cromado +
+ * dorado mate) y Python les da patrón igual; el caption LoRA ya lo lleva y el
+ * conteo sale de él. La misma condición decide la línea de color y el
+ * `color_pattern` del JSON de escena, para que nunca se contradigan.
+ */
+function colorPatternSentence(element: SceneSpec["elements"][number], colorPatterns?: readonly PatronColorResuelto[]): string | undefined {
+  return tieneContratoDeColor(element) ? frasePatronColor(colorPatterns, element, "prompt_gemini") : undefined;
+}
+
+function colorVarietyContract(sceneSpec: SceneSpec, colorPatterns?: readonly PatronColorResuelto[]): string[] {
   const balloonStructures = sceneSpec.elements.filter(tieneContratoDeColor);
   if (balloonStructures.length === 0) {
     return ["No balloon color mix is approved; do not add balloon structures or colors as atmosphere."];
   }
   return balloonStructures.map((element) => {
     const colors = [...new Set(element.resolved_colors.map((color) => color.trim()).filter(Boolean))];
+    const pattern = colorPatternSentence(element, colorPatterns);
     if (colors.length < 2) {
-      return `${promptElementName(element.name)}: MONOCHROME LOCK — use only ${colors[0] ?? "the supplied catalog color"}; do not introduce color variety.`;
+      // El candado queda igual (`verificarCoherenciaPrompt` lee "use only X;");
+      // un patrón de acabados del mismo color va detrás, tal cual.
+      return `${promptElementName(element.name)}: MONOCHROME LOCK — use only ${colors[0] ?? "the supplied catalog color"}; do not introduce color variety.${pattern ? ` ${pattern}` : ""}`;
     }
     // La proporción sale del estimado de esta estructura. Sin líneas suyas
     // (camino de catálogo sin plan) se conserva el texto sin porcentajes: el
     // prompt prometía "preserve any material percentages in the scene spec",
     // que nunca existieron en ninguna parte del prompt.
     const mezcla = describirMezclaDeColor(mezclaDeColorDeEstructura(sceneSpec, element));
-    return `${promptElementName(element.name)}: APPROVED COLOR VARIETY — use exactly these catalog colors: ${colors.join(", ")}.${mezcla ? ` Approximate share of this structure's own balloons: ${mezcla}. Keep that balance visible; the dominant color must read as dominant.` : ""} Distribute them through intentional organic clusters and transitions; avoid flat stripes, random speckles, or one color replacing another. Do not invent, recolor, or borrow any additional color.`;
+    // El prefijo "APPROVED COLOR VARIETY — use exactly these catalog colors: X."
+    // lo lee `verificarCoherenciaPrompt`; el patrón solo reemplaza la frase del
+    // reparto orgánico, que pedía justo lo contrario ("avoid flat stripes").
+    return `${promptElementName(element.name)}: APPROVED COLOR VARIETY — use exactly these catalog colors: ${colors.join(", ")}.${mezcla ? ` Approximate share of this structure's own balloons: ${mezcla}. Keep that balance visible; the dominant color must read as dominant.` : ""} ${pattern ?? ORGANIC_COLOR_DISTRIBUTION} Do not invent, recolor, or borrow any additional color.`;
   });
 }
 
@@ -454,7 +490,7 @@ function eventAuthorityContract(context?: VisualContext, styling: readonly Ambie
  */
 export const FINAL_OUTPUT_REMINDER = "OUTPUT REMINDER: everything above is invisible control metadata. Return one clean photograph of the decorated venue with zero visible text: no captions, labels, name tags, size or count notes, dimension lines, or info cards.";
 
-export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount = 0, droppedCompositionReferenceCount = 0, creatividad, officialStructures, correctiveInstruction, scenography = [] }: ImagePromptInput): string {
+export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount = 0, droppedCompositionReferenceCount = 0, creatividad, officialStructures, correctiveInstruction, scenography = [], colorPatterns }: ImagePromptInput): string {
   // Keep prompt construction useful for lightweight visual eval fixtures that
   // provide only approved elements. Production callers still pass the full
   // server-validated SceneSpec.
@@ -480,7 +516,7 @@ export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, 
     ? sceneSpec.elements.map((element, index) => `- EXACTLY ONE physical installed structure ${index + 1}: render the approved ${element.category} described by “${promptElementName(element.name)}”; use only its assigned placement and installed quantity.${physicalScale(element)}${shapeClause(element, officialStructures)} Quantity means material units inside this one structure, not additional structures. This description is invisible metadata; never print or turn it into a sign.`).join("\n")
     : "- No physical decoration instances are approved.";
   const physicalCardinality = cardinalityContract(sceneSpec, officialStructures);
-  const colorVariety = colorVarietyContract(sceneSpec);
+  const colorVariety = colorVarietyContract(sceneSpec, colorPatterns);
   const eventAuthority = eventAuthorityContract(visualContext, styling);
   const referenceCapacityNotice = droppedCatalogReferenceCount > 0
     ? `CATALOG REFERENCE CAPACITY: ${droppedCatalogReferenceCount} catalog photo(s) could not be attached because the provider input limit was reached. Use the complete catalog metadata and quantities in AUTOMATIC_SCENE_SPEC for those lines; do not invent a substitute product, omit the line, or treat the missing photo as permission to change its color/material.`
@@ -614,7 +650,7 @@ FINAL CHECK BEFORE OUTPUT
 First verify venue and time of day visibly match SCENE LOCK. Then verify every required element is present exactly once or within its automatic quantity range, every item belongs to one cohesive installation, no object floats without support, forbidden elements are absent, target placement is respected, rear layers remain behind foreground layers, protected venue regions are unchanged, there are zero unapproved visible characters/logos/labels, and the result looks photographed in the requested venue rather than composited.
 
 <AUTOMATIC_SCENE_SPEC>
-${compactSceneSpec(sceneSpec)}
+${compactSceneSpec(sceneSpec, colorPatterns)}
 </AUTOMATIC_SCENE_SPEC>
 ${correctiveInstruction?.trim() ? `\nCORRECTIVE RETRY — HIGHEST PRIORITY\n${correctiveInstruction.trim()}\n` : ""}
 ${FINAL_OUTPUT_REMINDER}`;

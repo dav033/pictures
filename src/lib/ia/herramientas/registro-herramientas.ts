@@ -12,6 +12,7 @@ import { parseEventSearchIntent } from "@/lib/rag/query-parser/event-search";
 import { aProductoValidado, validarSeleccion, type ItemRechazado, type ItemValidado, type SeleccionSolicitada } from "@/lib/rag/chat/validar";
 import { actualizarResultadoBusqueda, encolarEscrituraObservabilidad, registrarBusqueda, registrarPlanAudit, registrarSeleccion, type HechosPeticionPlan } from "@/lib/rag/observability/log";
 import { PlanDecoracionSchema, type PlanDecoracion } from "@/lib/plan/tipos";
+import type { PistaPatron } from "@/lib/plan/patron-color";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { aplicarColoresReferencia, extraerRestriccionesUsuario, validarCardinalidadEventoAbierto, validarCoberturaReferencia, validarEstructurasDeGlobosConGlobos, validarEstructurasFueraDeReferencia, validarPresenciaGlobos, validarRangoCreatividad, validarReferenciaSinGlobos, validarRestriccionesPlan, validarUnidadesDeclaradas, MENSAJE_CLIENTE_REFERENCIA_SIN_GLOBOS } from "@/lib/plan/restricciones";
 import { CREATIVIDAD_POR_DEFECTO, perfilCreatividad, type NivelCreatividad } from "@/lib/ia/escena/creatividad";
@@ -507,6 +508,29 @@ async function coloresReferenciaOmitidosDelTurno(
   });
 }
 
+/** Tope de `pistas_patron` en `plan-resolution.v1`. */
+const MAX_PISTAS_PATRON = 16;
+
+/**
+ * Pistas de patrón de color de la foto para las estructuras que materializan un
+ * elemento de la referencia (ADR-0028 §7). Misma fuente que los colores de la
+ * foto (`coloresElementoReferencia`): el elemento aprobado del blueprint del
+ * turno con ese `referencia_element_id`. Una pista por elemento aunque varias
+ * estructuras lo materialicen: Python la aplica a cada una.
+ */
+export function pistasPatronDelPlan(plan: Pick<PlanDecoracion, "estructuras">, blueprint: ReferenceBlueprintV2 | undefined): PistaPatron[] {
+  if (!blueprint) return [];
+  const elementos = new Map(blueprint.elements.filter((elemento) => elemento.approved).map((elemento) => [elemento.element_id, elemento]));
+  const pistas = new Map<string, PistaPatron>();
+  for (const estructura of plan.estructuras) {
+    const elementId = estructura.referencia_element_id;
+    const patron = elementId ? elementos.get(elementId)?.appearance.patron_color : undefined;
+    if (!elementId || !patron || pistas.has(elementId)) continue;
+    pistas.set(elementId, { referencia_element_id: elementId, ...patron });
+  }
+  return [...pistas.values()].slice(0, MAX_PISTAS_PATRON);
+}
+
 /** Arma el registro de herramientas (nombre → handler) que el motor genérico
  * de @sempertex/agente-core despacha — cada cuerpo es el mismo que tenía el
  * if-chain de ejecutar.ts antes de esta extracción, sin cambios de lógica. */
@@ -890,16 +914,26 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         MENSAJE_CLIENTE_SIN_BUSQUEDA,
       );
     }
-    const resolverPlanDelTurno = (plan: PlanDecoracion) =>
-      resolverPlan({
+    // Confirmar es el único momento en que Python completa los patrones de color
+    // (ADR-0028 §7): desde la pista de la foto o el preset de cada estructura. El
+    // reintento de convergencia pasa por aquí también, con las mismas opciones.
+    // Detrás de PATRONES_COLOR_V1 (default OFF): con la bandera apagada la
+    // petición es la de siempre y el plan sale sin patrón.
+    const completarPatrones = featureEnabled("PATRONES_COLOR_V1");
+    const resolverPlanDelTurno = (plan: PlanDecoracion) => {
+      const pistasPatron = completarPatrones ? pistasPatronDelPlan(plan, estado.referenceBlueprint) : [];
+      return resolverPlan({
         plan,
         allowlist: allowlistTurno,
         catalogSnapshotId: snapshotTurno,
         loraAllowlist: options.catalogAllowlist,
+        ...(completarPatrones ? { completarPatrones } : {}),
+        ...(pistasPatron.length > 0 ? { pistasPatron } : {}),
         requestId: estado.ragRequestId,
         correlationId: correlacionPython.success ? correlacionPython.data : estado.ragRequestId,
         ...(options.signal ? { signal: options.signal } : {}),
       });
+    };
     let resolucion: ResolucionPlan;
     const avisosConvergencia: string[] = [];
     try {

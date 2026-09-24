@@ -38,7 +38,7 @@ function requireResolvedLoras(loras: ResolvedLoraApplication[] | undefined): Res
   return loras;
 }
 import { buildVisualContext, completarEscenaConPlan } from "@/lib/ia/escena/visual-context";
-import { GEMINI_COMPOSITION_HARD_LOCK, inputsParaComposicionGemini, LORA_PRESENTATION_INSTRUCTION, promptPresentacionLora } from "@/lib/ia/uzume/lora-gemini-composition";
+import { hardLockComposicionGemini, inputsParaComposicionGemini, LORA_PRESENTATION_INSTRUCTION, promptPresentacionLora } from "@/lib/ia/uzume/lora-gemini-composition";
 import { ambienteDeFiesta, AVISO_ESCENOGRAFIA_NO_COTIZADA, nivelAmbienteDe, requiereAvisoNoCotizado } from "@/lib/ia/uzume/ambiente-fiesta";
 import { referenciasParaEtapa1Hibrida } from "@/lib/ia/uzume/referencias-etapa1";
 import { ErrorIA, type ImageInput, type Imagen, type ImagenEtiquetada, type PeticionImagen, type ProveedorId } from "@/lib/ia/nucleo/tipos";
@@ -917,7 +917,10 @@ async function generar(request: Request, generationRequestId: string): Promise<R
         espera_linea_de_color: tieneContratoDeColor(element),
       })),
     };
-    const promptBase = { sceneSpec: transformedSceneSpec, inputs: selected.promptInputs, revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount: selected.droppedCatalogProductIds.length, droppedCompositionReferenceCount: selected.droppedReferenceCount, creatividad: creatividad.nivel, officialStructures, scenography: escenografiaParaEscena };
+    // Patrón de color por estructura tal como lo firmó Python en el plan
+    // re-resuelto (ADR-0028 §12): los constructores solo insertan sus frases.
+    const colorPatterns = planResuelto.patrones_color;
+    const promptBase = { sceneSpec: transformedSceneSpec, inputs: selected.promptInputs, revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount: selected.droppedCatalogProductIds.length, droppedCompositionReferenceCount: selected.droppedReferenceCount, creatividad: creatividad.nivel, officialStructures, scenography: escenografiaParaEscena, colorPatterns };
     const providerPrompt = buildImagePrompt(promptBase);
     if (planResuelto) {
       const coherencia = verificarCoherenciaPrompt(providerPrompt, planResuelto, escenaParaCoherencia);
@@ -979,6 +982,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       ambientDecor,
       creativeCues: creatividad.pistasPrompt,
       officialStructures: officialStructures ?? new Map<string, string>(),
+      colorPatterns,
     });
     const loraCompilation = {
       prompt: productPromptCompilation.prompt,
@@ -1104,7 +1108,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       ? `${buildImagePrompt({
           ...promptBase,
           inputs: inputsComposicionGemini.map(({ id, role, allowed_use }) => ({ image_id: id, role, allowed_use })),
-        })}\n\n${GEMINI_COMPOSITION_HARD_LOCK}${ambiente.instruccion ? `\n\n${ambiente.instruccion}` : ""}`
+        })}\n\n${hardLockComposicionGemini(loraCompilation.clauses.some((clause) => Boolean(clause.colorPattern)))}${ambiente.instruccion ? `\n\n${ambiente.instruccion}` : ""}`
       : undefined;
     const result: { imagen: Imagen; interactionId?: string } = loraPrimaryImage && inputsComposicionGemini && promptComposicionGemini
       ? await port!.generar({

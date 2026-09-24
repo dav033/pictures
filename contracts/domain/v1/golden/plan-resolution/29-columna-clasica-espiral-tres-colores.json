@@ -1,0 +1,1619 @@
+{
+  "allowlist": [
+    {
+      "product_id": "P-BLANCO",
+      "variant_ids": [
+        "V-BLANCO-12"
+      ]
+    },
+    {
+      "product_id": "P-NEGRO",
+      "variant_ids": [
+        "V-NEGRO-12"
+      ]
+    },
+    {
+      "product_id": "P-AZUL",
+      "variant_ids": [
+        "V-AZUL-12"
+      ]
+    }
+  ],
+  "catalog_rows": [
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "blanco"
+      ],
+      "colores_variante": [
+        "blanco"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex blanco R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 8000,
+      "product_id": "P-BLANCO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex blanco",
+      "sku": "SKU-V-BLANCO-12",
+      "sku_original": "SHOP-V-BLANCO-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-BLANCO-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 25,
+      "variant_id": "V-BLANCO-12",
+      "variante_titulo": "R-12 / PAQUETE X 25"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "negro"
+      ],
+      "colores_variante": [
+        "negro"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex negro R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-negro-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 9000,
+      "product_id": "P-NEGRO",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex negro",
+      "sku": "SKU-V-NEGRO-12",
+      "sku_original": "SHOP-V-NEGRO-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-NEGRO-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 25,
+      "variant_id": "V-NEGRO-12",
+      "variante_titulo": "R-12 / PAQUETE X 25"
+    },
+    {
+      "acabados_producto": [],
+      "codigo_tamano": "R-12",
+      "colores_producto": [
+        "azul"
+      ],
+      "colores_variante": [
+        "azul"
+      ],
+      "currency": "COP",
+      "descripcion": "Globo latex azul R-12.",
+      "diam_pulg": 12,
+      "disponible": true,
+      "forma": "redondo",
+      "imagen": "https://cdn.example.test/v-azul-12.jpg",
+      "inventory_quantity": 500,
+      "precio": 8500,
+      "product_id": "P-AZUL",
+      "producto_disponible": true,
+      "producto_titulo": "Globo latex azul",
+      "sku": "SKU-V-AZUL-12",
+      "sku_original": "SHOP-V-AZUL-12",
+      "source_snapshot_id": "SNAP-GOLDEN-001",
+      "source_variant_id": "SOURCE-V-AZUL-12",
+      "unidades_inferidas": false,
+      "unidades_paq": 25,
+      "variant_id": "V-AZUL-12",
+      "variante_titulo": "R-12 / PAQUETE X 25"
+    }
+  ],
+  "catalog_snapshot_id": "SNAP-GOLDEN-001",
+  "description": "Dos columnas clásicas de 1,8 m en espiral de cuartetos blanco, negro, blanco y azul (ADR-0028). El patrón manda sobre la participación declarada (0,4/0,3/0,3): 10 cuartetos por columna dan 40 globos (las medidas daban 39) y 20/10/10 por color; el plan resuelto reescribe la participación a 0,5/0,25/0,25 y trae el patrón expandido en patrones_color, fuera del hash.",
+  "expected": {
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "blanco",
+          "design_quantity": 40,
+          "finish": null,
+          "product_id": "P-BLANCO",
+          "required_quantity": 40,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_COLUMNA",
+          "variant_id": "V-BLANCO-12",
+          "waste_adjusted_quantity": 40,
+          "waste_reserve": 0
+        },
+        {
+          "color": "negro",
+          "design_quantity": 20,
+          "finish": null,
+          "product_id": "P-NEGRO",
+          "required_quantity": 20,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_COLUMNA",
+          "variant_id": "V-NEGRO-12",
+          "waste_adjusted_quantity": 20,
+          "waste_reserve": 0
+        },
+        {
+          "color": "azul",
+          "design_quantity": 20,
+          "finish": null,
+          "product_id": "P-AZUL",
+          "required_quantity": 20,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_COLUMNA",
+          "variant_id": "V-AZUL-12",
+          "waste_adjusted_quantity": 20,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 2,
+        "density": "media",
+        "dimensions_m": {
+          "height": 1.8,
+          "length": null,
+          "width": null
+        },
+        "installation_length_m": 3.6,
+        "shape": "clasica",
+        "type": "columna",
+        "visual_density": "medium",
+        "visual_scale": "large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 6800,
+          "design_quantity": 20,
+          "leftover_inventory": 5,
+          "operational_surplus": 5,
+          "package_count": 1,
+          "potential_surplus": 5,
+          "product_id": "P-AZUL",
+          "purchase_cost": 8500,
+          "purchase_quantity": 25,
+          "required_quantity": 20,
+          "units_per_package": 25,
+          "used": 20,
+          "variant_id": "V-AZUL-12",
+          "waste_adjusted_quantity": 20,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 15040,
+          "design_quantity": 40,
+          "leftover_inventory": 3,
+          "operational_surplus": 3,
+          "package_count": 2,
+          "potential_surplus": 10,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 16000,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "units_per_package": 25,
+          "used": 40,
+          "variant_id": "V-BLANCO-12",
+          "waste_adjusted_quantity": 47,
+          "waste_reserve": 7
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 7200,
+          "design_quantity": 20,
+          "leftover_inventory": 5,
+          "operational_surplus": 5,
+          "package_count": 1,
+          "potential_surplus": 5,
+          "product_id": "P-NEGRO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 25,
+          "required_quantity": 20,
+          "units_per_package": 25,
+          "used": 20,
+          "variant_id": "V-NEGRO-12",
+          "waste_adjusted_quantity": 20,
+          "waste_reserve": 0
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 29040,
+        "covered_waste_reserve": 7,
+        "design_quantity": 80,
+        "natural_package_surplus": 20,
+        "operational_surplus": 13,
+        "potential_surplus": 20,
+        "purchase_cost": 33500,
+        "purchase_quantity": 100,
+        "required_quantity": 87,
+        "target_waste_reserve": 7,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 87,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": []
+    },
+    "plan_resuelto": {
+      "advertencias": [],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "azul",
+          "consumption_cost": 6800,
+          "design_quantity": 20,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA"
+          ],
+          "imagen": "https://cdn.example.test/v-azul-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 5,
+          "paquetes": 1,
+          "precio_paquete": 8500,
+          "product_id": "P-AZUL",
+          "purchase_cost": 8500,
+          "purchase_quantity": 25,
+          "required_quantity": 20,
+          "sku": "SKU-V-AZUL-12",
+          "sku_original": "SHOP-V-AZUL-12",
+          "sobrante": 5,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-AZUL-12",
+          "subtotal": 8500,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex azul — R-12 / PAQUETE X 25",
+          "unidades_con_merma": 20,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 20,
+          "unidades_paquete": 25,
+          "used": 20,
+          "variant_id": "V-AZUL-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 15040,
+          "design_quantity": 40,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA"
+          ],
+          "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 3,
+          "paquetes": 2,
+          "precio_paquete": 8000,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 16000,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "sku": "SKU-V-BLANCO-12",
+          "sku_original": "SHOP-V-BLANCO-12",
+          "sobrante": 10,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-BLANCO-12",
+          "subtotal": 16000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex blanco — R-12 / PAQUETE X 25",
+          "unidades_con_merma": 47,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 40,
+          "unidades_paquete": 25,
+          "used": 40,
+          "variant_id": "V-BLANCO-12",
+          "waste_reserve": 7
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "negro",
+          "consumption_cost": 7200,
+          "design_quantity": 20,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA"
+          ],
+          "imagen": "https://cdn.example.test/v-negro-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 5,
+          "paquetes": 1,
+          "precio_paquete": 9000,
+          "product_id": "P-NEGRO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 25,
+          "required_quantity": 20,
+          "sku": "SKU-V-NEGRO-12",
+          "sku_original": "SHOP-V-NEGRO-12",
+          "sobrante": 5,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-NEGRO-12",
+          "subtotal": 9000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex negro — R-12 / PAQUETE X 25",
+          "unidades_con_merma": 20,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 20,
+          "unidades_paquete": 25,
+          "used": 20,
+          "variant_id": "V-NEGRO-12",
+          "waste_reserve": 0
+        }
+      ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 26800,
+          "estructura_id": "EST_01_COLUMNA"
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 1.8,
+          "estructura_id": "EST_01_COLUMNA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLANCO",
+              "sku": "SKU-V-BLANCO-12",
+              "sku_original": "SHOP-V-BLANCO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-BLANCO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex blanco — R-12 / PAQUETE X 25",
+              "unidades": 40,
+              "unidades_inferidas": false,
+              "variant_id": "V-BLANCO-12"
+            },
+            {
+              "acabado": null,
+              "color": "negro",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-negro-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-NEGRO",
+              "sku": "SKU-V-NEGRO-12",
+              "sku_original": "SHOP-V-NEGRO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-NEGRO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex negro — R-12 / PAQUETE X 25",
+              "unidades": 20,
+              "unidades_inferidas": false,
+              "variant_id": "V-NEGRO-12"
+            },
+            {
+              "acabado": null,
+              "color": "azul",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-azul-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-AZUL",
+              "sku": "SKU-V-AZUL-12",
+              "sku_original": "SHOP-V-AZUL-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-AZUL-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex azul — R-12 / PAQUETE X 25",
+              "unidades": 20,
+              "unidades_inferidas": false,
+              "variant_id": "V-AZUL-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 80
+            }
+          ],
+          "nombre": "Columnas en espiral",
+          "repeticiones": 2,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 80,
+          "ubicacion": "entrada"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-001.",
+      "patrones_color": [
+        {
+          "aplicado": true,
+          "avisos": [
+            "Con cuartetos completos cada pieza lleva 40 globos; las medidas daban 39."
+          ],
+          "celdas": [
+            [
+              0,
+              1,
+              0,
+              2
+            ],
+            [
+              0,
+              1,
+              0,
+              2
+            ],
+            [
+              0,
+              1,
+              0,
+              2
+            ],
+            [
+              0,
+              1,
+              0,
+              2
+            ],
+            [
+              0,
+              1,
+              0,
+              2
+            ],
+            [
+              0,
+              1,
+              0,
+              2
+            ],
+            [
+              0,
+              1,
+              0,
+              2
+            ],
+            [
+              0,
+              1,
+              0,
+              2
+            ],
+            [
+              0,
+              1,
+              0,
+              2
+            ],
+            [
+              0,
+              1,
+              0,
+              2
+            ]
+          ],
+          "columnas": 4,
+          "conteo": [
+            {
+              "acabado": null,
+              "color": "blanco",
+              "material": 0,
+              "unidades_por_instancia": 20,
+              "unidades_total": 40
+            },
+            {
+              "acabado": null,
+              "color": "negro",
+              "material": 1,
+              "unidades_por_instancia": 10,
+              "unidades_total": 20
+            },
+            {
+              "acabado": null,
+              "color": "azul",
+              "material": 2,
+              "unidades_por_instancia": 10,
+              "unidades_total": 20
+            }
+          ],
+          "descripcion": "Cuartetos iguales de blanco (1), negro (2), blanco (1) y azul (3) que se encajan girando 1/8 de vuelta en cada capa: los colores forman espirales continuas de la base a la punta.",
+          "estructura_id": "EST_01_COLUMNA",
+          "extras": [],
+          "filas": 10,
+          "geometria": "racimos",
+          "globos_por_instancia": 40,
+          "instrucciones": [
+            "Infla cada globo con el calibrador para que todos queden del mismo tamaño.",
+            "Arma parejas (dos globos amarrados por el cuello) y une dos parejas para formar cada cuarteto.",
+            "Dentro de cada cuarteto respeta el orden de colores: blanco (1), negro (2), blanco (1), azul (3).",
+            "Encaja cada cuarteto sobre el anterior girándolo 1/8 de vuelta, siempre en el mismo sentido: así aparece la espiral.",
+            "Sigue la gráfica numerada: cada número es un color de la leyenda."
+          ],
+          "nombre": "Espiral",
+          "pasos": [
+            {
+              "celdas": [
+                0,
+                1,
+                0,
+                2
+              ],
+              "desde": 1,
+              "extras": [],
+              "hasta": 10
+            }
+          ],
+          "patron": {
+            "base": {
+              "modo": "espiral",
+              "racimo": [
+                0,
+                1,
+                0,
+                2
+              ],
+              "trazo": "espiral"
+            },
+            "origen": "decorador",
+            "version": "patron-color.v1"
+          },
+          "prompt_gemini": "COLOR PATTERN — build it from identical four-balloon clusters (white, black, white, blue around each cluster) rotated one eighth of a turn per layer so the colors form continuous diagonal spiral stripes winding from base to top; keep the order unbroken and do not randomize.",
+          "prompt_lora": "wrapped in a spiral of white, black and blue stripes winding from base to top",
+          "repeticiones": 2
+        }
+      ],
+      "plan": {
+        "concepto": {
+          "descripcion": "Dos columnas en espiral blanco, negro y azul.",
+          "paleta": [
+            "blanco",
+            "negro",
+            "azul"
+          ],
+          "titulo": "Columnas en espiral"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_COLUMNA",
+            "materiales": [
+              {
+                "color": "blanco",
+                "participacion": 0.5,
+                "product_id": "P-BLANCO",
+                "rol_material": "principal"
+              },
+              {
+                "color": "negro",
+                "participacion": 0.25,
+                "product_id": "P-NEGRO",
+                "rol_material": "secundario"
+              },
+              {
+                "color": "azul",
+                "participacion": 0.25,
+                "product_id": "P-AZUL",
+                "rol_material": "acento"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.8
+            },
+            "mezcla": "clasica",
+            "nombre": "Columnas en espiral",
+            "patron_color": {
+              "base": {
+                "modo": "espiral",
+                "racimo": [
+                  0,
+                  1,
+                  0,
+                  2
+                ],
+                "trazo": "espiral"
+              },
+              "origen": "decorador",
+              "version": "patron-color.v1"
+            },
+            "porque": "Espiral de cuartetos como en la foto de referencia.",
+            "repeticiones": 2,
+            "rol_escena": "focal",
+            "tipo": "columna",
+            "ubicacion": "entrada"
+          }
+        ],
+        "plan_id": "29292929-2929-4292-8292-292929292929",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "cce3c57903f62b17265f021a0b97a9cf0915cd41897fb69e5c2d604d327e1235",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 29040,
+        "covered_waste_reserve": 7,
+        "design_quantity": 80,
+        "globos_por_tamano": {
+          "R-12": 80
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 20,
+        "purchase_cost": 33500,
+        "target_waste_reserve": 7,
+        "total_cop": 33500,
+        "total_unidades": 80,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "complementosSoportados": false,
+      "consumptionCost": 29040,
+      "coveredWasteReserve": 7,
+      "incluyeIva": true,
+      "leftoverInventory": 13,
+      "lineas": [
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 20,
+          "color": "azul",
+          "consumptionCost": 6800,
+          "designQuantity": 20,
+          "diamPulg": 12.0,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA"
+          ],
+          "id": "V-AZUL-12",
+          "leftoverInventory": 5,
+          "nombre": "Globo latex azul — R-12 / PAQUETE X 25",
+          "paquetes": 1,
+          "precioPaquete": 8500,
+          "productId": "P-AZUL",
+          "purchaseCost": 8500,
+          "purchaseQuantity": 25,
+          "referenciaElementIds": [],
+          "requiredQuantity": 20,
+          "sobrante": 5,
+          "subtotal": 8500,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 25,
+          "used": 20,
+          "varianteId": "V-AZUL-12",
+          "wasteReserve": 0
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 40,
+          "color": "blanco",
+          "consumptionCost": 15040,
+          "designQuantity": 40,
+          "diamPulg": 12.0,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA"
+          ],
+          "id": "V-BLANCO-12",
+          "leftoverInventory": 3,
+          "nombre": "Globo latex blanco — R-12 / PAQUETE X 25",
+          "paquetes": 2,
+          "precioPaquete": 8000,
+          "productId": "P-BLANCO",
+          "purchaseCost": 16000,
+          "purchaseQuantity": 50,
+          "referenciaElementIds": [],
+          "requiredQuantity": 47,
+          "sobrante": 10,
+          "subtotal": 16000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 25,
+          "used": 40,
+          "varianteId": "V-BLANCO-12",
+          "wasteReserve": 7
+        },
+        {
+          "additionalPackageForWaste": false,
+          "cantidadNecesaria": 20,
+          "color": "negro",
+          "consumptionCost": 7200,
+          "designQuantity": 20,
+          "diamPulg": 12.0,
+          "disponible": true,
+          "elementosOrigen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA"
+          ],
+          "id": "V-NEGRO-12",
+          "leftoverInventory": 5,
+          "nombre": "Globo latex negro — R-12 / PAQUETE X 25",
+          "paquetes": 1,
+          "precioPaquete": 9000,
+          "productId": "P-NEGRO",
+          "purchaseCost": 9000,
+          "purchaseQuantity": 25,
+          "referenciaElementIds": [],
+          "requiredQuantity": 20,
+          "sobrante": 5,
+          "subtotal": 9000,
+          "tamano": "R-12",
+          "tamanoCodigo": "R-12",
+          "unidadesPaquete": 25,
+          "used": 20,
+          "varianteId": "V-NEGRO-12",
+          "wasteReserve": 0
+        }
+      ],
+      "mermaPorcentaje": 8,
+      "plan_hash": "cce3c57903f62b17265f021a0b97a9cf0915cd41897fb69e5c2d604d327e1235",
+      "purchaseCost": 33500,
+      "targetWasteReserve": 7,
+      "total": 33500
+    }
+  },
+  "expected_python": {
+    "catalog_snapshot_id": "SNAP-GOLDEN-001",
+    "material_estimate": {
+      "balloons": [
+        {
+          "color": "blanco",
+          "design_quantity": 40,
+          "finish": null,
+          "product_id": "P-BLANCO",
+          "required_quantity": 40,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_COLUMNA",
+          "variant_id": "V-BLANCO-12",
+          "waste_adjusted_quantity": 40,
+          "waste_reserve": 0
+        },
+        {
+          "color": "negro",
+          "design_quantity": 20,
+          "finish": null,
+          "product_id": "P-NEGRO",
+          "required_quantity": 20,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_COLUMNA",
+          "variant_id": "V-NEGRO-12",
+          "waste_adjusted_quantity": 20,
+          "waste_reserve": 0
+        },
+        {
+          "color": "azul",
+          "design_quantity": 20,
+          "finish": null,
+          "product_id": "P-AZUL",
+          "required_quantity": 20,
+          "shape": "redondo",
+          "size_inches": 12.0,
+          "structure_id": "EST_01_COLUMNA",
+          "variant_id": "V-AZUL-12",
+          "waste_adjusted_quantity": 20,
+          "waste_reserve": 0
+        }
+      ],
+      "design": {
+        "cluster_count": 2,
+        "density": "media",
+        "dimensions_m": {
+          "height": 1.8,
+          "length": null,
+          "width": null
+        },
+        "installation_length_m": 3.6,
+        "shape": "clasica",
+        "type": "columna",
+        "visual_density": "medium",
+        "visual_scale": "large"
+      },
+      "purchases": [
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 6800,
+          "design_quantity": 20,
+          "leftover_inventory": 5,
+          "operational_surplus": 5,
+          "package_count": 1,
+          "potential_surplus": 5,
+          "product_id": "P-AZUL",
+          "purchase_cost": 8500,
+          "purchase_quantity": 25,
+          "required_quantity": 20,
+          "units_per_package": 25,
+          "used": 20,
+          "variant_id": "V-AZUL-12",
+          "waste_adjusted_quantity": 20,
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 15040,
+          "design_quantity": 40,
+          "leftover_inventory": 3,
+          "operational_surplus": 3,
+          "package_count": 2,
+          "potential_surplus": 10,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 16000,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "units_per_package": 25,
+          "used": 40,
+          "variant_id": "V-BLANCO-12",
+          "waste_adjusted_quantity": 47,
+          "waste_reserve": 7
+        },
+        {
+          "additional_package_for_waste": false,
+          "consumption_cost": 7200,
+          "design_quantity": 20,
+          "leftover_inventory": 5,
+          "operational_surplus": 5,
+          "package_count": 1,
+          "potential_surplus": 5,
+          "product_id": "P-NEGRO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 25,
+          "required_quantity": 20,
+          "units_per_package": 25,
+          "used": 20,
+          "variant_id": "V-NEGRO-12",
+          "waste_adjusted_quantity": 20,
+          "waste_reserve": 0
+        }
+      ],
+      "special_elements": [],
+      "totals": {
+        "additional_waste_packages": 0,
+        "consumption_cost": 29040,
+        "covered_waste_reserve": 7,
+        "design_quantity": 80,
+        "natural_package_surplus": 20,
+        "operational_surplus": 13,
+        "potential_surplus": 20,
+        "purchase_cost": 33500,
+        "purchase_quantity": 100,
+        "required_quantity": 87,
+        "target_waste_reserve": 7,
+        "uncovered_waste_reserve": 0,
+        "waste_adjusted_quantity": 87,
+        "waste_only_savings_cop": 0
+      },
+      "version": "design-material-estimate-v1",
+      "warnings": []
+    },
+    "operation_schema_version": "plan-resolution-result.v1",
+    "plan_resuelto": {
+      "advertencias": [],
+      "alternativas": [],
+      "comercial": {
+        "delta_cop": 0,
+        "estado": "APROBACION_REQUERIDA"
+      },
+      "compras": [
+        {
+          "additional_package_for_waste": false,
+          "color": "azul",
+          "consumption_cost": 6800,
+          "design_quantity": 20,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA"
+          ],
+          "imagen": "https://cdn.example.test/v-azul-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 5,
+          "paquetes": 1,
+          "precio_paquete": 8500,
+          "product_id": "P-AZUL",
+          "purchase_cost": 8500,
+          "purchase_quantity": 25,
+          "required_quantity": 20,
+          "sku": "SKU-V-AZUL-12",
+          "sku_original": "SHOP-V-AZUL-12",
+          "sobrante": 5,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-AZUL-12",
+          "subtotal": 8500,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex azul — R-12 / PAQUETE X 25",
+          "unidades_con_merma": 20,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 20,
+          "unidades_paquete": 25,
+          "used": 20,
+          "variant_id": "V-AZUL-12",
+          "waste_reserve": 0
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "blanco",
+          "consumption_cost": 15040,
+          "design_quantity": 40,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA"
+          ],
+          "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 3,
+          "paquetes": 2,
+          "precio_paquete": 8000,
+          "product_id": "P-BLANCO",
+          "purchase_cost": 16000,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "sku": "SKU-V-BLANCO-12",
+          "sku_original": "SHOP-V-BLANCO-12",
+          "sobrante": 10,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-BLANCO-12",
+          "subtotal": 16000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex blanco — R-12 / PAQUETE X 25",
+          "unidades_con_merma": 47,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 40,
+          "unidades_paquete": 25,
+          "used": 40,
+          "variant_id": "V-BLANCO-12",
+          "waste_reserve": 7
+        },
+        {
+          "additional_package_for_waste": false,
+          "color": "negro",
+          "consumption_cost": 7200,
+          "design_quantity": 20,
+          "diam_pulg": 12.0,
+          "elementos_origen": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "estructuras": [
+            "EST_01_COLUMNA"
+          ],
+          "imagen": "https://cdn.example.test/v-negro-12.jpg",
+          "inventory_quantity": 500,
+          "leftover_inventory": 5,
+          "paquetes": 1,
+          "precio_paquete": 9000,
+          "product_id": "P-NEGRO",
+          "purchase_cost": 9000,
+          "purchase_quantity": 25,
+          "required_quantity": 20,
+          "sku": "SKU-V-NEGRO-12",
+          "sku_original": "SHOP-V-NEGRO-12",
+          "sobrante": 5,
+          "source_snapshot_id": "SNAP-GOLDEN-001",
+          "source_variant_id": "SOURCE-V-NEGRO-12",
+          "subtotal": 9000,
+          "tamano_codigo": "R-12",
+          "titulo": "Globo latex negro — R-12 / PAQUETE X 25",
+          "unidades_con_merma": 20,
+          "unidades_inferidas": false,
+          "unidades_necesarias": 20,
+          "unidades_paquete": 25,
+          "used": 20,
+          "variant_id": "V-NEGRO-12",
+          "waste_reserve": 0
+        }
+      ],
+      "costes_por_estructura": [
+        {
+          "consumo_cop": 26800,
+          "estructura_id": "EST_01_COLUMNA"
+        }
+      ],
+      "estructuras": [
+        {
+          "eje_m": 1.8,
+          "estructura_id": "EST_01_COLUMNA",
+          "lineas": [
+            {
+              "acabado": null,
+              "color": "blanco",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-blanco-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-BLANCO",
+              "sku": "SKU-V-BLANCO-12",
+              "sku_original": "SHOP-V-BLANCO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-BLANCO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex blanco — R-12 / PAQUETE X 25",
+              "unidades": 40,
+              "unidades_inferidas": false,
+              "variant_id": "V-BLANCO-12"
+            },
+            {
+              "acabado": null,
+              "color": "negro",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-negro-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-NEGRO",
+              "sku": "SKU-V-NEGRO-12",
+              "sku_original": "SHOP-V-NEGRO-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-NEGRO-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex negro — R-12 / PAQUETE X 25",
+              "unidades": 20,
+              "unidades_inferidas": false,
+              "variant_id": "V-NEGRO-12"
+            },
+            {
+              "acabado": null,
+              "color": "azul",
+              "diam_cm": 30.5,
+              "diam_pulg": 12.0,
+              "estructura_id": "EST_01_COLUMNA",
+              "forma": "redondo",
+              "imagen": "https://cdn.example.test/v-azul-12.jpg",
+              "inventory_quantity": 500,
+              "origen": {
+                "id": "EST_01_COLUMNA",
+                "kind": "estructura"
+              },
+              "product_id": "P-AZUL",
+              "sku": "SKU-V-AZUL-12",
+              "sku_original": "SHOP-V-AZUL-12",
+              "source_snapshot_id": "SNAP-GOLDEN-001",
+              "source_variant_id": "SOURCE-V-AZUL-12",
+              "sustitucion": null,
+              "tamano_codigo": "R-12",
+              "titulo": "Globo latex azul — R-12 / PAQUETE X 25",
+              "unidades": 20,
+              "unidades_inferidas": false,
+              "variant_id": "V-AZUL-12"
+            }
+          ],
+          "mezcla_real": [
+            {
+              "diam_pulg": 12.0,
+              "forma": "redondo",
+              "pct": 100.0,
+              "unidades": 80
+            }
+          ],
+          "nombre": "Columnas en espiral",
+          "repeticiones": 2,
+          "supuestos": [],
+          "tipo": "columna",
+          "total_unidades": 80,
+          "ubicacion": "entrada"
+        }
+      ],
+      "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot SNAP-GOLDEN-001.",
+      "patrones_color": [
+        {
+          "aplicado": true,
+          "avisos": [
+            "Con cuartetos completos cada pieza lleva 40 globos; las medidas daban 39."
+          ],
+          "celdas": [
+            [
+              0,
+              1,
+              0,
+              2
+            ],
+            [
+              0,
+              1,
+              0,
+              2
+            ],
+            [
+              0,
+              1,
+              0,
+              2
+            ],
+            [
+              0,
+              1,
+              0,
+              2
+            ],
+            [
+              0,
+              1,
+              0,
+              2
+            ],
+            [
+              0,
+              1,
+              0,
+              2
+            ],
+            [
+              0,
+              1,
+              0,
+              2
+            ],
+            [
+              0,
+              1,
+              0,
+              2
+            ],
+            [
+              0,
+              1,
+              0,
+              2
+            ],
+            [
+              0,
+              1,
+              0,
+              2
+            ]
+          ],
+          "columnas": 4,
+          "conteo": [
+            {
+              "acabado": null,
+              "color": "blanco",
+              "material": 0,
+              "unidades_por_instancia": 20,
+              "unidades_total": 40
+            },
+            {
+              "acabado": null,
+              "color": "negro",
+              "material": 1,
+              "unidades_por_instancia": 10,
+              "unidades_total": 20
+            },
+            {
+              "acabado": null,
+              "color": "azul",
+              "material": 2,
+              "unidades_por_instancia": 10,
+              "unidades_total": 20
+            }
+          ],
+          "descripcion": "Cuartetos iguales de blanco (1), negro (2), blanco (1) y azul (3) que se encajan girando 1/8 de vuelta en cada capa: los colores forman espirales continuas de la base a la punta.",
+          "estructura_id": "EST_01_COLUMNA",
+          "extras": [],
+          "filas": 10,
+          "geometria": "racimos",
+          "globos_por_instancia": 40,
+          "instrucciones": [
+            "Infla cada globo con el calibrador para que todos queden del mismo tamaño.",
+            "Arma parejas (dos globos amarrados por el cuello) y une dos parejas para formar cada cuarteto.",
+            "Dentro de cada cuarteto respeta el orden de colores: blanco (1), negro (2), blanco (1), azul (3).",
+            "Encaja cada cuarteto sobre el anterior girándolo 1/8 de vuelta, siempre en el mismo sentido: así aparece la espiral.",
+            "Sigue la gráfica numerada: cada número es un color de la leyenda."
+          ],
+          "nombre": "Espiral",
+          "pasos": [
+            {
+              "celdas": [
+                0,
+                1,
+                0,
+                2
+              ],
+              "desde": 1,
+              "extras": [],
+              "hasta": 10
+            }
+          ],
+          "patron": {
+            "base": {
+              "modo": "espiral",
+              "racimo": [
+                0,
+                1,
+                0,
+                2
+              ],
+              "trazo": "espiral"
+            },
+            "origen": "decorador",
+            "version": "patron-color.v1"
+          },
+          "prompt_gemini": "COLOR PATTERN — build it from identical four-balloon clusters (white, black, white, blue around each cluster) rotated one eighth of a turn per layer so the colors form continuous diagonal spiral stripes winding from base to top; keep the order unbroken and do not randomize.",
+          "prompt_lora": "wrapped in a spiral of white, black and blue stripes winding from base to top",
+          "repeticiones": 2
+        }
+      ],
+      "plan": {
+        "concepto": {
+          "descripcion": "Dos columnas en espiral blanco, negro y azul.",
+          "paleta": [
+            "blanco",
+            "negro",
+            "azul"
+          ],
+          "titulo": "Columnas en espiral"
+        },
+        "espacio": {
+          "fuente": "cliente",
+          "tipo": "salon"
+        },
+        "estructuras": [
+          {
+            "densidad": "media",
+            "estructura_id": "EST_01_COLUMNA",
+            "materiales": [
+              {
+                "color": "blanco",
+                "participacion": 0.5,
+                "product_id": "P-BLANCO",
+                "rol_material": "principal"
+              },
+              {
+                "color": "negro",
+                "participacion": 0.25,
+                "product_id": "P-NEGRO",
+                "rol_material": "secundario"
+              },
+              {
+                "color": "azul",
+                "participacion": 0.25,
+                "product_id": "P-AZUL",
+                "rol_material": "acento"
+              }
+            ],
+            "medidas": {
+              "alto_m": 1.8
+            },
+            "mezcla": "clasica",
+            "nombre": "Columnas en espiral",
+            "patron_color": {
+              "base": {
+                "modo": "espiral",
+                "racimo": [
+                  0,
+                  1,
+                  0,
+                  2
+                ],
+                "trazo": "espiral"
+              },
+              "origen": "decorador",
+              "version": "patron-color.v1"
+            },
+            "porque": "Espiral de cuartetos como en la foto de referencia.",
+            "repeticiones": 2,
+            "rol_escena": "focal",
+            "tipo": "columna",
+            "ubicacion": "entrada"
+          }
+        ],
+        "plan_id": "29292929-2929-4292-8292-292929292929",
+        "plan_version": "1.0",
+        "referencia_omitida": [],
+        "supuestos": []
+      },
+      "plan_hash": "cce3c57903f62b17265f021a0b97a9cf0915cd41897fb69e5c2d604d327e1235",
+      "request_id": "00000000-0000-4000-8000-000000000101",
+      "schema_version": "plan-resuelto.v1",
+      "sin_cobertura": [],
+      "sustituciones": [],
+      "totales": {
+        "additional_waste_packages": 0,
+        "ahorro_paquetes_cop": 0,
+        "consumption_cost": 29040,
+        "covered_waste_reserve": 7,
+        "design_quantity": 80,
+        "globos_por_tamano": {
+          "R-12": 80
+        },
+        "incluye_iva": true,
+        "merma_porcentaje": 8.0,
+        "natural_package_surplus": 20,
+        "purchase_cost": 33500,
+        "target_waste_reserve": 7,
+        "total_cop": 33500,
+        "total_unidades": 80,
+        "uncovered_waste_reserve": 0,
+        "waste_only_savings_cop": 0
+      }
+    },
+    "quote": {
+      "consumption_cost_cop": 29040,
+      "covered_waste_reserve": 7,
+      "currency": "COP",
+      "includes_vat": true,
+      "leftover_inventory": 13,
+      "lines": [
+        {
+          "available": true,
+          "color": "azul",
+          "consumption_cost_cop": 6800,
+          "design_quantity": 20,
+          "diameter_inches": 12.0,
+          "id": "V-AZUL-12",
+          "leftover_inventory": 5,
+          "origins": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 8500,
+          "packages": 1,
+          "product_id": "P-AZUL",
+          "purchase_cost_cop": 8500,
+          "purchase_quantity": 25,
+          "required_quantity": 20,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_COLUMNA"
+          ],
+          "subtotal_cop": 8500,
+          "surplus": 5,
+          "title": "Globo latex azul — R-12 / PAQUETE X 25",
+          "units_per_package": 25,
+          "used": 20,
+          "variant_id": "V-AZUL-12",
+          "waste_reserve": 0
+        },
+        {
+          "available": true,
+          "color": "blanco",
+          "consumption_cost_cop": 15040,
+          "design_quantity": 40,
+          "diameter_inches": 12.0,
+          "id": "V-BLANCO-12",
+          "leftover_inventory": 3,
+          "origins": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 8000,
+          "packages": 2,
+          "product_id": "P-BLANCO",
+          "purchase_cost_cop": 16000,
+          "purchase_quantity": 50,
+          "required_quantity": 47,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_COLUMNA"
+          ],
+          "subtotal_cop": 16000,
+          "surplus": 10,
+          "title": "Globo latex blanco — R-12 / PAQUETE X 25",
+          "units_per_package": 25,
+          "used": 40,
+          "variant_id": "V-BLANCO-12",
+          "waste_reserve": 7
+        },
+        {
+          "available": true,
+          "color": "negro",
+          "consumption_cost_cop": 7200,
+          "design_quantity": 20,
+          "diameter_inches": 12.0,
+          "id": "V-NEGRO-12",
+          "leftover_inventory": 5,
+          "origins": [
+            {
+              "id": "EST_01_COLUMNA",
+              "kind": "estructura"
+            }
+          ],
+          "package_price_cop": 9000,
+          "packages": 1,
+          "product_id": "P-NEGRO",
+          "purchase_cost_cop": 9000,
+          "purchase_quantity": 25,
+          "required_quantity": 20,
+          "size": "R-12",
+          "size_code": "R-12",
+          "structures": [
+            "EST_01_COLUMNA"
+          ],
+          "subtotal_cop": 9000,
+          "surplus": 5,
+          "title": "Globo latex negro — R-12 / PAQUETE X 25",
+          "units_per_package": 25,
+          "used": 20,
+          "variant_id": "V-NEGRO-12",
+          "waste_reserve": 0
+        }
+      ],
+      "plan_hash": "cce3c57903f62b17265f021a0b97a9cf0915cd41897fb69e5c2d604d327e1235",
+      "purchase_cost_cop": 33500,
+      "schema_version": "quote.v1",
+      "supported_complements": false,
+      "target_waste_reserve": 7,
+      "total_cop": 33500,
+      "waste_percentage": 8.0
+    }
+  },
+  "lora_variant_ids": null,
+  "name": "29-columna-clasica-espiral-tres-colores",
+  "plan": {
+    "concepto": {
+      "descripcion": "Dos columnas en espiral blanco, negro y azul.",
+      "paleta": [
+        "blanco",
+        "negro",
+        "azul"
+      ],
+      "titulo": "Columnas en espiral"
+    },
+    "espacio": {
+      "fuente": "cliente",
+      "tipo": "salon"
+    },
+    "estructuras": [
+      {
+        "densidad": "media",
+        "estructura_id": "EST_01_COLUMNA",
+        "materiales": [
+          {
+            "color": "blanco",
+            "participacion": 0.4,
+            "product_id": "P-BLANCO",
+            "rol_material": "principal"
+          },
+          {
+            "color": "negro",
+            "participacion": 0.3,
+            "product_id": "P-NEGRO",
+            "rol_material": "secundario"
+          },
+          {
+            "color": "azul",
+            "participacion": 0.3,
+            "product_id": "P-AZUL",
+            "rol_material": "acento"
+          }
+        ],
+        "medidas": {
+          "alto_m": 1.8
+        },
+        "mezcla": "clasica",
+        "nombre": "Columnas en espiral",
+        "patron_color": {
+          "base": {
+            "modo": "espiral",
+            "racimo": [
+              0,
+              1,
+              0,
+              2
+            ],
+            "trazo": "espiral"
+          },
+          "origen": "decorador",
+          "version": "patron-color.v1"
+        },
+        "porque": "Espiral de cuartetos como en la foto de referencia.",
+        "repeticiones": 2,
+        "rol_escena": "focal",
+        "tipo": "columna",
+        "ubicacion": "entrada"
+      }
+    ],
+    "plan_id": "29292929-2929-4292-8292-292929292929",
+    "plan_version": "1.0",
+    "referencia_omitida": [],
+    "supuestos": []
+  }
+}
