@@ -31,6 +31,7 @@ the catalog store cannot be used. They are not domain resolution outcomes.
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import math
@@ -2734,21 +2735,40 @@ async def resolve_plan(
         PlanDecoracion.model_validate(raw_plan)
     except ValidationError as error:
         raise PlanResolutionError("invalid_plan", 422) from error
-    snapshot_id = await catalog_store.published_snapshot(request.catalog_snapshot_id)
-    if snapshot_id is None:
-        raise PlanResolutionError("catalog_snapshot_not_found", 422)
     allowlist_pairs = _allowlist_pairs(request.allowlist)
     declared_pairs = _declared_pairs(raw_plan)
     pairs = allowlist_pairs | declared_pairs
-    if pairs:
-        identity_rows = await catalog_store.fetch_catalog_identity(
-            snapshot_id,
+    product_ids, variant_ids = _ids_for_plan(raw_plan, request.allowlist)
+    requested_snapshot = request.catalog_snapshot_id
+
+    async def no_identity() -> Sequence[Mapping[str, object]]:
+        return ()
+
+    # Both checks only depend on the requested snapshot, so they run together:
+    # each is a network round trip to the catalog database (about 250 ms from a
+    # developer machine to Neon) and a card edit resolves twice. They keep their
+    # order of precedence (an unpublished snapshot is reported before an
+    # ownership mismatch), and the commercial rows are only read once both pass.
+    published, identity = await asyncio.gather(
+        catalog_store.published_snapshot(requested_snapshot),
+        catalog_store.fetch_catalog_identity(
+            requested_snapshot,
             sorted({product_id for product_id, _variant_id in pairs}),
             sorted({variant_id for _product_id, variant_id in pairs}),
         )
-        if _product_variant_mismatches(identity_rows, allowlist_pairs, declared_pairs):
-            raise PlanResolutionError("allowlist_product_mismatch", 422)
-    product_ids, variant_ids = _ids_for_plan(raw_plan, request.allowlist)
+        if pairs
+        else no_identity(),
+        return_exceptions=True,
+    )
+    if isinstance(published, BaseException):
+        raise published
+    if published is None:
+        raise PlanResolutionError("catalog_snapshot_not_found", 422)
+    snapshot_id = published
+    if isinstance(identity, BaseException):
+        raise identity
+    if pairs and _product_variant_mismatches(identity, allowlist_pairs, declared_pairs):
+        raise PlanResolutionError("allowlist_product_mismatch", 422)
     rows = await catalog_store.fetch_plan_rows(
         snapshot_id,
         product_ids,

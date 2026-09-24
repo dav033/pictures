@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import asyncio
 import json
 import time
 from pathlib import Path
@@ -995,3 +996,40 @@ def test_incoherent_official_structure_is_rejected_by_the_contract(
     # The coherence table is generated from estructuras-oficiales.ts into the JSON Schema.
     with pytest.raises(ValidationError):
         _request_with_structure(changes)
+
+
+class _StoreThatWaitsForTheOtherCheck(FakePlanStore):
+    """``published_snapshot`` only answers once the identity check has started.
+
+    A resolve that runs both checks together finishes; one that awaits them
+    one after the other never starts the second and times out.
+    """
+
+    def __init__(self, rows: Sequence[dict[str, object]]) -> None:
+        super().__init__(rows)
+        self._identity_started = asyncio.Event()
+
+    async def published_snapshot(self, snapshot_id: str) -> str | None:
+        await asyncio.wait_for(self._identity_started.wait(), timeout=2)
+        return await super().published_snapshot(snapshot_id)
+
+    async def fetch_catalog_identity(
+        self,
+        snapshot_id: str,
+        product_ids: Sequence[str],
+        variant_ids: Sequence[str],
+    ) -> Sequence[dict[str, object]]:
+        self._identity_started.set()
+        return await super().fetch_catalog_identity(snapshot_id, product_ids, variant_ids)
+
+
+async def test_snapshot_and_ownership_checks_run_together() -> None:
+    # Each check is a round trip to the catalog database; a card edit resolves
+    # twice, so running them together halves that wait.
+    store = _StoreThatWaitsForTheOtherCheck([_row()])
+
+    result = await resolve_plan(_request(), store)
+
+    assert result["catalog_snapshot_id"] == SNAPSHOT
+    assert len(store.identity_calls) == 1
+    assert store.requested_ids is not None
