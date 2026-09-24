@@ -3,7 +3,13 @@
  * editor admission through catalog selection, Python-owned recommendations,
  * snapshot-pinned search and fail-closed tokens. `globalThis.fetch` is stubbed;
  * there is no network, and no tested path queries PostgreSQL (the pool is created
- * lazily from a loopback URL but never used).
+ * lazily from a loopback URL; only the audit INSERT is recorded, never sent).
+ *
+ * ADR-0028 §9: the edit itself (agregar, quitar, repartir, patrón…) is
+ * Python's (POST /internal/v1/plan/edit), and its semantics are tested in
+ * `services/ai-api/tests/test_plan_edicion.py`. The stub answers that route
+ * with canned plans; here only Next's orchestration is asserted: tokens,
+ * re-resolution, the edit request, code → status mapping, re-signing, audit.
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -62,6 +68,27 @@ function payloadResolucion(): Json {
   };
 }
 
+const RUTA_EDICION = "/internal/v1/plan/edit";
+const RUTA_RESOLUCION = "/internal/v1/plan/resolve";
+
+/** Canned plan-edit-result.v1: the plan Next sent, changed as the test says (Python's job). */
+function sobreEdicion(llamada: Llamada, cambiar: (plan: Json) => Json = (plan) => plan, avisos: string[] = []): Response {
+  const plan = llamada.body.plan;
+  assert.ok(esObjeto(plan));
+  return sobre(llamada, { operation_schema_version: "plan-edit-result.v1", plan: cambiar(structuredClone(plan)), avisos });
+}
+
+/** A domain rejection as Python's boundary writes it (`_error(code, status, details)`). */
+function rechazoPython(code: string, status: number, detalles: Json = {}): Response {
+  return Response.json({ detail: { code, request_id: "00000000-0000-4000-8000-00000000e000", correlation_id: "00000000-0000-4000-8000-00000000e001", ...detalles } }, { status });
+}
+
+/** Changes the first structure of a plan. */
+function conPrimeraEstructura(plan: Json, cambiar: (estructura: Json) => Json): Json {
+  const estructuras = plan.estructuras as Json[];
+  return { ...plan, estructuras: [cambiar(estructuras[0]!), ...estructuras.slice(1)] };
+}
+
 function payloadBusqueda(snapshot: string): Json {
   return {
     operation_schema_version: "catalog-search-result.v1",
@@ -107,21 +134,32 @@ function payloadRecomendaciones(productos: Array<{ product_id: string; title: st
 }
 
 async function main(): Promise<void> {
-  const { crearTokenPlan, abrirContextoPlan } = await import("../../src/lib/plan/aprobacion");
+  const { crearTokenPlan, abrirContextoPlan, verificarTokenAprobacion } = await import("../../src/lib/plan/aprobacion");
   const { POST } = await import("../../src/app/api/plan-editar/route");
+  const { PlanDecoracionSchema } = await import("../../src/lib/plan/tipos");
+  const { mensajeErrorRespuesta } = await import("../../src/lib/plan/peticion-plan-editar");
   const { ordenarRecomendacionesPorColor } = await import("../../src/lib/plan/recomendaciones-orden");
   const { RECOMENDACIONES_MAX_PRODUCTOS } = await import("../../src/lib/plan/edicion-python");
   const { AllowlistProductoVarianteError } = await import("../../src/lib/plan/allowlist-producto-variante");
   const { UiErrorV1Schema } = await import("../../src/lib/ia/contracts/ui-error-v1");
   const { getRagPool } = await import("../../src/lib/rag/db");
-  // Every tested path must stay off PostgreSQL: any query fails the test loudly.
+  // Every tested path must stay off PostgreSQL: any query fails the test
+  // loudly, except the audit INSERT of an applied edit, which is recorded
+  // (never sent) so its content can be checked.
+  const auditorias: unknown[][] = [];
   Object.defineProperty(getRagPool(), "query", {
-    value: () => { throw new Error("la prueba no debe consultar la base"); },
+    value: (sql: unknown, parametros: unknown) => {
+      if (typeof sql === "string" && sql.trim().startsWith("INSERT INTO plan_audit_log") && Array.isArray(parametros)) {
+        auditorias.push(parametros);
+        return Promise.resolve({ rows: [], rowCount: 1 });
+      }
+      throw new Error("la prueba no debe consultar la base");
+    },
   });
 
   const allowlistFirmada = [{ product_id: "prod-rojo", variant_ids: ["var-rojo-12"] }];
   const tokenPython = crearTokenPlan({ planHash: PLAN_HASH, requestId: REQUEST_ID, backend: "python", catalogSnapshotId: SNAPSHOT, allowlist: allowlistFirmada });
-  const base = { ...leerFixture("plan-resuelto-ok.json"), plan_hash: PLAN_HASH, request_id: REQUEST_ID, approval_token: tokenPython };
+  const base: Json = { ...leerFixture("plan-resuelto-ok.json"), plan_hash: PLAN_HASH, request_id: REQUEST_ID, approval_token: tokenPython };
 
   async function editar(body: Json, cabeceras: Record<string, string> = {}): Promise<{ status: number; cuerpo: Json; requestId: string | null }> {
     const respuesta = await POST(new Request("http://127.0.0.1/api/plan-editar", {
@@ -361,9 +399,15 @@ async function main(): Promise<void> {
   console.log("[PASS] aplicar Python: mismatch en la re-resolución base → 422 ALLOWLIST_PRODUCTO_VARIANTE");
 
   // --- 6b. E2E 2026-09-14 (D7): "Quitar" on the only material has its own code and every response has X-Request-ID.
-  llamadas = instalarFetch((llamada) => sobre(llamada, payloadResolucion()));
+  // Python rejects it (`unico_material`, 400); Next keeps the cause and the
+  // customer sentence. The base the browser echoes carries made-up lines: the
+  // edit request must carry the lines of the re-resolved (verified) plan.
+  llamadas = instalarFetch((llamada) => llamada.path === RUTA_EDICION
+    ? rechazoPython("unico_material", 400)
+    : sobre(llamada, payloadResolucion()));
   const requestIdCliente = "00000000-0000-4000-8000-0000000000d7";
-  r = await editar({ modo: "aplicar", base, edicion: { accion: "quitar", estructura_id: "EST_01_ARCO", objetivo_variant_id: "var-rojo-12" } }, { "x-request-id": requestIdCliente });
+  const baseConLineasAjenas = { ...base, estructuras: [{ estructura_id: "EST_01_ARCO", lineas: [{ product_id: "prod-x", variant_id: "var-falsa", color: "negro" }] }] };
+  r = await editar({ modo: "aplicar", base: baseConLineasAjenas, edicion: { accion: "quitar", estructura_id: "EST_01_ARCO", objetivo_variant_id: "var-rojo-12" } }, { "x-request-id": requestIdCliente });
   assert.equal(r.status, 400);
   assert.equal(r.cuerpo.causa, "UNICO_MATERIAL");
   const uiUnico = UiErrorV1Schema.parse(r.cuerpo.ui_error);
@@ -371,10 +415,19 @@ async function main(): Promise<void> {
   assert.equal(uiUnico.mensaje_usuario, "No se puede quitar el único globo de esta pieza; cámbialo por otro.");
   assert.equal(uiUnico.request_id, requestIdCliente);
   assert.equal(r.requestId, requestIdCliente, "the request id header is echoed");
+  assert.deepEqual(llamadas.map((l) => l.path), [RUTA_RESOLUCION, RUTA_EDICION], "nothing to admit, nothing to resolve after a rejection");
+  const peticionQuitar = llamadas[1]!.body;
+  assert.equal(peticionQuitar.schema_version, "plan-edit.v1");
+  assert.deepEqual((peticionQuitar.context as Json).scopes, ["plan.edit"]);
+  assert.deepEqual(peticionQuitar.plan, JSON.parse(JSON.stringify(PlanDecoracionSchema.parse(base.plan))), "Python edits the approved declarative plan");
+  assert.deepEqual(peticionQuitar.edicion, { accion: "quitar", estructura_id: "EST_01_ARCO", objetivo_variant_id: "var-rojo-12" });
+  assert.deepEqual(peticionQuitar.lineas_base, [{ estructura_id: "EST_01_ARCO", lineas: [{ product_id: "prod-rojo", variant_id: "var-rojo-12", color: "rojo" }] }], "verified lines, never the echoed ones");
+  assert.deepEqual(peticionQuitar.colores_variante, []);
+  assert.equal(peticionQuitar.completar_patrones, false, "PATRONES_COLOR_V1 is off by default");
   llamadas = instalarFetch((llamada) => sobre(llamada, payloadBusqueda(SNAPSHOT)));
   r = await editar({ modo: "buscar", consulta: "globo rojo", approval_token: tokenPython });
   assert.match(r.requestId ?? "", /^[0-9a-f-]{36}$/, "a generated request id when the client sends none");
-  console.log("[PASS] quitar el único material → 400 UNICO_MATERIAL / PIEZA_UNICO_MATERIAL y X-Request-ID en las respuestas");
+  console.log("[PASS] quitar el único material → 400 UNICO_MATERIAL / PIEZA_UNICO_MATERIAL, petición de edición con líneas verificadas y X-Request-ID");
 
   // --- 6c. D9c: "Modificar" only offers balloons for a balloon line, and the editor refuses a streamer.
   const candidatoPython = (productId: string, category: string, variante: { variant_id: string; size_code: string | null; diameter_inches: number | null; shape: string | null }) => ({
@@ -408,18 +461,23 @@ async function main(): Promise<void> {
     const serpentina = { product_id: "prod-serpentina", variant_id: "var-serpentina", diam_pulg: null, diam_cm: null, forma: null, tamano_codigo: null };
     return { ...payload, plan_resuelto: { ...planResuelto, estructuras: estructuras.map((estructura) => ({ ...estructura, lineas: estructura.lineas.map((linea) => ({ ...linea, ...serpentina })) })) } };
   };
+  /** Python's answer to a "reemplazar" on the arch: the new variant as an override of the red line. */
+  const conOverride = (variante: { product_id: string; variant_id: string }, color?: string) => (plan: Json): Json =>
+    conPrimeraEstructura(plan, (estructura) => ({ ...estructura, variant_overrides: [{ objetivo_variant_id: "var-rojo-12", ...variante, ...(color ? { color } : {}) }] }));
   let resoluciones = 0;
   llamadas = instalarFetch((llamada) => {
-    if (llamada.path === "/internal/v1/plan/resolve") {
+    if (llamada.path === RUTA_RESOLUCION) {
       resoluciones += 1;
       return sobre(llamada, resoluciones === 1 ? payloadResolucion() : resolucionConSerpentina());
     }
+    if (llamada.path === RUTA_EDICION) return sobreEdicion(llamada, conOverride({ product_id: "prod-serpentina", variant_id: "var-serpentina" }));
     return sobre(llamada, seleccionAdmitida({ product_id: "prod-serpentina", variant_id: "var-serpentina", size_code: null, shape: null, diameter_inches: null }));
   });
   r = await editar(reemplazo({ product_id: "prod-serpentina", variant_id: "var-serpentina" }));
   assert.equal(r.status, 422, JSON.stringify(r.cuerpo).slice(0, 400));
   assert.equal(r.cuerpo.causa, "REEMPLAZO_INCOMPATIBLE");
   assert.equal(UiErrorV1Schema.parse(r.cuerpo.ui_error).code, "REEMPLAZO_NO_COMPATIBLE");
+  assert.deepEqual(llamadas.map((l) => l.path), [RUTA_RESOLUCION, "/internal/v1/catalog/selection", RUTA_EDICION, RUTA_RESOLUCION], "admit, edit in Python, then resolve the edited plan");
   console.log("[PASS] Modificar: la búsqueda filtra por la línea objetivo y aplicar rechaza un globo cambiado por una serpentina");
 
   // --- 6d. D9a: the edited quote carries the catalog photo of each purchase.
@@ -429,9 +487,11 @@ async function main(): Promise<void> {
     const planResuelto = payload.plan_resuelto as Json;
     return { ...payload, plan_resuelto: { ...planResuelto, compras: (planResuelto.compras as Json[]).map((compra) => ({ ...compra, imagen: FOTO })) } };
   };
-  llamadas = instalarFetch((llamada) => llamada.path === "/internal/v1/plan/resolve"
-    ? sobre(llamada, resolucionConFoto())
-    : sobre(llamada, seleccionAdmitida({})));
+  llamadas = instalarFetch((llamada) => {
+    if (llamada.path === RUTA_RESOLUCION) return sobre(llamada, resolucionConFoto());
+    if (llamada.path === RUTA_EDICION) return sobreEdicion(llamada, conOverride({ product_id: "prod-rojo", variant_id: "var-rojo-12" }, "rojo"));
+    return sobre(llamada, seleccionAdmitida({}));
+  });
   r = await editar(reemplazo({ product_id: "prod-rojo", variant_id: "var-rojo-12" }));
   assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 400));
   const lineaCotizada = ((r.cuerpo.cotizacion as Json).lineas as Json[])[0]!;
@@ -442,14 +502,21 @@ async function main(): Promise<void> {
   // El editor manda texto libre y llegaba al plan sin tocar: "azul rey" no
   // coincidía con ninguna variante del resolver geométrico (SIN_COBERTURA), y
   // la tarjeta conservaba el color de la pieza reemplazada, así que unos globos
-  // azules se cotizaban como "rosado".
-  const AZUL = { product_id: "prod-azul", variant_id: "var-azul-12", product_title: "Globo Latex Redondo Fashion Azul", colors: ["azul"] };
+  // azules se cotizaban como "rosado". Qué color escribe la edición lo decide
+  // Python con los colores reales de la variante admitida (test_plan_edicion.py);
+  // Next se los pasa y canoniza el plan editado antes de resolverlo.
+  const AZUL = { product_id: "prod-azul", variant_id: "var-azul-12", product_title: "Globo Latex Redondo Fashion Azul", colors: ["azul", "turquesa"] };
   const planEnviado = (registro: Llamada[]): Json => {
-    const resueltas = registro.filter((llamada) => llamada.path === "/internal/v1/plan/resolve");
+    const resueltas = registro.filter((llamada) => llamada.path === RUTA_RESOLUCION);
     assert.equal(resueltas.length, 2, "se resuelve el plan base y el editado");
     const plan = resueltas[1]!.body.plan;
     assert.ok(esObjeto(plan));
     return plan;
+  };
+  const edicionEnviada = (registro: Llamada[]): Json => {
+    const ediciones = registro.filter((llamada) => llamada.path === RUTA_EDICION);
+    assert.equal(ediciones.length, 1, "una sola edición en Python");
+    return ediciones[0]!.body;
   };
   const colorDelOverride = (plan: Json): unknown => {
     const estructuras = plan.estructuras as Array<Json & { variant_overrides?: Json[] }>;
@@ -457,56 +524,175 @@ async function main(): Promise<void> {
     assert.equal(overrides.length, 1, JSON.stringify(overrides));
     return overrides[0]!.color;
   };
-  const editarConColor = async (color: string | undefined): Promise<Llamada[]> => {
-    const registro = instalarFetch((llamada) => llamada.path === "/internal/v1/plan/resolve"
-      ? sobre(llamada, payloadResolucion())
-      : sobre(llamada, seleccionAdmitida(AZUL)));
-    const respuesta = await editar({
-      modo: "aplicar",
-      base: { ...base, approval_token: tokenPython },
-      edicion: { accion: "reemplazar", estructura_id: "EST_01_ARCO", objetivo_variant_id: "var-rojo-12", variante: { product_id: AZUL.product_id, variant_id: AZUL.variant_id, ...(color === undefined ? {} : { color }) } },
-    });
-    assert.equal(respuesta.status, 200, JSON.stringify(respuesta.cuerpo).slice(0, 300));
-    return registro;
-  };
-  assert.equal(colorDelOverride(planEnviado(await editarConColor("rosado"))), "azul", "el color viejo de la tarjeta no puede etiquetar la variante nueva");
-  assert.equal(colorDelOverride(planEnviado(await editarConColor("azul rey"))), "azul", "el texto libre pasa por el vocabulario del catálogo");
-  assert.equal(colorDelOverride(planEnviado(await editarConColor(undefined))), "azul", "sin color se usa el único color de la variante");
+  const llamadasColor = instalarFetch((llamada) => {
+    if (llamada.path === RUTA_RESOLUCION) return sobre(llamada, payloadResolucion());
+    if (llamada.path === RUTA_EDICION) return sobreEdicion(llamada, conOverride({ product_id: AZUL.product_id, variant_id: AZUL.variant_id }, "azul rey"));
+    return sobre(llamada, seleccionAdmitida(AZUL));
+  });
+  r = await editar({
+    modo: "aplicar",
+    base: { ...base, approval_token: tokenPython },
+    edicion: { accion: "reemplazar", estructura_id: "EST_01_ARCO", objetivo_variant_id: "var-rojo-12", variante: { product_id: AZUL.product_id, variant_id: AZUL.variant_id, color: "azul rey" } },
+  });
+  assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 300));
+  assert.deepEqual(edicionEnviada(llamadasColor).colores_variante, ["azul", "turquesa"], "los colores reales de la variante admitida");
+  assert.deepEqual((edicionEnviada(llamadasColor).edicion as Json).variante, { product_id: AZUL.product_id, variant_id: AZUL.variant_id, color: "azul rey" }, "la edición viaja como la pidió el cliente");
+  assert.equal(colorDelOverride(planEnviado(llamadasColor)), "azul", "el texto libre pasa por el vocabulario del catálogo al resolver");
 
-  // Una variante con varios colores conserva lo que escribió el cliente,
-  // canonizado: rechazarla bloquearía una edición que el catálogo sí permite.
-  const llamadasVarios = instalarFetch((llamada) => llamada.path === "/internal/v1/plan/resolve"
-    ? sobre(llamada, payloadResolucion())
-    : sobre(llamada, seleccionAdmitida({ ...AZUL, colors: ["azul", "turquesa"] })));
+  const llamadasAgregar = instalarFetch((llamada) => {
+    if (llamada.path === RUTA_RESOLUCION) return sobre(llamada, payloadResolucion());
+    if (llamada.path === RUTA_EDICION) {
+      return sobreEdicion(llamada, (plan) => conPrimeraEstructura(plan, (estructura) => ({
+        ...estructura,
+        materiales: [
+          { ...(estructura.materiales as Json[])[0]!, participacion: 0.8 },
+          { product_id: AZUL.product_id, variant_id: AZUL.variant_id, color: "azul rey", participacion: 0.2, rol_material: "acento" },
+        ],
+      })));
+    }
+    return sobre(llamada, seleccionAdmitida(AZUL));
+  });
   r = await editar({
     modo: "aplicar",
     base: { ...base, approval_token: tokenPython },
     edicion: { accion: "agregar", estructura_id: "EST_01_ARCO", participacion: 0.2, variante: { product_id: AZUL.product_id, variant_id: AZUL.variant_id, color: "azul rey" } },
   });
   assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 300));
-  const materialesAgregados = (planEnviado(llamadasVarios).estructuras as Array<Json & { materiales: Json[] }>)[0]!.materiales;
-  assert.equal(materialesAgregados.at(-1)!.color, "azul", "agregar canoniza el color del cliente");
-  console.log("[PASS] edición: el color sale del catálogo y de la variante elegida, nunca de la pieza anterior");
+  assert.deepEqual((edicionEnviada(llamadasAgregar).edicion as Json).participacion, 0.2);
+  const materialesAgregados = (planEnviado(llamadasAgregar).estructuras as Array<Json & { materiales: Json[] }>)[0]!.materiales;
+  assert.equal(materialesAgregados.at(-1)!.color, "azul", "agregar canoniza el color del cliente al resolver");
+  console.log("[PASS] edición: Python recibe los colores reales de la variante y Next canoniza el plan editado al resolverlo");
 
-  // --- 6f. 2026-09-24: the card's sliders. "mezcla" only changes the piece's
-  // size mix and Python counts it; "repartir" only accepts one share per
-  // color of the piece, none under 5 %.
-  const llamadasMezcla = instalarFetch((llamada) => sobre(llamada, payloadResolucion()));
+  // --- 6f. 2026-09-24: the card's sliders. "mezcla" and "repartir" bring no
+  // new variant: nothing is admitted and the edited plan resolved is exactly
+  // the one Python returned. Python rejects a split that does not match the
+  // piece; Zod rejects a color under 5 % before anything is called.
+  const llamadasMezcla = instalarFetch((llamada) => llamada.path === RUTA_EDICION
+    ? sobreEdicion(llamada, (plan) => conPrimeraEstructura(plan, (estructura) => ({ ...estructura, mezcla: "solo_grandes" })))
+    : sobre(llamada, payloadResolucion()));
   r = await editar({ modo: "aplicar", base: { ...base, approval_token: tokenPython }, edicion: { accion: "mezcla", estructura_id: "EST_01_ARCO", mezcla: "solo_grandes" } });
   assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 300));
-  const planMezcla = planEnviado(llamadasMezcla);
-  const estructuraMezcla = (planMezcla.estructuras as Json[])[0]!;
-  const estructuraBase = ((base.plan as Json).estructuras as Json[])[0]!;
-  assert.equal(estructuraMezcla.mezcla, "solo_grandes");
-  assert.deepEqual({ ...estructuraMezcla, mezcla: estructuraBase.mezcla }, estructuraBase, "nada más de la pieza cambia");
-  assert.equal(llamadasMezcla.some((llamada) => llamada.path !== "/internal/v1/plan/resolve"), false, "sin variante nueva no se admite nada");
+  assert.deepEqual(llamadasMezcla.map((llamada) => llamada.path), [RUTA_RESOLUCION, RUTA_EDICION, RUTA_RESOLUCION], "sin variante nueva no se admite nada");
+  assert.deepEqual(edicionEnviada(llamadasMezcla).edicion, { accion: "mezcla", estructura_id: "EST_01_ARCO", mezcla: "solo_grandes" });
+  assert.equal(((planEnviado(llamadasMezcla).estructuras as Json[])[0]!).mezcla, "solo_grandes", "se resuelve el plan que editó Python");
 
-  instalarFetch((llamada) => sobre(llamada, payloadResolucion()));
+  llamadas = instalarFetch((llamada) => llamada.path === RUTA_EDICION
+    ? rechazoPython("reparto_no_corresponde", 409)
+    : sobre(llamada, payloadResolucion()));
   r = await editar({ modo: "aplicar", base: { ...base, approval_token: tokenPython }, edicion: { accion: "repartir", estructura_id: "EST_01_ARCO", participaciones: [0.5, 0.5] } });
   assert.equal(r.status, 409, "one share per color of the piece (it has one material)");
+  assert.equal(r.cuerpo.error, "La distribución no corresponde a los colores actuales de la pieza. Vuelve a abrirla e inténtalo otra vez.");
+  assert.deepEqual(edicionEnviada(llamadas).edicion, { accion: "repartir", estructura_id: "EST_01_ARCO", participaciones: [0.5, 0.5] });
+  llamadas = instalarFetch(() => { throw new Error("un reparto inválido no debe llegar a Python"); });
   r = await editar({ modo: "aplicar", base: { ...base, approval_token: tokenPython }, edicion: { accion: "repartir", estructura_id: "EST_01_ARCO", participaciones: [0.97, 0.03] } });
   assert.equal(r.status, 400, "a color under 5 % is a removal, not a split");
+  assert.equal(llamadas.length, 0);
   console.log("[PASS] edición desde los deslizadores: mezcla y reparto de colores");
+
+  // --- 6g. Every domain rejection of the Python edit keeps the status and the
+  // customer sentence the TypeScript edit had (ADR-0028 §9).
+  const rechazos: Array<[string, number, number, string, string | undefined]> = [
+    ["estructura_no_encontrada", 404, 404, "No se encontró la estructura seleccionada.", undefined],
+    ["variante_objetivo_no_encontrada", 404, 404, "No se encontró la variante objetivo en la estructura.", undefined],
+    ["material_no_editable", 409, 409, "La variante visible no corresponde a un material editable.", undefined],
+    ["sin_participacion", 400, 400, "La estructura quedó sin participación de materiales.", undefined],
+    ["patron_activo", 409, 409, "Esta pieza usa un patrón de color: cambia sus colores desde el patrón.", "PATRON_ACTIVO"],
+    ["invalid_plan", 422, 400, "La edición del plan no tiene un formato válido.", undefined],
+  ];
+  for (const [codigo, statusPython, statusRuta, mensaje, causa] of rechazos) {
+    instalarFetch((llamada) => llamada.path === RUTA_EDICION ? rechazoPython(codigo, statusPython) : sobre(llamada, payloadResolucion()));
+    r = await editar({ modo: "aplicar", base, edicion: { accion: "quitar", estructura_id: "EST_01_ARCO", objetivo_variant_id: "var-rojo-12" } });
+    assert.equal(r.status, statusRuta, codigo);
+    assert.equal(r.cuerpo.error, mensaje, codigo);
+    assert.equal(r.cuerpo.causa, causa, codigo);
+    UiErrorV1Schema.parse(r.cuerpo.ui_error);
+  }
+  instalarFetch((llamada) => llamada.path === RUTA_EDICION ? rechazoPython("patron_activo", 409) : sobre(llamada, payloadResolucion()));
+  r = await editar({ modo: "aplicar", base, edicion: { accion: "repartir", estructura_id: "EST_01_ARCO", participaciones: [0.5, 0.5] } });
+  const uiActivo = UiErrorV1Schema.parse(r.cuerpo.ui_error);
+  assert.equal(uiActivo.code, "PROPUESTA_INCOMPLETA", "a pattern is fixed in the pattern editor, not by asking for a new proposal");
+  assert.equal(uiActivo.mensaje_usuario, "Esta pieza usa un patrón de color: cambia sus colores desde el patrón.");
+  console.log("[PASS] rechazos de la edición en Python → mismos status y mensajes de siempre; patron_activo → 409 con su texto");
+
+  // --- 6h. accion "patron" (ADR-0028 §9): the pattern editor applies a pattern.
+  const ESPIRAL = { version: "patron-color.v1", origen: "decorador", base: { modo: "espiral", racimo: [0, 1, 0, 1], trazo: "espiral" } };
+  const AVISO = "El patrón se rehízo porque quitaste un color.";
+  process.env.PATRONES_COLOR_V1 = "true";
+  auditorias.length = 0;
+  llamadas = instalarFetch((llamada) => llamada.path === RUTA_EDICION
+    ? sobreEdicion(llamada, (plan) => conPrimeraEstructura(plan, (estructura) => ({ ...estructura, patron_color: ESPIRAL })), [AVISO])
+    : sobre(llamada, payloadResolucion()));
+  r = await editar({ modo: "aplicar", base, edicion: { accion: "patron", estructura_id: "EST_01_ARCO", patron_color: ESPIRAL } });
+  delete process.env.PATRONES_COLOR_V1;
+  assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 400));
+  assert.deepEqual(llamadas.map((l) => l.path), [RUTA_RESOLUCION, RUTA_EDICION, RUTA_RESOLUCION]);
+  assert.deepEqual(edicionEnviada(llamadas).edicion, { accion: "patron", estructura_id: "EST_01_ARCO", patron_color: ESPIRAL });
+  assert.equal(edicionEnviada(llamadas).completar_patrones, true, "the flag travels as completar_patrones");
+  assert.deepEqual(((planEnviado(llamadas).estructuras as Json[])[0]!).patron_color, ESPIRAL, "the edited plan Python returned is what gets resolved");
+  assert.deepEqual(r.cuerpo.avisos, [AVISO], "Python's notices reach the card");
+  const planRespuesta = r.cuerpo.plan as Json;
+  assert.equal(planRespuesta.request_id, REQUEST_ID);
+  assert.ok(verificarTokenAprobacion(String(planRespuesta.approval_token), String(planRespuesta.plan_hash)), "re-signed for the new plan_hash");
+  assert.equal(auditorias.length, 1, "one audit row per applied edit");
+  assert.equal(auditorias[0]![15], "PLAN_EDITED");
+  assert.deepEqual(JSON.parse(String(auditorias[0]![8])), { accion: "patron", estructura_id: "EST_01_ARCO", modo: "espiral" });
+
+  // Removing it: `patron_color: null` is a valid edit; a missing field or an extra one is not.
+  llamadas = instalarFetch((llamada) => llamada.path === RUTA_EDICION ? sobreEdicion(llamada) : sobre(llamada, payloadResolucion()));
+  r = await editar({ modo: "aplicar", base, edicion: { accion: "patron", estructura_id: "EST_01_ARCO", patron_color: null } });
+  assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 400));
+  assert.equal("avisos" in r.cuerpo, false, "no notices, no field");
+  assert.equal(JSON.parse(String(auditorias.at(-1)![8])).modo, null);
+  llamadas = instalarFetch(() => { throw new Error("una edición de patrón mal formada no debe llegar a Python"); });
+  for (const edicion of [
+    { accion: "patron", estructura_id: "EST_01_ARCO" },
+    { accion: "patron", estructura_id: "EST_01_ARCO", patron_color: { ...ESPIRAL, extra: true } },
+    { accion: "patron", estructura_id: "EST_01_ARCO", patron_color: null, variante: { product_id: "p", variant_id: "v" } },
+  ]) {
+    r = await editar({ modo: "aplicar", base, edicion });
+    assert.equal(r.status, 400, JSON.stringify(edicion));
+  }
+  assert.equal(llamadas.length, 0);
+
+  // Python rejects the pattern: its `motivo` and `mensaje` reach the editor as is.
+  const MENSAJE_PATRON = "Azul (3) no aparece en el patrón: agrégalo al racimo o quítalo de la pieza.";
+  llamadas = instalarFetch((llamada) => llamada.path === RUTA_EDICION
+    ? rechazoPython("patron_invalido", 422, { estructura_id: "EST_01_ARCO", motivo: "material_sin_uso", mensaje: MENSAJE_PATRON })
+    : sobre(llamada, payloadResolucion()));
+  r = await editar({ modo: "aplicar", base, edicion: { accion: "patron", estructura_id: "EST_01_ARCO", patron_color: ESPIRAL } });
+  assert.equal(r.status, 422);
+  const { ui_error: uiPatron, ...legacyPatron } = r.cuerpo;
+  assert.deepEqual(legacyPatron, { error: MENSAJE_PATRON, causa: "PATRON_INVALIDO", motivo: "material_sin_uso", mensaje: MENSAJE_PATRON });
+  const uiPatronParsed = UiErrorV1Schema.parse(uiPatron);
+  assert.equal(uiPatronParsed.code, "PROPUESTA_INCOMPLETA");
+  assert.equal(uiPatronParsed.mensaje_usuario, MENSAJE_PATRON);
+  assert.equal(uiPatronParsed.detalles_dev.codigo_origen, "PATRON_INVALIDO:material_sin_uso");
+  assert.equal(mensajeErrorRespuesta(r.cuerpo, "No se pudo actualizar la pieza."), MENSAJE_PATRON, "the card shows Python's sentence");
+  assert.deepEqual(llamadas.map((l) => l.path), [RUTA_RESOLUCION, RUTA_EDICION]);
+  console.log("[PASS] acción patron: petición a Python, bandera, re-firma, auditoría {accion, estructura_id, modo}, avisos y patron_invalido con motivo/mensaje");
+
+  // --- 6i. The edited plan is checked at the boundary: another plan, or shares
+  // that do not add up to 1, is an invalid Python response, never signed.
+  for (const cambiar of [
+    (plan: Json): Json => ({ ...plan, plan_id: "99999999-9999-4999-8999-999999999999" }),
+    (plan: Json): Json => conPrimeraEstructura(plan, (estructura) => ({ ...estructura, materiales: [{ ...(estructura.materiales as Json[])[0]!, participacion: 0.5 }] })),
+  ]) {
+    llamadas = instalarFetch((llamada) => llamada.path === RUTA_EDICION ? sobreEdicion(llamada, cambiar) : sobre(llamada, payloadResolucion()));
+    r = await editar({ modo: "aplicar", base, edicion: { accion: "mezcla", estructura_id: "EST_01_ARCO", mezcla: "clasica" } });
+    assert.equal(r.status, 502, JSON.stringify(r.cuerpo).slice(0, 300));
+    assert.equal(r.cuerpo.code, "PYTHON_INVALID_RESPONSE");
+    assert.deepEqual(llamadas.map((l) => l.path), [RUTA_RESOLUCION, RUTA_EDICION], "an invalid edit is never resolved");
+  }
+  console.log("[PASS] un plan editado que no corresponde o no suma 1 → 502 PYTHON_INVALID_RESPONSE sin resolverlo");
+
+  // --- 6j. A malformed body is the client's error (400), not a 500.
+  llamadas = instalarFetch(() => { throw new Error("un cuerpo mal formado no debe llegar a Python"); });
+  const malformado = await POST(new Request("http://127.0.0.1/api/plan-editar", { method: "POST", headers: { "content-type": "application/json" }, body: "{\"modo\":" }));
+  const cuerpoMalformado = await malformado.json() as Json;
+  assert.equal(malformado.status, 400);
+  assert.equal(UiErrorV1Schema.parse(cuerpoMalformado.ui_error).code, "SOLICITUD_INVALIDA");
+  assert.equal(llamadas.length, 0);
+  console.log("[PASS] JSON mal formado → 400 SOLICITUD_INVALIDA sin llamar a Python");
 
   // El bloque 7 probaba el kill switch: con `PYTHON_BACKEND_KILL_SWITCH=true`
   // un token Python daba 409 PYTHON_NO_SELECCIONADO en los tres modos sin

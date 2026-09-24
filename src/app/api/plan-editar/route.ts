@@ -17,7 +17,7 @@ import {
   aplicarEdicionPlan,
   correlationDesde,
 } from "@/lib/plan/aplicar-edicion";
-import { BasePlanSchema, EdicionMezclaSchema, EdicionRepartoSchema, EdicionSchema } from "@/lib/plan/edicion-esquemas";
+import { BasePlanSchema, EdicionMezclaSchema, EdicionPatronSchema, EdicionRepartoSchema, EdicionSchema } from "@/lib/plan/edicion-esquemas";
 
 const BodySchema = z.discriminatedUnion("modo", [
   z.object({
@@ -32,8 +32,10 @@ const BodySchema = z.discriminatedUnion("modo", [
     }).strict().optional(),
   }).strict(),
   z.object({ modo: z.literal("recomendadas"), variant_id: z.string().trim().min(1).max(160), approval_token: z.string().min(1), loraMode: LoraModeSlugSchema.optional() }).strict(),
-  z.object({ modo: z.literal("aplicar"), base: BasePlanSchema, edicion: z.union([EdicionSchema, EdicionRepartoSchema, EdicionMezclaSchema]), loraMode: LoraModeSlugSchema.optional() }).strict(),
+  z.object({ modo: z.literal("aplicar"), base: BasePlanSchema, edicion: z.union([EdicionSchema, EdicionRepartoSchema, EdicionMezclaSchema, EdicionPatronSchema]), loraMode: LoraModeSlugSchema.optional() }).strict(),
 ]);
+
+const MENSAJE_JSON_INVALIDO = "El cuerpo de la solicitud no es JSON válido.";
 
 function serializarCandidatos(candidatos: readonly ProductoCandidato[]) {
   return candidatos.slice(0, 8).map((candidato) => ({
@@ -55,8 +57,17 @@ export async function POST(request: Request) {
   // Every response carries X-Request-ID, so a failed edit can be traced (E2E 2026-09-14).
   const requestIdHttp = requestIdDe(request);
   const cabeceras = { "X-Request-ID": requestIdHttp };
+  let json: unknown;
   try {
-    const body = BodySchema.parse(await request.json());
+    json = await request.json();
+  } catch (error) {
+    // A malformed body is the client's error, not a 500.
+    const uiError = traducirErrorServidor(error instanceof SyntaxError ? error : new SyntaxError(MENSAJE_JSON_INVALIDO), requestIdHttp);
+    registrarFalloUi("/api/plan-editar", uiError);
+    return Response.json({ error: MENSAJE_JSON_INVALIDO, ui_error: uiError }, { status: 400, headers: cabeceras });
+  }
+  try {
+    const body = BodySchema.parse(json);
     const pool = getRagPool();
 
     // Un modo LoRA restringido (training_1/2) nunca debe poder ofrecer ni
@@ -106,14 +117,15 @@ export async function POST(request: Request) {
     // `ajustar_plan_decoracion` (src/lib/ia/herramientas/registro-herramientas.ts) can call
     // the exact same checks instead of a second implementation.
     const catalogAllowlist = await resolverCatalogAllowlist();
-    const { plan: resuelto, cotizacion } = await aplicarEdicionPlan({
+    const { plan: resuelto, cotizacion, avisos } = await aplicarEdicionPlan({
       base: body.base,
       edicion: body.edicion,
       catalogAllowlist,
       pool,
       signal: request.signal,
     });
-    return Response.json({ plan: resuelto, cotizacion }, { headers: cabeceras });
+    // `avisos` only when the edit has something to say (a rebuilt color pattern).
+    return Response.json({ plan: resuelto, cotizacion, ...(avisos.length ? { avisos } : {}) }, { headers: cabeceras });
   } catch (error) {
     // Los campos legacy (`error`, `causa`, `detalles`, sobre operational.v1) se
     // conservan para los consumidores actuales; `ui_error` (ui-error.v1) es lo
@@ -122,7 +134,9 @@ export async function POST(request: Request) {
     registrarFalloUi("/api/plan-editar", uiError);
     const responder = (cuerpo: Record<string, unknown>, status: number) => Response.json({ ...cuerpo, ui_error: uiError }, { status, headers: cabeceras });
     if (error instanceof z.ZodError) return responder({ error: "La edición del plan no tiene un formato válido.", detalles: error.issues }, 400);
-    if (error instanceof PlanEditError) return responder({ error: error.message, ...(error.causa ? { causa: error.causa } : {}) }, error.status);
+    if (error instanceof PlanEditError) {
+      return responder({ error: error.message, ...(error.causa ? { causa: error.causa } : {}), ...(error.patron ? { motivo: error.patron.motivo, mensaje: error.patron.mensaje } : {}) }, error.status);
+    }
     if (error instanceof PlanBackendNoDisponibleError) return responder({ error: error.message, causa: error.motivo }, 409);
     if (error instanceof AllowlistProductoVarianteError) return responder({ error: error.message, causa: error.causa }, 422);
     if (error instanceof Error && /^LORA_/.test(error.message)) return responder({ error: error.message }, 409);

@@ -3,6 +3,9 @@ import {
   isPythonAdapterError,
   llamarPythonCatalogRecommendations,
   llamarPythonCatalogSelection,
+  llamarPythonPlanEdit,
+  llamarPythonPlanPatron,
+  type PythonPlanEditLineaBase,
 } from "@/lib/ia/nucleo/python-adapter";
 import type { ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { candidatoDesdePython } from "@/lib/rag/chat/candidato-python";
@@ -10,9 +13,13 @@ import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import { errorAllowlistDesdePython } from "./allowlist-producto-variante";
 import type { ContextoPlan } from "./aprobacion";
 import { coloresRealesProducto } from "./colores-producto";
-import { PlanEditError } from "./edicion-error";
+import { MENSAJE_UNICO_MATERIAL } from "./edicion-compatibilidad";
+import { PlanEditError, type CausaEdicionPlan } from "./edicion-error";
+import type { EdicionPlan } from "./edicion-esquemas";
+import type { PatronColor, PatronColorResuelto } from "./patron-color";
 import { ordenarRecomendacionesPorColor } from "./recomendaciones-orden";
 import { PlanBackendNoDisponibleError } from "./resolver-backend";
+import type { PlanDecoracion } from "./tipos";
 
 /** Deadline for the short catalog checks the editor makes while the customer waits. */
 export const EDICION_PYTHON_DEADLINE_MS = 5_000;
@@ -126,4 +133,108 @@ export async function recomendarAlternativasPython(input: {
     { productId: resultado.reference.product_id, colores: resultado.reference.colors },
   );
   return ordenados.slice(0, RECOMENDACIONES_MAX_PRODUCTOS);
+}
+
+export const MENSAJE_PATRON_ACTIVO = "Esta pieza usa un patrón de color: cambia sus colores desde el patrón.";
+/** Only when Python rejects a pattern without its own sentence (an older service). */
+const MENSAJE_PATRON_INVALIDO = "Ese patrón de color no se puede armar en esta pieza.";
+
+type Rechazo = { status: number; mensaje: string; causa?: CausaEdicionPlan };
+
+/**
+ * Domain rejections of POST /internal/v1/plan/edit (ADR-0028 §9), with the
+ * same status and customer-facing sentence the TypeScript edit used before it
+ * moved to Python. `invalid_plan` is what used to fail as a Zod error on the
+ * edited plan (a seventh color, say).
+ */
+const RECHAZOS_EDICION: Readonly<Record<string, Rechazo>> = {
+  estructura_no_encontrada: { status: 404, mensaje: "No se encontró la estructura seleccionada." },
+  variante_objetivo_no_encontrada: { status: 404, mensaje: "No se encontró la variante objetivo en la estructura." },
+  reparto_no_corresponde: { status: 409, mensaje: "La distribución no corresponde a los colores actuales de la pieza. Vuelve a abrirla e inténtalo otra vez." },
+  material_no_editable: { status: 409, mensaje: "La variante visible no corresponde a un material editable." },
+  unico_material: { status: 400, mensaje: MENSAJE_UNICO_MATERIAL, causa: "UNICO_MATERIAL" },
+  sin_participacion: { status: 400, mensaje: "La estructura quedó sin participación de materiales." },
+  patron_activo: { status: 409, mensaje: MENSAJE_PATRON_ACTIVO, causa: "PATRON_ACTIVO" },
+  invalid_plan: { status: 400, mensaje: "La edición del plan no tiene un formato válido." },
+};
+
+/** Rejections of POST /internal/v1/plan/patron (ADR-0028 §10). */
+const RECHAZOS_VISTA_PATRON: Readonly<Record<string, Rechazo>> = {
+  estructura_no_encontrada: RECHAZOS_EDICION.estructura_no_encontrada!,
+  invalid_plan: { status: 422, mensaje: "El patrón de color no tiene un formato válido." },
+};
+
+/**
+ * A known domain rejection as `PlanEditError`; anything else (transport,
+ * authentication, an unknown code) is not a business answer and is left to
+ * the caller. `patron_invalido` keeps Python's `motivo` and `mensaje`: the
+ * decorator reads which color or rule broke the pattern.
+ */
+function rechazoDesdePython(error: unknown, rechazos: Readonly<Record<string, Rechazo>>): PlanEditError | null {
+  if (!isPythonAdapterError(error) || !error.domainCode) return null;
+  if (error.domainCode === "patron_invalido") {
+    const { motivo, mensaje } = error.domainDetails ?? {};
+    return new PlanEditError(422, mensaje ?? MENSAJE_PATRON_INVALIDO, "PATRON_INVALIDO", motivo && mensaje ? { motivo, mensaje } : undefined);
+  }
+  const rechazo = rechazos[error.domainCode];
+  return rechazo ? new PlanEditError(rechazo.status, rechazo.mensaje, rechazo.causa) : null;
+}
+
+/**
+ * Applies one edit to the declarative plan in Python (the only owner of the
+ * mutation). `lineasBase` are the lines of the base plan Next has just
+ * re-resolved and verified, never the ones the browser echoed.
+ */
+export async function editarPlanPython(input: {
+  plan: PlanDecoracion;
+  lineasBase: ReadonlyArray<{ estructura_id: string; lineas: readonly PythonPlanEditLineaBase[] }>;
+  edicion: EdicionPlan;
+  coloresVariante: readonly string[];
+  completarPatrones: boolean;
+  correlationId: string;
+  signal?: AbortSignal;
+}): Promise<{ plan: PlanDecoracion; avisos: string[] }> {
+  try {
+    const resultado = await llamarPythonPlanEdit({
+      plan: input.plan,
+      lineasBase: input.lineasBase,
+      edicion: input.edicion,
+      coloresVariante: input.coloresVariante,
+      completarPatrones: input.completarPatrones,
+      requestId: crypto.randomUUID(),
+      correlationId: input.correlationId,
+      deadlineMs: EDICION_PYTHON_DEADLINE_MS,
+      ...(input.signal ? { parentSignal: input.signal } : {}),
+    });
+    return { plan: resultado.plan, avisos: resultado.avisos };
+  } catch (error) {
+    throw rechazoDesdePython(error, RECHAZOS_EDICION) ?? error;
+  }
+}
+
+/**
+ * Pattern preview for the editor: the pattern Python expands (or suggests,
+ * with `null`) and counts, with the same grid the next resolution quotes.
+ */
+export async function vistaPreviaPatronPython(input: {
+  plan: PlanDecoracion;
+  estructuraId: string;
+  patronColor: PatronColor | null;
+  correlationId: string;
+  signal?: AbortSignal;
+}): Promise<PatronColorResuelto> {
+  try {
+    const resultado = await llamarPythonPlanPatron({
+      plan: input.plan,
+      estructuraId: input.estructuraId,
+      patronColor: input.patronColor,
+      requestId: crypto.randomUUID(),
+      correlationId: input.correlationId,
+      deadlineMs: EDICION_PYTHON_DEADLINE_MS,
+      ...(input.signal ? { parentSignal: input.signal } : {}),
+    });
+    return resultado.patron;
+  } catch (error) {
+    throw rechazoDesdePython(error, RECHAZOS_VISTA_PATRON) ?? error;
+  }
 }

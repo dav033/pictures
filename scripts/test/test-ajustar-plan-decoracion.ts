@@ -58,6 +58,20 @@ function sobre(llamada: Llamada, payload: Json): Response {
   return Response.json({ schema_version: "operational.v1", request_id: ctx.request_id, correlation_id: ctx.correlation_id, payload });
 }
 
+/**
+ * Answers `/internal/v1/plan/edit` with the plan it received: the edit itself
+ * belongs to Python (`plan_edicion.py`, pytest), so this double only proves
+ * the tool drives the same orchestration as the HTTP editor. `error` answers
+ * with a Python domain error instead.
+ */
+function conEdicion(responder: (llamada: Llamada) => Response, error?: { code: string; status: number }): (llamada: Llamada) => Response {
+  return (llamada) => {
+    if (llamada.path !== "/internal/v1/plan/edit") return responder(llamada);
+    if (error) return Response.json({ detail: { code: error.code } }, { status: error.status });
+    return sobre(llamada, { operation_schema_version: "plan-edit-result.v1", plan: llamada.body.plan as Json, avisos: [] });
+  };
+}
+
 function payloadResolucion(): Json {
   const resolved = leerFixture("plan-resuelto-ok.json");
   const quote = leerFixture("quote-ok.json");
@@ -118,7 +132,7 @@ async function main(): Promise<void> {
 
   // --- 1. reemplazar: happy path, mirrors D8 W2.5 (color canonizado, no el de la pieza vieja).
   {
-    const llamadas = instalarFetch((l) => l.path === "/internal/v1/plan/resolve" ? sobre(l, payloadResolucion()) : sobre(l, seleccionAdmitida({ product_id: "prod-azul", variant_id: "var-azul-12", product_title: "Globo Latex Redondo Fashion Azul", colors: ["azul"] })));
+    const llamadas = instalarFetch(conEdicion((l) => l.path === "/internal/v1/plan/resolve" ? sobre(l, payloadResolucion()) : sobre(l, seleccionAdmitida({ product_id: "prod-azul", variant_id: "var-azul-12", product_title: "Globo Latex Redondo Fashion Azul", colors: ["azul"] }))));
     const { estado, registro } = turno();
     const r = await registro.ajustar_plan_decoracion!({ accion: "reemplazar", estructura_id: "EST_01_ARCO", objetivo_variant_id: "var-rojo-12", variante: { product_id: "prod-azul", variant_id: "var-azul-12", color: "rosado" } }, llamada);
     assert.equal(r.ok, true, JSON.stringify(r).slice(0, 400));
@@ -127,13 +141,13 @@ async function main(): Promise<void> {
     assert.equal(r.accion, "reemplazar");
     assert.ok(estado.planResuelto, "el plan resuelto del estado queda actualizado (lo que ve la tarjeta)");
     assert.ok(estado.cotizacion, "la cotización del estado queda actualizada");
-    assert.equal(llamadas.length, 3, "resuelve base + admite variante + resuelve editado");
+    assert.deepEqual(llamadas.map((l) => l.path), ["/internal/v1/plan/resolve", "/internal/v1/catalog/selection", "/internal/v1/plan/edit", "/internal/v1/plan/resolve"], "resuelve base + admite variante + edita en Python + resuelve editado");
     console.log("[PASS] reemplazar: ok:true, estado.planResuelto/cotizacion actualizados, color canonizado por el catálogo");
   }
 
   // --- 2. agregar.
   {
-    instalarFetch((l) => l.path === "/internal/v1/plan/resolve" ? sobre(l, payloadResolucion()) : sobre(l, seleccionAdmitida({ product_id: "prod-azul", variant_id: "var-azul-12", product_title: "Globo Latex Redondo Fashion Azul", colors: ["azul"] })));
+    instalarFetch(conEdicion((l) => l.path === "/internal/v1/plan/resolve" ? sobre(l, payloadResolucion()) : sobre(l, seleccionAdmitida({ product_id: "prod-azul", variant_id: "var-azul-12", product_title: "Globo Latex Redondo Fashion Azul", colors: ["azul"] }))));
     const { registro } = turno();
     const r = await registro.ajustar_plan_decoracion!({ accion: "agregar", estructura_id: "EST_01_ARCO", participacion: 0.2, variante: { product_id: "prod-azul", variant_id: "var-azul-12" } }, llamada);
     assert.equal(r.ok, true, JSON.stringify(r).slice(0, 400));
@@ -143,11 +157,11 @@ async function main(): Promise<void> {
 
   // --- 3. quitar (no new variant, no same-turn search gate to satisfy).
   {
-    instalarFetch((l) => sobre(l, payloadResolucion()));
+    instalarFetch(conEdicion((l) => sobre(l, payloadResolucion()), { code: "unico_material", status: 400 }));
     const { registro } = turno({ ragVistos: [] });
     const r = await registro.ajustar_plan_decoracion!({ accion: "quitar", estructura_id: "EST_01_ARCO", objetivo_variant_id: "var-rojo-12" }, llamada);
-    // The fixture's only material is the one being removed: the domain rule
-    // (MENSAJE_UNICO_MATERIAL) rejects it, same as the HTTP route's D7 case —
+    // The fixture's only material is the one being removed: Python's domain
+    // rule (`unico_material`) rejects it, same as the HTTP route's D7 case —
     // proof `aplicarEdicionPlan` is the exact same code path, not a new one.
     assert.equal(r.ok, false);
     assert.equal(r.status, "AJUSTE_RECHAZADO");
@@ -206,13 +220,13 @@ async function main(): Promise<void> {
       return { ...payload, plan_resuelto: { ...planResuelto, estructuras: estructuras.map((e) => ({ ...e, lineas: e.lineas.map((linea) => ({ ...linea, ...candidatoPython() })) })) } };
     };
     let resoluciones = 0;
-    instalarFetch((l) => {
+    instalarFetch(conEdicion((l) => {
       if (l.path === "/internal/v1/plan/resolve") {
         resoluciones += 1;
         return sobre(l, resoluciones === 1 ? payloadResolucion() : resolucionConSerpentina());
       }
       return sobre(l, seleccionAdmitida({ product_id: "prod-serpentina", variant_id: "var-serpentina", size_code: null, shape: null, diameter_inches: null }));
-    });
+    }));
     const { registro } = turno({ ragVistos: [{ productId: "prod-serpentina", variantId: "var-serpentina" }] });
     const r = await registro.ajustar_plan_decoracion!({ accion: "reemplazar", estructura_id: "EST_01_ARCO", objetivo_variant_id: "var-rojo-12", variante: { product_id: "prod-serpentina", variant_id: "var-serpentina" } }, llamada);
     assert.equal(r.ok, false, JSON.stringify(r).slice(0, 400));
@@ -234,7 +248,7 @@ async function main(): Promise<void> {
 
   // --- 9. Invariant: at most one commercial tool per turn.
   {
-    instalarFetch((l) => l.path === "/internal/v1/plan/resolve" ? sobre(l, payloadResolucion()) : sobre(l, seleccionAdmitida({ product_id: "prod-azul", variant_id: "var-azul-12" })));
+    instalarFetch(conEdicion((l) => l.path === "/internal/v1/plan/resolve" ? sobre(l, payloadResolucion()) : sobre(l, seleccionAdmitida({ product_id: "prod-azul", variant_id: "var-azul-12" }))));
     const { estado, registro } = turno();
     const primero = await registro.ajustar_plan_decoracion!({ accion: "reemplazar", estructura_id: "EST_01_ARCO", objetivo_variant_id: "var-rojo-12", variante: { product_id: "prod-azul", variant_id: "var-azul-12" } }, llamada);
     assert.equal(primero.ok, true, JSON.stringify(primero).slice(0, 300));
@@ -255,7 +269,7 @@ async function main(): Promise<void> {
     const fallo = await registro.ajustar_plan_decoracion!({ accion: "reemplazar", estructura_id: "EST_01_ARCO" }, llamada);
     assert.equal(fallo.ok, false);
     assert.equal(estado.herramientaComercialUsada, "ajustar_plan_decoracion", "el intento fallido ya cuenta como esta herramienta, no bloquea reintentarla");
-    instalarFetch((l) => l.path === "/internal/v1/plan/resolve" ? sobre(l, payloadResolucion()) : sobre(l, seleccionAdmitida({ product_id: "prod-serpentina", variant_id: "var-serpentina" })));
+    instalarFetch(conEdicion((l) => l.path === "/internal/v1/plan/resolve" ? sobre(l, payloadResolucion()) : sobre(l, seleccionAdmitida({ product_id: "prod-serpentina", variant_id: "var-serpentina" }))));
     const reintento = await registro.ajustar_plan_decoracion!({ accion: "agregar", estructura_id: "EST_01_ARCO", participacion: 0.2, variante: { product_id: "prod-serpentina", variant_id: "var-serpentina" } }, llamada);
     assert.equal(reintento.ok, true, JSON.stringify(reintento).slice(0, 300));
     console.log("[PASS] invariante: reintentar la MISMA herramienta comercial tras un rechazo sigue permitido");

@@ -103,6 +103,12 @@ lógica TypeScript que esta función toque se migra.
   Python (§9) y la UI del editor, y se retira después de validarlo en
   producción. La detección en la foto tiene su propia bandera
   (`PATRON_REFERENCIA_PYTHON_ENABLED`); conviene encender las dos juntas.
+- **Visibilidad de estilos y controles del editor** (`src/components/plan/patron/modos.ts`):
+  refleja `_MODOS_POR_TIPO` y las reglas de dirección y espejo de
+  `patron_color.py` solo para ocultar lo que Python rechazaría; Python valida
+  cada vista previa y cada guardado, y un test comprueba la paridad de la
+  tabla. Se retira cuando `plan-patron-result.v1` devuelva los modos que admite
+  cada estructura.
 - **Tablas ES→EN exportadas desde TypeScript** (`x-colores-en`, `x-acabados-en`).
   Son de solo lectura para Python hasta que la taxonomía de colores migre.
 
@@ -406,7 +412,9 @@ Zod local en `python-adapter.ts`.
 
 Petición `plan-edit.v1`:
 `{schema_version, plan: PlanDecoracion, lineas_base: [{estructura_id, lineas:
-[{product_id, variant_id, color|null}]}], edicion, colores_variante: string[]}`.
+[{product_id, variant_id, color|null}]}], edicion, colores_variante: string[],
+completar_patrones?: boolean}`. Las líneas base salen de la re-resolución
+verificada del plan, nunca del eco del navegador.
 `edicion` es una de: `agregar|reemplazar|quitar` (forma de `EdicionSchema`),
 `repartir`, `mezcla`, y la nueva `{accion:"patron", estructura_id,
 patron_color: PatronColorV1 | null}`.
@@ -419,20 +427,30 @@ más:
 
 - `patron`: valida (sección 4, con la geometría de la estructura) y fija o
   quita el campo; sincroniza `participacion`.
-- `repartir` en estructura con patrón: si el modo es `aleatorio`, reescribe
-  `pesos` con `max(1, round_half_up(p * 100))` y conserva `semilla`; con otro
-  modo → `patron_activo` (409).
+- `repartir` en estructura con patrón: si el modo es `aleatorio` sin
+  `acentos` ni `pintados`, reescribe `pesos` con `max(1, round_half_up(p *
+  100))` y conserva `semilla`; con otro modo, o con acentos o pintados (sus
+  celdas tienen color fijo y el reparto no se traduce a pesos) →
+  `patron_activo` (409).
 - `agregar` en estructura con patrón: el material nuevo entra al final; si el
-  modo es `aleatorio` se añade su peso; si no, un acento (`cada: 2, desde: 2,
-  posiciones: [0]` en racimos; `cada: 3, desde: 2` en pared), si hay cupo
-  (4); si no hay cupo → preset nuevo (aviso). Si la estructura pasa de 1 a 2
-  materiales sin patrón → preset.
+  modo es `aleatorio`, el color nuevo toma su parte `p` de la base
+  (`max(1, round_half_up(p * 100))`) y los pesos que ya estaban se escalan a
+  `(1 - p) * 100` conservando su proporción (salen de los pesos, no de
+  `participacion`, que ya cuenta acentos y pintados); si no, un acento
+  (`cada: 2, desde: 2, posiciones: [0]` en racimos; `cada: 3, desde: 2` en
+  pared), si hay cupo (4); si no hay cupo, o el acento deja un color sin
+  globos → preset nuevo (aviso). Si la estructura pasa de 1 a 2 materiales sin
+  patrón → preset, solo con `completar_patrones` (Next lo manda con la bandera
+  `PATRONES_COLOR_V1`).
 - `quitar` en estructura con patrón: se rehace el preset con los materiales
   que quedan (aviso "El patrón se rehízo porque quitaste un color"); si queda
   uno solo, el patrón se quita.
 - `colorDeEdicion` se porta sin canonizar (Next canoniza al resolver).
 
-Códigos de dominio → status (Next los traduce a sus mensajes de siempre):
+`/api/plan-editar` añade `avisos` a su respuesta solo cuando Python devuelve
+alguno. Códigos de dominio → status (Next los traduce a sus mensajes de
+siempre; `invalid_plan` se muestra como 400 "La edición del plan no tiene un
+formato válido."):
 `estructura_no_encontrada` 404, `variante_objetivo_no_encontrada` 404,
 `reparto_no_corresponde` 409, `material_no_editable` 409, `unico_material`
 400, `sin_participacion` 400, `patron_activo` 409, `patron_invalido` 422
@@ -448,7 +466,11 @@ resolución (misma rejilla y conteo que dará `resolve`). Errores:
 `patron_invalido` 422, `invalid_plan` 422, `estructura_no_encontrada` 404.
 
 Next: `POST /api/plan-patron` (misma autenticación que `/api/plan-editar`;
-no firma ni muta nada) → `{patron}` o `{error, ui_error}`.
+no firma ni muta nada) → `{patron}`. Ante `patron_invalido` (422), esta ruta y
+la acción `patron` de `/api/plan-editar` responden `{error, causa:
+"PATRON_INVALIDO", motivo, mensaje, ui_error}`; `ui_error.mensaje_usuario` es
+el `mensaje` de Python si cabe en 280 caracteres. Otros fallos: `{error,
+ui_error}`.
 
 ## 11. Detección en la foto: `POST /internal/v1/ia/patron-referencia`
 
@@ -488,13 +510,18 @@ plan cae al preset.
 - `DetalleEstructura`: bloque "Patrón de color" con vista compacta, nombre,
   descripción, conteo por color y botones **Editar patrón** y **Hoja de
   armado**. `RepartoColores` solo aparece si no hay patrón o el patrón es
-  `aleatorio`.
+  `aleatorio` sin acentos ni pintados.
 - `EditorPatron` (Radix Dialog; hoja inferior en móvil): vista grande
   (alternar **Vista** pseudo-3D / **Gráfica** numerada), leyenda numerada de
   colores (1 = primer material…), presets con miniatura, parámetros del modo,
   "Acento cada N", pincel (racimo completo o un globo), deshacer local,
-  conteo por color en vivo (vista previa Python, con debounce), "Restablecer"
-  y **Aplicar patrón** (acción `patron`). Aviso si un color queda sin uso.
+  conteo por color en vivo (vista previa Python, con debounce). **Sin botón
+  "Aplicar"**: cada cambio válido se guarda solo en la propuesta (acción
+  `patron`) cuando el decorador se detiene, en cola serializada; el pie
+  muestra "Guardando…" / "Cambios guardados" / el motivo y "Reintentar".
+  "Restablecer" vuelve al patrón que había al abrir, "Listo" cierra. Un
+  patrón que Python rechaza nunca se guarda. Los deslizadores de colores y
+  tamaños de la tarjeta también guardan solos.
 - `HojaArmado`: leyenda, gráfica numerada, paso a paso por racimos (de
   `pasos`), instrucciones, conteo por color y tamaño; **Imprimir** (CSS
   `@media print`).

@@ -93,6 +93,14 @@ from app.plan import (
     PlanResolutionRequest,
     resolve_plan,
 )
+from app.plan_edicion import (
+    PLAN_EDIT_SCOPE,
+    PLAN_PATRON_SCOPE,
+    PlanEditRequest,
+    PlanPatronRequest,
+    ejecutar_edicion,
+    vista_previa_patron,
+)
 from app.postgres_store import PostgresOperationalStore
 
 
@@ -1332,6 +1340,48 @@ def create_app(
             operation="plan.resolve",
             model=PlanResolutionRequest,
             scope=PLAN_RESOLUTION_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/edit")
+    async def plan_edit(request: Request) -> Response:
+        # ADR-0028 §9: the pure edit of the declarative plan. No catalog: Next
+        # admits the variant and resolves the edited plan afterwards.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, PlanEditRequest):
+                raise _error("invalid_request", 422)
+            try:
+                result = ejecutar_edicion(payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.edit",
+            model=PlanEditRequest,
+            scope=PLAN_EDIT_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/patron")
+    async def plan_patron(request: Request) -> Response:
+        # ADR-0028 §10: expands (or suggests) one structure's color pattern for
+        # the editor, with the same grid and counts the next resolution quotes.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, PlanPatronRequest):
+                raise _error("invalid_request", 422)
+            try:
+                result = vista_previa_patron(payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.patron",
+            model=PlanPatronRequest,
+            scope=PLAN_PATRON_SCOPE,
             handler=handler,
         )
 

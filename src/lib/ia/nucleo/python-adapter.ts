@@ -12,8 +12,15 @@ import {
   CatalogRecommendationsResultV1Schema,
   PlanResolutionResultV1Schema,
 } from "@/lib/ia/contracts/domain-v1";
-import { MODOS_PATRON_COLOR, type PistaPatron } from "@/lib/plan/patron-color";
-import type { PlanDecoracion } from "@/lib/plan/tipos";
+import type { EdicionPlan } from "@/lib/plan/edicion-esquemas";
+import {
+  MODOS_PATRON_COLOR,
+  PatronColorResueltoSchema,
+  type PatronColor,
+  type PatronColorResuelto,
+  type PistaPatron,
+} from "@/lib/plan/patron-color";
+import { PlanDecoracionSchema, type PlanDecoracion } from "@/lib/plan/tipos";
 import { z } from "zod";
 
 export const PYTHON_ECHO_PATH = "/internal/v1/echo";
@@ -44,6 +51,10 @@ export const PYTHON_CHAT_TURN_STREAM_PATH = "/internal/v1/ia/chat-turn-stream";
 export const PYTHON_CHAT_TURN_STREAM_SCOPE = "ia.chat_turn_stream";
 export const PYTHON_PATRON_REFERENCIA_PATH = "/internal/v1/ia/patron-referencia";
 export const PYTHON_PATRON_REFERENCIA_SCOPE = "ia.patron_referencia";
+export const PYTHON_PLAN_EDIT_PATH = "/internal/v1/plan/edit";
+export const PYTHON_PLAN_EDIT_SCOPE = "plan.edit";
+export const PYTHON_PLAN_PATRON_PATH = "/internal/v1/plan/patron";
+export const PYTHON_PLAN_PATRON_SCOPE = "plan.patron";
 export const PYTHON_EMBEDDING_MODEL = "gemini-embedding-2";
 export const PYTHON_EMBEDDING_DIMENSIONS = 768;
 export const PYTHON_MAX_BODY_BYTES = 64 * 1024;
@@ -78,6 +89,30 @@ export type PythonCatalogSelectionDomainCode = (typeof PYTHON_CATALOG_SELECTION_
  */
 export const PYTHON_CATALOG_RECOMMENDATIONS_DOMAIN_CODES = ["catalog_snapshot_not_found", "reference_variant_not_found"] as const;
 export type PythonCatalogRecommendationsDomainCode = (typeof PYTHON_CATALOG_RECOMMENDATIONS_DOMAIN_CODES)[number];
+
+/**
+ * Stable domain error codes reported by POST /internal/v1/plan/edit
+ * (services/ai-api/app/plan_edicion.py, ADR-0028 §9). They keep Python's HTTP
+ * status (404, 409, 400 or 422), so they do not all classify as
+ * PYTHON_INVALID_REQUEST: callers branch on `domainCode`. `patron_invalido`
+ * carries `domainDetails` (structure, stable `motivo`, Spanish `mensaje`).
+ */
+export const PYTHON_PLAN_EDIT_DOMAIN_CODES = [
+  "estructura_no_encontrada",
+  "variante_objetivo_no_encontrada",
+  "reparto_no_corresponde",
+  "material_no_editable",
+  "unico_material",
+  "sin_participacion",
+  "patron_activo",
+  "patron_invalido",
+  "invalid_plan",
+] as const;
+export type PythonPlanEditDomainCode = (typeof PYTHON_PLAN_EDIT_DOMAIN_CODES)[number];
+
+/** Stable domain error codes reported by POST /internal/v1/plan/patron (ADR-0028 §10). */
+export const PYTHON_PLAN_PATRON_DOMAIN_CODES = ["estructura_no_encontrada", "patron_invalido", "invalid_plan"] as const;
+export type PythonPlanPatronDomainCode = (typeof PYTHON_PLAN_PATRON_DOMAIN_CODES)[number];
 
 type AdapterEnvironment = Record<string, string | undefined>;
 type JsonObject = Record<string, unknown>;
@@ -169,6 +204,35 @@ function upstreamProviderDetail(value: unknown): string | undefined {
   return parsed.success ? parsed.data : undefined;
 }
 
+/**
+ * What a domain error says next to its code (Python's `_detail_metadata`):
+ * `patron_invalido` names the structure, a stable rule and a Spanish sentence
+ * for the decorator. Written by the domain, never echoed from the request.
+ */
+export interface PythonDomainDetails {
+  estructuraId?: string;
+  motivo?: string;
+  mensaje?: string;
+}
+
+function upstreamDomainDetails(value: unknown): PythonDomainDetails | undefined {
+  if (!isJsonObject(value) || !isJsonObject(value.detail)) return undefined;
+  const detail = value.detail;
+  const texto = (campo: unknown, maximo: number): string | undefined => {
+    const parsed = z.string().trim().min(1).max(maximo).safeParse(campo);
+    return parsed.success ? parsed.data : undefined;
+  };
+  const estructuraId = texto(detail.estructura_id, 160);
+  const motivo = texto(detail.motivo, 64);
+  const mensaje = texto(detail.mensaje, 400);
+  if (estructuraId === undefined && motivo === undefined && mensaje === undefined) return undefined;
+  return {
+    ...(estructuraId === undefined ? {} : { estructuraId }),
+    ...(motivo === undefined ? {} : { motivo }),
+    ...(mensaje === undefined ? {} : { mensaje }),
+  };
+}
+
 export class PythonAdapterError extends Error {
   readonly code: PythonAdapterErrorCode;
   /**
@@ -188,6 +252,8 @@ export class PythonAdapterError extends Error {
   /** See upstreamProviderStatus/upstreamProviderDetail above. */
   readonly providerStatus?: number;
   readonly providerDetail?: string;
+  /** See upstreamDomainDetails above. */
+  readonly domainDetails?: PythonDomainDetails;
 
   constructor(input: {
     code: PythonAdapterErrorCode;
@@ -198,6 +264,7 @@ export class PythonAdapterError extends Error {
     domainCode?: string;
     providerStatus?: number;
     providerDetail?: string;
+    domainDetails?: PythonDomainDetails;
   }) {
     super(ERROR_MESSAGES[input.code]);
     this.name = "PythonAdapterError";
@@ -210,6 +277,7 @@ export class PythonAdapterError extends Error {
     this.domainCode = input.domainCode;
     this.providerStatus = input.providerStatus;
     this.providerDetail = input.providerDetail;
+    this.domainDetails = input.domainDetails;
   }
 }
 
@@ -257,8 +325,9 @@ function errorFor(
   domainCode?: string,
   providerStatus?: number,
   providerDetail?: string,
+  domainDetails?: PythonDomainDetails,
 ): PythonAdapterError {
-  return new PythonAdapterError({ code, status, requestId, correlationId, attempts, domainCode, providerStatus, providerDetail });
+  return new PythonAdapterError({ code, status, requestId, correlationId, attempts, domainCode, providerStatus, providerDetail, domainDetails });
 }
 
 function normalizeDeadlineMs(value: number | undefined): number {
@@ -325,11 +394,12 @@ function mapUpstreamError(
   const attempts = upstreamEmbeddingAttempts(body);
   const providerStatus = upstreamProviderStatus(body);
   const providerDetail = upstreamProviderDetail(body);
+  const domainDetails = upstreamDomainDetails(body);
   // The upstream domain code travels on the error so a caller can tell apart
   // failures that all classify as the same transport outcome (see
   // PythonAdapterError.domainCode).
   const upstream = (adapterCode: PythonAdapterErrorCode, adapterStatus: number): PythonAdapterError =>
-    errorFor(adapterCode, adapterStatus, requestId, correlationId, attempts, code, providerStatus, providerDetail);
+    errorFor(adapterCode, adapterStatus, requestId, correlationId, attempts, code, providerStatus, providerDetail, domainDetails);
   if (status === 401 && (code === "nonce_replay" || code === "replay")) {
     return upstream("PYTHON_REPLAY", 401);
   }
@@ -1024,6 +1094,56 @@ export type PythonCatalogRecommendationsResult = z.infer<typeof CatalogRecommend
   replayed?: boolean;
 };
 
+/** A resolved line of the edited structure, as the verified base resolution printed it. */
+export interface PythonPlanEditLineaBase {
+  product_id: string;
+  variant_id: string;
+  color: string | null;
+}
+
+export interface PythonPlanEditInput {
+  plan: PlanDecoracion;
+  lineasBase: ReadonlyArray<{ estructura_id: string; lineas: readonly PythonPlanEditLineaBase[] }>;
+  edicion: EdicionPlan;
+  /** Real colors of the variant admitted for "agregar"/"reemplazar"; empty otherwise. */
+  coloresVariante: readonly string[];
+  /** `PATRONES_COLOR_V1`: a piece going from one color to two gets its preset pattern. */
+  completarPatrones: boolean;
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+export interface PythonPlanEditResult {
+  plan: PlanDecoracion;
+  /** Sentences for the decorator (e.g. "El patrón se rehízo porque quitaste un color."). */
+  avisos: string[];
+  replayed?: boolean;
+}
+
+export interface PythonPlanPatronInput {
+  plan: PlanDecoracion;
+  estructuraId: string;
+  /** `null` asks for the suggested pattern of a structure. */
+  patronColor: PatronColor | null;
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+export interface PythonPlanPatronResult {
+  patron: PatronColorResuelto;
+  replayed?: boolean;
+}
+
 const rerankPayloadResultSchema = z.object({
   order: z.array(z.string().min(1)),
   scores: z.record(z.string().min(1), z.number().finite()),
@@ -1102,6 +1222,28 @@ function patronReferenciaPayloadIsConsistent(
   }
   return true;
 }
+
+// Local contracts (ADR-0026 §3) of the plan editor, owned by the Pydantic
+// models in services/ai-api/app/plan_edicion.py (ADR-0028 §9, §10). The plan
+// is validated with the same Zod owner as every other plan (`tipos.ts`), which
+// also checks what JSON Schema cannot (shares that add up to 1).
+const planEditPayloadResultSchema = z.object({
+  operation_schema_version: z.literal("plan-edit-result.v1"),
+  plan: PlanDecoracionSchema,
+  avisos: z.array(z.string().min(1).max(400)).max(8),
+}).strict();
+
+/** The edit touches one plan: same id and the same structures, in the same order. */
+function planEditPayloadIsConsistent(plan: PlanDecoracion, pedido: PlanDecoracion): boolean {
+  return plan.plan_id === pedido.plan_id
+    && plan.estructuras.length === pedido.estructuras.length
+    && plan.estructuras.every((estructura, indice) => estructura.estructura_id === pedido.estructuras[indice]!.estructura_id);
+}
+
+const planPatronPayloadResultSchema = z.object({
+  operation_schema_version: z.literal("plan-patron-result.v1"),
+  patron: PatronColorResueltoSchema,
+}).strict();
 
 const imageGenerateUsageSchema = z.object({
   total_input_tokens: z.number().int().nonnegative().optional(),
@@ -1855,6 +1997,69 @@ export async function llamarPythonCatalogRecommendations(
   return response.replayed
     ? { ...parsed.data, replayed: true }
     : parsed.data;
+}
+
+/**
+ * Applies one edit to the declarative plan (ADR-0028 §9). Python owns the
+ * mutation; Next already verified the approval, admitted the variant, and
+ * resolves and signs whatever comes back. No idempotency key: the operation
+ * is pure and has no effect to deduplicate.
+ */
+export async function llamarPythonPlanEdit(input: PythonPlanEditInput): Promise<PythonPlanEditResult> {
+  const { plan, lineasBase, edicion, coloresVariante, completarPatrones, ...rest } = input;
+  const operationBody = {
+    schema_version: "plan-edit.v1" as const,
+    plan,
+    lineas_base: lineasBase.map((estructura) => ({
+      estructura_id: estructura.estructura_id,
+      lineas: estructura.lineas.map((linea) => ({ product_id: linea.product_id, variant_id: linea.variant_id, color: linea.color })),
+    })),
+    edicion,
+    colores_variante: [...coloresVariante],
+    completar_patrones: completarPatrones,
+  };
+  const response = await llamarPythonOperacion(PYTHON_PLAN_EDIT_PATH, PYTHON_PLAN_EDIT_SCOPE, {
+    ...rest,
+    payload: operationBody,
+    operationBody,
+    scopes: [PYTHON_PLAN_EDIT_SCOPE],
+  });
+  const parsed = planEditPayloadResultSchema.safeParse(response.payload);
+  if (!parsed.success || !planEditPayloadIsConsistent(parsed.data.plan, plan)) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  const result: PythonPlanEditResult = { plan: parsed.data.plan, avisos: parsed.data.avisos };
+  return response.replayed ? { ...result, replayed: true } : result;
+}
+
+/**
+ * Expands one structure's color pattern, or suggests one with `null`
+ * (ADR-0028 §10), for the pattern editor. No catalog and no side effect.
+ */
+export async function llamarPythonPlanPatron(input: PythonPlanPatronInput): Promise<PythonPlanPatronResult> {
+  const { plan, estructuraId, patronColor, ...rest } = input;
+  const operationBody = {
+    schema_version: "plan-patron.v1" as const,
+    plan,
+    estructura_id: estructuraId,
+    patron_color: patronColor,
+  };
+  const response = await llamarPythonOperacion(PYTHON_PLAN_PATRON_PATH, PYTHON_PLAN_PATRON_SCOPE, {
+    ...rest,
+    payload: operationBody,
+    operationBody,
+    scopes: [PYTHON_PLAN_PATRON_SCOPE],
+  });
+  const parsed = planPatronPayloadResultSchema.safeParse(response.payload);
+  // The answer is about the structure asked for, and a suggestion is never "aplicado".
+  if (
+    !parsed.success
+    || parsed.data.patron.estructura_id !== estructuraId
+    || parsed.data.patron.aplicado !== (patronColor !== null)
+  ) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  return response.replayed ? { patron: parsed.data.patron, replayed: true } : { patron: parsed.data.patron };
 }
 
 export function pythonErrorBody(error: PythonAdapterError): {

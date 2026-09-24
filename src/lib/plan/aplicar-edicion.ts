@@ -2,27 +2,32 @@ import "server-only";
 import { z } from "zod";
 import type { Pool } from "pg";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
-import { admitirVariantePython, exigirContextoPython } from "./edicion-python";
-import { reemplazoIncompatible, MENSAJE_REEMPLAZO_INCOMPATIBLE, MENSAJE_UNICO_MATERIAL } from "./edicion-compatibilidad";
+import { featureEnabled } from "@/lib/ia/nucleo/feature-flags";
+import { admitirVariantePython, editarPlanPython, exigirContextoPython } from "./edicion-python";
+import { reemplazoIncompatible, MENSAJE_REEMPLAZO_INCOMPATIBLE } from "./edicion-compatibilidad";
 import { abrirContextoPlan, allowlistDesdeMapa, crearTokenPlan, mapaDesdeAllowlist, verificarTokenAprobacion, type ContextoPlan } from "./aprobacion";
-import { colorDeCatalogo } from "./colores-catalogo";
 import { conFotosDeCatalogo } from "./cotizacion-fotos";
 import { PlanEditError } from "./edicion-error";
 import { getRagPool } from "@/lib/rag/db";
 import { registrarPlanAudit } from "@/lib/rag/observability/log";
 import { resolverPlan } from "./resolver-backend";
-import { PlanDecoracionSchema, type MaterialPlan, type PlanDecoracion } from "./tipos";
+import type { PlanDecoracion } from "./tipos";
 import type { PlanResuelto } from "./resuelto";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
-import type { BasePlan, EdicionPlan, EdicionMezcla, EdicionReparto } from "./edicion-esquemas";
+import type { BasePlan, EdicionPlan } from "./edicion-esquemas";
 
 /**
- * Applies one edit (agregar/reemplazar/quitar) to an already-approved plan,
- * re-verified and re-resolved against Python — the same logic
- * `src/app/api/plan-editar/route.ts`'s `modo: "aplicar"` used to run inline.
- * Moved here so the chat tool `ajustar_plan_decoracion`
- * (`src/lib/ia/herramientas/registro-herramientas.ts`) can call the exact same code
- * instead of re-implementing the approval/re-resolution checks.
+ * Applies one edit (agregar/reemplazar/quitar/repartir/mezcla/patron) to an
+ * already-approved plan. Shared by `src/app/api/plan-editar/route.ts` and the
+ * chat tool `ajustar_plan_decoracion`
+ * (`src/lib/ia/herramientas/registro-herramientas.ts`), so both run the exact
+ * same checks.
+ *
+ * Orchestration only (ADR-0028 §9): the mutation of the declarative plan is
+ * Python's (`services/ai-api/app/plan_edicion.py`, POST /internal/v1/plan/edit).
+ * Here: the signed approval, the re-resolution of the base plan, the admission
+ * of a new variant, the resolution of the edited plan, the new signature and
+ * the audit row.
  *
  * No `Request`/`Response`: throws `PlanEditError` (business rejection, safe to
  * relay to the customer/model) or `PlanBackendNoDisponibleError`
@@ -62,159 +67,28 @@ export function unicos(values: string[]): string[] {
   return [...new Set(values)];
 }
 
-function normalizar(value: string): string {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
-}
-
-function normalizarParticipaciones(materiales: MaterialPlan[]): MaterialPlan[] {
-  const total = materiales.reduce((sum, material) => sum + material.participacion, 0);
-  if (total <= 0) throw new PlanEditError(400, "La estructura quedó sin participación de materiales.");
-
-  let acumulado = 0;
-  return materiales.map((material, index) => {
-    const participacion = index === materiales.length - 1
-      ? Math.max(0.000001, Number((1 - acumulado).toFixed(6)))
-      : Number((material.participacion / total).toFixed(6));
-    acumulado += participacion;
-    return { ...material, participacion };
-  });
-}
-
-function indiceMaterialParaLinea(
-  materiales: MaterialPlan[],
-  linea: { product_id: string; variant_id: string; color?: string | null },
-): number {
-  const porVariante = materiales.findIndex((material) => material.product_id === linea.product_id && material.variant_id === linea.variant_id);
-  if (porVariante >= 0) return porVariante;
-  const color = normalizar(linea.color ?? "");
-  return materiales.findIndex((material) => material.product_id === linea.product_id && normalizar(material.color ?? "") === color);
-}
-
-/**
- * Color the edit writes for the variant the customer/model picked ("agregar"
- * and "reemplazar"). See the original comment in the HTTP route history: the
- * label must say what is actually bought, canonized through the catalog
- * vocabulary, never the color of the piece being replaced.
- */
-function colorDeEdicion(color: string | undefined, coloresVariante: readonly string[]): string | undefined {
-  const pedido = color?.trim() ? colorDeCatalogo(color.trim()) : undefined;
-  if (coloresVariante.length !== 1) return pedido;
-  const unico = coloresVariante[0]!;
-  return pedido && normalizar(pedido) === normalizar(unico) ? pedido : unico;
-}
-
-/**
- * Pure: the structure keeps its materials and roles, only their shares change
- * (normalized to add up to 1). The number of shares must match the materials,
- * or the slider was built from another version of the plan.
- */
-function aplicarReparto(base: BasePlan, edicion: EdicionReparto): PlanDecoracion {
-  const estructura = base.plan.estructuras.find((item) => item.estructura_id === edicion.estructura_id);
-  if (!estructura) throw new PlanEditError(404, "No se encontró la estructura seleccionada.");
-  if (estructura.materiales.length !== edicion.participaciones.length) {
-    throw new PlanEditError(409, "La distribución no corresponde a los colores actuales de la pieza. Vuelve a abrirla e inténtalo otra vez.");
-  }
-  const materiales = normalizarParticipaciones(estructura.materiales.map((material, indice) => ({ ...material, participacion: edicion.participaciones[indice]! })));
-  return PlanDecoracionSchema.parse({
-    ...base.plan,
-    estructuras: base.plan.estructuras.map((item) => item.estructura_id === estructura.estructura_id ? { ...item, materiales } : item),
-  });
-}
-
-/** Pure: the structure keeps everything but its size mix. */
-function aplicarMezcla(base: BasePlan, edicion: EdicionMezcla): PlanDecoracion {
-  const estructura = base.plan.estructuras.find((item) => item.estructura_id === edicion.estructura_id);
-  if (!estructura) throw new PlanEditError(404, "No se encontró la estructura seleccionada.");
-  return PlanDecoracionSchema.parse({
-    ...base.plan,
-    estructuras: base.plan.estructuras.map((item) => item.estructura_id === estructura.estructura_id ? { ...item, mezcla: edicion.mezcla } : item),
-  });
-}
-
-/** Pure: builds the edited `PlanDecoracion` from the base envelope, the
- * requested edit and the real colors of the admitted variant. Never touches
- * the network or the database. */
-function aplicarEdicion(base: BasePlan, edicion: EdicionPlan, coloresVariante: readonly string[]): PlanDecoracion {
-  if (edicion.accion === "repartir") return aplicarReparto(base, edicion);
-  if (edicion.accion === "mezcla") return aplicarMezcla(base, edicion);
-  const estructura = base.plan.estructuras.find((item) => item.estructura_id === edicion.estructura_id);
-  if (!estructura) throw new PlanEditError(404, "No se encontró la estructura seleccionada.");
-  const colorVariante = edicion.accion === "quitar" ? undefined : colorDeEdicion(edicion.variante?.color, coloresVariante);
-
-  const materiales = estructura.materiales.map((material) => ({ ...material }));
-  if (edicion.accion === "agregar") {
-    const variante = edicion.variante!;
-    const participacion = edicion.participacion ?? 0.2;
-    const restante = 1 - participacion;
-    const existentes = normalizarParticipaciones(materiales).map((material) => ({
-      ...material,
-      participacion: material.participacion * restante,
+/** Lines of the edited structure from the base resolution Next just verified against `plan_hash`. */
+function lineasVerificadas(resuelto: PlanResuelto, estructuraId: string) {
+  return resuelto.estructuras
+    .filter((estructura) => estructura.estructura_id === estructuraId)
+    .map((estructura) => ({
+      estructura_id: estructura.estructura_id,
+      lineas: estructura.lineas.map((linea) => ({ product_id: linea.product_id, variant_id: linea.variant_id, color: linea.color })),
     }));
-    materiales.splice(0, materiales.length, ...normalizarParticipaciones([
-      ...existentes,
-      {
-        product_id: variante.product_id,
-        variant_id: variante.variant_id,
-        color: colorVariante,
-        acabado: variante.acabado,
-        participacion,
-        rol_material: "acento",
-      },
-    ]));
-  } else {
-    const lineaObjetivo = base.estructuras
-      .find((item) => item.estructura_id === edicion.estructura_id)
-      ?.lineas.find((linea) => linea.variant_id === edicion.objetivo_variant_id);
-    if (!lineaObjetivo) throw new PlanEditError(404, "No se encontró la variante objetivo en la estructura.");
+}
 
-    if (edicion.accion === "reemplazar" && ["arco", "semiarco", "guirnalda", "columna", "pared", "centro_mesa"].includes(estructura.tipo)) {
-      // Las estructuras geométricas no mutan `materiales` (la "receta" de colores/participación);
-      // el cambio vive en variant_overrides, que ya encadena ediciones sucesivas sobre la misma
-      // pieza. Por eso esta rama no depende de indiceMaterialParaLinea: una pieza ya editada
-      // antes puede tener un color que no está en `materiales`, y eso es válido.
-      const overrides = (estructura.variant_overrides ?? []).filter((override) => override.objetivo_variant_id !== edicion.objetivo_variant_id);
-      const variante = edicion.variante!;
-      const overrideAnterior = overrides.find((override) => override.variant_id === edicion.objetivo_variant_id);
-      const overridesSinCadena = overrides.filter((override) => override !== overrideAnterior);
-      const nuevoOverride = {
-        objetivo_variant_id: overrideAnterior?.objetivo_variant_id ?? edicion.objetivo_variant_id!,
-        product_id: variante.product_id,
-        variant_id: variante.variant_id,
-        color: colorVariante,
-      };
-      const planEditado: PlanDecoracion = {
-        ...base.plan,
-        estructuras: base.plan.estructuras.map((item) => item.estructura_id === estructura.estructura_id
-          ? { ...item, variant_overrides: [...overridesSinCadena, nuevoOverride] }
-          : item),
-      };
-      return PlanDecoracionSchema.parse(planEditado);
-    }
-
-    const indice = indiceMaterialParaLinea(materiales, lineaObjetivo);
-    if (indice < 0) throw new PlanEditError(409, "La variante visible no corresponde a un material editable.");
-
-    if (edicion.accion === "quitar") {
-      if (materiales.length === 1) throw new PlanEditError(400, MENSAJE_UNICO_MATERIAL, "UNICO_MATERIAL");
-      materiales.splice(indice, 1);
-      materiales.splice(0, materiales.length, ...normalizarParticipaciones(materiales));
-    } else {
-      const variante = edicion.variante!;
-      materiales[indice] = {
-        ...materiales[indice]!,
-        product_id: variante.product_id,
-        variant_id: variante.variant_id,
-        color: colorVariante ?? materiales[indice]!.color,
-        acabado: variante.acabado ?? materiales[indice]!.acabado,
-      };
-    }
+/** What the audit row records of each edit: the operation, never the whole plan. */
+function geometriaAuditada(edicion: EdicionPlan): Record<string, unknown> {
+  switch (edicion.accion) {
+    case "repartir":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, participaciones: edicion.participaciones };
+    case "mezcla":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, mezcla: edicion.mezcla };
+    case "patron":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, modo: edicion.patron_color?.base.modo ?? null };
+    default:
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, objetivo_variant_id: edicion.objetivo_variant_id, nueva_variant_id: edicion.variante?.variant_id };
   }
-
-  const planEditado: PlanDecoracion = {
-    ...base.plan,
-    estructuras: base.plan.estructuras.map((item) => item.estructura_id === estructura.estructura_id ? { ...item, materiales } : item),
-  };
-  return PlanDecoracionSchema.parse(planEditado);
 }
 
 export type AplicarEdicionInput = {
@@ -228,15 +102,16 @@ export type AplicarEdicionInput = {
   pool?: Pool;
 };
 
-export type AplicarEdicionResultado = { plan: PlanResuelto; cotizacion: Cotizacion };
+/** `avisos`: sentences for the decorator from the edit itself (e.g. a color pattern that was rebuilt). */
+export type AplicarEdicionResultado = { plan: PlanResuelto; cotizacion: Cotizacion; avisos: string[] };
 
 /**
  * Re-verifies the base plan's signed approval, re-resolves it against Python
  * to make sure nothing drifted since it was shown, admits the new variant
- * (when the edit adds one) and resolves the edited plan — issuing a fresh
- * approval token bound to the new `plan_hash`. Throws instead of silently
- * rebuilding when the token is stale, the backend isn't Python, or the
- * catalog changed underneath.
+ * (when the edit adds one), has Python apply the edit and resolves the edited
+ * plan — issuing a fresh approval token bound to the new `plan_hash`. Throws
+ * instead of silently rebuilding when the token is stale, the backend isn't
+ * Python, or the catalog changed underneath.
  */
 export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<AplicarEdicionResultado> {
   const pool = input.pool ?? getRagPool();
@@ -266,7 +141,7 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
   }
 
   let coloresVariante: string[] = [];
-  // Only adding or replacing brings a new variant to admit; removing and redistributing do not.
+  // Only adding or replacing brings a new variant to admit; the other edits do not.
   if (edicion.accion === "agregar" || edicion.accion === "reemplazar") {
     const variante = edicion.variante!;
     // Se exige la variante exacta: que el producto esté entrenado no dice
@@ -279,7 +154,17 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
     // consulta el catálogo por SQL.
     coloresVariante = await admitirVariantePython({ variante, catalogSnapshotId: snapshotPython, whitelist, correlationId, ...(input.signal ? { signal: input.signal } : {}) });
   }
-  const planEditado = aplicarEdicion(base, edicion, coloresVariante);
+  const { plan: planEditado, avisos } = await editarPlanPython({
+    plan: base.plan,
+    lineasBase: lineasVerificadas(planBaseVerificado.resuelto, edicion.estructura_id),
+    edicion,
+    coloresVariante,
+    // ADR-0028: una pieza que pasa de uno a dos colores recibe su patrón
+    // sugerido solo con la bandera, igual que al confirmar el plan.
+    completarPatrones: featureEnabled("PATRONES_COLOR_V1"),
+    correlationId,
+    ...(input.signal ? { signal: input.signal } : {}),
+  });
   const allowlistFinal = allowlistDesdeMapa(whitelist);
   const resolucionEditada = await resolver(planEditado, allowlistFinal);
   const resuelto = resolucionEditada.resuelto;
@@ -312,11 +197,7 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
     planHash: resuelto.plan_hash,
     restricciones: resuelto.plan.restricciones,
     selectedProductIds: resuelto.compras.map((compra) => compra.variant_id),
-    geometry: edicion.accion === "repartir"
-      ? { accion: edicion.accion, estructura_id: edicion.estructura_id, participaciones: edicion.participaciones }
-      : edicion.accion === "mezcla"
-        ? { accion: edicion.accion, estructura_id: edicion.estructura_id, mezcla: edicion.mezcla }
-        : { accion: edicion.accion, estructura_id: edicion.estructura_id, objetivo_variant_id: edicion.objetivo_variant_id, nueva_variant_id: edicion.variante?.variant_id },
+    geometry: geometriaAuditada(edicion),
     costChosenCop: resuelto.totales.total_cop,
     ceilingCop: resuelto.comercial.techo_cop,
     deltaCop: resuelto.comercial.delta_cop,
@@ -324,5 +205,5 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
     status: "PLAN_EDITED",
   });
 
-  return { plan: resuelto, cotizacion: conFotosDeCatalogo(resolucionEditada.cotizacion, resuelto.compras) };
+  return { plan: resuelto, cotizacion: conFotosDeCatalogo(resolucionEditada.cotizacion, resuelto.compras), avisos };
 }

@@ -122,7 +122,16 @@ export interface ClasificacionError {
   code: UiErrorCodeV1;
   codigoOrigen?: string;
   causa?: string;
+  /**
+   * Customer sentence more precise than the catalog one of `code`, already
+   * written for the customer by its owner (Python's `patron_invalido`
+   * message, for instance). Must fit ui-error.v1's 280 characters.
+   */
+  mensajeUsuario?: string;
 }
+
+/** ui-error.v1 caps `mensaje_usuario`; a longer sentence falls back to the catalog text. */
+const LIMITE_MENSAJE_USUARIO = 280;
 
 /** Clasificación pura (sin I/O); expuesta para las pruebas de regresión. */
 export function clasificarErrorServidor(error: unknown): ClasificacionError {
@@ -156,6 +165,17 @@ export function clasificarErrorServidor(error: unknown): ClasificacionError {
     // Causas con código propio: el cliente puede corregir la edición sin pedir otra propuesta.
     if (error.causa === "UNICO_MATERIAL") return { code: "PIEZA_UNICO_MATERIAL", codigoOrigen: error.causa, causa: error.causa };
     if (error.causa === "REEMPLAZO_INCOMPATIBLE") return { code: "REEMPLAZO_NO_COMPATIBLE", codigoOrigen: error.causa, causa: error.causa };
+    // Color pattern (ADR-0028): the decorator fixes it in the pattern editor,
+    // so the action is "ajustar", not "pedir otra propuesta", and the sentence
+    // is the specific one (Python's own for `patron_invalido`).
+    if (error.causa === "PATRON_INVALIDO" || error.causa === "PATRON_ACTIVO") {
+      return {
+        code: "PROPUESTA_INCOMPLETA",
+        codigoOrigen: error.patron ? `${error.causa}:${error.patron.motivo}` : error.causa,
+        causa: error.causa,
+        ...(error.message.length <= LIMITE_MENSAJE_USUARIO ? { mensajeUsuario: error.message } : {}),
+      };
+    }
     // Mensajes de PlanEditError ya están redactados para el cliente; el estado
     // decide la acción. 404/409 son cambios de catálogo o de plan base.
     if (error.status === 400 || error.status === 422) {
@@ -180,6 +200,7 @@ export function traducirErrorServidor(error: unknown, requestId?: string): UiErr
     codigoOrigen: clasificacion.codigoOrigen,
     causa: clasificacion.causa,
     requestId,
+    ...(clasificacion.mensajeUsuario ? { mensajeUsuario: clasificacion.mensajeUsuario } : {}),
   });
   const mensajeAdjunto = clasificacion.code === "ADJUNTO_INVALIDO" && clasificacion.codigoOrigen
     ? MENSAJE_ADJUNTO_POR_ORIGEN[clasificacion.codigoOrigen]

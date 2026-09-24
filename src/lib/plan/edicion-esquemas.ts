@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PatronColorV1Schema } from "./patron-color";
 import { PlanDecoracionSchema } from "./tipos";
 
 /**
@@ -95,5 +96,18 @@ export const EdicionMezclaSchema = z.object({
 
 export type EdicionMezcla = z.infer<typeof EdicionMezclaSchema>;
 
-/** Every edit the plan editor applies. */
-export type EdicionPlan = Edicion | EdicionReparto | EdicionMezcla;
+/**
+ * Color pattern of one structure from the pattern editor (ADR-0028 §9):
+ * `null` removes it. Only the shape is checked here; Python validates the
+ * pattern against the structure (`patron_invalido`) and rewrites the shares.
+ */
+export const EdicionPatronSchema = z.object({
+  accion: z.literal("patron"),
+  estructura_id: z.string().trim().min(1).max(160),
+  patron_color: PatronColorV1Schema.nullable(),
+}).strict();
+
+export type EdicionPatron = z.infer<typeof EdicionPatronSchema>;
+
+/** Every edit the plan editor applies (Python applies it: services/ai-api/app/plan_edicion.py). */
+export type EdicionPlan = Edicion | EdicionReparto | EdicionMezcla | EdicionPatron;
