@@ -19,7 +19,7 @@ Archivos propios: `ejecutar.ts`, `prompt-sistema.ts`, `historial-chat.ts`,
 `texto-final-turno.ts`, `jerga-interna.ts`.
 
 Lo que NO vive aquí, a propósito: el registro de herramientas
-(`registro-herramientas.ts`, `herramientas.ts`) y el registro de proveedores
-(`registro.ts`) son infraestructura compartida — también los usa el editor de
-plan (`/api/plan-editar`) y la generación de imagen — así que se quedan en
-`src/lib/ia/` en vez de mudarse aquí.
+([`../herramientas/`](../herramientas/)) y el registro de proveedores
+([`../nucleo/registro.ts`](../nucleo/registro.ts)) son infraestructura
+compartida — también los usa el editor de plan (`/api/plan-editar`) y la
+generación de imagen.

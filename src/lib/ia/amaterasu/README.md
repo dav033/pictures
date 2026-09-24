@@ -15,10 +15,14 @@ el contenido de una foto.
 Archivos propios: `analizar-referencias-v2.ts`, `analisis-ejemplos.ts` (+
 `analisis-ejemplos.json`, el fijador de casos de la galería),
 `dominancia-referencia.ts` y `decodificar-pixeles.ts` (medición de
-dominancia de color sobre píxeles reales, exclusiva de esta IA).
+dominancia de color sobre píxeles reales, exclusiva de esta IA),
+`analizar-venue.ts` (la misma lectura sobre la foto del espacio, que usa
+`/api/generate`) y `chat-python.ts` (el `ChatPort` respaldado por Python).
 
-Lo que NO vive aquí, a propósito: `reference-blueprint.ts` y
-`reference-structure.ts` son el contrato de referencia compartido por medio
-app (chat, generación de imagen, componentes, plan); `candidatos-referencia.ts`
-también lo usan `analizar-venue.ts` y el evaluador de estructuras. Los tres
-se quedan en `src/lib/ia/` como infraestructura compartida.
+Lo que NO vive aquí, a propósito: el contrato de la referencia está en
+[`../referencia/`](../referencia/) porque lo comparte media app (chat,
+generación de imagen, componentes, plan). Ahí están `reference-blueprint.ts`,
+`reference-structure.ts` (los tipos de estructura detectables y su mapeo
+determinista a la semántica visual) y `candidatos-referencia.ts`. Las
+evaluaciones de reconocimiento de estructuras viven en
+`src/lib/eval/estructuras/` y `scripts/eval/estructuras/`.
