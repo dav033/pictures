@@ -238,7 +238,7 @@ export async function resolveLoraModeDatasetAllowlist(
       [LORA_V007_CATALOG_SOURCE_IDS],
     );
     const productIds = [...new Set(materialized.rows.map((row) => row.product_id))];
-    const variantIds = [...new Set(materialized.rows.map((row) => row.variant_id))];
+    const variantIds = await ampliarAFamiliaYColor(pool, [...new Set(materialized.rows.map((row) => row.variant_id))]);
     if (productIds.length || variantIds.length) return filtrarPorVocabulario(pool, { productIds, variantIds });
   }
 
@@ -264,15 +264,29 @@ export async function resolveLoraModeDatasetAllowlist(
   const productIds = [...new Set(vinculo.linked.map((item) => item.productId))];
   const variantIdsRepresentados = vinculo.linked.flatMap((item) => item.variantId ? [item.variantId] : []);
 
-  // El tamaño de paquete (unidades_paq) no cambia el globo que el LoRA vio:
-  // es la misma familia/modelo/color/diámetro empacado distinto. Restringir
-  // por variant_id exacto bloqueaba paquetes nunca fotografiados de un globo
-  // que sí está cubierto (ej. R-12 Fashion Fucsia PAQ X20 cubre PAQ X50).
-  // Se amplía a cualquier variante que comparta product_id + forma + diámetro
-  // con una variante representada — "modelo, familia y tamaño", no empaque.
+  const variantIds = await ampliarAFamiliaYColor(pool, variantIdsRepresentados);
+  return filtrarPorVocabulario(pool, { productIds, variantIds });
+}
+
+/**
+ * Lo que el LoRA aprendió es una familia en un color —"Fashion Transparente",
+ * "Silk Verde"—, no un tamaño ni un empaque concreto. En el catálogo de
+ * Sempertex cada producto es justamente eso (familia + color + forma), y sus
+ * variantes son los tamaños y empaques. Si el dataset vio una variante, todas
+ * las del mismo producto y la misma forma quedan permitidas.
+ *
+ * Antes solo se ampliaba al empaque del mismo diámetro, así que un transparente
+ * visto en 9" dejaba fuera el de 5" y la columna orgánica fina nunca podía
+ * llevarlo (2026-09-24). La forma sigue separando: un corazón o un link de la
+ * misma familia es otro producto que el modelo no vio. Tampoco entran otros
+ * productos de la misma familia y color (los estampados "Infinity®" comparten
+ * familia y color con el liso y no se parecen en nada).
+ */
+async function ampliarAFamiliaYColor(pool: Pool, variantIdsRepresentados: readonly string[]): Promise<string[]> {
+  if (variantIdsRepresentados.length === 0) return [];
   const familias = await pool.query<{ product_id: string; variant_id: string }>(
     `WITH identidad_visual AS (
-       SELECT DISTINCT v.product_id, v.forma, v.diam_pulg
+       SELECT DISTINCT v.product_id, v.forma
          FROM catalog_variants v
         WHERE v.variant_id = ANY($1::text[])
      )
@@ -280,12 +294,10 @@ export async function resolveLoraModeDatasetAllowlist(
        FROM catalog_variants v
        JOIN identidad_visual iv
          ON iv.product_id = v.product_id
-        AND iv.forma IS NOT DISTINCT FROM v.forma
-        AND iv.diam_pulg IS NOT DISTINCT FROM v.diam_pulg`,
-    [variantIdsRepresentados],
+        AND iv.forma IS NOT DISTINCT FROM v.forma`,
+    [[...variantIdsRepresentados]],
   );
-  const variantIds = [...new Set([...variantIdsRepresentados, ...familias.rows.map((row) => row.variant_id)])];
-  return filtrarPorVocabulario(pool, { productIds, variantIds });
+  return [...new Set([...variantIdsRepresentados, ...familias.rows.map((row) => row.variant_id)])];
 }
 
 /**

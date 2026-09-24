@@ -150,9 +150,15 @@ async function testDatasetLinkedAfterCatalogReimport(): Promise<void> {
   assert.deepEqual(idLink.unmatched, ["c"]);
 
   // Catalog queries honor their id parameters, so stale dataset ids find nothing.
+  // new-v1 is the only variant the dataset saw. Same product and shape in
+  // another package or size is the same family and color: it is allowed. A
+  // heart of the same product, or another product, is not.
   const catalogRows = [
-    { variant_id: "new-v1", product_id: "new-p1", sku: "B2B-20014242", titulo: "B2b Globo Latex Redondo Reflex Dorado" },
-    { variant_id: "new-v1-pack50", product_id: "new-p1", sku: "B2B-20017754", titulo: "B2b Globo Latex Redondo Reflex Dorado" },
+    { variant_id: "new-v1", product_id: "new-p1", forma: "redondo", sku: "B2B-20014242", titulo: "B2b Globo Latex Redondo Reflex Dorado" },
+    { variant_id: "new-v1-pack50", product_id: "new-p1", forma: "redondo", sku: "B2B-20017754", titulo: "B2b Globo Latex Redondo Reflex Dorado" },
+    { variant_id: "new-v1-r5", product_id: "new-p1", forma: "redondo", sku: "B2B-20014200", titulo: "B2b Globo Latex Redondo Reflex Dorado" },
+    { variant_id: "new-v1-corazon", product_id: "new-p1", forma: "corazon", sku: "B2B-20014299", titulo: "B2b Globo Latex Redondo Reflex Dorado" },
+    { variant_id: "otro-v1", product_id: "otro-p1", forma: "redondo", sku: "B2B-30000001", titulo: "B2b Globo Latex Redondo Reflex Dorado Estampado" },
   ];
   const idsParam = (params: unknown[] | undefined): string[] => {
     const first = params?.[0];
@@ -165,7 +171,13 @@ async function testDatasetLinkedAfterCatalogReimport(): Promise<void> {
       if (sql.includes("sku_canonical = ANY")) return { rows: catalog };
       if (sql.includes("FROM catalog_products WHERE product_id")) return { rows: [] };
       if (sql.includes("identidad_visual")) {
-        return { rows: idsParam(params).includes("new-v1") ? catalogRows.map(({ product_id, variant_id }) => ({ product_id, variant_id })) : [] };
+        assert.ok(!/iv\.diam_pulg/.test(sql), "the family expansion no longer pins the diameter");
+        const vistas = catalogRows.filter((row) => idsParam(params).includes(row.variant_id));
+        return {
+          rows: catalogRows
+            .filter((row) => vistas.some((vista) => vista.product_id === row.product_id && vista.forma === row.forma))
+            .map(({ product_id, variant_id }) => ({ product_id, variant_id })),
+        };
       }
       if (sql.includes("JOIN catalog_products p")) {
         const ids = idsParam(params);
@@ -179,7 +191,7 @@ async function testDatasetLinkedAfterCatalogReimport(): Promise<void> {
   try {
     const allowlist = await resolveLoraModeDatasetAllowlist("training_1", reimportedPool);
     assert.deepEqual(allowlist?.productIds, ["new-p1"]);
-    assert.deepEqual(allowlist?.variantIds, ["new-v1", "new-v1-pack50"]);
+    assert.deepEqual([...(allowlist?.variantIds ?? [])].sort(), ["new-v1", "new-v1-pack50", "new-v1-r5"]);
   } finally {
     console.warn = warn;
   }
