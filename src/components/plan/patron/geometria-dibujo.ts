@@ -225,7 +225,8 @@ export function dibujarPatron(entrada: EntradaDibujo): Dibujo {
     maxX = Math.max(maxX, soporte.x + soporte.ancho / 2);
     maxY = Math.max(maxY, soporte.y + R * 0.7);
   }
-  const margen = R * 0.6;
+  // Lo justo para el contorno y la sombra: el dibujo llena el hueco que le dan.
+  const margen = R * 0.3;
   return {
     caja: { x: redondear(minX - margen), y: redondear(minY - margen), ancho: redondear(maxX - minX + margen * 2), alto: redondear(maxY - minY + margen * 2) },
     globos: globos.map((globo) => ({ ...globo, x: redondear(globo.x), y: redondear(globo.y), r: redondear(globo.r) })),

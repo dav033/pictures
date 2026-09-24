@@ -1140,6 +1140,24 @@ body {
       transform: translateX(100%);
     }
   }
+
+  /* --- Globos del dibujo del patrón (VistaPatron) ---------------------------
+     Entrada escalonada desde la base; el retraso va en el estilo de cada
+     globo. Corre una vez al montar: la vista previa en vivo repinta colores
+     sin volver a animar la entrada. `backwards` y no `both`: al terminar no
+     queda una animación en cada globo, que el navegador recomponía en cada
+     cuadro del arrastre. */
+
+  .patron-globo-entra {
+    animation: patron-globo-entra 380ms var(--ease-out) backwards;
+  }
+
+  @keyframes patron-globo-entra {
+    from {
+      opacity: 0;
+      transform: translateY(7px);
+    }
+  }
 }
 
 /* Excepciones de foco fuera de capa: deben ganarle a la regla global de

@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { AnimatePresence, motion, useReducedMotion, type Variants } from "motion/react";
-import { ArrowLeftRight, Check, ChevronDown, Plus, Search, X } from "lucide-react";
+import { ArrowLeftRight, Check, ChevronDown, Info, Plus, Search, X } from "lucide-react";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { ProductoCandidato, VarianteCandidata } from "@/lib/rag/chat/buscar";
@@ -56,8 +56,10 @@ import { EditorPatron } from "@/components/plan/patron/EditorPatron";
 import { DialogoHojaArmado } from "@/components/plan/patron/HojaArmado";
 import { leyendaPatron } from "@/components/plan/patron/leyenda";
 import { admitePatron } from "@/components/plan/patron/modos";
-import type { PatronColor } from "@/lib/plan/patron-color";
-import { FalloPlanPatron, pedirPlanEditarPatron } from "@/lib/plan/peticion-patron";
+import type { PatronColor, PatronColorResuelto } from "@/lib/plan/patron-color";
+import { FalloPlanPatron, pedirPlanEditarPatron, pedirVistaPatron } from "@/lib/plan/peticion-patron";
+import { avisosDeEdicion } from "@/components/plan/avisos-edicion";
+import { crearVistasEnVivo } from "@/components/plan/vistas-en-vivo";
 import { crearColaAjustes, crearPendientesAjustes, type TramoAjustes } from "@/components/plan/cola-ajustes";
 import type { ResumenAutoguardado } from "@/components/plan/autoguardado";
 
@@ -142,8 +144,8 @@ type OpcionCatalogo = { candidato: ProductoCandidato; variante: VarianteCandidat
 
 /** A way back from an edit (or a pattern editor session): its "Deshacer" and what the notice says after it. */
 type VueltaAtras = { tramo: TramoAjustes<PlanResuelto>; texto: string };
-/** One pattern editor session: its saves are undone together. */
-type SesionPatron = { estructuraId: string; tramo: TramoAjustes<PlanResuelto> };
+/** One pattern editor session: its saves are undone together, and Python's sentences about them are told once, at the end. */
+type SesionPatron = { estructuraId: string; tramo: TramoAjustes<PlanResuelto>; avisos: string[] };
 
 function unicosPor<T>(items: T[], clave: (item: T) => string): T[] {
   const vistas = new Set<string>();
@@ -245,7 +247,8 @@ function ListaOpciones({ opciones, guardando, onCambiar, ariaLabel, listId, acti
 export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, generando = false, onPlanActualizado, loraMode, modoDev = false, referenceBlueprint, imagenesReferencia, fotoEspacio, onVerCotizacion, escenografiaApagada = [], onEscenografiaToggle, onPedirAjuste }: Props) {
   const [celebracion, setCelebracion] = useState(0);
   // Feedback after an edit: what changed, the new total and a way back while it is still the last change.
-  const [avisoEdicion, setAvisoEdicion] = useState<{ id: number; texto: string; deshacer?: VueltaAtras } | null>(null);
+  // `avisos`: Python's own sentences about the edit (/api/plan-editar), verbatim.
+  const [avisoEdicion, setAvisoEdicion] = useState<{ id: number; texto: string; deshacer?: VueltaAtras; avisos?: readonly string[] } | null>(null);
   // An edit resets the approval; the customer is told instead of finding a button that changed.
   const [editadoTrasAprobar, setEditadoTrasAprobar] = useState(false);
   const secuenciaAvisoRef = useRef(0);
@@ -296,6 +299,9 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   const [pendientes] = useState(() => crearPendientesAjustes(setCambiosSinGuardar));
   const guardandoAjustes = ajustesEnCurso > 0 || cambiosSinGuardar > 0;
   const [hojaArmado, setHojaArmado] = useState<string | null>(null);
+  // The colors slider's live drawing per structure (ADR-0028 §13), outside the card's state: each Python
+  // response repaints only the pattern block and the summary strip of that piece, not the whole card.
+  const [vistasEnVivo] = useState(() => crearVistasEnVivo<PatronColorResuelto>());
   const disparadorModalRef = useRef<HTMLButtonElement | null>(null);
   const volverDetalleRef = useRef<HTMLButtonElement | null>(null);
   const busquedaCatalogoRef = useRef<HTMLInputElement | null>(null);
@@ -389,7 +395,8 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       colores,
       recorte: recorte ? { ...recorte, alt: `${oficial?.nombre ?? productoCliente(estructura.nombre)} de tu foto de referencia, ${ubicacionCorta.toLowerCase()}` } : null,
       recorteCrudo: recorte,
-      patron: patron ? { resuelto: patron, leyenda } : undefined,
+      // While the colors slider of a confetti moves, its strip shows Python's live drawing (`enVivo`).
+      patron: patron ? { resuelto: patron, leyenda, enVivo: editorDisponible ? vistasEnVivo : undefined } : undefined,
     };
   });
   const conFotos = piezas.some((pieza) => pieza.recorte);
@@ -633,12 +640,12 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     });
   }
 
-  /** A new plan from an edit; `texto: null` publishes it without the per-edit notice. */
-  function planEditado(nuevo: PlanResuelto, cotizacion: Cotizacion | undefined, texto: string | null, deshacer?: VueltaAtras): void {
+  /** A new plan from an edit; `texto: null` publishes it without the per-edit notice. `avisos`: Python's sentences, shown with it. */
+  function planEditado(nuevo: PlanResuelto, cotizacion: Cotizacion | undefined, texto: string | null, deshacer?: VueltaAtras, avisos: readonly string[] = []): void {
     if (!onPlanActualizado) return;
     if (aprobado) setEditadoTrasAprobar(true);
     publicarPlan(nuevo, cotizacion);
-    if (texto !== null) setAvisoEdicion({ id: ++secuenciaAvisoRef.current, texto: `${texto} Nuevo total: ${pesos.format(nuevo.totales.total_cop)}.`, deshacer });
+    if (texto !== null) setAvisoEdicion({ id: ++secuenciaAvisoRef.current, texto: `${texto} Nuevo total: ${pesos.format(nuevo.totales.total_cop)}.`, deshacer, avisos });
   }
 
   /**
@@ -650,9 +657,10 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
    * asked; `aviso: false` skips the per-edit notice (the pattern editor gives
    * one for its whole session); `pedir` swaps the request (the pattern one
    * reads Python's rejection); `tramo` joins the edit to others undone
-   * together (the pattern editor session).
+   * together (the pattern editor session); `alAvisar` receives Python's
+   * sentences about the edit when the notice is someone else's.
    */
-  async function aplicarAjusteDirecto(edicion: Record<string, unknown>, texto: string, opciones: { enDialogo?: boolean; aviso?: boolean; pedir?: typeof pedirPlanEditar; tramo?: TramoAjustes<PlanResuelto> } = {}): Promise<string | null> {
+  async function aplicarAjusteDirecto(edicion: Record<string, unknown>, texto: string, opciones: { enDialogo?: boolean; aviso?: boolean; pedir?: typeof pedirPlanEditar; tramo?: TramoAjustes<PlanResuelto>; alAvisar?: (avisos: readonly string[]) => void } = {}): Promise<string | null> {
     if (!onPlanActualizado) return "Esta propuesta ya no se puede editar.";
     const pedir = opciones.pedir ?? pedirPlanEditar;
     const tramo = opciones.tramo ?? cola.tramo();
@@ -661,7 +669,9 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       await tramo.encolar(async (base) => {
         const datos = await pedir({ modo: "aplicar", base, edicion, loraMode }, "No se pudo actualizar la pieza.") as { plan?: PlanResuelto; cotizacion?: Cotizacion };
         if (!datos.plan) throw new FalloPlanEditar(mensajeErrorRespuesta(datos, "No se pudo actualizar la pieza."));
-        planEditado(datos.plan, datos.cotizacion, opciones.aviso === false ? null : texto, { tramo, texto: "Volví a como estaba." });
+        const avisos = avisosDeEdicion(datos);
+        opciones.alAvisar?.(avisos);
+        planEditado(datos.plan, datos.cotizacion, opciones.aviso === false ? null : texto, { tramo, texto: "Volví a como estaba." }, avisos);
         return datos.plan;
       });
       return null;
@@ -682,13 +692,13 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     return aplicarAjusteDirecto(
       { accion: "patron", estructura_id: sesion.estructuraId, patron_color: patron },
       "",
-      { enDialogo: true, aviso: false, pedir, tramo: sesion.tramo },
+      { enDialogo: true, aviso: false, pedir, tramo: sesion.tramo, alAvisar: (avisos) => sesion.avisos.push(...avisos) },
     );
   }
 
   function abrirEditorPatron(estructuraId: string): void {
     setFalloPatron(null);
-    setPatronEditando({ estructuraId, tramo: cola.tramo() });
+    setPatronEditando({ estructuraId, tramo: cola.tramo(), avisos: [] });
   }
 
   /**
@@ -711,6 +721,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
         id: ++secuenciaAvisoRef.current,
         texto: `Patrón actualizado. Nuevo total: ${pesos.format(cola.base().totales.total_cop)}.`,
         deshacer: { tramo: sesion.tramo, texto: "Volví a como estaba." },
+        avisos: [...new Set(sesion.avisos)],
       });
     }
     const reintentable = sinGuardar && !(sinGuardar.valor && patronesRechazadosRef.current.has(sinGuardar.valor)) ? sinGuardar : null;
@@ -744,7 +755,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
           "No se pudo actualizar el plan.",
         ) as { plan?: PlanResuelto; cotizacion?: Cotizacion };
         if (!datos.plan) throw new FalloPlanEditar(mensajeErrorRespuesta(datos, "No se pudo actualizar el plan."));
-        planEditado(datos.plan, datos.cotizacion, modoEdicion === "agregar" ? "Listo, agregué el globo." : "Listo, cambié el globo.");
+        planEditado(datos.plan, datos.cotizacion, modoEdicion === "agregar" ? "Listo, agregué el globo." : "Listo, cambié el globo.", undefined, avisosDeEdicion(datos));
         return datos.plan;
       });
       cerrarEditor();
@@ -763,7 +774,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       await cola.encolar(async (base) => {
         const datos = await pedirPlanEditar({ modo: "aplicar", base, edicion: { accion: "reemplazar", estructura_id: seleccionCatalogo.estructuraId, objetivo_variant_id: seleccionCatalogo.linea.variant_id, variante: { product_id: opcion.candidato.productId, variant_id: opcion.variante.variantId, color: opcion.variante.colores[0] ?? undefined } }, loraMode }, "No se pudo cambiar la pieza.") as { plan?: PlanResuelto; cotizacion?: Cotizacion };
         if (!datos.plan) throw new FalloPlanEditar(mensajeErrorRespuesta(datos, "No se pudo cambiar la pieza."));
-        planEditado(datos.plan, datos.cotizacion, "Listo, cambié el globo.");
+        planEditado(datos.plan, datos.cotizacion, "Listo, cambié el globo.", undefined, avisosDeEdicion(datos));
         return datos.plan;
       });
        setIntercambioAbierto(false);
@@ -789,7 +800,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       await tramo.encolar(async (anterior) => {
         const datos = await pedirPlanEditar({ modo: "aplicar", base: anterior, edicion: { accion: "quitar", estructura_id: estructuraId, objetivo_variant_id: linea.variant_id }, loraMode }, "No se pudo quitar la pieza.") as { plan?: PlanResuelto; cotizacion?: Cotizacion };
         if (!datos.plan) throw new FalloPlanEditar(mensajeErrorRespuesta(datos, "No se pudo quitar la pieza."));
-        planEditado(datos.plan, datos.cotizacion, `Quité ${nombre} de ${pieza}.`, { tramo, texto: `Volví a poner ${nombre}.` });
+        planEditado(datos.plan, datos.cotizacion, `Quité ${nombre} de ${pieza}.`, { tramo, texto: `Volví a poner ${nombre}.` }, avisosDeEdicion(datos));
         return datos.plan;
       });
     } catch (error) {
@@ -905,10 +916,10 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     cola.sincronizar(plan);
   }, [cola, plan]);
 
-  // The edit notice (and its "Deshacer") stays a few seconds, then gets out of the way.
+  // The edit notice (and its "Deshacer") stays a few seconds, then gets out of the way; longer with Python's sentences to read.
   useEffect(() => {
     if (!avisoEdicion) return;
-    const fin = window.setTimeout(() => setAvisoEdicion((actual) => (actual?.id === avisoEdicion.id ? null : actual)), 6000);
+    const fin = window.setTimeout(() => setAvisoEdicion((actual) => (actual?.id === avisoEdicion.id ? null : actual)), avisoEdicion.avisos?.length ? 12000 : 6000);
     return () => window.clearTimeout(fin);
   }, [avisoEdicion]);
 
@@ -1137,6 +1148,10 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
                   // The session starts from the plan the pending slider changes sign.
                   ocupado: guardandoAjustes,
                 } : undefined}
+                vistaReparto={editorDisponible ? {
+                  pedir: (participaciones, signal) => pedirVistaPatron({ plan: plan.plan, estructura_id: estructura.estructura_id, patron_color: null, participaciones: [...participaciones] }, { signal }),
+                  vistas: vistasEnVivo,
+                } : undefined}
                 ocupado={guardandoEdicion}
                 pendientes={pendientes}
                 onVerProducto={(linea, disparador) => { disparadorModalRef.current = disparador; setSeleccionCatalogo({ linea, estructuraId: estructura.estructura_id, estructura: estructura.nombre }); setIntercambioAbierto(false); setRecomendaciones([]); setResultadosCatalogo([]); setErrorEdicion(null); }}
@@ -1207,6 +1222,11 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
           >
             <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 text-xs text-texto @xl:px-5.5">
               <span className="flex items-center gap-1.5"><Check className="size-3.5 text-exito" aria-hidden="true" />{avisoEdicion.texto}</span>
+              {avisoEdicion.avisos && avisoEdicion.avisos.length > 0 && (
+                <ul data-testid="avisos-edicion" aria-label="Avisos de la edición" className="order-last basis-full space-y-0.5 text-texto-suave">
+                  {avisoEdicion.avisos.map((aviso) => <li key={aviso} className="flex gap-1.5"><Info className="mt-px size-3.5 shrink-0" aria-hidden="true" />{aviso}</li>)}
+                </ul>
+              )}
               {avisoEdicion.deshacer && puedeDeshacer(avisoEdicion.deshacer) && (
                 <button type="button" data-testid="deshacer-edicion" onClick={() => { if (avisoEdicion.deshacer) deshacer(avisoEdicion.deshacer); }} className="rounded-full px-2.5 py-1 font-semibold text-acento underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">
                   Deshacer

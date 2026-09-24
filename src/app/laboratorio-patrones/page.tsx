@@ -10,8 +10,8 @@ import { clavePatron } from "@/components/plan/patron/borrador";
 import { estiloDe } from "@/components/plan/patron/modos";
 import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import type { Mezcla } from "@/lib/plan/mezclas";
-import type { PatronColor, PatronColorResuelto } from "@/lib/plan/patron-color";
-import { pedirPlanEditarPatron } from "@/lib/plan/peticion-patron";
+import type { ModoAdmitido, ModoPatronColor, PatronColor, PatronColorResuelto } from "@/lib/plan/patron-color";
+import { pedirPlanEditarPatron, pedirVistaPatronDetallada, type PeticionVistaPatron } from "@/lib/plan/peticion-patron";
 import { mensajeFalloPlanEditar } from "@/lib/plan/peticion-plan-editar";
 import type { EstructuraResuelta, LineaMaterial, PlanResuelto } from "@/lib/plan/resuelto";
 import planFixture from "../../../scripts/fixtures/patron-color-ui/plan-con-patrones.json";
@@ -21,19 +21,29 @@ import vistasFixture from "../../../scripts/fixtures/patron-color-ui/vistas-prev
 /**
  * Laboratorio visual del patrón de color (ADR-0028 §13): la tarjeta real con
  * un plan de fixture, el editor, la hoja de armado y una galería por tipo de
- * estructura. No llama a Python en vivo: las vistas previas y la edición
- * responden con lo que Python devolvió al generar las fixtures
- * (`scripts/fixtures/patron-color-ui`), buscando el patrón pedido o, si no
- * está grabado, el de su estilo; un patrón pintado a mano no cambia el
- * conteo aquí. La edición firma cada plan con un hash falso nuevo, como el
- * servidor, para ejercitar el autoguardado (patrón, colores y tamaños); se
- * puede volver lenta o hacer fallar. Solo para control visual; la protege la
- * misma sesión que el resto de la app (`src/proxy.ts`), como
- * `/laboratorio-referencias`.
+ * estructura.
+ *
+ * Las vistas previas (/api/plan-patron) salen de una de dos fuentes:
+ * - **grabadas** (sin red): lo que Python devolvió al generar las fixtures
+ *   (`scripts/fixtures/patron-color-ui`), buscando el patrón pedido o, si no
+ *   está grabado, el de su estilo. Un patrón pintado a mano o un reparto del
+ *   deslizador no cambian el dibujo aquí. Los estilos admitidos son los
+ *   grabados (sus modos, direcciones y espejo).
+ * - **Python real**: la ruta de verdad con el plan de la fixture (que es una
+ *   salida real de Python): dibujo, conteo, estilos y avisos en vivo.
+ *
+ * La edición (/api/plan-editar) siempre es simulada: firma cada plan con un
+ * hash falso nuevo, como el servidor, para ejercitar el autoguardado
+ * (patrón, colores y tamaños); se puede volver lenta o hacer fallar. Con
+ * Python real, el patrón que guarda (y el confeti que deja un reparto) lo
+ * expande Python. Solo para control visual; la protege la misma sesión que el
+ * resto de la app (`src/proxy.ts`), como `/laboratorio-referencias`.
  */
 
 /** Qué rechaza la Python simulada: nada, solo la sugerencia (pieza sin preset posible) o todo patrón. */
 type Rechazo = "ninguno" | "sugerencia" | "todo";
+/** De dónde salen las vistas previas: las grabadas o /api/plan-patron con Python real. */
+type FuenteVista = "grabada" | "python";
 const RECHAZO_PYTHON = { error: "patron_invalido", motivo: "material_sin_uso", mensaje: "Negro no aparece en el patrón: úsalo en alguna posición o quítalo de la pieza." };
 
 type VistasPrevias = Record<string, { sugerencia: PatronColorResuelto; porClave: Record<string, PatronColorResuelto>; porEstilo: Record<string, PatronColorResuelto> }>;
@@ -72,20 +82,39 @@ function conEstructura(actual: PlanResuelto, id: string, cambio: (estructura: Es
 
 type EdicionSimulada = { accion?: string; estructura_id?: string; patron_color?: PatronColor | null; participaciones?: number[]; mezcla?: Mezcla };
 
-/** La edición que la tarjeta pide a /api/plan-editar, aplicada sobre la base que manda (la última firmada). */
-function editarSimulado(base: PlanResuelto, edicion: EdicionSimulada): PlanResuelto | null {
+/** Una vista previa de la Python real (la ruta de verdad), sin pasar por el simulador. */
+async function vistaPython(fetchReal: typeof fetch, cuerpo: PeticionVistaPatron): Promise<PatronColorResuelto> {
+  return (await pedirVistaPatronDetallada(cuerpo, { fetcher: fetchReal })).patron;
+}
+
+/**
+ * La edición que la tarjeta pide a /api/plan-editar, aplicada sobre la base
+ * que manda (la última firmada). Con `fetchReal` (Python real) el patrón que
+ * queda lo expande Python: el guardado y el confeti que deja un reparto, con
+ * los avisos de ese reparto como los devolvería la edición.
+ */
+async function editarSimulado(base: PlanResuelto, edicion: EdicionSimulada, fetchReal: typeof fetch | null): Promise<{ plan: PlanResuelto; avisos: string[] } | null> {
   const id = edicion.estructura_id;
   if (!id) return null;
   switch (edicion.accion) {
-    case "patron":
-      return conPatronAplicado(base, id, edicion.patron_color ?? null);
+    case "patron": {
+      const patron = edicion.patron_color ?? null;
+      const vista = !patron ? null : fetchReal ? await vistaPython(fetchReal, { plan: base.plan, estructura_id: id, patron_color: patron }) : vistaPregrabada(id, patron);
+      return { plan: conPatronAplicado(base, id, patron, vista), avisos: [] };
+    }
     case "repartir": {
       const participaciones = edicion.participaciones ?? [];
-      return conEstructura(base, id, (estructura) => ({ ...estructura, materiales: estructura.materiales.map((material, indice) => ({ ...material, participacion: participaciones[indice] ?? material.participacion })) }));
+      const repartido = conEstructura(base, id, (estructura) => ({ ...estructura, materiales: estructura.materiales.map((material, indice) => ({ ...material, participacion: participaciones[indice] ?? material.participacion })) }));
+      const confeti = base.plan.estructuras.find((estructura) => estructura.estructura_id === id)?.patron_color?.base.modo === "aleatorio";
+      if (!fetchReal || !confeti) return { plan: repartido, avisos: [] };
+      // El mismo `repartir` que la vista previa del deslizador, y la expansión del confeti que deja.
+      const previa = await vistaPython(fetchReal, { plan: base.plan, estructura_id: id, patron_color: null, participaciones });
+      const aplicado = await vistaPython(fetchReal, { plan: repartido.plan, estructura_id: id, patron_color: previa.patron });
+      return { plan: conPatronAplicado(repartido, id, previa.patron, aplicado), avisos: previa.avisos.filter((aviso) => !aplicado.avisos.includes(aviso)) };
     }
     case "mezcla": {
       const mezcla = edicion.mezcla;
-      return mezcla ? conEstructura(base, id, (estructura) => ({ ...estructura, mezcla })) : null;
+      return mezcla ? { plan: conEstructura(base, id, (estructura) => ({ ...estructura, mezcla })), avisos: [] } : null;
     }
     default:
       return null;
@@ -104,9 +133,48 @@ function vistaPregrabada(estructuraId: string, patron: PatronColor | null): Patr
   return vistas.porClave[clavePatron(patron)] ?? vistas.porEstilo[estiloDe(patron)] ?? vistas.sugerencia;
 }
 
-/** El plan con el patrón aplicado (o quitado) como lo devolvería la edición; la vista pregrabada hace de expansión. */
-function conPatronAplicado(actual: PlanResuelto, id: string, patron: PatronColor | null): PlanResuelto {
-  const vista = patron ? vistaPregrabada(id, patron) : null;
+/**
+ * Estilos que Python admitió al grabar las fixtures: los modos grabados (en
+ * su orden), las direcciones que aparecen en lo grabado y si algo grabado
+ * llevaba espejo. Solo para la fuente "grabada"; con Python real los dice Python.
+ */
+function modosGrabados(estructuraId: string): ModoAdmitido[] {
+  const vistas = VISTAS[estructuraId];
+  if (!vistas) return [];
+  const todas = [vistas.sugerencia, ...Object.values(vistas.porClave), ...Object.values(vistas.porEstilo)];
+  const modos = [...new Set(Object.values(vistas.porEstilo).map((vista) => vista.patron.base.modo))];
+  return modos.map((modo) => {
+    const delModo = todas.filter((vista) => vista.patron.base.modo === modo);
+    const otras = [...new Set(delModo.flatMap((vista) => (vista.patron.direccion && vista.patron.direccion !== "longitudinal" ? [vista.patron.direccion] : [])))];
+    return { modo, direcciones: ["longitudinal", ...otras], espejo: delModo.some((vista) => vista.patron.simetria === "espejo") };
+  });
+}
+
+type PeticionPatronLab = { plan?: PlanResuelto["plan"]; estructura_id: string; patron_color: PatronColor | null; participaciones?: number[]; modo?: ModoPatronColor };
+
+/** /api/plan-patron con lo grabado: el patrón pedido, el punto de partida de un estilo o el confeti de un reparto (sin redibujarlo). */
+function vistaSimulada(cuerpo: PeticionPatronLab): { status: number; datos: unknown } {
+  const id = cuerpo.estructura_id;
+  const vistas = VISTAS[id];
+  if (!vistas) return { status: 404, datos: { error: "estructura_no_encontrada" } };
+  const responder = (vista: PatronColorResuelto) => ({ status: 200, datos: { patron: vista, modos_admitidos: modosGrabados(id) } });
+  if (cuerpo.participaciones) {
+    const patron = cuerpo.plan?.estructuras.find((estructura) => estructura.estructura_id === id)?.patron_color;
+    if (!patron) return { status: 409, datos: { error: "Esta pieza no tiene un patrón de color que dibujar." } };
+    if (patron.base.modo !== "aleatorio") return { status: 409, datos: { error: "Esta pieza usa un patrón de color: cambia sus colores desde el patrón.", causa: "PATRON_ACTIVO" } };
+    const vista = vistaPregrabada(id, patron);
+    return vista ? responder({ ...vista, patron }) : { status: 404, datos: { error: "estructura_no_encontrada" } };
+  }
+  if (cuerpo.modo) {
+    const grabada = vistas.porEstilo[cuerpo.modo] ?? vistas.sugerencia;
+    return responder({ ...grabada, aplicado: false, patron: { ...grabada.patron, origen: "sugerido" } });
+  }
+  const vista = vistaPregrabada(id, cuerpo.patron_color);
+  return vista ? responder(vista) : { status: 404, datos: { error: "estructura_no_encontrada" } };
+}
+
+/** El plan con el patrón aplicado (o quitado) como lo devolvería la edición, con `vista` como su expansión. */
+function conPatronAplicado(actual: PlanResuelto, id: string, patron: PatronColor | null, vista: PatronColorResuelto | null): PlanResuelto {
   const estructuras = actual.plan.estructuras.map((estructura) => {
     if (estructura.estructura_id !== id) return estructura;
     const copia = { ...estructura };
@@ -144,32 +212,40 @@ export default function LaboratorioPatronesPage() {
   const [aprobado, setAprobado] = useState(false);
   const [rechazar, setRechazar] = useState<Rechazo>("ninguno");
   const [guardado, setGuardado] = useState<Guardado>("normal");
+  const [fuente, setFuente] = useState<FuenteVista>("grabada");
   const [editor, setEditor] = useState<string | null>(null);
   const [hoja, setHoja] = useState<string | null>(null);
   // Qué firmó la edición simulada, en orden: deja ver que el autoguardado junta los cambios.
   const [firmadas, setFirmadas] = useState<string[]>([]);
   const rechazarRef = useRef(rechazar);
   const guardadoRef = useRef(guardado);
+  const fuenteRef = useRef(fuente);
   const planRef = useRef(plan);
 
   useEffect(() => {
     rechazarRef.current = rechazar;
     guardadoRef.current = guardado;
+    fuenteRef.current = fuente;
     planRef.current = plan;
-  }, [rechazar, guardado, plan]);
+  }, [rechazar, guardado, fuente, plan]);
 
-  // Respuestas simuladas de /api/plan-patron y de la acción `patron` de /api/plan-editar.
+  // Respuestas de /api/plan-patron (grabadas o de la Python real) y de la edición simulada de /api/plan-editar.
   useEffect(() => {
     const original = window.fetch;
     window.fetch = async (entrada, init) => {
       const url = typeof entrada === "string" ? entrada : entrada instanceof URL ? entrada.href : entrada.url;
       if (url.includes("/api/catalogo/imagenes")) return respuestaJson({ imagenes: {} });
       if (url.includes("/api/plan-patron") && typeof init?.body === "string") {
-        const cuerpo = JSON.parse(init.body) as { estructura_id: string; patron_color: PatronColor | null };
-        await new Promise((listo) => window.setTimeout(listo, 350));
-        if (rechazarRef.current === "todo" || (rechazarRef.current === "sugerencia" && !cuerpo.patron_color)) return respuestaJson(RECHAZO_PYTHON, 422);
-        const vista = vistaPregrabada(cuerpo.estructura_id, cuerpo.patron_color);
-        return vista ? respuestaJson({ patron: vista }) : respuestaJson({ error: "estructura_no_encontrada" }, 404);
+        const cuerpo = JSON.parse(init.body) as PeticionPatronLab;
+        const sugerencia = !cuerpo.patron_color && !cuerpo.participaciones && !cuerpo.modo;
+        if (rechazarRef.current === "todo" || (rechazarRef.current === "sugerencia" && sugerencia)) {
+          await new Promise((listo) => window.setTimeout(listo, 250));
+          return respuestaJson(RECHAZO_PYTHON, 422);
+        }
+        if (fuenteRef.current === "python") return original(entrada, init);
+        await new Promise((listo) => window.setTimeout(listo, 250));
+        const { status, datos } = vistaSimulada(cuerpo);
+        return respuestaJson(datos, status);
       }
       if (url.includes("/api/plan-editar") && typeof init?.body === "string") {
         const cuerpo = JSON.parse(init.body) as { modo?: string; base?: PlanResuelto; edicion?: EdicionSimulada };
@@ -180,11 +256,12 @@ export default function LaboratorioPatronesPage() {
           if (modo === "falla") throw new TypeError("Failed to fetch");
           // Como lo responde /api/plan-editar: la causa estable y la frase de Python.
           if (edicion.accion === "patron" && rechazarRef.current === "todo" && edicion.patron_color) return respuestaJson({ ...RECHAZO_PYTHON, error: RECHAZO_PYTHON.mensaje, causa: "PATRON_INVALIDO" }, 422);
-          const siguiente = editarSimulado(cuerpo.base, edicion);
+          const siguiente = await editarSimulado(cuerpo.base, edicion, fuenteRef.current === "python" ? original : null);
           if (!siguiente) return respuestaJson({ error: "estructura_no_encontrada" }, 404);
-          const nuevo = firmado(siguiente);
+          const nuevo = firmado(siguiente.plan);
           setFirmadas((previas) => [...previas, `${edicion.accion} sobre ${cuerpo.base?.plan_hash ?? "?"}`]);
-          return respuestaJson({ plan: nuevo });
+          // Como /api/plan-editar: `avisos` solo cuando Python tiene algo que decir.
+          return respuestaJson({ plan: nuevo, ...(siguiente.avisos.length ? { avisos: siguiente.avisos } : {}) });
         }
       }
       return original(entrada, init);
@@ -208,12 +285,23 @@ export default function LaboratorioPatronesPage() {
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-borde-suave bg-fondo px-4 py-3 sm:px-6">
         <div className="min-w-0">
           <h1 className="text-base font-semibold">Laboratorio · Patrones de color</h1>
-          <p className="text-xs text-texto-suave">Fixtures sin Python: la vista previa y la edición se simulan; el conteo no cambia al editar.</p>
+          <p className="text-xs text-texto-suave" data-testid="lab-fuente">
+            {fuente === "python"
+              ? "Vista previa con Python real (/api/plan-patron) sobre el plan de la fixture; la edición se simula y Python expande lo que guarda."
+              : "Vistas previas grabadas, sin red: el dibujo no cambia al editar ni al mover los colores; la edición se simula."}
+          </p>
           <p data-testid="registro-firmas" data-firmas={firmadas.length} className="text-[11px] text-texto-suave">
             Ediciones firmadas: {firmadas.length}{firmadas.length ? ` · última: ${firmadas.at(-1)}` : ""} · plan {plan.plan_hash.slice(0, 18)}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <label className="inline-flex items-center gap-2 text-xs text-texto-suave">
+            Vista previa
+            <select value={fuente} onChange={(evento) => setFuente(evento.target.value as FuenteVista)} className="ui-input h-8 w-auto py-0 text-xs" data-testid="fuente-vista">
+              <option value="grabada">grabada (sin red)</option>
+              <option value="python">Python real</option>
+            </select>
+          </label>
           <label className="inline-flex items-center gap-2 text-xs text-texto-suave">
             Python rechaza
             <select value={rechazar} onChange={(evento) => setRechazar(evento.target.value as Rechazo)} className="ui-input h-8 w-auto py-0 text-xs" data-testid="simular-rechazo">

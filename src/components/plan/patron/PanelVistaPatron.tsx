@@ -107,7 +107,8 @@ export function LienzoPatron(props: PropsLienzo) {
               espejo={espejo}
               proporcion={proporcion}
               etiqueta={`${nombrePieza}: patrón ${vista.nombre.toLowerCase()}`}
-              className="size-full p-3"
+              // Llena el lienzo entero (con su forma): el dibujo crece hasta el borde que toque primero.
+              className="absolute inset-0 size-full p-2"
             />
           ) : (
             <div className="scroll-suave overflow-x-auto p-2 md:size-full md:overflow-auto">

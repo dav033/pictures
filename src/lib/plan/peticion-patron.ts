@@ -1,6 +1,6 @@
 import { CATALOGO_ERRORES_UI_V1, leerUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 import { z } from "zod";
-import { ModoAdmitidoSchema, PatronColorResueltoSchema, type ModoAdmitido, type ModoPatronColor, type PatronColor, type PatronColorResuelto } from "./patron-color";
+import { ModoAdmitidoSchema, MODOS_PATRON_COLOR, PatronColorResueltoSchema, type ModoAdmitido, type ModoPatronColor, type PatronColor, type PatronColorResuelto } from "./patron-color";
 import { esCancelacion, FalloPlanEditar, mensajeErrorRespuesta } from "./peticion-plan-editar";
 import type { PlanResuelto } from "./resuelto";
 
@@ -165,6 +165,41 @@ export async function pedirVistaPatronDetallada(
     throw new FalloPlanPatron(respaldo, { cause: !patron.success ? patron.error : !modos.success ? modos.error : undefined });
   }
   return { patron: patron.data, modos_admitidos: modos.data };
+}
+
+/**
+ * Los estilos de una pieza cuando Python no pudo sugerirle un patrón (su
+ * rechazo no trae `modos_admitidos`): se pide a la vez el punto de partida de
+ * cada modo del contrato y vale la lista de la primera respuesta que Python
+ * dibuje; las demás se cancelan. Python decide igual qué modos admite la
+ * pieza (los que no, los rechaza); aquí no se filtra ninguno. Si ninguno se
+ * arma, el fallo es el primero que habla de la pieza (no de un estilo que
+ * no se arma en ella). Una cancelación se relanza tal cual.
+ */
+export async function pedirModosAdmitidos(
+  cuerpo: Pick<PeticionVistaPatron, "plan" | "estructura_id">,
+  opciones: { signal?: AbortSignal; fetcher?: typeof fetch } = {},
+): Promise<ModoAdmitido[]> {
+  const propio = new AbortController();
+  const alCancelar = () => propio.abort(opciones.signal?.reason);
+  if (opciones.signal?.aborted) alCancelar();
+  opciones.signal?.addEventListener("abort", alCancelar, { once: true });
+  try {
+    const intentos = MODOS_PATRON_COLOR.map((modo) => pedirVistaPatronDetallada(
+      { plan: cuerpo.plan, estructura_id: cuerpo.estructura_id, patron_color: null, modo },
+      { signal: propio.signal, fetcher: opciones.fetcher },
+    ).then((vista) => vista.modos_admitidos));
+    return await Promise.any(intentos);
+  } catch (error) {
+    if (opciones.signal?.aborted) throw opciones.signal.reason ?? new DOMException("Cancelado", "AbortError");
+    if (!(error instanceof AggregateError)) throw error;
+    const fallos: unknown[] = error.errors;
+    throw fallos.find((fallo) => fallo instanceof FalloPlanPatron && fallo.motivo !== "modo_no_permitido") ?? fallos[0];
+  } finally {
+    // La primera respuesta basta: las que sigan en camino sobran.
+    propio.abort();
+    opciones.signal?.removeEventListener("abort", alCancelar);
+  }
 }
 
 /**

@@ -103,12 +103,13 @@ lógica TypeScript que esta función toque se migra.
   Python (§9) y la UI del editor, y se retira después de validarlo en
   producción. La detección en la foto tiene su propia bandera
   (`PATRON_REFERENCIA_PYTHON_ENABLED`); conviene encender las dos juntas.
-- **Visibilidad de estilos y controles del editor** (`src/components/plan/patron/modos.ts`):
-  refleja `_MODOS_POR_TIPO` y las reglas de dirección y espejo de
-  `patron_color.py` solo para ocultar lo que Python rechazaría; Python valida
-  cada vista previa y cada guardado, y un test comprueba la paridad de la
-  tabla. Se retira cuando `plan-patron-result.v1` devuelva los modos que admite
-  cada estructura.
+- **Estilos de una pieza sin sugerencia** (`pedirModosAdmitidos`,
+  `src/lib/plan/peticion-patron.ts`): cuando Python no puede sugerir un patrón,
+  su rechazo (`patron_invalido`) no trae `modos_admitidos`; el editor pide el
+  punto de partida de cada modo del contrato y usa los estilos de la primera
+  respuesta. No decide nada (Python rechaza los que no se arman), pero son
+  hasta siete peticiones en ese caso raro. Se retira cuando el rechazo de la
+  vista previa traiga `modos_admitidos`.
 - **Tablas ES→EN exportadas desde TypeScript** (`x-colores-en`, `x-acabados-en`).
   Son de solo lectura para Python hasta que la taxonomía de colores migre.
 
@@ -512,19 +513,76 @@ plan cae al preset.
 
 - `DetalleEstructura`: bloque "Patrón de color" con vista compacta, nombre,
   descripción, conteo por color y botones **Editar patrón** y **Hoja de
-  armado**. `RepartoColores` solo aparece si no hay patrón o el patrón es
-  `aleatorio` sin acentos ni pintados.
+  armado**. El dibujo llena su marco conservando la proporción: el marco toma
+  la forma del dibujo (angosto y alto para una columna, ancho para un arco o
+  una guirnalda) y los contornos miden un píxel a cualquier escala.
+  `RepartoColores` solo aparece si no hay patrón o el patrón es `aleatorio`
+  (con acentos o pintados también: Python los integra al confeti y lo avisa).
+  En un confeti va dentro del bloque, justo bajo el nombre del patrón: al lado
+  del dibujo en pantallas anchas y debajo de él en un teléfono, para que la
+  pieza entera y la barra se vean a la vez mientras se arrastra.
+- **Vista previa en vivo del deslizador de colores** (`vista-reparto.ts`,
+  `usarVistaReparto.ts`): sobre un confeti, mientras el decorador arrastra o
+  mueve la barra con las flechas, la tarjeta pide `/api/plan-patron` con
+  `{patron_color: null, participaciones}` y dibuja lo que devuelve Python en el
+  bloque del patrón, la tira del resumen y las cifras bajo la barra ("N
+  globos", las de Python; sin patrón, la estimación "≈ N"). Una petición a la
+  vez por pieza, al menos 100 ms entre dos, gana el último reparto y las
+  respuestas viejas no cuentan. Al soltar se guarda como siempre (`repartir`);
+  el dibujo en vivo se queda mientras ese reparto va camino del plan (se
+  arrastra, espera su pausa o se guarda) y, cuando llega el plan firmado,
+  manda `patrones_color`. Un reparto que no se pudo guardar deja de
+  dibujarse (`repartoADibujar`): el bloque y la tira vuelven al plan, que es
+  lo que se aprueba y lo que abren "Editar patrón" y la hoja de armado; la
+  barra conserva su valor con la estimación "≈ N", el motivo y "Reintentar".
+  Un fallo de la vista previa (`sin_patron`, `patron_activo`, red) la apaga
+  sin mensaje hasta que la barra vuelva al plan: queda la barra con su
+  estimación. Los avisos nuevos de Python para ese reparto se ven, pequeños y
+  tal cual, bajo la barra; los que el patrón del plan ya traía se quedan en el
+  bloque. El dibujo en vivo no es estado de la tarjeta (`vistas-en-vivo.ts`):
+  cada respuesta vuelve a pintar solo el bloque y la tira de esa pieza. Con
+  él en la tarjeta, cada respuesta repintaba las cuatro piezas del
+  laboratorio (444 globos) y, en un teléfono con la CPU a 4×, dejaba tareas
+  de 1 a 1,9 s; ahora son 48 globos y los cuadros quedan en p95 ≈ 270 ms
+  (antes 1,3 s). Por lo mismo los globos entran con una animación CSS que
+  termina (no un componente animado por globo) y su sombra usa
+  `fill-opacity`.
 - `EditorPatron` (Radix Dialog; hoja inferior en móvil): vista grande
   (alternar **Vista** pseudo-3D / **Gráfica** numerada), leyenda numerada de
   colores (1 = primer material…), presets con miniatura, parámetros del modo,
   "Acento cada N", pincel (racimo completo o un globo), deshacer local,
-  conteo por color en vivo (vista previa Python, con debounce). **Sin botón
+  conteo por color en vivo (vista previa Python, con debounce). Los estilos
+  son exactamente los `modos_admitidos` que devuelve la vista previa, en el
+  orden de Python; la dirección se ofrece con las `direcciones` del modo del
+  borrador (si hay más de una) y el espejo cuando su `espejo` es verdadero. Al
+  abrir con el patrón del plan se pide igual una vista previa, sin tapar el
+  dibujo, solo para conocer esos estilos. Elegir un estilo distinto del modo
+  del borrador pide `{patron_color: null, modo}` y el `patron` que devuelve
+  Python pasa a ser el borrador (se dibuja sin otra petición); tocar el estilo
+  actual no cambia nada. Hoy ese punto de partida no mira el borrador: lo que
+  el decorador ya ajustó (acentos, espejo, dirección, globos por racimo) se
+  pierde al cambiar de estilo y solo "Deshacer" lo recupera. Pendiente: que la
+  vista previa reciba el borrador junto con `modo` y que Python conserve lo que
+  el estilo nuevo admite; TypeScript no lo mezcla. Si Python no puede sugerir
+  un patrón (su rechazo no trae `modos_admitidos`), el editor pide a la vez el
+  punto de partida de cada
+  modo del contrato y usa los estilos de la primera respuesta. TypeScript solo
+  guarda nombres, frases e iconos de cada modo; la única puerta propia es
+  mostrar "Crear patrón" en piezas geométricas con dos colores o más
+  (`TIPOS_ESTRUCTURA_GEOMETRICOS`). **Sin botón
   "Aplicar"**: cada cambio válido se guarda solo en la propuesta (acción
   `patron`) cuando el decorador se detiene, en cola serializada; el pie
   muestra "Guardando…" / "Cambios guardados" / el motivo y "Reintentar".
   "Restablecer" vuelve al patrón que había al abrir, "Listo" cierra. Un
-  patrón que Python rechaza nunca se guarda. Los deslizadores de colores y
-  tamaños de la tarjeta también guardan solos.
+  patrón que Python rechaza nunca se guarda. "Crear patrón" abre con la
+  sugerencia de Python como vista: no entra en la propuesta hasta que el
+  decorador la retoca, elige un estilo o pulsa **Usar sugerencia**; cerrar sin
+  tocarla no guarda nada. Los deslizadores de colores y tamaños de la tarjeta
+  también guardan solos.
+- Avisos de la edición: los `avisos` de `/api/plan-editar` ("El patrón se
+  rehízo porque quitaste un color.") se muestran tal cual en el aviso de la
+  tarjeta tras cada edición y, para el editor, juntos en el aviso de la sesión
+  al cerrarlo.
 - `HojaArmado`: leyenda, gráfica numerada, paso a paso por racimos (de
   `pasos`), instrucciones, conteo por color y tamaño; **Imprimir** (CSS
   `@media print`).

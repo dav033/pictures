@@ -17,7 +17,7 @@ import { leyendaPatron } from "./leyenda";
 import { ControlesPatron, GaleriaEstilos } from "./ControlesPatron";
 import { LienzoPatron, ResumenVistaPatron, type ModoVistaPatron } from "./PanelVistaPatron";
 import type { Pincel } from "./GraficaPatron";
-import { useVistaPrevia } from "./usarVistaPrevia";
+import { useArranqueEstilo, useVistaPrevia } from "./usarVistaPrevia";
 import { PieEditorPatron } from "./PieEditorPatron";
 
 type EstructuraDeclarada = PlanResuelto["plan"]["estructuras"][number];
@@ -59,6 +59,10 @@ const ESPERA_GUARDADO_MS = 700;
  * de Python ("Crear patrón") es solo una vista hasta que el decorador la
  * retoca o pulsa "Usar sugerencia", y cerrar sin tocar nada no guarda nada.
  * "Quitar patrón" guarda la pieza sin patrón al instante.
+ *
+ * Los estilos, sus direcciones y el espejo son los que Python admite para la
+ * pieza (`modos_admitidos`); elegir otro estilo pide a Python su punto de
+ * partida y esa respuesta es el borrador nuevo.
  */
 export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, resuelto, onGuardar, aprobada = false }: Props) {
   const reducir = useReducedMotion();
@@ -70,7 +74,7 @@ export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, r
   const [historia, setHistoria] = useState<Historia>({ pasado: [], presente: inicio.patron, futuro: [], grupo: null });
   const [modo, setModo] = useState<ModoVistaPatron>("vista");
   const [pincel, setPincel] = useState<Pincel>({ material: leyenda.length > 1 ? 1 : 0, alcance: "globo" });
-  const { vista, sugerencia, cargando, error, estadoBorrador, reintentar } = useVistaPrevia({
+  const { vista, modos, cargando, error, estadoBorrador, reintentar, sembrar } = useVistaPrevia({
     plan: inicio.plan,
     estructuraId: estructura.estructura_id,
     patron: historia.presente,
@@ -86,7 +90,6 @@ export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, r
   // Sin patrón en el borrador, los controles parten de la sugerencia a la vista; tocarlos la vuelve del decorador y se guarda.
   const borrador = historia.presente ?? vista?.patron ?? null;
   const sugerenciaSinUsar = historia.presente === null && estadoBorrador === "listo" && vista !== null ? vista.patron : null;
-  const puntoDePartida = inicio.patron ?? sugerencia?.patron ?? null;
   const geometria = vista?.geometria ?? (declarada.tipo === "pared" ? "rejilla" : "racimos");
   const globosPorRacimo = borrador?.globos_por_racimo
     ?? (borrador?.base.modo === "espiral" ? borrador.base.racimo.length : vista?.geometria === "racimos" ? vista.columnas : 4);
@@ -98,11 +101,16 @@ export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, r
   // El conteo a la vista es el de la última respuesta de Python, que puede ir detrás del borrador.
   const conteoEnPropuesta = enPropuesta(vista?.patron, patronEnPlan);
   const motivoRechazo = estadoBorrador === "rechazado" ? error?.mensaje ?? null : null;
-  const contexto = {
-    participaciones: declarada.materiales.map((material) => material.participacion ?? 0),
-    globosPorRacimo,
-    referencia: puntoDePartida,
-  };
+  // Otro estilo: Python arma su punto de partida, que se dibuja tal cual y pasa a ser el borrador.
+  const estilos = useArranqueEstilo({
+    plan: inicio.plan,
+    estructuraId: estructura.estructura_id,
+    alLlegar: (detallada) => {
+      sembrar(detallada);
+      cambiar(detallada.patron.patron, undefined, { conservarEstilo: true });
+    },
+  });
+  const eleccionEstilo = { onElegir: estilos.elegir, pendiente: estilos.pendiente, error: estilos.error };
 
   // Cada borrador nuevo va al autoguardado; quitar el patrón no necesita vista previa ni pausa.
   useEffect(() => {
@@ -116,7 +124,9 @@ export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, r
     else if (motivoRechazo) autoguardado.validar(historia.presente, { ok: false, motivo: motivoRechazo });
   }, [autoguardado, historia.presente, estadoBorrador, motivoRechazo]);
 
-  function cambiar(siguiente: PatronColor | null, grupo?: string): void {
+  function cambiar(siguiente: PatronColor | null, grupo?: string, { conservarEstilo = false } = {}): void {
+    // El último gesto manda: un estilo que Python todavía estaba armando ya no se pone encima.
+    if (!conservarEstilo) estilos.cancelar();
     setHistoria((actual) => {
       // Un deslizador arrastrado es un solo paso de deshacer.
       if (grupo && grupo === actual.grupo) return { ...actual, presente: siguiente, futuro: [] };
@@ -125,6 +135,7 @@ export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, r
   }
 
   function deshacer(): void {
+    estilos.cancelar();
     setHistoria((actual) => {
       const [previo] = actual.pasado.slice(-1);
       if (previo === undefined) return actual;
@@ -133,6 +144,7 @@ export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, r
   }
 
   function rehacer(): void {
+    estilos.cancelar();
     setHistoria((actual) => {
       const [siguiente, ...resto] = actual.futuro;
       if (siguiente === undefined) return actual;
@@ -235,17 +247,18 @@ export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, r
                   <ControlesPatron
                     patron={borrador}
                     leyenda={leyenda}
-                    tipo={declarada.tipo}
+                    modos={modos}
                     geometria={geometria}
-                    contexto={contexto}
+                    globosPorRacimo={globosPorRacimo}
+                    estilo={eleccionEstilo}
                     onCambiar={cambiar}
                   />
                 ) : error && !cargando ? (
                   // Python no pudo sugerir un patrón para esta pieza (p. ej. un
                   // color con tan poca participación que el preset lo deja sin
-                  // globos): el decorador elige el estilo y Python lo valida.
+                  // globos): el decorador elige el estilo y Python arma su punto de partida.
                   <div className="@container">
-                    <GaleriaEstilos patron={null} tipo={declarada.tipo} contexto={contexto} onCambiar={cambiar} />
+                    <GaleriaEstilos patron={null} modos={modos} estilo={eleccionEstilo} />
                   </div>
                 ) : (
                   <div className="space-y-2" aria-hidden="true">

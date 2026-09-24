@@ -14,6 +14,7 @@ import { MuestrasColor } from "@/components/propuesta/MuestrasColor";
 import type { PatronColorResuelto } from "@/lib/plan/patron-color";
 import { MiniPatron } from "./patron/MiniPatron";
 import type { ColorLeyenda } from "./patron/leyenda";
+import { useVistaEnVivo, type VistasEnVivo } from "./vistas-en-vivo";
 
 export const ENTRADA_CASCADA: Variants = {
   oculto: { opacity: 0, y: 8 },
@@ -33,17 +34,23 @@ export type PiezaPropuestaVista = {
   unidad: "globos" | "piezas";
   colores: MuestraColor[];
   recorte: { src: string; caja: CajaNormalizada; alt: string } | null;
-  /** Applied color pattern: the card shows its strip instead of loose color dots. */
-  patron?: { resuelto: PatronColorResuelto; leyenda: readonly ColorLeyenda[] };
+  /**
+   * Applied color pattern: the card shows its strip instead of loose color
+   * dots. `enVivo`: the colors slider's live drawing of this piece (by `id`),
+   * shown instead of `resuelto` while it lasts.
+   */
+  patron?: { resuelto: PatronColorResuelto; leyenda: readonly ColorLeyenda[]; enVivo?: VistasEnVivo<PatronColorResuelto> };
 };
 
-/** The pattern strip with its name, or the piece's colors when it has no pattern. */
+/** The pattern strip with its name, or the piece's colors when it has no pattern. Only this strip repaints with a live drawing. */
 function ColoresPieza({ pieza, retraso, className = "" }: { pieza: PiezaPropuestaVista; retraso?: number; className?: string }) {
+  const vivo = useVistaEnVivo(pieza.patron?.enVivo, pieza.id);
   if (!pieza.patron) return <MuestrasColor muestras={pieza.colores} retraso={retraso} className={className} etiqueta={`Colores de ${pieza.titulo}`} />;
+  const resuelto = vivo ?? pieza.patron.resuelto;
   return (
     <span className={`flex min-w-0 items-center gap-2 ${className}`}>
-      <MiniPatron resuelto={pieza.patron.resuelto} leyenda={pieza.patron.leyenda} className="h-7 w-auto max-w-[7.5rem] shrink-0" />
-      <span className="truncate text-xs font-medium text-texto-suave">{pieza.patron.resuelto.nombre}</span>
+      <MiniPatron resuelto={resuelto} leyenda={pieza.patron.leyenda} className="h-7 w-auto max-w-[7.5rem] shrink-0" />
+      <span className="truncate text-xs font-medium text-texto-suave">{resuelto.nombre}</span>
     </span>
   );
 }

@@ -9,4 +9,4 @@ export { ControlesPatron, GaleriaEstilos } from "./ControlesPatron";
 export { ResumenPatron } from "./ResumenPatron";
 export { VistaPatron } from "./VistaPatron";
 export { leyendaPatron, type ColorLeyenda } from "./leyenda";
-export { admitePatron, estilosParaTipo } from "./modos";
+export { admitePatron } from "./modos";

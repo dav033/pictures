@@ -1,15 +1,44 @@
 "use client";
 
 import { useId } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { useReducedMotion } from "motion/react";
 import type { PatronColorResuelto } from "@/lib/plan/patron-color";
-import { dibujarPatron, type GloboDibujo, type SoporteDibujo } from "./geometria-dibujo";
+import { dibujarPatron, type Dibujo, type EntradaDibujo, type GloboDibujo, type SoporteDibujo } from "./geometria-dibujo";
 import { colorDe, type BrilloGlobo, type ColorLeyenda } from "./leyenda";
 
+type ResueltoDibujo = Pick<PatronColorResuelto, "geometria" | "celdas" | "extras" | "patron">;
+type Forma = { tipo: string; oficialId?: string; espejo?: boolean; proporcion?: number };
+
+/** Lo que dibuja `VistaPatron` para una expansión de Python (el trazo solo cambia el giro del dibujo). */
+function entradaDibujo(resuelto: ResueltoDibujo, forma: Forma, celdas?: readonly (readonly number[])[]): EntradaDibujo {
+  const base = resuelto.patron.base;
+  return {
+    geometria: resuelto.geometria,
+    tipo: forma.tipo,
+    oficialId: forma.oficialId,
+    celdas: celdas ?? resuelto.celdas,
+    extras: resuelto.extras,
+    trazo: base.modo === "espiral" ? base.trazo : undefined,
+    espejo: forma.espejo ?? false,
+    proporcion: forma.proporcion,
+  };
+}
+
+/**
+ * El dibujo de una expansión de Python, para quien lo enmarca: con su `caja`
+ * le da un hueco de su forma (una columna alta y angosta, un arco ancho) y se
+ * lo pasa a `VistaPatron` (`dibujo`) para no calcularlo dos veces.
+ */
+export function dibujoPatron(resuelto: ResueltoDibujo, forma: Forma): Dibujo {
+  return dibujarPatron(entradaDibujo(resuelto, forma));
+}
+
 type Props = {
-  resuelto: Pick<PatronColorResuelto, "geometria" | "celdas" | "extras" | "patron">;
+  resuelto: ResueltoDibujo;
   /** Celdas a dibujar en lugar de las de `resuelto` (pintura optimista del editor). */
   celdas?: readonly (readonly number[])[];
+  /** `dibujoPatron` de este mismo `resuelto` y esta forma, si quien lo enmarca ya lo calculó (sin `celdas`). */
+  dibujo?: Dibujo;
   leyenda: readonly ColorLeyenda[];
   tipo: string;
   oficialId?: string;
@@ -36,16 +65,22 @@ const BRILLOS: Readonly<Record<BrilloGlobo, string>> = {
 
 function Soporte({ soporte }: { soporte: SoporteDibujo }) {
   if (soporte.tipo === "mesa") {
-    return <ellipse cx={soporte.x} cy={soporte.y + 3} rx={soporte.ancho / 2} ry={4} className="fill-superficie-2 stroke-borde" strokeWidth={0.8} />;
+    return <ellipse cx={soporte.x} cy={soporte.y + 3} rx={soporte.ancho / 2} ry={4} className="fill-superficie-2 stroke-borde" strokeWidth={1} vectorEffect="non-scaling-stroke" />;
   }
   return (
-    <g className="fill-superficie-2 stroke-borde" strokeWidth={0.8}>
-      <rect x={soporte.x - soporte.ancho / 2} y={soporte.y} width={soporte.ancho} height={5} rx={2.5} />
+    <g className="fill-superficie-2 stroke-borde" strokeWidth={1}>
+      <rect x={soporte.x - soporte.ancho / 2} y={soporte.y} width={soporte.ancho} height={5} rx={2.5} vectorEffect="non-scaling-stroke" />
     </g>
   );
 }
 
-function Globo({ globo, color, id, retraso }: { globo: GloboDibujo; color: ColorLeyenda; id: string; retraso: number | null }) {
+/**
+ * Un globo. Entra con una animación CSS (`patron-globo-entra`), no con un
+ * componente animado por globo: la vista previa en vivo vuelve a pintar el
+ * dibujo con cada respuesta y cada uno de esos componentes se volvía a
+ * evaluar. La animación corre una sola vez, al montar.
+ */
+function Globo({ globo, color, id, retraso, transicion }: { globo: GloboDibujo; color: ColorLeyenda; id: string; retraso: number | null; transicion: boolean }) {
   const ry = globo.r * 1.06;
   // Los de atrás quedan en sombra; los centros de flor (z > 1) no.
   const sombra = globo.z < 1 ? ((1 - globo.z) / 2) * 0.34 : 0;
@@ -59,20 +94,20 @@ function Globo({ globo, color, id, retraso }: { globo: GloboDibujo; color: Color
         fillOpacity={color.brillo === "transparente" ? 0.28 : 1}
         // Los claros se pierden en el fondo claro y los oscuros en el oscuro: los dos llevan contorno.
         className={color.muestra.conBorde || color.numeroClaro ? "stroke-borde" : undefined}
-        strokeWidth={color.muestra.conBorde || color.numeroClaro ? 0.7 : undefined}
-        style={{ transition: "fill 260ms var(--ease-out)" }}
+        // Contorno de un píxel a cualquier escala: nítido en un bloque pequeño y en la vista grande.
+        strokeWidth={color.muestra.conBorde || color.numeroClaro ? 1 : undefined}
+        vectorEffect="non-scaling-stroke"
+        // El color cambia con un fundido corto (la vista previa en vivo); sin movimiento, al instante.
+        style={transicion ? { transition: "fill 260ms var(--ease-out)" } : undefined}
       />
       <ellipse {...forma} fill={`url(#${id}-volumen)`} />
       <ellipse {...forma} fill={`url(#${id}-${BRILLOS[color.brillo]})`} />
-      {sombra > 0.02 && <ellipse {...forma} fill="#000" opacity={sombra} />}
+      {/* `fillOpacity`, no `opacity`: se ve igual (solo relleno) y no hace de cada sombra una capa que el navegador recompone en cada cuadro. */}
+      {sombra > 0.02 && <ellipse {...forma} fill="#000" fillOpacity={sombra} />}
     </>
   );
   if (retraso === null) return <g>{contenido}</g>;
-  return (
-    <motion.g initial={{ opacity: 0, y: 7 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.38, delay: retraso, ease: [0.23, 1, 0.32, 1] }}>
-      {contenido}
-    </motion.g>
-  );
+  return <g className="patron-globo-entra" style={{ animationDelay: `${retraso}s` }}>{contenido}</g>;
 }
 
 /**
@@ -82,12 +117,11 @@ function Globo({ globo, color, id, retraso }: { globo: GloboDibujo; color: Color
  * Los colores son datos de catálogo (`hex` de la leyenda); el soporte y los
  * bordes usan tokens del tema.
  */
-export function VistaPatron({ resuelto, celdas, leyenda, tipo, oficialId, espejo = false, proporcion, etiqueta, className = "", animar = true }: Props) {
+export function VistaPatron({ resuelto, celdas, dibujo: calculado, leyenda, tipo, oficialId, espejo = false, proporcion, etiqueta, className = "", animar = true }: Props) {
   const reducir = useReducedMotion();
   const id = `patron-${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const celdasDibujo = celdas ?? resuelto.celdas;
-  const trazo = resuelto.patron.base.modo === "espiral" ? resuelto.patron.base.trazo : undefined;
-  const dibujo = dibujarPatron({ geometria: resuelto.geometria, tipo, oficialId, celdas: celdasDibujo, extras: resuelto.extras, trazo, espejo, proporcion });
+  const dibujo = (!celdas && calculado) || dibujarPatron(entradaDibujo(resuelto, { tipo, oficialId, espejo, proporcion }, celdasDibujo));
   const animarGlobos = animar && !reducir && dibujo.globos.length <= MAXIMO_ANIMADOS;
   const filas = Math.max(1, celdasDibujo.length);
   const { caja } = dibujo;
@@ -97,6 +131,7 @@ export function VistaPatron({ resuelto, celdas, leyenda, tipo, oficialId, espejo
       role="img"
       aria-label={etiqueta}
       preserveAspectRatio="xMidYMid meet"
+      shapeRendering="geometricPrecision"
       className={className}
     >
       <defs>
@@ -134,6 +169,7 @@ export function VistaPatron({ resuelto, celdas, leyenda, tipo, oficialId, espejo
           color={colorDe(leyenda, globo.material)}
           id={id}
           retraso={animarGlobos ? Math.min(0.9, (globo.fila / filas) * 0.9) : null}
+          transicion={!reducir}
         />
       ))}
     </svg>

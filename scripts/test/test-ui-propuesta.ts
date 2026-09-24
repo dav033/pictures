@@ -15,16 +15,20 @@ import { EstadoError, PasosAsistente } from "@/components/propuesta/index";
 import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
-import { ControlesPatron, GaleriaEstilos, GraficaPatron, HojaArmado, leyendaPatron, PieEditorPatron, ResumenPatron } from "@/components/plan/patron";
+import { BloquePatron, ControlesPatron, GaleriaEstilos, GraficaPatron, HojaArmado, leyendaPatron, PieEditorPatron, ResumenPatron } from "@/components/plan/patron";
 import { crearAutoguardado, type Reloj } from "@/components/plan/autoguardado";
 import { crearColaAjustes, crearPendientesAjustes } from "@/components/plan/cola-ajustes";
 import { vistaDeAutoguardado, type VistaEstadoGuardado } from "@/components/plan/EstadoGuardado";
-import { conPintado, editar, enPropuesta, patronDeEstilo, pintadosPendientes } from "@/components/plan/patron/borrador";
-import { admitePatron, MODOS_POR_TIPO } from "@/components/plan/patron/modos";
-import { FalloPlanPatron, MENSAJE_PATRON_INVALIDO, pedirPlanEditarPatron, pedirVistaPatron } from "@/lib/plan/peticion-patron";
+import { conGlobosPorRacimo, conPintado, editar, enPropuesta, pintadosPendientes } from "@/components/plan/patron/borrador";
+import { admitePatron, controlesDeModo, iconoDeModo } from "@/components/plan/patron/modos";
+import { RepartoColores } from "@/components/plan/RepartoColores";
+import { crearVistaReparto, repartoADibujar } from "@/components/plan/vista-reparto";
+import { crearVistasEnVivo } from "@/components/plan/vistas-en-vivo";
+import { avisosDeEdicion } from "@/components/plan/avisos-edicion";
+import { FalloPlanPatron, MENSAJE_PATRON_INVALIDO, pedirModosAdmitidos, pedirPlanEditarPatron, pedirVistaPatron, pedirVistaPatronDetallada } from "@/lib/plan/peticion-patron";
 import { FalloPlanEditar, mensajeFalloPlanEditar } from "@/lib/plan/peticion-plan-editar";
 import { construirUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
-import { PatronColorResueltoSchema, type PatronColor, type PatronColorResuelto } from "@/lib/plan/patron-color";
+import { MODOS_PATRON_COLOR, PatronColorResueltoSchema, type ModoAdmitido, type PatronColor, type PatronColorResuelto } from "@/lib/plan/patron-color";
 
 /**
  * Propuesta, detalle, cotización y análisis de foto (iteración 4, maquetas
@@ -373,61 +377,69 @@ const leyendaDe = (id: string) => leyendaPatron(declaradaDe(id).materiales, estr
   ok("hoja de armado: paso a paso, consejos y conteos");
 }
 
-// 7d. Controles del editor: la galería respeta los modos de cada tipo y la espiral muestra su racimo.
+// 7d. Controles del editor: los estilos, sus direcciones y el espejo son los
+// que Python admite para la pieza (`modos_admitidos`), en su orden. La
+// interfaz no decide ninguno por el tipo de la pieza.
+const admitido = (modo: ModoAdmitido["modo"], direcciones: ModoAdmitido["direcciones"] = ["longitudinal"], espejo = false): ModoAdmitido => ({ modo, direcciones, espejo });
+// Como los devolvió Python para la columna y la pared de la fixture.
+const MODOS_COLUMNA = [admitido("espiral"), admitido("anillos"), admitido("bloques"), admitido("degradado"), admitido("aleatorio"), admitido("flor")];
+const MODOS_PARED = [admitido("anillos", ["longitudinal", "transversal"]), admitido("bloques", ["longitudinal", "transversal"]), admitido("degradado", ["longitudinal", "transversal", "diagonal"]), admitido("aleatorio"), admitido("damero")];
 {
-  const controles = (id: string, tipo: string, geometria: "racimos" | "rejilla") => textoVisible(renderToStaticMarkup(React.createElement(ControlesPatron, {
+  const estilo = { onElegir: () => undefined };
+  const controles = (id: string, geometria: "racimos" | "rejilla", modos: readonly ModoAdmitido[]) => textoVisible(renderToStaticMarkup(React.createElement(ControlesPatron, {
     patron: declaradaDe(id).patron_color!,
     leyenda: leyendaDe(id),
-    tipo,
+    modos,
     geometria,
-    contexto: { participaciones: declaradaDe(id).materiales.map((material) => material.participacion ?? 0), globosPorRacimo: 4 },
+    globosPorRacimo: 4,
+    estilo,
     onCambiar: () => undefined,
   })));
-  const pared = controles("EST_03_PARED", "pared", "rejilla");
-  assert.match(pared, /Damero/);
-  assert.match(pared, /Degradé diagonal/);
-  assert.doesNotMatch(pared, /Flores|Espiral|Globos por racimo/, "la pared no ofrece modos de racimo");
-  assert.match(pared, /Por filas Por columnas En diagonal/);
-  const columna = controles("EST_01_COLUMNA", "columna", "racimos");
-  assert.match(columna, /Espiral .*Zig-zag .*Franjas rectas .*Anillos .*Bloques .*Degradé .*Confeti .*Flores/);
-  assert.doesNotMatch(columna, /Damero|Degradé diagonal|Simetría espejo/);
+  const pared = controles("EST_03_PARED", "rejilla", MODOS_PARED);
+  assert.match(pared, /Estilo .*Anillos .*Bloques .*Degradé .*Confeti .*Damero/, "los estilos de Python, en su orden");
+  assert.doesNotMatch(pared, /Flores|Espiral|Globos por racimo/);
+  assert.match(pared, /Dirección Por filas Por columnas En diagonal/, "las direcciones del degradé, las de Python");
+  const columna = controles("EST_01_COLUMNA", "racimos", MODOS_COLUMNA);
+  assert.match(columna, /Espiral .*Anillos .*Bloques .*Degradé .*Confeti .*Flores/);
+  assert.doesNotMatch(columna, /Damero|Dirección|Simetría espejo/, "una sola dirección no se ofrece; sin espejo de Python, no hay interruptor");
   assert.match(columna, /Posición 1 .*Posición 2 .*Posición 3 .*Posición 4/);
   assert.match(columna, /4 · cuarteto/);
-  assert.match(controles("EST_02_ARCO", "arco", "racimos"), /Simetría espejo/);
-  ok("controles del editor: estilos por tipo, racimo de la espiral y espejo solo en arcos");
+  // Lo que diga Python manda, aunque no sea lo de siempre para el tipo: la interfaz no filtra por tipo.
+  const otra = controles("EST_01_COLUMNA", "racimos", [admitido("damero"), admitido("espiral", ["longitudinal", "transversal"], true)]);
+  assert.match(otra, /Estilo .*Damero .*Espiral/);
+  assert.doesNotMatch(otra, /Anillos|Flores/);
+  assert.match(otra, /Dirección Por filas Por columnas/);
+  assert.match(otra, /Simetría espejo/);
+  assert.match(controles("EST_02_ARCO", "racimos", [admitido("flor", ["longitudinal"], true)]), /Simetría espejo/, "el espejo cuando Python lo admite para el estilo del borrador");
+  ok("controles del editor: estilos, direcciones y espejo de Python, en su orden");
 
-  // Sin borrador (Python no pudo sugerir): la galería entera, ninguna ficha activa, para empezar por un estilo.
-  const galeria = renderToStaticMarkup(React.createElement(GaleriaEstilos, { patron: null, tipo: "guirnalda", contexto: { participaciones: [0.5, 0.49, 0.01], globosPorRacimo: 4 }, onCambiar: () => undefined }));
+  // Mientras Python no respondió, la galería espera sin fichas inventadas; un estilo en camino se marca y su rechazo queda a la vista.
+  const cargando = renderToStaticMarkup(React.createElement(GaleriaEstilos, { patron: null, modos: null, estilo }));
+  assert.doesNotMatch(cargando, /aria-pressed/);
+  assert.match(cargando, /brillo-carga/);
+  const galeria = renderToStaticMarkup(React.createElement(GaleriaEstilos, { patron: null, modos: MODOS_COLUMNA, estilo: { onElegir: () => undefined, pendiente: "anillos", error: { modo: "flor", mensaje: "Negro no aparece en el patrón." } } }));
   assert.match(textoVisible(galeria), /Elige uno para empezar tu patrón/);
-  assert.equal((galeria.match(/aria-pressed="false"/g) ?? []).length, 8, "las ocho fichas de la guirnalda, sin ninguna elegida");
-  assert.doesNotMatch(galeria, /aria-pressed="true"/);
-  ok("galería sin borrador: se puede empezar por un estilo cuando la sugerencia falla");
-}
+  assert.equal((galeria.match(/aria-pressed="false"/g) ?? []).length, 6, "las seis fichas que Python admite, ninguna elegida");
+  assert.match(galeria, /aria-busy="true" data-modo="anillos"/, "el estilo que Python está armando");
+  assert.match(textoVisible(galeria), /Flores: Negro no aparece en el patrón\./);
+  ok("galería: espera a Python, marca el estilo en camino y muestra su rechazo");
 
-// 7d'. Adaptador temporal de modos.ts: refleja `_MODOS_POR_TIPO` de Python (el
-// dueño). Se lee de patron_color.py para que la tabla no quede atrás en silencio.
-{
-  const fuente = readFileSync(resolve(process.cwd(), "services/ai-api/app/patron_color.py"), "utf8");
-  const cadenas = (texto: string) => [...texto.matchAll(/"([a-z_]+)"/g)].map((cadena) => cadena[1]!);
-  const tuplas = new Map([...fuente.matchAll(/^(_?[A-Z][A-Z_]*)(?::[^=\n]+)? = \(([^)]*)\)/gm)].map(([, nombre, cuerpo]) => [nombre!, cadenas(cuerpo!)]));
-  const tabla = /^_MODOS_POR_TIPO(?::[^=\n]+)? = \{([^}]*)\}/m.exec(fuente);
-  assert.ok(tabla, "patron_color.py ya no define _MODOS_POR_TIPO como un dict literal: actualiza esta prueba y el adaptador de modos.ts");
-  const python: Record<string, string[]> = {};
-  for (const [, tipo, valor] of tabla[1]!.matchAll(/"([a-z_]+)":\s*(\([^)]*\)|[A-Za-z_]+)/g)) {
-    const modos = valor!.startsWith("(") ? cadenas(valor!) : tuplas.get(valor!);
-    assert.ok(modos, `no encontré la tupla ${valor} en patron_color.py`);
-    python[tipo!] = [...modos].sort();
-  }
-  assert.ok(Object.keys(python).length >= 6, "la tabla de Python se leyó entera");
-  const typescript = Object.fromEntries(Object.entries(MODOS_POR_TIPO).map(([tipo, modos]) => [tipo, [...modos].sort()]));
-  assert.deepEqual(typescript, python, "MODOS_POR_TIPO (modos.ts) debe ser _MODOS_POR_TIPO (patron_color.py)");
+  // Qué controles lleva cada modo lo dice la respuesta, no el tipo.
+  assert.deepEqual(controlesDeModo(MODOS_PARED, "degradado"), { direcciones: ["longitudinal", "transversal", "diagonal"], espejo: false });
+  assert.deepEqual(controlesDeModo(MODOS_PARED, "damero"), { direcciones: [], espejo: false }, "una sola dirección no se ofrece");
+  assert.deepEqual(controlesDeModo(null, "degradado"), { direcciones: [], espejo: false }, "sin respuesta de Python, ninguno");
+  assert.deepEqual(controlesDeModo(MODOS_COLUMNA, "damero"), { direcciones: [], espejo: false }, "un modo que Python no admite, ninguno");
+  const espiral = declaradaDe("EST_01_COLUMNA").patron_color!;
+  assert.equal(iconoDeModo("espiral", { ...espiral, base: { modo: "espiral", racimo: [0, 1, 0, 2], trazo: "zigzag" } }), "zigzag", "la ficha del borrador muestra su trazo");
+  assert.equal(iconoDeModo("anillos", espiral), "anillos");
+  // "Crear patrón": solo la puerta de la interfaz (pieza geométrica con dos colores); Python contesta el resto al abrir.
   assert.equal(admitePatron("columna", 2), true);
   assert.equal(admitePatron("columna", 1), false, "un solo material no lleva patrón");
   assert.equal(admitePatron("backdrop", 3), false, "un tipo sin geometría no lleva patrón");
-  ok("modos por tipo del editor: iguales a los de Python");
+  ok("modos del editor: controles e iconos desde la respuesta de Python");
 }
 
-// 7e. Borrador declarativo: pintar reemplaza lo pintado antes y un estilo nuevo conserva lo que sirve.
+// 7e. Borrador declarativo: pintar reemplaza lo pintado antes.
 {
   const espiral = declaradaDe("EST_01_COLUMNA").patron_color!;
   const unGlobo = conPintado(espiral, { fila: 2, columna: 1, material: 2 });
@@ -436,24 +448,10 @@ const leyendaDe = (id: string) => leyendaPatron(declaradaDe(id).materiales, estr
   const racimo = conPintado(conPintado(otraVez, { fila: 3, columna: 0, material: 1 }), { fila: 2, material: 1 });
   assert.deepEqual(racimo.pintados, [{ fila: 3, columna: 0, material: 1 }, { fila: 2, material: 1 }], "pintar el racimo entero reemplaza sus globos pintados");
   assert.equal(racimo.origen, "decorador");
-  const zigzag = patronDeEstilo("zigzag", espiral, { participaciones: [0.5, 0.25, 0.25], globosPorRacimo: 4 });
-  assert.deepEqual(zigzag.base, { modo: "espiral", racimo: [0, 1, 0, 2], trazo: "zigzag" }, "el racimo sigue al cambiar el trazo");
-  const confeti = patronDeEstilo("aleatorio", espiral, { participaciones: [0.5, 0.25, 0.25], globosPorRacimo: 4 });
-  assert.deepEqual(confeti.base, { modo: "aleatorio", pesos: [{ material: 0, peso: 50 }, { material: 1, peso: 25 }, { material: 2, peso: 25 }], semilla: 1 });
   assert.deepEqual(pintadosPendientes(racimo, unGlobo), racimo.pintados, "lo que el eco de Python no trae sigue pendiente");
   assert.deepEqual(pintadosPendientes(racimo, racimo), []);
-  ok("borrador: pintados sin duplicados y estilos que conservan el racimo");
-
-  // Una ficha del mismo modo que el patrón de Python parte de él, no de un arranque armado aquí.
-  const presetConfeti: PatronColor = { version: "patron-color.v1", origen: "sugerido", base: { modo: "aleatorio", pesos: [{ material: 0, peso: 60 }, { material: 1, peso: 40 }], semilla: 1_234_567 } };
-  const anillos = patronDeEstilo("anillos", presetConfeti, { participaciones: [0.6, 0.4], globosPorRacimo: 4, referencia: presetConfeti });
-  const deVuelta = patronDeEstilo("aleatorio", anillos, { participaciones: [0.6, 0.4], globosPorRacimo: 4, referencia: presetConfeti });
-  assert.deepEqual(deVuelta.base, presetConfeti.base, "volver a Confeti recupera la semilla y los pesos de Python");
-  const conEspiralPython = patronDeEstilo("espiral", anillos, { participaciones: [0.5, 0.25, 0.25], globosPorRacimo: 4, referencia: espiral });
-  assert.deepEqual(conEspiralPython.base, { modo: "espiral", racimo: [0, 1, 0, 2], trazo: "espiral" }, "y volver a Espiral, el racimo del plan");
-  const sinNada = patronDeEstilo("anillos", null, { participaciones: [0.5, 0.49, 0.01], globosPorRacimo: 4 });
-  assert.deepEqual(sinNada.base, { modo: "anillos", secuencia: [0, 1, 2], largo: 1 }, "sin borrador ni patrón de Python, todos los colores en orden");
-  ok("borrador: una ficha del modo del patrón de Python parte de él");
+  assert.deepEqual(conGlobosPorRacimo(espiral, 3).base, { modo: "espiral", racimo: [0, 1, 0], trazo: "espiral" }, "otro racimo recorta la espiral");
+  ok("borrador: pintados sin duplicados");
 }
 
 // 7e'. "En tu propuesta" lo decide el diseño que ya tiene el plan, no `origen`.
@@ -968,8 +966,254 @@ async function probarAutoguardado(): Promise<void> {
   ok("pie del editor y deslizadores: sin Aplicar, con el estado del guardado");
 }
 
+// 9. Vista previa en vivo del deslizador de colores sobre un confeti
+// (vista-reparto.ts): una petición a la vez, gana el último reparto, se
+// cancela al volver al plan y un fallo vuelve a la barra sola.
+async function probarVistaReparto(): Promise<void> {
+  type Pedido = { participaciones: readonly number[]; signal: AbortSignal; resolver: (valor: string) => void; rechazar: (error: unknown) => void };
+  function bancoReparto({ intervaloMs = 100, oyeCancelar = true } = {}) {
+    const { reloj, avanzar } = relojFalso();
+    const pedidos: Pedido[] = [];
+    const fallos: unknown[] = [];
+    const control = crearVistaReparto<string>({
+      reloj,
+      intervaloMs,
+      alFallar: (error) => fallos.push(error),
+      pedir: (participaciones, signal) => new Promise<string>((resolver, rechazar) => {
+        pedidos.push({ participaciones, signal, resolver, rechazar });
+        if (oyeCancelar) signal.addEventListener("abort", () => rechazar(new DOMException("Cancelado", "AbortError")));
+      }),
+    });
+    return { control, avanzar, pedidos, fallos };
+  }
+
+  {
+    const { control, avanzar, pedidos } = bancoReparto();
+    control.mostrar([0.5, 0.5]);
+    assert.equal(pedidos.length, 1, "el primer movimiento se pide al instante");
+    control.mostrar([0.45, 0.55]);
+    control.mostrar([0.4, 0.6]);
+    await avanzar(150);
+    assert.equal(pedidos.length, 1, "nunca dos en vuelo: lo nuevo espera su turno");
+    assert.equal(control.estado().actualizando, true);
+    pedidos[0]!.resolver("dibujo 50/50");
+    await vaciarPromesas();
+    assert.equal(control.estado().vista, "dibujo 50/50", "cada respuesta se muestra aunque otra espere: la pieza cambia durante el arrastre");
+    assert.deepEqual(control.estado().participaciones, [0.5, 0.5]);
+    assert.equal(pedidos.length, 2, "al llegar, sale lo último");
+    assert.deepEqual(pedidos[1]!.participaciones, [0.4, 0.6], "el reparto intermedio nunca se pide");
+    pedidos[1]!.resolver("dibujo 40/60");
+    await vaciarPromesas();
+    assert.deepEqual(control.estado(), { vista: "dibujo 40/60", participaciones: [0.4, 0.6], actualizando: false, apagada: false });
+    control.mostrar([0.4, 0.6]);
+    await avanzar(500);
+    assert.equal(pedidos.length, 2, "lo ya dibujado no se vuelve a pedir");
+  }
+  ok("reparto en vivo: una petición a la vez y gana el último reparto");
+
+  {
+    const { control, avanzar, pedidos } = bancoReparto({ intervaloMs: 100 });
+    control.mostrar([0.5, 0.5]);
+    pedidos[0]!.resolver("a");
+    await vaciarPromesas();
+    control.mostrar([0.6, 0.4]);
+    assert.equal(pedidos.length, 1, "una respuesta rápida no se salta la pausa entre peticiones");
+    await avanzar(99);
+    assert.equal(pedidos.length, 1);
+    await avanzar(1);
+    assert.equal(pedidos.length, 2);
+  }
+  ok("reparto en vivo: entre el comienzo de dos peticiones pasa el intervalo");
+
+  {
+    const { control, avanzar, pedidos, fallos } = bancoReparto({ oyeCancelar: false });
+    control.mostrar([0.3, 0.7]);
+    pedidos[0]!.resolver("antes");
+    await vaciarPromesas();
+    control.mostrar([0.35, 0.65]);
+    await avanzar(100);
+    const enVuelo = pedidos[1]!;
+    control.mostrar(null);
+    assert.equal(enVuelo.signal.aborted, true, "volver al plan cancela lo que vuela");
+    assert.deepEqual(control.estado(), { vista: null, participaciones: null, actualizando: false, apagada: false }, "y el dibujo previo se descarta: manda el plan");
+    enVuelo.resolver("tarde");
+    await vaciarPromesas();
+    assert.equal(control.estado().vista, null, "una respuesta que llega tarde (aunque ignore la cancelación) no cuenta");
+    assert.equal(fallos.length, 0, "cancelar no es un fallo");
+    control.mostrar([0.35, 0.65]);
+    await avanzar(100);
+    assert.equal(pedidos.length, 3, "la próxima interacción vuelve a pedir lo mismo desde cero");
+  }
+  ok("reparto en vivo: volver al plan cancela y las respuestas viejas no cuentan");
+
+  {
+    const { control, avanzar, pedidos, fallos } = bancoReparto();
+    control.mostrar([0.5, 0.5]);
+    pedidos[0]!.resolver("dibujo");
+    await vaciarPromesas();
+    control.mostrar([0.6, 0.4]);
+    await avanzar(100);
+    pedidos[1]!.rechazar(new FalloPlanPatron("Esta pieza no tiene un patrón de color que dibujar."));
+    await vaciarPromesas();
+    assert.deepEqual(control.estado(), { vista: null, participaciones: null, actualizando: false, apagada: true }, "un fallo apaga la vista previa: la barra sigue sola");
+    assert.equal(fallos.length, 1, "el fallo queda a la vista de quien depura");
+    control.mostrar([0.7, 0.3]);
+    await avanzar(500);
+    assert.equal(pedidos.length, 2, "apagada, no insiste en la misma interacción");
+    control.mostrar(null);
+    control.mostrar([0.7, 0.3]);
+    assert.equal(pedidos.length, 3, "de vuelta al plan, la próxima interacción lo intenta otra vez");
+  }
+  ok("reparto en vivo: un fallo vuelve a la barra sola, sin reintentos en la misma interacción");
+
+  // Qué reparto se dibuja: solo el que va camino del plan. Uno que no se guardó
+  // no: el bloque y el resumen mostrarían algo que "Aprobar" no firma (revisión 2026-09-24).
+  {
+    const plan = [50, 25, 25];
+    const propio = [12, 63, 25];
+    assert.deepEqual(repartoADibujar(propio, plan, { arrastrando: true, fase: "quieto" }), propio, "mientras se arrastra");
+    assert.deepEqual(repartoADibujar(propio, plan, { arrastrando: false, fase: "esperando" }), propio, "esperando la pausa (teclado)");
+    assert.deepEqual(repartoADibujar(propio, plan, { arrastrando: false, fase: "guardando" }), propio, "mientras se guarda, hasta que llega el plan firmado");
+    assert.equal(repartoADibujar(propio, plan, { arrastrando: false, fase: "error" }), null, "un guardado que falló vuelve al dibujo del plan");
+    assert.equal(repartoADibujar(propio, plan, { arrastrando: false, fase: "guardado" }), null);
+    assert.equal(repartoADibujar([50, 25, 25], plan, { arrastrando: true, fase: "quieto" }), null, "lo que ya es el plan no se pide");
+    assert.equal(repartoADibujar(null, plan, { arrastrando: false, fase: "guardando" }), null);
+    assert.deepEqual(repartoADibujar(propio, plan, { arrastrando: true, fase: "error" }), propio, "tras un fallo, volver a arrastrar vuelve a dibujar");
+  }
+  ok("reparto en vivo: se dibuja lo que va camino del plan, nunca un reparto que no se guardó");
+
+  // Los dibujos en vivo viven fuera de la tarjeta: cada respuesta avisa y cada pieza lee solo el suyo.
+  {
+    const vistas = crearVistasEnVivo<string>();
+    let avisos = 0;
+    const dejar = vistas.suscribir(() => { avisos += 1; });
+    vistas.fijar("columna", "dibujo 12/63/25");
+    assert.equal(vistas.vista("columna"), "dibujo 12/63/25");
+    assert.equal(vistas.vista("arco"), null, "otra pieza sigue con su plan (su lectura no cambia y no se vuelve a pintar)");
+    vistas.fijar("columna", "dibujo 12/63/25");
+    assert.equal(avisos, 1, "el mismo dibujo no avisa otra vez");
+    vistas.fijar("columna", null);
+    assert.equal(vistas.vista("columna"), null, "null: de vuelta al dibujo del plan");
+    vistas.fijar("arco", null);
+    assert.equal(avisos, 2, "quitar lo que no estaba no avisa");
+    dejar();
+    vistas.fijar("columna", "otro");
+    assert.equal(avisos, 2);
+  }
+  ok("reparto en vivo: los dibujos por pieza fuera del estado de la tarjeta");
+
+  // El deslizador: cifras de Python cuando las hay (el patrón del plan), estimación sin patrón.
+  {
+    const colores = [{ etiqueta: "Blanco", fondo: "#fff", participacion: 0.5 }, { etiqueta: "Negro", fondo: "#000", participacion: 0.5 }];
+    const fila = (material: number, unidades: number) => ({ material, color: null, acabado: null, unidades_por_instancia: unidades / 2, unidades_total: unidades });
+    const conPatron = renderToStaticMarkup(React.createElement(RepartoColores, { colores, totalGlobos: 96, onGuardar: async () => null, conteo: [fila(0, 52), fila(1, 44)] }));
+    assert.match(textoVisible(conPatron), /Blanco 52 globos Negro 44 globos/, "el conteo exacto de Python, sin ≈");
+    assert.match(conPatron, /aria-label="Globos por color"[^>]*data-origen="python"/);
+    const sinPatron = renderToStaticMarkup(React.createElement(RepartoColores, { colores, totalGlobos: 96, onGuardar: async () => null }));
+    assert.match(textoVisible(sinPatron), /Blanco ≈ 48 globos Negro ≈ 48 globos/);
+    assert.match(sinPatron, /data-origen="estimado"/);
+    assert.doesNotMatch(sinPatron, /data-testid="reparto-avisos"/);
+
+    // El bloque con el dibujo en vivo de su pieza: lo que el plan ya decía se queda; lo nuevo del reparto lo dice el deslizador (una sola vez).
+    const columna = resueltoDe("EST_01_COLUMNA");
+    const aviso = columna.avisos[0]!;
+    const nuevo = "Los acentos y los globos pintados a mano se integraron al confeti para respetar el reparto que elegiste.";
+    const propsBloque = { leyenda: leyendaDe("EST_01_COLUMNA"), tipo: "columna", repeticiones: 2, nombrePieza: "Columna" };
+    const bloque = (vivo: PatronColorResuelto | null) => {
+      const vistas = crearVistasEnVivo<PatronColorResuelto>();
+      vistas.fijar("EST_01_COLUMNA", vivo);
+      return renderToStaticMarkup(React.createElement(BloquePatron, { ...propsBloque, resuelto: columna, enVivo: { vistas, id: "EST_01_COLUMNA" } }));
+    };
+    const vivo = { ...columna, conteo: columna.conteo.map((fila, indice) => ({ ...fila, unidades_total: indice === 0 ? 12 : fila.unidades_total })), avisos: [nuevo, aviso] };
+    assert.match(textoVisible(bloque(null)), /Con cuartetos completos/);
+    assert.doesNotMatch(bloque(null), /así queda con tu reparto|data-en-vivo/);
+    const enVivo = bloque(vivo);
+    assert.match(enVivo, /data-en-vivo="true"/);
+    assert.match(textoVisible(enVivo), /así queda con tu reparto/);
+    assert.match(textoVisible(enVivo), /1 Blanco mate 12 ·/, "el conteo del dibujo en vivo, el de Python");
+    assert.match(textoVisible(enVivo), /Con cuartetos completos/, "en vivo, lo que el plan ya decía no se mueve");
+    assert.doesNotMatch(textoVisible(enVivo), /se integraron al confeti/, "un aviso que trae el reparto nuevo va junto al deslizador");
+    const otraPieza = crearVistasEnVivo<PatronColorResuelto>();
+    otraPieza.fijar("EST_02_ARCO", vivo);
+    assert.doesNotMatch(renderToStaticMarkup(React.createElement(BloquePatron, { ...propsBloque, resuelto: columna, enVivo: { vistas: otraPieza, id: "EST_01_COLUMNA" } })), /data-en-vivo/, "cada bloque lee solo el dibujo de su pieza");
+
+    // Una columna en confeti: la tarjeta ofrece el deslizador con el conteo del plan que firmó Python.
+    const vistas = JSON.parse(readFileSync(resolve(process.cwd(), "scripts/fixtures/patron-color-ui/vistas-previas.json"), "utf8")) as Record<string, { porEstilo: Record<string, PatronColorResuelto> }>;
+    const confeti = PatronColorResueltoSchema.parse(vistas.EST_01_COLUMNA!.porEstilo.aleatorio);
+    const planConfeti = structuredClone(planPatrones);
+    planConfeti.plan.estructuras.find((estructura) => estructura.estructura_id === "EST_01_COLUMNA")!.patron_color = confeti.patron;
+    planConfeti.patrones_color = planConfeti.patrones_color!.map((patron) => (patron.estructura_id === "EST_01_COLUMNA" ? { ...confeti, aplicado: true } : patron));
+    const tarjeta = renderToStaticMarkup(React.createElement(TarjetaPlanDecoracion, { plan: planConfeti, onPlanActualizado: () => undefined }));
+    assert.equal((tarjeta.match(/Arrastra para cambiar cuánto lleva de cada color/g) ?? []).length, 2, "el confeti vuelve a tener su deslizador (y la guirnalda sin patrón)");
+    assert.equal((tarjeta.match(/data-origen="python"/g) ?? []).length, 1, "las cifras del confeti son las de Python");
+    for (const fila of confeti.conteo) assert.match(textoVisible(tarjeta), new RegExp(`${fila.unidades_total} globos`));
+    // En un teléfono el dibujo va arriba: el deslizador del confeti queda dentro del bloque, justo bajo el nombre del patrón
+    // y antes de la frase, el conteo y los botones, para ver la pieza entera mientras se mueve (revisión 2026-09-24).
+    const bloques = tarjeta.split('data-testid="bloque-patron"').slice(1).map((resto) => resto.slice(0, resto.indexOf("</section>")));
+    const bloqueConfeti = bloques.find((html) => html.includes(">Confeti<")) ?? "";
+    assert.ok(bloqueConfeti, "el confeti tiene su bloque");
+    const posicion = (marca: string) => bloqueConfeti.indexOf(marca);
+    assert.ok(posicion("<svg") >= 0 && posicion("<svg") < posicion('data-testid="reparto-colores"'), "primero el dibujo");
+    assert.ok(posicion('data-testid="reparto-colores"') < posicion(confeti.descripcion.slice(0, 20)), "el deslizador antes de la frase de Python");
+    assert.ok(posicion('data-testid="reparto-colores"') < posicion('data-testid="editar-patron"'), "y antes de los botones");
+    assert.equal(bloques.filter((html) => html.includes('data-testid="reparto-colores"')).length, 1, "solo el confeti lo lleva dentro");
+  }
+  ok("deslizador de colores: cifras de Python con patrón, estimación sin él, avisos una sola vez");
+}
+
+// 10. Avisos de Python sobre una edición (/api/plan-editar), tal cual y sin repetir.
+{
+  const frase = "El patrón se rehízo porque quitaste un color.";
+  assert.deepEqual(avisosDeEdicion({ plan: {}, avisos: [frase, frase, "Los acentos y los globos pintados a mano se integraron al confeti para respetar el reparto que elegiste."] }), [frase, "Los acentos y los globos pintados a mano se integraron al confeti para respetar el reparto que elegiste."]);
+  assert.deepEqual(avisosDeEdicion({ plan: {} }), [], "sin avisos, ninguno");
+  assert.deepEqual(avisosDeEdicion({ avisos: frase }), [], "algo que no es una lista no se muestra");
+  assert.deepEqual(avisosDeEdicion({ avisos: [1, frase] }), []);
+  assert.deepEqual(avisosDeEdicion(null), []);
+  ok("avisos de la edición: los de Python, tal cual");
+}
+
+// 11. Estilos que admite una pieza: vienen con la vista previa y, si Python no pudo sugerir, se preguntan por estilo.
+async function probarModosAdmitidos(): Promise<void> {
+  const resuelto = resueltoDe("EST_01_COLUMNA");
+  const responder = (datos: unknown, status = 200) => new Response(JSON.stringify(datos), { status, headers: { "Content-Type": "application/json" } });
+  const cuerpo = { plan: planPatrones.plan, estructura_id: "EST_01_COLUMNA", patron_color: null };
+  const detallada = await pedirVistaPatronDetallada({ ...cuerpo, modo: "anillos" }, { fetcher: async () => responder({ patron: resuelto, modos_admitidos: MODOS_COLUMNA }) });
+  assert.deepEqual(detallada.modos_admitidos, MODOS_COLUMNA);
+  await assert.rejects(pedirVistaPatronDetallada(cuerpo, { fetcher: async () => responder({ patron: resuelto }) }), FalloPlanPatron, "una respuesta sin estilos no vale");
+  await assert.rejects(pedirVistaPatronDetallada(cuerpo, { fetcher: async () => responder({ patron: resuelto, modos_admitidos: [{ modo: "rombos", direcciones: ["longitudinal"], espejo: false }] }) }), FalloPlanPatron, "ni con un estilo fuera del contrato");
+
+  // Sin sugerencia: cada estilo del contrato a la vez; vale la lista de la primera respuesta y las demás se cancelan.
+  const pedidos: Array<{ modo: string; signal: AbortSignal | null | undefined }> = [];
+  const noSeArma = { error: "patron_invalido", motivo: "modo_no_permitido", mensaje: "El patrón «Damero» no se arma en una columna." };
+  const modos = await pedirModosAdmitidos({ plan: planPatrones.plan, estructura_id: "EST_01_COLUMNA" }, {
+    fetcher: async (_url, init) => {
+      const { modo } = JSON.parse(String(init?.body)) as { modo: string };
+      pedidos.push({ modo, signal: init?.signal });
+      if (modo === "damero") return responder(noSeArma, 422);
+      if (modo !== "anillos") return new Promise<Response>((_listo, fallar) => init?.signal?.addEventListener("abort", () => fallar(new DOMException("Cancelado", "AbortError"))));
+      return responder({ patron: resuelto, modos_admitidos: MODOS_COLUMNA });
+    },
+  });
+  assert.deepEqual(modos, MODOS_COLUMNA);
+  assert.deepEqual(pedidos.map((pedido) => pedido.modo).sort(), [...MODOS_PATRON_COLOR].sort(), "cada modo del contrato, sin filtrar ninguno aquí");
+  assert.ok(pedidos.every((pedido) => pedido.signal?.aborted), "con la primera respuesta, las demás se cancelan");
+
+  // Ninguno se arma: el fallo que habla de la pieza, no el de un estilo que no va en ella.
+  const sinUso = { error: "patron_invalido", motivo: "material_sin_uso", mensaje: "Amarillo no aparece en el patrón." };
+  await assert.rejects(
+    pedirModosAdmitidos({ plan: planPatrones.plan, estructura_id: "EST_01_COLUMNA" }, { fetcher: async (_url, init) => responder(JSON.parse(String(init?.body)).modo === "espiral" ? noSeArma : sinUso, 422) }),
+    (error: unknown) => error instanceof FalloPlanPatron && error.motivo === "material_sin_uso" && error.message === sinUso.mensaje,
+  );
+  const cancelado = new AbortController();
+  cancelado.abort();
+  await assert.rejects(pedirModosAdmitidos({ plan: planPatrones.plan, estructura_id: "EST_01_COLUMNA" }, { signal: cancelado.signal, fetcher: async (_url, init) => { init?.signal?.throwIfAborted(); return responder({}); } }), (error: unknown) => error instanceof DOMException && error.name === "AbortError", "una cancelación se relanza tal cual");
+  ok("estilos de la pieza: con la vista previa, o preguntados por estilo cuando no hay sugerencia");
+}
+
 probarPeticionPatron()
   .then(probarAutoguardado)
+  .then(probarVistaReparto)
+  .then(probarModosAdmitidos)
   .then(() => console.log(`\n${casos} casos OK (propuesta, cotización, análisis de foto, patrón de color y autoguardado)`))
   .catch((error: unknown) => {
     console.error(error);

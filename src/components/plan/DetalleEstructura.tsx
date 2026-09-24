@@ -31,6 +31,7 @@ import type { PendientesAjustes } from "./cola-ajustes";
 import type { CajaNormalizada } from "@/components/referencia/recorte";
 import type { PatronColorResuelto } from "@/lib/plan/patron-color";
 import { BloquePatron } from "./patron/BloquePatron";
+import type { VistasEnVivo } from "./vistas-en-vivo";
 import type { ColorLeyenda } from "./patron/leyenda";
 
 const pesos = new Intl.NumberFormat("es-CO", { style: "currency", currency: "COP", maximumFractionDigits: 0 });
@@ -74,12 +75,23 @@ type Props = {
    * Absent for pieces that cannot carry a pattern.
    */
   patron?: {
+    /** The plan's applied pattern. */
     resuelto?: PatronColorResuelto;
     leyenda: readonly ColorLeyenda[];
     onEditar?: () => void;
     onHojaArmado?: () => void;
     /** Other edits are still saving: the editor opens once the plan they sign is in. */
     ocupado?: boolean;
+  };
+  /**
+   * Live drawing of the colors slider on a confetti pattern (ADR-0028 §10):
+   * Python draws each split while it moves; the slider leaves it in `vistas`
+   * (by structure) and the pattern block and the card's summary strip show
+   * it until the signed plan arrives.
+   */
+  vistaReparto?: {
+    pedir: (participaciones: readonly number[], signal: AbortSignal) => Promise<PatronColorResuelto>;
+    vistas: VistasEnVivo<PatronColorResuelto>;
   };
 };
 
@@ -191,7 +203,7 @@ function CantidadTexto({ texto }: { texto: string }) {
 export function DetalleEstructura({
   idBase, estructura, declarada, oficial, abierto, onAlternar, recorte, lineas, imagenDe, fotoAusente, sumaCop,
   editable, onAgregar, onEditar, onQuitar, puedeQuitar, onVerProducto, extraLinea, modoDev = false,
-  onRepartir, onCambiarMezcla, ocupado = false, pendientes, patron,
+  onRepartir, onCambiarMezcla, ocupado = false, pendientes, patron, vistaReparto,
 }: Props) {
   const reducir = useReducedMotion();
   const [familiasAbiertas, setFamiliasAbiertas] = useState<ReadonlySet<string>>(() => new Set());
@@ -214,9 +226,33 @@ export function DetalleEstructura({
   ];
   const pequenosRellenan = tramos.length >= 2 && tramos[0]!.unidades > tramos[tramos.length - 1]!.unidades;
   // With a pattern, the grid decides how much of each color goes in; only confetti still takes a color split.
-  const repartoLibre = !declarada?.patron_color || declarada.patron_color.base.modo === "aleatorio";
+  const confeti = declarada?.patron_color?.base.modo === "aleatorio";
+  const repartoLibre = !declarada?.patron_color || confeti;
   const proporcion = declarada?.medidas.alto_m && declarada.medidas.ancho_m ? declarada.medidas.alto_m / declarada.medidas.ancho_m : undefined;
   const idCuerpo = `${idBase}-cuerpo`;
+  const ajustable = editable && declarada && TIPOS_GEOMETRICOS.has(estructura.tipo);
+  // On a confetti the slider changes the drawing: it goes inside the pattern block, next to (on a phone, right under) it.
+  const repartoEnBloque = confeti && Boolean(patron?.resuelto);
+  const reparto = ajustable && onRepartir && repartoLibre && declarada.materiales.length >= 2 && declarada.materiales.every((material) => typeof material.participacion === "number") ? (
+    <RepartoColores
+      // Same materials, same control: it follows the shares the resolver signs. Adding or removing a color starts it over.
+      key={declarada.materiales.map((material) => material.variant_id ?? material.product_id).join("|")}
+      colores={declarada.materiales.map((material) => ({
+        etiqueta: material.color ? tonoCliente(material.color, material.product_id) : productoCliente(material.product_id),
+        fondo: muestraColor(material.color ?? "", null).fondo,
+        participacion: material.participacion ?? 0,
+      }))}
+      totalGlobos={estructura.total_unidades}
+      ocupado={ocupado}
+      onGuardar={onRepartir}
+      pendientes={pendientes}
+      vistaPrevia={confeti ? vistaReparto?.pedir : undefined}
+      onVistaPrevia={vistaReparto ? (vista) => vistaReparto.vistas.fijar(estructura.estructura_id, vista) : undefined}
+      conteo={patron?.resuelto?.conteo}
+      avisosPlan={patron?.resuelto?.avisos}
+      incrustado={repartoEnBloque}
+    />
+  ) : null;
 
   return (
     <li className={`overflow-hidden rounded-2xl border bg-superficie transition-colors ${abierto ? "border-borde shadow-[0_1px_2px_var(--sombra)]" : "border-borde-suave"}`}>
@@ -275,6 +311,8 @@ export function DetalleEstructura({
           {patron && (
             <BloquePatron
               resuelto={patron.resuelto}
+              enVivo={vistaReparto ? { vistas: vistaReparto.vistas, id: estructura.estructura_id } : undefined}
+              reparto={repartoEnBloque ? reparto : undefined}
               leyenda={patron.leyenda}
               tipo={estructura.tipo}
               oficialId={oficial?.id ?? declarada?.estructura_oficial}
@@ -289,23 +327,9 @@ export function DetalleEstructura({
             />
           )}
 
-          {editable && declarada && TIPOS_GEOMETRICOS.has(estructura.tipo) && (onRepartir || onCambiarMezcla) && (
+          {ajustable && ((reparto && !repartoEnBloque) || onCambiarMezcla) && (
             <div className="space-y-2.5">
-              {onRepartir && repartoLibre && declarada.materiales.length >= 2 && declarada.materiales.every((material) => typeof material.participacion === "number") && (
-                <RepartoColores
-                  // Same materials, same control: it follows the shares the resolver signs. Adding or removing a color starts it over.
-                  key={declarada.materiales.map((material) => material.variant_id ?? material.product_id).join("|")}
-                  colores={declarada.materiales.map((material) => ({
-                    etiqueta: material.color ? tonoCliente(material.color, material.product_id) : productoCliente(material.product_id),
-                    fondo: muestraColor(material.color ?? "", null).fondo,
-                    participacion: material.participacion ?? 0,
-                  }))}
-                  totalGlobos={estructura.total_unidades}
-                  ocupado={ocupado}
-                  onGuardar={onRepartir}
-                  pendientes={pendientes}
-                />
-              )}
+              {!repartoEnBloque && reparto}
               {onCambiarMezcla && (
                 <BalanceTamanos mezcla={declarada.mezcla} totalGlobos={estructura.total_unidades} ocupado={ocupado} onGuardar={onCambiarMezcla} pendientes={pendientes} />
               )}
