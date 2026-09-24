@@ -16,7 +16,15 @@ const conEspacio = referenciasParaLoraEdit([...productos, img("venue_base", 1, "
 assert.deepEqual(conEspacio.map((i) => i.id), ["VENUE_01"], "a venue photo switches to /edit and is the only pixel base");
 const muchas = referenciasParaLoraEdit([img("composition_reference", 4, "R2"), img("previous_generated_result", 0, "PREV"), img("composition_reference", 2, "R1"), ...productos, img("venue_base", 1, "V")], undefined);
 assert.deepEqual(muchas.map((i) => i.id), ["V"], "venue edit excludes every competing background");
-assert.equal(referenciasParaLoraEdit([img("composition_reference", 2, "R1")], "true").length, 1, "SEMPERTEX_LORA_EDIT=true behaves like the default");
+// 2026-09-24: a reference photo as the /edit base came back as the same photo
+// with other tones. References stay text; only a previous result is a base.
+assert.deepEqual(referenciasParaLoraEdit([img("composition_reference", 2, "R1"), ...productos], undefined), [], "a reference photo alone keeps text-to-image");
+assert.deepEqual(
+  referenciasParaLoraEdit([img("composition_reference", 2, "R1"), img("previous_generated_result", 0, "PREV"), ...productos], undefined).map((i) => i.id),
+  ["PREV"],
+  "a revision edits the previous result, never the reference",
+);
+assert.equal(referenciasParaLoraEdit([img("previous_generated_result", 0, "PREV")], "true").length, 1, "SEMPERTEX_LORA_EDIT=true behaves like the default");
 assert.deepEqual(referenciasParaLoraEdit([img("venue_base", 1, "V")], "false"), [], "SEMPERTEX_LORA_EDIT=false switches /edit off");
 assert.equal(loraEditApagado("false"), true);
 assert.equal(loraEditApagado(undefined), false);

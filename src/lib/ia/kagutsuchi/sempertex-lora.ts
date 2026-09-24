@@ -222,11 +222,16 @@ const imageSizeFor = (aspecto: PeticionImagen["aspecto"]) => {
  *
  * Con foto del espacio, `/api/generate` no entrega píxeles al LoRA: este crea
  * la decoración aislada con `TEXT_ENDPOINT` y Gemini la compone después sobre
- * el venue. Referencias sin venue y ajustes de una imagen previa sí usan
- * `/edit`. Fotos de producto solas no cambian el endpoint.
+ * el venue. Un ajuste de una imagen previa usa `/edit` con esa imagen como base.
+ *
+ * Una foto de referencia NUNCA entra como píxel. `/edit` conserva la imagen que
+ * recibe, así que con la referencia como base devolvía la misma foto con otros
+ * tonos en vez de una propuesta (2026-09-24; lo había activado ef9b77b). La
+ * referencia ya llega resumida en el blueprint, el plan y el caption. Fotos de
+ * producto tampoco cambian el endpoint.
  * `SEMPERTEX_LORA_EDIT=false` apaga `/edit` por completo (interruptor de retiro).
  */
-const ROLES_QUE_ACTIVAN_EDIT = new Set<ImageInput["role"]>(["venue_base", "composition_reference", "previous_generated_result"]);
+const ROLES_QUE_ACTIVAN_EDIT = new Set<ImageInput["role"]>(["venue_base", "previous_generated_result"]);
 
 export function referenciasParaLoraEdit(inputs: readonly ImageInput[], interruptor = process.env.SEMPERTEX_LORA_EDIT): ImageInput[] {
   if (interruptor === "false") return [];
@@ -241,7 +246,9 @@ export function referenciasParaLoraEdit(inputs: readonly ImageInput[], interrupt
       .sort((a, b) => a.priority - b.priority)
       .slice(0, MAX_EDIT_IMAGES);
   }
+  // Sin venue, solo la imagen previa es base: la referencia se copiaría entera.
   return [...inputs]
+    .filter((input) => input.role === "previous_generated_result")
     .sort((a, b) => a.priority - b.priority)
     .slice(0, MAX_EDIT_IMAGES);
 }

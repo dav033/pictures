@@ -827,10 +827,11 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     if (usarLora && !resolvedLoras) {
       throw new Error("LORA_MODE_REQUIRED: especifica loraMode (\"unlimited\" | \"training_1\" | \"training_2\") o loraSelection antes de generar con LoRA Sempertex. No existe un modo por defecto anónimo.");
     }
-    // Photos go to FLUX.2 /edit with the LoRA (sempertex-lora.ts); only the
-    // SEMPERTEX_LORA_EDIT=false switch restores the old rejection.
-    if (usarLora && !usarComposicionLoraGemini && loraEditApagado() && (venue || references.length || previous)) {
-      throw new Error("LoRA Sempertex genera desde texto. Para editar fotos o usar referencias, cambia a Gemini.");
+    // A venue photo or a previous result go to FLUX.2 /edit with the LoRA
+    // (sempertex-lora.ts); reference photos never do, they travel as text. Only
+    // the SEMPERTEX_LORA_EDIT=false switch restores the old rejection.
+    if (usarLora && !usarComposicionLoraGemini && loraEditApagado() && (venue || previous)) {
+      throw new Error("LoRA Sempertex genera desde texto. Para editar fotos, cambia a Gemini.");
     }
     const port = usarLora && !usarComposicionLoraGemini ? null : await imagenDe(proveedorSeleccionado);
     const capabilities = port?.capabilities ?? {
