@@ -158,7 +158,11 @@ PORT=3010 npm run dev
 
 `--reload` is not optional. Without it uvicorn keeps serving the `plan.py` it
 loaded at startup; this caused two separate production-visible failures on
-2026-09-16, hours apart. Do not use `set -a; . ../../.env.local`: `APP_PASSWORD`
+2026-09-16, hours apart. On Windows, when uvicorn runs without a console (a
+background shell, an IDE task, an agent), its reloader logs "Reloading..." but
+the old worker keeps serving the old code (2026-09-24). There, run
+`python scripts/ops/supervisar-ai-api.py` instead: it restarts the service
+whenever a `.py` under `services/ai-api/app` changes. Do not use `set -a; . ../../.env.local`: `APP_PASSWORD`
 has unquoted metacharacters and the shell fails without exporting anything.
 
 Verification before calling anything done:
