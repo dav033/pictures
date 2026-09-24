@@ -128,6 +128,31 @@ const casos: Caso[] = [
       assert.deepEqual(coloresDominantesReferencia({ observed_colors: ["white and gold"] }), ["blanco", "dorado"]);
     },
   },
+  {
+    nombre: "transparencia · los globos transparentes se exigen además de los 3 colores de la pieza",
+    correr: () => {
+      // 2026-09-24: rosado, plateado, blanco y transparente en una columna; el
+      // transparente quedaba cuarto y nunca se exigía.
+      assert.deepEqual(coloresDominantesReferencia(["pink", "silver", "white", "clear"]), ["rosado", "plateado", "blanco", "transparente"]);
+      // Los píxeles no ven un globo transparente: sale de las etiquetas aunque la medida mande en los tonos.
+      assert.deepEqual(
+        coloresDominantesReferencia({ observed_colors: ["pink", "clear"], measured_colors: [{ color: "plateado", share: 0.6 }, { color: "rosado", share: 0.4 }] }),
+        ["plateado", "rosado", "transparente"],
+      );
+      // "clear pink" es la línea Cristal teñida: rosado, no el transparente incoloro.
+      assert.deepEqual(coloresDominantesReferencia(["clear pink", "silver"]), ["rosado", "plateado"]);
+    },
+  },
+  {
+    nombre: "transparencia · el gris junto al plateado no ocupa cupo, pero sigue para avisar la sustitución",
+    correr: () => {
+      // Se compran igual: contarlo dejaba fuera el blanco. Se queda en la lista
+      // porque el resolutor le dice al cliente que se hizo con plateado (2.5).
+      assert.deepEqual(coloresDominantesReferencia(["pink", "silver", "grey", "white", "clear"]), ["rosado", "plateado", "gris", "blanco", "transparente"]);
+      // Sin plateado en la pieza, el gris ocupa su cupo como cualquier color.
+      assert.deepEqual(coloresDominantesReferencia(["grey", "pink", "white", "gold"]), ["gris", "rosado", "blanco"]);
+    },
+  },
 ];
 
 let fallos = 0;

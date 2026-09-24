@@ -44,6 +44,7 @@ import { sanearPorquesPlan } from "@/lib/plan/porque-cliente";
 import { sanearMarcasPlan } from "@/lib/plan/marcas-registradas";
 import { aplicarFuenteMedidasEspacio, clienteDioMedidasEspacio } from "@/lib/plan/medidas-defecto";
 import { coloresElementoReferencia, coloresFotoParaBusqueda, coloresReferenciaOmitidos, esSustitucionDeColor, productosGloboPorColor, type ProductoColorDisponible } from "@/lib/plan/colores-referencia";
+import { colorDeCompraSinVenta } from "@/lib/rag/catalog/similitud-color";
 import { buscarGlobosPorColor } from "@/lib/rag/catalog/globos-por-color";
 import { buscarNumerosPorDigito, digitosBuscados } from "@/lib/rag/catalog/numeros-por-digito";
 import { RAG_ENABLED, featureEnabled } from "@/lib/ia/nucleo/feature-flags";
@@ -477,7 +478,8 @@ async function coloresReferenciaOmitidosDelTurno(
   }));
   const faltantes = [...new Set(pendientes.flatMap((estructura) => {
     const usados = new Set(estructura.materiales.map((material) => material.color?.trim().toLowerCase()).filter(Boolean));
-    return estructura.colores_referencia.filter((color) => !usados.has(color.trim().toLowerCase()));
+    // An unsold photo color is covered by the color it is bought as ("gris" as "plateado").
+    return estructura.colores_referencia.filter((color) => !usados.has(color.trim().toLowerCase()) && !usados.has(colorDeCompraSinVenta(color) ?? ""));
   }))];
   if (faltantes.length === 0) return [];
   const disponibles = new Map<string, ProductoColorDisponible[]>(productosGloboPorColor(estado.ragCandidatos ?? [], faltantes));

@@ -34,6 +34,14 @@ type AparienciaColor = {
 export const MAX_COLORES_REFERENCIA = 3;
 
 /**
+ * Transparency is a finish, not a hue (see `TRANSPARENCIA`). A piece with clear
+ * balloons keeps them on top of its `MAX_COLORES_REFERENCIA` hues: in a photo
+ * with pink, silver, white and clear balloons the clear ones came fourth and
+ * were never claimed (2026-09-24).
+ */
+const TRANSPARENTE = "transparente";
+
+/**
  * English photo words the catalog taxonomy does not alias. "gris" is not a
  * catalog color: it is kept so a grey/graphite photo is reported as lost
  * instead of silently ignored. Names with no clear catalog color (copper,
@@ -163,17 +171,51 @@ function coloresMedidosDeFoto(blueprint: Pick<ReferenceBlueprintV2, "elements"> 
   return colores.length ? colores : undefined;
 }
 
-export function coloresDominantesReferencia(apariencia: AparienciaColor | readonly string[]): string[] {
-  const entrada: AparienciaColor = Array.isArray(apariencia) ? { observed_colors: apariencia } : (apariencia as AparienciaColor);
-  const medidos = coloresMedidos(entrada, true);
-  if (medidos) return medidos.slice(0, MAX_COLORES_REFERENCIA);
+/** Every known color of the observed labels, in reading order. */
+function coloresObservados(apariencia: AparienciaColor): string[] {
   const colores: string[] = [];
-  for (const etiqueta of entrada.observed_colors) {
+  for (const etiqueta of apariencia.observed_colors) {
     for (const color of coloresDeEtiqueta(etiqueta)) {
       if (!colores.includes(color)) colores.push(color);
     }
   }
-  return colores.slice(0, MAX_COLORES_REFERENCIA);
+  return colores;
+}
+
+/**
+ * The first `MAX_COLORES_REFERENCIA` hues of a piece, in reading order, plus
+ * two colors that never take one of those slots:
+ * - `transparente`, a finish rather than a hue;
+ * - a color the catalog does not sell when the piece also has the color it is
+ *   bought as ("gris" beside "plateado"): it is the same purchase, so it must
+ *   not push a real color out, but it stays so the resolver reports the
+ *   substitution to the customer (phase 2.5: substitute, never hide).
+ */
+function seleccionarDominantes(colores: readonly string[], conTransparente: boolean): string[] {
+  // Measured hues have no clear entry; the labels still say the piece has one.
+  const lista = conTransparente && !colores.includes(TRANSPARENTE) ? [...colores, TRANSPARENTE] : colores;
+  const elegidos: string[] = [];
+  let tonos = 0;
+  for (const color of lista) {
+    if (elegidos.includes(color)) continue;
+    const sustituto = colorDeCompraSinVenta(color);
+    const sinCupo = color === TRANSPARENTE || Boolean(sustituto && lista.includes(sustituto));
+    if (!sinCupo) {
+      if (tonos === MAX_COLORES_REFERENCIA) continue;
+      tonos += 1;
+    }
+    elegidos.push(color);
+  }
+  return elegidos;
+}
+
+export function coloresDominantesReferencia(apariencia: AparienciaColor | readonly string[]): string[] {
+  const entrada: AparienciaColor = Array.isArray(apariencia) ? { observed_colors: apariencia } : (apariencia as AparienciaColor);
+  const observados = coloresObservados(entrada);
+  // Pixels cannot see a clear balloon, so transparency always comes from the
+  // analyzer's labels, also when the hues come from the measurement.
+  const conTransparente = observados.includes(TRANSPARENTE);
+  return seleccionarDominantes(coloresMedidos(entrada, true) ?? observados, conTransparente);
 }
 
 /**
@@ -361,7 +403,8 @@ export function coloresReferenciaOmitidos<E extends { estructura_id: string; nom
       // A photo color no product can build in this structure's sizes is not
       // mandatory: claiming it would only trade the refusal for SIN_COBERTURA.
       const productos = (disponibles.get(color) ?? []).filter((producto) => sirveParaEstructura(estructura, producto)).map((producto) => ({ product_id: producto.product_id, titulo: producto.titulo, en_busqueda: producto.en_busqueda }));
-      if (!color || usados.has(color) || productos.length === 0) continue;
+      // A color the catalog does not sell is used when its stand-in is ("gris" as "plateado").
+      if (!color || usados.has(color) || usados.has(colorDeCompraSinVenta(color) ?? "") || productos.length === 0) continue;
       omitidos.push({ estructura_id: estructura.estructura_id, nombre: estructura.nombre, color, productos: [...productos] });
     }
   }

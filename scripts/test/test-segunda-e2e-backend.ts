@@ -83,7 +83,8 @@ async function main(): Promise<void> {
     elemento("REF_01_E05", "chairs", "furniture", ["white"]),
     elemento("REF_01_E09", "flowers", "floral", ["pink", "green"]),
   ], ["soft pink", "chrome silver", "pearl white", "white"]);
-  assert.deepEqual(coloresReferencia.coloresFotoParaBusqueda(semiarcos), ["rosado", "plateado", "blanco"], "the dominant colors of the balloon structures");
+  // The clear balloons of both garlands are searched too, on top of the three hues (2026-09-24).
+  assert.deepEqual(coloresReferencia.coloresFotoParaBusqueda(semiarcos), ["rosado", "plateado", "blanco", "transparente"], "the dominant colors of the balloon structures");
   assert.deepEqual(coloresReferencia.coloresFotoParaBusqueda(blueprint([elemento("REF_01_E01", "arch", "balloon_structure", ["charcoal grey", "gold"])], [])), ["dorado"], "grey is not a catalog color: it never forces a relaxation");
   assert.deepEqual(coloresReferencia.coloresFotoParaBusqueda(undefined), []);
 
@@ -341,9 +342,11 @@ async function main(): Promise<void> {
   assert.deepEqual(conPaleta.estructuras[0]!.colores_referencia, ["burdeos", "blanco", "plateado", "gris", "rosado"], "grey (4th arch color) and pink (chairs) are no longer dropped");
   const avisos = coloresReferencia.sustitucionesColorReferencia("EST_01_ARCO", conPaleta.estructuras[0]!.colores_referencia!, ["plateado", "violeta", "blanco"]);
   assert.deepEqual(avisos.map((item) => item.pedido), ["burdeos", "gris", "rosado"]);
-  // A color some structure buys is not noticed; the good run of photo 01 gets no extra notice.
+  // A color some structure buys is not noticed. The clear balloons of the
+  // garland are now claimed on top of its three hues (2026-09-24): a plan
+  // without them is told so.
   const planRosaPlata = PlanDecoracionSchema.parse({ ...planVino, estructuras: [{ ...arcoVino, referencia_element_id: "REF_01_E03", materiales: [["P-ROSADO", "rosado"], ["P-PLATA", "plateado"], ["P-BLANCO", "blanco"]].map(([productId, color], index) => ({ product_id: productId!, color: color!, participacion: index === 0 ? 0.4 : 0.3, rol_material: index === 0 ? "principal" : "secundario" })) }] });
-  assert.deepEqual(restricciones.aplicarColoresReferencia(planRosaPlata, semiarcos).estructuras[0]!.colores_referencia, ["rosado", "plateado", "blanco"]);
+  assert.deepEqual(restricciones.aplicarColoresReferencia(planRosaPlata, semiarcos).estructuras[0]!.colores_referencia, ["rosado", "plateado", "blanco", "transparente"]);
   // Only the element colors are claimed; pink from the chairs is a notice, never a refusal.
   const filasVino = [fila("P-PLATA", "V-PLATA-12", "plateado"), fila("P-VIOLETA", "V-VIOLETA-12", "violeta"), fila("P-BLANCO", "V-BLANCO-12", "blanco")];
   const candidatosVino = [

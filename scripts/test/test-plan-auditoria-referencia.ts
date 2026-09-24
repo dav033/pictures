@@ -279,7 +279,7 @@ async function main(): Promise<void> {
     plan_version: "1.0", plan_id: "01010101-0101-4010-8010-010101010101", concepto: { titulo: "x", descripcion: "x", paleta: [] },
     espacio: { tipo: "salón", fuente: "foto" }, supuestos: [],
     estructuras: [{ ...arcoBlanco, referencia_element_id: "REF_01_E03" }],
-  }), semiarcosFoto).estructuras[0]!.colores_referencia, ["rosado", "plateado", "gris"]);
+  }), semiarcosFoto).estructuras[0]!.colores_referencia, ["rosado", "plateado", "gris", "transparente"], "the clear accents are claimed on top of the three hues (2026-09-24)");
   const filaGlobo = (productId: string, variantId: string, color: string) => ({
     product_id: productId, variant_id: variantId, sku: null, sku_original: null, source_snapshot_id: null, source_variant_id: null, inventory_quantity: null, unidades_inferidas: null,
     producto_titulo: `Globo ${color}`, variante_titulo: "R-12", precio: 4000, unidades_paq: 12, disponible: true, producto_disponible: true,
@@ -352,7 +352,14 @@ async function main(): Promise<void> {
   assert.equal(rechazoTurno.mensaje_cliente, MENSAJE_CLIENTE_COLORES_REFERENCIA);
   const conColoresFoto = await turno.confirmar(["rosado", "plateado"]);
   assert.equal(conColoresFoto.ok, true, JSON.stringify(conColoresFoto).slice(0, 400));
-  assert.deepEqual((conColoresFoto.avisos_cliente as string[]).length, 1, "only grey, which the catalog does not have, is still a notice");
+  // Grey is reported as the silver it is bought as; the clear accents, now
+  // claimed on top of the three hues, are a real loss of this plan (the refusal
+  // is sent once per turn, so the second plan goes on with the notice).
+  assert.deepEqual(
+    (conColoresFoto.avisos_cliente as string[]).map((aviso) => /muestra (\S+)/.exec(aviso)?.[1]?.replace(/,$/, "")),
+    ["gris", "transparente"],
+    (conColoresFoto.avisos_cliente as string[]).join(" | "),
+  );
   const insiste = await turno.confirmar(["transparente"]);
   assert.equal(insiste.ok, true, "each color is sent back once per turn: no loop");
   assert.equal((insiste.avisos_cliente as string[]).length, 3);
