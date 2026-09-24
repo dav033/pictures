@@ -187,6 +187,15 @@ ya ve el navegador). Se planea aparte cuando las 4 anteriores estén validadas.
   flag-encendido-vs-apagado con más casos reales antes de activar por
   defecto.
 
+- **Añadido 2026-09-24**: el análisis de la foto del espacio
+  (`amaterasu/analizar-venue.ts`, llamado desde `/api/generate` con
+  `VENUE_AWARE_PLACEMENT_V1`) tiene la misma forma — dos pasadas de un mensaje
+  con la foto — y seguía llamando a Gemini directo con el flag encendido.
+  Ahora usa `crearChatTurnoPython` bajo el mismo
+  `REFERENCE_ANALYSIS_PYTHON_ENABLED`. La comparación flag
+  encendido/apagado de esta fase debe incluir el venue: sus herramientas no
+  se probaron todavía contra Python.
+
 ## Fase 3 — Uzume (implementada)
 
 - **Hallazgo que cambió el alcance de esta fase**: la llamada que usa

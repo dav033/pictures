@@ -15,9 +15,10 @@ import { findLoraPromptLanguageLeaks, findLoraPromptProductLeaks, preflightLoraP
 import { bloqueMezclaTamanos, bloqueMezclaPorEstructura } from "@/lib/ia/escena/tamano-fisico";
 import { descripcionProductoParaImagen, nombreProductoParaImagen } from "@/lib/ia/uzume/producto-para-imagen";
 import { type Cotizacion } from "@/lib/cotizacion/motor";
-import { featureEnabled, IMAGE_DEBUG } from "@/lib/ia/nucleo/feature-flags";
+import { featureEnabled, IMAGE_DEBUG, REFERENCE_ANALYSIS_PYTHON_ENABLED } from "@/lib/ia/nucleo/feature-flags";
 import { resolveAspectTransform } from "@/lib/ia/uzume/aspect-transform";
 import { analizarVenue, type VenueAnalysis } from "@/lib/ia/amaterasu/analizar-venue";
+import { crearChatTurnoPython } from "@/lib/ia/amaterasu/chat-python";
 import { targetBoxesFor } from "@/lib/ia/uzume/venue-placement";
 import { chatDe, imagenDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
 import { buildApprovedSceneSpec, SceneSpecSchema, sceneSpecHash, type SceneSpec } from "@/lib/ia/escena/scene-spec";
@@ -755,7 +756,12 @@ async function generar(request: Request, generationRequestId: string): Promise<R
     let venueAnalysis: VenueAnalysis | undefined;
     if (venue && featureEnabled("VENUE_AWARE_PLACEMENT_V1")) {
       try {
-        venueAnalysis = (await analizarVenue(await chatDe(proveedorSeleccionado), venue, contextoTelemetria, request.signal)).analysis;
+        // Misma forma que el análisis de referencias (dos pasadas de un solo
+        // mensaje con la foto), así que va por el mismo flag de Amaterasu.
+        const chatVenue = REFERENCE_ANALYSIS_PYTHON_ENABLED
+          ? crearChatTurnoPython({ requestId: generationRequestId, correlationId: generationCorrelationId })
+          : await chatDe(proveedorSeleccionado);
+        venueAnalysis = (await analizarVenue(chatVenue, venue, contextoTelemetria, request.signal)).analysis;
       } catch (error) {
         if (request.signal.aborted) throw error;
         console.warn("[generate] venue analysis unavailable; using automatic placement fallback", {
