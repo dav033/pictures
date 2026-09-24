@@ -325,6 +325,365 @@
                   "minLength": 1,
                   "maxLength": 80
                 }
+              },
+              "patron_color": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "string",
+                    "const": "patron-color.v1"
+                  },
+                  "origen": {
+                    "type": "string",
+                    "enum": [
+                      "decorador",
+                      "referencia",
+                      "sugerido"
+                    ]
+                  },
+                  "globos_por_racimo": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 8
+                  },
+                  "base": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "modo": {
+                            "type": "string",
+                            "const": "espiral"
+                          },
+                          "racimo": {
+                            "minItems": 1,
+                            "maxItems": 8,
+                            "type": "array",
+                            "items": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 11
+                            }
+                          },
+                          "trazo": {
+                            "type": "string",
+                            "enum": [
+                              "espiral",
+                              "zigzag",
+                              "recto"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "modo",
+                          "racimo",
+                          "trazo"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "modo": {
+                            "type": "string",
+                            "const": "anillos"
+                          },
+                          "secuencia": {
+                            "minItems": 1,
+                            "maxItems": 12,
+                            "type": "array",
+                            "items": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 11
+                            }
+                          },
+                          "largo": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 24
+                          }
+                        },
+                        "required": [
+                          "modo",
+                          "secuencia",
+                          "largo"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "modo": {
+                            "type": "string",
+                            "const": "bloques"
+                          },
+                          "bloques": {
+                            "minItems": 2,
+                            "maxItems": 12,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "material": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 11
+                                },
+                                "peso": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 100
+                                }
+                              },
+                              "required": [
+                                "material",
+                                "peso"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "modo",
+                          "bloques"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "modo": {
+                            "type": "string",
+                            "const": "degradado"
+                          },
+                          "paradas": {
+                            "minItems": 2,
+                            "maxItems": 6,
+                            "type": "array",
+                            "items": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 11
+                            }
+                          },
+                          "transicion": {
+                            "type": "string",
+                            "enum": [
+                              "suave",
+                              "escalonada"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "modo",
+                          "paradas",
+                          "transicion"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "modo": {
+                            "type": "string",
+                            "const": "aleatorio"
+                          },
+                          "pesos": {
+                            "minItems": 1,
+                            "maxItems": 6,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "material": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 11
+                                },
+                                "peso": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 100
+                                }
+                              },
+                              "required": [
+                                "material",
+                                "peso"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "semilla": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          }
+                        },
+                        "required": [
+                          "modo",
+                          "pesos",
+                          "semilla"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "modo": {
+                            "type": "string",
+                            "const": "flor"
+                          },
+                          "fondo": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 11
+                          },
+                          "petalo": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 11
+                          },
+                          "centro": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 11
+                          },
+                          "separacion": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 6
+                          }
+                        },
+                        "required": [
+                          "modo",
+                          "fondo",
+                          "petalo",
+                          "centro",
+                          "separacion"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "modo": {
+                            "type": "string",
+                            "const": "damero"
+                          },
+                          "secuencia": {
+                            "minItems": 2,
+                            "maxItems": 4,
+                            "type": "array",
+                            "items": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 11
+                            }
+                          },
+                          "tamano": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 4
+                          }
+                        },
+                        "required": [
+                          "modo",
+                          "secuencia",
+                          "tamano"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "acentos": {
+                    "maxItems": 4,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "material": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 11
+                        },
+                        "cada": {
+                          "type": "integer",
+                          "minimum": 2,
+                          "maximum": 24
+                        },
+                        "desde": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 24
+                        },
+                        "posiciones": {
+                          "minItems": 1,
+                          "maxItems": 64,
+                          "type": "array",
+                          "items": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 63
+                          }
+                        }
+                      },
+                      "required": [
+                        "material",
+                        "cada",
+                        "desde"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "pintados": {
+                    "maxItems": 512,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fila": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 999
+                        },
+                        "columna": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 63
+                        },
+                        "material": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 11
+                        }
+                      },
+                      "required": [
+                        "fila",
+                        "material"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "simetria": {
+                    "type": "string",
+                    "const": "espejo"
+                  },
+                  "direccion": {
+                    "type": "string",
+                    "enum": [
+                      "longitudinal",
+                      "transversal",
+                      "diagonal"
+                    ]
+                  }
+                },
+                "required": [
+                  "version",
+                  "origen",
+                  "base"
+                ],
+                "additionalProperties": false
               }
             },
             "required": [
@@ -1407,6 +1766,71 @@
         "type": "string",
         "minLength": 1,
         "maxLength": 160
+      }
+    },
+    "completar_patrones": {
+      "type": "boolean"
+    },
+    "pistas_patron": {
+      "maxItems": 16,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "referencia_element_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "modo": {
+            "type": "string",
+            "enum": [
+              "espiral",
+              "anillos",
+              "bloques",
+              "degradado",
+              "aleatorio",
+              "flor",
+              "damero"
+            ]
+          },
+          "colores": {
+            "minItems": 1,
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 80
+            }
+          },
+          "globos_por_racimo": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "pesos": {
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          "confianza": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "referencia_element_id",
+          "modo",
+          "colores",
+          "confianza"
+        ],
+        "additionalProperties": false
       }
     }
   },

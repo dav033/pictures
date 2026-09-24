@@ -1,5 +1,6 @@
 import type { PlanDecoracion, PlanDecoracion1_1, PropCatalogo } from "./tipos";
 import type { TipoEstructura, Ubicacion } from "./composicion";
+import type { PatronColorResuelto } from "./patron-color";
 
 export type EstadoComercialPlan = "VERIFICADO" | "APROBACION_REQUERIDA" | "PRESUPUESTO_EXCEDIDO";
 
@@ -172,5 +173,10 @@ export type PlanResuelto = {
    * consolidada: la UI no reparte el paquete por su cuenta.
    */
   costes_por_estructura: Array<{ estructura_id: string; consumo_cop: number | null }>;
+  /**
+   * Patrón de color expandido por estructura, tal como lo escribe Python
+   * (ADR-0028). También fuera del snapshot; ausente cuando no hay ninguno.
+   */
+  patrones_color?: PatronColorResuelto[];
   advertencias: string[];
 };

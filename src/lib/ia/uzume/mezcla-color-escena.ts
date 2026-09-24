@@ -32,7 +32,7 @@ export type ColorDeEstructura = {
  * coincidir con sus captions, mientras que aquí se le explica el material a un
  * modelo de instrucciones que nunca vio ese vocabulario.
  */
-const ACABADO_EN: Readonly<Record<string, string>> = {
+export const ACABADO_EN: Readonly<Record<string, string>> = {
   reflex: "high-shine chrome",
   metal: "metallic",
   metalizado: "metallic",

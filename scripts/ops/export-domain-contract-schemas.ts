@@ -5,6 +5,8 @@ import { DomainContractSchemas } from "../../src/lib/ia/contracts/domain-v1";
 import { geometriaEstructurasOficiales, reglasJsonSchemaEstructuraOficial } from "../../src/lib/plan/estructuras-oficiales";
 import { tonosColoresCatalogo } from "../../src/lib/rag/catalog/similitud-color";
 import { reglasMezclas } from "../../src/lib/plan/mezclas";
+import { PALETA_COLORES_EN_V2 } from "../../src/lib/rag/taxonomy/v2";
+import { ACABADO_EN } from "../../src/lib/ia/uzume/mezcla-color-escena";
 
 const outputDirectory = path.join(process.cwd(), "contracts", "domain", "v1");
 const checkOnly = process.argv.includes("--check");
@@ -82,6 +84,11 @@ async function main(): Promise<void> {
           ...generated,
           "x-geometria-estructuras-oficiales": geometriaEstructurasOficiales(),
           "x-reglas-mezclas": reglasMezclas(),
+          // plan.py (patron_color.py) names each color of a color pattern in the
+          // image prompt with the same ES→EN tables the TypeScript prompts use
+          // (ADR-0028); owners: taxonomy/v2.ts and mezcla-color-escena.ts.
+          "x-colores-en": { ...PALETA_COLORES_EN_V2 },
+          "x-acabados-en": { ...ACABADO_EN },
         }
       : entry.id === "catalog-search.v1"
       ? { $id: entry.id, ...generated, "x-tonos-colores-catalogo": tonosColoresCatalogo() }

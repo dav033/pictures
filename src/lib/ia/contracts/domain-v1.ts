@@ -22,6 +22,7 @@ import {
   PlanDecoracionSchema,
   PropCatalogoSchema,
 } from "@/lib/plan/tipos";
+import { PatronColorResueltoSchema, PistaPatronSchema } from "@/lib/plan/patron-color";
 import { CatalogProductSchema, CatalogVariantSchema } from "@/lib/rag/catalog/schemas";
 import { LoraSelectionSchema } from "@/lib/lora/schema";
 import { productVocabularySchema } from "@/lib/lora/product-vocabulary";
@@ -392,6 +393,12 @@ export const PlanResueltoV1Schema = z.object({
     estructura_id: idSchema,
     consumo_cop: copSchema.nullable(),
   }).strict()),
+  /**
+   * Patrón de color expandido por estructura (ADR-0028): rejilla, conteo, paso
+   * a paso y textos, escritos por Python. Fuera del snapshot que firma
+   * `plan_hash`, como `costes_por_estructura`; se omite cuando no hay ninguno.
+   */
+  patrones_color: z.array(PatronColorResueltoSchema).optional(),
 }).strict();
 
 const quoteLineSchema = z.object({
@@ -446,6 +453,9 @@ export const PlanResolutionRequestV1Schema = z.object({
   allowlist: z.array(CatalogAllowlistEntryV1Schema).max(256),
   catalog_snapshot_id: idSchema,
   lora_variant_ids: z.array(idSchema).max(PLAN_RESOLUTION_MAX_LORA_VARIANTS).optional(),
+  /** Solo al confirmar un plan: Python asigna patrón de color a las estructuras que no lo tienen (ADR-0028 §7). */
+  completar_patrones: z.boolean().optional(),
+  pistas_patron: z.array(PistaPatronSchema).max(16).optional(),
 }).strict();
 
 export const PlanResolutionResultV1Schema = z.object({

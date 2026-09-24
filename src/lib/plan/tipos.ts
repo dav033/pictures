@@ -19,6 +19,7 @@ import {
   validarRelacionesDeElemento,
   type RelacionFisicaInput,
 } from "./composicion";
+import { PatronColorV1Schema } from "./patron-color";
 
 /**
  * Vocabulario de Plan 1.0, importado de la fuente única
@@ -107,6 +108,8 @@ const EstructuraPlanSchema = z.object({
    * (`colores-referencia.ts`). Written by the server from the turn blueprint,
    * never by the model; both resolvers report the missing ones in `sustituciones`. */
   colores_referencia: z.array(z.string().trim().min(1).max(80)).max(8).optional(),
+  /** Dónde va cada color (ADR-0028). Sus reglas cruzadas las valida solo Python. */
+  patron_color: PatronColorV1Schema.optional(),
 }).strict().superRefine((value, ctx) => {
   for (const problema of incoherenciasEstructuraOficial(value)) {
     ctx.addIssue({ code: "custom", path: [problema.campo], message: problema.mensaje });
@@ -332,6 +335,8 @@ export const EstructuraPlan1_1Schema = z.object({
    * (`colores-referencia.ts`). Written by the server from the turn blueprint,
    * never by the model; both resolvers report the missing ones in `sustituciones`. */
   colores_referencia: z.array(z.string().trim().min(1).max(80)).max(8).optional(),
+  /** Dónde va cada color (ADR-0028). Sus reglas cruzadas las valida solo Python. */
+  patron_color: PatronColorV1Schema.optional(),
 }).strict().superRefine((value, ctx) => {
   validarRelacionesFisicasSchema(value.relaciones_fisicas, ctx);
   for (const problema of incoherenciasEstructuraOficial(value)) {
