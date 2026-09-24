@@ -147,7 +147,7 @@ const PERFILES: Record<NivelCreatividad, PerfilCreatividad> = {
     nivel: 5,
     nombre: "Libre",
     descripcion: "Sorprende: escena inesperada, decoración abundante y un ambiente con invitados.",
-    instruccionDiseno: `Sorprende al cliente: si no indicó lugar o momento, usa la SUGERENCIA DE ESCENA de abajo, aunque sea poco típica para el evento. Diseña una decoración abundante y compleja de 5 a 8 estructuras en varias zonas, con variantes oficiales audaces (asimétricas o no densas) y, sobre una foto de referencia, hasta 3 acentos. ${INVARIANTES}`,
+    instruccionDiseno: `Sorprende al cliente: si no indicó lugar o momento, usa la SUGERENCIA DE ESCENA de abajo, aunque sea poco típica para el evento. Diseña una decoración abundante y compleja de 5 a 8 estructuras en varias zonas, con variantes oficiales audaces (orgánicas o no densas) y, sobre una foto de referencia, hasta 3 acentos. ${INVARIANTES}`,
     rangoEstructuras: { min: 5, max: 8 },
     estructurasExtraConReferencia: 3,
     sugiereEscena: true,

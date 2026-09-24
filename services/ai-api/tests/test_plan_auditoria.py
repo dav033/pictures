@@ -122,6 +122,33 @@ def test_reference_colors_are_quiet_when_covered_absent_or_uncovered() -> None:
     assert _reference_color_substitutions("EST_01_ARCO", ["lila"], []) == []
 
 
+def test_an_unsold_photo_color_is_reported_as_its_stand_in_not_as_a_loss() -> None:
+    # 2026-09-24: chrome balloons read as "gris"; the catalog sells no grey and
+    # buys it as "plateado". A column that carries plateado lost nothing, yet
+    # the notice read "esta pieza no lo lleva". It is still reported (a
+    # deliberate substitution, never a silent one), but as what it is.
+    notices = _reference_color_substitutions(
+        "EST_01_COLUMNA", ["rosado", "gris", "blanco"], ["rosado", "plateado"]
+    )
+    assert notices == [
+        {
+            "estructura_id": "EST_01_COLUMNA",
+            "pedido": "gris",
+            "entregado": "plateado",
+            "motivo": "La foto de referencia muestra gris, que el catálogo no vende: se usó plateado.",
+        },
+        {
+            "estructura_id": "EST_01_COLUMNA",
+            "pedido": "blanco",
+            "entregado": "rosado, plateado",
+            "motivo": "La foto de referencia muestra blanco y esta pieza no lo lleva: se armó con rosado y plateado.",
+        },
+    ]
+    # Without its stand-in the grey is a real loss.
+    [loss] = _reference_color_substitutions("EST_01_COLUMNA", ["gris"], ["rosado"])
+    assert loss["entregado"] == "rosado" and "no lo lleva" in str(loss["motivo"])
+
+
 def _rojo_unico_candidato() -> Candidate:
     """A round balloon whose only real color is "rojo" -- the shape the trap
     below needs: a plan color that only matches the product's family tag, not

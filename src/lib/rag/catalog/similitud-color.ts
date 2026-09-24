@@ -1,4 +1,4 @@
-import { HEX_COLORES_OBSERVABLES } from "@/lib/rag/taxonomy/v2";
+import { HEX_COLORES_OBSERVABLES, PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 
 /**
  * Distancia perceptual entre colores del catálogo. Se exporta al contrato
@@ -119,6 +119,8 @@ export type TonosColoresCatalogoContrato = {
   lab: Record<string, [number, number, number]>;
   delta_e_maximo: number;
   escala: number;
+  /** Colores que la foto puede mostrar pero el catálogo no vende (hoy `gris`). */
+  colores_sin_venta: string[];
 };
 
 /**
@@ -132,7 +134,25 @@ export function tonosColoresCatalogo(): TonosColoresCatalogoContrato {
     lab: Object.fromEntries(Object.entries(LAB_COLORES).map(([color, lab]) => [color, [...lab] as [number, number, number]])),
     delta_e_maximo: DELTA_E_MAXIMO,
     escala: ESCALA,
+    colores_sin_venta: COLORES_SIN_VENTA,
   };
+}
+
+const PALETA_VENDIBLE: ReadonlySet<string> = new Set(PALETA_COLORES_V2);
+
+/** Colores medibles que no están en la paleta del catálogo: se observan, no se compran. */
+export const COLORES_SIN_VENTA: string[] = Object.keys(LAB_COLORES).filter((color) => !PALETA_VENDIBLE.has(color)).sort();
+
+/**
+ * El color del catálogo con el que se compra un color que la foto muestra y el
+ * catálogo no vende (la foto dice `gris`, se compra `plateado`). `undefined`
+ * cuando el color sí se vende —no necesita reemplazo— o cuando nada le queda
+ * cerca. Una pieza que lleva este color no ha perdido el de la foto.
+ */
+export function colorDeCompraSinVenta(color: string): string | undefined {
+  const normalizado = normalizarColor(color);
+  if (!COLORES_SIN_VENTA.includes(normalizado)) return undefined;
+  return colorCatalogoMasCercano(normalizado, PALETA_COLORES_V2);
 }
 
 /**

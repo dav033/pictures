@@ -81,12 +81,12 @@ export type GeometriaEstructurasOficialesContrato = Partial<Record<EstructuraOfi
 
 export const ESTRUCTURAS_OFICIALES: Readonly<Record<EstructuraOficialId, EstructuraOficial>> = {
   arco: { id: "arco", nombre: "Arco", descripcion: "Curva completa de globos con dos bases en el piso.", tipoBase: "arco", tiposAdmitidos: ["arco"], forma: "simetrica", sustantivoEn: "organic balloon garland arch" },
-  arco_asimetrico: { id: "arco_asimetrico", nombre: "Arco asimétrico", descripcion: "Arco con un lado más cargado o más alto que el otro.", tipoBase: "arco", tiposAdmitidos: ["arco"], forma: "asimetrica", sustantivoEn: "asymmetrical organic balloon garland arch", geometria: { anchoFinalBanda: 0.4 } },
+  arco_asimetrico: { id: "arco_asimetrico", nombre: "Arco orgánico", descripcion: "Arco con un lado más cargado o más alto que el otro.", tipoBase: "arco", tiposAdmitidos: ["arco"], forma: "asimetrica", sustantivoEn: "asymmetrical organic balloon garland arch", geometria: { anchoFinalBanda: 0.4 } },
   arco_no_denso: { id: "arco_no_denso", nombre: "Arco no denso", descripcion: "Arco ligero, con espacios entre los globos.", tipoBase: "arco", tiposAdmitidos: ["arco"], forma: "simetrica", densidades: ["sencilla"], sustantivoEn: "airy organic balloon garland arch" },
   semiarco: { id: "semiarco", nombre: "Semiarco", descripcion: "Un solo lado que sube y se curva, abierto arriba.", tipoBase: "semiarco", tiposAdmitidos: ["semiarco"], forma: "simetrica", sustantivoEn: "one-sided curved organic balloon garland" },
-  semiarco_asimetrico: { id: "semiarco_asimetrico", nombre: "Semiarco asimétrico", descripcion: "Semiarco de contorno irregular, más grueso en una parte.", tipoBase: "semiarco", tiposAdmitidos: ["semiarco"], forma: "asimetrica", sustantivoEn: "asymmetrical one-sided curved organic balloon garland", geometria: { anchoFinalBanda: 0.4 } },
+  semiarco_asimetrico: { id: "semiarco_asimetrico", nombre: "Semiarco orgánico", descripcion: "Semiarco de contorno irregular, más grueso en una parte.", tipoBase: "semiarco", tiposAdmitidos: ["semiarco"], forma: "asimetrica", sustantivoEn: "asymmetrical one-sided curved organic balloon garland", geometria: { anchoFinalBanda: 0.4 } },
   columna: { id: "columna", nombre: "Columna", descripcion: "Torre recta de globos.", tipoBase: "columna", tiposAdmitidos: ["columna"], forma: "simetrica", sustantivoEn: "organic balloon column" },
-  columna_asimetrica: { id: "columna_asimetrica", nombre: "Columna asimétrica", descripcion: "Columna de contorno irregular, con racimos a un lado.", tipoBase: "columna", tiposAdmitidos: ["columna"], forma: "asimetrica", sustantivoEn: "asymmetrical organic balloon column" },
+  columna_asimetrica: { id: "columna_asimetrica", nombre: "Columna orgánica", descripcion: "Columna de contorno irregular, con racimos a un lado.", tipoBase: "columna", tiposAdmitidos: ["columna"], forma: "asimetrica", sustantivoEn: "asymmetrical organic balloon column" },
   columna_no_densa: { id: "columna_no_densa", nombre: "Columna no densa", descripcion: "Columna ligera, con espacios entre los globos.", tipoBase: "columna", tiposAdmitidos: ["columna"], forma: "simetrica", densidades: ["sencilla"], sustantivoEn: "airy organic balloon column" },
   pared_densa: { id: "pared_densa", nombre: "Pared de globos densa", descripcion: "Fondo completo de globos, sin huecos.", tipoBase: "pared", tiposAdmitidos: ["pared"], forma: "simetrica", densidades: ["media", "lujosa"], sustantivoEn: "dense balloon wall installation" },
   pared_no_densa: { id: "pared_no_densa", nombre: "Pared de globos no densa", descripcion: "Fondo de globos ligero, deja ver la pared.", tipoBase: "pared", tiposAdmitidos: ["pared"], forma: "organica", densidades: ["sencilla"], sustantivoEn: "airy balloon wall installation" },
@@ -199,7 +199,7 @@ export const UBICACION_PARA_CLIENTE: Readonly<Record<string, string>> = {
   esquina: "en una esquina",
 };
 
-/** Resumen informativo para el cliente, ej. "Semiarco asimétrico · a la izquierda · 1,8 m de alto". */
+/** Resumen informativo para el cliente, ej. "Semiarco orgánico · a la izquierda · 1,8 m de alto". */
 export function resumenEstructuraParaCliente(estructura: EstructuraPlanLigera & { altoM?: number }): string {
   const oficial = identificarEstructuraOficial(estructura);
   const partes: string[] = [oficial?.nombre ?? estructura.nombre ?? estructura.tipo];
@@ -231,10 +231,10 @@ export const EJEMPLO_UNIDADES_DECLARADAS = Object.values(ESTRUCTURAS_OFICIALES)
 export const GUIA_ESTRUCTURAS_OFICIALES = `
 
 ESTRUCTURAS OFICIALES
-Solo diseña con estas estructuras. En confirmar_plan_decoracion pon en cada estructura estructura_oficial con el id indicado, el tipo indicado, una densidad admitida cuando se indique, y empieza el nombre con su etiqueta oficial (ej. "Semiarco asimétrico derecho"):
+Solo diseña con estas estructuras. En confirmar_plan_decoracion pon en cada estructura estructura_oficial con el id indicado, el tipo indicado, una densidad admitida cuando se indique, y empieza el nombre con su etiqueta oficial (ej. "Semiarco orgánico derecho"):
 ${Object.values(ESTRUCTURAS_OFICIALES).map((estructura) => `- ${estructura.nombre} (estructura_oficial ${estructura.id}): tipo ${estructura.tipoBase}${estructura.densidades ? `, densidad ${estructura.densidades.join(" o ")}` : ""}${estructura.ubicacion ? `, ubicación ${estructura.ubicacion}` : ""}. ${estructura.descripcion}`).join("\n")}
 - Bouquet y Figura con globos no tienen geometría calculada: indica variant_id y unidades_declaradas. unidades_declaradas es el total de globos de la pieza sumando sus repeticiones (no el número de figuras): al menos ${Object.values(ESTRUCTURAS_OFICIALES).filter((estructura) => estructura.unidadesMinimasPorInstancia).map((estructura) => `${estructura.unidadesMinimasPorInstancia} globos por ${estructura.nombre}`).join(" y ")} y nunca menos unidades que materiales.
-- Asimétrica significa un contorno irregular o un lado más cargado; dos piezas separadas de alturas distintas son dos estructuras, no una asimétrica.`;
+- Orgánica significa un contorno irregular o un lado más cargado, que se adapta al espacio o imita formas de la naturaleza; dos piezas separadas de alturas distintas son dos estructuras, no una orgánica.`;
 
 /**
  * The coherence table as JSON Schema `allOf` rules for an estructura object.

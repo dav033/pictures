@@ -554,9 +554,9 @@
           "pedido": "burdeos"
         },
         {
-          "entregado": "plateado, lila, blanco",
+          "entregado": "plateado",
           "estructura_id": "EST_01_ARCO",
-          "motivo": "La foto de referencia muestra gris y esta pieza no lo lleva: se armó con plateado, lila y blanco.",
+          "motivo": "La foto de referencia muestra gris, que el catálogo no vende: se usó plateado.",
           "pedido": "gris"
         },
         {
@@ -1163,9 +1163,9 @@
           "pedido": "burdeos"
         },
         {
-          "entregado": "plateado, lila, blanco",
+          "entregado": "plateado",
           "estructura_id": "EST_01_ARCO",
-          "motivo": "La foto de referencia muestra gris y esta pieza no lo lleva: se armó con plateado, lila y blanco.",
+          "motivo": "La foto de referencia muestra gris, que el catálogo no vende: se usó plateado.",
           "pedido": "gris"
         },
         {

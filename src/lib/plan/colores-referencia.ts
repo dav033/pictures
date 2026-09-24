@@ -1,5 +1,6 @@
 import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import { clasificarColores, PALETA_COLORES_V2, plegarTexto } from "@/lib/rag/taxonomy/v2";
+import { colorDeCompraSinVenta } from "@/lib/rag/catalog/similitud-color";
 
 /** Lo que una apariencia aporta al color: los nombres que el analizador escribió y, si hay foto, la medida. */
 type AparienciaColor = {
@@ -270,12 +271,20 @@ export function sustitucionesColorReferencia(
   }
   return pedidos
     .filter((pedido) => !cubiertos.has(pedido))
-    .map((pedido) => ({
-      estructura_id: estructuraId,
-      pedido,
-      entregado: entregados.join(", "),
-      motivo: `La foto de referencia muestra ${pedido} y esta pieza no lo lleva: se armó con ${unirColores(entregados)}.`,
-    }));
+    .map((pedido) => {
+      // Un color que el catálogo no vende (`gris`) y cuya pieza lleva el color
+      // con que se compra (`plateado`) no se perdió: se sustituyó, y se dice así.
+      const sustituto = colorDeCompraSinVenta(pedido);
+      if (sustituto && cubiertos.has(sustituto)) {
+        return { estructura_id: estructuraId, pedido, entregado: sustituto, motivo: `La foto de referencia muestra ${pedido}, que el catálogo no vende: se usó ${sustituto}.` };
+      }
+      return {
+        estructura_id: estructuraId,
+        pedido,
+        entregado: entregados.join(", "),
+        motivo: `La foto de referencia muestra ${pedido} y esta pieza no lo lleva: se armó con ${unirColores(entregados)}.`,
+      };
+    });
 }
 
 /** Size substitutions carry a size code ("R-12"); color substitutions carry a color. */

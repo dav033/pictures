@@ -75,6 +75,10 @@ _LAB: Mapping[str, Sequence[float]] = cast(
 # "close enough" means; the defaults only matter if the contract is missing.
 _DELTA_E_SCALE: float = cast(float, _TONE_CONTRACT.get("escala", 100))
 _DELTA_E_MAX: float = cast(float, _TONE_CONTRACT.get("delta_e_maximo", 45))
+# Colors a photo can show that the catalog does not sell (today "gris").
+_UNSOLD_COLORS: frozenset[str] = frozenset(
+    cast(list[str], _TONE_CONTRACT.get("colores_sin_venta", []))
+)
 
 
 class SearchFilters(BaseModel):
@@ -1056,6 +1060,19 @@ def _nearest_present_color(requested: str, present: Sequence[str]) -> str | None
     if _chromatic_distance(requested, best) >= _UNRELATED_DISTANCE:
         return None
     return best
+
+
+def purchase_color_for_unsold(color: str) -> str | None:
+    """The catalog color an unsold photo color is bought as ("gris" -> "plateado").
+
+    Mirrors ``colorDeCompraSinVenta`` (similitud-color.ts). ``None`` when the
+    color is sold -- it needs no stand-in -- or when nothing is close enough. A
+    structure that carries this color has not lost the photo color.
+    """
+    normalized = color.strip().lower()
+    if normalized not in _UNSOLD_COLORS:
+        return None
+    return _nearest_present_color(normalized, [name for name in _LAB if name not in _UNSOLD_COLORS])
 
 
 async def _resolve_colors(

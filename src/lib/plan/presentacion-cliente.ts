@@ -3,6 +3,7 @@ import { esParLateral } from "./ubicaciones";
 import { ESTRUCTURAS_OFICIALES, identificarEstructuraOficial, UBICACION_PARA_CLIENTE, type EstructuraOficialId } from "./estructuras-oficiales";
 import { ambientDecorSelection, sceneryFromReference } from "@/lib/ia/referencia/reference-structure";
 import { esSustitucionDeColor } from "./colores-referencia";
+import { colorDeCompraSinVenta } from "@/lib/rag/catalog/similitud-color";
 import type { ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import { clasificarAcabados, clasificarColores, HEX_COLORES_V2, type PALETA_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 
@@ -103,12 +104,12 @@ type Genero = "m" | "f";
 /** Artículo y plural de cada nombre oficial; completo por tipo para no olvidar ninguno. */
 const GRAMATICA_OFICIAL: Readonly<Record<EstructuraOficialId, { genero: Genero; plural: string }>> = {
   arco: { genero: "m", plural: "arcos" },
-  arco_asimetrico: { genero: "m", plural: "arcos asimétricos" },
+  arco_asimetrico: { genero: "m", plural: "arcos orgánicos" },
   arco_no_denso: { genero: "m", plural: "arcos no densos" },
   semiarco: { genero: "m", plural: "semiarcos" },
-  semiarco_asimetrico: { genero: "m", plural: "semiarcos asimétricos" },
+  semiarco_asimetrico: { genero: "m", plural: "semiarcos orgánicos" },
   columna: { genero: "f", plural: "columnas" },
-  columna_asimetrica: { genero: "f", plural: "columnas asimétricas" },
+  columna_asimetrica: { genero: "f", plural: "columnas orgánicas" },
   columna_no_densa: { genero: "f", plural: "columnas no densas" },
   pared_densa: { genero: "f", plural: "paredes de globos densas" },
   pared_no_densa: { genero: "f", plural: "paredes de globos no densas" },
@@ -141,7 +142,7 @@ export function ubicacionCliente(estructura: { ubicacion: string; repeticiones: 
 }
 
 /**
- * "un semiarco asimétrico a la derecha", "las dos columnas a ambos lados".
+ * "un semiarco orgánico a la derecha", "las dos columnas a ambos lados".
  * Una pieza sin estructura oficial (telón, kit) usa el nombre del plan sin
  * artículo porque su género no se puede deducir.
  */
@@ -310,7 +311,7 @@ export function coloresCliente(lineas: ReadonlyArray<{ color: string | null; aca
 
 /**
  * Línea de resumen derivada de las estructuras reales del plan (no de la
- * descripción libre del concepto): "Un semiarco asimétrico a la derecha y una
+ * descripción libre del concepto): "Un semiarco orgánico a la derecha y una
  * columna a la izquierda, en azul, blanco y dorado."
  */
 function clavePieza(estructura: EstructuraParaDescribir): string {
@@ -375,20 +376,30 @@ export function resumenPlanCliente(estructuras: readonly EstructuraParaDescribir
 /**
  * Una frase por par pedido/entregado, agrupando las estructuras afectadas.
  * Antes: "⚠ EST_01_SEMIARCO: R-18 → R-12" repetido por instancia.
- * `descripciones` va de `estructura_id` a "el semiarco asimétrico a la derecha".
+ * `descripciones` va de `estructura_id` a "el semiarco orgánico a la derecha".
  */
 export function sustitucionesCliente(
   sustituciones: ReadonlyArray<{ estructura_id: string; pedido: string; entregado: string; motivo?: string }>,
   descripciones: ReadonlyMap<string, string>,
 ): string[] {
   const grupos = new Map<string, { pedido: string; entregado: string; estructuras: string[] }>();
-  // A photo color the plan does not carry (`colores-referencia.ts`) already
-  // comes with its customer sentence; only size substitutions are rewritten.
-  const deColor: string[] = [];
+  // Photo colors a structure does not carry: collected per structure, so the
+  // customer reads one sentence that names the piece instead of one "esta
+  // pieza no lo lleva" per color (2026-09-24: four lines for two columns).
+  const colorPorEstructura = new Map<string, { faltan: string[]; entregados: string[] }>();
+  // A color the catalog does not sell, bought as its stand-in ("gris" as
+  // "plateado"), is not a loss: one sentence for the whole plan.
+  const sinVenta: string[] = [];
   for (const item of sustituciones) {
+    if (esSustitucionDeColor(item) && colorDeCompraSinVenta(item.pedido) === item.entregado.trim()) {
+      const texto = `La foto de referencia muestra ${nombreColorCliente(item.pedido)}, que el catálogo no vende: se usó ${nombreColorCliente(item.entregado.trim())}.`;
+      if (!sinVenta.includes(texto)) sinVenta.push(texto);
+      continue;
+    }
     if (esSustitucionDeColor(item)) {
-      const texto = item.motivo?.trim() || `La foto de referencia muestra ${nombreColorCliente(item.pedido)} y la propuesta no lo lleva.`;
-      if (!deColor.includes(texto)) deColor.push(texto);
+      const actual = colorPorEstructura.get(item.estructura_id) ?? { faltan: [], entregados: item.entregado.split(",").map((color) => color.trim()).filter(Boolean) };
+      if (!actual.faltan.includes(item.pedido)) actual.faltan.push(item.pedido);
+      colorPorEstructura.set(item.estructura_id, actual);
       continue;
     }
     const clave = `${item.pedido}|${item.entregado}`;
@@ -400,8 +411,31 @@ export function sustitucionesCliente(
   return [
     ...[...grupos.values()].map((grupo) =>
       `Para ${unirNatural(grupo.estructuras)} no hay globos de ${pulgadasCliente(grupo.pedido)} en ese color; usamos globos de ${pulgadasCliente(grupo.entregado)}.`),
-    ...deColor,
+    ...coloresFaltantesCliente(colorPorEstructura, descripciones),
+    ...sinVenta,
   ];
+}
+
+/** Pieces missing the same photo colors and built with the same ones share one sentence. */
+function coloresFaltantesCliente(
+  porEstructura: ReadonlyMap<string, { faltan: string[]; entregados: string[] }>,
+  descripciones: ReadonlyMap<string, string>,
+): string[] {
+  const grupos = new Map<string, { faltan: string[]; entregados: string[]; estructuras: string[] }>();
+  for (const [estructuraId, { faltan, entregados }] of porEstructura) {
+    const clave = `${[...faltan].sort().join(",")}|${[...entregados].sort().join(",")}`;
+    const grupo = grupos.get(clave) ?? { faltan, entregados, estructuras: [] };
+    const descripcion = descripciones.get(estructuraId) ?? "la decoración";
+    if (!grupo.estructuras.includes(descripcion)) grupo.estructuras.push(descripcion);
+    grupos.set(clave, grupo);
+  }
+  return [...grupos.values()].map(({ faltan, entregados, estructuras }) => {
+    const varias = estructuras.length > 1;
+    const pronombre = faltan.length > 1 ? "los" : "lo";
+    const colores = unirNatural(faltan.map(nombreColorCliente));
+    const armado = entregados.length ? `: ${varias ? "se armaron" : "se armó"} con ${unirNatural(entregados.map(nombreColorCliente))}` : "";
+    return `La foto de referencia muestra ${colores}; ${unirNatural(estructuras)} no ${pronombre} ${varias ? "llevan" : "lleva"}${armado}.`;
+  });
 }
 
 export function faltantesCliente(
@@ -631,7 +665,7 @@ export function estructurasVistasEnReferencia(blueprint: ReferenceBlueprintV2): 
   });
 }
 
-/** "Veo un semiarco asimétrico a la derecha y una columna a la izquierda."; null solo si no hay piezas. */
+/** "Veo un semiarco orgánico a la derecha y una columna a la izquierda."; null solo si no hay piezas. */
 export function resumenReferenciaCliente(blueprint: ReferenceBlueprintV2): string | null {
   const descripciones = estructurasVistasEnReferencia(blueprint);
   return descripciones.length ? `Veo ${unirNatural(descripciones)}.` : null;

@@ -48,6 +48,7 @@ from app.generated_models import (
     PlanResuelto,
     Quote,
 )
+from app.catalog import purchase_color_for_unsold
 from app.operational_models import ContractModel, OperationalRequest
 
 
@@ -1302,16 +1303,33 @@ def _reference_color_substitutions(
         normalized = _normalize(color) if isinstance(color, str) else ""
         if normalized and normalized not in requested:
             requested.append(normalized)
-    return [
-        {
-            "estructura_id": structure_id,
-            "pedido": color,
-            "entregado": ", ".join(delivered),
-            "motivo": f"La foto de referencia muestra {color} y esta pieza no lo lleva: se armó con {_join_colors(delivered)}.",
-        }
-        for color in requested
-        if color not in covered
-    ]
+    substitutions: list[dict[str, object]] = []
+    for color in requested:
+        if color in covered:
+            continue
+        stand_in = purchase_color_for_unsold(color)
+        if stand_in is not None and stand_in in covered:
+            # Not a loss: the catalog does not sell this color ("gris") and the
+            # structure carries the one it is bought as ("plateado"). It is
+            # still reported -- a deliberate substitution, never a silent one.
+            substitutions.append(
+                {
+                    "estructura_id": structure_id,
+                    "pedido": color,
+                    "entregado": stand_in,
+                    "motivo": f"La foto de referencia muestra {color}, que el catálogo no vende: se usó {stand_in}.",
+                }
+            )
+            continue
+        substitutions.append(
+            {
+                "estructura_id": structure_id,
+                "pedido": color,
+                "entregado": ", ".join(delivered),
+                "motivo": f"La foto de referencia muestra {color} y esta pieza no lo lleva: se armó con {_join_colors(delivered)}.",
+            }
+        )
+    return substitutions
 
 
 def _mix_real(lines: Sequence[Mapping[str, object]]) -> list[dict[str, object]]:

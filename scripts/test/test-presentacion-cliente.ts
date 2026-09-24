@@ -75,13 +75,13 @@ ok("colores agrupados por color y acabado, con muestra visual");
 
 const semiarco = { oficialId: "semiarco_asimetrico" as const, nombre: "Semiarco Orgánico Derecho", ubicacion: "lateral_derecho", repeticiones: 1 };
 const columna = { oficialId: "columna" as const, nombre: "Columna Orgánica Izquierda", ubicacion: "lateral_izquierdo", repeticiones: 1 };
-assert.equal(describirEstructuraCliente(semiarco, "definido"), "el semiarco asimétrico a la derecha");
+assert.equal(describirEstructuraCliente(semiarco, "definido"), "el semiarco orgánico a la derecha");
 assert.equal(describirEstructuraCliente(columna, "indefinido"), "una columna a la izquierda");
 assert.equal(describirEstructuraCliente({ ...columna, repeticiones: 2 }, "definido"), "las dos columnas a ambos lados");
 assert.equal(describirEstructuraCliente({ nombre: "Telón dorado", ubicacion: "fondo_pared", repeticiones: 1 }, "indefinido"), "telón dorado contra la pared del fondo");
 assert.equal(
   resumenPlanCliente([semiarco, columna], ["azul", "blanco", "dorado"]),
-  "Un semiarco asimétrico a la derecha y una columna a la izquierda, en azul, blanco y dorado.",
+  "Un semiarco orgánico a la derecha y una columna a la izquierda, en azul, blanco y dorado.",
 );
 assert.equal(
   resumenPlanCliente([{ oficialId: "semiarco", nombre: "Semiarco izquierdo", ubicacion: "lateral_izquierdo", repeticiones: 1 }, { oficialId: "semiarco", nombre: "Semiarco derecho", ubicacion: "lateral_derecho", repeticiones: 1 }], ["rosado"]),
@@ -95,7 +95,7 @@ assert.equal(
     { oficialId: "bouquet", nombre: "Bouquet", ubicacion: "piso_frontal", repeticiones: 1 },
     { oficialId: "bouquet", nombre: "Bouquet 2", ubicacion: "piso_frontal", repeticiones: 1 },
   ], ["plateado"]),
-  "Un arco asimétrico al centro y dos bouquets de globos en el piso, al frente, en plateado.",
+  "Un arco orgánico al centro y dos bouquets de globos en el piso, al frente, en plateado.",
   "dos bouquets iguales en el mismo lugar no se repiten",
 );
 assert.equal(
@@ -143,10 +143,32 @@ assert.equal(
     { estructura_id: "EST_01_SEMIARCO", pedido: "burdeos", entregado: "plateado, blanco", motivo },
     { estructura_id: "EST_02_COLUMNA", pedido: "burdeos", entregado: "plateado, blanco", motivo },
   ], descripciones);
+  // Una frase por grupo de piezas que nombra las piezas, no un "esta pieza"
+  // por cada color (2026-09-24).
   assert.deepEqual(textos, [
     "Para el semiarco a la derecha no hay globos de 18 pulgadas en ese color; usamos globos de 12 pulgadas.",
-    motivo,
+    "La foto de referencia muestra burdeos; el semiarco a la derecha y la columna a la izquierda no lo llevan: se armaron con plateado y blanco.",
   ]);
+  assert.deepEqual(
+    sustitucionesCliente([
+      { estructura_id: "EST_02_COLUMNA", pedido: "blanco", entregado: "rosado, plateado", motivo },
+      { estructura_id: "EST_02_COLUMNA", pedido: "transparente", entregado: "rosado, plateado", motivo },
+    ], descripciones),
+    ["La foto de referencia muestra blanco y transparente; la columna a la izquierda no los lleva: se armó con rosado y plateado."],
+  );
+  // El gris no se vende y se compra como plateado: una sustitución, dicha una
+  // sola vez aunque la tengan las dos piezas, y sin llamarla pérdida.
+  assert.deepEqual(
+    sustitucionesCliente([
+      { estructura_id: "EST_01_SEMIARCO", pedido: "gris", entregado: "plateado", motivo },
+      { estructura_id: "EST_02_COLUMNA", pedido: "gris", entregado: "plateado", motivo },
+      { estructura_id: "EST_02_COLUMNA", pedido: "blanco", entregado: "rosado, plateado", motivo },
+    ], descripciones),
+    [
+      "La foto de referencia muestra blanco; la columna a la izquierda no lo lleva: se armó con rosado y plateado.",
+      "La foto de referencia muestra gris, que el catálogo no vende: se usó plateado.",
+    ],
+  );
   assert.ok(textos.every((texto) => !/globos de burdeos/.test(texto)), "un color no se describe como tamaño");
 }
 ok("sustituciones agrupadas y supuestos sin ids, códigos ni slugs");
@@ -195,7 +217,7 @@ if (!blueprintParseado.success) {
   assert.fail(`fixture de blueprint inválido: ${blueprintParseado.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join(" | ")}`);
 }
 const blueprint = blueprintParseado.data;
-assert.equal(resumenReferenciaCliente(blueprint), "Veo un semiarco asimétrico a la derecha y una columna a la izquierda.");
+assert.equal(resumenReferenciaCliente(blueprint), "Veo un semiarco orgánico a la derecha y una columna a la izquierda.");
 assert.deepEqual(ambientacionCliente(blueprint, new Set(["REF_01_E01", "REF_01_E02"])), ["Luces", "Hojas y plantas"], "sin letreros y en español");
 ok("referencia: estructuras vistas y ambientación en español");
 
@@ -382,7 +404,7 @@ function textoVisible(html: string): string {
 
 const html = renderToStaticMarkup(React.createElement(TarjetaPlanDecoracion, { plan, referenceBlueprint: blueprint }));
 const texto = textoVisible(html);
-assert.match(texto, /Un semiarco asimétrico a la derecha y una columna a la izquierda, en blanco, azul y plateado\./);
+assert.match(texto, /Un semiarco orgánico a la derecha y una columna a la izquierda, en blanco, azul y plateado\./);
 assert.match(texto, /1,2 m de ancho × 2,2 m de alto · unos 23 globos/);
 assert.match(texto, /1,8 m de alto · unos 35 globos/);
 assert.match(texto, /Globos de 5, 9 y 12 pulgadas/);

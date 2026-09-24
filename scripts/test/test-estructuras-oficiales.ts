@@ -68,7 +68,7 @@ pass("plan structures map to their official variant; non-balloon pieces are not 
 
 // 3. Informative text for the customer never shows internal enums.
 const resumen = resumenEstructuraParaCliente({ tipo: "semiarco", densidad: "media", ubicacion: "lateral_izquierdo", nombre: "Semiarco asimétrico izquierdo", altoM: 1.8 });
-assert.equal(resumen, "Semiarco asimétrico · a la izquierda · 1,8 m de alto");
+assert.equal(resumen, "Semiarco orgánico · a la izquierda · 1,8 m de alto");
 assert.doesNotMatch(resumen, /_|semiarco\b(?! asim)/);
 pass("customer summary uses official names and plain locations");
 

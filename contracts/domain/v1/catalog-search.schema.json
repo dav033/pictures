@@ -271,6 +271,9 @@
       ]
     },
     "delta_e_maximo": 45,
-    "escala": 100
+    "escala": 100,
+    "colores_sin_venta": [
+      "gris"
+    ]
   }
 }
