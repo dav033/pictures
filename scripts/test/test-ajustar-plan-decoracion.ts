@@ -64,11 +64,11 @@ function sobre(llamada: Llamada, payload: Json): Response {
  * the tool drives the same orchestration as the HTTP editor. `error` answers
  * with a Python domain error instead.
  */
-function conEdicion(responder: (llamada: Llamada) => Response, error?: { code: string; status: number }): (llamada: Llamada) => Response {
+function conEdicion(responder: (llamada: Llamada) => Response, error?: { code: string; status: number }, avisos: string[] = []): (llamada: Llamada) => Response {
   return (llamada) => {
     if (llamada.path !== "/internal/v1/plan/edit") return responder(llamada);
     if (error) return Response.json({ detail: { code: error.code } }, { status: error.status });
-    return sobre(llamada, { operation_schema_version: "plan-edit-result.v1", plan: llamada.body.plan as Json, avisos: [] });
+    return sobre(llamada, { operation_schema_version: "plan-edit-result.v1", plan: llamada.body.plan as Json, avisos });
   };
 }
 
@@ -145,14 +145,16 @@ async function main(): Promise<void> {
     console.log("[PASS] reemplazar: ok:true, estado.planResuelto/cotizacion actualizados, color canonizado por el catálogo");
   }
 
-  // --- 2. agregar.
+  // --- 2. agregar, relaying Python's avisos about the edit verbatim.
   {
-    instalarFetch(conEdicion((l) => l.path === "/internal/v1/plan/resolve" ? sobre(l, payloadResolucion()) : sobre(l, seleccionAdmitida({ product_id: "prod-azul", variant_id: "var-azul-12", product_title: "Globo Latex Redondo Fashion Azul", colors: ["azul"] }))));
+    const aviso = "La pieza ahora lleva un patrón de color sugerido.";
+    instalarFetch(conEdicion((l) => l.path === "/internal/v1/plan/resolve" ? sobre(l, payloadResolucion()) : sobre(l, seleccionAdmitida({ product_id: "prod-azul", variant_id: "var-azul-12", product_title: "Globo Latex Redondo Fashion Azul", colors: ["azul"] })), undefined, [aviso]));
     const { registro } = turno();
     const r = await registro.ajustar_plan_decoracion!({ accion: "agregar", estructura_id: "EST_01_ARCO", participacion: 0.2, variante: { product_id: "prod-azul", variant_id: "var-azul-12" } }, llamada);
     assert.equal(r.ok, true, JSON.stringify(r).slice(0, 400));
     assert.equal(r.accion, "agregar");
-    console.log("[PASS] agregar: ok:true");
+    assert.deepEqual(r.avisos, [aviso], "los avisos de Python llegan al modelo tal cual");
+    console.log("[PASS] agregar: ok:true y los avisos de Python llegan al modelo");
   }
 
   // --- 3. quitar (no new variant, no same-turn search gate to satisfy).

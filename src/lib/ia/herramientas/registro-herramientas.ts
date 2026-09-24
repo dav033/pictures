@@ -1414,7 +1414,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         }
       }
       try {
-        const { plan: resuelto, cotizacion } = await aplicarEdicionPlan({
+        const { plan: resuelto, cotizacion, avisos } = await aplicarEdicionPlan({
           base: planVigente.base,
           edicion,
           catalogAllowlist: options.catalogAllowlist ?? null,
@@ -1441,7 +1441,12 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
           accion: edicion.accion,
           material_nuevo: edicion.accion === "quitar" ? undefined : `${edicion.variante!.product_id}/${edicion.variante!.variant_id}`,
           total_cop: resuelto.totales.total_cop,
-          accion_requerida: "Cuéntale al cliente qué cambiaste (la estructura y el material, no todo el plan) y que el desglose en pantalla ya lo refleja. No llames confirmar_plan_decoracion en este turno ni presentes esto como una propuesta nueva.",
+          // Python's own sentences about the edit (e.g. the color pattern was
+          // rebuilt because a color left the piece): relay them, don't reword.
+          ...(avisos.length > 0 ? { avisos } : {}),
+          accion_requerida: avisos.length > 0
+            ? "Cuéntale al cliente qué cambiaste (la estructura y el material, no todo el plan), incluidos los avisos tal cual, y que el desglose en pantalla ya lo refleja. No llames confirmar_plan_decoracion en este turno ni presentes esto como una propuesta nueva."
+            : "Cuéntale al cliente qué cambiaste (la estructura y el material, no todo el plan) y que el desglose en pantalla ya lo refleja. No llames confirmar_plan_decoracion en este turno ni presentes esto como una propuesta nueva.",
           fase: "propuesta_actualizada; el desglose en pantalla ya refleja el ajuste",
         };
       } catch (error) {
