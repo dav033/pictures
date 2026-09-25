@@ -59,6 +59,11 @@ import { peticionVistaPieza } from "@/components/plan/patron/peticion-pieza";
 import { admitePatron } from "@/components/plan/patron/modos";
 import type { PatronColor, PatronColorResuelto } from "@/lib/plan/patron-color";
 import { FalloPlanPatron, pedirPlanEditarPatron, pedirVistaPatron } from "@/lib/plan/peticion-patron";
+import { EditorBouquet } from "@/components/plan/bouquet/EditorBouquet";
+import { DialogoHojaArmadoBouquet } from "@/components/plan/bouquet/HojaArmadoBouquet";
+import { leyendaBouquet } from "@/components/plan/bouquet/leyenda-bouquet";
+import type { ArmadoBouquetV1 } from "@/lib/plan/armado-bouquet";
+import { FalloPlanArmado, pedirPlanEditarArmado } from "@/lib/plan/peticion-armado";
 import { avisosDeEdicion } from "@/components/plan/avisos-edicion";
 import { crearVistasEnVivo } from "@/components/plan/vistas-en-vivo";
 import { crearColaAjustes, crearPendientesAjustes, type TramoAjustes } from "@/components/plan/cola-ajustes";
@@ -147,6 +152,8 @@ type OpcionCatalogo = { candidato: ProductoCandidato; variante: VarianteCandidat
 type VueltaAtras = { tramo: TramoAjustes<PlanResuelto>; texto: string };
 /** One pattern editor session: its saves are undone together, and Python's sentences about them are told once, at the end. */
 type SesionPatron = { estructuraId: string; tramo: TramoAjustes<PlanResuelto>; avisos: string[] };
+/** One bouquet assembly editor session (ADR-0030), same contract as the pattern one. */
+type SesionArmado = SesionPatron;
 
 function unicosPor<T>(items: T[], clave: (item: T) => string): T[] {
   const vistas = new Set<string>();
@@ -291,6 +298,11 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   // The session's last change did not make it into the plan: why, and (for a failure, not a rejection) a retry with it.
   const [falloPatron, setFalloPatron] = useState<{ mensaje: string; reintentar: (() => void) | null } | null>(null);
   const patronesRechazadosRef = useRef(new WeakSet<PatronColor>());
+  // Bouquet assembly editor and sheet (ADR-0030), one bouquet at a time; same session contract as the pattern editor.
+  const [armadoEditando, setArmadoEditando] = useState<SesionArmado | null>(null);
+  const [falloArmado, setFalloArmado] = useState<{ mensaje: string; reintentar: (() => void) | null } | null>(null);
+  const armadosRechazadosRef = useRef(new WeakSet<ArmadoBouquetV1>());
+  const [hojaArmadoBouquet, setHojaArmadoBouquet] = useState<string | null>(null);
   // Every edit of the proposal runs one at a time on the plan the previous one
   // signed: the controls save on their own, faster than the prop comes back.
   const [ajustesEnCurso, setAjustesEnCurso] = useState(0);
@@ -325,11 +337,14 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
   const declaradasPorId = new Map(plan.plan.estructuras.map((estructura) => [estructura.estructura_id, estructura]));
   // Only applied patterns describe the plan; a suggestion lives in the editor until it is applied.
   const patronesAplicados = new Map((plan.patrones_color ?? []).filter((patron) => patron.aplicado).map((patron) => [patron.estructura_id, patron]));
+  // Bouquet assemblies as Python resolved them (ADR-0030), one per bouquet that has one.
+  const armadosPorEstructura = new Map((plan.armados_bouquet ?? []).map((armado) => [armado.estructura_id, armado]));
   const vistasEstructura = plan.estructuras.map((estructura) => {
     const declarada = declaradasPorId.get(estructura.estructura_id);
     const oficial = identificarEstructuraOficial({ tipo: estructura.tipo, densidad: declarada?.densidad, ubicacion: estructura.ubicacion, nombre: estructura.nombre, estructura_oficial: declarada?.estructura_oficial });
     const paraDescribir = { oficialId: oficial?.id, nombre: estructura.nombre, ubicacion: estructura.ubicacion, repeticiones: estructura.repeticiones };
     const patron = patronesAplicados.get(estructura.estructura_id);
+    const armado = armadosPorEstructura.get(estructura.estructura_id);
     return {
       estructura,
       declarada,
@@ -342,11 +357,17 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       leyenda: leyendaPatron(declarada?.materiales ?? [], estructura.lineas, patron?.conteo),
       patron,
       admitePatron: Boolean(declarada && admitePatron(estructura.tipo, declarada.materiales.length)),
+      // A bouquet (official structure) can carry an assembly; its numbered legend uses the codes Python gave.
+      esBouquet: oficial?.id === "bouquet",
+      armado,
+      leyendaArmado: armado ? leyendaBouquet(armado, estructura.lineas) : [],
     };
   });
   const descripcionesPorId = new Map(vistasEstructura.map((vista) => [vista.estructura.estructura_id, vista.descripcion]));
   const vistaEditorPatron = patronEditando ? vistasEstructura.find((vista) => vista.estructura.estructura_id === patronEditando.estructuraId) : undefined;
   const vistaHojaArmado = hojaArmado ? vistasEstructura.find((vista) => vista.estructura.estructura_id === hojaArmado) : undefined;
+  const vistaEditorArmado = armadoEditando ? vistasEstructura.find((vista) => vista.estructura.estructura_id === armadoEditando.estructuraId) : undefined;
+  const vistaHojaArmadoBouquet = hojaArmadoBouquet ? vistasEstructura.find((vista) => vista.estructura.estructura_id === hojaArmadoBouquet) : undefined;
   const coloresPlan = [...new Set(vistasEstructura.flatMap((vista) => vista.colores.map((muestra) => muestra.color)))];
   const resumenPlan = resumenPlanCliente(vistasEstructura.map((vista) => vista.paraDescribir), coloresPlan);
   const soloGlobos = plan.estructuras.every((estructura) => esEstructuraDeGlobos(estructura.tipo));
@@ -736,6 +757,51 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     void guardarPatron(sesion, patron).then((error) => avisarSesionPatron(sesion, { guardados: error ? 0 : 1, error, sinGuardar: error ? { valor: patron } : null }));
   }
 
+  /** One autosave of the bouquet assembly editor (ADR-0030). A rejected assembly comes back with Python's own sentence. */
+  function guardarArmado(sesion: SesionArmado, armado: ArmadoBouquetV1 | null): Promise<string | null> {
+    const pedir: typeof pedirPlanEditar = (cuerpo, respaldo, opciones) => pedirPlanEditarArmado(cuerpo, respaldo, opciones).catch((error: unknown) => {
+      // Python rejected this very assembly: retrying it would get the same answer.
+      if (armado && error instanceof FalloPlanArmado && error.armadoInvalido) armadosRechazadosRef.current.add(armado);
+      throw error;
+    });
+    return aplicarAjusteDirecto(
+      { accion: "armado", estructura_id: sesion.estructuraId, armado_bouquet: armado },
+      "",
+      { enDialogo: true, aviso: false, pedir, tramo: sesion.tramo, alAvisar: (avisos) => sesion.avisos.push(...avisos) },
+    );
+  }
+
+  function abrirEditorArmado(estructuraId: string): void {
+    setFalloArmado(null);
+    setArmadoEditando({ estructuraId, tramo: cola.tramo(), avisos: [] });
+  }
+
+  /** Like the pattern editor: closes at once, then ONE notice for the whole session with a "Deshacer". */
+  function cerrarEditorArmado(fin: Promise<ResumenAutoguardado<ArmadoBouquetV1 | null>>): void {
+    const sesion = armadoEditando;
+    setArmadoEditando(null);
+    if (!sesion) return;
+    void fin.then((resumen) => avisarSesionArmado(sesion, resumen));
+  }
+
+  function avisarSesionArmado(sesion: SesionArmado, { guardados, error, sinGuardar }: ResumenAutoguardado<ArmadoBouquetV1 | null>): void {
+    if (guardados > 0) {
+      setAvisoEdicion({
+        id: ++secuenciaAvisoRef.current,
+        texto: `Armado actualizado. Nuevo total: ${pesos.format(cola.base().totales.total_cop)}.`,
+        deshacer: { tramo: sesion.tramo, texto: "Volví a como estaba." },
+        avisos: [...new Set(sesion.avisos)],
+      });
+    }
+    const reintentable = sinGuardar && !(sinGuardar.valor && armadosRechazadosRef.current.has(sinGuardar.valor)) ? sinGuardar : null;
+    setFalloArmado(error ? { mensaje: `El último cambio del armado no se guardó: ${error}`, reintentar: reintentable ? () => reintentarArmado(sesion, reintentable.valor) : null } : null);
+  }
+
+  function reintentarArmado(sesion: SesionArmado, armado: ArmadoBouquetV1 | null): void {
+    setFalloArmado(null);
+    void guardarArmado(sesion, armado).then((error) => avisarSesionArmado(sesion, { guardados: error ? 0 : 1, error, sinGuardar: error ? { valor: armado } : null }));
+  }
+
   async function aplicarEdicion(evento?: FormEvent<HTMLFormElement>) {
     evento?.preventDefault();
     if (!onPlanActualizado || guardandoEdicion || !estructuraSeleccionada) return;
@@ -1121,7 +1187,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
           {!editorAbierto && errorEdicion && !seleccionCatalogo && <p role="alert" className="rounded-xl bg-error-suave px-3 py-2 text-xs font-medium text-error">{errorEdicion}</p>}
 
           <ol className="space-y-2.5" aria-label="Piezas de la decoración">
-            {vistasEstructura.map(({ estructura, declarada, oficial, leyenda, patron, admitePatron: conPatron }, indice) => (
+            {vistasEstructura.map(({ estructura, declarada, oficial, leyenda, patron, admitePatron: conPatron, esBouquet, armado, leyendaArmado }, indice) => (
               <DetalleEstructura
                 key={estructura.estructura_id}
                 idBase={`${editorId}-pieza-${indice}`}
@@ -1149,6 +1215,13 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
                   onEditar: editorDisponible && conPatron ? () => abrirEditorPatron(estructura.estructura_id) : undefined,
                   onHojaArmado: patron ? () => setHojaArmado(estructura.estructura_id) : undefined,
                   // The session starts from the plan the pending slider changes sign.
+                  ocupado: guardandoAjustes,
+                } : undefined}
+                armado={esBouquet && declarada && (editorDisponible || armado) ? {
+                  resuelto: armado,
+                  leyenda: leyendaArmado,
+                  onEditar: editorDisponible ? () => abrirEditorArmado(estructura.estructura_id) : undefined,
+                  onHojaArmado: armado ? () => setHojaArmadoBouquet(estructura.estructura_id) : undefined,
                   ocupado: guardandoAjustes,
                 } : undefined}
                 vistaReparto={editorDisponible ? {
@@ -1251,6 +1324,17 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
         </div>
       )}
 
+      {falloArmado && (
+        <div data-testid="armado-sin-guardar" role="alert" className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-t border-borde-suave bg-error-suave px-4 py-2.5 text-xs font-medium text-error @xl:px-5.5">
+          <span className="min-w-0">{falloArmado.mensaje}</span>
+          {falloArmado.reintentar && (
+            <button type="button" onClick={falloArmado.reintentar} className="shrink-0 rounded-full px-2.5 py-1 font-semibold text-acento underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento">
+              Reintentar
+            </button>
+          )}
+        </div>
+      )}
+
       {editadoTrasAprobar && !aprobado && onAprobar && !bloqueo && (
         <p data-testid="plan-reaprobar" role="status" className="border-t border-borde-suave bg-acento-suave px-4 py-2.5 text-xs font-medium text-acento @xl:px-5.5">
           Cambiaste la propuesta: la imagen no se actualiza sola. Toca «Regenerar visual» cuando quieras verla.
@@ -1296,6 +1380,31 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
           estructura={vistaHojaArmado.estructura}
           declarada={vistaHojaArmado.declarada}
           oficial={vistaHojaArmado.oficial}
+          tituloPlan={plan.plan.concepto.titulo}
+        />
+      )}
+      {armadoEditando && vistaEditorArmado?.declarada && editorDisponible && (
+        <EditorBouquet
+          key={vistaEditorArmado.estructura.estructura_id}
+          onCerrar={cerrarEditorArmado}
+          plan={plan.plan}
+          estructura={vistaEditorArmado.estructura}
+          declarada={vistaEditorArmado.declarada}
+          oficial={vistaEditorArmado.oficial}
+          resuelto={vistaEditorArmado.armado ?? null}
+          aprobada={aprobado || editadoTrasAprobar}
+          onGuardar={(armado) => guardarArmado(armadoEditando, armado)}
+        />
+      )}
+      {vistaHojaArmadoBouquet?.armado && (
+        <DialogoHojaArmadoBouquet
+          abierto
+          onAbiertoChange={(abierta) => { if (!abierta) setHojaArmadoBouquet(null); }}
+          resuelto={vistaHojaArmadoBouquet.armado}
+          leyenda={vistaHojaArmadoBouquet.leyendaArmado}
+          estructura={vistaHojaArmadoBouquet.estructura}
+          declarada={vistaHojaArmadoBouquet.declarada}
+          oficial={vistaHojaArmadoBouquet.oficial}
           tituloPlan={plan.plan.concepto.titulo}
         />
       )}

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { ArmadoBouquetV1Schema } from "./armado-bouquet";
 import { PatronColorV1Schema } from "./patron-color";
 import { PlanDecoracionSchema } from "./tipos";
 
@@ -109,5 +110,18 @@ export const EdicionPatronSchema = z.object({
 
 export type EdicionPatron = z.infer<typeof EdicionPatronSchema>;
 
+/**
+ * Assembly of one bouquet from the assembly editor (ADR-0030): `null` removes
+ * it. Only the shape is checked here; Python validates it against what the
+ * plan buys (`armado_invalido`).
+ */
+export const EdicionArmadoSchema = z.object({
+  accion: z.literal("armado"),
+  estructura_id: z.string().trim().min(1).max(160),
+  armado_bouquet: ArmadoBouquetV1Schema.nullable(),
+}).strict();
+
+export type EdicionArmado = z.infer<typeof EdicionArmadoSchema>;
+
 /** Every edit the plan editor applies (Python applies it: services/ai-api/app/plan_edicion.py). */
-export type EdicionPlan = Edicion | EdicionReparto | EdicionMezcla | EdicionPatron;
+export type EdicionPlan = Edicion | EdicionReparto | EdicionMezcla | EdicionPatron | EdicionArmado;

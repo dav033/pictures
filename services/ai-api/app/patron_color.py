@@ -1287,6 +1287,21 @@ def _color_en(material: MaterialPatron) -> str:
     return f"{acabado} {nombre}" if acabado else nombre
 
 
+def nombre_color_en(color: str | None) -> str:
+    """Solo el color en inglés (fragmento LoRA); ``_nombre_en`` para otros módulos."""
+    return _nombre_en(color)
+
+
+def color_con_acabado_en(color: str | None, acabado: str | None) -> str:
+    """Color con su acabado en inglés (frase Gemini); ``_color_en`` para otros módulos."""
+    return _color_en(MaterialPatron(color, acabado, 1.0))
+
+
+def lista_en(nombres: Sequence[str]) -> str:
+    """``a, b and c`` en inglés; ``_lista_en`` para otros módulos."""
+    return str(_lista_en(nombres))
+
+
 def _sin_repetir_seguidos(nombres: Sequence[str]) -> list[str]:
     """Una secuencia sin el mismo nombre dos veces seguidas ("gold, then gold")."""
     return [
@@ -1847,9 +1862,12 @@ __all__ = [
     "sugerir_patron_modo",
     "TIPO_REJILLA",
     "VERSION_PATRON",
+    "color_con_acabado_en",
     "conteo_por_instancia",
     "forma_valida",
+    "lista_en",
     "material_de_color",
+    "nombre_color_en",
     "participaciones",
     "patron_desde_pista",
     "patron_resuelto",

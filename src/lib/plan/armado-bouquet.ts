@@ -20,8 +20,11 @@ export type VarianteBouquet = (typeof VARIANTES_BOUQUET)[number];
 
 /** Unidades de armado de la técnica Sempertex; `suelto` es un globo solo. */
 export const UNIDADES_BOUQUET = ["suelto", "pareja", "trio", "cuarteto", "quinteto", "sexteto"] as const;
+export type UnidadBouquet = (typeof UNIDADES_BOUQUET)[number];
 export const ROLES_NIVEL_BOUQUET = ["base", "cuerpo", "capa", "alrededor", "acento", "relleno"] as const;
+export type RolNivelBouquet = (typeof ROLES_NIVEL_BOUQUET)[number];
 export const DISPOSICIONES_NUMERO = ["centro", "lados", "arriba"] as const;
+export type DisposicionNumero = (typeof DISPOSICIONES_NUMERO)[number];
 export const ORIGENES_ARMADO = ["decorador", "referencia", "sugerido"] as const;
 export const TIPOS_GLOBO_BOUQUET = ["latex", "metalizado", "burbuja", "numero"] as const;
 export const INSUMOS_BOUQUET = ["pesa", "cinta", "helio", "varilla", "base"] as const;
@@ -102,6 +105,10 @@ export const ArmadoBouquetResueltoSchema = z.object({
   descripcion: z.string(),
   pasos: z.array(z.string()),
   avisos: z.array(z.string()),
+  /** Frase del armado para Uzume (inglés, imperativo); TypeScript la inserta tal cual (ADR-0028 §12). */
+  prompt_gemini: z.string(),
+  /** Fragmento para Kagutsuchi: inglés ASCII, sin cifras ni negaciones. */
+  prompt_lora: z.string(),
 }).strict();
 
 export type ArmadoBouquetResuelto = z.infer<typeof ArmadoBouquetResueltoSchema>;

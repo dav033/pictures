@@ -12,7 +12,15 @@ import {
   CatalogRecommendationsResultV1Schema,
   PlanResolutionResultV1Schema,
 } from "@/lib/ia/contracts/domain-v1";
-import { LecturaArmadoSchema, type PistaArmado } from "@/lib/plan/armado-bouquet";
+import {
+  ArmadoBouquetResueltoSchema,
+  DISPOSICIONES_NUMERO,
+  LecturaArmadoSchema,
+  VARIANTES_BOUQUET,
+  type ArmadoBouquetResuelto,
+  type ArmadoBouquetV1,
+  type PistaArmado,
+} from "@/lib/plan/armado-bouquet";
 import type { EdicionPlan } from "@/lib/plan/edicion-esquemas";
 import {
   MODOS_PATRON_COLOR,
@@ -61,6 +69,8 @@ export const PYTHON_PLAN_EDIT_PATH = "/internal/v1/plan/edit";
 export const PYTHON_PLAN_EDIT_SCOPE = "plan.edit";
 export const PYTHON_PLAN_PATRON_PATH = "/internal/v1/plan/patron";
 export const PYTHON_PLAN_PATRON_SCOPE = "plan.patron";
+export const PYTHON_PLAN_ARMADO_PATH = "/internal/v1/plan/armado-bouquet";
+export const PYTHON_PLAN_ARMADO_SCOPE = "plan.armado_bouquet";
 export const PYTHON_EMBEDDING_MODEL = "gemini-embedding-2";
 export const PYTHON_EMBEDDING_DIMENSIONS = 768;
 export const PYTHON_MAX_BODY_BYTES = 64 * 1024;
@@ -112,9 +122,23 @@ export const PYTHON_PLAN_EDIT_DOMAIN_CODES = [
   "sin_participacion",
   "patron_activo",
   "patron_invalido",
+  "armado_invalido",
   "invalid_plan",
 ] as const;
 export type PythonPlanEditDomainCode = (typeof PYTHON_PLAN_EDIT_DOMAIN_CODES)[number];
+
+/**
+ * Stable domain error codes reported by POST /internal/v1/plan/armado-bouquet
+ * (ADR-0030). Its `armado_invalido` also carries the styles and number
+ * placements the purchase admits (`domainDetails.variantesAdmitidas`,
+ * `disposicionesAdmitidas`).
+ */
+export const PYTHON_PLAN_ARMADO_DOMAIN_CODES = [
+  "estructura_no_encontrada",
+  "armado_invalido",
+  "invalid_plan",
+] as const;
+export type PythonPlanArmadoDomainCode = (typeof PYTHON_PLAN_ARMADO_DOMAIN_CODES)[number];
 
 /**
  * Stable domain error codes reported by POST /internal/v1/plan/patron (ADR-0028 §10).
@@ -234,11 +258,22 @@ export interface PythonDomainDetails {
   motivo?: string;
   mensaje?: string;
   modosAdmitidos?: ModoAdmitido[];
+  /** `armado_invalido` of the bouquet preview (ADR-0030): what the purchase admits. */
+  variantesAdmitidas?: VarianteBouquet[];
+  disposicionesAdmitidas?: DisposicionNumero[];
 }
+
+type VarianteBouquet = (typeof VARIANTES_BOUQUET)[number];
+type DisposicionNumero = (typeof DISPOSICIONES_NUMERO)[number];
 
 /** The styles of a structure: at most one entry per mode, each in the contract. */
 const modosAdmitidosSchema = z.array(ModoAdmitidoSchema).max(MODOS_PATRON_COLOR.length)
   .refine((modos) => new Set(modos.map((modo) => modo.modo)).size === modos.length);
+/** Bouquet options: each value once, all in the contract. */
+const variantesAdmitidasSchema = z.array(z.enum(VARIANTES_BOUQUET)).max(VARIANTES_BOUQUET.length)
+  .refine((lista) => new Set(lista).size === lista.length);
+const disposicionesAdmitidasSchema = z.array(z.enum(DISPOSICIONES_NUMERO)).max(DISPOSICIONES_NUMERO.length)
+  .refine((lista) => new Set(lista).size === lista.length);
 
 function upstreamDomainDetails(value: unknown): PythonDomainDetails | undefined {
   if (!isJsonObject(value) || !isJsonObject(value.detail)) return undefined;
@@ -253,12 +288,21 @@ function upstreamDomainDetails(value: unknown): PythonDomainDetails | undefined 
   // All or nothing: a list that breaks the contract is dropped whole.
   const modos = modosAdmitidosSchema.safeParse(detail.modos_admitidos);
   const modosAdmitidos = modos.success ? modos.data : undefined;
-  if (estructuraId === undefined && motivo === undefined && mensaje === undefined && modosAdmitidos === undefined) return undefined;
+  const variantes = variantesAdmitidasSchema.safeParse(detail.variantes_admitidas);
+  const variantesAdmitidas = variantes.success ? variantes.data : undefined;
+  const disposiciones = disposicionesAdmitidasSchema.safeParse(detail.disposiciones_admitidas);
+  const disposicionesAdmitidas = disposiciones.success ? disposiciones.data : undefined;
+  if (
+    estructuraId === undefined && motivo === undefined && mensaje === undefined
+    && modosAdmitidos === undefined && variantesAdmitidas === undefined && disposicionesAdmitidas === undefined
+  ) return undefined;
   return {
     ...(estructuraId === undefined ? {} : { estructuraId }),
     ...(motivo === undefined ? {} : { motivo }),
     ...(mensaje === undefined ? {} : { mensaje }),
     ...(modosAdmitidos === undefined ? {} : { modosAdmitidos }),
+    ...(variantesAdmitidas === undefined ? {} : { variantesAdmitidas }),
+    ...(disposicionesAdmitidas === undefined ? {} : { disposicionesAdmitidas }),
   };
 }
 
@@ -1124,6 +1168,7 @@ export interface PythonPlanResolutionInput {
   /** Absent unless the caller passes it (ADR-0030): same byte-identical rule. */
   completarArmados?: boolean;
   pistasArmado?: PistaArmado[];
+  completarArmadosDe?: string[];
   requestId: string;
   correlationId: string;
   deadlineMs?: number;
@@ -1172,6 +1217,8 @@ export interface PythonPlanEditInput {
   coloresVariante: readonly string[];
   /** `PATRONES_COLOR_V1`: a piece going from one color to two gets its preset pattern. */
   completarPatrones: boolean;
+  /** `BOUQUETS_ARMADO_V1`: the notice of a removed assembly says it is suggested again (ADR-0030). */
+  completarArmados?: boolean;
   requestId: string;
   correlationId: string;
   deadlineMs?: number;
@@ -1245,6 +1292,57 @@ export interface PythonPlanPatronResult {
   patron: PatronColorResuelto;
   /** The styles the editor may offer for this structure, decided by Python. */
   modos_admitidos: ModoAdmitido[];
+  replayed?: boolean;
+}
+
+/** Plan 1.1 allows up to 12 materials per structure (`MAX_GLOBOS_PIEZA` in plan_edicion.py). */
+export const PYTHON_PLAN_ARMADO_MAX_GLOBOS = 12;
+
+/**
+ * What the browser knows of one balloon of the bouquet, from
+ * `PlanResuelto.estructuras[].lineas` (`GloboNavegador` in
+ * services/ai-api/app/plan_edicion.py). It only classifies each material
+ * (latex, foil, bubble or number, and its size) the way the catalog does at
+ * resolution; the counts are the plan's own. Never a price.
+ */
+export const PythonPlanArmadoGloboSchema = z.object({
+  product_id: z.string().min(1).max(160),
+  variant_id: z.string().min(1).max(160),
+  titulo: z.string().max(400),
+  forma: z.string().max(40).nullable().optional(),
+  diam_pulg: z.number().min(0).max(100).nullable().optional(),
+  tamano_codigo: z.string().max(40).nullable().optional(),
+  color: z.string().max(160).nullable().optional(),
+  acabado: z.string().max(160).nullable().optional(),
+}).strict();
+export type PythonPlanArmadoGlobo = z.infer<typeof PythonPlanArmadoGloboSchema>;
+export const PythonPlanArmadoGlobosSchema = z.array(PythonPlanArmadoGloboSchema).min(1).max(PYTHON_PLAN_ARMADO_MAX_GLOBOS);
+
+export interface PythonPlanArmadoInput {
+  plan: PlanDecoracion;
+  estructuraId: string;
+  /** `null` asks for the recipe of the bouquet (ADR-0030). */
+  armadoBouquet: ArmadoBouquetV1 | null;
+  /** The bouquet's balloons as the browser holds them; only the contract fields travel. */
+  globos: readonly PythonPlanArmadoGlobo[];
+  /** With `armadoBouquet` null: the style the decorator chose. */
+  variante?: VarianteBouquet;
+  /** With `armadoBouquet` null: where the decorator put the numbers. */
+  disposicion?: DisposicionNumero;
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+export interface PythonPlanArmadoResult {
+  armado: ArmadoBouquetResuelto;
+  /** The styles and number placements the editor may offer, decided by Python from the purchase. */
+  variantes_admitidas: VarianteBouquet[];
+  disposiciones_admitidas: DisposicionNumero[];
   replayed?: boolean;
 }
 
@@ -1379,6 +1477,13 @@ const planPatronPayloadResultSchema = z.object({
   operation_schema_version: z.literal("plan-patron-result.v1"),
   patron: PatronColorResueltoSchema,
   modos_admitidos: modosAdmitidosSchema,
+}).strict();
+
+const planArmadoPayloadResultSchema = z.object({
+  operation_schema_version: z.literal("plan-armado-bouquet-result.v1"),
+  armado: ArmadoBouquetResueltoSchema,
+  variantes_admitidas: variantesAdmitidasSchema,
+  disposiciones_admitidas: disposicionesAdmitidasSchema,
 }).strict();
 
 const imageGenerateUsageSchema = z.object({
@@ -2092,6 +2197,7 @@ export async function llamarPythonPlanResolution(
     pistasPatron,
     completarArmados,
     pistasArmado,
+    completarArmadosDe,
     ...rest
   } = input;
   const operationBody = {
@@ -2104,6 +2210,7 @@ export async function llamarPythonPlanResolution(
     ...(pistasPatron === undefined ? {} : { pistas_patron: pistasPatron }),
     ...(completarArmados === undefined ? {} : { completar_armados: completarArmados }),
     ...(pistasArmado === undefined ? {} : { pistas_armado: pistasArmado }),
+    ...(completarArmadosDe === undefined ? {} : { completar_armados_de: completarArmadosDe }),
   };
   const response = await llamarPythonOperacion(PYTHON_PLAN_RESOLUTION_PATH, PYTHON_PLAN_RESOLUTION_SCOPE, {
     ...rest,
@@ -2185,7 +2292,7 @@ export async function llamarPythonCatalogRecommendations(
  * is pure and has no effect to deduplicate.
  */
 export async function llamarPythonPlanEdit(input: PythonPlanEditInput): Promise<PythonPlanEditResult> {
-  const { plan, lineasBase, edicion, coloresVariante, completarPatrones, ...rest } = input;
+  const { plan, lineasBase, edicion, coloresVariante, completarPatrones, completarArmados, ...rest } = input;
   const operationBody = {
     schema_version: "plan-edit.v1" as const,
     plan,
@@ -2196,6 +2303,8 @@ export async function llamarPythonPlanEdit(input: PythonPlanEditInput): Promise<
     edicion,
     colores_variante: [...coloresVariante],
     completar_patrones: completarPatrones,
+    // Absent unless the caller passes it: every other request stays byte-identical.
+    ...(completarArmados === undefined ? {} : { completar_armados: completarArmados }),
   };
   const response = await llamarPythonOperacion(PYTHON_PLAN_EDIT_PATH, PYTHON_PLAN_EDIT_SCOPE, {
     ...rest,
@@ -2256,6 +2365,59 @@ export async function llamarPythonPlanPatron(input: PythonPlanPatronInput): Prom
     throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
   }
   const resultado = { patron: parsed.data.patron, modos_admitidos: parsed.data.modos_admitidos };
+  return response.replayed ? { ...resultado, replayed: true } : resultado;
+}
+
+/** Exactly the fields of `plan-armado-bouquet.v1`'s balloon, whatever else the caller's object carries. */
+function globoPlanArmado(globo: PythonPlanArmadoGlobo): PythonPlanArmadoGlobo {
+  return {
+    product_id: globo.product_id,
+    variant_id: globo.variant_id,
+    titulo: globo.titulo,
+    ...(globo.forma === undefined ? {} : { forma: globo.forma }),
+    ...(globo.diam_pulg === undefined ? {} : { diam_pulg: globo.diam_pulg }),
+    ...(globo.tamano_codigo === undefined ? {} : { tamano_codigo: globo.tamano_codigo }),
+    ...(globo.color === undefined ? {} : { color: globo.color }),
+    ...(globo.acabado === undefined ? {} : { acabado: globo.acabado }),
+  };
+}
+
+/**
+ * Resolves one bouquet's assembly, or suggests one with `null` (ADR-0030),
+ * for the assembly editor. No catalog and no side effect: the browser says
+ * what each balloon is and Python arranges the plan's own counts.
+ */
+export async function llamarPythonPlanArmadoBouquet(input: PythonPlanArmadoInput): Promise<PythonPlanArmadoResult> {
+  const { plan, estructuraId, armadoBouquet, globos, variante, disposicion, ...rest } = input;
+  const operationBody = {
+    schema_version: "plan-armado-bouquet.v1" as const,
+    plan,
+    estructura_id: estructuraId,
+    armado_bouquet: armadoBouquet,
+    globos: globos.map(globoPlanArmado),
+    ...(variante === undefined ? {} : { variante }),
+    ...(disposicion === undefined ? {} : { disposicion }),
+  };
+  const response = await llamarPythonOperacion(PYTHON_PLAN_ARMADO_PATH, PYTHON_PLAN_ARMADO_SCOPE, {
+    ...rest,
+    payload: operationBody,
+    operationBody,
+    scopes: [PYTHON_PLAN_ARMADO_SCOPE],
+  });
+  const parsed = planArmadoPayloadResultSchema.safeParse(response.payload);
+  // The answer is about the structure asked for; a given assembly comes back as given.
+  if (
+    !parsed.success
+    || parsed.data.armado.estructura_id !== estructuraId
+    || (armadoBouquet !== null && JSON.stringify(parsed.data.armado.armado) !== JSON.stringify(armadoBouquet))
+  ) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  const resultado = {
+    armado: parsed.data.armado,
+    variantes_admitidas: parsed.data.variantes_admitidas,
+    disposiciones_admitidas: parsed.data.disposiciones_admitidas,
+  };
   return response.replayed ? { ...resultado, replayed: true } : resultado;
 }
 

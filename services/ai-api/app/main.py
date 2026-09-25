@@ -110,12 +110,17 @@ from app.plan import (
     PlanResolutionRequest,
     resolve_plan,
 )
+from app.armado_bouquet import DISPOSICIONES as DISPOSICIONES_BOUQUET
+from app.armado_bouquet import VARIANTES as VARIANTES_BOUQUET
 from app.plan_edicion import (
+    PLAN_ARMADO_SCOPE,
     PLAN_EDIT_SCOPE,
     PLAN_PATRON_SCOPE,
+    PlanArmadoRequest,
     PlanEditRequest,
     PlanPatronRequest,
     ejecutar_edicion,
+    vista_previa_armado,
     vista_previa_patron,
 )
 from app.postgres_store import PostgresOperationalStore
@@ -816,6 +821,15 @@ def _detail_metadata(exception: HTTPException) -> dict[str, object]:
     styles = _safe_pattern_styles(exception.detail.get("modos_admitidos"))
     if styles is not None:
         metadata["modos_admitidos"] = styles
+    # armado_invalido of the bouquet preview (ADR-0030): the styles and the
+    # number placements the purchase admits, from known values only.
+    for key, known in (
+        ("variantes_admitidas", VARIANTES_BOUQUET),
+        ("disposiciones_admitidas", DISPOSICIONES_BOUQUET),
+    ):
+        options = exception.detail.get(key)
+        if isinstance(options, list) and all(isinstance(o, str) and o in known for o in options):
+            metadata[key] = [o for o in known if o in options]
     return metadata
 
 
@@ -1466,6 +1480,28 @@ def create_app(
             operation="plan.patron",
             model=PlanPatronRequest,
             scope=PLAN_PATRON_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/armado-bouquet")
+    async def plan_armado_bouquet(request: Request) -> Response:
+        # ADR-0030 (second delivery): resolves (or suggests) one bouquet's
+        # assembly for the editor, without the catalog: the browser sends what
+        # each balloon is; the counts are the plan's.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, PlanArmadoRequest):
+                raise _error("invalid_request", 422)
+            try:
+                result = await run_plan_cpu(vista_previa_armado, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.armado_bouquet",
+            model=PlanArmadoRequest,
+            scope=PLAN_ARMADO_SCOPE,
             handler=handler,
         )
 

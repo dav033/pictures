@@ -87,6 +87,8 @@ def test_clasifica_cada_globo_por_forma_y_titulo() -> None:
     assert burbuja is not None and burbuja.tipo == "burbuja"
     assert foil is not None and (foil.tipo, foil.tamano_pulg) == ("metalizado", 18)
     assert clasificar(4, _globo("Vela chispitas")) is None
+    # Metalizado en el título, pero no es un globo (catálogo real, 2026-09-25).
+    assert clasificar(5, _globo("B2b Cartel Letras Metalizado Corazones — PAQUETE X 1")) is None
 
 
 def _conteo_de(estructura: EstructuraBouquet, armado: dict[str, object]) -> None:
@@ -274,3 +276,74 @@ def test_cada_codigo_distingue_valor_del_numero() -> None:
     leyenda = armado_resuelto(estructura, armado)["leyenda"]
     digitos = {e["digito"]: e["codigo"] for e in leyenda if e["tipo_globo"] == "numero"}  # type: ignore[union-attr]
     assert set(digitos) == {"2", "5"} and digitos["2"] != digitos["5"]
+
+
+# --- Segunda entrega: opciones del editor y frases del prompt de imagen -------------
+
+
+def test_la_compra_dice_que_estilos_y_disposiciones_admite() -> None:
+    from app.armado_bouquet import disposiciones_admitidas, variantes_admitidas
+
+    helio = _estructura([_latex(12, "blanco"), _latex(12, "rosado"), _corazon_18()], [3, 3, 1])
+    assert variantes_admitidas(helio) == ["base_aire", "helio_apilado", "helio_escalonado"]
+    assert disposiciones_admitidas(helio) == []
+    aire = _estructura([_latex(12, "blanco"), _latex(5, "rosado")], [8, 3])
+    assert variantes_admitidas(aire) == ["base_aire"]
+    dos_digitos = _estructura([_latex(12, "blanco"), _numero("2"), _numero("5")], [4, 1, 1])
+    assert disposiciones_admitidas(dos_digitos) == ["centro", "lados", "arriba"]
+    impar = _estructura([_latex(12, "blanco"), _numero("2"), _numero("5")], [5, 1, 1])
+    assert disposiciones_admitidas(impar) == ["centro", "arriba"]
+    assert variantes_admitidas(_estructura([_latex(12, "blanco"), _globo("Vela")], [6, 1])) == []
+
+
+def test_el_decorador_elige_estilo_y_disposicion_en_el_editor() -> None:
+    globos = [_latex(12, "blanco"), _numero("2"), _numero("5")]
+    escalonado = sugerir_armado(_estructura(globos, [4, 1, 1]), variante="helio_escalonado")
+    assert escalonado is not None and escalonado["variante"] == "helio_escalonado"
+    lados = sugerir_armado(_estructura(globos, [4, 1, 1]), disposicion="lados")
+    assert lados is not None and lados["numero"] == {"digitos": [1, 2], "disposicion": "lados"}
+    # Lo que eligió manda sobre la foto.
+    foto = {"variante": "helio_apilado", "niveles": [], "confianza": 0.9}
+    aire = sugerir_armado(_estructura(globos, [4, 1, 1]), foto, variante="base_aire")
+    assert aire is not None and aire["variante"] == "base_aire"
+
+
+def test_una_eleccion_que_la_compra_no_admite_se_rechaza() -> None:
+    aire = _estructura([_latex(12, "blanco"), _latex(5, "rosado")], [8, 3])
+    with pytest.raises(ArmadoInvalido) as helio:
+        sugerir_armado(aire, variante="helio_apilado")
+    assert helio.value.motivo == "variante_no_admitida"
+    impar = _estructura([_latex(12, "blanco"), _numero("2"), _numero("5")], [5, 1, 1])
+    with pytest.raises(ArmadoInvalido) as lados:
+        sugerir_armado(impar, disposicion="lados")
+    assert lados.value.motivo == "disposicion_no_admitida"
+
+
+def test_las_frases_del_prompt_describen_el_armado_en_ingles() -> None:
+    estructura = _estructura([_latex(12, "blanco"), _latex(12, "rosado"), _corazon_18()], [3, 3, 1])
+    armado = sugerir_armado(estructura)
+    assert armado is not None
+    resuelto = armado_resuelto(estructura, armado)
+    gemini = str(resuelto["prompt_gemini"])
+    lora = str(resuelto["prompt_lora"])
+    assert gemini.startswith("BOUQUET ASSEMBLY — a helium balloon bouquet")
+    assert "stacked in layers" in gemini and "Topper: gold foil heart." in gemini
+    assert 'white 12" latex balloons' in gemini and "level 1 (layer)" in gemini
+    assert lora == (
+        "a helium balloon bouquet stacked in level layers of white and pink balloons"
+        " topped by gold foil heart"
+    )
+
+
+def test_la_frase_lora_deletrea_los_numeros_y_es_ascii() -> None:
+    estructura = _estructura([_latex(12, "blanco"), _numero("2"), _numero("5")], [4, 1, 1])
+    armado = sugerir_armado(estructura, disposicion="lados")
+    assert armado is not None
+    resuelto = armado_resuelto(estructura, armado)
+    lora = str(resuelto["prompt_lora"])
+    gemini = str(resuelto["prompt_gemini"])
+    assert lora.isascii() and not any(c.isdigit() for c in lora)
+    assert "foil number two balloon" in lora and "foil number five balloon" in lora
+    assert lora.endswith("one on each side")
+    assert 'foil number "2" balloon' in gemini and "Build two matching bouquets" in gemini
+    assert "one on each side, each with its own bouquet" in gemini

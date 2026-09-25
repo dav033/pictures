@@ -56,6 +56,8 @@ export type EntradaResolucionPlan = {
   completarArmados?: boolean;
   /** Lecturas del armado de cada bouquet de la foto, por elemento de referencia. */
   pistasArmado?: readonly PistaArmado[];
+  /** Con `completarArmados`: solo estas piezas (la editada, tras una edición que quitó su armado). */
+  completarArmadosDe?: readonly string[];
   requestId: string;
   correlationId: string;
   signal?: AbortSignal;
@@ -90,6 +92,7 @@ export async function resolverPlan(entrada: EntradaResolucionPlan): Promise<Reso
       ...(entrada.pistasPatron === undefined ? {} : { pistasPatron: [...entrada.pistasPatron] }),
       ...(entrada.completarArmados === undefined ? {} : { completarArmados: entrada.completarArmados }),
       ...(entrada.pistasArmado === undefined ? {} : { pistasArmado: [...entrada.pistasArmado] }),
+      ...(entrada.completarArmadosDe === undefined ? {} : { completarArmadosDe: [...entrada.completarArmadosDe] }),
       requestId: entrada.requestId,
       correlationId: entrada.correlationId,
       ...(entrada.signal ? { parentSignal: entrada.signal } : {}),

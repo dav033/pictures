@@ -84,12 +84,15 @@ Donde la tabla del distribuidor no tiene fila (látex de 9", 18", 24", 36"; núm
 25" y 34"), el peso sale de la sustentación de Sempertex o de la fila más cercana y se
 marca como **estimado** (aviso visible).
 
-## Supuestos a validar con el negocio
+## Reglas del negocio (propuestas como supuestos; validadas el 2026-09-25)
 
 - Números de 16" o menos van con aire en varilla.
 - Qué variante sugiere la receta sin foto: base de aire si hay látex chico o números
   chicos; helio apilado con 6 o más látex grandes en múltiplos de 3; si no, escalonado.
-- Las recetas con base (cuartetos en la base, el resto como cuerpo).
+- Las recetas con base (los dos primeros cuartetos son la base, el resto el cuerpo;
+  el sobrante va suelto).
+- Los pesos sin fila en la tabla del distribuidor se marcan como estimados, con aviso.
+- Una cantidad par en un bouquet de helio solo avisa, no bloquea.
 
 ## Consecuencias
 
@@ -103,11 +106,68 @@ marca como **estimado** (aviso visible).
 - Una edición de globos o reparto quita el armado; hoy no se vuelve a sugerir hasta
   un plan confirmado de nuevo.
 
-## Pendiente (siguiente entrega)
+## Segunda entrega (2026-09-25): vista previa, edición, prompt de imagen y UI
 
-Hoja de armado imprimible y editor de estilos (UI), la frase del armado en el prompt
-de imagen (Uzume / Kagutsuchi), la vista previa sin catálogo, y un conjunto de
-evaluación de la lectura en fotos reales con tope de gasto.
+Sigue la frontera de la primera: Python arma y redacta; TypeScript transporta y
+dibuja.
+
+9. **Vista previa sin catálogo** (`POST /internal/v1/plan/armado-bouquet`, scope
+   `plan.armado_bouquet`, contrato local `plan-armado-bouquet.v1`): resuelve el
+   armado que manda el editor o, con `armado_bouquet: null`, sugiere la receta,
+   con `variante` (estilo) y `disposicion` (dónde van los números) cuando el
+   decorador los eligió. El catálogo no se consulta: el navegador manda `globos`,
+   lo que ya tiene de cada globo de la pieza en sus líneas resueltas (título,
+   forma, diámetro, código de tamaño, color, acabado; `GloboNavegador`), y
+   Python clasifica con ellos como clasifica con el catálogo al resolver
+   (`contexto_bouquet_de_globos`). Los globos solo clasifican: las cantidades
+   son las del plan (`_distribute_units`), nunca las unidades de las líneas. La
+   respuesta trae el mismo `ArmadoBouquetResuelto` que `armados_bouquet` y las
+   opciones que la compra admite (`variantes_admitidas`,
+   `disposiciones_admitidas`, decididas en Python: sin helio con látex chico o
+   números chicos; `lados` solo con dos dígitos y reparto par). Un rechazo
+   `armado_invalido` de la pieza trae esas opciones también, para que el editor
+   las siga ofreciendo sin sugerencia (`sin_armado_posible`).
+10. **Acción `armado`** en `plan-edit.v1`: fija o quita (`null`) el armado de un
+    bouquet. Sin catálogo, la edición valida forma y conteo contra el plan
+    (`validar_armado_sin_catalogo`); la regla del helio con látex chico la
+    vuelve a comprobar la resolución, que es la puerta final (`armado_invalido`
+    422 con `motivo` y `mensaje`). Next la expone en `/api/plan-editar`.
+11. **Re-sugerir tras una edición.** Una edición que cambia los globos o el
+    reparto sigue quitando el armado, pero con `BOUQUETS_ARMADO_V1` Next pide la
+    re-resolución con `completar_armados` y `completar_armados_de:
+    [estructura_id]` (campo nuevo de `plan-resolution.v1`): solo la pieza editada
+    recibe su receta de nuevo; un bouquet cuyo armado el decorador quitó a
+    propósito no lo recupera. Python avisa "se vuelve a sugerir" cuando la
+    edición lleva `completar_armados`; si la re-resolución no pudo armarlo, Next
+    añade "queda sin armado". Sin la bandera, el aviso es el de antes.
+12. **Frase del armado en el prompt de imagen.** `armado_resuelto` escribe
+    `prompt_gemini` (inglés, imperativo: "BOUQUET ASSEMBLY — …", niveles de abajo
+    hacia arriba, remate, números y su disposición, con tamaños) y `prompt_lora`
+    (inglés ASCII, sin cifras: los dígitos van deletreados, "foil number five
+    balloon"). Los nombres de color salen de `x-colores-en` por las mismas
+    funciones que el patrón (`nombre_color_en`, `color_con_acabado_en`). En Next,
+    `frasesDeEstructuras` junta `patrones_color` y `armados_bouquet` en una sola
+    lista y los constructores (Uzume, Kagutsuchi) insertan la frase de cada
+    estructura por la misma puerta que el patrón (ADR-0028 §12), sin redactar.
+    Sin patrones ni armados la petición es byte a byte la de siempre
+    (`scripts/test/test-patron-color-prompt.ts`, caso bouquet, con una frase
+    real de Python fijada a mano en `scripts/fixtures/patron-color-prompt/armados.json`).
+13. **UI** (`src/components/plan/bouquet/`): bloque "Armado del bouquet" en la
+    tarjeta (dibujo, nombre, insumos, avisos, "Editar armado" y "Hoja de
+    armado"; "Crear armado" sin él), gráfica numerada por niveles (de abajo hacia
+    arriba, remate, números al centro, a los lados —un grupo por dígito— o
+    arriba; cintas y pesa en helio, base y varillas con aire), editor con
+    autoguardado (estilo y disposición entre las opciones que devuelve Python;
+    intercambiar dos globos, que nunca cambia el conteo; deshacer; quitar) y hoja
+    de armado imprimible con las mismas reglas de impresión que la del patrón.
+    TypeScript no tiene reglas: dibuja lo que Python devuelve y una permutación
+    la valida la vista previa.
+
+Consecuencias añadidas: `plan-resuelto.v1` gana dos campos en cada armado
+(`prompt_gemini`, `prompt_lora`) y `plan-resolution.v1` uno opcional en la
+petición (`completar_armados_de`); ningún vector dorado cambia. Queda para una
+entrega posterior el conjunto de evaluación de la lectura en fotos reales con
+tope de gasto declarado.
 
 ## Rollback
 

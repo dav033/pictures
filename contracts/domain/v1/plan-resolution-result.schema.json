@@ -6406,6 +6406,12 @@
                 "items": {
                   "type": "string"
                 }
+              },
+              "prompt_gemini": {
+                "type": "string"
+              },
+              "prompt_lora": {
+                "type": "string"
               }
             },
             "required": [
@@ -6422,7 +6428,9 @@
               "nombre",
               "descripcion",
               "pasos",
-              "avisos"
+              "avisos",
+              "prompt_gemini",
+              "prompt_lora"
             ],
             "additionalProperties": false
           }

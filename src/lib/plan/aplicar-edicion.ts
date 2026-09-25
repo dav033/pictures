@@ -87,6 +87,8 @@ function geometriaAuditada(edicion: EdicionPlan): Record<string, unknown> {
       return { accion: edicion.accion, estructura_id: edicion.estructura_id, mezcla: edicion.mezcla };
     case "patron":
       return { accion: edicion.accion, estructura_id: edicion.estructura_id, modo: edicion.patron_color?.base.modo ?? null };
+    case "armado":
+      return { accion: edicion.accion, estructura_id: edicion.estructura_id, variante: edicion.armado_bouquet?.variante ?? null };
     default:
       return { accion: edicion.accion, estructura_id: edicion.estructura_id, objetivo_variant_id: edicion.objetivo_variant_id, nueva_variant_id: edicion.variante?.variant_id };
   }
@@ -106,6 +108,17 @@ export type AplicarEdicionInput = {
 /** `avisos`: sentences for the decorator from the edit itself (e.g. a color pattern that was rebuilt). */
 export type AplicarEdicionResultado = { plan: PlanResuelto; cotizacion: Cotizacion; avisos: string[] };
 
+type PlanConArmados = { estructuras: ReadonlyArray<{ estructura_id: string; armado_bouquet?: unknown }> };
+
+/** The edited bouquet lost its assembly (its balloons or shares changed): the re-resolution may suggest one again. */
+function armadoQuitadoPorLaEdicion(base: PlanConArmados, editado: PlanConArmados, estructuraId: string): boolean {
+  const antes = base.estructuras.find((item) => item.estructura_id === estructuraId);
+  const despues = editado.estructuras.find((item) => item.estructura_id === estructuraId);
+  return antes?.armado_bouquet !== undefined && despues?.armado_bouquet === undefined;
+}
+
+export const AVISO_ARMADO_NO_REHECHO = "Con estos globos no se pudo volver a armar el bouquet: queda sin armado.";
+
 /**
  * Re-verifies the base plan's signed approval, re-resolves it against Python
  * to make sure nothing drifted since it was shown, admits the new variant
@@ -122,12 +135,15 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
   const whitelist = mapaDesdeAllowlist(contextoPlan.allowlist);
   const correlationId = correlationDesde(input.correlationId ?? base.request_id ?? aprobacion.requestId);
 
-  const resolver = (plan: PlanDecoracion, allowlistPython: ContextoPlan["allowlist"]) =>
+  const resolver = (plan: PlanDecoracion, allowlistPython: ContextoPlan["allowlist"], completarArmadosDe?: readonly string[]) =>
     resolverPlan({
       plan,
       allowlist: allowlistPython,
       catalogSnapshotId: snapshotPython,
       loraAllowlist: input.catalogAllowlist ?? undefined,
+      // ADR-0030: only the edited bouquet gets its assembly suggested again;
+      // one the decorator removed on purpose stays without it.
+      ...(completarArmadosDe ? { completarArmados: true, completarArmadosDe } : {}),
       requestId: crypto.randomUUID(),
       correlationId,
       ...(input.signal ? { signal: input.signal } : {}),
@@ -163,6 +179,9 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
     // consulta el catálogo por SQL.
     coloresVariante = await admitirVariantePython({ variante, catalogSnapshotId: snapshotPython, whitelist, correlationId, ...(input.signal ? { signal: input.signal } : {}) });
   }
+  // ADR-0030: un bouquet que pierde su armado al editar lo recibe de nuevo
+  // (receta) en la re-resolución, solo con la bandera, igual que al confirmar.
+  const completarArmados = featureEnabled("BOUQUETS_ARMADO_V1");
   const { plan: planEditado, avisos } = await editarPlanPython({
     plan: base.plan,
     lineasBase: lineasVerificadas(planBaseVerificado.resuelto, edicion.estructura_id),
@@ -171,13 +190,19 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
     // ADR-0028: una pieza que pasa de uno a dos colores recibe su patrón
     // sugerido solo con la bandera, igual que al confirmar el plan.
     completarPatrones: featureEnabled("PATRONES_COLOR_V1"),
+    ...(completarArmados ? { completarArmados } : {}),
     correlationId,
     ...(input.signal ? { signal: input.signal } : {}),
   });
   const allowlistFinal = allowlistDesdeMapa(whitelist);
-  const resolucionEditada = await resolver(planEditado, allowlistFinal);
+  const rehacerArmado = completarArmados && armadoQuitadoPorLaEdicion(base.plan, planEditado, edicion.estructura_id);
+  const resolucionEditada = await resolver(planEditado, allowlistFinal, rehacerArmado ? [edicion.estructura_id] : undefined);
   const resuelto = resolucionEditada.resuelto;
   if (resuelto.compras.length === 0) throw new PlanEditError(422, "El cambio dejó la estructura sin piezas disponibles.");
+  if (rehacerArmado && armadoQuitadoPorLaEdicion(base.plan, resuelto.plan, edicion.estructura_id)) {
+    // Python avisó que lo volvería a sugerir y no pudo (la compra no se arma): el decorador lo sabe.
+    avisos.push(AVISO_ARMADO_NO_REHECHO);
+  }
   if (edicion.accion === "reemplazar") {
     // Server-verified lines on both sides: the base plan was just re-resolved.
     const objetivo = planBaseVerificado.resuelto.estructuras

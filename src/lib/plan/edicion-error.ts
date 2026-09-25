@@ -16,9 +16,11 @@ export type CausaEdicionPlan =
   /** The color pattern breaks a rule Python owns (ADR-0028 §4); `patron` says which. */
   | "PATRON_INVALIDO"
   /** Redistributing the colors of a piece whose pattern decides them (ADR-0028 §9). */
-  | "PATRON_ACTIVO";
+  | "PATRON_ACTIVO"
+  /** The bouquet assembly breaks a rule Python owns (ADR-0030); `patron` says which. */
+  | "ARMADO_INVALIDO";
 
-/** What Python said about a rejected color pattern: a stable rule and a sentence for the decorator. */
+/** What Python said about a rejected color pattern or bouquet assembly: a stable rule and a sentence for the decorator. */
 export type RechazoPatron = { motivo: string; mensaje: string };
 
 export class PlanEditError extends Error {

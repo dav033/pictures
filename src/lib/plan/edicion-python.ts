@@ -3,11 +3,14 @@ import {
   isPythonAdapterError,
   llamarPythonCatalogRecommendations,
   llamarPythonCatalogSelection,
+  llamarPythonPlanArmadoBouquet,
   llamarPythonPlanEdit,
   llamarPythonPlanPatron,
+  type PythonPlanArmadoGlobo,
   type PythonPlanEditLineaBase,
   type PythonPlanPatronLinea,
 } from "@/lib/ia/nucleo/python-adapter";
+import type { ArmadoBouquetResuelto, ArmadoBouquetV1, DisposicionNumero, VarianteBouquet } from "./armado-bouquet";
 import type { ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { candidatoDesdePython } from "@/lib/rag/chat/candidato-python";
 import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
@@ -169,6 +172,15 @@ const RECHAZOS_VISTA_PATRON: Readonly<Record<string, Rechazo>> = {
   sin_patron: { status: 409, mensaje: "Esta pieza no tiene un patrón de color que dibujar." },
 };
 
+/** Rejections of POST /internal/v1/plan/armado-bouquet (ADR-0030). */
+const RECHAZOS_VISTA_ARMADO: Readonly<Record<string, Rechazo>> = {
+  estructura_no_encontrada: RECHAZOS_EDICION.estructura_no_encontrada!,
+  invalid_plan: { status: 422, mensaje: "El armado del bouquet no tiene un formato válido." },
+};
+
+/** Only when Python rejects an assembly without its own sentence (an older service). */
+const MENSAJE_ARMADO_INVALIDO = "Ese armado no se puede hacer con los globos de este bouquet.";
+
 /** Rejections that only the preview gives (the colors slider's `repartir`). */
 export const CODIGOS_VISTA_PATRON_SIN_DIBUJO = ["sin_patron", "patron_activo", "reparto_no_corresponde"] as const;
 export type CodigoVistaPatronSinDibujo = (typeof CODIGOS_VISTA_PATRON_SIN_DIBUJO)[number];
@@ -222,8 +234,30 @@ function rechazoDesdePython(error: unknown, rechazos: Readonly<Record<string, Re
     const { motivo, mensaje } = error.domainDetails ?? {};
     return new PlanEditError(422, mensaje ?? MENSAJE_PATRON_INVALIDO, "PATRON_INVALIDO", motivo && mensaje ? { motivo, mensaje } : undefined);
   }
+  if (error.domainCode === "armado_invalido") {
+    const { motivo, mensaje } = error.domainDetails ?? {};
+    return new PlanEditError(422, mensaje ?? MENSAJE_ARMADO_INVALIDO, "ARMADO_INVALIDO", motivo && mensaje ? { motivo, mensaje } : undefined);
+  }
   const rechazo = rechazos[error.domainCode];
   return rechazo ? new PlanEditError(rechazo.status, rechazo.mensaje, rechazo.causa) : null;
+}
+
+/** The options the bouquet editor may offer, as Python decides them from the purchase. */
+export type OpcionesArmado = { variantes_admitidas: VarianteBouquet[]; disposiciones_admitidas: DisposicionNumero[] };
+
+/**
+ * `armado_invalido` of the assembly preview: besides the rule and the
+ * sentence, the styles and number placements Python admits for the bouquet
+ * (ADR-0030), so the editor still offers them when no recipe fits. `null`
+ * when the rejection did not carry them (the edit never does).
+ */
+export class RechazoVistaArmadoError extends PlanEditError {
+  readonly opciones: OpcionesArmado | null;
+
+  constructor(message: string, armado: RechazoPatron | undefined, opciones: OpcionesArmado | null) {
+    super(422, message, "ARMADO_INVALIDO", armado);
+    this.opciones = opciones;
+  }
 }
 
 /**
@@ -237,6 +271,8 @@ export async function editarPlanPython(input: {
   edicion: EdicionPlan;
   coloresVariante: readonly string[];
   completarPatrones: boolean;
+  /** `BOUQUETS_ARMADO_V1`: the caller will ask the re-resolution to suggest the removed assembly again. */
+  completarArmados?: boolean;
   correlationId: string;
   signal?: AbortSignal;
 }): Promise<{ plan: PlanDecoracion; avisos: string[] }> {
@@ -247,6 +283,7 @@ export async function editarPlanPython(input: {
       edicion: input.edicion,
       coloresVariante: input.coloresVariante,
       completarPatrones: input.completarPatrones,
+      ...(input.completarArmados === undefined ? {} : { completarArmados: input.completarArmados }),
       requestId: crypto.randomUUID(),
       correlationId: input.correlationId,
       deadlineMs: EDICION_PYTHON_DEADLINE_MS,
@@ -299,6 +336,49 @@ export async function vistaPreviaPatronPython(input: {
     }
     if (rechazo && isPythonAdapterError(error) && error.domainCode && esCodigoSinDibujo(error.domainCode)) {
       throw new VistaPatronSinDibujoError(rechazo, error.domainCode);
+    }
+    throw rechazo ?? error;
+  }
+}
+
+/**
+ * Assembly preview for the bouquet editor (ADR-0030): the assembly Python
+ * resolves (or suggests, with `null`) with the same legend, supplies and
+ * prompts the next resolution quotes. `globos` are the bouquet's resolved
+ * lines as the browser holds them; they classify, never count.
+ */
+export async function vistaPreviaArmadoPython(input: {
+  plan: PlanDecoracion;
+  estructuraId: string;
+  armadoBouquet: ArmadoBouquetV1 | null;
+  globos: readonly PythonPlanArmadoGlobo[];
+  variante?: VarianteBouquet;
+  disposicion?: DisposicionNumero;
+  correlationId: string;
+  signal?: AbortSignal;
+}): Promise<{ armado: ArmadoBouquetResuelto } & OpcionesArmado> {
+  try {
+    const resultado = await llamarPythonPlanArmadoBouquet({
+      plan: input.plan,
+      estructuraId: input.estructuraId,
+      armadoBouquet: input.armadoBouquet,
+      globos: input.globos,
+      ...(input.variante === undefined ? {} : { variante: input.variante }),
+      ...(input.disposicion === undefined ? {} : { disposicion: input.disposicion }),
+      requestId: crypto.randomUUID(),
+      correlationId: input.correlationId,
+      deadlineMs: EDICION_PYTHON_DEADLINE_MS,
+      ...(input.signal ? { parentSignal: input.signal } : {}),
+    });
+    return { armado: resultado.armado, variantes_admitidas: resultado.variantes_admitidas, disposiciones_admitidas: resultado.disposiciones_admitidas };
+  } catch (error) {
+    const rechazo = rechazoDesdePython(error, RECHAZOS_VISTA_ARMADO);
+    if (rechazo?.causa === "ARMADO_INVALIDO" && isPythonAdapterError(error)) {
+      const { variantesAdmitidas, disposicionesAdmitidas } = error.domainDetails ?? {};
+      const opciones = variantesAdmitidas && disposicionesAdmitidas
+        ? { variantes_admitidas: variantesAdmitidas, disposiciones_admitidas: disposicionesAdmitidas }
+        : null;
+      throw new RechazoVistaArmadoError(rechazo.message, rechazo.patron, opciones);
     }
     throw rechazo ?? error;
   }

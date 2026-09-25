@@ -26,9 +26,16 @@ Tablas y su fuente (datos publicados, no supuestos):
   cada globo". Donde la tabla no tiene fila se usa la sustentación de Sempertex
   y el valor queda marcado como estimado.
 
-Supuestos de negocio (marcados en ADR-0030, a validar con el negocio): los
-números de 16" o menos van con aire en varilla; qué variante sugiere la receta
-cuando la foto no dice nada.
+Reglas del negocio (propuestas en ADR-0030 y validadas el 2026-09-25): los
+números de 16" o menos van con aire en varilla; la receta sin foto elige base
+de aire si hay látex chico o números chicos, helio apilado con 6 o más látex
+grandes en múltiplos de 3 y, si no, escalonado; con base, los dos primeros
+cuartetos son la base y el resto el cuerpo; una cantidad par en helio solo
+avisa; los pesos sin fila en la tabla se marcan como estimados.
+
+Además de resolver, este módulo redacta la frase del armado para el prompt de
+imagen (``prompt_gemini``, ``prompt_lora``), como hace ``patron_color`` con los
+patrones: TypeScript la inserta tal cual y nunca la redacta (ADR-0028 §12).
 """
 
 from __future__ import annotations
@@ -42,13 +49,21 @@ from typing import cast
 from jsonschema import Draft7Validator
 
 from app.generated_models import contract_schema
-from app.patron_color import MaterialPatron, material_de_color
+from app.patron_color import (
+    MaterialPatron,
+    color_con_acabado_en,
+    lista_en,
+    material_de_color,
+    nombre_color_en,
+)
 
 
 VERSION_ARMADO = "armado-bouquet.v1"
 CONFIANZA_MINIMA_LECTURA = 0.5
 MAX_NIVELES = 8
 MAX_REMATE = 4
+VARIANTES = ("base_aire", "helio_apilado", "helio_escalonado")
+DISPOSICIONES = ("centro", "lados", "arriba")
 
 GLOBOS_POR_UNIDAD: Mapping[str, int] = {
     "suelto": 1,
@@ -61,7 +76,7 @@ GLOBOS_POR_UNIDAD: Mapping[str, int] = {
 VARIANTES_HELIO = frozenset({"helio_apilado", "helio_escalonado"})
 #: Por debajo de este diámetro el látex va con aire (Anagram; R-5 no flota).
 LATEX_MINIMO_HELIO_PULG = 9.0
-#: Números de este tamaño o menos van con aire en varilla (supuesto, ADR-0030).
+#: Números de este tamaño o menos van con aire en varilla (regla del negocio, ADR-0030).
 NUMERO_MAXIMO_AIRE_PULG = 16.0
 FORMAS_LATEX = frozenset({"redondo", "corazon", "link", "modelar"})
 
@@ -177,6 +192,10 @@ def clasificar(indice: int, globo: GloboCatalogo) -> MaterialBouquet | None:
     tamano = _tamano(globo)
     if globo.forma in FORMAS_LATEX:
         return MaterialBouquet(indice, "latex", tamano, None, globo)
+    # Un cartel o una guirnalda metalizada no es un globo: no se arma (visto en
+    # el catálogo real el 2026-09-25, "Cartel Letras Metalizado Corazones").
+    if re.search(r"\b(?:cartel|banner|guirnalda|letrero)\b", titulo):
+        return None
     digito = re.search(r"\bnumero\s+(\d)(?!\d)", titulo)
     if digito:
         return MaterialBouquet(indice, "numero", tamano, digito.group(1), globo)
@@ -355,33 +374,112 @@ def _orden_por_lectura(
     return prioridad
 
 
+@dataclass(frozen=True)
+class _Capacidades:
+    """Lo que la compra de un bouquet permite armar, antes de elegir cómo."""
+
+    materiales: tuple[MaterialBouquet, ...]
+    por_instancia: tuple[int, ...]
+    #: Un índice por globo número comprado (por instancia).
+    digitos: tuple[int, ...]
+    puede_helio: bool
+
+    @property
+    def variantes(self) -> list[str]:
+        return list(VARIANTES) if self.puede_helio else ["base_aire"]
+
+    @property
+    def disposiciones(self) -> list[str]:
+        """Sin números no hay disposición; ``lados`` exige dos dígitos y reparto par."""
+        if not self.digitos:
+            return []
+        no_digitos = [self.por_instancia[m.indice] for m in self.materiales if m.tipo != "numero"]
+        lados = len(self.digitos) == 2 and not any(c % 2 for c in no_digitos)
+        return [d for d in DISPOSICIONES if d != "lados" or lados]
+
+
+def _capacidades(estructura: EstructuraBouquet) -> _Capacidades | None:
+    """``None`` si la compra no se puede armar: sin clasificar o sin repartir por repetición."""
+    if not estructura.es_bouquet or any(m is None for m in estructura.materiales):
+        return None
+    reps = estructura.repeticiones
+    if any(c % reps for c in estructura.cantidades):
+        return None
+    materiales = tuple(m for m in estructura.materiales if m is not None)
+    por_instancia = tuple(c // reps for c in estructura.cantidades)
+    digitos = tuple(
+        m.indice for m in materiales for _ in range(por_instancia[m.indice]) if m.tipo == "numero"
+    )
+    if len(digitos) > 3:
+        return None
+    numero_chico = any(
+        m.tipo == "numero"
+        and m.tamano_pulg is not None
+        and m.tamano_pulg <= NUMERO_MAXIMO_AIRE_PULG
+        for m in materiales
+        if por_instancia[m.indice] > 0
+    )
+    latex_chico = any(
+        por_instancia[m.indice]
+        for m in materiales
+        if m.tipo == "latex" and (m.tamano_pulg or 0) < LATEX_MINIMO_HELIO_PULG
+    )
+    return _Capacidades(materiales, por_instancia, digitos, not numero_chico and not latex_chico)
+
+
+def variantes_admitidas(estructura: EstructuraBouquet) -> list[str]:
+    """Estilos que el editor ofrece para la pieza: vacío si no se puede armar."""
+    capacidades = _capacidades(estructura)
+    return capacidades.variantes if capacidades is not None else []
+
+
+def disposiciones_admitidas(estructura: EstructuraBouquet) -> list[str]:
+    """Dónde pueden ir los números de la pieza: vacío sin números o sin armado posible."""
+    capacidades = _capacidades(estructura)
+    return capacidades.disposiciones if capacidades is not None else []
+
+
 def sugerir_armado(
-    estructura: EstructuraBouquet, lectura: Mapping[str, object] | None = None
+    estructura: EstructuraBouquet,
+    lectura: Mapping[str, object] | None = None,
+    *,
+    variante: str | None = None,
+    disposicion: str | None = None,
 ) -> dict[str, object] | None:
     """Un armado que acomoda exactamente lo que el plan compra, o ``None``.
 
     Con ``lectura`` (y confianza suficiente) la foto decide la variante, la
     disposición del número y el orden de colores; si lo que leyó no se puede
-    armar con esos globos, decide la receta. ``None`` cuando no se puede
-    armar sin cambiar la compra (materiales sin clasificar, cantidades que no
-    se reparten entre repeticiones): la estructura queda como hoy.
+    armar con esos globos, decide la receta. ``variante`` y ``disposicion``
+    son lo que el decorador eligió en el editor (vista previa): mandan sobre la
+    foto y, si la compra no los admite, ``ArmadoInvalido``
+    (``variante_no_admitida``, ``disposicion_no_admitida``). ``None`` cuando no
+    se puede armar sin cambiar la compra (materiales sin clasificar, cantidades
+    que no se reparten entre repeticiones): la estructura queda como hoy.
     """
-    if not estructura.es_bouquet or any(m is None for m in estructura.materiales):
+    capacidades = _capacidades(estructura)
+    if capacidades is None:
         return None
-    materiales = [m for m in estructura.materiales if m is not None]
-    reps = estructura.repeticiones
-    if any(c % reps for c in estructura.cantidades):
-        return None
-    por_instancia = [c // reps for c in estructura.cantidades]
+    materiales = capacidades.materiales
+    por_instancia = capacidades.por_instancia
+    digitos = list(capacidades.digitos)
+    puede_helio = capacidades.puede_helio
+    if variante is not None and variante not in capacidades.variantes:
+        raise ArmadoInvalido(
+            "variante_no_admitida",
+            'El látex de menos de 9" y los números chicos no flotan: este bouquet va con base de aire.',
+        )
+    if disposicion is not None and disposicion not in capacidades.disposiciones:
+        raise ArmadoInvalido(
+            "disposicion_no_admitida",
+            "Un número a cada lado necesita dos dígitos y un reparto par del resto de los globos.",
+        )
     if (
         lectura is not None
         and float(cast(float, lectura.get("confianza", 0))) < CONFIANZA_MINIMA_LECTURA
     ):
         lectura = None
 
-    digitos = [
-        m.indice for m in materiales for _ in range(por_instancia[m.indice]) if m.tipo == "numero"
-    ]
     foils = sorted(
         (m for m in materiales if m.tipo in ("metalizado", "burbuja")),
         key=lambda m: -(m.tamano_pulg or 0),
@@ -396,14 +494,6 @@ def sugerir_armado(
         for m in materiales
         if m.tipo == "latex" and (m.tamano_pulg or 0) < LATEX_MINIMO_HELIO_PULG
     ]
-    numero_chico = any(
-        m.tipo == "numero"
-        and m.tamano_pulg is not None
-        and m.tamano_pulg <= NUMERO_MAXIMO_AIRE_PULG
-        for m in materiales
-        if por_instancia[m.indice] > 0
-    )
-    puede_helio = not numero_chico and not any(por_instancia[m.indice] for m in chicos)
 
     prioridad = _orden_por_lectura(materiales, lectura)
     cuentas_grandes = sorted(
@@ -412,9 +502,10 @@ def sugerir_armado(
     )
     total_grandes = sum(c for _, c in cuentas_grandes)
 
-    variante = str(lectura["variante"]) if lectura is not None else None
-    if variante in VARIANTES_HELIO and not puede_helio:
-        variante = None
+    if variante is None:
+        variante = str(lectura["variante"]) if lectura is not None else None
+        if variante in VARIANTES_HELIO and not puede_helio:
+            variante = None
     if variante is None:
         if not puede_helio:
             variante = "base_aire"
@@ -423,17 +514,13 @@ def sugerir_armado(
         else:
             variante = "helio_escalonado"
 
-    disposicion = "centro"
-    if digitos:
-        pedida = str(lectura.get("disposicion", "")) if lectura is not None else ""
-        if pedida in ("centro", "arriba"):
-            disposicion = pedida
-        elif pedida == "lados" and len(digitos) == 2:
-            disposicion = "lados"
+    if disposicion is None:
+        disposicion = "centro"
+        if digitos:
+            pedida = str(lectura.get("disposicion", "")) if lectura is not None else ""
+            if pedida in capacidades.disposiciones:
+                disposicion = pedida
     grupos = 2 if disposicion == "lados" else 1
-    no_digitos = [por_instancia[m.indice] for m in materiales if m.tipo != "numero"]
-    if grupos > 1 and any(c % grupos for c in no_digitos):
-        disposicion, grupos = "centro", 1
     cuentas_grupo = [(i, c // grupos) for i, c in cuentas_grandes]
     remate_grupo = [m.indice for m in foils for _ in range(por_instancia[m.indice] // grupos)]
 
@@ -455,7 +542,7 @@ def sugerir_armado(
     if len(remate_grupo) > MAX_REMATE:
         niveles += _sueltos(_cuentas(remate_grupo[MAX_REMATE:]), "alrededor")
         remate_grupo = remate_grupo[:MAX_REMATE]
-    if len(niveles) > MAX_NIVELES or len(digitos) > 3:
+    if len(niveles) > MAX_NIVELES:
         return None
     armado: dict[str, object] = {
         "version": VERSION_ARMADO,
@@ -535,6 +622,165 @@ def _descripcion(material: MaterialBouquet) -> str:
 
 def _plural(n: int, singular: str, plural: str) -> str:
     return f"{n} {singular if n == 1 else plural}"
+
+
+# --- Frase del armado para el prompt de imagen (ADR-0028 §12, ADR-0030) ------------
+
+_DIGITO_EN = ("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine")
+_FORMA_FOIL_EN = (
+    ("corazon", "heart"),
+    ("estrella", "star"),
+    ("luna", "moon"),
+    ("redondo", "round foil balloon"),
+)
+_UNIDAD_EN = {
+    "suelto": ("single balloon", "single balloons"),
+    "pareja": ("pair", "pairs"),
+    "trio": ("trio", "trios"),
+    "cuarteto": ("four-balloon cluster", "four-balloon clusters"),
+    "quinteto": ("five-balloon cluster", "five-balloon clusters"),
+    "sexteto": ("six-balloon cluster", "six-balloon clusters"),
+}
+_ROL_EN = {
+    "base": "base",
+    "cuerpo": "body",
+    "capa": "layer",
+    "alrededor": "around the center",
+    "acento": "accents",
+    "relleno": "inside the bubble",
+}
+_DISPOSICION_EN = {
+    "centro": "at the center of the bouquet",
+    "lados": "one on each side, each with its own bouquet",
+    "arriba": "on top, as the topper",
+}
+_VARIANTE_EN = {
+    "base_aire": (
+        "an air-filled balloon bouquet fixed on a weighted base, built upward in tight clusters",
+        "Keep every balloon touching its cluster; the topper and the numbers stand on sticks above it.",
+        "an air-filled balloon bouquet built in tight clusters on a weighted base",
+    ),
+    "helio_apilado": (
+        "a helium balloon bouquet on ribbons tied to one weight, stacked in layers of balloons"
+        " at the same height, one layer directly above the other",
+        "Keep each layer level and centered over the one below; the topper floats highest.",
+        "a helium balloon bouquet stacked in level layers",
+    ),
+    "helio_escalonado": (
+        "a helium balloon bouquet on ribbons of different lengths tied to one weight, the balloons"
+        " staggered at clearly different heights around the central piece",
+        "No two balloons at the same height; the central piece floats highest.",
+        "a helium balloon bouquet staggered at different heights",
+    ),
+}
+
+
+def _forma_foil_en(material: MaterialBouquet) -> str:
+    titulo = _plegar(material.globo.titulo)
+    return next((en for es, en in _FORMA_FOIL_EN if es in titulo), "foil balloon")
+
+
+def _globo_en(material: MaterialBouquet, *, lora: bool) -> str:
+    """Un globo en inglés: para LoRA solo el color y sin cifras (ADR-0028 §8)."""
+    color = (
+        nombre_color_en(material.globo.color)
+        if lora
+        else color_con_acabado_en(material.globo.color, material.globo.acabado)
+    )
+    tamano = "" if lora else _pulgadas(material.tamano_pulg)
+    if material.tipo == "latex":
+        return " ".join(parte for parte in (color, tamano, "latex balloons") if parte)
+    if material.tipo == "numero":
+        cifra = _DIGITO_EN[int(material.digito or 0)] if lora else f'"{material.digito}"'
+        grande = material.tamano_pulg is not None and material.tamano_pulg > NUMERO_MAXIMO_AIRE_PULG
+        return " ".join(
+            parte
+            for parte in (
+                "large" if grande else "small",
+                color if material.globo.color else "",
+                f"foil number {cifra} balloon",
+                tamano,
+            )
+            if parte
+        )
+    if material.tipo == "burbuja":
+        return " ".join(
+            parte
+            for parte in (color if material.globo.color else "clear", tamano, "bubble balloon")
+            if parte
+        )
+    forma = _forma_foil_en(material)
+    return " ".join(
+        parte for parte in (color, "foil" if not forma.endswith("balloon") else "", forma) if parte
+    )
+
+
+def _colores_lora(nombres: Sequence[str]) -> str:
+    distintos = list(dict.fromkeys(nombres))
+    if len(distintos) > 4:
+        return f"a mix of {_DIGITO_EN[len(distintos)] if len(distintos) < 10 else 'many'} colors"
+    lista: str = lista_en(distintos)
+    return lista
+
+
+def _frases_prompt(
+    variante: str,
+    materiales: Mapping[int, MaterialBouquet],
+    armado: Mapping[str, object],
+    grupos: int,
+) -> tuple[str, str]:
+    """``(prompt_gemini, prompt_lora)`` del armado; inglés, LoRA en ASCII y sin cifras."""
+    apertura, cierre, apertura_lora = _VARIANTE_EN[variante]
+    niveles = cast(list[Mapping[str, object]], armado["niveles"])
+    remate = [materiales[i] for i in cast(list[int], armado.get("remate", []))]
+    numero = armado.get("numero")
+    digitos = (
+        [materiales[i] for i in cast(list[int], numero["digitos"])]
+        if isinstance(numero, Mapping)
+        else []
+    )
+
+    partes: list[str] = []
+    for posicion, nivel in enumerate(niveles, start=1):
+        cantidad = cast(int, nivel["cantidad"])
+        globos = [materiales[i] for i in cast(list[int], nivel["posiciones"])]
+        partes.append(
+            f"level {posicion} ({_ROL_EN[str(nivel['rol'])]}): "
+            f"{_plural(cantidad, *_UNIDAD_EN[str(nivel['unidad'])])} of "
+            + lista_en([_globo_en(g, lora=False) for g in globos])
+        )
+    frases = [f"BOUQUET ASSEMBLY — {apertura}."]
+    if grupos > 1:
+        frases.append("Build two matching bouquets, one per number.")
+    if partes:
+        frases.append("From the bottom up: " + "; ".join(partes) + ".")
+    if remate:
+        frases.append("Topper: " + lista_en([_globo_en(g, lora=False) for g in remate]) + ".")
+    if digitos and isinstance(numero, Mapping):
+        frases.append(
+            "Number balloons: "
+            + lista_en([_globo_en(g, lora=False) for g in digitos])
+            + f", {_DISPOSICION_EN[str(numero['disposicion'])]}."
+        )
+    frases.append(cierre)
+
+    colores = [
+        nombre_color_en(materiales[i].globo.color)
+        for nivel in niveles
+        for i in cast(list[int], nivel["posiciones"])
+        if materiales[i].tipo == "latex"
+    ]
+    lora = apertura_lora
+    if colores:
+        lora += f" of {_colores_lora(colores)} balloons"
+    if remate:
+        lora += " topped by " + lista_en([_globo_en(g, lora=True) for g in remate])
+    if digitos and isinstance(numero, Mapping):
+        lora += " with " + lista_en([_globo_en(g, lora=True) for g in digitos])
+        lora += {"centro": " at the center", "lados": " one on each side", "arriba": " on top"}[
+            str(numero["disposicion"])
+        ]
+    return " ".join(frases), lora
 
 
 def armado_resuelto(
@@ -688,6 +934,7 @@ def armado_resuelto(
         if helio
         else "Fija los niveles sobre la base y el remate y los números con varilla."
     )
+    prompt_gemini, prompt_lora = _frases_prompt(variante, materiales, armado, grupos)
 
     return {
         "estructura_id": estructura.estructura_id,
@@ -708,17 +955,23 @@ def armado_resuelto(
         "descripcion": _DESCRIPCION_VARIANTE[variante],
         "pasos": pasos,
         "avisos": avisos,
+        "prompt_gemini": prompt_gemini,
+        "prompt_lora": prompt_lora,
     }
 
 
 __all__ = [
     "ArmadoInvalido",
+    "DISPOSICIONES",
     "EstructuraBouquet",
     "GloboCatalogo",
     "MaterialBouquet",
+    "VARIANTES",
     "VERSION_ARMADO",
     "armado_resuelto",
     "clasificar",
+    "disposiciones_admitidas",
     "sugerir_armado",
     "validar",
+    "variantes_admitidas",
 ]

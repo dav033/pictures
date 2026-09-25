@@ -38,7 +38,7 @@ import math
 import os
 import re
 import unicodedata
-from collections.abc import Mapping, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass, replace
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from math import isfinite
@@ -63,7 +63,10 @@ from app.armado_bouquet import (
     MaterialBouquet,
     armado_resuelto,
     clasificar,
+    disposiciones_admitidas,
     sugerir_armado,
+    validar,
+    variantes_admitidas,
 )
 from app.catalog import purchase_color_for_unsold
 from app.operational_models import ContractModel, OperationalRequest
@@ -310,9 +313,12 @@ class PlanResolutionRequest(OperationalRequest):
     # Later re-resolutions keep what the plan already declares.
     completar_patrones: bool = Field(default=False, strict=True)
     pistas_patron: list[PistaPatron] = Field(default_factory=list, max_length=16)
-    # ADR-0030: the same one-time completion for bouquet assemblies.
+    # ADR-0030: the same one-time completion for bouquet assemblies. After an
+    # edit, Next limits it to the edited piece (``completar_armados_de``): a
+    # bouquet whose assembly the decorator removed does not get it back.
     completar_armados: bool = Field(default=False, strict=True)
     pistas_armado: list[PistaArmado] = Field(default_factory=list, max_length=16)
+    completar_armados_de: list[str] | None = Field(default=None, max_length=8)
 
     @field_validator("catalog_snapshot_id")
     @classmethod
@@ -3138,17 +3144,20 @@ def _assign_assemblies(
     plan: Mapping[str, object],
     candidate_by_variant: Mapping[str, Candidate],
     pistas: Sequence[Mapping[str, object]],
+    only: Collection[str] | None = None,
 ) -> dict[str, object]:
     """Photo reading first, recipe otherwise (ADR-0030); only bouquets without one.
 
     A bouquet that cannot be arranged without changing what it buys keeps its
-    plain declared units. Nothing else in the plan changes.
+    plain declared units. Nothing else in the plan changes. With ``only``, the
+    other structures are left as they are (the re-resolution after an edit).
     """
     completed = dict(plan)
     structures: list[object] = []
     for structure in _mappings(plan.get("estructuras")):
         item = dict(structure)
-        if item.get("armado_bouquet") is None:
+        wanted = only is None or _text(item.get("estructura_id")) in only
+        if wanted and item.get("armado_bouquet") is None:
             context = _bouquet_context(item, candidate_by_variant)
             if context.es_bouquet:
                 element_id = _text(item.get("referencia_element_id"))
@@ -3195,6 +3204,167 @@ def _resolved_assemblies(
     return resolved
 
 
+def contexto_bouquet_de_globos(
+    structure: Mapping[str, object], globos: Sequence[Mapping[str, object]] | None
+) -> EstructuraBouquet:
+    """The assembly context of one structure without a catalog (ADR-0030, second delivery).
+
+    ``globos`` are what the browser holds of the structure's resolved lines
+    (``plan_resuelto.estructuras[].lineas``: title, shape, size, color, finish),
+    reduced to what ``clasificar`` reads; each material is matched by its
+    ``variant_id`` and, failing that, by product and color. They only classify:
+    the quantities are the plan's own (``_distribute_units``), never the lines'
+    units. Without ``globos`` every material is unclassified, which is enough
+    to check an assembly's shape and counts (``validar``); the helium rule and
+    the resolved sheet need the catalog facts and are checked at resolution.
+    """
+    materials = _mappings(structure.get("materiales"))
+    lines = list(globos or [])
+    classified: list[MaterialBouquet | None] = []
+    for index, material in enumerate(materials):
+        product_id = _text(material.get("product_id")) or ""
+        variant_id = _text(material.get("variant_id")) or ""
+        line = next(
+            (
+                g
+                for g in lines
+                if g.get("variant_id") == variant_id and g.get("product_id") == product_id
+            ),
+            None,
+        ) or next(
+            (
+                g
+                for g in lines
+                if g.get("product_id") == product_id
+                and _text(g.get("color")) == _text(material.get("color"))
+            ),
+            None,
+        )
+        if line is None:
+            classified.append(None)
+            continue
+        balloon = GloboCatalogo(
+            product_id=product_id,
+            variant_id=_text(line.get("variant_id")) or variant_id,
+            titulo=_text(line.get("titulo")) or "",
+            forma=_text(line.get("forma")),
+            diam_pulg=_number(line.get("diam_pulg")),
+            codigo_tamano=_text(line.get("tamano_codigo")),
+            color=_text(line.get("color")),
+            acabado=_text(line.get("acabado")),
+        )
+        classified.append(clasificar(index, balloon))
+    return EstructuraBouquet(
+        estructura_id=_text(structure.get("estructura_id")) or "",
+        es_bouquet=structure.get("tipo") == "kit"
+        and structure.get("estructura_oficial") == "bouquet",
+        repeticiones=_integer(structure.get("repeticiones")) or 1,
+        materiales=tuple(classified),
+        cantidades=tuple(
+            _distribute_units(_integer(structure.get("unidades_declaradas")) or 0, materials)
+        ),
+    )
+
+
+def _assembly_error(estructura_id: str, error: ArmadoInvalido) -> PlanResolutionError:
+    return PlanResolutionError(
+        "armado_invalido",
+        422,
+        {"estructura_id": estructura_id, "motivo": error.motivo, "mensaje": error.mensaje},
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class VistaPreviaArmado:
+    """One bouquet's resolved assembly and what the editor may offer for it."""
+
+    armado: dict[str, object]
+    variantes_admitidas: list[str]
+    disposiciones_admitidas: list[str]
+
+
+def vista_previa_de_armado(
+    plan: Mapping[str, object],
+    estructura_id: str,
+    armado: Mapping[str, object] | None,
+    globos: Sequence[Mapping[str, object]],
+    *,
+    variante: str | None = None,
+    disposicion: str | None = None,
+) -> VistaPreviaArmado:
+    """Resolved assembly of one bouquet, without a catalog (ADR-0030, second delivery).
+
+    ``armado`` replaces the structure's own ``armado_bouquet`` and comes back
+    resolved with the same function resolution uses (``armado_resuelto``):
+    legend, levels, supplies, steps and prompts. ``None`` asks for the recipe
+    (``sugerir_armado``), with ``variante`` and ``disposicion`` when the
+    decorator chose a style or where the numbers go; the photo reading is not
+    consulted here (the editor starts from what the plan carries). ``globos``
+    classify each material (``contexto_bouquet_de_globos``); the counts are the
+    plan's. Raises ``PlanResolutionError``: ``estructura_no_encontrada`` (404),
+    ``invalid_plan`` (422) or ``armado_invalido`` (422, with ``motivo`` and
+    ``mensaje``; ``sin_armado_posible`` when no recipe fits the purchase).
+    """
+    _validate_plan(plan)
+    structure = _mappings(plan.get("estructuras"))[_structure_index(plan, estructura_id)]
+    context = contexto_bouquet_de_globos(structure, globos)
+    if not context.es_bouquet:
+        raise _assembly_error(
+            estructura_id,
+            ArmadoInvalido("no_es_bouquet", "Solo un bouquet puede tener armado por niveles."),
+        )
+    try:
+        if armado is None:
+            chosen = sugerir_armado(context, variante=variante, disposicion=disposicion)
+            if chosen is None:
+                raise ArmadoInvalido(
+                    "sin_armado_posible",
+                    "Con estos globos no se puede armar el bouquet sin cambiar la compra.",
+                )
+        else:
+            chosen = dict(armado)
+        resolved = armado_resuelto(context, chosen)
+    except ArmadoInvalido as error:
+        raise _assembly_error(estructura_id, error) from error
+    return VistaPreviaArmado(
+        armado=resolved,
+        variantes_admitidas=variantes_admitidas(context),
+        disposiciones_admitidas=disposiciones_admitidas(context),
+    )
+
+
+def opciones_de_armado(
+    plan: Mapping[str, object], estructura_id: str, globos: Sequence[Mapping[str, object]]
+) -> tuple[list[str], list[str]]:
+    """``(variantes_admitidas, disposiciones_admitidas)`` of one bouquet, for a rejected preview.
+
+    The empty pair when the plan or the structure cannot be read: the editor
+    then offers nothing rather than something the purchase forbids.
+    """
+    try:
+        _validate_plan(plan)
+        structure = _mappings(plan.get("estructuras"))[_structure_index(plan, estructura_id)]
+    except PlanResolutionError:
+        return [], []
+    context = contexto_bouquet_de_globos(structure, globos)
+    return variantes_admitidas(context), disposiciones_admitidas(context)
+
+
+def validar_armado_sin_catalogo(
+    structure: Mapping[str, object], armado: Mapping[str, object]
+) -> None:
+    """Shape and counts of an assembly against the plan alone (the edit, ADR-0030).
+
+    The helium rule needs the catalog and is checked again at resolution.
+    Raises ``PlanResolutionError`` ``armado_invalido``.
+    """
+    context = contexto_bouquet_de_globos(structure, None)
+    try:
+        validar(context, armado)
+    except ArmadoInvalido as error:
+        raise _assembly_error(context.estructura_id, error) from error
+
+
 def _resolution_result(
     request: PlanResolutionRequest,
     raw_plan: Mapping[str, object],
@@ -3221,6 +3391,9 @@ def _resolution_result(
             raw_plan,
             candidate_by_variant,
             [pista.model_dump(exclude_none=True) for pista in request.pistas_armado],
+            only=(
+                None if request.completar_armados_de is None else set(request.completar_armados_de)
+            ),
         )
     resolved = _build_resolved(
         request,
@@ -3465,12 +3638,17 @@ __all__ = [
     "PlanAllowlistEntry",
     "PlanResolutionError",
     "PlanResolutionRequest",
+    "VistaPreviaArmado",
     "VistaPreviaPatron",
     "compras_de_estructura",
+    "contexto_bouquet_de_globos",
     "modos_admitidos_de_estructura",
+    "opciones_de_armado",
     "patron_resuelto_de_estructura",
     "resolve_plan",
     "sincronizar_participaciones",
     "sugerir_patron_para_estructura",
+    "validar_armado_sin_catalogo",
+    "vista_previa_de_armado",
     "vista_previa_de_estructura",
 ]

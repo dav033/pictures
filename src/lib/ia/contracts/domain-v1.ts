@@ -466,6 +466,8 @@ export const PlanResolutionRequestV1Schema = z.object({
   /** Solo al confirmar un plan: Python arma por niveles los bouquets que no tienen armado (ADR-0030). */
   completar_armados: z.boolean().optional(),
   pistas_armado: z.array(PistaArmadoSchema).max(16).optional(),
+  /** Con `completar_armados`: solo estas estructuras (tras una edición, la pieza editada). */
+  completar_armados_de: z.array(idSchema).max(8).optional(),
 }).strict();
 
 export const PlanResolutionResultV1Schema = z.object({

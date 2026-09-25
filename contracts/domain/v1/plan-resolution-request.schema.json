@@ -2082,6 +2082,15 @@
         ],
         "additionalProperties": false
       }
+    },
+    "completar_armados_de": {
+      "maxItems": 8,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 160
+      }
     }
   },
   "required": [
