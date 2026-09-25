@@ -85,6 +85,8 @@ from app.uzume.interaction import (
     crear_interaccion_gemini,
 )
 from app.operational_store import InMemoryOperationalStore, StoredHttpResponse
+from app.plan_worker import run_plan_cpu
+from app.patron_color import DIRECCIONES as _PATTERN_DIRECTIONS, MODOS as _PATTERN_MODES
 from app.operational_models import ContractModel, OperationalRequest
 from app.plan import (
     CatalogPlanStore,
@@ -776,7 +778,45 @@ def _detail_metadata(exception: HTTPException) -> dict[str, object]:
         value = exception.detail.get(key)
         if isinstance(value, str) and value:
             metadata[key] = value[:limit]
+    # The pattern preview's rejection also says which styles the piece admits
+    # (ADR-0028 §10), so the editor still offers them without a suggestion.
+    styles = _safe_pattern_styles(exception.detail.get("modos_admitidos"))
+    if styles is not None:
+        metadata["modos_admitidos"] = styles
     return metadata
+
+
+def _safe_pattern_styles(value: object) -> list[dict[str, object]] | None:
+    """``modos_admitidos`` rebuilt from known values only, or ``None``.
+
+    All or nothing: a list of at most one entry per mode, each exactly
+    ``{modo, direcciones, espejo}`` with a known mode, one to three distinct
+    known directions and a boolean mirror. Anything else drops the field.
+    Known values are the patron-color.v1 contract's, never the error's.
+    """
+    if not isinstance(value, list) or len(value) > len(_PATTERN_MODES):
+        return None
+    styles: list[dict[str, object]] = []
+    seen: set[str] = set()
+    for item in value:
+        if not isinstance(item, dict) or set(item) != {"modo", "direcciones", "espejo"}:
+            return None
+        mode, directions, mirror = item["modo"], item["direcciones"], item["espejo"]
+        if not isinstance(mode, str) or mode not in _PATTERN_MODES or mode in seen:
+            return None
+        if (
+            not isinstance(directions, list)
+            or not 1 <= len(directions) <= len(_PATTERN_DIRECTIONS)
+            or not all(isinstance(direction, str) for direction in directions)
+            or not set(directions) <= set(_PATTERN_DIRECTIONS)
+            or len(set(directions)) != len(directions)
+        ):
+            return None
+        if not isinstance(mirror, bool):
+            return None
+        seen.add(mode)
+        styles.append({"modo": mode, "direcciones": list(directions), "espejo": mirror})
+    return styles
 
 
 async def _store_failure(
@@ -1351,7 +1391,8 @@ def create_app(
             if not isinstance(payload, PlanEditRequest):
                 raise _error("invalid_request", 422)
             try:
-                result = ejecutar_edicion(payload)
+                # CPU-bound (pattern expansion and contract checks): off the loop.
+                result = await run_plan_cpu(ejecutar_edicion, payload)
             except PlanResolutionError as error:
                 raise _error(error.code, error.status_code, error.details) from None
             return {"payload": result}
@@ -1372,7 +1413,8 @@ def create_app(
             if not isinstance(payload, PlanPatronRequest):
                 raise _error("invalid_request", 422)
             try:
-                result = vista_previa_patron(payload)
+                # CPU-bound (pattern expansion and contract checks): off the loop.
+                result = await run_plan_cpu(vista_previa_patron, payload)
             except PlanResolutionError as error:
                 raise _error(error.code, error.status_code, error.details) from None
             return {"payload": result}

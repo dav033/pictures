@@ -25,6 +25,29 @@ export type PropsHojaArmado = {
 
 const numero = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 });
 
+/**
+ * Globos por fila que caben con su número en el ancho imprimible de una hoja
+ * A4 o carta con los márgenes de `@page` (≈ 700 px): 24 globos pequeños y el
+ * número de la fila miden ≈ 530 px. Una pared más ancha (18 × 76 en 10 m ×
+ * 2,4 m) no cabe ni achicada: en el papel su gráfica va por tramos.
+ */
+export const GLOBOS_POR_TRAMO_IMPRESO = 24;
+
+/** Tramos parejos de columnas, de izquierda a derecha, de a lo sumo `maximo` (76 → 4 de 19). `hasta` es exclusivo. */
+export function tramosDeColumnas(columnas: number, maximo = GLOBOS_POR_TRAMO_IMPRESO): Array<{ desde: number; hasta: number }> {
+  const cuantos = Math.max(1, Math.ceil(columnas / maximo));
+  const base = Math.floor(columnas / cuantos);
+  const resto = columnas % cuantos;
+  const tramos: Array<{ desde: number; hasta: number }> = [];
+  let desde = 0;
+  for (let indice = 0; indice < cuantos; indice += 1) {
+    const hasta = desde + base + (indice < resto ? 1 : 0);
+    tramos.push({ desde, hasta });
+    desde = hasta;
+  }
+  return tramos;
+}
+
 /** Pulgadas de una línea ("12″"); sin tamaño, el código tal cual. */
 function tamanoDe(linea: LineaMaterial): { clave: string; texto: string; orden: number } {
   const pulgadas = linea.diam_pulg ?? Number(/(\d+(?:[.,]\d+)?)/.exec(linea.tamano_codigo ?? "")?.[1]?.replace(",", "."));
@@ -70,6 +93,8 @@ export function HojaArmado({ resuelto, leyenda, estructura, declarada, oficial, 
   const materialesEnTabla = [...new Set(porTamano.flatMap((fila) => [...fila.porMaterial.keys()]))].sort((a, b) => a - b);
   const proporcion = declarada?.medidas?.alto_m && declarada.medidas.ancho_m ? declarada.medidas.alto_m / declarada.medidas.ancho_m : undefined;
   const repeticiones = Math.max(1, resuelto.repeticiones);
+  const oficialId = oficial?.id ?? declarada?.estructura_oficial;
+  const tramos = tramosDeColumnas(Math.max(0, ...resuelto.celdas.map((fila) => fila.length)));
   return (
     <article className="hoja-armado @container space-y-5 text-texto" aria-label={`Hoja de armado: ${nombrePieza}`}>
       <header className="hoja-armado-bloque space-y-1.5 border-b border-borde pb-4">
@@ -85,16 +110,34 @@ export function HojaArmado({ resuelto, leyenda, estructura, declarada, oficial, 
         <LeyendaPatron leyenda={leyenda} className="pt-1" />
       </header>
 
-      <div className="grid gap-5 @2xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-        <section className="hoja-armado-bloque space-y-2">
+      {/* Al imprimir va en una sola columna (globals.css): la gráfica toma todo el ancho del papel. */}
+      <div className="hoja-armado-columnas grid gap-5 @2xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+        <section className="hoja-armado-bloque min-w-0 space-y-2">
           <h3 className="text-sm font-semibold">Cómo se ve</h3>
           <div className="grid h-72 place-items-center rounded-2xl border border-borde-suave bg-superficie-suave p-3 @2xl:h-96 print:h-72">
-            <VistaPatron resuelto={resuelto} leyenda={leyenda} tipo={estructura.tipo} oficialId={oficial?.id ?? declarada?.estructura_oficial} espejo={estructura.ubicacion === "lateral_derecho"} proporcion={proporcion} etiqueta={`${nombrePieza}: patrón ${resuelto.nombre.toLowerCase()}`} className="size-full" animar={false} />
+            <VistaPatron resuelto={resuelto} leyenda={leyenda} tipo={estructura.tipo} oficialId={oficialId} espejo={estructura.ubicacion === "lateral_derecho"} proporcion={proporcion} etiqueta={`${nombrePieza}: patrón ${resuelto.nombre.toLowerCase()}`} className="size-full" animar={false} />
           </div>
         </section>
-        <section className="space-y-2">
+        {/* `min-w-0`: en un teléfono solo se desplaza la gráfica, no la hoja entera. */}
+        <section className="min-w-0 space-y-2">
           <h3 className="text-sm font-semibold">Gráfica numerada</h3>
-          <GraficaPatron resuelto={resuelto} leyenda={leyenda} tipo={estructura.tipo} oficialId={oficial?.id ?? declarada?.estructura_oficial} />
+          <GraficaPatron resuelto={resuelto} leyenda={leyenda} tipo={estructura.tipo} oficialId={oficialId} className={tramos.length > 1 ? "print:hidden" : ""} />
+          {tramos.length > 1 && (
+            <div data-testid="grafica-por-tramos" className="hidden space-y-4 print:block">
+              <p className="text-xs text-texto-suave">En el papel la gráfica va en {tramos.length} tramos, de izquierda a derecha: cada {unidades.singular.toLowerCase()} sigue en el tramo siguiente.</p>
+              {tramos.map((tramo, indice) => (
+                <div key={tramo.desde} className="space-y-1">
+                  <p className="text-xs font-semibold">Tramo {indice + 1} · globos {tramo.desde + 1} a {tramo.hasta} de cada {unidades.singular.toLowerCase()}</p>
+                  <GraficaPatron
+                    resuelto={{ geometria: resuelto.geometria, celdas: resuelto.celdas.map((fila) => fila.slice(tramo.desde, tramo.hasta)), extras: indice === tramos.length - 1 ? resuelto.extras : [] }}
+                    leyenda={leyenda}
+                    tipo={estructura.tipo}
+                    oficialId={oficialId}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
 
@@ -104,10 +147,13 @@ export function HojaArmado({ resuelto, leyenda, estructura, declarada, oficial, 
           {resuelto.pasos.map((paso) => {
             const cuantos = paso.hasta - paso.desde + 1;
             const colores = paso.celdas.map((material) => colorDe(leyenda, material));
+            const centro = paso.extras.map((material) => colorDe(leyenda, material).etiqueta).join(", ");
             return (
               <li key={`${paso.desde}-${paso.hasta}`} className="hoja-armado-bloque flex flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2">
                 <span className="w-28 shrink-0 text-[13px] font-semibold tabular-nums">{rangoFilas(resuelto.geometria, paso.desde, paso.hasta)}</span>
-                <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1" aria-label={`${colores.map((color) => color.etiqueta).join(", ")}${paso.extras.length ? `, y al centro ${paso.extras.map((material) => colorDe(leyenda, material).etiqueta).join(", ")}` : ""}`}>
+                <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+                  {/* Los globos son solo dibujo: el lector de pantalla oye los colores en texto (un aria-label en un <span> genérico no se anuncia). */}
+                  <span className="sr-only">{colores.map((color) => color.etiqueta).join(", ")}{centro ? `, y al centro ${centro}` : ""}</span>
                   {colores.map((color, indice) => (
                     <span key={indice} aria-hidden="true" className="inline-flex items-center gap-1">
                       {indice > 0 && <span className="text-texto-tenue">·</span>}
@@ -217,7 +263,7 @@ export function DialogoHojaArmado({ abierto, onAbiertoChange, ...hoja }: PropsHo
             </div>
           </div>
           {/* Desplazable con el teclado (axe: scrollable-region-focusable). */}
-          <div tabIndex={0} aria-label="Contenido de la hoja de armado" className="hoja-armado-scroll scroll-suave min-h-0 flex-1 overflow-y-auto px-4 py-5 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-acento md:px-8 md:py-6">
+          <div tabIndex={0} role="region" aria-label="Contenido de la hoja de armado" className="hoja-armado-scroll scroll-suave min-h-0 flex-1 overflow-y-auto px-4 py-5 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-acento md:px-8 md:py-6">
             <HojaArmado {...hoja} />
           </div>
         </Dialog.Content>

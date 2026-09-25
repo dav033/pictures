@@ -14,7 +14,7 @@ import { errorAllowlistDesdePython } from "./allowlist-producto-variante";
 import type { ContextoPlan } from "./aprobacion";
 import { coloresRealesProducto } from "./colores-producto";
 import { MENSAJE_UNICO_MATERIAL } from "./edicion-compatibilidad";
-import { PlanEditError, type CausaEdicionPlan } from "./edicion-error";
+import { PlanEditError, type CausaEdicionPlan, type RechazoPatron } from "./edicion-error";
 import type { EdicionPlan } from "./edicion-esquemas";
 import type { ModoAdmitido, ModoPatronColor, PatronColor, PatronColorResuelto } from "./patron-color";
 import { ordenarRecomendacionesPorColor } from "./recomendaciones-orden";
@@ -169,6 +169,21 @@ const RECHAZOS_VISTA_PATRON: Readonly<Record<string, Rechazo>> = {
 };
 
 /**
+ * `patron_invalido` of the pattern preview: besides the rule and the sentence,
+ * the styles Python admits for the structure (ADR-0028 §10), so the editor
+ * still offers them when no pattern could be suggested. `null` when the
+ * rejection did not carry them (the edit never does).
+ */
+export class RechazoVistaPatronError extends PlanEditError {
+  readonly modosAdmitidos: ModoAdmitido[] | null;
+
+  constructor(message: string, patron: RechazoPatron | undefined, modosAdmitidos: ModoAdmitido[] | null) {
+    super(422, message, "PATRON_INVALIDO", patron);
+    this.modosAdmitidos = modosAdmitidos;
+  }
+}
+
+/**
  * A known domain rejection as `PlanEditError`; anything else (transport,
  * authentication, an unknown code) is not a business answer and is left to
  * the caller. `patron_invalido` keeps Python's `motivo` and `mensaje`: the
@@ -228,6 +243,8 @@ export async function vistaPreviaPatronPython(input: {
   participaciones?: readonly number[];
   /** With `patronColor` null: the starting point of that style instead of the preset. */
   modo?: ModoPatronColor;
+  /** With `modo`: the editor's draft; Python keeps from it what the new style admits. */
+  desde?: PatronColor;
   correlationId: string;
   signal?: AbortSignal;
 }): Promise<{ patron: PatronColorResuelto; modos_admitidos: ModoAdmitido[] }> {
@@ -238,6 +255,7 @@ export async function vistaPreviaPatronPython(input: {
       patronColor: input.patronColor,
       ...(input.participaciones === undefined ? {} : { participaciones: input.participaciones }),
       ...(input.modo === undefined ? {} : { modo: input.modo }),
+      ...(input.desde === undefined ? {} : { desde: input.desde }),
       requestId: crypto.randomUUID(),
       correlationId: input.correlationId,
       deadlineMs: EDICION_PYTHON_DEADLINE_MS,
@@ -245,6 +263,10 @@ export async function vistaPreviaPatronPython(input: {
     });
     return { patron: resultado.patron, modos_admitidos: resultado.modos_admitidos };
   } catch (error) {
-    throw rechazoDesdePython(error, RECHAZOS_VISTA_PATRON) ?? error;
+    const rechazo = rechazoDesdePython(error, RECHAZOS_VISTA_PATRON);
+    if (rechazo?.causa === "PATRON_INVALIDO" && isPythonAdapterError(error)) {
+      throw new RechazoVistaPatronError(rechazo.message, rechazo.patron, error.domainDetails?.modosAdmitidos ?? null);
+    }
+    throw rechazo ?? error;
   }
 }

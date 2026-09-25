@@ -22,7 +22,22 @@ type Props = {
   className?: string;
 };
 
-type Posicion = { fila: number; columna: number };
+/** Globo con el foco itinerante de la gráfica; `columna: -1` es el número del racimo (o de la fila). */
+export type Posicion = { fila: number; columna: number };
+
+/**
+ * Dónde está el único Tab stop de la gráfica cuando cambian sus filas (otro
+ * tamaño de racimo, "Deshacer", otro estilo). Si la fila elegida ya no existe,
+ * vuelve al primer racimo a la vista; si existe pero es más corta, al último
+ * globo de esa fila. El número del racimo (`-1`) se conserva mientras su fila
+ * exista. Sin esto el foco quedaba apuntando a una fila borrada y ningún botón
+ * entraba con Tab.
+ */
+export function posicionItinerante(elegido: Posicion, filas: readonly (readonly number[])[], primera: number): Posicion {
+  const largo = filas[elegido.fila]?.length;
+  if (largo === undefined) return { fila: primera, columna: 0 };
+  return { fila: elegido.fila, columna: Math.min(elegido.columna, largo - 1) };
+}
 
 function tamanoCelda(columnas: number): { tamano: "md" | "sm" | "xs"; sangria: string; conNumero: boolean } {
   if (columnas <= 8) return { tamano: "md", sangria: "pl-4", conNumero: true };
@@ -52,8 +67,8 @@ export function GraficaPatron({ resuelto, celdas, leyenda, tipo, oficialId, pinc
   const editable = Boolean(pincel && onPintar);
   const colorPincel = pincel ? colorDe(leyenda, pincel.material) : null;
   const [elegido, setActivo] = useState<Posicion>({ fila: orden[0] ?? 0, columna: 0 });
-  // Si la rejilla cambió de tamaño, el foco itinerante vuelve al primer racimo para que Tab siempre entre.
-  const activo = elegido.columna < (filasCeldas[elegido.fila]?.length ?? 0) ? elegido : { fila: orden[0] ?? 0, columna: 0 };
+  // Si la rejilla cambió de tamaño, el foco itinerante se reubica para que Tab siempre entre.
+  const activo = posicionItinerante(elegido, filasCeldas, orden[0] ?? 0);
   const botones = useRef(new Map<string, HTMLButtonElement>());
   const arriba = extremos.baseAbajo ? extremos.fin : extremos.inicio;
   const abajo = extremos.baseAbajo ? extremos.inicio : extremos.fin;
@@ -100,7 +115,8 @@ export function GraficaPatron({ resuelto, celdas, leyenda, tipo, oficialId, pinc
 
   if (!editable) {
     return (
-      <div className={`min-w-0 overflow-x-auto ${className}`}>
+      // Una pared ancha se desplaza de lado dentro de su marco: con el teclado también (axe: scrollable-region-focusable).
+      <div tabIndex={0} role="group" aria-label="Gráfica numerada" className={`min-w-0 overflow-x-auto rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento ${className}`}>
         {marcador(arriba)}
         <ol aria-label={`Gráfica numerada, ${unidades.singular.toLowerCase()} por ${unidades.singular.toLowerCase()}`} className="my-1 space-y-1">
           {orden.map((fila) => (

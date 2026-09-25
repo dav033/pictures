@@ -23,7 +23,7 @@ con ``details``):
 | ``patron_activo`` | 409 |
 | ``unico_material`` | 400 |
 | ``sin_participacion`` | 400 |
-| ``patron_invalido`` (``estructura_id``, ``motivo``, ``mensaje``) | 422 |
+| ``patron_invalido`` (``estructura_id``, ``motivo``, ``mensaje``; en la vista previa, además ``modos_admitidos``) | 422 |
 | ``invalid_plan`` (el plan recibido o el editado incumple plan-decoracion.v1) | 422 |
 """
 
@@ -43,13 +43,14 @@ from pydantic import ConfigDict, Field, ValidationError, field_validator, model_
 
 from app.generated_models import PlanDecoracion, contract_schema
 from app.operational_models import ContractModel, OperationalRequest
-from app.patron_color import TIPO_REJILLA
+from app.patron_color import TIPO_REJILLA, forma_valida, para_validar
 from app.plan import (
     PlanResolutionError,
+    VistaPreviaPatron,
     modos_admitidos_de_estructura,
-    patron_resuelto_de_estructura,
     sincronizar_participaciones,
     sugerir_patron_para_estructura,
+    vista_previa_de_estructura,
 )
 
 PLAN_EDIT_SCOPE = "plan.edit"
@@ -196,6 +197,9 @@ class PlanPatronRequest(OperationalRequest):
     Con ``participaciones`` (y ``patron_color`` nulo) es la vista previa del
     deslizador de colores sobre un confeti: el mismo ``repartir`` que aplicará
     la edición, sin guardarlo, para dibujar la pieza mientras se arrastra.
+    Con ``modo`` es el punto de partida de ese estilo; ``desde`` (solo con
+    ``modo``) es el borrador del editor, del que Python conserva lo que el
+    estilo nuevo admite (``sugerir_patron_modo``).
     """
 
     schema_version: Literal["plan-patron.v1"]
@@ -207,6 +211,8 @@ class PlanPatronRequest(OperationalRequest):
     modo: (
         Literal["espiral", "anillos", "bloques", "degradado", "aleatorio", "flor", "damero"] | None
     ) = None
+    #: Con ``modo``: el borrador del que viene el decorador (forma de ``patron-color.v1``).
+    desde: dict[str, object] | None = None
 
     @field_validator("participaciones")
     @classmethod
@@ -223,6 +229,10 @@ class PlanPatronRequest(OperationalRequest):
             self.patron_color is not None or self.participaciones is not None
         ):
             raise ValueError("modo solo pide el punto de partida de un estilo")
+        if self.desde is not None and self.modo is None:
+            raise ValueError("desde solo acompaña a modo")
+        if self.desde is not None and not forma_valida(self.desde):
+            raise ValueError("desde no cumple patron-color.v1")
         return self
 
 
@@ -602,7 +612,7 @@ def _agregar_al_patron(plan: dict[str, object], indice: int, parte: float) -> li
     estructura["patron_color"] = patron
     try:
         # Valida el patrón con la geometría de la pieza (reglas del §4).
-        sincronizar_participaciones(plan)
+        sincronizar_participaciones(plan, str(estructura["estructura_id"]))
     except PlanResolutionError as error:
         propio = (error.details or {}).get("estructura_id") == estructura["estructura_id"]
         if error.code != "patron_invalido" or not propio:
@@ -687,8 +697,9 @@ def editar_plan(
         _editar_materiales(estructura, edicion, lineas_base, colores_variante)
         avisos = _ajustar_patron(editado, indice, edicion, materiales_antes, completar_patrones)
     if _estructura(editado, indice).get("patron_color") is not None:
-        # Valida el patrón (forma y reglas del §4) y reescribe participacion.
-        editado = sincronizar_participaciones(editado)
+        # Valida el patrón (forma y reglas del §4) y reescribe participacion,
+        # solo en la pieza editada: las demás no cambiaron.
+        editado = sincronizar_participaciones(editado, edicion.estructura_id)
     _validar_plan(editado)
     return PlanEditado(plan=editado, avisos=tuple(aviso[:_MAX_AVISO] for aviso in avisos))
 
@@ -711,7 +722,7 @@ def ejecutar_edicion(request: PlanEditRequest) -> dict[str, object]:
 
 def _vista_previa_reparto(
     plan: Mapping[str, object], estructura_id: str, participaciones: Sequence[float]
-) -> dict[str, object]:
+) -> VistaPreviaPatron:
     """El confeti de la estructura tras ``repartir``, sin guardar nada.
 
     Es la misma edición que aplicará ``/plan/edit``; una estructura sin patrón
@@ -738,32 +749,70 @@ def _vista_previa_reparto(
         for item in cast(list[dict[str, object]], editado.plan["estructuras"])
         if item.get("estructura_id") == estructura_id
     )
-    patron: dict[str, object] = patron_resuelto_de_estructura(
+    vista = vista_previa_de_estructura(
         editado.plan, estructura_id, cast(dict[str, object], nuevo["patron_color"])
     )
     if editado.avisos:
-        patron["avisos"] = [*editado.avisos, *cast(list[str], patron["avisos"])]
-    return patron
+        vista.patron["avisos"] = [*editado.avisos, *cast(list[str], vista.patron["avisos"])]
+    return vista
+
+
+def _rechazo_con_estilos(
+    error: PlanResolutionError, request: PlanPatronRequest
+) -> PlanResolutionError | None:
+    """``patron_invalido`` de la pieza pedida, con los estilos que admite (ADR-0028 §10).
+
+    Sin sugerencia posible (una rejilla demasiado chica, por ejemplo) el editor
+    sigue ofreciendo los estilos de la pieza: van en el mismo rechazo. ``None``
+    si el rechazo es otro, habla de otra pieza o ya los trae.
+    """
+    detalles = error.details or {}
+    if (
+        error.code != "patron_invalido"
+        or detalles.get("estructura_id") != request.estructura_id
+        or "modos_admitidos" in detalles
+    ):
+        return None
+    try:
+        modos = modos_admitidos_de_estructura(request.plan, request.estructura_id)
+    except PlanResolutionError:
+        return None
+    return PlanResolutionError(
+        error.code, error.status_code, {**detalles, "modos_admitidos": modos}
+    )
 
 
 def vista_previa_patron(request: PlanPatronRequest) -> dict[str, object]:
     """``plan-patron-result.v1``: el patrón dado expandido, o la sugerencia con ``None``.
 
     Sin catálogo; la rejilla y el conteo son los que dará la próxima resolución.
+    Los estilos que ofrece el editor (``modos_admitidos``) los decide Python:
+    viajan con la respuesta y con el rechazo ``patron_invalido`` de la pieza.
     """
-    if request.participaciones is not None:
-        patron = _vista_previa_reparto(request.plan, request.estructura_id, request.participaciones)
-    else:
-        patron = patron_resuelto_de_estructura(
-            request.plan, request.estructura_id, request.patron_color, modo=request.modo
-        )
-    if next(_PATRON_RESUELTO.iter_errors(patron), None) is not None:
+    try:
+        if request.participaciones is not None:
+            vista = _vista_previa_reparto(
+                request.plan, request.estructura_id, request.participaciones
+            )
+        else:
+            vista = vista_previa_de_estructura(
+                request.plan,
+                request.estructura_id,
+                request.patron_color,
+                modo=request.modo,
+                desde=request.desde,
+            )
+    except PlanResolutionError as error:
+        con_estilos = _rechazo_con_estilos(error, request)
+        if con_estilos is None:
+            raise
+        raise con_estilos from error
+    if next(_PATRON_RESUELTO.iter_errors(para_validar(vista.patron)), None) is not None:
         raise RuntimeError("el patrón resuelto no cumple plan-resuelto.v1")
     return {
         "operation_schema_version": PLAN_PATRON_RESULT_VERSION,
-        "patron": patron,
-        # Qué estilos ofrece el editor para esta pieza: los decide Python.
-        "modos_admitidos": modos_admitidos_de_estructura(request.plan, request.estructura_id),
+        "patron": vista.patron,
+        "modos_admitidos": vista.modos_admitidos,
     }
 
 

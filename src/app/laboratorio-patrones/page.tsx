@@ -240,7 +240,8 @@ export default function LaboratorioPatronesPage() {
         const sugerencia = !cuerpo.patron_color && !cuerpo.participaciones && !cuerpo.modo;
         if (rechazarRef.current === "todo" || (rechazarRef.current === "sugerencia" && sugerencia)) {
           await new Promise((listo) => window.setTimeout(listo, 250));
-          return respuestaJson(RECHAZO_PYTHON, 422);
+          // Como /api/plan-patron: el rechazo trae los estilos que Python admite para la pieza.
+          return respuestaJson({ ...RECHAZO_PYTHON, modos_admitidos: modosGrabados(cuerpo.estructura_id) }, 422);
         }
         if (fuenteRef.current === "python") return original(entrada, init);
         await new Promise((listo) => window.setTimeout(listo, 250));

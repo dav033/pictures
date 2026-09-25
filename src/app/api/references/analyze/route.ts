@@ -33,9 +33,11 @@ export async function POST(request: Request) {
     const analisis = await analizarReferenciasV2(chat, references, [], "perceptual", { requestId, correlationId, superficie: "/api/references/analyze" }, request.signal, { forzarNuevoAnalisis: body.sinCache });
     // ADR-0028 §11: el patrón de color de cada estructura lo lee Python en una
     // llamada aparte (el prompt del análisis sigue congelado). Un fallo deja el
-    // blueprint sin pistas; nunca rompe el análisis.
+    // blueprint sin pistas; nunca rompe el análisis. La misma foto con los
+    // mismos elementos (un análisis de la caché o de la galería) reutiliza la
+    // detección ya pagada; "Reintentar" (`sin_cache`) pide una nueva.
     const result = PATRON_REFERENCIA_PYTHON_ENABLED
-      ? { ...analisis, blueprint: await detectarPatronesReferencia(analisis.blueprint, references, { requestId, correlationId, signal: request.signal, vencimiento }) }
+      ? { ...analisis, blueprint: await detectarPatronesReferencia(analisis.blueprint, references, { requestId, correlationId, signal: request.signal, vencimiento, sinCache: body.sinCache }) }
       : analisis;
     return Response.json(cuerpoExito(result, references, requestId, id), { headers: { "X-Request-ID": requestId } });
   } catch (error) {

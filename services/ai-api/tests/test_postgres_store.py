@@ -214,3 +214,37 @@ def test_postgres_store_requires_started_pool_without_credentials() -> None:
             await store.consume_nonce("ai-api", str(REQUEST_ID))
 
     run(scenario())
+
+
+def test_pool_skips_the_session_reset_query_because_the_store_keeps_no_session_state(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The pool releases with asyncpg's own rollback of an open transaction but
+    # without its reset query (one round trip per internal request). That is
+    # only right while no statement of this store leaves session state behind.
+    import inspect
+    import re
+
+    from app import postgres_store
+
+    captured: dict[str, object] = {}
+
+    async def fake_create_pool(**kwargs: object) -> FakePool:
+        captured.update(kwargs)
+        return FakePool()
+
+    monkeypatch.setattr(postgres_store.asyncpg, "create_pool", fake_create_pool)
+    run(PostgresOperationalStore("postgresql://localhost/demo").start())
+
+    assert captured["reset"] is postgres_store._reset_without_session_state
+    assert run(postgres_store._reset_without_session_state(object())) is None
+    statements = {name: value for name, value in vars(postgres_store).items() if name.endswith("_SQL")}
+    assert statements
+    for name, statement in statements.items():
+        # A statement that starts with SET/RESET/LISTEN/DECLARE (not an UPDATE's SET clause).
+        assert not re.search(r"(?:\A|;)\s*(?:SET|RESET|LISTEN|DECLARE)\b", statement, re.I), name
+        assert "pg_advisory" not in statement.lower(), name
+    # Every statement the store sends is one of those, or the readiness probe.
+    source = inspect.getsource(postgres_store)
+    sent = re.findall(r'connection\.(?:execute|fetch|fetchrow|fetchval)\(\s*(\w+|"[^"]*")', source)
+    assert sent and set(sent) <= {*statements, '"SELECT 1"'}, sent

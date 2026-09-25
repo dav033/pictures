@@ -15,7 +15,9 @@ import type { PlanResuelto } from "./resuelto";
  * (`patron_invalido`) trae `motivo` estable y `mensaje` en español para el
  * decorador ("Negro no aparece en el patrón"): ese mensaje sí se muestra, tal
  * cual, junto al borrador. Lo mismo al aplicarlo (acción `patron` de
- * /api/plan-editar). Sin React.
+ * /api/plan-editar). El rechazo de la vista previa trae además los estilos
+ * que Python admite para la pieza (`modos_admitidos`): el editor los ofrece
+ * aunque no haya sugerencia. Sin React.
  */
 
 export const RESPALDO_VISTA_PATRON = "No pude dibujar el patrón. Intenta de nuevo en un momento.";
@@ -35,6 +37,8 @@ export type PeticionVistaPatron = {
   participaciones?: number[];
   /** Con `patron_color: null`: el punto de partida de ese estilo que arma Python. */
   modo?: ModoPatronColor;
+  /** Con `modo`: el borrador del editor; Python conserva de él lo que el estilo nuevo admite. */
+  desde?: PatronColor;
 };
 
 /** La vista previa con los estilos que Python admite para la pieza. */
@@ -50,18 +54,24 @@ export class FalloPlanPatron extends FalloPlanEditar {
   readonly patronInvalido: boolean;
   /** Motivo estable del rechazo (`material_sin_uso`…), si el cuerpo lo trae. */
   readonly motivo: string | null;
+  /** Estilos que Python admite para la pieza, si el rechazo de la vista previa los trae. */
+  readonly modosAdmitidos: ModoAdmitido[] | null;
 
-  constructor(mensajeCliente: string, opciones: { patronInvalido?: boolean; motivo?: string | null; cause?: unknown } = {}) {
+  constructor(mensajeCliente: string, opciones: { patronInvalido?: boolean; motivo?: string | null; modosAdmitidos?: ModoAdmitido[] | null; cause?: unknown } = {}) {
     super(mensajeCliente, { cause: opciones.cause });
     this.name = "FalloPlanPatron";
     this.motivo = opciones.motivo ?? null;
     this.patronInvalido = opciones.patronInvalido ?? this.motivo !== null;
+    this.modosAdmitidos = opciones.modosAdmitidos ?? null;
   }
 }
 
 const LARGO_MAXIMO_MENSAJE = 400;
 const CODIGO_PATRON_INVALIDO = "patron_invalido";
 const CAUSA_PATRON_INVALIDO = "PATRON_INVALIDO";
+/** Un estilo por modo como mucho, todos del contrato: si no, la lista entera no vale. */
+const ModosAdmitidosSchema = z.array(ModoAdmitidoSchema).max(MODOS_PATRON_COLOR.length)
+  .refine((modos) => new Set(modos.map((modo) => modo.modo)).size === modos.length);
 
 function campoTexto(valor: unknown, clave: string): string | undefined {
   if (typeof valor !== "object" || valor === null || !(clave in valor)) return undefined;
@@ -69,7 +79,7 @@ function campoTexto(valor: unknown, clave: string): string | undefined {
   return typeof campo === "string" && campo.trim() ? campo.trim() : undefined;
 }
 
-export type ErrorPatronLeido = { mensaje: string; motivo: string | null; patronInvalido: boolean };
+export type ErrorPatronLeido = { mensaje: string; motivo: string | null; patronInvalido: boolean; modosAdmitidos: ModoAdmitido[] | null };
 
 /**
  * Lee un cuerpo de error de /api/plan-patron o /api/plan-editar. El rechazo
@@ -78,7 +88,8 @@ export type ErrorPatronLeido = { mensaje: string; motivo: string | null; patronI
  * `ui_error` (su `detalles_dev.causa`; el motivo va en `codigo_origen`,
  * "PATRON_INVALIDO:material_sin_uso"). El texto: el `mensaje` de Python, si
  * no el `ui_error` válido y, sin él, `MENSAJE_PATRON_INVALIDO` o el respaldo
- * de quien llama.
+ * de quien llama. `modos_admitidos` solo cuenta en un rechazo del patrón y si
+ * cumple el contrato entero.
  */
 export function leerErrorPatron(datos: unknown, respaldo: string): ErrorPatronLeido {
   const ui = leerUiErrorV1(datos);
@@ -91,11 +102,13 @@ export function leerErrorPatron(datos: unknown, respaldo: string): ErrorPatronLe
     || campoTexto(datos, "error") === CODIGO_PATRON_INVALIDO
     || campoTexto(datos, "causa") === CAUSA_PATRON_INVALIDO
     || ui?.detalles_dev.causa === CAUSA_PATRON_INVALIDO;
-  if (!patronInvalido) return { mensaje: mensajeErrorRespuesta(datos, respaldo), motivo: null, patronInvalido: false };
+  if (!patronInvalido) return { mensaje: mensajeErrorRespuesta(datos, respaldo), motivo: null, patronInvalido: false, modosAdmitidos: null };
+  const modos = ModosAdmitidosSchema.safeParse(typeof datos === "object" && datos !== null ? (datos as Record<string, unknown>).modos_admitidos : undefined);
   return {
     mensaje: mensajePython ?? mensajeErrorRespuesta(datos, MENSAJE_PATRON_INVALIDO),
     motivo: motivoPlano ?? motivoUi ?? null,
     patronInvalido: true,
+    modosAdmitidos: modos.success ? modos.data : null,
   };
 }
 
@@ -122,8 +135,8 @@ async function publicar(url: string, cuerpo: unknown, respaldo: string, opciones
     throw new FalloPlanPatron(respaldo, { cause: error });
   }
   if (!respuesta.ok) {
-    const { mensaje, motivo, patronInvalido } = leerErrorPatron(datos, respaldo);
-    throw new FalloPlanPatron(mensaje, { motivo, patronInvalido });
+    const { mensaje, motivo, patronInvalido, modosAdmitidos } = leerErrorPatron(datos, respaldo);
+    throw new FalloPlanPatron(mensaje, { motivo, patronInvalido, modosAdmitidos });
   }
   return datos;
 }
@@ -160,46 +173,11 @@ export async function pedirVistaPatronDetallada(
   const datos = await publicar("/api/plan-patron", cuerpo, respaldo, opciones);
   const objeto = typeof datos === "object" && datos !== null ? (datos as Record<string, unknown>) : {};
   const patron = PatronColorResueltoSchema.safeParse(objeto.patron);
-  const modos = z.array(ModoAdmitidoSchema).safeParse(objeto.modos_admitidos);
+  const modos = ModosAdmitidosSchema.safeParse(objeto.modos_admitidos);
   if (!patron.success || !modos.success || patron.data.estructura_id !== cuerpo.estructura_id) {
     throw new FalloPlanPatron(respaldo, { cause: !patron.success ? patron.error : !modos.success ? modos.error : undefined });
   }
   return { patron: patron.data, modos_admitidos: modos.data };
-}
-
-/**
- * Los estilos de una pieza cuando Python no pudo sugerirle un patrón (su
- * rechazo no trae `modos_admitidos`): se pide a la vez el punto de partida de
- * cada modo del contrato y vale la lista de la primera respuesta que Python
- * dibuje; las demás se cancelan. Python decide igual qué modos admite la
- * pieza (los que no, los rechaza); aquí no se filtra ninguno. Si ninguno se
- * arma, el fallo es el primero que habla de la pieza (no de un estilo que
- * no se arma en ella). Una cancelación se relanza tal cual.
- */
-export async function pedirModosAdmitidos(
-  cuerpo: Pick<PeticionVistaPatron, "plan" | "estructura_id">,
-  opciones: { signal?: AbortSignal; fetcher?: typeof fetch } = {},
-): Promise<ModoAdmitido[]> {
-  const propio = new AbortController();
-  const alCancelar = () => propio.abort(opciones.signal?.reason);
-  if (opciones.signal?.aborted) alCancelar();
-  opciones.signal?.addEventListener("abort", alCancelar, { once: true });
-  try {
-    const intentos = MODOS_PATRON_COLOR.map((modo) => pedirVistaPatronDetallada(
-      { plan: cuerpo.plan, estructura_id: cuerpo.estructura_id, patron_color: null, modo },
-      { signal: propio.signal, fetcher: opciones.fetcher },
-    ).then((vista) => vista.modos_admitidos));
-    return await Promise.any(intentos);
-  } catch (error) {
-    if (opciones.signal?.aborted) throw opciones.signal.reason ?? new DOMException("Cancelado", "AbortError");
-    if (!(error instanceof AggregateError)) throw error;
-    const fallos: unknown[] = error.errors;
-    throw fallos.find((fallo) => fallo instanceof FalloPlanPatron && fallo.motivo !== "modo_no_permitido") ?? fallos[0];
-  } finally {
-    // La primera respuesta basta: las que sigan en camino sobran.
-    propio.abort();
-    opciones.signal?.removeEventListener("abort", alCancelar);
-  }
 }
 
 /**

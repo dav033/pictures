@@ -1095,3 +1095,55 @@ def test_default_rerank_handler_runs_outside_event_loop(monkeypatch) -> None:
 
     assert result["payload"] == {"order": [], "scores": {}}
     assert worker_threads and worker_threads[0] != caller_thread
+
+
+# --- modos_admitidos in an error body (ADR-0028 §10) --------------------------------
+
+_ESTILOS = [
+    {"modo": "anillos", "direcciones": ["longitudinal", "transversal"], "espejo": False},
+    {"modo": "degradado", "direcciones": ["longitudinal", "transversal", "diagonal"], "espejo": False},
+    {"modo": "flor", "direcciones": ["longitudinal"], "espejo": True},
+]
+
+
+def _metadata_with_styles(styles: object) -> dict[str, object]:
+    error = main_module._error(
+        "patron_invalido",
+        422,
+        {"estructura_id": "EST_01", "motivo": "material_sin_uso", "mensaje": "m", "modos_admitidos": styles},
+    )
+    return main_module._detail_metadata(error)
+
+
+def test_error_details_carry_the_pattern_styles_rebuilt_from_known_values() -> None:
+    metadata = _metadata_with_styles(_ESTILOS)
+
+    assert metadata["modos_admitidos"] == _ESTILOS
+    assert metadata["modos_admitidos"] is not _ESTILOS
+    # A piece that admits no pattern says so with an empty list.
+    assert _metadata_with_styles([])["modos_admitidos"] == []
+
+
+def test_error_details_drop_malformed_pattern_styles_whole() -> None:
+    valid = {"modo": "anillos", "direcciones": ["longitudinal"], "espejo": False}
+    malformed: list[object] = [
+        "anillos",
+        {"modo": "anillos"},
+        [valid, "x"],
+        [{**valid, "extra": 1}],
+        [{**valid, "modo": "rombos"}],
+        [{**valid, "modo": ["anillos"]}],
+        [valid, valid],
+        [{**valid, "direcciones": []}],
+        [{**valid, "direcciones": ["arriba"]}],
+        [{**valid, "direcciones": ["longitudinal", "longitudinal"]}],
+        [{**valid, "direcciones": [["longitudinal"]]}],
+        [{**valid, "direcciones": "longitudinal"}],
+        [{**valid, "espejo": 1}],
+        [{**valid, "modo": modo} for modo in (*main_module._PATTERN_MODES, "espiral")],
+    ]
+
+    for value in malformed:
+        metadata = _metadata_with_styles(value)
+        assert "modos_admitidos" not in metadata, value
+        assert metadata["motivo"] == "material_sin_uso"

@@ -164,6 +164,24 @@ def database_url_from_env() -> str | None:
     return validate_database_url(value)
 
 
+async def _reset_without_session_state(connection: object) -> None:
+    """Pool ``reset`` hook: nothing to clear beyond what asyncpg always does.
+
+    Before calling this hook asyncpg rolls back any open transaction and drops
+    listeners (``Connection._reset``). Its default reset *query* (advisory
+    unlock, ``CLOSE ALL``, ``UNLISTEN *``, ``RESET ALL``) clears session state
+    this store never creates -- every statement here is a plain parameterized
+    statement, alone or inside ``connection.transaction()`` -- and runs on
+    every release, i.e. on every internal request, because each one consumes
+    its nonce here. Dropping it took the pattern preview from ~265 to ~137 ms
+    from a developer machine to Neon (2026-09-24, ADR-0028 §10). Adding
+    ``SET``, ``LISTEN``, advisory locks or cursors to this store requires going
+    back to the default reset (``tests/test_postgres_store.py`` checks the SQL
+    for them).
+    """
+    del connection
+
+
 def _epoch(value: object) -> float:
     if not isinstance(value, datetime):
         raise RuntimeError("POSTGRES_STORE_INVALID_TIMESTAMP")
@@ -267,6 +285,7 @@ class PostgresOperationalStore:
             # This store writes, so it closes idle connections early but never
             # replays a statement.
             max_inactive_connection_lifetime=60.0,
+            reset=_reset_without_session_state,
         )
         self._pool = cast(AsyncPool, created_pool)
 

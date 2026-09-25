@@ -4,7 +4,7 @@ import { useEffect, useState, type KeyboardEvent } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion, useReducedMotion } from "motion/react";
 import { Redo2, Undo2, X } from "lucide-react";
-import type { PatronColor, PatronColorResuelto, PintadoPatronColor } from "@/lib/plan/patron-color";
+import type { ModoPatronColor, PatronColor, PatronColorResuelto, PintadoPatronColor } from "@/lib/plan/patron-color";
 import type { EstructuraResuelta, PlanResuelto } from "@/lib/plan/resuelto";
 import type { EstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { productoCliente, ubicacionCliente } from "@/lib/plan/presentacion-cliente";
@@ -17,7 +17,7 @@ import { leyendaPatron } from "./leyenda";
 import { ControlesPatron, GaleriaEstilos } from "./ControlesPatron";
 import { LienzoPatron, ResumenVistaPatron, type ModoVistaPatron } from "./PanelVistaPatron";
 import type { Pincel } from "./GraficaPatron";
-import { useArranqueEstilo, useVistaPrevia } from "./usarVistaPrevia";
+import { avisosDelCambioDeEstilo, useArranqueEstilo, useVistaPrevia } from "./usarVistaPrevia";
 import { PieEditorPatron } from "./PieEditorPatron";
 
 type EstructuraDeclarada = PlanResuelto["plan"]["estructuras"][number];
@@ -74,6 +74,8 @@ export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, r
   const [historia, setHistoria] = useState<Historia>({ pasado: [], presente: inicio.patron, futuro: [], grupo: null });
   const [modo, setModo] = useState<ModoVistaPatron>("vista");
   const [pincel, setPincel] = useState<Pincel>({ material: leyenda.length > 1 ? 1 : 0, alcance: "globo" });
+  // Lo que Python avisó al armar el último estilo elegido (lo que quitó del borrador): va junto a los estilos.
+  const [avisosEstilo, setAvisosEstilo] = useState<{ modo: ModoPatronColor; avisos: string[] } | null>(null);
   const { vista, modos, cargando, error, estadoBorrador, reintentar, sembrar } = useVistaPrevia({
     plan: inicio.plan,
     estructuraId: estructura.estructura_id,
@@ -101,16 +103,29 @@ export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, r
   // El conteo a la vista es el de la última respuesta de Python, que puede ir detrás del borrador.
   const conteoEnPropuesta = enPropuesta(vista?.patron, patronEnPlan);
   const motivoRechazo = estadoBorrador === "rechazado" ? error?.mensaje ?? null : null;
-  // Otro estilo: Python arma su punto de partida, que se dibuja tal cual y pasa a ser el borrador.
+  // Otro estilo: Python arma su punto de partida desde el borrador (conserva lo que el estilo admite), se dibuja tal cual y pasa a ser el borrador.
   const estilos = useArranqueEstilo({
     plan: inicio.plan,
     estructuraId: estructura.estructura_id,
+    borrador,
     alLlegar: (detallada) => {
+      const avisos = avisosDelCambioDeEstilo(vista, detallada.patron);
+      setAvisosEstilo(avisos.length ? { modo: detallada.patron.patron.base.modo, avisos } : null);
       sembrar(detallada);
       cambiar(detallada.patron.patron, undefined, { conservarEstilo: true });
     },
   });
-  const eleccionEstilo = { onElegir: estilos.elegir, pendiente: estilos.pendiente, error: estilos.error };
+  // El aviso sigue mientras el decorador ajusta ese estilo; deshacer, restablecer u otro estilo lo retiran.
+  const avisosDelEstilo = avisosEstilo && borrador?.base.modo === avisosEstilo.modo ? avisosEstilo.avisos : [];
+  const eleccionEstilo = {
+    onElegir: (modo: ModoPatronColor) => {
+      setAvisosEstilo(null);
+      estilos.elegir(modo);
+    },
+    pendiente: estilos.pendiente,
+    error: estilos.error,
+    avisos: avisosDelEstilo,
+  };
 
   // Cada borrador nuevo va al autoguardado; quitar el patrón no necesita vista previa ni pausa.
   useEffect(() => {
@@ -136,6 +151,7 @@ export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, r
 
   function deshacer(): void {
     estilos.cancelar();
+    setAvisosEstilo(null);
     setHistoria((actual) => {
       const [previo] = actual.pasado.slice(-1);
       if (previo === undefined) return actual;
@@ -145,6 +161,7 @@ export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, r
 
   function rehacer(): void {
     estilos.cancelar();
+    setAvisosEstilo(null);
     setHistoria((actual) => {
       const [siguiente, ...resto] = actual.futuro;
       if (siguiente === undefined) return actual;
@@ -240,7 +257,7 @@ export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, r
                 />
               </section>
               <section aria-label="Conteo del patrón" className="order-3 shrink-0 border-t border-borde-suave bg-superficie-suave px-4 py-3 empty:hidden md:order-none md:col-start-1 md:row-start-2 md:max-h-72 md:overflow-y-auto md:border-b-0 md:border-r md:px-6 md:pb-4 md:pt-1">
-                <ResumenVistaPatron vista={vista} enPropuesta={conteoEnPropuesta} leyenda={leyenda} repeticiones={estructura.repeticiones} modo={modo} cargando={cargando} error={error} onReintentar={reintentar} />
+                <ResumenVistaPatron vista={vista} avisosAparte={avisosDelEstilo} enPropuesta={conteoEnPropuesta} leyenda={leyenda} repeticiones={estructura.repeticiones} modo={modo} cargando={cargando} error={error} onReintentar={reintentar} />
               </section>
               <section aria-label="Ajustes del patrón" className="order-2 shrink-0 px-4 py-4 md:order-none md:col-start-2 md:row-span-2 md:row-start-1 md:min-h-0 md:overflow-y-auto md:px-6 md:py-5">
                 {borrador ? (
@@ -275,9 +292,9 @@ export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, r
               // Lo que tenía la pieza al abrir; sin patrón, la sugerencia vuelve a ser solo una vista.
               puedeRestablecer={!mismoDiseno(historia.presente, inicio.patron)}
               tituloRestablecer={inicio.patron ? "Volver al patrón que tenía la pieza al abrir" : "Volver a como estaba al abrir: sin patrón en tu propuesta"}
-              onQuitar={() => cambiar(null)}
-              onRestablecer={() => cambiar(inicio.patron)}
-              onUsarSugerencia={sugerenciaSinUsar ? () => cambiar(sugerenciaSinUsar) : undefined}
+              onQuitar={() => { setAvisosEstilo(null); cambiar(null); }}
+              onRestablecer={() => { setAvisosEstilo(null); cambiar(inicio.patron); }}
+              onUsarSugerencia={sugerenciaSinUsar ? () => { setAvisosEstilo(null); cambiar(sugerenciaSinUsar); } : undefined}
               onListo={cerrar}
             />
           </motion.div>

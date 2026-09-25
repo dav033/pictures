@@ -72,7 +72,7 @@ async function main(): Promise<void> {
   const { crearEstadoConversacion, crearRegistroHerramientas, pistasPatronDelPlan } = await import("../../src/lib/ia/herramientas/registro-herramientas");
   const { RECHAZOS_PARA_CONVERGER } = await import("../../src/lib/ia/herramientas/convergencia-plan");
   const { resolverPlan } = await import("../../src/lib/plan/resolver-backend");
-  const { detectarPatronesReferencia } = await import("../../src/lib/ia/amaterasu/patron-referencia");
+  const { crearCacheDeteccionPatron, detectarPatronesReferencia } = await import("../../src/lib/ia/amaterasu/patron-referencia");
   const { ANALISIS_EJEMPLOS } = await import("../../src/lib/ia/amaterasu/analisis-ejemplos");
   const { instalarResolutorPythonFalso, SNAPSHOT_FALSO } = await import("../lib/resolutor-python-falso");
   type Blueprint = import("../../src/lib/ia/referencia/reference-blueprint").ReferenceBlueprintV2;
@@ -229,13 +229,14 @@ async function main(): Promise<void> {
     { id: "REF_01", mime: "image/png", base64: "aGVsbG8=", descripcion: "foto" },
     { id: "REF_02", mime: "image/jpeg", base64: "bXVuZG8=", descripcion: "foto" },
   ];
-  const contexto = { requestId: REQUEST_ID, correlationId: "00000000-0000-4000-8000-000000000002" };
+  // Cada caso con su propia caché de detecciones: la misma foto y los mismos elementos no vuelven a llamar.
+  const contexto = () => ({ requestId: REQUEST_ID, correlationId: "00000000-0000-4000-8000-000000000002", cache: crearCacheDeteccionPatron() });
   const deteccion = instalarPythonPatron((l) => {
     const elementos = l.body.elementos as Array<{ element_id: string }>;
     if (elementos[0]!.element_id === "REF_02_E01") return Response.json({ detail: { code: "patron_referencia_provider_error" } }, { status: 502 });
     return sobre(l, resultadoPatron([{ element_id: "REF_01_E01", ...espiral }]));
   });
-  const detectado = await detectarPatronesReferencia(dosFotos, referencias, contexto);
+  const detectado = await detectarPatronesReferencia(dosFotos, referencias, contexto());
   assert.equal(deteccion.length, 2);
   assert.ok(deteccion.every((l) => l.path === "/internal/v1/ia/patron-referencia"));
   const primera = deteccion.find((l) => (l.body.imagen as Json).mime_type === "image/png")!;
@@ -251,23 +252,98 @@ async function main(): Promise<void> {
 
   const ninguno = instalarPythonPatron((l) => sobre(l, resultadoPatron([{ element_id: "REF_01_E01", modo: "ninguno", colores: [], confianza: 0.2 }])));
   const soloUna = blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "balloon_structure")]);
-  assert.equal(await detectarPatronesReferencia(soloUna, referencias, contexto), soloUna, "\"ninguno\" no deja pista");
+  assert.equal(await detectarPatronesReferencia(soloUna, referencias, contexto()), soloUna, "\"ninguno\" no deja pista");
   assert.equal(ninguno.length, 1);
   const fueraDeContrato = instalarPythonPatron((l) => sobre(l, resultadoPatron([{ element_id: "REF_09_E09", ...espiral }])));
-  assert.equal(await detectarPatronesReferencia(soloUna, referencias, contexto), soloUna, "una pista de otro elemento es respuesta inválida");
+  assert.equal(await detectarPatronesReferencia(soloUna, referencias, contexto()), soloUna, "una pista de otro elemento es respuesta inválida");
   assert.equal(fueraDeContrato.length, 1);
   const sinTiempo = instalarPythonPatron(() => {
     throw new Error("sin tiempo no se llama");
   });
-  assert.equal(await detectarPatronesReferencia(soloUna, referencias, { ...contexto, vencimiento: Date.now() + 1_000 }), soloUna);
+  assert.equal(await detectarPatronesReferencia(soloUna, referencias, { ...contexto(), vencimiento: Date.now() + 1_000 }), soloUna);
   assert.equal(sinTiempo.length, 0);
   const sinGlobos = instalarPythonPatron(() => {
     throw new Error("sin estructuras de globos no se llama");
   });
   const flores = blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "floral")]);
-  assert.equal(await detectarPatronesReferencia(flores, referencias, contexto), flores);
+  assert.equal(await detectarPatronesReferencia(flores, referencias, contexto()), flores);
   assert.equal(sinGlobos.length, 0);
   ok("sin pista útil, sin tiempo o sin estructuras de globos el blueprint sale igual");
+
+  // ---------------------------------------------------------------------------
+  // Costo: cada detección es una llamada de visión con la foto entera. La misma
+  // foto con los mismos elementos (un análisis de la caché o de la galería) no
+  // la vuelve a pagar; un fallo sí se reintenta; "Reintentar" (sinCache) pide
+  // una nueva; dos peticiones a la vez comparten una sola llamada.
+  const pistaDePython = (pista: Json) => instalarPythonPatron((l) => sobre(l, resultadoPatron([{ element_id: "REF_01_E01", ...pista }])));
+  const unaFoto = [referencias[0]!];
+  const propia = contexto();
+  const fallida = instalarPythonPatron(() => Response.json({ detail: { code: "patron_referencia_unavailable" } }, { status: 503 }));
+  assert.equal(await detectarPatronesReferencia(soloUna, unaFoto, propia), soloUna);
+  assert.equal(fallida.length, 1);
+  const pagando = pistaDePython(espiral);
+  const pagada = await detectarPatronesReferencia(soloUna, unaFoto, propia);
+  assert.equal(pagando.length, 1, "un fallo no se guarda: la petición siguiente vuelve a llamar");
+  assert.deepEqual(pagada.elements[0]!.appearance.patron_color, espiral);
+  const repetidas = pistaDePython(bloques);
+  for (let vez = 0; vez < 3; vez += 1) {
+    assert.deepEqual((await detectarPatronesReferencia(soloUna, unaFoto, propia)).elements[0]!.appearance.patron_color, espiral, "la detección guardada");
+  }
+  assert.equal(repetidas.length, 0, "la misma foto con los mismos elementos no vuelve a pagar la visión");
+  const otrosElementos = blueprintDe(["REF_01"], [elemento("REF_01_E01", "REF_01", "balloon_structure", { colores: ["gold", "white"] })]);
+  await detectarPatronesReferencia(otrosElementos, unaFoto, propia);
+  assert.equal(repetidas.length, 1, "otra pregunta sobre la misma foto sí llama");
+  const reintento = pistaDePython(bloques);
+  assert.deepEqual((await detectarPatronesReferencia(soloUna, unaFoto, { ...propia, sinCache: true })).elements[0]!.appearance.patron_color, bloques);
+  assert.equal(reintento.length, 1, "sinCache pide una detección nueva");
+  assert.deepEqual((await detectarPatronesReferencia(soloUna, unaFoto, propia)).elements[0]!.appearance.patron_color, bloques, "y la nueva reemplaza a la guardada");
+  assert.equal(reintento.length, 1);
+
+  // En vuelo: dos peticiones iguales a la vez, una sola llamada. Si una se
+  // cancela, la otra sigue recibiendo su respuesta; si se cancelan todas, la llamada se corta.
+  let soltar: () => void = () => undefined;
+  const lenta = (senales: AbortSignal[]) => {
+    const llamadas: Llamada[] = [];
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const body: unknown = JSON.parse(String(init?.body));
+      assert.ok(esObjeto(body));
+      const llamada = { path: new URL(String(input)).pathname, body };
+      llamadas.push(llamada);
+      if (init?.signal) senales.push(init.signal);
+      await new Promise<void>((resolve, reject) => {
+        soltar = resolve;
+        init?.signal?.addEventListener("abort", () => reject(init.signal!.reason), { once: true });
+      });
+      return sobre(llamada, resultadoPatron([{ element_id: "REF_01_E01", ...espiral }]));
+    }) as typeof fetch;
+    return llamadas;
+  };
+  const senales: AbortSignal[] = [];
+  const compartida = lenta(senales);
+  const juntas = contexto();
+  const cancelada = new AbortController();
+  const [a, b, c] = [
+    detectarPatronesReferencia(soloUna, unaFoto, juntas),
+    detectarPatronesReferencia(soloUna, unaFoto, { ...juntas, signal: cancelada.signal }),
+    detectarPatronesReferencia(soloUna, unaFoto, juntas),
+  ];
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  cancelada.abort(new Error("CLIENT_CANCELLED"));
+  assert.equal(await b, soloUna, "la petición cancelada sale sin pistas");
+  soltar();
+  for (const resultado of await Promise.all([a, c])) assert.deepEqual(resultado.elements[0]!.appearance.patron_color, espiral);
+  assert.equal(compartida.length, 1, "tres peticiones iguales a la vez, una llamada");
+  assert.equal(senales[0]!.aborted, false, "cancelar una no corta la llamada que otras esperan");
+  const senalesSolas: AbortSignal[] = [];
+  const sola = lenta(senalesSolas);
+  const unica = new AbortController();
+  const abandonada = detectarPatronesReferencia(soloUna, unaFoto, { ...contexto(), signal: unica.signal });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+  unica.abort(new Error("CLIENT_CANCELLED"));
+  assert.equal(await abandonada, soloUna);
+  assert.equal(sola.length, 1);
+  assert.equal(senalesSolas[0]!.aborted, true, "sin nadie esperando, la llamada a Python se cancela");
+  ok("la detección se paga una vez por foto y pregunta: guardada, compartida en vuelo y nueva con sinCache");
 
   // ---------------------------------------------------------------------------
   // La ruta: foto de la galería (análisis guardado, sin proveedor) + detección.
@@ -282,10 +358,19 @@ async function main(): Promise<void> {
     body: JSON.stringify({ images: [{ mime: "image/jpeg", base64: foto }] }),
   }));
   const pistaRuta = { modo: "anillos", colores: ["plateado", "rosado"], confianza: 0.7 };
+  // Python caído: el análisis sale igual, sin pistas, y el fallo no se guarda.
+  const caida = instalarPythonPatron(() => Response.json({ detail: { code: "patron_referencia_unavailable" } }, { status: 503 }));
+  const respuestaCaida = await analizar();
+  assert.equal(respuestaCaida.status, 200, "un fallo de la detección no rompe el análisis");
+  const blueprintCaida = ReferenceBlueprintV2Schema.parse((await respuestaCaida.json() as { blueprint: unknown }).blueprint);
+  assert.ok(blueprintCaida.elements.every((e) => e.appearance.patron_color === undefined));
+  assert.equal(caida.length, 1);
+
   const ruta = instalarPythonPatron((l) => sobre(l, resultadoPatron([{ element_id: globos[0]!, ...pistaRuta }, { element_id: globos[1]!, modo: "ninguno", colores: [], confianza: 0.3 }])));
   const respuesta = await analizar();
   assert.equal(respuesta.status, 200);
-  const cuerpo = await respuesta.json() as { blueprint: unknown };
+  const cuerpo = await respuesta.json() as { blueprint: unknown; metadata?: { cached?: boolean } };
+  assert.equal(cuerpo.metadata?.cached, true, "la foto de la galería no llama al proveedor del análisis");
   const blueprintRuta = ReferenceBlueprintV2Schema.parse(cuerpo.blueprint);
   assert.equal(ruta.length, 1);
   assert.deepEqual((ruta[0]!.body.elementos as Array<{ element_id: string }>).map((e) => e.element_id), globos);
@@ -294,13 +379,18 @@ async function main(): Promise<void> {
   assert.equal(blueprintRuta.elements.find((e) => e.element_id === globos[1])!.appearance.patron_color, undefined);
   assert.ok(ejemplo.resultado.blueprint.elements.every((e) => e.appearance.patron_color === undefined), "el análisis guardado no se modifica");
 
-  const caida = instalarPythonPatron(() => Response.json({ detail: { code: "patron_referencia_unavailable" } }, { status: 503 }));
-  const respuestaCaida = await analizar();
-  assert.equal(respuestaCaida.status, 200, "un fallo de la detección no rompe el análisis");
-  const blueprintCaida = ReferenceBlueprintV2Schema.parse((await respuestaCaida.json() as { blueprint: unknown }).blueprint);
-  assert.ok(blueprintCaida.elements.every((e) => e.appearance.patron_color === undefined));
-  assert.equal(caida.length, 1);
-  ok("/api/references/analyze guarda cada pista en su elemento y sigue sin ellas si Python falla");
+  // La misma foto otra vez: el análisis fijo tampoco paga la detección (antes, una llamada de visión por petición).
+  const repetida = instalarPythonPatron(() => {
+    throw new Error("la detección de esta foto ya se pagó");
+  });
+  for (let vez = 0; vez < 3; vez += 1) {
+    const otra = await analizar();
+    assert.equal(otra.status, 200);
+    const blueprintOtra = ReferenceBlueprintV2Schema.parse((await otra.json() as { blueprint: unknown }).blueprint);
+    assert.deepEqual(blueprintOtra.elements.find((e) => e.element_id === globos[0])!.appearance.patron_color, pistaRuta, "las mismas pistas, sin llamar");
+  }
+  assert.equal(repetida.length, 0);
+  ok("/api/references/analyze guarda cada pista en su elemento, sigue sin ellas si Python falla y no repaga la detección de la misma foto");
 
   console.log(`\n${casos} casos OK (patrón de color de la foto)`);
 }

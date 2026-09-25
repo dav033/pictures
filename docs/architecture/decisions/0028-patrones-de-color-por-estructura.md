@@ -103,13 +103,6 @@ lógica TypeScript que esta función toque se migra.
   Python (§9) y la UI del editor, y se retira después de validarlo en
   producción. La detección en la foto tiene su propia bandera
   (`PATRON_REFERENCIA_PYTHON_ENABLED`); conviene encender las dos juntas.
-- **Estilos de una pieza sin sugerencia** (`pedirModosAdmitidos`,
-  `src/lib/plan/peticion-patron.ts`): cuando Python no puede sugerir un patrón,
-  su rechazo (`patron_invalido`) no trae `modos_admitidos`; el editor pide el
-  punto de partida de cada modo del contrato y usa los estilos de la primera
-  respuesta. No decide nada (Python rechaza los que no se arman), pero son
-  hasta siete peticiones en ese caso raro. Se retira cuando el rechazo de la
-  vista previa traiga `modos_admitidos`.
 - **Tablas ES→EN exportadas desde TypeScript** (`x-colores-en`, `x-acabados-en`).
   Son de solo lectura para Python hasta que la taxonomía de colores migre.
 
@@ -125,6 +118,7 @@ metería el campo en `required` y en el plan hasheado).
 
 ```ts
 const IndiceMaterial = z.number().int().min(0).max(11);
+const IndiceRejilla = z.number().int().min(0).max(3999); // ver §2: una fila o una columna llegan a 4000 posiciones
 const Racimo = z.array(IndiceMaterial).min(1).max(8);
 const Peso = z.object({ material: IndiceMaterial, peso: z.number().int().min(1).max(100) }).strict();
 
@@ -147,11 +141,11 @@ export const PatronColorV1Schema = z.object({
     material: IndiceMaterial,
     cada: z.number().int().min(2).max(24),
     desde: z.number().int().min(1).max(24),
-    posiciones: z.array(z.number().int().min(0).max(63)).min(1).max(64).optional(),
+    posiciones: z.array(IndiceRejilla).min(1).max(64).optional(),
   }).strict()).max(4).optional(),
   pintados: z.array(z.object({
-    fila: z.number().int().min(0).max(999),
-    columna: z.number().int().min(0).max(63).optional(),
+    fila: IndiceRejilla,
+    columna: IndiceRejilla.optional(),
     material: IndiceMaterial,
   }).strict()).max(512).optional(),
   simetria: z.literal("espejo").optional(),
@@ -184,6 +178,13 @@ diámetro.
   `filas = max(1, round_half_up(T / columnas))`. `globos_por_racimo` se ignora.
 - Tope: `filas * columnas <= 4000`; si no, `patron_invalido` (`motivo:
   rejilla_demasiado_grande`).
+- Con ese tope una pared puede tener una sola fila y hasta 4000 columnas, y
+  una pieza de racimos de 1 globo hasta 4000 filas: por eso `pintados[].fila`,
+  `pintados[].columna` y `acentos[].posiciones` del contrato llegan a 3999.
+  Todo globo que dibuja la gráfica se puede pintar (una pared de 10 m × 2,4 m
+  sale de 18 × 76). El contrato llegó a topar la columna en 63 y la fila en
+  999: el pincel de la columna 64 en adelante daba 400 en la vista previa, el
+  autoguardado y el cambio de estilo.
 
 ## 3. Expansión (determinista, solo enteros y `sha256`)
 
@@ -406,6 +407,29 @@ Acentos añaden: `, with evenly spaced D accent clusters` (LoRA) y `Every
 `pintados` añade a Gemini: `Some clusters were hand-painted by the decorator;
 follow the per-cluster color map exactly.` y nada al LoRA.
 
+En `bloques`, cada `p` es la parte de las líneas de la pieza entera que ocupa
+el bloque. Con espejo cada bloque sale de los dos pies, salvo la línea de la
+clave cuando el largo es impar, que es una sola: cuenta una vez (arco de 5
+filas con bloques 2 + 1: 80 % y 20 %, no 67 % y 33 %). La instrucción de
+armado nombra esa línea aparte ("desde cada pie hasta la clave: 2 cuartetos de
+blanco (1); en la clave, 1 cuarteto de negro (2)"), para que armar desde los
+dos pies no dé una línea de más.
+
+**Los colores se nombran por lo que se compra.** Al resolver, Python nombra
+cada material del patrón (`conteo[].color` y `acabado`, `descripcion`,
+`instrucciones`, `prompt_gemini`, `prompt_lora`) por las líneas que de verdad
+compra. Un reemplazo (`variant_overrides`, §9) cambia la compra sin tocar
+`materiales`, y el patrón apunta a índices. Si todas las líneas de un material
+vienen de un reemplazo y dicen un mismo color, el patrón usa ese color y el
+acabado de esas líneas. Si solo se reemplazó una parte con otro color (un
+tamaño de una mezcla de varios), o todas pero no con un mismo color, un
+número de la gráfica serían dos colores:
+el material conserva el nombre declarado y el patrón lleva un aviso ("Solo una
+parte del color azul (3) se cambió por rojo: …"). Sin reemplazos los nombres
+son los de `materiales`, byte a byte como antes. La vista previa (§10) no
+tiene catálogo y nombra lo declarado. `conteo[].color` es el color que decide
+Python para cada número de la leyenda.
+
 ## 9. Edición en Python: `POST /internal/v1/plan/edit`
 
 Scope `plan.edit`. Contrato local (ADR-0026 §3): Pydantic junto al módulo +
@@ -446,6 +470,15 @@ más:
 - `quitar` en estructura con patrón: se rehace el preset con los materiales
   que quedan (aviso "El patrón se rehízo porque quitaste un color"); si queda
   uno solo, el patrón se quita.
+- `reemplazar` en estructura con patrón: como en toda pieza geométrica, el
+  reemplazo va a `variant_overrides` y ni `materiales` ni el patrón cambian.
+  La compra cambia exactamente en esa línea (la variante elegida, con su
+  color). Reescribir el material haría que el resolutor volviera a elegir
+  producto, tamaño y acabado por su cuenta: con varios tamaños, los que la
+  propuesta no tenga del producto nuevo quedarían sin cobertura. Lo que el
+  patrón nombra sale de lo que se compra (§8): el conteo, los textos y los
+  prompts dicen el color nuevo. La edición no avisa nada; si el reemplazo
+  parte un color en dos, el aviso va en el patrón resuelto.
 - `colorDeEdicion` se porta sin canonizar (Next canoniza al resolver).
 
 `/api/plan-editar` añade `avisos` a su respuesta solo cuando Python devuelve
@@ -461,20 +494,107 @@ formato válido."):
 
 Scope `plan.patron`. Petición `plan-patron.v1`: `{schema_version, plan:
 PlanDecoracion, estructura_id, patron_color: PatronColorV1 | null,
-participaciones?: number[]}` (null = sugerir). `participaciones` (con
-`patron_color` nulo) es la vista previa del deslizador de colores sobre un
-confeti mientras se arrastra: el mismo `repartir` de la edición, sin guardar
-(`sin_patron` 409 si la pieza no tiene patrón). Respuesta `plan-patron-result.v1`: `{operation_schema_version,
-patron: PatronColorResuelto}`. Sin catálogo; usa las mismas funciones que la
-resolución (misma rejilla y conteo que dará `resolve`). Errores:
-`patron_invalido` 422, `invalid_plan` 422, `estructura_no_encontrada` 404.
+participaciones?: number[], modo?, desde?: PatronColorV1}` (null = sugerir).
+`participaciones` (con `patron_color` nulo) es la vista previa del
+deslizador de colores sobre un confeti mientras se arrastra: el mismo
+`repartir` de la edición, sin guardar (`sin_patron` 409 si la pieza no tiene
+patrón). `modo` (con `patron_color` nulo) pide el punto de partida de ese
+estilo (`sugerir_patron_modo`); `desde` (solo con `modo`) es el borrador del
+editor, y Python conserva de él lo que el estilo nuevo admite, en este
+orden: `globos_por_racimo` (solo en racimos), la `direccion` si está entre
+las `direcciones` del estilo, `simetria: "espejo"` si el estilo lo lleva y
+cada acento cuyo material y posiciones siguen existiendo. Lo que el estilo no
+ofrece (el espejo en un confeti, la diagonal en unos anillos) se deja sin
+más; lo que ofrece pero dejaría el patrón inválido se quita y se avisa en
+español al principio de `avisos` ("El estilo «flores» no se arma en racimos
+de 8 en esta pieza: queda en cuartetos."). Los `pintados` no pasan: son de
+la gráfica del estilo anterior. Respuesta `plan-patron-result.v1`:
+`{operation_schema_version, patron: PatronColorResuelto, modos_admitidos:
+[{modo, direcciones, espejo}]}`. Sin catálogo; usa las mismas funciones que
+la resolución (misma rejilla y conteo que dará `resolve`). Errores:
+`patron_invalido` 422, `invalid_plan` 422, `estructura_no_encontrada` 404. El
+`patron_invalido` de la pieza pedida trae además `modos_admitidos` (vacío si
+la pieza no admite patrón): sin sugerencia posible (una rejilla demasiado
+chica) el editor sigue ofreciendo los estilos. La frontera (`_detail_metadata`)
+los rearma desde valores conocidos: una lista de a lo sumo un estilo por
+modo, cada uno exactamente `{modo, direcciones, espejo}`; cualquier otra cosa
+quita el campo entero.
 
 Next: `POST /api/plan-patron` (misma autenticación que `/api/plan-editar`;
-no firma ni muta nada) → `{patron}`. Ante `patron_invalido` (422), esta ruta y
-la acción `patron` de `/api/plan-editar` responden `{error, causa:
-"PATRON_INVALIDO", motivo, mensaje, ui_error}`; `ui_error.mensaje_usuario` es
-el `mensaje` de Python si cabe en 280 caracteres. Otros fallos: `{error,
-ui_error}`.
+no firma ni muta nada) → `{patron, modos_admitidos}`. Ante `patron_invalido`
+(422), esta ruta y la acción `patron` de `/api/plan-editar` responden
+`{error, causa: "PATRON_INVALIDO", motivo, mensaje, ui_error}`, y esta ruta
+añade `modos_admitidos` cuando Python los manda (el adaptador los valida con
+el esquema de `ModoAdmitido`); `ui_error.mensaje_usuario` es el `mensaje` de
+Python si cabe en 280 caracteres. Otros fallos: `{error, ui_error}`.
+
+**Latencia medida** (2026-09-24, plan del laboratorio de 4 piezas, Python y
+Next locales, Neon en us-east-2 a 66 ms de ida y vuelta; medición de sesión,
+no versionada): la vista previa tardaba ~265 ms de Next a Python y ~280 ms
+por la ruta de Next. No era el adaptador de TypeScript (Zod del plan
+0,08 ms, del patrón 0,02 ms, firma 0,05 ms) ni el cómputo de Python
+(13–18 ms): contra un Python igual pero con el almacén en memoria la misma
+llamada tarda ~18–23 ms. El resto es el nonce en Neon: su escritura y, al
+devolver la conexión al pool, la consulta de reinicio de asyncpg
+(`pg_advisory_unlock_all`, `CLOSE ALL`, `UNLISTEN *`, `RESET ALL`). El
+almacén operativo no deja estado de sesión, así que su pool usa el gancho
+`reset` de asyncpg sin esa consulta (asyncpg sigue revirtiendo una
+transacción abierta; `tests/test_postgres_store.py` vigila que su SQL no
+use `SET`, `LISTEN`, cursores ni candados); el nonce se escribe y se valida
+igual (una repetición sigue siendo `401 nonce_replay`). La vista previa
+valida el plan dos veces (recibido y completado) y lo completa una:
+`modos_admitidos` sale de la misma estructura completada, no de otra
+validación y otra completitud. Resultado: ~137 ms de Next a Python y ~155 ms
+por la ruta; el cómputo de Python bajó de 13,5 a 8,8 ms en la sugerencia.
+Lo que queda es sobre todo la escritura del nonce en Neon.
+
+**Cálculo fuera del event loop** (2026-09-24). La vista previa, la edición y
+la parte de CPU de la resolución (completar el plan, resolver las líneas y
+validar los resultados) corren en un solo hilo aparte
+(`app/plan_worker.py`). En el event loop quedan la frontera y las idas al
+catálogo. Dentro de un `async def`, ese cálculo paraba todo `ai-api` (chat en
+streaming, imagen, nonce) y `asyncio.wait_for` no lo podía cortar. Un solo
+hilo acota la concurrencia: con el GIL, más hilos no calculan más rápido y le
+quitan turnos al loop. Lo que espera va en la cola y, si su plazo vence antes
+de empezar, se cancela sin gastar CPU.
+
+- **Solo la pieza pedida.** La vista previa y la edición expanden solo esa
+  pieza: su rejilla no depende de las otras. La resolución del plan editado
+  sigue validando todas.
+- **Validación más barata.** Validar el patrón resuelto contra el contrato era
+  ~85 % del costo. Ahora recorre una sola vez cada valor distinto de una fila
+  (`para_validar`). El veredicto es el mismo, porque el contrato no limita el
+  largo de una fila.
+- **Tope por petición.** El contrato ya acota el trabajo: ≤ 8 piezas y
+  ≤ 4000 celdas cada una.
+
+Medido en local (medición de sesión, no versionada) sobre paredes de
+13 × 5 m con confeti, de 3762 celdas cada una:
+
+| Operación | Antes | Después |
+|---|---:|---:|
+| Vista previa del deslizador, 1 pared | 77 ms | 33 ms |
+| Vista previa del deslizador, 8 paredes | 198 ms | 61 ms |
+| Edición `repartir`, 8 paredes | 73 ms | 29 ms |
+| Resolución, 1 pared | 128 ms | 47 ms |
+| Resolución, 8 paredes | 1190 ms | 275 ms |
+| `/healthz` con 10 vistas previas concurrentes (en proceso) | 1186 ms | 74–103 ms |
+
+Mientras se resuelven tres planes de ocho paredes, el loop se retrasa p50
+26 ms y como máximo 42–57 ms. En reposo se retrasa 10,5 ms, que es la
+resolución del temporizador de Windows.
+
+En vivo (Next y Python locales, Neon; `/healthz` de Python muestreado desde
+el mismo script que carga, como en la medición de antes):
+
+- Un decorador que arrastra la barra sobre la pared de 13 × 5 m: antes p90
+  134 ms y máximo 213 ms; ahora p90 36–52 ms y máximo 50–98 ms.
+- Diez vistas previas pesadas a la vez: antes el máximo era 2262 ms; ahora
+  es 332–741 ms. Con un muestreador en otro proceso, p90 7–15 ms, con un solo
+  pico de 0,46–0,91 s por ráfaga, mientras el hilo del plan calcula
+  ~1,3 s seguidos. La causa más probable es la espera del GIL, pero no está
+  confirmada. Si hiciera falta bajar ese pico, el paso siguiente es un
+  proceso aparte en vez de un hilo.
 
 ## 11. Detección en la foto: `POST /internal/v1/ia/patron-referencia`
 
@@ -490,6 +610,15 @@ cada pista en el elemento del blueprint (`appearance.patron_color`, opcional);
 al confirmar el plan, las pistas de los elementos referenciados viajan como
 `pistas_patron`. Un fallo de detección no rompe el análisis: se registra y el
 plan cae al preset.
+
+Cada detección es una llamada de visión con la foto entera, así que se paga
+una vez por petición idéntica (misma foto, mismos elementos): Next guarda las
+pistas en memoria (40 fotos, como la caché del análisis) y comparte la llamada
+en vuelo; si todas las peticiones que la esperan se cancelan, se cancela. Un
+análisis que sale de la caché o una foto de la galería, que no llaman a ningún
+proveedor, reutilizan la detección ya pagada; "Reintentar" (`sin_cache`) pide
+una nueva, que reemplaza a la guardada; un fallo no se guarda. La caché vive en
+el proceso de Next: un despliegue (app y `ai-api` juntos) la vacía.
 
 ## 12. Prompt de imagen (adaptador temporal)
 
@@ -557,16 +686,19 @@ plan cae al preset.
   borrador (si hay más de una) y el espejo cuando su `espejo` es verdadero. Al
   abrir con el patrón del plan se pide igual una vista previa, sin tapar el
   dibujo, solo para conocer esos estilos. Elegir un estilo distinto del modo
-  del borrador pide `{patron_color: null, modo}` y el `patron` que devuelve
-  Python pasa a ser el borrador (se dibuja sin otra petición); tocar el estilo
-  actual no cambia nada. Hoy ese punto de partida no mira el borrador: lo que
-  el decorador ya ajustó (acentos, espejo, dirección, globos por racimo) se
-  pierde al cambiar de estilo y solo "Deshacer" lo recupera. Pendiente: que la
-  vista previa reciba el borrador junto con `modo` y que Python conserve lo que
-  el estilo nuevo admite; TypeScript no lo mezcla. Si Python no puede sugerir
-  un patrón (su rechazo no trae `modos_admitidos`), el editor pide a la vez el
-  punto de partida de cada
-  modo del contrato y usa los estilos de la primera respuesta. TypeScript solo
+  del borrador pide `{patron_color: null, modo, desde: borrador}` y el
+  `patron` que devuelve Python pasa a ser el borrador (se dibuja sin otra
+  petición); tocar el estilo actual no cambia nada. Python conserva del
+  borrador lo que el estilo nuevo admite (globos por racimo, dirección,
+  espejo, acentos; §10) y avisa de lo que tuvo que quitar; TypeScript no lo
+  mezcla y "Deshacer" sigue volviendo al estilo anterior. Ese aviso (lo que la
+  respuesta trae de nuevo respecto del dibujo anterior) va justo bajo los
+  estilos, en una región viva (`role="status"`) siempre montada, mientras el
+  borrador siga en ese estilo; no se repite en el conteo. En un teléfono el
+  conteo queda bajo todos los ajustes y un aviso solo ahí pasaba inadvertido
+  mientras el patrón reducido se guardaba solo. Si Python no puede
+  sugerir un patrón, su rechazo (`patron_invalido`) trae igual
+  `modos_admitidos` y el editor los ofrece. TypeScript solo
   guarda nombres, frases e iconos de cada modo; la única puerta propia es
   mostrar "Crear patrón" en piezas geométricas con dos colores o más
   (`TIPOS_ESTRUCTURA_GEOMETRICOS`). **Sin botón
@@ -585,7 +717,15 @@ plan cae al preset.
   al cerrarlo.
 - `HojaArmado`: leyenda, gráfica numerada, paso a paso por racimos (de
   `pasos`), instrucciones, conteo por color y tamaño; **Imprimir** (CSS
-  `@media print`).
+  `@media print`). En pantalla solo la gráfica se desplaza de lado (con el
+  teclado también); en el papel va a todo el ancho y, si una fila pasa de 24
+  globos (lo que cabe con su número en A4 o carta), por tramos parejos de
+  izquierda a derecha: ningún globo queda recortado. Los colores de cada paso
+  se dicen en texto para el lector de pantalla (`sr-only`), no en un
+  `aria-label` sobre un `<span>` genérico.
+- "Editar patrón" y "Crear patrón" no se deshabilitan mientras se guarda un
+  cambio (`aria-disabled`, el toque no hace nada): al cerrar el editor con un
+  cambio pendiente el foco vuelve a ellos, y un botón `disabled` no lo recibe.
 - Tras editar un plan ya aprobado: botón **Regenerar visual** (re-aprobar y
   generar). Nunca regenera solo.
 - Tokens del tema, accesible por teclado, `prefers-reduced-motion`, sin

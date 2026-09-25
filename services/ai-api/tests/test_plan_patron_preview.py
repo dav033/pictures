@@ -14,6 +14,7 @@ from collections.abc import Mapping
 from typing import cast
 from uuid import UUID
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.main import Settings, build_signature, create_app
@@ -310,3 +311,179 @@ def test_el_endpoint_exige_su_scope_y_el_campo_patron() -> None:
         422,
         "invalid_request",
     )
+
+
+# --- Cambiar de estilo con el borrador (``desde``) y rechazos con estilos ------------
+
+LINEALES = ["espiral", "anillos", "bloques", "degradado", "aleatorio", "flor"]
+MODOS_COLUMNA = [{"modo": modo, "direcciones": ["longitudinal"], "espejo": False} for modo in LINEALES]
+
+
+def _peticion_estilo(modo: str, desde: Mapping[str, object] | None) -> PlanPatronRequest:
+    return PlanPatronRequest.model_validate(
+        {
+            "context": {**CONTEXTO, "body_sha256": "a" * 64},
+            **_operacion(None),
+            "modo": modo,
+            **({} if desde is None else {"desde": dict(desde)}),
+        }
+    )
+
+
+def test_el_estilo_nuevo_parte_del_borrador_del_decorador() -> None:
+    # La columna mide T = 39 globos (test_plan_patron.py): en tríos, round(39 / 3)
+    # = 13 filas × 3, justo 39. Participación 0.4 / 0.3 / 0.3 → anillos [0, 1, 2]:
+    # filas blancas 0, 3, 6, 9, 12; negras 1, 4, 7, 10; azules el resto → 15, 12, 12.
+    # El acento azul pasa tal cual: posición 1 de las filas pares (0, 2, …, 12)
+    # quita 3 blancos (filas 0, 6, 12) y 2 negros (4, 10) → 12, 10, 17.
+    # Los globos pintados son de la gráfica anterior: no pasan.
+    acento = {"material": 2, "cada": 2, "desde": 1, "posiciones": [1]}
+    desde = {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "globos_por_racimo": 3,
+        "base": {"modo": "espiral", "racimo": [0, 1, 2], "trazo": "espiral"},
+        "acentos": [acento],
+        "pintados": [{"fila": 0, "material": 1}],
+    }
+
+    resultado = vista_previa_patron(_peticion_estilo("anillos", desde))
+
+    patron = cast(dict[str, object], resultado["patron"])
+    assert patron["aplicado"] is False
+    assert patron["patron"] == {
+        "version": "patron-color.v1",
+        "origen": "sugerido",
+        "globos_por_racimo": 3,
+        "base": {"modo": "anillos", "secuencia": [0, 1, 2], "largo": 1},
+        "acentos": [acento],
+    }
+    assert (patron["filas"], patron["columnas"]) == (13, 3)
+    assert _conteo(resultado) == [(12, 24), (10, 20), (17, 34)]
+    assert patron["avisos"] == []
+    assert resultado["modos_admitidos"] == MODOS_COLUMNA
+
+
+def test_lo_que_no_pasa_al_estilo_nuevo_se_avisa_en_la_vista_previa() -> None:
+    # Racimos de 8: round(39 / 8) = 5 filas; las flores necesitan la fila 5 para
+    # su primer centro (índice 4) y la tienen, así que el 8 pasa; el acento en
+    # la posición 9 no cabe en un racimo de 8.
+    desde = {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "globos_por_racimo": 8,
+        "base": {"modo": "anillos", "secuencia": [0, 1, 2], "largo": 1},
+        "acentos": [{"material": 1, "cada": 2, "desde": 1, "posiciones": [8]}],
+    }
+
+    patron = cast(dict[str, object], vista_previa_patron(_peticion_estilo("flor", desde))["patron"])
+
+    assert cast(dict[str, object], patron["patron"])["globos_por_racimo"] == 8
+    assert "acentos" not in cast(dict[str, object], patron["patron"])
+    assert cast(list[str], patron["avisos"])[0] == (
+        "El acento de negro (2) no cabe en el estilo «flores»: se quitó."
+    )
+
+
+def test_desde_solo_va_con_modo_y_con_la_forma_del_contrato() -> None:
+    import pytest
+    from pydantic import ValidationError
+
+    desde = {**ANILLOS}
+    with pytest.raises(ValidationError):
+        PlanPatronRequest.model_validate(
+            {"context": {**CONTEXTO, "body_sha256": "a" * 64}, **_operacion(None), "desde": desde}
+        )
+    with pytest.raises(ValidationError):
+        _peticion_estilo("anillos", {**ANILLOS, "base": {"modo": "anillos", "secuencia": [], "largo": 1}})
+    with pytest.raises(ValidationError):
+        _peticion_estilo("anillos", {**ANILLOS, "color": "azul"})
+
+
+def _columna_diminuta() -> dict[str, object]:
+    # 0.2 m de columna: una sola fila de 4 globos para 5 colores → ningún preset se arma.
+    return _columna(
+        medidas={"alto_m": 0.2},
+        materiales=[
+            {"product_id": f"prod-{color}", "color": color, "participacion": 0.2, "rol_material": "secundario"}
+            for color in ("blanco", "negro", "azul", "rojo", "dorado")
+        ],
+    )
+
+
+def test_sin_sugerencia_el_rechazo_trae_los_estilos_de_la_pieza() -> None:
+    import pytest
+
+    from app.plan import PlanResolutionError
+
+    peticion = PlanPatronRequest.model_validate(
+        {
+            "context": {**CONTEXTO, "body_sha256": "a" * 64},
+            **_operacion(None),
+            "plan": {**_plan(), "estructuras": [_columna_diminuta()]},
+        }
+    )
+
+    with pytest.raises(PlanResolutionError) as error:
+        vista_previa_patron(peticion)
+
+    detalles = cast(dict[str, object], error.value.details)
+    assert (error.value.code, detalles["motivo"]) == ("patron_invalido", "material_sin_uso")
+    assert detalles["modos_admitidos"] == MODOS_COLUMNA
+
+
+def test_la_vista_previa_de_una_pieza_no_expande_las_demas() -> None:
+    # Solo se expande la pieza pedida (ADR-0028 §10): el patrón de otra no cambia
+    # su rejilla ni su conteo, y expandirlas todas multiplicaba el trabajo de cada
+    # vista previa por el número de piezas. Aunque el de la otra no se pueda
+    # armar (lo rechaza la resolución del plan), esta pieza se dibuja.
+    otra = {**_columna(patron_color=SIN_AZUL), "estructura_id": "EST_02_COLUMNA"}
+    peticion = PlanPatronRequest.model_validate(
+        {
+            "context": {**CONTEXTO, "body_sha256": "a" * 64},
+            **_operacion(ANILLOS),
+            "plan": {**_plan(), "estructuras": [_columna(), otra]},
+        }
+    )
+
+    resultado = vista_previa_patron(peticion)
+
+    patron = cast(dict[str, object], resultado["patron"])
+    assert (patron["estructura_id"], patron["aplicado"]) == (COLUMNA, True)
+    assert _conteo(resultado) == _conteo(vista_previa_patron(_peticion(ANILLOS)))
+
+
+def test_el_endpoint_devuelve_los_estilos_en_el_rechazo() -> None:
+    sin_sugerencia = {**_operacion(None), "plan": {**_plan(), "estructuras": [_columna_diminuta()]}}
+
+    status_patron, body_patron = _post(_operacion(SIN_AZUL), "00000000-0000-4000-8000-000000000b07")
+    status_sugerencia, body_sugerencia = _post(sin_sugerencia, "00000000-0000-4000-8000-000000000b08")
+
+    for status, body in ((status_patron, body_patron), (status_sugerencia, body_sugerencia)):
+        detail = cast(dict[str, object], body["detail"])
+        assert (status, detail["code"]) == (422, "patron_invalido")
+        assert detail["modos_admitidos"] == MODOS_COLUMNA
+
+
+def test_el_endpoint_calcula_la_vista_previa_fuera_del_event_loop(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # La vista previa se pide mientras el decorador arrastra: su cálculo (CPU
+    # puro) no puede frenar el event loop del resto de ai-api. Va al hilo del plan.
+    import threading
+
+    import app.main as main
+
+    hilos: list[str] = []
+    calcular = main.vista_previa_patron
+
+    def espia(peticion: PlanPatronRequest) -> dict[str, object]:
+        hilos.append(threading.current_thread().name)
+        return calcular(peticion)
+
+    monkeypatch.setattr(main, "vista_previa_patron", espia)
+
+    status, _body = _post(_operacion(ANILLOS), "00000000-0000-4000-8000-000000000b20")
+
+    assert status == 200
+    assert len(hilos) == 1 and hilos[0].startswith("plan-cpu")

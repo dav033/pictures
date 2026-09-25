@@ -12,7 +12,7 @@ import hashlib
 import json
 import time
 from collections.abc import Mapping, Sequence
-from typing import cast
+from typing import Any, cast
 from uuid import UUID
 
 import pytest
@@ -29,6 +29,13 @@ from app.plan import (
     resolve_plan,
     sincronizar_participaciones,
     sugerir_patron_para_estructura,
+)
+from app.plan_edicion import (
+    EdicionMaterial,
+    LineaBase,
+    LineasBaseEstructura,
+    VarianteEdicion,
+    editar_plan,
 )
 
 SNAPSHOT = "products_catalog:patrones"
@@ -452,6 +459,190 @@ async def test_patron_invalido_es_un_error_de_dominio_con_detalles() -> None:
     details = cast(dict[str, object], raised.value.details)
     assert (details["estructura_id"], details["motivo"]) == ("EST_01_COLUMNA", "material_sin_uso")
     assert "azul (3)" in str(details["mensaje"])
+
+
+# --- Lo que se compra nombra el patrón (§9: reemplazar) -----------------------------
+
+
+def _row_tamano(color: str, pulgadas: int) -> dict[str, object]:
+    return {
+        **_row(color),
+        "variant_id": f"var-{color}-{pulgadas}",
+        "sku": f"{color.upper()}-{pulgadas}",
+        "sku_original": f"{color.upper()}-{pulgadas}",
+        "source_variant_id": f"source-{color}-{pulgadas}",
+        "variante_titulo": f"R-{pulgadas}",
+        "codigo_tamano": f"R-{pulgadas}",
+        "diam_pulg": pulgadas,
+    }
+
+
+async def _resolver_catalogo(
+    plan: Mapping[str, object], filas: Sequence[dict[str, object]]
+) -> dict[str, object]:
+    """Resuelve contra ``filas`` con todas sus variantes admitidas."""
+    variantes: dict[str, list[str]] = {}
+    for fila in filas:
+        variantes.setdefault(str(fila["product_id"]), []).append(str(fila["variant_id"]))
+    request = _request(
+        plan,
+        allowlist=[
+            {"product_id": producto, "variant_ids": ids} for producto, ids in variantes.items()
+        ],
+    )
+    result = await resolve_plan(request, FakePlanStore(filas))
+    return cast(dict[str, object], result["plan_resuelto"])
+
+
+def _conteo_por_color(resolved: Mapping[str, object]) -> dict[str, int]:
+    patron = cast(list[dict[str, object]], resolved["patrones_color"])[0]
+    return {
+        str(fila["color"]): cast(int, fila["unidades_total"])
+        for fila in cast(list[dict[str, object]], patron["conteo"])
+    }
+
+
+@pytest.mark.anyio
+async def test_reemplazar_un_color_con_patron_nombra_el_patron_con_lo_que_se_compra() -> None:
+    # Columna en espiral blanco-negro-blanco-azul (10 cuartetos: 20/10/10). El
+    # decorador cambia el azul por rojo desde la tarjeta: la edición lo deja en
+    # variant_overrides y la compra lleva rojo. El conteo, la descripción y las
+    # frases del prompt tienen que decir rojo, no el azul que se quitó.
+    filas = [_row(color) for color in ("blanco", "negro", "azul", "rojo")]
+    base = await _resolver_catalogo(_plan(_columna(patron_color=ESPIRAL)), filas)
+    estructura = cast(list[dict[str, object]], base["estructuras"])[0]
+    editado = editar_plan(
+        cast(dict[str, object], base["plan"]),
+        EdicionMaterial(
+            accion="reemplazar",
+            estructura_id="EST_01_COLUMNA",
+            objetivo_variant_id="var-azul-12",
+            variante=VarianteEdicion(product_id="prod-rojo", variant_id="var-rojo-12", color="rojo"),
+        ),
+        [
+            LineasBaseEstructura(
+                estructura_id="EST_01_COLUMNA",
+                lineas=[
+                    LineaBase(
+                        product_id=str(linea["product_id"]),
+                        variant_id=str(linea["variant_id"]),
+                        color=cast(str, linea["color"]),
+                    )
+                    for linea in cast(list[dict[str, object]], estructura["lineas"])
+                ],
+            )
+        ],
+        ["rojo"],
+    )
+
+    resuelto = await _resolver_catalogo(editado.plan, filas)
+
+    assert _por_color(resuelto) == {"blanco": 20, "negro": 10, "rojo": 10}
+    assert _conteo_por_color(resuelto) == _por_color(resuelto)
+    patron = cast(list[dict[str, object]], resuelto["patrones_color"])[0]
+    assert "(white, black, white, red around each cluster)" in str(patron["prompt_gemini"])
+    assert patron["prompt_lora"] == "wrapped in a spiral of white, black and red stripes winding from base to top"
+    assert "rojo (3)" in str(patron["descripcion"])
+    textos = " ".join([str(patron["descripcion"]), *cast(list[str], patron["instrucciones"])])
+    assert "azul" not in textos and "blue" not in str(patron["prompt_gemini"])
+    assert not any("se cambió por" in aviso for aviso in cast(list[str], patron["avisos"]))
+    # La receta declarada no cambia: la compra la decide el reemplazo.
+    assert [m["color"] for m in _materiales(resuelto)] == ["blanco", "negro", "azul"]
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("caso", ["un_tamano", "todos_a_rojo", "cada_tamano_a_otro_color"])
+async def test_reemplazar_parte_de_un_color_con_patron_lo_avisa(caso: str) -> None:
+    # Con varios tamaños cada color se compra en varias líneas. Si solo una pasa
+    # a rojo, el número 3 de la gráfica sería dos colores: sigue llamándose azul
+    # y el patrón lo avisa. Si todas pasan a rojo, el 3 es rojo. Si todas se
+    # cambian pero no a un mismo color, tampoco hay un nombre para el 3.
+    tamanos = (5, 9, 12, 18, 24)
+    filas = [
+        _row_tamano(color, pulgadas)
+        for color in ("blanco", "negro", "azul", "rojo", "verde")
+        for pulgadas in tamanos
+    ]
+    columna = _columna(mezcla="organica_fina", patron_color=ESPIRAL)
+    base = await _resolver_catalogo(_plan(columna), filas)
+    lineas_base = cast(list[dict[str, object]], cast(list[dict[str, object]], base["estructuras"])[0]["lineas"])
+    azules = [str(linea["variant_id"]) for linea in lineas_base if linea["color"] == "azul"]
+    assert len(azules) > 1 and "var-azul-12" in azules
+    destinos = {
+        "un_tamano": {"var-azul-12": "rojo"},
+        "todos_a_rojo": {objetivo: "rojo" for objetivo in azules},
+        "cada_tamano_a_otro_color": {
+            objetivo: "rojo" if objetivo == "var-azul-12" else "verde" for objetivo in azules
+        },
+    }[caso]
+    plan = cast(dict[str, object], base["plan"])
+    estructura = cast(list[dict[str, object]], plan["estructuras"])[0]
+    estructura["variant_overrides"] = [
+        {
+            "objetivo_variant_id": objetivo,
+            "product_id": f"prod-{color}",
+            "variant_id": objetivo.replace("azul", color),
+            "color": color,
+        }
+        for objetivo, color in destinos.items()
+    ]
+
+    resuelto = await _resolver_catalogo(plan, filas)
+
+    compradas = _por_color(resuelto)
+    patron = cast(list[dict[str, object]], resuelto["patrones_color"])[0]
+    colores_conteo = [fila["color"] for fila in cast(list[dict[str, object]], patron["conteo"])]
+    avisos = cast(list[str], patron["avisos"])
+    if caso == "todos_a_rojo":
+        assert "azul" not in compradas
+        assert colores_conteo == ["blanco", "negro", "rojo"]
+        assert _conteo_por_color(resuelto) == compradas
+        assert not any("se cambió por" in aviso for aviso in avisos)
+    elif caso == "un_tamano":
+        assert {"azul", "rojo"} <= set(compradas)
+        assert colores_conteo == ["blanco", "negro", "azul"]
+        assert (
+            "Solo una parte del color azul (3) se cambió por rojo: la gráfica, el conteo y los"
+            " textos lo siguen nombrando como antes. Cambia también sus otros tamaños para que"
+            " todo ese color sea rojo."
+        ) in avisos
+    else:
+        assert "azul" not in compradas and {"rojo", "verde"} <= set(compradas)
+        assert colores_conteo == ["blanco", "negro", "azul"]
+        cambio = next(aviso for aviso in avisos if "se cambió por" in aviso)
+        assert cambio.startswith("El color azul (3) se cambió por ")
+        assert "rojo" in cambio and "verde" in cambio and "según el tamaño" in cambio
+
+
+@pytest.mark.anyio
+async def test_la_resolucion_calcula_fuera_del_event_loop(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Completar el plan (expandir sus patrones) y resolverlo es CPU puro: con
+    # ocho paredes grandes pasaba de un segundo con el event loop parado. Solo
+    # las idas al catálogo quedan en el loop.
+    import threading
+
+    import app.plan as plan
+
+    hilos: dict[str, str] = {}
+    completar, construir = plan._complete_plan, plan._build_resolved
+
+    def espia_completar(*args: Any, **kwargs: Any) -> dict[str, object]:
+        hilos["completar"] = threading.current_thread().name
+        return completar(*args, **kwargs)
+
+    def espia_construir(*args: Any, **kwargs: Any) -> dict[str, object]:
+        hilos["resolver"] = threading.current_thread().name
+        return construir(*args, **kwargs)
+
+    monkeypatch.setattr(plan, "_complete_plan", espia_completar)
+    monkeypatch.setattr(plan, "_build_resolved", espia_construir)
+
+    resolved = await _resolve(_plan(_columna(patron_color=ESPIRAL)))
+
+    assert _por_color(resolved) == {"blanco": 20, "negro": 10, "azul": 10}
+    assert set(hilos) == {"completar", "resolver"}
+    assert all(nombre.startswith("plan-cpu") for nombre in hilos.values())
+    assert threading.current_thread().name not in hilos.values()
 
 
 def _signed(request: PlanResolutionRequest, nonce: UUID) -> tuple[bytes, dict[str, str]]:

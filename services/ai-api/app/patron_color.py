@@ -66,9 +66,20 @@ _LAB: Mapping[str, Sequence[float]] = cast(
     contract_schema("CatalogSearch").get("x-tonos-colores-catalogo", {}).get("lab", {}),
 )
 # La forma de patron-color.v1 la valida el contrato; aquí solo se reutiliza
-# para descartar un patrón armado desde una pista que no cabe en él.
-_FORMA = Draft7Validator(
-    _PLAN_SCHEMA["properties"]["estructuras"]["items"]["properties"]["patron_color"]
+# para descartar un patrón armado aquí (una pista de la foto, un punto de
+# partida) que no cabe en él, y para leer el borrador `desde`.
+_ESQUEMA_PATRON: Mapping[str, object] = _PLAN_SCHEMA["properties"]["estructuras"]["items"][
+    "properties"
+]["patron_color"]
+_FORMA = Draft7Validator(_ESQUEMA_PATRON)
+_PROPIEDADES_PATRON = cast(Mapping[str, Mapping[str, object]], _ESQUEMA_PATRON["properties"])
+#: Los modos y las direcciones del contrato, en su orden (dueño: el Zod de patron-color.v1).
+MODOS: tuple[str, ...] = tuple(
+    str(cast(Mapping[str, Mapping[str, object]], base["properties"])["modo"]["const"])
+    for base in cast(list[Mapping[str, object]], _PROPIEDADES_PATRON["base"]["oneOf"])
+)
+DIRECCIONES: tuple[str, ...] = tuple(
+    str(direccion) for direccion in cast(list[object], _PROPIEDADES_PATRON["direccion"]["enum"])
 )
 
 _TIPO_ES = {
@@ -688,17 +699,20 @@ def _pesos_por_participacion(
     ]
 
 
-def _racimo_sugerido(estructura: EstructuraPatron) -> list[int]:
-    """Cuatro posiciones: una por material y el resto por mayor resto, intercaladas."""
+def _racimo_sugerido(estructura: EstructuraPatron, k: int = 4) -> list[int]:
+    """``k`` posiciones: una por material y el resto por mayor resto, intercaladas.
+
+    Exige ``k >= len(materiales)``; con ``k = 4`` es el racimo del preset (§6).
+    """
     partes = [Fraction(str(material.participacion)) for material in estructura.materiales]
     cantidad = len(partes)
-    sobrantes = [max(Fraction(0), 4 * parte - 1) for parte in partes]
+    sobrantes = [max(Fraction(0), k * parte - 1) for parte in partes]
     if sum(sobrantes) == 0:
         sobrantes = [Fraction(1)] * cantidad
-    posiciones = [1 + extra for extra in _mayor_resto(4 - cantidad, sobrantes)]
+    posiciones = [1 + extra for extra in _mayor_resto(k - cantidad, sobrantes)]
     racimo: list[int] = []
     anterior: int | None = None
-    for _posicion in range(4):
+    for _posicion in range(k):
         disponibles = [indice for indice in range(cantidad) if posiciones[indice] > 0]
         distintos = [indice for indice in disponibles if indice != anterior] or disponibles
         elegido = min(distintos, key=lambda indice: (-posiciones[indice], -partes[indice], indice))
@@ -767,59 +781,63 @@ def _por_participacion(estructura: EstructuraPatron) -> list[int]:
     )
 
 
-def _con_acentos_para_sin_uso(
-    estructura: EstructuraPatron, patron: dict[str, object]
+def _acento_json(acento: _Acento) -> dict[str, object]:
+    return {
+        "material": acento.material,
+        "cada": acento.cada,
+        "desde": acento.desde,
+        **({"posiciones": list(acento.posiciones)} if acento.posiciones is not None else {}),
+    }
+
+
+def _con_acentos(
+    estructura: EstructuraPatron, patron: Mapping[str, object], conservados: Sequence[_Acento]
 ) -> dict[str, object]:
-    """Cada color que la base no usa entra como acento (como con las pistas, §7)."""
-    usados = _materiales_de_base(cast(Mapping[str, object], patron["base"]))
+    """``patron`` con sus acentos: primero uno por cada color que ni la base ni
+    ``conservados`` usan (como con las pistas, §7) y detrás ``conservados``,
+    que mandan si pisan el mismo globo. Sin acentos, sin la clave."""
+    resultado = {clave: valor for clave, valor in patron.items() if clave != "acentos"}
+    usados = _materiales_de_base(cast(Mapping[str, object], patron["base"])) | {
+        acento.material for acento in conservados
+    }
     sin_uso = [indice for indice in range(len(estructura.materiales)) if indice not in usados]
-    if sin_uso:
-        patron["acentos"] = [
-            {
-                "material": material,
-                "cada": 3 + orden,
-                "desde": 2 + orden,
-                **({"posiciones": [0]} if estructura.tipo != TIPO_REJILLA else {}),
-            }
-            for orden, material in enumerate(sin_uso)
-        ]
-    return patron
+    acentos = [
+        {
+            "material": material,
+            "cada": 3 + orden,
+            "desde": 2 + orden,
+            **({"posiciones": [0]} if estructura.tipo != TIPO_REJILLA else {}),
+        }
+        for orden, material in enumerate(sin_uso)
+    ] + [_acento_json(acento) for acento in conservados]
+    if acentos:
+        resultado["acentos"] = acentos
+    return resultado
 
 
-def sugerir_patron_modo(estructura: EstructuraPatron, modo: str) -> dict[str, object]:
-    """Punto de partida de un estilo concreto que elige el decorador (``origen: "sugerido"``).
+def _preset_de_estilo(estructura: EstructuraPatron, modo: str, k: int | None) -> dict[str, object]:
+    """Base de un estilo desde la ``participacion``, sin acentos; ``k`` fija los globos por racimo.
 
-    Parte de la ``participacion`` de la pieza: el color principal manda en el
-    fondo, el orden de los bloques o la secuencia. Los colores que el estilo no
-    usa entran como acentos. Lanza ``PatronColorInvalido`` si el estilo no se
-    arma en la estructura o dejaría un color sin globos.
+    El color principal manda en el fondo, el orden de los bloques o la
+    secuencia. En espiral el racimo tiene ``k`` posiciones: una por color y el
+    resto por participación; si ``k`` no alcanza para todos, van los ``k``
+    principales y los demás quedan para los acentos.
     """
-    _validar_estructura(estructura)
-    if modo not in _MODOS_POR_TIPO[estructura.tipo]:
-        opciones = ", ".join(_MODO_ES[opcion] for opcion in _MODOS_POR_TIPO[estructura.tipo])
-        raise PatronColorInvalido(
-            "modo_no_permitido",
-            f"El patrón «{_MODO_ES.get(modo, modo)}» no se arma en {_TIPO_ES[estructura.tipo]};"
-            f" elige {opciones}.",
-        )
     cantidad = len(estructura.materiales)
     orden = _por_participacion(estructura)
     patron: dict[str, object] = {"version": VERSION_PATRON, "origen": "sugerido"}
+    if k is not None:
+        patron["globos_por_racimo"] = k
     if modo == "espiral":
-        if cantidad <= 4:
-            patron["base"] = {
-                "modo": "espiral",
-                "racimo": _racimo_sugerido(estructura),
-                "trazo": "espiral",
-            }
-        else:
+        if k is None and cantidad > 4:
             # Cinco o seis colores: un racimo con una posición por color.
             patron["globos_por_racimo"] = cantidad
-            patron["base"] = {
-                "modo": "espiral",
-                "racimo": list(range(cantidad)),
-                "trazo": "espiral",
-            }
+            racimo = list(range(cantidad))
+        elif k is None or cantidad <= k:
+            racimo = _racimo_sugerido(estructura, 4 if k is None else k)
+        else:
+            racimo = orden[:k]
+        patron["base"] = {"modo": "espiral", "racimo": racimo, "trazo": "espiral"}
     elif modo == "anillos":
         patron["base"] = {"modo": "anillos", "secuencia": orden, "largo": 1}
     elif modo == "bloques":
@@ -855,9 +873,143 @@ def sugerir_patron_modo(estructura: EstructuraPatron, modo: str) -> dict[str, ob
         }
     else:
         patron["base"] = {"modo": "damero", "secuencia": orden[:4], "tamano": 1}
-    patron = _con_acentos_para_sin_uso(estructura, patron)
-    validar_y_expandir(estructura, patron)
     return patron
+
+
+def _armable(estructura: EstructuraPatron, patron: Mapping[str, object]) -> bool:
+    """Si ``patron`` cumple la forma y las reglas cruzadas (§4) en la estructura."""
+    if not forma_valida(patron):
+        return False
+    try:
+        validar_y_expandir(estructura, patron)
+    except PatronColorInvalido:
+        return False
+    return True
+
+
+def _acento_cabe(
+    estructura: EstructuraPatron, patron: Mapping[str, object], acento: _Acento
+) -> bool:
+    """El material existe y sus posiciones caben en cada racimo (o fila) de ``patron``."""
+    if acento.material >= len(estructura.materiales):
+        return False
+    if acento.posiciones is None:
+        return True
+    _geometria, _filas, columnas = _rejilla(estructura, _leer(patron))
+    return all(posicion < columnas for posicion in acento.posiciones)
+
+
+_DIRECCION_ES = {"transversal": "de lado a lado", "diagonal": "en diagonal"}
+
+
+@dataclass(frozen=True, slots=True)
+class PuntoDePartida:
+    """Punto de partida de un estilo y, en español, lo que no se pudo conservar del borrador."""
+
+    patron: dict[str, object]
+    avisos: tuple[str, ...]
+
+
+def sugerir_patron_modo(
+    estructura: EstructuraPatron, modo: str, desde: Mapping[str, object] | None = None
+) -> PuntoDePartida:
+    """Punto de partida de un estilo concreto que elige el decorador (``origen: "sugerido"``).
+
+    Parte de la ``participacion`` de la pieza: el color principal manda en el
+    fondo, el orden de los bloques o la secuencia. Los colores que el estilo no
+    usa entran como acentos. Lanza ``PatronColorInvalido`` si el estilo no se
+    arma en la estructura o dejaría un color sin globos.
+
+    ``desde`` es el borrador del que viene el decorador (con la forma de
+    ``patron-color.v1``). De él se conserva lo que el estilo nuevo admite, en
+    este orden: los globos por racimo (solo en racimos), la dirección si está
+    entre las ``direcciones`` del estilo, el espejo si el estilo lo lleva y
+    cada acento cuyo color y posiciones siguen existiendo. Lo que el estilo no
+    ofrece (el espejo en un confeti, la diagonal en unos anillos) se deja sin
+    más; lo que sí ofrece pero dejaría el patrón inválido se quita con un
+    aviso. Los globos pintados a mano no pasan: son de la gráfica del estilo
+    anterior.
+    """
+    _validar_estructura(estructura)
+    if modo not in _MODOS_POR_TIPO[estructura.tipo]:
+        opciones = ", ".join(_MODO_ES[opcion] for opcion in _MODOS_POR_TIPO[estructura.tipo])
+        raise PatronColorInvalido(
+            "modo_no_permitido",
+            f"El patrón «{_MODO_ES.get(modo, modo)}» no se arma en {_TIPO_ES[estructura.tipo]};"
+            f" elige {opciones}.",
+        )
+    previo = _leer(desde) if desde is not None else None
+    estilo = f"«{_MODO_ES[modo]}»"
+    avisos: list[str] = []
+    k = (
+        previo.globos_por_racimo
+        if previo is not None and estructura.tipo in TIPOS_RACIMOS
+        else None
+    )
+    patron = _con_acentos(estructura, _preset_de_estilo(estructura, modo, k), ())
+    if k is None:
+        validar_y_expandir(estructura, patron)
+    elif not _armable(estructura, patron):
+        patron = _con_acentos(estructura, _preset_de_estilo(estructura, modo, None), ())
+        validar_y_expandir(estructura, patron)
+        pedido = _unidad("racimos", k, transversal=False).plural
+        queda = _unidad("racimos", _globos_por_racimo(_leer(patron)), transversal=False).plural
+        avisos.append(f"El estilo {estilo} no se arma en {pedido} en esta pieza: queda en {queda}.")
+    if previo is None:
+        return PuntoDePartida(patron, ())
+    patron, capas = _con_capas_del_borrador(estructura, modo, patron, previo)
+    return PuntoDePartida(patron, (*avisos, *capas))
+
+
+def _con_capas_del_borrador(
+    estructura: EstructuraPatron, modo: str, patron: dict[str, object], previo: _Patron
+) -> tuple[dict[str, object], list[str]]:
+    """Dirección, espejo y acentos de ``previo`` que el estilo ``modo`` admite.
+
+    Cada capa entra solo si el patrón sigue siendo válido; si no, se quita con
+    un aviso en español. Devuelve el patrón y esos avisos.
+    """
+    estilo = f"«{_MODO_ES[modo]}»"
+    admitido = next(item for item in modos_admitidos(estructura) if item["modo"] == modo)
+    capas: list[tuple[dict[str, object], str]] = []
+    if previo.direccion in _DIRECCION_ES and previo.direccion in cast(
+        list[str], admitido["direcciones"]
+    ):
+        capas.append(
+            (
+                {"direccion": previo.direccion},
+                f"El estilo {estilo} no se arma {_DIRECCION_ES[previo.direccion]} en esta pieza:"
+                " queda de arriba abajo.",
+            )
+        )
+    if previo.espejo and admitido["espejo"]:
+        capas.append(
+            (
+                {"simetria": "espejo"},
+                f"El estilo {estilo} no se arma en espejo en esta pieza: queda sin espejo.",
+            )
+        )
+    avisos: list[str] = []
+    for cambios, aviso in capas:
+        candidato = {**patron, **cambios}
+        if _armable(estructura, candidato):
+            patron = candidato
+        else:
+            avisos.append(aviso)
+    conservados: list[_Acento] = []
+    for acento in previo.acentos:
+        candidato = _con_acentos(estructura, patron, [*conservados, acento])
+        if _acento_cabe(estructura, patron, acento) and _armable(estructura, candidato):
+            conservados.append(acento)
+            patron = candidato
+            continue
+        color = (
+            _nombre_color(estructura, acento.material)
+            if acento.material < len(estructura.materiales)
+            else f"n.º {acento.material + 1}"
+        )
+        avisos.append(f"El acento de {color} no cabe en el estilo {estilo}: se quitó.")
+    return patron, avisos
 
 
 def _delta_e(uno: Sequence[float], otro: Sequence[float]) -> float:
@@ -1290,9 +1442,19 @@ class _Redactor:
         largo = self.expansion.columnas if transversal else self.expansion.filas
         efectivo = (largo + 1) // 2 if self.p.espejo else largo
         tamanos = _mayor_resto(efectivo, [peso for _material, peso in pesos])
+        # Líneas de cada bloque en la pieza entera, como las pinta `_lineas`:
+        # con espejo cada bloque sale de los dos pies, salvo la línea central de
+        # un largo impar, que es una sola (la de la clave).
+        bloque_de_linea = [indice for indice, tamano in enumerate(tamanos) for _ in range(tamano)]
+        lineas_por_bloque = [0] * len(tamanos)
+        for indice in range(largo):
+            reflejado = min(indice, largo - 1 - indice) if self.p.espejo else indice
+            lineas_por_bloque[bloque_de_linea[reflejado]] += 1
         bloques = [
-            (material, tamano, _redondear(100 * tamano / efectivo))
-            for (material, _peso), tamano in zip(pesos, tamanos, strict=True)
+            (material, tamano, _redondear(100 * lineas / largo))
+            for (material, _peso), tamano, lineas in zip(
+                pesos, tamanos, lineas_por_bloque, strict=True
+            )
         ]
         detalle_es = ", ".join(f"{self.es(m)} ~{pct} %" for m, _tamano, pct in bloques)
         if len(bloques) <= 4:
@@ -1311,17 +1473,42 @@ class _Redactor:
                 f" {len(bloques)} colors; clean transitions between blocks."
             )
             lora = f"color-blocked in multicolor sections {self.eje_en}"
-        u = self.linea
-        orden = ", luego ".join(
-            f"{u.cantidad(tamano)} de {self.es(m)}" for m, tamano, _pct in bloques if tamano
-        )
-        desde = ", desde cada pie hasta la clave" if self.p.espejo else ""
         return _Texto(
             "Bloques",
             f"Bloques de color sólido {self.eje_es}: {detalle_es}.",
-            [f"Arma los bloques en orden{desde}: {orden}."],
+            [self._orden_de_bloques(bloques, largo)],
             gemini,
             lora,
+        )
+
+    def _orden_de_bloques(self, bloques: Sequence[tuple[int, int, int]], largo: int) -> str:
+        """Paso a paso de los bloques; con espejo, desde cada pie y la clave aparte.
+
+        ``bloques`` es ``(material, tamaño en media pieza, %)``. Con espejo y un
+        largo impar, la línea de la clave es una sola: el bloque que la contiene
+        pone una línea menos desde cada pie y la de la clave se nombra aparte,
+        para que armar desde los dos pies no dé una línea de más.
+        """
+        u = self.linea
+        por_pie = [(material, tamano) for material, tamano, _pct in bloques]
+        clave: int | None = None
+        if self.p.espejo and largo % 2:
+            central = max(indice for indice, (_m, tamano) in enumerate(por_pie) if tamano)
+            clave, tamano = por_pie[central]
+            por_pie[central] = (clave, tamano - 1)
+        orden = ", luego ".join(
+            f"{u.cantidad(tamano)} de {self.es(m)}" for m, tamano in por_pie if tamano
+        )
+        if not self.p.espejo:
+            return f"Arma los bloques en orden: {orden}."
+        if clave is None:
+            return f"Arma los bloques en orden, desde cada pie hasta la clave: {orden}."
+        en_la_clave = f"{u.cantidad(1)} de {self.es(clave)}"
+        if not orden:
+            return f"Arma {en_la_clave} en la clave."
+        return (
+            f"Arma los bloques en orden, desde cada pie hasta la clave: {orden}; en la clave,"
+            f" {en_la_clave}."
         )
 
     def degradado(self) -> _Texto:
@@ -1523,6 +1710,43 @@ class _Redactor:
         return _Texto(modo.nombre, modo.descripcion, instrucciones, gemini, lora)
 
 
+def _valores_distintos(fila: object) -> object:
+    """Una fila de celdas con cada par (tipo, valor) una sola vez, en su orden."""
+    if not isinstance(fila, list):
+        return fila
+    try:
+        return list({(type(valor), valor): valor for valor in fila}.values())
+    except TypeError:  # un valor que no se puede comparar: que lo vea el validador
+        return fila
+
+
+def para_validar(patron: Mapping[str, object]) -> dict[str, object]:
+    """Copia de un patrón resuelto para validarlo contra plan-resuelto.v1 sin recorrer cada globo.
+
+    Las rejillas (``celdas`` y ``pasos[].celdas``) son lo único grande: miles
+    de enteros en una pared, y validarlos uno a uno con el JSON Schema era casi
+    todo el costo de la vista previa y de la resolución. La regla de cada celda
+    (entero de 0 a 2^53 - 1) solo mira su tipo y su valor, y el contrato no
+    limita el largo de una fila: validar cada par (tipo, valor) distinto de una
+    fila una sola vez da el mismo resultado que validarla entera. ``True`` y
+    ``1`` son pares distintos, así que un booleano sigue sin pasar por entero.
+    Solo para validar: lo que se responde es el patrón completo.
+    """
+    copia = dict(patron)
+    celdas = patron.get("celdas")
+    if isinstance(celdas, list):
+        copia["celdas"] = [_valores_distintos(fila) for fila in celdas]
+    pasos = patron.get("pasos")
+    if isinstance(pasos, list):
+        copia["pasos"] = [
+            {**paso, "celdas": _valores_distintos(paso["celdas"])}
+            if isinstance(paso, Mapping) and "celdas" in paso
+            else paso
+            for paso in pasos
+        ]
+    return copia
+
+
 def _pasos(expansion: Expansion) -> list[dict[str, object]]:
     """Filas idénticas consecutivas (celdas y extras), 1-based e inclusivas."""
     extras_por_fila: dict[int, list[int]] = {}
@@ -1610,12 +1834,16 @@ def patron_resuelto(
 
 __all__ = [
     "Conteo",
+    "DIRECCIONES",
     "EstructuraPatron",
     "Expansion",
+    "MODOS",
     "MaterialPatron",
     "PatronColorInvalido",
+    "PuntoDePartida",
     "TIPOS_RACIMOS",
     "modos_admitidos",
+    "para_validar",
     "sugerir_patron_modo",
     "TIPO_REJILLA",
     "VERSION_PATRON",

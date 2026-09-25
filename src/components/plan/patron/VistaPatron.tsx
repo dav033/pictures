@@ -175,4 +175,3 @@ export function VistaPatron({ resuelto, celdas, dibujo: calculado, leyenda, tipo
     </svg>
   );
 }
-

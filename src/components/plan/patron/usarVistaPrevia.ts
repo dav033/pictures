@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ModoAdmitido, ModoPatronColor, PatronColor, PatronColorResuelto } from "@/lib/plan/patron-color";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
-import { FalloPlanPatron, mensajeFalloPlanPatron, pedirModosAdmitidos, pedirVistaPatronDetallada, type VistaPatronDetallada } from "@/lib/plan/peticion-patron";
+import { FalloPlanPatron, mensajeFalloPlanPatron, pedirVistaPatronDetallada, type VistaPatronDetallada } from "@/lib/plan/peticion-patron";
 import { esCancelacion } from "@/lib/plan/peticion-plan-editar";
 import { clavePatron } from "./borrador";
 
@@ -38,9 +38,9 @@ type Respuesta = { claves: ReadonlySet<string>; vista: PatronColorResuelto | nul
  * sin otra petición.
  *
  * También trae los estilos que Python admite para la pieza (`modos`): llegan
- * con cada respuesta. Al abrir con el dibujo del plan se pide igual una vez,
- * sin tapar ese dibujo, solo para saberlos. Si Python no pudo sugerir un
- * patrón (su rechazo no los trae), se preguntan con `pedirModosAdmitidos`.
+ * con cada respuesta y con cada rechazo del patrón (así se conocen aunque
+ * Python no pueda sugerir ninguno). Al abrir con el dibujo del plan se pide
+ * igual una vez, sin tapar ese dibujo, solo para saberlos.
  */
 export function useVistaPrevia({ plan, estructuraId, patron, inicial }: Opciones): {
   vista: PatronColorResuelto | null;
@@ -69,8 +69,6 @@ export function useVistaPrevia({ plan, estructuraId, patron, inicial }: Opciones
   const faltanModos = modos === null;
   // Lo que Python ya contestó mal para este borrador no se vuelve a pedir solo: "Reintentar" o un cambio.
   const yaFallo = error?.clave === clave;
-  // Python rechazó la sugerencia y con ella no vinieron los estilos: se preguntan aparte.
-  const sinSugerencia = faltanModos && clave === CLAVE_SUGERENCIA && error?.clave === CLAVE_SUGERENCIA && error.patronInvalido;
 
   useEffect(() => {
     if (respondida && !faltanModos) {
@@ -96,6 +94,8 @@ export function useVistaPrevia({ plan, estructuraId, patron, inicial }: Opciones
         })
         .catch((fallo: unknown) => {
           if (esCancelacion(fallo) || numero !== secuencia.current) return;
+          // Un rechazo del patrón dice igual qué estilos admite la pieza.
+          if (fallo instanceof FalloPlanPatron && fallo.modosAdmitidos) setModos(fallo.modosAdmitidos);
           setError({ clave, mensaje: mensajeFalloPlanPatron(fallo), patronInvalido: fallo instanceof FalloPlanPatron && fallo.patronInvalido });
         })
         .finally(() => {
@@ -104,18 +104,6 @@ export function useVistaPrevia({ plan, estructuraId, patron, inicial }: Opciones
     }, clave === CLAVE_SUGERENCIA || respondida ? 0 : ESPERA_MS);
     return () => window.clearTimeout(temporizador);
   }, [clave, respondida, faltanModos, yaFallo, estructuraId, intento, plan, patron]);
-
-  useEffect(() => {
-    if (!sinSugerencia) return;
-    const actual = new AbortController();
-    pedirModosAdmitidos({ plan, estructura_id: estructuraId }, { signal: actual.signal })
-      .then(setModos)
-      // Sin ningún estilo que Python arme, el mensaje de la sugerencia ya dice por qué.
-      .catch((fallo: unknown) => {
-        if (!esCancelacion(fallo)) console.warn("[patron] ningún estilo se arma en esta pieza:", mensajeFalloPlanPatron(fallo));
-      });
-    return () => actual.abort();
-  }, [sinSugerencia, plan, estructuraId]);
 
   useEffect(() => () => controlador.current?.abort(), []);
 
@@ -149,15 +137,31 @@ export function useVistaPrevia({ plan, estructuraId, patron, inicial }: Opciones
 }
 
 /**
+ * Lo que el punto de partida de un estilo trae de nuevo respecto del dibujo
+ * que había: sobre todo lo que Python tuvo que quitar del borrador al cambiar
+ * ("El estilo «bloques» no se arma en espejo…", ADR-0028 §10). Se muestra
+ * junto a los estilos, donde el decorador acaba de tocar; los avisos que ya
+ * traía el dibujo siguen solo en el conteo. Solo compara textos: no decide nada.
+ */
+export function avisosDelCambioDeEstilo(previa: PatronColorResuelto | null, llegada: PatronColorResuelto): string[] {
+  const antes = new Set(previa?.avisos ?? []);
+  return llegada.avisos.filter((aviso) => !antes.has(aviso));
+}
+
+/**
  * Elegir un estilo que no es el del borrador: Python arma su punto de partida
  * (`modo` en la vista previa) y esa respuesta pasa a ser el borrador
- * (`alLlegar`). Solo cuenta el último pedido; `cancelar` lo descarta (otro
- * cambio del decorador llegó antes). Un rechazo de Python queda junto al
- * estilo que se eligió.
+ * (`alLlegar`). Con el pedido va el borrador actual (`desde`): Python
+ * conserva de él lo que el estilo nuevo admite (tamaño del racimo, dirección,
+ * espejo, acentos) y avisa de lo que no pudo; aquí no se mezcla nada. Solo
+ * cuenta el último pedido; `cancelar` lo descarta (otro cambio del decorador
+ * llegó antes). Un rechazo de Python queda junto al estilo que se eligió.
  */
-export function useArranqueEstilo({ plan, estructuraId, alLlegar }: {
+export function useArranqueEstilo({ plan, estructuraId, borrador, alLlegar }: {
   plan: PlanResuelto["plan"];
   estructuraId: string;
+  /** El borrador a la vista cuando se elige el estilo (el patrón o la sugerencia); `null` sin ninguno. */
+  borrador: PatronColor | null;
   alLlegar: (detallada: VistaPatronDetallada) => void;
 }): {
   pendiente: ModoPatronColor | null;
@@ -169,9 +173,11 @@ export function useArranqueEstilo({ plan, estructuraId, alLlegar }: {
   const [error, setError] = useState<{ modo: ModoPatronColor; mensaje: string } | null>(null);
   const controlador = useRef<AbortController | null>(null);
   const alLlegarRef = useRef(alLlegar);
+  const borradorRef = useRef(borrador);
   useEffect(() => {
     alLlegarRef.current = alLlegar;
-  }, [alLlegar]);
+    borradorRef.current = borrador;
+  }, [alLlegar, borrador]);
   useEffect(() => () => controlador.current?.abort(), []);
 
   function elegir(modo: ModoPatronColor): void {
@@ -180,7 +186,8 @@ export function useArranqueEstilo({ plan, estructuraId, alLlegar }: {
     controlador.current = actual;
     setPendiente(modo);
     setError(null);
-    pedirVistaPatronDetallada({ plan, estructura_id: estructuraId, patron_color: null, modo }, { signal: actual.signal })
+    const desde = borradorRef.current;
+    pedirVistaPatronDetallada({ plan, estructura_id: estructuraId, patron_color: null, modo, ...(desde ? { desde } : {}) }, { signal: actual.signal })
       .then((detallada) => {
         if (controlador.current !== actual) return;
         controlador.current = null;

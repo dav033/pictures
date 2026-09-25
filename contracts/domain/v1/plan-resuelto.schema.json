@@ -626,7 +626,7 @@
                               "items": {
                                 "type": "integer",
                                 "minimum": 0,
-                                "maximum": 63
+                                "maximum": 3999
                               }
                             }
                           },
@@ -647,12 +647,12 @@
                             "fila": {
                               "type": "integer",
                               "minimum": 0,
-                              "maximum": 999
+                              "maximum": 3999
                             },
                             "columna": {
                               "type": "integer",
                               "minimum": 0,
-                              "maximum": 63
+                              "maximum": 3999
                             },
                             "material": {
                               "type": "integer",
@@ -2612,7 +2612,7 @@
                               "items": {
                                 "type": "integer",
                                 "minimum": 0,
-                                "maximum": 63
+                                "maximum": 3999
                               }
                             }
                           },
@@ -2633,12 +2633,12 @@
                             "fila": {
                               "type": "integer",
                               "minimum": 0,
-                              "maximum": 999
+                              "maximum": 3999
                             },
                             "columna": {
                               "type": "integer",
                               "minimum": 0,
-                              "maximum": 63
+                              "maximum": 3999
                             },
                             "material": {
                               "type": "integer",
@@ -5458,7 +5458,7 @@
                       "items": {
                         "type": "integer",
                         "minimum": 0,
-                        "maximum": 63
+                        "maximum": 3999
                       }
                     }
                   },
@@ -5479,12 +5479,12 @@
                     "fila": {
                       "type": "integer",
                       "minimum": 0,
-                      "maximum": 999
+                      "maximum": 3999
                     },
                     "columna": {
                       "type": "integer",
                       "minimum": 0,
-                      "maximum": 63
+                      "maximum": 3999
                     },
                     "material": {
                       "type": "integer",

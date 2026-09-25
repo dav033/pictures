@@ -1237,3 +1237,29 @@ def test_el_endpoint_exige_su_scope_y_un_cuerpo_valido() -> None:
 
     assert (status_scope, cast(dict[str, object], body_scope["detail"])["code"]) == (403, "insufficient_scope")
     assert (status_cuerpo, cast(dict[str, object], body_cuerpo["detail"])["code"]) == (422, "invalid_request")
+
+
+def test_el_endpoint_edita_fuera_del_event_loop(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Expandir patrones y validar contra el contrato es CPU puro: en el event
+    # loop bloqueaba a todo ai-api (chat, imagen, nonce). Va al hilo del plan.
+    import threading
+
+    import app.main as main
+
+    hilos: list[str] = []
+    editar = main.ejecutar_edicion
+
+    def espia(peticion: plan_edicion.PlanEditRequest) -> dict[str, object]:
+        hilos.append(threading.current_thread().name)
+        return editar(peticion)
+
+    monkeypatch.setattr(main, "ejecutar_edicion", espia)
+    operacion = _operacion(
+        _plan(_columna()),
+        {"accion": "repartir", "estructura_id": COLUMNA, "participaciones": [0.3, 0.3, 0.3]},
+    )
+
+    status, _body = _post(operacion, "00000000-0000-4000-8000-000000000a06")
+
+    assert status == 200
+    assert len(hilos) == 1 and hilos[0].startswith("plan-cpu")

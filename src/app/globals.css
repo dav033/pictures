@@ -1312,6 +1312,13 @@ body {
     break-inside: avoid;
   }
 
+  /* Una sola columna: la gráfica numerada toma todo el ancho del papel (en
+     pantalla ancha va al lado de la vista). Lo que aún no cabe se imprime por
+     tramos (HojaArmado); nada se recorta. */
+  .hoja-armado-columnas {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
   .hoja-armado h3 {
     break-after: avoid;
   }

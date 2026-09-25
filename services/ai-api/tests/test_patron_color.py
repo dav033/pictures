@@ -22,6 +22,7 @@ from app.patron_color import (
     conteo_por_instancia,
     material_de_color,
     modos_admitidos,
+    para_validar,
     participaciones,
     patron_desde_pista,
     patron_resuelto,
@@ -849,6 +850,63 @@ def test_mas_de_cuatro_colores_no_se_nombran_uno_a_uno() -> None:
 
 
 @pytest.mark.parametrize(
+    ("total", "filas", "porcentajes", "orden"),
+    [
+        # 5 filas: L' = 3 → bloques 2, 1 → filas 0 0 1 0 0. La fila de la clave es una
+        # sola: el negro ocupa 1 de 5 filas (20 %), no 1 de 3, y desde cada pie van
+        # 2 cuartetos de blanco (2 + 2 + 1 = 5 cuartetos, 4 globos negros).
+        (20, [0, 0, 1, 0, 0], ("~80 %", "~20 %"),
+         "Arma los bloques en orden, desde cada pie hasta la clave: 2 cuartetos de blanco (1);"
+         " en la clave, 1 cuarteto de negro (2)."),
+        # 7 filas: L' = 4 → 2, 2 → 0 0 1 1 1 0 0: 4/7 ≈ 57 %, 3/7 ≈ 43 %; desde cada pie
+        # 2 de blanco y 1 de negro, y el negro de la clave aparte (2·3 + 1 = 7).
+        (28, [0, 0, 1, 1, 1, 0, 0], ("~57 %", "~43 %"),
+         "Arma los bloques en orden, desde cada pie hasta la clave: 2 cuartetos de blanco (1),"
+         " luego 1 cuarteto de negro (2); en la clave, 1 cuarteto de negro (2)."),
+        # 4 filas (par): no hay fila central compartida; 2 · 1 de cada color.
+        (16, [0, 1, 1, 0], ("~50 %", "~50 %"),
+         "Arma los bloques en orden, desde cada pie hasta la clave: 1 cuarteto de blanco (1),"
+         " luego 1 cuarteto de negro (2)."),
+    ],
+)
+def test_bloques_en_espejo_cuentan_una_sola_vez_la_fila_de_la_clave(
+    total: int, filas: list[int], porcentajes: tuple[str, str], orden: str
+) -> None:
+    arco = _estructura(tipo="arco", total=total, colores=COLORES[:2], estructura_id="EST_01_ARCO")
+    patron = _patron(
+        {"modo": "bloques", "bloques": [{"material": 0, "peso": 1}, {"material": 1, "peso": 1}]},
+        simetria="espejo",
+    )
+
+    textos = _textos(arco, patron)
+
+    assert [fila[0] for fila in _celdas(arco, patron)] == filas
+    blanco, negro = porcentajes
+    assert str(textos["descripcion"]).endswith(f"blanco (1) {blanco}, negro (2) {negro}.")
+    gemini_blanco, gemini_negro = (p.replace(" ", "") for p in porcentajes)
+    assert f"white ({gemini_blanco}), black ({gemini_negro})" in str(textos["prompt_gemini"])
+    assert orden in textos["instrucciones"]
+
+
+def test_bloques_en_espejo_con_la_clave_de_otro_color() -> None:
+    # Arco de 20 (5 filas), tres bloques iguales: L' = 3 → 1, 1, 1 → filas 0 1 2 1 0.
+    # El azul es solo la clave: 1 de 5 filas.
+    arco = _estructura(tipo="arco", total=20, estructura_id="EST_01_ARCO")
+    patron = _patron(
+        {"modo": "bloques", "bloques": [{"material": i, "peso": 1} for i in range(3)]},
+        simetria="espejo",
+    )
+
+    textos = _textos(arco, patron)
+
+    assert str(textos["descripcion"]).endswith("blanco (1) ~40 %, negro (2) ~40 %, azul (3) ~20 %.")
+    assert (
+        "Arma los bloques en orden, desde cada pie hasta la clave: 1 cuarteto de blanco (1),"
+        " luego 1 cuarteto de negro (2); en la clave, 1 cuarteto de azul (3)."
+    ) in textos["instrucciones"]
+
+
+@pytest.mark.parametrize(
     ("k", "unidad"),
     [(2, "pareja"), (3, "trío"), (4, "cuarteto"), (5, "quinteto"), (6, "sexteto"), (7, "racimo de 7")],
 )
@@ -977,28 +1035,30 @@ def test_punto_de_partida_de_cada_estilo_sigue_la_participacion() -> None:
     # 40 globos = 10 cuartetos; el negro manda (0.5), luego azul (0.3), luego blanco (0.2).
     estructura = _estructura(total=40, partes=(0.2, 0.5, 0.3))
 
-    assert sugerir_patron_modo(estructura, "anillos")["base"] == {"modo": "anillos", "secuencia": [1, 2, 0], "largo": 1}
-    assert sugerir_patron_modo(estructura, "bloques")["base"] == {
+    assert sugerir_patron_modo(estructura, "anillos").patron["base"] == {"modo": "anillos", "secuencia": [1, 2, 0], "largo": 1}
+    assert sugerir_patron_modo(estructura, "bloques").patron["base"] == {
         "modo": "bloques",
         "bloques": [{"material": 1, "peso": 50}, {"material": 2, "peso": 30}, {"material": 0, "peso": 20}],
     }
-    assert sugerir_patron_modo(estructura, "degradado")["base"] == {
+    assert sugerir_patron_modo(estructura, "degradado").patron["base"] == {
         "modo": "degradado",
         "paradas": [0, 1, 2],
         "transicion": "suave",
     }
-    assert sugerir_patron_modo(estructura, "flor")["base"] == {
+    assert sugerir_patron_modo(estructura, "flor").patron["base"] == {
         "modo": "flor",
         "fondo": 1,
         "petalo": 2,
         "centro": 0,
         "separacion": 3,
     }
-    assert sugerir_patron_modo(estructura, "espiral")["origen"] == "sugerido"
+    assert sugerir_patron_modo(estructura, "espiral").patron["origen"] == "sugerido"
 
 
 def test_flor_de_dos_colores_lleva_el_centro_del_fondo() -> None:
-    patron = sugerir_patron_modo(_estructura(total=40, colores=("blanco", "rosado"), partes=(0.6, 0.4)), "flor")
+    patron = sugerir_patron_modo(
+        _estructura(total=40, colores=("blanco", "rosado"), partes=(0.6, 0.4)), "flor"
+    ).patron
 
     assert patron["base"] == {"modo": "flor", "fondo": 0, "petalo": 1, "centro": 0, "separacion": 3}
     assert "acentos" not in patron
@@ -1007,7 +1067,7 @@ def test_flor_de_dos_colores_lleva_el_centro_del_fondo() -> None:
 def test_flor_de_cuatro_colores_deja_el_menor_como_acento() -> None:
     estructura = _estructura(total=48, colores=("blanco", "rosado", "amarillo", "verde"), partes=(0.4, 0.3, 0.2, 0.1))
 
-    patron = sugerir_patron_modo(estructura, "flor")
+    patron = sugerir_patron_modo(estructura, "flor").patron
 
     assert patron["acentos"] == [{"material": 3, "cada": 3, "desde": 2, "posiciones": [0]}]
 
@@ -1015,7 +1075,7 @@ def test_flor_de_cuatro_colores_deja_el_menor_como_acento() -> None:
 def test_espiral_de_cinco_colores_va_en_quintetos() -> None:
     patron = sugerir_patron_modo(
         _estructura(total=40, colores=("blanco", "negro", "azul", "rojo", "dorado")), "espiral"
-    )
+    ).patron
 
     assert patron["globos_por_racimo"] == 5
     assert patron["base"] == {"modo": "espiral", "racimo": [0, 1, 2, 3, 4], "trazo": "espiral"}
@@ -1024,7 +1084,7 @@ def test_espiral_de_cinco_colores_va_en_quintetos() -> None:
 def test_damero_de_pared_con_los_colores_de_mayor_a_menor() -> None:
     estructura = _estructura(**{**PARED_3X4, "total": 40}, partes=(0.2, 0.5, 0.3))
 
-    assert sugerir_patron_modo(estructura, "damero")["base"] == {
+    assert sugerir_patron_modo(estructura, "damero").patron["base"] == {
         "modo": "damero",
         "secuencia": [1, 2, 0],
         "tamano": 1,
@@ -1036,3 +1096,189 @@ def test_estilo_que_la_pieza_no_admite() -> None:
         sugerir_patron_modo(_estructura(), "damero")
 
     assert error.value.motivo == "modo_no_permitido"
+
+
+# --- Cambiar de estilo conserva lo que el decorador ya ajustó (``desde``) -------------
+
+# 0.5 / 0.3 / 0.2: el orden por participación es [0, 1, 2] y los pesos 50 / 30 / 20.
+PARTES_532 = (0.5, 0.3, 0.2)
+
+
+def test_de_espiral_en_trio_a_anillos_conserva_el_trio_el_espejo_y_el_acento() -> None:
+    # Arco de 18 globos en tríos: 6 filas × 3. Con espejo las filas se leen
+    # 0, 1, 2, 2, 1, 0; anillos [0, 1, 2] de a una fila → 0, 1, 2, 2, 1, 0.
+    # Acento azul (2) cada 2 desde 1 en la posición 1: filas con índice
+    # reflejado par (0 y 2) → filas 0, 5 (quedan 0 · 2 · 0) y 2, 3 (ya azules).
+    estructura = _estructura(tipo="arco", total=18, partes=PARTES_532)
+    acento = {"material": 2, "cada": 2, "desde": 1, "posiciones": [1]}
+    desde = _patron(
+        {"modo": "espiral", "racimo": [0, 1, 2], "trazo": "espiral"},
+        globos_por_racimo=3,
+        simetria="espejo",
+        acentos=[acento],
+    )
+
+    partida = sugerir_patron_modo(estructura, "anillos", desde)
+
+    assert partida.patron == {
+        "version": "patron-color.v1",
+        "origen": "sugerido",
+        "globos_por_racimo": 3,
+        "base": {"modo": "anillos", "secuencia": [0, 1, 2], "largo": 1},
+        "simetria": "espejo",
+        "acentos": [acento],
+    }
+    assert partida.avisos == ()
+    assert _celdas(estructura, partida.patron) == [
+        [0, 2, 0],
+        [1, 1, 1],
+        [2, 2, 2],
+        [2, 2, 2],
+        [1, 1, 1],
+        [0, 2, 0],
+    ]
+    # Blanco 2 + 2, negro 3 + 3, azul 1 + 3 + 3 + 1.
+    assert _conteo(estructura, partida.patron) == [4, 6, 8]
+
+
+def test_a_espiral_el_racimo_toma_el_tamano_del_borrador() -> None:
+    desde = _patron({"modo": "anillos", "secuencia": [0, 1, 2], "largo": 1}, globos_por_racimo=3)
+
+    # Tres colores en tríos: 3·p − 1 = 0.5, −0.1, −0.4 → no sobra ninguna posición: [0, 1, 2].
+    tres = sugerir_patron_modo(_estructura(total=18, partes=PARTES_532), "espiral", desde)
+    # Cuatro colores en tríos: van los tres principales y el cuarto como acento
+    # (cada 3 desde 2 en la posición 0, como un color que la base no usa).
+    cuatro = sugerir_patron_modo(
+        _estructura(total=30, colores=("blanco", "negro", "azul", "rojo"), partes=(0.4, 0.3, 0.2, 0.1)),
+        "espiral",
+        desde,
+    )
+
+    assert tres.patron["globos_por_racimo"] == 3
+    assert tres.patron["base"] == {"modo": "espiral", "racimo": [0, 1, 2], "trazo": "espiral"}
+    assert (cuatro.patron["base"], cuatro.patron["acentos"]) == (
+        {"modo": "espiral", "racimo": [0, 1, 2], "trazo": "espiral"},
+        [{"material": 3, "cada": 3, "desde": 2, "posiciones": [0]}],
+    )
+    assert tres.avisos == cuatro.avisos == ()
+
+
+def test_la_direccion_de_la_pared_pasa_si_el_estilo_nuevo_la_ofrece() -> None:
+    estructura = _estructura(**PARED_3X4, partes=PARTES_532)
+    de_lado = _patron({"modo": "anillos", "secuencia": [0, 1, 2], "largo": 1}, direccion="transversal")
+    diagonal = _patron({"modo": "degradado", "paradas": [0, 1, 2], "transicion": "suave"}, direccion="diagonal")
+
+    bloques = sugerir_patron_modo(estructura, "bloques", de_lado)
+    anillos = sugerir_patron_modo(estructura, "anillos", diagonal)
+
+    # Bloques de lado a lado sobre 4 columnas: 4 · (50, 30, 20) % = 2, 1.2, 0.8
+    # → 2, 1, 1 por mayor resto; cada fila es 0 · 0 · 1 · 2.
+    assert bloques.patron["direccion"] == "transversal"
+    assert _celdas(estructura, bloques.patron) == [[0, 0, 1, 2]] * 3
+    # Los anillos no van en diagonal: la dirección no pasa y no hay nada que avisar.
+    assert "direccion" not in anillos.patron
+    assert (bloques.avisos, anillos.avisos) == ((), ())
+
+
+def test_el_espejo_no_pasa_a_un_confeti_que_no_lo_lleva() -> None:
+    desde = _patron({"modo": "anillos", "secuencia": [0, 1, 2], "largo": 1}, simetria="espejo")
+
+    partida = sugerir_patron_modo(_estructura(tipo="arco", total=16, partes=PARTES_532), "aleatorio", desde)
+
+    assert "simetria" not in partida.patron
+    assert partida.avisos == ()
+
+
+def test_lo_que_el_estilo_ofrece_pero_no_se_arma_se_quita_con_aviso() -> None:
+    # Flores en racimos de 8 con 30 globos: round(3.75) = 4 filas y el primer
+    # centro va en la fila 5 → el azul (centro) sin globos. En cuartetos:
+    # round(7.5) = 8 filas y sí. El acento en la posición 8 no cabe en un cuarteto.
+    columna = _estructura(total=30, partes=PARTES_532)
+    racimos_de_8 = _patron(
+        {"modo": "anillos", "secuencia": [0, 1, 2], "largo": 1},
+        globos_por_racimo=8,
+        acentos=[{"material": 1, "cada": 2, "desde": 1, "posiciones": [7]}],
+    )
+    # Bloques en espejo sobre 4 filas: ceil(4 / 2) = 2 líneas → 1, 1, 0: el azul
+    # sin globos. Sin espejo: 4 líneas → 2, 1, 1.
+    arco = _estructura(tipo="arco", total=16, partes=PARTES_532)
+    en_espejo = _patron({"modo": "anillos", "secuencia": [0, 1, 2], "largo": 1}, simetria="espejo")
+    # Un acento blanco en todas las posiciones de las filas 2 y 5 (cada 3 desde 2)
+    # tapa las dos filas negras de unos anillos 0, 1, 2, 0, 1, 2.
+    tapa_negro = _patron(
+        {"modo": "anillos", "secuencia": [0, 1, 2], "largo": 1},
+        acentos=[{"material": 0, "cada": 3, "desde": 2}],
+    )
+
+    flores = sugerir_patron_modo(columna, "flor", racimos_de_8)
+    bloques = sugerir_patron_modo(arco, "bloques", en_espejo)
+    anillos = sugerir_patron_modo(_estructura(total=24, partes=PARTES_532), "anillos", tapa_negro)
+
+    assert flores.patron == {
+        "version": "patron-color.v1",
+        "origen": "sugerido",
+        "base": {"modo": "flor", "fondo": 0, "petalo": 1, "centro": 2, "separacion": 3},
+    }
+    assert flores.avisos == (
+        "El estilo «flores» no se arma en racimos de 8 en esta pieza: queda en cuartetos.",
+        "El acento de negro (2) no cabe en el estilo «flores»: se quitó.",
+    )
+    assert "simetria" not in bloques.patron
+    assert bloques.avisos == ("El estilo «bloques» no se arma en espejo en esta pieza: queda sin espejo.",)
+    assert "acentos" not in anillos.patron
+    assert anillos.avisos == ("El acento de blanco (1) no cabe en el estilo «anillos»: se quitó.",)
+
+
+def test_sin_borrador_el_punto_de_partida_no_cambia() -> None:
+    estructura = _estructura(total=40, partes=(0.2, 0.5, 0.3))
+
+    for modo in ("espiral", "anillos", "bloques", "degradado", "aleatorio", "flor"):
+        assert sugerir_patron_modo(estructura, modo, None) == sugerir_patron_modo(estructura, modo)
+    assert sugerir_patron_modo(estructura, "anillos").avisos == ()
+
+
+# --- Validación del patrón resuelto (plan-resuelto.v1) --------------------------------
+
+
+def _errores_de_contrato(patron: Mapping[str, object]) -> list[str]:
+    from jsonschema import Draft7Validator
+
+    from app.generated_models import contract_schema
+
+    esquema = contract_schema("PlanResuelto")["properties"]["patrones_color"]["items"]
+    return [error.message for error in Draft7Validator(esquema).iter_errors(patron)]
+
+
+def test_para_validar_da_el_mismo_veredicto_con_una_celda_por_valor() -> None:
+    # Una pared de confeti: miles de celdas con tres valores. La copia para
+    # validar deja cada fila con sus valores distintos y conserva el resto.
+    pared = _estructura(tipo="pared", total=600, ancho=6.0, alto=3.0)
+    patron = _patron({"modo": "aleatorio", "semilla": 7, "pesos": [
+        {"material": 0, "peso": 5}, {"material": 1, "peso": 3}, {"material": 2, "peso": 2}
+    ]})
+    resuelto = patron_resuelto(pared, patron, aplicado=True)
+
+    copia = para_validar(resuelto)
+
+    celdas = resuelto["celdas"]
+    # T = 600 en 6 × 3 m: round(sqrt(600 · 2)) = 35 columnas y round(600 / 35) = 17 filas.
+    assert isinstance(celdas, list) and (len(celdas), len(celdas[0])) == (17, 35)
+    assert [sorted(set(fila)) for fila in copia["celdas"]] == [sorted(set(fila)) for fila in celdas]
+    assert all(len(fila) <= 3 for fila in copia["celdas"])
+    assert len(copia["pasos"]) == len(resuelto["pasos"])
+    assert {k: v for k, v in copia.items() if k not in ("celdas", "pasos")} == {
+        k: v for k, v in resuelto.items() if k not in ("celdas", "pasos")
+    }
+    assert _errores_de_contrato(copia) == _errores_de_contrato(resuelto) == []
+
+
+@pytest.mark.parametrize("malo", [-1, True, 1.5, "2", None])
+def test_para_validar_no_deja_pasar_una_celda_fuera_del_contrato(malo: object) -> None:
+    resuelto = patron_resuelto(_estructura(), _patron(ESPIRAL), aplicado=True)
+    celdas = [list(fila) for fila in resuelto["celdas"]]
+    celdas[2][1] = malo
+    pasos = [dict(paso) for paso in resuelto["pasos"]]
+    pasos[0]["celdas"] = [*pasos[0]["celdas"], malo]
+    for roto in ({**resuelto, "celdas": celdas}, {**resuelto, "pasos": pasos}):
+        assert _errores_de_contrato(roto)
+        assert _errores_de_contrato(para_validar(roto))

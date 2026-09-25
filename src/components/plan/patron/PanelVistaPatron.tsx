@@ -152,6 +152,8 @@ export function LienzoPatron(props: PropsLienzo) {
 
 type PropsResumen = {
   vista: PatronColorResuelto | null;
+  /** Avisos que ya se muestran junto a los estilos (los del último cambio de estilo): aquí no se repiten. */
+  avisosAparte?: readonly string[];
   /** El conteo a la vista es el del patrón que ya tiene el plan (no una sugerencia ni un borrador). */
   enPropuesta: boolean;
   leyenda: readonly ColorLeyenda[];
@@ -163,8 +165,9 @@ type PropsResumen = {
 };
 
 /** Lo que acompaña al dibujo: leyenda, la frase de Python, el conteo en vivo y sus avisos. */
-export function ResumenVistaPatron({ vista, enPropuesta, leyenda, repeticiones, modo, cargando, error, onReintentar }: PropsResumen) {
+export function ResumenVistaPatron({ vista, avisosAparte = [], enPropuesta, leyenda, repeticiones, modo, cargando, error, onReintentar }: PropsResumen) {
   if (!vista) return null;
+  const avisos = vista.avisos.filter((aviso) => !avisosAparte.includes(aviso));
   return (
     <div className="@container space-y-2.5">
       {modo === "vista" && <LeyendaPatron leyenda={leyenda} />}
@@ -179,9 +182,9 @@ export function ResumenVistaPatron({ vista, enPropuesta, leyenda, repeticiones, 
           {!error.patronInvalido && <button type="button" onClick={onReintentar} className="shrink-0 font-semibold underline underline-offset-2">Reintentar</button>}
         </p>
       )}
-      {vista.avisos.length > 0 && !error && (
+      {avisos.length > 0 && !error && (
         <ul aria-label="Avisos del patrón" className="space-y-1 rounded-xl bg-superficie px-3 py-2 text-xs text-texto-suave ring-1 ring-borde-suave ring-inset">
-          {vista.avisos.map((aviso) => <li key={aviso} className="flex gap-1.5"><TriangleAlert className="mt-px size-3.5 shrink-0 text-aviso" aria-hidden="true" />{aviso}</li>)}
+          {avisos.map((aviso) => <li key={aviso} className="flex gap-1.5"><TriangleAlert className="mt-px size-3.5 shrink-0 text-aviso" aria-hidden="true" />{aviso}</li>)}
         </ul>
       )}
     </div>

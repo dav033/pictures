@@ -113,7 +113,10 @@ export const PYTHON_PLAN_EDIT_DOMAIN_CODES = [
 ] as const;
 export type PythonPlanEditDomainCode = (typeof PYTHON_PLAN_EDIT_DOMAIN_CODES)[number];
 
-/** Stable domain error codes reported by POST /internal/v1/plan/patron (ADR-0028 §10). */
+/**
+ * Stable domain error codes reported by POST /internal/v1/plan/patron (ADR-0028 §10).
+ * Its `patron_invalido` also carries the structure's styles (`domainDetails.modosAdmitidos`).
+ */
 export const PYTHON_PLAN_PATRON_DOMAIN_CODES = ["estructura_no_encontrada", "patron_invalido", "invalid_plan"] as const;
 export type PythonPlanPatronDomainCode = (typeof PYTHON_PLAN_PATRON_DOMAIN_CODES)[number];
 
@@ -210,13 +213,20 @@ function upstreamProviderDetail(value: unknown): string | undefined {
 /**
  * What a domain error says next to its code (Python's `_detail_metadata`):
  * `patron_invalido` names the structure, a stable rule and a Spanish sentence
- * for the decorator. Written by the domain, never echoed from the request.
+ * for the decorator; the pattern preview's rejection also carries the styles
+ * the structure admits (`modos_admitidos`, ADR-0028 §10). Written by the
+ * domain, never echoed from the request.
  */
 export interface PythonDomainDetails {
   estructuraId?: string;
   motivo?: string;
   mensaje?: string;
+  modosAdmitidos?: ModoAdmitido[];
 }
+
+/** The styles of a structure: at most one entry per mode, each in the contract. */
+const modosAdmitidosSchema = z.array(ModoAdmitidoSchema).max(MODOS_PATRON_COLOR.length)
+  .refine((modos) => new Set(modos.map((modo) => modo.modo)).size === modos.length);
 
 function upstreamDomainDetails(value: unknown): PythonDomainDetails | undefined {
   if (!isJsonObject(value) || !isJsonObject(value.detail)) return undefined;
@@ -228,11 +238,15 @@ function upstreamDomainDetails(value: unknown): PythonDomainDetails | undefined 
   const estructuraId = texto(detail.estructura_id, 160);
   const motivo = texto(detail.motivo, 64);
   const mensaje = texto(detail.mensaje, 400);
-  if (estructuraId === undefined && motivo === undefined && mensaje === undefined) return undefined;
+  // All or nothing: a list that breaks the contract is dropped whole.
+  const modos = modosAdmitidosSchema.safeParse(detail.modos_admitidos);
+  const modosAdmitidos = modos.success ? modos.data : undefined;
+  if (estructuraId === undefined && motivo === undefined && mensaje === undefined && modosAdmitidos === undefined) return undefined;
   return {
     ...(estructuraId === undefined ? {} : { estructuraId }),
     ...(motivo === undefined ? {} : { motivo }),
     ...(mensaje === undefined ? {} : { mensaje }),
+    ...(modosAdmitidos === undefined ? {} : { modosAdmitidos }),
   };
 }
 
@@ -1140,6 +1154,11 @@ export interface PythonPlanPatronInput {
   participaciones?: readonly number[];
   /** With `patronColor` null: the starting point of that style instead of the preset. */
   modo?: ModoPatronColor;
+  /**
+   * With `modo`: the editor's current draft. Python keeps from it what the
+   * new style admits (cluster size, direction, mirror, accents).
+   */
+  desde?: PatronColor;
   requestId: string;
   correlationId: string;
   deadlineMs?: number;
@@ -1255,7 +1274,7 @@ function planEditPayloadIsConsistent(plan: PlanDecoracion, pedido: PlanDecoracio
 const planPatronPayloadResultSchema = z.object({
   operation_schema_version: z.literal("plan-patron-result.v1"),
   patron: PatronColorResueltoSchema,
-  modos_admitidos: z.array(ModoAdmitidoSchema).max(MODOS_PATRON_COLOR.length),
+  modos_admitidos: modosAdmitidosSchema,
 }).strict();
 
 const imageGenerateUsageSchema = z.object({
@@ -2050,7 +2069,7 @@ export async function llamarPythonPlanEdit(input: PythonPlanEditInput): Promise<
  * (ADR-0028 §10), for the pattern editor. No catalog and no side effect.
  */
 export async function llamarPythonPlanPatron(input: PythonPlanPatronInput): Promise<PythonPlanPatronResult> {
-  const { plan, estructuraId, patronColor, participaciones, modo, ...rest } = input;
+  const { plan, estructuraId, patronColor, participaciones, modo, desde, ...rest } = input;
   const operationBody = {
     schema_version: "plan-patron.v1" as const,
     plan,
@@ -2058,6 +2077,7 @@ export async function llamarPythonPlanPatron(input: PythonPlanPatronInput): Prom
     patron_color: patronColor,
     ...(participaciones === undefined ? {} : { participaciones: [...participaciones] }),
     ...(modo === undefined ? {} : { modo }),
+    ...(desde === undefined ? {} : { desde }),
   };
   const response = await llamarPythonOperacion(PYTHON_PLAN_PATRON_PATH, PYTHON_PLAN_PATRON_SCOPE, {
     ...rest,

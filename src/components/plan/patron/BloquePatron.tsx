@@ -49,7 +49,24 @@ function marcoDibujo(ancho: number): string {
   return "h-52 @md:w-64 @md:min-h-44";
 }
 
-const botonSecundario = "ui-pressable inline-flex h-9 items-center gap-1.5 rounded-xl border border-borde px-3 text-[13px] font-medium text-acento hover:bg-acento-suave focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento disabled:opacity-50";
+const botonSecundario = "ui-pressable inline-flex h-9 items-center gap-1.5 rounded-xl border border-borde px-3 text-[13px] font-medium text-acento hover:bg-acento-suave focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-acento disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50";
+
+/**
+ * El botón que abre el editor no se deshabilita mientras se guarda: al cerrar
+ * el editor con un cambio pendiente, ese guardado arranca en el mismo gesto y
+ * el foco vuelve a este botón (`useFocoDeRetorno`). Un botón `disabled` no
+ * recibe el foco y quedaba en <body>. Ocupado, sigue enfocable y el toque no
+ * hace nada.
+ */
+function propsAbrirEditor(ocupado: boolean, abrir: () => void) {
+  return {
+    "aria-disabled": ocupado || undefined,
+    title: ocupado ? "Espera a que termine de guardarse el último cambio" : undefined,
+    onClick: () => {
+      if (!ocupado) abrir();
+    },
+  };
+}
 
 /**
  * "Patrón de color" dentro del detalle de una pieza: la vista compacta, el
@@ -68,7 +85,7 @@ export function BloquePatron({ resuelto, enVivo, reparto, leyenda, tipo, oficial
           <span className="block text-[13px] font-semibold text-texto">Patrón de color</span>
           <span className="block text-xs text-texto-suave">Decide dónde va cada color: espiral, anillos, degradé, flores… y saca la hoja de armado.</span>
         </span>
-        <button type="button" onClick={onEditar} disabled={ocupado} data-testid="crear-patron" className={botonSecundario}>
+        <button type="button" {...propsAbrirEditor(ocupado, onEditar)} data-testid="crear-patron" className={botonSecundario}>
           <Palette className="size-4" aria-hidden="true" />Crear patrón
         </button>
       </section>
@@ -101,7 +118,7 @@ export function BloquePatron({ resuelto, enVivo, reparto, leyenda, tipo, oficial
           )}
           <div className="flex flex-wrap gap-2 pt-0.5">
             {onEditar && (
-              <button type="button" onClick={onEditar} disabled={ocupado} data-testid="editar-patron" className={botonSecundario}>
+              <button type="button" {...propsAbrirEditor(ocupado, onEditar)} data-testid="editar-patron" className={botonSecundario}>
                 <Palette className="size-4" aria-hidden="true" />Editar patrón
               </button>
             )}

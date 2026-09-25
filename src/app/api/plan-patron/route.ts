@@ -4,7 +4,7 @@ import { registrarFalloUi, traducirErrorServidor } from "@/lib/errores-ui/traduc
 import { construirUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 import { isPythonAdapterError, pythonErrorBody, PYTHON_MAX_BODY_BYTES } from "@/lib/ia/nucleo/python-adapter";
 import { PlanEditError } from "@/lib/plan/edicion-error";
-import { vistaPreviaPatronPython } from "@/lib/plan/edicion-python";
+import { RechazoVistaPatronError, vistaPreviaPatronPython } from "@/lib/plan/edicion-python";
 import { EdicionRepartoSchema } from "@/lib/plan/edicion-esquemas";
 import { MODOS_PATRON_COLOR, PatronColorV1Schema } from "@/lib/plan/patron-color";
 import { PlanDecoracionSchema } from "@/lib/plan/tipos";
@@ -15,6 +15,9 @@ import { PlanDecoracionSchema } from "@/lib/plan/tipos";
  * sugerencia) y recibe la rejilla, el conteo y los textos que escribe Python.
  * Transporte puro: no firma, no escribe en la base y no toca el catálogo; la
  * edición que sí cambia el plan va por `/api/plan-editar` (acción `patron`).
+ * Un rechazo `patron_invalido` trae además los estilos que Python admite para
+ * la pieza (`modos_admitidos`), para que el editor los ofrezca aunque no haya
+ * sugerencia.
  *
  * Misma autenticación que `/api/plan-editar` (la sesión que exige
  * `src/proxy.ts`), repetida aquí como guardia del handler.
@@ -28,12 +31,17 @@ const BodySchema = z.object({
   participaciones: EdicionRepartoSchema.shape.participaciones.optional(),
   /** With `patron_color` null: the starting point of that style instead of the preset. */
   modo: z.enum(MODOS_PATRON_COLOR).optional(),
+  /** With `modo`: the editor's draft; Python keeps from it what the new style admits. */
+  desde: PatronColorV1Schema.optional(),
 }).strict().refine((body) => body.participaciones === undefined || body.patron_color === null, {
   message: "participaciones y patron_color no van juntos.",
   path: ["participaciones"],
 }).refine((body) => body.modo === undefined || (body.patron_color === null && body.participaciones === undefined), {
   message: "modo solo pide el punto de partida de un estilo.",
   path: ["modo"],
+}).refine((body) => body.desde === undefined || body.modo !== undefined, {
+  message: "desde solo acompaña a modo.",
+  path: ["desde"],
 });
 
 /** Lo que se reenvía a Python cabe en su límite de cuerpo; un cuerpo mayor nunca llegaría. */
@@ -86,6 +94,7 @@ export async function POST(request: Request) {
       patronColor: body.patron_color,
       ...(body.participaciones === undefined ? {} : { participaciones: body.participaciones }),
       ...(body.modo === undefined ? {} : { modo: body.modo }),
+      ...(body.desde === undefined ? {} : { desde: body.desde }),
       correlationId: requestIdHttp,
       signal: request.signal,
     });
@@ -96,8 +105,14 @@ export async function POST(request: Request) {
     const responder = (datos: Record<string, unknown>, status: number) => Response.json({ ...datos, ui_error: uiError }, { status, headers: cabeceras });
     if (error instanceof z.ZodError) return responder({ error: "La vista previa del patrón no tiene un formato válido.", detalles: error.issues }, 400);
     if (error instanceof PlanEditError) {
-      // `patron_invalido`: `motivo` estable y `mensaje` de Python para el decorador.
-      return responder({ error: error.message, ...(error.causa ? { causa: error.causa } : {}), ...(error.patron ? { motivo: error.patron.motivo, mensaje: error.patron.mensaje } : {}) }, error.status);
+      // `patron_invalido`: `motivo` estable y `mensaje` de Python para el decorador, y los estilos de la pieza.
+      const modosAdmitidos = error instanceof RechazoVistaPatronError ? error.modosAdmitidos : null;
+      return responder({
+        error: error.message,
+        ...(error.causa ? { causa: error.causa } : {}),
+        ...(error.patron ? { motivo: error.patron.motivo, mensaje: error.patron.mensaje } : {}),
+        ...(modosAdmitidos ? { modos_admitidos: modosAdmitidos } : {}),
+      }, error.status);
     }
     if (isPythonAdapterError(error)) {
       return responder(pythonErrorBody(error), error.status >= 400 && error.status <= 599 ? error.status : 502);

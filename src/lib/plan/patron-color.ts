@@ -23,6 +23,15 @@ export const ORIGENES_PATRON_COLOR = ["decorador", "referencia", "sugerido"] as 
 export const DIRECCIONES_PATRON_COLOR = ["longitudinal", "transversal", "diagonal"] as const;
 
 const IndiceMaterialSchema = z.number().int().min(0).max(11);
+/**
+ * Última fila o posición que puede tener una rejilla. Python expande hasta
+ * 4000 celdas (`MAX_CELDAS`, ADR-0028 §2) y una pared puede salir con una sola
+ * fila, así que una fila o una columna llegan a 4000 posiciones: una pared de
+ * 10 m × 2,4 m ya tiene 76 columnas. Un tope menor dejaría globos de la gráfica
+ * que el editor dibuja pero no puede pintar.
+ */
+const INDICE_REJILLA_MAXIMO = 3999;
+const IndiceRejillaSchema = z.number().int().min(0).max(INDICE_REJILLA_MAXIMO);
 const RacimoSchema = z.array(IndiceMaterialSchema).min(1).max(8);
 const PesoMaterialSchema = z.object({
   material: IndiceMaterialSchema,
@@ -78,13 +87,13 @@ export const AcentoPatronColorSchema = z.object({
   material: IndiceMaterialSchema,
   cada: z.number().int().min(2).max(24),
   desde: z.number().int().min(1).max(24),
-  posiciones: z.array(z.number().int().min(0).max(63)).min(1).max(64).optional(),
+  posiciones: z.array(IndiceRejillaSchema).min(1).max(64).optional(),
 }).strict();
 
 export const PintadoPatronColorSchema = z.object({
-  fila: z.number().int().min(0).max(999),
+  fila: IndiceRejillaSchema,
   /** Sin columna se pinta el racimo (o la fila) completo. */
-  columna: z.number().int().min(0).max(63).optional(),
+  columna: IndiceRejillaSchema.optional(),
   material: IndiceMaterialSchema,
 }).strict();
 

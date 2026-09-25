@@ -89,6 +89,7 @@ packages/*/dist
 /services/ai-api/.pytest_cache/
 /services/ai-api/.mypy_cache/
 /services/ai-api/**/__pycache__/
+/scripts/**/__pycache__/
 /services/ai-api/*.egg-info/
 
 # perfiles persistentes de navegador para scrapers con sesión propia (Playwright)
