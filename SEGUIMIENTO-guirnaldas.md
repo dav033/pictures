@@ -10,8 +10,8 @@ referencia `archivo:línea`.
 ## 0. Qué se pidió
 
 1. **Guirnaldas por partes**: llevar a las guirnaldas lo que ADR-0028 y ADR-0030
-   hicieron para arcos, columnas y bouquets, con investigación completa (código,
-   fuentes del oficio, videos) e implementación completa (Python, contrato, Next, UI,
+   hicieron para arcos, columnas y bouquets, con investigación completa (código y
+   fuentes del oficio) e implementación completa (Python, contrato, Next, UI,
    prompts, evaluación).
 2. **La foto manda sobre la cantidad en todas las estructuras**: hoy solo el bouquet
    toma su cantidad de la lectura de la foto (ADR-0030, decisión 4 enmendada). Se
@@ -150,28 +150,10 @@ que la guirnalda necesita), 1 (la entrega grande).
   tabla de helio; Anagram *Balloon Guide*; Qualatex "Balloon Basics" (solo vía
   buscador: la red bloquea qualatex.com y balloonhq.com); tabla de pesas del
   distribuidor. Ninguna trae la técnica de guirnalda orgánica escrita.
-- **Videos descargados por el usuario** (`C:\Users\davidt\Downloads\videoplayback*.mp4`,
-  15 archivos, ~4 h, BalloonPro.co / Balloon Crew / Qualatex; 640×360). Identificados
-  por fotogramas el 2026-09-25 (ninguno transcrito todavía: el usuario detuvo la
-  transcripción; cada minuto de audio cuesta ~1,5–2 min de servidor, uno a la vez):
-
-  | Archivo | Dur. | Tema (por fotogramas) | Sirve para |
-  |---|---|---|---|
-  | videoplayback2.mp4 | 12:47 | **Guirnalda orgánica con cuartetos** (globos blancos: inflar en pares, atar cuartetos, encadenar, rellenar con globos chicos, 00:02–00:11) | técnica de armado, unidades, relleno |
-  | videoplayback15.mp4 | 13:56 | **Guirnalda orgánica en piso** (Qualatex): cuartetos de 11" de tres colores atados en cadena, rellenos de 5", luego pilares con foil (00:00–00:06; 00:06–00:13 es otra pieza) | secuencia de colores por racimo, relleno, soporte |
-  | videoplayback6.mp4 | 81:26 | Webinar "Quick Link Designer" (BalloonPro): diseño de guirnaldas y paredes con globos link en rejilla numerada (00:16–00:32) | gráfica numerada y conteo por rejilla |
-  | videoplayback16.mp4 | 8:26 | Pared de globos con cuartetos sobre tira (Qualatex) | técnica de cuartetos y tira |
-  | videoplayback.mp4 | 35:40 | Columna de Halloween con racimos y foils | racimos, foils sobre estructura |
-  | videoplayback4.mp4 | 34:19 | Base y varilla de columna (taller) | insumos de soporte |
-  | videoplayback12.mp4 | 14:49 | Armazón de PVC para inflar | no aplica |
-  | 3, 7, 8, 9, 10, 11, 13, 14 | 2–10 min | varillas, calcomanías en globos gigantes, número en foam, foil en varilla, globos gigantes, confeti 3 ft, burbuja rellena | no aplica a guirnaldas |
-
-  Lo que enseñan los dos videos de guirnalda, visto en los fotogramas y pendiente de
-  confirmar con la transcripción: la unidad es el **cuarteto** (dos parejas atadas);
-  los cuartetos se encadenan por los nudos con la misma cuerda o tira; entre
-  cuartetos se rellena con globos de 5" para dar el aspecto orgánico; los colores se
-  alternan por cuarteto (no por globo); una guirnalda de piso se arma en el suelo y
-  se fija con pesos; sobre pared se monta sobre tira perforada.
+- No hay material propio del oficio sobre guirnaldas en el repo: las reglas de
+  técnica (unidad del racimo, relleno, soporte) se proponen desde las fuentes de
+  arriba y quedan marcadas como supuestos a validar con el negocio, como se hizo
+  con las recetas del bouquet.
 
 ## 2. Diseño propuesto
 
@@ -392,10 +374,7 @@ verde, y app + `ai-api` desplegados juntos cuando cambie el contrato.
   confirmar (nunca en re-resoluciones), como los patrones y armados.
 - Costo: cada foto con estructuras suma una llamada de visión más (conteo) y otra
   para guirnaldas (~US$0,002–0,01 cada una). Las evaluaciones se corren con tope
-  declarado y confirmado; los videos, si se transcriben, son tiempo de servidor
-  (1,5–2× la duración, uno a la vez), no dinero.
-- Los videos son de BalloonPro/Qualatex/Balloon Crew: se usan como fuente de
-  técnica (citada en el ADR), nunca se copian textos ni imágenes al repo.
+  declarado y confirmado.
 
 ## 6. Verificación por entrega
 
@@ -416,8 +395,7 @@ tope y crudos fuera del repo.
 
 1. Lanzar el agente del frente 3 con la misión de §2.3 (no pregunta; commits en
    `feat/bouquets`).
-2. Transcribir `videoplayback2.mp4` y `videoplayback15.mp4` (27 min de audio, ~45–55
-   min de servidor) y volcar en ADR-0032 las reglas de la técnica con marca de tiempo.
+2. Validar con el negocio los supuestos de §4 (unidad del racimo, relleno, soporte).
 3. Contar a mano 30 fotos del dataset privado (10 densas, 10 medias, 10 de pocos
    globos) para la evaluación del conteo; guardar `sha256, globos, exacto` fuera del
    repo.
