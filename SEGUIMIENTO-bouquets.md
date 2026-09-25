@@ -197,6 +197,18 @@ sube la rama y se abre el PR.
   real de Python fijada en `scripts/fixtures/patron-color-prompt/armados.json`.
 - **Docs**: ADR-0030 "Segunda entrega" y reglas validadas.
 
+### La foto manda sobre la compra (2026-09-25, tarde)
+
+Probando en local, un bouquet de 5 globos en la foto salía con 15: el modelo del
+chat elige `unidades_declaradas` sin ver el número de globos y el armado solo
+acomodaba esa compra. Decisión del usuario: la foto manda, sin mínimo de 5 en ese
+caso. `compra_desde_lectura` (armado_bouquet.py) y `_comprar_lo_leido` (plan.py):
+al confirmar con lectura confiable, la cantidad, el reparto y el armado salen de
+la foto; los colores que la foto no muestra se quitan; todo queda en `supuestos`.
+Si algo de la lectura no se compra, regla de siempre. ADR-0030 decisión 4
+enmendada. También `allowedDevOrigins` admite `127.0.0.1` (la app abierta por la
+IP quedaba sin JavaScript en desarrollo).
+
 ### Pendiente inmediato
 
 0. **Revisar y mezclar el PR #2.** Nota: gitleaks marcó dos falsos positivos en

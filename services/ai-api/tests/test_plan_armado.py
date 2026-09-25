@@ -276,3 +276,67 @@ async def test_editar_los_globos_quita_el_armado_con_aviso() -> None:
     estructura = cast(list[dict[str, object]], editado.plan["estructuras"])[0]
     assert "armado_bouquet" not in estructura
     assert any("armado del bouquet" in aviso for aviso in editado.avisos)
+
+
+@pytest.mark.anyio
+async def test_la_foto_manda_sobre_la_compra_al_confirmar() -> None:
+    # El modelo declaró 15 globos; la foto tiene 3 blancos, 2 rosados y el corazón.
+    pista = {
+        "referencia_element_id": "REF_01_E01",
+        "variante": "helio_escalonado",
+        "niveles": [
+            {"unidad": "suelto", "colores": ["blanco", "blanco", "blanco"]},
+            {"unidad": "suelto", "colores": ["rosado", "rosado"]},
+        ],
+        "remate": {"clase": "metalizado", "color": "dorado"},
+        "confianza": 0.9,
+    }
+    plan = _plan(_bouquet(unidades_declaradas=15))
+    resolved = await _resolve(plan, completar_armados=True, pistas_armado=[pista])
+    assert _lineas(resolved) == [
+        ("var-r12-blanco", 3),
+        ("var-r12-rosado", 2),
+        ("var-foil-dorado", 1),
+    ]
+    estructura = cast(
+        list[dict[str, object]], cast(dict[str, object], resolved["plan"])["estructuras"]
+    )[0]
+    assert estructura["unidades_declaradas"] == 6
+    armado = cast(dict[str, object], estructura["armado_bouquet"])
+    assert (armado["origen"], armado["variante"], armado["remate"]) == (
+        "referencia",
+        "helio_escalonado",
+        [2],
+    )
+    supuestos = cast(list[str], cast(dict[str, object], resolved["plan"])["supuestos"])
+    assert any("la foto muestra 6 globos" in s and "el plan decía 15" in s for s in supuestos)
+    # Volver a resolver el plan firmado es punto fijo: la foto ya no interviene.
+    segunda = await _resolve(cast(dict[str, object], resolved["plan"]))
+    assert segunda["plan_hash"] == resolved["plan_hash"]
+
+
+@pytest.mark.anyio
+async def test_la_foto_quita_el_color_que_no_lleva() -> None:
+    pista = {
+        "referencia_element_id": "REF_01_E01",
+        "variante": "helio_apilado",
+        "niveles": [
+            {"unidad": "trio", "colores": ["blanco", "blanco", "blanco"]},
+            {"unidad": "trio", "colores": ["blanco", "blanco", "blanco"]},
+        ],
+        "remate": {"clase": "metalizado"},
+        "confianza": 0.9,
+    }
+    resolved = await _resolve(_plan(_bouquet()), completar_armados=True, pistas_armado=[pista])
+    assert _lineas(resolved) == [("var-r12-blanco", 6), ("var-foil-dorado", 1)]
+    plan = cast(dict[str, object], resolved["plan"])
+    materiales = cast(
+        list[dict[str, object]], cast(list[dict[str, object]], plan["estructuras"])[0]["materiales"]
+    )
+    assert [m["color"] for m in materiales] == ["blanco", "dorado"]
+    assert any("se quitó rosado" in s for s in cast(list[str], plan["supuestos"]))
+    leyenda = cast(
+        list[dict[str, object]],
+        cast(list[dict[str, object]], resolved["armados_bouquet"])[0]["leyenda"],
+    )
+    assert [e["codigo"] for e in leyenda] == [1, 2]

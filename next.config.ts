@@ -9,7 +9,9 @@ const nextConfig: NextConfig = {
   //
   // Solo afecta a `next dev` y solo habilita rangos privados de LAN: nada de comodines
   // abiertos, para no permitir que cualquier origen pida recursos del servidor de desarrollo.
-  allowedDevOrigins: ["192.168.72.101", "192.168.*.*", "10.*.*.*", "172.16.*.*", "172.30.*.*"],
+  // `127.0.0.1` también: abrir la app por la IP de loopback en vez de `localhost` dejaba la
+  // página sin JavaScript (chunks bloqueados) y sin un solo botón que respondiera (2026-09-25).
+  allowedDevOrigins: ["127.0.0.1", "192.168.72.101", "192.168.*.*", "10.*.*.*", "172.16.*.*", "172.30.*.*"],
   cacheComponents: true,
   experimental: {
     // `src/proxy.ts` matches every API route, so Next buffers each request body

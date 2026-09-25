@@ -4,23 +4,51 @@
     {
       "name": "demo-decoracion",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 3000,
       "autoPort": true
     },
     {
       "name": "demo-decoracion-3001",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--", "-p", "3001"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "-p",
+        "3001"
+      ],
       "port": 3001,
       "autoPort": true
     },
     {
       "name": "codex-lora-vocabulario",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "../demo-decoracion-codex-lora-vocabulario", "run", "dev", "--", "--webpack"],
+      "runtimeArgs": [
+        "--prefix",
+        "../demo-decoracion-codex-lora-vocabulario",
+        "run",
+        "dev",
+        "--",
+        "--webpack"
+      ],
       "port": 3001,
       "autoPort": true
+    },
+    {
+      "name": "demo-decoracion-3010",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "-p",
+        "3010"
+      ],
+      "port": 3010
     }
   ]
 }

@@ -561,6 +561,172 @@ def sugerir_armado(
     return armado
 
 
+# --- La foto manda sobre la compra (ADR-0030, 2026-09-25) --------------------------
+
+
+@dataclass(frozen=True)
+class CompraLeida:
+    """Lo que la foto dice que compra un bouquet y cómo se arma.
+
+    ``cantidades`` son las unidades por material de UNA instancia, contando
+    todos los grupos (con números "a los lados" hay dos bouquets); ``armado``
+    es la lectura misma en forma de ``armado-bouquet.v1`` (``origen:
+    referencia``), con los índices de ``materiales`` de la estructura.
+    """
+
+    cantidades: tuple[int, ...]
+    armado: dict[str, object]
+
+    @property
+    def total(self) -> int:
+        return sum(self.cantidades)
+
+
+def _material_del_color(materiales: Sequence[MaterialBouquet], color: str) -> int | None:
+    patrones = [MaterialPatron(m.globo.color, m.globo.acabado, 1.0) for m in materiales]
+    posicion = material_de_color(patrones, color)
+    return materiales[posicion].indice if posicion is not None else None
+
+
+def _niveles_leidos(
+    lectura: Mapping[str, object], latex: Sequence[MaterialBouquet], variante: str
+) -> list[dict[str, object]] | None:
+    """Los niveles de la lectura como niveles del armado; ``None`` si un color no se compra."""
+    unidades: list[tuple[str, list[int]]] = []
+    for nivel in cast(list[Mapping[str, object]], lectura.get("niveles", [])):
+        unidad = str(nivel["unidad"])
+        indices: list[int] = []
+        for color in cast(list[str], nivel.get("colores", [])):
+            indice = _material_del_color(latex, color)
+            if indice is None:
+                return None
+            indices.append(indice)
+        if unidad == "suelto":
+            unidades.extend(("suelto", [indice]) for indice in indices)
+        elif len(indices) == GLOBOS_POR_UNIDAD[unidad]:
+            unidades.append((unidad, indices))
+        else:
+            return None
+    niveles: list[dict[str, object]] = []
+    con_unidad = 0
+    for unidad, posiciones in unidades:
+        if unidad == "suelto":
+            rol = "acento" if variante == "base_aire" else "alrededor"
+        elif variante == "base_aire":
+            rol = "base" if con_unidad < 2 else "cuerpo"
+            con_unidad += 1
+        else:
+            rol = "capa" if variante == "helio_apilado" else "alrededor"
+        if (
+            niveles
+            and niveles[-1]["unidad"] == unidad
+            and niveles[-1]["posiciones"] == posiciones
+            and niveles[-1]["rol"] == rol
+        ):
+            niveles[-1]["cantidad"] = cast(int, niveles[-1]["cantidad"]) + 1
+        else:
+            niveles.append({"rol": rol, "unidad": unidad, "cantidad": 1, "posiciones": posiciones})
+    return niveles
+
+
+def compra_desde_lectura(
+    estructura: EstructuraBouquet, lectura: Mapping[str, object]
+) -> CompraLeida | None:
+    """La compra y el armado que dicta la foto, o ``None`` si no se puede seguir.
+
+    Se sigue solo si la lectura es confiable y TODO lo que leyó se compra con
+    los materiales del bouquet: cada color de los niveles con un látex del
+    plan (igualdad o tono cercano, como las pistas de patrón), el remate con
+    un material de su clase (y color, si lo dijo) y cada dígito con su globo
+    número. Un material que la foto no muestra queda en 0: la resolución lo
+    quita. Sin números ni remate, nada que casar. Helio con látex chico o
+    número chico baja a base de aire, como la receta.
+    """
+    if not estructura.es_bouquet:
+        return None
+    if float(cast(float, lectura.get("confianza", 0))) < CONFIANZA_MINIMA_LECTURA:
+        return None
+    materiales = [m for m in estructura.materiales if m is not None]
+    n = len(estructura.materiales)
+    latex = [m for m in materiales if m.tipo == "latex"]
+    numeros = cast(list[Mapping[str, object]], lectura.get("numeros") or [])
+    digitos: list[int] = []
+    for numero in numeros:
+        indice = next(
+            (
+                m.indice
+                for m in materiales
+                if m.tipo == "numero" and m.digito == str(numero.get("digito"))
+            ),
+            None,
+        )
+        if indice is None:
+            return None
+        digitos.append(indice)
+    remate: list[int] = []
+    leido = lectura.get("remate")
+    if isinstance(leido, Mapping):
+        clase = str(leido.get("clase"))
+        candidatos = [m for m in materiales if m.tipo == clase]
+        color = leido.get("color")
+        indice = (
+            _material_del_color(candidatos, str(color))
+            if isinstance(color, str) and color
+            else (candidatos[0].indice if candidatos else None)
+        )
+        if indice is None:
+            return None
+        remate = [indice]
+
+    variante = str(lectura.get("variante") or "helio_escalonado")
+    niveles = _niveles_leidos(lectura, latex, variante)
+    if niveles is None:
+        return None
+    usados = (
+        {i for nivel in niveles for i in cast(list[int], nivel["posiciones"])}
+        | set(remate)
+        | set(digitos)
+    )
+    por_indice = {m.indice: m for m in materiales}
+    if variante in VARIANTES_HELIO and any(
+        _helio_de(por_indice[i]) is None
+        for i in usados
+        if por_indice[i].tipo in ("latex", "numero")
+    ):
+        variante = "base_aire"
+        niveles = _niveles_leidos(lectura, latex, variante) or niveles
+    disposicion = str(lectura.get("disposicion") or "centro")
+    if (
+        not digitos
+        or disposicion not in DISPOSICIONES
+        or (disposicion == "lados" and len(digitos) != 2)
+    ):
+        disposicion = "centro"
+    grupos = 2 if disposicion == "lados" else 1
+
+    cantidades = [0] * n
+    for nivel in niveles:
+        for indice in cast(list[int], nivel["posiciones"]):
+            cantidades[indice] += cast(int, nivel["cantidad"]) * grupos
+    for indice in remate:
+        cantidades[indice] += grupos
+    for indice in digitos:
+        cantidades[indice] += 1
+    if sum(cantidades) == 0 or len(niveles) > MAX_NIVELES:
+        return None
+    armado: dict[str, object] = {
+        "version": VERSION_ARMADO,
+        "origen": "referencia",
+        "variante": variante,
+        "niveles": niveles,
+    }
+    if remate:
+        armado["remate"] = remate
+    if digitos:
+        armado["numero"] = {"digitos": digitos, "disposicion": disposicion}
+    return CompraLeida(tuple(cantidades), armado)
+
+
 # --- Resolución (lo que dibuja la hoja de armado) -----------------------------
 
 _NOMBRE_VARIANTE = {
@@ -962,6 +1128,7 @@ def armado_resuelto(
 
 __all__ = [
     "ArmadoInvalido",
+    "CompraLeida",
     "DISPOSICIONES",
     "EstructuraBouquet",
     "GloboCatalogo",
@@ -970,6 +1137,7 @@ __all__ = [
     "VERSION_ARMADO",
     "armado_resuelto",
     "clasificar",
+    "compra_desde_lectura",
     "disposiciones_admitidas",
     "sugerir_armado",
     "validar",

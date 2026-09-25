@@ -58,11 +58,13 @@ from app.generated_models import (
 from app.armado_bouquet import (
     CONFIANZA_MINIMA_LECTURA,
     ArmadoInvalido,
+    CompraLeida,
     EstructuraBouquet,
     GloboCatalogo,
     MaterialBouquet,
     armado_resuelto,
     clasificar,
+    compra_desde_lectura,
     disposiciones_admitidas,
     sugerir_armado,
     validar,
@@ -3154,6 +3156,13 @@ def _assign_assemblies(
     """
     completed = dict(plan)
     structures: list[object] = []
+    raw_assumptions = plan.get("supuestos")
+    assumptions = [
+        a
+        for a in (raw_assumptions if isinstance(raw_assumptions, list) else [])
+        if isinstance(a, str)
+    ]
+    changed = False
     for structure in _mappings(plan.get("estructuras")):
         item = dict(structure)
         wanted = only is None or _text(item.get("estructura_id")) in only
@@ -3171,12 +3180,88 @@ def _assign_assemblies(
                     ),
                     None,
                 )
-                assembly = sugerir_armado(context, reading)
-                if assembly is not None:
-                    item["armado_bouquet"] = assembly
+                # The photo decides what is bought (2026-09-25): count and
+                # colors per balloon, when everything it read is purchasable.
+                bought = compra_desde_lectura(context, reading) if reading is not None else None
+                if bought is not None:
+                    item, notices = _comprar_lo_leido(item, context, bought)
+                    context = _bouquet_context(item, candidate_by_variant)
+                    assumptions.extend(notices)
+                    changed = True
+                    try:
+                        validar(context, _mapping(item["armado_bouquet"]))
+                    except ArmadoInvalido:
+                        item.pop("armado_bouquet", None)
+                if item.get("armado_bouquet") is None:
+                    assembly = sugerir_armado(context, reading)
+                    if assembly is not None:
+                        item["armado_bouquet"] = assembly
         structures.append(item)
     completed["estructuras"] = structures
+    if changed:
+        completed["supuestos"] = list(dict.fromkeys(assumptions))
+        _validate_plan(completed)
     return completed
+
+
+def _shares_of(quotas: Sequence[float]) -> list[float]:
+    """Shares rounded to six decimals, the last one absorbing the rest (as ``participaciones``)."""
+    rounded = [round(quota, 6) for quota in quotas[:-1]]
+    return [*rounded, round(1 - sum(rounded), 6)]
+
+
+def _comprar_lo_leido(
+    structure: Mapping[str, object], context: EstructuraBouquet, bought: CompraLeida
+) -> tuple[dict[str, object], list[str]]:
+    """The bouquet as the photo shows it: units, shares and the assembly itself.
+
+    Materials the photo does not show leave the structure (with a notice for
+    the customer); the assembly's indices follow the materials that stay.
+    ``unidades_declaradas`` counts every repetition, as the contract says.
+    """
+    materials = _mappings(structure.get("materiales"))
+    kept = [index for index, units in enumerate(bought.cantidades) if units > 0]
+    remap = {old: new for new, old in enumerate(kept)}
+    total = bought.total
+    shares = _shares_of([bought.cantidades[index] / total for index in kept])
+    new_materials = [
+        {**dict(materials[index]), "participacion": share}
+        for index, share in zip(kept, shares, strict=True)
+    ]
+    if not any(material.get("rol_material") == "principal" for material in new_materials):
+        new_materials[0]["rol_material"] = "principal"
+    assembly = json.loads(json.dumps(bought.armado))
+    for level in assembly["niveles"]:
+        level["posiciones"] = [remap[index] for index in level["posiciones"]]
+    if "remate" in assembly:
+        assembly["remate"] = [remap[index] for index in assembly["remate"]]
+    if "numero" in assembly:
+        assembly["numero"]["digitos"] = [remap[index] for index in assembly["numero"]["digitos"]]
+    before = _integer(structure.get("unidades_declaradas")) or 0
+    reps = context.repeticiones
+    name = _text(structure.get("nombre")) or "Bouquet de globos"
+    notices = []
+    if before != total * reps:
+        notices.append(
+            f"{name}: la foto muestra {total} globos por bouquet, así que la cantidad quedó en "
+            f"{total * reps} (el plan decía {before})."
+        )
+    dropped = [
+        _text(materials[index].get("color")) or "un material"
+        for index, units in enumerate(bought.cantidades)
+        if units == 0
+    ]
+    if dropped:
+        notices.append(f"{name}: se quitó {', '.join(dropped)} porque la foto no lo lleva.")
+    return (
+        {
+            **dict(structure),
+            "unidades_declaradas": total * reps,
+            "materiales": new_materials,
+            "armado_bouquet": assembly,
+        },
+        notices,
+    )
 
 
 def _resolved_assemblies(

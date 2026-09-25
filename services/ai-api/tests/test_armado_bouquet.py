@@ -347,3 +347,89 @@ def test_la_frase_lora_deletrea_los_numeros_y_es_ascii() -> None:
     assert lora.endswith("one on each side")
     assert 'foil number "2" balloon' in gemini and "Build two matching bouquets" in gemini
     assert "one on each side, each with its own bouquet" in gemini
+
+
+# --- La foto manda sobre la compra (2026-09-25) ------------------------------------
+
+
+def test_la_foto_dicta_cantidad_colores_y_armado() -> None:
+    from app.armado_bouquet import compra_desde_lectura
+
+    # El modelo compró 15 globos en tres colores; la foto tiene 2 dorados, 1 negro y el "80".
+    globos = [
+        _latex(12, "negro"),
+        _latex(12, "dorado"),
+        _latex(12, "violeta"),
+        _numero("8"),
+        _numero("0"),
+    ]
+    estructura = _estructura(globos, [5, 5, 3, 1, 1])
+    lectura = {
+        "variante": "helio_escalonado",
+        "niveles": [{"unidad": "suelto", "colores": ["dorado", "dorado", "negro"]}],
+        "numeros": [
+            {"digito": "8", "clase_tamano": "grande"},
+            {"digito": "0", "clase_tamano": "grande"},
+        ],
+        "disposicion": "centro",
+        "confianza": 0.85,
+    }
+    compra = compra_desde_lectura(estructura, lectura)
+    assert compra is not None
+    assert compra.cantidades == (1, 2, 0, 1, 1) and compra.total == 5
+    assert compra.armado["variante"] == "helio_escalonado"
+    assert compra.armado["niveles"] == [
+        {"rol": "alrededor", "unidad": "suelto", "cantidad": 2, "posiciones": [1]},
+        {"rol": "alrededor", "unidad": "suelto", "cantidad": 1, "posiciones": [0]},
+    ]
+    assert compra.armado["numero"] == {"digitos": [3, 4], "disposicion": "centro"}
+
+
+def test_la_foto_no_manda_si_lee_algo_que_no_se_compra() -> None:
+    from app.armado_bouquet import compra_desde_lectura
+
+    estructura = _estructura([_latex(12, "blanco"), _latex(12, "rosado"), _corazon_18()], [3, 3, 1])
+    base = {
+        "variante": "helio_apilado",
+        "niveles": [{"unidad": "trio", "colores": ["blanco", "rosado", "blanco"]}],
+        "confianza": 0.9,
+    }
+    assert compra_desde_lectura(estructura, base) is not None
+    # Un color que el plan no lleva, un dígito sin globo número, un remate de otra clase, o poca confianza.
+    assert (
+        compra_desde_lectura(
+            estructura,
+            {**base, "niveles": [{"unidad": "trio", "colores": ["verde", "rosado", "blanco"]}]},
+        )
+        is None
+    )
+    assert (
+        compra_desde_lectura(
+            estructura, {**base, "numeros": [{"digito": "5", "clase_tamano": "grande"}]}
+        )
+        is None
+    )
+    assert compra_desde_lectura(estructura, {**base, "remate": {"clase": "burbuja"}}) is None
+    assert compra_desde_lectura(estructura, {**base, "confianza": 0.3}) is None
+    con_remate = compra_desde_lectura(
+        estructura, {**base, "remate": {"clase": "metalizado", "color": "dorado"}}
+    )
+    assert (
+        con_remate is not None
+        and con_remate.armado["remate"] == [2]
+        and con_remate.cantidades == (2, 1, 1)
+    )
+
+
+def test_la_foto_con_latex_chico_baja_a_base_de_aire() -> None:
+    from app.armado_bouquet import compra_desde_lectura
+
+    estructura = _estructura([_latex(5, "blanco"), _latex(12, "rosado")], [8, 3])
+    lectura = {
+        "variante": "helio_apilado",
+        "niveles": [{"unidad": "cuarteto", "colores": ["blanco", "rosado", "blanco", "rosado"]}],
+        "confianza": 0.9,
+    }
+    compra = compra_desde_lectura(estructura, lectura)
+    assert compra is not None and compra.armado["variante"] == "base_aire"
+    assert compra.armado["niveles"][0]["rol"] == "base"  # type: ignore[index]

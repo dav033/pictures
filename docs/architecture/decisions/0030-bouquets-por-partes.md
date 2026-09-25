@@ -38,11 +38,27 @@ repartido entre prompts y módulos sin un lugar por tipo.
    material, remate y números (dígitos y disposición: centro, lados o arriba). Con
    `lados` hay un grupo por dígito. Ausente, la resolución es byte a byte la de
    siempre.
-4. **El armado nunca cambia lo que se compra.** Las cantidades por material siguen
-   saliendo de `_distribute_units`; validar exige que el armado cuente exactamente
-   esas unidades y la receta reparte esas mismas (el sobrante queda como globos
-   sueltos). El total en COP es idéntico con y sin armado. Presente, el armado
-   entra en `plan_hash` (es parte del plan firmado).
+4. **El armado nunca cambia lo que se compra, salvo la foto al confirmar.** Las
+   cantidades por material siguen saliendo de `_distribute_units`; validar exige
+   que el armado cuente exactamente esas unidades y la receta reparte esas mismas
+   (el sobrante queda como globos sueltos). El editor y toda re-resolución dejan
+   la compra intacta: el total en COP es idéntico con y sin armado. Presente, el
+   armado entra en `plan_hash` (es parte del plan firmado).
+   **Excepción decidida el 2026-09-25 ("la foto manda"):** al confirmar con
+   `completar_armados`, si la lectura de la foto es confiable (≥ 0,5) y todo lo
+   que leyó se compra con los materiales del bouquet (cada color de los niveles
+   con un látex del plan por igualdad o tono cercano, el remate con un material
+   de su clase y color, cada dígito con su globo número), Python toma de la foto
+   la cantidad (`unidades_declaradas`, por repetición) y el reparto
+   (`participacion`), quita los materiales que la foto no muestra y arma
+   exactamente lo leído (`compra_desde_lectura`, `origen: referencia`). No hay
+   mínimo de globos en ese caso: se compran los que la foto tiene, aunque sean
+   menos de 5. Cada cambio queda en `supuestos` ("la foto muestra N globos por
+   bouquet… el plan decía M", "se quitó X porque la foto no lo lleva"), que la
+   tarjeta muestra en "Ajustes que hice". Si algo de la lectura no se puede
+   comprar, o no es confiable, se aplica la regla de siempre: la compra del plan
+   y la receta. Motivo: el modelo del chat elegía la cantidad sin ver el número
+   de globos (15 para una foto de 5) y el armado solo podía acomodar ese error.
 5. **Completar al confirmar** (`completar_armados` + `pistas_armado` en
    `plan-resolution.v1`, bandera `BOUQUETS_ARMADO_V1`, default OFF): cada estructura
    con `estructura_oficial: "bouquet"` sin armado recibe el de la lectura de la foto
