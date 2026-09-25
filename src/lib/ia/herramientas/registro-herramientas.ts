@@ -977,6 +977,8 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     const completarPatrones = featureEnabled("PATRONES_COLOR_V1");
     // ADR-0030: lo mismo para el armado de los bouquets, detrás de BOUQUETS_ARMADO_V1.
     const completarArmados = featureEnabled("BOUQUETS_ARMADO_V1");
+    // ADR-0032: y el de las guirnaldas, detrás de GUIRNALDAS_ARMADO_V1 (solo receta hasta E4).
+    const completarArmadosGuirnalda = featureEnabled("GUIRNALDAS_ARMADO_V1");
     const resolverPlanDelTurno = (plan: PlanDecoracion) => {
       const pistasPatron = completarPatrones ? pistasPatronDelPlan(plan, estado.referenceBlueprint) : [];
       const pistasArmado = completarArmados ? pistasArmadoDelPlan(plan, estado.referenceBlueprint) : [];
@@ -991,6 +993,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         ...(pistasPatron.length > 0 ? { pistasPatron } : {}),
         ...(completarArmados ? { completarArmados } : {}),
         ...(pistasArmado.length > 0 ? { pistasArmado } : {}),
+        ...(completarArmadosGuirnalda ? { completarArmadosGuirnalda } : {}),
         requestId: estado.ragRequestId,
         correlationId: correlacionPython.success ? correlacionPython.data : estado.ragRequestId,
         ...(options.signal ? { signal: options.signal } : {}),

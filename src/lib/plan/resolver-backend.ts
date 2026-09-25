@@ -56,8 +56,14 @@ export type EntradaResolucionPlan = {
   completarArmados?: boolean;
   /** Lecturas del armado de cada bouquet de la foto, por elemento de referencia. */
   pistasArmado?: readonly PistaArmado[];
-  /** Con `completarArmados`: solo estas piezas (la editada, tras una edición que quitó su armado). */
+  /** Con `completarArmados` o `completarArmadosGuirnalda`: solo estas piezas (la editada, tras una edición que quitó su armado). */
   completarArmadosDe?: readonly string[];
+  /**
+   * Solo al confirmar un plan (ADR-0032): Python arma por partes cada guirnalda
+   * que no tiene armado (receta), sin cambiar lo que se compra. Misma regla:
+   * sin este campo la petición es la de siempre.
+   */
+  completarArmadosGuirnalda?: boolean;
   requestId: string;
   correlationId: string;
   signal?: AbortSignal;
@@ -93,6 +99,7 @@ export async function resolverPlan(entrada: EntradaResolucionPlan): Promise<Reso
       ...(entrada.completarArmados === undefined ? {} : { completarArmados: entrada.completarArmados }),
       ...(entrada.pistasArmado === undefined ? {} : { pistasArmado: [...entrada.pistasArmado] }),
       ...(entrada.completarArmadosDe === undefined ? {} : { completarArmadosDe: [...entrada.completarArmadosDe] }),
+      ...(entrada.completarArmadosGuirnalda === undefined ? {} : { completarArmadosGuirnalda: entrada.completarArmadosGuirnalda }),
       requestId: entrada.requestId,
       correlationId: entrada.correlationId,
       ...(entrada.signal ? { parentSignal: entrada.signal } : {}),

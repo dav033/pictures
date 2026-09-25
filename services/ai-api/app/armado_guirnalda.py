@@ -981,7 +981,10 @@ def _frases_prompt(
     }[forma]
     cantidad = len(reparto.racimos)
     frases = [
-        f"GARLAND ASSEMBLY — {soporte_en}, {forma_en}.",
+        # Sobre otra pieza la guirnalda sigue la forma de su anfitriona.
+        f"GARLAND ASSEMBLY — {soporte_en}."
+        if soporte == "sobre_estructura"
+        else f"GARLAND ASSEMBLY — {soporte_en}, {forma_en}.",
         f"Build it from {_plural(cantidad, *_UNIDAD_EN[unidad][:2])} of {_pulgadas(base)} balloons in "
         + lista_en([color(m, lora=False) for m in materiales])
         + ", chained from the left end to the right end.",
@@ -1033,6 +1036,8 @@ def _frases_prompt(
         "arco_caido": " dipping in swags",
         "u_invertida": " shaped as an inverted U",
     }[forma]
+    if soporte == "sobre_estructura":
+        forma_lora = ""
     lora = (
         f"organic balloon garland {soporte_lora}{forma_lora} built from clusters of"
         f" {_UNIDAD_EN[unidad][2]} {_colores_lora([color(m, lora=True) for m in materiales])}"
@@ -1173,8 +1178,10 @@ def armado_resuelto(
     avisos: list[str] = []
     if sueltos_total:
         avisos.append(
-            f"Sobran {_plural(sueltos_total, 'globo', 'globos')} que no completan un {singular}:"
-            " van sueltos entre los racimos."
+            f"Sobra 1 globo que no completa un {singular}: va suelto entre los racimos."
+            if sueltos_total == 1
+            else f"Sobran {sueltos_total} globos que no completan un {singular}: van sueltos"
+            " entre los racimos."
         )
     if str(armado["forma"]) in FORMAS_CON_CAIDA and caida is None:
         avisos.append(

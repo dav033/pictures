@@ -1169,6 +1169,8 @@ export interface PythonPlanResolutionInput {
   completarArmados?: boolean;
   pistasArmado?: PistaArmado[];
   completarArmadosDe?: string[];
+  /** Absent unless the caller passes it (ADR-0032): same byte-identical rule. */
+  completarArmadosGuirnalda?: boolean;
   requestId: string;
   correlationId: string;
   deadlineMs?: number;
@@ -1219,6 +1221,8 @@ export interface PythonPlanEditInput {
   completarPatrones: boolean;
   /** `BOUQUETS_ARMADO_V1`: the notice of a removed assembly says it is suggested again (ADR-0030). */
   completarArmados?: boolean;
+  /** `GUIRNALDAS_ARMADO_V1`: the same for a garland's assembly (ADR-0032). */
+  completarArmadosGuirnalda?: boolean;
   requestId: string;
   correlationId: string;
   deadlineMs?: number;
@@ -2198,6 +2202,7 @@ export async function llamarPythonPlanResolution(
     completarArmados,
     pistasArmado,
     completarArmadosDe,
+    completarArmadosGuirnalda,
     ...rest
   } = input;
   const operationBody = {
@@ -2211,6 +2216,7 @@ export async function llamarPythonPlanResolution(
     ...(completarArmados === undefined ? {} : { completar_armados: completarArmados }),
     ...(pistasArmado === undefined ? {} : { pistas_armado: pistasArmado }),
     ...(completarArmadosDe === undefined ? {} : { completar_armados_de: completarArmadosDe }),
+    ...(completarArmadosGuirnalda === undefined ? {} : { completar_armados_guirnalda: completarArmadosGuirnalda }),
   };
   const response = await llamarPythonOperacion(PYTHON_PLAN_RESOLUTION_PATH, PYTHON_PLAN_RESOLUTION_SCOPE, {
     ...rest,
@@ -2292,7 +2298,7 @@ export async function llamarPythonCatalogRecommendations(
  * is pure and has no effect to deduplicate.
  */
 export async function llamarPythonPlanEdit(input: PythonPlanEditInput): Promise<PythonPlanEditResult> {
-  const { plan, lineasBase, edicion, coloresVariante, completarPatrones, completarArmados, ...rest } = input;
+  const { plan, lineasBase, edicion, coloresVariante, completarPatrones, completarArmados, completarArmadosGuirnalda, ...rest } = input;
   const operationBody = {
     schema_version: "plan-edit.v1" as const,
     plan,
@@ -2305,6 +2311,7 @@ export async function llamarPythonPlanEdit(input: PythonPlanEditInput): Promise<
     completar_patrones: completarPatrones,
     // Absent unless the caller passes it: every other request stays byte-identical.
     ...(completarArmados === undefined ? {} : { completar_armados: completarArmados }),
+    ...(completarArmadosGuirnalda === undefined ? {} : { completar_armados_guirnalda: completarArmadosGuirnalda }),
   };
   const response = await llamarPythonOperacion(PYTHON_PLAN_EDIT_PATH, PYTHON_PLAN_EDIT_SCOPE, {
     ...rest,

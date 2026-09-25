@@ -12,7 +12,8 @@ export type FeatureFlag =
   | "AMBIENTE_FIESTA_V1"
   | "REFERENCIA_EN_ETAPA1_V1"
   | "PATRONES_COLOR_V1"
-  | "BOUQUETS_ARMADO_V1";
+  | "BOUQUETS_ARMADO_V1"
+  | "GUIRNALDAS_ARMADO_V1";
 
 export function featureEnabled(name: FeatureFlag): boolean {
   const raw = process.env[name];
@@ -51,6 +52,13 @@ export function featureEnabled(name: FeatureFlag): boolean {
     // que se compra. Apagada, los planes nuevos salen sin armado; uno que ya lo
     // trae lo conserva.
     if (name === "BOUQUETS_ARMADO_V1") return false;
+    // Default OFF (ADR-0032). Al confirmar un plan, Next pide
+    // `completar_armados_guirnalda` y cada guirnalda sin armado recibe su
+    // receta (soporte, racimos, relleno y remates), sin cambiar lo que se
+    // compra; tras una edición que se lo quita, la re-resolución se lo vuelve a
+    // sugerir solo a esa pieza. Apagada, los planes nuevos salen sin armado; uno
+    // que ya lo trae lo conserva.
+    if (name === "GUIRNALDAS_ARMADO_V1") return false;
     return true;
   }
   return raw === "1" || raw.toLowerCase() === "true" || raw.toLowerCase() === "on";

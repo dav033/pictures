@@ -273,6 +273,8 @@ export async function editarPlanPython(input: {
   completarPatrones: boolean;
   /** `BOUQUETS_ARMADO_V1`: the caller will ask the re-resolution to suggest the removed assembly again. */
   completarArmados?: boolean;
+  /** `GUIRNALDAS_ARMADO_V1`: the same for a garland's assembly (ADR-0032). */
+  completarArmadosGuirnalda?: boolean;
   correlationId: string;
   signal?: AbortSignal;
 }): Promise<{ plan: PlanDecoracion; avisos: string[] }> {
@@ -284,6 +286,7 @@ export async function editarPlanPython(input: {
       coloresVariante: input.coloresVariante,
       completarPatrones: input.completarPatrones,
       ...(input.completarArmados === undefined ? {} : { completarArmados: input.completarArmados }),
+      ...(input.completarArmadosGuirnalda === undefined ? {} : { completarArmadosGuirnalda: input.completarArmadosGuirnalda }),
       requestId: crypto.randomUUID(),
       correlationId: input.correlationId,
       deadlineMs: EDICION_PYTHON_DEADLINE_MS,
