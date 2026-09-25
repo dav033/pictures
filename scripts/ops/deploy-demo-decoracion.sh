@@ -29,6 +29,14 @@ if ! git merge-base --is-ancestor "$DEPLOY_SHA" origin/main; then
 fi
 git checkout "$DEPLOY_SHA" -- .
 
+# `git checkout <sha> -- .` adds and updates but never deletes: a file the
+# release removed stayed in the build context and broke the Next build
+# (2026-09-25). Drop every tracked file the release no longer has. Untracked
+# files (.env.production and its backups) are never touched. `-f` because
+# this checkout has no commit of its own: every tracked file counts as staged.
+comm -23 <(git ls-files | sort) <(git ls-tree -r --name-only "$DEPLOY_SHA" | sort) \
+  | xargs -r -d '\n' git rm -q -f --ignore-unmatch --
+
 docker build -t "$IMAGE" .
 
 docker stop demo-decoracion || true
