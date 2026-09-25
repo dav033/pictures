@@ -20,7 +20,7 @@ async function caso(nombre: string, fn: () => Promise<void> | void): Promise<voi
   console.log(`ok - ${nombre}`);
 }
 
-function mockChat(inventario: Record<string, unknown>, audit: "vacio" | "malformado"): ChatPort & { llamadas: () => number } {
+function mockChat(inventario: Record<string, unknown>): ChatPort & { llamadas: () => number } {
   let llamadas = 0;
   return {
     id: "gemini",
@@ -29,9 +29,7 @@ function mockChat(inventario: Record<string, unknown>, audit: "vacio" | "malform
     async turno(peticion: PeticionChat): Promise<TurnoChat> {
       llamadas += 1;
       const nombre = peticion.herramientas[0]!.nombre;
-      if (nombre === "return_reference_audit" && audit === "malformado") return { texto: "{roto", llamadas: [], uso: { entrada: 0, salida: 0 }, modelo: "mock-ejemplos" };
-      const args = nombre === "return_reference_inventory" ? inventario : { images: [{ image_id: "REF_01", elements: [] }] };
-      return { texto: "", llamadas: [{ nombre, args }], uso: { entrada: 0, salida: 0 }, modelo: "mock-ejemplos" };
+      return { texto: "", llamadas: [{ nombre, args: inventario }], uso: { entrada: 0, salida: 0 }, modelo: "mock-ejemplos" };
     },
     async *turnoStream() {
       throw new Error("not used");
@@ -58,7 +56,7 @@ async function run(): Promise<void> {
     // Known default box (Plan A F10). Removal condition: A7 merged (regenerates
     // the stored analysis, fixes E03 and replaces this list with a test that
     // forbids default boxes outright).
-    const EXCEPCIONES_CAJA_POR_DEFECTO = ["ejemplo-10/REF_01_E03"];
+    const EXCEPCIONES_CAJA_POR_DEFECTO: string[] = [];
     const encontradas = ANALISIS_EJEMPLOS.ejemplos.flatMap((ejemplo) =>
       ejemplo.resultado.blueprint.elements
         .filter(({ reference_bbox: caja }) => caja.x === 0.1 && caja.y === 0.1 && caja.width === 0.2 && caja.height === 0.2)
@@ -69,7 +67,7 @@ async function run(): Promise<void> {
 
   await caso("la foto de ejemplo sin recomprimir devuelve su análisis sin llamar al proveedor", async () => {
     const foto = MANIFIESTO_REFERENCIAS_EJEMPLO.fotos[0]!;
-    const chat = mockChat({ images: [] }, "vacio");
+    const chat = mockChat({ images: [] });
     const resultado = await analizarReferenciasV2(chat, [{ id: "REF_01", mime: "image/jpeg", base64: archivoEjemplo(foto.archivo), descripcion: "ejemplo" }], [], "perceptual");
     assert.equal(chat.llamadas(), 0);
     assert.equal(resultado.metadata.cached, true);
@@ -106,7 +104,7 @@ async function run(): Promise<void> {
   const fotoPrueba = () => ({ id: "REF_01", mime: "image/jpeg", base64: Buffer.from(`prueba-${Math.random()}`).toString("base64"), descripcion: "test" });
 
   await caso("box_2d [ymin, xmin, ymax, xmax] 0-1000 se convierte a reference_bbox normalizado", async () => {
-    const resultado = await analizarReferenciasV2(mockChat(inventario, "vacio"), [fotoPrueba()], [], "perceptual");
+    const resultado = await analizarReferenciasV2(mockChat(inventario), [fotoPrueba()], [], "perceptual");
     const columna = resultado.blueprint.elements.find((element) => element.name === "Left balloon column");
     assert.ok(columna);
     const caja = columna.reference_bbox;
@@ -117,7 +115,7 @@ async function run(): Promise<void> {
     const cajaDe = async (box2d: unknown): Promise<number[]> => {
       const [imagen] = inventario.images;
       const conCaja = { images: [{ ...imagen, elements: [{ ...imagen!.elements[0], box_2d: box2d }] }] };
-      const resultado = await analizarReferenciasV2(mockChat(conCaja, "vacio"), [fotoPrueba()], [], "perceptual");
+      const resultado = await analizarReferenciasV2(mockChat(conCaja), [fotoPrueba()], [], "perceptual");
       const columna = resultado.blueprint.elements.find((element) => element.name === "Left balloon column");
       assert.ok(columna, `sin elemento para ${JSON.stringify(box2d)}`);
       const caja = columna.reference_bbox;
@@ -134,11 +132,6 @@ async function run(): Promise<void> {
     // 0.1/0.1/0.2/0.2 box. Removal condition: A2.2a/A7 ("sin caja válida no se aprueba").
     assert.deepEqual(await cajaDe([0, 0, "x", 100]), [0.1, 0.1, 0.2, 0.2]);
     assert.deepEqual(await cajaDe([0, 0, 100]), [0.1, 0.1, 0.2, 0.2]);
-  });
-
-  await caso("una verificación mal formada deja el inventario en vez de tumbar el análisis", async () => {
-    const resultado = await analizarReferenciasV2(mockChat(inventario, "malformado"), [fotoPrueba()], [], "perceptual");
-    assert.ok(tieneEstructurasDeGlobos(ReferenceBlueprintV2Schema.parse(resultado.blueprint)));
   });
 
   console.log(`\n${casos} casos OK`);

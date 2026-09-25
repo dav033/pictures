@@ -1,0 +1,60 @@
+{
+  "advertencia": "Comparación direccional contra la carpeta elegida por una persona al capturar; no es exactitud contra verdad revisada.",
+  "imagenes": 34,
+  "corridas_ok": 34,
+  "global": {
+    "tasa_sin_estructura": 0,
+    "tasa_familia_presente": 0.9705882352941176,
+    "tasa_familia_principal": 0.9705882352941176,
+    "organico_detectado_en_carpetas_organicas": null,
+    "asimetrico_en_carpetas_regulares": 0,
+    "imagenes_con_familia_principal_inestable": 0
+  },
+  "por_clase": [
+    {
+      "clase": "arco",
+      "familia": "arco",
+      "imagenes": 12,
+      "corridas": 12,
+      "tasa_sin_estructura": 0,
+      "tasa_familia_presente": 0.9166666666666666,
+      "tasa_familia_principal": 0.9166666666666666,
+      "tasa_contorno_asimetrico": 0,
+      "tasa_densidad_airy": 0,
+      "se_espera_organica": false
+    },
+    {
+      "clase": "columna",
+      "familia": "columna",
+      "imagenes": 22,
+      "corridas": 22,
+      "tasa_sin_estructura": 0,
+      "tasa_familia_presente": 1,
+      "tasa_familia_principal": 1,
+      "tasa_contorno_asimetrico": 0,
+      "tasa_densidad_airy": 0,
+      "se_espera_organica": false
+    }
+  ],
+  "confusion_familia_carpeta_vs_principal": {
+    "arco": {
+      "arco": 11,
+      "semiarco": 1
+    },
+    "columna": {
+      "columna": 22
+    }
+  },
+  "tipos_detector_por_clase": {
+    "arco": {
+      "arch": 11,
+      "half_arch": 1,
+      "sculpture": 1,
+      "bouquet": 1
+    },
+    "columna": {
+      "column": 45
+    }
+  },
+  "imagenes_inestables": []
+}

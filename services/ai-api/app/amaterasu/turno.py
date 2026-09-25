@@ -3,21 +3,20 @@
 TypeScript (`src/lib/ia/amaterasu/analizar-referencias-v2.ts`) still owns
 everything that is not a network call to the provider: the in-memory
 cache/in-flight dedupe, the fixed gallery examples, the retry-on-malformed
-loop across the "inventory" and "audit" passes, `buildBlueprint`,
+loop of the inventory pass (the only pass since ADR-0029), `buildBlueprint`,
 `catalogFallback`, `resolveBillOfMaterials`, and the measured color-dominance
 enrichment. This module makes exactly one non-streaming, tool-calling Gemini
 turn -- the same primitive `ChatPort.turno()` already is in TypeScript
 (`packages/agente-core/src/gemini/chat.ts`), scoped to the single-user-message
-shape Amaterasu actually sends (no assistant/tool history: each pass is one
-fresh call). Migration context:
+shape Amaterasu actually sends (no assistant/tool history: each call is
+fresh). Migration context:
 docs/architecture/decisions/0026-migrar-las-ias-a-python.md.
 
 Known, accepted difference from the TypeScript path: the JS `ChatPort`
-instance dedupes image bytes across the inventory and audit passes of one
-analysis (a `WeakSet` scoped to that one `ChatPort`, see chat.ts). This
-module has no such session, so both passes resend full image bytes -- more
-bandwidth per Python-path analysis, not a behavior change: the model still
-sees the same images either way.
+instance dedupes image bytes across the calls of one analysis (a `WeakSet`
+scoped to that one `ChatPort`, see chat.ts). This module has no such
+session, so a retried inventory resends full image bytes -- more bandwidth,
+not a behavior change: the model still sees the same images either way.
 """
 
 from __future__ import annotations
@@ -38,8 +37,7 @@ MAX_IMAGES = 3
 MAX_IMAGE_BASE64_CHARS = 15_000_000
 MAX_TOOLS = 2
 # Text caps only guard against absurd input; the real ceiling is the 11MB body
-# cap. The audit pass embeds the whole draft inventory in `message`, and the
-# catalog mode appends the full valid-product list to the system prompt, so a
+# cap. The catalog mode appends the full valid-product list to the system prompt, so a
 # tight cap here rejected legitimate turns the direct TypeScript path accepts.
 MAX_TEXT_CHARS = 400_000
 
@@ -166,7 +164,7 @@ async def ejecutar_turno_gemini(
     client_factory: Callable[[str], object] | None = None,
 ) -> dict[str, object]:
     """Makes the one Gemini tool-calling turn `analizarReferenciasV2`'s
-    inventory and audit passes used to make directly from TypeScript (via
+    inventory pass used to make directly from TypeScript (via
     `ChatPort.turno`). Raises ReferenceTurnError on any provider failure --
     the caller (TypeScript's `pasoConHerramienta`) already retries a
     malformed answer on its own, so this never retries internally.

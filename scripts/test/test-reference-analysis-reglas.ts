@@ -6,11 +6,11 @@ import type { ChatPort, Herramienta, PeticionChat, TurnoChat } from "@/lib/ia/nu
 
 /**
  * Deterministic normalization rules of the reference analysis (auditoría
- * 2026-09-14, hallazgos #2, #7, #8, #9, #11–#16, #19, #22 and the UI
+ * 2026-09-14, hallazgos #2, #7, #9, #11–#16, #19, #22 and the UI
  * contract). The provider is mocked: no network, no key.
  */
 
-type Respuestas = { inventory: Record<string, unknown>; audit?: Record<string, unknown> };
+type Respuestas = { inventory: Record<string, unknown> };
 
 function mockChat(respuestas: Respuestas, opciones: { retrasoMs?: number; peticiones?: PeticionChat[] } = {}): ChatPort & { llamadas: () => number } {
   let llamadas = 0;
@@ -28,7 +28,8 @@ function mockChat(respuestas: Respuestas, opciones: { retrasoMs?: number; petici
         });
       }
       const nombre = peticion.herramientas[0]!.nombre;
-      const args = nombre === "return_reference_inventory" ? respuestas.inventory : respuestas.audit ?? { images: [{ image_id: "REF_01", elements: [] }] };
+      assert.equal(nombre, "return_reference_inventory", "the analysis has one inventory pass (ADR-0029)");
+      const args = respuestas.inventory;
       return { texto: "", llamadas: [{ nombre, args }], uso: { entrada: 0, salida: 0 }, modelo: "mock-reglas" };
     },
     async *turnoStream() {
@@ -51,8 +52,8 @@ function elemento(name: string, extra: Record<string, unknown>): Record<string, 
   return { name, detection_confidence: 0.9, visible_evidence: `${name} visible`, reference_bbox: { x: 0.1, y: 0.1, width: 0.3, height: 0.6 }, composition_relevance: "essential", model_decision: { action: "include", match_type: "none", reason: "r", adaptation: "a" }, ...extra };
 }
 
-async function analizar(elements: Array<Record<string, unknown>>, audit?: Array<Record<string, unknown>>): Promise<ReferenceBlueprintV2> {
-  const chat = mockChat({ inventory: inventario(elements), audit: audit ? { images: [{ image_id: "REF_01", elements: audit }] } : undefined });
+async function analizar(elements: Array<Record<string, unknown>>): Promise<ReferenceBlueprintV2> {
+  const chat = mockChat({ inventory: inventario(elements) });
   const result = await analizarReferenciasV2(chat, [foto()], [], "perceptual");
   return ReferenceBlueprintV2Schema.parse(result.blueprint);
 }
@@ -105,20 +106,11 @@ async function run(): Promise<void> {
     assert.equal(por(cortina, "Black drapes").category, "curtain");
   });
 
-  await caso("#8 F10: hallazgos del verificador con confianza baja o duplicados no se aprueban", async () => {
-    const nube = (name: string, x: number, width: number, confidence = 0.9) => elemento(name, { category: "balloon_structure", detection_confidence: confidence, reference_bbox: { x, y: 0.02, width, height: 0.25 }, structure: { structure_type: "ceiling_installation", horizontal_position: "center" } });
-    const blueprint = await analizar(
-      [nube("Left Ceiling Balloon Cloud", 0.02, 0.3), nube("Center Ceiling Balloon Cloud", 0.35, 0.3)],
-      [
-        nube("Right Ceiling Balloon Cloud", 0.55, 0.4, 0.49),
-        nube("Left-center balloon cloud", 0.2, 0.3, 0.85),
-        elemento("Gold sequin backdrop", { category: "backdrop", detection_confidence: 0.9, reference_bbox: { x: 0.2, y: 0.4, width: 0.6, height: 0.5 } }),
-      ],
-    );
-    assert.equal(por(blueprint, "Right Ceiling Balloon Cloud").approved, false, "confianza 0,49 no se aprueba");
-    assert.equal(por(blueprint, "Left-center balloon cloud").approved, false, "misma categoría y tipo con solape es duplicado");
-    assert.equal(por(blueprint, "Gold sequin backdrop").approved, true, "un hallazgo nuevo y seguro del verificador sí se aprueba");
-    assert.equal(blueprint.elements.filter((element) => element.approved && element.category === "balloon_structure").length, 2);
+  await caso("ADR-0029: el análisis hace una sola llamada al proveedor (sin pasada de auditoría)", async () => {
+    const chat = mockChat({ inventory: inventario([elemento("Balloon arch", { category: "balloon_structure", structure: { structure_type: "arch" } })]) });
+    const result = await analizarReferenciasV2(chat, [foto()], [], "perceptual");
+    assert.equal(chat.llamadas(), 1);
+    assert.deepEqual(result.metadata.passes, ["inventory"]);
   });
 
   await caso("#9 una pieza full_width con evidencia izquierda/derecha son dos piezas con su recuadro", async () => {
@@ -198,12 +190,9 @@ async function run(): Promise<void> {
     assert.equal(por(columnas, "Two balloon columns").quantity.min, 2, "its own plural still counts");
   });
 
-  await caso("revisión: el merge del verificador no deja una estructura de globos aprobada sin tipo", async () => {
+  await caso("revisión: una estructura de globos sin tipo nunca queda aprobada", async () => {
     const caja = { x: 0.2, y: 0.2, width: 0.4, height: 0.5 };
-    const blueprint = await analizar(
-      [elemento("Colorful decoration", { category: "other", reference_bbox: caja })],
-      [elemento("Balloon decoration", { category: "balloon_structure", reference_bbox: caja })],
-    );
+    const blueprint = await analizar([elemento("Colorful decoration", { category: "balloon_structure", reference_bbox: caja })]);
     const pieza = blueprint.elements[0]!;
     assert.ok(!(pieza.approved && pieza.category === "balloon_structure" && !pieza.visual_semantics), JSON.stringify({ approved: pieza.approved, category: pieza.category }));
     assert.equal(tieneEstructurasDeGlobos(blueprint), false);
@@ -259,12 +248,12 @@ async function run(): Promise<void> {
     const primero = mockChat({ inventory: inventario([]) });
     const a = await analizarReferenciasV2(primero, [referencia], [], "perceptual");
     const b = await analizarReferenciasV2(primero, [referencia], [], "perceptual");
-    assert.equal(primero.llamadas(), 2, "inventario + auditoría una sola vez");
+    assert.equal(primero.llamadas(), 1, "el inventario una sola vez");
     assert.equal(a.metadata.cached, false);
     assert.equal(b.metadata.cached, true);
     const segundo = mockChat({ inventory: inventario([elemento("Balloon arch", { category: "balloon_structure", structure: { structure_type: "arch" } })]) });
     const forzado = await analizarReferenciasV2(segundo, [referencia], [], "perceptual", undefined, undefined, { forzarNuevoAnalisis: true });
-    assert.equal(segundo.llamadas(), 2, "reintentar vuelve a llamar al proveedor");
+    assert.equal(segundo.llamadas(), 1, "reintentar vuelve a llamar al proveedor");
     assert.equal(forzado.metadata.cached, false);
     assert.equal(forzado.tieneEstructurasDeGlobos, true);
     const despues = await analizarReferenciasV2(segundo, [referencia], [], "perceptual");
@@ -279,7 +268,7 @@ async function run(): Promise<void> {
       analizarReferenciasV2(chat, [referencia], [], "perceptual"),
       analizarReferenciasV2(chat, [referencia], [], "perceptual", undefined, undefined, { forzarNuevoAnalisis: true }),
     ]);
-    assert.equal(chat.llamadas(), 2, "una sola ejecución (inventario + auditoría)");
+    assert.equal(chat.llamadas(), 1, "una sola ejecución");
     assert.deepEqual(x.blueprint, y.blueprint);
 
     const otra = foto();
@@ -291,7 +280,7 @@ async function run(): Promise<void> {
     await assert.rejects(p1, /CLIENT_CANCELLED/);
     const sigue = await p2;
     assert.equal(sigue.tieneElementos, false);
-    assert.equal(lento.llamadas(), 2);
+    assert.equal(lento.llamadas(), 1);
 
     const sola = foto();
     const abandonado = mockChat({ inventory: inventario([]) }, { retrasoMs: 40 });
@@ -300,7 +289,7 @@ async function run(): Promise<void> {
     unico.abort(new Error("CLIENT_CANCELLED"));
     await assert.rejects(p3, /CLIENT_CANCELLED/);
     await new Promise((resolve) => setTimeout(resolve, 60));
-    assert.equal(abandonado.llamadas(), 1, "sin nadie esperando, la llamada compartida se cancela y no sigue a la auditoría");
+    assert.equal(abandonado.llamadas(), 1, "sin nadie esperando, la llamada compartida se cancela");
   });
 
   console.log(`[PASS] ${casos} reglas deterministas del análisis de referencia`);
