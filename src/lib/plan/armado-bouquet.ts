@@ -23,7 +23,8 @@ export const UNIDADES_BOUQUET = ["suelto", "pareja", "trio", "cuarteto", "quinte
 export type UnidadBouquet = (typeof UNIDADES_BOUQUET)[number];
 export const ROLES_NIVEL_BOUQUET = ["base", "cuerpo", "capa", "alrededor", "acento", "relleno"] as const;
 export type RolNivelBouquet = (typeof ROLES_NIVEL_BOUQUET)[number];
-export const DISPOSICIONES_NUMERO = ["centro", "lados", "arriba"] as const;
+/** Dónde van los globos número: al centro, uno a cada lado (un bouquet por dígito), arriba como remate o abajo, en la base. */
+export const DISPOSICIONES_NUMERO = ["centro", "lados", "arriba", "abajo"] as const;
 export type DisposicionNumero = (typeof DISPOSICIONES_NUMERO)[number];
 export const ORIGENES_ARMADO = ["decorador", "referencia", "sugerido"] as const;
 export const TIPOS_GLOBO_BOUQUET = ["latex", "metalizado", "burbuja", "numero"] as const;

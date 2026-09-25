@@ -404,7 +404,8 @@
                     "enum": [
                       "centro",
                       "lados",
-                      "arriba"
+                      "arriba",
+                      "abajo"
                     ]
                   },
                   "confianza": {

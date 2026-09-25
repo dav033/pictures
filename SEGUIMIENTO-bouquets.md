@@ -209,6 +209,10 @@ Si algo de la lectura no se compra, regla de siempre. ADR-0030 decisión 4
 enmendada. También `allowedDevOrigins` admite `127.0.0.1` (la app abierta por la
 IP quedaba sin JavaScript en desarrollo).
 
+Después, disposición **abajo** para los números (de pie en la base, como en la
+foto del "80"): contrato, reglas, lectura de la foto, prompt de imagen, gráfica
+y editor. Abajo los números no flotan: no entran en la pesa, las cintas ni el helio.
+
 ### Pendiente inmediato
 
 0. **Revisar y mezclar el PR #2.** Nota: gitleaks marcó dos falsos positivos en

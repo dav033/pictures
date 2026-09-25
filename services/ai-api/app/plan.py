@@ -299,7 +299,7 @@ class PistaArmado(ContractModel):
     niveles: list[NivelLeido] = Field(max_length=8)
     remate: RemateLeido | None = None
     numeros: list[NumeroLeido] | None = Field(default=None, max_length=3)
-    disposicion: Literal["centro", "lados", "arriba"] | None = None
+    disposicion: Literal["centro", "lados", "arriba", "abajo"] | None = None
     confianza: float = Field(ge=0, le=1)
 
 

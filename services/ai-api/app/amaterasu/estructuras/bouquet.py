@@ -39,7 +39,7 @@ VARIANTES = ("base_aire", "helio_apilado", "helio_escalonado")
 UNIDADES = tuple(GLOBOS_POR_UNIDAD)
 CLASES_REMATE = ("metalizado", "burbuja", "latex")
 CLASES_TAMANO_NUMERO = ("chico", "grande")
-DISPOSICIONES = ("centro", "lados", "arriba")
+DISPOSICIONES = ("centro", "lados", "arriba", "abajo")
 MAX_NIVELES = 8
 MAX_NUMEROS = 3
 
@@ -60,7 +60,7 @@ niveles: the latex levels from the bottom up (for a helium bouquet, from the low
 remate: the balloon on top or at the center that is not part of a latex level: clase "metalizado" (a foil shape such as a heart or a star), "burbuja" (a clear bubble balloon, possibly with confetti or small balloons inside) or "latex" (one large latex balloon), and its color.
 
 numeros: foil number balloons in the piece, in reading order: digito (0 to 9) and clase_tamano "chico" (about the size of a regular balloon, usually on a stick) or "grande" (much taller than the other balloons). Omit when there are none.
-disposicion: where the numbers are: "centro" (in the middle of the bouquet), "arriba" (on top, as the topper) or "lados" (one number on each side, each with its own group of balloons). Omit when there are no numbers.
+disposicion: where the numbers are: "centro" (in the middle of the bouquet), "arriba" (on top, as the topper), "abajo" (standing at the bottom, at the base or on the floor, with the balloons above them) or "lados" (one number on each side, each with its own group of balloons). Omit when there are no numbers.
 
 Colors: use ONLY these catalog color names, spelled exactly as written: {", ".join(paleta)}. Map what you see to the closest of these names (light pink is rosado, chrome or metallic gold is dorado, clear is transparente). Never write any other color name.
 

@@ -333,7 +333,7 @@ class PlanArmadoRequest(OperationalRequest):
     armado_bouquet: dict[str, object] | None
     globos: list[GloboNavegador] = Field(min_length=1, max_length=MAX_GLOBOS_PIEZA)
     variante: Literal["base_aire", "helio_apilado", "helio_escalonado"] | None = None
-    disposicion: Literal["centro", "lados", "arriba"] | None = None
+    disposicion: Literal["centro", "lados", "arriba", "abajo"] | None = None
 
     @field_validator("armado_bouquet")
     @classmethod

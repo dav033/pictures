@@ -35,7 +35,9 @@ repartido entre prompts y módulos sin un lugar por tipo.
    (Plan 1.0 y 1.1). Variante (`base_aire`, `helio_apilado`, `helio_escalonado`),
    niveles de abajo hacia arriba en unidades Sempertex (suelto, pareja, trío,
    cuarteto, quinteto, sexteto) con el color de cada posición por índice de
-   material, remate y números (dígitos y disposición: centro, lados o arriba). Con
+   material, remate y números (dígitos y disposición: centro, lados, arriba o,
+   desde el 2026-09-25, abajo: de pie en la base con los globos encima, sin
+   flotar ni pesar). Con
    `lados` hay un grupo por dígito. Ausente, la resolución es byte a byte la de
    siempre.
 4. **El armado nunca cambia lo que se compra, salvo la foto al confirmar.** Las

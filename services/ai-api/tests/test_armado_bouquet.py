@@ -290,9 +290,9 @@ def test_la_compra_dice_que_estilos_y_disposiciones_admite() -> None:
     aire = _estructura([_latex(12, "blanco"), _latex(5, "rosado")], [8, 3])
     assert variantes_admitidas(aire) == ["base_aire"]
     dos_digitos = _estructura([_latex(12, "blanco"), _numero("2"), _numero("5")], [4, 1, 1])
-    assert disposiciones_admitidas(dos_digitos) == ["centro", "lados", "arriba"]
+    assert disposiciones_admitidas(dos_digitos) == ["centro", "lados", "arriba", "abajo"]
     impar = _estructura([_latex(12, "blanco"), _numero("2"), _numero("5")], [5, 1, 1])
-    assert disposiciones_admitidas(impar) == ["centro", "arriba"]
+    assert disposiciones_admitidas(impar) == ["centro", "arriba", "abajo"]
     assert variantes_admitidas(_estructura([_latex(12, "blanco"), _globo("Vela")], [6, 1])) == []
 
 
@@ -433,3 +433,17 @@ def test_la_foto_con_latex_chico_baja_a_base_de_aire() -> None:
     compra = compra_desde_lectura(estructura, lectura)
     assert compra is not None and compra.armado["variante"] == "base_aire"
     assert compra.armado["niveles"][0]["rol"] == "base"  # type: ignore[index]
+
+
+def test_los_numeros_abajo_van_de_pie_y_no_flotan() -> None:
+    estructura = _estructura([_latex(12, "blanco"), _numero("8"), _numero("0")], [3, 1, 1])
+    abajo = sugerir_armado(estructura, disposicion="abajo")
+    assert abajo is not None and abajo["numero"] == {"digitos": [1, 2], "disposicion": "abajo"}
+    resuelto = armado_resuelto(estructura, abajo)
+    pesa = next(i for i in resuelto["insumos"] if i["insumo"] == "pesa")  # type: ignore[union-attr]
+    cintas = next(i for i in resuelto["insumos"] if i["insumo"] == "cinta")  # type: ignore[union-attr]
+    # Solo los tres látex de 12" flotan (3 × 12 g); los números quedan de pie en la base.
+    assert "36 g" in pesa["detalle"] and cintas["cantidad"] == 3
+    assert "de pie en la base" in " ".join(resuelto["pasos"])  # type: ignore[arg-type]
+    assert "standing at the base" in str(resuelto["prompt_gemini"])
+    assert str(resuelto["prompt_lora"]).endswith("standing at the base")

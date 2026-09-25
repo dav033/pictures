@@ -554,7 +554,8 @@
                         "enum": [
                           "centro",
                           "lados",
-                          "arriba"
+                          "arriba",
+                          "abajo"
                         ]
                       },
                       "confianza": {
@@ -2040,7 +2041,8 @@
                             "enum": [
                               "centro",
                               "lados",
-                              "arriba"
+                              "arriba",
+                              "abajo"
                             ]
                           }
                         },

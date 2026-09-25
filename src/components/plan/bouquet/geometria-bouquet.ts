@@ -141,14 +141,17 @@ function dibujarGrupo(entrada: EntradaDibujoBouquet, grupo: number, siguienteOrd
     techo = centroY - RADIO_REMATE - HUECO;
   }
 
-  // Números: al centro (delante), arriba del remate, o uno por grupo a los lados.
+  // Números: al centro (delante), arriba del remate, abajo en la base, o uno por grupo a los lados.
+  const abajo = entrada.numero?.disposicion === "abajo";
+  // Abajo: los números van de pie bajo el primer nivel; la pesa o la base bajan con ellos.
+  const sueloNumeros = abajo ? RADIO * 0.6 + RADIO_NUMERO : 0;
   if (entrada.numero) {
     const { codigos, disposicion } = entrada.numero;
     const propios = disposicion === "lados" && entrada.grupos > 1
       ? codigos.map((codigo, indice) => ({ codigo, indice })).filter(({ indice }) => indice === grupo)
       : codigos.map((codigo, indice) => ({ codigo, indice }));
     const paso = ANCHO_NUMERO + HUECO;
-    const centroY = disposicion === "arriba" ? techo - RADIO_NUMERO : techoNiveles / 2;
+    const centroY = disposicion === "arriba" ? techo - RADIO_NUMERO : disposicion === "abajo" ? sueloNumeros : techoNiveles / 2;
     propios.forEach(({ codigo, indice }, posicion) => {
       globos.push({
         clave: `g${grupo}-d${indice}`,
@@ -168,14 +171,18 @@ function dibujarGrupo(entrada: EntradaDibujoBouquet, grupo: number, siguienteOrd
   }
 
   if (helio) {
-    const pesa = { x: 0, y: RADIO * 3.2 };
-    for (const globo of globos) lineas.push({ x1: globo.x, y1: globo.y + globo.r, x2: pesa.x, y2: pesa.y - RADIO * 0.6 });
+    const pesa = { x: 0, y: abajo ? sueloNumeros + RADIO_NUMERO + RADIO * 1.6 : RADIO * 3.2 };
+    for (const globo of globos) {
+      // Abajo, los números no cuelgan de una cinta: van de pie junto a la pesa.
+      if (abajo && "digito" in globo.posicion) continue;
+      lineas.push({ x1: globo.x, y1: globo.y + globo.r, x2: pesa.x, y2: pesa.y - RADIO * 0.6 });
+    }
     return { globos, lineas, pesa, base: null };
   }
-  const base = { x: 0, y: RADIO * 0.4, ancho: Math.max(anchoMaximo, RADIO * 4) + RADIO * 1.5 };
-  // Varillas: del remate y de los números hasta el nivel más alto.
+  const base = { x: 0, y: abajo ? sueloNumeros + RADIO_NUMERO + RADIO * 0.4 : RADIO * 0.4, ancho: Math.max(anchoMaximo, RADIO * 4) + RADIO * 1.5 };
+  // Varillas: del remate y de los números hasta el nivel más alto (los números de abajo van de pie en la base).
   for (const globo of globos) {
-    if ("nivel" in globo.posicion) continue;
+    if ("nivel" in globo.posicion || (abajo && "digito" in globo.posicion)) continue;
     lineas.push({ x1: globo.x, y1: globo.y + globo.r, x2: globo.x, y2: techoNiveles + RADIO * 1.2 });
   }
   return { globos, lineas, pesa: null, base };

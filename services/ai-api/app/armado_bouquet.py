@@ -63,7 +63,7 @@ CONFIANZA_MINIMA_LECTURA = 0.5
 MAX_NIVELES = 8
 MAX_REMATE = 4
 VARIANTES = ("base_aire", "helio_apilado", "helio_escalonado")
-DISPOSICIONES = ("centro", "lados", "arriba")
+DISPOSICIONES = ("centro", "lados", "arriba", "abajo")
 
 GLOBOS_POR_UNIDAD: Mapping[str, int] = {
     "suelto": 1,
@@ -759,6 +759,7 @@ _DISPOSICION_ES = {
     "centro": "al centro del bouquet",
     "lados": "uno a cada lado, cada uno con su propio bouquet",
     "arriba": "arriba, como remate",
+    "abajo": "abajo, de pie en la base, con los globos encima",
 }
 
 
@@ -819,6 +820,7 @@ _DISPOSICION_EN = {
     "centro": "at the center of the bouquet",
     "lados": "one on each side, each with its own bouquet",
     "arriba": "on top, as the topper",
+    "abajo": "at the bottom, standing at the base with the balloons rising above them",
 }
 _VARIANTE_EN = {
     "base_aire": (
@@ -943,9 +945,12 @@ def _frases_prompt(
         lora += " topped by " + lista_en([_globo_en(g, lora=True) for g in remate])
     if digitos and isinstance(numero, Mapping):
         lora += " with " + lista_en([_globo_en(g, lora=True) for g in digitos])
-        lora += {"centro": " at the center", "lados": " one on each side", "arriba": " on top"}[
-            str(numero["disposicion"])
-        ]
+        lora += {
+            "centro": " at the center",
+            "lados": " one on each side",
+            "arriba": " on top",
+            "abajo": " standing at the base",
+        }[str(numero["disposicion"])]
     return " ".join(frases), lora
 
 
@@ -1008,7 +1013,9 @@ def armado_resuelto(
     if helio:
         # Con "lados" cada grupo lleva un solo dígito.
         digitos_grupo = digitos[:1] if grupos > 1 else digitos
-        flotantes = globos_grupo + [materiales[i] for i in digitos_grupo]
+        # Abajo, los números van de pie en la base: no flotan ni pesan.
+        abajo = isinstance(numero, Mapping) and numero.get("disposicion") == "abajo"
+        flotantes = globos_grupo + ([] if abajo else [materiales[i] for i in digitos_grupo])
         datos = [(m, _helio_de(m)) for m in flotantes]
         peso = sum(h.peso_g for _, h in datos if h is not None)
         gas = sum(h.gas_m3 for _, h in datos if h is not None) * grupos * reps

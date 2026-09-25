@@ -84,6 +84,7 @@ export const ETIQUETA_DISPOSICION: Readonly<Record<DisposicionNumero, string>> =
   centro: "Al centro",
   lados: "A los lados",
   arriba: "Arriba",
+  abajo: "Abajo",
 };
 
 export const NOMBRE_UNIDAD: Readonly<Record<UnidadBouquet, { singular: string; plural: string }>> = {
