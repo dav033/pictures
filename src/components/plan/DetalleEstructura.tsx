@@ -30,7 +30,9 @@ import { BalanceTamanos } from "./BalanceTamanos";
 import type { PendientesAjustes } from "./cola-ajustes";
 import type { CajaNormalizada } from "@/components/referencia/recorte";
 import type { PatronColorResuelto } from "@/lib/plan/patron-color";
+import type { ArmadoBouquetResuelto } from "@/lib/plan/armado-bouquet";
 import { BloquePatron } from "./patron/BloquePatron";
+import { BloqueBouquet } from "./bouquet/BloqueBouquet";
 import type { VistasEnVivo } from "./vistas-en-vivo";
 import type { ColorLeyenda } from "./patron/leyenda";
 
@@ -77,6 +79,21 @@ type Props = {
   patron?: {
     /** The plan's applied pattern. */
     resuelto?: PatronColorResuelto;
+    leyenda: readonly ColorLeyenda[];
+    onEditar?: () => void;
+    onHojaArmado?: () => void;
+    /** Other edits are still saving: the editor opens once the plan they sign is in. */
+    ocupado?: boolean;
+  };
+  /**
+   * Bouquet assembly block (ADR-0030): Python's resolved assembly, its
+   * numbered legend and the ways into the editor and the assembly sheet.
+   * Only for bouquets; a bouquet never carries a pattern, so at most one of
+   * the two blocks shows.
+   */
+  armado?: {
+    /** The plan's assembly for this bouquet. */
+    resuelto?: ArmadoBouquetResuelto;
     leyenda: readonly ColorLeyenda[];
     onEditar?: () => void;
     onHojaArmado?: () => void;
@@ -203,7 +220,7 @@ function CantidadTexto({ texto }: { texto: string }) {
 export function DetalleEstructura({
   idBase, estructura, declarada, oficial, abierto, onAlternar, recorte, lineas, imagenDe, fotoAusente, sumaCop,
   editable, onAgregar, onEditar, onQuitar, puedeQuitar, onVerProducto, extraLinea, modoDev = false,
-  onRepartir, onCambiarMezcla, ocupado = false, pendientes, patron, vistaReparto,
+  onRepartir, onCambiarMezcla, ocupado = false, pendientes, patron, armado, vistaReparto,
 }: Props) {
   const reducir = useReducedMotion();
   const [familiasAbiertas, setFamiliasAbiertas] = useState<ReadonlySet<string>>(() => new Set());
@@ -323,6 +340,18 @@ export function DetalleEstructura({
               onEditar={patron.onEditar}
               onHojaArmado={patron.onHojaArmado}
               ocupado={ocupado || Boolean(patron.ocupado)}
+              modoDev={modoDev}
+            />
+          )}
+
+          {armado && (
+            <BloqueBouquet
+              resuelto={armado.resuelto}
+              leyenda={armado.leyenda}
+              nombrePieza={nombreVisible}
+              onEditar={armado.onEditar}
+              onHojaArmado={armado.onHojaArmado}
+              ocupado={ocupado || Boolean(armado.ocupado)}
               modoDev={modoDev}
             />
           )}

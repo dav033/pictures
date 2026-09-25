@@ -8,6 +8,7 @@ import {
   type PythonPatronReferenciaPista,
 } from "@/lib/ia/nucleo/python-adapter";
 import type { ImagenEtiquetada } from "@/lib/ia/nucleo/tipos";
+import { crearCacheLectura, leerCompartido, type CacheLectura } from "./deteccion-compartida";
 import { ReferenceBlueprintV2Schema, type PatronColorReferencia, type ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 
 /**
@@ -29,10 +30,6 @@ import { ReferenceBlueprintV2Schema, type PatronColorReferencia, type ReferenceB
 const MAX_ELEMENTOS_POR_FOTO = 12;
 /** Techo propio de la detección: va después del análisis, dentro del mismo `maxDuration` de la ruta. */
 export const DEADLINE_PATRON_REFERENCIA_MS = 25_000;
-/** Con menos tiempo que esto antes del vencimiento de la ruta no vale la pena llamar. */
-const DEADLINE_MINIMO_MS = 3_000;
-/** Holgura para serializar y responder después de la detección. */
-const HOLGURA_RESPUESTA_MS = 2_000;
 
 type MimeFoto = PythonPatronReferenciaInput["imagen"]["mimeType"];
 const MIMES: ReadonlySet<string> = new Set<MimeFoto>(["image/png", "image/jpeg", "image/webp"]);
@@ -50,19 +47,10 @@ function esMimeFoto(mime: string): mime is MimeFoto {
  * Vive en el proceso de Next: un despliegue (app y `ai-api` juntos) la vacía.
  * Solo guarda respuestas válidas de Python; un fallo se vuelve a intentar.
  */
-export type CacheDeteccionPatron = {
-  resultados: Map<string, readonly PythonPatronReferenciaPista[]>;
-  enVuelo: Map<string, DeteccionEnVuelo>;
-  maximo: number;
-};
+export type CacheDeteccionPatron = CacheLectura<PythonPatronReferenciaPista>;
 
-type DeteccionEnVuelo = { promesa: Promise<readonly PythonPatronReferenciaPista[]>; controlador: AbortController; esperando: number };
-
-/** Fotos distintas que se recuerdan, como `MAX_CACHE` del análisis. */
-const MAX_DETECCIONES_EN_CACHE = 40;
-
-export function crearCacheDeteccionPatron(maximo = MAX_DETECCIONES_EN_CACHE): CacheDeteccionPatron {
-  return { resultados: new Map(), enVuelo: new Map(), maximo };
+export function crearCacheDeteccionPatron(maximo?: number): CacheDeteccionPatron {
+  return crearCacheLectura<PythonPatronReferenciaPista>(maximo);
 }
 
 const CACHE_DEL_PROCESO = crearCacheDeteccionPatron();
@@ -129,12 +117,6 @@ export function adjuntarPistasPatron(blueprint: ReferenceBlueprintV2, pistas: re
   };
 }
 
-function deadlineDeteccion(vencimiento: number | undefined): number | undefined {
-  if (vencimiento === undefined) return DEADLINE_PATRON_REFERENCIA_MS;
-  const restante = vencimiento - Date.now() - HOLGURA_RESPUESTA_MS;
-  return restante < DEADLINE_MINIMO_MS ? undefined : Math.min(DEADLINE_PATRON_REFERENCIA_MS, restante);
-}
-
 function registrarOmision(contexto: ContextoDeteccionPatron, imageId: string, motivo: Record<string, unknown>): void {
   console.warn("[references/analyze] detección de patrón omitida", JSON.stringify({
     request_id: contexto.requestId,
@@ -149,125 +131,46 @@ function claveDeteccion(referencia: ImagenEtiquetada & { mime: MimeFoto }, eleme
   return createHash("sha256").update(referencia.mime).update("\0").update(referencia.base64).update("\0").update(JSON.stringify(elementos)).digest("hex");
 }
 
-function guardarDeteccion(cache: CacheDeteccionPatron, clave: string, pistas: readonly PythonPatronReferenciaPista[]): void {
-  cache.resultados.delete(clave);
-  if (cache.resultados.size >= cache.maximo) cache.resultados.delete(cache.resultados.keys().next().value!);
-  cache.resultados.set(clave, pistas);
-}
-
-function motivoAborto(signal: AbortSignal): unknown {
-  return signal.reason ?? new Error("CLIENT_CANCELLED");
-}
-
-/**
- * Espera la detección compartida. Si esta petición se cancela, deja de
- * esperarla; la llamada a Python solo se cancela cuando ya nadie la espera.
- */
-function esperarDeteccion(cache: CacheDeteccionPatron, clave: string, entrada: DeteccionEnVuelo, signal: AbortSignal | undefined): Promise<readonly PythonPatronReferenciaPista[]> {
-  if (signal?.aborted) {
-    if (entrada.esperando === 0) {
-      if (cache.enVuelo.get(clave) === entrada) cache.enVuelo.delete(clave);
-      entrada.controlador.abort(motivoAborto(signal));
-    }
-    return Promise.reject(motivoAborto(signal));
-  }
-  entrada.esperando += 1;
-  return new Promise((resolve, reject) => {
-    let listo = false;
-    const alCancelar = () => {
-      if (listo) return;
-      listo = true;
-      entrada.esperando -= 1;
-      if (entrada.esperando === 0) {
-        if (cache.enVuelo.get(clave) === entrada) cache.enVuelo.delete(clave);
-        entrada.controlador.abort(motivoAborto(signal!));
-      }
-      reject(motivoAborto(signal!));
-    };
-    signal?.addEventListener("abort", alCancelar, { once: true });
-    entrada.promesa.then(
-      (pistas) => {
-        if (listo) return;
-        listo = true;
-        entrada.esperando -= 1;
-        signal?.removeEventListener("abort", alCancelar);
-        resolve(pistas);
-      },
-      (error: unknown) => {
-        if (listo) return;
-        listo = true;
-        entrada.esperando -= 1;
-        signal?.removeEventListener("abort", alCancelar);
-        reject(error);
-      },
-    );
-  });
-}
-
-async function pistasDeFoto(
+function pistasDeFoto(
   referencia: ImagenEtiquetada & { mime: MimeFoto },
   elementos: PythonPatronReferenciaElemento[],
   contexto: ContextoDeteccionPatron,
 ): Promise<PythonPatronReferenciaPista[]> {
-  const cache = contexto.cache ?? CACHE_DEL_PROCESO;
-  const clave = claveDeteccion(referencia, elementos);
-  const guardada = contexto.sinCache ? undefined : cache.resultados.get(clave);
-  if (guardada) {
-    guardarDeteccion(cache, clave, guardada);
-    return [...guardada];
-  }
-  let entrada = cache.enVuelo.get(clave);
-  if (!entrada) {
-    const deadlineMs = deadlineDeteccion(contexto.vencimiento);
-    if (deadlineMs === undefined) {
-      registrarOmision(contexto, referencia.id, { motivo: "sin_tiempo" });
-      return [];
-    }
-    const controlador = new AbortController();
-    const nueva: DeteccionEnVuelo = {
-      controlador,
-      esperando: 0,
-      promesa: llamarPythonPatronReferencia({
+  return leerCompartido<PythonPatronReferenciaPista>({
+    cache: contexto.cache ?? CACHE_DEL_PROCESO,
+    clave: claveDeteccion(referencia, elementos),
+    sinCache: contexto.sinCache,
+    signal: contexto.signal,
+    vencimiento: contexto.vencimiento,
+    techoMs: DEADLINE_PATRON_REFERENCIA_MS,
+    llamar: async (deadlineMs, signal) => {
+      const resultado = await llamarPythonPatronReferencia({
         imagen: { mimeType: referencia.mime, dataBase64: referencia.base64 },
         elementos,
         requestId: contexto.requestId,
         correlationId: contexto.correlationId,
         deadlineMs,
-        parentSignal: controlador.signal,
-      })
-        .then((resultado) => {
-          // Modelo, versión del prompt y uso reportado por el proveedor (AGENTS.md).
-          console.info("[references/analyze] patrón de color detectado", JSON.stringify({
-            request_id: contexto.requestId,
-            correlation_id: contexto.correlationId,
-            image_id: referencia.id,
-            modelo: resultado.modelo,
-            prompt_version: resultado.promptVersion,
-            usage: resultado.usage,
-            elementos: elementos.length,
-            pistas: resultado.pistas.filter((pista) => pista.modo !== "ninguno").length,
-          }));
-          guardarDeteccion(cache, clave, resultado.pistas);
-          return resultado.pistas;
-        })
-        .finally(() => {
-          if (cache.enVuelo.get(clave) === nueva) cache.enVuelo.delete(clave);
-        }),
-    };
-    // Cada petición que espera maneja (y registra) el fallo; esto solo evita un
-    // rechazo sin manejar cuando todas se cancelaron antes de que terminara.
-    nueva.promesa.catch(() => undefined);
-    cache.enVuelo.set(clave, nueva);
-    entrada = nueva;
-  }
-  try {
-    return [...await esperarDeteccion(cache, clave, entrada, contexto.signal)];
-  } catch (error) {
-    registrarOmision(contexto, referencia.id, isPythonAdapterError(error)
-      ? { code: error.code, domain_code: error.domainCode ?? null, provider_detail: error.providerDetail ?? null }
-      : { code: "ERROR_INESPERADO", mensaje: error instanceof Error ? error.message.slice(0, 200) : String(error).slice(0, 200) });
-    return [];
-  }
+        parentSignal: signal,
+      });
+      // Modelo, versión del prompt y uso reportado por el proveedor (AGENTS.md).
+      console.info("[references/analyze] patrón de color detectado", JSON.stringify({
+        request_id: contexto.requestId,
+        correlation_id: contexto.correlationId,
+        image_id: referencia.id,
+        modelo: resultado.modelo,
+        prompt_version: resultado.promptVersion,
+        usage: resultado.usage,
+        elementos: elementos.length,
+        pistas: resultado.pistas.filter((pista) => pista.modo !== "ninguno").length,
+      }));
+      return resultado.pistas;
+    },
+    alOmitir: (motivo) => registrarOmision(contexto, referencia.id, "motivo" in motivo
+      ? motivo
+      : isPythonAdapterError(motivo.error)
+        ? { code: motivo.error.code, domain_code: motivo.error.domainCode ?? null, provider_detail: motivo.error.providerDetail ?? null }
+        : { code: "ERROR_INESPERADO", mensaje: motivo.error instanceof Error ? motivo.error.message.slice(0, 200) : String(motivo.error).slice(0, 200) }),
+  });
 }
 
 /**

@@ -23,23 +23,19 @@ const elemento = (nombre: string, box: number[], structure?: Record<string, unkn
   model_decision: { action: "include", match_type: "none", reason: "r", adaptation: "a" },
 });
 
-function chatSimulado(opciones: { auditoriaMalformada?: boolean } = {}): ChatPort {
+function chatSimulado(): ChatPort {
   return {
     id: "gemini",
     modelo: "gemini-simulado",
     thinkingLevel: "default",
     async turno(peticion: PeticionChat): Promise<TurnoChat> {
       const nombre = peticion.herramientas[0]!.nombre;
+      assert.equal(nombre, "return_reference_inventory", "one inventory pass (ADR-0029)");
       const uso = { entrada: 3000, salida: 900 };
-      if (nombre === "return_reference_inventory") {
-        return { texto: "", modelo: "gemini-simulado", uso, finishReason: "STOP", llamadas: [{ nombre, args: { images: [{ image_id: "REF_01", elements: [
-          elemento("Balloon hoop", [100, 300, 700, 700], { structure_type: "hoop", horizontal_position: "center" }),
-          elemento("Tall organic column", [50, 20, 950, 250], { structure_type: "column", top_overhang: "slight", horizontal_position: "left" }),
-          elemento("Wooden table", [700, 400, 1000, 800], undefined, "furniture"),
-        ] }] } }] };
-      }
-      if (opciones.auditoriaMalformada) return { texto: "{roto", modelo: "gemini-simulado", uso, llamadas: [] };
       return { texto: "", modelo: "gemini-simulado", uso, finishReason: "STOP", llamadas: [{ nombre, args: { images: [{ image_id: "REF_01", elements: [
+        elemento("Balloon hoop", [100, 300, 700, 700], { structure_type: "hoop", horizontal_position: "center" }),
+        elemento("Tall organic column", [50, 20, 950, 250], { structure_type: "column", top_overhang: "slight", horizontal_position: "left" }),
+        elemento("Wooden table", [700, 400, 1000, 800], undefined, "furniture"),
         elemento("Balloon bouquet", [600, 750, 950, 950], { structure_type: "bouquet", horizontal_position: "right" }),
       ] }] } }] };
     },
@@ -65,17 +61,7 @@ async function run(): Promise<void> {
     assert.equal(guardados.length, 1);
     assert.equal(resultado.rawOutputSha256, createHash("sha256").update(guardados[0]!).digest("hex"));
     assert.doesNotMatch(guardados[0]!, new RegExp(base64.slice(0, 40).replace(/[+/]/g, "\\$&")), "raw output keeps model arguments, never the image");
-    assert.deepEqual(resultado.pases.map((p) => [p.capacidad, p.malformado, p.finishReason]), [["analisis_referencia_inventario", false, "STOP"], ["analisis_referencia_auditoria", false, "STOP"]]);
-  });
-
-  await caso("auditoría malformada dos veces: se usa solo el inventario, como producción, y los intentos quedan marcados", async () => {
-    const base64 = randomBytes(96).toString("base64");
-    const analizar = crearAnalizadorV13({ chat: chatSimulado({ auditoriaMalformada: true }), leerImagen: async () => ({ base64, mime: "image/jpeg" }), guardarSalidaCruda: async () => "f".repeat(64) });
-    const resultado = await analizar(itemCon(base64), AbortSignal.timeout(10_000));
-    assert.equal(resultado.resultado, "ok");
-    if (resultado.resultado !== "ok") return;
-    assert.deepEqual(resultado.detecciones.map((d) => d.structure.type), ["hoop", "column"]);
-    assert.deepEqual(resultado.pases.filter((p) => p.malformado).map((p) => [p.capacidad, p.intento]), [["analisis_referencia_auditoria", 1], ["analisis_referencia_auditoria", 2]]);
+    assert.deepEqual(resultado.pases.map((p) => [p.capacidad, p.malformado, p.finishReason]), [["analisis_referencia_inventario", false, "STOP"]]);
   });
 
   await caso("integridad: una imagen que no coincide con su hash se rechaza antes de llamar", async () => {

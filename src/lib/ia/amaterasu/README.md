@@ -19,6 +19,13 @@ dominancia de color sobre píxeles reales, exclusiva de esta IA),
 `analizar-venue.ts` (la misma lectura sobre la foto del espacio, que usa
 `/api/generate`) y `chat-python.ts` (el `ChatPort` respaldado por Python).
 
+Lecturas de la foto que corren después del análisis, en paralelo:
+`patron-referencia.ts` (patrón de color, ADR-0028 §11) y
+`bouquet-referencia.ts` (armado de cada bouquet, ADR-0030). Comparten la caché
+y las llamadas en vuelo de `deteccion-compartida.ts`. Del lado de Python,
+lo que Amaterasu sabe de cada tipo de estructura vive en un submódulo por
+tipo: `services/ai-api/app/amaterasu/estructuras/` (ADR-0030).
+
 Lo que NO vive aquí, a propósito: el contrato de la referencia está en
 [`../referencia/`](../referencia/) porque lo comparte media app (chat,
 generación de imagen, componentes, plan). Ahí están `reference-blueprint.ts`,

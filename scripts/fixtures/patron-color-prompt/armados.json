@@ -1,0 +1,145 @@
+{
+  "apilado-semiarco": {
+    "estructura_id": "EST_01_SEMIARCO",
+    "armado": {
+      "version": "armado-bouquet.v1",
+      "origen": "sugerido",
+      "variante": "helio_apilado",
+      "niveles": [
+        {
+          "rol": "capa",
+          "unidad": "trio",
+          "cantidad": 1,
+          "posiciones": [
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "rol": "capa",
+          "unidad": "trio",
+          "cantidad": 1,
+          "posiciones": [
+            1,
+            0,
+            1
+          ]
+        }
+      ],
+      "remate": [
+        2
+      ]
+    },
+    "grupos": 1,
+    "repeticiones": 1,
+    "leyenda": [
+      {
+        "codigo": 1,
+        "material": 0,
+        "product_id": "P-ROJO",
+        "variant_id": "V-P-ROJO-R-12",
+        "descripcion": "R-12 rojo",
+        "tipo_globo": "latex",
+        "color": "rojo",
+        "acabado": null,
+        "tamano_pulg": 12,
+        "digito": null,
+        "unidades_por_grupo": 3,
+        "unidades_total": 3
+      },
+      {
+        "codigo": 2,
+        "material": 1,
+        "product_id": "P-DORADO",
+        "variant_id": "V-P-DORADO-R-12",
+        "descripcion": "R-12 dorado cromado",
+        "tipo_globo": "latex",
+        "color": "dorado",
+        "acabado": "cromado",
+        "tamano_pulg": 12,
+        "digito": null,
+        "unidades_por_grupo": 3,
+        "unidades_total": 3
+      },
+      {
+        "codigo": 3,
+        "material": 2,
+        "product_id": "P-CORAZON",
+        "variant_id": "V-P-CORAZON-18",
+        "descripcion": "Globo Metalizado Corazon Dorado Mate 18\"",
+        "tipo_globo": "metalizado",
+        "color": "dorado",
+        "acabado": "mate",
+        "tamano_pulg": 18.0,
+        "digito": null,
+        "unidades_por_grupo": 1,
+        "unidades_total": 1
+      }
+    ],
+    "niveles": [
+      {
+        "rol": "capa",
+        "unidad": "trio",
+        "cantidad": 1,
+        "codigos": [
+          1,
+          2,
+          1
+        ]
+      },
+      {
+        "rol": "capa",
+        "unidad": "trio",
+        "cantidad": 1,
+        "codigos": [
+          2,
+          1,
+          2
+        ]
+      }
+    ],
+    "remate": [
+      3
+    ],
+    "numero": null,
+    "insumos": [
+      {
+        "insumo": "pesa",
+        "cantidad": 1,
+        "unidad": "pesas",
+        "detalle": "de 80 g o más cada una (suma del peso de cada globo)",
+        "estimado": false
+      },
+      {
+        "insumo": "cinta",
+        "cantidad": 7,
+        "unidad": "cintas",
+        "detalle": "una por globo, de largos distintos si el bouquet es escalonado",
+        "estimado": false
+      },
+      {
+        "insumo": "helio",
+        "cantidad": 0.104,
+        "unidad": "m³",
+        "detalle": "según la capacidad de gas de cada globo",
+        "estimado": true
+      }
+    ],
+    "duracion_estimada": {
+      "horas_min": 18,
+      "horas_max": 24
+    },
+    "nombre": "Bouquet de helio apilado",
+    "descripcion": "Capas de globos con helio a la misma altura, una encima de otra, con el remate arriba.",
+    "pasos": [
+      "Nivel 1 (capa): 1 trío de R-12 rojo (1), R-12 dorado cromado (2).",
+      "Nivel 2 (capa): 1 trío de R-12 dorado cromado (2), R-12 rojo (1).",
+      "Remate: Globo Metalizado Corazon Dorado Mate 18\" (3).",
+      "Ata cada globo a su cinta y todas las cintas a la pesa."
+    ],
+    "avisos": [],
+    "prompt_gemini": "BOUQUET ASSEMBLY — a helium balloon bouquet on ribbons tied to one weight, stacked in layers of balloons at the same height, one layer directly above the other. From the bottom up: level 1 (layer): 1 trio of red 12\" latex balloons, high-shine chrome gold 12\" latex balloons and red 12\" latex balloons; level 2 (layer): 1 trio of high-shine chrome gold 12\" latex balloons, red 12\" latex balloons and high-shine chrome gold 12\" latex balloons. Topper: matte gold foil heart. Keep each layer level and centered over the one below; the topper floats highest.",
+    "prompt_lora": "a helium balloon bouquet stacked in level layers of red and gold balloons topped by gold foil heart"
+  }
+}

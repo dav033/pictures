@@ -19,6 +19,7 @@ import {
   validarRelacionesDeElemento,
   type RelacionFisicaInput,
 } from "./composicion";
+import { ArmadoBouquetV1Schema } from "./armado-bouquet";
 import { PatronColorV1Schema } from "./patron-color";
 
 /**
@@ -110,6 +111,8 @@ const EstructuraPlanSchema = z.object({
   colores_referencia: z.array(z.string().trim().min(1).max(80)).max(8).optional(),
   /** Dónde va cada color (ADR-0028). Sus reglas cruzadas las valida solo Python. */
   patron_color: PatronColorV1Schema.optional(),
+  /** Armado de un bouquet por niveles (ADR-0030). Sus reglas cruzadas las valida solo Python. */
+  armado_bouquet: ArmadoBouquetV1Schema.optional(),
 }).strict().superRefine((value, ctx) => {
   for (const problema of incoherenciasEstructuraOficial(value)) {
     ctx.addIssue({ code: "custom", path: [problema.campo], message: problema.mensaje });
@@ -337,6 +340,8 @@ export const EstructuraPlan1_1Schema = z.object({
   colores_referencia: z.array(z.string().trim().min(1).max(80)).max(8).optional(),
   /** Dónde va cada color (ADR-0028). Sus reglas cruzadas las valida solo Python. */
   patron_color: PatronColorV1Schema.optional(),
+  /** Armado de un bouquet por niveles (ADR-0030). Sus reglas cruzadas las valida solo Python. */
+  armado_bouquet: ArmadoBouquetV1Schema.optional(),
 }).strict().superRefine((value, ctx) => {
   validarRelacionesFisicasSchema(value.relaciones_fisicas, ctx);
   for (const problema of incoherenciasEstructuraOficial(value)) {

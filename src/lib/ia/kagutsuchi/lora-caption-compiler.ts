@@ -4,8 +4,7 @@ import { clasificarColores, PALETA_COLORES_EN_V2 } from "@/lib/rag/taxonomy/v2";
 import type { LoraDensity, LoraDesignRole, LoraPlacement, LoraStructureType, VisualSemantics } from "../escena/lora-semantics";
 import type { PhysicalForm, PhysicalRelation, SceneElementKind, QuantitySemantics } from "../escena/scene-visual-contract";
 import { identificarEstructuraOficial, type EstructuraOficial } from "@/lib/plan/estructuras-oficiales";
-import type { PatronColorResuelto } from "@/lib/plan/patron-color";
-import { frasePatronColor } from "../uzume/mezcla-color-escena";
+import { frasePatronColor, type FraseDeEstructura } from "../uzume/mezcla-color-escena";
 
 export const LORA_CAPTION_COMPILER_VERSION = "lora-caption-v2.7-color-pattern" as const;
 
@@ -1133,7 +1132,7 @@ function dedupeEnvironment(context: VisualContext, eventPhrase?: string): string
   });
 }
 
-function groupClauses(sceneSpec: SceneSpec, productConceptsByElementId?: Map<string, ProductConceptClauseInput[]>, officialStructures?: ReadonlyMap<string, string>, colorPatterns?: readonly PatronColorResuelto[]): LoraVisualClause[] {
+function groupClauses(sceneSpec: SceneSpec, productConceptsByElementId?: Map<string, ProductConceptClauseInput[]>, officialStructures?: ReadonlyMap<string, string>, colorPatterns?: readonly FraseDeEstructura[]): LoraVisualClause[] {
   // Repeated plan structures materialize as `<estructura_id>#<n>` elements.
   const items = sceneSpec.elements.map((element, index) => ({
     ...semanticFor(element, index, sceneSpec, officialStructures?.get(element.element_id) ?? officialStructures?.get(element.element_id.split("#")[0]!)),
@@ -1336,11 +1335,12 @@ export function compileLoraCaption(input: {
   /** Plain English styling cues of the creativity level (creatividad.ts); dropped first when compacting. */
   creativeCues?: readonly string[];
   /**
-   * `plan_resuelto.patrones_color` as Python wrote it (ADR-0028 §12). Only the
-   * `prompt_lora` of an applied pattern is inserted, verbatim; the compiler
-   * never words, expands or counts a pattern. Absent: the legacy caption.
+   * `plan_resuelto.patrones_color` and `armados_bouquet` as Python wrote them
+   * (ADR-0028 §12, ADR-0030; `frasesDeEstructuras`). Only the `prompt_lora`
+   * of an applied phrase is inserted, verbatim; the compiler never words,
+   * expands or counts a pattern or an assembly. Absent: the legacy caption.
    */
-  colorPatterns?: readonly PatronColorResuelto[];
+  colorPatterns?: readonly FraseDeEstructura[];
 }): LoraCaptionCompilation {
   const productConceptsByElementId = input.productConcepts?.length
     ? input.productConcepts.reduce((map, entry) => {

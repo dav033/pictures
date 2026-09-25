@@ -455,6 +455,121 @@
                       "confianza"
                     ],
                     "additionalProperties": false
+                  },
+                  "armado_bouquet": {
+                    "type": "object",
+                    "properties": {
+                      "variante": {
+                        "type": "string",
+                        "enum": [
+                          "base_aire",
+                          "helio_apilado",
+                          "helio_escalonado"
+                        ]
+                      },
+                      "niveles": {
+                        "maxItems": 8,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "unidad": {
+                              "type": "string",
+                              "enum": [
+                                "suelto",
+                                "pareja",
+                                "trio",
+                                "cuarteto",
+                                "quinteto",
+                                "sexteto"
+                              ]
+                            },
+                            "colores": {
+                              "minItems": 1,
+                              "maxItems": 6,
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "minLength": 1,
+                                "maxLength": 80
+                              }
+                            }
+                          },
+                          "required": [
+                            "unidad",
+                            "colores"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "remate": {
+                        "type": "object",
+                        "properties": {
+                          "clase": {
+                            "type": "string",
+                            "enum": [
+                              "metalizado",
+                              "burbuja",
+                              "latex"
+                            ]
+                          },
+                          "color": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 80
+                          }
+                        },
+                        "required": [
+                          "clase"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "numeros": {
+                        "maxItems": 3,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "digito": {
+                              "type": "string",
+                              "pattern": "^\\d$"
+                            },
+                            "clase_tamano": {
+                              "type": "string",
+                              "enum": [
+                                "chico",
+                                "grande"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "digito",
+                            "clase_tamano"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "disposicion": {
+                        "type": "string",
+                        "enum": [
+                          "centro",
+                          "lados",
+                          "arriba",
+                          "abajo"
+                        ]
+                      },
+                      "confianza": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      }
+                    },
+                    "required": [
+                      "variante",
+                      "niveles",
+                      "confianza"
+                    ],
+                    "additionalProperties": false
                   }
                 },
                 "required": [
@@ -1819,6 +1934,130 @@
                       "version",
                       "origen",
                       "base"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "armado_bouquet": {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "type": "string",
+                        "const": "armado-bouquet.v1"
+                      },
+                      "origen": {
+                        "type": "string",
+                        "enum": [
+                          "decorador",
+                          "referencia",
+                          "sugerido"
+                        ]
+                      },
+                      "variante": {
+                        "type": "string",
+                        "enum": [
+                          "base_aire",
+                          "helio_apilado",
+                          "helio_escalonado"
+                        ]
+                      },
+                      "niveles": {
+                        "maxItems": 8,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "rol": {
+                              "type": "string",
+                              "enum": [
+                                "base",
+                                "cuerpo",
+                                "capa",
+                                "alrededor",
+                                "acento",
+                                "relleno"
+                              ]
+                            },
+                            "unidad": {
+                              "type": "string",
+                              "enum": [
+                                "suelto",
+                                "pareja",
+                                "trio",
+                                "cuarteto",
+                                "quinteto",
+                                "sexteto"
+                              ]
+                            },
+                            "cantidad": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 24
+                            },
+                            "posiciones": {
+                              "minItems": 1,
+                              "maxItems": 6,
+                              "type": "array",
+                              "items": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 11
+                              }
+                            }
+                          },
+                          "required": [
+                            "rol",
+                            "unidad",
+                            "cantidad",
+                            "posiciones"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "remate": {
+                        "minItems": 1,
+                        "maxItems": 4,
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 11
+                        }
+                      },
+                      "numero": {
+                        "type": "object",
+                        "properties": {
+                          "digitos": {
+                            "minItems": 1,
+                            "maxItems": 3,
+                            "type": "array",
+                            "items": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 11
+                            }
+                          },
+                          "disposicion": {
+                            "type": "string",
+                            "enum": [
+                              "centro",
+                              "lados",
+                              "arriba",
+                              "abajo"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "digitos",
+                          "disposicion"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "version",
+                      "origen",
+                      "variante",
+                      "niveles"
                     ],
                     "additionalProperties": false
                   }

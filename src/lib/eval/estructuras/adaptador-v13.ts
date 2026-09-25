@@ -1,19 +1,20 @@
 import { createHash } from "node:crypto";
 import { analizarReferenciasV2, type PaseObservado } from "@/lib/ia/amaterasu/analizar-referencias-v2";
-import { mergeCandidates, object, parseCandidates } from "@/lib/ia/referencia/candidatos-referencia";
+import { object, parseCandidates } from "@/lib/ia/referencia/candidatos-referencia";
 import { stableElementId } from "@/lib/ia/referencia/reference-blueprint";
-import type { VarianteReconocedor } from "@/lib/ia/referencia/reference-structure";
+import { VARIANTE_PRODUCCION, type VarianteReconocedor } from "@/lib/ia/referencia/reference-structure";
 import type { ChatPort } from "@/lib/ia/nucleo/tipos";
 import type { DeteccionV1 } from "./prediccion";
 import type { Analizador, ItemSuite, PaseResultado, ResultadoAnalisis } from "./runner";
 
 /**
- * Adapter that runs the production v13 recognizer (`analizarReferenciasV2`,
- * perceptual mode, as /api/references/analyze calls it) for the runner.
+ * Adapter that runs the production recognizer (`analizarReferenciasV2`,
+ * perceptual mode, as /api/references/analyze calls it) for the runner. The file
+ * keeps its historical name; the variant is `VARIANTE_PRODUCCION` unless given.
  *
  * The blueprint merges detector types (hoop→arco, sculpture/bouquet/cluster→kit),
  * so detections are rebuilt from the observed raw tool arguments with the same
- * production parsers (`parseCandidates`, `mergeCandidates`) and paired by index
+ * production parser (`parseCandidates`, inventory pass only) and paired by index
  * with the blueprint elements. Any drift between both makes the analysis fail
  * loudly instead of producing silently wrong predictions.
  */
@@ -30,11 +31,9 @@ export function detectarDetecciones(
     [...pasesObservados].reverse().find((pase) => pase.capacidad === capacidad && pase.args !== null)?.args ?? null;
   const inventario = ultimoValido("analisis_referencia_inventario");
   if (!inventario) throw new Error("adaptador v13: no hay inventario válido observado para un análisis ok");
-  // A twice-malformed audit is skipped by production with `{ images: [] }`.
-  const auditoria = ultimoValido("analisis_referencia_auditoria") ?? { images: [] };
   // Single-image suites: production maps every image id to REF_01 in that case.
   const candidatosDe = (raw: Record<string, unknown>) => (Array.isArray(raw.images) ? raw.images : []).flatMap((valor) => parseCandidates(ID_IMAGEN, object(valor)));
-  const candidatos = mergeCandidates(candidatosDe(inventario), candidatosDe(auditoria));
+  const candidatos = candidatosDe(inventario);
   if (candidatos.length !== elementos.length) {
     throw new Error(`adaptador v13: ${candidatos.length} candidatos frente a ${elementos.length} elementos del blueprint`);
   }
@@ -80,7 +79,7 @@ export function crearAnalizadorV13(dependencias: {
         "perceptual",
         { superficie: "evaluacion/estructuras" },
         signal,
-        { forzarNuevoAnalisis: true, variante: dependencias.variante ?? "v13", observarPase: (pase) => { observados.push(pase); } },
+        { forzarNuevoAnalisis: true, variante: dependencias.variante ?? VARIANTE_PRODUCCION, observarPase: (pase) => { observados.push(pase); } },
       );
     } catch (error) {
       const nombre = error instanceof Error ? error.name : "";

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { isAbsolute, relative, resolve } from "node:path";
 import { z } from "zod";
-import { VARIANTES_RECONOCEDOR, type VarianteReconocedor } from "@/lib/ia/referencia/reference-structure";
+import { VARIANTE_PRODUCCION, VARIANTES_RECONOCEDOR, type VarianteReconocedor } from "@/lib/ia/referencia/reference-structure";
 import { SupuestoTokensSchema, TablaPreciosSchema } from "./costo";
 import { leerPrediccionesJsonl, lineaJsonl, type PrediccionEstructurasV1 } from "./prediccion";
 import { resumirCorrida } from "./resumen-corrida";
@@ -49,7 +49,7 @@ export type OpcionesCli = {
 export function leerArgumentos(argv: readonly string[]): OpcionesCli {
   const opciones: OpcionesCli = {
     suite: "", runId: "", corridas: 5, maxUsd: null, concurrencia: 2, plazoMs: 120_000, salida: "", crudos: null, raizImagenes: "",
-    ejecutar: false, variante: "v13", precios: "eval/estructuras/precios/2026-09-15.json", supuesto: "eval/estructuras/supuestos/tokens-analisis-2026-09-15.json",
+    ejecutar: false, variante: VARIANTE_PRODUCCION, precios: "eval/estructuras/precios/2026-09-15.json", supuesto: "eval/estructuras/supuestos/tokens-analisis-2026-09-15.json",
   };
   const numeros = new Set(["--corridas", "--max-usd", "--concurrencia", "--plazo-ms"]);
   for (let i = 0; i < argv.length; i += 1) {

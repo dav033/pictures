@@ -45,14 +45,18 @@ from pydantic import ConfigDict, Field, ValidationError, field_validator, model_
 from app.generated_models import PlanDecoracion, contract_schema
 from app.operational_models import ContractModel, OperationalRequest
 from app.patron_color import TIPO_REJILLA, forma_valida, para_validar
+from app.armado_bouquet import DISPOSICIONES, VARIANTES
 from app.plan import (
     ComprasPorMaterial,
     PlanResolutionError,
     VistaPreviaPatron,
     compras_de_estructura,
     modos_admitidos_de_estructura,
+    opciones_de_armado,
     sincronizar_participaciones,
     sugerir_patron_para_estructura,
+    validar_armado_sin_catalogo,
+    vista_previa_de_armado,
     vista_previa_de_estructura,
 )
 
@@ -62,6 +66,11 @@ PLAN_EDIT_RESULT_VERSION = "plan-edit-result.v1"
 PLAN_PATRON_SCOPE = "plan.patron"
 PLAN_PATRON_REQUEST_VERSION = "plan-patron.v1"
 PLAN_PATRON_RESULT_VERSION = "plan-patron-result.v1"
+PLAN_ARMADO_SCOPE = "plan.armado_bouquet"
+PLAN_ARMADO_REQUEST_VERSION = "plan-armado-bouquet.v1"
+PLAN_ARMADO_RESULT_VERSION = "plan-armado-bouquet-result.v1"
+#: Materiales por estructura en Plan 1.1.
+MAX_GLOBOS_PIEZA = 12
 
 #: Estructuras cuyo ``reemplazar`` va a ``variant_overrides``: su receta de
 #: colores (``materiales``) no cambia.
@@ -95,6 +104,17 @@ _ESPACIOS_JS = "\t\n\v\f\r                  　
 _PATRON_RESUELTO = Draft7Validator(
     contract_schema("PlanResuelto")["properties"]["patrones_color"]["items"]
 )
+# Y la del armado, lo mismo que `plan_resuelto.armados_bouquet[]`.
+_ARMADO_RESUELTO = Draft7Validator(
+    contract_schema("PlanResuelto")["properties"]["armados_bouquet"]["items"]
+)
+_ARMADO_FORMA = Draft7Validator(
+    contract_schema("PlanDecoracion")["properties"]["estructuras"]["items"]["properties"][
+        "armado_bouquet"
+    ]
+)
+AVISO_ARMADO_QUITADO = "El armado del bouquet se quitó porque cambiaste sus globos."
+AVISO_ARMADO_REHACER = "El armado del bouquet se vuelve a sugerir con los globos nuevos."
 
 
 # --- Contrato local (ADR-0026 §3) --------------------------------------------------
@@ -190,10 +210,42 @@ class EdicionPatron(_Estricto):
     patron_color: dict[str, object] | None
 
 
+class EdicionArmado(_Estricto):
+    """Fija (o, con ``None``, quita) el armado por niveles de un bouquet (ADR-0030)."""
+
+    accion: Literal["armado"]
+    estructura_id: Identificador
+    armado_bouquet: dict[str, object] | None
+
+    @field_validator("armado_bouquet")
+    @classmethod
+    def validar_forma(cls, valor: dict[str, object] | None) -> dict[str, object] | None:
+        if valor is not None and next(_ARMADO_FORMA.iter_errors(valor), None) is not None:
+            raise ValueError("armado_bouquet no cumple armado-bouquet.v1")
+        return valor
+
+
 Edicion = Annotated[
-    EdicionMaterial | EdicionReparto | EdicionMezcla | EdicionPatron,
+    EdicionMaterial | EdicionReparto | EdicionMezcla | EdicionPatron | EdicionArmado,
     Field(discriminator="accion"),
 ]
+
+
+class GloboNavegador(_Estricto):
+    """Lo que el navegador sabe de un globo de la pieza (``plan_resuelto.estructuras[].lineas``).
+
+    Solo clasifica (látex, metalizado, burbuja o número, y su tamaño), como el
+    catálogo al resolver; nunca cuenta ni cobra: las cantidades son del plan.
+    """
+
+    product_id: Identificador
+    variant_id: Identificador
+    titulo: str = Field(max_length=400)
+    forma: str | None = Field(default=None, max_length=40)
+    diam_pulg: float | None = Field(default=None, ge=0, le=100)
+    tamano_codigo: str | None = Field(default=None, max_length=40)
+    color: str | None = Field(default=None, max_length=160)
+    acabado: str | None = Field(default=None, max_length=160)
 
 
 class PlanEditRequest(OperationalRequest):
@@ -212,6 +264,8 @@ class PlanEditRequest(OperationalRequest):
     edicion: Edicion
     colores_variante: list[Annotated[str, Field(max_length=160)]] = Field(max_length=24)
     completar_patrones: bool = Field(default=False, strict=True)
+    #: ``BOUQUETS_ARMADO_V1``: Next volverá a sugerir el armado que la edición quita.
+    completar_armados: bool = Field(default=False, strict=True)
 
 
 class PlanPatronRequest(OperationalRequest):
@@ -261,6 +315,39 @@ class PlanPatronRequest(OperationalRequest):
             raise ValueError("desde solo acompaña a modo")
         if self.desde is not None and not forma_valida(self.desde):
             raise ValueError("desde no cumple patron-color.v1")
+        return self
+
+
+class PlanArmadoRequest(OperationalRequest):
+    """``plan-armado-bouquet.v1``: resolver un armado (o, con ``None``, sugerir uno).
+
+    Sin catálogo: ``globos`` dicen qué es cada globo de la pieza (los mismos
+    datos que Next tiene en sus líneas resueltas); las cantidades son del plan.
+    ``variante`` y ``disposicion`` (solo con ``armado_bouquet`` nulo) son lo
+    que el decorador eligió en el editor.
+    """
+
+    schema_version: Literal["plan-armado-bouquet.v1"]
+    plan: dict[str, object]
+    estructura_id: Identificador
+    armado_bouquet: dict[str, object] | None
+    globos: list[GloboNavegador] = Field(min_length=1, max_length=MAX_GLOBOS_PIEZA)
+    variante: Literal["base_aire", "helio_apilado", "helio_escalonado"] | None = None
+    disposicion: Literal["centro", "lados", "arriba", "abajo"] | None = None
+
+    @field_validator("armado_bouquet")
+    @classmethod
+    def validar_forma(cls, valor: dict[str, object] | None) -> dict[str, object] | None:
+        if valor is not None and next(_ARMADO_FORMA.iter_errors(valor), None) is not None:
+            raise ValueError("armado_bouquet no cumple armado-bouquet.v1")
+        return valor
+
+    @model_validator(mode="after")
+    def eleccion_solo_al_sugerir(self) -> "PlanArmadoRequest":
+        if self.armado_bouquet is not None and (
+            self.variante is not None or self.disposicion is not None
+        ):
+            raise ValueError("variante y disposicion solo piden una sugerencia")
         return self
 
 
@@ -688,13 +775,37 @@ def _ajustar_patron(
 # --- Casos de uso ------------------------------------------------------------------
 
 
+def _quitar_armado(estructura: dict[str, object], *, rehacer: bool) -> list[str]:
+    """Un bouquet cuyos globos o reparto cambian pierde su armado (ADR-0030).
+
+    El armado acomoda exactamente lo que se compra; tras la edición ya no
+    coincidiría y la resolución lo rechazaría. Se quita y se avisa; con
+    ``rehacer`` (``completar_armados``, la bandera de Next) el aviso dice que
+    la resolución que sigue lo vuelve a sugerir (``completar_armados_de``).
+    """
+    if estructura.pop("armado_bouquet", None) is None:
+        return []
+    return [AVISO_ARMADO_REHACER if rehacer else AVISO_ARMADO_QUITADO]
+
+
+def _fijar_armado(estructura: dict[str, object], edicion: EdicionArmado) -> None:
+    """Fija o quita el armado; sin catálogo valida forma y conteo (``armado_invalido``)."""
+    if edicion.armado_bouquet is None:
+        estructura.pop("armado_bouquet", None)
+        return
+    armado = copy.deepcopy(edicion.armado_bouquet)
+    validar_armado_sin_catalogo(estructura, armado)
+    estructura["armado_bouquet"] = armado
+
+
 def editar_plan(
     plan: Mapping[str, object],
-    edicion: EdicionMaterial | EdicionReparto | EdicionMezcla | EdicionPatron,
+    edicion: EdicionMaterial | EdicionReparto | EdicionMezcla | EdicionPatron | EdicionArmado,
     lineas_base: Sequence[LineasBaseEstructura] = (),
     colores_variante: Sequence[str] = (),
     *,
     completar_patrones: bool = False,
+    completar_armados: bool = False,
 ) -> PlanEditado:
     """Aplica una edición al plan declarativo y devuelve el plan editado, ya validado.
 
@@ -722,14 +833,18 @@ def editar_plan(
             estructura.pop("patron_color", None)
         else:
             estructura["patron_color"] = copy.deepcopy(edicion.patron_color)
+    elif isinstance(edicion, EdicionArmado):
+        _fijar_armado(estructura, edicion)
     elif isinstance(edicion, EdicionReparto):
         avisos = _repartir(estructura, edicion.participaciones)
+        avisos += _quitar_armado(estructura, rehacer=completar_armados)
     elif isinstance(edicion, EdicionMezcla):
         estructura["mezcla"] = edicion.mezcla
     else:
         materiales_antes = len(_materiales(estructura))
         _editar_materiales(estructura, edicion, lineas_base, colores_variante)
         avisos = _ajustar_patron(editado, indice, edicion, materiales_antes, completar_patrones)
+        avisos += _quitar_armado(estructura, rehacer=completar_armados)
     if _estructura(editado, indice).get("patron_color") is not None:
         # Valida el patrón (forma y reglas del §4) y reescribe participacion,
         # solo en la pieza editada: las demás no cambiaron.
@@ -746,11 +861,57 @@ def ejecutar_edicion(request: PlanEditRequest) -> dict[str, object]:
         request.lineas_base,
         request.colores_variante,
         completar_patrones=request.completar_patrones,
+        completar_armados=request.completar_armados,
     )
     return {
         "operation_schema_version": PLAN_EDIT_RESULT_VERSION,
         "plan": resultado.plan,
         "avisos": list(resultado.avisos),
+    }
+
+
+def vista_previa_armado(request: PlanArmadoRequest) -> dict[str, object]:
+    """``plan-armado-bouquet-result.v1``: el armado dado resuelto, o la receta con ``None``.
+
+    Sin catálogo; la leyenda, los insumos y las frases son los que dará la
+    próxima resolución con esos globos. Un rechazo ``armado_invalido`` de la
+    pieza trae además los estilos y las disposiciones que admite, para que el
+    editor los siga ofreciendo.
+    """
+    globos = [globo.model_dump() for globo in request.globos]
+    try:
+        vista = vista_previa_de_armado(
+            request.plan,
+            request.estructura_id,
+            request.armado_bouquet,
+            globos,
+            variante=request.variante,
+            disposicion=request.disposicion,
+        )
+    except PlanResolutionError as error:
+        detalles = error.details or {}
+        if (
+            error.code != "armado_invalido"
+            or detalles.get("estructura_id") != request.estructura_id
+        ):
+            raise
+        opciones = opciones_de_armado(request.plan, request.estructura_id, globos)
+        raise PlanResolutionError(
+            error.code,
+            error.status_code,
+            {
+                **detalles,
+                "variantes_admitidas": opciones[0],
+                "disposiciones_admitidas": opciones[1],
+            },
+        ) from error
+    if next(_ARMADO_RESUELTO.iter_errors(vista.armado), None) is not None:
+        raise RuntimeError("el armado resuelto no cumple plan-resuelto.v1")
+    return {
+        "operation_schema_version": PLAN_ARMADO_RESULT_VERSION,
+        "armado": vista.armado,
+        "variantes_admitidas": [v for v in VARIANTES if v in vista.variantes_admitidas],
+        "disposiciones_admitidas": [d for d in DISPOSICIONES if d in vista.disposiciones_admitidas],
     }
 
 
@@ -872,18 +1033,25 @@ def vista_previa_patron(request: PlanPatronRequest) -> dict[str, object]:
 
 
 __all__ = [
+    "AVISO_ARMADO_QUITADO",
+    "AVISO_ARMADO_REHACER",
+    "EdicionArmado",
     "EdicionMaterial",
     "EdicionMezcla",
     "EdicionPatron",
     "EdicionReparto",
+    "GloboNavegador",
     "LineaBase",
     "LineaComprada",
     "LineasBaseEstructura",
     "MAX_LINEAS_PIEZA",
     "ORIGEN_DECORADOR",
     "PARTICIPACION_AGREGAR",
+    "PLAN_ARMADO_SCOPE",
     "PLAN_EDIT_SCOPE",
     "PLAN_PATRON_SCOPE",
+    "PlanArmadoRequest",
+    "vista_previa_armado",
     "PlanEditRequest",
     "PlanEditado",
     "PlanPatronRequest",

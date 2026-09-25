@@ -15,6 +15,7 @@ import { EstadoError, PasosAsistente } from "@/components/propuesta/index";
 import { ReferenceBlueprintV2Schema, type ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import type { Cotizacion } from "@/lib/cotizacion/motor";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
+import type { PlanDecoracion } from "@/lib/plan/tipos";
 import { BloquePatron, ControlesPatron, GaleriaEstilos, GraficaPatron, HojaArmado, leyendaPatron, PieEditorPatron, ResumenPatron } from "@/components/plan/patron";
 import { crearAutoguardado, type Reloj } from "@/components/plan/autoguardado";
 import { crearColaAjustes, crearPendientesAjustes } from "@/components/plan/cola-ajustes";
@@ -36,6 +37,10 @@ import { FalloPlanPatron, MENSAJE_PATRON_INVALIDO, pedirPlanEditarPatron, pedirV
 import { FalloPlanEditar, mensajeFalloPlanEditar } from "@/lib/plan/peticion-plan-editar";
 import { construirUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 import { PatronColorResueltoSchema, type ModoAdmitido, type PatronColor, type PatronColorResuelto } from "@/lib/plan/patron-color";
+import { ArmadoBouquetResueltoSchema, type ArmadoBouquetResuelto, type ArmadoBouquetV1 } from "@/lib/plan/armado-bouquet";
+import { BloqueBouquet, describirArmado, dibujarBouquet, GraficaBouquet, HojaArmadoBouquet, intercambiar, leyendaBouquet, mismoArmado, resumenInsumos } from "@/components/plan/bouquet";
+import { globosDeLineas } from "@/components/plan/bouquet/leyenda-bouquet";
+import { FalloPlanArmado, leerErrorArmado, MENSAJE_ARMADO_INVALIDO, pedirVistaArmado } from "@/lib/plan/peticion-armado";
 
 /**
  * Propuesta, detalle, cotización y análisis de foto (iteración 4, maquetas
@@ -550,6 +555,164 @@ function tablaTamanos(html: string): { encabezados: string[]; filas: string[][] 
   assert.match(hoja, /3 Azul rey cromado \d+ \d+/, "globos por color");
   assert.deepEqual(tablaTamanos(hojaHtml).encabezados, ["Tamaño", "Blanco mate", "Negro mate", "Azul rey cromado", "Total"], "globos por tamaño, con el mismo nombre");
   ok("color reetiquetado: la leyenda toma el tono y el acabado de la línea de su producto");
+}
+
+// 7d. Armado de bouquet (ADR-0030, segunda entrega). Fixture escrita a mano
+// (scripts/fixtures/bouquet-ui): una pieza bouquet y el armado que Python
+// resolvería para ella. La UI solo lo dibuja.
+type FixtureBouquet = { declarada: PlanDecoracion["estructuras"][number]; estructura: PlanResuelto["estructuras"][number]; armado: ArmadoBouquetResuelto };
+const bouquet = JSON.parse(readFileSync(resolve(process.cwd(), "scripts/fixtures/bouquet-ui/bouquet-helio-apilado.json"), "utf8")) as FixtureBouquet;
+ArmadoBouquetResueltoSchema.parse(bouquet.armado);
+
+/** El plan de patrones con el bouquet añadido, con o sin su armado resuelto. */
+function planConBouquet(conArmado: boolean): PlanResuelto {
+  const plan: PlanResuelto = structuredClone(planPatrones);
+  const declarada = structuredClone(bouquet.declarada);
+  if (!conArmado) delete declarada.armado_bouquet;
+  // La fixture de patrones es un Plan 1.0: sus estructuras no llevan `relaciones_fisicas`.
+  if (plan.plan.plan_version !== "1.0") assert.fail("la fixture de patrones tiene que ser un Plan 1.0");
+  plan.plan.estructuras.push(declarada);
+  plan.estructuras.push(structuredClone(bouquet.estructura));
+  if (conArmado) plan.armados_bouquet = [structuredClone(bouquet.armado)];
+  return plan;
+}
+
+{
+  const leyenda = leyendaBouquet(bouquet.armado, bouquet.estructura.lineas);
+  assert.deepEqual(leyenda.map((color) => [color.numero, color.etiqueta]), [[1, "R-12 blanco fashion"], [2, "R-12 rosado fashion"], [3, "Corazón dorado 18\""]], "la leyenda lleva los códigos y las descripciones de Python");
+  assert.notEqual(leyenda[1]!.hex, leyenda[0]!.hex, "cada código con el color que se compra");
+
+  // La tarjeta: bloque "Armado del bouquet" solo en el bouquet, con su nombre y sus accesos.
+  const html = renderToStaticMarkup(React.createElement(TarjetaPlanDecoracion, { plan: planConBouquet(true), onPlanActualizado: () => undefined, onAprobar: () => undefined }));
+  const texto = textoVisible(html);
+  assert.equal((html.match(/data-testid="bloque-armado"/g) ?? []).length, 1, "solo el bouquet muestra el bloque del armado");
+  assert.match(texto, /Armado del bouquet Bouquet de helio apilado/, "nombre de Python como chip");
+  assert.match(texto, /Capas de globos con helio a la misma altura/, "descripción de Python");
+  assert.match(texto, /Necesita: 1 pesa de 80 g o más cada una · 7 cintas · ≈ 0,106 m³ de helio · flota 18–24 h/, "insumos de Python, lo estimado con ≈");
+  assert.equal((html.match(/data-testid="editar-armado"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-testid="abrir-hoja-armado-bouquet"/g) ?? []).length, 1);
+  assert.equal((html.match(/data-testid="crear-armado"/g) ?? []).length, 0, "con armado no se ofrece crearlo");
+  assert.equal((html.match(/data-testid="bloque-patron"/g) ?? []).length, 3, "las piezas con patrón siguen con su bloque; el bouquet no lleva patrón");
+  assert.doesNotMatch(html, /data-testid="editor-armado"|data-testid="dialogo-hoja-armado-bouquet"/, "editor y hoja cerrados no se montan");
+  ok("tarjeta con bouquet: bloque del armado con nombre, insumos y accesos");
+
+  const sinArmado = renderToStaticMarkup(React.createElement(TarjetaPlanDecoracion, { plan: planConBouquet(false), onPlanActualizado: () => undefined }));
+  assert.equal((sinArmado.match(/data-testid="crear-armado"/g) ?? []).length, 1, "editable y sin armado: el bouquet ofrece crearlo");
+  assert.equal((sinArmado.match(/data-testid="bloque-armado"/g) ?? []).length, 0);
+  const soloLectura = renderToStaticMarkup(React.createElement(TarjetaPlanDecoracion, { plan: planConBouquet(false) }));
+  assert.doesNotMatch(soloLectura, /data-testid="crear-armado"|Armado del bouquet/, "sin edición ni armado no hay bloque");
+  const otras = renderToStaticMarkup(React.createElement(TarjetaPlanDecoracion, { plan: planPatrones, onPlanActualizado: () => undefined }));
+  assert.doesNotMatch(otras, /crear-armado|bloque-armado/, "las piezas que no son bouquet nunca ofrecen el armado");
+  ok("tarjeta sin armado: la invitación solo en un bouquet editable");
+
+  // Ocupado: "Editar armado" y "Crear armado" siguen enfocables (aria-disabled, no disabled).
+  const bloqueOcupado = (resuelto?: ArmadoBouquetResuelto) => renderToStaticMarkup(React.createElement(BloqueBouquet, { resuelto, leyenda, nombrePieza: "Bouquet", onEditar: () => undefined, onHojaArmado: () => undefined, ocupado: true }));
+  for (const [markup, testid] of [[bloqueOcupado(bouquet.armado), "editar-armado"], [bloqueOcupado(), "crear-armado"]] as const) {
+    const boton = new RegExp(`<button[^>]*data-testid="${testid}"[^>]*>`).exec(markup)?.[0] ?? "";
+    assert.match(boton, /aria-disabled="true"/, `${testid} ocupado se anuncia como no disponible`);
+    assert.doesNotMatch(boton, /\sdisabled=""/, `${testid} ocupado no pierde el foco`);
+  }
+  ok("bloque del armado: abrir el editor sigue enfocable mientras se guarda");
+
+  // Gráfica numerada por niveles: estática con su texto, editable como grupo de botones con un solo Tab stop.
+  const dibujo = dibujarBouquet(bouquet.armado);
+  const nivel1 = dibujo.globos.filter((globo) => "nivel" in globo.posicion && globo.posicion.nivel === 0);
+  const nivel2 = dibujo.globos.filter((globo) => "nivel" in globo.posicion && globo.posicion.nivel === 1);
+  const remate = dibujo.globos.filter((globo) => "remate" in globo.posicion);
+  assert.deepEqual([nivel1.length, nivel2.length, remate.length], [3, 3, 1]);
+  assert.ok(Math.max(...nivel1.map((globo) => globo.y)) > Math.max(...nivel2.map((globo) => globo.y)), "el nivel 1 va abajo");
+  assert.ok(remate[0]!.y < Math.min(...nivel2.map((globo) => globo.y)), "el remate va arriba");
+  assert.deepEqual(nivel1.map((globo) => globo.codigo), [1, 2, 1], "los códigos de Python, en su orden");
+  assert.equal(dibujo.soporte, "helio");
+  assert.equal(dibujo.lineas.length, 7, "con helio, una cinta por globo hasta la pesa");
+  assert.equal(dibujo.pesas.length, 1);
+  assert.deepEqual(describirArmado(bouquet.armado, leyenda), ["Nivel 1 (base): 1 trío de R-12 blanco fashion (1), R-12 rosado fashion (2), R-12 blanco fashion (1)", "Nivel 2 (cuerpo): 1 trío de R-12 rosado fashion (2), R-12 blanco fashion (1), R-12 rosado fashion (2)", "Remate: Corazón dorado 18\" (3)"]);
+  const estatica = renderToStaticMarkup(React.createElement(GraficaBouquet, { resuelto: bouquet.armado, leyenda, etiqueta: "Bouquet: helio apilado" }));
+  assert.match(estatica, /<figure aria-label="Bouquet: helio apilado"/);
+  assert.match(estatica, /<figcaption class="sr-only">Nivel 1 \(base\): 1 trío de/, "el lector de pantalla oye los niveles");
+  assert.doesNotMatch(estatica, /role="button"/);
+  const editable = renderToStaticMarkup(React.createElement(GraficaBouquet, { resuelto: bouquet.armado, leyenda, onSeleccionar: () => undefined, seleccion: [{ nivel: 0, unidad: 0, globo: 1 }] }));
+  assert.match(editable, /role="group" aria-label="Gráfica del bouquet: elige un globo y luego otro para intercambiarlos"/);
+  assert.equal((editable.match(/role="button"/g) ?? []).length, 7, "cada globo del bouquet es un botón");
+  assert.equal((editable.match(/tabindex="0"/g) ?? []).length, 1, "un solo globo entra con Tab; las flechas mueven el resto");
+  assert.match(editable, /aria-label="Nivel 1, unidad 1, globo 2: R-12 rosado fashion \(2\)" aria-pressed="true"/, "el globo elegido se anuncia");
+  assert.match(editable, /aria-label="Remate 1: Corazón dorado 18&quot; \(3\)"/);
+  // Con base de aire: base y varillas; con "lados", dos bouquets y cada número una sola vez.
+  const conNumeros: ArmadoBouquetResuelto = {
+    ...bouquet.armado,
+    armado: { ...bouquet.armado.armado, variante: "base_aire", numero: { digitos: [2, 2], disposicion: "lados" } },
+    grupos: 2,
+    numero: { codigos: [3, 3], disposicion: "lados" },
+  };
+  const dosGrupos = dibujarBouquet(conNumeros);
+  assert.equal(dosGrupos.soporte, "base");
+  assert.equal(dosGrupos.bases.length, 2, "un bouquet por número, cada uno con su base");
+  assert.equal(dosGrupos.globos.filter((globo) => globo.forma === "numero").length, 2);
+  assert.equal(dosGrupos.globos.filter((globo) => globo.orden !== null).length, 7 + 2, "se eligen los globos del primer grupo y cada número una vez");
+  assert.ok(dosGrupos.globos.filter((globo) => globo.grupo === 1).every((globo) => globo.forma === "numero" || globo.orden === null));
+  ok("gráfica del bouquet: niveles de abajo hacia arriba, remate, cintas o base, y un grupo de botones accesible");
+
+  // Hoja de armado: leyenda, niveles, remate, insumos, duración y paso a paso, con las clases de impresión.
+  const hojaHtml = renderToStaticMarkup(React.createElement(HojaArmadoBouquet, { resuelto: bouquet.armado, leyenda, estructura: bouquet.estructura, declarada: bouquet.declarada, tituloPlan: planPatrones.plan.concepto.titulo }));
+  const hoja = textoVisible(hojaHtml);
+  assert.match(hoja, /Hoja de armado · Baby shower azul, blanco y flores/);
+  assert.match(hoja, /Bouquet de helio apilado/);
+  assert.match(hoja, /7 globos por bouquet · 7 globos en total/);
+  assert.match(hoja, /Cómo se arma/);
+  assert.match(hoja, /Código Globo Por bouquet Total 1 1 R-12 blanco fashion 3 3 2 2 R-12 rosado fashion 3 3 3 3 Corazón dorado 18 1 1/, "la tabla de la leyenda: código, globo, por bouquet y total");
+  assert.match(hoja, /Niveles, de abajo hacia arriba Nivel 1 base · 1 trío .*Nivel 2 cuerpo · 1 trío .*Remate arriba del último nivel/);
+  assert.match(hoja, /Insumos \(no se cotizan\) .*Pesa 1 pesas de 80 g o más .*Helio ≈ 0,106 m³ según la capacidad de gas de cada globo estimado/i);
+  assert.match(hoja, /Duración estimada: flota 18–24 h/);
+  assert.match(hoja, /Paso a paso Nivel 1 \(base\): 1 trío de R-12 blanco fashion \(1\), R-12 rosado fashion \(2\)\..*Ata cada globo a su cinta y todas las cintas a la pesa\./);
+  for (const clase of ["hoja-armado ", "hoja-armado-bloque", "hoja-armado-columnas"]) assert.match(hojaHtml, new RegExp(`class="${clase}`), `clase de impresión ${clase.trim()}`);
+  ok("hoja de armado del bouquet: leyenda, niveles, insumos, duración y paso a paso");
+
+  // El borrador: intercambiar es una permutación pura; los números solo entre sí.
+  const armado: ArmadoBouquetV1 = { ...bouquet.armado.armado, numero: { digitos: [2, 0], disposicion: "centro" } };
+  const cambiado = intercambiar(armado, { nivel: 0, unidad: 0, globo: 0 }, { nivel: 0, unidad: 0, globo: 1 });
+  assert.deepEqual(cambiado?.niveles[0]!.posiciones, [1, 0, 0], "los dos globos cambian de sitio");
+  assert.equal(cambiado?.origen, "decorador", "lo firma el decorador");
+  assert.equal(intercambiar(armado, { nivel: 0, unidad: 0, globo: 0 }, { nivel: 0, unidad: 0, globo: 2 }), null, "el mismo material no cambia nada");
+  assert.deepEqual(intercambiar(armado, { nivel: 1, unidad: 0, globo: 0 }, { remate: 0 })?.remate, [1], "un globo de nivel se cambia con el remate");
+  assert.equal(intercambiar(armado, { nivel: 0, unidad: 0, globo: 0 }, { digito: 0 }), null, "un número no se cambia con un globo");
+  assert.deepEqual(intercambiar(armado, { digito: 0 }, { digito: 1 })?.numero?.digitos, [0, 2], "los números se cambian entre sí");
+  assert.equal(intercambiar(armado, { remate: 3 }, { nivel: 0, unidad: 0, globo: 0 }), null, "una posición que no existe no cambia nada");
+  assert.ok(mismoArmado(armado, { ...armado, origen: "referencia" }), "mismo armado aunque cambie quién lo firmó");
+  assert.ok(!mismoArmado(armado, cambiado));
+  assert.equal(resumenInsumos([], null), "");
+  const globos = globosDeLineas([...bouquet.estructura.lineas, bouquet.estructura.lineas[0]!]);
+  assert.equal(globos.length, 3, "un globo por variante");
+  assert.deepEqual(Object.keys(globos[2]!).sort(), ["acabado", "color", "diam_pulg", "forma", "product_id", "tamano_codigo", "titulo", "variant_id"], "solo los campos del contrato");
+  ok("borrador del armado: intercambios como permutación pura y globos de la vista previa");
+}
+
+// 7d'. Petición de la vista previa del armado: validación de la respuesta y el rechazo de Python con sus opciones.
+async function probarPeticionArmado(): Promise<void> {
+  const resuelto = bouquet.armado;
+  const cuerpo = { plan: planPatrones.plan, estructura_id: "EST_05_BOUQUET", armado_bouquet: null, globos: globosDeLineas(bouquet.estructura.lineas) };
+  const responder = (datos: unknown, status = 200): typeof fetch => async () => new Response(JSON.stringify(datos), { status, headers: { "Content-Type": "application/json" } });
+  const opciones = { variantes_admitidas: ["base_aire", "helio_apilado", "helio_escalonado"], disposiciones_admitidas: ["centro", "arriba"] };
+  let enviado: Record<string, unknown> = {};
+  const bien = await pedirVistaArmado(cuerpo, { fetcher: async (destino, init) => { enviado = JSON.parse(String(init?.body)) as Record<string, unknown>; return responder({ armado: resuelto, ...opciones })(destino, init); } });
+  assert.equal(bien.armado.nombre, "Bouquet de helio apilado");
+  assert.deepEqual(bien.opciones, { variantes: ["base_aire", "helio_apilado", "helio_escalonado"], disposiciones: ["centro", "arriba"] });
+  assert.deepEqual(Object.keys(enviado).sort(), ["armado_bouquet", "estructura_id", "globos", "plan"], "solo los campos del contrato");
+  await assert.rejects(pedirVistaArmado(cuerpo, { fetcher: responder({ armado: resuelto }) }), FalloPlanArmado, "sin las opciones de la pieza no vale");
+  await assert.rejects(pedirVistaArmado(cuerpo, { fetcher: responder({ armado: { ...resuelto, niveles: "no" }, ...opciones }) }), FalloPlanArmado, "una respuesta fuera de esquema no se dibuja");
+  await assert.rejects(pedirVistaArmado(cuerpo, { fetcher: responder({ armado: { ...resuelto, estructura_id: "EST_01_COLUMNA" }, ...opciones }) }), FalloPlanArmado, "ni la de otra estructura");
+  const frase = "Un látex de 5″ no flota con helio: cámbialo por uno de 9″ o más o usa la base de aire.";
+  await assert.rejects(
+    pedirVistaArmado(cuerpo, { fetcher: responder({ error: "armado_invalido", causa: "ARMADO_INVALIDO", motivo: "helio_con_latex_chico", mensaje: frase, ...opciones }, 422) }),
+    (error: unknown) => error instanceof FalloPlanArmado && error.armadoInvalido && error.motivo === "helio_con_latex_chico" && error.message === frase && error.opciones?.variantes.length === 3,
+    "el rechazo trae la frase de Python y las opciones de la pieza",
+  );
+  await assert.rejects(pedirVistaArmado(cuerpo, { fetcher: responder({ error: "Traceback (most recent call last)" }, 500) }), (error: unknown) => error instanceof FalloPlanArmado && !error.armadoInvalido && !/Traceback/.test(error.message), "un error técnico no llega al decorador");
+  await assert.rejects(pedirVistaArmado(cuerpo, { fetcher: async () => { throw new TypeError("Failed to fetch"); } }), (error: unknown) => error instanceof FalloPlanArmado && !/Failed to fetch/.test(error.message));
+  const uiRechazo = construirUiErrorV1("PROPUESTA_INCOMPLETA", { mensaje: frase, codigoOrigen: "ARMADO_INVALIDO:helio_con_latex_chico", causa: "ARMADO_INVALIDO", mensajeUsuario: frase });
+  assert.deepEqual(leerErrorArmado({ error: frase, ui_error: uiRechazo }, "respaldo"), { mensaje: frase, motivo: "helio_con_latex_chico", armadoInvalido: true, opciones: null }, "solo con ui_error");
+  assert.equal(leerErrorArmado({ error: "Traceback", causa: "ARMADO_INVALIDO" }, "respaldo").mensaje, MENSAJE_ARMADO_INVALIDO, "sin la frase de Python: un texto propio, nunca el `error` crudo");
+  assert.equal(leerErrorArmado({ error: "estructura_no_encontrada" }, "respaldo").armadoInvalido, false);
+  ok("petición de vista previa del armado: validación de la respuesta y errores para el decorador");
 }
 
 // 7c''. La vista previa lleva las líneas de la pieza: sin catálogo, Python nombra con ellas lo que se compra.
@@ -1489,11 +1652,12 @@ async function probarModosAdmitidos(): Promise<void> {
 }
 
 probarPeticionPatron()
+  .then(probarPeticionArmado)
   .then(probarLineasVistaPrevia)
   .then(probarAutoguardado)
   .then(probarVistaReparto)
   .then(probarModosAdmitidos)
-  .then(() => console.log(`\n${casos} casos OK (propuesta, cotización, análisis de foto, patrón de color y autoguardado)`))
+  .then(() => console.log(`\n${casos} casos OK (propuesta, cotización, análisis de foto, patrón de color, armado de bouquet y autoguardado)`))
   .catch((error: unknown) => {
     console.error(error);
     process.exit(1);

@@ -20,25 +20,19 @@ Mismo proveedor, modelo y cliente que el turno del análisis
 
 from __future__ import annotations
 
-import base64
 import hashlib
 import json
 import math
-import os
 import unicodedata
 from typing import Annotated, Callable, Literal, cast
 
 from pydantic import Field, StringConstraints, model_validator
 
-from app.amaterasu.turno import (
-    DEFAULT_MODEL,
-    _block_reason,
-    _default_client,
-    _finish_reason,
-    _usage_dict,
-)
+from app.amaterasu.estructuras import frase_inicio_de_pieza
+from app.amaterasu.vision_estructurada import DEFAULT_MODEL, LecturaFotoError, leer_foto
 from app.generated_models import contract_schema
 from app.operational_models import ContractModel, OperationalRequest
+from app.patron_color import MODOS as MODOS_PATRON
 
 
 PATRON_REFERENCIA_SCOPE = "ia.patron_referencia"
@@ -51,7 +45,8 @@ MAX_COLORES = 12
 MAX_IMAGE_BASE64_CHARS = 15_000_000
 MAX_OUTPUT_TOKENS = 2_048
 
-MODOS = ("espiral", "anillos", "bloques", "degradado", "aleatorio", "flor", "damero")
+# Los modos los define el contrato (`patron-color.v1`); un solo dueño.
+MODOS: tuple[str, ...] = MODOS_PATRON
 MODO_NINGUNO = "ninguno"
 
 # Vocabulario de color del catálogo: `x-paleta-colores` del contrato
@@ -64,17 +59,9 @@ PALETA: tuple[str, ...] = tuple(
 )
 
 
-class PatronReferenciaError(Exception):
+class PatronReferenciaError(LecturaFotoError):
     """Stable domain error translated by the HTTP boundary. `provider_detail`
     carries the provider's finish/block reason when the answer was empty."""
-
-    def __init__(
-        self, code: str, status_code: int = 502, provider_detail: str | None = None
-    ) -> None:
-        super().__init__(code)
-        self.code = code
-        self.status_code = status_code
-        self.provider_detail = provider_detail
 
 
 TextoCorto = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)]
@@ -133,7 +120,7 @@ For each element listed in the message (element_id, its structure type and, when
 - "damero" (checkerboard, only on flat balloon walls): a checkerboard of 2 colors, or diagonal rainbow bands of 3 or 4 colors. colores = the colors in order.
 - "ninguno": the piece is a single color, is hidden, or you cannot tell the arrangement. colores = [].
 
-The start of a piece is: the base of a column; the left foot of an arch (going up over the top and down to the right foot); the base of a half-arch toward its open tip; the left end of a garland; the top-left corner of a wall; the bottom of a centerpiece.
+{frase_inicio_de_pieza()}
 
 Colors: use ONLY these catalog color names, spelled exactly as written: {", ".join(PALETA)}. Map what you see to the closest of these names (light pink is rosado, chrome or metallic gold is dorado, clear is transparente). Never write any other color name, and never write "multicolor". The colors the first analysis observed are given as a hint; trust the photo when they disagree.
 
@@ -307,70 +294,23 @@ async def detectar_patrones_referencia(
     `ejecutar_turno_gemini`.
     """
 
-    api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-    if not api_key:
-        raise PatronReferenciaError("patron_referencia_unavailable", 503)
-
-    try:
-        # `Blob.data` wants raw bytes, not the base64 text (see turno.py).
-        raw_bytes = base64.b64decode(payload.imagen.data_base64, validate=True)
-    except Exception as error:
-        raise PatronReferenciaError("patron_referencia_invalid_image", 422) from error
-    if not raw_bytes:
-        raise PatronReferenciaError("patron_referencia_invalid_image", 422)
-
-    from google.genai import types
-
-    client: object = (client_factory or _default_client)(api_key)
-    content = types.Content(
-        role="user",
-        parts=[
-            types.Part(inline_data=types.Blob(mime_type=payload.imagen.mime_type, data=raw_bytes)),
-            types.Part(text=_mensaje(payload.elementos)),
-        ],
+    raw, usage = await leer_foto(
+        mime_type=payload.imagen.mime_type,
+        data_base64=payload.imagen.data_base64,
+        mensaje=_mensaje(payload.elementos),
+        system_instruction=SYSTEM_INSTRUCTION,
+        response_schema=RESPONSE_SCHEMA,
+        max_output_tokens=MAX_OUTPUT_TOKENS,
+        prefijo="patron_referencia",
+        error=PatronReferenciaError,
+        client_factory=client_factory,
     )
-    try:
-        response = await client.aio.models.generate_content(  # type: ignore[attr-defined]
-            model=DEFAULT_MODEL,
-            contents=[content],
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_INSTRUCTION,
-                response_mime_type="application/json",
-                response_schema=RESPONSE_SCHEMA,
-                temperature=0,
-                max_output_tokens=MAX_OUTPUT_TOKENS,
-                # Extracción estructurada: sin razonamiento, igual que Inari y
-                # Happie, para que el presupuesto de salida sea todo JSON.
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
-            ),
-        )
-    except Exception as error:
-        raise PatronReferenciaError("patron_referencia_provider_error", 502) from error
-
-    text = getattr(response, "text", None)
-    if not text:
-        # Bloqueada o vacía: no hay nada que leer. El motivo del proveedor viaja
-        # en el error para el log de Next, nunca como un éxito sin pistas.
-        motivos = {
-            "finish_reason": _finish_reason(response),
-            "block_reason": _block_reason(response),
-        }
-        raise PatronReferenciaError(
-            "patron_referencia_empty_response",
-            502,
-            " ".join(f"{clave}={valor}" for clave, valor in motivos.items() if valor) or None,
-        )
-    try:
-        raw = json.loads(str(text))
-    except json.JSONDecodeError as error:
-        raise PatronReferenciaError("patron_referencia_invalid_output", 502) from error
-
     return {
         "operation_schema_version": PATRON_REFERENCIA_RESULT_VERSION,
         "pistas": validar_pistas(raw, payload.elementos),
         "modelo": DEFAULT_MODEL,
         "prompt_version": PROMPT_VERSION,
-        "usage": _usage_dict(getattr(response, "usage_metadata", None)),
+        "usage": usage,
     }
 
 

@@ -14,7 +14,7 @@ import {
   type ProductVocabulary,
 } from "@/lib/lora/product-vocabulary";
 import { aDescriptorPerceptual } from "@/lib/lora/descriptor-perceptual";
-import type { PatronColorResuelto } from "@/lib/plan/patron-color";
+import type { FraseDeEstructura } from "../uzume/mezcla-color-escena";
 
 /**
  * Subagent G deliverable — runtime prompt integration.
@@ -329,8 +329,8 @@ export function compileProductPrompt(input: {
   officialStructures?: ReadonlyMap<string, string>;
   /** Styling cues of the creativity level (creatividad.ts); rendered only, dropped first when compacting. */
   creativeCues?: readonly string[];
-  /** `plan_resuelto.patrones_color`, passed through untouched: the compiler inserts each applied `prompt_lora` verbatim (ADR-0028 §12). */
-  colorPatterns?: readonly PatronColorResuelto[];
+  /** `plan_resuelto.patrones_color` and `armados_bouquet`, passed through untouched: the compiler inserts each applied `prompt_lora` verbatim (ADR-0028 §12, ADR-0030). */
+  colorPatterns?: readonly FraseDeEstructura[];
 }): ProductPromptRuntimeResult {
   const vocabulary = input.vocabulary ?? [];
   const activeConcept = vocabulary.find((concept) => concept.status === "active");

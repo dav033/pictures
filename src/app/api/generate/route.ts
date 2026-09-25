@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import { z } from "zod";
 import { buildImagePrompt, placementDescription, promptElementName, tieneContratoDeColor, type PromptImageInput } from "@/lib/ia/uzume/build-image-prompt";
+import { frasesDeEstructuras } from "@/lib/ia/uzume/mezcla-color-escena";
 import { getGeminiClient } from "@/lib/gemini";
 import { GROUPING_ONLY_CONTEXT, LORA_CAPTION_COMPILER_VERSION, LORA_JSON_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH, translateLoraColor } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
 import { includesJsonPrompt, includesTextPrompt, resolveLoraPromptFormat } from "@/lib/ia/kagutsuchi/lora-prompt-format";
@@ -917,9 +918,10 @@ async function generar(request: Request, generationRequestId: string): Promise<R
         espera_linea_de_color: tieneContratoDeColor(element),
       })),
     };
-    // Patrón de color por estructura tal como lo firmó Python en el plan
-    // re-resuelto (ADR-0028 §12): los constructores solo insertan sus frases.
-    const colorPatterns = planResuelto.patrones_color;
+    // Patrón de color y armado de bouquet por estructura tal como los firmó
+    // Python en el plan re-resuelto (ADR-0028 §12, ADR-0030): los
+    // constructores solo insertan sus frases.
+    const colorPatterns = frasesDeEstructuras(planResuelto);
     const promptBase = { sceneSpec: transformedSceneSpec, inputs: selected.promptInputs, revisionInstruction, visualContext, sizeMixBlock, droppedCatalogReferenceCount: selected.droppedCatalogProductIds.length, droppedCompositionReferenceCount: selected.droppedReferenceCount, creatividad: creatividad.nivel, officialStructures, scenography: escenografiaParaEscena, colorPatterns };
     const providerPrompt = buildImagePrompt(promptBase);
     if (planResuelto) {

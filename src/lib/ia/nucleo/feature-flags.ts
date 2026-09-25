@@ -11,7 +11,8 @@ export type FeatureFlag =
   | "MEASURED_COLOR_DOMINANCE_V1"
   | "AMBIENTE_FIESTA_V1"
   | "REFERENCIA_EN_ETAPA1_V1"
-  | "PATRONES_COLOR_V1";
+  | "PATRONES_COLOR_V1"
+  | "BOUQUETS_ARMADO_V1";
 
 export function featureEnabled(name: FeatureFlag): boolean {
   const raw = process.env[name];
@@ -44,6 +45,12 @@ export function featureEnabled(name: FeatureFlag): boolean {
     // ("Crear patrón" incluido) y la resolución lo tratan igual, porque
     // ninguno lee la bandera. Apagarla no quita patrones.
     if (name === "PATRONES_COLOR_V1") return false;
+    // Default OFF (ADR-0030). Al confirmar un plan, Next pide
+    // `completar_armados` con las lecturas de la foto (`pistas_armado`) y cada
+    // bouquet sin armado recibe el de su lectura o su receta, sin cambiar lo
+    // que se compra. Apagada, los planes nuevos salen sin armado; uno que ya lo
+    // trae lo conserva.
+    if (name === "BOUQUETS_ARMADO_V1") return false;
     return true;
   }
   return raw === "1" || raw.toLowerCase() === "true" || raw.toLowerCase() === "on";
@@ -107,6 +114,28 @@ export const HAPPIE_PYTHON_ENABLED = process.env.HAPPIE_PYTHON_ENABLED === "true
  * hints only reach a plan while `PATRONES_COLOR_V1` is on.
  */
 export const PATRON_REFERENCIA_PYTHON_ENABLED = process.env.PATRON_REFERENCIA_PYTHON_ENABLED === "true";
+
+/**
+ * Default: OFF (2026-09-25). The in-process cache of the reference analysis
+ * (same photo, same prompt -> the stored blueprint, up to 40 photos) served a
+ * stale analysis while the bouquet reading was being fixed and hid every fix
+ * behind "the same photo". Off, every upload is analysed again (one Gemini
+ * call, ~US$0.01); the gallery examples (`analisis-ejemplos.json`) and the
+ * in-flight sharing of one identical request are not a cache and stay. Read
+ * at call time so a test can turn it on.
+ */
+export function referenceAnalysisCacheEnabled(): boolean {
+  return process.env.REFERENCE_ANALYSIS_CACHE_ENABLED === "true";
+}
+
+/**
+ * Default: OFF (ADR-0030). After the reference analysis, asks Python to read
+ * how each bouquet in the photo is assembled and stores it on its blueprint
+ * element (`appearance.armado_bouquet`). One Gemini call per photo with
+ * bouquets, in parallel with the pattern reading; a failure never breaks the
+ * analysis. The readings only reach a plan while `BOUQUETS_ARMADO_V1` is on.
+ */
+export const BOUQUET_REFERENCIA_PYTHON_ENABLED = process.env.BOUQUET_REFERENCIA_PYTHON_ENABLED === "true";
 
 // --- LoRA capability flags -------------------------------------------------
 

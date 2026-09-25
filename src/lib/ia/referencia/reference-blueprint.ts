@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { z } from "zod";
+import { LecturaArmadoSchema } from "../../plan/armado-bouquet";
 import { PistaPatronSchema } from "../../plan/patron-color";
 import { VisualSemanticsSchema } from "../escena/lora-semantics";
 import {
@@ -81,6 +82,12 @@ const AppearanceSchema = z
     composition: texto(240).default("single uniform material"),
     /** Opcional: solo con la detección encendida y en estructuras de globos donde leyó un patrón. */
     patron_color: PatronColorReferenciaSchema.optional(),
+    /**
+     * Opcional: cómo está armado un bouquet de la foto (ADR-0030). Solo con la
+     * lectura encendida y en bouquets. Es una pista: al confirmar el plan viaja
+     * como `pistas_armado` y Python decide si la usa.
+     */
+    armado_bouquet: LecturaArmadoSchema.optional(),
   })
   .strict();
 

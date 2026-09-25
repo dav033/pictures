@@ -42,6 +42,12 @@ from app.amaterasu.turno import (
     ReferenceTurnRequest,
     ejecutar_turno_gemini,
 )
+from app.amaterasu.bouquet_referencia import (
+    BOUQUET_REFERENCIA_SCOPE,
+    BouquetReferenciaError,
+    BouquetReferenciaRequest,
+    leer_armados_referencia,
+)
 from app.amaterasu.patron_referencia import (
     PATRON_REFERENCIA_SCOPE,
     PatronReferenciaError,
@@ -104,12 +110,17 @@ from app.plan import (
     PlanResolutionRequest,
     resolve_plan,
 )
+from app.armado_bouquet import DISPOSICIONES as DISPOSICIONES_BOUQUET
+from app.armado_bouquet import VARIANTES as VARIANTES_BOUQUET
 from app.plan_edicion import (
+    PLAN_ARMADO_SCOPE,
     PLAN_EDIT_SCOPE,
     PLAN_PATRON_SCOPE,
+    PlanArmadoRequest,
     PlanEditRequest,
     PlanPatronRequest,
     ejecutar_edicion,
+    vista_previa_armado,
     vista_previa_patron,
 )
 from app.postgres_store import PostgresOperationalStore
@@ -250,6 +261,7 @@ IntentParseHandler = Callable[[IntentParseRequest], Awaitable[dict[str, object]]
 HappieGenerateHandler = Callable[[HappieGenerateRequest], Awaitable[dict[str, object]]]
 ReferenceTurnHandler = Callable[[ReferenceTurnRequest], Awaitable[dict[str, object]]]
 PatronReferenciaHandler = Callable[[PatronReferenciaRequest], Awaitable[dict[str, object]]]
+BouquetReferenciaHandler = Callable[[BouquetReferenciaRequest], Awaitable[dict[str, object]]]
 ImageGenerateHandler = Callable[[ImageGenerateRequest], Awaitable[dict[str, object]]]
 LoraGenerateHandler = Callable[[LoraGenerateRequest], Awaitable[dict[str, object]]]
 # Not awaited: it validates what can fail before the stream opens (raising an
@@ -398,6 +410,19 @@ async def _default_reference_turn_handler(payload: ReferenceTurnRequest) -> dict
         result = await ejecutar_turno_gemini(payload)
     except ReferenceTurnError as error:
         raise _error(error.code, error.status_code) from None
+    return {"payload": result}
+
+
+async def _default_bouquet_referencia_handler(
+    payload: BouquetReferenciaRequest,
+) -> dict[str, object]:
+    try:
+        result = await leer_armados_referencia(payload)
+    except BouquetReferenciaError as error:
+        details: dict[str, object] = {}
+        if error.provider_detail is not None:
+            details["provider_detail"] = error.provider_detail
+        raise _error(error.code, error.status_code, details or None) from None
     return {"payload": result}
 
 
@@ -796,6 +821,15 @@ def _detail_metadata(exception: HTTPException) -> dict[str, object]:
     styles = _safe_pattern_styles(exception.detail.get("modos_admitidos"))
     if styles is not None:
         metadata["modos_admitidos"] = styles
+    # armado_invalido of the bouquet preview (ADR-0030): the styles and the
+    # number placements the purchase admits, from known values only.
+    for key, known in (
+        ("variantes_admitidas", VARIANTES_BOUQUET),
+        ("disposiciones_admitidas", DISPOSICIONES_BOUQUET),
+    ):
+        options = exception.detail.get(key)
+        if isinstance(options, list) and all(isinstance(o, str) and o in known for o in options):
+            metadata[key] = [o for o in known if o in options]
     return metadata
 
 
@@ -1144,6 +1178,7 @@ def create_app(
     lora_generate_handler: LoraGenerateHandler | None = None,
     chat_turn_stream_handler: ChatTurnStreamHandler | None = None,
     patron_referencia_handler: PatronReferenciaHandler | None = None,
+    bouquet_referencia_handler: BouquetReferenciaHandler | None = None,
 ) -> FastAPI:
     current_settings = settings or Settings.from_env()
     default_store: object | None = None
@@ -1217,6 +1252,9 @@ def create_app(
     happie_generate_handler_fn = happie_generate_handler or _default_happie_generate_handler
     reference_turn_handler_fn = reference_turn_handler or _default_reference_turn_handler
     patron_referencia_handler_fn = patron_referencia_handler or _default_patron_referencia_handler
+    bouquet_referencia_handler_fn = (
+        bouquet_referencia_handler or _default_bouquet_referencia_handler
+    )
     image_generate_handler_fn = image_generate_handler or _default_image_generate_handler
     lora_generate_handler_fn = lora_generate_handler or _default_lora_generate_handler
     chat_turn_stream_handler_fn = chat_turn_stream_handler or _default_chat_turn_stream_handler
@@ -1445,6 +1483,28 @@ def create_app(
             handler=handler,
         )
 
+    @application.post("/internal/v1/plan/armado-bouquet")
+    async def plan_armado_bouquet(request: Request) -> Response:
+        # ADR-0030 (second delivery): resolves (or suggests) one bouquet's
+        # assembly for the editor, without the catalog: the browser sends what
+        # each balloon is; the counts are the plan's.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, PlanArmadoRequest):
+                raise _error("invalid_request", 422)
+            try:
+                result = await run_plan_cpu(vista_previa_armado, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.armado_bouquet",
+            model=PlanArmadoRequest,
+            scope=PLAN_ARMADO_SCOPE,
+            handler=handler,
+        )
+
     @application.post("/internal/v1/ia/intent-parse")
     async def ia_intent_parse(request: Request) -> Response:
         return await _handle_operational_request(
@@ -1486,6 +1546,18 @@ def create_app(
             model=PatronReferenciaRequest,
             scope=PATRON_REFERENCIA_SCOPE,
             handler=cast(OperationalHandler, patron_referencia_handler_fn),
+            max_body_bytes=current_settings.max_body_bytes_imagenes,
+        )
+
+    @application.post("/internal/v1/ia/bouquet-referencia")
+    async def ia_bouquet_referencia(request: Request) -> Response:
+        # One reference photo per call, like the pattern reading (ADR-0030).
+        return await _handle_operational_request(
+            request,
+            operation="ia.bouquet_referencia",
+            model=BouquetReferenciaRequest,
+            scope=BOUQUET_REFERENCIA_SCOPE,
+            handler=cast(OperationalHandler, bouquet_referencia_handler_fn),
             max_body_bytes=current_settings.max_body_bytes_imagenes,
         )
 

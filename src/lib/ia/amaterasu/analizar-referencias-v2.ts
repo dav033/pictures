@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { ErrorIA, type ChatPort, type Herramienta, type ImagenEtiquetada, type TurnoChat } from "@/lib/ia/nucleo/tipos";
 import type { Producto } from "@/lib/types";
 import { enriquecerConDominancia } from "./dominancia-referencia";
-import { featureEnabled } from "@/lib/ia/nucleo/feature-flags";
+import { featureEnabled, referenceAnalysisCacheEnabled } from "@/lib/ia/nucleo/feature-flags";
 import { bytesDeBase64 } from "@sempertex/agente-core";
 import { registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/nucleo/telemetria-llamadas";
 import {
@@ -20,15 +20,16 @@ import {
   STRUCTURE_DETECTION_RULES,
   STRUCTURE_RULES_V14_CANDIDATE,
   STRUCTURE_RULES_V15_CANDIDATE,
-  STRUCTURE_RULES_V16_CANDIDATE,
+  STRUCTURE_RULES_V16,
+  VARIANTE_PRODUCCION,
   type VarianteReconocedor,
   tieneElementosAprobados,
   tieneEstructurasDeGlobos,
 } from "@/lib/ia/referencia/reference-structure";
 import { analisisFijoDeEjemplo } from "./analisis-ejemplos";
-import { category, mergeCandidates, normalize, object, parseCandidates, stringList, stringValue, toolArgs, type Candidate } from "@/lib/ia/referencia/candidatos-referencia";
+import { category, normalize, object, parseCandidates, stringList, stringValue, toolArgs, type Candidate } from "@/lib/ia/referencia/candidatos-referencia";
 
-export { inferReferenceLayer, VERIFIER_MIN_CONFIDENCE } from "@/lib/ia/referencia/candidatos-referencia";
+export { inferReferenceLayer } from "@/lib/ia/referencia/candidatos-referencia";
 
 export type AnalisisV2Resultado = {
   blueprint: ReferenceBlueprintV2;
@@ -37,7 +38,8 @@ export type AnalisisV2Resultado = {
   /** UI contract: at least one approved element. False = nothing usable was seen (never "Listo"). */
   tieneElementos: boolean;
   metadata: {
-    passes: ["inventory", "audit"];
+    /** One inventory pass: the audit pass was removed in ADR-0029 (it changed more structure types for the worse than for the better). */
+    passes: ["inventory"];
     /** True when this result came from the in-memory cache instead of a new provider call. */
     cached: boolean;
     cache_key: string;
@@ -90,9 +92,6 @@ ${STRUCTURE_DETECTION_RULES}`;
 
 const REAR_LAYER_RULE = "Rear-layer rule: any visible curtain, telon, drape, fabric backdrop, black cloth background, shimmer wall, or panel must be classified as curtain/drape/backdrop/panel and scene_role backdrop, never other or midground. If string lights are separately visible, classify them as lighting behind the decoration; do not move them to the ceiling.";
 
-const AUDIT_SYSTEM = `You are a strict verifier and catalog-resolution reviewer of an event-design reference inventory. Inspect the image and draft inventory. Report only visible event-design elements that were missed, misclassified, or lack evidence. For every new finding, decide include or omit and select the closest valid catalog product when useful. Do not ask the customer. Include box_2d ([ymin, xmin, ymax, xmax], integers 0-1000), visible_evidence, and the complete model_decision object.`;
-const AUDIT_SYSTEM_PERCEPTUAL = `You are a strict verifier of an event-design reference inventory. Inspect the image and draft inventory. Report only visible event-design elements that were missed, misclassified, or lack evidence. You have no catalog access — never propose a catalog_product_id or bill_of_materials; set match_type to "none" and decide include/omit purely on visual relevance. Do not ask the customer. Include box_2d ([ymin, xmin, ymax, xmax], integers 0-1000), visible_evidence, and the complete model_decision object. Also correct structure when a balloon structure type, side, height or curve was misread.
-${STRUCTURE_DETECTION_RULES}`;
 export const ANALYSIS_PARSER_VERSION = "semantic-layers-v13-box-2d";
 
 const TOOL: Herramienta = {
@@ -193,27 +192,6 @@ const TOOL: Herramienta = {
   },
 };
 
-const AUDIT_TOOL: Herramienta = {
-  nombre: "return_reference_audit",
-  descripcion: "Return only missed or unsupported visible event-design elements.",
-  esquema: {
-    type: "object",
-    required: ["images"],
-    properties: {
-      images: {
-        type: "array",
-        items: {
-          type: "object",
-          additionalProperties: true,
-          properties: {
-            elements: { type: "array", items: { type: "object", additionalProperties: true } },
-          },
-        },
-      },
-    },
-  },
-};
-
 const cache = new Map<string, AnalisisV2Resultado>();
 const MAX_CACHE = 40;
 
@@ -240,12 +218,12 @@ export type OpcionesAnalisisReferencias = {
    * do not analyze the same photos concurrently). Errors it throws propagate.
    */
   observarPase?: (pase: PaseObservado) => void;
-  /** Evaluation only: prompt variant. Omitted means production v13. */
+  /** Evaluation only: prompt variant. Omitted means `VARIANTE_PRODUCCION`. */
   variante?: VarianteReconocedor;
 };
 
 export type PaseObservado = {
-  capacidad: "analisis_referencia_inventario" | "analisis_referencia_auditoria";
+  capacidad: "analisis_referencia_inventario";
   intento: number;
   ms: number;
   uso: TurnoChat["uso"];
@@ -295,7 +273,6 @@ function esperarAnalisisCompartido(key: string, entry: AnalisisEnVuelo, signal: 
 /** Attempts per analysis pass when the model answers with malformed tool output. */
 const MAX_INTENTOS_FORMATO_ANALISIS = 2;
 const PARAMETROS_INVENTARIO = { temperatura: 0, maxTokens: 6000 } as const;
-const PARAMETROS_AUDITORIA = { temperatura: 0, maxTokens: 4000 } as const;
 
 /**
  * Hash of the effective analysis configuration, recorded per pass in telemetry
@@ -309,11 +286,10 @@ export function analysisConfigHash(input: { model: string; thinkingLevel: string
     parser_version: ANALYSIS_PARSER_VERSION,
     mode: input.mode,
     system_prompt_hash: input.systemPromptHash,
-    tools: [TOOL, AUDIT_TOOL],
+    tools: [TOOL],
     model: input.model,
     thinking_level: input.thinkingLevel ?? "desconocido",
     inventory: PARAMETROS_INVENTARIO,
-    audit: PARAMETROS_AUDITORIA,
   })).digest("hex");
 }
 
@@ -370,24 +346,17 @@ function resolveBillOfMaterials(
     : lines.map((line, index) => ({ ...line, share: index === 0 ? 1 : 0 }));
 }
 
-function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string, unknown>, auditRaw: Record<string, unknown>, catalogo: ReferenceCatalogItem[], mode: AnalysisMode): ReferenceBlueprintV2 {
+function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string, unknown>, catalogo: ReferenceCatalogItem[], mode: AnalysisMode): ReferenceBlueprintV2 {
   const inventoryImages = Array.isArray(inventoryRaw.images) ? inventoryRaw.images : [];
-  const auditImages = Array.isArray(auditRaw.images) ? auditRaw.images : [];
   const knownImageIds = new Set(images.map((image) => image.id));
   const safeImageId = (value: unknown) => {
     const candidate = stringValue(value, images[0].id, 40);
     return knownImageIds.has(candidate) ? candidate : images[0].id;
   };
-  const allCandidates = mergeCandidates(
-    inventoryImages.flatMap((value) => {
-      const item = object(value);
-      return parseCandidates(safeImageId(item.image_id), item);
-    }),
-    auditImages.flatMap((value) => {
-      const item = object(value);
-      return parseCandidates(safeImageId(item.image_id), item);
-    }),
-  );
+  const allCandidates = inventoryImages.flatMap((value) => {
+    const item = object(value);
+    return parseCandidates(safeImageId(item.image_id), item);
+  });
   const bySourceIndex = new Map<string, number>();
   // Modo perceptual (R3): ningún id de catálogo puede salir de este módulo,
   // sin importar lo que haya devuelto el modelo — el chat es el único que
@@ -527,11 +496,10 @@ function buildBlueprint(images: ImagenEtiquetada[], inventoryRaw: Record<string,
 }
 
 /** Prompts and their hash for a mode and catalog; the evaluation runner records the same hash. */
-export function sistemaAnalisis(catalogo: ReferenceCatalogItem[], mode: AnalysisMode, variante: VarianteReconocedor = "v13") {
-  // Candidate rules are appended only on request, so v13 prompts and hashes stay byte-identical.
-  const extra = variante === "v14-candidato" ? `\n${STRUCTURE_RULES_V14_CANDIDATE}` : variante === "v15-candidato" ? `\n${STRUCTURE_RULES_V15_CANDIDATE}` : variante === "v16-candidato" ? `\n${STRUCTURE_RULES_V16_CANDIDATE}` : "";
+export function sistemaAnalisis(catalogo: ReferenceCatalogItem[], mode: AnalysisMode, variante: VarianteReconocedor = VARIANTE_PRODUCCION) {
+  // Each variant appends its rules to the base text, so every variant's prompt and hash stay byte-identical.
+  const extra = variante === "v14-candidato" ? `\n${STRUCTURE_RULES_V14_CANDIDATE}` : variante === "v15-candidato" ? `\n${STRUCTURE_RULES_V15_CANDIDATE}` : variante === "v16" ? `\n${STRUCTURE_RULES_V16}` : "";
   const inventorySystem = (mode === "perceptual" ? INVENTORY_SYSTEM_PERCEPTUAL : INVENTORY_SYSTEM) + extra;
-  const auditSystem = (mode === "perceptual" ? AUDIT_SYSTEM_PERCEPTUAL : AUDIT_SYSTEM) + extra;
   // En modo perceptual nunca se manda el catálogo al modelo: no hay nada
   // válido que pueda elegir, y mandarlo solo lo tentaría a inventar un id.
   const catalogText = mode === "perceptual"
@@ -539,21 +507,23 @@ export function sistemaAnalisis(catalogo: ReferenceCatalogItem[], mode: Analysis
     : catalogo.length
       ? catalogo.map((item) => JSON.stringify({ id: item.id, name: item.nombre, category: item.categoria, colors: item.colores, description: item.descripcion.slice(0, 180) })).join("\n")
       : "No catalog products supplied.";
-  const systemPromptHash = createHash("sha256").update(ANALYSIS_PARSER_VERSION).update(mode).update(inventorySystem).update(auditSystem).update(REAR_LAYER_RULE).update(catalogText).digest("hex");
-  return { inventorySystem, auditSystem, catalogText, systemPromptHash };
+  const systemPromptHash = createHash("sha256").update(ANALYSIS_PARSER_VERSION).update(mode).update(inventorySystem).update(REAR_LAYER_RULE).update(catalogText).digest("hex");
+  return { inventorySystem, catalogText, systemPromptHash };
 }
 
 export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenEtiquetada[], catalogo: ReferenceCatalogItem[] = [], mode: AnalysisMode = "perceptual", telemetria?: ContextoTelemetriaIA, signal?: AbortSignal, opciones: OpcionesAnalisisReferencias = {}): Promise<AnalisisV2Resultado> {
   if (!referencias.length) throw new Error("At least one reference image is required.");
-  const variante = opciones.variante ?? "v13";
-  const { inventorySystem, auditSystem, catalogText, systemPromptHash } = sistemaAnalisis(catalogo, mode, variante);
+  const variante = opciones.variante ?? VARIANTE_PRODUCCION;
+  const { inventorySystem, catalogText, systemPromptHash } = sistemaAnalisis(catalogo, mode, variante);
   const key = analysisCacheKey({ model: chat.modelo, systemPromptHash, images: referencias.map((image) => ({ image_id: image.id, mime: image.mime, base64: image.base64 })) });
-  // The stored gallery analyses are v13 results; a candidate variant never reuses them.
-  if (!opciones.forzarNuevoAnalisis && mode === "perceptual" && variante === "v13") {
+  // The stored gallery analyses were made with the production variant; any other variant never reuses them.
+  if (!opciones.forzarNuevoAnalisis && mode === "perceptual" && variante === VARIANTE_PRODUCCION) {
     const fijo = analisisFijoDeEjemplo(referencias, ANALYSIS_PARSER_VERSION);
     if (fijo) return fijo;
   }
-  const cached = opciones.forzarNuevoAnalisis ? undefined : cache.get(key);
+  // La caché por foto está apagada salvo REFERENCE_ANALYSIS_CACHE_ENABLED (2026-09-25):
+  // servía un análisis viejo de la misma foto y escondía cada arreglo.
+  const cached = opciones.forzarNuevoAnalisis || !referenceAnalysisCacheEnabled() ? undefined : cache.get(key);
   if (cached) return { ...cached, metadata: { ...cached.metadata, cached: true } };
   let entry = enVuelo.get(key);
   if (!entry) {
@@ -561,7 +531,7 @@ export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenE
     const nueva: AnalisisEnVuelo = {
       controller,
       waiters: 0,
-      promise: ejecutarAnalisis({ chat, referencias, catalogo, mode, telemetria, signal: controller.signal, key, systemPromptHash, inventorySystem, auditSystem, catalogText, observarPase: opciones.observarPase })
+      promise: ejecutarAnalisis({ chat, referencias, catalogo, mode, telemetria, signal: controller.signal, key, systemPromptHash, inventorySystem, catalogText, observarPase: opciones.observarPase })
         .then((result) => {
           if (cache.has(key)) cache.delete(key);
           if (cache.size >= MAX_CACHE) cache.delete(cache.keys().next().value!);
@@ -588,17 +558,16 @@ async function ejecutarAnalisis(input: {
   key: string;
   systemPromptHash: string;
   inventorySystem: string;
-  auditSystem: string;
   catalogText: string;
   observarPase?: OpcionesAnalisisReferencias["observarPase"];
 }): Promise<AnalisisV2Resultado> {
-  const { chat, referencias, catalogo, mode, telemetria, signal, key, systemPromptHash, inventorySystem, auditSystem, catalogText, observarPase } = input;
+  const { chat, referencias, catalogo, mode, telemetria, signal, key, systemPromptHash, inventorySystem, catalogText, observarPase } = input;
   const ids = referencias.map((reference) => reference.id);
   const bytesImagenEntrada = referencias.reduce((total, image) => total + bytesDeBase64(image.base64), 0);
   const configHash = analysisConfigHash({ model: chat.modelo, thinkingLevel: chat.thinkingLevel, mode, systemPromptHash });
   const promptVersion = systemPromptHash.slice(0, 16);
   const ejecutarPaso = async (
-    capacidad: "analisis_referencia_inventario" | "analisis_referencia_auditoria",
+    capacidad: PaseObservado["capacidad"],
     peticion: Parameters<ChatPort["turno"]>[0],
     intento: number,
   ) => {
@@ -635,7 +604,7 @@ async function ejecutarAnalisis(input: {
   // The analysis has no side effects, so one bounded retry is safe; a second
   // malformed answer is a retryable provider failure, not a client error.
   const pasoConHerramienta = async (
-    capacidad: "analisis_referencia_inventario" | "analisis_referencia_auditoria",
+    capacidad: PaseObservado["capacidad"],
     peticion: Parameters<ChatPort["turno"]>[0],
     toolName: string,
   ): Promise<Record<string, unknown>> => {
@@ -665,21 +634,7 @@ async function ejecutarAnalisis(input: {
       ...PARAMETROS_INVENTARIO,
       signal,
   }, TOOL.nombre);
-  const draftJson = JSON.stringify(inventoryRaw).slice(0, 24000);
-  // The audit only adds or corrects findings: when it keeps answering with
-  // malformed output the inventory alone is still a valid analysis.
-  const auditRaw = await pasoConHerramienta("analisis_referencia_auditoria", {
-    sistema: mode === "perceptual" ? `${auditSystem}\n${REAR_LAYER_RULE}` : `${auditSystem}\n${REAR_LAYER_RULE}\n\nVALID CATALOG PRODUCTS\n${catalogText}`,
-      historial: [{ rol: "usuario", texto: `Audit the draft inventory below against the same references. Keep exact image IDs. Resolve every finding automatically.\n<DRAFT_INVENTORY>${draftJson}</DRAFT_INVENTORY>`, imagenes: referencias }],
-      herramientas: [AUDIT_TOOL],
-      ...PARAMETROS_AUDITORIA,
-      signal,
-  }, AUDIT_TOOL.nombre).catch((error: unknown) => {
-    if (signal?.aborted || !(error instanceof ErrorIA) || !error.message.includes("malformed output")) throw error;
-    console.warn("[references/analyze] audit skipped after malformed output", { request_id: telemetria?.requestId });
-    return { images: [] } as Record<string, unknown>;
-  });
-  const armado = buildBlueprint(referencias, inventoryRaw, auditRaw, mode === "perceptual" ? [] : catalogo, mode);
+  const armado = buildBlueprint(referencias, inventoryRaw, mode === "perceptual" ? [] : catalogo, mode);
   // La dominancia se mide sobre los píxeles, no sobre el orden en que el modelo
   // escribió los nombres (fase 2.1). Detrás de bandera hasta que el benchmark
   // muestre la mejora.
@@ -689,7 +644,7 @@ async function ejecutarAnalisis(input: {
     tieneEstructurasDeGlobos: tieneEstructurasDeGlobos(blueprint),
     tieneElementos: tieneElementosAprobados(blueprint),
     metadata: {
-      passes: ["inventory", "audit"],
+      passes: ["inventory"],
       cached: false,
       cache_key: key,
       system_prompt_hash: systemPromptHash,

@@ -1,5 +1,6 @@
 import { porcentajesMayorResto } from "../escena/tamano-fisico";
 import type { SceneSpec } from "../escena/scene-spec";
+import type { ArmadoBouquetResuelto } from "@/lib/plan/armado-bouquet";
 import type { PatronColorResuelto } from "@/lib/plan/patron-color";
 
 /**
@@ -70,7 +71,7 @@ export function idDeEstructura(element: SceneSpec["elements"][number]): string {
  * aleatorio: el reparto orgánico de siempre). En ese caso el prompt no cambia.
  */
 export function frasePatronColor(
-  patrones: readonly PatronColorResuelto[] | undefined,
+  patrones: readonly FraseDeEstructura[] | undefined,
   element: SceneSpec["elements"][number],
   campo: "prompt_gemini" | "prompt_lora",
 ): string | undefined {
@@ -78,6 +79,34 @@ export function frasePatronColor(
   const estructura = idDeEstructura(element);
   const frase = patrones.find((patron) => patron.aplicado && patron.estructura_id === estructura)?.[campo].trim();
   return frase || undefined;
+}
+
+/**
+ * Lo que los constructores de prompts leen de un patrón de color o de un
+ * armado de bouquet: a qué estructura pertenece, si está en el plan y las dos
+ * frases que escribió Python. Un `PatronColorResuelto` lo cumple tal cual.
+ */
+export type FraseDeEstructura = Pick<PatronColorResuelto, "estructura_id" | "aplicado" | "prompt_gemini" | "prompt_lora">;
+
+/**
+ * Las frases por estructura de un plan resuelto: sus patrones de color
+ * (ADR-0028 §12) y sus armados de bouquet (ADR-0030), que siempre son del
+ * plan (`aplicado: true`). `undefined` cuando el plan no trae ninguno de los
+ * dos, para que la petición de siempre siga byte a byte igual.
+ */
+export function frasesDeEstructuras(
+  plan: { patrones_color?: readonly PatronColorResuelto[]; armados_bouquet?: readonly ArmadoBouquetResuelto[] } | null | undefined,
+): FraseDeEstructura[] | undefined {
+  if (!plan || (plan.patrones_color === undefined && plan.armados_bouquet === undefined)) return undefined;
+  return [
+    ...(plan.patrones_color ?? []),
+    ...(plan.armados_bouquet ?? []).map((armado) => ({
+      estructura_id: armado.estructura_id,
+      aplicado: true,
+      prompt_gemini: armado.prompt_gemini,
+      prompt_lora: armado.prompt_lora,
+    })),
+  ];
 }
 
 /**

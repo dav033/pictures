@@ -1,7 +1,6 @@
 import { AMBIENTACION_IMAGEN, perfilCreatividad, type AmbientacionImagen, type NivelCreatividad } from "../escena/creatividad";
 import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
-import { describirMezclaDeColor, frasePatronColor, mezclaDeColorDeEstructura } from "./mezcla-color-escena";
-import type { PatronColorResuelto } from "@/lib/plan/patron-color";
+import { describirMezclaDeColor, frasePatronColor, mezclaDeColorDeEstructura, type FraseDeEstructura } from "./mezcla-color-escena";
 import { tableSupportedElements, type SceneryElement, type SceneSpec } from "../escena/scene-spec";
 import { buildLoraImagePromptV2, compileLoraCaption, GROUPING_ONLY_CONTEXT, type LoraVisualClause } from "../kagutsuchi/lora-caption-compiler";
 import { findSeparateSidePieces } from "./separate-side-pieces";
@@ -61,12 +60,13 @@ export type ImagePromptInput = {
    */
   scenography?: readonly SceneryElement[];
   /**
-   * `plan_resuelto.patrones_color`, tal como lo escribió Python (ADR-0028 §12).
-   * Adaptador temporal: el prompt solo inserta `prompt_gemini` de la estructura;
-   * nunca redacta ni interpreta un patrón. Sin patrón aplicado con frase, el
+   * `plan_resuelto.patrones_color` y `armados_bouquet`, tal como los escribió
+   * Python (ADR-0028 §12, ADR-0030; `frasesDeEstructuras`). Adaptador
+   * temporal: el prompt solo inserta `prompt_gemini` de la estructura; nunca
+   * redacta ni interpreta un patrón ni un armado. Sin frase aplicada, el
    * prompt es byte a byte el de siempre.
    */
-  colorPatterns?: readonly PatronColorResuelto[];
+  colorPatterns?: readonly FraseDeEstructura[];
 };
 
 /**
@@ -173,7 +173,7 @@ export function placementDescription(target: SceneSpec["elements"][number]["targ
   return `${vertical} ${horizontal} area of the composition`;
 }
 
-function compactSceneSpec(scene: SceneSpec, colorPatterns?: readonly PatronColorResuelto[]): string {
+function compactSceneSpec(scene: SceneSpec, colorPatterns?: readonly FraseDeEstructura[]): string {
   return JSON.stringify({
     // This is a rendering brief, not the internal scene record. Never expose
     // plan/element/venue identifiers to the image model: they are useful for
@@ -439,11 +439,11 @@ const ORGANIC_COLOR_DISTRIBUTION = "Distribute them through intentional organic 
  * conteo sale de él. La misma condición decide la línea de color y el
  * `color_pattern` del JSON de escena, para que nunca se contradigan.
  */
-function colorPatternSentence(element: SceneSpec["elements"][number], colorPatterns?: readonly PatronColorResuelto[]): string | undefined {
+function colorPatternSentence(element: SceneSpec["elements"][number], colorPatterns?: readonly FraseDeEstructura[]): string | undefined {
   return tieneContratoDeColor(element) ? frasePatronColor(colorPatterns, element, "prompt_gemini") : undefined;
 }
 
-function colorVarietyContract(sceneSpec: SceneSpec, colorPatterns?: readonly PatronColorResuelto[]): string[] {
+function colorVarietyContract(sceneSpec: SceneSpec, colorPatterns?: readonly FraseDeEstructura[]): string[] {
   const balloonStructures = sceneSpec.elements.filter(tieneContratoDeColor);
   if (balloonStructures.length === 0) {
     return ["No balloon color mix is approved; do not add balloon structures or colors as atmosphere."];

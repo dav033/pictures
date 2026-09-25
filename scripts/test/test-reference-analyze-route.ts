@@ -174,7 +174,7 @@ async function run(): Promise<void> {
       blueprint: { schema_version: "2.0", source_images: [{ image_id: "REF_01", approved_roles: ["composition_reference"] }], elements: [], composition: { focal_point: "x", density: "unknown", symmetry: "unknown", negative_space: [] }, palette: { observed: [], priority: [] }, unresolved_decisions: [] },
       tieneEstructurasDeGlobos: false,
       tieneElementos: false,
-      metadata: { passes: ["inventory", "audit"], cached: false, cache_key: "k", system_prompt_hash: "h", requires_review: false, unresolved_count: 0, default_approval_rule: "r" },
+      metadata: { passes: ["inventory"], cached: false, cache_key: "k", system_prompt_hash: "h", requires_review: false, unresolved_count: 0, default_approval_rule: "r" },
     } as AnalisisV2Resultado;
     const body = cuerpoExito(result, references, requestId, "gemini");
     assert.equal(body.request_id, requestId);

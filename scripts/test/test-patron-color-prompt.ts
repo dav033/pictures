@@ -8,6 +8,8 @@ import { planBlueprint } from "@/lib/plan/blueprint";
 import { planResueltoDesdePython } from "@/lib/plan/python-mapper";
 import { cajasDeEstructuras } from "@/lib/plan/ubicaciones";
 import { PatronColorResueltoSchema, type PatronColorResuelto } from "@/lib/plan/patron-color";
+import { ArmadoBouquetResueltoSchema, type ArmadoBouquetResuelto } from "@/lib/plan/armado-bouquet";
+import { frasesDeEstructuras } from "@/lib/ia/uzume/mezcla-color-escena";
 import { buildApprovedSceneSpec, type SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { bloqueMezclaPorEstructura } from "@/lib/ia/escena/tamano-fisico";
 import { buildVisualContext } from "@/lib/ia/escena/visual-context";
@@ -58,6 +60,14 @@ function leerFixture(nombre: string): unknown {
 }
 
 const PATRONES = z.record(z.string(), PatronColorResueltoSchema).parse(leerFixture("patrones.json"));
+/** Armados de bouquet como los escribe Python (ADR-0030), fijados a mano igual que los patrones. */
+const ARMADOS = z.record(z.string(), ArmadoBouquetResueltoSchema).parse(leerFixture("armados.json"));
+
+function armado(nombre: string, cambios: Partial<ArmadoBouquetResuelto> = {}): ArmadoBouquetResuelto {
+  const base = ARMADOS[nombre];
+  if (!base) throw new Error(`armado de fixture desconocido: ${nombre} (hay ${Object.keys(ARMADOS).join(", ")})`);
+  return ArmadoBouquetResueltoSchema.parse({ ...base, ...cambios });
+}
 
 function patron(nombre: string, cambios: Partial<PatronColorResuelto> = {}): PatronColorResuelto {
   const base = PATRONES[nombre];
@@ -301,8 +311,50 @@ function main(): void {
   loraConPatron(instantanea);
   agrupacionConPatron();
   compactacionConPatron();
+  armadoDeBouquetEnLosPrompts(instantanea);
   // Al final: es la frontera con la salida real de Python, no con las frases fijadas arriba.
   vectoresDoradosConPatron();
+}
+
+/**
+ * El armado de un bouquet (ADR-0030) entra por la misma puerta que el patrón:
+ * `frasesDeEstructuras` junta `patrones_color` y `armados_bouquet` y los
+ * constructores insertan `prompt_gemini` / `prompt_lora` tal cual, sin
+ * redactar nada. Sin armados ni patrones la petición es la de siempre.
+ */
+function armadoDeBouquetEnLosPrompts(instantanea: Readonly<Record<string, string>>): void {
+  const cumple = planFijado("calibracion-cumple-semiarco-columna");
+  const bouquetHelio = armado("apilado-semiarco");
+  assert.equal(bouquetHelio.estructura_id, "EST_01_SEMIARCO");
+  // Sin ninguno de los dos, nada que insertar: la petición de siempre.
+  assert.equal(frasesDeEstructuras({}), undefined);
+  assert.equal(frasesDeEstructuras(null), undefined);
+  const frases = frasesDeEstructuras({ armados_bouquet: [bouquetHelio] })!;
+  assert.deepEqual(frases, [{ estructura_id: "EST_01_SEMIARCO", aplicado: true, prompt_gemini: bouquetHelio.prompt_gemini, prompt_lora: bouquetHelio.prompt_lora }]);
+  // Un patrón y un armado de piezas distintas conviven en la misma lista.
+  const espiralColumna = patron("espiral-columna", { estructura_id: "EST_02_COLUMNA" });
+  assert.equal(frasesDeEstructuras({ patrones_color: [espiralColumna], armados_bouquet: [bouquetHelio] })!.length, 2);
+
+  // Gemini: la frase del armado va en la línea de color de su pieza y en su color_pattern.
+  const escena = escenaDePlan(cumple);
+  const prompt = buildImagePrompt({ sceneSpec: escena, visualContext: CONTEXTO_CUMPLE, sizeMixBlock: sizeMixDe(cumple.plan, escena), officialStructures: officialStructuresDe(cumple.plan), colorPatterns: frases });
+  const lineaSemiarco = prompt.split("\n").find((linea) => linea.startsWith("- Semiarco derecho: "))!;
+  assert.ok(lineaSemiarco.endsWith(` ${bouquetHelio.prompt_gemini} Do not invent, recolor, or borrow any additional color.`), lineaSemiarco);
+  assert.doesNotMatch(lineaSemiarco, /organic clusters/);
+  const deshecho = prompt
+    .replace(bouquetHelio.prompt_gemini, "Distribute them through intentional organic clusters and transitions; avoid flat stripes, random speckles, or one color replacing another.")
+    .replace(`,"color_pattern":${JSON.stringify(bouquetHelio.prompt_gemini)}`, "");
+  assert.equal(deshecho, instantanea["gemini/cumple-semiarco-columna"]);
+
+  // LoRA: el fragmento va tras la frase de materiales, en su cláusula y en el JSON, y pasa el control de idioma y el preflight.
+  const caption = compileLoraCaption({ sceneSpec: escena, visualContext: CONTEXTO_CUMPLE, officialStructures: officialStructuresDe(cumple.plan), dialect: "product_v007", colorPatterns: frases });
+  assert.equal(clausulaDe(caption.clauses, "EST_01_SEMIARCO").colorPattern, bouquetHelio.prompt_lora);
+  assert.equal(vecesEn(caption.prompt, bouquetHelio.prompt_lora), 1, caption.prompt);
+  const json = ensureLoraTriggers(caption.jsonPrompt, [{ path: "patron-color", trigger: "eventdecor_style_v2", scale: 1 }]);
+  assert.deepEqual(findLoraPromptLanguageLeaks(`${caption.prompt} ${json}`), [], "Python escribió prompt_lora con texto que el LoRA rechaza");
+  const reporte = preflight(escena, caption);
+  assert.equal(reporte.ok, true, reporte.errors.join("; "));
+  console.log("[PASS] bouquet: el armado de Python entra en los prompts Gemini y LoRA por la misma puerta que el patrón, tal cual");
 }
 
 /** Gemini: la frase de Python reemplaza SOLO la del reparto orgánico, en la línea de su estructura. */

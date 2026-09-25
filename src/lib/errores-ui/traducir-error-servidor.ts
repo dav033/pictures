@@ -183,7 +183,7 @@ export function clasificarErrorServidor(error: unknown): ClasificacionError {
     // Color pattern (ADR-0028): the decorator fixes it in the pattern editor,
     // so the action is "ajustar", not "pedir otra propuesta", and the sentence
     // is the specific one (Python's own for `patron_invalido`).
-    if (error.causa === "PATRON_INVALIDO" || error.causa === "PATRON_ACTIVO") {
+    if (error.causa === "PATRON_INVALIDO" || error.causa === "PATRON_ACTIVO" || error.causa === "ARMADO_INVALIDO") {
       return {
         code: "PROPUESTA_INCOMPLETA",
         codigoOrigen: error.patron ? `${error.causa}:${error.patron.motivo}` : error.causa,
