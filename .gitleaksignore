@@ -14,3 +14,4 @@ c7facf3bf6d054f14d2937e3085ea2e4931af74a:.env.local.example:generic-api-key:31
 4bdb5c5eff79fe4474572207ca5bac27a7b4994f:src/lib/ia/analisis-ejemplos.json:generic-api-key:4057
 # False positive: `apilado.estructura_id` (a test variable; "api" is a substring of the Spanish word) with a structure id, not a key.
 411cc16f1c2785318a16c50866d0a0bacf005ca5:scripts/test/test-patron-color-prompt.ts:generic-api-key:328
+532ce8f4026da6cd6419f162fd2fb0f40dfc0595:scripts/test/test-patron-color-prompt.ts:generic-api-key:328
