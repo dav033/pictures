@@ -801,6 +801,148 @@
               "niveles"
             ],
             "additionalProperties": false
+          },
+          "armado_guirnalda": {
+            "type": "object",
+            "properties": {
+              "version": {
+                "type": "string",
+                "const": "armado-guirnalda.v1"
+              },
+              "origen": {
+                "type": "string",
+                "enum": [
+                  "decorador",
+                  "referencia",
+                  "sugerido"
+                ]
+              },
+              "soporte": {
+                "type": "string",
+                "enum": [
+                  "pared",
+                  "colgada",
+                  "piso",
+                  "mesa",
+                  "sobre_estructura"
+                ]
+              },
+              "estructura_id": {
+                "type": "string",
+                "pattern": "^EST_\\d{2}_[A-Z_]+$"
+              },
+              "forma": {
+                "type": "string",
+                "enum": [
+                  "recta",
+                  "curva",
+                  "ondulada",
+                  "u_invertida",
+                  "arco_caido"
+                ]
+              },
+              "caida_m": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 5
+              },
+              "puntos_de_anclaje": {
+                "type": "integer",
+                "minimum": 2,
+                "maximum": 6
+              },
+              "racimo": {
+                "type": "object",
+                "properties": {
+                  "unidad": {
+                    "type": "string",
+                    "enum": [
+                      "trio",
+                      "cuarteto",
+                      "quinteto"
+                    ]
+                  },
+                  "tamano_pulg_base": {
+                    "type": "number",
+                    "enum": [
+                      9,
+                      11,
+                      12
+                    ]
+                  }
+                },
+                "required": [
+                  "unidad",
+                  "tamano_pulg_base"
+                ],
+                "additionalProperties": false
+              },
+              "relleno": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "material": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 11
+                      },
+                      "proporcion": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 0.5
+                      }
+                    },
+                    "required": [
+                      "material",
+                      "proporcion"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "remates": {
+                "maxItems": 6,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "material": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 11
+                    },
+                    "posicion": {
+                      "type": "string",
+                      "enum": [
+                        "extremo_izq",
+                        "extremo_der",
+                        "centro",
+                        "cada_n"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "material",
+                    "posicion"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "version",
+              "origen",
+              "soporte",
+              "forma",
+              "racimo",
+              "relleno",
+              "remates"
+            ],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -1847,6 +1989,31 @@
     },
     "semiarco_asimetrico": {
       "anchoFinalBanda": 0.4
+    },
+    "guirnalda": {
+      "eje": "largo",
+      "formas": {
+        "recta": {
+          "factorPerfil": 1,
+          "conCaida": false
+        },
+        "curva": {
+          "factorPerfil": 1,
+          "conCaida": false
+        },
+        "ondulada": {
+          "factorPerfil": 1,
+          "conCaida": false
+        },
+        "u_invertida": {
+          "factorPerfil": 1,
+          "conCaida": true
+        },
+        "arco_caido": {
+          "factorPerfil": 1,
+          "conCaida": true
+        }
+      }
     },
     "aro_circular": {
       "eje": "circunferencia"

@@ -1,7 +1,8 @@
 """Edición de un plan aprobado y vista previa de su patrón de color (ADR-0028 §9, §10).
 
 Dueño único de la mutación declarativa de un plan: ``agregar``, ``reemplazar``,
-``quitar``, ``repartir``, ``mezcla`` y ``patron``. Las cinco primeras son el
+``quitar``, ``repartir``, ``mezcla``, ``patron``, ``armado`` (bouquet, ADR-0030)
+y ``armado_guirnalda`` (ADR-0032). Las cinco primeras son el
 port uno a uno de ``aplicarEdicion`` (antes en ``src/lib/plan/aplicar-edicion.ts``,
 con su redondeo de ``participacion`` a seis decimales); encima van las reglas
 de patrón del §9. Next conserva lo que no es del dominio: el token firmado, la
@@ -55,8 +56,10 @@ from app.plan import (
     opciones_de_armado,
     sincronizar_participaciones,
     sugerir_patron_para_estructura,
+    validar_armado_guirnalda_sin_catalogo,
     validar_armado_sin_catalogo,
     vista_previa_de_armado,
+    vista_previa_de_armado_guirnalda,
     vista_previa_de_estructura,
 )
 
@@ -69,6 +72,9 @@ PLAN_PATRON_RESULT_VERSION = "plan-patron-result.v1"
 PLAN_ARMADO_SCOPE = "plan.armado_bouquet"
 PLAN_ARMADO_REQUEST_VERSION = "plan-armado-bouquet.v1"
 PLAN_ARMADO_RESULT_VERSION = "plan-armado-bouquet-result.v1"
+PLAN_ARMADO_GUIRNALDA_SCOPE = "plan.armado_guirnalda"
+PLAN_ARMADO_GUIRNALDA_REQUEST_VERSION = "plan-armado-guirnalda.v1"
+PLAN_ARMADO_GUIRNALDA_RESULT_VERSION = "plan-armado-guirnalda-result.v1"
 #: Materiales por estructura en Plan 1.1.
 MAX_GLOBOS_PIEZA = 12
 
@@ -115,6 +121,22 @@ _ARMADO_FORMA = Draft7Validator(
 )
 AVISO_ARMADO_QUITADO = "El armado del bouquet se quitó porque cambiaste sus globos."
 AVISO_ARMADO_REHACER = "El armado del bouquet se vuelve a sugerir con los globos nuevos."
+# Guirnaldas (ADR-0032): lo mismo que `plan_resuelto.armados_guirnalda[]` y su forma.
+_ARMADO_GUIRNALDA_RESUELTO = Draft7Validator(
+    contract_schema("PlanResuelto")["properties"]["armados_guirnalda"]["items"]
+)
+_ARMADO_GUIRNALDA_FORMA = Draft7Validator(
+    contract_schema("PlanDecoracion")["properties"]["estructuras"]["items"]["properties"][
+        "armado_guirnalda"
+    ]
+)
+AVISO_ARMADO_GUIRNALDA_QUITADO = (
+    "El armado de la guirnalda se quitó porque ya no cabe en sus globos."
+)
+AVISO_ARMADO_GUIRNALDA_COLOR = "El armado de la guirnalda se quitó porque quitaste un color."
+AVISO_ARMADO_GUIRNALDA_REHACER = (
+    "El armado de la guirnalda se vuelve a sugerir con los globos nuevos."
+)
 
 
 # --- Contrato local (ADR-0026 §3) --------------------------------------------------
@@ -225,10 +247,30 @@ class EdicionArmado(_Estricto):
         return valor
 
 
-Edicion = Annotated[
-    EdicionMaterial | EdicionReparto | EdicionMezcla | EdicionPatron | EdicionArmado,
-    Field(discriminator="accion"),
-]
+class EdicionArmadoGuirnalda(_Estricto):
+    """Fija (o, con ``None``, quita) el armado por partes de una guirnalda (ADR-0032)."""
+
+    accion: Literal["armado_guirnalda"]
+    estructura_id: Identificador
+    armado_guirnalda: dict[str, object] | None
+
+    @field_validator("armado_guirnalda")
+    @classmethod
+    def validar_forma(cls, valor: dict[str, object] | None) -> dict[str, object] | None:
+        if valor is not None and next(_ARMADO_GUIRNALDA_FORMA.iter_errors(valor), None) is not None:
+            raise ValueError("armado_guirnalda no cumple armado-guirnalda.v1")
+        return valor
+
+
+EdicionPlan = (
+    EdicionMaterial
+    | EdicionReparto
+    | EdicionMezcla
+    | EdicionPatron
+    | EdicionArmado
+    | EdicionArmadoGuirnalda
+)
+Edicion = Annotated[EdicionPlan, Field(discriminator="accion")]
 
 
 class GloboNavegador(_Estricto):
@@ -266,6 +308,8 @@ class PlanEditRequest(OperationalRequest):
     completar_patrones: bool = Field(default=False, strict=True)
     #: ``BOUQUETS_ARMADO_V1``: Next volverá a sugerir el armado que la edición quita.
     completar_armados: bool = Field(default=False, strict=True)
+    #: ``GUIRNALDAS_ARMADO_V1``: lo mismo para el armado de una guirnalda (ADR-0032).
+    completar_armados_guirnalda: bool = Field(default=False, strict=True)
 
 
 class PlanPatronRequest(OperationalRequest):
@@ -349,6 +393,37 @@ class PlanArmadoRequest(OperationalRequest):
         ):
             raise ValueError("variante y disposicion solo piden una sugerencia")
         return self
+
+
+class LineaGuirnalda(LineaComprada):
+    """Línea resuelta de una guirnalda (vista previa del armado, ADR-0032).
+
+    La de ``LineaComprada`` más el código de tamaño, con el que la leyenda
+    nombra cada globo como al resolver. Solo nombra: nunca cuenta ni cobra.
+    """
+
+    tamano_codigo: str | None = Field(default=None, max_length=40)
+
+
+class PlanArmadoGuirnaldaRequest(OperationalRequest):
+    """``plan-armado-guirnalda.v1``: resolver el armado de una guirnalda (o sugerir uno con ``None``).
+
+    Sin catálogo: los globos los cuenta el plan; ``lineas`` (las líneas
+    resueltas de la pieza que tiene el navegador) solo nombran cada código.
+    """
+
+    schema_version: Literal["plan-armado-guirnalda.v1"]
+    plan: dict[str, object]
+    estructura_id: Identificador
+    armado_guirnalda: dict[str, object] | None
+    lineas: list[LineaGuirnalda] | None = Field(default=None, max_length=MAX_LINEAS_PIEZA)
+
+    @field_validator("armado_guirnalda")
+    @classmethod
+    def validar_forma(cls, valor: dict[str, object] | None) -> dict[str, object] | None:
+        if valor is not None and next(_ARMADO_GUIRNALDA_FORMA.iter_errors(valor), None) is not None:
+            raise ValueError("armado_guirnalda no cumple armado-guirnalda.v1")
+        return valor
 
 
 @dataclass(frozen=True, slots=True)
@@ -798,20 +873,69 @@ def _fijar_armado(estructura: dict[str, object], edicion: EdicionArmado) -> None
     estructura["armado_bouquet"] = armado
 
 
+def _fijar_armado_guirnalda(
+    plan: dict[str, object], estructura: dict[str, object], edicion: EdicionArmadoGuirnalda
+) -> None:
+    """Fija o quita el armado de una guirnalda; valida todo sin catálogo (``armado_invalido``).
+
+    Todo lo que un armado de guirnalda comprueba se sabe sin catálogo: la pieza
+    anfitriona, los anclajes, el relleno, los remates y el patrón; con una
+    forma que cuelga, el conteo con el largo de la cuerda.
+    """
+    if edicion.armado_guirnalda is None:
+        estructura.pop("armado_guirnalda", None)
+        return
+    armado = copy.deepcopy(edicion.armado_guirnalda)
+    validar_armado_guirnalda_sin_catalogo(plan, edicion.estructura_id, armado)
+    estructura["armado_guirnalda"] = armado
+
+
+def _revisar_armado_guirnalda(
+    plan: dict[str, object], indice: int, *, quitar_siempre: bool, rehacer: bool
+) -> list[str]:
+    """Una guirnalda editada conserva su armado solo si todavía cabe en sus globos (ADR-0032).
+
+    El armado de una guirnalda no lleva cantidades: tras cambiar colores,
+    reparto, mezcla o patrón se vuelve a validar contra el plan editado y se
+    queda si vale. Quitar un color corre los índices de ``materiales``, así
+    que ahí se quita siempre. Con ``rehacer`` (``completar_armados_guirnalda``,
+    la bandera de Next) el aviso dice que la re-resolución lo vuelve a sugerir.
+    """
+    estructura = _estructura(plan, indice)
+    armado = estructura.get("armado_guirnalda")
+    if armado is None:
+        return []
+    if not quitar_siempre:
+        try:
+            validar_armado_guirnalda_sin_catalogo(
+                plan, str(estructura["estructura_id"]), cast(Mapping[str, object], armado)
+            )
+            return []
+        except PlanResolutionError as error:
+            if error.code != "armado_invalido":
+                raise
+    estructura.pop("armado_guirnalda", None)
+    if rehacer:
+        return [AVISO_ARMADO_GUIRNALDA_REHACER]
+    return [AVISO_ARMADO_GUIRNALDA_COLOR if quitar_siempre else AVISO_ARMADO_GUIRNALDA_QUITADO]
+
+
 def editar_plan(
     plan: Mapping[str, object],
-    edicion: EdicionMaterial | EdicionReparto | EdicionMezcla | EdicionPatron | EdicionArmado,
+    edicion: EdicionPlan,
     lineas_base: Sequence[LineasBaseEstructura] = (),
     colores_variante: Sequence[str] = (),
     *,
     completar_patrones: bool = False,
     completar_armados: bool = False,
+    completar_armados_guirnalda: bool = False,
 ) -> PlanEditado:
     """Aplica una edición al plan declarativo y devuelve el plan editado, ya validado.
 
     Si la estructura editada termina con patrón, ``participacion`` se reescribe
     desde su rejilla (``sincronizar_participaciones``): el plan editado ya dice
-    lo que la resolución va a contar.
+    lo que la resolución va a contar. Una guirnalda con armado lo conserva
+    mientras siga cabiendo en sus globos (``_revisar_armado_guirnalda``).
     """
     _validar_plan(plan)
     editado = copy.deepcopy(dict(plan))
@@ -835,6 +959,8 @@ def editar_plan(
             estructura["patron_color"] = copy.deepcopy(edicion.patron_color)
     elif isinstance(edicion, EdicionArmado):
         _fijar_armado(estructura, edicion)
+    elif isinstance(edicion, EdicionArmadoGuirnalda):
+        _fijar_armado_guirnalda(editado, estructura, edicion)
     elif isinstance(edicion, EdicionReparto):
         avisos = _repartir(estructura, edicion.participaciones)
         avisos += _quitar_armado(estructura, rehacer=completar_armados)
@@ -849,6 +975,13 @@ def editar_plan(
         # Valida el patrón (forma y reglas del §4) y reescribe participacion,
         # solo en la pieza editada: las demás no cambiaron.
         editado = sincronizar_participaciones(editado, edicion.estructura_id)
+    if not isinstance(edicion, (EdicionArmado, EdicionArmadoGuirnalda)):
+        avisos += _revisar_armado_guirnalda(
+            editado,
+            indice,
+            quitar_siempre=isinstance(edicion, EdicionMaterial) and edicion.accion == "quitar",
+            rehacer=completar_armados_guirnalda,
+        )
     _validar_plan(editado)
     return PlanEditado(plan=editado, avisos=tuple(aviso[:_MAX_AVISO] for aviso in avisos))
 
@@ -862,6 +995,7 @@ def ejecutar_edicion(request: PlanEditRequest) -> dict[str, object]:
         request.colores_variante,
         completar_patrones=request.completar_patrones,
         completar_armados=request.completar_armados,
+        completar_armados_guirnalda=request.completar_armados_guirnalda,
     )
     return {
         "operation_schema_version": PLAN_EDIT_RESULT_VERSION,
@@ -912,6 +1046,29 @@ def vista_previa_armado(request: PlanArmadoRequest) -> dict[str, object]:
         "armado": vista.armado,
         "variantes_admitidas": [v for v in VARIANTES if v in vista.variantes_admitidas],
         "disposiciones_admitidas": [d for d in DISPOSICIONES if d in vista.disposiciones_admitidas],
+    }
+
+
+def vista_previa_armado_guirnalda(request: PlanArmadoGuirnaldaRequest) -> dict[str, object]:
+    """``plan-armado-guirnalda-result.v1``: el armado dado resuelto, o la receta con ``None``.
+
+    Sin catálogo; la leyenda, los racimos, los insumos y las frases son los que
+    dará la próxima resolución. ``opciones`` es lo que el editor puede ofrecer
+    para la pieza (soportes, anfitrionas, unidades, tamaños base, colores de
+    relleno y de remate), decidido en Python.
+    """
+    vista = vista_previa_de_armado_guirnalda(
+        request.plan,
+        request.estructura_id,
+        request.armado_guirnalda,
+        [linea.model_dump() for linea in request.lineas] if request.lineas else None,
+    )
+    if next(_ARMADO_GUIRNALDA_RESUELTO.iter_errors(vista.armado), None) is not None:
+        raise RuntimeError("el armado resuelto no cumple plan-resuelto.v1")
+    return {
+        "operation_schema_version": PLAN_ARMADO_GUIRNALDA_RESULT_VERSION,
+        "armado": vista.armado,
+        "opciones": vista.opciones,
     }
 
 
@@ -1033,9 +1190,14 @@ def vista_previa_patron(request: PlanPatronRequest) -> dict[str, object]:
 
 
 __all__ = [
+    "AVISO_ARMADO_GUIRNALDA_COLOR",
+    "AVISO_ARMADO_GUIRNALDA_QUITADO",
+    "AVISO_ARMADO_GUIRNALDA_REHACER",
     "AVISO_ARMADO_QUITADO",
     "AVISO_ARMADO_REHACER",
     "EdicionArmado",
+    "EdicionArmadoGuirnalda",
+    "EdicionPlan",
     "EdicionMaterial",
     "EdicionMezcla",
     "EdicionPatron",
@@ -1043,15 +1205,19 @@ __all__ = [
     "GloboNavegador",
     "LineaBase",
     "LineaComprada",
+    "LineaGuirnalda",
     "LineasBaseEstructura",
     "MAX_LINEAS_PIEZA",
     "ORIGEN_DECORADOR",
     "PARTICIPACION_AGREGAR",
+    "PLAN_ARMADO_GUIRNALDA_SCOPE",
     "PLAN_ARMADO_SCOPE",
     "PLAN_EDIT_SCOPE",
     "PLAN_PATRON_SCOPE",
+    "PlanArmadoGuirnaldaRequest",
     "PlanArmadoRequest",
     "vista_previa_armado",
+    "vista_previa_armado_guirnalda",
     "PlanEditRequest",
     "PlanEditado",
     "PlanPatronRequest",

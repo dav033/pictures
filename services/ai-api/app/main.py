@@ -113,14 +113,17 @@ from app.plan import (
 from app.armado_bouquet import DISPOSICIONES as DISPOSICIONES_BOUQUET
 from app.armado_bouquet import VARIANTES as VARIANTES_BOUQUET
 from app.plan_edicion import (
+    PLAN_ARMADO_GUIRNALDA_SCOPE,
     PLAN_ARMADO_SCOPE,
     PLAN_EDIT_SCOPE,
     PLAN_PATRON_SCOPE,
+    PlanArmadoGuirnaldaRequest,
     PlanArmadoRequest,
     PlanEditRequest,
     PlanPatronRequest,
     ejecutar_edicion,
     vista_previa_armado,
+    vista_previa_armado_guirnalda,
     vista_previa_patron,
 )
 from app.postgres_store import PostgresOperationalStore
@@ -1502,6 +1505,28 @@ def create_app(
             operation="plan.armado_bouquet",
             model=PlanArmadoRequest,
             scope=PLAN_ARMADO_SCOPE,
+            handler=handler,
+        )
+
+    @application.post("/internal/v1/plan/armado-guirnalda")
+    async def plan_armado_guirnalda(request: Request) -> Response:
+        # ADR-0032: resolves (or suggests) one garland's assembly for the
+        # editor, without the catalog: the plan counts the balloons and the
+        # browser's resolved lines only name them.
+        async def handler(payload: OperationalRequest) -> dict[str, object]:
+            if not isinstance(payload, PlanArmadoGuirnaldaRequest):
+                raise _error("invalid_request", 422)
+            try:
+                result = await run_plan_cpu(vista_previa_armado_guirnalda, payload)
+            except PlanResolutionError as error:
+                raise _error(error.code, error.status_code, error.details) from None
+            return {"payload": result}
+
+        return await _handle_operational_request(
+            request,
+            operation="plan.armado_guirnalda",
+            model=PlanArmadoGuirnaldaRequest,
+            scope=PLAN_ARMADO_GUIRNALDA_SCOPE,
             handler=handler,
         )
 
