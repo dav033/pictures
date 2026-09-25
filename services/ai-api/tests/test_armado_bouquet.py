@@ -502,3 +502,22 @@ def test_los_numeros_abajo_van_de_pie_y_no_flotan() -> None:
     assert "de pie en la base" in " ".join(resuelto["pasos"])  # type: ignore[arg-type]
     assert "standing at the base" in str(resuelto["prompt_gemini"])
     assert str(resuelto["prompt_lora"]).endswith("standing at the base")
+
+
+def test_escalonado_sin_remate_ni_numeros_no_nombra_una_pieza_central() -> None:
+    estructura = _estructura([_latex(9, "negro")], [10])
+    armado = sugerir_armado(estructura)
+    assert armado is not None and armado["variante"] == "helio_escalonado"
+    gemini = str(armado_resuelto(estructura, armado)["prompt_gemini"])
+    # Sin remate ni números no hay pieza central que rodear ni que suba más alto.
+    assert "central piece" not in gemini
+    assert "staggered at clearly different heights." in gemini
+    assert gemini.endswith("No two balloons at the same height.")
+    con_estrella = _estructura(
+        [_latex(12, "blanco"), _globo("B2b Globo Metalizado Estrella Dorado Mate — 36 IN")],
+        [4, 1],
+    )
+    armado = sugerir_armado(con_estrella, variante="helio_escalonado")
+    assert armado is not None
+    gemini = str(armado_resuelto(con_estrella, armado)["prompt_gemini"])
+    assert "around the central piece" in gemini and gemini.endswith("floats highest.")

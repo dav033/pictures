@@ -909,15 +909,35 @@ def _numeros_lora(digitos: Sequence[MaterialBouquet]) -> str:
     return uno_por_uno
 
 
+_SIN_PIEZA_CENTRAL = " around the central piece"
+
+
+def _con_pieza_central(con_remate: bool, con_numeros: bool, disposicion: str | None) -> bool:
+    """Si el bouquet escalonado tiene pieza central: el remate o números que flotan."""
+    return con_remate or (con_numeros and disposicion != "abajo")
+
+
+def _apertura(variante: str, apertura: str, pieza_central: bool) -> str:
+    """La primera frase Gemini; el escalonado sin remate ni números no rodea nada."""
+    if variante == "helio_escalonado" and not pieza_central:
+        return apertura.replace(_SIN_PIEZA_CENTRAL, "")
+    return apertura
+
+
 def _cierre(
     variante: str, cierre: str, con_remate: bool, con_numeros: bool, disposicion: str | None
 ) -> str:
-    """La última frase Gemini. Con base de aire nombra solo lo que va en varilla.
+    """La última frase Gemini: nombra solo las piezas que la compra trae.
 
-    Decía siempre "the topper and the numbers stand on sticks", también sin
-    números: una frase así le pide al modelo de imagen globos que no se compran.
-    Abajo, los números van de pie en la base, no en varilla.
+    Con base de aire decía siempre "the topper and the numbers stand on sticks",
+    también sin números, y el escalonado "the central piece floats highest" sin
+    remate ni números: frases así le piden al modelo de imagen globos que no se
+    compran. Abajo, los números van de pie en la base, no en varilla.
     """
+    if variante == "helio_escalonado" and not _con_pieza_central(
+        con_remate, con_numeros, disposicion
+    ):
+        return cierre.split(";")[0] + "."
     if variante != "base_aire":
         return cierre
     en_varilla = (["the topper"] if con_remate else []) + (
@@ -959,14 +979,15 @@ def _frases_prompt(
             f"{_plural(cantidad, *_UNIDAD_EN[str(nivel['unidad'])])} of "
             + (globos[0] if len(set(globos)) == 1 else lista_en(globos))
         )
-    frases = [f"BOUQUET ASSEMBLY — {apertura}."]
+    disposicion = str(numero["disposicion"]) if isinstance(numero, Mapping) else None
+    pieza_central = _con_pieza_central(bool(remate), bool(digitos), disposicion)
+    frases = [f"BOUQUET ASSEMBLY — {_apertura(variante, apertura, pieza_central)}."]
     if grupos > 1:
         frases.append("Build two matching bouquets, one per number.")
     if partes:
         frases.append("From the bottom up: " + "; ".join(partes) + ".")
     if remate:
         frases.append("Topper: " + lista_en([_globo_en(g, lora=False) for g in remate]) + ".")
-    disposicion = str(numero["disposicion"]) if isinstance(numero, Mapping) else None
     if digitos and disposicion is not None:
         frases.append(
             "Number balloons: "
