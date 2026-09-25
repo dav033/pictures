@@ -19,3 +19,8 @@ class DefinicionEstructura:
     #: escribe el prompt de `patron_referencia.py`. ``None``: el tipo no tiene
     #: patrón de color por posición.
     inicio_de_pieza: str | None
+    #: Cómo cuenta un decorador los globos de este tipo de pieza en una foto, en
+    #: inglés, como lo escribe el prompt de `conteo_referencia.py` (ADR-0031).
+    #: Describe qué mirar, nunca cuántos globos lleva: la cantidad por metro o
+    #: por densidad es de `app/plan.py` y no se le sugiere al modelo.
+    como_contar: str

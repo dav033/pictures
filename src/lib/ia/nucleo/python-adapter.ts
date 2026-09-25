@@ -21,6 +21,7 @@ import {
   type ArmadoBouquetV1,
   type PistaArmado,
 } from "@/lib/plan/armado-bouquet";
+import { LecturaConteoSchema } from "@/lib/plan/conteo-referencia";
 import type { EdicionPlan } from "@/lib/plan/edicion-esquemas";
 import {
   MODOS_PATRON_COLOR,
@@ -65,6 +66,8 @@ export const PYTHON_PATRON_REFERENCIA_PATH = "/internal/v1/ia/patron-referencia"
 export const PYTHON_PATRON_REFERENCIA_SCOPE = "ia.patron_referencia";
 export const PYTHON_BOUQUET_REFERENCIA_PATH = "/internal/v1/ia/bouquet-referencia";
 export const PYTHON_BOUQUET_REFERENCIA_SCOPE = "ia.bouquet_referencia";
+export const PYTHON_CONTEO_REFERENCIA_PATH = "/internal/v1/ia/conteo-referencia";
+export const PYTHON_CONTEO_REFERENCIA_SCOPE = "ia.conteo_referencia";
 export const PYTHON_PLAN_EDIT_PATH = "/internal/v1/plan/edit";
 export const PYTHON_PLAN_EDIT_SCOPE = "plan.edit";
 export const PYTHON_PLAN_PATRON_PATH = "/internal/v1/plan/patron";
@@ -929,6 +932,42 @@ export interface PythonBouquetReferenciaResult {
   replayed?: boolean;
 }
 
+/** A balloon structure the reference analysis found in one photo, to be counted (ADR-0031). */
+export interface PythonConteoReferenciaElemento {
+  elementId: string;
+  /** Plan structure type (`visual_semantics.structure_type`) or "desconocido". */
+  tipo: string;
+  /** The official structure the chat would give it (`identificarEstructuraOficial`), when there is one. */
+  estructuraOficial?: string;
+  bbox?: { x: number; y: number; width: number; height: number };
+  /** Identical pieces the element stands for ("2 columns"); Python counts one. Omitted when 1. */
+  piezas?: number;
+}
+
+export interface PythonConteoReferenciaInput {
+  imagen: { mimeType: "image/png" | "image/jpeg" | "image/webp"; dataBase64: string };
+  /** 1..12, unique ids, all from the same photo as `imagen`. */
+  elementos: PythonConteoReferenciaElemento[];
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+/** One reading as Python validated it: the balloon count of one piece. */
+export type PythonConteoReferenciaLectura = z.infer<typeof conteoReferenciaLecturaSchema>;
+
+export interface PythonConteoReferenciaResult {
+  lecturas: PythonConteoReferenciaLectura[];
+  modelo: string;
+  promptVersion: string;
+  usage: z.infer<typeof conteoReferenciaPayloadResultSchema>["usage"];
+  replayed?: boolean;
+}
+
 /** One hint as Python validated it; "ninguno" carries no colors. */
 export type PythonPatronReferenciaPista = z.infer<typeof patronReferenciaPistaSchema>;
 
@@ -1442,18 +1481,41 @@ const bouquetReferenciaPayloadResultSchema = z.object({
   }).strict().nullable(),
 }).strict();
 
+// Local contract (ADR-0026 §3): the Pydantic side is
+// services/ai-api/app/amaterasu/conteo_referencia.py, which owns the prompt and
+// the validation; the reading's shape is `LecturaConteoSchema`
+// (src/lib/plan/conteo-referencia.ts), exported inside reference-blueprint.v2.
+const conteoReferenciaLecturaSchema = LecturaConteoSchema.extend({
+  element_id: z.string().min(1).max(80),
+}).strict();
+
+const conteoReferenciaPayloadResultSchema = z.object({
+  operation_schema_version: z.literal("conteo-referencia-result.v1"),
+  lecturas: z.array(conteoReferenciaLecturaSchema).max(12),
+  modelo: z.string().min(1),
+  prompt_version: z.string().min(1),
+  usage: intentParseUsageSchema.extend({
+    tool_use_prompt_token_count: z.number().int().nonnegative().optional(),
+  }).strict().nullable(),
+}).strict();
+
+/** Readings only for elements that were asked about, once each (bouquet and count readings). */
+function lecturasPorElementoPedido(lecturas: readonly { element_id: string }[], elementIds: readonly string[]): boolean {
+  const pedidos = new Set(elementIds);
+  const vistos = new Set<string>();
+  for (const lectura of lecturas) {
+    if (!pedidos.has(lectura.element_id) || vistos.has(lectura.element_id)) return false;
+    vistos.add(lectura.element_id);
+  }
+  return true;
+}
+
 /** Readings only for elements that were asked about, once each. */
 function bouquetReferenciaPayloadIsConsistent(
   payload: z.infer<typeof bouquetReferenciaPayloadResultSchema>,
   elementIds: readonly string[],
 ): boolean {
-  const pedidos = new Set(elementIds);
-  const vistos = new Set<string>();
-  for (const lectura of payload.lecturas) {
-    if (!pedidos.has(lectura.element_id) || vistos.has(lectura.element_id)) return false;
-    vistos.add(lectura.element_id);
-  }
-  return true;
+  return lecturasPorElementoPedido(payload.lecturas, elementIds);
 }
 
 // Local contracts (ADR-0026 §3) of the plan editor, owned by the Pydantic
@@ -1992,6 +2054,48 @@ export async function llamarPythonBouquetReferencia(
     throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
   }
   const result: PythonBouquetReferenciaResult = {
+    lecturas: parsed.data.lecturas,
+    modelo: parsed.data.modelo,
+    promptVersion: parsed.data.prompt_version,
+    usage: parsed.data.usage,
+  };
+  return response.replayed ? { ...result, replayed: true } : result;
+}
+
+/**
+ * Counts the balloons of each balloon structure in one reference photo
+ * (ADR-0031). Python owns the prompt, how each kind of piece is counted, the
+ * response schema and the validation; this only transports the photo and the
+ * structures the analysis found, and checks the answer is about them and fits
+ * the reading's contract. No idempotency key and no retry: the call has no side
+ * effect and the caller continues without readings on any failure.
+ */
+export async function llamarPythonConteoReferencia(
+  input: PythonConteoReferenciaInput,
+): Promise<PythonConteoReferenciaResult> {
+  const { imagen, elementos, ...rest } = input;
+  const operationPayload = {
+    schema_version: "conteo-referencia.v1" as const,
+    imagen: { mime_type: imagen.mimeType, data_base64: imagen.dataBase64 },
+    elementos: elementos.map((elemento) => ({
+      element_id: elemento.elementId,
+      tipo: elemento.tipo,
+      ...(elemento.estructuraOficial === undefined ? {} : { estructura_oficial: elemento.estructuraOficial }),
+      ...(elemento.bbox === undefined ? {} : { bbox: elemento.bbox }),
+      ...(elemento.piezas === undefined ? {} : { piezas: elemento.piezas }),
+    })),
+  };
+  const response = await llamarPythonOperacion(PYTHON_CONTEO_REFERENCIA_PATH, PYTHON_CONTEO_REFERENCIA_SCOPE, {
+    ...rest,
+    payload: operationPayload,
+    operationBody: operationPayload,
+    maxBodyBytes: PYTHON_MAX_BODY_BYTES_IMAGENES,
+  });
+  const parsed = conteoReferenciaPayloadResultSchema.safeParse(response.payload);
+  if (!parsed.success || !lecturasPorElementoPedido(parsed.data.lecturas, elementos.map((elemento) => elemento.elementId))) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  const result: PythonConteoReferenciaResult = {
     lecturas: parsed.data.lecturas,
     modelo: parsed.data.modelo,
     promptVersion: parsed.data.prompt_version,

@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 from app.amaterasu import patron_referencia
-from app.amaterasu.estructuras import DEFINICIONES, definicion, frase_inicio_de_pieza
+from app.amaterasu.estructuras import (
+    DEFINICIONES,
+    definicion,
+    definicion_de_pieza,
+    frase_inicio_de_pieza,
+)
 from app.patron_color import MODOS
 
 
@@ -34,3 +39,30 @@ def test_la_frase_solo_nombra_tipos_con_patron() -> None:
     for d in DEFINICIONES:
         if d.inicio_de_pieza is not None:
             assert d.inicio_de_pieza in frase
+
+
+def test_techo_y_figura_entraron_sin_frase_de_patron() -> None:
+    # ADR-0031: entraron al registro para el conteo; el prompt del patrón sigue
+    # igual (su versión está fijada arriba).
+    for clave in ("techo_globos", "figura"):
+        registrado = definicion(clave)
+        assert registrado is not None and registrado.inicio_de_pieza is None
+
+
+def test_cada_pieza_se_describe_por_su_estructura_oficial_o_por_su_tipo() -> None:
+    def clave(tipo: str, oficial: str | None = None) -> str | None:
+        registrado = definicion_de_pieza(tipo, oficial)
+        return registrado.clave if registrado else None
+
+    assert clave("kit", "bouquet") == "bouquet"
+    assert clave("kit", "figura") == "figura"
+    assert clave("escultura", "figura") == "figura"
+    assert clave("guirnalda", "techo_globos") == "techo_globos"
+    assert clave("guirnalda", "guirnalda") == "guirnalda"
+    # Una variante sin submódulo propio cae en su tipo.
+    assert clave("arco", "arco_asimetrico") == "arco"
+    assert clave("arco", "aro_circular") == "arco"
+    assert clave("columna") == "columna"
+    # Un kit sin estructura oficial (un racimo) no está descrito.
+    assert clave("kit") is None
+    assert clave("desconocido") is None
