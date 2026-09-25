@@ -400,3 +400,94 @@ tope y crudos fuera del repo.
    globos) para la evaluación del conteo; guardar `sha256, globos, exacto` fuera del
    repo.
 4. Abrir `feat/conteo-referencia` desde `main` con `feat/bouquets` integrada.
+
+## 8. Estado de las entregas
+
+### E3 — guirnaldas por partes, backend sin UI (hecha el 2026-09-25, rama `feat/guirnaldas`)
+
+Decisiones en ADR-0032 (`docs/architecture/decisions/0032-guirnaldas-por-partes.md`).
+Referencias a la rama al cierre de la entrega.
+
+- **Contrato `armado-guirnalda.v1`**: dueño Zod `src/lib/plan/armado-guirnalda.ts`
+  (forma y `ArmadoGuirnaldaResueltoSchema`); campo opcional en Plan 1.0 y 1.1
+  (`src/lib/plan/tipos.ts:118` y `:349`); `armados_guirnalda` y
+  `completar_armados_guirnalda` en `src/lib/ia/contracts/domain-v1.ts:416` y
+  `:484`. Exportado (`contracts/domain/v1/*`, y `contracts/chat/v1/request.schema.json`
+  porque el chat lleva el plan vigente) y `generated_models.py` regenerado.
+- **Geometría**: entrada `guirnalda` en `src/lib/plan/estructuras-oficiales.ts:106`
+  (`eje: "largo"`, `factorPerfil` y `conCaida` por forma) →
+  `x-geometria-estructuras-oficiales`; en `services/ai-api/app/plan.py`:
+  `_GARLAND_SHAPES` (l.152), `_garland_cord` (l.1041, parábola exacta por tramo),
+  `_garland_profile` (l.1067), `_eje` (l.1075) y `_structure_count` (l.1515),
+  que pasa el armado a `_total_globos`. La puerta física mide sobre la cuerda
+  porque lee `eje_m`.
+- **Dueño de las reglas**: `services/ai-api/app/armado_guirnalda.py`: supuestos
+  del oficio (l.73–103), `_validar_forma_y_soporte` (l.287), `_tomar_relleno`
+  (l.356), `_tomar_remates` (l.413), `_racimos` (l.453), `_repartir` (l.506),
+  `validar` (l.546), `_receta` (l.571), `_desde_lectura` (l.605, punto de
+  entrada de E4), `sugerir_armado` (l.649), `opciones_admitidas` (l.681),
+  `_insumos` (l.798), `_duracion` (l.902), `_frases_prompt` (l.927),
+  `armado_resuelto` (l.1057).
+- **Resolución** (`plan.py`): `completar_armados_guirnalda` en la petición
+  (l.341), completitud en `_resolution_result` (l.3576), `armados_guirnalda`
+  fuera del hash en `_build_resolved` (l.3078); `_is_garland` (l.3824),
+  `_garland_context` (l.3833), `_completar_armados_guirnalda` (l.3929),
+  `_armados_guirnalda_resueltos` (l.3957), `vista_previa_de_armado_guirnalda`
+  (l.4012), `validar_armado_guirnalda_sin_catalogo` (l.4046); `_runs_by_demand`
+  (l.848) sale de `_read_back_purchases` para nombrar con las líneas.
+- **Vista previa y edición** (`services/ai-api/app/plan_edicion.py`):
+  `EdicionArmadoGuirnalda` (l.250), `completar_armados_guirnalda` en la edición
+  (l.312), `PlanArmadoGuirnaldaRequest` (l.408), `_fijar_armado_guirnalda`
+  (l.876), `_revisar_armado_guirnalda` (l.893), `vista_previa_armado_guirnalda`
+  (l.1052); endpoint `POST /internal/v1/plan/armado-guirnalda` en
+  `services/ai-api/app/main.py:1511` (scope `plan.armado_guirnalda`).
+- **Next**: bandera `GUIRNALDAS_ARMADO_V1` (`src/lib/ia/nucleo/feature-flags.ts:61`,
+  default OFF, y `.env.example`); confirmar pide la completitud
+  (`src/lib/ia/herramientas/registro-herramientas.ts:981`); `resolver-backend.ts`
+  (l.66) y `python-adapter.ts` (l.1173) la llevan solo cuando se pide; la
+  edición re-sugiere solo la pieza que perdió el armado
+  (`src/lib/plan/aplicar-edicion.ts:204`); acción `armado_guirnalda` en
+  `src/lib/plan/edicion-esquemas.ts:131` y `/api/plan-editar`.
+- **Limpieza (§1.8, punto 7)**: comentarios de `estructuras-oficiales.ts` y
+  `presentacion-cliente.ts` que citaban `src/lib/medidas/geometria.ts`;
+  `SEGUIMIENTO.md` §4 ya no dice que `MEZCLAS` está duplicada.
+
+**Verificación real** (2026-09-25):
+
+- `npx tsc --noEmit`: solo el TS2304 `LayoutProps` preexistente de
+  `src/app/layout.tsx`. `npm run -s lint`: 0 errores (26 avisos preexistentes).
+  `npm run -s contracts:check`: sin deriva. `npm run plan:test`: completo en 0,
+  con `plan:test-armado-guirnalda` (7 casos, salidas reales de Python fijadas
+  en `scripts/fixtures/armado-guirnalda/resueltos.json`).
+- `pytest -q`: 742 en verde (4 omitidas por falta de Postgres local), con
+  `tests/test_armado_guirnalda.py` (47 casos) y `tests/test_plan_guirnalda.py`
+  (20: bandera on/off, compra igual, hash, punto fijo, `completar_armados_de`,
+  techo y arco sin armado, cuerda y puerta física, vista previa = resolución,
+  edición, endpoint). `ruff check`, `ruff format --check`, `mypy app` y
+  `generate_models.py --check` limpios. Los 31 vectores dorados no cambian.
+- E2E local contra el catálogo real (ai-api del worktree en 8012, sin LLM ni
+  gasto): guirnalda de 2,5 m, `media`, `organica_fina`, dos colores Fashion:
+  48 globos y 50.436 COP con y sin bandera, mismas líneas, `plan_hash`
+  distinto, punto fijo, vista previa = resolución (armado dado y receta), una
+  caída de 0,6 m da 2,84 m de cuerda y 55 globos sin aviso de la puerta física,
+  y cambiar la mezcla a clásica quita el armado con aviso y la re-resolución
+  trae la receta nueva con el mismo total. 14/14.
+
+**Pendientes**:
+
+- Validar con el negocio los supuestos del oficio (ADR-0032): unidad por
+  densidad, relleno de 5", remates repartidos, soporte por ubicación, insumos y
+  ritmo de armado. `factorPerfil` está en 1 en todas las formas, sin calibrar.
+- E4: lectura de la guirnalda en la foto y `placementFor`; hoy la bandera solo
+  completa por receta. E5: frases en Uzume/Kagutsuchi, patrón por racimo y
+  espejo. E6: UI y la ruta de Next de la vista previa (Python ya responde en
+  `/internal/v1/plan/armado-guirnalda`).
+- Un rechazo `armado_invalido` de la vista previa no trae `opciones` (la
+  frontera de `main.py` solo deja pasar campos conocidos); el editor de E6
+  puede pedirlas con `armado_guirnalda: null`.
+- Los remates son globos grandes de látex de la propia guirnalda: un foil o
+  una burbuja sobre la guirnalda sigue siendo otra estructura (la resolución
+  geométrica solo compra látex redondo).
+- Al fusionar con `feat/conteo-referencia`: `_aplicar_conteos` debe ir antes de
+  las completitudes de armados en `_resolution_result` (plan.py l.3576), para
+  que la receta vea la densidad y las medidas finales.

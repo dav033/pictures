@@ -68,7 +68,7 @@ const TIPOS_LARGO_ES_FONDO = new Set(["arco", "semiarco", "columna"]);
 /** Medidas con su dimensión en palabras: "2,4 m de ancho × 2,2 m de alto". */
 export function medidasCliente(tipo: string, medidas: { ancho_m?: number; alto_m?: number; largo_m?: number } | undefined): string | null {
   if (!medidas) return null;
-  // Una guirnalda se describe y se calcula por su largo (geometria.ts: largo || ancho);
+  // Una guirnalda se describe y se calcula por su largo (`_eje` en services/ai-api/app/plan.py: largo, o ancho si falta);
   // "1,5 m de ancho × 3,5 m de largo × 0,4 m de alto" confundía sobre una mesa.
   if (tipo === "guirnalda") {
     const largo = medidas.largo_m ?? medidas.ancho_m;
