@@ -79,7 +79,9 @@ repartido entre prompts y módulos sin un lugar por tipo.
    del patrón y con el mismo vencimiento. Prompt, esquema y validación en
    `estructuras/bouquet.py`; la llamada común vive en `vision_estructurada.py` (la
    usan las dos lecturas). En Next, `bouquet-referencia.ts` elige los bouquets con la
-   misma `identificarEstructuraOficial` que usa el chat y guarda cada lectura en
+   misma `identificarEstructuraOficial` que usa el chat (desde el 2026-09-25 también
+   los centros de mesa: v16 duda entre las dos clases en piezas chicas, y una
+   lectura sobrante no se usa) y guarda cada lectura en
    `appearance.armado_bouquet`; la caché y las llamadas compartidas son las mismas
    de la lectura del patrón (`deteccion-compartida.ts`). Nunca rompe el análisis.
 8. **Editar quita el armado.** Una edición que cambia los globos o el reparto de un

@@ -63,6 +63,14 @@ export type ContextoLecturaBouquet = {
  * Bouquets aprobados del blueprint, por la foto en la que aparecen. Es la misma
  * decisión que toma el chat al proponer la estructura oficial
  * (`identificarEstructuraOficial` sobre el tipo y la forma detectados).
+ *
+ * También los centros de mesa (2026-09-25): el reconocedor v16 llama "centro de
+ * mesa" a las piezas chicas con pocos globos y duda entre corridas sobre la
+ * misma foto (una pieza de 3 látex con un "80" salió bouquet una vez y centro
+ * de mesa otra). Leerlos cuesta una llamada más por foto con centros de mesa;
+ * si la pieza termina como bouquet (por el chat o por el cliente), la foto
+ * manda con su cantidad y sus colores. Si queda como centro de mesa, la lectura
+ * no se usa: `_assign_assemblies` solo mira bouquets.
  */
 export function elementosBouquet(blueprint: ReferenceBlueprintV2): Map<string, PythonBouquetReferenciaElemento[]> {
   const porFoto = new Map<string, PythonBouquetReferenciaElemento[]>();
@@ -75,7 +83,7 @@ export function elementosBouquet(blueprint: ReferenceBlueprintV2): Map<string, P
       ubicacion: semantica.placement,
       nombre: elemento.appearance.shape,
     });
-    if (oficial?.id !== "bouquet") continue;
+    if (oficial?.id !== "bouquet" && oficial?.id !== "centro_mesa") continue;
     const lista = porFoto.get(elemento.source_image_id) ?? [];
     if (lista.length >= MAX_ELEMENTOS_POR_FOTO) continue;
     lista.push({

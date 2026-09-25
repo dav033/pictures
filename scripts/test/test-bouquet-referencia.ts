@@ -87,8 +87,9 @@ async function main(): Promise<void> {
     elemento("REF_01_E03", "small centerpiece", "centro_mesa"),
     elemento("REF_01_E04", bouquet, "kit", { approved: false }),
   ]);
-  assert.deepEqual([...elementosBouquet(mezcla).values()].flat().map((e) => e.elementId), ["REF_01_E01"]);
-  ok("solo se leen los bouquets aprobados, con la misma regla que usa el chat");
+  // Los centros de mesa también se leen (el reconocedor duda entre bouquet y centro de mesa en piezas chicas); columnas y demás, no.
+  assert.deepEqual([...elementosBouquet(mezcla).values()].flat().map((e) => e.elementId), ["REF_01_E01", "REF_01_E03"]);
+  ok("se leen los bouquets y los centros de mesa aprobados, con la misma regla que usa el chat");
 
   // ---------------------------------------------------------------------------
   const foto = { id: "REF_01", mime: "image/png", base64: Buffer.from("foto-bouquet").toString("base64"), descripcion: "x" };
@@ -104,7 +105,7 @@ async function main(): Promise<void> {
   const leido = await leerArmadosReferencia(mezcla, [foto], contexto);
   assert.equal(llamadas.length, 1);
   assert.equal(llamadas[0]!.path, "/internal/v1/ia/bouquet-referencia");
-  assert.deepEqual((llamadas[0]!.body.elementos as Json[]).map((e) => e.element_id), ["REF_01_E01"]);
+  assert.deepEqual((llamadas[0]!.body.elementos as Json[]).map((e) => e.element_id), ["REF_01_E01", "REF_01_E03"], "el centro de mesa también viaja a la lectura");
   assert.deepEqual(leido.elements[0]!.appearance.armado_bouquet, lectura);
   assert.equal(mezcla.elements[0]!.appearance.armado_bouquet, undefined, "el blueprint recibido no se modifica");
   await leerArmadosReferencia(mezcla, [foto], contexto);

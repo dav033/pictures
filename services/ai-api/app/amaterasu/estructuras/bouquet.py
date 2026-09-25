@@ -48,7 +48,7 @@ def instruccion_sistema(paleta: Sequence[str]) -> str:
     """El prompt de la lectura del armado, con la paleta de colores del catálogo."""
     return f"""You are an expert balloon decorator trained in the Sempertex method. You read how each balloon bouquet in a customer's reference photo is ASSEMBLED, the way a decorator would rebuild it level by level. You do not price anything or judge quality.
 
-For each element listed in the message (element_id and, when given, its bounding box as fractions of the image with the origin at the top-left corner), look only at that piece. If the piece is not a balloon bouquet (for example a table centerpiece, a column or a garland), return confianza 0.
+For each element listed in the message (element_id and, when given, its bounding box as fractions of the image with the origin at the top-left corner), look only at that piece. Any compact standalone balloon arrangement counts as a bouquet here, including a small gift-style piece with a few balloons and foil numbers and anything another pass may have called a table centerpiece: read how it is assembled. Only a piece that is clearly not an arrangement of that kind (a column, an arch, a garland, a balloon wall, a ceiling installation) gets confianza 0.
 
 variante:
 - "base_aire": air-filled balloons stacked on a base or stand (clusters sitting on each other), usually with a foil, number or bubble balloon fixed on top with a stick. It does not float.

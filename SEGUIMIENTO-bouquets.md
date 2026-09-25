@@ -213,6 +213,13 @@ Después, disposición **abajo** para los números (de pie en la base, como en l
 foto del "80"): contrato, reglas, lectura de la foto, prompt de imagen, gráfica
 y editor. Abajo los números no flotan: no entran en la pesa, las cintas ni el helio.
 
+Y la lectura del armado se pide también para los centros de mesa de la foto:
+v16 llama "centro de mesa" a las piezas chicas por diseño y cambia de opinión
+entre corridas (medido sobre las salidas guardadas: ninguna regla determinista
+—"menciona números", "está en el piso"— separa mejor las dos clases). Si la pieza
+termina como bouquet, la foto manda; si queda como centro de mesa, la lectura no
+se usa. Cuesta una llamada de visión más por foto con centros de mesa.
+
 ### Pendiente inmediato
 
 0. **Revisar y mezclar el PR #2.** Nota: gitleaks marcó dos falsos positivos en
