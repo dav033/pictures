@@ -1,12 +1,11 @@
 export { BloquePatron } from "./BloquePatron";
 export { EditorPatron } from "./EditorPatron";
-export { GraficaPatron, type Pincel } from "./GraficaPatron";
-export { DialogoHojaArmado, HojaArmado, type PropsHojaArmado } from "./HojaArmado";
-export { LeyendaPatron, MuestraNumero } from "./LeyendaPatron";
+export { GraficaPatron } from "./GraficaPatron";
+export { DialogoHojaArmado, HojaArmado } from "./HojaArmado";
+export { LeyendaPatron } from "./LeyendaPatron";
 export { MiniPatron } from "./MiniPatron";
 export { PieEditorPatron } from "./PieEditorPatron";
 export { ControlesPatron, GaleriaEstilos } from "./ControlesPatron";
 export { ResumenPatron } from "./ResumenPatron";
 export { VistaPatron } from "./VistaPatron";
-export { leyendaPatron, type ColorLeyenda } from "./leyenda";
-export { admitePatron } from "./modos";
+export { leyendaPatron } from "./leyenda";

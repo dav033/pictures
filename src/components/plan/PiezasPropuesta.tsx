@@ -42,15 +42,21 @@ export type PiezaPropuestaVista = {
   patron?: { resuelto: PatronColorResuelto; leyenda: readonly ColorLeyenda[]; enVivo?: VistasEnVivo<PatronColorResuelto> };
 };
 
-/** The pattern strip with its name, or the piece's colors when it has no pattern. Only this strip repaints with a live drawing. */
+/**
+ * The pattern strip with its name, or the piece's colors when it has no
+ * pattern. The strip is a drawing: the screen reader still hears the piece's
+ * colors in text, as with the swatches. Only this strip repaints with a live drawing.
+ */
 function ColoresPieza({ pieza, retraso, className = "" }: { pieza: PiezaPropuestaVista; retraso?: number; className?: string }) {
   const vivo = useVistaEnVivo(pieza.patron?.enVivo, pieza.id);
-  if (!pieza.patron) return <MuestrasColor muestras={pieza.colores} retraso={retraso} className={className} etiqueta={`Colores de ${pieza.titulo}`} />;
+  const etiqueta = `Colores de ${pieza.titulo}`;
+  if (!pieza.patron) return <MuestrasColor muestras={pieza.colores} retraso={retraso} className={className} etiqueta={etiqueta} />;
   const resuelto = vivo ?? pieza.patron.resuelto;
   return (
     <span className={`flex min-w-0 items-center gap-2 ${className}`}>
       <MiniPatron resuelto={resuelto} leyenda={pieza.patron.leyenda} className="h-7 w-auto max-w-[7.5rem] shrink-0" />
       <span className="truncate text-xs font-medium text-texto-suave">{resuelto.nombre}</span>
+      {pieza.colores.length > 0 && <span className="sr-only">{`${etiqueta}: ${pieza.colores.map((muestra) => muestra.etiqueta).join(", ")}`}</span>}
     </span>
   );
 }

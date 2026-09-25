@@ -15,6 +15,7 @@ import { ErrorCodeV1Schema } from "../../src/lib/ia/contracts/chat-v1";
 import { clasificarErrorServidor, traducirErrorServidor } from "../../src/lib/errores-ui/traducir-error-servidor";
 import { ErrorIA } from "../../src/lib/ia/nucleo/tipos";
 import { PlanEditError } from "../../src/lib/plan/edicion-error";
+import { MENSAJE_PATRON_ACTIVO, VistaPatronSinDibujoError } from "../../src/lib/plan/edicion-python";
 import { PlanBackendNoDisponibleError } from "../../src/lib/plan/resolver-backend";
 import { AllowlistProductoVarianteError } from "../../src/lib/plan/allowlist-producto-variante";
 import { NonCommercialSourceRejectedError } from "../../src/lib/generacion/provenance";
@@ -182,6 +183,31 @@ caso("errores tipados se clasifican por clase, no por texto", () => {
   assert.ok(!zod.success);
   assert.equal(clasificarErrorServidor(zod.error).code, "SOLICITUD_INVALIDA");
   assert.equal(clasificarErrorServidor("texto lanzado").code, "ERROR_INTERNO");
+});
+
+caso("los rechazos que solo da la vista previa del patrón no dicen que la propuesta cambió", () => {
+  // /api/plan-patron (ADR-0028 §10): el deslizador sobre un confeti pide la vista
+  // previa mientras se arrastra. Sin nada que dibujar, el editor la apaga sin
+  // mensaje; nada se guardó y la propuesta no cambió.
+  const casosVista = [
+    ["sin_patron", new PlanEditError(409, "Esta pieza no tiene un patrón de color que dibujar.")],
+    ["patron_activo", new PlanEditError(409, MENSAJE_PATRON_ACTIVO, "PATRON_ACTIVO")],
+    ["reparto_no_corresponde", new PlanEditError(409, "La distribución no corresponde a los colores actuales de la pieza. Vuelve a abrirla e inténtalo otra vez.")],
+  ] as const;
+  for (const [codigo, rechazo] of casosVista) {
+    const ui = traducirErrorServidor(new VistaPatronSinDibujoError(rechazo, codigo), "00000000-0000-4000-8000-0000000000bb");
+    assert.notEqual(ui.code, "PROPUESTA_DESACTUALIZADA", codigo);
+    assert.equal(ui.code, "PROPUESTA_INCOMPLETA", codigo);
+    assert.equal(ui.mensaje_usuario, rechazo.message, codigo);
+    assert.equal(ui.retryable, false, codigo);
+    assert.equal(ui.detalles_dev.codigo_origen, `VISTA_PATRON:${codigo}`, codigo);
+    assert.equal(ui.detalles_dev.causa, rechazo.causa ?? codigo, codigo);
+    assert.equal(ui.request_id, "00000000-0000-4000-8000-0000000000bb");
+    UiErrorV1Schema.parse(ui);
+  }
+  // El mismo 409 de la edición (/api/plan-editar) sí es un plan base que cambió.
+  const edicion = new PlanEditError(409, "La distribución no corresponde a los colores actuales de la pieza. Vuelve a abrirla e inténtalo otra vez.");
+  assert.equal(clasificarErrorServidor(edicion).code, "PROPUESTA_DESACTUALIZADA");
 });
 
 console.log(`\n${casos} casos OK (ui-error.v1)`);

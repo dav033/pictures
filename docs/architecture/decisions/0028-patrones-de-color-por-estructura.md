@@ -87,6 +87,27 @@ lógica TypeScript que esta función toque se migra.
 - Revertir a la revisión anterior rechaza planes que ya traen `patron_color`
   (`additionalProperties:false`): se pierden las propuestas abiertas (≤24 h).
   App y `ai-api` se despliegan juntos, como siempre.
+- Revertir también deja pistas de la foto en los blueprints que ya tiene el
+  navegador: con `PATRON_REFERENCIA_PYTHON_ENABLED` encendida, un elemento
+  analizado puede llevar `appearance.patron_color` (§11), que la revisión
+  anterior no conoce (su `AppearanceSchema` es `.strict()`). En el servidor no
+  queda nada que migrar: el blueprint no se guarda en la base, la caché del
+  análisis y la de las pistas viven en el proceso de Next (el despliegue las
+  vacía) y Python no valida blueprints. En el navegador, la revisión anterior:
+  - **rechaza** el borrador de la referencia que una pestaña abierta con el
+    código nuevo le manda en el chat: `chat.v1` valida `referenceBlueprint`
+    con ese esquema, así que `/api/chat` responde 400 `INVALID_INPUT`, que el
+    cliente muestra como `SOLICITUD_INVALIDA` ("Recarga la página…");
+  - **ignora sin avisar** ese mismo borrador en `/api/generate`, que lo lee
+    con `safeParse`: la imagen sale sin la escenografía de la foto;
+  - **no lee** el `referenceBlueprint` que guardan los mensajes en
+    `sessionStorage`: solo pinta las tarjetas con él, sin validarlo, así que
+    el campo de más no rompe nada (el `plan` de esos mensajes sí, por el punto
+    anterior).
+
+  Recargar la página lo resuelve: el borrador vive en el estado de React y no
+  sobrevive la recarga, y un análisis nuevo de la revisión anterior no trae
+  pistas.
 
 ## Adaptadores temporales (con condición de retiro)
 
@@ -98,11 +119,18 @@ lógica TypeScript que esta función toque se migra.
   resolver; la edición en Python no canoniza. Se retira con la migración de la
   taxonomía de colores a Python.
 - **Bandera `PATRONES_COLOR_V1`** (`featureEnabled`, apagada por defecto en el
-  código). Next solo pide `completar_patrones`/`pistas_patron` al confirmar un
-  plan si está encendida. Se enciende en el mismo despliegue que la edición en
-  Python (§9) y la UI del editor, y se retira después de validarlo en
-  producción. La detección en la foto tiene su propia bandera
-  (`PATRON_REFERENCIA_PYTHON_ENABLED`); conviene encender las dos juntas.
+  código). Solo decide cuándo Python pone un patrón por su cuenta: al
+  confirmar un plan, Next pide `completar_patrones` con las `pistas_patron`
+  (§7), y al editar, una pieza que pasa de un color a dos recibe su preset
+  (`completar_patrones` de `plan-edit.v1`, §9). Apagada, los planes nuevos
+  salen sin patrón y nada más cambia: un plan que ya trae `patron_color` lo
+  conserva, y la edición, la vista previa, el editor ("Crear patrón"
+  incluido) y la resolución lo tratan igual, porque ninguno lee la bandera.
+  Apagarla no quita patrones ni es un retroceso de la función: para eso se
+  despliega la revisión anterior (ver "Consecuencias"). Se retira después de
+  validarla en producción. La detección en la foto tiene su propia bandera
+  (`PATRON_REFERENCIA_PYTHON_ENABLED`); sus pistas solo llegan a un plan con
+  las dos encendidas.
 - **Tablas ES→EN exportadas desde TypeScript** (`x-colores-en`, `x-acabados-en`).
   Son de solo lectura para Python hasta que la taxonomía de colores migre.
 
@@ -427,8 +455,9 @@ número de la gráfica serían dos colores:
 el material conserva el nombre declarado y el patrón lleva un aviso ("Solo una
 parte del color azul (3) se cambió por rojo: …"). Sin reemplazos los nombres
 son los de `materiales`, byte a byte como antes. La vista previa (§10) no
-tiene catálogo y nombra lo declarado. `conteo[].color` es el color que decide
-Python para cada número de la leyenda.
+tiene catálogo: nombra igual, con la misma función, leyendo lo que se compra
+de las líneas resueltas que le manda el navegador (`lineas`). `conteo[].color`
+es el color que decide Python para cada número de la leyenda.
 
 ## 9. Edición en Python: `POST /internal/v1/plan/edit`
 
@@ -455,8 +484,10 @@ más:
 - `repartir` en estructura con patrón: si el modo es `aleatorio`, reescribe
   `pesos` con `max(1, round_half_up(p * 100))` y conserva `semilla`; si el
   confeti tenía `acentos` o `pintados`, se integran al confeti (se quitan, con
-  aviso), porque con color fijo encima el reparto pedido no saldría. Con otro
-  modo → `patron_activo` (409).
+  aviso), porque con color fijo encima el reparto pedido no saldría. El
+  reparto que queda lo eligió el decorador con el deslizador: el patrón pasa a
+  `origen: "decorador"` aunque viniera del preset (`sugerido`) o de la foto
+  (`referencia`). Con otro modo → `patron_activo` (409).
 - `agregar` en estructura con patrón: el material nuevo entra al final; si el
   modo es `aleatorio`, el color nuevo toma su parte `p` de la base
   (`max(1, round_half_up(p * 100))`) y los pesos que ya estaban se escalan a
@@ -494,7 +525,8 @@ formato válido."):
 
 Scope `plan.patron`. Petición `plan-patron.v1`: `{schema_version, plan:
 PlanDecoracion, estructura_id, patron_color: PatronColorV1 | null,
-participaciones?: number[], modo?, desde?: PatronColorV1}` (null = sugerir).
+participaciones?: number[], modo?, desde?: PatronColorV1, lineas?:
+LineaComprada[]}` (null = sugerir).
 `participaciones` (con `patron_color` nulo) es la vista previa del
 deslizador de colores sobre un confeti mientras se arrastra: el mismo
 `repartir` de la edición, sin guardar (`sin_patron` 409 si la pieza no tiene
@@ -520,13 +552,77 @@ los rearma desde valores conocidos: una lista de a lo sumo un estilo por
 modo, cada uno exactamente `{modo, direcciones, espejo}`; cualquier otra cosa
 quita el campo entero.
 
+**Lo que se compra nombra también la vista previa.** Tras un `reemplazar` la
+tarjeta dice "rojo" (la resolución nombra lo que se compra, §8); sin catálogo,
+el editor decía el "azul" declarado. `lineas` (opcional, con cualquiera de los
+pedidos de arriba) son las líneas resueltas de la pieza que tiene el
+navegador (`PlanResuelto.estructuras[].lineas`, del mismo `PlanResuelto` que
+`plan`), reducidas a `{product_id, variant_id, color, acabado?, unidades,
+diam_pulg?}`: objetos estrictos, a lo sumo 256 (`LineaComprada` en
+`plan_edicion.py`; Zod `PythonPlanPatronLineaSchema` en `python-adapter.ts`;
+la ruta de Next las valida igual y `peticion-patron.ts` manda solo esos
+campos de una `LineaMaterial`). Python lee de ellas qué compra cada material
+(`compras_de_estructura` en `plan.py`) y nombra con la misma función que la
+resolución (`_named_by_purchase`): el conteo, los textos, los prompts, los
+avisos (el de un reemplazo parcial va al final, como al resolver) y la frase
+de un rechazo dicen lo que se compra. Las líneas solo nombran: la rejilla y
+el conteo salen del borrador, nunca de sus `unidades`.
+
+Cómo se leen, sin catálogo: las demandas de la pieza son las que cubrió la
+resolución (`_despiece_with_plan_sizes` sobre `plan` tal cual, con su propio
+patrón), en el mismo orden en que escribió las líneas. Cada demanda toma las
+líneas consecutivas cuyas `unidades` suman las suyas, todas del mismo
+producto, color y tamaño (la compra de todo el plan puede partir una línea
+en varias bolsas) y de un diámetro admisible para el pedido. Una línea es de
+un reemplazo si la compra uno de los `variant_overrides` de la pieza (su
+producto, y su variante o, si la compra de todo el plan la llevó a otra
+bolsa, su color) y no es lo que pide su propio material (la variante
+declarada, o el producto declarado en el color declarado): un reemplazo que
+compra lo mismo que otro material de la pieza no renombra a ese otro. Una
+línea del producto del propio material en otro color que el declarado, que
+también compra un override, no se puede leer sin catálogo: es la compra
+propia que `_line_color` reetiquetó (el color declarado, "azul", solo era la
+familia del producto y la variante es "azul rey") o un reemplazo por ese
+mismo producto. Ese material se nombra como lo declara, sin avisos, y los
+demás siguen nombrando lo que compran (`_replaced_line` devuelve `None` y
+`_read_back_purchases` lo deja fuera). Así, cambiar el negro por el mismo
+globo que ya compra el azul reetiquetado renombra solo al negro, como la
+resolución. Si no hay nada que renombrar (sin `variant_overrides`, una pieza
+no geométrica) o las líneas no corresponden al plan (otra resolución, una
+demanda sin cobertura, una línea de más o de menos, el plan o su patrón ya no
+resuelven),
+la vista previa nombra lo declarado, como sin `lineas`, en vez de adivinar; la
+próxima resolución vuelve a nombrar lo que se compra. Los casos que quedan
+distintos, todos con un reemplazo por el producto del propio material: un
+reemplazo por el mismo producto y el mismo color (otra bolsa de lo mismo) no
+se distingue de la compra propia del material (el nombre es el mismo y solo
+el `acabado` podría diferir del de la resolución); uno por el mismo producto
+en otro color, o sobre un color reetiquetado, deja en la vista previa el
+nombre declarado y sin aviso de reemplazo parcial ese número, donde la
+resolución nombra (o avisa) lo que se compra.
+
+Con el deslizador (`participaciones`) las compras se leen del `plan`
+recibido, no del repartido: `repartir` no cambia los materiales.
+
+Leerlas cuesta validar el plan una vez más y expandir el patrón propio de la
+pieza, y solo se hace si la pieza tiene `variant_overrides`. En la pared de
+13 × 5 m con confeti (3762 celdas) y un reemplazo, la vista previa del
+deslizador pasa de ~31 a ~40 ms (mediana en proceso, sin red; medición de
+sesión, no versionada); casi todo es la expansión (~10 ms).
+
 Next: `POST /api/plan-patron` (misma autenticación que `/api/plan-editar`;
 no firma ni muta nada) → `{patron, modos_admitidos}`. Ante `patron_invalido`
 (422), esta ruta y la acción `patron` de `/api/plan-editar` responden
 `{error, causa: "PATRON_INVALIDO", motivo, mensaje, ui_error}`, y esta ruta
 añade `modos_admitidos` cuando Python los manda (el adaptador los valida con
 el esquema de `ModoAdmitido`); `ui_error.mensaje_usuario` es el `mensaje` de
-Python si cabe en 280 caracteres. Otros fallos: `{error, ui_error}`.
+Python si cabe en 280 caracteres. Otros fallos: `{error, ui_error}`. Los tres
+rechazos que solo da la vista previa del deslizador (`sin_patron`,
+`patron_activo`, `reparto_no_corresponde`, 409) llegan como
+`VistaPatronSinDibujoError`: el editor los calla (§13) y nada se guardó, así
+que su `ui_error` no es `PROPUESTA_DESACTUALIZADA` ("pide la propuesta de
+nuevo", lo que dice un 409 de la edición) sino `PROPUESTA_INCOMPLETA` con la
+frase propia de cada uno y `codigo_origen` `VISTA_PATRON:<código>`.
 
 **Latencia medida** (2026-09-24, plan del laboratorio de 4 piezas, Python y
 Next locales, Neon en us-east-2 a 66 ms de ida y vuelta; medición de sesión,

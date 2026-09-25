@@ -26,8 +26,8 @@ type Props = {
   /** Estilos que Python admite para la pieza, en su orden (`null` mientras no respondió). */
   modos: readonly ModoAdmitido[] | null;
   geometria: "racimos" | "rejilla";
-  /** Globos por racimo con que se dibuja hoy la pieza. */
-  globosPorRacimo: number;
+  /** Globos por racimo con que Python dibuja la pieza; `null` mientras no la dibujó. */
+  globosPorRacimo: number | null;
   estilo: EleccionEstilo;
   onCambiar: CambioPatron;
   deshabilitado?: boolean;
@@ -127,7 +127,7 @@ export function ControlesPatron({ patron, leyenda, modos, geometria, globosPorRa
     <div className="@container space-y-5">
       <GaleriaEstilos patron={patron} modos={modos} estilo={estilo} deshabilitado={deshabilitado} />
       <ParametrosModo patron={patron} leyenda={leyenda} geometria={geometria} onCambiar={onCambiar} deshabilitado={deshabilitado} />
-      {geometria === "racimos" && (
+      {geometria === "racimos" && globosPorRacimo !== null && (
         <Apartado titulo="Globos por racimo" ayuda="Pareja, trío, cuarteto…: cuántos globos amarras en cada racimo">
           <Contador
             etiqueta="Globos por racimo"

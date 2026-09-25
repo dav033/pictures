@@ -215,6 +215,38 @@ async function main(): Promise<void> {
   assert.equal(llamadas.length, 0);
   console.log("[PASS] pared ancha: pintar el globo de la columna 76 (o cualquier posición de una rejilla de 4000) llega a Python en la vista previa, el cambio de estilo y el autoguardado; más allá → 400");
 
+  // --- 1e. The structure's resolved lines (`lineas`): a naming hint for Python
+  // (ADR-0028 §8, §10). Strict and bounded here; Python decides the names.
+  const LINEA = { product_id: "prod-rojo", variant_id: "var-rojo-12", color: "rojo", acabado: null, unidades: 10, diam_pulg: 12 };
+  const MINIMA = { product_id: "prod-blanco", variant_id: "var-blanco-12", color: "blanco", unidades: 20 };
+  for (const extra of [{}, { participaciones: [0.5, 0.25, 0.25] }, { modo: "anillos" }]) {
+    llamadas = instalarFetch((llamada) => resultado(llamada, patronResuelto(!("modo" in extra))));
+    r = await pedir({ plan, estructura_id: ESTRUCTURA, patron_color: "modo" in extra || "participaciones" in extra ? null : ESPIRAL, lineas: [LINEA, MINIMA], ...extra });
+    assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 300));
+    assert.deepEqual(llamadas[0]!.body.lineas, [LINEA, MINIMA], "the lines reach Python as they are, absent fields stay absent");
+  }
+  llamadas = instalarFetch((llamada) => resultado(llamada, patronResuelto(true)));
+  r = await pedir({ plan, estructura_id: ESTRUCTURA, patron_color: ESPIRAL, lineas: Array.from({ length: 256 }, () => LINEA) });
+  assert.equal(r.status, 200, "256 lines, the bound of a piece");
+  llamadas = instalarFetch(() => { throw new Error("unas líneas inválidas no deben llegar a Python"); });
+  for (const [caso, lineas] of [
+    ["un campo de más (sku)", [{ ...LINEA, sku: "ROJO-12" }]],
+    ["sin unidades", [{ product_id: "prod-rojo", variant_id: "var-rojo-12", color: "rojo" }]],
+    ["sin color", [{ product_id: "prod-rojo", variant_id: "var-rojo-12", unidades: 10 }]],
+    ["cero unidades", [{ ...LINEA, unidades: 0 }]],
+    ["unidades no enteras", [{ ...LINEA, unidades: 2.5 }]],
+    ["variante vacía", [{ ...LINEA, variant_id: "" }]],
+    ["diámetro negativo", [{ ...LINEA, diam_pulg: -1 }]],
+    ["más de 256", Array.from({ length: 257 }, () => LINEA)],
+    ["no es una lista", LINEA],
+  ] as const) {
+    r = await pedir({ plan, estructura_id: ESTRUCTURA, patron_color: ESPIRAL, lineas });
+    assert.equal(r.status, 400, caso);
+    assert.equal(UiErrorV1Schema.parse(r.cuerpo.ui_error).code, "SOLICITUD_INVALIDA", caso);
+  }
+  assert.equal(llamadas.length, 0);
+  console.log("[PASS] líneas de la pieza: llegan a Python tal cual con cualquier pedido; estrictas y hasta 256 → si no, 400 sin llamar a Python");
+
   // --- 2. The answer is validated: another structure, or a suggestion marked as applied, is not drawn.
   for (const patron of [patronResuelto(false, "EST_09_OTRA"), patronResuelto(true), { ...patronResuelto(false), celdas: "x" }]) {
     instalarFetch((llamada) => resultado(llamada, patron));
@@ -263,6 +295,21 @@ async function main(): Promise<void> {
   assert.equal(r.status, 422);
   assert.equal(r.cuerpo.error, "El patrón de color no tiene un formato válido.");
   console.log("[PASS] vista previa: patron_invalido 422 con motivo/mensaje y los estilos de la pieza, estructura_no_encontrada 404, invalid_plan 422");
+
+  // --- 3b. What only the slider's preview answers: nothing to draw. The editor
+  // turns the preview off quietly; the proposal did not change, so the
+  // ui_error never says "pide la propuesta de nuevo".
+  for (const codigo of ["sin_patron", "patron_activo", "reparto_no_corresponde"]) {
+    instalarFetch(() => rechazoPython(codigo, 409));
+    r = await pedir({ plan, estructura_id: ESTRUCTURA, patron_color: null, participaciones: [0.5, 0.25, 0.25] });
+    assert.equal(r.status, 409, codigo);
+    const ui = UiErrorV1Schema.parse(r.cuerpo.ui_error);
+    assert.notEqual(ui.code, "PROPUESTA_DESACTUALIZADA", codigo);
+    assert.equal(ui.code, "PROPUESTA_INCOMPLETA", codigo);
+    assert.equal(ui.detalles_dev.codigo_origen, `VISTA_PATRON:${codigo}`, codigo);
+    assert.equal(ui.mensaje_usuario, r.cuerpo.error, `${codigo}: the piece's own sentence, not the catalog's`);
+  }
+  console.log("[PASS] vista previa del deslizador: sin_patron, patron_activo y reparto_no_corresponde → 409 con ui_error PROPUESTA_INCOMPLETA (VISTA_PATRON:*), nunca PROPUESTA_DESACTUALIZADA");
 
   // --- 4. Transport failures: Python unreachable is retryable, never a success.
   globalThis.fetch = (async () => { throw new TypeError("fetch failed"); }) as typeof fetch;
@@ -324,6 +371,16 @@ async function main(): Promise<void> {
     pedirVistaPatron({ plan: PlanDecoracionSchema.parse(plan), estructura_id: ESTRUCTURA, patron_color: null }, { fetcher }),
     (error: unknown) => error instanceof FalloPlanPatron && error.motivo === null && error.message !== RESPALDO_VISTA_PATRON,
   );
+  // The browser holds whole resolved lines (sku, title, image...): only the
+  // contract's fields travel, so the strict route accepts them.
+  const lineaResuelta = {
+    estructura_id: ESTRUCTURA, origen: { kind: "estructura" as const, id: ESTRUCTURA }, product_id: "prod-rojo", variant_id: "var-rojo-12",
+    sku: "ROJO-12", titulo: "Globo rojo", color: "rojo", tamano_codigo: "R-12", diam_pulg: 12, diam_cm: 30.5, forma: "redondo",
+    acabado: "perlado", unidades: 10, imagen: null, sustitucion: null,
+  };
+  llamadas = instalarFetch((llamada) => resultado(llamada, patronResuelto(true)));
+  await pedirVistaPatron({ plan: PlanDecoracionSchema.parse(plan), estructura_id: ESTRUCTURA, patron_color: espiral, lineas: [lineaResuelta] }, { fetcher });
+  assert.deepEqual(llamadas[0]!.body.lineas, [{ product_id: "prod-rojo", variant_id: "var-rojo-12", color: "rojo", acabado: "perlado", unidades: 10, diam_pulg: 12 }]);
   console.log("[PASS] peticion-patron.ts: dibuja el {patron} de la ruta, muestra el mensaje de Python con su motivo y lee los estilos del rechazo");
 }
 

@@ -7,9 +7,11 @@ import { HEX_COLORES_V2 } from "@/lib/rag/taxonomy/v2";
 /**
  * Leyenda numerada de un patrón, como en la gráfica del curso Sempertex:
  * 1 = primer material de la estructura, 2 = el segundo… El número es el índice
- * del material + 1 (el patrón apunta a `materiales` por índice). Solo
- * presentación: nombres y muestras salen de `presentacion-cliente.ts`; nada de
- * aquí expande ni cuenta un patrón.
+ * del material + 1 (el patrón apunta a `materiales` por índice). El color de
+ * cada número lo decide Python (`conteo[].color` y `acabado`, ADR-0028 §8):
+ * tras un reemplazo es lo que se compra, no lo declarado. Solo presentación:
+ * nombres y muestras salen de `presentacion-cliente.ts`; nada de aquí expande
+ * ni cuenta un patrón.
  */
 
 export type BrilloGlobo = "mate" | "cromado" | "perlado" | "transparente" | "multicolor";
@@ -28,6 +30,8 @@ export type ColorLeyenda = {
 };
 
 type MaterialLeyenda = { product_id: string; color?: string; acabado?: string };
+/** Lo que Python dice de cada número: el color y el acabado que se compran. */
+type ConteoLeyenda = ReadonlyArray<Pick<PatronColorResuelto["conteo"][number], "material" | "color" | "acabado">>;
 
 const HEX_PALETA: Readonly<Record<string, string>> = HEX_COLORES_V2;
 const HEX_DESCONOCIDO = "#9ca3af";
@@ -53,17 +57,38 @@ function brilloDe(color: string, acabado: string | null): BrilloGlobo {
   return "mate";
 }
 
+/** Línea resuelta que da el tono ("verde selva") de un color: la de ese color y acabado, mejor si es del mismo producto. */
+function lineaDelColor(lineas: readonly LineaMaterial[], productId: string, color: string, acabado: string | null): LineaMaterial | undefined {
+  const delColor = lineas.filter((item) => item.color === color && (!acabado || !item.acabado || item.acabado === acabado));
+  return delColor.find((item) => item.product_id === productId) ?? delColor[0];
+}
+
+function mismoColor(a: string | null | undefined, b: string | null | undefined): boolean {
+  return (a ?? "").trim().toLowerCase() === (b ?? "").trim().toLowerCase();
+}
+
 /**
- * Una entrada por material, en el orden de `materiales`. El tono y el acabado
- * se leen de la línea resuelta del mismo producto (su título dice "verde
- * selva", "reflex"…); sin línea, del material declarado.
+ * Una entrada por material, en el orden de `materiales`. Con `conteo` (el del
+ * patrón resuelto por Python) cada número lleva el color y el acabado que
+ * Python le dio, que tras un reemplazo es lo que se compra; solo sin él (una
+ * vista sin patrón resuelto) se nombra el material declarado. El tono y el
+ * acabado que falten se leen de una línea resuelta de ese color (su título
+ * dice "verde selva", "reflex"…). Si ninguna dice ese color y Python no lo
+ * renombró, de la línea del propio producto: la resolución la reetiqueta con
+ * el color real de la variante ("azul" declarado, "azul rey" comprado).
  */
-export function leyendaPatron(materiales: readonly MaterialLeyenda[], lineas: readonly LineaMaterial[] = []): ColorLeyenda[] {
+export function leyendaPatron(materiales: readonly MaterialLeyenda[], lineas: readonly LineaMaterial[] = [], conteo?: ConteoLeyenda | null): ColorLeyenda[] {
   return materiales.map((material, indice) => {
-    const linea = lineas.find((item) => item.product_id === material.product_id && (!material.color || item.color === material.color))
-      ?? lineas.find((item) => item.product_id === material.product_id);
-    const color = material.color ?? linea?.color ?? null;
-    const acabado = acabadoCliente(material.acabado ?? linea?.acabado, linea?.titulo);
+    const dePython = conteo?.find((fila) => fila.material === indice);
+    // Python nombra lo que se compra; sin su conteo, lo declarado.
+    const nombrado = dePython ? { color: dePython.color, acabado: dePython.acabado } : { color: material.color ?? null, acabado: material.acabado ?? null };
+    const renombrado = dePython !== undefined && !mismoColor(dePython.color, material.color);
+    const delProducto = () => lineas.find((item) => item.product_id === material.product_id);
+    const linea = nombrado.color
+      ? lineaDelColor(lineas, material.product_id, nombrado.color, nombrado.acabado) ?? (renombrado ? undefined : delProducto())
+      : delProducto();
+    const color = nombrado.color ?? linea?.color ?? null;
+    const acabado = acabadoCliente(nombrado.acabado ?? linea?.acabado, linea?.titulo);
     const tono = color && linea ? tonoCliente(color, linea.titulo) : color ? nombreColorCliente(color) : undefined;
     const muestra = muestraColor(color ?? "", acabado, tono);
     const hex = HEX_PALETA[muestra.color] ?? HEX_DESCONOCIDO;
@@ -80,6 +105,19 @@ export function leyendaPatron(materiales: readonly MaterialLeyenda[], lineas: re
       numeroClaro: brillo !== "transparente" && luminancia(hex) < 0.18,
     };
   });
+}
+
+/**
+ * Color y acabado de una línea tal como se compra ("Rojo mate", "Verde selva
+ * cromado"); sin color, el producto. `clave` agrupa las líneas que se ven igual.
+ */
+export function colorDeLinea(linea: Pick<LineaMaterial, "color" | "acabado" | "titulo">): { clave: string; muestra: MuestraColor } {
+  if (!linea.color) {
+    const producto = productoCliente(linea.titulo);
+    return { clave: `producto:${producto}`, muestra: { color: "", etiqueta: producto, fondo: HEX_DESCONOCIDO, conBorde: false } };
+  }
+  const muestra = muestraColor(linea.color, acabadoCliente(linea.acabado, linea.titulo), tonoCliente(linea.color, linea.titulo));
+  return { clave: `color:${muestra.etiqueta}`, muestra: { ...muestra, etiqueta: mayusculaInicial(muestra.etiqueta) } };
 }
 
 /** Entrada de un índice que la leyenda no conoce (no debería pasar): gris, sin nombre de color. */

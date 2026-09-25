@@ -616,8 +616,15 @@ class _BoughtLine:
     finish: str | None
 
 
+#: What each material index of a structure buys, as ``_named_by_purchase``
+#: reads it: from resolution (``_resolve_structures``) or read back from the
+#: structure's resolved lines by the catalog-less preview
+#: (``compras_de_estructura``).
+ComprasPorMaterial = Mapping[int, Sequence[_BoughtLine]]
+
+
 def _named_by_purchase(
-    context: EstructuraPatron, bought: Mapping[int, Sequence[_BoughtLine]]
+    context: EstructuraPatron, bought: ComprasPorMaterial
 ) -> tuple[EstructuraPatron, list[str]]:
     """The pattern's materials named by what their lines buy, and its notices.
 
@@ -671,6 +678,114 @@ def _named_by_purchase(
                 f" también sus otros tamaños para que todo ese color sea {other}."
             )
     return replace(context, materiales=tuple(materials)), notices
+
+
+def _replaced_line(
+    line: Mapping[str, object],
+    material: Mapping[str, object],
+    overrides: Sequence[Mapping[str, object]],
+) -> bool | None:
+    """Whether a resolved line of ``material`` was bought by a replacement (§9).
+
+    Resolution knows it: the override whose target it had chosen. Read back
+    from the line, it is a line that one of the structure's
+    ``variant_overrides`` buys (its product, and its variant or, when the
+    plan-wide choice of packages bought it in another presentation, its
+    color) and that is not what its own material asks for (the declared
+    variant, or the declared product in the declared color). A replacement
+    that happens to buy what another material of the piece buys therefore
+    does not rename that material.
+
+    ``None`` when the line cannot tell: a line of the material's own product
+    in another color than the declared one, which an override also buys, is
+    either the material's own purchase that ``_line_color`` relabelled (the
+    declared color only matched a family color of the product, and the
+    variant's only real color is the line's) or a replacement by that same
+    product. Only the catalog knows which; the caller does not guess.
+    """
+    product = _text(line.get("product_id"))
+    variant = _text(line.get("variant_id"))
+    color = _normalize(_text(line.get("color")) or "")
+    if variant is not None and variant == _text(material.get("variant_id")):
+        return False
+    own_product = product == _text(material.get("product_id"))
+    if own_product and color == _normalize(_text(material.get("color")) or ""):
+        return False
+    for override in overrides:
+        if _text(override.get("product_id")) != product:
+            continue
+        override_color = _text(override.get("color"))
+        if _text(override.get("variant_id")) == variant or (
+            override_color is not None and _normalize(override_color) == color
+        ):
+            return None if own_product else True
+    return False
+
+
+def _purchase_key(line: Mapping[str, object]) -> tuple[str | None, str, float | None]:
+    """Product, color and size: what the plan-wide choice of packages keeps."""
+    return (
+        _text(line.get("product_id")),
+        _normalize(_text(line.get("color")) or ""),
+        _number(line.get("diam_pulg")),
+    )
+
+
+def _read_back_purchases(
+    structure: Mapping[str, object],
+    demands: Sequence[Mapping[str, object]],
+    lines: Sequence[Mapping[str, object]],
+) -> dict[int, list[_BoughtLine]]:
+    """``demands`` matched in order with the structure's resolved ``lines``.
+
+    Resolution writes one line per covered demand, in demand order; the
+    plan-wide choice of packages (``_reoptimize_presentations``) may then split
+    it into consecutive lines of the same product, color and size that add up
+    to its units. Each demand therefore takes the consecutive lines whose
+    units add up to its own. Empty — nothing read back — when they do not
+    correspond: lines of another resolution, an uncovered demand, a line left
+    over. A material with a line that ``_replaced_line`` cannot tell is left
+    out: it is named as declared, without notices, instead of guessing; the
+    other materials are still named by what their lines buy.
+    """
+    materials = _mappings(structure.get("materiales"))
+    overrides = _mappings(structure.get("variant_overrides") or [])
+    bought: dict[int, list[_BoughtLine]] = {}
+    undecided: set[int] = set()
+    position = 0
+    for demand in demands:
+        wanted = _integer(demand.get("cantidad")) or 0
+        run: list[Mapping[str, object]] = []
+        units = 0
+        while units < wanted and position < len(lines):
+            run.append(lines[position])
+            units += _integer(lines[position].get("unidades")) or 0
+            position += 1
+        if units != wanted or len({_purchase_key(line) for line in run}) != 1:
+            return {}
+        delivered = _number(run[0].get("diam_pulg"))
+        requested = _number(demand.get("pulgadas"))
+        if (
+            delivered is not None
+            and requested is not None
+            and not _admissible_substitution(requested, delivered)
+        ):
+            return {}
+        index = _integer(demand.get("material_index")) or 0
+        for line in run:
+            replaced = _replaced_line(line, materials[index], overrides)
+            if replaced is None:
+                undecided.add(index)
+            bought.setdefault(index, []).append(
+                _BoughtLine(
+                    replaced=bool(replaced),
+                    color=_text(line.get("color")),
+                    finish=_text(line.get("acabado")),
+                )
+            )
+    if position != len(lines):
+        return {}
+    return {index: items for index, items in bought.items() if index not in undecided}
 
 
 def _expand_pattern(
@@ -2833,7 +2948,7 @@ def _compact_patterns(resolved: Mapping[str, object]) -> Mapping[str, object]:
 
 
 def _resolved_patterns(
-    plan: Mapping[str, object], bought: Sequence[Mapping[int, Sequence[_BoughtLine]]]
+    plan: Mapping[str, object], bought: Sequence[ComprasPorMaterial]
 ) -> list[dict[str, object]]:
     """``patrones_color``: each pattern named by what its structure buys (§9).
 
@@ -2982,6 +3097,55 @@ def _structure_index(plan: Mapping[str, object], estructura_id: str) -> int:
     raise PlanResolutionError("estructura_no_encontrada", 404)
 
 
+def compras_de_estructura(
+    plan: Mapping[str, object],
+    estructura_id: str,
+    lineas: Sequence[Mapping[str, object]],
+) -> ComprasPorMaterial:
+    """What each material of one structure buys, read back from its resolved lines.
+
+    For the catalog-less preview (ADR-0028 §10), so it names each color of the
+    pattern by what is bought, exactly as resolution does (§8,
+    ``_named_by_purchase``). ``lineas`` are the structure's lines of the
+    resolution the browser holds (``plan_resuelto.estructuras[].lineas``) and
+    ``plan`` the plan that resolution echoed. The structure's demands are the
+    ones resolution covered (``_despiece_with_plan_sizes`` over the plan as it
+    is, with its own pattern), in the same order; ``_read_back_purchases``
+    matches them with the lines and ``_replaced_line`` tells which line a
+    replacement bought. The lines only name: they never count or price. A
+    material whose lines cannot tell (its own product relabelled, or replaced
+    by that same product) is left out and keeps its declared name.
+
+    Empty — the preview names what ``materiales`` declares, as before — when
+    nothing can be renamed (no ``variant_overrides``, not a geometric piece,
+    no lines) or the lines cannot be read back: the plan or its own pattern no
+    longer resolves, or the lines are not this plan's (another resolution, an
+    uncovered demand). Never raises for the lines: the preview goes on with
+    the declared names and resolution names the purchase again.
+    """
+    raw_structures = plan.get("estructuras")
+    structure = next(
+        (
+            item
+            for item in (raw_structures if isinstance(raw_structures, list) else [])
+            if isinstance(item, Mapping) and item.get("estructura_id") == estructura_id
+        ),
+        None,
+    )
+    if structure is None or not lineas or not structure.get("variant_overrides"):
+        return {}
+    try:
+        _validate_plan(plan)
+        measured = _complete_measures(plan)
+        completed = _mappings(measured.get("estructuras"))[_structure_index(measured, estructura_id)]
+        if _text(completed.get("tipo")) not in _GEOMETRIC_TYPES:
+            return {}
+        _axis, demands, _unplaced = _despiece_with_plan_sizes(measured, completed)
+    except PlanResolutionError:
+        return {}
+    return _read_back_purchases(completed, demands, lineas)
+
+
 @dataclass(frozen=True, slots=True)
 class VistaPreviaPatron:
     """One structure's expanded pattern and the styles the editor may offer for it."""
@@ -2997,15 +3161,21 @@ def vista_previa_de_estructura(
     *,
     modo: str | None = None,
     desde: Mapping[str, object] | None = None,
+    compras: ComprasPorMaterial | None = None,
 ) -> VistaPreviaPatron:
     """Expanded color pattern of one structure, without a catalog (ADR-0028 §10).
 
     The structure is completed as ``resolve_plan`` completes it (without
     ``completar_patrones``), so the grid and the counts are the ones the next
     resolution will quote; the other structures' patterns are not expanded.
-    Without a catalog, each color is named as ``materiales`` declares it: a
-    replacement (``variant_overrides``) only renames it in the resolution,
-    which knows what is bought (§9). ``patron`` replaces the structure's own
+    Each color is named by what the structure buys, with the same function
+    resolution uses (``_named_by_purchase``, §8): ``compras`` is what each
+    material buys, read back from the browser's resolved lines
+    (``compras_de_estructura``); without it (or with it empty) each color is
+    named as ``materiales`` declares it. The names reach every text of the
+    preview (the count, the texts, the prompts, the notices and a rejection's
+    sentence), never the grid or the counts; a partial replacement's notice
+    goes last, as in resolution. ``patron`` replaces the structure's own
     ``patron_color`` and comes back with ``aplicado: true``; ``None`` asks for
     the preset, computed without the structure's current pattern, and comes
     back with ``aplicado: false`` — the structure's preset, or with ``modo``
@@ -3036,8 +3206,9 @@ def vista_previa_de_estructura(
     measured = _complete_measures(candidate)
     completed = _sync_participations(measured, measured, only=index)
     _validate_plan(completed)
-    context = _pattern_context(completed, _mappings(completed.get("estructuras"))[index])
-    admitted: list[dict[str, object]] = modos_admitidos(context)
+    declared = _pattern_context(completed, _mappings(completed.get("estructuras"))[index])
+    admitted: list[dict[str, object]] = modos_admitidos(declared)
+    context, purchase_notices = _named_by_purchase(declared, compras or {})
     notices: tuple[str, ...] = ()
     try:
         if patron is not None:
@@ -3050,8 +3221,8 @@ def vista_previa_de_estructura(
         resolved: dict[str, object] = patron_resuelto(context, chosen, aplicado=patron is not None)
     except PatronColorInvalido as error:
         raise _pattern_error(estructura_id, error) from error
-    if notices:
-        resolved["avisos"] = [*notices, *cast(list[str], resolved["avisos"])]
+    if notices or purchase_notices:
+        resolved["avisos"] = [*notices, *cast(list[str], resolved["avisos"]), *purchase_notices]
     return VistaPreviaPatron(patron=resolved, modos_admitidos=admitted)
 
 
@@ -3125,6 +3296,7 @@ def sugerir_patron_para_estructura(
 
 __all__ = [
     "CatalogPlanStore",
+    "ComprasPorMaterial",
     "MERMA",
     "PLAN_RESOLUTION_SCOPE",
     "PistaPatron",
@@ -3132,6 +3304,7 @@ __all__ = [
     "PlanResolutionError",
     "PlanResolutionRequest",
     "VistaPreviaPatron",
+    "compras_de_estructura",
     "modos_admitidos_de_estructura",
     "patron_resuelto_de_estructura",
     "resolve_plan",

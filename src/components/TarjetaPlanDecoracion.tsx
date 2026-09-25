@@ -55,6 +55,7 @@ import { imagenDeReferencia, urlImagen } from "@/components/referencia/recorte";
 import { EditorPatron } from "@/components/plan/patron/EditorPatron";
 import { DialogoHojaArmado } from "@/components/plan/patron/HojaArmado";
 import { leyendaPatron } from "@/components/plan/patron/leyenda";
+import { peticionVistaPieza } from "@/components/plan/patron/peticion-pieza";
 import { admitePatron } from "@/components/plan/patron/modos";
 import type { PatronColor, PatronColorResuelto } from "@/lib/plan/patron-color";
 import { FalloPlanPatron, pedirPlanEditarPatron, pedirVistaPatron } from "@/lib/plan/peticion-patron";
@@ -328,6 +329,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
     const declarada = declaradasPorId.get(estructura.estructura_id);
     const oficial = identificarEstructuraOficial({ tipo: estructura.tipo, densidad: declarada?.densidad, ubicacion: estructura.ubicacion, nombre: estructura.nombre, estructura_oficial: declarada?.estructura_oficial });
     const paraDescribir = { oficialId: oficial?.id, nombre: estructura.nombre, ubicacion: estructura.ubicacion, repeticiones: estructura.repeticiones };
+    const patron = patronesAplicados.get(estructura.estructura_id);
     return {
       estructura,
       declarada,
@@ -335,9 +337,10 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
       paraDescribir,
       descripcion: describirEstructuraCliente(paraDescribir, "definido"),
       colores: coloresCliente(estructura.lineas),
-      // Numbered legend of the pattern: material index + 1, in `materiales` order.
-      leyenda: leyendaPatron(declarada?.materiales ?? [], estructura.lineas),
-      patron: patronesAplicados.get(estructura.estructura_id),
+      // Numbered legend of the pattern: material index + 1, in `materiales` order,
+      // each number with the color Python gave it (what is bought after a replacement).
+      leyenda: leyendaPatron(declarada?.materiales ?? [], estructura.lineas, patron?.conteo),
+      patron,
       admitePatron: Boolean(declarada && admitePatron(estructura.tipo, declarada.materiales.length)),
     };
   });
@@ -1149,7 +1152,7 @@ export function TarjetaPlanDecoracion({ plan, onAprobar, aprobado = false, gener
                   ocupado: guardandoAjustes,
                 } : undefined}
                 vistaReparto={editorDisponible ? {
-                  pedir: (participaciones, signal) => pedirVistaPatron({ plan: plan.plan, estructura_id: estructura.estructura_id, patron_color: null, participaciones: [...participaciones] }, { signal }),
+                  pedir: (participaciones, signal) => pedirVistaPatron(peticionVistaPieza({ plan: plan.plan, estructuraId: estructura.estructura_id, lineas: estructura.lineas }, { patron_color: null, participaciones: [...participaciones] }), { signal }),
                   vistas: vistasEnVivo,
                 } : undefined}
                 ocupado={guardandoEdicion}

@@ -116,8 +116,17 @@ export type PythonPlanEditDomainCode = (typeof PYTHON_PLAN_EDIT_DOMAIN_CODES)[nu
 /**
  * Stable domain error codes reported by POST /internal/v1/plan/patron (ADR-0028 §10).
  * Its `patron_invalido` also carries the structure's styles (`domainDetails.modosAdmitidos`).
+ * The colors slider's preview (`participaciones`) adds the three answers of
+ * its `repartir`: `sin_patron`, `patron_activo` and `reparto_no_corresponde`.
  */
-export const PYTHON_PLAN_PATRON_DOMAIN_CODES = ["estructura_no_encontrada", "patron_invalido", "invalid_plan"] as const;
+export const PYTHON_PLAN_PATRON_DOMAIN_CODES = [
+  "estructura_no_encontrada",
+  "patron_invalido",
+  "invalid_plan",
+  "sin_patron",
+  "patron_activo",
+  "reparto_no_corresponde",
+] as const;
 export type PythonPlanPatronDomainCode = (typeof PYTHON_PLAN_PATRON_DOMAIN_CODES)[number];
 
 type AdapterEnvironment = Record<string, string | undefined>;
@@ -1142,6 +1151,27 @@ export interface PythonPlanEditResult {
   replayed?: boolean;
 }
 
+/** Same bound as a structure's base lines in plan-edit.v1 (`MAX_LINEAS_PIEZA` in plan_edicion.py). */
+export const PYTHON_PLAN_PATRON_MAX_LINEAS = 256;
+
+/**
+ * One resolved line of the previewed structure, as the browser holds it in
+ * `PlanResuelto.estructuras[].lineas`, reduced to what says what is bought
+ * (`LineaComprada` in services/ai-api/app/plan_edicion.py). A naming hint
+ * only: Python reads from the lines which color each material buys after a
+ * replacement (ADR-0028 §8, §10); it never counts or prices with them.
+ */
+export const PythonPlanPatronLineaSchema = z.object({
+  product_id: z.string().min(1).max(160),
+  variant_id: z.string().min(1).max(160),
+  color: z.string().max(160).nullable(),
+  acabado: z.string().max(160).nullable().optional(),
+  unidades: z.number().int().min(1).max(1_000_000),
+  diam_pulg: z.number().min(0).max(100).nullable().optional(),
+}).strict();
+export type PythonPlanPatronLinea = z.infer<typeof PythonPlanPatronLineaSchema>;
+export const PythonPlanPatronLineasSchema = z.array(PythonPlanPatronLineaSchema).max(PYTHON_PLAN_PATRON_MAX_LINEAS);
+
 export interface PythonPlanPatronInput {
   plan: PlanDecoracion;
   estructuraId: string;
@@ -1159,6 +1189,12 @@ export interface PythonPlanPatronInput {
    * new style admits (cluster size, direction, mirror, accents).
    */
   desde?: PatronColor;
+  /**
+   * The structure's resolved lines (any of the above): Python names each
+   * color by what is bought, as resolution does. Only the fields of
+   * `PythonPlanPatronLineaSchema` travel.
+   */
+  lineas?: readonly PythonPlanPatronLinea[];
   requestId: string;
   correlationId: string;
   deadlineMs?: number;
@@ -2064,12 +2100,24 @@ export async function llamarPythonPlanEdit(input: PythonPlanEditInput): Promise<
   return response.replayed ? { ...result, replayed: true } : result;
 }
 
+/** Exactly the fields of `plan-patron.v1`'s line, whatever else the caller's object carries. */
+function lineaPlanPatron(linea: PythonPlanPatronLinea): PythonPlanPatronLinea {
+  return {
+    product_id: linea.product_id,
+    variant_id: linea.variant_id,
+    color: linea.color,
+    ...(linea.acabado === undefined ? {} : { acabado: linea.acabado }),
+    unidades: linea.unidades,
+    ...(linea.diam_pulg === undefined ? {} : { diam_pulg: linea.diam_pulg }),
+  };
+}
+
 /**
  * Expands one structure's color pattern, or suggests one with `null`
  * (ADR-0028 §10), for the pattern editor. No catalog and no side effect.
  */
 export async function llamarPythonPlanPatron(input: PythonPlanPatronInput): Promise<PythonPlanPatronResult> {
-  const { plan, estructuraId, patronColor, participaciones, modo, desde, ...rest } = input;
+  const { plan, estructuraId, patronColor, participaciones, modo, desde, lineas, ...rest } = input;
   const operationBody = {
     schema_version: "plan-patron.v1" as const,
     plan,
@@ -2078,6 +2126,7 @@ export async function llamarPythonPlanPatron(input: PythonPlanPatronInput): Prom
     ...(participaciones === undefined ? {} : { participaciones: [...participaciones] }),
     ...(modo === undefined ? {} : { modo }),
     ...(desde === undefined ? {} : { desde }),
+    ...(lineas === undefined ? {} : { lineas: lineas.map(lineaPlanPatron) }),
   };
   const response = await llamarPythonOperacion(PYTHON_PLAN_PATRON_PATH, PYTHON_PLAN_PATRON_SCOPE, {
     ...rest,

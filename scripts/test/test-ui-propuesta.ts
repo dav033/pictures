@@ -19,17 +19,20 @@ import { BloquePatron, ControlesPatron, GaleriaEstilos, GraficaPatron, HojaArmad
 import { crearAutoguardado, type Reloj } from "@/components/plan/autoguardado";
 import { crearColaAjustes, crearPendientesAjustes } from "@/components/plan/cola-ajustes";
 import { vistaDeAutoguardado, type VistaEstadoGuardado } from "@/components/plan/EstadoGuardado";
-import { conGlobosPorRacimo, conPintado, editar, enPropuesta, pintadosPendientes } from "@/components/plan/patron/borrador";
+import { borradorALaVista, conGlobosPorRacimo, conPintado, editar, enPropuesta, pintadosPendientes } from "@/components/plan/patron/borrador";
+import { crearArranqueEstilo } from "@/components/plan/patron/arranque-estilo";
+import { peticionVistaPieza } from "@/components/plan/patron/peticion-pieza";
 import { admitePatron, controlesDeModo, iconoDeModo } from "@/components/plan/patron/modos";
 import { posicionItinerante } from "@/components/plan/patron/GraficaPatron";
-import { GLOBOS_POR_TRAMO_IMPRESO, tramosDeColumnas } from "@/components/plan/patron/HojaArmado";
+import { GLOBOS_POR_TRAMO_IMPRESO, tablaPorTamano, tramosDeColumnas } from "@/components/plan/patron/HojaArmado";
+import { colorDeLinea } from "@/components/plan/patron/leyenda";
 import { ResumenVistaPatron } from "@/components/plan/patron/PanelVistaPatron";
 import { avisosDelCambioDeEstilo } from "@/components/plan/patron/usarVistaPrevia";
 import { RepartoColores } from "@/components/plan/RepartoColores";
 import { crearVistaReparto, repartoADibujar } from "@/components/plan/vista-reparto";
 import { crearVistasEnVivo } from "@/components/plan/vistas-en-vivo";
 import { avisosDeEdicion } from "@/components/plan/avisos-edicion";
-import { FalloPlanPatron, MENSAJE_PATRON_INVALIDO, pedirPlanEditarPatron, pedirVistaPatron, pedirVistaPatronDetallada } from "@/lib/plan/peticion-patron";
+import { FalloPlanPatron, MENSAJE_PATRON_INVALIDO, pedirPlanEditarPatron, pedirVistaPatron, pedirVistaPatronDetallada, type VistaPatronDetallada } from "@/lib/plan/peticion-patron";
 import { FalloPlanEditar, mensajeFalloPlanEditar } from "@/lib/plan/peticion-plan-editar";
 import { construirUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 import { PatronColorResueltoSchema, type ModoAdmitido, type PatronColor, type PatronColorResuelto } from "@/lib/plan/patron-color";
@@ -312,7 +315,8 @@ for (const patron of planPatrones.patrones_color ?? []) PatronColorResueltoSchem
 const resueltoDe = (id: string): PatronColorResuelto => planPatrones.patrones_color!.find((patron) => patron.estructura_id === id)!;
 const estructuraDe = (id: string) => planPatrones.estructuras.find((estructura) => estructura.estructura_id === id)!;
 const declaradaDe = (id: string) => planPatrones.plan.estructuras.find((estructura) => estructura.estructura_id === id)!;
-const leyendaDe = (id: string) => leyendaPatron(declaradaDe(id).materiales, estructuraDe(id).lineas);
+// Como la tarjeta: cada número con el color que le dio Python (`conteo`), si la pieza tiene patrón.
+const leyendaDe = (id: string) => leyendaPatron(declaradaDe(id).materiales, estructuraDe(id).lineas, planPatrones.patrones_color?.find((patron) => patron.estructura_id === id)?.conteo);
 
 // 7a. La tarjeta: bloque "Patrón de color" en el detalle, tira del patrón en el resumen y editor cerrado.
 {
@@ -330,6 +334,9 @@ const leyendaDe = (id: string) => leyendaPatron(declaradaDe(id).materiales, estr
   assert.equal((html.match(/data-testid="crear-patron"/g) ?? []).length, 1, "la guirnalda sin patrón ofrece crearlo");
   assert.equal((html.match(/Arrastra para cambiar cuánto lleva de cada color/g) ?? []).length, 1, "el reparto por deslizador solo queda donde no manda un patrón");
   assert.match(html, /aria-label="Patrón espiral"/, "la tarjeta de resumen muestra la tira del patrón");
+  // La tira es un dibujo: el lector de pantalla sigue oyendo los colores de la pieza, como con las muestras.
+  assert.match(html, /aria-label="Patrón espiral"[^]*?<span class="sr-only">Colores de 2 columnas: blanco mate, negro mate, azul cromado<\/span>/, "con la tira, los colores siguen en texto");
+  assert.match(html, /<ul class="flex items-center mt-1\.5" aria-label="Colores de Guirnalda[^"]*">/, "sin patrón, las muestras con su lista");
   assert.match(html, /aria-label="Patrón flores"/);
   assert.match(html, /inert=""[^]*data-testid="bloque-patron"/, "el bloque vive en el detalle cerrado (inert)");
   assert.doesNotMatch(html, /role="dialog"|data-testid="editor-patron"|data-testid="dialogo-hoja-armado"/, "editor y hoja cerrados no se montan");
@@ -438,6 +445,130 @@ const leyendaDe = (id: string) => leyendaPatron(declaradaDe(id).materiales, estr
   ok("hoja de armado: una pared ancha se desplaza en pantalla y se imprime por tramos sin recortar globos");
 }
 
+// 7c'. Tras un reemplazo se nombra lo que se compra (ADR-0028 §8 y §9).
+// `plan-con-reemplazo.json` es salida real de Python: el plan de la fixture
+// resuelto por `resolve_plan` con un catálogo de prueba y dos ediciones
+// `reemplazar` de `editar_plan`. En la columna todo el azul cromado (3) pasó
+// a rojo mate: Python nombra el 3 "rojo". En la guirnalda (con el confeti que
+// sugiere Python) solo el dorado de 12″ pasó a rojo: el 2 sigue siendo
+// dorado y Python lo avisa. La receta declarada (`materiales`) no cambia.
+const planReemplazo = JSON.parse(readFileSync(resolve(process.cwd(), "scripts/fixtures/patron-color-ui/plan-con-reemplazo.json"), "utf8")) as PlanResuelto;
+for (const patron of planReemplazo.patrones_color ?? []) PatronColorResueltoSchema.parse(patron);
+function piezaReemplazo(id: string) {
+  const resuelto = planReemplazo.patrones_color!.find((patron) => patron.estructura_id === id)!;
+  const estructura = planReemplazo.estructuras.find((item) => item.estructura_id === id)!;
+  const declarada = planReemplazo.plan.estructuras.find((item) => item.estructura_id === id)!;
+  return { resuelto, estructura, declarada, leyenda: leyendaPatron(declarada.materiales, estructura.lineas, resuelto.conteo) };
+}
+/** Las líneas como viajan en la vista previa: los campos de `LineaComprada` (plan-patron.v1). */
+const lineasCompradas = (lineas: PlanResuelto["estructuras"][number]["lineas"]) => lineas.map(({ product_id, variant_id, color, acabado, unidades, diam_pulg }) => ({ product_id, variant_id, color, acabado, unidades, diam_pulg }));
+/** Celdas de la tabla "Globos por tamaño": encabezados y filas, como texto. */
+function tablaTamanos(html: string): { encabezados: string[]; filas: string[][] } {
+  const tabla = /<table[^>]*data-testid="globos-por-tamano"[^>]*>([^]*?)<\/table>/.exec(html)?.[1] ?? "";
+  const celdas = (fila: string) => [...fila.matchAll(/<t[hd][^>]*>([^]*?)<\/t[hd]>/g)].map((celda) => textoVisible(celda[1]!).trim());
+  const [cabeza = "", ...cuerpo] = [...tabla.matchAll(/<tr>([^]*?)<\/tr>/g)].map((fila) => fila[1]!);
+  return { encabezados: celdas(cabeza), filas: cuerpo.map(celdas) };
+}
+{
+  const columna = piezaReemplazo("EST_01_COLUMNA");
+  assert.deepEqual(columna.declarada.materiales.map((material) => [material.color, material.acabado]), [["blanco", "fashion"], ["negro", "fashion"], ["azul", "reflex"]], "la receta declarada sigue diciendo azul cromado");
+  assert.deepEqual(columna.resuelto.conteo.map((fila) => [fila.color, fila.acabado]), [["blanco", "fashion"], ["negro", "fashion"], ["rojo", "fashion"]], "Python nombra el 3 por lo que se compra");
+  assert.deepEqual(columna.leyenda.map((color) => `${color.numero} ${color.etiqueta}`), ["1 Blanco mate", "2 Negro mate", "3 Rojo mate"], "la leyenda dice el color comprado, con su acabado");
+  assert.deepEqual(leyendaPatron(columna.declarada.materiales, columna.estructura.lineas).map((color) => color.etiqueta), ["Blanco mate", "Negro mate", "Azul cromado"], "sin conteo de Python (una vista sin él), lo declarado");
+
+  // La tarjeta: el conteo del bloque y la gráfica numerada.
+  const tarjeta = textoVisible(renderToStaticMarkup(React.createElement(TarjetaPlanDecoracion, { plan: planReemplazo, onPlanActualizado: () => undefined, onAprobar: () => undefined })));
+  assert.match(tarjeta, /1 Blanco mate 48 · 50 % 2 Negro mate 24 · 25 % 3 Rojo mate 24 · 25 %/, "el conteo del bloque nombra lo que se compra");
+  assert.doesNotMatch(tarjeta, /Azul cromado/);
+  const grafica = renderToStaticMarkup(React.createElement(GraficaPatron, { resuelto: columna.resuelto, leyenda: columna.leyenda, tipo: "columna" }));
+  assert.match(grafica, /<li aria-label="Racimo 1: Blanco mate, Negro mate, Blanco mate, Rojo mate"/, "la gráfica dice el color comprado");
+
+  // La hoja de armado: leyenda, paso a paso, globos por color y por tamaño.
+  const hojaHtml = renderToStaticMarkup(React.createElement(HojaArmado, { resuelto: columna.resuelto, leyenda: columna.leyenda, estructura: columna.estructura, declarada: columna.declarada }));
+  const hoja = textoVisible(hojaHtml);
+  assert.match(hoja, /3: Rojo mate/, "la leyenda de la hoja");
+  assert.match(hoja, /Paso a paso Racimos 1–12 Blanco mate, Negro mate, Blanco mate, Rojo mate/);
+  assert.match(hoja, /3 Rojo mate 12 24/, "globos por color");
+  assert.doesNotMatch(hoja, /azul/i, "ni la hoja ni los textos de Python nombran el color que se quitó");
+  const tabla = tablaTamanos(hojaHtml);
+  assert.deepEqual(tabla.encabezados, ["Tamaño", "Blanco mate", "Negro mate", "Rojo mate", "Total"], "cada columna es un color tal como se compra");
+  assert.deepEqual(tabla.filas, [["12″", "48", "24", "24", "96"]]);
+  ok("reemplazo completo: leyenda, gráfica y hoja dicen el color que se compra");
+}
+{
+  const guirnalda = piezaReemplazo("EST_04_GUIRNALDA");
+  assert.deepEqual(guirnalda.resuelto.conteo.map((fila) => fila.color), ["blanco", "dorado"], "solo una parte del dorado se reemplazó: Python conserva su nombre");
+  assert.ok(guirnalda.resuelto.avisos.some((aviso) => aviso.startsWith("Solo una parte del color dorado (2) se cambió por rojo")));
+  assert.deepEqual(guirnalda.leyenda.map((color) => color.etiqueta), ["Blanco mate", "Dorado cromado"]);
+  const tarjeta = textoVisible(renderToStaticMarkup(React.createElement(TarjetaPlanDecoracion, { plan: planReemplazo, onPlanActualizado: () => undefined, onAprobar: () => undefined })));
+  assert.ok(tarjeta.includes(guirnalda.resuelto.avisos.find((aviso) => aviso.startsWith("Solo una parte"))!), "el aviso de Python se ve en el bloque");
+
+  // Ninguna línea se cae de la tabla: el rojo de 12″ tiene su propia columna, con lo que compra.
+  const hojaHtml = renderToStaticMarkup(React.createElement(HojaArmado, { resuelto: guirnalda.resuelto, leyenda: guirnalda.leyenda, estructura: guirnalda.estructura, declarada: guirnalda.declarada }));
+  assert.ok(textoVisible(hojaHtml).includes(guirnalda.resuelto.avisos.find((aviso) => aviso.startsWith("Solo una parte"))!), "la hoja dice por qué el dorado se cuenta junto y la tabla por tamaño lo separa");
+  const tabla = tablaTamanos(hojaHtml);
+  assert.deepEqual(tabla.encabezados, ["Tamaño", "Blanco mate", "Dorado cromado", "Rojo mate", "Total"]);
+  const porTamano = new Map(tabla.filas.map((fila) => [fila[0], fila.slice(1)]));
+  assert.deepEqual(porTamano.get("12″"), ["22", "0", "15", "37"], "el rojo que se compra en 12″ no se cuenta como dorado ni desaparece");
+  const lineas = guirnalda.estructura.lineas;
+  assert.equal(tabla.filas.reduce((suma, fila) => suma + Number(fila.at(-1)), 0), lineas.reduce((suma, linea) => suma + linea.unidades, 0), "la tabla suma todas las líneas de la pieza");
+  const { colores, filas } = tablaPorTamano(lineas);
+  for (const linea of lineas) {
+    const columnaDeLinea = colores.find(({ muestra }) => muestra.color === linea.color);
+    assert.ok(columnaDeLinea, `${linea.variant_id} tiene su columna`);
+  }
+  assert.equal(filas.reduce((suma, fila) => suma + [...fila.porColor.values()].reduce((a, b) => a + b, 0), 0), lineas.reduce((suma, linea) => suma + linea.unidades, 0));
+  ok("reemplazo parcial: la hoja cuenta cada línea con su propio color y Python avisa");
+
+}
+
+// 7c'''. Un color que la resolución reetiquetó: el plan declara "azul" (la
+// familia del producto) y la línea dice el color real de la variante, "azul
+// rey" (`_line_color` en plan.py). Python no lo renombra (no es un reemplazo),
+// así que ninguna línea dice su color: el tono y el acabado salen de la línea
+// de su propio producto, como en la tabla "Globos por tamaño".
+{
+  const id = "EST_01_COLUMNA";
+  const lineaAzul = estructuraDe(id).lineas.find((linea) => linea.color === "azul")!;
+  const reetiquetada = { ...lineaAzul, color: "azul rey", titulo: "Globo Latex Redondo Reflex Azul Rey — R-12 / PAQUETE X 50" };
+  const material = { product_id: lineaAzul.product_id, color: "azul" };
+  for (const conteo of [[{ material: 0, color: "azul", acabado: null }], undefined]) {
+    const [color] = leyendaPatron([material], [reetiquetada], conteo);
+    assert.deepEqual([color!.etiqueta, color!.brillo], ["Azul rey cromado", "cromado"], `el tono y el brillo de la línea comprada (${conteo ? "con" : "sin"} conteo de Python)`);
+    assert.equal(color!.etiqueta, colorDeLinea(reetiquetada).muestra.etiqueta, "la leyenda y la tabla por tamaño lo llaman igual");
+  }
+  const [renombrado] = leyendaPatron([material], [reetiquetada], [{ material: 0, color: "rojo", acabado: null }]);
+  assert.deepEqual([renombrado!.etiqueta, renombrado!.brillo], ["Rojo", "mate"], "un material que Python renombró no toma el tono de lo que compraba antes");
+
+  const estructura = { ...estructuraDe(id), lineas: estructuraDe(id).lineas.map((linea) => (linea === lineaAzul ? reetiquetada : linea)) };
+  const resuelto = resueltoDe(id);
+  const leyenda = leyendaPatron(declaradaDe(id).materiales, estructura.lineas, resuelto.conteo);
+  assert.equal(resuelto.conteo[2]!.color, "azul", "Python nombra lo declarado");
+  const hojaHtml = renderToStaticMarkup(React.createElement(HojaArmado, { resuelto, leyenda, estructura, declarada: declaradaDe(id) }));
+  const hoja = textoVisible(hojaHtml);
+  assert.match(hoja, /3: Azul rey cromado/, "la leyenda de la hoja");
+  assert.match(hoja, /3 Azul rey cromado \d+ \d+/, "globos por color");
+  assert.deepEqual(tablaTamanos(hojaHtml).encabezados, ["Tamaño", "Blanco mate", "Negro mate", "Azul rey cromado", "Total"], "globos por tamaño, con el mismo nombre");
+  ok("color reetiquetado: la leyenda toma el tono y el acabado de la línea de su producto");
+}
+
+// 7c''. La vista previa lleva las líneas de la pieza: sin catálogo, Python nombra con ellas lo que se compra.
+async function probarLineasVistaPrevia(): Promise<void> {
+  const columna = piezaReemplazo("EST_01_COLUMNA");
+  let enviado: Record<string, unknown> = {};
+  const vista = await pedirVistaPatron(peticionVistaPieza({ plan: planReemplazo.plan, estructuraId: "EST_01_COLUMNA", lineas: columna.estructura.lineas }, { patron_color: null, participaciones: [0.5, 0.25, 0.25] }), {
+    fetcher: async (_url, init) => {
+      enviado = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return new Response(JSON.stringify({ patron: columna.resuelto }), { status: 200, headers: { "Content-Type": "application/json" } });
+    },
+  });
+  assert.equal(vista.estructura_id, "EST_01_COLUMNA");
+  assert.deepEqual([enviado.estructura_id, enviado.patron_color, enviado.participaciones], ["EST_01_COLUMNA", null, [0.5, 0.25, 0.25]]);
+  assert.deepEqual(enviado.lineas, lineasCompradas(columna.estructura.lineas), "solo lo que dice qué se compra (ni título, ni imagen, ni precio)");
+  assert.ok(JSON.stringify(enviado.lineas).includes('"variant_id":"V-ROJO-12","color":"rojo","acabado":"fashion"'), "la línea reemplazada viaja con el color que se compra");
+  ok("vista previa: el cuerpo lleva las líneas resueltas de la pieza");
+}
+
 // 7d. Controles del editor: los estilos, sus direcciones y el espejo son los
 // que Python admite para la pieza (`modos_admitidos`), en su orden. La
 // interfaz no decide ninguno por el tipo de la pieza.
@@ -465,6 +596,9 @@ const MODOS_PARED = [admitido("anillos", ["longitudinal", "transversal"]), admit
   assert.doesNotMatch(columna, /Damero|Dirección|Simetría espejo/, "una sola dirección no se ofrece; sin espejo de Python, no hay interruptor");
   assert.match(columna, /Posición 1 .*Posición 2 .*Posición 3 .*Posición 4/);
   assert.match(columna, /4 · cuarteto/);
+  // El tamaño del racimo es el que dibujó Python (`columnas`); sin su dibujo no se inventa uno.
+  const sinDibujo = textoVisible(renderToStaticMarkup(React.createElement(ControlesPatron, { patron: declaradaDe("EST_01_COLUMNA").patron_color!, leyenda: leyendaDe("EST_01_COLUMNA"), modos: MODOS_COLUMNA, geometria: "racimos", globosPorRacimo: null, estilo, onCambiar: () => undefined })));
+  assert.doesNotMatch(sinDibujo, /Globos por racimo/);
   // Lo que diga Python manda, aunque no sea lo de siempre para el tipo: la interfaz no filtra por tipo.
   const otra = controles("EST_01_COLUMNA", "racimos", [admitido("damero"), admitido("espiral", ["longitudinal", "transversal"], true)]);
   assert.match(otra, /Estilo .*Damero .*Espiral/);
@@ -1290,20 +1424,72 @@ async function probarModosAdmitidos(): Promise<void> {
     (error: unknown) => error instanceof FalloPlanPatron && !error.patronInvalido && error.modosAdmitidos === null,
   );
 
-  // Cambiar de estilo lleva el borrador (`desde`) con `modo`: Python decide qué conserva.
-  const borrador = declaradaDe("EST_01_COLUMNA").patron_color!;
-  let enviado: Record<string, unknown> = {};
-  await pedirVistaPatronDetallada({ ...cuerpo, modo: "anillos", desde: borrador }, {
-    fetcher: async (_url, init) => {
-      enviado = JSON.parse(String(init?.body)) as Record<string, unknown>;
-      return responder({ patron: resuelto, modos_admitidos: MODOS_COLUMNA });
-    },
+  ok("estilos de la pieza: con la vista previa y con su rechazo");
+
+  // Cambiar de estilo lleva el borrador a la vista (`desde`) con `modo`, por el
+  // camino del editor: `borradorALaVista` elige qué borrador tiene a la vista y
+  // `crearArranqueEstilo` (lo que monta `useArranqueEstilo`) arma el pedido y
+  // decide qué respuesta cuenta. Python decide qué conserva.
+  const pieza = { plan: planPatrones.plan, estructuraId: "EST_01_COLUMNA", lineas: estructuraDe("EST_01_COLUMNA").lineas };
+  const sugerencia: PatronColorResuelto = { ...resuelto, aplicado: false, patron: { ...resuelto.patron, origen: "sugerido" } };
+  const anillos: PatronColorResuelto = { ...resuelto, aplicado: false, patron: { version: "patron-color.v1", origen: "sugerido", base: { modo: "anillos", secuencia: [0, 1, 2], largo: 1 } } };
+  let presente: PatronColor | null = null;
+  const enviados: Array<Record<string, unknown>> = [];
+  const llegadas: VistaPatronDetallada[] = [];
+  // Cada pedido espera a que la prueba lo conteste (o a que lo cancelen).
+  const enEspera: Array<{ responder: (respuesta: Response) => void }> = [];
+  // Lo que hace `useArranqueEstilo` en cada render del editor: la pieza, el borrador a la vista y quién recibe.
+  const actual = () => ({ pieza, borrador: borradorALaVista(presente, sugerencia), alLlegar: (detallada: VistaPatronDetallada) => { llegadas.push(detallada); } });
+  const arranque = crearArranqueEstilo(actual(), {
+    fetcher: (_url, init) => new Promise<Response>((listo, falla) => {
+      enviados.push(JSON.parse(String(init?.body)) as Record<string, unknown>);
+      init?.signal?.addEventListener("abort", () => falla(new DOMException("cancelado", "AbortError")));
+      enEspera.push({ responder: listo });
+    }),
   });
-  assert.deepEqual([enviado.modo, enviado.desde, enviado.patron_color], ["anillos", borrador, null]);
-  ok("estilos de la pieza: con la vista previa y con su rechazo; cambiar de estilo lleva el borrador");
+  const contestar = async (datos: unknown, status = 200) => {
+    enEspera.shift()!.responder(responder(datos, status));
+    for (let vuelta = 0; vuelta < 4; vuelta += 1) await vaciarPromesas();
+  };
+
+  // "Crear patrón": sin borrador propio viaja la sugerencia que dibujó Python.
+  arranque.elegir("anillos");
+  assert.deepEqual(arranque.estado(), { pendiente: "anillos", error: null }, "el estilo en camino");
+  await contestar({ patron: anillos, modos_admitidos: MODOS_COLUMNA });
+  assert.deepEqual([enviados[0]!.modo, enviados[0]!.desde, enviados[0]!.patron_color, enviados[0]!.estructura_id], ["anillos", sugerencia.patron, null, "EST_01_COLUMNA"]);
+  assert.deepEqual(enviados[0]!.lineas, lineasCompradas(pieza.lineas), "con las líneas de la pieza");
+  assert.deepEqual(llegadas.map((detallada) => detallada.patron.patron.base.modo), ["anillos"], "la respuesta pasa a ser el borrador");
+  assert.deepEqual(arranque.estado(), { pendiente: null, error: null });
+
+  // El decorador retoca (3 globos por racimo): lo que viaja es su borrador, no la sugerencia.
+  presente = conGlobosPorRacimo(sugerencia.patron, 3);
+  arranque.usar(actual());
+  arranque.elegir("flor");
+  assert.deepEqual(enviados[1]!.desde, presente);
+  // Otro estilo antes de que Python conteste: el primero se cancela y solo cuenta el último.
+  arranque.elegir("bloques");
+  await vaciarPromesas();
+  assert.equal(enEspera.length, 2);
+  enEspera.shift();
+  await contestar({ patron: anillos, modos_admitidos: MODOS_COLUMNA });
+  assert.deepEqual(enviados.map((enviado) => enviado.modo), ["anillos", "flor", "bloques"]);
+  assert.equal(llegadas.length, 2, "la respuesta del estilo cancelado no llega");
+  // Otro gesto del decorador (`cancelar`) descarta el estilo en camino.
+  arranque.elegir("degradado");
+  arranque.cancelar();
+  assert.deepEqual(arranque.estado(), { pendiente: null, error: null });
+  await contestar({ patron: anillos, modos_admitidos: MODOS_COLUMNA });
+  assert.equal(llegadas.length, 2, "cancelado, no pisa el borrador");
+  // Un rechazo de Python queda junto al estilo elegido.
+  arranque.elegir("flor");
+  await contestar(sinPreset, 422);
+  assert.deepEqual(arranque.estado(), { pendiente: null, error: { modo: "flor", mensaje: sinPreset.mensaje } });
+  assert.equal(llegadas.length, 2);
+  ok("cambiar de estilo: el editor manda su borrador a la vista, con las líneas, y solo cuenta el último pedido");
 }
 
 probarPeticionPatron()
+  .then(probarLineasVistaPrevia)
   .then(probarAutoguardado)
   .then(probarVistaReparto)
   .then(probarModosAdmitidos)

@@ -735,9 +735,11 @@ def test_repartir_un_confeti_reescribe_los_pesos_y_conserva_la_semilla() -> None
         plan, {"accion": "repartir", "estructura_id": COLUMNA, "participaciones": [0.6, 0.25, 0.15]}
     )
 
-    # Pesos 60/25/15 sobre 40 celdas: 24, 10 y 6 globos → 0.6, 0.25, 0.15.
+    # Pesos 60/25/15 sobre 40 celdas: 24, 10 y 6 globos → 0.6, 0.25, 0.15. El
+    # reparto lo eligió el decorador: el confeti sugerido pasa a ser suyo.
     assert _estructura(resultado.plan, COLUMNA)["patron_color"] == {
         **confeti,
+        "origen": "decorador",
         "base": {
             "modo": "aleatorio",
             "pesos": [{"material": 0, "peso": 60}, {"material": 1, "peso": 25}, {"material": 2, "peso": 15}],
@@ -796,6 +798,29 @@ def test_repartir_un_confeti_con_acentos_o_pintados_los_integra_y_avisa(
         "Los acentos y los globos pintados a mano se integraron al confeti para respetar"
         " el reparto que elegiste.",
     )
+
+
+@pytest.mark.parametrize("origen", ["sugerido", "referencia", "decorador"])
+def test_repartir_un_confeti_lo_deja_como_decision_del_decorador(origen: str) -> None:
+    # El deslizador es una decisión del decorador: venga el confeti del preset
+    # o de la foto, tras repartirlo su origen es "decorador". Nada más cambia de
+    # origen: la semilla y el modo se conservan.
+    confeti = {**_confeti([(0, 40), (1, 30), (2, 30)], semilla=99), "origen": origen}
+    plan = _plan(_con_patron(_columna(), confeti, (0.4, 0.3, 0.3)))
+
+    resultado = _editar(
+        plan, {"accion": "repartir", "estructura_id": COLUMNA, "participaciones": [0.5, 0.3, 0.2]}
+    )
+
+    patron = cast(dict[str, object], _estructura(resultado.plan, COLUMNA)["patron_color"])
+    assert patron["origen"] == "decorador"
+    assert cast(dict[str, object], patron["base"])["semilla"] == 99
+    # Repartir una pieza sin patrón no le crea uno.
+    sin_patron = _editar(
+        _plan(_columna()),
+        {"accion": "repartir", "estructura_id": COLUMNA, "participaciones": [0.5, 0.3, 0.2]},
+    )
+    assert "patron_color" not in _estructura(sin_patron.plan, COLUMNA)
 
 
 # --- agregar con patrón -------------------------------------------------------------------

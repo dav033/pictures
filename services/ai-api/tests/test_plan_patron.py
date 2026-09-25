@@ -34,8 +34,10 @@ from app.plan_edicion import (
     EdicionMaterial,
     LineaBase,
     LineasBaseEstructura,
+    PlanPatronRequest,
     VarianteEdicion,
     editar_plan,
+    vista_previa_patron,
 )
 
 SNAPSHOT = "products_catalog:patrones"
@@ -612,6 +614,332 @@ async def test_reemplazar_parte_de_un_color_con_patron_lo_avisa(caso: str) -> No
         cambio = next(aviso for aviso in avisos if "se cambió por" in aviso)
         assert cambio.startswith("El color azul (3) se cambió por ")
         assert "rojo" in cambio and "verde" in cambio and "según el tamaño" in cambio
+
+
+# --- La vista previa nombra lo que se compra, como la resolución (§8, §10) -----------
+
+_CONTEXTO_VISTA = {
+    "schema_version": "operational.v1",
+    "request_id": "00000000-0000-4000-8000-000000000c00",
+    "correlation_id": "ffffffff-ffff-4fff-8fff-ffffffffffff",
+    "deadline_at": "2030-01-01T00:00:00Z",
+    "deadline_ms": 5000,
+    "body_sha256": "a" * 64,
+    "scopes": ["plan.patron"],
+}
+_CAMPOS_LINEA = ("product_id", "variant_id", "color", "acabado", "unidades", "diam_pulg")
+
+
+def _lineas_del_navegador(resolved: Mapping[str, object]) -> list[dict[str, object]]:
+    """Las líneas de la pieza como las tiene el navegador, en la forma de plan-patron.v1."""
+    estructura = cast(list[dict[str, object]], resolved["estructuras"])[0]
+    return [
+        {campo: linea.get(campo) for campo in _CAMPOS_LINEA}
+        for linea in cast(list[dict[str, object]], estructura["lineas"])
+    ]
+
+
+def _vista_previa(
+    resolved: Mapping[str, object],
+    lineas: Sequence[Mapping[str, object]] | None,
+    **peticion: object,
+) -> dict[str, object]:
+    """Vista previa de la pieza del plan resuelto (por defecto, con su propio patrón)."""
+    plan = cast(dict[str, object], resolved["plan"])
+    estructura = cast(list[dict[str, object]], plan["estructuras"])[0]
+    cuerpo: dict[str, object] = {
+        "context": _CONTEXTO_VISTA,
+        "schema_version": "plan-patron.v1",
+        "plan": plan,
+        "estructura_id": estructura["estructura_id"],
+        "patron_color": estructura.get("patron_color"),
+        **peticion,
+    }
+    if lineas is not None:
+        cuerpo["lineas"] = [dict(linea) for linea in lineas]
+    resultado = vista_previa_patron(PlanPatronRequest.model_validate(cuerpo))
+    return cast(dict[str, object], resultado["patron"])
+
+
+async def _reemplazada(
+    plan: Mapping[str, object],
+    filas: Sequence[dict[str, object]],
+    objetivo: str,
+    color: str,
+) -> dict[str, object]:
+    """El plan resuelto tras reemplazar ``objetivo`` por la variante de 12" de ``color``."""
+    base = await _resolver_catalogo(plan, filas)
+    estructura = cast(list[dict[str, object]], base["estructuras"])[0]
+    editado = editar_plan(
+        cast(dict[str, object], base["plan"]),
+        EdicionMaterial(
+            accion="reemplazar",
+            estructura_id=str(estructura["estructura_id"]),
+            objetivo_variant_id=objetivo,
+            variante=VarianteEdicion(
+                product_id=f"prod-{color}", variant_id=f"var-{color}-12", color=color
+            ),
+        ),
+        [
+            LineasBaseEstructura(
+                estructura_id=str(estructura["estructura_id"]),
+                lineas=[
+                    LineaBase(
+                        product_id=str(linea["product_id"]),
+                        variant_id=str(linea["variant_id"]),
+                        color=cast(str, linea["color"]),
+                    )
+                    for linea in cast(list[dict[str, object]], estructura["lineas"])
+                ],
+            )
+        ],
+        [color],
+    )
+    return await _resolver_catalogo(editado.plan, filas)
+
+
+def _colores_conteo(patron: Mapping[str, object]) -> list[object]:
+    return [fila["color"] for fila in cast(list[dict[str, object]], patron["conteo"])]
+
+
+@pytest.mark.anyio
+async def test_la_vista_previa_nombra_el_reemplazo_como_la_resolucion() -> None:
+    # La tarjeta dice rojo (la resolución nombra lo que se compra); el editor,
+    # con las líneas que tiene el navegador, tiene que decir lo mismo: el
+    # patrón resuelto entero (conteo, textos, prompts y avisos) es idéntico.
+    filas = [_row(color) for color in ("blanco", "negro", "azul", "rojo")]
+    resuelto = await _reemplazada(
+        _plan(_columna(patron_color=ESPIRAL)), filas, "var-azul-12", "rojo"
+    )
+    esperado = cast(list[dict[str, object]], resuelto["patrones_color"])[0]
+    assert _colores_conteo(esperado) == ["blanco", "negro", "rojo"]
+
+    assert _vista_previa(resuelto, _lineas_del_navegador(resuelto)) == esperado
+    # Sin las líneas la vista previa no sabe qué se compra: nombra lo declarado.
+    assert _colores_conteo(_vista_previa(resuelto, None)) == ["blanco", "negro", "azul"]
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("caso", ["un_tamano", "todos_a_rojo", "cada_tamano_a_otro_color"])
+async def test_la_vista_previa_de_un_reemplazo_por_tamano_es_la_de_la_resolucion(
+    caso: str,
+) -> None:
+    # Mezcla de varios tamaños: cada color se compra en varias líneas y el
+    # reemplazo puede tocar una, todas o todas con colores distintos. La vista
+    # previa nombra (o avisa) exactamente como la resolución.
+    tamanos = (5, 9, 12, 18, 24)
+    filas = [
+        _row_tamano(color, pulgadas)
+        for color in ("blanco", "negro", "azul", "rojo", "verde")
+        for pulgadas in tamanos
+    ]
+    base = await _resolver_catalogo(_plan(_columna(mezcla="organica_fina", patron_color=ESPIRAL)), filas)
+    azules = [
+        str(linea["variant_id"])
+        for linea in cast(list[dict[str, object]], cast(list[dict[str, object]], base["estructuras"])[0]["lineas"])
+        if linea["color"] == "azul"
+    ]
+    destinos = {
+        "un_tamano": {"var-azul-12": "rojo"},
+        "todos_a_rojo": {objetivo: "rojo" for objetivo in azules},
+        "cada_tamano_a_otro_color": {
+            objetivo: "rojo" if objetivo == "var-azul-12" else "verde" for objetivo in azules
+        },
+    }[caso]
+    plan = cast(dict[str, object], base["plan"])
+    cast(list[dict[str, object]], plan["estructuras"])[0]["variant_overrides"] = [
+        {
+            "objetivo_variant_id": objetivo,
+            "product_id": f"prod-{color}",
+            "variant_id": objetivo.replace("azul", color),
+            "color": color,
+        }
+        for objetivo, color in destinos.items()
+    ]
+    resuelto = await _resolver_catalogo(plan, filas)
+    esperado = cast(list[dict[str, object]], resuelto["patrones_color"])[0]
+
+    assert _vista_previa(resuelto, _lineas_del_navegador(resuelto)) == esperado
+    if caso == "todos_a_rojo":
+        assert _colores_conteo(esperado) == ["blanco", "negro", "rojo"]
+    else:
+        assert any("se cambió por" in aviso for aviso in cast(list[str], esperado["avisos"]))
+
+
+def _row_x12(color: str) -> dict[str, object]:
+    """La misma variante de 12" en bolsa de 12, más barata para pocas unidades."""
+    return {
+        **_row(color),
+        "variant_id": f"var-{color}-12-x12",
+        "sku": f"{color.upper()}-12-X12",
+        "sku_original": f"{color.upper()}-12-X12",
+        "source_variant_id": f"source-{color}-12-x12",
+        "variante_titulo": "R-12 x12",
+        "precio": 3000,
+        "unidades_paq": 12,
+    }
+
+
+@pytest.mark.anyio
+async def test_la_vista_previa_lee_las_lineas_tras_elegir_las_bolsas_de_todo_el_plan() -> None:
+    # Tres columnas iguales: 60 blancos, 30 negros y 30 del color 3. La compra
+    # de todo el plan elige bolsas (x50, x12): el blanco sale en dos líneas y
+    # el rojo del reemplazo en otra bolsa que la que eligió el decorador. Las
+    # líneas siguen diciendo qué compra cada color.
+    filas = [
+        *(_row(color) for color in ("blanco", "negro", "azul", "rojo")),
+        *(_row_x12(color) for color in ("blanco", "negro", "rojo")),
+    ]
+    resuelto = await _reemplazada(
+        _plan(_columna(patron_color=ESPIRAL, repeticiones=3)), filas, "var-azul-12", "rojo"
+    )
+    lineas = _lineas_del_navegador(resuelto)
+    assert len([linea for linea in lineas if linea["color"] == "blanco"]) > 1
+    assert [linea["variant_id"] for linea in lineas if linea["color"] == "rojo"] != ["var-rojo-12"]
+    esperado = cast(list[dict[str, object]], resuelto["patrones_color"])[0]
+    assert _colores_conteo(esperado) == ["blanco", "negro", "rojo"]
+
+    assert _vista_previa(resuelto, lineas) == esperado
+
+
+@pytest.mark.anyio
+async def test_un_reemplazo_por_el_color_de_otro_material_solo_renombra_el_reemplazado() -> None:
+    # El azul pasa a blanco: el blanco (1) compra lo mismo que el reemplazo,
+    # pero no es un reemplazo y no se renombra.
+    filas = [_row(color) for color in ("blanco", "negro", "azul")]
+    resuelto = await _reemplazada(
+        _plan(_columna(patron_color=ESPIRAL)), filas, "var-azul-12", "blanco"
+    )
+    esperado = cast(list[dict[str, object]], resuelto["patrones_color"])[0]
+    assert _colores_conteo(esperado) == ["blanco", "negro", "blanco"]
+
+    assert _vista_previa(resuelto, _lineas_del_navegador(resuelto)) == esperado
+
+
+def _azul_familia(fila: dict[str, object]) -> dict[str, object]:
+    """El azul solo es azul por su familia: la variante es azul rey y la línea lo dice."""
+    if fila["product_id"] != "prod-azul":
+        return fila
+    return {**fila, "colores_producto": ["azul"], "colores_variante": ["azul rey"]}
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("mezcla", "color_override"),
+    [("clasica", "azul rey"), ("organica_fina", "azul rey"), ("organica_fina", None)],
+    ids=["un_tamano", "varios_tamanos", "varios_tamanos_sin_color"],
+)
+async def test_un_reemplazo_por_el_producto_de_un_color_reetiquetado_no_lo_renombra(
+    mezcla: str, color_override: str | None
+) -> None:
+    # El azul (3) se compra como "azul rey" (_line_color reetiqueta el color de
+    # familia) y el negro de 12" pasa a ese mismo globo. La resolución solo
+    # renombra al negro; las líneas del azul no dicen si son su compra propia
+    # reetiquetada o un reemplazo por su mismo producto, así que la vista
+    # previa lo nombra como lo declara, sin avisos, igual que la resolución.
+    tamanos = (5, 9, 12, 18, 24) if mezcla == "organica_fina" else (12,)
+    filas = [
+        _azul_familia(_row_tamano(color, pulgadas))
+        for color in ("blanco", "negro", "azul")
+        for pulgadas in tamanos
+    ]
+    base = await _resolver_catalogo(_plan(_columna(mezcla=mezcla, patron_color=ESPIRAL)), filas)
+    plan = cast(dict[str, object], base["plan"])
+    cast(list[dict[str, object]], plan["estructuras"])[0]["variant_overrides"] = [
+        {
+            "objetivo_variant_id": "var-negro-12",
+            "product_id": "prod-azul",
+            "variant_id": "var-azul-12",
+            **({"color": color_override} if color_override else {}),
+        }
+    ]
+    resuelto = await _resolver_catalogo(plan, filas)
+    lineas = _lineas_del_navegador(resuelto)
+    assert {linea["color"] for linea in lineas if linea["product_id"] == "prod-azul"} == {"azul rey"}
+    esperado = cast(list[dict[str, object]], resuelto["patrones_color"])[0]
+    assert _colores_conteo(esperado)[2] == "azul"
+    assert not any("azul (3)" in aviso for aviso in cast(list[str], esperado["avisos"]))
+
+    assert _vista_previa(resuelto, lineas) == esperado
+
+
+_CONFETI = {
+    "version": "patron-color.v1",
+    "origen": "sugerido",
+    "base": {
+        "modo": "aleatorio",
+        "pesos": [{"material": 0, "peso": 40}, {"material": 1, "peso": 30}, {"material": 2, "peso": 30}],
+        "semilla": 7,
+    },
+}
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    "peticion",
+    [
+        {"patron_color": None, "participaciones": [0.5, 0.25, 0.25]},
+        {"patron_color": None},
+        {"patron_color": None, "modo": "anillos"},
+    ],
+    ids=["deslizador", "sugerencia", "estilo"],
+)
+async def test_el_deslizador_la_sugerencia_y_un_estilo_nombran_lo_que_se_compra(
+    peticion: dict[str, object],
+) -> None:
+    filas = [_row(color) for color in ("blanco", "negro", "azul", "rojo")]
+    resuelto = await _reemplazada(
+        _plan(_columna(patron_color=_CONFETI)), filas, "var-azul-12", "rojo"
+    )
+
+    patron = _vista_previa(resuelto, _lineas_del_navegador(resuelto), **peticion)
+
+    assert _colores_conteo(patron) == ["blanco", "negro", "rojo"]
+    textos = " ".join([str(patron["descripcion"]), *cast(list[str], patron["instrucciones"])])
+    assert "azul" not in textos and "blue" not in str(patron["prompt_gemini"])
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("cambio", ["una_linea_menos", "una_linea_de_mas", "otras_unidades"])
+async def test_lineas_que_no_son_las_del_plan_no_nombran(cambio: str) -> None:
+    # Las líneas solo nombran: si no corresponden a lo que el plan compra (otra
+    # resolución, una demanda sin cobertura), la vista previa nombra lo
+    # declarado, como sin líneas, en vez de adivinar.
+    filas = [_row(color) for color in ("blanco", "negro", "azul", "rojo")]
+    resuelto = await _reemplazada(
+        _plan(_columna(patron_color=ESPIRAL)), filas, "var-azul-12", "rojo"
+    )
+    lineas = _lineas_del_navegador(resuelto)
+    if cambio == "una_linea_menos":
+        lineas = lineas[1:]
+    elif cambio == "una_linea_de_mas":
+        lineas = [*lineas, dict(lineas[-1])]
+    else:
+        lineas[0] = {**lineas[0], "unidades": cast(int, lineas[0]["unidades"]) - 1}
+
+    assert _vista_previa(resuelto, lineas) == _vista_previa(resuelto, None)
+
+
+@pytest.mark.anyio
+async def test_las_lineas_nunca_cuentan() -> None:
+    # Las unidades de las líneas solo sirven para leerlas: el conteo sale de la
+    # rejilla del borrador. Unos anillos sobre la misma pieza cuentan 16/12/12.
+    filas = [_row(color) for color in ("blanco", "negro", "azul", "rojo")]
+    resuelto = await _reemplazada(
+        _plan(_columna(patron_color=ESPIRAL)), filas, "var-azul-12", "rojo"
+    )
+    anillos = {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {"modo": "anillos", "secuencia": [0, 1, 2], "largo": 1},
+    }
+
+    patron = _vista_previa(resuelto, _lineas_del_navegador(resuelto), patron_color=anillos)
+
+    conteo = cast(list[dict[str, object]], patron["conteo"])
+    assert [(fila["color"], fila["unidades_por_instancia"]) for fila in conteo] == [
+        ("blanco", 16), ("negro", 12), ("rojo", 12),
+    ]
 
 
 @pytest.mark.anyio

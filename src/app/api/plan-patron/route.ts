@@ -2,7 +2,7 @@ import { z } from "zod";
 import { isAuthenticatedRequest } from "@/lib/auth/request";
 import { registrarFalloUi, traducirErrorServidor } from "@/lib/errores-ui/traducir-error-servidor";
 import { construirUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
-import { isPythonAdapterError, pythonErrorBody, PYTHON_MAX_BODY_BYTES } from "@/lib/ia/nucleo/python-adapter";
+import { isPythonAdapterError, pythonErrorBody, PYTHON_MAX_BODY_BYTES, PythonPlanPatronLineasSchema } from "@/lib/ia/nucleo/python-adapter";
 import { PlanEditError } from "@/lib/plan/edicion-error";
 import { RechazoVistaPatronError, vistaPreviaPatronPython } from "@/lib/plan/edicion-python";
 import { EdicionRepartoSchema } from "@/lib/plan/edicion-esquemas";
@@ -17,7 +17,11 @@ import { PlanDecoracionSchema } from "@/lib/plan/tipos";
  * edición que sí cambia el plan va por `/api/plan-editar` (acción `patron`).
  * Un rechazo `patron_invalido` trae además los estilos que Python admite para
  * la pieza (`modos_admitidos`), para que el editor los ofrezca aunque no haya
- * sugerencia.
+ * sugerencia. Con `lineas` (las líneas resueltas de la pieza) Python nombra
+ * cada color por lo que se compra, como al resolver. Los rechazos que solo da
+ * la vista previa del deslizador (`sin_patron`, `patron_activo`,
+ * `reparto_no_corresponde`) no dicen que la propuesta cambió: el editor los
+ * calla (`VistaPatronSinDibujoError`).
  *
  * Misma autenticación que `/api/plan-editar` (la sesión que exige
  * `src/proxy.ts`), repetida aquí como guardia del handler.
@@ -33,6 +37,12 @@ const BodySchema = z.object({
   modo: z.enum(MODOS_PATRON_COLOR).optional(),
   /** With `modo`: the editor's draft; Python keeps from it what the new style admits. */
   desde: PatronColorV1Schema.optional(),
+  /**
+   * The structure's resolved lines as the browser holds them (strict, at most
+   * 256): Python names each color by what is bought, as resolution does. A
+   * naming hint only; nothing here counts or prices.
+   */
+  lineas: PythonPlanPatronLineasSchema.optional(),
 }).strict().refine((body) => body.participaciones === undefined || body.patron_color === null, {
   message: "participaciones y patron_color no van juntos.",
   path: ["participaciones"],
@@ -95,6 +105,7 @@ export async function POST(request: Request) {
       ...(body.participaciones === undefined ? {} : { participaciones: body.participaciones }),
       ...(body.modo === undefined ? {} : { modo: body.modo }),
       ...(body.desde === undefined ? {} : { desde: body.desde }),
+      ...(body.lineas === undefined ? {} : { lineas: body.lineas }),
       correlationId: requestIdHttp,
       signal: request.signal,
     });

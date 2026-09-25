@@ -42,6 +42,15 @@ export function enPropuesta(patron: PatronColor | null | undefined, delPlan: Pat
   return delPlan !== null && patron != null && mismoDiseno(patron, delPlan);
 }
 
+/**
+ * El borrador que el editor tiene a la vista: el del decorador o, sin él, la
+ * sugerencia que dibujó Python (tocarla la vuelve del decorador). Es lo que
+ * lleva un cambio de estilo como `desde`.
+ */
+export function borradorALaVista(presente: PatronColor | null, vista: { patron: PatronColor } | null): PatronColor | null {
+  return presente ?? vista?.patron ?? null;
+}
+
 /** Aplica cambios al borrador; el patrón pasa a ser del decorador y los campos `undefined` desaparecen. */
 export function editar(patron: PatronColor, cambios: Partial<Omit<PatronColor, "version" | "origen">>): PatronColor {
   const siguiente: PatronColor = { ...patron, ...cambios, origen: "decorador" };

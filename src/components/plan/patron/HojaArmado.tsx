@@ -1,13 +1,13 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { Printer, X } from "lucide-react";
+import { Info, Printer, X } from "lucide-react";
 import type { PatronColorResuelto } from "@/lib/plan/patron-color";
 import type { EstructuraResuelta, LineaMaterial, PlanResuelto } from "@/lib/plan/resuelto";
 import type { EstructuraOficial } from "@/lib/plan/estructuras-oficiales";
-import { medidasCliente, productoCliente, ubicacionCliente } from "@/lib/plan/presentacion-cliente";
+import { medidasCliente, productoCliente, ubicacionCliente, type MuestraColor } from "@/lib/plan/presentacion-cliente";
 import { useFocoDeRetorno } from "@/components/ui/foco-retorno";
-import { colorDe, nombreRacimo, rangoFilas, unidadesFila, type ColorLeyenda } from "./leyenda";
+import { colorDe, colorDeLinea, nombreRacimo, rangoFilas, unidadesFila, type ColorLeyenda } from "./leyenda";
 import { LeyendaPatron, MuestraNumero } from "./LeyendaPatron";
 import { GraficaPatron } from "./GraficaPatron";
 import { VistaPatron } from "./VistaPatron";
@@ -55,23 +55,29 @@ function tamanoDe(linea: LineaMaterial): { clave: string; texto: string; orden: 
   return { clave: linea.tamano_codigo ?? "?", texto: linea.tamano_codigo ?? "Sin tamaño", orden: Number.MAX_SAFE_INTEGER };
 }
 
+type ColorComprado = { clave: string; muestra: MuestraColor };
+type FilaTamano = { clave: string; texto: string; orden: number; porColor: Map<string, number>; total: number };
+
 /**
- * Globos por tamaño y color, tal como los resolvió el plan (líneas de la
- * estructura). Cada línea va a la columna de su material: mismo producto y,
- * si el material lo declara, mismo color.
+ * Globos por tamaño y color, tal como los compra el plan: cada línea resuelta
+ * de la estructura va a la columna de su propio color y acabado, en el orden
+ * en que aparecen. Un reemplazo compra otro color que el declarado y sale con
+ * el suyo; ninguna línea se asigna a un material ni se queda fuera. Solo suma
+ * las unidades que Python ya puso en cada línea.
  */
-function tablaPorTamano(lineas: readonly LineaMaterial[], materiales: ReadonlyArray<{ product_id: string; color?: string }>): Array<{ clave: string; texto: string; porMaterial: Map<number, number>; total: number }> {
-  const filas = new Map<string, { clave: string; texto: string; orden: number; porMaterial: Map<number, number>; total: number }>();
+export function tablaPorTamano(lineas: readonly LineaMaterial[]): { colores: ColorComprado[]; filas: FilaTamano[] } {
+  const colores = new Map<string, ColorComprado>();
+  const filas = new Map<string, FilaTamano>();
   for (const linea of lineas) {
+    const color = colorDeLinea(linea);
+    if (!colores.has(color.clave)) colores.set(color.clave, color);
     const tamano = tamanoDe(linea);
-    const exacto = materiales.findIndex((material) => material.product_id === linea.product_id && (!material.color || material.color === linea.color));
-    const indice = exacto >= 0 ? exacto : materiales.findIndex((material) => material.product_id === linea.product_id);
-    const fila = filas.get(tamano.clave) ?? { ...tamano, porMaterial: new Map<number, number>(), total: 0 };
-    fila.porMaterial.set(indice, (fila.porMaterial.get(indice) ?? 0) + linea.unidades);
+    const fila = filas.get(tamano.clave) ?? { ...tamano, porColor: new Map<string, number>(), total: 0 };
+    fila.porColor.set(color.clave, (fila.porColor.get(color.clave) ?? 0) + linea.unidades);
     fila.total += linea.unidades;
     filas.set(tamano.clave, fila);
   }
-  return [...filas.values()].sort((a, b) => a.orden - b.orden);
+  return { colores: [...colores.values()], filas: [...filas.values()].sort((a, b) => a.orden - b.orden) };
 }
 
 /**
@@ -89,8 +95,7 @@ export function HojaArmado({ resuelto, leyenda, estructura, declarada, oficial, 
   const estructuraRacimo = rejilla
     ? `${resuelto.filas} filas de ${resuelto.columnas} globos`
     : `${resuelto.filas} racimos de ${resuelto.columnas} globos (${nombreRacimo(resuelto.columnas)})`;
-  const porTamano = declarada ? tablaPorTamano(estructura.lineas, declarada.materiales) : [];
-  const materialesEnTabla = [...new Set(porTamano.flatMap((fila) => [...fila.porMaterial.keys()]))].sort((a, b) => a - b);
+  const porTamano = tablaPorTamano(estructura.lineas);
   const proporcion = declarada?.medidas?.alto_m && declarada.medidas.ancho_m ? declarada.medidas.alto_m / declarada.medidas.ancho_m : undefined;
   const repeticiones = Math.max(1, resuelto.repeticiones);
   const oficialId = oficial?.id ?? declarada?.estructura_oficial;
@@ -108,6 +113,12 @@ export function HojaArmado({ resuelto, leyenda, estructura, declarada, oficial, 
           {resuelto.descripcion && <span className="text-texto-suave">{resuelto.descripcion}</span>}
         </p>
         <LeyendaPatron leyenda={leyenda} className="pt-1" />
+        {/* Los avisos de Python, tal cual: p. ej. que solo una parte de un color se cambió y la tabla por tamaño lo muestra aparte. */}
+        {resuelto.avisos.length > 0 && (
+          <ul aria-label="Avisos del patrón" className="space-y-0.5 pt-1 text-xs text-texto-suave">
+            {resuelto.avisos.map((aviso) => <li key={aviso} className="flex gap-1.5"><Info className="mt-px size-3.5 shrink-0 text-texto-tenue" aria-hidden="true" />{aviso}</li>)}
+          </ul>
+        )}
       </header>
 
       {/* Al imprimir va en una sola columna (globals.css): la gráfica toma todo el ancho del papel. */}
@@ -194,27 +205,31 @@ export function HojaArmado({ resuelto, leyenda, estructura, declarada, oficial, 
             </tbody>
           </table>
         </section>
-        {porTamano.length > 0 && (
+        {porTamano.filas.length > 0 && (
           <section className="hoja-armado-bloque space-y-2">
             <h3 className="text-sm font-semibold">Globos por tamaño{repeticiones > 1 ? ` (las ${repeticiones} piezas)` : ""}</h3>
-            <table className="w-full text-[13px]">
+            {/* Cada columna es un color tal como se compra (sus líneas), no un número de la leyenda. */}
+            <table className="w-full text-[13px]" data-testid="globos-por-tamano">
               <thead className="text-xs text-texto-suave">
                 <tr>
-                  <th className="py-1 text-left font-medium">Tamaño</th>
-                  {materialesEnTabla.map((indice) => (
-                    <th key={indice} className="py-1 text-right font-medium">
-                      {indice >= 0 ? <span className="inline-flex justify-end"><MuestraNumero color={colorDe(leyenda, indice)} tamano="sm" /><span className="sr-only">{colorDe(leyenda, indice).etiqueta}</span></span> : "Otro"}
+                  <th className="py-1 text-left align-bottom font-medium">Tamaño</th>
+                  {porTamano.colores.map(({ clave, muestra }) => (
+                    <th key={clave} className="py-1 pl-2 text-right align-bottom font-medium leading-tight">
+                      <span className="inline-flex items-center justify-end gap-1">
+                        <span aria-hidden="true" className={`size-3 shrink-0 rounded-full ${muestra.conBorde ? "ring-1 ring-borde ring-inset" : ""}`} style={{ background: muestra.fondo }} />
+                        {muestra.etiqueta}
+                      </span>
                     </th>
                   ))}
-                  <th className="py-1 text-right font-medium">Total</th>
+                  <th className="py-1 pl-2 text-right align-bottom font-medium">Total</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-borde-suave">
-                {porTamano.map((fila) => (
+                {porTamano.filas.map((fila) => (
                   <tr key={fila.clave}>
                     <td className="py-1.5 font-medium">{fila.texto}</td>
-                    {materialesEnTabla.map((indice) => <td key={indice} className="py-1.5 text-right tabular-nums">{numero.format(fila.porMaterial.get(indice) ?? 0)}</td>)}
-                    <td className="py-1.5 text-right font-semibold tabular-nums">{numero.format(fila.total)}</td>
+                    {porTamano.colores.map(({ clave }) => <td key={clave} className="py-1.5 pl-2 text-right tabular-nums">{numero.format(fila.porColor.get(clave) ?? 0)}</td>)}
+                    <td className="py-1.5 pl-2 text-right font-semibold tabular-nums">{numero.format(fila.total)}</td>
                   </tr>
                 ))}
               </tbody>

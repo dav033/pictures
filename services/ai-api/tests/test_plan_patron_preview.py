@@ -162,6 +162,8 @@ def test_el_reparto_del_deslizador_se_dibuja_sin_guardar() -> None:
         "semilla": 7,
     }
     assert _conteo(resultado) == [(20, 40), (10, 20), (10, 20)]
+    # El reparto lo eligió el decorador: el confeti que venía de la foto pasa a ser suyo.
+    assert cast(dict[str, object], patron["patron"])["origen"] == "decorador"
     # El acento de la foto se integró al confeti, y la vista previa lo dice.
     assert "acentos" not in cast(dict[str, object], patron["patron"])
     assert any("se integraron al confeti" in aviso for aviso in cast(list[str], patron["avisos"]))
@@ -308,6 +310,72 @@ def test_el_endpoint_exige_su_scope_y_el_campo_patron() -> None:
     )
     # `null` pide la sugerencia; omitir el campo no es lo mismo.
     assert (status_cuerpo, cast(dict[str, object], body_cuerpo["detail"])["code"]) == (
+        422,
+        "invalid_request",
+    )
+
+
+# --- Líneas de la pieza (``lineas``): solo nombran ----------------------------------
+
+LINEA = {
+    "product_id": "prod-azul",
+    "variant_id": "var-azul-12",
+    "color": "azul",
+    "acabado": None,
+    "unidades": 20,
+    "diam_pulg": 12,
+}
+
+
+def _con_lineas(lineas: object, **extra: object) -> dict[str, object]:
+    return {"context": {**CONTEXTO, "body_sha256": "a" * 64}, **_operacion(None), "lineas": lineas, **extra}
+
+
+@pytest.mark.parametrize(
+    "lineas",
+    [
+        [{**LINEA, "sku": "AZUL-12"}],
+        [{key: value for key, value in LINEA.items() if key != "unidades"}],
+        [{key: value for key, value in LINEA.items() if key != "color"}],
+        [{**LINEA, "unidades": 0}],
+        [{**LINEA, "unidades": 2.5}],
+        [{**LINEA, "diam_pulg": -1}],
+        [{**LINEA, "variant_id": ""}],
+        [{**LINEA, "color": "x" * 161}],
+        [LINEA] * 257,
+    ],
+    ids=["campo_de_mas", "sin_unidades", "sin_color", "cero_unidades", "unidades_no_enteras", "diametro_negativo", "variante_vacia", "color_largo", "mas_de_256"],
+)
+def test_las_lineas_de_la_pieza_tienen_una_forma_estricta_y_acotada(lineas: object) -> None:
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        PlanPatronRequest.model_validate(_con_lineas(lineas))
+
+
+def test_las_lineas_van_con_cualquier_pedido_y_sin_reemplazos_no_cambian_nada() -> None:
+    # Sin `variant_overrides` no hay nada que renombrar: la vista previa es la de siempre.
+    minima = {key: value for key, value in LINEA.items() if key not in ("acabado", "diam_pulg")}
+    for extra in ({}, {"modo": "anillos"}):
+        con = vista_previa_patron(PlanPatronRequest.model_validate(_con_lineas([LINEA, minima], **extra)))
+        sin = vista_previa_patron(
+            PlanPatronRequest.model_validate(
+                {"context": {**CONTEXTO, "body_sha256": "a" * 64}, **_operacion(None), **extra}
+            )
+        )
+        assert con == sin
+
+
+def test_el_endpoint_acepta_las_lineas_y_rechaza_las_que_no_cumplen() -> None:
+    operacion = {**_operacion(ANILLOS), "lineas": [LINEA]}
+    status, _body = _post(operacion, "00000000-0000-4000-8000-000000000b30")
+    status_mala, body_mala = _post(
+        {**_operacion(ANILLOS), "lineas": [{**LINEA, "precio": 1}]},
+        "00000000-0000-4000-8000-000000000b31",
+    )
+
+    assert status == 200
+    assert (status_mala, cast(dict[str, object], body_mala["detail"])["code"]) == (
         422,
         "invalid_request",
     )

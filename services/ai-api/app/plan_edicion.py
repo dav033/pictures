@@ -21,6 +21,7 @@ con ``details``):
 | ``reparto_no_corresponde`` | 409 |
 | ``material_no_editable`` | 409 |
 | ``patron_activo`` | 409 |
+| ``sin_patron`` (solo la vista previa del deslizador) | 409 |
 | ``unico_material`` | 400 |
 | ``sin_participacion`` | 400 |
 | ``patron_invalido`` (``estructura_id``, ``motivo``, ``mensaje``; en la vista previa, además ``modos_admitidos``) | 422 |
@@ -45,8 +46,10 @@ from app.generated_models import PlanDecoracion, contract_schema
 from app.operational_models import ContractModel, OperationalRequest
 from app.patron_color import TIPO_REJILLA, forma_valida, para_validar
 from app.plan import (
+    ComprasPorMaterial,
     PlanResolutionError,
     VistaPreviaPatron,
+    compras_de_estructura,
     modos_admitidos_de_estructura,
     sincronizar_participaciones,
     sugerir_patron_para_estructura,
@@ -70,6 +73,10 @@ _SEIS_DECIMALES = Decimal("0.000001")
 _MAX_ACENTOS = 4
 _MAX_PESOS = 6
 _MAX_AVISO = 400
+#: Líneas resueltas de una pieza, como ``LineasBaseEstructura``.
+MAX_LINEAS_PIEZA = 256
+#: El deslizador de colores es una decisión del decorador (§9).
+ORIGEN_DECORADOR = "decorador"
 
 AVISO_PATRON_QUITAR = "El patrón se rehízo porque quitaste un color."
 AVISO_PATRON_AGREGAR = "El patrón se rehízo para incluir el color nuevo."
@@ -110,7 +117,23 @@ class LineaBase(_Estricto):
 
 class LineasBaseEstructura(_Estricto):
     estructura_id: Identificador
-    lineas: list[LineaBase] = Field(max_length=256)
+    lineas: list[LineaBase] = Field(max_length=MAX_LINEAS_PIEZA)
+
+
+class LineaComprada(_Estricto):
+    """Línea resuelta de la pieza tal como la tiene el navegador (vista previa, §10).
+
+    Es la de ``plan_resuelto.estructuras[].lineas``, reducida a lo que dice qué
+    se compra. Solo nombra: con ella Python lee qué color compra cada material
+    tras un reemplazo (``compras_de_estructura``); nunca cuenta ni cobra.
+    """
+
+    product_id: Identificador
+    variant_id: Identificador
+    color: str | None = Field(max_length=160)
+    acabado: str | None = Field(default=None, max_length=160)
+    unidades: int = Field(ge=1, le=1_000_000)
+    diam_pulg: float | None = Field(default=None, ge=0, le=100)
 
 
 class VarianteEdicion(_Estricto):
@@ -199,7 +222,10 @@ class PlanPatronRequest(OperationalRequest):
     la edición, sin guardarlo, para dibujar la pieza mientras se arrastra.
     Con ``modo`` es el punto de partida de ese estilo; ``desde`` (solo con
     ``modo``) es el borrador del editor, del que Python conserva lo que el
-    estilo nuevo admite (``sugerir_patron_modo``).
+    estilo nuevo admite (``sugerir_patron_modo``). ``lineas`` (con cualquiera
+    de ellas) son las líneas resueltas de la pieza que tiene el navegador: la
+    vista previa nombra con ellas cada color por lo que se compra, como la
+    resolución (§8).
     """
 
     schema_version: Literal["plan-patron.v1"]
@@ -213,6 +239,8 @@ class PlanPatronRequest(OperationalRequest):
     ) = None
     #: Con ``modo``: el borrador del que viene el decorador (forma de ``patron-color.v1``).
     desde: dict[str, object] | None = None
+    #: Líneas resueltas de la pieza (``plan_resuelto.estructuras[].lineas``): solo nombran.
+    lineas: list[LineaComprada] | None = Field(default=None, max_length=MAX_LINEAS_PIEZA)
 
     @field_validator("participaciones")
     @classmethod
@@ -508,8 +536,10 @@ def _repartir(estructura: dict[str, object], participaciones: Sequence[float]) -
     y el reparto pedido no saldría (un acento fija un mínimo de su color y el
     deslizador movería la rejilla al revés de lo pedido). El deslizador es la
     forma de decir "así se reparte este confeti", así que las capas se integran
-    al confeti (se quitan) y se avisa. Con otro modo el reparto se cambia en el
-    editor de patrón: ``patron_activo``.
+    al confeti (se quitan) y se avisa. El reparto que queda lo eligió el
+    decorador con el deslizador, así que el patrón pasa a ``origen:
+    "decorador"`` aunque viniera de la foto o del preset. Con otro modo el
+    reparto se cambia en el editor de patrón: ``patron_activo``.
     """
     patron = cast(dict[str, object] | None, estructura.get("patron_color"))
     base = cast(dict[str, object], patron["base"]) if patron is not None else None
@@ -535,7 +565,11 @@ def _repartir(estructura: dict[str, object], participaciones: Sequence[float]) -
     sin_capas = {
         clave: valor for clave, valor in patron.items() if clave not in ("acentos", "pintados")
     }
-    estructura["patron_color"] = {**sin_capas, "base": {**base, "pesos": pesos}}
+    estructura["patron_color"] = {
+        **sin_capas,
+        "origen": ORIGEN_DECORADOR,
+        "base": {**base, "pesos": pesos},
+    }
     return [_AVISO_CAPAS_CONFETI] if capas else []
 
 
@@ -721,12 +755,17 @@ def ejecutar_edicion(request: PlanEditRequest) -> dict[str, object]:
 
 
 def _vista_previa_reparto(
-    plan: Mapping[str, object], estructura_id: str, participaciones: Sequence[float]
+    plan: Mapping[str, object],
+    estructura_id: str,
+    participaciones: Sequence[float],
+    compras: ComprasPorMaterial,
 ) -> VistaPreviaPatron:
     """El confeti de la estructura tras ``repartir``, sin guardar nada.
 
     Es la misma edición que aplicará ``/plan/edit``; una estructura sin patrón
     no tiene nada que dibujar (``sin_patron``) y otro modo es ``patron_activo``.
+    ``compras`` se leyó del plan recibido (el de las líneas): ``repartir`` no
+    cambia los materiales, solo cuántos globos lleva cada uno.
     """
     estructura = next(
         (
@@ -750,7 +789,10 @@ def _vista_previa_reparto(
         if item.get("estructura_id") == estructura_id
     )
     vista = vista_previa_de_estructura(
-        editado.plan, estructura_id, cast(dict[str, object], nuevo["patron_color"])
+        editado.plan,
+        estructura_id,
+        cast(dict[str, object], nuevo["patron_color"]),
+        compras=compras,
     )
     if editado.avisos:
         vista.patron["avisos"] = [*editado.avisos, *cast(list[str], vista.patron["avisos"])]
@@ -786,13 +828,25 @@ def vista_previa_patron(request: PlanPatronRequest) -> dict[str, object]:
     """``plan-patron-result.v1``: el patrón dado expandido, o la sugerencia con ``None``.
 
     Sin catálogo; la rejilla y el conteo son los que dará la próxima resolución.
+    Con ``lineas``, cada color se nombra por lo que se compra, como al
+    resolver (``compras_de_estructura``); si no corresponden al plan, por lo
+    que declara ``materiales``.
     Los estilos que ofrece el editor (``modos_admitidos``) los decide Python:
     viajan con la respuesta y con el rechazo ``patron_invalido`` de la pieza.
     """
+    compras = (
+        compras_de_estructura(
+            request.plan,
+            request.estructura_id,
+            [linea.model_dump() for linea in request.lineas],
+        )
+        if request.lineas
+        else {}
+    )
     try:
         if request.participaciones is not None:
             vista = _vista_previa_reparto(
-                request.plan, request.estructura_id, request.participaciones
+                request.plan, request.estructura_id, request.participaciones, compras
             )
         else:
             vista = vista_previa_de_estructura(
@@ -801,6 +855,7 @@ def vista_previa_patron(request: PlanPatronRequest) -> dict[str, object]:
                 request.patron_color,
                 modo=request.modo,
                 desde=request.desde,
+                compras=compras,
             )
     except PlanResolutionError as error:
         con_estilos = _rechazo_con_estilos(error, request)
@@ -822,7 +877,10 @@ __all__ = [
     "EdicionPatron",
     "EdicionReparto",
     "LineaBase",
+    "LineaComprada",
     "LineasBaseEstructura",
+    "MAX_LINEAS_PIEZA",
+    "ORIGEN_DECORADOR",
     "PARTICIPACION_AGREGAR",
     "PLAN_EDIT_SCOPE",
     "PLAN_PATRON_SCOPE",

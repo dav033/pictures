@@ -1,4 +1,5 @@
 import { CATALOGO_ERRORES_UI_V1, leerUiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
+import type { PythonPlanPatronLinea } from "@/lib/ia/nucleo/python-adapter";
 import { z } from "zod";
 import { ModoAdmitidoSchema, MODOS_PATRON_COLOR, PatronColorResueltoSchema, type ModoAdmitido, type ModoPatronColor, type PatronColor, type PatronColorResuelto } from "./patron-color";
 import { esCancelacion, FalloPlanEditar, mensajeErrorRespuesta } from "./peticion-plan-editar";
@@ -8,7 +9,9 @@ import type { PlanResuelto } from "./resuelto";
  * Vista previa del editor de patrones: el navegador manda el patrón
  * declarativo a /api/plan-patron y recibe la rejilla, el conteo y los textos
  * que escribe Python (ADR-0028 §10). Aquí no se expande ni se cuenta nada; la
- * respuesta se valida con el mismo esquema que viaja en `plan_resuelto`.
+ * respuesta se valida con el mismo esquema que viaja en `plan_resuelto`. Con
+ * las líneas resueltas de la pieza (`lineas`) Python nombra cada color por lo
+ * que se compra, como en la tarjeta; qué nombre lleva cada número lo decide él.
  *
  * Errores con el estilo de `peticion-plan-editar.ts`: nunca el texto técnico
  * del navegador ni el `error` crudo del servidor. Un patrón que Python rechaza
@@ -39,7 +42,34 @@ export type PeticionVistaPatron = {
   modo?: ModoPatronColor;
   /** Con `modo`: el borrador del editor; Python conserva de él lo que el estilo nuevo admite. */
   desde?: PatronColor;
+  /**
+   * Las líneas resueltas de la pieza (`PlanResuelto.estructuras[].lineas`,
+   * del mismo `PlanResuelto` que `plan`): con ellas Python nombra cada color
+   * por lo que se compra, como al resolver (ADR-0028 §8, §10). Solo nombran;
+   * nunca cuentan. Sirven las `LineaMaterial` tal cual: viajan solo los
+   * campos del contrato.
+   */
+  lineas?: readonly LineaVistaPatron[];
 };
+
+/** Lo que la vista previa lee de una línea resuelta (contrato `plan-patron.v1`). */
+export type LineaVistaPatron = PythonPlanPatronLinea;
+
+/** Solo los campos del contrato: la ruta es estricta y una `LineaMaterial` trae muchos más. */
+function lineaVistaPatron(linea: LineaVistaPatron): LineaVistaPatron {
+  return {
+    product_id: linea.product_id,
+    variant_id: linea.variant_id,
+    color: linea.color,
+    ...(linea.acabado === undefined ? {} : { acabado: linea.acabado }),
+    unidades: linea.unidades,
+    ...(linea.diam_pulg === undefined ? {} : { diam_pulg: linea.diam_pulg }),
+  };
+}
+
+function cuerpoVistaPatron(cuerpo: PeticionVistaPatron): PeticionVistaPatron {
+  return cuerpo.lineas === undefined ? cuerpo : { ...cuerpo, lineas: cuerpo.lineas.map(lineaVistaPatron) };
+}
 
 /** La vista previa con los estilos que Python admite para la pieza. */
 export type VistaPatronDetallada = { patron: PatronColorResuelto; modos_admitidos: ModoAdmitido[] };
@@ -151,7 +181,7 @@ export async function pedirVistaPatron(
   opciones: { signal?: AbortSignal; fetcher?: typeof fetch; respaldo?: string } = {},
 ): Promise<PatronColorResuelto> {
   const respaldo = opciones.respaldo ?? RESPALDO_VISTA_PATRON;
-  const datos = await publicar("/api/plan-patron", cuerpo, respaldo, opciones);
+  const datos = await publicar("/api/plan-patron", cuerpoVistaPatron(cuerpo), respaldo, opciones);
   const patron = typeof datos === "object" && datos !== null ? (datos as Record<string, unknown>).patron : undefined;
   const validado = PatronColorResueltoSchema.safeParse(patron);
   // Una respuesta que no es un patrón resuelto, o que es de otra estructura, no se dibuja.
@@ -170,7 +200,7 @@ export async function pedirVistaPatronDetallada(
   opciones: { signal?: AbortSignal; fetcher?: typeof fetch; respaldo?: string } = {},
 ): Promise<VistaPatronDetallada> {
   const respaldo = opciones.respaldo ?? RESPALDO_VISTA_PATRON;
-  const datos = await publicar("/api/plan-patron", cuerpo, respaldo, opciones);
+  const datos = await publicar("/api/plan-patron", cuerpoVistaPatron(cuerpo), respaldo, opciones);
   const objeto = typeof datos === "object" && datos !== null ? (datos as Record<string, unknown>) : {};
   const patron = PatronColorResueltoSchema.safeParse(objeto.patron);
   const modos = ModosAdmitidosSchema.safeParse(objeto.modos_admitidos);

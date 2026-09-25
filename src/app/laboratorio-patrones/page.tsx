@@ -8,13 +8,15 @@ import { TarjetaPlanDecoracion } from "@/components/TarjetaPlanDecoracion";
 import { DialogoHojaArmado, EditorPatron, GraficaPatron, HojaArmado, LeyendaPatron, leyendaPatron, MiniPatron, ResumenPatron, VistaPatron } from "@/components/plan/patron";
 import { clavePatron } from "@/components/plan/patron/borrador";
 import { estiloDe } from "@/components/plan/patron/modos";
+import { peticionVistaPieza, type PedidoVistaPatron } from "@/components/plan/patron/peticion-pieza";
 import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import type { Mezcla } from "@/lib/plan/mezclas";
 import type { ModoAdmitido, ModoPatronColor, PatronColor, PatronColorResuelto } from "@/lib/plan/patron-color";
-import { pedirPlanEditarPatron, pedirVistaPatronDetallada, type PeticionVistaPatron } from "@/lib/plan/peticion-patron";
+import { pedirPlanEditarPatron, pedirVistaPatronDetallada } from "@/lib/plan/peticion-patron";
 import { mensajeFalloPlanEditar } from "@/lib/plan/peticion-plan-editar";
 import type { EstructuraResuelta, LineaMaterial, PlanResuelto } from "@/lib/plan/resuelto";
 import planFixture from "../../../scripts/fixtures/patron-color-ui/plan-con-patrones.json";
+import planReemplazoFixture from "../../../scripts/fixtures/patron-color-ui/plan-con-reemplazo.json";
 import galeriaFixture from "../../../scripts/fixtures/patron-color-ui/galeria.json";
 import vistasFixture from "../../../scripts/fixtures/patron-color-ui/vistas-previas.json";
 
@@ -31,6 +33,14 @@ import vistasFixture from "../../../scripts/fixtures/patron-color-ui/vistas-prev
  *   grabados (sus modos, direcciones y espejo).
  * - **Python real**: la ruta de verdad con el plan de la fixture (que es una
  *   salida real de Python): dibujo, conteo, estilos y avisos en vivo.
+ *
+ * Hay dos planes, los dos salidas reales de Python: el de la fixture y el
+ * mismo después de dos reemplazos hechos con la edición de Python
+ * (`plan-con-reemplazo.json`): en la columna todo el azul cromado pasó a rojo
+ * mate, y en la guirnalda (con el confeti que sugiere Python) solo el dorado
+ * de 12″ pasó a rojo. La leyenda, la gráfica y la hoja dicen lo que se compra.
+ * Las vistas grabadas nombran lo que se declaraba al grabarlas; con Python
+ * real, la vista previa lleva las líneas de la pieza y nombra lo que se compra.
  *
  * La edición (/api/plan-editar) siempre es simulada: firma cada plan con un
  * hash falso nuevo, como el servidor, para ejercitar el autoguardado
@@ -58,7 +68,11 @@ type PiezaGaleria = {
 };
 
 // Fixtures JSON: los tipos del JSON importado son más anchos que los del dominio.
-const PLAN_INICIAL = planFixture as unknown as PlanResuelto;
+const PLANES = {
+  fixture: planFixture as unknown as PlanResuelto,
+  reemplazo: planReemplazoFixture as unknown as PlanResuelto,
+} satisfies Record<string, PlanResuelto>;
+type PlanLab = keyof typeof PLANES;
 const GALERIA = galeriaFixture as unknown as PiezaGaleria[];
 const VISTAS = vistasFixture as unknown as VistasPrevias;
 
@@ -82,9 +96,10 @@ function conEstructura(actual: PlanResuelto, id: string, cambio: (estructura: Es
 
 type EdicionSimulada = { accion?: string; estructura_id?: string; patron_color?: PatronColor | null; participaciones?: number[]; mezcla?: Mezcla };
 
-/** Una vista previa de la Python real (la ruta de verdad), sin pasar por el simulador. */
-async function vistaPython(fetchReal: typeof fetch, cuerpo: PeticionVistaPatron): Promise<PatronColorResuelto> {
-  return (await pedirVistaPatronDetallada(cuerpo, { fetcher: fetchReal })).patron;
+/** Una vista previa de la Python real (la ruta de verdad) para una pieza de `base`, con sus líneas, sin pasar por el simulador. */
+async function vistaPython(fetchReal: typeof fetch, base: PlanResuelto, id: string, pedido: PedidoVistaPatron): Promise<PatronColorResuelto> {
+  const lineas = base.estructuras.find((estructura) => estructura.estructura_id === id)?.lineas ?? [];
+  return (await pedirVistaPatronDetallada(peticionVistaPieza({ plan: base.plan, estructuraId: id, lineas }, pedido), { fetcher: fetchReal })).patron;
 }
 
 /**
@@ -99,7 +114,7 @@ async function editarSimulado(base: PlanResuelto, edicion: EdicionSimulada, fetc
   switch (edicion.accion) {
     case "patron": {
       const patron = edicion.patron_color ?? null;
-      const vista = !patron ? null : fetchReal ? await vistaPython(fetchReal, { plan: base.plan, estructura_id: id, patron_color: patron }) : vistaPregrabada(id, patron);
+      const vista = !patron ? null : fetchReal ? await vistaPython(fetchReal, base, id, { patron_color: patron }) : vistaPregrabada(id, patron, base.patrones_color);
       return { plan: conPatronAplicado(base, id, patron, vista), avisos: [] };
     }
     case "repartir": {
@@ -108,8 +123,8 @@ async function editarSimulado(base: PlanResuelto, edicion: EdicionSimulada, fetc
       const confeti = base.plan.estructuras.find((estructura) => estructura.estructura_id === id)?.patron_color?.base.modo === "aleatorio";
       if (!fetchReal || !confeti) return { plan: repartido, avisos: [] };
       // El mismo `repartir` que la vista previa del deslizador, y la expansión del confeti que deja.
-      const previa = await vistaPython(fetchReal, { plan: base.plan, estructura_id: id, patron_color: null, participaciones });
-      const aplicado = await vistaPython(fetchReal, { plan: repartido.plan, estructura_id: id, patron_color: previa.patron });
+      const previa = await vistaPython(fetchReal, base, id, { patron_color: null, participaciones });
+      const aplicado = await vistaPython(fetchReal, repartido, id, { patron_color: previa.patron });
       return { plan: conPatronAplicado(repartido, id, previa.patron, aplicado), avisos: previa.avisos.filter((aviso) => !aplicado.avisos.includes(aviso)) };
     }
     case "mezcla": {
@@ -125,8 +140,14 @@ function respuestaJson(cuerpo: unknown, status = 200): Response {
   return new Response(JSON.stringify(cuerpo), { status, headers: { "Content-Type": "application/json" } });
 }
 
-/** Vista previa pregrabada más parecida al patrón pedido: la exacta, la de su estilo o la sugerencia. */
-function vistaPregrabada(estructuraId: string, patron: PatronColor | null): PatronColorResuelto | null {
+/**
+ * Vista previa sin red más parecida al patrón pedido: la expansión que ya
+ * trae el plan si es ese mismo patrón (Python la nombró por lo que se
+ * compra), o la grabada exacta, la de su estilo o la sugerencia.
+ */
+function vistaPregrabada(estructuraId: string, patron: PatronColor | null, delPlan: readonly PatronColorResuelto[] = []): PatronColorResuelto | null {
+  const propia = patron ? delPlan.find((entrada) => entrada.estructura_id === estructuraId && entrada.aplicado && clavePatron(entrada.patron) === clavePatron(patron)) : undefined;
+  if (propia) return propia;
   const vistas = VISTAS[estructuraId];
   if (!vistas) return null;
   if (!patron) return vistas.sugerencia;
@@ -153,7 +174,7 @@ function modosGrabados(estructuraId: string): ModoAdmitido[] {
 type PeticionPatronLab = { plan?: PlanResuelto["plan"]; estructura_id: string; patron_color: PatronColor | null; participaciones?: number[]; modo?: ModoPatronColor };
 
 /** /api/plan-patron con lo grabado: el patrón pedido, el punto de partida de un estilo o el confeti de un reparto (sin redibujarlo). */
-function vistaSimulada(cuerpo: PeticionPatronLab): { status: number; datos: unknown } {
+function vistaSimulada(cuerpo: PeticionPatronLab, delPlan: readonly PatronColorResuelto[]): { status: number; datos: unknown } {
   const id = cuerpo.estructura_id;
   const vistas = VISTAS[id];
   if (!vistas) return { status: 404, datos: { error: "estructura_no_encontrada" } };
@@ -162,14 +183,14 @@ function vistaSimulada(cuerpo: PeticionPatronLab): { status: number; datos: unkn
     const patron = cuerpo.plan?.estructuras.find((estructura) => estructura.estructura_id === id)?.patron_color;
     if (!patron) return { status: 409, datos: { error: "Esta pieza no tiene un patrón de color que dibujar." } };
     if (patron.base.modo !== "aleatorio") return { status: 409, datos: { error: "Esta pieza usa un patrón de color: cambia sus colores desde el patrón.", causa: "PATRON_ACTIVO" } };
-    const vista = vistaPregrabada(id, patron);
+    const vista = vistaPregrabada(id, patron, delPlan);
     return vista ? responder({ ...vista, patron }) : { status: 404, datos: { error: "estructura_no_encontrada" } };
   }
   if (cuerpo.modo) {
     const grabada = vistas.porEstilo[cuerpo.modo] ?? vistas.sugerencia;
     return responder({ ...grabada, aplicado: false, patron: { ...grabada.patron, origen: "sugerido" } });
   }
-  const vista = vistaPregrabada(id, cuerpo.patron_color);
+  const vista = vistaPregrabada(id, cuerpo.patron_color, delPlan);
   return vista ? responder(vista) : { status: 404, datos: { error: "estructura_no_encontrada" } };
 }
 
@@ -208,7 +229,10 @@ function estructuraGaleria(pieza: PiezaGaleria): EstructuraResuelta {
 }
 
 export default function LaboratorioPatronesPage() {
-  const [plan, setPlan] = useState<PlanResuelto>(PLAN_INICIAL);
+  const [planLab, setPlanLab] = useState<PlanLab>("fixture");
+  const [plan, setPlan] = useState<PlanResuelto>(PLANES.fixture);
+  // Qué pieza con patrón muestra la hoja de la página (por defecto, la primera).
+  const [hojaPagina, setHojaPagina] = useState<string | null>(null);
   const [aprobado, setAprobado] = useState(false);
   const [rechazar, setRechazar] = useState<Rechazo>("ninguno");
   const [guardado, setGuardado] = useState<Guardado>("normal");
@@ -245,7 +269,7 @@ export default function LaboratorioPatronesPage() {
         }
         if (fuenteRef.current === "python") return original(entrada, init);
         await new Promise((listo) => window.setTimeout(listo, 250));
-        const { status, datos } = vistaSimulada(cuerpo);
+        const { status, datos } = vistaSimulada(cuerpo, planRef.current.patrones_color ?? []);
         return respuestaJson(datos, status);
       }
       if (url.includes("/api/plan-editar") && typeof init?.body === "string") {
@@ -274,12 +298,22 @@ export default function LaboratorioPatronesPage() {
   const estructuraEditor = editor ? plan.estructuras.find((estructura) => estructura.estructura_id === editor) : undefined;
   const declaradaEditor = editor ? declaradas.get(editor) : undefined;
   const piezaHoja = hoja ? GALERIA.find((pieza) => pieza.id === hoja) : undefined;
+  const aplicados = (plan.patrones_color ?? []).filter((entrada) => entrada.aplicado);
   const hojaEnPagina = (() => {
-    const resuelto = (plan.patrones_color ?? []).find((entrada) => entrada.aplicado);
+    const resuelto = aplicados.find((entrada) => entrada.estructura_id === hojaPagina) ?? aplicados[0];
     const estructura = resuelto ? plan.estructuras.find((item) => item.estructura_id === resuelto.estructura_id) : undefined;
     const declarada = resuelto ? declaradas.get(resuelto.estructura_id) : undefined;
     return resuelto && estructura && declarada ? { resuelto, estructura, declarada } : null;
   })();
+
+  function cambiarPlan(siguiente: PlanLab): void {
+    setPlanLab(siguiente);
+    setPlan(PLANES[siguiente]);
+    setAprobado(false);
+    setEditor(null);
+    setHoja(null);
+    setHojaPagina(null);
+  }
 
   return (
     <div className="min-h-dvh bg-fondo text-texto">
@@ -296,6 +330,13 @@ export default function LaboratorioPatronesPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <label className="inline-flex items-center gap-2 text-xs text-texto-suave">
+            Plan
+            <select value={planLab} onChange={(evento) => cambiarPlan(evento.target.value as PlanLab)} className="ui-input h-8 w-auto py-0 text-xs" data-testid="plan-lab">
+              <option value="fixture">fixture</option>
+              <option value="reemplazo">con reemplazos (azul → rojo)</option>
+            </select>
+          </label>
           <label className="inline-flex items-center gap-2 text-xs text-texto-suave">
             Vista previa
             <select value={fuente} onChange={(evento) => setFuente(evento.target.value as FuenteVista)} className="ui-input h-8 w-auto py-0 text-xs" data-testid="fuente-vista">
@@ -333,7 +374,7 @@ export default function LaboratorioPatronesPage() {
                 <Palette className="size-3.5" aria-hidden="true" />Editor: {estructura.nombre}
               </button>
             ))}
-            <button type="button" onClick={() => { setPlan(PLAN_INICIAL); setAprobado(false); }} className="ui-chip ui-pressable">Reiniciar plan</button>
+            <button type="button" onClick={() => cambiarPlan(planLab)} className="ui-chip ui-pressable">Reiniciar plan</button>
           </div>
           <TarjetaPlanDecoracion plan={plan} aprobado={aprobado} onAprobar={() => setAprobado(true)} onPlanActualizado={(siguiente) => { setPlan(siguiente); setAprobado(false); }} />
         </section>
@@ -342,7 +383,7 @@ export default function LaboratorioPatronesPage() {
           <h2 className="text-sm font-semibold">Galería por estructura</h2>
           <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {GALERIA.map((pieza) => {
-              const leyenda = leyendaPatron(pieza.estructura.materiales, pieza.lineas);
+              const leyenda = leyendaPatron(pieza.estructura.materiales, pieza.lineas, pieza.resuelto.conteo);
               const oficialId = pieza.estructura.estructura_oficial;
               return (
                 <li key={pieza.id} data-testid={`galeria-${pieza.id}`} className="ui-card @container flex flex-col gap-3 p-3">
@@ -367,13 +408,23 @@ export default function LaboratorioPatronesPage() {
           </ul>
         </section>
 
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold">Hoja de armado en la página</h2>
+        <section className="space-y-3" data-testid="hoja-en-pagina">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold">Hoja de armado en la página</h2>
+            <label className="inline-flex items-center gap-2 text-xs text-texto-suave">
+              Pieza
+              <select value={hojaEnPagina?.resuelto.estructura_id ?? ""} onChange={(evento) => setHojaPagina(evento.target.value)} className="ui-input h-8 w-auto py-0 text-xs" data-testid="hoja-pagina-pieza">
+                {aplicados.map((entrada) => (
+                  <option key={entrada.estructura_id} value={entrada.estructura_id}>{declaradas.get(entrada.estructura_id)?.nombre ?? entrada.estructura_id}</option>
+                ))}
+              </select>
+            </label>
+          </div>
           <div className="ui-card p-4 sm:p-6">
             {hojaEnPagina && (
               <HojaArmado
                 resuelto={hojaEnPagina.resuelto}
-                leyenda={leyendaPatron(hojaEnPagina.declarada.materiales, hojaEnPagina.estructura.lineas)}
+                leyenda={leyendaPatron(hojaEnPagina.declarada.materiales, hojaEnPagina.estructura.lineas, hojaEnPagina.resuelto.conteo)}
                 estructura={hojaEnPagina.estructura}
                 declarada={hojaEnPagina.declarada}
                 oficial={identificarEstructuraOficial(hojaEnPagina.declarada)}
@@ -414,7 +465,7 @@ export default function LaboratorioPatronesPage() {
           abierto
           onAbiertoChange={(abierta) => { if (!abierta) setHoja(null); }}
           resuelto={piezaHoja.resuelto}
-          leyenda={leyendaPatron(piezaHoja.estructura.materiales, piezaHoja.lineas)}
+          leyenda={leyendaPatron(piezaHoja.estructura.materiales, piezaHoja.lineas, piezaHoja.resuelto.conteo)}
           estructura={estructuraGaleria(piezaHoja)}
           declarada={piezaHoja.estructura}
           oficial={identificarEstructuraOficial(piezaHoja.estructura)}

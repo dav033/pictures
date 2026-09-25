@@ -1,3 +1,4 @@
+import { esCancelacion } from "@/lib/plan/peticion-plan-editar";
 import { relojNavegador, type FaseAutoguardado, type Reloj } from "./autoguardado";
 
 /**
@@ -79,10 +80,6 @@ export function repartoADibujar(
   if (!mostrados || iguales(mostrados, enPlan)) return null;
   const enCamino = momento.arrastrando || momento.fase === "esperando" || momento.fase === "guardando";
   return enCamino ? mostrados : null;
-}
-
-function esCancelacion(error: unknown): boolean {
-  return error instanceof DOMException && error.name === "AbortError";
 }
 
 export function crearVistaReparto<R>(opciones: OpcionesVistaReparto<R>): VistaReparto<R> {

@@ -6,6 +6,7 @@ import {
   llamarPythonPlanEdit,
   llamarPythonPlanPatron,
   type PythonPlanEditLineaBase,
+  type PythonPlanPatronLinea,
 } from "@/lib/ia/nucleo/python-adapter";
 import type { ProductoCandidato } from "@/lib/rag/chat/buscar";
 import { candidatoDesdePython } from "@/lib/rag/chat/candidato-python";
@@ -168,6 +169,32 @@ const RECHAZOS_VISTA_PATRON: Readonly<Record<string, Rechazo>> = {
   sin_patron: { status: 409, mensaje: "Esta pieza no tiene un patrón de color que dibujar." },
 };
 
+/** Rejections that only the preview gives (the colors slider's `repartir`). */
+export const CODIGOS_VISTA_PATRON_SIN_DIBUJO = ["sin_patron", "patron_activo", "reparto_no_corresponde"] as const;
+export type CodigoVistaPatronSinDibujo = (typeof CODIGOS_VISTA_PATRON_SIN_DIBUJO)[number];
+
+function esCodigoSinDibujo(codigo: string): codigo is CodigoVistaPatronSinDibujo {
+  return (CODIGOS_VISTA_PATRON_SIN_DIBUJO as readonly string[]).includes(codigo);
+}
+
+/**
+ * The preview has nothing to draw for this request: the piece has no pattern
+ * (`sin_patron`), its pattern is not a confeti (`patron_activo`) or the
+ * slider's colors are not the piece's (`reparto_no_corresponde`). The editor
+ * turns its live preview off quietly; the proposal did not change and nothing
+ * was saved, so it is not "the proposal is out of date" (ADR-0028 §10, §13).
+ * Same status and sentence as the edit's answer; `codigo` is Python's.
+ */
+export class VistaPatronSinDibujoError extends PlanEditError {
+  readonly codigo: CodigoVistaPatronSinDibujo;
+
+  constructor(rechazo: PlanEditError, codigo: CodigoVistaPatronSinDibujo) {
+    super(rechazo.status, rechazo.message, rechazo.causa);
+    this.name = "VistaPatronSinDibujoError";
+    this.codigo = codigo;
+  }
+}
+
 /**
  * `patron_invalido` of the pattern preview: besides the rule and the sentence,
  * the styles Python admits for the structure (ADR-0028 §10), so the editor
@@ -245,6 +272,8 @@ export async function vistaPreviaPatronPython(input: {
   modo?: ModoPatronColor;
   /** With `modo`: the editor's draft; Python keeps from it what the new style admits. */
   desde?: PatronColor;
+  /** The structure's resolved lines: Python names each color by what is bought (a hint, never a count). */
+  lineas?: readonly PythonPlanPatronLinea[];
   correlationId: string;
   signal?: AbortSignal;
 }): Promise<{ patron: PatronColorResuelto; modos_admitidos: ModoAdmitido[] }> {
@@ -256,6 +285,7 @@ export async function vistaPreviaPatronPython(input: {
       ...(input.participaciones === undefined ? {} : { participaciones: input.participaciones }),
       ...(input.modo === undefined ? {} : { modo: input.modo }),
       ...(input.desde === undefined ? {} : { desde: input.desde }),
+      ...(input.lineas === undefined ? {} : { lineas: input.lineas }),
       requestId: crypto.randomUUID(),
       correlationId: input.correlationId,
       deadlineMs: EDICION_PYTHON_DEADLINE_MS,
@@ -266,6 +296,9 @@ export async function vistaPreviaPatronPython(input: {
     const rechazo = rechazoDesdePython(error, RECHAZOS_VISTA_PATRON);
     if (rechazo?.causa === "PATRON_INVALIDO" && isPythonAdapterError(error)) {
       throw new RechazoVistaPatronError(rechazo.message, rechazo.patron, error.domainDetails?.modosAdmitidos ?? null);
+    }
+    if (rechazo && isPythonAdapterError(error) && error.domainCode && esCodigoSinDibujo(error.domainCode)) {
+      throw new VistaPatronSinDibujoError(rechazo, error.domainCode);
     }
     throw rechazo ?? error;
   }

@@ -34,10 +34,15 @@ export function featureEnabled(name: FeatureFlag): boolean {
     // dibuja el LoRA, y elegir entre eso y editar el venue directamente exige la
     // evaluación de 10 planes de la fase 4.
     if (name === "REFERENCIA_EN_ETAPA1_V1") return false;
-    // Default OFF: al confirmar, Python completa el patrón de color de cada
-    // estructura (ADR-0028 §7) y el patrón manda sobre el conteo por color. La
-    // edición de hoy (agregar, quitar, repartir) no sabe de patrones hasta que
-    // la edición en Python (§9) salga en el mismo despliegue.
+    // Default OFF (ADR-0028). Solo decide cuándo Python pone un patrón por su
+    // cuenta: al confirmar un plan, Next pide `completar_patrones` con las
+    // pistas de la foto (`pistas_patron`) y cada estructura geométrica de dos
+    // colores o más recibe el patrón de su pista o su preset (§7); al editar,
+    // una pieza que pasa de un color a dos recibe su preset (§9). Apagada, los
+    // planes nuevos salen sin patrón y nada más cambia: un plan que ya trae
+    // `patron_color` lo conserva, y la edición, la vista previa, el editor
+    // ("Crear patrón" incluido) y la resolución lo tratan igual, porque
+    // ninguno lee la bandera. Apagarla no quita patrones.
     if (name === "PATRONES_COLOR_V1") return false;
     return true;
   }

@@ -8,6 +8,72 @@ Rama: `fase-a/a0-linea-base`. **Nada de esto está desplegado.**
 
 ---
 
+## 0. Patrones de color por estructura (2026-09-24, rama `feat/patrones-color`)
+
+Sale de `fase-a/a0-linea-base` (459b9d6). **Nada desplegado.** Decisión y
+especificación: `docs/architecture/decisions/0028-patrones-de-color-por-estructura.md`.
+
+**Qué es.** Cada estructura del plan puede llevar `patron_color`: dónde va cada
+color (espiral, zig-zag, franjas rectas, anillos, bloques, degradé, confeti,
+flores, damero/diagonal en pared, acentos cada N, globos pintados a mano). Python
+lo expande a una rejilla de racimos o filas, cuenta los globos de cada color (el
+patrón manda sobre la cotización), escribe la hoja de armado y la frase del
+prompt de imagen. El decorador lo edita en una gráfica numerada como la del
+curso Sempertex, con vista 3D, sin botón "Aplicar" (guardado automático), y la
+columna se redibuja mientras arrastra el reparto de colores de un confeti.
+
+**Reparto de dueños (regla del usuario: la lógica de IA vive en Python).**
+- Python: `app/patron_color.py` (expansión, conteo, presets, textos),
+  `app/plan.py` (conteo con patrón, `patrones_color` fuera del hash),
+  `app/plan_edicion.py` (toda la edición del plan, migrada desde TypeScript),
+  `app/plan_worker.py` (CPU fuera del bucle), `app/amaterasu/patron_referencia.py`
+  (detección del patrón en la foto con Gemini).
+- TypeScript solo dibuja y transporta: `src/components/plan/patron/*`,
+  `/api/plan-patron` (vista previa), `/api/plan-editar` (acción `patron`).
+- Adaptador temporal que queda: la frase del patrón se inserta en los prompts
+  de imagen TypeScript (`build-image-prompt.ts`, compilador LoRA) hasta que el
+  prompt de imagen completo migre a Python.
+
+**Cómo encenderlo.** Dos banderas, apagadas por defecto en código y encendidas
+en `.env.local`: `PATRONES_COLOR_V1` (Python asigna el patrón al confirmar) y
+`PATRON_REFERENCIA_PYTHON_ENABLED` (lee el patrón en la foto; una llamada de
+visión por foto, con caché por foto). En producción: desplegar app y `ai-api`
+juntos y encender las dos a la vez. Revertir deja inválidas las propuestas
+abiertas que ya tengan `patron_color` (ver ADR, Consecuencias).
+
+**Correr local en Windows.** `uvicorn --reload` lanzado sin consola se cuelga al
+recargar y sigue sirviendo código viejo (pasó dos veces el 2026-09-24). Usar
+`python scripts/ops/supervisar-ai-api.py`, que reinicia el servicio al cambiar
+un `.py` (AGENTS.md lo explica).
+
+**Verificado** (árbol final): pytest 611, `npm run plan:test` completo (224
+PASS, 0 FAIL), tsc, lint (0 errores), `contracts:check`, `generate_models
+--check`, ruff, mypy. Los 28 vectores dorados previos no cambian; 29–31 son de
+patrones. Integración real sin LLM (Next → Python → catálogo Neon) en
+`scratchpad`: confirmar, editar (patrón, repartir, mezcla, quitar) y vista
+previa, con conteos, hash y firmas coherentes.
+
+**Latencias medidas en local** (Neon a ~66–250 ms por viaje): vista previa del
+editor ~140 ms (antes ~265; lo que queda es la escritura del nonce
+anti-repetición), vista previa del deslizador en vivo 36–52 ms p90; guardar dos
+cambios seguidos resuelve una vez, no dos.
+
+**Pendiente, con dueño a decidir:**
+1. **Medir la fidelidad de la imagen con patrón.** El LoRA casi no vio patrones
+   en su entrenamiento (v005: 8 "alternating"; v007: 0). Hace falta una corrida
+   de evaluación con tope de gasto: Gemini vs LoRA vs híbrido con patrón.
+   Opciones si el LoRA no sigue la espiral: mandar a Python un esquema del
+   patrón como imagen de referencia, o capturas con patrones en el próximo
+   dataset (decisión de una persona).
+2. **Pedir el patrón por chat** ("haz la columna en espiral blanco, negro y
+   azul") no está: el prompt y las herramientas de Omoikane siguen en
+   TypeScript y habría que migrarlos primero.
+3. Migrar el prompt de imagen completo a Python para retirar el adaptador.
+4. Límite de frecuencia por sesión en `/api/plan-patron` (hoy la interfaz ya
+   manda una petición a la vez).
+
+---
+
 ## 1. Qué se hizo hoy
 
 ### 1.1 El incidente que lo arrancó todo

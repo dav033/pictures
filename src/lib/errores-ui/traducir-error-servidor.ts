@@ -6,6 +6,7 @@ import { AllowlistProductoVarianteError } from "@/lib/plan/allowlist-producto-va
 import { PlanBackendNoDisponibleError } from "@/lib/plan/resolver-backend";
 import { PythonPlanMappingError } from "@/lib/plan/python-mapper";
 import { PlanEditError } from "@/lib/plan/edicion-error";
+import { VistaPatronSinDibujoError } from "@/lib/plan/edicion-python";
 import { ProveedorImagenNoDisponibleError } from "@/lib/ia/kagutsuchi/sempertex-lora";
 import { construirUiErrorV1, type UiErrorCodeV1, type UiErrorV1 } from "@/lib/ia/contracts/ui-error-v1";
 
@@ -165,6 +166,20 @@ export function clasificarErrorServidor(error: unknown): ClasificacionError {
     // Causas con código propio: el cliente puede corregir la edición sin pedir otra propuesta.
     if (error.causa === "UNICO_MATERIAL") return { code: "PIEZA_UNICO_MATERIAL", codigoOrigen: error.causa, causa: error.causa };
     if (error.causa === "REEMPLAZO_INCOMPATIBLE") return { code: "REEMPLAZO_NO_COMPATIBLE", codigoOrigen: error.causa, causa: error.causa };
+    // Answers only the pattern preview gives (/api/plan-patron, the colors
+    // slider's `repartir`): there is nothing to draw and the editor turns its
+    // live preview off quietly. Nothing was saved and the proposal did not
+    // change, so never "pide la propuesta de nuevo" (PROPUESTA_DESACTUALIZADA,
+    // what a plain 409 means below). Same family as PATRON_ACTIVO: something to
+    // adjust in the piece, with its own sentence.
+    if (error instanceof VistaPatronSinDibujoError) {
+      return {
+        code: "PROPUESTA_INCOMPLETA",
+        codigoOrigen: `VISTA_PATRON:${error.codigo}`,
+        causa: error.causa ?? error.codigo,
+        ...(error.message.length <= LIMITE_MENSAJE_USUARIO ? { mensajeUsuario: error.message } : {}),
+      };
+    }
     // Color pattern (ADR-0028): the decorator fixes it in the pattern editor,
     // so the action is "ajustar", not "pedir otra propuesta", and the sentence
     // is the specific one (Python's own for `patron_invalido`).

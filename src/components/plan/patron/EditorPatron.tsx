@@ -12,7 +12,7 @@ import { useFocoDeRetorno } from "@/components/ui/foco-retorno";
 import type { ResumenAutoguardado } from "../autoguardado";
 import { useAutoguardado } from "../usarAutoguardado";
 import { vistaDeAutoguardado, type VistaEstadoGuardado } from "../EstadoGuardado";
-import { celdasConPendientes, conPintado, enPropuesta, mismoDiseno, pintadosPendientes, sinPintados } from "./borrador";
+import { borradorALaVista, celdasConPendientes, conPintado, enPropuesta, mismoDiseno, pintadosPendientes, sinPintados } from "./borrador";
 import { leyendaPatron } from "./leyenda";
 import { ControlesPatron, GaleriaEstilos } from "./ControlesPatron";
 import { LienzoPatron, ResumenVistaPatron, type ModoVistaPatron } from "./PanelVistaPatron";
@@ -67,21 +67,25 @@ const ESPERA_GUARDADO_MS = 700;
 export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, resuelto, onGuardar, aprobada = false }: Props) {
   const reducir = useReducedMotion();
   const focoRetorno = useFocoDeRetorno();
-  // Lo que había al abrir: "Restablecer" vuelve aquí y la vista previa se pide sobre ese plan.
-  const [inicio] = useState(() => ({ patron: declarada.patron_color ?? null, resuelto, plan }));
+  // Lo que había al abrir: "Restablecer" vuelve aquí y la vista previa se pide sobre ese plan y lo que compraba la pieza.
+  const [inicio] = useState(() => ({
+    patron: declarada.patron_color ?? null,
+    resuelto,
+    pieza: { plan, estructuraId: estructura.estructura_id, lineas: estructura.lineas },
+  }));
   const patronEnPlan = declarada.patron_color ?? null;
-  const leyenda = leyendaPatron(declarada.materiales, estructura.lineas);
   const [historia, setHistoria] = useState<Historia>({ pasado: [], presente: inicio.patron, futuro: [], grupo: null });
   const [modo, setModo] = useState<ModoVistaPatron>("vista");
-  const [pincel, setPincel] = useState<Pincel>({ material: leyenda.length > 1 ? 1 : 0, alcance: "globo" });
+  const [pincel, setPincel] = useState<Pincel>({ material: declarada.materiales.length > 1 ? 1 : 0, alcance: "globo" });
   // Lo que Python avisó al armar el último estilo elegido (lo que quitó del borrador): va junto a los estilos.
   const [avisosEstilo, setAvisosEstilo] = useState<{ modo: ModoPatronColor; avisos: string[] } | null>(null);
   const { vista, modos, cargando, error, estadoBorrador, reintentar, sembrar } = useVistaPrevia({
-    plan: inicio.plan,
-    estructuraId: estructura.estructura_id,
+    pieza: inicio.pieza,
     patron: historia.presente,
     inicial: inicio.patron && inicio.resuelto ? inicio.resuelto : null,
   });
+  // Cada número con el color que Python le dio (lo que se compra), del último dibujo o del plan al abrir.
+  const leyenda = leyendaPatron(declarada.materiales, estructura.lineas, vista?.conteo ?? inicio.resuelto?.conteo);
   const { estado: guardado, control: autoguardado } = useAutoguardado<PatronColor | null>({
     enPlan: inicio.patron,
     iguales: mismoDiseno,
@@ -90,11 +94,12 @@ export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, r
     guardar: onGuardar,
   });
   // Sin patrón en el borrador, los controles parten de la sugerencia a la vista; tocarlos la vuelve del decorador y se guarda.
-  const borrador = historia.presente ?? vista?.patron ?? null;
+  const borrador = borradorALaVista(historia.presente, vista);
   const sugerenciaSinUsar = historia.presente === null && estadoBorrador === "listo" && vista !== null ? vista.patron : null;
   const geometria = vista?.geometria ?? (declarada.tipo === "pared" ? "rejilla" : "racimos");
-  const globosPorRacimo = borrador?.globos_por_racimo
-    ?? (borrador?.base.modo === "espiral" ? borrador.base.racimo.length : vista?.geometria === "racimos" ? vista.columnas : 4);
+  // En racimos, las `columnas` de lo que dibujó Python son los globos de cada racimo (ADR-0028 §2): la regla es suya.
+  // Lo que el decorador acaba de fijar se muestra ya, antes de que Python lo dibuje, para que dos toques seguidos sumen dos.
+  const globosPorRacimo = borrador?.globos_por_racimo ?? (vista?.geometria === "racimos" ? vista.columnas : null);
   const pendientes = borrador && vista ? pintadosPendientes(borrador, vista.patron) : [];
   const celdas = vista ? celdasConPendientes(vista.celdas, pendientes) : null;
   const nombrePieza = oficial?.nombre ?? productoCliente(estructura.nombre);
@@ -105,8 +110,7 @@ export function EditorPatron({ onCerrar, plan, estructura, declarada, oficial, r
   const motivoRechazo = estadoBorrador === "rechazado" ? error?.mensaje ?? null : null;
   // Otro estilo: Python arma su punto de partida desde el borrador (conserva lo que el estilo admite), se dibuja tal cual y pasa a ser el borrador.
   const estilos = useArranqueEstilo({
-    plan: inicio.plan,
-    estructuraId: estructura.estructura_id,
+    pieza: inicio.pieza,
     borrador,
     alLlegar: (detallada) => {
       const avisos = avisosDelCambioDeEstilo(vista, detallada.patron);
