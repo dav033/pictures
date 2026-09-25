@@ -150,7 +150,7 @@ async function run() {
     },
   };
   const recuperado = await analizarReferenciasV2(chatMalformado, [{ ...referencia, base64: "CCCC" }], [], "perceptual");
-  assert.equal(llamadas, 3, "un reintento del inventario y una auditoría");
+  assert.equal(llamadas, 2, "un reintento del inventario y nada más (sin auditoría, ADR-0029)");
   assert.equal(recuperado.blueprint.elements.length, 1);
   const siempreMalformado: ChatPort = {
     ...mockChat([inventoryConIdColado]),

@@ -1771,8 +1771,8 @@ export async function llamarPythonHappieGenerate(
 }
 
 /**
- * The one Gemini tool-calling turn Amaterasu's inventory and audit passes
- * make (src/lib/ia/amaterasu/analizar-referencias-v2.ts, via the ChatPort
+ * The one Gemini tool-calling turn Amaterasu's inventory pass makes
+ * (src/lib/ia/amaterasu/analizar-referencias-v2.ts, via the ChatPort
  * `src/lib/ia/amaterasu/chat-python.ts` wraps around this). Python only makes
  * the provider round trip; the retry-on-malformed loop, the blueprint
  * assembly and everything else stays in TypeScript, unchanged. Uses

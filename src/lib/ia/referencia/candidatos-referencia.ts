@@ -1,5 +1,4 @@
 import type { ReferenceBlueprintV2, ReferenceBBox } from "./reference-blueprint";
-import { bboxContainment, bboxOverlap } from "./reference-blueprint";
 import {
   alignVerticalPosition,
   inferStructureFromName,
@@ -18,11 +17,10 @@ import {
 } from "./reference-structure";
 
 /**
- * Provider output of the reference analysis → candidates (#2, #8, #9, #12–#16).
+ * Provider output of the reference analysis → candidates (#2, #9, #12–#16).
  * Pure normalization of untrusted tool arguments: field aliases, bounded
  * numbers and boxes, category and layer inference, the deterministic review
- * of balloon detections, and the merge of verifier findings into the
- * inventory. No provider, cache or blueprint assembly
+ * of balloon detections. No provider, cache or blueprint assembly
  * (analizar-referencias-v2.ts owns those).
  */
 
@@ -330,71 +328,6 @@ function extractJson(text: string): unknown {
 
 export function toolArgs(turn: { llamadas: Array<{ nombre: string; args: Record<string, unknown> }>; texto: string }, toolName: string): Record<string, unknown> {
   return turn.llamadas.find((call) => call.nombre === toolName)?.args ?? object(extractJson(turn.texto));
-}
-
-/** Verifier-only findings below this confidence are recorded but never approved (#8). */
-export const VERIFIER_MIN_CONFIDENCE = 0.6;
-/** Share of the smaller box covered by the other one that makes two same-kind detections one piece. */
-const DUPLICATE_MIN_CONTAINMENT = 0.2;
-
-function sameKind(a: Candidate, b: Candidate): boolean {
-  return a.category === b.category && (a.structure?.type ?? null) === (b.structure?.type ?? null);
-}
-
-function duplicatesExisting(finding: Candidate, existing: Candidate[]): boolean {
-  return existing.some((item) => item.source_image_id === finding.source_image_id
-    && sameKind(item, finding)
-    && Math.max(bboxContainment(finding.reference_bbox, item.reference_bbox), bboxContainment(item.reference_bbox, finding.reference_bbox)) >= DUPLICATE_MIN_CONTAINMENT);
-}
-
-export function mergeCandidates(inventory: Candidate[], audit: Candidate[]): Candidate[] {
-  const merged = [...inventory];
-  for (const finding of audit) {
-    const match = merged.findIndex((item) => item.source_image_id === finding.source_image_id && bboxOverlap(item.reference_bbox, finding.reference_bbox) >= 0.35);
-    if (match >= 0) {
-      const current = merged[match];
-      const strongerCategory = current.category === "other" && finding.category !== "other" ? finding.category : current.category;
-      const strongerRole = current.scene_role === "midground" && finding.scene_role !== "midground" ? finding.scene_role : current.scene_role;
-      // El color es el campo que más varía entre las dos pasadas y era el único
-      // que el verificador no podía tocar (fase 2.8): la segunda pasada existe
-      // justamente para corregir a la primera y estaba ciega aquí.
-      //
-      // La regla es la misma que usan `category` y `scene_role` arriba: el
-      // verificador solo gana cuando el inventario trae el valor vacío, que es
-      // su forma de "no vi nada". Si los dos vieron algo y no coinciden, no hay
-      // manera de saber cuál acierta desde aquí, así que se conserva el del
-      // inventario y el desacuerdo se anota — perderlo en silencio es lo que
-      // hacía antes.
-      const desacuerdoColor =
-        current.observed_colors.length > 0 &&
-        finding.observed_colors.length > 0 &&
-        finding.observed_colors.join("|").toLowerCase() !== current.observed_colors.join("|").toLowerCase()
-          ? [`verifier read the colors as ${finding.observed_colors.join(", ")}`]
-          : [];
-      const coloresObservados = current.observed_colors.length === 0 ? finding.observed_colors : current.observed_colors;
-      merged[match] = { ...current, structure: finding.structure ?? current.structure, shape: finding.structure ? finding.shape : current.shape, category: strongerCategory, scene_role: strongerRole, name: current.name === "unidentified decorative element" ? finding.name : current.name, observed_colors: coloresObservados, visible_evidence: finding.visible_evidence, uncertainties: [...new Set([...current.uncertainties, ...finding.uncertainties, ...desacuerdoColor])].slice(0, 8) };
-    } else {
-      // A verifier-only finding is approved only when the verifier is confident
-      // and it is not a second copy of a piece already in the inventory: F10
-      // got a third, non-existent ceiling cloud (confidence 0.49) approved.
-      const lowConfidence = finding.detection_confidence < VERIFIER_MIN_CONFIDENCE;
-      const duplicate = duplicatesExisting(finding, merged);
-      const approve = finding.model_decision.action === "include" && !lowConfidence && !duplicate;
-      const note = duplicate
-        ? "Verifier-only finding duplicates an existing element; not approved."
-        : lowConfidence
-          ? "Verifier-only finding below the confidence threshold; not approved."
-          : "Verifier-only finding resolved automatically.";
-      merged.push({
-        ...finding,
-        detection_confidence: Math.min(finding.detection_confidence, 0.49),
-        include_policy: approve ? "include" : "exclude",
-        model_decision: approve ? finding.model_decision : { ...finding.model_decision, action: "omit", catalog_product_id: undefined, match_type: "none", bill_of_materials: undefined },
-        uncertainties: [note, ...finding.uncertainties].slice(0, 8),
-      });
-    }
-  }
-  return merged;
 }
 
 export function normalize(value: string): string {

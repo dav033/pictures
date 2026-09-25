@@ -8,8 +8,8 @@ const IMAGE_MIME_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 /**
  * Amaterasu's own historial shape (analizar-referencias-v2.ts's `ejecutarPaso`):
  * always exactly one fresh "usuario" message with the reference images and a
- * text instruction, never assistant/tool turns -- each of the two passes
- * (inventory, audit) is an independent call, not a running conversation. This
+ * text instruction, never assistant/tool turns -- the inventory pass (the only
+ * one since ADR-0029) is an independent call, not a running conversation. This
  * validates that assumption instead of silently mishandling a shape this
  * adapter was never built for.
  */
@@ -37,8 +37,8 @@ function imagenesPython(mensaje: Extract<PeticionChat["historial"][number], { ro
 /**
  * `ChatPort` respaldado por el turno de Gemini que corre en Python
  * (docs/architecture/decisions/0026). Solo implementa `turno()` -- lo único
- * que usa `analizarReferenciasV2` -- y no dedupe bytes de imagen entre la
- * pasada de inventario y la de auditoría como sí hace `crearChatGemini`
+ * que usa `analizarReferenciasV2` -- y no dedupe bytes de imagen entre los
+ * intentos de un mismo análisis como sí hace `crearChatGemini`
  * (diferencia aceptada y documentada en `app/amaterasu/turno.py`).
  */
 export function crearChatTurnoPython(opts: { requestId: string; correlationId: string; model?: string }): ChatPort {

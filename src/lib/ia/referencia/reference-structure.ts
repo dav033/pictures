@@ -64,9 +64,15 @@ export const DETECTED_STRUCTURE_TOOL_SCHEMA = {
 export const STRUCTURE_DETECTION_RULES = `For every balloon structure also return \`structure\`: structure_type (arch = one continuous curve with two feet on the floor; half_arch = a single rising side whose top clearly bends sideways, open at the top or with only one foot; column = vertical stack whose top stays roughly above its base, even if the outline is lumpy or leans slightly; always return top_overhang for vertical pieces, it decides between half_arch and column); garland = loose organic run along a surface or the floor; balloon_wall; centerpiece; ceiling_installation; cluster; sculpture = a figure built from balloons such as an animal, number or character; bouquet = balloons tied together floating or on a weight; hoop = circular frame covered in balloons), outline (symmetric or asymmetric), density (dense, medium or airy), horizontal_position, relative_height compared with the other balloon structures, curves_toward, top_overhang, grounded, and mirrors_element. Two separate pieces that leave a visible gap between them are two elements, never one arch: for example a short leaning column on the left and a tall half-arch on the right curving toward it. horizontal_position full_width is only for one continuous piece (a balloon wall, an arch, a garland that runs unbroken across the scene); two columns, half-arches, garlands or bouquets on opposite sides are two elements, one left and one right. Balloons lying loose or scattered on the floor are not a garland or any other structure: name them "loose balloons" and omit structure. Foil balloons, figures, numbers or letters fixed onto a balloon wall or another balloon structure belong to that structure: mention them in its composition instead of returning a separate structure. Only real event balloon decoration is a balloon structure; a hot air balloon, a kite or a soap bubble is not. When one element groups several identical separate pieces (for example two columns side by side), set quantity to that count.
 For every element return composition_relevance: essential (defines the composition), supporting (clearly visible styling such as string lights, foliage or props next to the decoration), or minor (negligible). Minor elements must use model_decision.action "omit".`;
 
-/** Recognizer prompt variants. "v13" is production; any other value is an evaluation candidate. */
-export const VARIANTES_RECONOCEDOR = ["v13", "v14-candidato", "v15-candidato", "v16-candidato"] as const;
+/**
+ * Recognizer prompt variants. `VARIANTE_PRODUCCION` is the one every route
+ * uses; the others stay selectable for evaluation only. "v13" is the base text
+ * alone (production until ADR-0029); the rest append their rules to it.
+ */
+export const VARIANTES_RECONOCEDOR = ["v13", "v14-candidato", "v15-candidato", "v16"] as const;
 export type VarianteReconocedor = (typeof VARIANTES_RECONOCEDOR)[number];
+/** ADR-0029: v16 separates bouquet from centerpiece (89 % vs 80 % on 105 photos). */
+export const VARIANTE_PRODUCCION: VarianteReconocedor = "v16";
 
 /**
  * Candidate rules appended to the detection rules only when a caller asks for
@@ -98,11 +104,12 @@ export const STRUCTURE_RULES_V15_CANDIDATE = `Clarification for compact balloon 
 - A tall vertical stack of balloons whose top stays above its base is a column, even with a foil balloon on top; never call it a bouquet or centerpiece.`;
 
 /**
- * v16 candidate: v15's bouquet / centerpiece rule, with the column guard
- * narrowed. In v15 "tall vertical stack = column" also caught tall
- * centerpieces and bouquets (5 + 5 analyses turned into columns).
+ * v16: v15's bouquet / centerpiece rule, with the column guard narrowed. In
+ * v15 "tall vertical stack = column" also caught tall centerpieces and
+ * bouquets (5 + 5 analyses turned into columns). Production since ADR-0029:
+ * the text is byte-frozen, its hash is the one the evaluation measured.
  */
-export const STRUCTURE_RULES_V16_CANDIDATE = `Clarification for compact balloon arrangements (it overrides the bouquet and centerpiece definitions above):
+export const STRUCTURE_RULES_V16 = `Clarification for compact balloon arrangements (it overrides the bouquet and centerpiece definitions above):
 - Decide between centerpiece and bouquet by size and balloon load, not by where the piece stands.
 - centerpiece = a compact arrangement with a low balloon load: few balloons in total (roughly up to a dozen), for example a single bubble or foil balloon on a small base, or a handful of helium balloons tied to a weight. It stays small relative to the table or furniture it sits on.
 - bouquet = a larger, balloon-heavy arrangement: many balloons packed together (a full stacked base of several round balloons, several toppers or twisted accents, or a big cloud of helium balloons). It reads as a statement piece on its own.

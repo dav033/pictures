@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { dentroDe, ejecutarCli } from "../../../src/lib/eval/estructuras/cli-reconocimiento";
-import { VARIANTES_RECONOCEDOR, type VarianteReconocedor } from "../../../src/lib/ia/referencia/reference-structure";
+import { VARIANTE_PRODUCCION, VARIANTES_RECONOCEDOR, type VarianteReconocedor } from "../../../src/lib/ia/referencia/reference-structure";
 
 /**
  * Recognition runner CLI (Plan A §A0.3). Preview by default; spending requires
@@ -48,7 +48,7 @@ async function sistemaActual(variante: VarianteReconocedor) {
 async function main(): Promise<void> {
   cargarEntorno();
   const argVariante = process.argv[process.argv.indexOf("--variante") + 1];
-  const variante: VarianteReconocedor = process.argv.includes("--variante") && (VARIANTES_RECONOCEDOR as readonly string[]).includes(argVariante ?? "") ? (argVariante as VarianteReconocedor) : "v13";
+  const variante: VarianteReconocedor = process.argv.includes("--variante") && (VARIANTES_RECONOCEDOR as readonly string[]).includes(argVariante ?? "") ? (argVariante as VarianteReconocedor) : VARIANTE_PRODUCCION;
   const inicial = await sistemaActual(variante);
   await ejecutarCli(process.argv.slice(2), {
     repo: REPO,

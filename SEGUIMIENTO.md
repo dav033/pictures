@@ -296,9 +296,10 @@ permiso solo para evaluación interna, **con el compromiso de reemplazarlas por
 fotos con permiso antes de cualquier compuerta**; migraciones 024 y 025
 aplicadas en Neon el 2026-09-16; LoRA con foto pasa por `/edit`.
 
-- **Promover v16 a producción** (89 % frente a 80 % en 105 fotos). Necesita: tu
-  revisión de los 5 centros de mesa que cambian a bouquet, una corrida de control
-  de ≈US$0,50 y el visto bueno.
+- ~~Promover v16 a producción~~ **Hecho 2026-09-25 (ADR-0029)**: v16 en producción
+  y sin pasada de auditoría. Revisión humana de los 5 centros de mesa (ninguno es
+  bouquet; 4 de esos errores venían de la auditoría), control de 34 fotos a US$0,28
+  sin deriva, y la auditoría retirada (113/122 sin ella frente a 109/122 con ella).
 - **LoRA `/edit`**: cableado y desplegable, sin medir porque fal no tenía saldo.
   Puede ser la causa de la mejora de resultados que se observó (ver §6).
 - **Propagar la taxonomía de 12 clases** a Fundamentos, la guía 04, los planes

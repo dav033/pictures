@@ -190,9 +190,10 @@ uv run --directory services/ai-api ruff check app tests && mypy app
 - Structure taxonomy is **12 classes**: dense/non-dense variants and plain
   `semiarco` were retired; every half-arch is organic. Parts of `docs/` that said
   16 were deleted rather than corrected.
-- The reference analysis prompt for production is byte-frozen. Candidate variants
-  append their rules only on request so the production hash and its cache key stay
-  identical. Changing it invalidates the evaluation baseline.
+- The reference analysis prompt for production is byte-frozen: variant `v16`
+  (`VARIANTE_PRODUCCION`), one inventory pass, no audit pass (ADR-0029). Other
+  variants append their rules only on request so the production hash and its cache
+  key stay identical. Changing it invalidates the evaluation baseline.
 - Scenery (non-balloon elements detected in the customer's photo) enters the image
   prompt and nothing else. The plan owns what is built and charged; scenery is
   what is preserved from the photo. It never touches quoting, materials or
