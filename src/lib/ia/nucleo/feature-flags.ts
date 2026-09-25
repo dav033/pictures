@@ -116,6 +116,19 @@ export const HAPPIE_PYTHON_ENABLED = process.env.HAPPIE_PYTHON_ENABLED === "true
 export const PATRON_REFERENCIA_PYTHON_ENABLED = process.env.PATRON_REFERENCIA_PYTHON_ENABLED === "true";
 
 /**
+ * Default: OFF (2026-09-25). The in-process cache of the reference analysis
+ * (same photo, same prompt -> the stored blueprint, up to 40 photos) served a
+ * stale analysis while the bouquet reading was being fixed and hid every fix
+ * behind "the same photo". Off, every upload is analysed again (one Gemini
+ * call, ~US$0.01); the gallery examples (`analisis-ejemplos.json`) and the
+ * in-flight sharing of one identical request are not a cache and stay. Read
+ * at call time so a test can turn it on.
+ */
+export function referenceAnalysisCacheEnabled(): boolean {
+  return process.env.REFERENCE_ANALYSIS_CACHE_ENABLED === "true";
+}
+
+/**
  * Default: OFF (ADR-0030). After the reference analysis, asks Python to read
  * how each bouquet in the photo is assembled and stores it on its blueprint
  * element (`appearance.armado_bouquet`). One Gemini call per photo with

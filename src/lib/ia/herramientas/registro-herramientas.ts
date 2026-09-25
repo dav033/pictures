@@ -980,6 +980,8 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     const resolverPlanDelTurno = (plan: PlanDecoracion) => {
       const pistasPatron = completarPatrones ? pistasPatronDelPlan(plan, estado.referenceBlueprint) : [];
       const pistasArmado = completarArmados ? pistasArmadoDelPlan(plan, estado.referenceBlueprint) : [];
+      // Diagnóstico (ids y conteos, nunca la foto): qué lecturas de la foto viajan con la confirmación.
+      if (completarArmados) console.info("[plan] pistas de armado", JSON.stringify({ request_id: estado.ragRequestId, bouquets: plan.estructuras.filter((estructura) => estructura.estructura_oficial === "bouquet").map((estructura) => ({ id: estructura.estructura_id, referencia: estructura.referencia_element_id ?? null, unidades: estructura.unidades_declaradas ?? null })), pistas: pistasArmado.map((pista) => ({ referencia: pista.referencia_element_id, confianza: pista.confianza, numeros: pista.numeros?.map((numero) => numero.digito).join("") ?? null })) }));
       return resolverPlan({
         plan,
         allowlist: allowlistTurno,

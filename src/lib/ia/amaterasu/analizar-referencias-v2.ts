@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { ErrorIA, type ChatPort, type Herramienta, type ImagenEtiquetada, type TurnoChat } from "@/lib/ia/nucleo/tipos";
 import type { Producto } from "@/lib/types";
 import { enriquecerConDominancia } from "./dominancia-referencia";
-import { featureEnabled } from "@/lib/ia/nucleo/feature-flags";
+import { featureEnabled, referenceAnalysisCacheEnabled } from "@/lib/ia/nucleo/feature-flags";
 import { bytesDeBase64 } from "@sempertex/agente-core";
 import { registrarGemini, resultadoTelemetria, type ContextoTelemetriaIA } from "@/lib/ia/nucleo/telemetria-llamadas";
 import {
@@ -521,7 +521,9 @@ export async function analizarReferenciasV2(chat: ChatPort, referencias: ImagenE
     const fijo = analisisFijoDeEjemplo(referencias, ANALYSIS_PARSER_VERSION);
     if (fijo) return fijo;
   }
-  const cached = opciones.forzarNuevoAnalisis ? undefined : cache.get(key);
+  // La caché por foto está apagada salvo REFERENCE_ANALYSIS_CACHE_ENABLED (2026-09-25):
+  // servía un análisis viejo de la misma foto y escondía cada arreglo.
+  const cached = opciones.forzarNuevoAnalisis || !referenceAnalysisCacheEnabled() ? undefined : cache.get(key);
   if (cached) return { ...cached, metadata: { ...cached.metadata, cached: true } };
   let entry = enVuelo.get(key);
   if (!entry) {

@@ -234,6 +234,13 @@ la lectura se pide para toda pieza compacta (bouquet, centro de mesa, racimo,
 figura). Pendiente aparte: "morado" en el análisis y "violeta" en la compra son
 sinónimos que el canon de colores no junta.
 
+Y la caché en memoria del análisis de la foto queda apagada por defecto
+(`REFERENCE_ANALYSIS_CACHE_ENABLED=true` la vuelve a encender): servía el análisis
+viejo de la misma foto y escondía cada arreglo. Cada foto subida se analiza de
+nuevo (una llamada a Gemini); la galería de ejemplos no la usa. Dos registros
+nuevos ayudan a diagnosticar: `[references/analyze] elementos` (tipo, patrón y
+lectura del armado por elemento) y `[plan] pistas de armado` al confirmar.
+
 ### Pendiente inmediato
 
 0. **Revisar y mezclar el PR #2.** Nota: gitleaks marcó dos falsos positivos en

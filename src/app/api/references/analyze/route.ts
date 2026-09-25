@@ -45,6 +45,21 @@ export async function POST(request: Request) {
       BOUQUET_REFERENCIA_PYTHON_ENABLED ? leerArmadosReferencia(analisis.blueprint, references, lectura) : analisis.blueprint,
     ]);
     const result = { ...analisis, blueprint: conArmadosDe(conPatron, conArmado) };
+    // Qué vio el reconocedor y qué lecturas quedaron en cada elemento: solo
+    // ids, tipos y conteos (nunca la foto), para diagnosticar un plan que no
+    // sigue la foto (2026-09-25: un bouquet de 5 globos salía con 12 o 20).
+    console.info("[references/analyze] elementos", JSON.stringify({
+      request_id: requestId,
+      cache: analisis.metadata.cached,
+      elementos: result.blueprint.elements.filter((elemento) => elemento.approved).map((elemento) => ({
+        id: elemento.element_id,
+        tipo: elemento.visual_semantics?.structure_type ?? null,
+        patron: elemento.appearance.patron_color?.modo ?? null,
+        armado: elemento.appearance.armado_bouquet
+          ? { confianza: elemento.appearance.armado_bouquet.confianza, niveles: elemento.appearance.armado_bouquet.niveles.length, numeros: elemento.appearance.armado_bouquet.numeros?.map((numero) => numero.digito).join("") ?? null }
+          : null,
+      })),
+    }));
     return Response.json(cuerpoExito(result, references, requestId, id), { headers: { "X-Request-ID": requestId } });
   } catch (error) {
     const { status, body, uiError } = respuestaError(error, requestId);

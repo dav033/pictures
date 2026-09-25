@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import { analizarReferenciasV2 } from "@/lib/ia/amaterasu/analizar-referencias-v2";
 import { ReferenceBlueprintV2Schema, unidadesMaterialDeElemento, type ReferenceBlueprintV2 } from "@/lib/ia/referencia/reference-blueprint";
 import { normalizeFinishColors, tieneElementosAprobados, tieneEstructurasDeGlobos } from "@/lib/ia/referencia/reference-structure";
+
+// Estas pruebas ejercitan la caché del análisis, apagada por defecto desde 2026-09-25.
+process.env.REFERENCE_ANALYSIS_CACHE_ENABLED = "true";
 import type { ChatPort, Herramienta, PeticionChat, TurnoChat } from "@/lib/ia/nucleo/tipos";
 
 /**

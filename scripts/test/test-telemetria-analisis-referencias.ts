@@ -8,6 +8,9 @@ import { resolve } from "node:path";
 import { analizarReferenciasV2, analysisConfigHash, sistemaAnalisis, type PaseObservado } from "@/lib/ia/amaterasu/analizar-referencias-v2";
 import { STRUCTURE_RULES_V14_CANDIDATE, STRUCTURE_RULES_V15_CANDIDATE, STRUCTURE_RULES_V16, VARIANTE_PRODUCCION } from "@/lib/ia/referencia/reference-structure";
 import { MANIFIESTO_REFERENCIAS_EJEMPLO } from "@/lib/referencias-ejemplo/manifiesto";
+
+// Estas pruebas ejercitan la caché del análisis, apagada por defecto desde 2026-09-25.
+process.env.REFERENCE_ANALYSIS_CACHE_ENABLED = "true";
 import type { ChatPort, PeticionChat, TurnoChat } from "@/lib/ia/nucleo/tipos";
 
 /**
