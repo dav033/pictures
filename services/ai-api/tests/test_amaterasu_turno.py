@@ -11,11 +11,13 @@ from app.amaterasu.turno import (
     ejecutar_turno_gemini,
 )
 
-TINY_PNG_BASE64 = base64.b64encode(bytes.fromhex(
-    "89504e470d0a1a0a0000000d4948445200000001000000010802000000907753"
-    "de0000000c4944415478da6360000002000155bce9a70000000049454e44ae42"
-    "6082"
-)).decode("ascii")
+TINY_PNG_BASE64 = base64.b64encode(
+    bytes.fromhex(
+        "89504e470d0a1a0a0000000d4948445200000001000000010802000000907753"
+        "de0000000c4944415478da6360000002000155bce9a70000000049454e44ae42"
+        "6082"
+    )
+).decode("ascii")
 
 
 def _request_dict(**overrides: object) -> dict[str, object]:
@@ -33,13 +35,21 @@ def _request_dict(**overrides: object) -> dict[str, object]:
         "system_instruction": "Eres un analista forense de decoracion de eventos.",
         "message": "Inventaria estas referencias.",
         "images": [
-            {"id": "REF_01", "mime": "image/png", "base64": TINY_PNG_BASE64, "descripcion": "foto del cliente"},
+            {
+                "id": "REF_01",
+                "mime": "image/png",
+                "base64": TINY_PNG_BASE64,
+                "descripcion": "foto del cliente",
+            },
         ],
         "tools": [
             {
                 "name": "return_reference_inventory",
                 "description": "Return structured inventory.",
-                "parameters_json_schema": {"type": "object", "properties": {"images": {"type": "array"}}},
+                "parameters_json_schema": {
+                    "type": "object",
+                    "properties": {"images": {"type": "array"}},
+                },
             },
         ],
     }
@@ -56,10 +66,14 @@ def test_reference_turn_request_accepts_an_audit_sized_turn() -> None:
     # Regression 2026-09-24: the audit pass embeds the whole draft inventory in
     # the message and the catalog mode appends every valid product to the
     # system prompt; a 4k/20k cap rejected real turns with 422.
-    payload = ReferenceTurnRequest.model_validate(_request_dict(
-        message="Audit the draft inventory below.\n<DRAFT_INVENTORY>" + "x" * 60_000 + "</DRAFT_INVENTORY>",
-        system_instruction="Inventory rules.\nVALID CATALOG PRODUCTS\n" + "producto\n" * 10_000,
-    ))
+    payload = ReferenceTurnRequest.model_validate(
+        _request_dict(
+            message="Audit the draft inventory below.\n<DRAFT_INVENTORY>"
+            + "x" * 60_000
+            + "</DRAFT_INVENTORY>",
+            system_instruction="Inventory rules.\nVALID CATALOG PRODUCTS\n" + "producto\n" * 10_000,
+        )
+    )
     assert len(payload.message) > 60_000
 
 
@@ -79,7 +93,9 @@ def test_reference_turn_request_defaults_to_default_model() -> None:
     assert payload.model == DEFAULT_MODEL
 
 
-def test_ejecutar_turno_gemini_fails_closed_without_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_ejecutar_turno_gemini_fails_closed_without_api_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
     payload = ReferenceTurnRequest.model_validate(_request_dict())
@@ -90,11 +106,22 @@ def test_ejecutar_turno_gemini_fails_closed_without_api_key(monkeypatch: pytest.
     assert excinfo.value.status_code == 503
 
 
-def test_ejecutar_turno_gemini_fails_closed_on_invalid_base64(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_ejecutar_turno_gemini_fails_closed_on_invalid_base64(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
-    payload = ReferenceTurnRequest.model_validate(_request_dict(
-        images=[{"id": "REF_01", "mime": "image/png", "base64": "not-valid-base64!!", "descripcion": ""}],
-    ))
+    payload = ReferenceTurnRequest.model_validate(
+        _request_dict(
+            images=[
+                {
+                    "id": "REF_01",
+                    "mime": "image/png",
+                    "base64": "not-valid-base64!!",
+                    "descripcion": "",
+                }
+            ],
+        )
+    )
     with pytest.raises(ReferenceTurnError) as excinfo:
         asyncio.run(ejecutar_turno_gemini(payload))
     assert excinfo.value.code == "reference_turn_invalid_image"
@@ -117,7 +144,9 @@ class _FakeClient:
 
 
 def _fake_response(text: str, tool_call: dict[str, object] | None) -> object:
-    part = SimpleNamespace(function_call=SimpleNamespace(**tool_call) if tool_call else None, text=None)
+    part = SimpleNamespace(
+        function_call=SimpleNamespace(**tool_call) if tool_call else None, text=None
+    )
     content = SimpleNamespace(parts=[part])
     candidate = SimpleNamespace(content=content, finish_reason="STOP")
     usage = SimpleNamespace(
@@ -128,10 +157,14 @@ def _fake_response(text: str, tool_call: dict[str, object] | None) -> object:
         tool_use_prompt_token_count=0,
         total_token_count=140,
     )
-    return SimpleNamespace(text=text, candidates=[candidate], usage_metadata=usage, prompt_feedback=None)
+    return SimpleNamespace(
+        text=text, candidates=[candidate], usage_metadata=usage, prompt_feedback=None
+    )
 
 
-def test_ejecutar_turno_gemini_returns_text_tool_calls_and_usage(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_ejecutar_turno_gemini_returns_text_tool_calls_and_usage(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     response = _fake_response(
         text='{"images":[]}',
@@ -140,7 +173,9 @@ def test_ejecutar_turno_gemini_returns_text_tool_calls_and_usage(monkeypatch: py
     fake_client = _FakeClient(response)
     payload = ReferenceTurnRequest.model_validate(_request_dict())
 
-    result = asyncio.run(ejecutar_turno_gemini(payload, client_factory=lambda _api_key: fake_client))
+    result = asyncio.run(
+        ejecutar_turno_gemini(payload, client_factory=lambda _api_key: fake_client)
+    )
 
     assert result["text"] == '{"images":[]}'
     assert result["tool_calls"] == [{"name": "return_reference_inventory", "args": {"images": []}}]
@@ -183,6 +218,8 @@ def test_ejecutar_turno_gemini_wraps_provider_errors(monkeypatch: pytest.MonkeyP
 
     payload = ReferenceTurnRequest.model_validate(_request_dict())
     with pytest.raises(ReferenceTurnError) as excinfo:
-        asyncio.run(ejecutar_turno_gemini(payload, client_factory=lambda _api_key: _RaisingClient()))
+        asyncio.run(
+            ejecutar_turno_gemini(payload, client_factory=lambda _api_key: _RaisingClient())
+        )
     assert excinfo.value.code == "reference_turn_provider_error"
     assert excinfo.value.status_code == 502

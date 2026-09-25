@@ -90,7 +90,9 @@ def _usage_metadata(usage: object) -> dict[str, int]:
     return {key: value for key, value in fields.items() if isinstance(value, int)}
 
 
-def _provider_error_event(error: BaseException, *, phase: Literal["open", "stream"]) -> dict[str, object]:
+def _provider_error_event(
+    error: BaseException, *, phase: Literal["open", "stream"]
+) -> dict[str, object]:
     """`phase` is "open" only while no provider chunk has arrived: that is the
     one window where TypeScript may retry the turn (the same window
     `conReintento` covers on the direct path), because nothing was generated
@@ -100,7 +102,9 @@ def _provider_error_event(error: BaseException, *, phase: Literal["open", "strea
     return {
         "type": "error",
         "code": "chat_turn_provider_error",
-        "provider_status": status if isinstance(status, int) and not isinstance(status, bool) else None,
+        "provider_status": status
+        if isinstance(status, int) and not isinstance(status, bool)
+        else None,
         "provider_message": (str(error) or type(error).__name__)[:MAX_PROVIDER_MESSAGE],
         "phase": phase,
     }
@@ -124,7 +128,9 @@ def _build_config(payload: ChatTurnStreamRequest) -> object:
             )
         ]
     if payload.thinking_level is not None:
-        config["thinking_config"] = types.ThinkingConfig(thinking_level=payload.thinking_level.upper())
+        config["thinking_config"] = types.ThinkingConfig(
+            thinking_level=payload.thinking_level.upper()
+        )
     if payload.temperature is not None:
         config["temperature"] = payload.temperature
     if payload.max_output_tokens is not None:
@@ -138,7 +144,9 @@ async def _events(
     received_chunk = False
     stream: Any = None
     try:
-        stream = await client.aio.models.generate_content_stream(model=model, contents=contents, config=config)
+        stream = await client.aio.models.generate_content_stream(
+            model=model, contents=contents, config=config
+        )
         text = ""
         # Mirrors turnoStream in agente-core: calls that arrive in separate
         # chunks are accumulated by id (or name+args), never overwritten, so no
@@ -164,9 +172,13 @@ async def _events(
                         "id": call_id,
                         "name": function_call.name,
                         "args": args,
-                        "thought_signature": base64.b64encode(signature).decode("ascii") if signature else None,
+                        "thought_signature": base64.b64encode(signature).decode("ascii")
+                        if signature
+                        else None,
                     }
-                elif isinstance(getattr(part, "text", None), str) and not getattr(part, "thought", False):
+                elif isinstance(getattr(part, "text", None), str) and not getattr(
+                    part, "thought", False
+                ):
                     delta += part.text
             if delta:
                 text += delta

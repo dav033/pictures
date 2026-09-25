@@ -94,7 +94,9 @@ def test_sends_every_part_in_one_user_message(monkeypatch: pytest.MonkeyPatch) -
         tool_use_prompt_token_count=None,
         total_token_count=52,
     )
-    fake_client = _FakeClient(SimpleNamespace(text='{"recomendaciones": [], "resumen": "x"}', usage_metadata=usage))
+    fake_client = _FakeClient(
+        SimpleNamespace(text='{"recomendaciones": [], "resumen": "x"}', usage_metadata=usage)
+    )
     payload = HappieGenerateRequest.model_validate(_request_dict())
 
     result = asyncio.run(generar_happie_gemini(payload, client_factory=lambda _key: fake_client))

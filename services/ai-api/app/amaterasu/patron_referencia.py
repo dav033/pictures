@@ -68,7 +68,9 @@ class PatronReferenciaError(Exception):
     """Stable domain error translated by the HTTP boundary. `provider_detail`
     carries the provider's finish/block reason when the answer was empty."""
 
-    def __init__(self, code: str, status_code: int = 502, provider_detail: str | None = None) -> None:
+    def __init__(
+        self, code: str, status_code: int = 502, provider_detail: str | None = None
+    ) -> None:
         super().__init__(code)
         self.code = code
         self.status_code = status_code
@@ -173,9 +175,12 @@ RESPONSE_SCHEMA: dict[str, object] = {
 
 # Versión del prompt que viaja en el resultado y en la telemetría de Next: cambia
 # con cualquier cambio del texto, de la paleta o del esquema de salida.
-PROMPT_VERSION = "patron-referencia.v1:" + hashlib.sha256(
-    (SYSTEM_INSTRUCTION + json.dumps(RESPONSE_SCHEMA, sort_keys=True)).encode("utf-8")
-).hexdigest()[:16]
+PROMPT_VERSION = (
+    "patron-referencia.v1:"
+    + hashlib.sha256(
+        (SYSTEM_INSTRUCTION + json.dumps(RESPONSE_SCHEMA, sort_keys=True)).encode("utf-8")
+    ).hexdigest()[:16]
+)
 
 
 def _mensaje(elementos: list[ElementoReferencia]) -> str:

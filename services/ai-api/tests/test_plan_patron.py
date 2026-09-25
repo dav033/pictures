@@ -199,12 +199,16 @@ def _por_color(resolved: Mapping[str, object]) -> dict[str, int]:
 
 def _materiales(resolved: Mapping[str, object]) -> list[dict[str, object]]:
     plan = cast(dict[str, object], resolved["plan"])
-    return cast(list[dict[str, object]], cast(list[dict[str, object]], plan["estructuras"])[0]["materiales"])
+    return cast(
+        list[dict[str, object]], cast(list[dict[str, object]], plan["estructuras"])[0]["materiales"]
+    )
 
 
 def _patron_del_plan(resolved: Mapping[str, object]) -> dict[str, object]:
     plan = cast(dict[str, object], resolved["plan"])
-    return cast(dict[str, object], cast(list[dict[str, object]], plan["estructuras"])[0]["patron_color"])
+    return cast(
+        dict[str, object], cast(list[dict[str, object]], plan["estructuras"])[0]["patron_color"]
+    )
 
 
 # --- Sin patrón nada cambia ------------------------------------------------------
@@ -244,7 +248,9 @@ async def test_el_patron_decide_el_conteo_por_color_y_entra_en_el_hash() -> None
         ("EST_01_COLUMNA", True, 10, 4)
     ]
     assert [c["unidades_total"] for c in cast(list[dict[str, object]], patrones[0]["conteo"])] == [
-        20, 10, 10,
+        20,
+        10,
+        10,
     ]
 
 
@@ -290,7 +296,9 @@ async def test_varios_tamanos_conservan_el_total_y_reparten_por_la_rejilla() -> 
         "densidad": "media",
         "mezcla": "organica_fina",
         "repeticiones": 1,
-        "materiales": [{"color": c, "participacion": 1 / 3} for c in ("blanco", "rosado", "fucsia")],
+        "materiales": [
+            {"color": c, "participacion": 1 / 3} for c in ("blanco", "rosado", "fucsia")
+        ],
         "patron_color": {
             "version": "patron-color.v1",
             "origen": "decorador",
@@ -301,11 +309,20 @@ async def test_varios_tamanos_conservan_el_total_y_reparten_por_la_rejilla() -> 
     _eje, demandas, _sin_ubicar = _despiece_with_plan_sizes({}, estructura)
 
     assert [(d["pulgadas"], d["material_index"], d["cantidad"]) for d in demandas] == [
-        (5, 0, 6), (5, 1, 12), (5, 2, 7),
-        (9, 0, 5), (9, 1, 11), (9, 2, 6),
-        (12, 0, 16), (12, 1, 32), (12, 2, 16),
-        (18, 0, 2), (18, 1, 3), (18, 2, 1),
-        (24, 0, 1), (24, 1, 1),
+        (5, 0, 6),
+        (5, 1, 12),
+        (5, 2, 7),
+        (9, 0, 5),
+        (9, 1, 11),
+        (9, 2, 6),
+        (12, 0, 16),
+        (12, 1, 32),
+        (12, 2, 16),
+        (18, 0, 2),
+        (18, 1, 3),
+        (18, 2, 1),
+        (24, 0, 1),
+        (24, 1, 1),
     ]
 
 
@@ -348,12 +365,19 @@ def test_varios_tamanos_compran_cada_color_de_la_grafica() -> None:
     # del conteo (5/10 y 1/10), así sus pisos no pasan del margen de cada color, y
     # reparte lo que falta por resto (0.5 primero, diámetro mayor antes).
     assert [(d["pulgadas"], d["material_index"], d["cantidad"]) for d in demandas] == [
-        (5, 0, 1), (5, 5, 1),
-        (9, 0, 1), (9, 4, 1),
-        (12, 0, 2), (12, 1, 1), (12, 2, 1), (12, 3, 1),
+        (5, 0, 1),
+        (5, 5, 1),
+        (9, 0, 1),
+        (9, 4, 1),
+        (12, 0, 2),
+        (12, 1, 1),
+        (12, 2, 1),
+        (12, 3, 1),
         (18, 0, 1),
     ]
-    materiales = cast(list[dict[str, object]], cast(list[dict[str, object]], plan["estructuras"])[0]["materiales"])
+    materiales = cast(
+        list[dict[str, object]], cast(list[dict[str, object]], plan["estructuras"])[0]["materiales"]
+    )
     assert [material["participacion"] for material in materiales] == [0.5, 0.1, 0.1, 0.1, 0.1, 0.1]
     conteo = cast(list[dict[str, object]], resuelto["conteo"])
     assert [c["unidades_por_instancia"] for c in conteo] == [5, 1, 1, 1, 1, 1]
@@ -381,8 +405,15 @@ async def test_completar_patrones_asigna_el_preset_y_queda_fijo() -> None:
     assert otra_vez["plan_hash"] == resolved["plan_hash"]
 
 
-def _pista(colores: Sequence[str], confianza: float = 0.8, modo: str = "anillos") -> dict[str, object]:
-    return {"referencia_element_id": "ref-col", "modo": modo, "colores": list(colores), "confianza": confianza}
+def _pista(
+    colores: Sequence[str], confianza: float = 0.8, modo: str = "anillos"
+) -> dict[str, object]:
+    return {
+        "referencia_element_id": "ref-col",
+        "modo": modo,
+        "colores": list(colores),
+        "confianza": confianza,
+    }
 
 
 @pytest.mark.anyio
@@ -519,7 +550,9 @@ async def test_reemplazar_un_color_con_patron_nombra_el_patron_con_lo_que_se_com
             accion="reemplazar",
             estructura_id="EST_01_COLUMNA",
             objetivo_variant_id="var-azul-12",
-            variante=VarianteEdicion(product_id="prod-rojo", variant_id="var-rojo-12", color="rojo"),
+            variante=VarianteEdicion(
+                product_id="prod-rojo", variant_id="var-rojo-12", color="rojo"
+            ),
         ),
         [
             LineasBaseEstructura(
@@ -543,7 +576,10 @@ async def test_reemplazar_un_color_con_patron_nombra_el_patron_con_lo_que_se_com
     assert _conteo_por_color(resuelto) == _por_color(resuelto)
     patron = cast(list[dict[str, object]], resuelto["patrones_color"])[0]
     assert "(white, black, white, red around each cluster)" in str(patron["prompt_gemini"])
-    assert patron["prompt_lora"] == "wrapped in a spiral of white, black and red stripes winding from base to top"
+    assert (
+        patron["prompt_lora"]
+        == "wrapped in a spiral of white, black and red stripes winding from base to top"
+    )
     assert "rojo (3)" in str(patron["descripcion"])
     textos = " ".join([str(patron["descripcion"]), *cast(list[str], patron["instrucciones"])])
     assert "azul" not in textos and "blue" not in str(patron["prompt_gemini"])
@@ -567,7 +603,9 @@ async def test_reemplazar_parte_de_un_color_con_patron_lo_avisa(caso: str) -> No
     ]
     columna = _columna(mezcla="organica_fina", patron_color=ESPIRAL)
     base = await _resolver_catalogo(_plan(columna), filas)
-    lineas_base = cast(list[dict[str, object]], cast(list[dict[str, object]], base["estructuras"])[0]["lineas"])
+    lineas_base = cast(
+        list[dict[str, object]], cast(list[dict[str, object]], base["estructuras"])[0]["lineas"]
+    )
     azules = [str(linea["variant_id"]) for linea in lineas_base if linea["color"] == "azul"]
     assert len(azules) > 1 and "var-azul-12" in azules
     destinos = {
@@ -733,10 +771,14 @@ async def test_la_vista_previa_de_un_reemplazo_por_tamano_es_la_de_la_resolucion
         for color in ("blanco", "negro", "azul", "rojo", "verde")
         for pulgadas in tamanos
     ]
-    base = await _resolver_catalogo(_plan(_columna(mezcla="organica_fina", patron_color=ESPIRAL)), filas)
+    base = await _resolver_catalogo(
+        _plan(_columna(mezcla="organica_fina", patron_color=ESPIRAL)), filas
+    )
     azules = [
         str(linea["variant_id"])
-        for linea in cast(list[dict[str, object]], cast(list[dict[str, object]], base["estructuras"])[0]["lineas"])
+        for linea in cast(
+            list[dict[str, object]], cast(list[dict[str, object]], base["estructuras"])[0]["lineas"]
+        )
         if linea["color"] == "azul"
     ]
     destinos = {
@@ -855,7 +897,9 @@ async def test_un_reemplazo_por_el_producto_de_un_color_reetiquetado_no_lo_renom
     ]
     resuelto = await _resolver_catalogo(plan, filas)
     lineas = _lineas_del_navegador(resuelto)
-    assert {linea["color"] for linea in lineas if linea["product_id"] == "prod-azul"} == {"azul rey"}
+    assert {linea["color"] for linea in lineas if linea["product_id"] == "prod-azul"} == {
+        "azul rey"
+    }
     esperado = cast(list[dict[str, object]], resuelto["patrones_color"])[0]
     assert _colores_conteo(esperado)[2] == "azul"
     assert not any("azul (3)" in aviso for aviso in cast(list[str], esperado["avisos"]))
@@ -868,7 +912,11 @@ _CONFETI = {
     "origen": "sugerido",
     "base": {
         "modo": "aleatorio",
-        "pesos": [{"material": 0, "peso": 40}, {"material": 1, "peso": 30}, {"material": 2, "peso": 30}],
+        "pesos": [
+            {"material": 0, "peso": 40},
+            {"material": 1, "peso": 30},
+            {"material": 2, "peso": 30},
+        ],
         "semilla": 7,
     },
 }
@@ -938,7 +986,9 @@ async def test_las_lineas_nunca_cuentan() -> None:
 
     conteo = cast(list[dict[str, object]], patron["conteo"])
     assert [(fila["color"], fila["unidades_por_instancia"]) for fila in conteo] == [
-        ("blanco", 16), ("negro", 12), ("rojo", 12),
+        ("blanco", 16),
+        ("negro", 12),
+        ("rojo", 12),
     ]
 
 
@@ -978,8 +1028,13 @@ def _signed(request: PlanResolutionRequest, nonce: UUID) -> tuple[bytes, dict[st
     operation_hash = hashlib.sha256(
         json.dumps(operation, separators=(",", ":"), ensure_ascii=False).encode()
     ).hexdigest()
-    context = {**request.context.model_dump(mode="json", exclude_none=True), "body_sha256": operation_hash}
-    body = json.dumps({"context": context, **operation}, separators=(",", ":"), ensure_ascii=False).encode()
+    context = {
+        **request.context.model_dump(mode="json", exclude_none=True),
+        "body_sha256": operation_hash,
+    }
+    body = json.dumps(
+        {"context": context, **operation}, separators=(",", ":"), ensure_ascii=False
+    ).encode()
     timestamp = int(time.time())
     return body, {
         "content-type": "application/json",
@@ -1052,8 +1107,12 @@ def test_vista_previa_sugiere_sin_tocar_el_plan() -> None:
 
     assert sugerido["aplicado"] is False
     assert cast(dict[str, object], sugerido["patron"])["origen"] == "sugerido"
-    assert [c["unidades_por_instancia"] for c in cast(list[dict[str, object]], sugerido["conteo"])] == [
-        20, 10, 10,
+    assert [
+        c["unidades_por_instancia"] for c in cast(list[dict[str, object]], sugerido["conteo"])
+    ] == [
+        20,
+        10,
+        10,
     ]
 
 
@@ -1068,8 +1127,12 @@ def test_vista_previa_de_un_patron_dado_da_el_conteo_de_la_resolucion() -> None:
 
     # 10 filas 0, 1, 2, 0...: 4, 3 y 3 cuartetos.
     assert resuelto["aplicado"] is True
-    assert [c["unidades_por_instancia"] for c in cast(list[dict[str, object]], resuelto["conteo"])] == [
-        16, 12, 12,
+    assert [
+        c["unidades_por_instancia"] for c in cast(list[dict[str, object]], resuelto["conteo"])
+    ] == [
+        16,
+        12,
+        12,
     ]
 
 
@@ -1080,7 +1143,11 @@ def test_vista_previa_de_un_patron_dado_da_el_conteo_de_la_resolucion() -> None:
         ("EST_01_COLUMNA", SIN_AZUL, "patron_invalido", 422),
         (
             "EST_01_COLUMNA",
-            {"version": "patron-color.v1", "origen": "decorador", "base": {"modo": "espiral", "racimo": [], "trazo": "espiral"}},
+            {
+                "version": "patron-color.v1",
+                "origen": "decorador",
+                "base": {"modo": "espiral", "racimo": [], "trazo": "espiral"},
+            },
             "invalid_plan",
             422,
         ),
@@ -1113,8 +1180,12 @@ def test_sincronizar_solo_reescribe_participacion() -> None:
 
     estructuras = cast(list[dict[str, object]], synced["estructuras"])
     # Sin alto la columna toma 1.8 m por defecto (interior): 40 globos, 20/10/10.
-    assert [m["participacion"] for m in cast(list[dict[str, object]], estructuras[0]["materiales"])] == [
-        0.5, 0.25, 0.25,
+    assert [
+        m["participacion"] for m in cast(list[dict[str, object]], estructuras[0]["materiales"])
+    ] == [
+        0.5,
+        0.25,
+        0.25,
     ]
     assert estructuras[0]["medidas"] == {}
     assert estructuras[1] == otra

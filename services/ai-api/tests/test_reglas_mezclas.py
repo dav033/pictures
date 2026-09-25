@@ -33,7 +33,10 @@ def test_python_substitution_rule_matches_the_typescript_table_pair_by_pair() ->
     for requested in _DIAMETROS_ESTANDAR:
         for available in _DIAMETROS_ESTANDAR:
             expected = requested == available or available in table[str(requested)]
-            assert _admissible_substitution(requested, available) is expected, (requested, available)
+            assert _admissible_substitution(requested, available) is expected, (
+                requested,
+                available,
+            )
 
 
 def test_non_standard_diameters_are_never_a_substitution() -> None:

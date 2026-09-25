@@ -171,7 +171,10 @@ async def crear_interaccion_gemini(
     interaction_status = getattr(interaction, "status", None)
     if interaction_status not in (None, "completed"):
         errors = getattr(interaction, "errors", None) or []
-        message = "; ".join(str(getattr(e, "message", e)) for e in errors) or f"interaction status={interaction_status}"
+        message = (
+            "; ".join(str(getattr(e, "message", e)) for e in errors)
+            or f"interaction status={interaction_status}"
+        )
         code, http_status = _classify_error(message)
         raise ImageGenerateError(code, http_status)
 

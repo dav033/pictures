@@ -238,7 +238,9 @@ def test_pool_skips_the_session_reset_query_because_the_store_keeps_no_session_s
 
     assert captured["reset"] is postgres_store._reset_without_session_state
     assert run(postgres_store._reset_without_session_state(object())) is None
-    statements = {name: value for name, value in vars(postgres_store).items() if name.endswith("_SQL")}
+    statements = {
+        name: value for name, value in vars(postgres_store).items() if name.endswith("_SQL")
+    }
     assert statements
     for name, statement in statements.items():
         # A statement that starts with SET/RESET/LISTEN/DECLARE (not an UPDATE's SET clause).

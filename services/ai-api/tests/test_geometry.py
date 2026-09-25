@@ -267,28 +267,24 @@ def test_la_mezcla_efectiva_cierra_en_todos_los_subconjuntos_de_tamanos() -> Non
             proporciones, sin_ubicar = _effective_proportions(mezcla, set(tamanos))
             suma = sum(proporcion for _pulgadas, proporcion in proporciones)
             assert abs(suma - 1) < 1e-9, f"{etiqueta}: las proporciones suman {suma}"
-            assert all(
-                pulgadas in tamanos for pulgadas, _proporcion in proporciones
-            ), f"{etiqueta}: tamaño fuera de lo pedido"
+            assert all(pulgadas in tamanos for pulgadas, _proporcion in proporciones), (
+                f"{etiqueta}: tamaño fuera de lo pedido"
+            )
             en_mezcla = [
                 pulgadas for pulgadas, _proporcion in _MIXES[mezcla] if pulgadas in tamanos
             ]
             assert list(sin_ubicar) == (
-                [pulgadas for pulgadas in tamanos if pulgadas not in en_mezcla]
-                if en_mezcla
-                else []
+                [pulgadas for pulgadas in tamanos if pulgadas not in en_mezcla] if en_mezcla else []
             )
             _eje_m, lineas, _sin_ubicar = _despiece_with_plan_sizes(
                 _plan_con_tamanos(*tamanos),
                 _estructura("arco", ARCO, materiales, mezcla=mezcla),
             )
-            _eje_base, total_base = _total_globos(
-                "arco", ARCO, "media", mezcla, None, proporciones
-            )
+            _eje_base, total_base = _total_globos("arco", ARCO, "media", mezcla, None, proporciones)
             assert _total(lineas) == total_base, etiqueta
-            assert all(
-                cast(int, linea["pulgadas"]) in tamanos for linea in lineas
-            ), f"{etiqueta}: línea fuera de lo pedido"
+            assert all(cast(int, linea["pulgadas"]) in tamanos for linea in lineas), (
+                f"{etiqueta}: línea fuera de lo pedido"
+            )
 
 
 def test_el_parseo_de_los_tamanos_obligatorios_es_identico_al_de_typescript() -> None:
@@ -305,17 +301,20 @@ def test_el_parseo_de_los_tamanos_obligatorios_es_identico_al_de_typescript() ->
         return pulgadas
 
     assert tamanos("R-12", "r12", "18", " R-24 ", "R-12") == {12, 18, 24}
-    assert tamanos(
-        "R-12.5",
-        "R-0x0C",
-        "R-1e1",
-        "R-",
-        "R-1_0",
-        "R-١٢",
-        "R-0",
-        "R-1234",
-        "grandes",
-    ) == set(), "antes: 12.5, 12, 10 y 0 pulgadas en TypeScript; 10 pulgadas en Python"
+    assert (
+        tamanos(
+            "R-12.5",
+            "R-0x0C",
+            "R-1e1",
+            "R-",
+            "R-1_0",
+            "R-١٢",
+            "R-0",
+            "R-1234",
+            "grandes",
+        )
+        == set()
+    ), "antes: 12.5, 12, 10 y 0 pulgadas en TypeScript; 10 pulgadas en Python"
     assert _required_sizes(
         {
             "restricciones": {
@@ -444,9 +443,10 @@ def test_los_dos_margenes_cierran_exactos_en_cada_figura(
                 por_tamano = _agrupar(lineas, "pulgadas")
                 por_material = _agrupar(lineas, "material_index")
                 for pulgadas, _proporcion in _MIXES[mezcla]:
-                    assert por_tamano.get(pulgadas, 0) == referencia_por_tamano.get(
-                        pulgadas, 0
-                    ) * repeticiones, f"{etiqueta}: R-{pulgadas} depende del número de colores"
+                    assert (
+                        por_tamano.get(pulgadas, 0)
+                        == referencia_por_tamano.get(pulgadas, 0) * repeticiones
+                    ), f"{etiqueta}: R-{pulgadas} depende del número de colores"
                 for indice, participacion in enumerate(participaciones):
                     cantidad = por_material.get(indice, 0)
                     esperado = total_referencia * participacion

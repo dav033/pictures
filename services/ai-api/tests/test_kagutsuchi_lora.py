@@ -63,7 +63,9 @@ def test_generar_lora_fal_fails_closed_without_fal_key(monkeypatch: pytest.Monke
 
 
 class _FakeResponse:
-    def __init__(self, status_code: int, json_body: object = None, headers: dict[str, str] | None = None) -> None:
+    def __init__(
+        self, status_code: int, json_body: object = None, headers: dict[str, str] | None = None
+    ) -> None:
         self.status_code = status_code
         self._json_body = json_body
         self.headers = headers or {}
@@ -75,7 +77,9 @@ class _FakeResponse:
 
 
 class _FakeStreamResponse:
-    def __init__(self, status_code: int, chunks: list[bytes], headers: dict[str, str] | None = None) -> None:
+    def __init__(
+        self, status_code: int, chunks: list[bytes], headers: dict[str, str] | None = None
+    ) -> None:
         self.status_code = status_code
         self.headers = headers or {}
         self._chunks = chunks
@@ -92,7 +96,11 @@ class _FakeStreamResponse:
 
 
 class _FakeAsyncClient:
-    def __init__(self, responses: list[_FakeResponse], stream_responses: list[_FakeStreamResponse] | None = None) -> None:
+    def __init__(
+        self,
+        responses: list[_FakeResponse],
+        stream_responses: list[_FakeStreamResponse] | None = None,
+    ) -> None:
         self._responses = list(responses)
         self._stream_responses = list(stream_responses or [])
         self.requests: list[dict[str, object]] = []
@@ -103,7 +111,9 @@ class _FakeAsyncClient:
     async def __aexit__(self, *exc: object) -> bool:
         return False
 
-    async def request(self, method: str, url: str, *, headers: dict[str, str] | None = None, json: object = None) -> _FakeResponse:
+    async def request(
+        self, method: str, url: str, *, headers: dict[str, str] | None = None, json: object = None
+    ) -> _FakeResponse:
         self.requests.append({"method": method, "url": url, "headers": headers, "json": json})
         return self._responses.pop(0)
 
@@ -113,23 +123,30 @@ class _FakeAsyncClient:
 
 
 def _submission(request_id: str = "req_123") -> _FakeResponse:
-    return _FakeResponse(200, {
-        "request_id": request_id,
-        "status_url": "https://queue.fal.run/fal-ai/flux-2/lora/requests/req_123/status",
-        "response_url": "https://queue.fal.run/fal-ai/flux-2/lora/requests/req_123",
-    })
+    return _FakeResponse(
+        200,
+        {
+            "request_id": request_id,
+            "status_url": "https://queue.fal.run/fal-ai/flux-2/lora/requests/req_123/status",
+            "response_url": "https://queue.fal.run/fal-ai/flux-2/lora/requests/req_123",
+        },
+    )
 
 
 def _completed_status() -> _FakeResponse:
     return _FakeResponse(200, {"status": "COMPLETED"})
 
 
-def _result(url: str = "https://fal.media/files/abc/image.png", content_type: str | None = "image/png") -> _FakeResponse:
+def _result(
+    url: str = "https://fal.media/files/abc/image.png", content_type: str | None = "image/png"
+) -> _FakeResponse:
     return _FakeResponse(200, {"images": [{"url": url, "content_type": content_type}]})
 
 
 def _image_stream(content_type: str = "image/png") -> _FakeStreamResponse:
-    return _FakeStreamResponse(200, [b"\x89PNG", b"restofthebytes"], headers={"content-type": content_type})
+    return _FakeStreamResponse(
+        200, [b"\x89PNG", b"restofthebytes"], headers={"content-type": content_type}
+    )
 
 
 def test_generar_lora_fal_happy_path_text_mode(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -160,10 +177,12 @@ def test_generar_lora_fal_edit_mode_forwards_image_urls(monkeypatch: pytest.Monk
         responses=[_submission(), _completed_status(), _result()],
         stream_responses=[_image_stream()],
     )
-    payload = LoraGenerateRequest.model_validate(_request_dict(
-        mode="edit",
-        image_data_urls=["data:image/jpeg;base64,aGVsbG8="],
-    ))
+    payload = LoraGenerateRequest.model_validate(
+        _request_dict(
+            mode="edit",
+            image_data_urls=["data:image/jpeg;base64,aGVsbG8="],
+        )
+    )
 
     asyncio.run(generar_lora_fal(payload, client_factory=lambda: client))
 
@@ -177,6 +196,7 @@ def test_generar_lora_fal_edit_mode_forwards_image_urls(monkeypatch: pytest.Monk
 def test_generar_lora_fal_polls_until_completed(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("FAL_KEY", "test-key")
     import app.kagutsuchi.lora as lora_module
+
     monkeypatch.setattr(lora_module, "POLL_INTERVAL_SECONDS", 0)
     client = _FakeAsyncClient(
         responses=[
@@ -195,12 +215,16 @@ def test_generar_lora_fal_polls_until_completed(monkeypatch: pytest.MonkeyPatch)
     assert result["image_base64"]
 
 
-def test_generar_lora_fal_fails_closed_on_generation_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_generar_lora_fal_fails_closed_on_generation_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("FAL_KEY", "test-key")
-    client = _FakeAsyncClient(responses=[
-        _submission(),
-        _FakeResponse(200, {"status": "FAILED", "error": "safety filter rejected the prompt"}),
-    ])
+    client = _FakeAsyncClient(
+        responses=[
+            _submission(),
+            _FakeResponse(200, {"status": "FAILED", "error": "safety filter rejected the prompt"}),
+        ]
+    )
     payload = LoraGenerateRequest.model_validate(_request_dict())
 
     with pytest.raises(LoraGenerateError) as excinfo:
@@ -212,6 +236,7 @@ def test_generar_lora_fal_fails_closed_on_generation_failure(monkeypatch: pytest
 def test_generar_lora_fal_times_out_when_never_completed(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("FAL_KEY", "test-key")
     import app.kagutsuchi.lora as lora_module
+
     monkeypatch.setattr(lora_module, "POLL_DEADLINE_SECONDS", 0)
     client = _FakeAsyncClient(responses=[_submission()])
     payload = LoraGenerateRequest.model_validate(_request_dict())
@@ -231,7 +256,10 @@ def test_generar_lora_fal_times_out_when_never_completed(monkeypatch: pytest.Mon
     ],
 )
 def test_generar_lora_fal_classifies_account_rejected_submissions(
-    monkeypatch: pytest.MonkeyPatch, status_code: int, body: dict[str, object], expected_causa: str,
+    monkeypatch: pytest.MonkeyPatch,
+    status_code: int,
+    body: dict[str, object],
+    expected_causa: str,
 ) -> None:
     monkeypatch.setenv("FAL_KEY", "test-key")
     client = _FakeAsyncClient(responses=[_FakeResponse(status_code, body)])
@@ -244,7 +272,9 @@ def test_generar_lora_fal_classifies_account_rejected_submissions(
     assert excinfo.value.status_code == 503
 
 
-def test_generar_lora_fal_classifies_generic_submit_rejection(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_generar_lora_fal_classifies_generic_submit_rejection(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("FAL_KEY", "test-key")
     client = _FakeAsyncClient(responses=[_FakeResponse(500, {"error": "internal error"})])
     payload = LoraGenerateRequest.model_validate(_request_dict())
@@ -255,13 +285,22 @@ def test_generar_lora_fal_classifies_generic_submit_rejection(monkeypatch: pytes
     assert excinfo.value.status_code == 502
 
 
-def test_generar_lora_fal_rejects_submission_with_disallowed_status_url(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_generar_lora_fal_rejects_submission_with_disallowed_status_url(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("FAL_KEY", "test-key")
-    client = _FakeAsyncClient(responses=[_FakeResponse(200, {
-        "request_id": "req_123",
-        "status_url": "https://evil.example.com/status",
-        "response_url": "https://queue.fal.run/fal-ai/flux-2/lora/requests/req_123",
-    })])
+    client = _FakeAsyncClient(
+        responses=[
+            _FakeResponse(
+                200,
+                {
+                    "request_id": "req_123",
+                    "status_url": "https://evil.example.com/status",
+                    "response_url": "https://queue.fal.run/fal-ai/flux-2/lora/requests/req_123",
+                },
+            )
+        ]
+    )
     payload = LoraGenerateRequest.model_validate(_request_dict())
 
     with pytest.raises(LoraGenerateError) as excinfo:
@@ -269,13 +308,17 @@ def test_generar_lora_fal_rejects_submission_with_disallowed_status_url(monkeypa
     assert excinfo.value.code == "lora_invalid_submission"
 
 
-def test_generar_lora_fal_rejects_image_url_on_disallowed_host(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_generar_lora_fal_rejects_image_url_on_disallowed_host(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("FAL_KEY", "test-key")
-    client = _FakeAsyncClient(responses=[
-        _submission(),
-        _completed_status(),
-        _result(url="https://evil.example.com/image.png"),
-    ])
+    client = _FakeAsyncClient(
+        responses=[
+            _submission(),
+            _completed_status(),
+            _result(url="https://evil.example.com/image.png"),
+        ]
+    )
     payload = LoraGenerateRequest.model_validate(_request_dict())
 
     with pytest.raises(LoraGenerateError) as excinfo:
@@ -283,11 +326,17 @@ def test_generar_lora_fal_rejects_image_url_on_disallowed_host(monkeypatch: pyte
     assert excinfo.value.code == "lora_invalid_image_response"
 
 
-def test_generar_lora_fal_rejects_image_too_large_by_content_length(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_generar_lora_fal_rejects_image_too_large_by_content_length(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("FAL_KEY", "test-key")
     client = _FakeAsyncClient(
         responses=[_submission(), _completed_status(), _result()],
-        stream_responses=[_FakeStreamResponse(200, [b"x"], headers={"content-length": "99999999", "content-type": "image/png"})],
+        stream_responses=[
+            _FakeStreamResponse(
+                200, [b"x"], headers={"content-length": "99999999", "content-type": "image/png"}
+            )
+        ],
     )
     payload = LoraGenerateRequest.model_validate(_request_dict())
 
@@ -296,7 +345,9 @@ def test_generar_lora_fal_rejects_image_too_large_by_content_length(monkeypatch:
     assert excinfo.value.code == "lora_image_too_large"
 
 
-def test_generar_lora_fal_rejects_disallowed_image_content_type(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_generar_lora_fal_rejects_disallowed_image_content_type(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("FAL_KEY", "test-key")
     client = _FakeAsyncClient(
         responses=[_submission(), _completed_status(), _result(content_type=None)],
@@ -309,14 +360,21 @@ def test_generar_lora_fal_rejects_disallowed_image_content_type(monkeypatch: pyt
     assert excinfo.value.code == "lora_image_type_rejected"
 
 
-def test_generar_lora_fal_follows_allowed_redirect_on_submit(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_generar_lora_fal_follows_allowed_redirect_on_submit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("FAL_KEY", "test-key")
-    client = _FakeAsyncClient(responses=[
-        _FakeResponse(302, headers={"location": "https://rest.alpha.fal.ai/fal-ai/flux-2/lora"}),
-        _submission(),
-        _completed_status(),
-        _result(),
-    ], stream_responses=[_image_stream()])
+    client = _FakeAsyncClient(
+        responses=[
+            _FakeResponse(
+                302, headers={"location": "https://rest.alpha.fal.ai/fal-ai/flux-2/lora"}
+            ),
+            _submission(),
+            _completed_status(),
+            _result(),
+        ],
+        stream_responses=[_image_stream()],
+    )
     payload = LoraGenerateRequest.model_validate(_request_dict())
 
     result = asyncio.run(generar_lora_fal(payload, client_factory=lambda: client))
@@ -325,11 +383,15 @@ def test_generar_lora_fal_follows_allowed_redirect_on_submit(monkeypatch: pytest
     assert client.requests[1]["url"] == "https://rest.alpha.fal.ai/fal-ai/flux-2/lora"
 
 
-def test_generar_lora_fal_rejects_redirect_to_disallowed_host(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_generar_lora_fal_rejects_redirect_to_disallowed_host(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("FAL_KEY", "test-key")
-    client = _FakeAsyncClient(responses=[
-        _FakeResponse(302, headers={"location": "https://evil.example.com/fal-ai/flux-2/lora"}),
-    ])
+    client = _FakeAsyncClient(
+        responses=[
+            _FakeResponse(302, headers={"location": "https://evil.example.com/fal-ai/flux-2/lora"}),
+        ]
+    )
     payload = LoraGenerateRequest.model_validate(_request_dict())
 
     with pytest.raises(LoraGenerateError) as excinfo:

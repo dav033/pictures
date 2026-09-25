@@ -559,7 +559,10 @@ def _happie_generate_body(scopes: list[str] | None = None, *, catalog_chars: int
     operation_payload: dict[str, object] = {
         "schema_version": "happie-generate.v1",
         "purpose": "package_recommend",
-        "parts": ["Descripción del cliente: boda para 80", "Paquetes disponibles (JSON): " + "x" * catalog_chars],
+        "parts": [
+            "Descripción del cliente: boda para 80",
+            "Paquetes disponibles (JSON): " + "x" * catalog_chars,
+        ],
         "system_instruction": "Recomiendas paquetes de eventos.",
         "response_json_schema": {"type": "object"},
     }
@@ -597,7 +600,9 @@ def test_happie_generate_requires_its_own_scope_and_accepts_a_catalog_above_64kb
     path = "/internal/v1/ia/happie-generate"
     # A Happia catalog does not fit the 64KB cap the other text operations share.
     body = _happie_generate_body(catalog_chars=MAX_BODY_BYTES * 2)
-    response = client.post(path, content=body, headers=_headers(body, ["ia.happie_generate"], path=path))
+    response = client.post(
+        path, content=body, headers=_headers(body, ["ia.happie_generate"], path=path)
+    )
     assert response.status_code == 200
     assert json.loads(response.json()["payload"]["text"])["resumen"] == "package_recommend"
 
@@ -749,7 +754,9 @@ def _chat_stream_body(
 
 def _chat_stream_client(handler: object) -> TestClient:
     return TestClient(
-        create_app(Settings(environment="test", hmac_secret=SECRET), chat_turn_stream_handler=handler)  # type: ignore[arg-type]
+        create_app(
+            Settings(environment="test", hmac_secret=SECRET), chat_turn_stream_handler=handler
+        )  # type: ignore[arg-type]
     )
 
 
@@ -779,11 +786,21 @@ def _events_handler(*events: dict[str, object]):  # type: ignore[no-untyped-def]
 
 
 def test_chat_stream_streams_ndjson_events_and_requires_its_scope() -> None:
-    client = _chat_stream_client(_events_handler(
-        {"type": "text", "delta": "Hola"},
-        {"type": "end", "text": "Hola", "tool_calls": [], "usage_metadata": {}, "model": "m", "finish_reason": "STOP", "block_reason": None},
-        {"type": "text", "delta": "nunca se envía"},
-    ))
+    client = _chat_stream_client(
+        _events_handler(
+            {"type": "text", "delta": "Hola"},
+            {
+                "type": "end",
+                "text": "Hola",
+                "tool_calls": [],
+                "usage_metadata": {},
+                "model": "m",
+                "finish_reason": "STOP",
+                "block_reason": None,
+            },
+            {"type": "text", "delta": "nunca se envía"},
+        )
+    )
     response = _post_chat_stream(client, _chat_stream_body())
 
     assert response.status_code == 200  # type: ignore[attr-defined]
@@ -817,7 +834,10 @@ def test_chat_stream_failure_before_opening_is_a_plain_http_error() -> None:
 
 
 def test_chat_stream_without_terminal_event_ends_with_an_error_event() -> None:
-    response = _post_chat_stream(_chat_stream_client(_events_handler({"type": "text", "delta": "a medias"})), _chat_stream_body())
+    response = _post_chat_stream(
+        _chat_stream_client(_events_handler({"type": "text", "delta": "a medias"})),
+        _chat_stream_body(),
+    )
 
     events = _ndjson(response)
     assert events[0] == {"type": "text", "delta": "a medias"}
@@ -835,7 +855,9 @@ def test_chat_stream_enforces_the_signed_deadline() -> None:
 
         return generator()
 
-    response = _post_chat_stream(_chat_stream_client(open_stream), _chat_stream_body(deadline_ms=200))
+    response = _post_chat_stream(
+        _chat_stream_client(open_stream), _chat_stream_body(deadline_ms=200)
+    )
 
     events = _ndjson(response)
     assert events[0]["type"] == "text"
@@ -858,7 +880,9 @@ def test_chat_stream_disconnect_closes_the_event_generator() -> None:
 
         return generator()
 
-    app = create_app(Settings(environment="test", hmac_secret=SECRET), chat_turn_stream_handler=open_stream)  # type: ignore[arg-type]
+    app = create_app(
+        Settings(environment="test", hmac_secret=SECRET), chat_turn_stream_handler=open_stream
+    )  # type: ignore[arg-type]
     body = _chat_stream_body(deadline_ms=60000)
     headers = _headers(body, ["ia.chat_turn_stream"], path=CHAT_STREAM_PATH)
 
@@ -901,7 +925,9 @@ def test_chat_stream_disconnect_closes_the_event_generator() -> None:
     sent = asyncio.run(run())
 
     assert sent[0]["status"] == 200
-    assert closed.is_set(), "a disconnect must close the generator (and with it the provider stream)"
+    assert closed.is_set(), (
+        "a disconnect must close the generator (and with it the provider stream)"
+    )
 
 
 class main_module_lifespan:
@@ -1101,7 +1127,11 @@ def test_default_rerank_handler_runs_outside_event_loop(monkeypatch) -> None:
 
 _ESTILOS = [
     {"modo": "anillos", "direcciones": ["longitudinal", "transversal"], "espejo": False},
-    {"modo": "degradado", "direcciones": ["longitudinal", "transversal", "diagonal"], "espejo": False},
+    {
+        "modo": "degradado",
+        "direcciones": ["longitudinal", "transversal", "diagonal"],
+        "espejo": False,
+    },
     {"modo": "flor", "direcciones": ["longitudinal"], "espejo": True},
 ]
 
@@ -1110,7 +1140,12 @@ def _metadata_with_styles(styles: object) -> dict[str, object]:
     error = main_module._error(
         "patron_invalido",
         422,
-        {"estructura_id": "EST_01", "motivo": "material_sin_uso", "mensaje": "m", "modos_admitidos": styles},
+        {
+            "estructura_id": "EST_01",
+            "motivo": "material_sin_uso",
+            "mensaje": "m",
+            "modos_admitidos": styles,
+        },
     )
     return main_module._detail_metadata(error)
 

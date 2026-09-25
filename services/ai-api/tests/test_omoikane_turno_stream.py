@@ -32,7 +32,10 @@ def _request_dict(**overrides: object) -> dict[str, object]:
             {
                 "name": "buscar_catalogo_rag",
                 "description": "Busca en el catálogo.",
-                "parameters_json_schema": {"type": "object", "properties": {"q": {"type": "string"}}},
+                "parameters_json_schema": {
+                    "type": "object",
+                    "properties": {"q": {"type": "string"}},
+                },
             }
         ],
     }
@@ -40,12 +43,26 @@ def _request_dict(**overrides: object) -> dict[str, object]:
     return body
 
 
-def _part(text: str | None = None, *, thought: bool = False, call: dict[str, Any] | None = None, signature: bytes | None = None) -> object:
-    function_call = SimpleNamespace(name=call["name"], args=call.get("args"), id=call.get("id")) if call else None
-    return SimpleNamespace(text=text, thought=thought, function_call=function_call, thought_signature=signature)
+def _part(
+    text: str | None = None,
+    *,
+    thought: bool = False,
+    call: dict[str, Any] | None = None,
+    signature: bytes | None = None,
+) -> object:
+    function_call = (
+        SimpleNamespace(name=call["name"], args=call.get("args"), id=call.get("id"))
+        if call
+        else None
+    )
+    return SimpleNamespace(
+        text=text, thought=thought, function_call=function_call, thought_signature=signature
+    )
 
 
-def _chunk(parts: list[object], *, finish: object = None, usage: object = None, block: object = None) -> object:
+def _chunk(
+    parts: list[object], *, finish: object = None, usage: object = None, block: object = None
+) -> object:
     candidate = SimpleNamespace(content=SimpleNamespace(parts=parts), finish_reason=finish)
     return SimpleNamespace(
         candidates=[candidate],
@@ -104,7 +121,9 @@ def _collect(generator: Any) -> list[dict[str, Any]]:
     return asyncio.run(run())
 
 
-def _open(monkeypatch: pytest.MonkeyPatch, result: object, **overrides: object) -> tuple[Any, _FakeClient]:
+def _open(
+    monkeypatch: pytest.MonkeyPatch, result: object, **overrides: object
+) -> tuple[Any, _FakeClient]:
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     client = _FakeClient(result)
     payload = ChatTurnStreamRequest.model_validate(_request_dict(**overrides))
@@ -130,21 +149,57 @@ def test_fails_closed_without_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
     assert (excinfo.value.code, excinfo.value.status_code) == ("chat_turn_unavailable", 503)
 
 
-def test_rejects_contents_the_sdk_cannot_read_before_opening(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_rejects_contents_the_sdk_cannot_read_before_opening(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
-    payload = ChatTurnStreamRequest.model_validate(_request_dict(contents=[{"role": "user", "parts": "no es una lista"}]))
+    payload = ChatTurnStreamRequest.model_validate(
+        _request_dict(contents=[{"role": "user", "parts": "no es una lista"}])
+    )
 
     with pytest.raises(ChatTurnError) as excinfo:
         abrir_turno_stream(payload, client_factory=lambda _key: _FakeClient(_FakeStream([])))
     assert (excinfo.value.code, excinfo.value.status_code) == ("chat_turn_invalid_contents", 422)
 
 
-def test_accepts_the_camelcase_contents_historialAContents_builds(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_accepts_the_camelcase_contents_historialAContents_builds(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
     contents = [
-        {"role": "user", "parts": [{"text": "[IMAGEN_ID=ESPACIO_BASE]"}, {"inlineData": {"mimeType": "image/png", "data": png}}, {"text": "hola"}]},
-        {"role": "model", "parts": [{"functionCall": {"name": "buscar_catalogo_rag", "args": {"q": "dorado"}, "id": "c1"}, "thoughtSignature": "c2lnbmF0dXJh"}]},
-        {"role": "user", "parts": [{"functionResponse": {"name": "buscar_catalogo_rag", "response": {"ok": True}, "id": "c1"}}]},
+        {
+            "role": "user",
+            "parts": [
+                {"text": "[IMAGEN_ID=ESPACIO_BASE]"},
+                {"inlineData": {"mimeType": "image/png", "data": png}},
+                {"text": "hola"},
+            ],
+        },
+        {
+            "role": "model",
+            "parts": [
+                {
+                    "functionCall": {
+                        "name": "buscar_catalogo_rag",
+                        "args": {"q": "dorado"},
+                        "id": "c1",
+                    },
+                    "thoughtSignature": "c2lnbmF0dXJh",
+                }
+            ],
+        },
+        {
+            "role": "user",
+            "parts": [
+                {
+                    "functionResponse": {
+                        "name": "buscar_catalogo_rag",
+                        "response": {"ok": True},
+                        "id": "c1",
+                    }
+                }
+            ],
+        },
     ]
     stream = _FakeStream([_chunk([_part("Listo")], finish=SimpleNamespace(value="STOP"))])
     generator, client = _open(monkeypatch, stream, contents=contents)
@@ -158,44 +213,92 @@ def test_accepts_the_camelcase_contents_historialAContents_builds(monkeypatch: p
 
 
 def test_streams_text_deltas_then_one_end_event(monkeypatch: pytest.MonkeyPatch) -> None:
-    usage = SimpleNamespace(prompt_token_count=100, candidates_token_count=20, cached_content_token_count=0, thoughts_token_count=7, tool_use_prompt_token_count=None)
-    stream = _FakeStream([
-        _chunk([_part("Hola, "), _part("pensando...", thought=True)]),
-        _chunk([_part("te recomiendo dorado.")], finish=SimpleNamespace(value="STOP"), usage=usage),
-    ])
+    usage = SimpleNamespace(
+        prompt_token_count=100,
+        candidates_token_count=20,
+        cached_content_token_count=0,
+        thoughts_token_count=7,
+        tool_use_prompt_token_count=None,
+    )
+    stream = _FakeStream(
+        [
+            _chunk([_part("Hola, "), _part("pensando...", thought=True)]),
+            _chunk(
+                [_part("te recomiendo dorado.")], finish=SimpleNamespace(value="STOP"), usage=usage
+            ),
+        ]
+    )
     generator, _client = _open(monkeypatch, stream)
 
     events = _collect(generator)
 
-    assert events[:2] == [{"type": "text", "delta": "Hola, "}, {"type": "text", "delta": "te recomiendo dorado."}]
+    assert events[:2] == [
+        {"type": "text", "delta": "Hola, "},
+        {"type": "text", "delta": "te recomiendo dorado."},
+    ]
     end = events[2]
     assert end["type"] == "end"
     assert end["text"] == "Hola, te recomiendo dorado."
     assert end["tool_calls"] == []
     assert end["finish_reason"] == "STOP"
-    assert end["usage_metadata"] == {"promptTokenCount": 100, "candidatesTokenCount": 20, "cachedContentTokenCount": 0, "thoughtsTokenCount": 7}
+    assert end["usage_metadata"] == {
+        "promptTokenCount": 100,
+        "candidatesTokenCount": 20,
+        "cachedContentTokenCount": 0,
+        "thoughtsTokenCount": 7,
+    }
     assert len(events) == 3
     assert stream.closed is True
 
 
-def test_accumulates_calls_split_across_chunks_with_their_signatures(monkeypatch: pytest.MonkeyPatch) -> None:
-    stream = _FakeStream([
-        _chunk([_part(call={"name": "guardar_brief", "args": {"invitados": 80}, "id": "c1"}, signature=b"firma-1")]),
-        _chunk([_part(call={"name": "buscar_catalogo_rag", "args": {"q": "dorado"}}, signature=b"firma-2")]),
-        _chunk([], finish=SimpleNamespace(value="STOP")),
-    ])
+def test_accumulates_calls_split_across_chunks_with_their_signatures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    stream = _FakeStream(
+        [
+            _chunk(
+                [
+                    _part(
+                        call={"name": "guardar_brief", "args": {"invitados": 80}, "id": "c1"},
+                        signature=b"firma-1",
+                    )
+                ]
+            ),
+            _chunk(
+                [
+                    _part(
+                        call={"name": "buscar_catalogo_rag", "args": {"q": "dorado"}},
+                        signature=b"firma-2",
+                    )
+                ]
+            ),
+            _chunk([], finish=SimpleNamespace(value="STOP")),
+        ]
+    )
     generator, _client = _open(monkeypatch, stream)
 
     end = _collect(generator)[-1]
 
     assert end["tool_calls"] == [
-        {"id": "c1", "name": "guardar_brief", "args": {"invitados": 80}, "thought_signature": base64.b64encode(b"firma-1").decode()},
-        {"id": None, "name": "buscar_catalogo_rag", "args": {"q": "dorado"}, "thought_signature": base64.b64encode(b"firma-2").decode()},
+        {
+            "id": "c1",
+            "name": "guardar_brief",
+            "args": {"invitados": 80},
+            "thought_signature": base64.b64encode(b"firma-1").decode(),
+        },
+        {
+            "id": None,
+            "name": "buscar_catalogo_rag",
+            "args": {"q": "dorado"},
+            "thought_signature": base64.b64encode(b"firma-2").decode(),
+        },
     ]
 
 
 def test_builds_config_with_tools_and_thinking_level(monkeypatch: pytest.MonkeyPatch) -> None:
-    generator, client = _open(monkeypatch, _FakeStream([_chunk([_part("ok")])]), thinking_level="low")
+    generator, client = _open(
+        monkeypatch, _FakeStream([_chunk([_part("ok")])]), thinking_level="low"
+    )
 
     _collect(generator)
 
@@ -204,7 +307,10 @@ def test_builds_config_with_tools_and_thinking_level(monkeypatch: pytest.MonkeyP
     assert config.thinking_config.thinking_level.value == "LOW"
     declaration = config.tools[0].function_declarations[0]
     assert declaration.name == "buscar_catalogo_rag"
-    assert declaration.parameters_json_schema == {"type": "object", "properties": {"q": {"type": "string"}}}
+    assert declaration.parameters_json_schema == {
+        "type": "object",
+        "properties": {"q": {"type": "string"}},
+    }
 
 
 def test_omits_tools_and_thinking_when_not_requested(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -217,18 +323,24 @@ def test_omits_tools_and_thinking_when_not_requested(monkeypatch: pytest.MonkeyP
     assert config.thinking_config is None
 
 
-def test_provider_failure_while_opening_is_an_open_phase_error(monkeypatch: pytest.MonkeyPatch) -> None:
-    generator, _client = _open(monkeypatch, _ProviderError(429, "429 RESOURCE_EXHAUSTED. quota exceeded"))
+def test_provider_failure_while_opening_is_an_open_phase_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    generator, _client = _open(
+        monkeypatch, _ProviderError(429, "429 RESOURCE_EXHAUSTED. quota exceeded")
+    )
 
     events = _collect(generator)
 
-    assert events == [{
-        "type": "error",
-        "code": "chat_turn_provider_error",
-        "provider_status": 429,
-        "provider_message": "429 RESOURCE_EXHAUSTED. quota exceeded",
-        "phase": "open",
-    }]
+    assert events == [
+        {
+            "type": "error",
+            "code": "chat_turn_provider_error",
+            "provider_status": 429,
+            "provider_message": "429 RESOURCE_EXHAUSTED. quota exceeded",
+            "phase": "open",
+        }
+    ]
 
 
 def test_failure_before_any_chunk_is_still_the_open_phase(monkeypatch: pytest.MonkeyPatch) -> None:

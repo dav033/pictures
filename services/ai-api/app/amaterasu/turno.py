@@ -121,10 +121,12 @@ def _tool_calls(response: object) -> list[dict[str, object]]:
         function_call = getattr(part, "function_call", None)
         if function_call is None or not getattr(function_call, "name", None):
             continue
-        calls.append({
-            "name": function_call.name,
-            "args": dict(getattr(function_call, "args", None) or {}),
-        })
+        calls.append(
+            {
+                "name": function_call.name,
+                "args": dict(getattr(function_call, "args", None) or {}),
+            }
+        )
     return calls
 
 
@@ -196,14 +198,18 @@ async def ejecutar_turno_gemini(
     content = types.Content(role="user", parts=parts)
 
     tools = (
-        [types.Tool(function_declarations=[
-            types.FunctionDeclaration(
-                name=tool.name,
-                description=tool.description,
-                parameters_json_schema=tool.parameters_json_schema,
+        [
+            types.Tool(
+                function_declarations=[
+                    types.FunctionDeclaration(
+                        name=tool.name,
+                        description=tool.description,
+                        parameters_json_schema=tool.parameters_json_schema,
+                    )
+                    for tool in payload.tools
+                ]
             )
-            for tool in payload.tools
-        ])]
+        ]
         if payload.tools
         else None
     )

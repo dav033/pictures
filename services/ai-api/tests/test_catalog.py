@@ -329,7 +329,9 @@ def _red_balloon_row(color: str = "rojo") -> dict[str, object]:
 
 
 @pytest.mark.anyio
-async def test_catalog_search_resolves_a_color_the_snapshot_lacks_to_the_nearest_stocked_one() -> None:
+async def test_catalog_search_resolves_a_color_the_snapshot_lacks_to_the_nearest_stocked_one() -> (
+    None
+):
     """Bug: a photo's dominant color ("burdeos") has no exact catalog product
     and the search returned nothing for it, so the color silently vanished
     from the plan. The catalog now resolves it to the nearest color it truly
@@ -337,7 +339,9 @@ async def test_catalog_search_resolves_a_color_the_snapshot_lacks_to_the_nearest
     similitud-color.ts) rather than a hand-kept synonym table, and reports the
     substitution instead of dropping the request.
     """
-    pool = FakeColorResolutionPool(present_colors=["rojo"], candidate_rows=[_red_balloon_row("rojo")])
+    pool = FakeColorResolutionPool(
+        present_colors=["rojo"], candidate_rows=[_red_balloon_row("rojo")]
+    )
     store = CatalogStore("postgresql://demo:demo@localhost/demo", pool=pool)
 
     result = await store.search(
@@ -357,7 +361,9 @@ async def test_catalog_search_resolves_a_color_the_snapshot_lacks_to_the_nearest
 
 @pytest.mark.anyio
 async def test_catalog_search_keeps_an_exact_color_request_untouched() -> None:
-    pool = FakeColorResolutionPool(present_colors=["rojo"], candidate_rows=[_red_balloon_row("rojo")])
+    pool = FakeColorResolutionPool(
+        present_colors=["rojo"], candidate_rows=[_red_balloon_row("rojo")]
+    )
     store = CatalogStore("postgresql://demo:demo@localhost/demo", pool=pool)
 
     result = await store.search(
@@ -384,7 +390,9 @@ async def test_catalog_search_reports_no_substitution_when_nothing_close_is_stoc
 
 
 @pytest.mark.anyio
-async def test_catalog_search_does_not_invent_a_substitute_for_a_color_the_table_does_not_know() -> None:
+async def test_catalog_search_does_not_invent_a_substitute_for_a_color_the_table_does_not_know() -> (
+    None
+):
     """Regresion encontrada corriendo el servicio contra el catalogo real.
 
     El analizador de fotos se inventa nombres de color: "frambuesa" no esta en la
@@ -397,7 +405,9 @@ async def test_catalog_search_does_not_invent_a_substitute_for_a_color_the_table
     store = CatalogStore("postgresql://demo:demo@localhost/demo", pool=pool)
 
     result = await store.search(
-        _request(message="globo latex frambuesa", filters={"available": True, "colors": ["frambuesa"]})
+        _request(
+            message="globo latex frambuesa", filters={"available": True, "colors": ["frambuesa"]}
+        )
     )
 
     assert result["color_substitutions"] == []

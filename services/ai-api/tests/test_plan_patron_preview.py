@@ -55,7 +55,12 @@ def _columna(**extra: object) -> dict[str, object]:
         "densidad": "media",
         "mezcla": "clasica",
         "materiales": [
-            {"product_id": f"prod-{color}", "color": color, "participacion": parte, "rol_material": "secundario"}
+            {
+                "product_id": f"prod-{color}",
+                "color": color,
+                "participacion": parte,
+                "rol_material": "secundario",
+            }
             for color, parte in (("blanco", 0.4), ("negro", 0.3), ("azul", 0.3))
         ],
         "porque": "Columna de prueba.",
@@ -75,7 +80,9 @@ def _plan() -> dict[str, object]:
     }
 
 
-def _operacion(patron: Mapping[str, object] | None, estructura_id: str = COLUMNA) -> dict[str, object]:
+def _operacion(
+    patron: Mapping[str, object] | None, estructura_id: str = COLUMNA
+) -> dict[str, object]:
     return {
         "schema_version": "plan-patron.v1",
         "plan": _plan(),
@@ -129,14 +136,20 @@ CONFETI = {
     "origen": "referencia",
     "base": {
         "modo": "aleatorio",
-        "pesos": [{"material": 0, "peso": 40}, {"material": 1, "peso": 30}, {"material": 2, "peso": 30}],
+        "pesos": [
+            {"material": 0, "peso": 40},
+            {"material": 1, "peso": 30},
+            {"material": 2, "peso": 30},
+        ],
         "semilla": 7,
     },
     "acentos": [{"material": 2, "cada": 3, "desde": 2, "posiciones": [0]}],
 }
 
 
-def _peticion_reparto(participaciones: list[float], columna: Mapping[str, object]) -> PlanPatronRequest:
+def _peticion_reparto(
+    participaciones: list[float], columna: Mapping[str, object]
+) -> PlanPatronRequest:
     return PlanPatronRequest.model_validate(
         {
             "context": {**CONTEXTO, "body_sha256": "a" * 64},
@@ -152,13 +165,19 @@ def _peticion_reparto(participaciones: list[float], columna: Mapping[str, object
 def test_el_reparto_del_deslizador_se_dibuja_sin_guardar() -> None:
     # Mientras se arrastra: el mismo `repartir` de la edición sobre el confeti,
     # sin tocar el plan. 40 celdas por 50/25/25 → 20, 10 y 10 por columna.
-    resultado = vista_previa_patron(_peticion_reparto([0.5, 0.25, 0.25], _columna(patron_color=CONFETI)))
+    resultado = vista_previa_patron(
+        _peticion_reparto([0.5, 0.25, 0.25], _columna(patron_color=CONFETI))
+    )
 
     patron = cast(dict[str, object], resultado["patron"])
     assert patron["aplicado"] is True
     assert cast(dict[str, object], patron["patron"])["base"] == {
         "modo": "aleatorio",
-        "pesos": [{"material": 0, "peso": 50}, {"material": 1, "peso": 25}, {"material": 2, "peso": 25}],
+        "pesos": [
+            {"material": 0, "peso": 50},
+            {"material": 1, "peso": 25},
+            {"material": 2, "peso": 25},
+        ],
         "semilla": 7,
     }
     assert _conteo(resultado) == [(20, 40), (10, 20), (10, 20)]
@@ -173,8 +192,17 @@ def test_la_vista_previa_dice_que_estilos_ofrece_el_editor() -> None:
     resultado = vista_previa_patron(_peticion(None))
 
     modos = cast(list[dict[str, object]], resultado["modos_admitidos"])
-    assert [modo["modo"] for modo in modos] == ["espiral", "anillos", "bloques", "degradado", "aleatorio", "flor"]
-    assert all(modo["direcciones"] == ["longitudinal"] and modo["espejo"] is False for modo in modos)
+    assert [modo["modo"] for modo in modos] == [
+        "espiral",
+        "anillos",
+        "bloques",
+        "degradado",
+        "aleatorio",
+        "flor",
+    ]
+    assert all(
+        modo["direcciones"] == ["longitudinal"] and modo["espejo"] is False for modo in modos
+    )
 
 
 def test_el_punto_de_partida_de_un_estilo_se_pide_con_modo() -> None:
@@ -199,7 +227,11 @@ def test_modo_solo_va_sin_patron() -> None:
 
     with pytest.raises(ValidationError):
         PlanPatronRequest.model_validate(
-            {"context": {**CONTEXTO, "body_sha256": "a" * 64}, **_operacion(ANILLOS), "modo": "anillos"}
+            {
+                "context": {**CONTEXTO, "body_sha256": "a" * 64},
+                **_operacion(ANILLOS),
+                "modo": "anillos",
+            }
         )
 
 
@@ -237,7 +269,9 @@ def _post(
             json.dumps(operation, separators=(",", ":"), ensure_ascii=False).encode()
         ).hexdigest(),
     }
-    body = json.dumps({"context": context, **operation}, separators=(",", ":"), ensure_ascii=False).encode()
+    body = json.dumps(
+        {"context": context, **operation}, separators=(",", ":"), ensure_ascii=False
+    ).encode()
     timestamp = int(time.time())
     headers = {
         "content-type": "application/json",
@@ -285,7 +319,10 @@ def test_un_patron_invalido_responde_422_con_motivo_y_mensaje() -> None:
 def test_una_estructura_desconocida_responde_404() -> None:
     status, body = _post(_operacion(None, "EST_09_OTRA"), "00000000-0000-4000-8000-000000000b03")
 
-    assert (status, cast(dict[str, object], body["detail"])["code"]) == (404, "estructura_no_encontrada")
+    assert (status, cast(dict[str, object], body["detail"])["code"]) == (
+        404,
+        "estructura_no_encontrada",
+    )
 
 
 def test_un_patron_fuera_del_contrato_responde_invalid_plan() -> None:
@@ -328,7 +365,12 @@ LINEA = {
 
 
 def _con_lineas(lineas: object, **extra: object) -> dict[str, object]:
-    return {"context": {**CONTEXTO, "body_sha256": "a" * 64}, **_operacion(None), "lineas": lineas, **extra}
+    return {
+        "context": {**CONTEXTO, "body_sha256": "a" * 64},
+        **_operacion(None),
+        "lineas": lineas,
+        **extra,
+    }
 
 
 @pytest.mark.parametrize(
@@ -344,7 +386,17 @@ def _con_lineas(lineas: object, **extra: object) -> dict[str, object]:
         [{**LINEA, "color": "x" * 161}],
         [LINEA] * 257,
     ],
-    ids=["campo_de_mas", "sin_unidades", "sin_color", "cero_unidades", "unidades_no_enteras", "diametro_negativo", "variante_vacia", "color_largo", "mas_de_256"],
+    ids=[
+        "campo_de_mas",
+        "sin_unidades",
+        "sin_color",
+        "cero_unidades",
+        "unidades_no_enteras",
+        "diametro_negativo",
+        "variante_vacia",
+        "color_largo",
+        "mas_de_256",
+    ],
 )
 def test_las_lineas_de_la_pieza_tienen_una_forma_estricta_y_acotada(lineas: object) -> None:
     from pydantic import ValidationError
@@ -357,7 +409,9 @@ def test_las_lineas_van_con_cualquier_pedido_y_sin_reemplazos_no_cambian_nada() 
     # Sin `variant_overrides` no hay nada que renombrar: la vista previa es la de siempre.
     minima = {key: value for key, value in LINEA.items() if key not in ("acabado", "diam_pulg")}
     for extra in ({}, {"modo": "anillos"}):
-        con = vista_previa_patron(PlanPatronRequest.model_validate(_con_lineas([LINEA, minima], **extra)))
+        con = vista_previa_patron(
+            PlanPatronRequest.model_validate(_con_lineas([LINEA, minima], **extra))
+        )
         sin = vista_previa_patron(
             PlanPatronRequest.model_validate(
                 {"context": {**CONTEXTO, "body_sha256": "a" * 64}, **_operacion(None), **extra}
@@ -384,7 +438,9 @@ def test_el_endpoint_acepta_las_lineas_y_rechaza_las_que_no_cumplen() -> None:
 # --- Cambiar de estilo con el borrador (``desde``) y rechazos con estilos ------------
 
 LINEALES = ["espiral", "anillos", "bloques", "degradado", "aleatorio", "flor"]
-MODOS_COLUMNA = [{"modo": modo, "direcciones": ["longitudinal"], "espejo": False} for modo in LINEALES]
+MODOS_COLUMNA = [
+    {"modo": modo, "direcciones": ["longitudinal"], "espejo": False} for modo in LINEALES
+]
 
 
 def _peticion_estilo(modo: str, desde: Mapping[str, object] | None) -> PlanPatronRequest:
@@ -463,7 +519,9 @@ def test_desde_solo_va_con_modo_y_con_la_forma_del_contrato() -> None:
             {"context": {**CONTEXTO, "body_sha256": "a" * 64}, **_operacion(None), "desde": desde}
         )
     with pytest.raises(ValidationError):
-        _peticion_estilo("anillos", {**ANILLOS, "base": {"modo": "anillos", "secuencia": [], "largo": 1}})
+        _peticion_estilo(
+            "anillos", {**ANILLOS, "base": {"modo": "anillos", "secuencia": [], "largo": 1}}
+        )
     with pytest.raises(ValidationError):
         _peticion_estilo("anillos", {**ANILLOS, "color": "azul"})
 
@@ -473,7 +531,12 @@ def _columna_diminuta() -> dict[str, object]:
     return _columna(
         medidas={"alto_m": 0.2},
         materiales=[
-            {"product_id": f"prod-{color}", "color": color, "participacion": 0.2, "rol_material": "secundario"}
+            {
+                "product_id": f"prod-{color}",
+                "color": color,
+                "participacion": 0.2,
+                "rol_material": "secundario",
+            }
             for color in ("blanco", "negro", "azul", "rojo", "dorado")
         ],
     )
@@ -525,7 +588,9 @@ def test_el_endpoint_devuelve_los_estilos_en_el_rechazo() -> None:
     sin_sugerencia = {**_operacion(None), "plan": {**_plan(), "estructuras": [_columna_diminuta()]}}
 
     status_patron, body_patron = _post(_operacion(SIN_AZUL), "00000000-0000-4000-8000-000000000b07")
-    status_sugerencia, body_sugerencia = _post(sin_sugerencia, "00000000-0000-4000-8000-000000000b08")
+    status_sugerencia, body_sugerencia = _post(
+        sin_sugerencia, "00000000-0000-4000-8000-000000000b08"
+    )
 
     for status, body in ((status_patron, body_patron), (status_sugerencia, body_sugerencia)):
         detail = cast(dict[str, object], body["detail"])

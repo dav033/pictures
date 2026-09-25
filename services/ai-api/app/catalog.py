@@ -1042,7 +1042,6 @@ def _chromatic_distance(requested: str, candidate: str) -> float:
     return min(delta / _DELTA_E_SCALE, 1.0)
 
 
-
 def _nearest_present_color(requested: str, present: Sequence[str]) -> str | None:
     """The color of ``present`` closest to ``requested`` by ``_chromatic_distance``.
 
@@ -1056,7 +1055,9 @@ def _nearest_present_color(requested: str, present: Sequence[str]) -> str | None
     """
     if not present:
         return None
-    best = min(present, key=lambda candidate: (_chromatic_distance(requested, candidate), candidate))
+    best = min(
+        present, key=lambda candidate: (_chromatic_distance(requested, candidate), candidate)
+    )
     if _chromatic_distance(requested, best) >= _UNRELATED_DISTANCE:
         return None
     return best
@@ -1088,9 +1089,7 @@ async def _resolve_colors(
     stock. ``None`` (not an empty list) when nothing was requested, so callers
     can tell "no color filter" apart from "every requested color is exact".
     """
-    normalized_requested = [
-        value.strip().lower() for value in requested_colors if value.strip()
-    ]
+    normalized_requested = [value.strip().lower() for value in requested_colors if value.strip()]
     if not normalized_requested:
         return None, []
     rows = await connection.fetch(

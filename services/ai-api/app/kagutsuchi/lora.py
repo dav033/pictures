@@ -43,7 +43,9 @@ MAX_REDIRECTS = 4
 REQUEST_TIMEOUT_SECONDS = 30.0
 ALLOWED_IMAGE_CONTENT_TYPES = {"image/png", "image/jpeg", "image/webp"}
 ACCOUNT_REJECTED_STATUSES = {401, 402, 403}
-_NO_BALANCE_PATTERN = re.compile(r"balance|billing|locked|top up|payment|credit|quota exceeded", re.IGNORECASE)
+_NO_BALANCE_PATTERN = re.compile(
+    r"balance|billing|locked|top up|payment|credit|quota exceeded", re.IGNORECASE
+)
 _QUEUE_STATUSES = {"IN_QUEUE", "IN_PROGRESS", "COMPLETED", "FAILED", "CANCELLED"}
 
 
@@ -175,7 +177,9 @@ def _parse_fal_response(value: object) -> list[dict[str, str | None]] | None:
         if not url:
             return None
         content_type = item.get("content_type") if item else None
-        parsed.append({"url": url, "content_type": content_type if isinstance(content_type, str) else None})
+        parsed.append(
+            {"url": url, "content_type": content_type if isinstance(content_type, str) else None}
+        )
     return parsed
 
 
@@ -200,7 +204,9 @@ def _fal_error(response: httpx.Response, code: str) -> LoraGenerateError:
     detail = _fal_error_detail(response)[:300]
     if response.status_code in ACCOUNT_REJECTED_STATUSES:
         causa: Literal["saldo_agotado", "acceso_denegado"] = (
-            "saldo_agotado" if response.status_code == 402 or _NO_BALANCE_PATTERN.search(detail) else "acceso_denegado"
+            "saldo_agotado"
+            if response.status_code == 402 or _NO_BALANCE_PATTERN.search(detail)
+            else "acceso_denegado"
         )
         return LoraGenerateError(
             f"lora_account_{causa}",
@@ -209,7 +215,9 @@ def _fal_error(response: httpx.Response, code: str) -> LoraGenerateError:
             provider_status=response.status_code,
             provider_detail=detail or None,
         )
-    return LoraGenerateError(code, 502, provider_status=response.status_code, provider_detail=detail or None)
+    return LoraGenerateError(
+        code, 502, provider_status=response.status_code, provider_detail=detail or None
+    )
 
 
 def _default_client() -> httpx.AsyncClient:
@@ -220,7 +228,9 @@ def _default_client() -> httpx.AsyncClient:
     # with -- the OS trust store does. Same reasoning as
     # scripts/eval_rerank.py's `truststore.inject_into_ssl()`.
     ssl_context = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-    return httpx.AsyncClient(follow_redirects=False, timeout=REQUEST_TIMEOUT_SECONDS, verify=ssl_context)
+    return httpx.AsyncClient(
+        follow_redirects=False, timeout=REQUEST_TIMEOUT_SECONDS, verify=ssl_context
+    )
 
 
 async def _fetch_allowed(
@@ -269,16 +279,24 @@ async def _download_bounded_image(
                 current_url = next_url
                 continue
             if response.status_code >= 400:
-                raise LoraGenerateError("lora_download_rejected", 502, provider_status=response.status_code)
+                raise LoraGenerateError(
+                    "lora_download_rejected", 502, provider_status=response.status_code
+                )
             content_length = response.headers.get("content-length")
-            if content_length and content_length.isdigit() and int(content_length) > MAX_FAL_IMAGE_BYTES:
+            if (
+                content_length
+                and content_length.isdigit()
+                and int(content_length) > MAX_FAL_IMAGE_BYTES
+            ):
                 raise LoraGenerateError("lora_image_too_large", 502)
             chunks = bytearray()
             async for chunk in response.aiter_bytes():
                 chunks.extend(chunk)
                 if len(chunks) > MAX_FAL_IMAGE_BYTES:
                     raise LoraGenerateError("lora_image_too_large", 502)
-            content_type = response.headers.get("content-type", "").split(";", 1)[0].strip().lower() or None
+            content_type = (
+                response.headers.get("content-type", "").split(";", 1)[0].strip().lower() or None
+            )
             return bytes(chunks), content_type
     raise LoraGenerateError("lora_redirect_limit_exceeded", 502)
 
@@ -355,7 +373,9 @@ async def _generar_lora_fal(
                 raise LoraGenerateError(
                     "lora_generation_failed",
                     502,
-                    provider_detail=error_detail[:300] if isinstance(error_detail, str) and error_detail else None,
+                    provider_detail=error_detail[:300]
+                    if isinstance(error_detail, str) and error_detail
+                    else None,
                 )
             await asyncio.sleep(POLL_INTERVAL_SECONDS)
         if not completed:
@@ -377,7 +397,9 @@ async def _generar_lora_fal(
         if not first or not url or not _is_allowed_image_url(url):
             raise LoraGenerateError("lora_invalid_image_response", 502)
 
-        image_bytes, header_content_type = await _download_bounded_image(client, url, _is_allowed_image_url)
+        image_bytes, header_content_type = await _download_bounded_image(
+            client, url, _is_allowed_image_url
+        )
         declared_content_type = first.get("content_type")
         content_type = (declared_content_type or header_content_type or "").lower()
         if content_type not in ALLOWED_IMAGE_CONTENT_TYPES:

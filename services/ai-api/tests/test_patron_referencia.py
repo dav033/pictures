@@ -26,11 +26,13 @@ from app.generated_models import contract_schema
 from app import main as main_module
 from app.main import MAX_BODY_BYTES, Settings, build_signature, create_app
 
-TINY_PNG_BASE64 = base64.b64encode(bytes.fromhex(
-    "89504e470d0a1a0a0000000d4948445200000001000000010802000000907753"
-    "de0000000c4944415478da6360000002000155bce9a70000000049454e44ae42"
-    "6082"
-)).decode("ascii")
+TINY_PNG_BASE64 = base64.b64encode(
+    bytes.fromhex(
+        "89504e470d0a1a0a0000000d4948445200000001000000010802000000907753"
+        "de0000000c4944415478da6360000002000155bce9a70000000049454e44ae42"
+        "6082"
+    )
+).decode("ascii")
 SECRET = "t" * 32
 PATH = "/internal/v1/ia/patron-referencia"
 
@@ -87,7 +89,9 @@ class _FakeClient:
         self.aio = SimpleNamespace(models=_FakeModels(response))
 
 
-def _fake_response(text: str | None, *, finish_reason: object = "STOP", block_reason: object = None) -> object:
+def _fake_response(
+    text: str | None, *, finish_reason: object = "STOP", block_reason: object = None
+) -> object:
     candidate = SimpleNamespace(content=SimpleNamespace(parts=[]), finish_reason=finish_reason)
     usage = SimpleNamespace(
         prompt_token_count=1200,
@@ -98,11 +102,15 @@ def _fake_response(text: str | None, *, finish_reason: object = "STOP", block_re
         total_token_count=1280,
     )
     feedback = SimpleNamespace(block_reason=block_reason) if block_reason else None
-    return SimpleNamespace(text=text, candidates=[candidate], usage_metadata=usage, prompt_feedback=feedback)
+    return SimpleNamespace(
+        text=text, candidates=[candidate], usage_metadata=usage, prompt_feedback=feedback
+    )
 
 
 def _run(payload: PatronReferenciaRequest, client: object) -> dict[str, object]:
-    return asyncio.run(detectar_patrones_referencia(payload, client_factory=lambda _api_key: client))
+    return asyncio.run(
+        detectar_patrones_referencia(payload, client_factory=lambda _api_key: client)
+    )
 
 
 # --- Prompt and response schema -------------------------------------------
@@ -122,7 +130,15 @@ def test_prompt_names_every_palette_color_and_every_mode() -> None:
     for modo in (*MODOS, "ninguno"):
         assert f'"{modo}"' in SYSTEM_INSTRUCTION
     # The decorator's own words for each pattern, not only the identifiers.
-    for oficio in ("quartets", "salvavidas", "ombré", "confetti", "daisy", "checkerboard", "zigzag"):
+    for oficio in (
+        "quartets",
+        "salvavidas",
+        "ombré",
+        "confetti",
+        "daisy",
+        "checkerboard",
+        "zigzag",
+    ):
         assert oficio in SYSTEM_INSTRUCTION
 
 
@@ -173,7 +189,10 @@ def test_rejects_invalid_base64_before_calling(monkeypatch: pytest.MonkeyPatch) 
     client = _FakeClient(_fake_response("{}"))
     with pytest.raises(PatronReferenciaError) as excinfo:
         _run(_payload(imagen={"mime_type": "image/png", "data_base64": "no-es-base64!!"}), client)
-    assert (excinfo.value.code, excinfo.value.status_code) == ("patron_referencia_invalid_image", 422)
+    assert (excinfo.value.code, excinfo.value.status_code) == (
+        "patron_referencia_invalid_image",
+        422,
+    )
     assert client.aio.models.calls == []
 
 
@@ -241,7 +260,10 @@ def test_wraps_provider_errors(monkeypatch: pytest.MonkeyPatch) -> None:
     client = SimpleNamespace(aio=SimpleNamespace(models=_RaisingModels()))
     with pytest.raises(PatronReferenciaError) as excinfo:
         _run(_payload(), client)
-    assert (excinfo.value.code, excinfo.value.status_code) == ("patron_referencia_provider_error", 502)
+    assert (excinfo.value.code, excinfo.value.status_code) == (
+        "patron_referencia_provider_error",
+        502,
+    )
 
 
 def test_empty_answer_is_an_error_with_the_provider_reason(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -258,7 +280,10 @@ def test_malformed_answer_is_invalid_output(monkeypatch: pytest.MonkeyPatch, tex
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     with pytest.raises(PatronReferenciaError) as excinfo:
         _run(_payload(), _FakeClient(_fake_response(texto)))
-    assert (excinfo.value.code, excinfo.value.status_code) == ("patron_referencia_invalid_output", 502)
+    assert (excinfo.value.code, excinfo.value.status_code) == (
+        "patron_referencia_invalid_output",
+        502,
+    )
 
 
 # --- Provider output validation -----------------------------------------------
@@ -269,11 +294,36 @@ def test_drops_unrequested_duplicate_and_unknown_mode_hints() -> None:
     pistas = validar_pistas(
         {
             "pistas": [
-                {"element_id": "REF_09_E01", "modo": "espiral", "colores": ["rojo"], "confianza": 1},
-                {"element_id": "REF_01_E01", "modo": "arcoiris", "colores": ["rojo"], "confianza": 1},
-                {"element_id": "REF_01_E01", "modo": "anillos", "colores": ["rojo", "blanco"], "confianza": 0.7},
-                {"element_id": "REF_01_E01", "modo": "bloques", "colores": ["azul", "blanco"], "confianza": 0.9},
-                {"element_id": "REF_01_E02", "modo": "degradado", "colores": ["rojo", "blanco"], "confianza": True},
+                {
+                    "element_id": "REF_09_E01",
+                    "modo": "espiral",
+                    "colores": ["rojo"],
+                    "confianza": 1,
+                },
+                {
+                    "element_id": "REF_01_E01",
+                    "modo": "arcoiris",
+                    "colores": ["rojo"],
+                    "confianza": 1,
+                },
+                {
+                    "element_id": "REF_01_E01",
+                    "modo": "anillos",
+                    "colores": ["rojo", "blanco"],
+                    "confianza": 0.7,
+                },
+                {
+                    "element_id": "REF_01_E01",
+                    "modo": "bloques",
+                    "colores": ["azul", "blanco"],
+                    "confianza": 0.9,
+                },
+                {
+                    "element_id": "REF_01_E02",
+                    "modo": "degradado",
+                    "colores": ["rojo", "blanco"],
+                    "confianza": True,
+                },
                 "no es un objeto",
             ]
         },
@@ -281,7 +331,12 @@ def test_drops_unrequested_duplicate_and_unknown_mode_hints() -> None:
     )
     # The unknown mode does not burn the element: its next valid hint is used.
     assert pistas == [
-        {"element_id": "REF_01_E01", "modo": "anillos", "colores": ["rojo", "blanco"], "confianza": 0.7},
+        {
+            "element_id": "REF_01_E01",
+            "modo": "anillos",
+            "colores": ["rojo", "blanco"],
+            "confianza": 0.7,
+        },
     ]
 
 
@@ -413,7 +468,10 @@ async def _stub_handler(payload: PatronReferenciaRequest) -> dict[str, object]:
 
 def test_route_requires_its_own_scope_and_accepts_a_photo_above_64kb() -> None:
     client = TestClient(
-        create_app(Settings(environment="test", hmac_secret=SECRET), patron_referencia_handler=_stub_handler)
+        create_app(
+            Settings(environment="test", hmac_secret=SECRET),
+            patron_referencia_handler=_stub_handler,
+        )
     )
     body, headers = _signed(
         ["ia.patron_referencia"],
@@ -430,7 +488,9 @@ def test_route_requires_its_own_scope_and_accepts_a_photo_above_64kb() -> None:
 
 def test_route_maps_domain_errors_with_the_provider_reason(monkeypatch: pytest.MonkeyPatch) -> None:
     async def _raise(_payload: PatronReferenciaRequest) -> dict[str, object]:
-        raise PatronReferenciaError("patron_referencia_empty_response", 502, "finish_reason=MAX_TOKENS")
+        raise PatronReferenciaError(
+            "patron_referencia_empty_response", 502, "finish_reason=MAX_TOKENS"
+        )
 
     # The default handler: the provider call is the only thing replaced.
     monkeypatch.setattr(main_module, "detectar_patrones_referencia", _raise)

@@ -3137,7 +3137,9 @@ def compras_de_estructura(
     try:
         _validate_plan(plan)
         measured = _complete_measures(plan)
-        completed = _mappings(measured.get("estructuras"))[_structure_index(measured, estructura_id)]
+        completed = _mappings(measured.get("estructuras"))[
+            _structure_index(measured, estructura_id)
+        ]
         if _text(completed.get("tipo")) not in _GEOMETRIC_TYPES:
             return {}
         _axis, demands, _unplaced = _despiece_with_plan_sizes(measured, completed)

@@ -51,7 +51,9 @@ def test_intent_parse_request_defaults_to_default_model() -> None:
     assert payload.model == DEFAULT_MODEL
 
 
-def test_interpretar_consulta_gemini_fails_closed_without_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_interpretar_consulta_gemini_fails_closed_without_api_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
     payload = IntentParseRequest.model_validate(_request_dict())
@@ -77,7 +79,9 @@ class _FakeClient:
         self.aio = SimpleNamespace(models=_FakeModels(response))
 
 
-def test_interpretar_consulta_gemini_returns_text_and_usage(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_interpretar_consulta_gemini_returns_text_and_usage(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     usage = SimpleNamespace(
         prompt_token_count=10,
@@ -90,7 +94,9 @@ def test_interpretar_consulta_gemini_returns_text_and_usage(monkeypatch: pytest.
     fake_client = _FakeClient(response)
 
     payload = IntentParseRequest.model_validate(_request_dict())
-    result = asyncio.run(interpretar_consulta_gemini(payload, client_factory=lambda _api_key: fake_client))
+    result = asyncio.run(
+        interpretar_consulta_gemini(payload, client_factory=lambda _api_key: fake_client)
+    )
 
     assert result["text"] == '{"filtros_duros": {}}'
     assert result["model"] == DEFAULT_MODEL
@@ -104,14 +110,18 @@ def test_interpretar_consulta_gemini_returns_text_and_usage(monkeypatch: pytest.
     assert fake_client.aio.models.calls[0]["model"] == DEFAULT_MODEL
 
 
-def test_interpretar_consulta_gemini_fails_closed_on_empty_text(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_interpretar_consulta_gemini_fails_closed_on_empty_text(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     response = SimpleNamespace(text=None, usage_metadata=None)
     fake_client = _FakeClient(response)
 
     payload = IntentParseRequest.model_validate(_request_dict())
     with pytest.raises(IntentParseError) as excinfo:
-        asyncio.run(interpretar_consulta_gemini(payload, client_factory=lambda _api_key: fake_client))
+        asyncio.run(
+            interpretar_consulta_gemini(payload, client_factory=lambda _api_key: fake_client)
+        )
     assert excinfo.value.code == "intent_parser_empty_response"
 
 
@@ -128,6 +138,8 @@ def test_interpretar_consulta_gemini_wraps_provider_errors(monkeypatch: pytest.M
 
     payload = IntentParseRequest.model_validate(_request_dict())
     with pytest.raises(IntentParseError) as excinfo:
-        asyncio.run(interpretar_consulta_gemini(payload, client_factory=lambda _api_key: _RaisingClient()))
+        asyncio.run(
+            interpretar_consulta_gemini(payload, client_factory=lambda _api_key: _RaisingClient())
+        )
     assert excinfo.value.code == "intent_parser_provider_error"
     assert excinfo.value.status_code == 502

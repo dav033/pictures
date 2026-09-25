@@ -82,17 +82,35 @@ class _FakeClient:
 
 def _completed_interaction(image_data: str | None, usage: object = None) -> object:
     output_image = SimpleNamespace(data=image_data) if image_data else None
-    return SimpleNamespace(status="completed", output_image=output_image, steps=[], id="int_123", usage=usage, errors=None)
+    return SimpleNamespace(
+        status="completed",
+        output_image=output_image,
+        steps=[],
+        id="int_123",
+        usage=usage,
+        errors=None,
+    )
 
 
-def test_crear_interaccion_returns_image_model_and_interaction_id(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_crear_interaccion_returns_image_model_and_interaction_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
-    usage = SimpleNamespace(total_input_tokens=500, total_output_tokens=1200, total_thought_tokens=0, total_cached_tokens=0, total_tool_use_tokens=0, total_tokens=1700)
+    usage = SimpleNamespace(
+        total_input_tokens=500,
+        total_output_tokens=1200,
+        total_thought_tokens=0,
+        total_cached_tokens=0,
+        total_tool_use_tokens=0,
+        total_tokens=1700,
+    )
     interaction = _completed_interaction("aW1hZ2VkYXRh", usage=usage)
     fake_client = _FakeClient(interaction)
     payload = ImageGenerateRequest.model_validate(_request_dict())
 
-    result = asyncio.run(crear_interaccion_gemini(payload, client_factory=lambda _api_key: fake_client))
+    result = asyncio.run(
+        crear_interaccion_gemini(payload, client_factory=lambda _api_key: fake_client)
+    )
 
     assert result["image_base64"] == "aW1hZ2VkYXRh"
     assert result["model"] == DEFAULT_MODEL
@@ -102,11 +120,18 @@ def test_crear_interaccion_returns_image_model_and_interaction_id(monkeypatch: p
     assert call["model"] == DEFAULT_MODEL
     assert call["store"] is True
     assert "previous_interaction_id" not in call
-    assert call["response_format"] == {"type": "image", "mime_type": "image/jpeg", "aspect_ratio": "3:2", "image_size": "2K"}
+    assert call["response_format"] == {
+        "type": "image",
+        "mime_type": "image/jpeg",
+        "aspect_ratio": "3:2",
+        "image_size": "2K",
+    }
     assert len(call["input"]) == 3
 
 
-def test_crear_interaccion_forwards_previous_interaction_id(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_crear_interaccion_forwards_previous_interaction_id(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     interaction = _completed_interaction("aW1hZ2VkYXRh")
     fake_client = _FakeClient(interaction)
@@ -117,14 +142,20 @@ def test_crear_interaccion_forwards_previous_interaction_id(monkeypatch: pytest.
     assert fake_client.aio.interactions.calls[0]["previous_interaction_id"] == "int_prev"
 
 
-def test_crear_interaccion_falls_back_to_steps_for_the_image(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_crear_interaccion_falls_back_to_steps_for_the_image(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     step = SimpleNamespace(content=[SimpleNamespace(type="image", data="ZnJvbXN0ZXA=")])
-    interaction = SimpleNamespace(status="completed", output_image=None, steps=[step], id="int_456", usage=None, errors=None)
+    interaction = SimpleNamespace(
+        status="completed", output_image=None, steps=[step], id="int_456", usage=None, errors=None
+    )
     fake_client = _FakeClient(interaction)
     payload = ImageGenerateRequest.model_validate(_request_dict())
 
-    result = asyncio.run(crear_interaccion_gemini(payload, client_factory=lambda _api_key: fake_client))
+    result = asyncio.run(
+        crear_interaccion_gemini(payload, client_factory=lambda _api_key: fake_client)
+    )
 
     assert result["image_base64"] == "ZnJvbXN0ZXA="
 
@@ -143,7 +174,9 @@ def test_crear_interaccion_fails_closed_on_empty_image(monkeypatch: pytest.Monke
 def test_crear_interaccion_fails_closed_on_failed_status(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     error = SimpleNamespace(message="content blocked by safety filters")
-    interaction = SimpleNamespace(status="failed", output_image=None, steps=[], id="int_789", usage=None, errors=[error])
+    interaction = SimpleNamespace(
+        status="failed", output_image=None, steps=[], id="int_789", usage=None, errors=[error]
+    )
     fake_client = _FakeClient(interaction)
     payload = ImageGenerateRequest.model_validate(_request_dict())
 
@@ -164,7 +197,10 @@ def test_crear_interaccion_fails_closed_on_failed_status(monkeypatch: pytest.Mon
     ],
 )
 def test_crear_interaccion_classifies_provider_exceptions(
-    monkeypatch: pytest.MonkeyPatch, message: str, expected_code: str, expected_status: int,
+    monkeypatch: pytest.MonkeyPatch,
+    message: str,
+    expected_code: str,
+    expected_status: int,
 ) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     fake_client = _FakeClient(RuntimeError(message))

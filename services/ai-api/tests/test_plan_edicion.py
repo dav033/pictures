@@ -159,9 +159,7 @@ def _plan(*estructuras: dict[str, object]) -> dict[str, object]:
     }
 
 
-def _lineas(
-    estructura_id: str, *lineas: tuple[str, str, str | None]
-) -> list[LineasBaseEstructura]:
+def _lineas(estructura_id: str, *lineas: tuple[str, str, str | None]) -> list[LineasBaseEstructura]:
     return [
         LineasBaseEstructura.model_validate(
             {
@@ -250,7 +248,9 @@ def test_normalizar_redondea_a_seis_decimales_y_el_ultimo_cierra() -> None:
 def test_normalizar_redondea_las_mitades_hacia_arriba_como_to_fixed() -> None:
     # 0.0078125 es exacto en binario: toFixed(6) da 0.007813 (round() de Python
     # daría 0.007812, al par). El último cierra: 1 - 0.007813 = 0.992187.
-    partes = normalizar_participaciones([{"participacion": 0.0078125}, {"participacion": 0.9921875}])
+    partes = normalizar_participaciones(
+        [{"participacion": 0.0078125}, {"participacion": 0.9921875}]
+    )
 
     assert [m["participacion"] for m in partes] == [0.007813, 0.992187]
 
@@ -399,7 +399,11 @@ def test_agregar_una_variante_de_varios_colores_conserva_lo_pedido_sin_canonizar
             "accion": "agregar",
             "estructura_id": ARCO,
             "participacion": 0.2,
-            "variante": {"product_id": "prod-azul", "variant_id": "var-azul-12", "color": "azul rey"},
+            "variante": {
+                "product_id": "prod-azul",
+                "variant_id": "var-azul-12",
+                "color": "azul rey",
+            },
         },
         colores=["azul", "turquesa"],
     )
@@ -449,7 +453,9 @@ def test_un_plan_que_no_cumple_el_contrato_es_invalid_plan() -> None:
 # --- reemplazar ----------------------------------------------------------------------
 
 
-def _reemplazo(estructura_id: str, objetivo: str, variante: Mapping[str, object]) -> dict[str, object]:
+def _reemplazo(
+    estructura_id: str, objetivo: str, variante: Mapping[str, object]
+) -> dict[str, object]:
     return {
         "accion": "reemplazar",
         "estructura_id": estructura_id,
@@ -482,8 +488,17 @@ def test_reemplazar_otra_vez_encadena_al_objetivo_original() -> None:
     # La línea visible ya es la azul de un reemplazo anterior; su material no está
     # en `materiales` y no hace falta: la cadena vuelve a la variante original.
     previos = [
-        {"objetivo_variant_id": "var-rojo-12", "product_id": "prod-azul", "variant_id": "var-azul-12", "color": "azul"},
-        {"objetivo_variant_id": "var-blanco-12", "product_id": "prod-crema", "variant_id": "var-crema-12"},
+        {
+            "objetivo_variant_id": "var-rojo-12",
+            "product_id": "prod-azul",
+            "variant_id": "var-azul-12",
+            "color": "azul",
+        },
+        {
+            "objetivo_variant_id": "var-blanco-12",
+            "product_id": "prod-crema",
+            "variant_id": "var-crema-12",
+        },
     ]
     plan = _plan(_arco(("rojo", "blanco"), (0.5, 0.5), variant_overrides=previos))
 
@@ -495,26 +510,47 @@ def test_reemplazar_otra_vez_encadena_al_objetivo_original() -> None:
     )
 
     assert _estructura(resultado.plan, ARCO)["variant_overrides"] == [
-        {"objetivo_variant_id": "var-blanco-12", "product_id": "prod-crema", "variant_id": "var-crema-12"},
-        {"objetivo_variant_id": "var-rojo-12", "product_id": "prod-verde", "variant_id": "var-verde-12"},
+        {
+            "objetivo_variant_id": "var-blanco-12",
+            "product_id": "prod-crema",
+            "variant_id": "var-crema-12",
+        },
+        {
+            "objetivo_variant_id": "var-rojo-12",
+            "product_id": "prod-verde",
+            "variant_id": "var-verde-12",
+        },
     ]
 
 
 def test_reemplazar_la_misma_linea_original_sustituye_su_override() -> None:
     previos = [
-        {"objetivo_variant_id": "var-rojo-12", "product_id": "prod-azul", "variant_id": "var-azul-12"},
+        {
+            "objetivo_variant_id": "var-rojo-12",
+            "product_id": "prod-azul",
+            "variant_id": "var-azul-12",
+        },
     ]
     plan = _plan(_arco(variant_overrides=previos))
 
     resultado = _editar(
         plan,
-        _reemplazo(ARCO, "var-rojo-12", {"product_id": "prod-verde", "variant_id": "var-verde-12", "color": "verde"}),
+        _reemplazo(
+            ARCO,
+            "var-rojo-12",
+            {"product_id": "prod-verde", "variant_id": "var-verde-12", "color": "verde"},
+        ),
         _lineas(ARCO, _linea("rojo")),
         [],
     )
 
     assert _estructura(resultado.plan, ARCO)["variant_overrides"] == [
-        {"objetivo_variant_id": "var-rojo-12", "product_id": "prod-verde", "variant_id": "var-verde-12", "color": "verde"},
+        {
+            "objetivo_variant_id": "var-rojo-12",
+            "product_id": "prod-verde",
+            "variant_id": "var-verde-12",
+            "color": "verde",
+        },
     ]
 
 
@@ -529,7 +565,9 @@ def test_reemplazar_la_misma_linea_original_sustituye_su_override() -> None:
 def test_una_variante_objetivo_que_no_esta_en_la_pieza_es_404(
     lineas: list[LineasBaseEstructura],
 ) -> None:
-    edicion = _reemplazo(ARCO, "var-rojo-12", {"product_id": "prod-azul", "variant_id": "var-azul-12"})
+    edicion = _reemplazo(
+        ARCO, "var-rojo-12", {"product_id": "prod-azul", "variant_id": "var-azul-12"}
+    )
 
     assert _rechazo(_plan(_arco()), edicion, lineas)[:2] == ("variante_objetivo_no_encontrada", 404)
 
@@ -537,7 +575,11 @@ def test_una_variante_objetivo_que_no_esta_en_la_pieza_es_404(
 def test_reemplazar_en_una_pieza_sin_geometria_cambia_el_material() -> None:
     resultado = _editar(
         _plan(_kit()),
-        _reemplazo(KIT, "var-globo-rosado", {"product_id": "prod-globo", "variant_id": "var-globo-azul", "color": "azul"}),
+        _reemplazo(
+            KIT,
+            "var-globo-rosado",
+            {"product_id": "prod-globo", "variant_id": "var-globo-azul", "color": "azul"},
+        ),
         _lineas(KIT, ("prod-globo", "var-globo-rosado", "rosado")),
         ["azul"],
     )
@@ -559,7 +601,11 @@ def test_reemplazar_sin_color_nuevo_conserva_el_anterior_y_el_acabado_pedido_gan
     # Por producto y color normalizado: la línea trae otra variante y "ROSÁDO ".
     resultado = _editar(
         _plan(_kit()),
-        _reemplazo(KIT, "var-otra", {"product_id": "prod-globo", "variant_id": "var-globo-mix", "acabado": "mate"}),
+        _reemplazo(
+            KIT,
+            "var-otra",
+            {"product_id": "prod-globo", "variant_id": "var-globo-mix", "acabado": "mate"},
+        ),
         _lineas(KIT, ("prod-globo", "var-otra", "ROSÁDO ")),
         ["rosado", "lila"],
     )
@@ -573,7 +619,9 @@ def test_reemplazar_sin_color_nuevo_conserva_el_anterior_y_el_acabado_pedido_gan
 
 
 def test_una_linea_que_no_sale_de_ningun_material_no_es_editable() -> None:
-    edicion = _reemplazo(KIT, "var-ajena", {"product_id": "prod-globo", "variant_id": "var-globo-azul"})
+    edicion = _reemplazo(
+        KIT, "var-ajena", {"product_id": "prod-globo", "variant_id": "var-globo-azul"}
+    )
 
     assert _rechazo(_plan(_kit()), edicion, _lineas(KIT, ("prod-otro", "var-ajena", "rosado")))[
         :2
@@ -601,7 +649,11 @@ def test_quitar_renormaliza_los_que_quedan() -> None:
 
 
 def test_quitar_en_una_pieza_geometrica_toca_materiales_y_no_los_overrides() -> None:
-    override = {"objetivo_variant_id": "var-rojo-12", "product_id": "prod-azul", "variant_id": "var-azul-12"}
+    override = {
+        "objetivo_variant_id": "var-rojo-12",
+        "product_id": "prod-azul",
+        "variant_id": "var-azul-12",
+    }
     plan = _plan(_arco(("rojo", "blanco"), (0.7, 0.3), variant_overrides=[override]))
 
     resultado = _editar(plan, _quitar(ARCO, "var-blanco-12"), _lineas(ARCO, _linea("blanco")))
@@ -651,7 +703,9 @@ def test_la_edicion_se_valida_en_la_frontera(edicion: dict[str, object]) -> None
 def test_fijar_un_patron_sincroniza_la_participacion() -> None:
     plan = _plan(_columna(partes=(0.4, 0.3, 0.3)), _arco())
 
-    resultado = _editar(plan, {"accion": "patron", "estructura_id": COLUMNA, "patron_color": ESPIRAL})
+    resultado = _editar(
+        plan, {"accion": "patron", "estructura_id": COLUMNA, "patron_color": ESPIRAL}
+    )
 
     assert _estructura(resultado.plan, COLUMNA)["patron_color"] == ESPIRAL
     assert _partes(resultado.plan, COLUMNA) == [0.5, 0.25, 0.25]
@@ -725,7 +779,11 @@ def test_repartir_un_confeti_reescribe_los_pesos_y_conserva_la_semilla() -> None
         "origen": "sugerido",
         "base": {
             "modo": "aleatorio",
-            "pesos": [{"material": 0, "peso": 40}, {"material": 1, "peso": 30}, {"material": 2, "peso": 30}],
+            "pesos": [
+                {"material": 0, "peso": 40},
+                {"material": 1, "peso": 30},
+                {"material": 2, "peso": 30},
+            ],
             "semilla": 12345,
         },
     }
@@ -742,7 +800,11 @@ def test_repartir_un_confeti_reescribe_los_pesos_y_conserva_la_semilla() -> None
         "origen": "decorador",
         "base": {
             "modo": "aleatorio",
-            "pesos": [{"material": 0, "peso": 60}, {"material": 1, "peso": 25}, {"material": 2, "peso": 15}],
+            "pesos": [
+                {"material": 0, "peso": 60},
+                {"material": 1, "peso": 25},
+                {"material": 2, "peso": 15},
+            ],
             "semilla": 12345,
         },
     }
@@ -789,7 +851,11 @@ def test_repartir_un_confeti_con_acentos_o_pintados_los_integra_y_avisa(
     assert "acentos" not in patron and "pintados" not in patron
     assert patron["base"] == {
         "modo": "aleatorio",
-        "pesos": [{"material": 0, "peso": 40}, {"material": 1, "peso": 30}, {"material": 2, "peso": 30}],
+        "pesos": [
+            {"material": 0, "peso": 40},
+            {"material": 1, "peso": 30},
+            {"material": 2, "peso": 30},
+        ],
         "semilla": 7,
     }
     # 40 celdas de un solo tamaño por 40/30/30: 16, 12 y 12 globos, justo lo pedido.
@@ -826,7 +892,9 @@ def test_repartir_un_confeti_lo_deja_como_decision_del_decorador(origen: str) ->
 # --- agregar con patrón -------------------------------------------------------------------
 
 
-def _agregar(estructura_id: str, color: str, participacion: float | None = None) -> dict[str, object]:
+def _agregar(
+    estructura_id: str, color: str, participacion: float | None = None
+) -> dict[str, object]:
     return {
         "accion": "agregar",
         "estructura_id": estructura_id,
@@ -856,7 +924,11 @@ def test_agregar_a_un_confeti_suma_su_peso() -> None:
         "origen": "decorador",
         "base": {
             "modo": "aleatorio",
-            "pesos": [{"material": 0, "peso": 50}, {"material": 1, "peso": 30}, {"material": 2, "peso": 20}],
+            "pesos": [
+                {"material": 0, "peso": 50},
+                {"material": 1, "peso": 30},
+                {"material": 2, "peso": 20},
+            ],
             "semilla": 7,
         },
     }
@@ -867,7 +939,10 @@ def test_agregar_a_un_confeti_suma_su_peso() -> None:
     # Los pesos 50/30/20 se escalan a 80 (40/24/16) y el rojo entra con 20.
     # Sobre 40 celdas: 16, 9.6, 6.4, 8 → 16, 9, 6, 8 y el globo que falta al
     # mayor resto (9.6): 16/10/6/8 → 0.4, 0.25, 0.15, 0.2.
-    base = cast(dict[str, object], cast(dict[str, object], _estructura(resultado.plan, COLUMNA)["patron_color"])["base"])
+    base = cast(
+        dict[str, object],
+        cast(dict[str, object], _estructura(resultado.plan, COLUMNA)["patron_color"])["base"],
+    )
     assert base == {
         "modo": "aleatorio",
         "pesos": [
@@ -1020,7 +1095,9 @@ def test_agregar_a_un_confeti_sin_cupo_de_pesos_rehace_el_preset() -> None:
         "origen": "decorador",
         "base": {
             "modo": "aleatorio",
-            "pesos": [{"material": indice // 2, "peso": 20 if indice < 2 else 15} for indice in range(6)],
+            "pesos": [
+                {"material": indice // 2, "peso": 20 if indice < 2 else 15} for indice in range(6)
+            ],
             "semilla": 3,
         },
     }
@@ -1095,7 +1172,9 @@ def test_quitar_hasta_un_color_quita_el_patron() -> None:
 
 
 def test_sin_preset_posible_el_patron_se_quita(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(plan_edicion, "sugerir_patron_para_estructura", lambda plan, estructura_id: None)
+    monkeypatch.setattr(
+        plan_edicion, "sugerir_patron_para_estructura", lambda plan, estructura_id: None
+    )
     plan = _plan(_con_patron(_columna(), ESPIRAL, (0.5, 0.25, 0.25)))
 
     resultado = _editar(plan, _quitar(COLUMNA, "var-azul-12"), _lineas(COLUMNA, _linea("azul")))
@@ -1113,7 +1192,9 @@ def test_reemplazar_en_una_pieza_con_patron_no_toca_el_patron() -> None:
 
     resultado = _editar(
         _plan(estructura),
-        _reemplazo(COLUMNA, "var-negro-12", {"product_id": "prod-gris", "variant_id": "var-gris-12"}),
+        _reemplazo(
+            COLUMNA, "var-negro-12", {"product_id": "prod-gris", "variant_id": "var-gris-12"}
+        ),
         _lineas(COLUMNA, _linea("negro")),
         ["gris"],
     )
@@ -1122,14 +1203,21 @@ def test_reemplazar_en_una_pieza_con_patron_no_toca_el_patron() -> None:
     assert editada["patron_color"] == ESPIRAL
     assert editada["materiales"] == estructura["materiales"]
     assert editada["variant_overrides"] == [
-        {"objetivo_variant_id": "var-negro-12", "product_id": "prod-gris", "variant_id": "var-gris-12", "color": "gris"}
+        {
+            "objetivo_variant_id": "var-negro-12",
+            "product_id": "prod-gris",
+            "variant_id": "var-gris-12",
+            "color": "gris",
+        }
     ]
 
 
 def test_cambiar_la_mezcla_de_una_pieza_con_patron_lo_conserva() -> None:
     plan = _plan(_con_patron(_columna(), ESPIRAL, (0.5, 0.25, 0.25)))
 
-    resultado = _editar(plan, {"accion": "mezcla", "estructura_id": COLUMNA, "mezcla": "solo_grandes"})
+    resultado = _editar(
+        plan, {"accion": "mezcla", "estructura_id": COLUMNA, "mezcla": "solo_grandes"}
+    )
 
     editada = _estructura(resultado.plan, COLUMNA)
     partes = _partes(resultado.plan, COLUMNA)
@@ -1164,7 +1252,9 @@ def _firmado(
         ).hexdigest(),
         "scopes": [scope],
     }
-    body = json.dumps({"context": context, **operation}, separators=(",", ":"), ensure_ascii=False).encode()
+    body = json.dumps(
+        {"context": context, **operation}, separators=(",", ":"), ensure_ascii=False
+    ).encode()
     timestamp = int(time.time())
     return body, {
         "content-type": "application/json",
@@ -1224,25 +1314,40 @@ def test_el_endpoint_edita_y_responde_plan_edit_result() -> None:
     assert status == 200
     payload = cast(dict[str, object], body["payload"])
     assert (payload["operation_schema_version"], payload["avisos"]) == ("plan-edit-result.v1", [])
-    assert _partes(cast(dict[str, object], payload["plan"]), COLUMNA) == [0.333333, 0.333333, 0.333334]
+    assert _partes(cast(dict[str, object], payload["plan"]), COLUMNA) == [
+        0.333333,
+        0.333333,
+        0.333334,
+    ]
 
 
 def test_el_endpoint_traduce_los_errores_de_dominio() -> None:
-    lineas = [{"estructura_id": ARCO, "lineas": [{"product_id": "prod-rojo", "variant_id": "var-rojo-12", "color": "rojo"}]}]
+    lineas = [
+        {
+            "estructura_id": ARCO,
+            "lineas": [{"product_id": "prod-rojo", "variant_id": "var-rojo-12", "color": "rojo"}],
+        }
+    ]
     unico = _operacion(_plan(_arco()), _quitar(ARCO, "var-rojo-12"), lineas)
     sin_azul = _operacion(
         _plan(_columna()),
         {
             "accion": "patron",
             "estructura_id": COLUMNA,
-            "patron_color": {**ESPIRAL, "base": {"modo": "espiral", "racimo": [0, 1, 0, 1], "trazo": "espiral"}},
+            "patron_color": {
+                **ESPIRAL,
+                "base": {"modo": "espiral", "racimo": [0, 1, 0, 1], "trazo": "espiral"},
+            },
         },
     )
 
     status_unico, body_unico = _post(unico, "00000000-0000-4000-8000-000000000a02")
     status_patron, body_patron = _post(sin_azul, "00000000-0000-4000-8000-000000000a03")
 
-    assert (status_unico, cast(dict[str, object], body_unico["detail"])["code"]) == (400, "unico_material")
+    assert (status_unico, cast(dict[str, object], body_unico["detail"])["code"]) == (
+        400,
+        "unico_material",
+    )
     detail = cast(dict[str, object], body_patron["detail"])
     assert status_patron == 422
     assert (detail["code"], detail["estructura_id"], detail["motivo"]) == (
@@ -1254,14 +1359,24 @@ def test_el_endpoint_traduce_los_errores_de_dominio() -> None:
 
 
 def test_el_endpoint_exige_su_scope_y_un_cuerpo_valido() -> None:
-    operacion = _operacion(_plan(_columna()), {"accion": "mezcla", "estructura_id": COLUMNA, "mezcla": "clasica"})
+    operacion = _operacion(
+        _plan(_columna()), {"accion": "mezcla", "estructura_id": COLUMNA, "mezcla": "clasica"}
+    )
     sin_variante = _operacion(_plan(_arco()), {"accion": "agregar", "estructura_id": ARCO})
 
-    status_scope, body_scope = _post(operacion, "00000000-0000-4000-8000-000000000a04", scope="plan.resolve")
+    status_scope, body_scope = _post(
+        operacion, "00000000-0000-4000-8000-000000000a04", scope="plan.resolve"
+    )
     status_cuerpo, body_cuerpo = _post(sin_variante, "00000000-0000-4000-8000-000000000a05")
 
-    assert (status_scope, cast(dict[str, object], body_scope["detail"])["code"]) == (403, "insufficient_scope")
-    assert (status_cuerpo, cast(dict[str, object], body_cuerpo["detail"])["code"]) == (422, "invalid_request")
+    assert (status_scope, cast(dict[str, object], body_scope["detail"])["code"]) == (
+        403,
+        "insufficient_scope",
+    )
+    assert (status_cuerpo, cast(dict[str, object], body_cuerpo["detail"])["code"]) == (
+        422,
+        "invalid_request",
+    )
 
 
 def test_el_endpoint_edita_fuera_del_event_loop(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -18,7 +18,16 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from types import ModuleType
-from typing import AsyncGenerator, AsyncIterator, Awaitable, Callable, Literal, Protocol, TypeVar, cast
+from typing import (
+    AsyncGenerator,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Literal,
+    Protocol,
+    TypeVar,
+    cast,
+)
 from uuid import UUID
 
 from fastapi import FastAPI, HTTPException, Request
@@ -424,7 +433,9 @@ async def _default_lora_generate_handler(payload: LoraGenerateRequest) -> dict[s
     return {"payload": result}
 
 
-def _default_chat_turn_stream_handler(payload: ChatTurnStreamRequest) -> AsyncGenerator[dict[str, object], None]:
+def _default_chat_turn_stream_handler(
+    payload: ChatTurnStreamRequest,
+) -> AsyncGenerator[dict[str, object], None]:
     try:
         # mypy sees imported callables as Any here (follow_imports = "skip").
         return cast(AsyncGenerator[dict[str, object], None], abrir_turno_stream(payload))
@@ -759,7 +770,9 @@ def _detail_metadata(exception: HTTPException) -> dict[str, object]:
                 and isinstance(elapsed_ms, int)
                 and elapsed_ms >= 0
             ):
-                safe_attempts.append({"attempt": attempt, "result": result, "elapsed_ms": elapsed_ms})
+                safe_attempts.append(
+                    {"attempt": attempt, "result": result, "elapsed_ms": elapsed_ms}
+                )
         if safe_attempts:
             metadata["attempts"] = safe_attempts
     # Kagutsuchi's account-rejected fal.ai responses (see LoraGenerateError):
@@ -861,7 +874,9 @@ async def _admit_operational_request(
     shared by the single-response and the streaming boundary."""
 
     runtime_settings: Settings = request.app.state.settings
-    effective_max_body_bytes = max_body_bytes if max_body_bytes is not None else runtime_settings.max_body_bytes
+    effective_max_body_bytes = (
+        max_body_bytes if max_body_bytes is not None else runtime_settings.max_body_bytes
+    )
     content_length = request.headers.get("content-length")
     if (
         content_length
@@ -952,7 +967,10 @@ async def _handle_operational_stream(
         finally:
             await events.aclose()
         if not terminal:
-            logger.error("stream ended without a terminal event", extra={"request_id": request.state.request_id})
+            logger.error(
+                "stream ended without a terminal event",
+                extra={"request_id": request.state.request_id},
+            )
             yield _ndjson_line({"type": "error", "code": "internal_error", "phase": "stream"})
             return
         metrics.increment(f"{operation}.completed")
