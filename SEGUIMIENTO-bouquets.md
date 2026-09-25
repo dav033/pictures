@@ -8,7 +8,8 @@ Lee primero `AGENTS.md` (reglas del repo), luego ADR-0029 y ADR-0030 en
 
 Todo está en la rama **`feat/bouquets`**, que ya incluye v16 (merge `2dec759`) y la
 segunda entrega de bouquets (§7). El PR [dav033/pictures#1](https://github.com/dav033/pictures/pull/1)
-(`feat/reconocedor-v16`, solo v16) queda reemplazado por el PR de esta rama.
+(`feat/reconocedor-v16`, solo v16) se cerró: lo reemplaza el PR
+[dav033/pictures#2](https://github.com/dav033/pictures/pull/2) (`feat/bouquets` → `main`).
 
 | Commit | Qué |
 |---|---|
@@ -198,6 +199,9 @@ sube la rama y se abre el PR.
 
 ### Pendiente inmediato
 
+0. **Revisar y mezclar el PR #2.** Nota: gitleaks marcó dos falsos positivos en
+   `test-patron-color-prompt.ts` (una variable llamada `apilado` contiene «api»);
+   se renombró y sus huellas quedaron en `.gitleaksignore`.
 1. **Desplegar la app y `ai-api` juntos.** `ai-api` hoy se despliega a mano (ver la
    memoria del proyecto y `AGENTS.md`). Las dos banderas siguen apagadas.
 2. **Encender banderas en producción** cuando se decida: `BOUQUETS_ARMADO_V1` y
