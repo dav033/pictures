@@ -53,9 +53,20 @@ function labDeHex(hex: string): Lab {
   return labDeRgb((entero >> 16) & 255, (entero >> 8) & 255, entero & 255);
 }
 
+/**
+ * Six decimals: a millionth of ΔE, far below any threshold here. Without it
+ * the exported contract differed between Windows and Linux in the last digit
+ * (`Math.cbrt`/`Math.pow` come from the platform's libm), so `contracts:check`
+ * failed in CI on a table generated on a laptop (2026-09-25).
+ */
+function redondearLab([l, a, b]: Lab): Lab {
+  const seis = (valor: number) => Math.round(valor * 1e6) / 1e6;
+  return [seis(l), seis(a), seis(b)];
+}
+
 /** CIELAB de cada color medible. Incluye `gris`, que se observa aunque no se venda. */
 export const LAB_COLORES: Readonly<Record<string, Lab>> = Object.fromEntries(
-  Object.entries(HEX_COLORES_OBSERVABLES).map(([color, hex]) => [color, labDeHex(hex)]),
+  Object.entries(HEX_COLORES_OBSERVABLES).map(([color, hex]) => [color, redondearLab(labDeHex(hex))]),
 );
 
 /**
