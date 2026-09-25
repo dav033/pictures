@@ -324,32 +324,32 @@ function main(): void {
  */
 function armadoDeBouquetEnLosPrompts(instantanea: Readonly<Record<string, string>>): void {
   const cumple = planFijado("calibracion-cumple-semiarco-columna");
-  const apilado = armado("apilado-semiarco");
-  assert.equal(apilado.estructura_id, "EST_01_SEMIARCO");
+  const armadoApilado = armado("armadoApilado-semiarco");
+  assert.equal(armadoApilado.estructura_id, "EST_01_SEMIARCO");
   // Sin ninguno de los dos, nada que insertar: la petición de siempre.
   assert.equal(frasesDeEstructuras({}), undefined);
   assert.equal(frasesDeEstructuras(null), undefined);
-  const frases = frasesDeEstructuras({ armados_bouquet: [apilado] })!;
-  assert.deepEqual(frases, [{ estructura_id: "EST_01_SEMIARCO", aplicado: true, prompt_gemini: apilado.prompt_gemini, prompt_lora: apilado.prompt_lora }]);
+  const frases = frasesDeEstructuras({ armados_bouquet: [armadoApilado] })!;
+  assert.deepEqual(frases, [{ estructura_id: "EST_01_SEMIARCO", aplicado: true, prompt_gemini: armadoApilado.prompt_gemini, prompt_lora: armadoApilado.prompt_lora }]);
   // Un patrón y un armado de piezas distintas conviven en la misma lista.
   const espiralColumna = patron("espiral-columna", { estructura_id: "EST_02_COLUMNA" });
-  assert.equal(frasesDeEstructuras({ patrones_color: [espiralColumna], armados_bouquet: [apilado] })!.length, 2);
+  assert.equal(frasesDeEstructuras({ patrones_color: [espiralColumna], armados_bouquet: [armadoApilado] })!.length, 2);
 
   // Gemini: la frase del armado va en la línea de color de su pieza y en su color_pattern.
   const escena = escenaDePlan(cumple);
   const prompt = buildImagePrompt({ sceneSpec: escena, visualContext: CONTEXTO_CUMPLE, sizeMixBlock: sizeMixDe(cumple.plan, escena), officialStructures: officialStructuresDe(cumple.plan), colorPatterns: frases });
   const lineaSemiarco = prompt.split("\n").find((linea) => linea.startsWith("- Semiarco derecho: "))!;
-  assert.ok(lineaSemiarco.endsWith(` ${apilado.prompt_gemini} Do not invent, recolor, or borrow any additional color.`), lineaSemiarco);
+  assert.ok(lineaSemiarco.endsWith(` ${armadoApilado.prompt_gemini} Do not invent, recolor, or borrow any additional color.`), lineaSemiarco);
   assert.doesNotMatch(lineaSemiarco, /organic clusters/);
   const deshecho = prompt
-    .replace(apilado.prompt_gemini, "Distribute them through intentional organic clusters and transitions; avoid flat stripes, random speckles, or one color replacing another.")
-    .replace(`,"color_pattern":${JSON.stringify(apilado.prompt_gemini)}`, "");
+    .replace(armadoApilado.prompt_gemini, "Distribute them through intentional organic clusters and transitions; avoid flat stripes, random speckles, or one color replacing another.")
+    .replace(`,"color_pattern":${JSON.stringify(armadoApilado.prompt_gemini)}`, "");
   assert.equal(deshecho, instantanea["gemini/cumple-semiarco-columna"]);
 
   // LoRA: el fragmento va tras la frase de materiales, en su cláusula y en el JSON, y pasa el control de idioma y el preflight.
   const caption = compileLoraCaption({ sceneSpec: escena, visualContext: CONTEXTO_CUMPLE, officialStructures: officialStructuresDe(cumple.plan), dialect: "product_v007", colorPatterns: frases });
-  assert.equal(clausulaDe(caption.clauses, "EST_01_SEMIARCO").colorPattern, apilado.prompt_lora);
-  assert.equal(vecesEn(caption.prompt, apilado.prompt_lora), 1, caption.prompt);
+  assert.equal(clausulaDe(caption.clauses, "EST_01_SEMIARCO").colorPattern, armadoApilado.prompt_lora);
+  assert.equal(vecesEn(caption.prompt, armadoApilado.prompt_lora), 1, caption.prompt);
   const json = ensureLoraTriggers(caption.jsonPrompt, [{ path: "patron-color", trigger: "eventdecor_style_v2", scale: 1 }]);
   assert.deepEqual(findLoraPromptLanguageLeaks(`${caption.prompt} ${json}`), [], "Python escribió prompt_lora con texto que el LoRA rechaza");
   const reporte = preflight(escena, caption);
