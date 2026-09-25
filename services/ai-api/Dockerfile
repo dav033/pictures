@@ -19,6 +19,12 @@ RUN uv run --no-dev python -c "from sentence_transformers import CrossEncoder; C
 
 COPY app ./app
 
+# The app must import with the production dependencies alone. Tests run with
+# the test extras, so a runtime import of a test-only package (truststore,
+# 2026-09-25) passed CI and crash-looped the container in production. Here it
+# fails the build instead, before any container is replaced.
+RUN APP_ENV=build uv run --no-dev python -c "import app.main"
+
 RUN useradd --create-home --uid 10001 appuser \
     && chown -R appuser:appuser /app /opt/huggingface
 USER appuser

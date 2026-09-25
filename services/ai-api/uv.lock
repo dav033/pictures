@@ -252,6 +252,7 @@ dependencies = [
     { name = "torch", version = "2.5.1", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux'" },
     { name = "torch", version = "2.5.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'linux'" },
     { name = "torch", version = "2.5.1+cpu", source = { registry = "https://download.pytorch.org/whl/cpu" }, marker = "(platform_machine != 'aarch64' and sys_platform == 'linux') or (platform_python_implementation != 'CPython' and sys_platform == 'linux')" },
+    { name = "truststore" },
     { name = "uvicorn" },
 ]
 
@@ -262,7 +263,6 @@ quality = [
 ]
 test = [
     { name = "pytest" },
-    { name = "truststore" },
 ]
 
 [package.metadata]
@@ -279,7 +279,7 @@ requires-dist = [
     { name = "sentence-transformers", specifier = "==3.3.1" },
     { name = "torch", marker = "sys_platform != 'linux'", specifier = "==2.5.1" },
     { name = "torch", marker = "sys_platform == 'linux'", specifier = "==2.5.1", index = "https://download.pytorch.org/whl/cpu" },
-    { name = "truststore", marker = "extra == 'test'", specifier = "==0.10.4" },
+    { name = "truststore", specifier = "==0.10.4" },
     { name = "uvicorn", specifier = "==0.34.0" },
 ]
 provides-extras = ["test", "quality"]

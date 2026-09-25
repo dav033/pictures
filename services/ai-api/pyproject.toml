@@ -19,13 +19,13 @@ dependencies = [
     "pydantic==2.12.5",
     "sentence-transformers==3.3.1",
     "torch==2.5.1",
+    "truststore==0.10.4",
     "uvicorn==0.34.0",
 ]
 
 [project.optional-dependencies]
 test = [
     "pytest==8.3.4",
-    "truststore==0.10.4",
 ]
 quality = [
     "mypy==1.14.1",
