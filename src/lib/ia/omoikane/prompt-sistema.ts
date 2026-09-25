@@ -115,6 +115,7 @@ DISEÑO DE LA DECORACIÓN (activo)
 - NUNCA le presentes al cliente un plan con PRESUPUESTO_EXCEDIDO como si fuera aprobable. Preguntas como "¿te gusta este diseño y presupuesto para aprobarlo?" sobre un plan que la herramienta rechazó son deshonestas: aprobarlo no haría nada, la generación está bloqueada por el mismo techo. Si después de rediseñar sigue sin caber, dile la verdad completa —cuánto es el mínimo real por paquetes cerrados, cuánto se pasa de su presupuesto (dilo así, nunca "techo" ni "límite") y qué se podría hacer con su presupuesto— y pregúntale si prefiere subir el presupuesto o quedarse con la versión más chica que sí cabe. No hay tercera opción.
 - Si el cliente adjuntó una imagen de referencia, ANALISIS_REFERENCIA_VISUAL (abajo, si está presente) lista cada elemento detectado con su element_id. Cada uno de esos ids debe aparecer o en materiales[].participacion de alguna estructura vía "referencia_element_id" (la estructura que lo materializa) o en "referencia_omitida" (con un motivo real de por qué no se incluye) — omitir uno en silencio es tan deshonesto como omitir un producto de la propuesta sin decirlo. Si confirmar_plan_decoracion devuelve ok:false por COBERTURA_REFERENCIA_INCOMPLETA, cubre los "elementos_sin_cubrir" que te indique antes de reintentar.
 - CANTIDADES: "piezas iguales en la foto" de ANALISIS_REFERENCIA_VISUAL es el número de piezas (2 columnas iguales → una estructura con repeticiones 2), nunca un número de globos. unidades_declaradas es otra cosa: el total de globos (o de piezas de catálogo, si es un kit empaquetado o un accesorio) de la estructura completa sumando sus repeticiones.
+- ARMADO LEÍDO EN LA FOTO: cuando un bouquet trae "armado leído en la foto", esa es la cuenta real de globos de la pieza: declara exactamente ese total en unidades_declaradas (por pieza, sumando repeticiones) y, si lista globos número, busca cada dígito por separado ("globo metalizado numero 8") y ponlos en materiales, un material por dígito; el sistema rechaza el plan si faltan (NUMEROS_REFERENCIA_OMITIDOS). No inventes más globos de los que la foto tiene.
 - FOTO SIN GLOBOS: si ANALISIS_REFERENCIA_VISUAL no trae ninguna estructura de globos (balloon_structure) y el cliente no nombró piezas (arco, columnas, centros de mesa, bouquet…), PREGUNTA antes de armar: dile en una frase que su foto no tiene decoración con globos y pregúntale qué piezas quiere, o sugiérele elegir una de las fotos de ejemplo. No inventes estructuras ni llames confirmar_plan_decoracion hasta que responda; con un nivel de CREATIVIDAD DEL DISEÑO que permita acentos extra sobre la foto sí puedes proponerlos. Si confirmar_plan_decoracion devuelve REFERENCIA_SIN_GLOBOS, haz esa pregunta.
 - Respeta alcance comercial de cada elemento: un elemento fuera_de_catalogo no dispara buscar_catalogo_rag ni una propuesta de emulación; decláralo con motivo_tipo "fuera_de_catalogo". Un elemento emulable solo puede quedar como propuesta pendiente con motivo_tipo "emulacion_propuesta" y propuesta explícita; no lo asignes a una estructura en el primer plan.
 - La respuesta de confirmar_plan_decoracion incluye \`evento.event_label\`, \`evento.original_request\`, \`evento.match_levels\` y \`evento.relaxations\`; consérvalos en el resumen. Si aparece \`thematic\` o \`adaptable\`, dilo como propuesta temática/adaptable, nunca como coincidencia exacta.
@@ -147,6 +148,36 @@ const COMPOSICION_UNIFORME = "single uniform material";
  */
 function sanearTextoObservado(texto: string): string {
   return texto.replace(/\s+/g, " ").replace(/"/g, "").trim().slice(0, 240);
+}
+
+const GLOBOS_POR_UNIDAD: Readonly<Record<string, number>> = { suelto: 1, pareja: 2, trio: 3, cuarteto: 4, quinteto: 5, sexteto: 6 };
+
+/**
+ * Lo que Amaterasu leyó del armado de un bouquet de la foto (ADR-0030), contado
+ * para el modelo: cuántos globos látex y de qué colores, el remate y los números.
+ * Con esto el modelo declara la cantidad real de la pieza y busca cada dígito;
+ * sin esto inventaba 12 o 15 globos para una pieza de 5. Solo con una lectura
+ * confiable (>= 0,5, la misma barra que Python).
+ */
+function armadoLeido(lectura: ReferenceBlueprintV2["elements"][number]["appearance"]["armado_bouquet"]): string {
+  if (!lectura || lectura.confianza < 0.5) return "";
+  const porColor = new Map<string, number>();
+  for (const nivel of lectura.niveles) {
+    const globos = nivel.unidad === "suelto" ? nivel.colores : nivel.colores.slice(0, GLOBOS_POR_UNIDAD[nivel.unidad] ?? nivel.colores.length);
+    for (const color of globos) porColor.set(color, (porColor.get(color) ?? 0) + 1);
+  }
+  const latex = [...porColor.values()].reduce((suma, n) => suma + n, 0);
+  const numeros = lectura.numeros ?? [];
+  const total = latex + (lectura.remate ? 1 : 0) + numeros.length;
+  const partes = [
+    latex > 0 ? `${latex} globos látex (${[...porColor.entries()].map(([color, n]) => `${n} ${color}`).join(", ")})` : "",
+    lectura.remate ? `remate ${lectura.remate.clase}${lectura.remate.color ? ` ${lectura.remate.color}` : ""}` : "",
+    numeros.length > 0 ? `globos número ${numeros.map((numero) => numero.digito).join(", ")} (${numeros.some((numero) => numero.clase_tamano === "grande") ? "grandes" : "chicos"})` : "",
+  ].filter(Boolean).join("; ");
+  const indicacion = numeros.length > 0
+    ? ` Declara unidades_declaradas ${total} por pieza (sumando repeticiones) y busca cada dígito como globo metalizado número (${numeros.map((numero) => `"globo metalizado numero ${numero.digito}"`).join(", ")}) para incluirlo en materiales: sin ellos el plan no puede seguir la foto`
+    : ` Declara unidades_declaradas ${total} por pieza (sumando repeticiones)`;
+  return `; armado leído en la foto: ${partes}; total ${total} globos.${indicacion}`;
 }
 
 /**
@@ -189,7 +220,7 @@ export function serializeReferenceBlueprint(blueprint: ReferenceBlueprintV2): st
       const estructura = semantica
         ? ` Estructura detectada: ${oficial ? `estructura oficial "${oficial.nombre}", ` : ""}tipo ${semantica.structure_type}, densidad ${semantica.density}, ubicación ${semantica.placement}, rol ${semantica.design_role}; forma: ${element.appearance.shape}. Usa exactamente esa estructura oficial (su etiqueta al inicio del nombre y en estructura_oficial), ese tipo y esa ubicación en la estructura del plan que lo materialice, con materiales que cubran sus colores y acabados observados (chrome/metallic = reflex, pearl = satin; "clear" junto a un color, como "clear pink", es la línea Cristal de ese color —un acabado translúcido, no un globo transparente—, y "clear" solo sí es transparente: elige el producto con ese acabado y regístralo en materiales[].acabado) y alturas que respeten su forma relativa; dos piezas separadas son dos estructuras. Si el catálogo no tiene un color, acabado o tamaño grande observado, díselo al cliente en una frase.`
         : "";
-      return `- ${element.element_id} (${element.category}, alcance ${alcance.alcance}, capa ${element.scene_role}): "${element.name}"${estructura ? ` —${estructura}` : ""} — colores observados: ${colores}${mezclaObservada}; posición en la referencia: ${posicion}; piezas iguales en la foto: ${element.quantity.mode === "exact" ? element.quantity.min : `${element.quantity.min}-${element.quantity.max}`}; relaciones: ${relaciones}. Nota comercial: ${alcance.nota}${emulacion}`;
+      return `- ${element.element_id} (${element.category}, alcance ${alcance.alcance}, capa ${element.scene_role}): "${element.name}"${estructura ? ` —${estructura}` : ""} — colores observados: ${colores}${mezclaObservada}${armadoLeido(element.appearance.armado_bouquet)}; posición en la referencia: ${posicion}; piezas iguales en la foto: ${element.quantity.mode === "exact" ? element.quantity.min : `${element.quantity.min}-${element.quantity.max}`}; relaciones: ${relaciones}. Nota comercial: ${alcance.nota}${emulacion}`;
     })
     .join("\n");
   return elementos || "- Ningún elemento relevante detectado.";

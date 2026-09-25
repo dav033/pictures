@@ -148,6 +148,46 @@ async function main(): Promise<void> {
   assert.equal((cuerpos[1]!.body.pistas_armado as Json[]).length, 1);
   ok("completar_armados y pistas_armado solo viajan cuando se piden");
 
+  // ---------------------------------------------------------------------------
+  // La foto manda (2026-09-25): el modelo ve la cuenta del armado leído, y al
+  // confirmar el plan debe llevar los números que la foto muestra.
+  const { serializeReferenceBlueprint } = await import("../../src/lib/ia/omoikane/prompt-sistema");
+  const { numerosDeLaFoto, validarNumerosDeLaFoto } = await import("../../src/lib/plan/numeros-pedidos");
+  const conNumeros = { variante: "helio_escalonado", niveles: [{ unidad: "suelto", colores: ["dorado", "dorado", "negro"] }], numeros: [{ digito: "8", clase_tamano: "grande" }, { digito: "0", clase_tamano: "grande" }], disposicion: "abajo", confianza: 0.85 };
+  const fotoOchenta = blueprintDe([elemento("REF_01_E01", bouquet, "kit", { armado: conNumeros }), elemento("REF_01_E02", "small centerpiece", "centro_mesa", { armado: { ...lectura, confianza: 0.3 } })]);
+  const lineaBouquet = serializeReferenceBlueprint(fotoOchenta).split("\n").find((linea) => linea.includes("REF_01_E01")) ?? "";
+  assert.match(lineaBouquet, /armado leído en la foto: 3 globos látex \(2 dorado, 1 negro\); globos número 8, 0 \(grandes\); total 5 globos\./, lineaBouquet);
+  assert.match(lineaBouquet, /Declara unidades_declaradas 5 por pieza .*"globo metalizado numero 8", "globo metalizado numero 0"/, lineaBouquet);
+  const lineaCentro = serializeReferenceBlueprint(fotoOchenta).split("\n").find((linea) => linea.includes("REF_01_E02")) ?? "";
+  assert.doesNotMatch(lineaCentro, /armado leído/, "una lectura con poca confianza no se le cuenta al modelo");
+  const material = (product_id: string, color: string) => ({ product_id, variant_id: `${product_id}-v`, color, participacion: 0.5, rol_material: "secundario" as const });
+  const estructuraDe = (materiales: ReturnType<typeof material>[], ref = "REF_01_E01") => ({ estructura_id: "EST_01", nombre: "Bouquet de globos", referencia_element_id: ref, materiales });
+  const productos = new Map([
+    ["P-DORADO", { titulo: "Globo Latex Dorado", categoria: "globo_latex" }],
+    ["P-NUM-8", { titulo: "B2b Globo Metalizado Numero 8 Dorado", categoria: "globo_metalizado" }],
+    ["P-NUM-0", { titulo: "B2b Globo Metalizado Numero 0 Dorado", categoria: "globo_metalizado" }],
+    ["P-NUM-5", { titulo: "B2b Globo Metalizado Numero 5 Dorado", categoria: "globo_metalizado" }],
+  ]);
+  const digitos = numerosDeLaFoto({ estructuras: [estructuraDe([material("P-DORADO", "dorado")])] }, fotoOchenta);
+  assert.deepEqual([...digitos.entries()], [["EST_01", ["8", "0"]]]);
+  assert.deepEqual([...numerosDeLaFoto({ estructuras: [estructuraDe([material("P-DORADO", "dorado")], "REF_01_E02")] }, fotoOchenta).entries()], [], "sin lectura confiable no hay números que exigir");
+  const sinNumeros = validarNumerosDeLaFoto({ estructuras: [estructuraDe([material("P-DORADO", "dorado")])] }, productos, digitos);
+  assert.deepEqual(sinNumeros, ["La foto muestra el número 80 en «Bouquet de globos» y la propuesta no lleva globos de número: deben ser 8 y 0."]);
+  const otroNumero = validarNumerosDeLaFoto({ estructuras: [estructuraDe([material("P-DORADO", "dorado"), material("P-NUM-5", "dorado")])] }, productos, digitos);
+  assert.match(otroNumero[0] ?? "", /son 5: deben ser 8 y 0/);
+  const completo = validarNumerosDeLaFoto({ estructuras: [estructuraDe([material("P-DORADO", "dorado"), material("P-NUM-8", "dorado"), material("P-NUM-0", "dorado")])] }, productos, digitos);
+  assert.deepEqual(completo, []);
+  ok("la foto manda: el modelo ve la cuenta leída y el plan debe llevar los números de la foto");
+
+  // Toda pieza compacta se lee: bouquet, centro de mesa, racimo y figura (kit); una columna no.
+  const compactas = blueprintDe([
+    elemento("REF_01_E01", bouquet, "kit"),
+    elemento("REF_01_E02", "tall column, on the left", "columna"),
+    elemento("REF_01_E03", "small centerpiece", "centro_mesa"),
+    elemento("REF_01_E04", "balloon cluster", "kit"),
+  ]);
+  assert.deepEqual([...elementosBouquet(compactas).values()].flat().map((e) => e.elementId), ["REF_01_E01", "REF_01_E03", "REF_01_E04"]);
+  ok("se lee toda pieza compacta (bouquet, centro de mesa, racimo, figura); columnas y demás, no");
   console.log(`\n${casos} casos OK (armado de bouquets de la foto)`);
 }
 

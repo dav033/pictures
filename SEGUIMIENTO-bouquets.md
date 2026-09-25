@@ -220,6 +220,20 @@ entre corridas (medido sobre las salidas guardadas: ninguna regla determinista
 termina como bouquet, la foto manda; si queda como centro de mesa, la lectura no
 se usa. Cuesta una llamada de visión más por foto con centros de mesa.
 
+**Por qué salían 12 o 15 globos para una foto de 5 (diagnóstico 2026-09-25):** la
+cantidad la elegía el modelo del chat a ojo (el análisis no le decía cuántos
+globos tiene la pieza); la lectura del armado solo se pedía si el reconocedor
+decía "bouquet"; y aunque llegara, el plan no llevaba los globos número de la foto,
+así que "la foto manda" descartaba la lectura entera. Tres arreglos: el análisis
+que ve el modelo lleva "armado leído en la foto: 3 globos látex (2 dorado, 1
+negro); globos número 8, 0; total 5" con la instrucción de declarar ese total y
+buscar cada dígito (`serializeReferenceBlueprint`, regla ARMADO LEÍDO EN LA FOTO);
+confirmar rechaza con `NUMEROS_REFERENCIA_OMITIDOS` si faltan los números de la
+foto (`numerosDeLaFoto`, `validarNumerosDeLaFoto`, una vez por pieza y turno); y
+la lectura se pide para toda pieza compacta (bouquet, centro de mesa, racimo,
+figura). Pendiente aparte: "morado" en el análisis y "violeta" en la compra son
+sinónimos que el canon de colores no junta.
+
 ### Pendiente inmediato
 
 0. **Revisar y mezclar el PR #2.** Nota: gitleaks marcó dos falsos positivos en

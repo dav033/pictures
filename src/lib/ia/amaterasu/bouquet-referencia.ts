@@ -83,7 +83,9 @@ export function elementosBouquet(blueprint: ReferenceBlueprintV2): Map<string, P
       ubicacion: semantica.placement,
       nombre: elemento.appearance.shape,
     });
-    if (oficial?.id !== "bouquet" && oficial?.id !== "centro_mesa") continue;
+    // Toda pieza compacta: bouquet, centro de mesa, racimo o figura (tipo kit).
+    // Es la misma llamada por foto; una lectura de más no se usa.
+    if (oficial?.id !== "bouquet" && oficial?.id !== "centro_mesa" && semantica.structure_type !== "kit") continue;
     const lista = porFoto.get(elemento.source_image_id) ?? [];
     if (lista.length >= MAX_ELEMENTOS_POR_FOTO) continue;
     lista.push({

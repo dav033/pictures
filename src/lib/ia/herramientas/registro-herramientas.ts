@@ -40,7 +40,7 @@ import { resolverPlan, type ResolucionPlan } from "@/lib/plan/resolver-backend";
 import { canonizarColoresPlan } from "@/lib/plan/colores-catalogo";
 import { coloresSinCubrir } from "@/lib/rag/chat/relajacion-filtros";
 import { coloresVigentes, extraerRestriccionesConversacion } from "@/lib/plan/restricciones-conversacion";
-import { digitoDeFiguraNumero, numerosPedidos, validarNumerosPedidos } from "@/lib/plan/numeros-pedidos";
+import { digitoDeFiguraNumero, numerosDeLaFoto, numerosPedidos, validarNumerosDeLaFoto, validarNumerosPedidos } from "@/lib/plan/numeros-pedidos";
 import { conFotosDeCatalogo } from "@/lib/plan/cotizacion-fotos";
 import { sanearPorquesPlan } from "@/lib/plan/porque-cliente";
 import { sanearMarcasPlan } from "@/lib/plan/marcas-registradas";
@@ -136,6 +136,8 @@ export type EstadoConversacion = {
    * any later omission goes on with a notice, so a search that cannot find the
    * color never loops. */
   coloresReferenciaReclamados: Set<string>;
+  /** Structures already asked to carry the photo's number balloons (once per turn, like the colors). */
+  numerosReferenciaReclamados: Set<string>;
   /** Refusals of `confirmar_plan_decoracion` in this turn (convergencia-plan.ts). */
   rechazosPlan: number;
   /** When this turn started (ms since epoch): bounds how long it may keep calling the model. */
@@ -278,6 +280,7 @@ export function crearEstadoConversacion(brief: Brief, solicitudOriginal = "", re
     solicitudOriginal,
     referenciaSinGlobosPreguntada: opciones.referenciaSinGlobosPreguntada ?? false,
     coloresReferenciaReclamados: new Set(),
+    numerosReferenciaReclamados: new Set(),
     rechazosPlan: 0,
     inicioTurnoMs: Date.now(),
     ajustesCobertura: [],
@@ -432,6 +435,8 @@ export function describirAjustesParticipacion(ajustes: readonly AjusteParticipac
 // el color real declarado, colores_referencia (que sigue diciendo "burdeos")
 // diverge honestamente de la línea comprada y el aviso sí dispara.
 export const ACCION_COLORES_REFERENCIA_OMITIDOS ="La foto de referencia muestra colores dominantes que estas estructuras no usan y el catálogo sí tiene (colores_omitidos). Cubre cada estructura con uno de esos productos: si tiene en_busqueda true, úsalo en materiales; si no, búscalo una sola vez con buscar_catalogo_rag usando una consulta de un solo color (por ejemplo \"globo latex redondo rosado\"): la búsqueda deja de exigir la ocasión cuando esta esconde los colores de la foto. En el material declara el color REAL de ese producto (el que trae el catálogo), nunca la palabra de la foto si el producto no la tiene tal cual: el sistema solo avisa la sustitución al cliente cuando el material dice la verdad. Luego vuelve a confirmar con lo que tengas; si la búsqueda no devolvió un color, confirma igual y el sistema se lo avisará al cliente. Este aviso llega una sola vez por mensaje. No anuncies ni generes una imagen.";
+export const ACCION_NUMEROS_REFERENCIA_OMITIDOS = "La foto de referencia muestra globos de número que la propuesta no lleva (numeros_omitidos, uno por estructura con sus dígitos). Busca cada dígito por separado con buscar_catalogo_rag (por ejemplo \"globo metalizado numero 8 dorado\" y \"globo metalizado numero 0 dorado\"), agrégalos a materiales de esa estructura (un material por dígito, con su variant_id) y vuelve a confirmar. Si el catálogo no tiene un dígito en ese color, usa el color en que sí está (numeros_en_catalogo de la búsqueda) y díselo al cliente en una frase. Este aviso llega una sola vez por mensaje. No anuncies ni generes una imagen.";
+export const MENSAJE_CLIENTE_NUMEROS_REFERENCIA = "Estoy agregando los globos de número que se ven en tu foto.";
 export const ACCION_NUMERO_INCORRECTO = "Los globos de número deben formar exactamente el número que pidió el cliente, un globo por dígito. Busca cada dígito por separado con buscar_catalogo_rag (por ejemplo \"globo metalizado numero 4 plata\" y \"globo metalizado numero 0 plata\"), usa esos productos en la figura y vuelve a confirmar. Si el catálogo no tiene uno de los dígitos en el color pedido, quita la figura de número y ofrécele al cliente el color en que sí está ese dígito (numeros_en_catalogo de la búsqueda) en vez de decirle solo que no hay. No anuncies ni generes una imagen.";
 export const ACCION_NUMEROS_EN_CATALOGO = "numeros_en_catalogo lista los globos de número que el catálogo disponible sí tiene para cada dígito que esta búsqueda no devolvió. No le digas al cliente solo que no hay ese número: ofrécele el color que sí existe para ese dígito (por ejemplo «el 4 lo tengo en latte, ¿te sirve?») y pregúntale si lo quiere; si disponibles está vacío, dile que ese dígito no está disponible y ofrece la decoración sin número. No uses ese globo en un plan hasta que el cliente lo acepte y lo busques.";
 export const ACCION_TAMANO_CLIENTE_SIN_COBERTURA = "Los tamaños que faltan son los que pidió el cliente y los productos de ese color no los tienen en el catálogo disponible. No reintentes el mismo plan: busca una vez ese tamaño en otro color o producto si no lo hiciste; si tampoco sirve, responde ya al cliente con lo que sí hay (el color en otros tamaños o ese tamaño en otro color) y pregúntale cómo prefiere seguir. No anuncies ni generes este plan.";
@@ -749,6 +754,36 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         errores: erroresDeNumero,
         accion_requerida: ACCION_NUMERO_INCORRECTO,
         mensaje_cliente: mensajeClienteRestricciones(erroresDeNumero),
+      };
+    }
+    // The photo's foil numbers must be in the plan (ADR-0030, 2026-09-25):
+    // without them Python cannot follow the photo's count and colors. Asked
+    // once per structure and never after the convergence threshold.
+    const numerosFoto = numerosDeLaFoto(planCanonico, estado.referenceBlueprint);
+    for (const id of estado.numerosReferenciaReclamados) numerosFoto.delete(id);
+    const erroresDeNumerosFoto = estado.rechazosPlan >= RECHAZOS_PARA_CONVERGER
+      ? []
+      : validarNumerosDeLaFoto(planCanonico, new Map((estado.ragCandidatos ?? []).map((candidato) => [candidato.productId, candidato])), numerosFoto);
+    if (erroresDeNumerosFoto.length > 0) {
+      for (const id of numerosFoto.keys()) estado.numerosReferenciaReclamados.add(id);
+      estado.planResuelto = undefined;
+      estado.seleccionFinalIA = [];
+      encolarEscrituraObservabilidad(auditarPlan({
+        requestId: estado.ragRequestId,
+        solicitudOriginal: estado.solicitudOriginal,
+        restricciones: estado.restriccionesUsuario,
+        candidateProductIds: [...estado.ragIdsRecuperados],
+        status: "NUMEROS_REFERENCIA_OMITIDOS",
+        error: erroresDeNumerosFoto.join(" | "),
+      }));
+      encolarEscrituraObservabilidad(actualizarResultadoBusqueda(ragPool, estado.ragRequestId, "aclaracion"));
+      return {
+        ok: false,
+        status: "NUMEROS_REFERENCIA_OMITIDOS",
+        numeros_omitidos: [...numerosFoto.entries()].map(([estructura_id, digitos]) => ({ estructura_id, digitos })),
+        errores: erroresDeNumerosFoto,
+        accion_requerida: ACCION_NUMEROS_REFERENCIA_OMITIDOS,
+        mensaje_cliente: MENSAJE_CLIENTE_NUMEROS_REFERENCIA,
       };
     }
     const categoriaPorProducto = new Map((estado.ragCandidatos ?? []).map((candidato) => [candidato.productId, candidato.categoria]));

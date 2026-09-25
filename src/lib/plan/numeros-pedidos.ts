@@ -73,3 +73,56 @@ export function validarNumerosPedidos(
   }
   return [...new Set(errores)];
 }
+
+/** The bouquet reading of one reference element, when it says the piece has foil numbers. */
+type ElementoConLectura = { element_id: string; approved: boolean; appearance: { armado_bouquet?: { numeros?: ReadonlyArray<{ digito: string }>; confianza: number } } };
+
+/** Below this confidence the photo reading is a hint, never a requirement (same bar as Python's `CONFIANZA_MINIMA_LECTURA`). */
+const CONFIANZA_MINIMA_LECTURA = 0.5;
+
+/**
+ * Digits the photo shows on the piece each structure materializes (ADR-0030,
+ * 2026-09-25): from the bouquet reading of its reference element, in reading
+ * order ("80" -> ["8", "0"]). Only readings a decorator would rely on count.
+ */
+/** What the photo-number rules read of a structure: its id, its name, its reference element and its materials. */
+type EstructuraConReferencia = { estructura_id: string; nombre: string; referencia_element_id?: string; materiales: ReadonlyArray<{ product_id: string }> };
+
+export function numerosDeLaFoto(
+  plan: { estructuras: ReadonlyArray<EstructuraConReferencia> },
+  blueprint: { elements: ReadonlyArray<ElementoConLectura> } | undefined,
+): Map<string, string[]> {
+  const digitos = new Map<string, string[]>();
+  if (!blueprint) return digitos;
+  const elementos = new Map(blueprint.elements.filter((elemento) => elemento.approved).map((elemento) => [elemento.element_id, elemento]));
+  for (const estructura of plan.estructuras) {
+    const lectura = estructura.referencia_element_id ? elementos.get(estructura.referencia_element_id)?.appearance.armado_bouquet : undefined;
+    if (!lectura || lectura.confianza < CONFIANZA_MINIMA_LECTURA || !lectura.numeros?.length) continue;
+    digitos.set(estructura.estructura_id, lectura.numeros.map((numero) => numero.digito));
+  }
+  return digitos;
+}
+
+/**
+ * Customer-facing errors, one per structure whose photo shows foil numbers the
+ * plan does not carry (or carries other digits). Without them Python cannot
+ * follow the photo and the piece keeps the model's invented count.
+ */
+export function validarNumerosDeLaFoto(
+  plan: { estructuras: ReadonlyArray<EstructuraConReferencia> },
+  productos: ReadonlyMap<string, { titulo: string; categoria: string | null }>,
+  numerosFoto: ReadonlyMap<string, readonly string[]>,
+): string[] {
+  const errores: string[] = [];
+  for (const estructura of plan.estructuras) {
+    const esperados = numerosFoto.get(estructura.estructura_id);
+    if (!esperados?.length) continue;
+    const digitos = estructura.materiales.map((material) => digitoDeFiguraNumero(productos.get(material.product_id))).filter((digito): digito is string => digito !== null);
+    const faltan = [...new Set(esperados)].filter((digito) => !digitos.includes(digito));
+    if (faltan.length === 0) continue;
+    errores.push(digitos.length === 0
+      ? `La foto muestra el número ${esperados.join("")} en «${estructura.nombre}» y la propuesta no lleva globos de número: deben ser ${unir([...new Set(esperados)])}.`
+      : `La foto muestra el número ${esperados.join("")} en «${estructura.nombre}» y los globos de número de la propuesta son ${unir([...new Set(digitos)].sort())}: deben ser ${unir([...new Set(esperados)])}.`);
+  }
+  return [...new Set(errores)];
+}
