@@ -12,6 +12,7 @@ import { parseEventSearchIntent } from "@/lib/rag/query-parser/event-search";
 import { aProductoValidado, validarSeleccion, type ItemRechazado, type ItemValidado, type SeleccionSolicitada } from "@/lib/rag/chat/validar";
 import { actualizarResultadoBusqueda, encolarEscrituraObservabilidad, registrarBusqueda, registrarPlanAudit, registrarSeleccion, type HechosPeticionPlan } from "@/lib/rag/observability/log";
 import { PlanDecoracionSchema, type PlanDecoracion } from "@/lib/plan/tipos";
+import type { PistaArmado } from "@/lib/plan/armado-bouquet";
 import type { PistaPatron } from "@/lib/plan/patron-color";
 import type { PlanResuelto } from "@/lib/plan/resuelto";
 import { aplicarColoresReferencia, extraerRestriccionesUsuario, validarCardinalidadEventoAbierto, validarCoberturaReferencia, validarEstructurasDeGlobosConGlobos, validarEstructurasFueraDeReferencia, validarPresenciaGlobos, validarRangoCreatividad, validarReferenciaSinGlobos, validarRestriccionesPlan, validarUnidadesDeclaradas, MENSAJE_CLIENTE_REFERENCIA_SIN_GLOBOS } from "@/lib/plan/restricciones";
@@ -531,6 +532,25 @@ export function pistasPatronDelPlan(plan: Pick<PlanDecoracion, "estructuras">, b
   return [...pistas.values()].slice(0, MAX_PISTAS_PATRON);
 }
 
+/**
+ * Lecturas del armado de la foto para los bouquets que materializan un elemento
+ * de la referencia (ADR-0030). Misma fuente y misma regla que
+ * `pistasPatronDelPlan`: el elemento aprobado del blueprint del turno con ese
+ * `referencia_element_id`, una lectura por elemento.
+ */
+export function pistasArmadoDelPlan(plan: Pick<PlanDecoracion, "estructuras">, blueprint: ReferenceBlueprintV2 | undefined): PistaArmado[] {
+  if (!blueprint) return [];
+  const elementos = new Map(blueprint.elements.filter((elemento) => elemento.approved).map((elemento) => [elemento.element_id, elemento]));
+  const pistas = new Map<string, PistaArmado>();
+  for (const estructura of plan.estructuras) {
+    const elementId = estructura.referencia_element_id;
+    const lectura = elementId ? elementos.get(elementId)?.appearance.armado_bouquet : undefined;
+    if (!elementId || !lectura || pistas.has(elementId)) continue;
+    pistas.set(elementId, { referencia_element_id: elementId, ...lectura });
+  }
+  return [...pistas.values()].slice(0, MAX_PISTAS_PATRON);
+}
+
 /** Arma el registro de herramientas (nombre → handler) que el motor genérico
  * de @sempertex/agente-core despacha — cada cuerpo es el mismo que tenía el
  * if-chain de ejecutar.ts antes de esta extracción, sin cambios de lógica. */
@@ -920,8 +940,11 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     // Detrás de PATRONES_COLOR_V1 (default OFF): con la bandera apagada la
     // petición es la de siempre y el plan sale sin patrón.
     const completarPatrones = featureEnabled("PATRONES_COLOR_V1");
+    // ADR-0030: lo mismo para el armado de los bouquets, detrás de BOUQUETS_ARMADO_V1.
+    const completarArmados = featureEnabled("BOUQUETS_ARMADO_V1");
     const resolverPlanDelTurno = (plan: PlanDecoracion) => {
       const pistasPatron = completarPatrones ? pistasPatronDelPlan(plan, estado.referenceBlueprint) : [];
+      const pistasArmado = completarArmados ? pistasArmadoDelPlan(plan, estado.referenceBlueprint) : [];
       return resolverPlan({
         plan,
         allowlist: allowlistTurno,
@@ -929,6 +952,8 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         loraAllowlist: options.catalogAllowlist,
         ...(completarPatrones ? { completarPatrones } : {}),
         ...(pistasPatron.length > 0 ? { pistasPatron } : {}),
+        ...(completarArmados ? { completarArmados } : {}),
+        ...(pistasArmado.length > 0 ? { pistasArmado } : {}),
         requestId: estado.ragRequestId,
         correlationId: correlacionPython.success ? correlacionPython.data : estado.ragRequestId,
         ...(options.signal ? { signal: options.signal } : {}),

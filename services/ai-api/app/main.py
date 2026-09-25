@@ -42,6 +42,12 @@ from app.amaterasu.turno import (
     ReferenceTurnRequest,
     ejecutar_turno_gemini,
 )
+from app.amaterasu.bouquet_referencia import (
+    BOUQUET_REFERENCIA_SCOPE,
+    BouquetReferenciaError,
+    BouquetReferenciaRequest,
+    leer_armados_referencia,
+)
 from app.amaterasu.patron_referencia import (
     PATRON_REFERENCIA_SCOPE,
     PatronReferenciaError,
@@ -250,6 +256,7 @@ IntentParseHandler = Callable[[IntentParseRequest], Awaitable[dict[str, object]]
 HappieGenerateHandler = Callable[[HappieGenerateRequest], Awaitable[dict[str, object]]]
 ReferenceTurnHandler = Callable[[ReferenceTurnRequest], Awaitable[dict[str, object]]]
 PatronReferenciaHandler = Callable[[PatronReferenciaRequest], Awaitable[dict[str, object]]]
+BouquetReferenciaHandler = Callable[[BouquetReferenciaRequest], Awaitable[dict[str, object]]]
 ImageGenerateHandler = Callable[[ImageGenerateRequest], Awaitable[dict[str, object]]]
 LoraGenerateHandler = Callable[[LoraGenerateRequest], Awaitable[dict[str, object]]]
 # Not awaited: it validates what can fail before the stream opens (raising an
@@ -398,6 +405,19 @@ async def _default_reference_turn_handler(payload: ReferenceTurnRequest) -> dict
         result = await ejecutar_turno_gemini(payload)
     except ReferenceTurnError as error:
         raise _error(error.code, error.status_code) from None
+    return {"payload": result}
+
+
+async def _default_bouquet_referencia_handler(
+    payload: BouquetReferenciaRequest,
+) -> dict[str, object]:
+    try:
+        result = await leer_armados_referencia(payload)
+    except BouquetReferenciaError as error:
+        details: dict[str, object] = {}
+        if error.provider_detail is not None:
+            details["provider_detail"] = error.provider_detail
+        raise _error(error.code, error.status_code, details or None) from None
     return {"payload": result}
 
 
@@ -1144,6 +1164,7 @@ def create_app(
     lora_generate_handler: LoraGenerateHandler | None = None,
     chat_turn_stream_handler: ChatTurnStreamHandler | None = None,
     patron_referencia_handler: PatronReferenciaHandler | None = None,
+    bouquet_referencia_handler: BouquetReferenciaHandler | None = None,
 ) -> FastAPI:
     current_settings = settings or Settings.from_env()
     default_store: object | None = None
@@ -1217,6 +1238,9 @@ def create_app(
     happie_generate_handler_fn = happie_generate_handler or _default_happie_generate_handler
     reference_turn_handler_fn = reference_turn_handler or _default_reference_turn_handler
     patron_referencia_handler_fn = patron_referencia_handler or _default_patron_referencia_handler
+    bouquet_referencia_handler_fn = (
+        bouquet_referencia_handler or _default_bouquet_referencia_handler
+    )
     image_generate_handler_fn = image_generate_handler or _default_image_generate_handler
     lora_generate_handler_fn = lora_generate_handler or _default_lora_generate_handler
     chat_turn_stream_handler_fn = chat_turn_stream_handler or _default_chat_turn_stream_handler
@@ -1486,6 +1510,18 @@ def create_app(
             model=PatronReferenciaRequest,
             scope=PATRON_REFERENCIA_SCOPE,
             handler=cast(OperationalHandler, patron_referencia_handler_fn),
+            max_body_bytes=current_settings.max_body_bytes_imagenes,
+        )
+
+    @application.post("/internal/v1/ia/bouquet-referencia")
+    async def ia_bouquet_referencia(request: Request) -> Response:
+        # One reference photo per call, like the pattern reading (ADR-0030).
+        return await _handle_operational_request(
+            request,
+            operation="ia.bouquet_referencia",
+            model=BouquetReferenciaRequest,
+            scope=BOUQUET_REFERENCIA_SCOPE,
+            handler=cast(OperationalHandler, bouquet_referencia_handler_fn),
             max_body_bytes=current_settings.max_body_bytes_imagenes,
         )
 

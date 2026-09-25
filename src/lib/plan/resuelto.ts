@@ -1,5 +1,6 @@
 import type { PlanDecoracion, PlanDecoracion1_1, PropCatalogo } from "./tipos";
 import type { TipoEstructura, Ubicacion } from "./composicion";
+import type { ArmadoBouquetResuelto } from "./armado-bouquet";
 import type { PatronColorResuelto } from "./patron-color";
 
 export type EstadoComercialPlan = "VERIFICADO" | "APROBACION_REQUERIDA" | "PRESUPUESTO_EXCEDIDO";
@@ -178,5 +179,7 @@ export type PlanResuelto = {
    * (ADR-0028). También fuera del snapshot; ausente cuando no hay ninguno.
    */
   patrones_color?: PatronColorResuelto[];
+  /** Armado de cada bouquet (ADR-0030), escrito por Python; la UI solo lo dibuja. */
+  armados_bouquet?: ArmadoBouquetResuelto[];
   advertencias: string[];
 };

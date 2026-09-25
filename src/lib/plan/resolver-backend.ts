@@ -6,6 +6,7 @@ import type { CatalogAllowlist } from "@/lib/rag/retrieval/types";
 import { errorAllowlistDesdePython } from "./allowlist-producto-variante";
 import { canonizarColoresPlan } from "./colores-catalogo";
 import type { EntradaAllowlistPlan } from "./aprobacion";
+import type { PistaArmado } from "./armado-bouquet";
 import type { PistaPatron } from "./patron-color";
 import { cotizacionDesdePython, planResueltoDesdePython } from "./python-mapper";
 import type { PlanResuelto } from "./resuelto";
@@ -47,6 +48,14 @@ export type EntradaResolucionPlan = {
   completarPatrones?: boolean;
   /** Pistas de patrón leídas en la foto, por elemento de referencia. */
   pistasPatron?: readonly PistaPatron[];
+  /**
+   * Solo al confirmar un plan (ADR-0030): Python arma por niveles cada bouquet
+   * que no tiene armado, desde la lectura de la foto o su receta, sin cambiar
+   * lo que se compra. Misma regla: sin estos campos la petición es la de siempre.
+   */
+  completarArmados?: boolean;
+  /** Lecturas del armado de cada bouquet de la foto, por elemento de referencia. */
+  pistasArmado?: readonly PistaArmado[];
   requestId: string;
   correlationId: string;
   signal?: AbortSignal;
@@ -79,6 +88,8 @@ export async function resolverPlan(entrada: EntradaResolucionPlan): Promise<Reso
       ...(entrada.loraAllowlist ? { loraVariantIds: [...entrada.loraAllowlist.variantIds] } : {}),
       ...(entrada.completarPatrones === undefined ? {} : { completarPatrones: entrada.completarPatrones }),
       ...(entrada.pistasPatron === undefined ? {} : { pistasPatron: [...entrada.pistasPatron] }),
+      ...(entrada.completarArmados === undefined ? {} : { completarArmados: entrada.completarArmados }),
+      ...(entrada.pistasArmado === undefined ? {} : { pistasArmado: [...entrada.pistasArmado] }),
       requestId: entrada.requestId,
       correlationId: entrada.correlationId,
       ...(entrada.signal ? { parentSignal: entrada.signal } : {}),

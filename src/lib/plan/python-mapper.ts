@@ -64,7 +64,7 @@ function prop(entrada: NonNullable<PlanResueltoV1["props"]>[number]): PropResuel
  * unknown value is a broken response, not something to coerce silently.
  */
 export function planResueltoDesdePython(payload: PlanResueltoV1): PlanResuelto {
-  const { schema_version: contrato, estructuras, props, costes_por_estructura: costesPorEstructura, patrones_color: patronesColor, ...resto } = payload;
+  const { schema_version: contrato, estructuras, props, costes_por_estructura: costesPorEstructura, patrones_color: patronesColor, armados_bouquet: armadosBouquet, ...resto } = payload;
   // This mapper is where the transport marker is dropped, so it states which
   // contract it accepted instead of discarding it silently.
   if (contrato !== PLAN_RESUELTO_CONTRACT_VERSION) {
@@ -79,6 +79,8 @@ export function planResueltoDesdePython(payload: PlanResueltoV1): PlanResuelto {
     // Igual que el consumo: el patrón expandido lo escribe Python y la tarjeta
     // solo lo dibuja (ADR-0028). Ausente cuando ninguna estructura lo tiene.
     ...(patronesColor === undefined ? {} : { patrones_color: patronesColor }),
+    // Lo mismo para el armado de los bouquets (ADR-0030).
+    ...(armadosBouquet === undefined ? {} : { armados_bouquet: armadosBouquet }),
     ...(props === undefined ? {} : { props: props.map(prop) }),
   };
 }

@@ -12,6 +12,7 @@ import {
   CatalogRecommendationsResultV1Schema,
   PlanResolutionResultV1Schema,
 } from "@/lib/ia/contracts/domain-v1";
+import { LecturaArmadoSchema, type PistaArmado } from "@/lib/plan/armado-bouquet";
 import type { EdicionPlan } from "@/lib/plan/edicion-esquemas";
 import {
   MODOS_PATRON_COLOR,
@@ -54,6 +55,8 @@ export const PYTHON_CHAT_TURN_STREAM_PATH = "/internal/v1/ia/chat-turn-stream";
 export const PYTHON_CHAT_TURN_STREAM_SCOPE = "ia.chat_turn_stream";
 export const PYTHON_PATRON_REFERENCIA_PATH = "/internal/v1/ia/patron-referencia";
 export const PYTHON_PATRON_REFERENCIA_SCOPE = "ia.patron_referencia";
+export const PYTHON_BOUQUET_REFERENCIA_PATH = "/internal/v1/ia/bouquet-referencia";
+export const PYTHON_BOUQUET_REFERENCIA_SCOPE = "ia.bouquet_referencia";
 export const PYTHON_PLAN_EDIT_PATH = "/internal/v1/plan/edit";
 export const PYTHON_PLAN_EDIT_SCOPE = "plan.edit";
 export const PYTHON_PLAN_PATRON_PATH = "/internal/v1/plan/patron";
@@ -851,6 +854,37 @@ export interface PythonPatronReferenciaInput {
   randomUUID?: () => string;
 }
 
+/** A bouquet the reference analysis found in one photo (ADR-0030). */
+export interface PythonBouquetReferenciaElemento {
+  elementId: string;
+  bbox?: { x: number; y: number; width: number; height: number };
+  coloresObservados: string[];
+}
+
+export interface PythonBouquetReferenciaInput {
+  imagen: { mimeType: "image/png" | "image/jpeg" | "image/webp"; dataBase64: string };
+  /** 1..12, unique ids, all from the same photo as `imagen`. */
+  elementos: PythonBouquetReferenciaElemento[];
+  requestId: string;
+  correlationId: string;
+  deadlineMs?: number;
+  parentSignal?: AbortSignal;
+  env?: AdapterEnvironment;
+  fetchImpl?: typeof fetch;
+  randomUUID?: () => string;
+}
+
+/** One reading as Python validated it: the assembly of one bouquet. */
+export type PythonBouquetReferenciaLectura = z.infer<typeof bouquetReferenciaLecturaSchema>;
+
+export interface PythonBouquetReferenciaResult {
+  lecturas: PythonBouquetReferenciaLectura[];
+  modelo: string;
+  promptVersion: string;
+  usage: z.infer<typeof bouquetReferenciaPayloadResultSchema>["usage"];
+  replayed?: boolean;
+}
+
 /** One hint as Python validated it; "ninguno" carries no colors. */
 export type PythonPatronReferenciaPista = z.infer<typeof patronReferenciaPistaSchema>;
 
@@ -1087,6 +1121,9 @@ export interface PythonPlanResolutionInput {
   /** Absent unless the caller passes it: every other request stays byte-identical (ADR-0028 §7). */
   completarPatrones?: boolean;
   pistasPatron?: PistaPatron[];
+  /** Absent unless the caller passes it (ADR-0030): same byte-identical rule. */
+  completarArmados?: boolean;
+  pistasArmado?: PistaArmado[];
   requestId: string;
   correlationId: string;
   deadlineMs?: number;
@@ -1286,6 +1323,37 @@ function patronReferenciaPayloadIsConsistent(
     if (pista.modo !== "ninguno" && pista.colores.length === 0) return false;
     if (pista.pesos !== undefined && pista.pesos.length !== pista.colores.length) return false;
     vistos.add(pista.element_id);
+  }
+  return true;
+}
+
+// Local contract (ADR-0026 §3): the Pydantic side is
+// services/ai-api/app/amaterasu/bouquet_referencia.py; the prompt, the palette
+// and the validation of the provider output live in estructuras/bouquet.py.
+const bouquetReferenciaLecturaSchema = LecturaArmadoSchema.extend({
+  element_id: z.string().min(1).max(80),
+}).strict();
+
+const bouquetReferenciaPayloadResultSchema = z.object({
+  operation_schema_version: z.literal("bouquet-referencia-result.v1"),
+  lecturas: z.array(bouquetReferenciaLecturaSchema).max(12),
+  modelo: z.string().min(1),
+  prompt_version: z.string().min(1),
+  usage: intentParseUsageSchema.extend({
+    tool_use_prompt_token_count: z.number().int().nonnegative().optional(),
+  }).strict().nullable(),
+}).strict();
+
+/** Readings only for elements that were asked about, once each. */
+function bouquetReferenciaPayloadIsConsistent(
+  payload: z.infer<typeof bouquetReferenciaPayloadResultSchema>,
+  elementIds: readonly string[],
+): boolean {
+  const pedidos = new Set(elementIds);
+  const vistos = new Set<string>();
+  for (const lectura of payload.lecturas) {
+    if (!pedidos.has(lectura.element_id) || vistos.has(lectura.element_id)) return false;
+    vistos.add(lectura.element_id);
   }
   return true;
 }
@@ -1789,6 +1857,45 @@ export async function llamarPythonPatronReferencia(
 }
 
 /**
+ * Reads how each bouquet in one reference photo is assembled (ADR-0030). Python
+ * owns the prompt, the palette, the response schema and the validation; this
+ * only transports the photo and the bouquets the analysis found, and checks the
+ * answer is about them. No idempotency key and no retry: the call has no side
+ * effect and the caller continues without readings on any failure.
+ */
+export async function llamarPythonBouquetReferencia(
+  input: PythonBouquetReferenciaInput,
+): Promise<PythonBouquetReferenciaResult> {
+  const { imagen, elementos, ...rest } = input;
+  const operationPayload = {
+    schema_version: "bouquet-referencia.v1" as const,
+    imagen: { mime_type: imagen.mimeType, data_base64: imagen.dataBase64 },
+    elementos: elementos.map((elemento) => ({
+      element_id: elemento.elementId,
+      ...(elemento.bbox === undefined ? {} : { bbox: elemento.bbox }),
+      colores_observados: elemento.coloresObservados,
+    })),
+  };
+  const response = await llamarPythonOperacion(PYTHON_BOUQUET_REFERENCIA_PATH, PYTHON_BOUQUET_REFERENCIA_SCOPE, {
+    ...rest,
+    payload: operationPayload,
+    operationBody: operationPayload,
+    maxBodyBytes: PYTHON_MAX_BODY_BYTES_IMAGENES,
+  });
+  const parsed = bouquetReferenciaPayloadResultSchema.safeParse(response.payload);
+  if (!parsed.success || !bouquetReferenciaPayloadIsConsistent(parsed.data, elementos.map((elemento) => elemento.elementId))) {
+    throw errorFor("PYTHON_INVALID_RESPONSE", 502, response.request_id, response.correlation_id);
+  }
+  const result: PythonBouquetReferenciaResult = {
+    lecturas: parsed.data.lecturas,
+    modelo: parsed.data.modelo,
+    promptVersion: parsed.data.prompt_version,
+    usage: parsed.data.usage,
+  };
+  return response.replayed ? { ...result, replayed: true } : result;
+}
+
+/**
  * The one Gemini Interactions call `crearImagenGemini`'s `generar()` makes
  * (src/lib/ia/uzume/imagen.ts, via the ImagenPort
  * src/lib/ia/uzume/imagen-python.ts wraps around this). `input` travels
@@ -1983,6 +2090,8 @@ export async function llamarPythonPlanResolution(
     loraVariantIds,
     completarPatrones,
     pistasPatron,
+    completarArmados,
+    pistasArmado,
     ...rest
   } = input;
   const operationBody = {
@@ -1993,6 +2102,8 @@ export async function llamarPythonPlanResolution(
     ...(loraVariantIds === undefined ? {} : { lora_variant_ids: loraVariantIds }),
     ...(completarPatrones === undefined ? {} : { completar_patrones: completarPatrones }),
     ...(pistasPatron === undefined ? {} : { pistas_patron: pistasPatron }),
+    ...(completarArmados === undefined ? {} : { completar_armados: completarArmados }),
+    ...(pistasArmado === undefined ? {} : { pistas_armado: pistasArmado }),
   };
   const response = await llamarPythonOperacion(PYTHON_PLAN_RESOLUTION_PATH, PYTHON_PLAN_RESOLUTION_SCOPE, {
     ...rest,

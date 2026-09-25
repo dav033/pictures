@@ -688,6 +688,17 @@ def _ajustar_patron(
 # --- Casos de uso ------------------------------------------------------------------
 
 
+def _quitar_armado(estructura: dict[str, object]) -> list[str]:
+    """Un bouquet cuyos globos o reparto cambian pierde su armado (ADR-0030).
+
+    El armado acomoda exactamente lo que se compra; tras la edición ya no
+    coincidiría y la resolución lo rechazaría. Se quita y se avisa.
+    """
+    if estructura.pop("armado_bouquet", None) is None:
+        return []
+    return ["El armado del bouquet se quitó porque cambiaste sus globos."]
+
+
 def editar_plan(
     plan: Mapping[str, object],
     edicion: EdicionMaterial | EdicionReparto | EdicionMezcla | EdicionPatron,
@@ -724,12 +735,14 @@ def editar_plan(
             estructura["patron_color"] = copy.deepcopy(edicion.patron_color)
     elif isinstance(edicion, EdicionReparto):
         avisos = _repartir(estructura, edicion.participaciones)
+        avisos += _quitar_armado(estructura)
     elif isinstance(edicion, EdicionMezcla):
         estructura["mezcla"] = edicion.mezcla
     else:
         materiales_antes = len(_materiales(estructura))
         _editar_materiales(estructura, edicion, lineas_base, colores_variante)
         avisos = _ajustar_patron(editado, indice, edicion, materiales_antes, completar_patrones)
+        avisos += _quitar_armado(estructura)
     if _estructura(editado, indice).get("patron_color") is not None:
         # Valida el patrón (forma y reglas del §4) y reescribe participacion,
         # solo en la pieza editada: las demás no cambiaron.

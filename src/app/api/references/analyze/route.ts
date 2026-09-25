@@ -1,9 +1,10 @@
 import { analizarReferenciasV2 } from "@/lib/ia/amaterasu/analizar-referencias-v2";
 import { crearChatTurnoPython } from "@/lib/ia/amaterasu/chat-python";
+import { conArmadosDe, leerArmadosReferencia } from "@/lib/ia/amaterasu/bouquet-referencia";
 import { detectarPatronesReferencia } from "@/lib/ia/amaterasu/patron-referencia";
 import { chatDe, resolverProveedor } from "@/lib/ia/nucleo/registro";
 import type { ProveedorId } from "@/lib/ia/nucleo/tipos";
-import { PATRON_REFERENCIA_PYTHON_ENABLED, REFERENCE_ANALYSIS_PYTHON_ENABLED } from "@/lib/ia/nucleo/feature-flags";
+import { BOUQUET_REFERENCIA_PYTHON_ENABLED, PATRON_REFERENCIA_PYTHON_ENABLED, REFERENCE_ANALYSIS_PYTHON_ENABLED } from "@/lib/ia/nucleo/feature-flags";
 import { registrarFalloUi } from "@/lib/errores-ui/traducir-error-servidor";
 import { cuerpoExito, leerCuerpo, referenciasEtiquetadas, respuestaError, validarCuerpo } from "./analisis-http";
 
@@ -36,9 +37,14 @@ export async function POST(request: Request) {
     // blueprint sin pistas; nunca rompe el análisis. La misma foto con los
     // mismos elementos (un análisis de la caché o de la galería) reutiliza la
     // detección ya pagada; "Reintentar" (`sin_cache`) pide una nueva.
-    const result = PATRON_REFERENCIA_PYTHON_ENABLED
-      ? { ...analisis, blueprint: await detectarPatronesReferencia(analisis.blueprint, references, { requestId, correlationId, signal: request.signal, vencimiento, sinCache: body.sinCache }) }
-      : analisis;
+    // ADR-0030: el armado de cada bouquet es otra lectura igual, en paralelo
+    // con la del patrón y con el mismo vencimiento; las dos se juntan por elemento.
+    const lectura = { requestId, correlationId, signal: request.signal, vencimiento, sinCache: body.sinCache };
+    const [conPatron, conArmado] = await Promise.all([
+      PATRON_REFERENCIA_PYTHON_ENABLED ? detectarPatronesReferencia(analisis.blueprint, references, lectura) : analisis.blueprint,
+      BOUQUET_REFERENCIA_PYTHON_ENABLED ? leerArmadosReferencia(analisis.blueprint, references, lectura) : analisis.blueprint,
+    ]);
+    const result = { ...analisis, blueprint: conArmadosDe(conPatron, conArmado) };
     return Response.json(cuerpoExito(result, references, requestId, id), { headers: { "X-Request-ID": requestId } });
   } catch (error) {
     const { status, body, uiError } = respuestaError(error, requestId);

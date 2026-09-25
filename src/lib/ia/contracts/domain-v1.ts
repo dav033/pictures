@@ -22,6 +22,7 @@ import {
   PlanDecoracionSchema,
   PropCatalogoSchema,
 } from "@/lib/plan/tipos";
+import { ArmadoBouquetResueltoSchema, PistaArmadoSchema } from "@/lib/plan/armado-bouquet";
 import { PatronColorResueltoSchema, PistaPatronSchema } from "@/lib/plan/patron-color";
 import { CatalogProductSchema, CatalogVariantSchema } from "@/lib/rag/catalog/schemas";
 import { LoraSelectionSchema } from "@/lib/lora/schema";
@@ -399,6 +400,12 @@ export const PlanResueltoV1Schema = z.object({
    * `plan_hash`, como `costes_por_estructura`; se omite cuando no hay ninguno.
    */
   patrones_color: z.array(PatronColorResueltoSchema).optional(),
+  /**
+   * Armado de cada bouquet (ADR-0030): leyenda por globo comprado, niveles,
+   * insumos no cotizados y pasos, escritos por Python. Fuera del snapshot que
+   * firma `plan_hash`; se omite cuando no hay ninguno.
+   */
+  armados_bouquet: z.array(ArmadoBouquetResueltoSchema).optional(),
 }).strict();
 
 const quoteLineSchema = z.object({
@@ -456,6 +463,9 @@ export const PlanResolutionRequestV1Schema = z.object({
   /** Solo al confirmar un plan: Python asigna patrón de color a las estructuras que no lo tienen (ADR-0028 §7). */
   completar_patrones: z.boolean().optional(),
   pistas_patron: z.array(PistaPatronSchema).max(16).optional(),
+  /** Solo al confirmar un plan: Python arma por niveles los bouquets que no tienen armado (ADR-0030). */
+  completar_armados: z.boolean().optional(),
+  pistas_armado: z.array(PistaArmadoSchema).max(16).optional(),
 }).strict();
 
 export const PlanResolutionResultV1Schema = z.object({
