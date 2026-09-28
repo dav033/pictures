@@ -1,7 +1,7 @@
 import { AMBIENTACION_IMAGEN, perfilCreatividad, type AmbientacionImagen, type NivelCreatividad } from "../escena/creatividad";
 import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
-import { armadoDeElemento, describirMezclaDeColor, frasePatronColor, mezclaDeColorDeEstructura, type FraseDeEstructura } from "./mezcla-color-escena";
-import { CARDINALIDAD_CON_PAR_DE_BOUQUETS, EXCEPCION_CONTEO_CON_ARMADO, fraseInstanciaConArmado, pluralCardinalidadConArmado, sustantivoCardinalidadConArmado } from "./armado-en-prompt";
+import { armadoDeElemento, armadoGuirnaldaDeElemento, describirMezclaDeColor, frasePatronColor, idDeEstructura, mezclaDeColorDeEstructura, type FraseDeEstructura } from "./mezcla-color-escena";
+import { CARDINALIDAD_CON_GUIRNALDA_ABRAZADA, CARDINALIDAD_CON_PAR_DE_BOUQUETS, EXCEPCION_CONTEO_CON_ARMADO, FRASE_INSTANCIA_CON_ARMADO_GUIRNALDA, fraseInstanciaConArmado, fraseSoporteGuirnalda, pluralCardinalidadConArmado, sustantivoCardinalidadConArmado } from "./armado-en-prompt";
 import { tableSupportedElements, type SceneryElement, type SceneSpec } from "../escena/scene-spec";
 import { buildLoraImagePromptV2, compileLoraCaption, GROUPING_ONLY_CONTEXT, type LoraVisualClause } from "../kagutsuchi/lora-caption-compiler";
 import { findSeparateSidePieces } from "./separate-side-pieces";
@@ -111,8 +111,14 @@ function physicalScale(element: SceneSpec["elements"][number]): string {
  * approved arch drawn as a round hoop or a closed square frame (7 of 48 images
  * of the arch plan) and a wall garland floating mid-wall. A declared or named
  * circular hoop keeps its own form.
+ *
+ * A garland with an assembly (ADR-0032, E5) gets the support and shape its
+ * assembly names (wall, hanging, floor, table or wrapped around another
+ * structure); without one, the wall sentence of always.
  */
-function shapeClause(element: SceneSpec["elements"][number], officialStructures?: ReadonlyMap<string, string>): string {
+function shapeClause(element: SceneSpec["elements"][number], officialStructures?: ReadonlyMap<string, string>, colorPatterns?: readonly FraseDeEstructura[], sceneSpec?: SceneSpec): string {
+  const guirnalda = armadoGuirnaldaDeElemento(colorPatterns, element);
+  if (guirnalda) return fraseSoporteGuirnalda(guirnalda, anfitrionaEnPrompt(sceneSpec, guirnalda.anfitriona));
   const semantics = element.visual_semantics;
   if (!semantics) return "";
   const official = identificarEstructuraOficial({
@@ -135,6 +141,13 @@ function shapeClause(element: SceneSpec["elements"][number], officialStructures?
     return " Support: mounted flat against the wall along its whole length with visible anchoring; it never floats away from the wall.";
   }
   return "";
+}
+
+/** Name in the prompt of the plan structure a garland is wrapped around (never its id). */
+function anfitrionaEnPrompt(sceneSpec: SceneSpec | undefined, estructuraId: string | undefined): string | undefined {
+  if (!sceneSpec || !estructuraId) return undefined;
+  const anfitriona = sceneSpec.elements.find((element) => idDeEstructura(element) === estructuraId);
+  return anfitriona ? promptElementName(anfitriona.name) : undefined;
 }
 
 function stylingOf(nivel: NivelCreatividad | undefined): readonly AmbientacionImagen[] {
@@ -259,9 +272,12 @@ function materialEstimateContract(sceneSpec: SceneSpec, colorPatterns?: readonly
  * decoration.  This contract describes the *scene architecture* without
  * inventing any catalog objects.
  */
-function decorationCompositionContract(sceneSpec: SceneSpec, visualContext?: VisualContext, styling: readonly AmbientacionImagen[] = [], scenography: readonly SceneryElement[] = []): string[] {
+function decorationCompositionContract(sceneSpec: SceneSpec, visualContext?: VisualContext, styling: readonly AmbientacionImagen[] = [], scenography: readonly SceneryElement[] = [], colorPatterns?: readonly FraseDeEstructura[]): string[] {
   const categories = new Set(sceneSpec.elements.map((element) => element.category));
-  const tableSupports = tableSupportedElements(sceneSpec);
+  // A garland whose assembly runs along the table edge (ADR-0032, E5) stands on a
+  // table too, whatever its placement: without it "no generic table" banned it.
+  const tableTop = tableSupportedElements(sceneSpec);
+  const tableSupports = [...tableTop, ...sceneSpec.elements.filter((element) => !tableTop.includes(element) && armadoGuirnaldaDeElemento(colorPatterns, element)?.soporte === "mesa")];
   // Las prohibiciones generales de este contrato son lo primero y más fuerte
   // que lee el modelo. Sin nombrar aquí la escenografía conservada, el prompt
   // se contradice consigo mismo y el modelo borra justo lo que el cliente
@@ -415,6 +431,8 @@ function separateSidePiecesSentence(sceneSpec: SceneSpec, officialStructures?: R
 function cardinalityContract(sceneSpec: SceneSpec, officialStructures?: ReadonlyMap<string, string>, colorPatterns?: readonly FraseDeEstructura[]): string {
   const counts = new Map<string, number>();
   let conParDeBouquets = false;
+  // A garland wrapped around another structure touches it on purpose (ADR-0032, E5).
+  const conGuirnaldaAbrazada = sceneSpec.elements.some((element) => armadoGuirnaldaDeElemento(colorPatterns, element)?.soporte === "sobre_estructura");
   for (const element of sceneSpec.elements) {
     // Un armado con un número a cada lado son dos bouquets en una pieza del
     // plan (`grupos` de Python): "exactly one" contradecía su "two bouquets".
@@ -425,7 +443,7 @@ function cardinalityContract(sceneSpec: SceneSpec, officialStructures?: Readonly
   }
   const partes = [...counts.entries()].map(([kind, count]) => `${count} ${count === 1 ? kind : pluralizarEstructura(kind)}`);
   const summary = partes.length > 2 ? `${partes.slice(0, -1).join(", ")} and ${partes[partes.length - 1]}` : partes.join(" and ");
-  return `CARDINALITY CONTRACT: render exactly ${summary || "zero approved physical instances"}, meaning exactly ${sceneSpec.elements.length} distinct installed structure(s). Each listed element is one visible structure, not one balloon or one package. The quantity inside an element is its installed material quantity; never turn it into extra structures. Keep every listed structure separate, positioned separately, and neither merge, duplicate, nor omit any one.${conParDeBouquets ? CARDINALIDAD_CON_PAR_DE_BOUQUETS : ""}${separateSidePiecesSentence(sceneSpec, officialStructures)}`;
+  return `CARDINALITY CONTRACT: render exactly ${summary || "zero approved physical instances"}, meaning exactly ${sceneSpec.elements.length} distinct installed structure(s). Each listed element is one visible structure, not one balloon or one package. The quantity inside an element is its installed material quantity; never turn it into extra structures. Keep every listed structure separate, positioned separately, and neither merge, duplicate, nor omit any one.${conParDeBouquets ? CARDINALIDAD_CON_PAR_DE_BOUQUETS : ""}${conGuirnaldaAbrazada ? CARDINALIDAD_CON_GUIRNALDA_ABRAZADA : ""}${separateSidePiecesSentence(sceneSpec, officialStructures)}`;
 }
 
 /**
@@ -482,19 +500,25 @@ function colorVarietyContract(sceneSpec: SceneSpec, colorPatterns?: readonly Fra
     // El prefijo "APPROVED COLOR VARIETY — use exactly these catalog colors: X."
     // lo lee `verificarCoherenciaPrompt`; el patrón solo reemplaza la frase del
     // reparto orgánico, que pedía justo lo contrario ("avoid flat stripes").
-    return `${promptElementName(element.name)}: APPROVED COLOR VARIETY — use exactly these catalog colors: ${colors.join(", ")}.${mezcla ? ` Approximate share of this structure's own balloons: ${mezcla}. Keep that balance visible; the dominant color must read as dominant.` : ""} ${pattern ?? ORGANIC_COLOR_DISTRIBUTION} Do not invent, recolor, or borrow any additional color.`;
+    // Una guirnalda armada sin patrón (o con confeti) conserva el reparto
+    // orgánico: su armado dice cómo se arma, no dónde va cada color (ADR-0032).
+    const guirnalda = armadoGuirnaldaDeElemento(colorPatterns, element);
+    const reparto = pattern && guirnalda && !guirnalda.conPatron ? `${ORGANIC_COLOR_DISTRIBUTION} ${pattern}` : pattern ?? ORGANIC_COLOR_DISTRIBUTION;
+    return `${promptElementName(element.name)}: APPROVED COLOR VARIETY — use exactly these catalog colors: ${colors.join(", ")}.${mezcla ? ` Approximate share of this structure's own balloons: ${mezcla}. Keep that balance visible; the dominant color must read as dominant.` : ""} ${reparto} Do not invent, recolor, or borrow any additional color.`;
   });
 }
 
 /**
  * Cierre de la línea del INSTANCE CONTRACT de una pieza con armado de bouquet
- * (ADR-0030): su armado manda sobre las instrucciones genéricas de agrupar
- * globos. Vacío sin armado, y solo cuando la línea de color (donde va el
- * armado) existe.
+ * (ADR-0030) o de guirnalda (ADR-0032): su armado manda sobre las
+ * instrucciones genéricas de agrupar globos. Vacío sin armado, y solo cuando
+ * la línea de color (donde va el armado) existe.
  */
 function armadoClause(element: SceneSpec["elements"][number], colorPatterns?: readonly FraseDeEstructura[]): string {
+  if (!colorPatternSentence(element, colorPatterns)) return "";
   const armado = armadoDeElemento(colorPatterns, element);
-  return armado && colorPatternSentence(element, colorPatterns) ? fraseInstanciaConArmado(armado.grupos) : "";
+  if (armado) return fraseInstanciaConArmado(armado.grupos);
+  return armadoGuirnaldaDeElemento(colorPatterns, element) ? FRASE_INSTANCIA_CON_ARMADO_GUIRNALDA : "";
 }
 
 function eventAuthorityContract(context?: VisualContext, styling: readonly AmbientacionImagen[] = []): string[] {
@@ -537,12 +561,12 @@ export function buildImagePrompt({ sceneSpec, inputs = [], revisionInstruction, 
   const environmentCues = visualContext ? buildPositiveEnvironmentCues(visualContext) : [];
   const failureConditions = visualContext ? buildVisualFailureConditions(visualContext) : [];
   const styling = stylingOf(creatividad);
-  const compositionContract = decorationCompositionContract(sceneSpec, visualContext, styling, scenography);
+  const compositionContract = decorationCompositionContract(sceneSpec, visualContext, styling, scenography, colorPatterns);
   const creativity = creativityContract(creatividad);
   const scaleInstruction = balloonScaleInstruction(sizeMixBlock);
   const materialContract = materialEstimateContract(sceneSpec, colorPatterns);
   const instanceContract = sceneSpec.elements.length
-    ? sceneSpec.elements.map((element, index) => `- EXACTLY ONE physical installed structure ${index + 1}: render the approved ${element.category} described by “${promptElementName(element.name)}”; use only its assigned placement and installed quantity.${physicalScale(element)}${shapeClause(element, officialStructures)}${armadoClause(element, colorPatterns)} Quantity means material units inside this one structure, not additional structures. This description is invisible metadata; never print or turn it into a sign.`).join("\n")
+    ? sceneSpec.elements.map((element, index) => `- EXACTLY ONE physical installed structure ${index + 1}: render the approved ${element.category} described by “${promptElementName(element.name)}”; use only its assigned placement and installed quantity.${physicalScale(element)}${shapeClause(element, officialStructures, colorPatterns, sceneSpec)}${armadoClause(element, colorPatterns)} Quantity means material units inside this one structure, not additional structures. This description is invisible metadata; never print or turn it into a sign.`).join("\n")
     : "- No physical decoration instances are approved.";
   const physicalCardinality = cardinalityContract(sceneSpec, officialStructures, colorPatterns);
   const colorVariety = colorVarietyContract(sceneSpec, colorPatterns);

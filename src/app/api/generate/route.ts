@@ -40,7 +40,7 @@ function requireResolvedLoras(loras: ResolvedLoraApplication[] | undefined): Res
   return loras;
 }
 import { buildVisualContext, completarEscenaConPlan } from "@/lib/ia/escena/visual-context";
-import { candadosDeComposicion, hardLockComposicionGemini, inputsParaComposicionGemini, LORA_PRESENTATION_INSTRUCTION, promptPresentacionLora } from "@/lib/ia/uzume/lora-gemini-composition";
+import { candadosDeComposicion, conArmadoGuirnaldaEnCaption, hardLockComposicionGemini, inputsParaComposicionGemini, LORA_PRESENTATION_INSTRUCTION, promptPresentacionLora } from "@/lib/ia/uzume/lora-gemini-composition";
 import { ambienteDeFiesta, AVISO_ESCENOGRAFIA_NO_COTIZADA, nivelAmbienteDe, requiereAvisoNoCotizado } from "@/lib/ia/uzume/ambiente-fiesta";
 import { referenciasParaEtapa1Hibrida } from "@/lib/ia/uzume/referencias-etapa1";
 import { ErrorIA, type ImageInput, type Imagen, type ImagenEtiquetada, type PeticionImagen, type ProveedorId } from "@/lib/ia/nucleo/tipos";
@@ -911,9 +911,9 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       : bloqueMezclaTamanos([...unidadesPorTamano.values()]) ?? undefined;
     // Mapa de estructuras oficiales declaradas en el plan, para nombrar el prompt de imagen con el mismo vocabulario que el catálogo.
     const officialStructures = officialStructuresDePlan(planResuelto);
-    // Patrón de color y armado de bouquet por estructura tal como los firmó
-    // Python en el plan re-resuelto (ADR-0028 §12, ADR-0030): los
-    // constructores solo insertan sus frases.
+    // Patrón de color y armados de bouquet y de guirnalda por estructura tal
+    // como los firmó Python en el plan re-resuelto (ADR-0028 §12, ADR-0030,
+    // ADR-0032): los constructores solo insertan sus frases.
     const colorPatterns = frasesDeEstructuras(planResuelto);
     // Lo que la escena aprobada dice de cada estructura, para la comprobación
     // estructural de color de `verificarCoherenciaPrompt`. Con las mismas
@@ -1115,7 +1115,7 @@ async function generar(request: Request, generationRequestId: string): Promise<R
       ? `${buildImagePrompt({
           ...promptBase,
           inputs: inputsComposicionGemini.map(({ id, role, allowed_use }) => ({ image_id: id, role, allowed_use })),
-        })}\n\n${hardLockComposicionGemini(...candadosDeComposicion(loraCompilation.clauses))}${ambiente.instruccion ? `\n\n${ambiente.instruccion}` : ""}`
+        })}\n\n${hardLockComposicionGemini(...candadosDeComposicion(loraCompilation.clauses), conArmadoGuirnaldaEnCaption(loraCompilation.clauses))}${ambiente.instruccion ? `\n\n${ambiente.instruccion}` : ""}`
       : undefined;
     const result: { imagen: Imagen; interactionId?: string } = loraPrimaryImage && inputsComposicionGemini && promptComposicionGemini
       ? await port!.generar({

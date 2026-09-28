@@ -485,7 +485,7 @@ Referencias a la rama al cierre de la entrega.
   ritmo de armado. `factorPerfil` está en 1 en todas las formas, sin calibrar.
 - E4: lectura de la guirnalda en la foto y `placementFor`; hoy la bandera solo
   completa por receta. E5: frases en Uzume/Kagutsuchi, patrón por racimo y
-  espejo. E6: UI y la ruta de Next de la vista previa (Python ya responde en
+  espejo (hecha, ver abajo). E6: UI y la ruta de Next de la vista previa (Python ya responde en
   `/internal/v1/plan/armado-guirnalda`).
 - Un rechazo `armado_invalido` de la vista previa no trae `opciones` (la
   frontera de `main.py` solo deja pasar campos conocidos); el editor de E6
@@ -497,6 +497,110 @@ Referencias a la rama al cierre de la entrega.
   las completitudes de armados en `_resolution_result` (plan.py l.3576), para
   que la receta vea la densidad y las medidas finales.
 
+### E5 — prompts, patrón por racimo y espejo (hecha el 2026-09-28, rama `feat/guirnaldas-e5`)
+
+Parte de `feat/guirnaldas` en `27528f2` (E0, E1 y E3 ya dentro). Decisiones
+10 a 15 de ADR-0032; enmiendas de §3 y §6 en ADR-0028. Sin bandera propia:
+sin `armados_guirnalda` nada cambia. Referencias a la rama al cierre.
+
+- **Python, dueño del patrón y del armado**:
+  - `services/ai-api/app/patron_color.py`: `EstructuraPatron.racimo_armado` y
+    `forma_armado` (l.155); `_admite_espejo` (l.385) y `_racimo_de_armado`
+    (l.392); `filas_de_racimos` (l.678), el patrón sobre los racimos que se
+    arman; `_preset_por_racimo` (l.784) y `sugerir_patron` (l.819);
+    `modos_admitidos` ofrece espejo en U (l.869); la unidad del armado manda
+    en `sugerir_patron_modo` (l.1044) y en `patron_desde_pista` (l.1222);
+    redacción en espejo `_EJE_ESPEJO` y `_PIE_Y_CLAVE_ES` (l.1282, l.1293).
+  - `services/ai-api/app/armado_guirnalda.py`: `EstructuraGuirnalda.filas_de_racimos`
+    (l.184), usada por `_racimos` (l.482); `racimo_y_forma` (l.569);
+    `_frase_lora` (l.1074), la frase LoRA como modificador.
+  - `services/ai-api/app/plan.py`: `_pattern_context` lee el armado de una
+    guirnalda por partes (l.666); `_garland_context` pasa el patrón por
+    racimos (l.3901, l.3933). Tres líneas de import aparte (`partial`,
+    `racimo_y_forma_de_armado`, `filas_de_racimos`).
+  - `services/ai-api/app/plan_edicion.py`: `AVISO_ESPEJO_GUIRNALDA` (l.141),
+    `_quitar_espejo_sin_u` (l.901), llamado al fijar el armado (l.891) y tras
+    `_revisar_armado_guirnalda` (l.1016).
+- **Next, solo inserta y elige frases fijas**:
+  - `src/lib/ia/uzume/mezcla-color-escena.ts`: `ArmadoGuirnaldaEnPrompt`
+    (l.91), `frasesDeEstructuras` con `armados_guirnalda` y la unión con el
+    patrón (l.138), `armadoGuirnaldaDeElemento` (l.183).
+  - `src/lib/ia/uzume/armado-en-prompt.ts`: `fraseSoporteGuirnalda` (l.140),
+    `FRASE_INSTANCIA_CON_ARMADO_GUIRNALDA` (l.150),
+    `CARDINALIDAD_CON_GUIRNALDA_ABRAZADA` (l.157).
+  - `src/lib/ia/uzume/build-image-prompt.ts`: `shapeClause` con el armado
+    (l.119) y `anfitrionaEnPrompt` (l.147); excepción de mesa (l.280); de
+    cardinalidad (l.435); reparto orgánico sin patrón (l.506); `armadoClause`
+    (l.517).
+  - `src/lib/ia/kagutsuchi/lora-caption-compiler.ts`: `armadoGuirnalda` en la
+    cláusula (l.148, l.184, l.652, l.1168).
+  - `src/lib/ia/uzume/lora-gemini-composition.ts`: `GEMINI_COMPOSITION_GARLAND_LOCK`
+    (l.52), `hardLockComposicionGemini` con tercer candado (l.59),
+    `candadosDeComposicion` (l.77) y `conArmadoGuirnaldaEnCaption` (l.85);
+    `src/app/api/generate/route.ts:1118` lo pasa.
+- **Cómo convive el relleno con el patrón** (decidido): el patrón colorea los
+  racimos; el relleno y los remates toman el color de su material y no ocupan
+  posiciones del patrón. El racimo `i` es la fila `i` del patrón expandido
+  sobre los racimos que se arman. La compra sigue saliendo de la rejilla
+  completa (T/k filas); si un color no alcanza, `fuera_de_patron` lo avisa
+  (en la U en espejo de prueba: 3 de 44 globos).
+- **Pruebas nuevas**: `services/ai-api/tests/test_patron_guirnalda.py` (23:
+  preset sin armado igual, por racimo, unidad del armado sobre la de la foto,
+  espejo en U y fuera de ella, redacción, `filas_de_racimos`, resolución y
+  edición); frase LoRA por soporte y forma en `test_armado_guirnalda.py`;
+  `scripts/test/test-armado-guirnalda-prompt.ts` (`ia:test-armado-guirnalda-prompt`,
+  en `plan:test`) con `scripts/lib/escenas-armado-guirnalda.ts` y
+  `scripts/fixtures/armado-guirnalda-prompt/` (15 planes de Python de verdad,
+  escritos por `services/ai-api/scripts/fixture_armado_guirnalda_prompt.py`,
+  vista previa por defecto y `--escribir`; e instantánea de 16 prompts sin
+  armado, capturada con los constructores de `27528f2`). `resueltos.json` de
+  E3 lleva la frase LoRA nueva.
+- **Script para E7**: `scripts/ops/generar-guirnalda-armado.ts`, generación
+  real en fal.ai con y sin armado (pared, swags, U en espejo, piso, abrazada),
+  vista previa por defecto, gasto solo con `--confirm-spend --max-usd`. No se
+  corrió con gasto.
+
+**Verificación real** (2026-09-28):
+
+- Python: `pytest -q` 799 en verde (4 omitidas por falta de Postgres local);
+  `ruff check`, `ruff format --check`, `mypy app scripts` y
+  `generate_models.py --check` limpios. Los 31 vectores dorados no cambian
+  (`test_plan_parity`, `test_plan_regresion`). Los cinco planes sin armado de
+  la fixture salen idénticos resueltos con el código de `27528f2` y con E5.
+  `PROMPT_VERSION` del patrón de Amaterasu sigue en `0d8c93d34d672014`.
+- Next: `npx tsc --noEmit` solo con el TS2304 `LayoutProps` preexistente de
+  `src/app/layout.tsx`; `npm run -s lint` 0 errores (25 avisos
+  preexistentes); `npm run -s contracts:check` sin deriva (E5 no toca el
+  contrato); `ia:test-armado-guirnalda-prompt`, `ia:test-patron-color-prompt`,
+  `ia:test-armado-bouquet-prompt`, `ia:test-lora-compiler`,
+  `ia:test-lora-bilateral`, `ia:test-lora-v004-compactacion`,
+  `ia:test-prompts`, `lora:test-product-runtime`, `plan:test-prompt` y
+  `plan:test-armado-guirnalda` en verde. `npm run plan:test`: completo en 0
+  (85 scripts, con `ia:test-armado-guirnalda-prompt`: 12 casos).
+
+**Pendientes**:
+
+- **No se sabe si el LoRA v007 (ni el v004) aprendió guirnaldas por soporte**:
+  "draped between two anchor points", "in clusters of four" o "wrapped around
+  the balloon arch" nunca estuvieron en sus captions. Se mide en E7, con pago
+  y tope (`scripts/ops/generar-guirnalda-armado.ts`).
+- Al confirmar, el patrón se completa antes que la receta del armado, así que
+  una guirnalda nueva sigue recibiendo confeti con varios tamaños y cuarteto
+  (ADR-0032, decisión 15). Propuesta para la fusión con E2/E4: receta →
+  patrón por racimo → receta otra vez, validando que ningún remate quede sin
+  globo grande.
+- La compra por color sigue la rejilla completa y los racimos el patrón sobre
+  ellos: con anillos o espejo la diferencia sale como `fuera_de_patron`.
+  Contar la rejilla sobre los racimos cambiaría la compra: decisión de negocio.
+- La variante JSON del caption (experimental) dice "every listed decoration
+  appears once as a separate physical piece" también con una guirnalda
+  abrazada a otra pieza; el texto y Gemini ya lo exceptúan.
+- Para E6: la gráfica del armado debe dibujar `armados_guirnalda[].racimos`
+  (los colores que salen de `filas_de_racimos`), no las filas de
+  `patrones_color[].celdas`, que tienen T/k filas.
+- Para la fusión con E4: E5 toca `plan.py` solo en `_pattern_context`,
+  `_garland_context` y tres imports; ni el contrato ni `reference-structure.ts`.
+
 ### Estado de las ramas (2026-09-28, todas subidas a `origin`, sin PR abierto)
 
 | Rama | Contenido | Estado |
@@ -505,6 +609,7 @@ Referencias a la rama al cierre de la entrega.
 | `feat/conteo-referencia` | E1 (lectura de conteo, bandera OFF) | hecha |
 | `wip/conteo-e2` | E2 a medias | no pasa `contracts:check`; ver `SEGUIMIENTO-conteo.md` §3 |
 | `feat/guirnaldas` | E3 (armado de guirnalda, bandera OFF) | hecha; faltan E4–E6 |
+| `feat/guirnaldas-e5` | E5 (prompts, patrón por racimo, espejo), desde `feat/guirnaldas` `27528f2` | hecha; falta fusionar con E4 y E6 |
 
 Ninguna rama incluye a las otras todavía; E4 en adelante debe partir de
 `feat/guirnaldas` con `feat/bouquets` y `feat/conteo-referencia` fusionadas.

@@ -43,29 +43,47 @@ export const GEMINI_COMPOSITION_PATTERN_LOCK = "Keep each structure's color patt
 export const GEMINI_COMPOSITION_ASSEMBLY_LOCK = "Keep each balloon bouquet exactly as assembled in the LoRA image: the same levels from bottom to top, the same topper, the number balloons in the same position and the same number of bouquets; never add, drop or regroup its balloons.";
 
 /**
- * Hard lock de la etapa 2; sin patrón de color ni armado es la constante de
- * siempre, byte a byte. `conArmadoBouquet` va aparte del patrón: un plan puede
- * traer uno, el otro o los dos.
+ * Lo que el hard lock añade cuando el caption de la etapa 1 llevó el armado de
+ * una guirnalda (ADR-0032, E5): la etapa 2 re-posa la decoración de un fondo
+ * blanco sobre el venue, y sin esta frase podía enderezar una guirnalda en U,
+ * bajarla al piso o separarla de la pieza que abraza. Solo nombra lo que el
+ * armado fija; el armado mismo viaja en la línea de color del prompt.
  */
-export function hardLockComposicionGemini(conPatronDeColor: boolean, conArmadoBouquet = false): string {
+export const GEMINI_COMPOSITION_GARLAND_LOCK = "Keep each balloon garland exactly as assembled in the LoRA image: the same clusters, filler and accent balloons and the same shape, and install it on the support its assembly names in COLOR VARIETY (flat against the real wall, hanging from its anchor points, resting on the real floor, along the real table edge, or wrapped around its host structure); never straighten, re-hang, split or regroup it.";
+
+/**
+ * Hard lock de la etapa 2; sin patrón de color ni armado es la constante de
+ * siempre, byte a byte. `conArmadoBouquet` y `conArmadoGuirnalda` van aparte
+ * del patrón: un plan puede traer cualquiera de ellos o todos.
+ */
+export function hardLockComposicionGemini(conPatronDeColor: boolean, conArmadoBouquet = false, conArmadoGuirnalda = false): string {
   return [
     GEMINI_COMPOSITION_HARD_LOCK,
     ...(conPatronDeColor ? [GEMINI_COMPOSITION_PATTERN_LOCK] : []),
     ...(conArmadoBouquet ? [GEMINI_COMPOSITION_ASSEMBLY_LOCK] : []),
+    ...(conArmadoGuirnalda ? [GEMINI_COMPOSITION_GARLAND_LOCK] : []),
   ].join(" ");
 }
+
+type ClausulaConFrase = { colorPattern?: string; armadoBouquet?: unknown; armadoGuirnalda?: { conPatron: boolean } };
 
 /**
  * Qué candados pide el caption de la etapa 1, leído de sus cláusulas: una
  * cláusula con `colorPattern` lleva un patrón de color, salvo que esa frase sea
- * la de un armado de bouquet (`armadoBouquet`). Sin armados es la condición de
- * siempre (`some(colorPattern)`).
+ * la de un armado de bouquet (`armadoBouquet`) o solo la de un armado de
+ * guirnalda sin patrón (`armadoGuirnalda.conPatron` falso). Sin armados es la
+ * condición de siempre (`some(colorPattern)`).
  */
-export function candadosDeComposicion(clauses: ReadonlyArray<{ colorPattern?: string; armadoBouquet?: unknown }>): [conPatronDeColor: boolean, conArmadoBouquet: boolean] {
+export function candadosDeComposicion(clauses: ReadonlyArray<ClausulaConFrase>): [conPatronDeColor: boolean, conArmadoBouquet: boolean] {
   return [
-    clauses.some((clause) => Boolean(clause.colorPattern) && !clause.armadoBouquet),
+    clauses.some((clause) => Boolean(clause.colorPattern) && !clause.armadoBouquet && (!clause.armadoGuirnalda || clause.armadoGuirnalda.conPatron)),
     clauses.some((clause) => Boolean(clause.colorPattern) && Boolean(clause.armadoBouquet)),
   ];
+}
+
+/** Si el caption de la etapa 1 llevó el armado de alguna guirnalda (tercer candado de `hardLockComposicionGemini`). */
+export function conArmadoGuirnaldaEnCaption(clauses: ReadonlyArray<ClausulaConFrase>): boolean {
+  return clauses.some((clause) => Boolean(clause.colorPattern) && Boolean(clause.armadoGuirnalda));
 }
 
 /**
