@@ -3,7 +3,10 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { ejecutarCliConteo, leerArgumentosConteo, type DependenciasCliConteo } from "../../src/lib/eval/estructuras/cli-conteo";
 import {
+  clasificarFalloConteo,
+  comprobarLecturaConteo,
   cuentaDeLectura,
+  FalloSistematicoConteo,
   leerPrediccionesConteo,
   leerVerdadConteo,
   metricasConteo,
@@ -38,7 +41,7 @@ const lectura = (extra: Record<string, unknown> = {}) => ({
   por_tamano: [], largo_relativo: null, alto_relativo: null, confianza: 0.8, ...extra,
 });
 
-function entorno(opciones: { archivos?: Map<string, string>; uso?: { entrada: number; salida: number; pensamiento?: number; completo: boolean } } = {}) {
+function entorno(opciones: { archivos?: Map<string, string>; uso?: { entrada: number; salida: number; pensamiento?: number; completo: boolean }; fallo?: (n: number) => Error | null; comprobar?: () => Promise<void> } = {}) {
   const archivos = opciones.archivos ?? new Map<string, string>([
     [resolve(REPO, "suite.json"), JSON.stringify(suite)],
     [resolve(FUERA, "verdad.csv"), verdad],
@@ -49,6 +52,8 @@ function entorno(opciones: { archivos?: Map<string, string>; uso?: { entrada: nu
   let llamadas = 0;
   const analizar: AnalizadorConteo = async (item) => {
     llamadas += 1;
+    const error = opciones.fallo?.(llamadas);
+    if (error) throw error;
     const piezas = item.image_sha256 === hash(2)
       ? [{ element_id: "REF_01_E01", tipo: "kit", estructura_oficial: "bouquet", piezas: 1, lectura: lectura({ globos_visibles: 5, exacto: true, estimado_total: null }) }]
       : [{ element_id: "REF_01_E01", tipo: "guirnalda", estructura_oficial: "guirnalda", piezas: 1, lectura: lectura() }];
@@ -62,7 +67,7 @@ function entorno(opciones: { archivos?: Map<string, string>; uso?: { entrada: nu
     commit: () => "abc1234",
     ahora: () => new Date("2026-09-28T14:00:00Z"),
     desactivarTelemetriaDurable: () => { eventos.push("telemetria-desactivada"); },
-    crearAnalizador: async () => { eventos.push("analizador-creado"); return { ...sistema, analizar }; },
+    crearAnalizador: async () => { eventos.push("analizador-creado"); return { ...sistema, analizar, comprobar: opciones.comprobar ?? (async () => undefined) }; },
     sistemaSinProveedor: () => sistema,
     log: (mensaje) => { eventos.push(`log:${mensaje}`); },
   };
@@ -193,6 +198,39 @@ async function run(): Promise<void> {
     const lineas = leerPrediccionesConteo(archivos.get(resolve(salida, "predicciones.jsonl"))!);
     assert.deepEqual(lineas.map((linea) => linea.resultado), ["ok", "ok", "omitida_por_presupuesto"]);
     assert.ok(resultado.runJsonRuta);
+  });
+
+  await caso("#24 comprobación antes de gastar: sin la ruta, sin firma o sin configurar, no se analiza ninguna foto", async () => {
+    const adaptador = (code: string, status: number, domainCode?: string) => Object.assign(new Error(code), { code, status, ...(domainCode ? { domainCode } : {}) });
+    await comprobarLecturaConteo(async () => { throw adaptador("PYTHON_INVALID_REQUEST", 422); });
+    for (const [error, codigo] of [
+      [adaptador("PYTHON_UNAVAILABLE", 404), "PYTHON_UNAVAILABLE"],
+      [adaptador("PYTHON_AUTH_FAILED", 401), "PYTHON_AUTH_FAILED"],
+      [adaptador("PYTHON_BACKEND_NOT_CONFIGURED", 503), "PYTHON_BACKEND_NOT_CONFIGURED"],
+    ] as const) {
+      await assert.rejects(comprobarLecturaConteo(async () => { throw error; }), (rechazo: unknown) => rechazo instanceof FalloSistematicoConteo && rechazo.codigo === codigo);
+    }
+    await assert.rejects(comprobarLecturaConteo(async () => ({ lecturas: [] })), /PREFLIGHT_ACEPTO_UN_CUERPO_INVALIDO/);
+    const { deps, llamadas } = entorno({ comprobar: async () => { throw new FalloSistematicoConteo("PYTHON_UNAVAILABLE"); } });
+    await assert.rejects(ejecutarCliConteo([...base, "--ejecutar", "--max-usd", "2", "--crudos", FUERA], deps), /fallo sistemático: PYTHON_UNAVAILABLE/);
+    assert.equal(llamadas(), 0, "ninguna foto se paga si el ai-api no sirve");
+  });
+
+  await caso("#24 un fallo sistemático a mitad de corrida la detiene, deja su código y sale con error", async () => {
+    assert.deepEqual(clasificarFalloConteo(Object.assign(new Error("x"), { code: "PYTHON_UNAVAILABLE", status: 503, domainCode: "conteo_referencia_unavailable" })), { codigo: "PYTHON_UNAVAILABLE:conteo_referencia_unavailable", sistematico: true });
+    assert.deepEqual(clasificarFalloConteo(Object.assign(new Error("x"), { code: "PYTHON_UNAVAILABLE", status: 502, domainCode: "conteo_referencia_provider_error" })), { codigo: "PYTHON_UNAVAILABLE:conteo_referencia_provider_error", sistematico: false });
+    const { deps, archivos, eventos, llamadas } = entorno({ fallo: (n) => (n === 1 ? new FalloSistematicoConteo("PROMPT_VERSION_DISTINTA") : null) });
+    await assert.rejects(ejecutarCliConteo([...base, "--ejecutar", "--max-usd", "2", "--concurrencia", "1", "--crudos", FUERA], deps), /PROMPT_VERSION_DISTINTA/);
+    assert.equal(llamadas(), 1, "tras el primer fallo sistemático no empieza otra foto");
+    const [linea] = leerPrediccionesConteo(archivos.get(resolve(salida, "predicciones.jsonl"))!);
+    assert.deepEqual([linea!.resultado, linea!.error_codigo], ["error", "PROMPT_VERSION_DISTINTA"]);
+    const run = JSON.parse(archivos.get(resolve(salida, "run.json"))!);
+    assert.equal(run.detenida_por, "PROMPT_VERSION_DISTINTA");
+    assert.ok(eventos.includes("log:[conteo] fatal: PROMPT_VERSION_DISTINTA"));
+    // Un error suelto (no sistemático) no detiene la corrida.
+    const suelto = entorno({ fallo: (n) => (n === 1 ? new Error("otra cosa") : null) });
+    await ejecutarCliConteo([...base, "--ejecutar", "--max-usd", "2", "--concurrencia", "1", "--crudos", FUERA], suelto.deps);
+    assert.equal(suelto.llamadas(), 3);
   });
 
   console.log(`[PASS] ${casos} casos del runner de conteo`);

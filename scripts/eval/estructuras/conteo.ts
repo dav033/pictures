@@ -4,7 +4,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } fr
 import { dirname, resolve } from "node:path";
 import { dentroDe } from "../../../src/lib/eval/estructuras/cli-reconocimiento";
 import { ejecutarCliConteo, type SistemaConteo } from "../../../src/lib/eval/estructuras/cli-conteo";
-import type { AnalizadorConteo, PiezaContada } from "../../../src/lib/eval/estructuras/conteo";
+import { clasificarFalloConteo, comprobarLecturaConteo, FalloSistematicoConteo, type AnalizadorConteo, type PiezaContada } from "../../../src/lib/eval/estructuras/conteo";
 
 /**
  * Runner del conteo de globos (ADR-0031). Vista previa por defecto; gastar exige
@@ -21,6 +21,8 @@ import type { AnalizadorConteo, PiezaContada } from "../../../src/lib/eval/estru
 const REPO = process.cwd();
 /** Versión del prompt de la lectura (fijada en services/ai-api/tests/test_conteo_referencia.py). La corrida real registra la que Python devuelve. */
 const PROMPT_VERSION_CONOCIDA = "conteo-referencia.v1:bfd6604c6192ab95";
+/** PNG de 1×1 para la comprobación: el ai-api rechaza el cuerpo (sin elementos) antes de mirar la imagen. */
+const PNG_MINIMO = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR42mNgAAAAAgABXLzppwAAAABJRU5ErkJggg==";
 
 function detectarMime(bytes: Buffer): "image/jpeg" | "image/png" | "image/webp" {
   if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return "image/jpeg";
@@ -35,7 +37,7 @@ function cargarEntorno(): void {
   delete process.env.DATABASE_URL;
 }
 
-async function crearAnalizador(raizImagenes: string, crudos: string): Promise<SistemaConteo & { analizar: AnalizadorConteo }> {
+async function crearAnalizador(raizImagenes: string, crudos: string): Promise<SistemaConteo & { analizar: AnalizadorConteo; comprobar: () => Promise<void> }> {
   // telemetria-llamadas configura la persistencia en Postgres al importarse: primero se importa, luego se apaga.
   await import("../../../src/lib/ia/nucleo/telemetria-llamadas");
   const { configurarPersistenciaTelemetria } = await import("@sempertex/agente-core");
@@ -59,7 +61,7 @@ async function crearAnalizador(raizImagenes: string, crudos: string): Promise<Si
       const analisis = await analizarReferenciasV2(chat, [imagen], [], "perceptual", { requestId, correlationId: requestId, superficie: "evaluacion/conteo" }, signal, {
         forzarNuevoAnalisis: true,
         // El pensamiento se cobra como salida (calcularCosteEstimado).
-        observarPase: (pase) => { uso.entrada += pase.uso.entrada; uso.salida += pase.uso.salida; uso.pensamiento += pase.uso.pensamiento; },
+        observarPase: (pase) => { uso.entrada += pase.uso.entrada; uso.salida += pase.uso.salida; uso.pensamiento += pase.uso.pensamiento ?? 0; },
       });
       const elementos = elementosConteo(analisis.blueprint).get("REF_01") ?? [];
       const piezas: PiezaContada[] = [];
@@ -69,8 +71,8 @@ async function crearAnalizador(raizImagenes: string, crudos: string): Promise<Si
           imagen: { mimeType: imagen.mime, dataBase64: imagen.base64 },
           elementos, requestId, correlationId: requestId, deadlineMs: 60_000, parentSignal: signal,
         });
-        // Una corrida registra una sola versión del prompt: si el ai-api trae otra, falla fuerte.
-        if (resultado.promptVersion !== PROMPT_VERSION_CONOCIDA) throw new Error(`el ai-api usa ${resultado.promptVersion}, no ${PROMPT_VERSION_CONOCIDA}`);
+        // Una corrida registra una sola versión del prompt: si el ai-api trae otra, la corrida se detiene.
+        if (resultado.promptVersion !== PROMPT_VERSION_CONOCIDA) throw new FalloSistematicoConteo("PROMPT_VERSION_DISTINTA");
         if (resultado.usage) {
           uso.entrada += resultado.usage.prompt_token_count ?? 0;
           uso.salida += resultado.usage.candidates_token_count ?? 0;
@@ -90,11 +92,19 @@ async function crearAnalizador(raizImagenes: string, crudos: string): Promise<Si
       return { resultado: "ok", piezas, uso, rawOutputSha256: sha, msTotal: Date.now() - inicio };
     } catch (error) {
       const nombre = error instanceof Error ? error.name : "";
-      const resultado = signal.aborted || nombre === "TimeoutError" ? "timeout" : "error";
-      return { resultado, uso: { ...uso, completo: false }, msTotal: Date.now() - inicio };
+      if (signal.aborted || nombre === "TimeoutError") return { resultado: "timeout", uso: { ...uso, completo: false }, msTotal: Date.now() - inicio };
+      // El análisis de Amaterasu ya se pagó: su uso queda en la línea, con el código del fallo.
+      const fallo = clasificarFalloConteo(error);
+      if (fallo.sistematico) console.error(`[conteo] fatal: ${fallo.codigo}`);
+      return { resultado: "error", uso: { ...uso, completo: false }, msTotal: Date.now() - inicio, causa: fallo.codigo, sistematico: fallo.sistematico };
     }
   };
-  return { modelo: chat.modelo, promptVersion: PROMPT_VERSION_CONOCIDA, analizar };
+  // Antes del primer análisis pagado: la ruta existe, firma y scope valen (422 antes del dominio, sin proveedor).
+  const comprobar = () => comprobarLecturaConteo(() => {
+    const requestId = randomUUID();
+    return llamarPythonConteoReferencia({ imagen: { mimeType: "image/png", dataBase64: PNG_MINIMO }, elementos: [], requestId, correlationId: requestId, deadlineMs: 15_000 });
+  });
+  return { modelo: chat.modelo, promptVersion: PROMPT_VERSION_CONOCIDA, analizar, comprobar };
 }
 
 async function main(): Promise<void> {

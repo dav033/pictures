@@ -89,6 +89,8 @@ export const PrediccionConteoV1Schema = z.object({
   }).strict(),
   latencia_ms: z.number().int().nonnegative(),
   raw_output_sha256: sha256.nullable(),
+  /** Código estable del fallo de una línea `error` (sin mensaje ni datos de la foto). */
+  error_codigo: z.string().regex(/^[A-Za-z0-9_.:-]{1,120}$/).optional(),
 }).strict();
 export type PrediccionConteoV1 = z.infer<typeof PrediccionConteoV1Schema>;
 
@@ -282,12 +284,68 @@ export function estimarConteo(input: { tabla: TablaPrecios; supuesto: SupuestoCo
 
 // --- Runner ---------------------------------------------------------------------------------
 
+/**
+ * Un fallo que se repetiría en todas las fotos (el ai-api sin la ruta, sin
+ * autenticación, con otra versión del prompt o sin su llave): la corrida se
+ * detiene en vez de seguir pagando el análisis de cada foto para nada.
+ * `codigo` es un código estable, nunca un mensaje ni datos de la foto.
+ */
+export class FalloSistematicoConteo extends Error {
+  constructor(readonly codigo: string) {
+    super(`fallo sistemático: ${codigo}`);
+    this.name = "FalloSistematicoConteo";
+  }
+}
+
+const CODIGOS_PYTHON_SISTEMATICOS = new Set([
+  "PYTHON_BACKEND_NOT_CONFIGURED", "PYTHON_BACKEND_INVALID_URL", "PYTHON_AUTH_FAILED", "PYTHON_AUTH_UNAVAILABLE", "PYTHON_SCOPE_DENIED",
+  // La respuesta no cumple el contrato de esta revisión: el ai-api es de otra.
+  "PYTHON_INVALID_RESPONSE",
+]);
+
+function codigoCorto(valor: unknown): string | null {
+  return typeof valor === "string" && /^[A-Za-z0-9_.-]{1,60}$/.test(valor) ? valor : null;
+}
+
+/** El código de un fallo del análisis y si es sistemático. Lee el error del adaptador de Python por su forma (`code`, `status`, `domainCode`). */
+export function clasificarFalloConteo(error: unknown): { codigo: string; sistematico: boolean } {
+  if (error instanceof FalloSistematicoConteo) return { codigo: error.codigo, sistematico: true };
+  const datos = (typeof error === "object" && error !== null ? error : {}) as { code?: unknown; status?: unknown; domainCode?: unknown; name?: unknown };
+  const codigo = codigoCorto(datos.code);
+  if (codigo === null) return { codigo: codigoCorto(datos.name) ?? "ERROR", sistematico: false };
+  const dominio = codigoCorto(datos.domainCode);
+  const sistematico = CODIGOS_PYTHON_SISTEMATICOS.has(codigo)
+    || (codigo === "PYTHON_UNAVAILABLE" && datos.status === 404)
+    // 503 sin llave de Gemini en el ai-api (`vision_estructurada.leer_foto`).
+    || dominio === "conteo_referencia_unavailable";
+  return { codigo: dominio ? `${codigo}:${dominio}` : codigo, sistematico };
+}
+
+/**
+ * Comprobación gratis antes de gastar: una petición firmada con un cuerpo
+ * inválido (sin elementos) llega a la ruta y el ai-api la rechaza con 422 antes
+ * del dominio, sin llamar al proveedor. Cualquier otra respuesta (404, 401,
+ * 403, sin configurar) detiene la corrida antes del primer análisis. La
+ * versión del prompt no se puede ver sin pagar: la comprueba la primera
+ * lectura, que entonces detiene la corrida.
+ */
+export async function comprobarLecturaConteo(enviarCuerpoInvalido: () => Promise<unknown>): Promise<void> {
+  try {
+    await enviarCuerpoInvalido();
+  } catch (error) {
+    const datos = (typeof error === "object" && error !== null ? error : {}) as { code?: unknown; status?: unknown };
+    if (datos.code === "PYTHON_INVALID_REQUEST" && datos.status === 422) return;
+    throw new FalloSistematicoConteo(clasificarFalloConteo(error).codigo);
+  }
+  throw new FalloSistematicoConteo("PREFLIGHT_ACEPTO_UN_CUERPO_INVALIDO");
+}
+
 /** Tokens reportados por las dos llamadas; `pensamiento` se cobra como salida. */
 type UsoConteo = { entrada: number; salida: number; pensamiento?: number; completo: boolean };
 
 export type ResultadoConteo =
   | { resultado: "ok"; piezas: PiezaContada[]; uso: UsoConteo; rawOutputSha256: string; msTotal: number }
-  | { resultado: "error" | "timeout" | "cancelado"; uso: UsoConteo; msTotal: number };
+  | { resultado: "error" | "timeout" | "cancelado"; uso: UsoConteo; msTotal: number; causa?: string; sistematico?: boolean };
 
 export type AnalizadorConteo = (item: ItemSuite, signal: AbortSignal) => Promise<ResultadoConteo>;
 
@@ -332,7 +390,14 @@ export function planificarConteo(config: ConfiguracionConteo, items: readonly It
   return { run_id: config.runId, imagenes: items.length, corridas_por_imagen: config.corridasPorImagen, analisis_totales: totales, analisis_pendientes: pendientes, estimacion, cabe_en_presupuesto: Number.isFinite(config.maxUsd) && estimacion.cota_superior_usd <= config.maxUsd };
 }
 
-export type ResultadoCorridaConteo = { plan: PlanConteo; lineas: PrediccionConteoV1[]; costo_reportado_usd: number; omitidas_por_presupuesto: number };
+export type ResultadoCorridaConteo = {
+  plan: PlanConteo;
+  lineas: PrediccionConteoV1[];
+  costo_reportado_usd: number;
+  omitidas_por_presupuesto: number;
+  /** Código del fallo sistemático que detuvo la corrida; `null` si terminó. */
+  detenida_por: string | null;
+};
 
 /**
  * Corre los análisis pendientes. Fotos distintas en paralelo (≤ concurrencia);
@@ -341,7 +406,8 @@ export type ResultadoCorridaConteo = { plan: PlanConteo; lineas: PrediccionConte
  * completo: un timeout o un uso sin reportar no prueban que no se cobró).
  * Lo gastado por encima de la cota también se reserva, así que una foto más
  * cara que su cota frena las siguientes: el gasto pasa del tope a lo sumo por
- * el exceso de las fotos que ya estaban en curso.
+ * el exceso de las fotos que ya estaban en curso. Un fallo sistemático no deja
+ * empezar otra foto (las que ya corren terminan) y queda en `detenida_por`.
  * `alEscribir` recibe cada línea en cuanto existe: una corrida cortada se reanuda.
  */
 export async function ejecutarConteo(input: {
@@ -360,6 +426,7 @@ export async function ejecutarConteo(input: {
   let reservado = 0;
   let costoReal = 0;
   let omitidas = 0;
+  let detenidaPor: string | null = null;
 
   const linea = (item: ItemSuite, corrida: number, analisis: ResultadoConteo | { resultado: "omitida_por_presupuesto" }): PrediccionConteoV1 => PrediccionConteoV1Schema.parse({
     schema: PREDICCION_CONTEO_SCHEMA_ID,
@@ -374,12 +441,13 @@ export async function ejecutarConteo(input: {
       : { tokens_entrada: 0, tokens_salida: 0, tokens_pensamiento: 0, completo: true },
     latencia_ms: "msTotal" in analisis ? Math.round(analisis.msTotal) : 0,
     raw_output_sha256: analisis.resultado === "ok" ? analisis.rawOutputSha256 : null,
+    ...("causa" in analisis && analisis.causa ? { error_codigo: analisis.causa } : {}),
   });
 
   const porImagen = async (item: ItemSuite) => {
     for (let corrida = 1; corrida <= config.corridasPorImagen; corrida += 1) {
       if (input.yaHechas?.has(claveCorrida(item.image_sha256, corrida))) continue;
-      if (input.signal?.aborted) return;
+      if (input.signal?.aborted || detenidaPor !== null) return;
       let nueva: PrediccionConteoV1;
       if (unitaria.cota_superior_usd > config.maxUsd - reservado) {
         omitidas += 1;
@@ -393,13 +461,17 @@ export async function ejecutarConteo(input: {
           analisis = await analizar(item, signal);
         } catch (error) {
           const nombre = error instanceof Error ? error.name : "";
-          analisis = { resultado: nombre === "TimeoutError" ? "timeout" : nombre === "AbortError" ? "cancelado" : "error", uso: { entrada: 0, salida: 0, completo: false }, msTotal: Date.now() - inicio };
+          const fallo = clasificarFalloConteo(error);
+          analisis = nombre === "TimeoutError" || nombre === "AbortError"
+            ? { resultado: nombre === "TimeoutError" ? "timeout" : "cancelado", uso: { entrada: 0, salida: 0, completo: false }, msTotal: Date.now() - inicio }
+            : { resultado: "error", uso: { entrada: 0, salida: 0, completo: false }, msTotal: Date.now() - inicio, causa: fallo.codigo, sistematico: fallo.sistematico };
         }
         const gastado = costo(analisis.uso, precio);
         costoReal += gastado;
         // Lo que pasó de la cota también cuenta: el tope sigue el gasto, no la reserva.
         if (gastado > unitaria.cota_superior_usd) reservado += gastado - unitaria.cota_superior_usd;
         if (analisis.uso.completo && analisis.resultado !== "timeout") reservado -= Math.max(0, unitaria.cota_superior_usd - gastado);
+        if (analisis.resultado === "error" && analisis.sistematico && detenidaPor === null) detenidaPor = analisis.causa ?? "ERROR";
         nueva = linea(item, corrida, analisis);
       }
       lineas.push(nueva);
@@ -411,7 +483,7 @@ export async function ejecutarConteo(input: {
   await Promise.all(Array.from({ length: Math.min(config.concurrencia, cola.length) }, async () => {
     for (let item = cola.shift(); item; item = cola.shift()) await porImagen(item);
   }));
-  return { plan, lineas, costo_reportado_usd: costoReal, omitidas_por_presupuesto: omitidas };
+  return { plan, lineas, costo_reportado_usd: costoReal, omitidas_por_presupuesto: omitidas, detenida_por: detenidaPor };
 }
 
 /** `run.json` de una corrida de conteo: plan, costo y, con verdad humana, las métricas. */
@@ -435,6 +507,7 @@ export function resumirConteo(input: {
       uso_incompleto: input.todasLasLineas.filter((linea) => !linea.uso_reportado.completo).length,
       omitidas_por_presupuesto: input.corrida.omitidas_por_presupuesto,
     },
+    detenida_por: input.corrida.detenida_por,
     resultados: Object.fromEntries(["ok", "error", "timeout", "cancelado", "omitida_por_presupuesto"].map((resultado) => [resultado, input.todasLasLineas.filter((linea) => linea.resultado === resultado).length])),
     latencia_ms: { n: latencias.length, p50: percentil(latencias, 50), p95: percentil(latencias, 95) },
     metricas: input.verdad ? metricasConteo(input.todasLasLineas, input.verdad) : null,

@@ -93,7 +93,8 @@ export type DependenciasCliConteo = {
   ahora: () => Date;
   /** Apaga la telemetría durable (ai_call_log) y quita DATABASE_URL: una evaluación no escribe en la base de producción. */
   desactivarTelemetriaDurable: () => void;
-  crearAnalizador: (opciones: { raizImagenes: string; crudos: string }) => Promise<SistemaConteo & { analizar: AnalizadorConteo }>;
+  /** `comprobar` corre antes del primer análisis pagado: si el ai-api no sirve, lanza `FalloSistematicoConteo` sin gastar. */
+  crearAnalizador: (opciones: { raizImagenes: string; crudos: string }) => Promise<SistemaConteo & { analizar: AnalizadorConteo; comprobar: () => Promise<void> }>;
   /** Para la vista previa, donde no se crea ningún analizador (ni cliente de proveedor). */
   sistemaSinProveedor: () => SistemaConteo;
   log: (mensaje: string) => void;
@@ -123,7 +124,7 @@ export async function ejecutarCliConteo(argv: readonly string[], deps: Dependenc
   if (opciones.ejecutar) deps.desactivarTelemetriaDurable();
   const sistemaBase = opciones.ejecutar
     ? await deps.crearAnalizador({ raizImagenes: opciones.raizImagenes, crudos: opciones.crudos! })
-    : { ...deps.sistemaSinProveedor(), analizar: null };
+    : { ...deps.sistemaSinProveedor(), analizar: null, comprobar: null };
   const config: ConfiguracionConteo = {
     runId: opciones.runId,
     corridasPorImagen: opciones.corridas,
@@ -154,6 +155,7 @@ export async function ejecutarCliConteo(argv: readonly string[], deps: Dependenc
   if (!plan.cabe_en_presupuesto) {
     throw new Error(`la cota estimada US$${plan.estimacion.cota_superior_usd.toFixed(2)} supera --max-usd ${opciones.maxUsd}: no se ejecuta nada`);
   }
+  await sistemaBase.comprobar!();
   const corrida = await ejecutarConteo({
     config, items: suite.items, analizar: sistemaBase.analizar!, yaHechas,
     alEscribir: (linea) => deps.anexarTexto(rutaPredicciones, lineaConteoJsonl(linea)),
@@ -161,6 +163,10 @@ export async function ejecutarCliConteo(argv: readonly string[], deps: Dependenc
   const runJson = resumirConteo({ corrida, todasLasLineas: [...previas, ...corrida.lineas], verdad, generadoEn: deps.ahora(), suite: { id: suite.suite_id, manifiesto_sha256: manifiestoSha256 } });
   const runJsonRuta = resolve(opciones.salida, "run.json");
   deps.escribirTexto(runJsonRuta, `${JSON.stringify(runJson, null, 2)}\n`);
-  deps.log(`[ejecución] ${corrida.lineas.length} líneas · reportado US$${corrida.costo_reportado_usd.toFixed(4)} · omitidas por presupuesto ${corrida.omitidas_por_presupuesto}`);
+  deps.log(`[ejecución] ${corrida.lineas.length} líneas · reportado US${corrida.costo_reportado_usd.toFixed(4)} · omitidas por presupuesto ${corrida.omitidas_por_presupuesto}`);
+  if (corrida.detenida_por !== null) {
+    deps.log(`[conteo] fatal: ${corrida.detenida_por}`);
+    throw new Error(`corrida detenida por un fallo sistemático (${corrida.detenida_por}); run.json escrito. Corrige el ai-api y reanuda con el mismo --run-id`);
+  }
   return { modo: "ejecucion", runJsonRuta };
 }
