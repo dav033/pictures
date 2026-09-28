@@ -345,6 +345,18 @@ que falla contra el código anterior al arreglo.
 - **8** (`a203645`): el tope de salida de la lectura del bouquet sube de 2048 a
   4096 tokens, y un JSON cortado lleva su `finish_reason` en `provider_detail`.
 
+### 3.5 Guirnalda de 0,5 m con una foto de unos 75 globos (rama `fix/largo-desde-conteo`, 2026-09-28)
+
+- **Lectura real:** 54 visibles, no exacta, estimado 75, 40 % chico y 60 %
+  mediano, confianza 0,85, sin escala. Costó 2354 tokens, menos de un centavo.
+- **Antes:** con 0,5 m declarados por el chat, `_aplicar_conteos` daba
+  `sin_ajuste_posible` ("ninguna densidad ni largo dentro de ±35 %"). El máximo
+  era 0,675 m, unos 17 globos, y el plan quedaba en 10 a 12 globos.
+- **Ahora:** sin medidas del cliente, la cantidad decide el eje libre. Con
+  densidad media da 3,87 m y 75 globos. Ver la enmienda en ADR-0031 §12.
+- **También:** `brief.espacio` ya no es evidencia de medidas del cliente, y el
+  chat deja vacías las medidas que el cliente no dio.
+
 ## 4. Pendientes
 
 1. ~~Fusionar con `fix/bouquet-conteo-niveles`~~: hecho, ver §3.1.

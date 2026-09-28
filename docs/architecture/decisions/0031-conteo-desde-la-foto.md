@@ -177,6 +177,21 @@ El trabajo se parte en dos entregas reversibles por separado
     petición declara para esa pieza, y la foto solo ajusta la densidad. Una pieza con patrón
     re-sincroniza sus participaciones; si el patrón ya no cabe, no se ajusta. Sin
     opción válida: `sin_ajuste_posible`, y el plan queda igual.
+
+    **Enmienda de la ventana del eje (2026-09-28).** Una guirnalda con 0,5 m que
+    el chat puso sin dato del cliente y una foto de unos 75 globos quedaba en 12:
+    ±35 % de 0,5 m no llega. Ahora, si las medidas no son del cliente (ni
+    `espacio.fuente: cliente` ni `medidas_del_cliente`) y la ventana no alcanza,
+    la cantidad de la foto decide el eje en las piezas con un solo eje libre
+    (guirnalda: largo; columna: alto; `conteo_foto.eje_libre`). Se usan la
+    densidad del plan y la mezcla elegida, el mismo `contar` (con la cuerda si hay
+    armado), el menor centímetro que llega a la cuenta, la puerta física y
+    `MAX_MEDIDA_M`. El supuesto lo dice "equivalente a la foto (no medido)". Arco,
+    semiarco, pared y centro de mesa dependen de dos medidas y siguen con la
+    ventana. Con medidas del cliente nada cambia. Además, `brief.espacio` ya no
+    es evidencia de medidas del cliente, porque lo escribe el modelo
+    (`clienteDioMedidasEspacio`). Con conteo, el chat deja vacías las medidas que
+    el cliente no dio.
 13. **Dónde corre.** Las reglas están en `services/ai-api/app/conteo_foto.py`, que
     no importa `plan.py`: lo que necesita le llega en `PuertoPlan` (contar, puerta
     física, cobertura de mezcla, contexto del kit, re-sincronizar el patrón).
