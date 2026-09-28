@@ -285,6 +285,23 @@ falsos en pytest.
 | `generate_models.py --check` | al día |
 | vectores dorados `plan-resolution` | 31, sin cambios |
 
+### 3.3 Revisión adversaria de `feat/guirnaldas`: hallazgos 24–30 (rama `fix/rev-eval`, 2026-09-28)
+
+Cada arreglo lleva una prueba que falla antes y pasa después; nada corrió contra
+proveedores.
+
+- **24** (`0dd22bf`): antes del primer análisis pagado, una petición firmada con un cuerpo inválido tiene que volver con 422 (ruta, firma y scope bien, sin proveedor); un fallo sistemático a mitad (otra versión del prompt, 401/403/404, respuesta fuera de contrato, ai-api sin llave) no deja empezar otra foto, queda en `run.json` (`detenida_por`) y el comando sale con error; cada línea `error` guarda `error_codigo`.
+- **25** (`d45e7fe`): el exceso sobre la cota también se reserva, así que el tope sigue el gasto real; mismo arreglo en `runner.ts` (reconocimiento).
+- **26** (`b898fe3`): `correrExperimento` (fal.ai) falla cerrado: sin saldo legible no genera nada y, si deja de leerse a mitad, se detiene (`npm run lora:test-tope-fal`).
+- **27** (`7b06c10`): la cuenta humana tiene que ser un entero escrito; un blanco, "1e1" o "0x10" se rechazan con su línea.
+- **28** (`7d36228`): los tokens de pensamiento de las dos llamadas se registran (`tokens_pensamiento`, opcional en líneas viejas) y se cobran como salida.
+- **29** (`4df6ab3`): cada foto cuenta en una sola meta; una foto de más de 15 globos contada una a una va a la del error relativo, y `cumple.exactas` es un veredicto estricto (todas a ±1). Decisión en ADR-0031, decisión 16.
+- **30** (`334cf0a`): `run.json` cubre la corrida entera tras reanudar (costo sumado desde las líneas, plan completo); lo de la invocación va en `esta_invocacion`.
+
+Fuera de estos ids, sin tocar: `scripts/bench/bench-fidelidad.ts` lee el saldo de fal
+pero no aplica `--max-usd` a mitad de corrida, y `resumirCorrida`
+(`resumen-corrida.ts`, reconocimiento) tiene la misma forma que el hallazgo 30.
+
 ## 4. Pendientes
 
 1. ~~Fusionar con `fix/bouquet-conteo-niveles`~~: hecho, ver §3.1.
