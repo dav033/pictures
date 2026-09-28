@@ -397,6 +397,43 @@ E6 numeraba sus decisiones 10 a 14, como E5; al fusionarlas pasan a 21 a 25, det
     de cuerda, duración estimada, pasos de Python y, con patrón, su nombre y
     sus consejos). "Hoja de armado" del bloque del patrón abre esta.
 
+## Corrección (2026-09-28): el armado llega a la imagen como racimos, no como cintas
+
+Una guirnalda en pared con espiral de cuartetos salió en fal.ai (LoRA v007, sin
+foto del espacio) con cintas retorcidas cruzando la pieza. El armado sí llegaba
+al caption. Lo que llegaba mal era la redacción: "wrapped in a spiral of pink,
+orange and gold stripes winding along its length" y, en Gemini, "continuous
+diagonal spiral stripes" y "tight and twisted against each other". El
+diagnóstico y la evidencia están en `SEGUIMIENTO-guirnaldas.md` §8.
+
+26. **Una guirnalda por partes se redacta como racimos de globos.** Cuando el
+    patrón colorea los racimos del armado (`_racimo_de_armado`),
+    `patron_color.py` enmienda la redacción de ADR-0028 §8 solo para esa
+    guirnalda:
+    - **Espiral, cualquier trazo.** LoRA: "every cluster holding two pink, one
+      orange and one gold balloon", con cuántos globos de cada color lleva el
+      racimo, en palabras. Gemini: "every four-balloon cluster is the same: …
+      round latex balloons, in the order …", el giro de cada racimo según el
+      trazo y "the pattern comes only from the balloons' own colors".
+    - **Anillos.** LoRA: "each cluster one solid color, pink and white in turn
+      …" en vez de "stacked bands"; la frase Gemini ya hablaba de racimos.
+    - **Armado.** La frase Gemini de `armado_guirnalda.py` cambia "tight and
+      twisted against each other" por "packed tightly against each other" y
+      termina en "made only of round latex balloons: no ribbons, streamers,
+      twisted bands or fabric". La frase LoRA del armado no cambia.
+    - **Etapa 2 del híbrido.** El candado de la guirnalda (TypeScript) añade
+      que la guirnalda es solo de globos y descarta cualquier cinta de la
+      imagen LoRA.
+
+    El caption LoRA no lleva negaciones: FLUX.2 en fal no tiene prompt negativo,
+    y "no ribbons" en el caption nombra la cinta; se describe en positivo. Sin
+    armado, las frases son byte a byte las de antes (guirnalda clásica con
+    patrón, columna, arco). Bloques, degradé y flores no cambian, porque no hay
+    evidencia de que fallen. Las frases viven fuera del snapshot, así que
+    `plan_hash` no cambia y ningún plan aprobado se rompe. Sigue pendiente
+    medir con generaciones reales (`scripts/ops/generar-guirnalda-espiral.ts`,
+    con tope). Rollback: revertir `c805a19` y `888ee7f`.
+
 ## Rollback
 
 Apagar `GUIRNALDA_REFERENCIA_PYTHON_ENABLED` deja de leer las guirnaldas en la
