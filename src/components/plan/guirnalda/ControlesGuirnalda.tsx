@@ -47,6 +47,8 @@ type Props = {
   onArrastrar: (indice: number, evento: PointerEvent<HTMLButtonElement>) => void;
   /** El botón "Mover" de cada remate, para devolverle el foco al soltarlo en un racimo. */
   registrarMover?: (indice: number) => (nodo: HTMLButtonElement | null) => void;
+  /** Sin borrador: por qué (Python no puede armar la receta o no respondió). Sin él, se está cargando. */
+  aviso?: string | null;
 };
 
 const MIN_CAIDA_M = 0.05;
@@ -113,7 +115,14 @@ function Deslizador({ etiqueta, valor, min, max, paso, formato, onConfirmar, tes
  * con el soporte (el editor la deshace). Cada cambio es un borrador nuevo que
  * Python dibuja; aquí no se cuenta nada.
  */
-export function ControlesGuirnalda({ borrador, opciones, colores, nombrePieza, onCambiar, moviendo, onMover, onArrastrar, registrarMover }: Props) {
+export function ControlesGuirnalda({ borrador, opciones, colores, nombrePieza, onCambiar, moviendo, onMover, onArrastrar, registrarMover, aviso = null }: Props) {
+  if (!borrador && aviso) {
+    return (
+      <p data-testid="controles-guirnalda-sin-armado" className="rounded-xl bg-superficie-suave px-3 py-2.5 text-[13px] text-texto-suave">
+        No hay armado que ajustar: {aviso} Con «Restablecer» vuelve el que tenía la pieza.
+      </p>
+    );
+  }
   if (!borrador) {
     return (
       <div className="space-y-5" aria-hidden="true">

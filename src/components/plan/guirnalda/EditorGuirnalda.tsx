@@ -352,6 +352,7 @@ export function EditorGuirnalda({ onCerrar, plan, estructura, declarada, oficial
               <section aria-label="Ajustes del armado" className="order-2 shrink-0 px-4 py-4 md:min-h-0 md:overflow-y-auto md:px-6 md:py-5">
                 <ControlesGuirnalda
                   borrador={borrador}
+                  aviso={panel.fase === "vacio" || panel.fase === "error" ? panel.mensaje : null}
                   opciones={vista.opciones}
                   colores={colores}
                   nombrePieza={nombrePieza}

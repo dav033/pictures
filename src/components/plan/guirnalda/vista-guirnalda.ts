@@ -109,8 +109,11 @@ export function crearVistaGuirnalda(opciones: OpcionesVistaGuirnalda): VistaGuir
     const borrador: EstadoBorradorGuirnalda = respondido
       ? "listo"
       : propio && !propio.soloOpciones ? (propio.armadoInvalido ? "rechazado" : "fallido") : "pendiente";
+    // Una receta que Python no puede armar (o que no llegó) no se tapa con el último dibujo: ese
+    // armado es el que el decorador acaba de quitar. El panel pasa a vacío o a error.
+    const recetaSinDibujo = objetivo.clave === CLAVE_RECETA && propio !== null && !propio.soloOpciones;
     return {
-      vista: respondido ?? ultimo,
+      vista: respondido ?? (recetaSinDibujo ? null : ultimo),
       opciones: admitidas,
       borrador,
       enVuelo: vuelo !== null && !vuelo.soloOpciones,

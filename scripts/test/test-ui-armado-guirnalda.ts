@@ -606,6 +606,38 @@ async function probarRevision(): Promise<void> {
     assert.equal(conForma(colgadaEnArco, "recta").puntos_de_anclaje, 2, "colgada los conserva: los exige el contrato");
     ok("20: al dejar de colgar (o el arco caído en pared) los anclajes se van del borrador");
   }
+  // 21: tras "Quitar armado", si Python no puede armar la receta (o no responde), no se muestra el armado quitado.
+  {
+    const sinArmar = "Con estos globos no se puede armar la guirnalda sin cambiar la compra.";
+    const { control, pedidos, rechazos, avanzar } = banco(COLGADA.armado);
+    control.mostrar(COLGADA.armado.armado);
+    pedidos[0]!.resolver(COLGADA);
+    await avanzar(0);
+    control.mostrar(null);
+    await avanzar(0);
+    assert.equal(pedidos[1]!.armado, null, "se pide la receta");
+    pedidos[1]!.fallar(new FalloPlanArmado(sinArmar, { motivo: "sin_armado_posible" }));
+    await avanzar(0);
+    assert.deepEqual(panelVistaGuirnalda(control.estado()), { fase: "vacio", mensaje: sinArmar }, "21: vacío, no el armado quitado como listo");
+    assert.deepEqual(rechazos, [], "la receta rechazada no deshace nada");
+    const caido = banco(COLGADA.armado);
+    caido.control.mostrar(COLGADA.armado.armado);
+    caido.pedidos[0]!.resolver(COLGADA);
+    await caido.avanzar(0);
+    caido.control.mostrar(null);
+    await caido.avanzar(0);
+    caido.pedidos[1]!.fallar(new FalloPlanArmado("No pudimos conectar con el servidor."));
+    await caido.avanzar(0);
+    assert.deepEqual(panelVistaGuirnalda(caido.control.estado()), { fase: "error", mensaje: "No pudimos conectar con el servidor.", reintentable: true }, "21: error con Reintentar, no el armado quitado");
+    const colores = leyendaPatron(declarada.materiales, estructura.lineas);
+    const sinBorrador = renderToStaticMarkup(React.createElement(ControlesGuirnalda, {
+      borrador: null, opciones: null, colores, nombrePieza: (id: string) => id, aviso: sinArmar,
+      onCambiar: () => undefined, moviendo: null, onMover: () => undefined, onArrastrar: () => undefined,
+    }));
+    assert.match(textoVisible(sinBorrador), new RegExp(sinArmar.replace(/./g, "\.")), "21: los controles dicen por qué no hay armado");
+    assert.doesNotMatch(sinBorrador, /brillo-carga/, "21: no se quedan en un esqueleto de carga");
+    ok("21: tras Quitar armado, receta imposible → vacío; Python caído → error con Reintentar; los controles lo dicen");
+  }
 }
 
 async function main(): Promise<void> {
