@@ -386,7 +386,7 @@ function banco(inicial: ArmadoGuirnaldaResuelto | null) {
     pedir: (armado, signal) => new Promise((resolver, fallar) => pedidos.push({ armado, signal, resolver, fallar })),
     alRechazar: (mensaje) => rechazos.push(mensaje),
   });
-  return { control, pedidos, rechazos, avanzar };
+  return { control, pedidos, rechazos, avanzar, reloj };
 }
 
 const conArmado = (resuelto: ArmadoGuirnaldaResuelto, armado: ArmadoGuirnaldaV1): VistaArmadoGuirnalda => ({ armado: { ...resuelto, armado }, opciones: RECETA.opciones });
@@ -523,9 +523,41 @@ async function probarPeticion(): Promise<void> {
   ok("petición de la vista previa: solo el contrato, respuesta validada, rechazo con la frase de Python y Python caído sin detalles técnicos");
 }
 
+// ---------------------------------------------------------------------------
+// 10. Revisión adversaria de feat/guirnaldas (hallazgos 18–23): cada caso falla sin su arreglo.
+async function probarRevision(): Promise<void> {
+  const frase = "Una guirnalda que cuelga necesita la pared o puntos de anclaje de donde colgar.";
+  // 18: el rechazo tardío de un borrador viejo no deshace el nuevo.
+  {
+    const { control, pedidos, rechazos, avanzar } = banco(RECETA.armado);
+    control.mostrar(RECETA.armado.armado);
+    pedidos[0]!.resolver(RECETA);
+    await avanzar(0);
+    const b = conSoporte(conForma(RECETA.armado.armado, "u_invertida"), "piso");
+    const c = conSoporte(RECETA.armado.armado, "pared");
+    control.mostrar(b);
+    await avanzar(300);
+    assert.equal(pedidos.length, 2, "B sale tras la pausa");
+    control.mostrar(c);
+    assert.equal(pedidos[1]!.signal.aborted, true, "mostrar C cancela lo que vuela para B, aunque C espere su pausa");
+    pedidos[1]!.fallar(new FalloPlanArmado(frase, { motivo: "forma_no_admitida" }));
+    await avanzar(0);
+    assert.deepEqual(rechazos, [], "18: el rechazo de B no deshace C");
+    assert.equal(control.estado().borrador, "pendiente");
+    await avanzar(300);
+    assert.equal(pedidos.length, 3);
+    assert.equal(pedidos[2]!.armado, c, "sale C");
+    pedidos[2]!.resolver(conArmado(RECETA.armado, c));
+    await avanzar(0);
+    assert.equal(control.estado().borrador, "listo");
+    ok("18: un rechazo tardío de un borrador viejo no deshace el nuevo");
+  }
+}
+
 async function main(): Promise<void> {
   await probarVistaPrevia();
   await probarPeticion();
+  await probarRevision();
   console.log(`\n${casos} casos en verde`);
 }
 

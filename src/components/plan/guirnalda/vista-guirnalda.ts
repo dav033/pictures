@@ -13,7 +13,7 @@ import { claveArmadoGuirnalda } from "./borrador-guirnalda";
  *
  * - Un cambio espera `esperaMs` sin otro cambio antes de pedirse; la receta
  *   (`null`) sale en seguida.
- * - Gana el último borrador: pedir otro cancela la petición en vuelo y una
+ * - Gana el último borrador: mostrar otro cancela la petición en vuelo y una
  *   respuesta vieja que llegue igual no cuenta.
  * - Mientras llega la respuesta se conserva el último dibujo.
  * - Lo que Python ya dibujó se guarda: deshacer o volver a la receta lo
@@ -168,13 +168,15 @@ export function crearVistaGuirnalda(opciones: OpcionesVistaGuirnalda): VistaGuir
   function programar(): void {
     if (!objetivo) return;
     detenerEspera();
+    // Lo que vuele para otro borrador ya no cuenta, aunque el nuevo espere su pausa: si no, un
+    // rechazo tardío del viejo pasaba por el del borrador a la vista y el editor deshacía el nuevo.
+    if (vuelo && vuelo.clave !== objetivo.clave) {
+      vuelo.controlador.abort();
+      vuelo = null;
+    }
     const respondido = recordados.has(objetivo.clave);
     if (respondido) {
-      // Ya dibujado: lo que vuele para otro borrador ya no cuenta; faltando las opciones, se piden sin tapar el dibujo.
-      if (vuelo && vuelo.clave !== objetivo.clave) {
-        vuelo.controlador.abort();
-        vuelo = null;
-      }
+      // Ya dibujado; faltando las opciones, se piden sin tapar el dibujo.
       if (admitidas === null && !vuelo && fallo?.clave !== objetivo.clave) lanzar(true);
       emitir();
       return;
