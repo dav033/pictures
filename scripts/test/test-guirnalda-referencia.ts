@@ -180,12 +180,45 @@ async function main(): Promise<void> {
   const sofa = { bbox: { x: 0.1, y: 0.4, width: 0.5, height: 0.4 }, mesa: false };
   assert.equal(refinarPlacementGuirnalda("fondo_pared", abajo, [], "mesa"), "sobre_mesa_principal");
   assert.equal(refinarPlacementGuirnalda("fondo_pared", abajo, [], "piso"), "piso_frontal");
-  assert.equal(refinarPlacementGuirnalda("arco_central", pasillo, [], "piso"), "recorrido_suelo");
-  assert.equal(refinarPlacementGuirnalda("recorrido_suelo", abajo, [], "piso"), "recorrido_suelo");
+  // Hallazgo 12: el plan del chat y plan-resolution.v1 son Plan 1.0, que no
+  // tiene recorrido_suelo ni alrededor_mobiliario; el prompt del sistema manda
+  // copiar la ubicación tal cual, así que el refinado se queda en ese vocabulario.
+  assert.equal(refinarPlacementGuirnalda("arco_central", pasillo, [], "piso"), "piso_frontal", "un pasillo en el piso es piso_frontal en Plan 1.0");
   assert.equal(refinarPlacementGuirnalda("piso_frontal", abajo, [], "pared"), "fondo_pared");
+  assert.equal(refinarPlacementGuirnalda("piso_frontal", abajo, [], "pared", true), "piso_frontal", "fondo_pared ya ocupado: no se mueve");
   assert.equal(refinarPlacementGuirnalda("lateral_izquierdo", abajo, [], "pared"), "lateral_izquierdo");
   assert.equal(refinarPlacementGuirnalda("fondo_pared", { x: 0.25, y: 0.5, width: 0.5, height: 0.15 }, [mesa]), "sobre_mesa_principal", "sobre una mesa detectada");
-  assert.equal(refinarPlacementGuirnalda("fondo_pared", { x: 0.1, y: 0.45, width: 0.4, height: 0.3 }, [sofa]), "alrededor_mobiliario");
+  assert.equal(refinarPlacementGuirnalda("fondo_pared", { x: 0.1, y: 0.45, width: 0.4, height: 0.3 }, [sofa]), "fondo_pared", "alrededor de un mueble no es una ubicación de Plan 1.0");
+  const { UBICACIONES } = await import("../../src/lib/plan/tipos");
+  const cajas = [abajo, pasillo, mesa.bbox, sofa.bbox, { x: 0.25, y: 0.5, width: 0.5, height: 0.15 }, { x: 0.1, y: 0.45, width: 0.4, height: 0.3 }, { x: 0, y: 0, width: 1, height: 1 }];
+  const actuales = ["fondo_pared", "piso_frontal", "arco_central", "lateral_izquierdo", "lateral_derecho", "sobre_mesa_principal", "entrada", "mesas_invitados", "techo"] as const;
+  for (const actual of actuales) {
+    for (const caja of cajas) {
+      for (const soporte of [undefined, "pared", "colgada", "piso", "mesa", "sobre_estructura"] as const) {
+        for (const ocupado of [false, true]) {
+          const refinada = refinarPlacementGuirnalda(actual, caja, [mesa, sofa], soporte, ocupado);
+          assert.ok((UBICACIONES as readonly string[]).includes(refinada), `${actual} ${JSON.stringify(caja)} ${soporte} -> ${refinada} no es Plan 1.0`);
+        }
+      }
+    }
+  }
+  // Una sola pieza en fondo_pared por foto: ni junto a un backdrop, ni dos guirnaldas a la vez.
+  const pared = { ...lectura, soporte: "pared" };
+  const alPie = reubicarGuirnaldas(blueprintDe([
+    elemento("REF_01_E01", { tipo: "guirnalda", ubicacion: "piso_frontal", lectura: pared, bbox: abajo }),
+    elemento("REF_01_E02", { categoria: "backdrop", nombre: "backdrop" }),
+    elemento("REF_02_E01", { tipo: "guirnalda", ubicacion: "piso_frontal", lectura: pared, bbox: abajo, imagen: "REF_02" }),
+    elemento("REF_02_E02", { tipo: "guirnalda", ubicacion: "piso_frontal", lectura: pared, bbox: abajo, imagen: "REF_02" }),
+    elemento("REF_03_E01", { tipo: "pared", ubicacion: "fondo_pared", imagen: "REF_03" }),
+    elemento("REF_03_E02", { tipo: "guirnalda", ubicacion: "piso_frontal", lectura: pared, bbox: abajo, imagen: "REF_03" }),
+  ], ["REF_01", "REF_02", "REF_03"]));
+  assert.deepEqual(alPie.elements.map((item) => item.visual_semantics?.placement), [
+    "piso_frontal", undefined, "fondo_pared", "piso_frontal", "fondo_pared", "piso_frontal",
+  ], "con un backdrop o una pieza ya en fondo_pared la guirnalda se queda donde estaba");
+  for (const imagen of ["REF_01", "REF_02", "REF_03"]) {
+    const enFondo = alPie.elements.filter((item) => item.source_image_id === imagen && (item.visual_semantics?.placement === "fondo_pared" || item.category === "backdrop"));
+    assert.ok(enFondo.length <= 1, `${imagen}: ${enFondo.length} piezas en fondo_pared`);
+  }
   assert.equal(refinarPlacementGuirnalda("fondo_pared", { x: 0.1, y: 0.05, width: 0.8, height: 0.2 }, [mesa, sofa]), "fondo_pared", "lejos de los muebles no cambia");
   assert.equal(refinarPlacementGuirnalda("techo", abajo, [mesa], "mesa"), "techo");
   const conMuebles = blueprintDe([
@@ -198,7 +231,7 @@ async function main(): Promise<void> {
   assert.equal(reubicado.elements[2]!.visual_semantics?.placement, "fondo_pared", "una lectura dudosa no manda");
   const quieto = blueprintDe([elemento("REF_01_E01", { tipo: "guirnalda" })]);
   assert.equal(reubicarGuirnaldas(quieto), quieto, "sin cambios, el mismo objeto");
-  ok("placement de guirnaldas: soporte leído, mesa detectada, muebles, recorrido de piso");
+  ok("placement de guirnaldas: soporte leído y mesa detectada, siempre en Plan 1.0 y con un solo fondo_pared por foto");
 
   // ---------------------------------------------------------------------------
   const plan = { estructuras: [{ referencia_element_id: "REF_01_E01" }, { referencia_element_id: "REF_01_E01" }, { referencia_element_id: "REF_01_E03" }, {}] } as never;
@@ -211,6 +244,30 @@ async function main(): Promise<void> {
   assert.ok(!("pistas_guirnalda" in cuerpos[0]!.body), "sin la bandera la petición es la de siempre");
   assert.equal((cuerpos[1]!.body.pistas_guirnalda as Json[]).length, 1);
   ok("pistas_guirnalda: una por elemento que el plan materializa, y solo viaja cuando se pide");
+
+  // ---------------------------------------------------------------------------
+  // Hallazgo 32: el navegador no tiene la foto. Python devuelve las lecturas de
+  // las guirnaldas del plan (`lecturas_guirnalda`, fuera del hash) y una edición
+  // las vuelve a mandar, para que un armado que la edición quita se re-sugiera
+  // con la foto y no con la receta (tests/test_plan_guirnalda_lecturas.py).
+  const { PlanResueltoV1Schema } = await import("../../src/lib/ia/contracts/domain-v1");
+  const { planResueltoDesdePython } = await import("../../src/lib/plan/python-mapper");
+  const { lecturasGuirnaldaDeLaEdicion } = await import("../../src/lib/plan/aplicar-edicion");
+  const fixtureResuelto = JSON.parse(readFileSync(path.join(process.cwd(), "contracts", "domain", "v1", "fixtures", "plan-resuelto-ok.json"), "utf8")) as Json;
+  const leidaDeLaFoto = { referencia_element_id: "REF_01_E01", ...lectura };
+  assert.deepEqual(planResueltoDesdePython(PlanResueltoV1Schema.parse({ ...fixtureResuelto, lecturas_guirnalda: [leidaDeLaFoto] })).lecturas_guirnalda, [leidaDeLaFoto]);
+  assert.equal("lecturas_guirnalda" in planResueltoDesdePython(PlanResueltoV1Schema.parse(fixtureResuelto)), false);
+  const baseConLecturas = { ...fixtureResuelto, lecturas_guirnalda: [leidaDeLaFoto] } as never;
+  assert.equal(lecturasGuirnaldaDeLaEdicion(baseConLecturas), undefined, "sin GUIRNALDAS_ARMADO_V1 la edición es la de siempre");
+  process.env.GUIRNALDAS_ARMADO_V1 = "true";
+  try {
+    assert.deepEqual(lecturasGuirnaldaDeLaEdicion(baseConLecturas), [leidaDeLaFoto], "vuelven a viajar en la re-resolución");
+    assert.equal(lecturasGuirnaldaDeLaEdicion(fixtureResuelto as never), undefined, "sin lecturas en el plan base, nada");
+    assert.equal(lecturasGuirnaldaDeLaEdicion({ ...fixtureResuelto, lecturas_guirnalda: [{ referencia_element_id: "REF_01_E01", soporte: "techo" }] } as never), undefined, "una lectura que no cumple el contrato no viaja");
+  } finally {
+    delete process.env.GUIRNALDAS_ARMADO_V1;
+  }
+  ok("lecturas_guirnalda: Python las devuelve y la re-resolución de una edición las vuelve a mandar");
 
   console.log(`\n${casos} casos en verde`);
 }

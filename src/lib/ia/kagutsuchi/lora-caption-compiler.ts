@@ -4,7 +4,7 @@ import { clasificarColores, PALETA_COLORES_EN_V2 } from "@/lib/rag/taxonomy/v2";
 import type { LoraDensity, LoraDesignRole, LoraPlacement, LoraStructureType, VisualSemantics } from "../escena/lora-semantics";
 import type { PhysicalForm, PhysicalRelation, SceneElementKind, QuantitySemantics } from "../escena/scene-visual-contract";
 import { identificarEstructuraOficial, type EstructuraOficial } from "@/lib/plan/estructuras-oficiales";
-import { armadoDeElemento, armadoGuirnaldaDeElemento, frasePatronColor, type ArmadoGuirnaldaEnPrompt, type FraseDeEstructura } from "../uzume/mezcla-color-escena";
+import { armadoDeElemento, armadoGuirnaldaDeElemento, frasePatronColor, type ArmadoBouquetEnPrompt, type ArmadoGuirnaldaEnPrompt, type FraseDeEstructura } from "../uzume/mezcla-color-escena";
 
 export const LORA_CAPTION_COMPILER_VERSION = "lora-caption-v2.7-color-pattern" as const;
 
@@ -138,7 +138,7 @@ export type LoraVisualClause = {
    * clause renders one bouquet noun per group. Absent otherwise, so a caption
    * without an assembly keeps its clauses byte for byte.
    */
-  armadoBouquet?: { grupos: number };
+  armadoBouquet?: ArmadoBouquetEnPrompt;
   /**
    * Present when `colorPattern` is (or starts with) the `prompt_lora` of a
    * garland assembly (ADR-0032, E5): its support and shape, and whether the
@@ -179,7 +179,7 @@ type SemanticElement = {
   /** Python's `prompt_lora` for this element's structure, when it has an applied pattern. */
   colorPattern?: string;
   /** Set when that `prompt_lora` is a bouquet assembly (ADR-0030). */
-  armadoBouquet?: { grupos: number };
+  armadoBouquet?: ArmadoBouquetEnPrompt;
   /** Set when that `prompt_lora` is a garland assembly (ADR-0032). */
   armadoGuirnalda?: ArmadoGuirnaldaEnPrompt;
 };

@@ -27848,6 +27848,3107 @@
           "sobrante_alto:var-rosado-9"
         ]
       }
+    },
+    "clasica-sin-relleno": {
+      "plan_resuelto": {
+        "schema_version": "plan-resuelto.v1",
+        "plan": {
+          "plan_version": "1.0",
+          "plan_id": "32323232-3232-4232-8232-323232323232",
+          "concepto": {
+            "titulo": "Prueba",
+            "descripcion": "Guirnaldas.",
+            "paleta": [
+              "rosado"
+            ]
+          },
+          "espacio": {
+            "tipo": "salon",
+            "fuente": "cliente"
+          },
+          "estructuras": [
+            {
+              "estructura_id": "EST_01_GUIRNALDA",
+              "nombre": "Guirnalda",
+              "tipo": "guirnalda",
+              "estructura_oficial": "guirnalda",
+              "rol_escena": "focal",
+              "ubicacion": "fondo_pared",
+              "medidas": {
+                "largo_m": 2.5
+              },
+              "repeticiones": 1,
+              "densidad": "media",
+              "mezcla": "clasica",
+              "materiales": [
+                {
+                  "product_id": "prod-rosado",
+                  "color": "rosado",
+                  "participacion": 0.6,
+                  "rol_material": "principal"
+                },
+                {
+                  "product_id": "prod-blanco",
+                  "color": "blanco",
+                  "participacion": 0.4,
+                  "rol_material": "secundario"
+                }
+              ],
+              "porque": "Guirnalda de prueba.",
+              "armado_guirnalda": {
+                "version": "armado-guirnalda.v1",
+                "origen": "sugerido",
+                "soporte": "pared",
+                "forma": "recta",
+                "racimo": {
+                  "unidad": "cuarteto",
+                  "tamano_pulg_base": 12
+                },
+                "relleno": null,
+                "remates": []
+              }
+            },
+            {
+              "estructura_id": "EST_02_ARCO",
+              "nombre": "Arco",
+              "tipo": "arco",
+              "estructura_oficial": "arco",
+              "rol_escena": "focal",
+              "ubicacion": "arco_central",
+              "medidas": {
+                "ancho_m": 3,
+                "alto_m": 2.4
+              },
+              "repeticiones": 1,
+              "densidad": "media",
+              "mezcla": "organica_fina",
+              "materiales": [
+                {
+                  "product_id": "prod-dorado",
+                  "color": "dorado",
+                  "participacion": 1.0,
+                  "rol_material": "principal"
+                }
+              ],
+              "porque": "Arco de prueba."
+            }
+          ],
+          "supuestos": [],
+          "referencia_omitida": []
+        },
+        "plan_hash": "d1f48ca3eeb9417d484b03a0669ee27d6bec24679366db1fa3b197f57e3d473f",
+        "request_id": "00000000-0000-4000-8000-000000000032",
+        "estructuras": [
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "nombre": "Guirnalda",
+            "tipo": "guirnalda",
+            "ubicacion": "fondo_pared",
+            "repeticiones": 1,
+            "eje_m": 2.5,
+            "total_unidades": 54,
+            "lineas": [
+              {
+                "estructura_id": "EST_01_GUIRNALDA",
+                "origen": {
+                  "kind": "estructura",
+                  "id": "EST_01_GUIRNALDA"
+                },
+                "product_id": "prod-rosado",
+                "variant_id": "var-rosado-12",
+                "sku": "ROSADO-12",
+                "sku_original": "ROSADO-12",
+                "source_snapshot_id": "products_catalog:guirnalda",
+                "source_variant_id": "source-rosado-12",
+                "inventory_quantity": 5000,
+                "unidades_inferidas": false,
+                "titulo": "Globo látex rosado — R-12",
+                "color": "rosado",
+                "tamano_codigo": "R-12",
+                "diam_pulg": 12.0,
+                "diam_cm": 30.5,
+                "forma": "redondo",
+                "acabado": null,
+                "unidades": 32,
+                "imagen": "https://cdn.example/rosado-12.jpg",
+                "sustitucion": null
+              },
+              {
+                "estructura_id": "EST_01_GUIRNALDA",
+                "origen": {
+                  "kind": "estructura",
+                  "id": "EST_01_GUIRNALDA"
+                },
+                "product_id": "prod-blanco",
+                "variant_id": "var-blanco-12",
+                "sku": "BLANCO-12",
+                "sku_original": "BLANCO-12",
+                "source_snapshot_id": "products_catalog:guirnalda",
+                "source_variant_id": "source-blanco-12",
+                "inventory_quantity": 5000,
+                "unidades_inferidas": false,
+                "titulo": "Globo látex blanco — R-12",
+                "color": "blanco",
+                "tamano_codigo": "R-12",
+                "diam_pulg": 12.0,
+                "diam_cm": 30.5,
+                "forma": "redondo",
+                "acabado": null,
+                "unidades": 22,
+                "imagen": "https://cdn.example/blanco-12.jpg",
+                "sustitucion": null
+              }
+            ],
+            "mezcla_real": [
+              {
+                "diam_pulg": 12.0,
+                "forma": "redondo",
+                "unidades": 54,
+                "pct": 100.0
+              }
+            ],
+            "supuestos": []
+          },
+          {
+            "estructura_id": "EST_02_ARCO",
+            "nombre": "Arco",
+            "tipo": "arco",
+            "ubicacion": "arco_central",
+            "repeticiones": 1,
+            "eje_m": 6.21,
+            "total_unidades": 119,
+            "lineas": [
+              {
+                "estructura_id": "EST_02_ARCO",
+                "origen": {
+                  "kind": "estructura",
+                  "id": "EST_02_ARCO"
+                },
+                "product_id": "prod-dorado",
+                "variant_id": "var-dorado-5",
+                "sku": "DORADO-5",
+                "sku_original": "DORADO-5",
+                "source_snapshot_id": "products_catalog:guirnalda",
+                "source_variant_id": "source-dorado-5",
+                "inventory_quantity": 5000,
+                "unidades_inferidas": false,
+                "titulo": "Globo látex dorado — R-5",
+                "color": "dorado",
+                "tamano_codigo": "R-5",
+                "diam_pulg": 5.0,
+                "diam_cm": 12.7,
+                "forma": "redondo",
+                "acabado": null,
+                "unidades": 25,
+                "imagen": "https://cdn.example/dorado-5.jpg",
+                "sustitucion": null
+              },
+              {
+                "estructura_id": "EST_02_ARCO",
+                "origen": {
+                  "kind": "estructura",
+                  "id": "EST_02_ARCO"
+                },
+                "product_id": "prod-dorado",
+                "variant_id": "var-dorado-9",
+                "sku": "DORADO-9",
+                "sku_original": "DORADO-9",
+                "source_snapshot_id": "products_catalog:guirnalda",
+                "source_variant_id": "source-dorado-9",
+                "inventory_quantity": 5000,
+                "unidades_inferidas": false,
+                "titulo": "Globo látex dorado — R-9",
+                "color": "dorado",
+                "tamano_codigo": "R-9",
+                "diam_pulg": 9.0,
+                "diam_cm": 22.9,
+                "forma": "redondo",
+                "acabado": null,
+                "unidades": 22,
+                "imagen": "https://cdn.example/dorado-9.jpg",
+                "sustitucion": null
+              },
+              {
+                "estructura_id": "EST_02_ARCO",
+                "origen": {
+                  "kind": "estructura",
+                  "id": "EST_02_ARCO"
+                },
+                "product_id": "prod-dorado",
+                "variant_id": "var-dorado-12",
+                "sku": "DORADO-12",
+                "sku_original": "DORADO-12",
+                "source_snapshot_id": "products_catalog:guirnalda",
+                "source_variant_id": "source-dorado-12",
+                "inventory_quantity": 5000,
+                "unidades_inferidas": false,
+                "titulo": "Globo látex dorado — R-12",
+                "color": "dorado",
+                "tamano_codigo": "R-12",
+                "diam_pulg": 12.0,
+                "diam_cm": 30.5,
+                "forma": "redondo",
+                "acabado": null,
+                "unidades": 64,
+                "imagen": "https://cdn.example/dorado-12.jpg",
+                "sustitucion": null
+              },
+              {
+                "estructura_id": "EST_02_ARCO",
+                "origen": {
+                  "kind": "estructura",
+                  "id": "EST_02_ARCO"
+                },
+                "product_id": "prod-dorado",
+                "variant_id": "var-dorado-18",
+                "sku": "DORADO-18",
+                "sku_original": "DORADO-18",
+                "source_snapshot_id": "products_catalog:guirnalda",
+                "source_variant_id": "source-dorado-18",
+                "inventory_quantity": 5000,
+                "unidades_inferidas": false,
+                "titulo": "Globo látex dorado — R-18",
+                "color": "dorado",
+                "tamano_codigo": "R-18",
+                "diam_pulg": 18.0,
+                "diam_cm": 45.7,
+                "forma": "redondo",
+                "acabado": null,
+                "unidades": 6,
+                "imagen": "https://cdn.example/dorado-18.jpg",
+                "sustitucion": null
+              },
+              {
+                "estructura_id": "EST_02_ARCO",
+                "origen": {
+                  "kind": "estructura",
+                  "id": "EST_02_ARCO"
+                },
+                "product_id": "prod-dorado",
+                "variant_id": "var-dorado-24",
+                "sku": "DORADO-24",
+                "sku_original": "DORADO-24",
+                "source_snapshot_id": "products_catalog:guirnalda",
+                "source_variant_id": "source-dorado-24",
+                "inventory_quantity": 5000,
+                "unidades_inferidas": false,
+                "titulo": "Globo látex dorado — R-24",
+                "color": "dorado",
+                "tamano_codigo": "R-24",
+                "diam_pulg": 24.0,
+                "diam_cm": 61.0,
+                "forma": "redondo",
+                "acabado": null,
+                "unidades": 2,
+                "imagen": "https://cdn.example/dorado-24.jpg",
+                "sustitucion": null
+              }
+            ],
+            "mezcla_real": [
+              {
+                "diam_pulg": 12.0,
+                "forma": "redondo",
+                "unidades": 64,
+                "pct": 53.78
+              },
+              {
+                "diam_pulg": 5.0,
+                "forma": "redondo",
+                "unidades": 25,
+                "pct": 21.01
+              },
+              {
+                "diam_pulg": 9.0,
+                "forma": "redondo",
+                "unidades": 22,
+                "pct": 18.49
+              },
+              {
+                "diam_pulg": 18.0,
+                "forma": "redondo",
+                "unidades": 6,
+                "pct": 5.04
+              },
+              {
+                "diam_pulg": 24.0,
+                "forma": "redondo",
+                "unidades": 2,
+                "pct": 1.68
+              }
+            ],
+            "supuestos": []
+          }
+        ],
+        "compras": [
+          {
+            "variant_id": "var-blanco-12",
+            "product_id": "prod-blanco",
+            "sku": "BLANCO-12",
+            "sku_original": "BLANCO-12",
+            "source_snapshot_id": "products_catalog:guirnalda",
+            "source_variant_id": "source-blanco-12",
+            "inventory_quantity": 5000,
+            "unidades_inferidas": false,
+            "titulo": "Globo látex blanco — R-12",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12.0,
+            "color": "blanco",
+            "unidades_necesarias": 22,
+            "design_quantity": 22,
+            "waste_reserve": 0,
+            "required_quantity": 22,
+            "unidades_con_merma": 22,
+            "unidades_paquete": 50,
+            "paquetes": 1,
+            "purchase_quantity": 50,
+            "used": 22,
+            "leftover_inventory": 28,
+            "consumption_cost": 5280,
+            "purchase_cost": 12000,
+            "additional_package_for_waste": false,
+            "sobrante": 28,
+            "precio_paquete": 12000,
+            "subtotal": 12000,
+            "estructuras": [
+              "EST_01_GUIRNALDA"
+            ],
+            "elementos_origen": [
+              {
+                "kind": "estructura",
+                "id": "EST_01_GUIRNALDA"
+              }
+            ],
+            "imagen": "https://cdn.example/blanco-12.jpg"
+          },
+          {
+            "variant_id": "var-dorado-12",
+            "product_id": "prod-dorado",
+            "sku": "DORADO-12",
+            "sku_original": "DORADO-12",
+            "source_snapshot_id": "products_catalog:guirnalda",
+            "source_variant_id": "source-dorado-12",
+            "inventory_quantity": 5000,
+            "unidades_inferidas": false,
+            "titulo": "Globo látex dorado — R-12",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12.0,
+            "color": "dorado",
+            "unidades_necesarias": 64,
+            "design_quantity": 64,
+            "waste_reserve": 0,
+            "required_quantity": 64,
+            "unidades_con_merma": 64,
+            "unidades_paquete": 50,
+            "paquetes": 2,
+            "purchase_quantity": 100,
+            "used": 64,
+            "leftover_inventory": 36,
+            "consumption_cost": 15360,
+            "purchase_cost": 24000,
+            "additional_package_for_waste": false,
+            "sobrante": 36,
+            "precio_paquete": 12000,
+            "subtotal": 24000,
+            "estructuras": [
+              "EST_02_ARCO"
+            ],
+            "elementos_origen": [
+              {
+                "kind": "estructura",
+                "id": "EST_02_ARCO"
+              }
+            ],
+            "imagen": "https://cdn.example/dorado-12.jpg"
+          },
+          {
+            "variant_id": "var-dorado-18",
+            "product_id": "prod-dorado",
+            "sku": "DORADO-18",
+            "sku_original": "DORADO-18",
+            "source_snapshot_id": "products_catalog:guirnalda",
+            "source_variant_id": "source-dorado-18",
+            "inventory_quantity": 5000,
+            "unidades_inferidas": false,
+            "titulo": "Globo látex dorado — R-18",
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18.0,
+            "color": "dorado",
+            "unidades_necesarias": 6,
+            "design_quantity": 6,
+            "waste_reserve": 0,
+            "required_quantity": 6,
+            "unidades_con_merma": 6,
+            "unidades_paquete": 50,
+            "paquetes": 1,
+            "purchase_quantity": 50,
+            "used": 6,
+            "leftover_inventory": 44,
+            "consumption_cost": 2160,
+            "purchase_cost": 18000,
+            "additional_package_for_waste": false,
+            "sobrante": 44,
+            "precio_paquete": 18000,
+            "subtotal": 18000,
+            "estructuras": [
+              "EST_02_ARCO"
+            ],
+            "elementos_origen": [
+              {
+                "kind": "estructura",
+                "id": "EST_02_ARCO"
+              }
+            ],
+            "imagen": "https://cdn.example/dorado-18.jpg"
+          },
+          {
+            "variant_id": "var-dorado-24",
+            "product_id": "prod-dorado",
+            "sku": "DORADO-24",
+            "sku_original": "DORADO-24",
+            "source_snapshot_id": "products_catalog:guirnalda",
+            "source_variant_id": "source-dorado-24",
+            "inventory_quantity": 5000,
+            "unidades_inferidas": false,
+            "titulo": "Globo látex dorado — R-24",
+            "tamano_codigo": "R-24",
+            "diam_pulg": 24.0,
+            "color": "dorado",
+            "unidades_necesarias": 2,
+            "design_quantity": 2,
+            "waste_reserve": 14,
+            "required_quantity": 16,
+            "unidades_con_merma": 16,
+            "unidades_paquete": 50,
+            "paquetes": 1,
+            "purchase_quantity": 50,
+            "used": 2,
+            "leftover_inventory": 34,
+            "consumption_cost": 7680,
+            "purchase_cost": 24000,
+            "additional_package_for_waste": false,
+            "sobrante": 48,
+            "precio_paquete": 24000,
+            "subtotal": 24000,
+            "estructuras": [
+              "EST_02_ARCO"
+            ],
+            "elementos_origen": [
+              {
+                "kind": "estructura",
+                "id": "EST_02_ARCO"
+              }
+            ],
+            "imagen": "https://cdn.example/dorado-24.jpg"
+          },
+          {
+            "variant_id": "var-dorado-5",
+            "product_id": "prod-dorado",
+            "sku": "DORADO-5",
+            "sku_original": "DORADO-5",
+            "source_snapshot_id": "products_catalog:guirnalda",
+            "source_variant_id": "source-dorado-5",
+            "inventory_quantity": 5000,
+            "unidades_inferidas": false,
+            "titulo": "Globo látex dorado — R-5",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5.0,
+            "color": "dorado",
+            "unidades_necesarias": 25,
+            "design_quantity": 25,
+            "waste_reserve": 0,
+            "required_quantity": 25,
+            "unidades_con_merma": 25,
+            "unidades_paquete": 50,
+            "paquetes": 1,
+            "purchase_quantity": 50,
+            "used": 25,
+            "leftover_inventory": 25,
+            "consumption_cost": 2500,
+            "purchase_cost": 5000,
+            "additional_package_for_waste": false,
+            "sobrante": 25,
+            "precio_paquete": 5000,
+            "subtotal": 5000,
+            "estructuras": [
+              "EST_02_ARCO"
+            ],
+            "elementos_origen": [
+              {
+                "kind": "estructura",
+                "id": "EST_02_ARCO"
+              }
+            ],
+            "imagen": "https://cdn.example/dorado-5.jpg"
+          },
+          {
+            "variant_id": "var-dorado-9",
+            "product_id": "prod-dorado",
+            "sku": "DORADO-9",
+            "sku_original": "DORADO-9",
+            "source_snapshot_id": "products_catalog:guirnalda",
+            "source_variant_id": "source-dorado-9",
+            "inventory_quantity": 5000,
+            "unidades_inferidas": false,
+            "titulo": "Globo látex dorado — R-9",
+            "tamano_codigo": "R-9",
+            "diam_pulg": 9.0,
+            "color": "dorado",
+            "unidades_necesarias": 22,
+            "design_quantity": 22,
+            "waste_reserve": 0,
+            "required_quantity": 22,
+            "unidades_con_merma": 22,
+            "unidades_paquete": 50,
+            "paquetes": 1,
+            "purchase_quantity": 50,
+            "used": 22,
+            "leftover_inventory": 28,
+            "consumption_cost": 3960,
+            "purchase_cost": 9000,
+            "additional_package_for_waste": false,
+            "sobrante": 28,
+            "precio_paquete": 9000,
+            "subtotal": 9000,
+            "estructuras": [
+              "EST_02_ARCO"
+            ],
+            "elementos_origen": [
+              {
+                "kind": "estructura",
+                "id": "EST_02_ARCO"
+              }
+            ],
+            "imagen": "https://cdn.example/dorado-9.jpg"
+          },
+          {
+            "variant_id": "var-rosado-12",
+            "product_id": "prod-rosado",
+            "sku": "ROSADO-12",
+            "sku_original": "ROSADO-12",
+            "source_snapshot_id": "products_catalog:guirnalda",
+            "source_variant_id": "source-rosado-12",
+            "inventory_quantity": 5000,
+            "unidades_inferidas": false,
+            "titulo": "Globo látex rosado — R-12",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12.0,
+            "color": "rosado",
+            "unidades_necesarias": 32,
+            "design_quantity": 32,
+            "waste_reserve": 0,
+            "required_quantity": 32,
+            "unidades_con_merma": 32,
+            "unidades_paquete": 50,
+            "paquetes": 1,
+            "purchase_quantity": 50,
+            "used": 32,
+            "leftover_inventory": 18,
+            "consumption_cost": 7680,
+            "purchase_cost": 12000,
+            "additional_package_for_waste": false,
+            "sobrante": 18,
+            "precio_paquete": 12000,
+            "subtotal": 12000,
+            "estructuras": [
+              "EST_01_GUIRNALDA"
+            ],
+            "elementos_origen": [
+              {
+                "kind": "estructura",
+                "id": "EST_01_GUIRNALDA"
+              }
+            ],
+            "imagen": "https://cdn.example/rosado-12.jpg"
+          }
+        ],
+        "totales": {
+          "globos_por_tamano": {
+            "R-12": 118,
+            "R-18": 6,
+            "R-24": 2,
+            "R-5": 25,
+            "R-9": 22
+          },
+          "total_unidades": 173,
+          "total_cop": 104000,
+          "design_quantity": 173,
+          "target_waste_reserve": 14,
+          "natural_package_surplus": 227,
+          "covered_waste_reserve": 14,
+          "uncovered_waste_reserve": 0,
+          "purchase_cost": 104000,
+          "consumption_cost": 44620,
+          "waste_only_savings_cop": 0,
+          "additional_waste_packages": 0,
+          "ahorro_paquetes_cop": 0,
+          "incluye_iva": true,
+          "merma_porcentaje": 8.0
+        },
+        "comercial": {
+          "estado": "APROBACION_REQUERIDA",
+          "delta_cop": 0
+        },
+        "alternativas": [],
+        "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot products_catalog:guirnalda.",
+        "sustituciones": [],
+        "sin_cobertura": [],
+        "costes_por_estructura": [
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "consumo_cop": 12960
+          },
+          {
+            "estructura_id": "EST_02_ARCO",
+            "consumo_cop": 24940
+          }
+        ],
+        "advertencias": [
+          "sobrante_alto:var-blanco-12",
+          "sobrante_alto:var-dorado-12",
+          "sobrante_alto:var-dorado-18",
+          "sobrante_alto:var-dorado-24",
+          "sobrante_alto:var-dorado-5",
+          "sobrante_alto:var-dorado-9",
+          "sobrante_alto:var-rosado-12"
+        ],
+        "armados_guirnalda": [
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "armado": {
+              "version": "armado-guirnalda.v1",
+              "origen": "sugerido",
+              "soporte": "pared",
+              "forma": "recta",
+              "racimo": {
+                "unidad": "cuarteto",
+                "tamano_pulg_base": 12
+              },
+              "relleno": null,
+              "remates": []
+            },
+            "repeticiones": 1,
+            "largo_m": 2.5,
+            "largo_cuerda_m": 2.5,
+            "globos_por_instancia": 54,
+            "leyenda": [
+              {
+                "codigo": 1,
+                "material": 0,
+                "product_id": "prod-rosado",
+                "variant_id": "var-rosado-12",
+                "descripcion": "R-12 rosado",
+                "color": "rosado",
+                "acabado": null,
+                "tamano_pulg": 12.0,
+                "unidades_por_instancia": 32,
+                "unidades_total": 32
+              },
+              {
+                "codigo": 2,
+                "material": 1,
+                "product_id": "prod-blanco",
+                "variant_id": "var-blanco-12",
+                "descripcion": "R-12 blanco",
+                "color": "blanco",
+                "acabado": null,
+                "tamano_pulg": 12.0,
+                "unidades_por_instancia": 22,
+                "unidades_total": 22
+              }
+            ],
+            "racimos": [
+              {
+                "numero": 1,
+                "codigos": [
+                  1,
+                  2,
+                  1,
+                  2
+                ]
+              },
+              {
+                "numero": 2,
+                "codigos": [
+                  1,
+                  1,
+                  2,
+                  1
+                ]
+              },
+              {
+                "numero": 3,
+                "codigos": [
+                  2,
+                  1,
+                  1,
+                  2
+                ]
+              },
+              {
+                "numero": 4,
+                "codigos": [
+                  1,
+                  2,
+                  1,
+                  2
+                ]
+              },
+              {
+                "numero": 5,
+                "codigos": [
+                  1,
+                  1,
+                  2,
+                  1
+                ]
+              },
+              {
+                "numero": 6,
+                "codigos": [
+                  2,
+                  1,
+                  1,
+                  2
+                ]
+              },
+              {
+                "numero": 7,
+                "codigos": [
+                  1,
+                  2,
+                  1,
+                  1
+                ]
+              },
+              {
+                "numero": 8,
+                "codigos": [
+                  2,
+                  1,
+                  2,
+                  1
+                ]
+              },
+              {
+                "numero": 9,
+                "codigos": [
+                  1,
+                  2,
+                  1,
+                  2
+                ]
+              },
+              {
+                "numero": 10,
+                "codigos": [
+                  1,
+                  1,
+                  2,
+                  1
+                ]
+              },
+              {
+                "numero": 11,
+                "codigos": [
+                  2,
+                  1,
+                  2,
+                  1
+                ]
+              },
+              {
+                "numero": 12,
+                "codigos": [
+                  1,
+                  2,
+                  1,
+                  2
+                ]
+              },
+              {
+                "numero": 13,
+                "codigos": [
+                  1,
+                  1,
+                  2,
+                  1
+                ]
+              }
+            ],
+            "relleno": null,
+            "remates": [],
+            "sueltos": [
+              {
+                "codigo": 1,
+                "cantidad": 1
+              },
+              {
+                "codigo": 2,
+                "cantidad": 1
+              }
+            ],
+            "insumos": [
+              {
+                "insumo": "tira",
+                "cantidad": 3.0,
+                "unidad": "m",
+                "detalle": "tira perforada para armar la guirnalda: su largo más un 10 % para amarres",
+                "estimado": false
+              },
+              {
+                "insumo": "ganchos",
+                "cantidad": 6,
+                "unidad": "ganchos",
+                "detalle": "ganchos adhesivos o pegante para pared, uno cada 50 cm",
+                "estimado": false
+              },
+              {
+                "insumo": "pegante",
+                "cantidad": 2,
+                "unidad": "puntos",
+                "detalle": "puntos de pegamento para el relleno, los remates y los globos sueltos",
+                "estimado": true
+              },
+              {
+                "insumo": "tijeras",
+                "cantidad": 1,
+                "unidad": "tijeras",
+                "detalle": "",
+                "estimado": false
+              },
+              {
+                "insumo": "bomba",
+                "cantidad": 1,
+                "unidad": "bomba",
+                "detalle": "infladora con calibrador de tamaños",
+                "estimado": false
+              }
+            ],
+            "duracion_estimada": {
+              "horas_min": 0.75,
+              "horas_max": 1.75,
+              "estimado": true
+            },
+            "nombre": "Guirnalda en pared",
+            "descripcion": "13 cuartetos de 12\" de izquierda a derecha, sobre la pared.",
+            "pasos": [
+              "Infla y calibra los 54 globos de cada guirnalda según la leyenda.",
+              "Arma 13 cuartetos de 12\": amarra dos parejas y crúzalas. Cada racimo lleva los códigos de la gráfica.",
+              "Pasa los racimos por la tira en orden, del 1 (extremo izquierdo) al 13 (extremo derecho), girando cada uno un cuarto de vuelta respecto del anterior.",
+              "Reparte los globos sueltos entre los racimos para cerrar huecos: 1 de R-12 rosado (1), 1 de R-12 blanco (2).",
+              "Fija la guirnalda a la pared de izquierda a derecha con ganchos o pegante."
+            ],
+            "avisos": [
+              "Sobran 2 globos que no completan un cuarteto: van sueltos entre los racimos."
+            ],
+            "prompt_gemini": "GARLAND ASSEMBLY — an organic balloon garland mounted flat against the wall, running straight along its length. Build it from 13 four-balloon clusters of 12\" balloons in pink and white, chained from the left end to the right end. Keep the clusters tight and twisted against each other so the garland reads as one continuous organic piece with no gaps.",
+            "prompt_lora": "mounted flat against the wall in clusters of four"
+          }
+        ]
+      },
+      "material_estimate": {
+        "version": "design-material-estimate-v1",
+        "design": {
+          "type": "composite_installation",
+          "shape": "coordinated structures",
+          "dimensions_m": {
+            "width": null,
+            "height": null,
+            "length": 2.5
+          },
+          "installation_length_m": 8.71,
+          "density": "media",
+          "visual_density": "medium",
+          "visual_scale": "large",
+          "cluster_count": 2
+        },
+        "balloons": [
+          {
+            "structure_id": "EST_01_GUIRNALDA",
+            "product_id": "prod-rosado",
+            "variant_id": "var-rosado-12",
+            "color": "rosado",
+            "finish": null,
+            "size_inches": 12.0,
+            "shape": "redondo",
+            "design_quantity": 32,
+            "waste_reserve": 0,
+            "required_quantity": 32,
+            "waste_adjusted_quantity": 32
+          },
+          {
+            "structure_id": "EST_01_GUIRNALDA",
+            "product_id": "prod-blanco",
+            "variant_id": "var-blanco-12",
+            "color": "blanco",
+            "finish": null,
+            "size_inches": 12.0,
+            "shape": "redondo",
+            "design_quantity": 22,
+            "waste_reserve": 0,
+            "required_quantity": 22,
+            "waste_adjusted_quantity": 22
+          },
+          {
+            "structure_id": "EST_02_ARCO",
+            "product_id": "prod-dorado",
+            "variant_id": "var-dorado-5",
+            "color": "dorado",
+            "finish": null,
+            "size_inches": 5.0,
+            "shape": "redondo",
+            "design_quantity": 25,
+            "waste_reserve": 0,
+            "required_quantity": 25,
+            "waste_adjusted_quantity": 25
+          },
+          {
+            "structure_id": "EST_02_ARCO",
+            "product_id": "prod-dorado",
+            "variant_id": "var-dorado-9",
+            "color": "dorado",
+            "finish": null,
+            "size_inches": 9.0,
+            "shape": "redondo",
+            "design_quantity": 22,
+            "waste_reserve": 0,
+            "required_quantity": 22,
+            "waste_adjusted_quantity": 22
+          },
+          {
+            "structure_id": "EST_02_ARCO",
+            "product_id": "prod-dorado",
+            "variant_id": "var-dorado-12",
+            "color": "dorado",
+            "finish": null,
+            "size_inches": 12.0,
+            "shape": "redondo",
+            "design_quantity": 64,
+            "waste_reserve": 0,
+            "required_quantity": 64,
+            "waste_adjusted_quantity": 64
+          },
+          {
+            "structure_id": "EST_02_ARCO",
+            "product_id": "prod-dorado",
+            "variant_id": "var-dorado-18",
+            "color": "dorado",
+            "finish": null,
+            "size_inches": 18.0,
+            "shape": "redondo",
+            "design_quantity": 6,
+            "waste_reserve": 0,
+            "required_quantity": 6,
+            "waste_adjusted_quantity": 6
+          },
+          {
+            "structure_id": "EST_02_ARCO",
+            "product_id": "prod-dorado",
+            "variant_id": "var-dorado-24",
+            "color": "dorado",
+            "finish": null,
+            "size_inches": 24.0,
+            "shape": "redondo",
+            "design_quantity": 2,
+            "waste_reserve": 0,
+            "required_quantity": 2,
+            "waste_adjusted_quantity": 2
+          }
+        ],
+        "special_elements": [],
+        "purchases": [
+          {
+            "product_id": "prod-blanco",
+            "variant_id": "var-blanco-12",
+            "design_quantity": 22,
+            "waste_reserve": 0,
+            "required_quantity": 22,
+            "waste_adjusted_quantity": 22,
+            "units_per_package": 50,
+            "package_count": 1,
+            "purchase_quantity": 50,
+            "used": 22,
+            "leftover_inventory": 28,
+            "consumption_cost": 5280,
+            "purchase_cost": 12000,
+            "additional_package_for_waste": false,
+            "operational_surplus": 28,
+            "potential_surplus": 28
+          },
+          {
+            "product_id": "prod-dorado",
+            "variant_id": "var-dorado-12",
+            "design_quantity": 64,
+            "waste_reserve": 0,
+            "required_quantity": 64,
+            "waste_adjusted_quantity": 64,
+            "units_per_package": 50,
+            "package_count": 2,
+            "purchase_quantity": 100,
+            "used": 64,
+            "leftover_inventory": 36,
+            "consumption_cost": 15360,
+            "purchase_cost": 24000,
+            "additional_package_for_waste": false,
+            "operational_surplus": 36,
+            "potential_surplus": 36
+          },
+          {
+            "product_id": "prod-dorado",
+            "variant_id": "var-dorado-18",
+            "design_quantity": 6,
+            "waste_reserve": 0,
+            "required_quantity": 6,
+            "waste_adjusted_quantity": 6,
+            "units_per_package": 50,
+            "package_count": 1,
+            "purchase_quantity": 50,
+            "used": 6,
+            "leftover_inventory": 44,
+            "consumption_cost": 2160,
+            "purchase_cost": 18000,
+            "additional_package_for_waste": false,
+            "operational_surplus": 44,
+            "potential_surplus": 44
+          },
+          {
+            "product_id": "prod-dorado",
+            "variant_id": "var-dorado-24",
+            "design_quantity": 2,
+            "waste_reserve": 14,
+            "required_quantity": 16,
+            "waste_adjusted_quantity": 16,
+            "units_per_package": 50,
+            "package_count": 1,
+            "purchase_quantity": 50,
+            "used": 2,
+            "leftover_inventory": 34,
+            "consumption_cost": 7680,
+            "purchase_cost": 24000,
+            "additional_package_for_waste": false,
+            "operational_surplus": 34,
+            "potential_surplus": 48
+          },
+          {
+            "product_id": "prod-dorado",
+            "variant_id": "var-dorado-5",
+            "design_quantity": 25,
+            "waste_reserve": 0,
+            "required_quantity": 25,
+            "waste_adjusted_quantity": 25,
+            "units_per_package": 50,
+            "package_count": 1,
+            "purchase_quantity": 50,
+            "used": 25,
+            "leftover_inventory": 25,
+            "consumption_cost": 2500,
+            "purchase_cost": 5000,
+            "additional_package_for_waste": false,
+            "operational_surplus": 25,
+            "potential_surplus": 25
+          },
+          {
+            "product_id": "prod-dorado",
+            "variant_id": "var-dorado-9",
+            "design_quantity": 22,
+            "waste_reserve": 0,
+            "required_quantity": 22,
+            "waste_adjusted_quantity": 22,
+            "units_per_package": 50,
+            "package_count": 1,
+            "purchase_quantity": 50,
+            "used": 22,
+            "leftover_inventory": 28,
+            "consumption_cost": 3960,
+            "purchase_cost": 9000,
+            "additional_package_for_waste": false,
+            "operational_surplus": 28,
+            "potential_surplus": 28
+          },
+          {
+            "product_id": "prod-rosado",
+            "variant_id": "var-rosado-12",
+            "design_quantity": 32,
+            "waste_reserve": 0,
+            "required_quantity": 32,
+            "waste_adjusted_quantity": 32,
+            "units_per_package": 50,
+            "package_count": 1,
+            "purchase_quantity": 50,
+            "used": 32,
+            "leftover_inventory": 18,
+            "consumption_cost": 7680,
+            "purchase_cost": 12000,
+            "additional_package_for_waste": false,
+            "operational_surplus": 18,
+            "potential_surplus": 18
+          }
+        ],
+        "totals": {
+          "design_quantity": 173,
+          "target_waste_reserve": 14,
+          "covered_waste_reserve": 14,
+          "uncovered_waste_reserve": 0,
+          "natural_package_surplus": 227,
+          "required_quantity": 187,
+          "consumption_cost": 44620,
+          "purchase_cost": 104000,
+          "waste_only_savings_cop": 0,
+          "additional_waste_packages": 0,
+          "waste_adjusted_quantity": 187,
+          "purchase_quantity": 400,
+          "operational_surplus": 213,
+          "potential_surplus": 227
+        },
+        "warnings": [
+          "sobrante_alto:var-blanco-12",
+          "sobrante_alto:var-dorado-12",
+          "sobrante_alto:var-dorado-18",
+          "sobrante_alto:var-dorado-24",
+          "sobrante_alto:var-dorado-5",
+          "sobrante_alto:var-dorado-9",
+          "sobrante_alto:var-rosado-12"
+        ]
+      }
+    },
+    "sobre-columnas-repetidas": {
+      "plan_resuelto": {
+        "schema_version": "plan-resuelto.v1",
+        "plan": {
+          "plan_version": "1.0",
+          "plan_id": "32323232-3232-4232-8232-323232323232",
+          "concepto": {
+            "titulo": "Prueba",
+            "descripcion": "Guirnaldas.",
+            "paleta": [
+              "rosado"
+            ]
+          },
+          "espacio": {
+            "tipo": "salon",
+            "fuente": "cliente"
+          },
+          "estructuras": [
+            {
+              "estructura_id": "EST_01_GUIRNALDA",
+              "nombre": "Guirnalda",
+              "tipo": "guirnalda",
+              "estructura_oficial": "guirnalda",
+              "rol_escena": "focal",
+              "ubicacion": "lateral_izquierdo",
+              "medidas": {
+                "largo_m": 2.5
+              },
+              "repeticiones": 2,
+              "densidad": "media",
+              "mezcla": "organica_fina",
+              "materiales": [
+                {
+                  "product_id": "prod-rosado",
+                  "color": "rosado",
+                  "participacion": 0.6,
+                  "rol_material": "principal"
+                },
+                {
+                  "product_id": "prod-blanco",
+                  "color": "blanco",
+                  "participacion": 0.4,
+                  "rol_material": "secundario"
+                }
+              ],
+              "porque": "Guirnalda de prueba.",
+              "armado_guirnalda": {
+                "version": "armado-guirnalda.v1",
+                "origen": "decorador",
+                "soporte": "sobre_estructura",
+                "forma": "curva",
+                "racimo": {
+                  "unidad": "cuarteto",
+                  "tamano_pulg_base": 12
+                },
+                "relleno": {
+                  "material": 0,
+                  "proporcion": 0.2
+                },
+                "remates": [],
+                "estructura_id": "EST_02_COLUMNA"
+              }
+            },
+            {
+              "estructura_id": "EST_02_COLUMNA",
+              "nombre": "Columna",
+              "tipo": "columna",
+              "estructura_oficial": "columna",
+              "rol_escena": "soporte",
+              "ubicacion": "lateral_izquierdo",
+              "medidas": {
+                "alto_m": 2.0
+              },
+              "repeticiones": 2,
+              "densidad": "media",
+              "mezcla": "organica_fina",
+              "materiales": [
+                {
+                  "product_id": "prod-dorado",
+                  "color": "dorado",
+                  "participacion": 1.0,
+                  "rol_material": "principal"
+                }
+              ],
+              "porque": "Arco de prueba."
+            }
+          ],
+          "supuestos": [],
+          "referencia_omitida": []
+        },
+        "plan_hash": "110e4b646cbeeeb1851f08161fc4d521966c721d21976910cea781188638c218",
+        "request_id": "00000000-0000-4000-8000-000000000032",
+        "estructuras": [
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "nombre": "Guirnalda",
+            "tipo": "guirnalda",
+            "ubicacion": "lateral_izquierdo",
+            "repeticiones": 2,
+            "eje_m": 2.5,
+            "total_unidades": 96,
+            "lineas": [
+              {
+                "estructura_id": "EST_01_GUIRNALDA",
+                "origen": {
+                  "kind": "estructura",
+                  "id": "EST_01_GUIRNALDA"
+                },
+                "product_id": "prod-rosado",
+                "variant_id": "var-rosado-5",
+                "sku": "ROSADO-5",
+                "sku_original": "ROSADO-5",
+                "source_snapshot_id": "products_catalog:guirnalda",
+                "source_variant_id": "source-rosado-5",
+                "inventory_quantity": 5000,
+                "unidades_inferidas": false,
+                "titulo": "Globo látex rosado — R-5",
+                "color": "rosado",
+                "tamano_codigo": "R-5",
+                "diam_pulg": 5.0,
+                "diam_cm": 12.7,
+                "forma": "redondo",
+                "acabado": null,
+                "unidades": 12,
+                "imagen": "https://cdn.example/rosado-5.jpg",
+                "sustitucion": null
+              },
+              {
+                "estructura_id": "EST_01_GUIRNALDA",
+                "origen": {
+                  "kind": "estructura",
+                  "id": "EST_01_GUIRNALDA"
+                },
+                "product_id": "prod-blanco",
+                "variant_id": "var-blanco-5",
+                "sku": "BLANCO-5",
+                "sku_original": "BLANCO-5",
+                "source_snapshot_id": "products_catalog:guirnalda",
+                "source_variant_id": "source-blanco-5",
+                "inventory_quantity": 5000,
+                "unidades_inferidas": false,
+                "titulo": "Globo látex blanco — R-5",
+                "color": "blanco",
+                "tamano_codigo": "R-5",
+                "diam_pulg": 5.0,
+                "diam_cm": 12.7,
+                "forma": "redondo",
+                "acabado": null,
+                "unidades": 8,
+                "imagen": "https://cdn.example/blanco-5.jpg",
+                "sustitucion": null
+              },
+              {
+                "estructura_id": "EST_01_GUIRNALDA",
+                "origen": {
+                  "kind": "estructura",
+                  "id": "EST_01_GUIRNALDA"
+                },
+                "product_id": "prod-rosado",
+                "variant_id": "var-rosado-9",
+                "sku": "ROSADO-9",
+                "sku_original": "ROSADO-9",
+                "source_snapshot_id": "products_catalog:guirnalda",
+                "source_variant_id": "source-rosado-9",
+                "inventory_quantity": 5000,
+                "unidades_inferidas": false,
+                "titulo": "Globo látex rosado — R-9",
+                "color": "rosado",
+                "tamano_codigo": "R-9",
+                "diam_pulg": 9.0,
+                "diam_cm": 22.9,
+                "forma": "redondo",
+                "acabado": null,
+                "unidades": 10,
+                "imagen": "https://cdn.example/rosado-9.jpg",
+                "sustitucion": null
+              },
+              {
+                "estructura_id": "EST_01_GUIRNALDA",
+                "origen": {
+                  "kind": "estructura",
+                  "id": "EST_01_GUIRNALDA"
+                },
+                "product_id": "prod-blanco",
+                "variant_id": "var-blanco-9",
+                "sku": "BLANCO-9",
+                "sku_original": "BLANCO-9",
+                "source_snapshot_id": "products_catalog:guirnalda",
+                "source_variant_id": "source-blanco-9",
+                "inventory_quantity": 5000,
+                "unidades_inferidas": false,
+                "titulo": "Globo látex blanco — R-9",
+                "color": "blanco",
+                "tamano_codigo": "R-9",
+                "diam_pulg": 9.0,
+                "diam_cm": 22.9,
+                "forma": "redondo",
+                "acabado": null,
+                "unidades": 8,
+                "imagen": "https://cdn.example/blanco-9.jpg",
+                "sustitucion": null
+              },
+              {
+                "estructura_id": "EST_01_GUIRNALDA",
+                "origen": {
+                  "kind": "estructura",
+                  "id": "EST_01_GUIRNALDA"
+                },
+                "product_id": "prod-rosado",
+                "variant_id": "var-rosado-12",
+                "sku": "ROSADO-12",
+                "sku_original": "ROSADO-12",
+                "source_snapshot_id": "products_catalog:guirnalda",
+                "source_variant_id": "source-rosado-12",
+                "inventory_quantity": 5000,
+                "unidades_inferidas": false,
+                "titulo": "Globo látex rosado — R-12",
+                "color": "rosado",
+                "tamano_codigo": "R-12",
+                "diam_pulg": 12.0,
+                "diam_cm": 30.5,
+                "forma": "redondo",
+                "acabado": null,
+                "unidades": 32,
+                "imagen": "https://cdn.example/rosado-12.jpg",
+                "sustitucion": null
+              },
+              {
+                "estructura_id": "EST_01_GUIRNALDA",
+                "origen": {
+                  "kind": "estructura",
+                  "id": "EST_01_GUIRNALDA"
+                },
+                "product_id": "prod-blanco",
+                "variant_id": "var-blanco-12",
+                "sku": "BLANCO-12",
+                "sku_original": "BLANCO-12",
+                "source_snapshot_id": "products_catalog:guirnalda",
+                "source_variant_id": "source-blanco-12",
+                "inventory_quantity": 5000,
+                "unidades_inferidas": false,
+                "titulo": "Globo látex blanco — R-12",
+                "color": "blanco",
+                "tamano_codigo": "R-12",
+                "diam_pulg": 12.0,
+                "diam_cm": 30.5,
+                "forma": "redondo",
+                "acabado": null,
+                "unidades": 20,
+                "imagen": "https://cdn.example/blanco-12.jpg",
+                "sustitucion": null
+              },
+              {
+                "estructura_id": "EST_01_GUIRNALDA",
+                "origen": {
+                  "kind": "estructura",
+                  "id": "EST_01_GUIRNALDA"
+                },
+                "product_id": "prod-rosado",
+                "variant_id": "var-rosado-18",
+                "sku": "ROSADO-18",
+                "sku_original": "ROSADO-18",
+                "source_snapshot_id": "products_catalog:guirnalda",
+                "source_variant_id": "source-rosado-18",
+                "inventory_quantity": 5000,
+                "unidades_inferidas": false,
+                "titulo": "Globo látex rosado — R-18",
+                "color": "rosado",
+                "tamano_codigo": "R-18",
+                "diam_pulg": 18.0,
+                "diam_cm": 45.7,
+                "forma": "redondo",
+                "acabado": null,
+                "unidades": 2,
+                "imagen": "https://cdn.example/rosado-18.jpg",
+                "sustitucion": null
+              },
+              {
+                "estructura_id": "EST_01_GUIRNALDA",
+                "origen": {
+                  "kind": "estructura",
+                  "id": "EST_01_GUIRNALDA"
+                },
+                "product_id": "prod-blanco",
+                "variant_id": "var-blanco-18",
+                "sku": "BLANCO-18",
+                "sku_original": "BLANCO-18",
+                "source_snapshot_id": "products_catalog:guirnalda",
+                "source_variant_id": "source-blanco-18",
+                "inventory_quantity": 5000,
+                "unidades_inferidas": false,
+                "titulo": "Globo látex blanco — R-18",
+                "color": "blanco",
+                "tamano_codigo": "R-18",
+                "diam_pulg": 18.0,
+                "diam_cm": 45.7,
+                "forma": "redondo",
+                "acabado": null,
+                "unidades": 2,
+                "imagen": "https://cdn.example/blanco-18.jpg",
+                "sustitucion": null
+              },
+              {
+                "estructura_id": "EST_01_GUIRNALDA",
+                "origen": {
+                  "kind": "estructura",
+                  "id": "EST_01_GUIRNALDA"
+                },
+                "product_id": "prod-rosado",
+                "variant_id": "var-rosado-24",
+                "sku": "ROSADO-24",
+                "sku_original": "ROSADO-24",
+                "source_snapshot_id": "products_catalog:guirnalda",
+                "source_variant_id": "source-rosado-24",
+                "inventory_quantity": 5000,
+                "unidades_inferidas": false,
+                "titulo": "Globo látex rosado — R-24",
+                "color": "rosado",
+                "tamano_codigo": "R-24",
+                "diam_pulg": 24.0,
+                "diam_cm": 61.0,
+                "forma": "redondo",
+                "acabado": null,
+                "unidades": 2,
+                "imagen": "https://cdn.example/rosado-24.jpg",
+                "sustitucion": null
+              }
+            ],
+            "mezcla_real": [
+              {
+                "diam_pulg": 12.0,
+                "forma": "redondo",
+                "unidades": 52,
+                "pct": 54.17
+              },
+              {
+                "diam_pulg": 5.0,
+                "forma": "redondo",
+                "unidades": 20,
+                "pct": 20.83
+              },
+              {
+                "diam_pulg": 9.0,
+                "forma": "redondo",
+                "unidades": 18,
+                "pct": 18.75
+              },
+              {
+                "diam_pulg": 18.0,
+                "forma": "redondo",
+                "unidades": 4,
+                "pct": 4.17
+              },
+              {
+                "diam_pulg": 24.0,
+                "forma": "redondo",
+                "unidades": 2,
+                "pct": 2.08
+              }
+            ],
+            "supuestos": []
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA",
+            "nombre": "Columna",
+            "tipo": "columna",
+            "ubicacion": "lateral_izquierdo",
+            "repeticiones": 2,
+            "eje_m": 2.0,
+            "total_unidades": 78,
+            "lineas": [
+              {
+                "estructura_id": "EST_02_COLUMNA",
+                "origen": {
+                  "kind": "estructura",
+                  "id": "EST_02_COLUMNA"
+                },
+                "product_id": "prod-dorado",
+                "variant_id": "var-dorado-5",
+                "sku": "DORADO-5",
+                "sku_original": "DORADO-5",
+                "source_snapshot_id": "products_catalog:guirnalda",
+                "source_variant_id": "source-dorado-5",
+                "inventory_quantity": 5000,
+                "unidades_inferidas": false,
+                "titulo": "Globo látex dorado — R-5",
+                "color": "dorado",
+                "tamano_codigo": "R-5",
+                "diam_pulg": 5.0,
+                "diam_cm": 12.7,
+                "forma": "redondo",
+                "acabado": null,
+                "unidades": 16,
+                "imagen": "https://cdn.example/dorado-5.jpg",
+                "sustitucion": null
+              },
+              {
+                "estructura_id": "EST_02_COLUMNA",
+                "origen": {
+                  "kind": "estructura",
+                  "id": "EST_02_COLUMNA"
+                },
+                "product_id": "prod-dorado",
+                "variant_id": "var-dorado-9",
+                "sku": "DORADO-9",
+                "sku_original": "DORADO-9",
+                "source_snapshot_id": "products_catalog:guirnalda",
+                "source_variant_id": "source-dorado-9",
+                "inventory_quantity": 5000,
+                "unidades_inferidas": false,
+                "titulo": "Globo látex dorado — R-9",
+                "color": "dorado",
+                "tamano_codigo": "R-9",
+                "diam_pulg": 9.0,
+                "diam_cm": 22.9,
+                "forma": "redondo",
+                "acabado": null,
+                "unidades": 14,
+                "imagen": "https://cdn.example/dorado-9.jpg",
+                "sustitucion": null
+              },
+              {
+                "estructura_id": "EST_02_COLUMNA",
+                "origen": {
+                  "kind": "estructura",
+                  "id": "EST_02_COLUMNA"
+                },
+                "product_id": "prod-dorado",
+                "variant_id": "var-dorado-12",
+                "sku": "DORADO-12",
+                "sku_original": "DORADO-12",
+                "source_snapshot_id": "products_catalog:guirnalda",
+                "source_variant_id": "source-dorado-12",
+                "inventory_quantity": 5000,
+                "unidades_inferidas": false,
+                "titulo": "Globo látex dorado — R-12",
+                "color": "dorado",
+                "tamano_codigo": "R-12",
+                "diam_pulg": 12.0,
+                "diam_cm": 30.5,
+                "forma": "redondo",
+                "acabado": null,
+                "unidades": 42,
+                "imagen": "https://cdn.example/dorado-12.jpg",
+                "sustitucion": null
+              },
+              {
+                "estructura_id": "EST_02_COLUMNA",
+                "origen": {
+                  "kind": "estructura",
+                  "id": "EST_02_COLUMNA"
+                },
+                "product_id": "prod-dorado",
+                "variant_id": "var-dorado-18",
+                "sku": "DORADO-18",
+                "sku_original": "DORADO-18",
+                "source_snapshot_id": "products_catalog:guirnalda",
+                "source_variant_id": "source-dorado-18",
+                "inventory_quantity": 5000,
+                "unidades_inferidas": false,
+                "titulo": "Globo látex dorado — R-18",
+                "color": "dorado",
+                "tamano_codigo": "R-18",
+                "diam_pulg": 18.0,
+                "diam_cm": 45.7,
+                "forma": "redondo",
+                "acabado": null,
+                "unidades": 4,
+                "imagen": "https://cdn.example/dorado-18.jpg",
+                "sustitucion": null
+              },
+              {
+                "estructura_id": "EST_02_COLUMNA",
+                "origen": {
+                  "kind": "estructura",
+                  "id": "EST_02_COLUMNA"
+                },
+                "product_id": "prod-dorado",
+                "variant_id": "var-dorado-24",
+                "sku": "DORADO-24",
+                "sku_original": "DORADO-24",
+                "source_snapshot_id": "products_catalog:guirnalda",
+                "source_variant_id": "source-dorado-24",
+                "inventory_quantity": 5000,
+                "unidades_inferidas": false,
+                "titulo": "Globo látex dorado — R-24",
+                "color": "dorado",
+                "tamano_codigo": "R-24",
+                "diam_pulg": 24.0,
+                "diam_cm": 61.0,
+                "forma": "redondo",
+                "acabado": null,
+                "unidades": 2,
+                "imagen": "https://cdn.example/dorado-24.jpg",
+                "sustitucion": null
+              }
+            ],
+            "mezcla_real": [
+              {
+                "diam_pulg": 12.0,
+                "forma": "redondo",
+                "unidades": 42,
+                "pct": 53.85
+              },
+              {
+                "diam_pulg": 5.0,
+                "forma": "redondo",
+                "unidades": 16,
+                "pct": 20.51
+              },
+              {
+                "diam_pulg": 9.0,
+                "forma": "redondo",
+                "unidades": 14,
+                "pct": 17.95
+              },
+              {
+                "diam_pulg": 18.0,
+                "forma": "redondo",
+                "unidades": 4,
+                "pct": 5.13
+              },
+              {
+                "diam_pulg": 24.0,
+                "forma": "redondo",
+                "unidades": 2,
+                "pct": 2.56
+              }
+            ],
+            "supuestos": []
+          }
+        ],
+        "compras": [
+          {
+            "variant_id": "var-blanco-12",
+            "product_id": "prod-blanco",
+            "sku": "BLANCO-12",
+            "sku_original": "BLANCO-12",
+            "source_snapshot_id": "products_catalog:guirnalda",
+            "source_variant_id": "source-blanco-12",
+            "inventory_quantity": 5000,
+            "unidades_inferidas": false,
+            "titulo": "Globo látex blanco — R-12",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12.0,
+            "color": "blanco",
+            "unidades_necesarias": 20,
+            "design_quantity": 20,
+            "waste_reserve": 0,
+            "required_quantity": 20,
+            "unidades_con_merma": 20,
+            "unidades_paquete": 50,
+            "paquetes": 1,
+            "purchase_quantity": 50,
+            "used": 20,
+            "leftover_inventory": 30,
+            "consumption_cost": 4800,
+            "purchase_cost": 12000,
+            "additional_package_for_waste": false,
+            "sobrante": 30,
+            "precio_paquete": 12000,
+            "subtotal": 12000,
+            "estructuras": [
+              "EST_01_GUIRNALDA"
+            ],
+            "elementos_origen": [
+              {
+                "kind": "estructura",
+                "id": "EST_01_GUIRNALDA"
+              }
+            ],
+            "imagen": "https://cdn.example/blanco-12.jpg"
+          },
+          {
+            "variant_id": "var-blanco-18",
+            "product_id": "prod-blanco",
+            "sku": "BLANCO-18",
+            "sku_original": "BLANCO-18",
+            "source_snapshot_id": "products_catalog:guirnalda",
+            "source_variant_id": "source-blanco-18",
+            "inventory_quantity": 5000,
+            "unidades_inferidas": false,
+            "titulo": "Globo látex blanco — R-18",
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18.0,
+            "color": "blanco",
+            "unidades_necesarias": 2,
+            "design_quantity": 2,
+            "waste_reserve": 14,
+            "required_quantity": 16,
+            "unidades_con_merma": 16,
+            "unidades_paquete": 50,
+            "paquetes": 1,
+            "purchase_quantity": 50,
+            "used": 2,
+            "leftover_inventory": 34,
+            "consumption_cost": 5760,
+            "purchase_cost": 18000,
+            "additional_package_for_waste": false,
+            "sobrante": 48,
+            "precio_paquete": 18000,
+            "subtotal": 18000,
+            "estructuras": [
+              "EST_01_GUIRNALDA"
+            ],
+            "elementos_origen": [
+              {
+                "kind": "estructura",
+                "id": "EST_01_GUIRNALDA"
+              }
+            ],
+            "imagen": "https://cdn.example/blanco-18.jpg"
+          },
+          {
+            "variant_id": "var-blanco-5",
+            "product_id": "prod-blanco",
+            "sku": "BLANCO-5",
+            "sku_original": "BLANCO-5",
+            "source_snapshot_id": "products_catalog:guirnalda",
+            "source_variant_id": "source-blanco-5",
+            "inventory_quantity": 5000,
+            "unidades_inferidas": false,
+            "titulo": "Globo látex blanco — R-5",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5.0,
+            "color": "blanco",
+            "unidades_necesarias": 8,
+            "design_quantity": 8,
+            "waste_reserve": 0,
+            "required_quantity": 8,
+            "unidades_con_merma": 8,
+            "unidades_paquete": 50,
+            "paquetes": 1,
+            "purchase_quantity": 50,
+            "used": 8,
+            "leftover_inventory": 42,
+            "consumption_cost": 800,
+            "purchase_cost": 5000,
+            "additional_package_for_waste": false,
+            "sobrante": 42,
+            "precio_paquete": 5000,
+            "subtotal": 5000,
+            "estructuras": [
+              "EST_01_GUIRNALDA"
+            ],
+            "elementos_origen": [
+              {
+                "kind": "estructura",
+                "id": "EST_01_GUIRNALDA"
+              }
+            ],
+            "imagen": "https://cdn.example/blanco-5.jpg"
+          },
+          {
+            "variant_id": "var-blanco-9",
+            "product_id": "prod-blanco",
+            "sku": "BLANCO-9",
+            "sku_original": "BLANCO-9",
+            "source_snapshot_id": "products_catalog:guirnalda",
+            "source_variant_id": "source-blanco-9",
+            "inventory_quantity": 5000,
+            "unidades_inferidas": false,
+            "titulo": "Globo látex blanco — R-9",
+            "tamano_codigo": "R-9",
+            "diam_pulg": 9.0,
+            "color": "blanco",
+            "unidades_necesarias": 8,
+            "design_quantity": 8,
+            "waste_reserve": 0,
+            "required_quantity": 8,
+            "unidades_con_merma": 8,
+            "unidades_paquete": 50,
+            "paquetes": 1,
+            "purchase_quantity": 50,
+            "used": 8,
+            "leftover_inventory": 42,
+            "consumption_cost": 1440,
+            "purchase_cost": 9000,
+            "additional_package_for_waste": false,
+            "sobrante": 42,
+            "precio_paquete": 9000,
+            "subtotal": 9000,
+            "estructuras": [
+              "EST_01_GUIRNALDA"
+            ],
+            "elementos_origen": [
+              {
+                "kind": "estructura",
+                "id": "EST_01_GUIRNALDA"
+              }
+            ],
+            "imagen": "https://cdn.example/blanco-9.jpg"
+          },
+          {
+            "variant_id": "var-dorado-12",
+            "product_id": "prod-dorado",
+            "sku": "DORADO-12",
+            "sku_original": "DORADO-12",
+            "source_snapshot_id": "products_catalog:guirnalda",
+            "source_variant_id": "source-dorado-12",
+            "inventory_quantity": 5000,
+            "unidades_inferidas": false,
+            "titulo": "Globo látex dorado — R-12",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12.0,
+            "color": "dorado",
+            "unidades_necesarias": 42,
+            "design_quantity": 42,
+            "waste_reserve": 0,
+            "required_quantity": 42,
+            "unidades_con_merma": 42,
+            "unidades_paquete": 50,
+            "paquetes": 1,
+            "purchase_quantity": 50,
+            "used": 42,
+            "leftover_inventory": 8,
+            "consumption_cost": 10080,
+            "purchase_cost": 12000,
+            "additional_package_for_waste": false,
+            "sobrante": 8,
+            "precio_paquete": 12000,
+            "subtotal": 12000,
+            "estructuras": [
+              "EST_02_COLUMNA"
+            ],
+            "elementos_origen": [
+              {
+                "kind": "estructura",
+                "id": "EST_02_COLUMNA"
+              }
+            ],
+            "imagen": "https://cdn.example/dorado-12.jpg"
+          },
+          {
+            "variant_id": "var-dorado-18",
+            "product_id": "prod-dorado",
+            "sku": "DORADO-18",
+            "sku_original": "DORADO-18",
+            "source_snapshot_id": "products_catalog:guirnalda",
+            "source_variant_id": "source-dorado-18",
+            "inventory_quantity": 5000,
+            "unidades_inferidas": false,
+            "titulo": "Globo látex dorado — R-18",
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18.0,
+            "color": "dorado",
+            "unidades_necesarias": 4,
+            "design_quantity": 4,
+            "waste_reserve": 0,
+            "required_quantity": 4,
+            "unidades_con_merma": 4,
+            "unidades_paquete": 50,
+            "paquetes": 1,
+            "purchase_quantity": 50,
+            "used": 4,
+            "leftover_inventory": 46,
+            "consumption_cost": 1440,
+            "purchase_cost": 18000,
+            "additional_package_for_waste": false,
+            "sobrante": 46,
+            "precio_paquete": 18000,
+            "subtotal": 18000,
+            "estructuras": [
+              "EST_02_COLUMNA"
+            ],
+            "elementos_origen": [
+              {
+                "kind": "estructura",
+                "id": "EST_02_COLUMNA"
+              }
+            ],
+            "imagen": "https://cdn.example/dorado-18.jpg"
+          },
+          {
+            "variant_id": "var-dorado-24",
+            "product_id": "prod-dorado",
+            "sku": "DORADO-24",
+            "sku_original": "DORADO-24",
+            "source_snapshot_id": "products_catalog:guirnalda",
+            "source_variant_id": "source-dorado-24",
+            "inventory_quantity": 5000,
+            "unidades_inferidas": false,
+            "titulo": "Globo látex dorado — R-24",
+            "tamano_codigo": "R-24",
+            "diam_pulg": 24.0,
+            "color": "dorado",
+            "unidades_necesarias": 2,
+            "design_quantity": 2,
+            "waste_reserve": 0,
+            "required_quantity": 2,
+            "unidades_con_merma": 2,
+            "unidades_paquete": 50,
+            "paquetes": 1,
+            "purchase_quantity": 50,
+            "used": 2,
+            "leftover_inventory": 48,
+            "consumption_cost": 960,
+            "purchase_cost": 24000,
+            "additional_package_for_waste": false,
+            "sobrante": 48,
+            "precio_paquete": 24000,
+            "subtotal": 24000,
+            "estructuras": [
+              "EST_02_COLUMNA"
+            ],
+            "elementos_origen": [
+              {
+                "kind": "estructura",
+                "id": "EST_02_COLUMNA"
+              }
+            ],
+            "imagen": "https://cdn.example/dorado-24.jpg"
+          },
+          {
+            "variant_id": "var-dorado-5",
+            "product_id": "prod-dorado",
+            "sku": "DORADO-5",
+            "sku_original": "DORADO-5",
+            "source_snapshot_id": "products_catalog:guirnalda",
+            "source_variant_id": "source-dorado-5",
+            "inventory_quantity": 5000,
+            "unidades_inferidas": false,
+            "titulo": "Globo látex dorado — R-5",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5.0,
+            "color": "dorado",
+            "unidades_necesarias": 16,
+            "design_quantity": 16,
+            "waste_reserve": 0,
+            "required_quantity": 16,
+            "unidades_con_merma": 16,
+            "unidades_paquete": 50,
+            "paquetes": 1,
+            "purchase_quantity": 50,
+            "used": 16,
+            "leftover_inventory": 34,
+            "consumption_cost": 1600,
+            "purchase_cost": 5000,
+            "additional_package_for_waste": false,
+            "sobrante": 34,
+            "precio_paquete": 5000,
+            "subtotal": 5000,
+            "estructuras": [
+              "EST_02_COLUMNA"
+            ],
+            "elementos_origen": [
+              {
+                "kind": "estructura",
+                "id": "EST_02_COLUMNA"
+              }
+            ],
+            "imagen": "https://cdn.example/dorado-5.jpg"
+          },
+          {
+            "variant_id": "var-dorado-9",
+            "product_id": "prod-dorado",
+            "sku": "DORADO-9",
+            "sku_original": "DORADO-9",
+            "source_snapshot_id": "products_catalog:guirnalda",
+            "source_variant_id": "source-dorado-9",
+            "inventory_quantity": 5000,
+            "unidades_inferidas": false,
+            "titulo": "Globo látex dorado — R-9",
+            "tamano_codigo": "R-9",
+            "diam_pulg": 9.0,
+            "color": "dorado",
+            "unidades_necesarias": 14,
+            "design_quantity": 14,
+            "waste_reserve": 0,
+            "required_quantity": 14,
+            "unidades_con_merma": 14,
+            "unidades_paquete": 50,
+            "paquetes": 1,
+            "purchase_quantity": 50,
+            "used": 14,
+            "leftover_inventory": 36,
+            "consumption_cost": 2520,
+            "purchase_cost": 9000,
+            "additional_package_for_waste": false,
+            "sobrante": 36,
+            "precio_paquete": 9000,
+            "subtotal": 9000,
+            "estructuras": [
+              "EST_02_COLUMNA"
+            ],
+            "elementos_origen": [
+              {
+                "kind": "estructura",
+                "id": "EST_02_COLUMNA"
+              }
+            ],
+            "imagen": "https://cdn.example/dorado-9.jpg"
+          },
+          {
+            "variant_id": "var-rosado-12",
+            "product_id": "prod-rosado",
+            "sku": "ROSADO-12",
+            "sku_original": "ROSADO-12",
+            "source_snapshot_id": "products_catalog:guirnalda",
+            "source_variant_id": "source-rosado-12",
+            "inventory_quantity": 5000,
+            "unidades_inferidas": false,
+            "titulo": "Globo látex rosado — R-12",
+            "tamano_codigo": "R-12",
+            "diam_pulg": 12.0,
+            "color": "rosado",
+            "unidades_necesarias": 32,
+            "design_quantity": 32,
+            "waste_reserve": 0,
+            "required_quantity": 32,
+            "unidades_con_merma": 32,
+            "unidades_paquete": 50,
+            "paquetes": 1,
+            "purchase_quantity": 50,
+            "used": 32,
+            "leftover_inventory": 18,
+            "consumption_cost": 7680,
+            "purchase_cost": 12000,
+            "additional_package_for_waste": false,
+            "sobrante": 18,
+            "precio_paquete": 12000,
+            "subtotal": 12000,
+            "estructuras": [
+              "EST_01_GUIRNALDA"
+            ],
+            "elementos_origen": [
+              {
+                "kind": "estructura",
+                "id": "EST_01_GUIRNALDA"
+              }
+            ],
+            "imagen": "https://cdn.example/rosado-12.jpg"
+          },
+          {
+            "variant_id": "var-rosado-18",
+            "product_id": "prod-rosado",
+            "sku": "ROSADO-18",
+            "sku_original": "ROSADO-18",
+            "source_snapshot_id": "products_catalog:guirnalda",
+            "source_variant_id": "source-rosado-18",
+            "inventory_quantity": 5000,
+            "unidades_inferidas": false,
+            "titulo": "Globo látex rosado — R-18",
+            "tamano_codigo": "R-18",
+            "diam_pulg": 18.0,
+            "color": "rosado",
+            "unidades_necesarias": 2,
+            "design_quantity": 2,
+            "waste_reserve": 0,
+            "required_quantity": 2,
+            "unidades_con_merma": 2,
+            "unidades_paquete": 50,
+            "paquetes": 1,
+            "purchase_quantity": 50,
+            "used": 2,
+            "leftover_inventory": 48,
+            "consumption_cost": 720,
+            "purchase_cost": 18000,
+            "additional_package_for_waste": false,
+            "sobrante": 48,
+            "precio_paquete": 18000,
+            "subtotal": 18000,
+            "estructuras": [
+              "EST_01_GUIRNALDA"
+            ],
+            "elementos_origen": [
+              {
+                "kind": "estructura",
+                "id": "EST_01_GUIRNALDA"
+              }
+            ],
+            "imagen": "https://cdn.example/rosado-18.jpg"
+          },
+          {
+            "variant_id": "var-rosado-24",
+            "product_id": "prod-rosado",
+            "sku": "ROSADO-24",
+            "sku_original": "ROSADO-24",
+            "source_snapshot_id": "products_catalog:guirnalda",
+            "source_variant_id": "source-rosado-24",
+            "inventory_quantity": 5000,
+            "unidades_inferidas": false,
+            "titulo": "Globo látex rosado — R-24",
+            "tamano_codigo": "R-24",
+            "diam_pulg": 24.0,
+            "color": "rosado",
+            "unidades_necesarias": 2,
+            "design_quantity": 2,
+            "waste_reserve": 0,
+            "required_quantity": 2,
+            "unidades_con_merma": 2,
+            "unidades_paquete": 50,
+            "paquetes": 1,
+            "purchase_quantity": 50,
+            "used": 2,
+            "leftover_inventory": 48,
+            "consumption_cost": 960,
+            "purchase_cost": 24000,
+            "additional_package_for_waste": false,
+            "sobrante": 48,
+            "precio_paquete": 24000,
+            "subtotal": 24000,
+            "estructuras": [
+              "EST_01_GUIRNALDA"
+            ],
+            "elementos_origen": [
+              {
+                "kind": "estructura",
+                "id": "EST_01_GUIRNALDA"
+              }
+            ],
+            "imagen": "https://cdn.example/rosado-24.jpg"
+          },
+          {
+            "variant_id": "var-rosado-5",
+            "product_id": "prod-rosado",
+            "sku": "ROSADO-5",
+            "sku_original": "ROSADO-5",
+            "source_snapshot_id": "products_catalog:guirnalda",
+            "source_variant_id": "source-rosado-5",
+            "inventory_quantity": 5000,
+            "unidades_inferidas": false,
+            "titulo": "Globo látex rosado — R-5",
+            "tamano_codigo": "R-5",
+            "diam_pulg": 5.0,
+            "color": "rosado",
+            "unidades_necesarias": 12,
+            "design_quantity": 12,
+            "waste_reserve": 0,
+            "required_quantity": 12,
+            "unidades_con_merma": 12,
+            "unidades_paquete": 50,
+            "paquetes": 1,
+            "purchase_quantity": 50,
+            "used": 12,
+            "leftover_inventory": 38,
+            "consumption_cost": 1200,
+            "purchase_cost": 5000,
+            "additional_package_for_waste": false,
+            "sobrante": 38,
+            "precio_paquete": 5000,
+            "subtotal": 5000,
+            "estructuras": [
+              "EST_01_GUIRNALDA"
+            ],
+            "elementos_origen": [
+              {
+                "kind": "estructura",
+                "id": "EST_01_GUIRNALDA"
+              }
+            ],
+            "imagen": "https://cdn.example/rosado-5.jpg"
+          },
+          {
+            "variant_id": "var-rosado-9",
+            "product_id": "prod-rosado",
+            "sku": "ROSADO-9",
+            "sku_original": "ROSADO-9",
+            "source_snapshot_id": "products_catalog:guirnalda",
+            "source_variant_id": "source-rosado-9",
+            "inventory_quantity": 5000,
+            "unidades_inferidas": false,
+            "titulo": "Globo látex rosado — R-9",
+            "tamano_codigo": "R-9",
+            "diam_pulg": 9.0,
+            "color": "rosado",
+            "unidades_necesarias": 10,
+            "design_quantity": 10,
+            "waste_reserve": 0,
+            "required_quantity": 10,
+            "unidades_con_merma": 10,
+            "unidades_paquete": 50,
+            "paquetes": 1,
+            "purchase_quantity": 50,
+            "used": 10,
+            "leftover_inventory": 40,
+            "consumption_cost": 1800,
+            "purchase_cost": 9000,
+            "additional_package_for_waste": false,
+            "sobrante": 40,
+            "precio_paquete": 9000,
+            "subtotal": 9000,
+            "estructuras": [
+              "EST_01_GUIRNALDA"
+            ],
+            "elementos_origen": [
+              {
+                "kind": "estructura",
+                "id": "EST_01_GUIRNALDA"
+              }
+            ],
+            "imagen": "https://cdn.example/rosado-9.jpg"
+          }
+        ],
+        "totales": {
+          "globos_por_tamano": {
+            "R-12": 94,
+            "R-18": 8,
+            "R-5": 36,
+            "R-9": 32,
+            "R-24": 4
+          },
+          "total_unidades": 174,
+          "total_cop": 180000,
+          "design_quantity": 174,
+          "target_waste_reserve": 14,
+          "natural_package_surplus": 526,
+          "covered_waste_reserve": 14,
+          "uncovered_waste_reserve": 0,
+          "purchase_cost": 180000,
+          "consumption_cost": 41760,
+          "waste_only_savings_cop": 0,
+          "additional_waste_packages": 0,
+          "ahorro_paquetes_cop": 0,
+          "incluye_iva": true,
+          "merma_porcentaje": 8.0
+        },
+        "comercial": {
+          "estado": "APROBACION_REQUERIDA",
+          "delta_cop": 0
+        },
+        "alternativas": [],
+        "merma_log": "Reserva estadística del 8% distribuida sobre sobrantes compatibles del snapshot products_catalog:guirnalda.",
+        "sustituciones": [],
+        "sin_cobertura": [],
+        "costes_por_estructura": [
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "consumo_cop": 20120
+          },
+          {
+            "estructura_id": "EST_02_COLUMNA",
+            "consumo_cop": 16600
+          }
+        ],
+        "advertencias": [
+          "sobrante_alto:var-blanco-12",
+          "sobrante_alto:var-blanco-18",
+          "sobrante_alto:var-blanco-5",
+          "sobrante_alto:var-blanco-9",
+          "sobrante_alto:var-dorado-18",
+          "sobrante_alto:var-dorado-24",
+          "sobrante_alto:var-dorado-5",
+          "sobrante_alto:var-dorado-9",
+          "sobrante_alto:var-rosado-12",
+          "sobrante_alto:var-rosado-18",
+          "sobrante_alto:var-rosado-24",
+          "sobrante_alto:var-rosado-5",
+          "sobrante_alto:var-rosado-9"
+        ],
+        "armados_guirnalda": [
+          {
+            "estructura_id": "EST_01_GUIRNALDA",
+            "armado": {
+              "version": "armado-guirnalda.v1",
+              "origen": "decorador",
+              "soporte": "sobre_estructura",
+              "forma": "curva",
+              "racimo": {
+                "unidad": "cuarteto",
+                "tamano_pulg_base": 12
+              },
+              "relleno": {
+                "material": 0,
+                "proporcion": 0.2
+              },
+              "remates": [],
+              "estructura_id": "EST_02_COLUMNA"
+            },
+            "repeticiones": 2,
+            "largo_m": 2.5,
+            "largo_cuerda_m": 2.5,
+            "globos_por_instancia": 48,
+            "leyenda": [
+              {
+                "codigo": 1,
+                "material": 0,
+                "product_id": "prod-rosado",
+                "variant_id": "var-rosado-5",
+                "descripcion": "R-5 rosado",
+                "color": "rosado",
+                "acabado": null,
+                "tamano_pulg": 5.0,
+                "unidades_por_instancia": 6,
+                "unidades_total": 12
+              },
+              {
+                "codigo": 2,
+                "material": 0,
+                "product_id": "prod-rosado",
+                "variant_id": "var-rosado-9",
+                "descripcion": "R-9 rosado",
+                "color": "rosado",
+                "acabado": null,
+                "tamano_pulg": 9.0,
+                "unidades_por_instancia": 5,
+                "unidades_total": 10
+              },
+              {
+                "codigo": 3,
+                "material": 0,
+                "product_id": "prod-rosado",
+                "variant_id": "var-rosado-12",
+                "descripcion": "R-12 rosado",
+                "color": "rosado",
+                "acabado": null,
+                "tamano_pulg": 12.0,
+                "unidades_por_instancia": 16,
+                "unidades_total": 32
+              },
+              {
+                "codigo": 4,
+                "material": 0,
+                "product_id": "prod-rosado",
+                "variant_id": "var-rosado-18",
+                "descripcion": "R-18 rosado",
+                "color": "rosado",
+                "acabado": null,
+                "tamano_pulg": 18.0,
+                "unidades_por_instancia": 1,
+                "unidades_total": 2
+              },
+              {
+                "codigo": 5,
+                "material": 0,
+                "product_id": "prod-rosado",
+                "variant_id": "var-rosado-24",
+                "descripcion": "R-24 rosado",
+                "color": "rosado",
+                "acabado": null,
+                "tamano_pulg": 24.0,
+                "unidades_por_instancia": 1,
+                "unidades_total": 2
+              },
+              {
+                "codigo": 6,
+                "material": 1,
+                "product_id": "prod-blanco",
+                "variant_id": "var-blanco-5",
+                "descripcion": "R-5 blanco",
+                "color": "blanco",
+                "acabado": null,
+                "tamano_pulg": 5.0,
+                "unidades_por_instancia": 4,
+                "unidades_total": 8
+              },
+              {
+                "codigo": 7,
+                "material": 1,
+                "product_id": "prod-blanco",
+                "variant_id": "var-blanco-9",
+                "descripcion": "R-9 blanco",
+                "color": "blanco",
+                "acabado": null,
+                "tamano_pulg": 9.0,
+                "unidades_por_instancia": 4,
+                "unidades_total": 8
+              },
+              {
+                "codigo": 8,
+                "material": 1,
+                "product_id": "prod-blanco",
+                "variant_id": "var-blanco-12",
+                "descripcion": "R-12 blanco",
+                "color": "blanco",
+                "acabado": null,
+                "tamano_pulg": 12.0,
+                "unidades_por_instancia": 10,
+                "unidades_total": 20
+              },
+              {
+                "codigo": 9,
+                "material": 1,
+                "product_id": "prod-blanco",
+                "variant_id": "var-blanco-18",
+                "descripcion": "R-18 blanco",
+                "color": "blanco",
+                "acabado": null,
+                "tamano_pulg": 18.0,
+                "unidades_por_instancia": 1,
+                "unidades_total": 2
+              }
+            ],
+            "racimos": [
+              {
+                "numero": 1,
+                "codigos": [
+                  3,
+                  8,
+                  3,
+                  7
+                ]
+              },
+              {
+                "numero": 2,
+                "codigos": [
+                  2,
+                  3,
+                  8,
+                  3
+                ]
+              },
+              {
+                "numero": 3,
+                "codigos": [
+                  8,
+                  3,
+                  2,
+                  8
+                ]
+              },
+              {
+                "numero": 4,
+                "codigos": [
+                  3,
+                  7,
+                  3,
+                  3
+                ]
+              },
+              {
+                "numero": 5,
+                "codigos": [
+                  8,
+                  2,
+                  4,
+                  9
+                ]
+              },
+              {
+                "numero": 6,
+                "codigos": [
+                  5,
+                  8,
+                  3,
+                  3
+                ]
+              },
+              {
+                "numero": 7,
+                "codigos": [
+                  7,
+                  3,
+                  8,
+                  2
+                ]
+              },
+              {
+                "numero": 8,
+                "codigos": [
+                  3,
+                  8,
+                  3,
+                  8
+                ]
+              },
+              {
+                "numero": 9,
+                "codigos": [
+                  3,
+                  2,
+                  7,
+                  3
+                ]
+              }
+            ],
+            "relleno": {
+              "material": 0,
+              "total": 10,
+              "codigos": [
+                {
+                  "codigo": 1,
+                  "cantidad": 6
+                },
+                {
+                  "codigo": 6,
+                  "cantidad": 4
+                }
+              ]
+            },
+            "remates": [],
+            "sueltos": [
+              {
+                "codigo": 3,
+                "cantidad": 1
+              },
+              {
+                "codigo": 8,
+                "cantidad": 1
+              }
+            ],
+            "insumos": [
+              {
+                "insumo": "tira",
+                "cantidad": 6.0,
+                "unidad": "m",
+                "detalle": "tira perforada para armar la guirnalda: su largo más un 10 % para amarres",
+                "estimado": false
+              },
+              {
+                "insumo": "amarres",
+                "cantidad": 12,
+                "unidad": "amarres",
+                "detalle": "cintillos o amarres a la pieza anfitriona, uno cada 50 cm",
+                "estimado": false
+              },
+              {
+                "insumo": "pegante",
+                "cantidad": 24,
+                "unidad": "puntos",
+                "detalle": "puntos de pegamento para el relleno, los remates y los globos sueltos",
+                "estimado": true
+              },
+              {
+                "insumo": "tijeras",
+                "cantidad": 1,
+                "unidad": "tijeras",
+                "detalle": "",
+                "estimado": false
+              },
+              {
+                "insumo": "bomba",
+                "cantidad": 1,
+                "unidad": "bomba",
+                "detalle": "infladora con calibrador de tamaños",
+                "estimado": false
+              }
+            ],
+            "duracion_estimada": {
+              "horas_min": 1.75,
+              "horas_max": 3.25,
+              "estimado": true
+            },
+            "nombre": "Guirnalda sobre Columna",
+            "descripcion": "9 cuartetos de 12\" de izquierda a derecha y relleno de 10 globos chicos, abrazada a Columna.",
+            "pasos": [
+              "Infla y calibra los 48 globos de cada guirnalda según la leyenda.",
+              "Arma 9 cuartetos de 12\": amarra dos parejas y crúzalas. Cada racimo lleva los códigos de la gráfica.",
+              "Pasa los racimos por la tira en orden, del 1 (extremo izquierdo) al 9 (extremo derecho), girando cada uno un cuarto de vuelta respecto del anterior.",
+              "Relleno: pega los 10 globos chicos en los huecos entre racimos, repartidos parejo: 6 de R-5 rosado (1), 4 de R-5 blanco (6).",
+              "Reparte los globos sueltos entre los racimos para cerrar huecos: 1 de R-12 rosado (3), 1 de R-12 blanco (8).",
+              "Amárrala a Columna cada 50 cm, siguiendo su forma."
+            ],
+            "avisos": [
+              "Sobran 2 globos que no completan un cuarteto: van sueltos entre los racimos."
+            ],
+            "prompt_gemini": "GARLAND ASSEMBLY — an organic balloon garland wrapped around the balloon column, following its shape. Build it from 9 four-balloon clusters of 12\" balloons in pink and white, chained from the left end to the right end. Tuck small 5\" pink and white filler balloons into the gaps between the clusters. Keep the clusters tight and twisted against each other so the garland reads as one continuous organic piece with no gaps.",
+            "prompt_lora": "wrapped around the balloon column in clusters of four with small pink and white filler balloons"
+          }
+        ]
+      },
+      "material_estimate": {
+        "version": "design-material-estimate-v1",
+        "design": {
+          "type": "composite_installation",
+          "shape": "coordinated structures",
+          "dimensions_m": {
+            "width": null,
+            "height": null,
+            "length": 2.5
+          },
+          "installation_length_m": 9.0,
+          "density": "media",
+          "visual_density": "medium",
+          "visual_scale": "large",
+          "cluster_count": 4
+        },
+        "balloons": [
+          {
+            "structure_id": "EST_01_GUIRNALDA",
+            "product_id": "prod-rosado",
+            "variant_id": "var-rosado-5",
+            "color": "rosado",
+            "finish": null,
+            "size_inches": 5.0,
+            "shape": "redondo",
+            "design_quantity": 12,
+            "waste_reserve": 0,
+            "required_quantity": 12,
+            "waste_adjusted_quantity": 12
+          },
+          {
+            "structure_id": "EST_01_GUIRNALDA",
+            "product_id": "prod-blanco",
+            "variant_id": "var-blanco-5",
+            "color": "blanco",
+            "finish": null,
+            "size_inches": 5.0,
+            "shape": "redondo",
+            "design_quantity": 8,
+            "waste_reserve": 0,
+            "required_quantity": 8,
+            "waste_adjusted_quantity": 8
+          },
+          {
+            "structure_id": "EST_01_GUIRNALDA",
+            "product_id": "prod-rosado",
+            "variant_id": "var-rosado-9",
+            "color": "rosado",
+            "finish": null,
+            "size_inches": 9.0,
+            "shape": "redondo",
+            "design_quantity": 10,
+            "waste_reserve": 0,
+            "required_quantity": 10,
+            "waste_adjusted_quantity": 10
+          },
+          {
+            "structure_id": "EST_01_GUIRNALDA",
+            "product_id": "prod-blanco",
+            "variant_id": "var-blanco-9",
+            "color": "blanco",
+            "finish": null,
+            "size_inches": 9.0,
+            "shape": "redondo",
+            "design_quantity": 8,
+            "waste_reserve": 0,
+            "required_quantity": 8,
+            "waste_adjusted_quantity": 8
+          },
+          {
+            "structure_id": "EST_01_GUIRNALDA",
+            "product_id": "prod-rosado",
+            "variant_id": "var-rosado-12",
+            "color": "rosado",
+            "finish": null,
+            "size_inches": 12.0,
+            "shape": "redondo",
+            "design_quantity": 32,
+            "waste_reserve": 0,
+            "required_quantity": 32,
+            "waste_adjusted_quantity": 32
+          },
+          {
+            "structure_id": "EST_01_GUIRNALDA",
+            "product_id": "prod-blanco",
+            "variant_id": "var-blanco-12",
+            "color": "blanco",
+            "finish": null,
+            "size_inches": 12.0,
+            "shape": "redondo",
+            "design_quantity": 20,
+            "waste_reserve": 0,
+            "required_quantity": 20,
+            "waste_adjusted_quantity": 20
+          },
+          {
+            "structure_id": "EST_01_GUIRNALDA",
+            "product_id": "prod-rosado",
+            "variant_id": "var-rosado-18",
+            "color": "rosado",
+            "finish": null,
+            "size_inches": 18.0,
+            "shape": "redondo",
+            "design_quantity": 2,
+            "waste_reserve": 0,
+            "required_quantity": 2,
+            "waste_adjusted_quantity": 2
+          },
+          {
+            "structure_id": "EST_01_GUIRNALDA",
+            "product_id": "prod-blanco",
+            "variant_id": "var-blanco-18",
+            "color": "blanco",
+            "finish": null,
+            "size_inches": 18.0,
+            "shape": "redondo",
+            "design_quantity": 2,
+            "waste_reserve": 0,
+            "required_quantity": 2,
+            "waste_adjusted_quantity": 2
+          },
+          {
+            "structure_id": "EST_01_GUIRNALDA",
+            "product_id": "prod-rosado",
+            "variant_id": "var-rosado-24",
+            "color": "rosado",
+            "finish": null,
+            "size_inches": 24.0,
+            "shape": "redondo",
+            "design_quantity": 2,
+            "waste_reserve": 0,
+            "required_quantity": 2,
+            "waste_adjusted_quantity": 2
+          },
+          {
+            "structure_id": "EST_02_COLUMNA",
+            "product_id": "prod-dorado",
+            "variant_id": "var-dorado-5",
+            "color": "dorado",
+            "finish": null,
+            "size_inches": 5.0,
+            "shape": "redondo",
+            "design_quantity": 16,
+            "waste_reserve": 0,
+            "required_quantity": 16,
+            "waste_adjusted_quantity": 16
+          },
+          {
+            "structure_id": "EST_02_COLUMNA",
+            "product_id": "prod-dorado",
+            "variant_id": "var-dorado-9",
+            "color": "dorado",
+            "finish": null,
+            "size_inches": 9.0,
+            "shape": "redondo",
+            "design_quantity": 14,
+            "waste_reserve": 0,
+            "required_quantity": 14,
+            "waste_adjusted_quantity": 14
+          },
+          {
+            "structure_id": "EST_02_COLUMNA",
+            "product_id": "prod-dorado",
+            "variant_id": "var-dorado-12",
+            "color": "dorado",
+            "finish": null,
+            "size_inches": 12.0,
+            "shape": "redondo",
+            "design_quantity": 42,
+            "waste_reserve": 0,
+            "required_quantity": 42,
+            "waste_adjusted_quantity": 42
+          },
+          {
+            "structure_id": "EST_02_COLUMNA",
+            "product_id": "prod-dorado",
+            "variant_id": "var-dorado-18",
+            "color": "dorado",
+            "finish": null,
+            "size_inches": 18.0,
+            "shape": "redondo",
+            "design_quantity": 4,
+            "waste_reserve": 0,
+            "required_quantity": 4,
+            "waste_adjusted_quantity": 4
+          },
+          {
+            "structure_id": "EST_02_COLUMNA",
+            "product_id": "prod-dorado",
+            "variant_id": "var-dorado-24",
+            "color": "dorado",
+            "finish": null,
+            "size_inches": 24.0,
+            "shape": "redondo",
+            "design_quantity": 2,
+            "waste_reserve": 0,
+            "required_quantity": 2,
+            "waste_adjusted_quantity": 2
+          }
+        ],
+        "special_elements": [],
+        "purchases": [
+          {
+            "product_id": "prod-blanco",
+            "variant_id": "var-blanco-12",
+            "design_quantity": 20,
+            "waste_reserve": 0,
+            "required_quantity": 20,
+            "waste_adjusted_quantity": 20,
+            "units_per_package": 50,
+            "package_count": 1,
+            "purchase_quantity": 50,
+            "used": 20,
+            "leftover_inventory": 30,
+            "consumption_cost": 4800,
+            "purchase_cost": 12000,
+            "additional_package_for_waste": false,
+            "operational_surplus": 30,
+            "potential_surplus": 30
+          },
+          {
+            "product_id": "prod-blanco",
+            "variant_id": "var-blanco-18",
+            "design_quantity": 2,
+            "waste_reserve": 14,
+            "required_quantity": 16,
+            "waste_adjusted_quantity": 16,
+            "units_per_package": 50,
+            "package_count": 1,
+            "purchase_quantity": 50,
+            "used": 2,
+            "leftover_inventory": 34,
+            "consumption_cost": 5760,
+            "purchase_cost": 18000,
+            "additional_package_for_waste": false,
+            "operational_surplus": 34,
+            "potential_surplus": 48
+          },
+          {
+            "product_id": "prod-blanco",
+            "variant_id": "var-blanco-5",
+            "design_quantity": 8,
+            "waste_reserve": 0,
+            "required_quantity": 8,
+            "waste_adjusted_quantity": 8,
+            "units_per_package": 50,
+            "package_count": 1,
+            "purchase_quantity": 50,
+            "used": 8,
+            "leftover_inventory": 42,
+            "consumption_cost": 800,
+            "purchase_cost": 5000,
+            "additional_package_for_waste": false,
+            "operational_surplus": 42,
+            "potential_surplus": 42
+          },
+          {
+            "product_id": "prod-blanco",
+            "variant_id": "var-blanco-9",
+            "design_quantity": 8,
+            "waste_reserve": 0,
+            "required_quantity": 8,
+            "waste_adjusted_quantity": 8,
+            "units_per_package": 50,
+            "package_count": 1,
+            "purchase_quantity": 50,
+            "used": 8,
+            "leftover_inventory": 42,
+            "consumption_cost": 1440,
+            "purchase_cost": 9000,
+            "additional_package_for_waste": false,
+            "operational_surplus": 42,
+            "potential_surplus": 42
+          },
+          {
+            "product_id": "prod-dorado",
+            "variant_id": "var-dorado-12",
+            "design_quantity": 42,
+            "waste_reserve": 0,
+            "required_quantity": 42,
+            "waste_adjusted_quantity": 42,
+            "units_per_package": 50,
+            "package_count": 1,
+            "purchase_quantity": 50,
+            "used": 42,
+            "leftover_inventory": 8,
+            "consumption_cost": 10080,
+            "purchase_cost": 12000,
+            "additional_package_for_waste": false,
+            "operational_surplus": 8,
+            "potential_surplus": 8
+          },
+          {
+            "product_id": "prod-dorado",
+            "variant_id": "var-dorado-18",
+            "design_quantity": 4,
+            "waste_reserve": 0,
+            "required_quantity": 4,
+            "waste_adjusted_quantity": 4,
+            "units_per_package": 50,
+            "package_count": 1,
+            "purchase_quantity": 50,
+            "used": 4,
+            "leftover_inventory": 46,
+            "consumption_cost": 1440,
+            "purchase_cost": 18000,
+            "additional_package_for_waste": false,
+            "operational_surplus": 46,
+            "potential_surplus": 46
+          },
+          {
+            "product_id": "prod-dorado",
+            "variant_id": "var-dorado-24",
+            "design_quantity": 2,
+            "waste_reserve": 0,
+            "required_quantity": 2,
+            "waste_adjusted_quantity": 2,
+            "units_per_package": 50,
+            "package_count": 1,
+            "purchase_quantity": 50,
+            "used": 2,
+            "leftover_inventory": 48,
+            "consumption_cost": 960,
+            "purchase_cost": 24000,
+            "additional_package_for_waste": false,
+            "operational_surplus": 48,
+            "potential_surplus": 48
+          },
+          {
+            "product_id": "prod-dorado",
+            "variant_id": "var-dorado-5",
+            "design_quantity": 16,
+            "waste_reserve": 0,
+            "required_quantity": 16,
+            "waste_adjusted_quantity": 16,
+            "units_per_package": 50,
+            "package_count": 1,
+            "purchase_quantity": 50,
+            "used": 16,
+            "leftover_inventory": 34,
+            "consumption_cost": 1600,
+            "purchase_cost": 5000,
+            "additional_package_for_waste": false,
+            "operational_surplus": 34,
+            "potential_surplus": 34
+          },
+          {
+            "product_id": "prod-dorado",
+            "variant_id": "var-dorado-9",
+            "design_quantity": 14,
+            "waste_reserve": 0,
+            "required_quantity": 14,
+            "waste_adjusted_quantity": 14,
+            "units_per_package": 50,
+            "package_count": 1,
+            "purchase_quantity": 50,
+            "used": 14,
+            "leftover_inventory": 36,
+            "consumption_cost": 2520,
+            "purchase_cost": 9000,
+            "additional_package_for_waste": false,
+            "operational_surplus": 36,
+            "potential_surplus": 36
+          },
+          {
+            "product_id": "prod-rosado",
+            "variant_id": "var-rosado-12",
+            "design_quantity": 32,
+            "waste_reserve": 0,
+            "required_quantity": 32,
+            "waste_adjusted_quantity": 32,
+            "units_per_package": 50,
+            "package_count": 1,
+            "purchase_quantity": 50,
+            "used": 32,
+            "leftover_inventory": 18,
+            "consumption_cost": 7680,
+            "purchase_cost": 12000,
+            "additional_package_for_waste": false,
+            "operational_surplus": 18,
+            "potential_surplus": 18
+          },
+          {
+            "product_id": "prod-rosado",
+            "variant_id": "var-rosado-18",
+            "design_quantity": 2,
+            "waste_reserve": 0,
+            "required_quantity": 2,
+            "waste_adjusted_quantity": 2,
+            "units_per_package": 50,
+            "package_count": 1,
+            "purchase_quantity": 50,
+            "used": 2,
+            "leftover_inventory": 48,
+            "consumption_cost": 720,
+            "purchase_cost": 18000,
+            "additional_package_for_waste": false,
+            "operational_surplus": 48,
+            "potential_surplus": 48
+          },
+          {
+            "product_id": "prod-rosado",
+            "variant_id": "var-rosado-24",
+            "design_quantity": 2,
+            "waste_reserve": 0,
+            "required_quantity": 2,
+            "waste_adjusted_quantity": 2,
+            "units_per_package": 50,
+            "package_count": 1,
+            "purchase_quantity": 50,
+            "used": 2,
+            "leftover_inventory": 48,
+            "consumption_cost": 960,
+            "purchase_cost": 24000,
+            "additional_package_for_waste": false,
+            "operational_surplus": 48,
+            "potential_surplus": 48
+          },
+          {
+            "product_id": "prod-rosado",
+            "variant_id": "var-rosado-5",
+            "design_quantity": 12,
+            "waste_reserve": 0,
+            "required_quantity": 12,
+            "waste_adjusted_quantity": 12,
+            "units_per_package": 50,
+            "package_count": 1,
+            "purchase_quantity": 50,
+            "used": 12,
+            "leftover_inventory": 38,
+            "consumption_cost": 1200,
+            "purchase_cost": 5000,
+            "additional_package_for_waste": false,
+            "operational_surplus": 38,
+            "potential_surplus": 38
+          },
+          {
+            "product_id": "prod-rosado",
+            "variant_id": "var-rosado-9",
+            "design_quantity": 10,
+            "waste_reserve": 0,
+            "required_quantity": 10,
+            "waste_adjusted_quantity": 10,
+            "units_per_package": 50,
+            "package_count": 1,
+            "purchase_quantity": 50,
+            "used": 10,
+            "leftover_inventory": 40,
+            "consumption_cost": 1800,
+            "purchase_cost": 9000,
+            "additional_package_for_waste": false,
+            "operational_surplus": 40,
+            "potential_surplus": 40
+          }
+        ],
+        "totals": {
+          "design_quantity": 174,
+          "target_waste_reserve": 14,
+          "covered_waste_reserve": 14,
+          "uncovered_waste_reserve": 0,
+          "natural_package_surplus": 526,
+          "required_quantity": 188,
+          "consumption_cost": 41760,
+          "purchase_cost": 180000,
+          "waste_only_savings_cop": 0,
+          "additional_waste_packages": 0,
+          "waste_adjusted_quantity": 188,
+          "purchase_quantity": 700,
+          "operational_surplus": 512,
+          "potential_surplus": 526
+        },
+        "warnings": [
+          "sobrante_alto:var-blanco-12",
+          "sobrante_alto:var-blanco-18",
+          "sobrante_alto:var-blanco-5",
+          "sobrante_alto:var-blanco-9",
+          "sobrante_alto:var-dorado-18",
+          "sobrante_alto:var-dorado-24",
+          "sobrante_alto:var-dorado-5",
+          "sobrante_alto:var-dorado-9",
+          "sobrante_alto:var-rosado-12",
+          "sobrante_alto:var-rosado-18",
+          "sobrante_alto:var-rosado-24",
+          "sobrante_alto:var-rosado-5",
+          "sobrante_alto:var-rosado-9"
+        ]
+      }
     }
   }
 }

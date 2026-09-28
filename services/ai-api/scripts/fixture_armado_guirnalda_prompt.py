@@ -149,6 +149,31 @@ def casos() -> Casos:
             {},
         ),
         "repetida": (plan(guirnalda(repeticiones=2), arco()), confirmar),
+        # Revisión (hallazgo 17): clásica, la receta no lleva relleno ni remates.
+        "clasica-sin-relleno": (plan(guirnalda(mezcla="clasica"), arco()), confirmar),
+        # Revisión (hallazgo 15): un par de columnas y dos guirnaldas abrazadas a ellas.
+        "sobre-columnas-repetidas": (
+            plan(
+                guirnalda(
+                    repeticiones=2,
+                    ubicacion="lateral_izquierdo",
+                    armado_guirnalda=_armado(
+                        soporte="sobre_estructura", estructura_id="EST_02_COLUMNA", forma="curva"
+                    ),
+                ),
+                arco(
+                    estructura_id="EST_02_COLUMNA",
+                    nombre="Columna",
+                    tipo="columna",
+                    estructura_oficial="columna",
+                    ubicacion="lateral_izquierdo",
+                    medidas={"alto_m": 2.0},
+                    repeticiones=2,
+                    rol_escena="soporte",
+                ),
+            ),
+            {},
+        ),
     }
 
 

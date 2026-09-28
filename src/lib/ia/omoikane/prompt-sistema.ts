@@ -185,13 +185,18 @@ function armadoLeido(lectura: ReferenceBlueprintV2["elements"][number]["appearan
   }
   const latex = [...tamanosPorColor].map(([color, tamanos]) => (tamanos.size > 0 ? `${color} ${[...tamanos].join(" y ")}` : color)).join(", ");
   const numeros = lectura.numeros ?? [];
-  const total = sinTotal ? undefined : lectura.total_globos;
+  // Un total de 0 (lectura confiable sin nada que comprar: Python tampoco
+  // compra desde ella) no es una cantidad que declarar: `unidades_declaradas`
+  // es positivo y "declara 0" hacía fallar el confirmar (hallazgo 14). Solo se
+  // mira la cifra de Python; no se recuenta nada.
+  const total = sinTotal || !lectura.total_globos ? undefined : lectura.total_globos;
   const partes = [
     latex ? `látex ${latex}` : "",
     lectura.remate ? `remate ${lectura.remate.clase}${lectura.remate.color ? ` ${lectura.remate.color}` : ""}` : "",
     numeros.length > 0 ? `globos número ${numeros.map((numero) => numero.digito).join(", ")} (${numeros.some((numero) => numero.clase_tamano === "grande") ? "grandes" : "chicos"})` : "",
     total !== undefined ? `total ${total} globos` : "",
   ].filter(Boolean).join("; ");
+  if (!partes) return "";
   const indicaciones = [
     total !== undefined ? `declara unidades_declaradas ${total} por pieza (sumando repeticiones)` : "",
     numeros.length > 0 ? `busca cada dígito como globo metalizado número (${numeros.map((numero) => `"globo metalizado numero ${numero.digito}"`).join(", ")}) para incluirlo en materiales: sin ellos el plan no puede seguir la foto` : "",

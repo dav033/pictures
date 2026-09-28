@@ -823,6 +823,18 @@ Hallazgos 18–23. Cada uno tiene su prueba de regresión en `ui:test-armado-gui
   vivo sobre la curva. La tira del resumen (`MiniPatron`) muestra a lo sumo 12 racimos y
   sigue tomando las filas de la rejilla en vivo.
 
+### Revisión adversaria, frontera TS y prompts (2026-09-28, rama `fix/rev-ts` desde `ef6e3aa`)
+
+Una línea por hallazgo de `hallazgos.json`; cada uno con su prueba, que fallaba antes y pasa después.
+
+- **12** (`7b69dfb`): `refinarPlacementGuirnalda` ya no devuelve `recorrido_suelo` ni `alrededor_mobiliario`, que Plan 1.0 no admite, y la regla de pared no lleva una guirnalda a `fondo_pared` si su foto ya tiene una pieza allí. Prueba en `scripts/test/test-guirnalda-referencia.ts`; ADR-0032 §19 enmendado.
+- **14** (`613e32d`): `armadoLeido` no pide "declara unidades_declaradas 0" con una lectura sin globos, ni escribe una línea vacía. Python ya no compra desde esa lectura, así que el arreglo va en el prompt. Prueba en `scripts/test/test-bouquet-referencia.ts`.
+- **15** (`e8f7b08`): la guirnalda #n abraza a la anfitriona #n. Sin pareja, "one of the approved structures". Prueba con el plan real de Python `sobre-columnas-repetidas`.
+- **16** (`12cbc74`): el soporte del armado decide la TABLE SUPPORT EXCEPTION en los dos sentidos; sin armado decide la ubicación, como siempre. Prueba con el plan `mesa` pasado a colgada, pared, piso y abrazada.
+- **17** (`437b852`): la frase de instancia y los candados del híbrido nombran solo el relleno, los remates, el remate y los números que el armado resuelto tiene. Con todas las piezas, las frases son byte a byte las de antes. Pruebas en los tests de guirnalda y de bouquet.
+- **32** (`91137b7`): `plan_resuelto.lecturas_guirnalda` (contrato nuevo, fuera del hash) y `lecturasGuirnaldaDeLaEdicion`: una edición que quita el armado lo re-sugiere con la foto y no con la receta. Pruebas en `tests/test_plan_guirnalda_lecturas.py` y `test-guirnalda-referencia.ts`; ADR-0032 §24 enmendado. App y `ai-api` se despliegan juntos.
+- Límite anotado (fuera de los hallazgos): con el soporte cambiado en el editor y la ubicación en la mesa, el caption LoRA sigue diciendo "placed on the main table", porque el preflight exige la mesa para `sobre_mesa_principal`.
+
 ### Estado de las ramas (2026-09-28, todas subidas a `origin`, sin PR abierto)
 
 | Rama | Contenido | Estado |

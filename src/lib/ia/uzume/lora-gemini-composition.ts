@@ -34,13 +34,35 @@ export const GEMINI_COMPOSITION_HARD_LOCK = "COMPOSITING HARD LOCK: use the venu
  */
 export const GEMINI_COMPOSITION_PATTERN_LOCK = "Keep each structure's color pattern exactly as in the LoRA image.";
 
+/** Qué piezas llevan los armados del caption, para que los candados nombren solo esas (hallazgo 17). */
+export type PiezasDeLosArmados = {
+  bouquet: { remate: boolean; numeros: boolean };
+  guirnalda: { relleno: boolean; remates: boolean };
+};
+
+function unirEnIngles(partes: readonly string[]): string {
+  return partes.length <= 1 ? partes.join("") : `${partes.slice(0, -1).join(", ")} and ${partes[partes.length - 1]}`;
+}
+
 /**
  * Lo que el hard lock añade cuando el caption de la etapa 1 llevó el armado de
  * un bouquet (ADR-0030): al re-posar la decoración, Gemini no puede rehacer el
- * bouquet ni mover sus números. Solo nombra lo que el armado fija; el armado
- * mismo ya viaja en la línea de color del prompt de la etapa 2.
+ * bouquet ni mover sus números. Solo nombra lo que el armado fija (el remate y
+ * los números, si los tiene); el armado mismo ya viaja en la línea de color
+ * del prompt de la etapa 2.
  */
-export const GEMINI_COMPOSITION_ASSEMBLY_LOCK = "Keep each balloon bouquet exactly as assembled in the LoRA image: the same levels from bottom to top, the same topper, the number balloons in the same position and the same number of bouquets; never add, drop or regroup its balloons.";
+export function candadoArmadoBouquet(piezas: PiezasDeLosArmados["bouquet"]): string {
+  const iguales = unirEnIngles([
+    "the same levels from bottom to top",
+    ...(piezas.remate ? ["the same topper"] : []),
+    ...(piezas.numeros ? ["the number balloons in the same position"] : []),
+    "the same number of bouquets",
+  ]);
+  return `Keep each balloon bouquet exactly as assembled in the LoRA image: ${iguales}; never add, drop or regroup its balloons.`;
+}
+
+/** El candado del bouquet con remate y números: el de siempre. */
+export const GEMINI_COMPOSITION_ASSEMBLY_LOCK = candadoArmadoBouquet({ remate: true, numeros: true });
 
 /**
  * Lo que el hard lock añade cuando el caption de la etapa 1 llevó el armado de
@@ -49,23 +71,39 @@ export const GEMINI_COMPOSITION_ASSEMBLY_LOCK = "Keep each balloon bouquet exact
  * bajarla al piso o separarla de la pieza que abraza. Solo nombra lo que el
  * armado fija; el armado mismo viaja en la línea de color del prompt.
  */
-export const GEMINI_COMPOSITION_GARLAND_LOCK = "Keep each balloon garland exactly as assembled in the LoRA image: the same clusters, filler and accent balloons and the same shape, and install it on the support its assembly names in COLOR VARIETY (flat against the real wall, hanging from its anchor points, resting on the real floor, along the real table edge, or wrapped around its host structure); never straighten, re-hang, split or regroup it.";
+export function candadoArmadoGuirnalda(piezas: PiezasDeLosArmados["guirnalda"]): string {
+  const racimos = piezas.relleno && piezas.remates ? "the same clusters, filler and accent balloons"
+    : piezas.relleno ? "the same clusters and filler balloons"
+      : piezas.remates ? "the same clusters and accent balloons"
+        : "the same clusters";
+  return `Keep each balloon garland exactly as assembled in the LoRA image: ${racimos} and the same shape, and install it on the support its assembly names in COLOR VARIETY (flat against the real wall, hanging from its anchor points, resting on the real floor, along the real table edge, or wrapped around its host structure); never straighten, re-hang, split or regroup it.`;
+}
+
+/** El candado de la guirnalda con relleno y remates: el de E5. */
+export const GEMINI_COMPOSITION_GARLAND_LOCK = candadoArmadoGuirnalda({ relleno: true, remates: true });
 
 /**
  * Hard lock de la etapa 2; sin patrón de color ni armado es la constante de
  * siempre, byte a byte. `conArmadoBouquet` y `conArmadoGuirnalda` van aparte
- * del patrón: un plan puede traer cualquiera de ellos o todos.
+ * del patrón: un plan puede traer cualquiera de ellos o todos. `piezas`
+ * (`piezasDeLosArmados` del caption) hace que cada candado nombre solo el
+ * remate, los números, el relleno y los remates que los armados tienen; sin
+ * ella, los candados completos.
  */
-export function hardLockComposicionGemini(conPatronDeColor: boolean, conArmadoBouquet = false, conArmadoGuirnalda = false): string {
+export function hardLockComposicionGemini(conPatronDeColor: boolean, conArmadoBouquet = false, conArmadoGuirnalda = false, piezas?: PiezasDeLosArmados): string {
   return [
     GEMINI_COMPOSITION_HARD_LOCK,
     ...(conPatronDeColor ? [GEMINI_COMPOSITION_PATTERN_LOCK] : []),
-    ...(conArmadoBouquet ? [GEMINI_COMPOSITION_ASSEMBLY_LOCK] : []),
-    ...(conArmadoGuirnalda ? [GEMINI_COMPOSITION_GARLAND_LOCK] : []),
+    ...(conArmadoBouquet ? [piezas ? candadoArmadoBouquet(piezas.bouquet) : GEMINI_COMPOSITION_ASSEMBLY_LOCK] : []),
+    ...(conArmadoGuirnalda ? [piezas ? candadoArmadoGuirnalda(piezas.guirnalda) : GEMINI_COMPOSITION_GARLAND_LOCK] : []),
   ].join(" ");
 }
 
-type ClausulaConFrase = { colorPattern?: string; armadoBouquet?: unknown; armadoGuirnalda?: { conPatron: boolean } };
+type ClausulaConFrase = {
+  colorPattern?: string;
+  armadoBouquet?: { conRemate: boolean; conNumeros: boolean };
+  armadoGuirnalda?: { conPatron: boolean; conRelleno: boolean; conRemates: boolean };
+};
 
 /**
  * Qué candados pide el caption de la etapa 1, leído de sus cláusulas: una
@@ -79,6 +117,24 @@ export function candadosDeComposicion(clauses: ReadonlyArray<ClausulaConFrase>):
     clauses.some((clause) => Boolean(clause.colorPattern) && !clause.armadoBouquet && (!clause.armadoGuirnalda || clause.armadoGuirnalda.conPatron)),
     clauses.some((clause) => Boolean(clause.colorPattern) && Boolean(clause.armadoBouquet)),
   ];
+}
+
+/**
+ * Qué piezas llevan los armados del caption de la etapa 1, juntando todas sus
+ * cláusulas con armado: el cuarto argumento de `hardLockComposicionGemini`.
+ */
+export function piezasDeLosArmados(clauses: ReadonlyArray<ClausulaConFrase>): PiezasDeLosArmados {
+  const conFrase = clauses.filter((clause) => Boolean(clause.colorPattern));
+  return {
+    bouquet: {
+      remate: conFrase.some((clause) => clause.armadoBouquet?.conRemate === true),
+      numeros: conFrase.some((clause) => clause.armadoBouquet?.conNumeros === true),
+    },
+    guirnalda: {
+      relleno: conFrase.some((clause) => clause.armadoGuirnalda?.conRelleno === true),
+      remates: conFrase.some((clause) => clause.armadoGuirnalda?.conRemates === true),
+    },
+  };
 }
 
 /** Si el caption de la etapa 1 llevó el armado de alguna guirnalda (tercer candado de `hardLockComposicionGemini`). */

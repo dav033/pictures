@@ -96,7 +96,19 @@ export type ArmadoGuirnaldaEnPrompt = {
   anfitriona?: string;
   /** La frase de la estructura lleva además su patrón de color (no confeti). */
   conPatron: boolean;
+  /** El armado resuelto lleva relleno de globos chicos (`relleno` no nulo). */
+  conRelleno: boolean;
+  /** El armado resuelto lleva remates (`remates` no vacío). */
+  conRemates: boolean;
 };
+
+/**
+ * Lo que el prompt lee del armado de un bouquet (ADR-0030), tal como lo
+ * decidió Python: cuántos bouquets forman cada instancia (`grupos`; 2 con un
+ * número a cada lado) y si lleva remate y globos número. Solo elige frases
+ * fijas (cardinalidad, candados); nunca redacta ni cuenta el armado.
+ */
+export type ArmadoBouquetEnPrompt = { grupos: number; conRemate: boolean; conNumeros: boolean };
 
 /**
  * Lo que los constructores de prompts leen de un patrón de color o de un
@@ -108,10 +120,11 @@ export type FraseDeEstructura = Pick<PatronColorResuelto, "estructura_id" | "apl
   /**
    * Solo en la frase de un armado de bouquet (ADR-0030): cuántos bouquets
    * forman cada instancia de la pieza, tal como lo decidió Python (`grupos`;
-   * 2 con un número a cada lado). El prompt lo lee para contar piezas, nunca
-   * para redactar el armado. Un patrón de color no lo lleva.
+   * 2 con un número a cada lado), y si lleva remate y números. El prompt lo
+   * lee para contar piezas y elegir el candado, nunca para redactar el armado.
+   * Un patrón de color no lo lleva.
    */
-  armado?: { grupos: number };
+  armado?: ArmadoBouquetEnPrompt;
   /** Solo en la frase de una guirnalda con armado (ADR-0032, E5). */
   guirnalda?: ArmadoGuirnaldaEnPrompt;
 };
@@ -150,7 +163,7 @@ export function frasesDeEstructuras(
       aplicado: true,
       prompt_gemini: armado.prompt_gemini,
       prompt_lora: armado.prompt_lora,
-      armado: { grupos: armado.grupos },
+      armado: { grupos: armado.grupos, conRemate: armado.remate.length > 0, conNumeros: armado.numero !== null },
     })),
   ];
   for (const armado of plan.armados_guirnalda ?? []) {
@@ -167,6 +180,8 @@ export function frasesDeEstructuras(
         ...(armado.armado.puntos_de_anclaje === undefined ? {} : { puntos_de_anclaje: armado.armado.puntos_de_anclaje }),
         ...(armado.armado.estructura_id === undefined ? {} : { anfitriona: armado.armado.estructura_id }),
         conPatron: Boolean(patron?.prompt_gemini.trim() || patron?.prompt_lora.trim()),
+        conRelleno: armado.relleno !== null,
+        conRemates: armado.remates.length > 0,
       },
     };
     if (indice >= 0) frases[indice] = entrada;
@@ -197,7 +212,7 @@ export function armadoGuirnaldaDeElemento(
 export function armadoDeElemento(
   frases: readonly FraseDeEstructura[] | undefined,
   element: SceneSpec["elements"][number],
-): { grupos: number } | undefined {
+): ArmadoBouquetEnPrompt | undefined {
   if (!frases?.length) return undefined;
   const estructura = idDeEstructura(element);
   return frases.find((frase) => frase.aplicado && frase.estructura_id === estructura && frase.armado)?.armado;

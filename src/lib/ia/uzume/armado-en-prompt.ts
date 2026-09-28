@@ -114,7 +114,19 @@ export function mezclaRealConArmado(
 /** Número de anclajes en palabras: el prompt nunca muestra cifras de un armado. */
 const ANCLAJES_EN: Readonly<Record<number, string>> = { 2: "two", 3: "three", 4: "four", 5: "five", 6: "six" };
 
-function soporteDeGuirnalda(armado: ArmadoGuirnaldaEnPrompt, anfitriona: string | undefined): string {
+/**
+ * La pieza sobre la que va abrazada una guirnalda, por su nombre en el prompt
+ * (nunca su id). `unaDeVarias`: la anfitriona está repetida y esta instancia de
+ * la guirnalda no tiene pareja, así que se nombra sin su "#n de m".
+ */
+export type AnfitrionaEnPrompt = { nombre: string; unaDeVarias?: boolean };
+
+function soporteDeGuirnalda(armado: ArmadoGuirnaldaEnPrompt, anfitriona: AnfitrionaEnPrompt | undefined): string {
+  const pieza = !anfitriona
+    ? "its host structure"
+    : anfitriona.unaDeVarias
+      ? `one of the approved structures described by “${anfitriona.nombre}”`
+      : `the approved structure described by “${anfitriona.nombre}”`;
   const porSoporte: Readonly<Record<SoporteGuirnalda, string>> = {
     pared: "mounted flat against the wall along its whole length with visible anchoring; it never floats away from the wall",
     colgada: armado.puntos_de_anclaje === undefined || armado.puntos_de_anclaje === 2
@@ -122,7 +134,7 @@ function soporteDeGuirnalda(armado: ArmadoGuirnaldaEnPrompt, anfitriona: string 
       : `draped across ${ANCLAJES_EN[armado.puntos_de_anclaje] ?? "its"} anchor points, hanging from visible hooks or cords at each point; it never rests on the floor or leans on a wall`,
     piso: "resting on the floor along the front of the installation, grounded along its whole length; it never floats or climbs a wall",
     mesa: "running along the table edge, resting on the tabletop along its whole length; it never floats above the table or hangs down to the floor",
-    sobre_estructura: `wrapped around ${anfitriona ? `the approved structure described by “${anfitriona}”` : "its host structure"}, following that structure's shape and tied to it along its whole length; it never stands apart as a separate piece`,
+    sobre_estructura: `wrapped around ${pieza}, following that structure's shape and tied to it along its whole length; it never stands apart as a separate piece`,
   };
   return porSoporte[armado.soporte];
 }
@@ -139,10 +151,11 @@ const FORMA_GUIRNALDA_EN: Readonly<Record<FormaGuirnalda, string>> = {
  * Frase de soporte y forma del INSTANCE CONTRACT para una guirnalda con
  * armado. Sin armado el prompt conserva la de siempre (solo la de pared,
  * `shapeClause`). Una guirnalda sobre otra pieza sigue la forma de su
- * anfitriona: su forma propia no se nombra. `anfitriona` es el nombre de la
- * pieza en el prompt (`promptElementName`), sin ids.
+ * anfitriona: su forma propia no se nombra. `anfitriona` es la pieza en el
+ * prompt (`promptElementName`, sin ids), la instancia que le toca a esta
+ * guirnalda (`anfitrionaEnPrompt` de `build-image-prompt.ts`).
  */
-export function fraseSoporteGuirnalda(armado: ArmadoGuirnaldaEnPrompt, anfitriona?: string): string {
+export function fraseSoporteGuirnalda(armado: ArmadoGuirnaldaEnPrompt, anfitriona?: AnfitrionaEnPrompt): string {
   const forma = armado.soporte === "sobre_estructura" ? "" : ` Shape: ${FORMA_GUIRNALDA_EN[armado.forma]}.`;
   return ` Support: ${soporteDeGuirnalda(armado, anfitriona)}.${forma}`;
 }
@@ -150,9 +163,17 @@ export function fraseSoporteGuirnalda(armado: ArmadoGuirnaldaEnPrompt, anfitrion
 /**
  * Cierre de la línea del INSTANCE CONTRACT de una guirnalda con armado: su
  * armado (en COLOR VARIETY y en su `color_pattern`) manda sobre las
- * instrucciones genéricas de agrupar globos.
+ * instrucciones genéricas de agrupar globos. Nombra el relleno y los remates
+ * solo si el armado de Python los tiene: nombrarlos siempre invitaba al modelo
+ * a añadir globos chicos o grandes que no se cotizaron (hallazgo 17).
  */
-export const FRASE_INSTANCIA_CON_ARMADO_GUIRNALDA = " Build it exactly as its GARLAND ASSEMBLY in COLOR VARIETY says: one continuous garland of the listed clusters with its filler and accent balloons, on that support and in that shape; never split it into separate clusters, bouquets or loose balloons.";
+export function fraseInstanciaConArmadoGuirnalda(armado: Pick<ArmadoGuirnaldaEnPrompt, "conRelleno" | "conRemates">): string {
+  const piezas = armado.conRelleno && armado.conRemates ? " with its filler and accent balloons"
+    : armado.conRelleno ? " with its filler balloons"
+      : armado.conRemates ? " with its accent balloons"
+        : "";
+  return ` Build it exactly as its GARLAND ASSEMBLY in COLOR VARIETY says: one continuous garland of the listed clusters${piezas}, on that support and in that shape; never split it into separate clusters, bouquets or loose balloons.`;
+}
 
 /**
  * Frase del contrato de cardinalidad cuando una guirnalda va abrazada a otra

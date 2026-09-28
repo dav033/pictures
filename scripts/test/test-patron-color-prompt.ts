@@ -332,7 +332,7 @@ function armadoDeBouquetEnLosPrompts(instantanea: Readonly<Record<string, string
   assert.equal(frasesDeEstructuras(null), undefined);
   const frases = frasesDeEstructuras({ armados_bouquet: [bouquetHelio] })!;
   // `armado.grupos` marca la frase como la de un armado (cuántos bouquets por pieza).
-  assert.deepEqual(frases, [{ estructura_id: "EST_01_SEMIARCO", aplicado: true, prompt_gemini: bouquetHelio.prompt_gemini, prompt_lora: bouquetHelio.prompt_lora, armado: { grupos: 1 } }]);
+  assert.deepEqual(frases, [{ estructura_id: "EST_01_SEMIARCO", aplicado: true, prompt_gemini: bouquetHelio.prompt_gemini, prompt_lora: bouquetHelio.prompt_lora, armado: { grupos: 1, conRemate: true, conNumeros: false } }]);
   // Un patrón y un armado de piezas distintas conviven en la misma lista.
   const espiralColumna = patron("espiral-columna", { estructura_id: "EST_02_COLUMNA" });
   assert.equal(frasesDeEstructuras({ patrones_color: [espiralColumna], armados_bouquet: [bouquetHelio] })!.length, 2);

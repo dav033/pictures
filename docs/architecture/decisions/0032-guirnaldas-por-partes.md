@@ -130,11 +130,18 @@ la cuerda real es más larga y la puerta física no lo veía
     conserva el reparto orgánico y el armado va detrás (el armado dice cómo
     se arma, no dónde va cada color); con patrón, la frase del patrón lo
     reemplaza, como sin armado. Una guirnalda `sobre_estructura` abre una
-    excepción en el contrato de cardinalidad (las dos piezas se tocan) y una
-    `mesa` cuenta en la excepción de mesa aunque su ubicación no sea una mesa.
+    excepción en el contrato de cardinalidad (las dos piezas se tocan) y el
+    soporte del armado decide la excepción de mesa en los dos sentidos: una
+    `mesa` cuenta aunque su ubicación no sea una mesa, y una guirnalda ubicada
+    en la mesa con otro soporte no la recibe (hallazgo 16 de la revisión).
+    Una guirnalda abrazada a una anfitriona repetida abraza su instancia
+    (#n con #n; sin pareja, "una de" las anfitrionas; hallazgo 15).
     En el híbrido, `GEMINI_COMPOSITION_GARLAND_LOCK` se añade al hard lock solo
     cuando el caption llevó un armado de guirnalda; un armado sin patrón no
-    pide el candado del patrón.
+    pide el candado del patrón. La frase de instancia y los candados de la
+    guirnalda y del bouquet nombran solo el relleno, los remates, el remate y
+    los números que el armado resuelto de Python tiene (hallazgo 17 de la
+    revisión: nombrarlos siempre invitaba a añadir piezas no cotizadas).
 13. **Patrón por racimo** (`patron_color.py`). `EstructuraPatron` trae del
     armado sus globos por racimo y su forma (`racimo_y_forma`). Con armado,
     `sugerir_patron` va por los racimos del armado: espiral si los colores
@@ -287,12 +294,17 @@ Sigue la frontera de las anteriores: Amaterasu describe, Python arma.
     `src/lib/ia/referencia/reference-structure.ts`): con la lectura encendida,
     después de las lecturas, la ubicación de cada guirnalda se refina. Con
     soporte leído (confianza ≥ 0,5): `mesa` es `sobre_mesa_principal`; `piso`
-    es `recorrido_suelo` si la caja baja hasta el borde de la foto y es alta
-    (una corrida que se aleja hacia el fondo) y si no `piso_frontal`; `pared`
-    saca a la guirnalda del piso o de la mesa. Sin soporte, por geometría: su
+    es `piso_frontal`; `pared` saca a la guirnalda del piso o de la mesa, salvo
+    que otra pieza aprobada de su foto (o un backdrop) ya esté en `fondo_pared`,
+    porque el plan admite una sola. Sin soporte, por geometría: su
     borde de abajo sobre la mitad de arriba de una mesa detectada (un mueble
-    cuyo nombre dice table o mesa) que cubre a lo ancho es `sobre_mesa_principal`;
-    si su caja cubre un 30 % o más de un mueble, `alrededor_mobiliario`. Es un
+    cuyo nombre dice table o mesa) que cubre a lo ancho es `sobre_mesa_principal`.
+    *Enmienda (hallazgo 12 de la revisión):* la salida se queda en el
+    vocabulario de Plan 1.0, el único que admiten el plan del chat y
+    `plan-resolution.v1`, y el prompt del sistema manda copiar la ubicación tal
+    cual; `recorrido_suelo` (una corrida alta hacia el fondo) y
+    `alrededor_mobiliario` (caja sobre un mueble) se quitaron hasta que Plan
+    1.1 llegue a esos consumidores. Es un
     posproceso: el prompt v16 del reconocedor sigue byte a byte y
     `placementFor` no cambia, así que con la bandera apagada la ubicación es la
     de siempre. Los umbrales son supuestos sin calibrar.
@@ -368,7 +380,17 @@ E6 numeraba sus decisiones 10 a 14, como E5; al fusionarlas pasan a 21 a 25, det
     Python.
 24. **"Quitar armado" es a propósito.** Con `GUIRNALDAS_ARMADO_V1`, una
     edición que pierde el armado lo re-sugiere; la acción `armado_guirnalda`
-    con `null` no (`resugerirArmadoGuirnalda`).
+    con `null` no (`resugerirArmadoGuirnalda`). *Enmienda (hallazgo 32 de la
+    revisión):* lo re-sugiere con la foto. El navegador no la tiene, así que
+    Python devuelve las lecturas de las guirnaldas del plan
+    (`plan_resuelto.lecturas_guirnalda`, las `pistas_guirnalda` de la petición
+    cuyo elemento es una guirnalda del plan, fuera del snapshot y del hash,
+    como `conteos_referencia`) y Next las vuelve a mandar en cada
+    re-resolución de una edición (`lecturasGuirnaldaDeLaEdicion`); Python solo
+    las usa en la pieza que se re-sugiere. Antes volvía la receta (pared,
+    recta) y una guirnalda leída abrazada al arco quedaba en la pared. Campo
+    nuevo del contrato (Zod → export → `generate_models.py`): app y `ai-api`
+    se despliegan juntos.
 25. **Una sola hoja de armado** para guirnaldas con armado: la del patrón y la
     del armado se funden (gráfica, leyenda de códigos por material y tamaño,
     racimos en orden, relleno, remates, sueltos, insumos con metros de tira y

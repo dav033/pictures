@@ -420,6 +420,15 @@ export const PlanResueltoV1Schema = z.object({
    * (ADR-0031). Fuera del snapshot que firma `plan_hash`; se omite sin conteos.
    */
   conteos_referencia: z.array(ConteoAplicadoSchema).max(32).optional(),
+  /**
+   * Las lecturas de la foto de las guirnaldas del plan (`pistas_guirnalda` de
+   * la petición, ADR-0032), devueltas para que la re-resolución de una
+   * edición las vuelva a mandar: sin ellas, un armado que la edición quita se
+   * re-sugería con la receta y perdía el soporte y la forma de la foto
+   * (hallazgo 32). Fuera del snapshot que firma `plan_hash`; se omite sin
+   * lecturas.
+   */
+  lecturas_guirnalda: z.array(PistaGuirnaldaSchema).max(16).optional(),
 }).strict();
 
 const quoteLineSchema = z.object({

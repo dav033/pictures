@@ -7,8 +7,8 @@ import type { SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { LORA_JSON_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH, translateLoraColor, type LoraVisualClause } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
 import { findLoraPromptLanguageLeaks, preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
 import { ensureLoraTriggers } from "@/lib/ia/kagutsuchi/sempertex-lora";
-import { CARDINALIDAD_CON_GUIRNALDA_ABRAZADA, FRASE_INSTANCIA_CON_ARMADO_GUIRNALDA } from "@/lib/ia/uzume/armado-en-prompt";
-import { candadosDeComposicion, conArmadoGuirnaldaEnCaption, GEMINI_COMPOSITION_GARLAND_LOCK, GEMINI_COMPOSITION_HARD_LOCK, GEMINI_COMPOSITION_PATTERN_LOCK, hardLockComposicionGemini, LORA_PRESENTATION_INSTRUCTION, promptPresentacionLora } from "@/lib/ia/uzume/lora-gemini-composition";
+import { CARDINALIDAD_CON_GUIRNALDA_ABRAZADA, fraseInstanciaConArmadoGuirnalda } from "@/lib/ia/uzume/armado-en-prompt";
+import { candadosDeComposicion, conArmadoGuirnaldaEnCaption, GEMINI_COMPOSITION_GARLAND_LOCK, GEMINI_COMPOSITION_HARD_LOCK, GEMINI_COMPOSITION_PATTERN_LOCK, hardLockComposicionGemini, LORA_PRESENTATION_INSTRUCTION, piezasDeLosArmados, promptPresentacionLora } from "@/lib/ia/uzume/lora-gemini-composition";
 import { armadoDeElemento, armadoGuirnaldaDeElemento, frasesDeEstructuras, type FraseDeEstructura } from "@/lib/ia/uzume/mezcla-color-escena";
 import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
 import type { ArmadoGuirnaldaResuelto } from "@/lib/plan/armado-guirnalda";
@@ -151,7 +151,7 @@ function frasesDeLaGuirnalda(): void {
     aplicado: true,
     prompt_gemini: armado.prompt_gemini,
     prompt_lora: armado.prompt_lora,
-    guirnalda: { soporte: "pared", forma: "recta", conPatron: false },
+    guirnalda: { soporte: "pared", forma: "recta", conPatron: false, conRelleno: true, conRemates: true },
   }]);
   // Con patrón, una sola frase por guirnalda: la del armado y detrás la del patrón.
   const conPatron = planGuirnalda("pared-patron-por-racimo").plan;
@@ -163,20 +163,20 @@ function frasesDeLaGuirnalda(): void {
   assert.equal(unidas.length, 1);
   assert.equal(unidas[0]!.prompt_gemini, `${armadoConPatron.prompt_gemini} ${patron.prompt_gemini}`);
   assert.equal(unidas[0]!.prompt_lora, `${armadoConPatron.prompt_lora}, ${patron.prompt_lora}`);
-  assert.deepEqual(unidas[0]!.guirnalda, { soporte: "pared", forma: "recta", conPatron: true });
+  assert.deepEqual(unidas[0]!.guirnalda, { soporte: "pared", forma: "recta", conPatron: true, conRelleno: true, conRemates: false });
   // Un confeti (frases vacías) no es un patrón en el prompt: queda el armado solo.
   const confeti = { ...patron, prompt_gemini: "", prompt_lora: "" };
   const conConfeti = frasesDeEstructuras({ patrones_color: [confeti], armados_guirnalda: [armadoConPatron] })!;
   assert.equal(conConfeti[0]!.prompt_gemini, armadoConPatron.prompt_gemini);
   assert.equal(conConfeti[0]!.guirnalda?.conPatron, false);
   // Colgada de tres puntos y abrazada al arco: lo que Python decidió, sin ids en el texto.
-  assert.deepEqual(frasesDeEstructuras(planGuirnalda("colgada").plan)![0]!.guirnalda, { soporte: "colgada", forma: "arco_caido", puntos_de_anclaje: 3, conPatron: false });
-  assert.deepEqual(frasesDeEstructuras(planGuirnalda("sobre-arco").plan)![0]!.guirnalda, { soporte: "sobre_estructura", forma: "curva", anfitriona: "EST_02_ARCO", conPatron: false });
+  assert.deepEqual(frasesDeEstructuras(planGuirnalda("colgada").plan)![0]!.guirnalda, { soporte: "colgada", forma: "arco_caido", puntos_de_anclaje: 3, conPatron: false, conRelleno: true, conRemates: false });
+  assert.deepEqual(frasesDeEstructuras(planGuirnalda("sobre-arco").plan)![0]!.guirnalda, { soporte: "sobre_estructura", forma: "curva", anfitriona: "EST_02_ARCO", conPatron: false, conRelleno: true, conRemates: false });
   // Un armado de guirnalda no es un armado de bouquet.
   const escena = escenaDePlan(planGuirnalda("pared"));
   const elemento = escena.elements.find((element) => element.element_id === GUIRNALDA_PLAN)!;
   assert.equal(armadoDeElemento(frasesDeEstructuras(pared), elemento), undefined);
-  assert.deepEqual(armadoGuirnaldaDeElemento(frasesDeEstructuras(pared), elemento), { soporte: "pared", forma: "recta", conPatron: false });
+  assert.deepEqual(armadoGuirnaldaDeElemento(frasesDeEstructuras(pared), elemento), { soporte: "pared", forma: "recta", conPatron: false, conRelleno: true, conRemates: true });
   console.log("[PASS] frases: el armado de la guirnalda entra por la misma puerta que el patrón y se une a él cuando lo lleva");
 }
 
@@ -200,7 +200,7 @@ function geminiPorSoporte(): void {
     const frases = frasesDeEstructuras(fijado.plan)!;
     const prompt = promptGeminiDePlan(fijado, frases);
     const instancia = lineaDeInstancia(prompt, "Guirnalda");
-    const esperado = ` ${caso.soporte}${caso.forma ? ` ${caso.forma}` : ""}${FRASE_INSTANCIA_CON_ARMADO_GUIRNALDA} Quantity means`;
+    const esperado = ` ${caso.soporte}${caso.forma ? ` ${caso.forma}` : ""}${fraseInstanciaConArmadoGuirnalda(frases[0]!.guirnalda!)} Quantity means`;
     assert.ok(instancia.includes(esperado), `${caso.plan}: ${instancia}`);
     if (!caso.forma) assert.doesNotMatch(instancia, /Shape:/, `${caso.plan}: sobre otra pieza sigue su forma`);
     // La frase de Python va en la línea de color y en su color_pattern.
@@ -231,7 +231,7 @@ function geminiNadaMasCambia(): void {
     .replace(`${ORGANICO} ${frase}`, ORGANICO)
     .replace(`,"color_pattern":${JSON.stringify(frase)}`, "")
     .replace(`${PARED_DE_SIEMPRE} Shape: it runs straight along its length.`, PARED_DE_SIEMPRE)
-    .replace(FRASE_INSTANCIA_CON_ARMADO_GUIRNALDA, "");
+    .replace(fraseInstanciaConArmadoGuirnalda(frases[0]!.guirnalda!), "");
   assert.equal(deshecho, INSTANTANEA["gemini/pared"]);
   console.log("[PASS] Gemini: con la receta, fuera de sus cuatro inserciones el prompt es el de antes");
 }
@@ -262,7 +262,7 @@ function geminiRepetida(): void {
   const prompt = promptGeminiDePlan(fijado, frases);
   for (const numero of [1, 2]) {
     const nombre = `Guirnalda #${numero} de 2`;
-    assert.ok(lineaDeInstancia(prompt, nombre).includes(`${PARED_DE_SIEMPRE} Shape: it runs straight along its length.${FRASE_INSTANCIA_CON_ARMADO_GUIRNALDA}`), nombre);
+    assert.ok(lineaDeInstancia(prompt, nombre).includes(`${PARED_DE_SIEMPRE} Shape: it runs straight along its length.${fraseInstanciaConArmadoGuirnalda(frases[0]!.guirnalda!)}`), nombre);
     assert.ok(lineaQueEmpieza(prompt, `- ${nombre}: `).includes(frases[0]!.prompt_gemini), nombre);
   }
   const coherencia = verificarCoherenciaPrompt(prompt, fijado.plan, escenaParaCoherencia(escenaDePlan(fijado), frases));
@@ -399,6 +399,84 @@ function gemniSinteticoSinPlan(): void {
   console.log("[PASS] Gemini sin plan: el soporte llega y una anfitriona desconocida no deja ids en el prompt");
 }
 
+// ---------------------------------------------------------------------------
+// 6. Revisión adversaria de feat/guirnaldas (hallazgos 15, 16 y 17).
+// ---------------------------------------------------------------------------
+
+/** Hallazgo 15: cada instancia de una guirnalda abraza a su instancia de la anfitriona repetida. */
+function anfitrionaRepetida(): void {
+  // Python acepta dos guirnaldas abrazadas a un par de columnas (plan real).
+  const fijado = planGuirnalda("sobre-columnas-repetidas");
+  const frases = frasesDeEstructuras(fijado.plan)!;
+  const prompt = promptGeminiDePlan(fijado, frases);
+  for (const numero of [1, 2]) {
+    const linea = lineaDeInstancia(prompt, `Guirnalda #${numero} de 2`);
+    assert.ok(linea.includes(`Support: wrapped around the approved structure described by “Columna #${numero} de 2”`), linea);
+  }
+  const coherencia = verificarCoherenciaPrompt(prompt, fijado.plan, escenaParaCoherencia(escenaDePlan(fijado), frases));
+  assert.equal(coherencia.ok, true, coherencia.errores.join("; "));
+  // Con distinto número de instancias no hay pareja: la anfitriona se nombra sin su número.
+  const base = escenaGuirnalda();
+  const arco = base.elements.find((element) => element.element_id === "EST_01_ARCO")!;
+  const arcos = [1, 2].map((numero) => ({ ...arco, element_id: `EST_01_ARCO#${numero}`, name: `Arco orgánico #${numero} de 2`, visual_semantics: { ...arco.visual_semantics!, repetition_group: "EST_01_ARCO" } }));
+  const escena = { ...base, elements: [...arcos, ...base.elements.filter((element) => element !== arco)] };
+  const sobreArco = armadoDelPlan(planGuirnalda("sobre-arco").plan);
+  const frasesArco = frasesDeEstructuras({ armados_guirnalda: [{ ...sobreArco, estructura_id: GUIRNALDA_SINTETICA, armado: { ...sobreArco.armado, estructura_id: "EST_01_ARCO" } }] })!;
+  const linea = lineaDeInstancia(promptGeminiGuirnalda(escena, frasesArco), "Guirnalda orgánica");
+  assert.ok(linea.includes("Support: wrapped around one of the approved structures described by “Arco orgánico”"), linea);
+  assert.doesNotMatch(linea, /Arco orgánico #\d/, linea);
+  console.log("[PASS] hallazgo 15: con la anfitriona repetida, la guirnalda #n abraza a su pieza #n (o a una de ellas si no hay pareja)");
+}
+
+/** Hallazgo 16: el soporte del armado manda sobre la ubicación para la excepción de mesa. */
+function mesaSegunElSoporte(): void {
+  const base = planGuirnalda("mesa");
+  const armado = armadoDelPlan(base.plan);
+  assert.match(promptGeminiDePlan(base, frasesDeEstructuras(base.plan)), /TABLE SUPPORT EXCEPTION: 1 approved table-top structure\(s\)/, "sobre la mesa y con soporte mesa");
+  const otros: ReadonlyArray<Partial<ArmadoGuirnaldaResuelto["armado"]>> = [
+    { soporte: "colgada", puntos_de_anclaje: 2 },
+    { soporte: "pared" },
+    { soporte: "piso" },
+    { soporte: "sobre_estructura", estructura_id: "EST_02_ARCO" },
+  ];
+  for (const cambio of otros) {
+    const plan = { ...base.plan, armados_guirnalda: [{ ...armado, armado: { ...armado.armado, ...cambio } }] };
+    const prompt = promptGeminiDePlan({ ...base, plan }, frasesDeEstructuras(plan));
+    assert.doesNotMatch(prompt, /TABLE SUPPORT EXCEPTION/, `${cambio.soporte}: la guirnalda ubicada en la mesa ya no se apoya en ella`);
+  }
+  // Sin armado la ubicación decide, como siempre (la instantánea lo fija byte a byte).
+  assert.match(INSTANTANEA["gemini/mesa"]!, /TABLE SUPPORT EXCEPTION: 1 approved table-top structure\(s\)/);
+  console.log("[PASS] hallazgo 16: una guirnalda ubicada en la mesa con otro soporte no recibe la excepción de mesa");
+}
+
+/** Hallazgo 17: la frase fija y el candado solo nombran el relleno y los remates que el armado tiene. */
+function piezasQueElArmadoTiene(): void {
+  const casos: ReadonlyArray<[plan: string, relleno: boolean, remates: boolean]> = [
+    ["pared", true, true],
+    ["colgada", true, false],
+    ["clasica-sin-relleno", false, false],
+  ];
+  for (const [nombre, relleno, remates] of casos) {
+    const fijado = planGuirnalda(nombre);
+    const armado = armadoDelPlan(fijado.plan);
+    assert.equal(armado.relleno !== null, relleno, nombre);
+    assert.equal(armado.remates.length > 0, remates, nombre);
+    const instancia = lineaDeInstancia(promptGeminiDePlan(fijado, frasesDeEstructuras(fijado.plan)), "Guirnalda");
+    assert.ok(instancia.includes("Build it exactly as its GARLAND ASSEMBLY in COLOR VARIETY says: one continuous garland of the listed clusters"), instancia);
+    assert.equal(/filler/.test(instancia), relleno, `${nombre}: ${instancia}`);
+    assert.equal(/accent/.test(instancia), remates, `${nombre}: ${instancia}`);
+    const clauses = captionCanonicoGuirnalda(escenaGuirnalda(), frasesSinteticas(nombre)).clauses;
+    const candado = hardLockComposicionGemini(...candadosDeComposicion(clauses), conArmadoGuirnaldaEnCaption(clauses), piezasDeLosArmados(clauses));
+    assert.ok(candado.startsWith(`${GEMINI_COMPOSITION_HARD_LOCK} Keep each balloon garland exactly as assembled`), candado);
+    assert.equal(/filler/.test(candado), relleno, `${nombre}: ${candado}`);
+    assert.equal(/accent/.test(candado), remates, `${nombre}: ${candado}`);
+  }
+  // Con relleno y remates, la frase y el candado completos de siempre.
+  const pared = captionCanonicoGuirnalda(escenaGuirnalda(), frasesSinteticas("pared")).clauses;
+  assert.equal(hardLockComposicionGemini(...candadosDeComposicion(pared), conArmadoGuirnaldaEnCaption(pared), piezasDeLosArmados(pared)), `${GEMINI_COMPOSITION_HARD_LOCK} ${GEMINI_COMPOSITION_GARLAND_LOCK}`);
+  console.log("[PASS] hallazgo 17: sin relleno o sin remates, ni la línea de instancia ni el candado del híbrido los nombran");
+}
+
 function main(): void {
   sinArmadoByteAByte();
   frasesDeLaGuirnalda();
@@ -412,6 +490,9 @@ function main(): void {
   loraRepetida();
   loraLegacyDelPlan();
   hibridoConArmado();
+  anfitrionaRepetida();
+  mesaSegunElSoporte();
+  piezasQueElArmadoTiene();
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {

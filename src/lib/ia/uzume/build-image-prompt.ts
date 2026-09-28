@@ -1,7 +1,7 @@
 import { AMBIENTACION_IMAGEN, perfilCreatividad, type AmbientacionImagen, type NivelCreatividad } from "../escena/creatividad";
 import { identificarEstructuraOficial } from "@/lib/plan/estructuras-oficiales";
 import { armadoDeElemento, armadoGuirnaldaDeElemento, describirMezclaDeColor, frasePatronColor, idDeEstructura, mezclaDeColorDeEstructura, type FraseDeEstructura } from "./mezcla-color-escena";
-import { CARDINALIDAD_CON_GUIRNALDA_ABRAZADA, CARDINALIDAD_CON_PAR_DE_BOUQUETS, EXCEPCION_CONTEO_CON_ARMADO, FRASE_INSTANCIA_CON_ARMADO_GUIRNALDA, fraseInstanciaConArmado, fraseSoporteGuirnalda, pluralCardinalidadConArmado, sustantivoCardinalidadConArmado } from "./armado-en-prompt";
+import { CARDINALIDAD_CON_GUIRNALDA_ABRAZADA, CARDINALIDAD_CON_PAR_DE_BOUQUETS, EXCEPCION_CONTEO_CON_ARMADO, fraseInstanciaConArmado, fraseInstanciaConArmadoGuirnalda, fraseSoporteGuirnalda, pluralCardinalidadConArmado, sustantivoCardinalidadConArmado, type AnfitrionaEnPrompt } from "./armado-en-prompt";
 import { tableSupportedElements, type SceneryElement, type SceneSpec } from "../escena/scene-spec";
 import { buildLoraImagePromptV2, compileLoraCaption, GROUPING_ONLY_CONTEXT, type LoraVisualClause } from "../kagutsuchi/lora-caption-compiler";
 import { findSeparateSidePieces } from "./separate-side-pieces";
@@ -118,7 +118,7 @@ function physicalScale(element: SceneSpec["elements"][number]): string {
  */
 function shapeClause(element: SceneSpec["elements"][number], officialStructures?: ReadonlyMap<string, string>, colorPatterns?: readonly FraseDeEstructura[], sceneSpec?: SceneSpec): string {
   const guirnalda = armadoGuirnaldaDeElemento(colorPatterns, element);
-  if (guirnalda) return fraseSoporteGuirnalda(guirnalda, anfitrionaEnPrompt(sceneSpec, guirnalda.anfitriona));
+  if (guirnalda) return fraseSoporteGuirnalda(guirnalda, anfitrionaEnPrompt(sceneSpec, guirnalda.anfitriona, element));
   const semantics = element.visual_semantics;
   if (!semantics) return "";
   const official = identificarEstructuraOficial({
@@ -143,11 +143,32 @@ function shapeClause(element: SceneSpec["elements"][number], officialStructures?
   return "";
 }
 
-/** Name in the prompt of the plan structure a garland is wrapped around (never its id). */
-function anfitrionaEnPrompt(sceneSpec: SceneSpec | undefined, estructuraId: string | undefined): string | undefined {
+/** Instance number of a repeated plan structure (`EST_x#2` -> "2"); undefined for a single one. */
+function numeroDeInstancia(element: SceneSpec["elements"][number]): string | undefined {
+  return element.element_id.split("#")[1];
+}
+
+/**
+ * The host a garland instance is wrapped around, by its name in the prompt
+ * (never its id). A repeated host pairs instance by instance with a garland
+ * repeated as many times (Guirnalda #n wraps Columna #n); naming only the
+ * first instance stacked every garland on host #1 and left the others bare
+ * (review finding 15). With different counts there is no pair: the host is
+ * named without its "#n de m", as one of its instances.
+ */
+function anfitrionaEnPrompt(sceneSpec: SceneSpec | undefined, estructuraId: string | undefined, guirnalda: SceneSpec["elements"][number]): AnfitrionaEnPrompt | undefined {
   if (!sceneSpec || !estructuraId) return undefined;
-  const anfitriona = sceneSpec.elements.find((element) => idDeEstructura(element) === estructuraId);
-  return anfitriona ? promptElementName(anfitriona.name) : undefined;
+  const instancias = sceneSpec.elements.filter((element) => idDeEstructura(element) === estructuraId);
+  const primera = instancias[0];
+  if (!primera) return undefined;
+  if (instancias.length === 1) return { nombre: promptElementName(primera.name) };
+  const propias = sceneSpec.elements.filter((element) => idDeEstructura(element) === idDeEstructura(guirnalda)).length;
+  const numero = numeroDeInstancia(guirnalda);
+  const pareja = propias === instancias.length && numero !== undefined
+    ? instancias.find((element) => numeroDeInstancia(element) === numero)
+    : undefined;
+  if (pareja) return { nombre: promptElementName(pareja.name) };
+  return { nombre: promptElementName(primera.name).replace(/\s*#\d+\s+de\s+\d+$/, ""), unaDeVarias: true };
 }
 
 function stylingOf(nivel: NivelCreatividad | undefined): readonly AmbientacionImagen[] {
@@ -274,10 +295,17 @@ function materialEstimateContract(sceneSpec: SceneSpec, colorPatterns?: readonly
  */
 function decorationCompositionContract(sceneSpec: SceneSpec, visualContext?: VisualContext, styling: readonly AmbientacionImagen[] = [], scenography: readonly SceneryElement[] = [], colorPatterns?: readonly FraseDeEstructura[]): string[] {
   const categories = new Set(sceneSpec.elements.map((element) => element.category));
-  // A garland whose assembly runs along the table edge (ADR-0032, E5) stands on a
-  // table too, whatever its placement: without it "no generic table" banned it.
+  // A garland's assembly (ADR-0032, E5) decides whether it stands on a table,
+  // in both directions: along the table edge it needs one whatever its
+  // placement ("no generic table" banned it), and hung, on the wall, on the
+  // floor or wrapped around another piece it has none even when placed on the
+  // table (review finding 16: a phantom table under a hanging garland).
+  // Without an assembly the placement decides, as always.
   const tableTop = tableSupportedElements(sceneSpec);
-  const tableSupports = [...tableTop, ...sceneSpec.elements.filter((element) => !tableTop.includes(element) && armadoGuirnaldaDeElemento(colorPatterns, element)?.soporte === "mesa")];
+  const tableSupports = sceneSpec.elements.filter((element) => {
+    const soporte = armadoGuirnaldaDeElemento(colorPatterns, element)?.soporte;
+    return soporte ? soporte === "mesa" : tableTop.includes(element);
+  });
   // Las prohibiciones generales de este contrato son lo primero y más fuerte
   // que lee el modelo. Sin nombrar aquí la escenografía conservada, el prompt
   // se contradice consigo mismo y el modelo borra justo lo que el cliente
@@ -518,7 +546,8 @@ function armadoClause(element: SceneSpec["elements"][number], colorPatterns?: re
   if (!colorPatternSentence(element, colorPatterns)) return "";
   const armado = armadoDeElemento(colorPatterns, element);
   if (armado) return fraseInstanciaConArmado(armado.grupos);
-  return armadoGuirnaldaDeElemento(colorPatterns, element) ? FRASE_INSTANCIA_CON_ARMADO_GUIRNALDA : "";
+  const guirnalda = armadoGuirnaldaDeElemento(colorPatterns, element);
+  return guirnalda ? fraseInstanciaConArmadoGuirnalda(guirnalda) : "";
 }
 
 function eventAuthorityContract(context?: VisualContext, styling: readonly AmbientacionImagen[] = []): string[] {

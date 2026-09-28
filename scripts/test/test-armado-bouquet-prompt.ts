@@ -10,7 +10,7 @@ import { findLoraPromptLanguageLeaks, preflightLoraPrompt } from "@/lib/ia/kagut
 import { ensureLoraTriggers } from "@/lib/ia/kagutsuchi/sempertex-lora";
 import { CARDINALIDAD_CON_PAR_DE_BOUQUETS, EXCEPCION_CONTEO_CON_ARMADO, fraseInstanciaConArmado, mezclaRealConArmado } from "@/lib/ia/uzume/armado-en-prompt";
 import { tieneContratoDeColor } from "@/lib/ia/uzume/build-image-prompt";
-import { candadosDeComposicion, GEMINI_COMPOSITION_ASSEMBLY_LOCK, GEMINI_COMPOSITION_HARD_LOCK, GEMINI_COMPOSITION_PATTERN_LOCK, hardLockComposicionGemini } from "@/lib/ia/uzume/lora-gemini-composition";
+import { candadosDeComposicion, conArmadoGuirnaldaEnCaption, GEMINI_COMPOSITION_ASSEMBLY_LOCK, GEMINI_COMPOSITION_HARD_LOCK, GEMINI_COMPOSITION_PATTERN_LOCK, hardLockComposicionGemini, piezasDeLosArmados } from "@/lib/ia/uzume/lora-gemini-composition";
 import { armadoDeElemento, frasesDeEstructuras, type FraseDeEstructura } from "@/lib/ia/uzume/mezcla-color-escena";
 import { PRODUCT_VOCABULARY } from "@/lib/lora/product-vocabulary-data";
 import { ArmadoBouquetResueltoSchema, type ArmadoBouquetResuelto } from "@/lib/plan/armado-bouquet";
@@ -138,7 +138,7 @@ function sinArmadoByteAByte(): void {
 function frasesYContratoDeColor(): void {
   const armado15 = armado("vector-15");
   const frases = frasesDeEstructuras({ armados_bouquet: [armado15] })!;
-  assert.deepEqual(frases, [{ estructura_id: BOUQUET_VECTOR_15, aplicado: true, prompt_gemini: armado15.prompt_gemini, prompt_lora: armado15.prompt_lora, armado: { grupos: 1 } }]);
+  assert.deepEqual(frases, [{ estructura_id: BOUQUET_VECTOR_15, aplicado: true, prompt_gemini: armado15.prompt_gemini, prompt_lora: armado15.prompt_lora, armado: { grupos: 1, conRemate: false, conNumeros: false } }]);
   const escena = escenaDePlan(vector15([armado15]));
   const bouquet = escena.elements.find((element) => element.element_id === BOUQUET_VECTOR_15)!;
   // Lo que produce planBlueprint para un kit: por eso quedaba fuera del contrato de color.
@@ -146,7 +146,7 @@ function frasesYContratoDeColor(): void {
   assert.equal(bouquet.visual_semantics?.structure_type, "kit");
   assert.equal(tieneContratoDeColor(bouquet), false);
   assert.equal(tieneContratoDeColor(bouquet, frases), true);
-  assert.deepEqual(armadoDeElemento(frases, bouquet), { grupos: 1 });
+  assert.deepEqual(armadoDeElemento(frases, bouquet), { grupos: 1, conRemate: false, conNumeros: false });
   // Un patrón de color no es un armado.
   const patron: FraseDeEstructura = { estructura_id: "EST_01_ARCO", aplicado: true, prompt_gemini: "COLOR PATTERN — x.", prompt_lora: "wrapped in a spiral" };
   assert.equal(armadoDeElemento([patron], escena.elements.find((element) => element.element_id === "EST_01_ARCO")!), undefined);
@@ -230,7 +230,7 @@ function loraCanonicoConArmado(): void {
     assert.deepEqual(resultado.dropped_sizes, [], caso);
     const clausula = clausulaDe(resultado.clauses, BOUQUET_SINTETICO);
     assert.equal(clausula.colorPattern, centro.prompt_lora);
-    assert.deepEqual(clausula.armadoBouquet, { grupos: 1 });
+    assert.deepEqual(clausula.armadoBouquet, { grupos: 1, conRemate: false, conNumeros: true });
     assert.equal(vecesEn(resultado.prompt, centro.prompt_lora), 1, caso);
     // Un solo bouquet nombrado: la frase de Python es un modificador, no otro sustantivo.
     assert.equal(vecesEn(resultado.prompt, "balloon bouquet"), 1, caso);
@@ -258,7 +258,7 @@ function loraGruposEInstancias(): void {
   const lados = armado("numeros-lados");
   const resultado = captionCanonico(escenaBouquet(BOUQUET_15_LADOS), frasesSinteticas("numeros-lados"));
   const clausula = clausulaDe(resultado.clauses, BOUQUET_SINTETICO);
-  assert.deepEqual(clausula.armadoBouquet, { grupos: 2 });
+  assert.deepEqual(clausula.armadoBouquet, { grupos: 2, conRemate: false, conNumeros: true });
   assert.equal(clausula.visibleCount, 2);
   assert.match(resultado.prompt, new RegExp(`two balloon bouquets [^.]*${lados.prompt_lora.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`), resultado.prompt);
   assert.equal(preflight(escenaBouquet(BOUQUET_15_LADOS), resultado).ok, true);
@@ -317,6 +317,32 @@ function hibridoConArmado(): void {
   console.log("[PASS] híbrido: el hard lock de la etapa 2 añade el candado del armado solo cuando el caption lo llevó");
 }
 
+/**
+ * Hallazgo 17 de la revisión: el candado del armado nombraba siempre "the same
+ * topper, the number balloons in the same position", también para un bouquet
+ * sin remate ni números (el del vector 15: diez látex negros), e invitaba a la
+ * etapa 2 a añadirlos. Solo nombra lo que el armado de Python tiene.
+ */
+function hibridoSoloLoQueHay(): void {
+  const candadoDe = (nombre: string): string => {
+    const clauses = captionCanonico(escenaBouquet(BOUQUET_80), frasesSinteticas(nombre)).clauses;
+    return hardLockComposicionGemini(...candadosDeComposicion(clauses), conArmadoGuirnaldaEnCaption(clauses), piezasDeLosArmados(clauses));
+  };
+  const sinNada = armado("vector-15");
+  assert.deepEqual([sinNada.remate, sinNada.numero], [[], null]);
+  const vector15 = candadoDe("vector-15");
+  assert.ok(vector15.startsWith(`${GEMINI_COMPOSITION_HARD_LOCK} Keep each balloon bouquet exactly as assembled in the LoRA image: the same levels from bottom to top and the same number of bouquets;`), vector15);
+  assert.doesNotMatch(vector15, /topper|number balloons/, vector15);
+  const centro = armado("numeros-centro");
+  assert.deepEqual(centro.remate, []);
+  const conNumeros = candadoDe("numeros-centro");
+  assert.match(conNumeros, /the number balloons in the same position/, conNumeros);
+  assert.doesNotMatch(conNumeros, /topper/, conNumeros);
+  // Con remate y números, el candado completo de siempre.
+  assert.equal(hardLockComposicionGemini(false, true, false, { bouquet: { remate: true, numeros: true }, guirnalda: { relleno: false, remates: false } }), `${GEMINI_COMPOSITION_HARD_LOCK} ${GEMINI_COMPOSITION_ASSEMBLY_LOCK}`);
+  console.log("[PASS] híbrido: el candado del bouquet solo nombra el remate y los números que el armado tiene");
+}
+
 // ---------------------------------------------------------------------------
 // 5. Bloque de tamaños.
 // ---------------------------------------------------------------------------
@@ -349,6 +375,7 @@ function main(): void {
   loraGruposEInstancias();
   loraLegacyDelPlan();
   hibridoConArmado();
+  hibridoSoloLoQueHay();
   tamanosConArmado();
 }
 
