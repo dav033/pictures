@@ -46,6 +46,7 @@ from pydantic import ConfigDict, Field, ValidationError, field_validator, model_
 from app.generated_models import PlanDecoracion, contract_schema
 from app.operational_models import ContractModel, OperationalRequest
 from app.patron_color import TIPO_REJILLA, forma_valida, para_validar
+from app.patron_color import FORMA_GUIRNALDA_ESPEJO
 from app.armado_bouquet import DISPOSICIONES, VARIANTES
 from app.plan import (
     ComprasPorMaterial,
@@ -136,6 +137,10 @@ AVISO_ARMADO_GUIRNALDA_QUITADO = (
 AVISO_ARMADO_GUIRNALDA_COLOR = "El armado de la guirnalda se quitó porque quitaste un color."
 AVISO_ARMADO_GUIRNALDA_REHACER = (
     "El armado de la guirnalda se vuelve a sugerir con los globos nuevos."
+)
+AVISO_ESPEJO_GUIRNALDA = (
+    "El patrón de la guirnalda quedó sin espejo: solo una guirnalda en U invertida se arma"
+    " simétrica desde el centro."
 )
 
 
@@ -875,19 +880,44 @@ def _fijar_armado(estructura: dict[str, object], edicion: EdicionArmado) -> None
 
 def _fijar_armado_guirnalda(
     plan: dict[str, object], estructura: dict[str, object], edicion: EdicionArmadoGuirnalda
-) -> None:
+) -> list[str]:
     """Fija o quita el armado de una guirnalda; valida todo sin catálogo (``armado_invalido``).
 
     Todo lo que un armado de guirnalda comprueba se sabe sin catálogo: la pieza
     anfitriona, los anclajes, el relleno, los remates y el patrón; con una
-    forma que cuelga, el conteo con el largo de la cuerda.
+    forma que cuelga, el conteo con el largo de la cuerda. Un patrón en espejo
+    pierde el espejo si la guirnalda deja de ir en U invertida (E5).
     """
+    avisos = _quitar_espejo_sin_u(estructura, edicion.armado_guirnalda)
     if edicion.armado_guirnalda is None:
         estructura.pop("armado_guirnalda", None)
-        return
+        return avisos
     armado = copy.deepcopy(edicion.armado_guirnalda)
     validar_armado_guirnalda_sin_catalogo(plan, edicion.estructura_id, armado)
     estructura["armado_guirnalda"] = armado
+    return avisos
+
+
+def _quitar_espejo_sin_u(estructura: dict[str, object], armado: object) -> list[str]:
+    """Quita el espejo del patrón de una guirnalda que ya no va en U invertida (E5).
+
+    El espejo de una guirnalda depende de su armado (``patron_color``): si el
+    armado se quita o cambia de forma, el patrón en espejo ya no vale y la
+    próxima resolución lo rechazaría. Se deja el mismo patrón sin espejo, con
+    aviso; quien llama resincroniza ``participacion``.
+    """
+    patron = estructura.get("patron_color")
+    if (
+        estructura.get("tipo") != "guirnalda"
+        or not isinstance(patron, Mapping)
+        or patron.get("simetria") != "espejo"
+        or (isinstance(armado, Mapping) and armado.get("forma") == FORMA_GUIRNALDA_ESPEJO)
+    ):
+        return []
+    estructura["patron_color"] = {
+        clave: copy.deepcopy(valor) for clave, valor in patron.items() if clave != "simetria"
+    }
+    return [AVISO_ESPEJO_GUIRNALDA]
 
 
 def _revisar_armado_guirnalda(
@@ -960,7 +990,7 @@ def editar_plan(
     elif isinstance(edicion, EdicionArmado):
         _fijar_armado(estructura, edicion)
     elif isinstance(edicion, EdicionArmadoGuirnalda):
-        _fijar_armado_guirnalda(editado, estructura, edicion)
+        avisos = _fijar_armado_guirnalda(editado, estructura, edicion)
     elif isinstance(edicion, EdicionReparto):
         avisos = _repartir(estructura, edicion.participaciones)
         avisos += _quitar_armado(estructura, rehacer=completar_armados)
@@ -982,6 +1012,12 @@ def editar_plan(
             quitar_siempre=isinstance(edicion, EdicionMaterial) and edicion.accion == "quitar",
             rehacer=completar_armados_guirnalda,
         )
+        editada = _estructura(editado, indice)
+        sin_espejo = _quitar_espejo_sin_u(editada, editada.get("armado_guirnalda"))
+        if sin_espejo:
+            # El armado en U se fue con esta edición: el patrón sigue, sin espejo.
+            avisos += sin_espejo
+            editado = sincronizar_participaciones(editado, edicion.estructura_id)
     _validar_plan(editado)
     return PlanEditado(plan=editado, avisos=tuple(aviso[:_MAX_AVISO] for aviso in avisos))
 

@@ -390,18 +390,66 @@ def test_las_frases_del_prompt() -> None:
     assert gemini.startswith("GARLAND ASSEMBLY — an organic balloon garland mounted flat")
     assert "8 four-balloon clusters" in gemini and "filler balloons" in gemini
     assert lora.isascii() and not any(c.isdigit() for c in lora)
-    assert lora.startswith("organic balloon garland mounted flat against the wall")
+    # E5: un modificador que el caption pone detrás de "an organic balloon garland"
+    # y sus materiales; nombrar otra guirnalda duplicaba el sustantivo. Los
+    # colores de los racimos ya van en la cláusula; los del relleno y los
+    # remates dicen cuál es chico y cuál grande.
+    assert lora == (
+        "mounted flat against the wall in clusters of four with small pink and white filler"
+        " balloons and large pink and white accent balloons"
+    )
+    assert "garland" not in lora
     colgada = armado_resuelto(
         estructura,
         _armado(soporte="colgada", forma="arco_caido", caida_m=0.4, puntos_de_anclaje=3),
     )
     assert "2 swags about 0.4 m deep" in str(colgada["prompt_gemini"])
-    assert "dipping in swags" in str(colgada["prompt_lora"])
+    assert (
+        colgada["prompt_lora"]
+        == "draped across three anchor points dipping in swags in clusters of four"
+    )
     abrazada = armado_resuelto(
         estructura, _armado(soporte="sobre_estructura", estructura_id="EST_02_ARCO")
     )
-    assert "wrapped around the balloon arch" in str(abrazada["prompt_lora"])
+    assert abrazada["prompt_lora"] == "wrapped around the balloon arch in clusters of four"
     assert abrazada["nombre"] == "Guirnalda sobre Arco"
+
+
+@pytest.mark.parametrize(
+    ("armado", "soporte_lora"),
+    [
+        (_armado(), "mounted flat against the wall in clusters of four"),
+        (
+            _armado(soporte="colgada", forma="u_invertida", caida_m=0.6, puntos_de_anclaje=2),
+            "draped between two anchor points shaped as an inverted U in clusters of four",
+        ),
+        (
+            _armado(soporte="colgada", forma="recta", puntos_de_anclaje=6),
+            "draped across six anchor points in clusters of four",
+        ),
+        (_armado(soporte="piso"), "resting on the floor along the front in clusters of four"),
+        (
+            _armado(soporte="mesa", forma="ondulada"),
+            "running along the table edge in a soft wave in clusters of four",
+        ),
+        (
+            _armado(forma="curva"),
+            "mounted flat against the wall in a gentle curve in clusters of four",
+        ),
+        (
+            _armado(soporte="sobre_estructura", estructura_id="EST_02_ARCO", forma="ondulada"),
+            "wrapped around the balloon arch in clusters of four",
+        ),
+    ],
+)
+def test_la_frase_lora_lleva_soporte_y_forma(
+    armado: Mapping[str, object], soporte_lora: str
+) -> None:
+    # Clásica: sin relleno ni remates, la frase es solo soporte, forma y unidad.
+    resuelto = armado_resuelto(_estructura(CLASICA, mezcla="clasica", otras=(ARCO,)), armado)
+    lora = str(resuelto["prompt_lora"])
+    assert lora == soporte_lora
+    assert lora.isascii() and not any(c.isdigit() for c in lora)
 
 
 def test_una_forma_que_cuelga_sin_caida_avisa() -> None:
