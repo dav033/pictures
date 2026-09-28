@@ -1,5 +1,5 @@
 {
-  "_origen": "Salida real de vista_previa_de_armado_guirnalda (services/ai-api/app/plan.py) para EST_04_GUIRNALDA de scripts/fixtures/patron-color-ui/plan-con-patrones.json, con sus líneas resueltas. Casos tomados en feat/guirnaldas 27528f2 y, los del desnivel, en feat/guirnalda-caida; todos regenerados sobre la fusión con fix/armado-en-imagen (solo cambiaron prompt_gemini y prompt_lora). Sin catálogo ni gasto. Se regenera solo a mano, cuando cambie armado_guirnalda.py a propósito.",
+  "_origen": "Salida real de vista_previa_de_armado_guirnalda (services/ai-api/app/plan.py) para EST_04_GUIRNALDA de scripts/fixtures/patron-color-ui/plan-con-patrones.json, con sus líneas resueltas. Casos tomados en feat/guirnaldas 27528f2 y, los del desnivel, en feat/guirnalda-caida; todos regenerados sobre la fusión con fix/armado-en-imagen (solo cambiaron prompt_gemini y prompt_lora). Sin catálogo ni gasto. Decisión 28 (fix/guirnalda-curvatura): prompt_gemini y prompt_lora de todos los casos regenerados a mano (lo único que cambió; comprobado campo por campo) y el caso pared_curva_arqueo_desnivel añadido. Se regenera solo a mano, cuando cambie armado_guirnalda.py a propósito.",
   "estructura_id": "EST_04_GUIRNALDA",
   "casos": {
     "receta": {
@@ -767,7 +767,7 @@
         "avisos": [
           "Sobran 3 globos que no completan un cuarteto: van sueltos entre los racimos."
         ],
-        "prompt_gemini": "GARLAND ASSEMBLY — an organic balloon garland hung from 3 anchor points, dipping between its anchor points in 2 swags about 0.4 m deep. Build it from 13 four-balloon clusters of 12\" balloons in matte white and high-shine chrome gold, chained from the left end to the right end. Tuck small 5\" matte white and high-shine chrome gold filler balloons into the gaps between the clusters. Accents: large 24\" and 18\" matte white balloons spaced along it, about one every 4 clusters; large 18\" high-shine chrome gold balloons spaced along it, about one every 7 clusters. Keep the clusters packed tightly against each other so the garland reads as one continuous organic piece with no gaps, made only of round latex balloons: no ribbons, streamers, twisted bands or fabric.",
+        "prompt_gemini": "GARLAND ASSEMBLY — an organic balloon garland hung from 3 anchor points, dipping between its anchor points in 2 swags about 0.4 m deep. Build it from 13 four-balloon clusters of 12\" balloons in matte white and high-shine chrome gold, chained from the left end to the right end. Tuck small 5\" matte white and high-shine chrome gold filler balloons into the gaps between the clusters. Accents: large 24\" and 18\" matte white balloons spaced along it, about one every 4 clusters; large 18\" high-shine chrome gold balloons spaced along it, about one every 7 clusters. Keep the clusters packed tightly against each other so the garland reads as one continuous organic piece with no gaps, made only of round latex balloons: no ribbons, streamers, twisted bands or fabric. Both ends hang free in the air, well above the floor: no stands, no legs, no poles and no frame reaching the floor.",
         "prompt_lora": "draped across three anchor points dipping in swags in clusters of four with small white and gold filler balloons and large white and gold accent balloons"
       },
       "opciones": {
@@ -1209,8 +1209,8 @@
         "avisos": [
           "Sobra 1 globo que no completa un cuarteto: va suelto entre los racimos."
         ],
-        "prompt_gemini": "GARLAND ASSEMBLY — an organic balloon garland mounted flat against the wall, shaped as an inverted U whose sides drop about 1.2 m. Build it from 15 four-balloon clusters of 12\" balloons in matte white and high-shine chrome gold, chained from the left end to the right end. Tuck small 5\" matte white and high-shine chrome gold filler balloons into the gaps between the clusters. Accents: large 24\" and 18\" matte white balloons spaced along it, about one every 5 clusters; large 24\" and 18\" high-shine chrome gold balloons spaced along it, about one every 5 clusters. Keep the clusters packed tightly against each other so the garland reads as one continuous organic piece with no gaps, made only of round latex balloons: no ribbons, streamers, twisted bands or fabric.",
-        "prompt_lora": "mounted flat against the wall shaped as an inverted U in clusters of four with small white and gold filler balloons and large white and gold accent balloons"
+        "prompt_gemini": "GARLAND ASSEMBLY — an organic balloon garland mounted flat high on the wall, running along the top with both sides curving down about 1.2 m. Build it from 15 four-balloon clusters of 12\" balloons in matte white and high-shine chrome gold, chained from the left end to the right end. Tuck small 5\" matte white and high-shine chrome gold filler balloons into the gaps between the clusters. Accents: large 24\" and 18\" matte white balloons spaced along it, about one every 5 clusters; large 24\" and 18\" high-shine chrome gold balloons spaced along it, about one every 5 clusters. Keep the clusters packed tightly against each other so the garland reads as one continuous organic piece with no gaps, made only of round latex balloons: no ribbons, streamers, twisted bands or fabric. Both ends hang free in the air, well above the floor: no stands, no legs, no poles and no frame reaching the floor.",
+        "prompt_lora": "mounted flat high on the wall, running along the top with both sides curving down, both ends free, in clusters of four with small white and gold filler balloons and large white and gold accent balloons"
       },
       "opciones": {
         "soportes": [
@@ -1602,8 +1602,8 @@
         "avisos": [
           "Sobra 1 globo que no completa un cuarteto: va suelto entre los racimos."
         ],
-        "prompt_gemini": "GARLAND ASSEMBLY — an organic balloon garland mounted flat against the wall, rising and falling in a soft wave along its length. Build it from 12 four-balloon clusters of 12\" balloons in matte white and high-shine chrome gold, chained from the left end to the right end. Tuck small 5\" matte white and high-shine chrome gold filler balloons into the gaps between the clusters. Accents: large 24\" and 18\" matte white balloons spaced along it, about one every 3 clusters; one large 18\" high-shine chrome gold balloon along it. Keep the clusters packed tightly against each other so the garland reads as one continuous organic piece with no gaps, made only of round latex balloons: no ribbons, streamers, twisted bands or fabric.",
-        "prompt_lora": "mounted flat against the wall in a soft wave in clusters of four with small white and gold filler balloons and large white and gold accent balloons"
+        "prompt_gemini": "GARLAND ASSEMBLY — an organic balloon garland mounted flat high on the wall, rising and falling in a soft wave along its length. Build it from 12 four-balloon clusters of 12\" balloons in matte white and high-shine chrome gold, chained from the left end to the right end. Tuck small 5\" matte white and high-shine chrome gold filler balloons into the gaps between the clusters. Accents: large 24\" and 18\" matte white balloons spaced along it, about one every 3 clusters; one large 18\" high-shine chrome gold balloon along it. Keep the clusters packed tightly against each other so the garland reads as one continuous organic piece with no gaps, made only of round latex balloons: no ribbons, streamers, twisted bands or fabric. Both ends hang free in the air, well above the floor: no stands, no legs, no poles and no frame reaching the floor.",
+        "prompt_lora": "mounted flat high on the wall in a soft wave, both ends free, in clusters of four with small white and gold filler balloons and large white and gold accent balloons"
       },
       "opciones": {
         "soportes": [
@@ -2406,8 +2406,8 @@
           "Fija la guirnalda a la pared de izquierda a derecha con ganchos o pegante, con el extremo derecho 0,9 m más bajo que el izquierdo."
         ],
         "avisos": [],
-        "prompt_gemini": "GARLAND ASSEMBLY — an organic balloon garland mounted flat against the wall, following a gentle curve. Build it from 13 four-balloon clusters of 12\" balloons in matte white and high-shine chrome gold, chained from the left end to the right end. Tuck small 5\" matte white and high-shine chrome gold filler balloons into the gaps between the clusters. Accents: large 18\" matte white balloons spaced along it, about one every 7 clusters; large 24\" and 18\" high-shine chrome gold balloons spaced along it, about one every 7 clusters. Keep the clusters packed tightly against each other so the garland reads as one continuous organic piece with no gaps, made only of round latex balloons: no ribbons, streamers, twisted bands or fabric. Its right end hangs about 0.9 m lower than its left end, so the garland slopes down toward the right.",
-        "prompt_lora": "mounted flat against the wall in a gentle curve in clusters of four with small white and gold filler balloons and large white and gold accent balloons"
+        "prompt_gemini": "GARLAND ASSEMBLY — an organic balloon garland mounted flat high on the wall, bowing gently upward along the top. Build it from 13 four-balloon clusters of 12\" balloons in matte white and high-shine chrome gold, chained from the left end to the right end. Tuck small 5\" matte white and high-shine chrome gold filler balloons into the gaps between the clusters. Accents: large 18\" matte white balloons spaced along it, about one every 7 clusters; large 24\" and 18\" high-shine chrome gold balloons spaced along it, about one every 7 clusters. Keep the clusters packed tightly against each other so the garland reads as one continuous organic piece with no gaps, made only of round latex balloons: no ribbons, streamers, twisted bands or fabric. Its right end hangs about 0.9 m lower than its left end, so the garland slopes down toward the right. Both ends hang free in the air, well above the floor: no stands, no legs, no poles and no frame reaching the floor.",
+        "prompt_lora": "mounted flat high on the wall, higher on the left, curving along the top and dropping lower at the right end, both ends free, in clusters of four with small white and gold filler balloons and large white and gold accent balloons"
       },
       "opciones": {
         "soportes": [
@@ -2817,8 +2817,411 @@
         "avisos": [
           "Sobran 3 globos que no completan un cuarteto: van sueltos entre los racimos."
         ],
-        "prompt_gemini": "GARLAND ASSEMBLY — an organic balloon garland hung from 2 anchor points, dipping between its anchor points in 1 swag about 0.4 m deep. Build it from 12 four-balloon clusters of 12\" balloons in matte white and high-shine chrome gold, chained from the left end to the right end. Tuck small 5\" matte white and high-shine chrome gold filler balloons into the gaps between the clusters. Accents: large 24\" and 18\" matte white balloons spaced along it, about one every 4 clusters; large 18\" high-shine chrome gold balloons spaced along it, about one every 6 clusters. Keep the clusters packed tightly against each other so the garland reads as one continuous organic piece with no gaps, made only of round latex balloons: no ribbons, streamers, twisted bands or fabric. Its right end hangs about 0.6 m lower than its left end, so the garland slopes down toward the right.",
-        "prompt_lora": "draped between two anchor points dipping in swags in clusters of four with small white and gold filler balloons and large white and gold accent balloons"
+        "prompt_gemini": "GARLAND ASSEMBLY — an organic balloon garland hung from 2 anchor points, dipping between its anchor points in 1 swag about 0.4 m deep. Build it from 12 four-balloon clusters of 12\" balloons in matte white and high-shine chrome gold, chained from the left end to the right end. Tuck small 5\" matte white and high-shine chrome gold filler balloons into the gaps between the clusters. Accents: large 24\" and 18\" matte white balloons spaced along it, about one every 4 clusters; large 18\" high-shine chrome gold balloons spaced along it, about one every 6 clusters. Keep the clusters packed tightly against each other so the garland reads as one continuous organic piece with no gaps, made only of round latex balloons: no ribbons, streamers, twisted bands or fabric. Its right end hangs about 0.6 m lower than its left end, so the garland slopes down toward the right. Both ends hang free in the air, well above the floor: no stands, no legs, no poles and no frame reaching the floor.",
+        "prompt_lora": "draped between two anchor points dipping in swags, higher on the left and lower at the right end, in clusters of four with small white and gold filler balloons and large white and gold accent balloons"
+      },
+      "opciones": {
+        "soportes": [
+          "pared",
+          "colgada",
+          "piso",
+          "mesa",
+          "sobre_estructura"
+        ],
+        "anfitrionas": [
+          "EST_01_COLUMNA",
+          "EST_02_ARCO",
+          "EST_03_PARED"
+        ],
+        "unidades": [
+          "trio",
+          "cuarteto",
+          "quinteto"
+        ],
+        "tamanos_base": [
+          9,
+          11,
+          12
+        ],
+        "materiales_relleno": [
+          0,
+          1
+        ],
+        "materiales_remate": [
+          0,
+          1
+        ]
+      }
+    },
+    "pared_curva_arqueo_desnivel": {
+      "armado": {
+        "estructura_id": "EST_04_GUIRNALDA",
+        "armado": {
+          "version": "armado-guirnalda.v1",
+          "origen": "decorador",
+          "soporte": "pared",
+          "forma": "curva",
+          "racimo": {
+            "unidad": "cuarteto",
+            "tamano_pulg_base": 12
+          },
+          "relleno": {
+            "material": 0,
+            "proporcion": 0.2059
+          },
+          "remates": [
+            {
+              "material": 0,
+              "posicion": "cada_n"
+            },
+            {
+              "material": 1,
+              "posicion": "cada_n"
+            }
+          ],
+          "desnivel_m": -0.9,
+          "arqueo_m": 0.35
+        },
+        "repeticiones": 1,
+        "largo_m": 3.5,
+        "largo_cuerda_m": 3.7,
+        "globos_por_instancia": 71,
+        "leyenda": [
+          {
+            "codigo": 1,
+            "material": 0,
+            "product_id": null,
+            "variant_id": null,
+            "descripcion": "5\" blanco fashion",
+            "color": "blanco",
+            "acabado": "fashion",
+            "tamano_pulg": 5.0,
+            "unidades_por_instancia": 9,
+            "unidades_total": 9
+          },
+          {
+            "codigo": 2,
+            "material": 0,
+            "product_id": null,
+            "variant_id": null,
+            "descripcion": "9\" blanco fashion",
+            "color": "blanco",
+            "acabado": "fashion",
+            "tamano_pulg": 9.0,
+            "unidades_por_instancia": 8,
+            "unidades_total": 8
+          },
+          {
+            "codigo": 3,
+            "material": 0,
+            "product_id": null,
+            "variant_id": null,
+            "descripcion": "12\" blanco fashion",
+            "color": "blanco",
+            "acabado": "fashion",
+            "tamano_pulg": 12.0,
+            "unidades_por_instancia": 23,
+            "unidades_total": 23
+          },
+          {
+            "codigo": 4,
+            "material": 0,
+            "product_id": null,
+            "variant_id": null,
+            "descripcion": "18\" blanco fashion",
+            "color": "blanco",
+            "acabado": "fashion",
+            "tamano_pulg": 18.0,
+            "unidades_por_instancia": 2,
+            "unidades_total": 2
+          },
+          {
+            "codigo": 5,
+            "material": 0,
+            "product_id": null,
+            "variant_id": null,
+            "descripcion": "24\" blanco fashion",
+            "color": "blanco",
+            "acabado": "fashion",
+            "tamano_pulg": 24.0,
+            "unidades_por_instancia": 1,
+            "unidades_total": 1
+          },
+          {
+            "codigo": 6,
+            "material": 1,
+            "product_id": null,
+            "variant_id": null,
+            "descripcion": "5\" dorado reflex",
+            "color": "dorado",
+            "acabado": "reflex",
+            "tamano_pulg": 5.0,
+            "unidades_por_instancia": 6,
+            "unidades_total": 6
+          },
+          {
+            "codigo": 7,
+            "material": 1,
+            "product_id": null,
+            "variant_id": null,
+            "descripcion": "9\" dorado reflex",
+            "color": "dorado",
+            "acabado": "reflex",
+            "tamano_pulg": 9.0,
+            "unidades_por_instancia": 5,
+            "unidades_total": 5
+          },
+          {
+            "codigo": 8,
+            "material": 1,
+            "product_id": null,
+            "variant_id": null,
+            "descripcion": "12\" dorado reflex",
+            "color": "dorado",
+            "acabado": "reflex",
+            "tamano_pulg": 12.0,
+            "unidades_por_instancia": 15,
+            "unidades_total": 15
+          },
+          {
+            "codigo": 9,
+            "material": 1,
+            "product_id": null,
+            "variant_id": null,
+            "descripcion": "18\" dorado reflex",
+            "color": "dorado",
+            "acabado": "reflex",
+            "tamano_pulg": 18.0,
+            "unidades_por_instancia": 2,
+            "unidades_total": 2
+          }
+        ],
+        "racimos": [
+          {
+            "numero": 1,
+            "codigos": [
+              3,
+              8,
+              2,
+              7
+            ]
+          },
+          {
+            "numero": 2,
+            "codigos": [
+              3,
+              3,
+              8,
+              3
+            ]
+          },
+          {
+            "numero": 3,
+            "codigos": [
+              8,
+              2,
+              3,
+              8
+            ]
+          },
+          {
+            "numero": 4,
+            "codigos": [
+              3,
+              3,
+              7,
+              2
+            ]
+          },
+          {
+            "numero": 5,
+            "codigos": [
+              8,
+              3,
+              3,
+              8
+            ]
+          },
+          {
+            "numero": 6,
+            "codigos": [
+              3,
+              8,
+              2,
+              3
+            ]
+          },
+          {
+            "numero": 7,
+            "codigos": [
+              7,
+              3,
+              8,
+              3
+            ]
+          },
+          {
+            "numero": 8,
+            "codigos": [
+              2,
+              8,
+              3,
+              8
+            ]
+          },
+          {
+            "numero": 9,
+            "codigos": [
+              3,
+              3,
+              7,
+              2
+            ]
+          },
+          {
+            "numero": 10,
+            "codigos": [
+              8,
+              3,
+              3,
+              8
+            ]
+          },
+          {
+            "numero": 11,
+            "codigos": [
+              3,
+              2,
+              8,
+              3
+            ]
+          },
+          {
+            "numero": 12,
+            "codigos": [
+              7,
+              3,
+              3,
+              8
+            ]
+          }
+        ],
+        "relleno": {
+          "material": 0,
+          "total": 15,
+          "codigos": [
+            {
+              "codigo": 1,
+              "cantidad": 9
+            },
+            {
+              "codigo": 6,
+              "cantidad": 6
+            }
+          ]
+        },
+        "remates": [
+          {
+            "posicion": "cada_n",
+            "codigo": 5,
+            "cantidad": 1,
+            "racimos": [
+              3
+            ]
+          },
+          {
+            "posicion": "cada_n",
+            "codigo": 4,
+            "cantidad": 2,
+            "racimos": [
+              7,
+              11
+            ]
+          },
+          {
+            "posicion": "cada_n",
+            "codigo": 9,
+            "cantidad": 2,
+            "racimos": [
+              4,
+              10
+            ]
+          }
+        ],
+        "sueltos": [
+          {
+            "codigo": 2,
+            "cantidad": 1
+          },
+          {
+            "codigo": 3,
+            "cantidad": 1
+          },
+          {
+            "codigo": 8,
+            "cantidad": 1
+          }
+        ],
+        "insumos": [
+          {
+            "insumo": "tira",
+            "cantidad": 4.5,
+            "unidad": "m",
+            "detalle": "tira perforada para armar la guirnalda: su largo más un 10 % para amarres",
+            "estimado": false
+          },
+          {
+            "insumo": "ganchos",
+            "cantidad": 9,
+            "unidad": "ganchos",
+            "detalle": "ganchos adhesivos o pegante para pared, uno cada 50 cm",
+            "estimado": false
+          },
+          {
+            "insumo": "pegante",
+            "cantidad": 23,
+            "unidad": "puntos",
+            "detalle": "puntos de pegamento para el relleno, los remates y los globos sueltos",
+            "estimado": true
+          },
+          {
+            "insumo": "tijeras",
+            "cantidad": 1,
+            "unidad": "tijeras",
+            "detalle": "",
+            "estimado": false
+          },
+          {
+            "insumo": "bomba",
+            "cantidad": 1,
+            "unidad": "bomba",
+            "detalle": "infladora con calibrador de tamaños",
+            "estimado": false
+          }
+        ],
+        "duracion_estimada": {
+          "horas_min": 1.0,
+          "horas_max": 2.25,
+          "estimado": true
+        },
+        "nombre": "Guirnalda en pared",
+        "descripcion": "12 cuartetos de 12\" de izquierda a derecha, relleno de 15 globos chicos y 5 globos grandes de remate, sobre la pared.",
+        "pasos": [
+          "Infla y calibra los 71 globos de cada guirnalda según la leyenda.",
+          "Arma 12 cuartetos de 12\": amarra dos parejas y crúzalas. Cada racimo lleva los códigos de la gráfica.",
+          "Pasa los racimos por la tira en orden, del 1 (extremo izquierdo) al 12 (extremo derecho), girando cada uno un cuarto de vuelta respecto del anterior.",
+          "Relleno: pega los 15 globos chicos en los huecos entre racimos, repartidos parejo: 9 de 5\" blanco fashion (1), 6 de 5\" dorado reflex (6).",
+          "Remate: 1 globo 24\" blanco fashion (5) junto al racimo 3.",
+          "Remate: 2 globos 18\" blanco fashion (4) junto a los racimos 7 y 11.",
+          "Remate: 2 globos 18\" dorado reflex (9) junto a los racimos 4 y 10.",
+          "Reparte los globos sueltos entre los racimos para cerrar huecos: 1 de 9\" blanco fashion (2), 1 de 12\" blanco fashion (3), 1 de 12\" dorado reflex (8).",
+          "Fija la guirnalda a la pared de izquierda a derecha con ganchos o pegante, arqueada 0,35 m hacia arriba sobre la recta entre sus extremos y el extremo derecho 0,9 m más bajo que el izquierdo."
+        ],
+        "avisos": [
+          "Sobran 3 globos que no completan un cuarteto: van sueltos entre los racimos."
+        ],
+        "prompt_gemini": "GARLAND ASSEMBLY — an organic balloon garland mounted flat high on the wall, bowing gently upward along the top, its middle about 0.35 m above the straight line between its ends. Build it from 12 four-balloon clusters of 12\" balloons in matte white and high-shine chrome gold, chained from the left end to the right end. Tuck small 5\" matte white and high-shine chrome gold filler balloons into the gaps between the clusters. Accents: large 24\" and 18\" matte white balloons spaced along it, about one every 4 clusters; large 18\" high-shine chrome gold balloons spaced along it, about one every 6 clusters. Keep the clusters packed tightly against each other so the garland reads as one continuous organic piece with no gaps, made only of round latex balloons: no ribbons, streamers, twisted bands or fabric. Its right end hangs about 0.9 m lower than its left end, so the garland slopes down toward the right. Both ends hang free in the air, well above the floor: no stands, no legs, no poles and no frame reaching the floor.",
+        "prompt_lora": "mounted flat high on the wall, higher on the left, curving along the top and dropping lower at the right end, both ends free, in clusters of four with small white and gold filler balloons and large white and gold accent balloons"
       },
       "opciones": {
         "soportes": [

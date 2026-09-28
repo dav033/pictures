@@ -243,15 +243,17 @@ async def test_el_plan_resuelto_lleva_la_redaccion_nueva() -> None:
     patrones = cast(list[dict[str, object]], resuelto["patrones_color"])
     assert len(armados) == 1 and len(patrones) == 1
     gemini_armado, lora_armado = str(armados[0]["prompt_gemini"]), str(armados[0]["prompt_lora"])
+    # Decisión 28: en la pared, tras los racimos, la línea de los extremos libres.
     assert gemini_armado.endswith(
         "Keep the clusters packed tightly against each other so the garland reads as one"
         " continuous organic piece with no gaps, made only of round latex balloons: no ribbons,"
-        " streamers, twisted bands or fabric."
+        " streamers, twisted bands or fabric. Both ends hang free in the air, well above the"
+        " floor: no stands, no legs, no poles and no frame reaching the floor."
     )
     assert "twisted against each other" not in gemini_armado
     assert lora_armado == (
-        "mounted flat against the wall in clusters of four with small pink, white and gold filler"
-        " balloons"
+        "mounted flat high on the wall, both ends free, in clusters of four with small pink,"
+        " white and gold filler balloons"
     )
     lora_patron = str(patrones[0]["prompt_lora"])
     assert lora_patron == "every cluster holding two pink, one white and one gold balloon"

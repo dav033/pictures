@@ -17,8 +17,10 @@ real de la cuerda) y llegan aquí por instancia, material × tamaño
 comprado queda en exactamente un racimo, en el relleno, en un remate o suelto,
 y ``validar`` lo comprueba. La receta nunca declara caída, así que completar
 un armado deja el total en COP igual. La lectura de la foto sí puede traerla,
-con el desnivel entre los extremos (decisión 27): relativos al largo, y aquí
-se pasan a metros; entonces la cuerda es otra y ``plan.py`` cuenta sobre ella.
+con el desnivel entre los extremos (decisión 27) y, desde la decisión 28, con
+el sentido de la curva (arqueada hacia arriba o colgando hacia abajo):
+relativos al largo, y aquí se pasan a metros; entonces la cuerda es otra y
+``plan.py`` cuenta sobre ella.
 
 Reglas y su fuente:
 
@@ -92,6 +94,8 @@ TAMANO_RELLENO_RECETA_PULG = 5.0
 MEDIDA_RELATIVA_MINIMA = 0.05
 #: Formas sin caída propia que, si la foto las ve caer, cuelgan en arco (decisión 27).
 FORMAS_QUE_CAEN = frozenset({"recta", "curva"})
+#: ``SENTIDOS_CURVA_GUIRNALDA`` del contrato (decisión 28).
+SENTIDOS_CURVA = ("arriba", "abajo")
 #: Tope de ``caida_m`` y de ``desnivel_m`` en ``armado-guirnalda.v1`` (en valor absoluto).
 MAX_METROS_GEOMETRIA = 5.0
 _MARGEN_TIRA = 1.1
@@ -129,12 +133,12 @@ FORMAS_CON_CAIDA = frozenset(
 #: Soportes donde una forma que cuelga tiene de dónde colgar y un extremo puede ir más
 #: alto que el otro (``desnivel_m``, decisión 27). Dueño: armado-guirnalda.ts
 #: (``SOPORTES_CON_CAIDA_GUIRNALDA``), exportado en ``x-reglas-guirnalda``.
-SOPORTES_CON_CAIDA = frozenset(
-    cast(
-        list[str],
-        cast(Mapping[str, object], _PLAN_SCHEMA["x-reglas-guirnalda"])["soportesConCaida"],
-    )
-)
+_REGLAS_GUIRNALDA = cast(Mapping[str, object], _PLAN_SCHEMA["x-reglas-guirnalda"])
+SOPORTES_CON_CAIDA = frozenset(cast(list[str], _REGLAS_GUIRNALDA["soportesConCaida"]))
+#: Formas que se arquean hacia arriba sobre la recta entre sus extremos y lo declaran con
+#: ``arqueo_m`` (decisión 28), el sentido contrario de la caída. Dueño: armado-guirnalda.ts
+#: (``FORMAS_CON_ARQUEO_GUIRNALDA``), exportado en ``x-reglas-guirnalda``.
+FORMAS_CON_ARQUEO = frozenset(cast(list[str], _REGLAS_GUIRNALDA["formasConArqueo"]))
 
 
 class ArmadoInvalido(ValueError):
@@ -373,6 +377,17 @@ def _validar_forma_y_soporte(estructura: EstructuraGuirnalda, armado: Mapping[st
         raise ArmadoInvalido(
             "desnivel_sin_soporte",
             "Solo una guirnalda en la pared o colgada tiene un extremo más alto que el otro.",
+        )
+    if armado.get("arqueo_m") is not None and forma not in FORMAS_CON_ARQUEO:
+        raise ArmadoInvalido(
+            "arqueo_sin_curva",
+            "Solo una guirnalda curva se arquea hacia arriba; la que cuelga lleva su caída.",
+        )
+    if armado.get("arqueo_m") is not None and soporte not in SOPORTES_CON_CAIDA:
+        raise ArmadoInvalido(
+            "arqueo_sin_soporte",
+            "Solo una guirnalda en la pared o colgada se arquea hacia arriba sobre la recta"
+            " entre sus extremos.",
         )
     k = GLOBOS_POR_UNIDAD[str(cast(Mapping[str, object], armado["racimo"])["unidad"])]
     if estructura.k_patron is not None and k != estructura.k_patron:
@@ -676,21 +691,47 @@ def _metros_de(relativo: object, largo_m: float) -> float | None:
     return max(-MAX_METROS_GEOMETRIA, min(MAX_METROS_GEOMETRIA, float(metros))) if metros else None
 
 
-def geometria_de_lectura(lectura: Mapping[str, object], largo_m: float) -> dict[str, object]:
-    """La forma, la caída y el desnivel que la foto dice, en metros sobre ``largo_m``.
+def _curvatura_leida(
+    forma: str, sentido: object, flecha: float | None
+) -> tuple[str, dict[str, object]]:
+    """La forma y su flecha en metros según el sentido que la foto lee (decisión 28).
 
-    ADR-0032, decisión 27. La lectura (con confianza desde 0,5) trae medidas
-    relativas al largo horizontal, nunca metros: ``caida_relativa`` (cuánto
-    baja el centro bajo la recta que une los extremos) y ``desnivel_relativo``
-    (el extremo derecho menos el izquierdo). Cuentan solo en una guirnalda que
-    la foto ve en la pared o colgada (``SOPORTES_CON_CAIDA``) y desde
-    ``MEDIDA_RELATIVA_MINIMA``. Una recta o una curva que cae pasa a
-    ``arco_caido`` con su caída; una U invertida o un arco caído la llevan tal
-    cual; una ondulada no (su onda no es una caída). El desnivel va en
-    cualquier forma. ``largo_m`` es el tramo horizontal del plan, sea del
-    cliente o no: la caída nunca lo cambia, solo alarga la cuerda. ``{}`` si
-    no hay nada que medir. Puro: ``plan.py`` lo usa también para que el
-    conteo de la foto compare con la cuerda que se va a comprar.
+    Hacia abajo, la guirnalda cuelga bajo la recta que une sus extremos: un
+    arco caído con esa caída. Hacia arriba, se arquea sobre esa recta: una
+    curva con ese arqueo, salvo la U invertida, cuyos lados bajan esa flecha
+    desde lo alto (su ``caida_m`` de siempre). Una ondulada no lleva flecha
+    (su onda no es una caída ni un arqueo), y sin sentido o sin flecha la
+    forma leída se conserva.
+    """
+    if flecha is None or flecha <= 0 or sentido not in SENTIDOS_CURVA or forma == "ondulada":
+        return forma, {}
+    if sentido == "abajo":
+        return "arco_caido", {"caida_m": flecha}
+    if forma == "u_invertida":
+        return forma, {"caida_m": flecha}
+    return "curva", {"arqueo_m": flecha}
+
+
+def geometria_de_lectura(lectura: Mapping[str, object], largo_m: float) -> dict[str, object]:
+    """La forma, su flecha y el desnivel que la foto dice, en metros sobre ``largo_m``.
+
+    ADR-0032, decisiones 27 y 28. La lectura (con confianza desde 0,5) trae
+    medidas relativas al largo horizontal, nunca metros: ``sentido_curva``
+    (``arriba``, arqueada sobre la recta que une los extremos; ``abajo``,
+    colgando bajo ella), ``flecha_relativa`` (cuánto se aparta de esa recta)
+    y ``desnivel_relativo`` (el extremo derecho menos el izquierdo). Cuentan
+    solo en una guirnalda que la foto ve en la pared o colgada
+    (``SOPORTES_CON_CAIDA``) y desde ``MEDIDA_RELATIVA_MINIMA``. Hacia abajo
+    es un ``arco_caido`` con ``caida_m``; hacia arriba, una ``curva`` con
+    ``arqueo_m`` (o la U invertida con su caída; ``_curvatura_leida``). Una
+    lectura guardada con la v2 (sin ``sentido_curva`` ni ``flecha_relativa``)
+    trae ``caida_relativa``, que solo sabía caer, y se lee como entonces: una
+    recta o una curva que cae pasa a ``arco_caido``; una U invertida o un arco
+    caído la llevan tal cual; una ondulada no. El desnivel va en cualquier
+    forma. ``largo_m`` es el tramo horizontal del plan, sea del cliente o no:
+    la flecha nunca lo cambia, solo alarga la cuerda. ``{}`` si no hay nada
+    que medir. Puro: ``plan.py`` lo usa también para que el conteo de la foto
+    compare con la cuerda que se va a comprar.
     """
     confianza = lectura.get("confianza")
     if (
@@ -702,13 +743,21 @@ def geometria_de_lectura(lectura: Mapping[str, object], largo_m: float) -> dict[
     ):
         return {}
     forma = str(lectura["forma"])
-    caida = _metros_de(lectura.get("caida_relativa"), largo_m)
     desnivel = _metros_de(lectura.get("desnivel_relativo"), largo_m)
-    if caida is not None and caida > 0 and forma in FORMAS_QUE_CAEN:
-        forma = "arco_caido"
     geometria: dict[str, object] = {}
-    if caida is not None and caida > 0 and forma in FORMAS_CON_CAIDA:
-        geometria["caida_m"] = caida
+    if "sentido_curva" in lectura or "flecha_relativa" in lectura:
+        forma, geometria = _curvatura_leida(
+            forma,
+            lectura.get("sentido_curva"),
+            _metros_de(lectura.get("flecha_relativa"), largo_m),
+        )
+    else:
+        # Una lectura de la v2 (decisión 27): solo sabía caer bajo la recta.
+        caida = _metros_de(lectura.get("caida_relativa"), largo_m)
+        if caida is not None and caida > 0 and forma in FORMAS_QUE_CAEN:
+            forma = "arco_caido"
+        if caida is not None and caida > 0 and forma in FORMAS_CON_CAIDA:
+            geometria["caida_m"] = caida
     if desnivel is not None:
         geometria["desnivel_m"] = desnivel
     return {"forma": forma, **geometria} if geometria else {}
@@ -1094,6 +1143,7 @@ def _frases_prompt(
     unidad = str(racimo["unidad"])
     base = float(cast(int, racimo["tamano_pulg_base"]))
     caida = armado.get("caida_m")
+    arqueo = armado.get("arqueo_m")
     puntos = armado.get("puntos_de_anclaje")
     tramos = max(1, int(cast(int, puntos)) - 1) if puntos is not None else 1
     anfitriona = _anfitriona(estructura, armado)
@@ -1113,7 +1163,9 @@ def _frases_prompt(
         return str(nombre_color_en(nombre) if lora else color_con_acabado_en(nombre, acabado))
 
     soporte_en = {
-        "pared": "an organic balloon garland mounted flat against the wall",
+        # En la parte alta de la pared: "against the wall" a secas, con la cola
+        # "grounded supports", salió como un arco de pie con patas (decisión 28).
+        "pared": "an organic balloon garland mounted flat high on the wall",
         "colgada": (
             f"an organic balloon garland hung from {int(cast(int, puntos))} anchor points"
             if puntos is not None
@@ -1126,15 +1178,29 @@ def _frases_prompt(
         ),
     }[soporte]
     caida_en = f" about {float(cast(float, caida)):g} m deep" if caida is not None else ""
+    # En la pared o colgada la curva se arquea hacia arriba (decisión 28): sobre el piso
+    # o la mesa corre en el plano de apoyo y no tiene arriba.
+    curva_en = (
+        "bowing gently upward along the top"
+        + (
+            f", its middle about {float(cast(float, arqueo)):g} m above the straight line"
+            " between its ends"
+            if arqueo is not None
+            else ""
+        )
+        if soporte in SOPORTES_CON_CAIDA
+        else "following a gentle curve"
+    )
     forma_en = {
         "recta": "running straight along its length",
-        "curva": "following a gentle curve",
+        "curva": curva_en,
         "ondulada": "rising and falling in a soft wave along its length",
         "arco_caido": (
             f"dipping between its anchor points in {_plural(tramos, 'swag', 'swags')}{caida_en}"
         ),
-        "u_invertida": "shaped as an inverted U"
-        + (f" whose sides drop about {float(cast(float, caida)):g} m" if caida is not None else ""),
+        # Sin "inverted U" ni "arch": se dibujaba como un arco de pie (decisión 28).
+        "u_invertida": "running along the top with both sides curving down"
+        + (f" about {float(cast(float, caida)):g} m" if caida is not None else ""),
     }[forma]
     cantidad = len(reparto.racimos)
     frases = [
@@ -1193,8 +1259,41 @@ def _frases_prompt(
         extras_lora.append(f"large {_colores_lora(grandes)} accent balloons")
     anclajes = int(cast(int, puntos)) if puntos is not None else None
     return " ".join(frases), _frase_lora(
-        soporte, forma, anclajes, anfitriona_en, unidad, extras_lora
+        soporte, forma, anclajes, anfitriona_en, unidad, extras_lora, _desnivel(armado)
     )
+
+
+def _lados(desnivel: float) -> tuple[str, str]:
+    """``(lado alto, lado bajo)`` de una guirnalda con desnivel, en inglés."""
+    return ("left", "right") if desnivel < 0 else ("right", "left")
+
+
+def _forma_lora(soporte: str, forma: str, desnivel: float | None) -> str:
+    """La forma del fragmento LoRA, en positivo y sin cifras (decisión 28).
+
+    En la pared o colgada dice hacia dónde va: la curva se arquea por arriba
+    y, con desnivel, qué extremo va más alto ("higher on the left, curving
+    along the top and dropping lower at the right end"); las demás formas
+    nombran el lado alto y el bajo. Ninguna nombra un arco, patas ni bases.
+    Sobre el piso o la mesa, la de siempre; sobre otra pieza, ninguna.
+    """
+    if soporte == "sobre_estructura":
+        return ""
+    base = {
+        "recta": "",
+        "curva": " in a gentle curve",
+        "ondulada": " in a soft wave",
+        "arco_caido": " dipping in swags",
+        "u_invertida": ", running along the top with both sides curving down",
+    }[forma]
+    if soporte not in SOPORTES_CON_CAIDA:
+        return base
+    if desnivel is None:
+        return ", curving gently upward along the top" if forma == "curva" else base
+    alto, bajo = _lados(desnivel)
+    if forma == "curva":
+        return f", higher on the {alto}, curving along the top and dropping lower at the {bajo} end"
+    return f"{base}, higher on the {alto} and lower at the {bajo} end"
 
 
 def _frase_lora(
@@ -1204,6 +1303,7 @@ def _frase_lora(
     anfitriona_en: str,
     unidad: str,
     extras: Sequence[str],
+    desnivel: float | None = None,
 ) -> str:
     """Fragmento LoRA del armado: un modificador de la guirnalda, nunca otra guirnalda (E5).
 
@@ -1215,7 +1315,10 @@ def _frase_lora(
     "running along the table edge", "wrapped around the balloon arch",
     "mounted flat against the wall"), la forma, la unidad del racimo y, con sus
     colores, el relleno y los remates. ASCII y sin cifras (ADR-0028 §8): el
-    número de anclajes va en palabras.
+    número de anclajes va en palabras. En la pared va "high on the wall" con
+    "both ends free", y la forma dice hacia dónde va (``_forma_lora``): FLUX
+    no tiene prompt negativo, así que lo que no es (un arco de pie, patas,
+    soportes) no se nombra; se describe lo que sí es (decisión 28).
     """
     if soporte == "colgada":
         puntos = anclajes if anclajes is not None else 2
@@ -1226,24 +1329,17 @@ def _frase_lora(
         )
     else:
         soporte_lora = {
-            "pared": "mounted flat against the wall",
+            "pared": "mounted flat high on the wall",
             "piso": "resting on the floor along the front",
             "mesa": "running along the table edge",
             "sobre_estructura": f"wrapped around the {anfitriona_en}",
         }[soporte]
     # Sobre otra pieza la guirnalda sigue la forma de su anfitriona.
-    forma_lora = (
-        ""
-        if soporte == "sobre_estructura"
-        else {
-            "recta": "",
-            "curva": " in a gentle curve",
-            "ondulada": " in a soft wave",
-            "arco_caido": " dipping in swags",
-            "u_invertida": " shaped as an inverted U",
-        }[forma]
-    )
-    lora = f"{soporte_lora}{forma_lora} in clusters of {_UNIDAD_EN[unidad][2]}"
+    cabeza = soporte_lora + _forma_lora(soporte, forma, desnivel)
+    if soporte == "pared":
+        cabeza += ", both ends free"
+    coma = "," if "," in cabeza else ""
+    lora = f"{cabeza}{coma} in clusters of {_UNIDAD_EN[unidad][2]}"
     if extras:
         lora += " with " + " and ".join(extras)
     return _ascii_sin_cifras(lora)
@@ -1264,6 +1360,22 @@ def _desnivel_es(armado: Mapping[str, object]) -> str:
     metros = f"{abs(desnivel):g}".replace(".", ",")
     return (
         f"el extremo derecho {metros} m más {'bajo' if desnivel < 0 else 'alto'} que el izquierdo"
+    )
+
+
+def _frase_en_alto(armado: Mapping[str, object]) -> str:
+    """La línea de los extremos para Uzume: en la pared o colgada, nunca un arco de pie.
+
+    Decisión 28: la guirnalda de la pared salió como un arco rectangular con
+    patas y soportes metálicos. Gemini sí sigue una exclusión explícita (el
+    fragmento LoRA la dice en positivo, ``_frase_lora``). Vacía en el piso, la
+    mesa u otra pieza.
+    """
+    if armado.get("soporte") not in SOPORTES_CON_CAIDA:
+        return ""
+    return (
+        "Both ends hang free in the air, well above the floor: no stands, no legs, no poles"
+        " and no frame reaching the floor."
     )
 
 
@@ -1390,6 +1502,12 @@ def armado_resuelto(
     caida_es = (
         f", con una caída de {float(cast(float, caida)):g} m".replace(".", ",") if caida else ""
     )
+    arqueo = armado.get("arqueo_m")
+    if arqueo:
+        caida_es = (
+            f", arqueada {float(cast(float, arqueo)):g} m hacia arriba".replace(".", ",")
+            + " sobre la recta entre sus extremos"
+        )
     if _desnivel_es(armado):
         caida_es += (" y " if caida_es else ", con ") + _desnivel_es(armado)
     pasos.append(
@@ -1448,7 +1566,9 @@ def armado_resuelto(
         + "."
     )
     prompt_gemini, prompt_lora = _frases_prompt(estructura, armado, reparto)
-    prompt_gemini = " ".join(f for f in (prompt_gemini, _frase_desnivel(armado)) if f)
+    prompt_gemini = " ".join(
+        f for f in (prompt_gemini, _frase_desnivel(armado), _frase_en_alto(armado)) if f
+    )
     return {
         "estructura_id": estructura.estructura_id,
         "armado": dict(armado),
@@ -1476,6 +1596,7 @@ __all__ = [
     "ArmadoInvalido",
     "EstructuraGuirnalda",
     "FORMAS",
+    "FORMAS_CON_ARQUEO",
     "FORMAS_CON_CAIDA",
     "GloboGuirnalda",
     "OtraEstructura",

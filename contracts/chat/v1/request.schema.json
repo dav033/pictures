@@ -798,6 +798,32 @@
                           }
                         ]
                       },
+                      "sentido_curva": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "arriba",
+                              "abajo"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "flecha_relativa": {
+                        "anyOf": [
+                          {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 0.6
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
                       "desnivel_relativo": {
                         "anyOf": [
                           {
@@ -2442,6 +2468,11 @@
                         ]
                       },
                       "caida_m": {
+                        "type": "number",
+                        "exclusiveMinimum": 0,
+                        "maximum": 5
+                      },
+                      "arqueo_m": {
                         "type": "number",
                         "exclusiveMinimum": 0,
                         "maximum": 5

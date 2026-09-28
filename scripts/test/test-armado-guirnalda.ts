@@ -52,7 +52,7 @@ const ARMADO = {
 } as const;
 
 async function main(): Promise<void> {
-  const { ArmadoGuirnaldaV1Schema, ArmadoGuirnaldaResueltoSchema } = await import("../../src/lib/plan/armado-guirnalda");
+  const { ArmadoGuirnaldaV1Schema, ArmadoGuirnaldaResueltoSchema, LecturaGuirnaldaSchema } = await import("../../src/lib/plan/armado-guirnalda");
   const { PlanDecoracionSchema, EstructuraPlan1_1Schema } = await import("../../src/lib/plan/tipos");
 
   // ---------------------------------------------------------------------------
@@ -90,13 +90,32 @@ async function main(): Promise<void> {
   assert.equal("desnivel_m" in ArmadoGuirnaldaV1Schema.parse(ARMADO), false, "sin desnivel no aparece: el plan firmado es el de antes");
   ok("armado-guirnalda.v1: desnivel_m opcional, con signo y dentro de ±5 m");
 
+  // ADR-0032, decisión 28: arqueo_m, cuánto SUBE el centro sobre la recta entre los extremos.
+  for (const arqueo of [0.01, 0.35, 5]) {
+    assert.equal(ArmadoGuirnaldaV1Schema.parse({ ...ARMADO, forma: "curva", arqueo_m: arqueo }).arqueo_m, arqueo);
+  }
+  for (const arqueo of [0, -0.3, 5.01, Number.NaN]) {
+    assert.equal(ArmadoGuirnaldaV1Schema.safeParse({ ...ARMADO, forma: "curva", arqueo_m: arqueo }).success, false, `arqueo_m ${String(arqueo)}`);
+  }
+  assert.equal("arqueo_m" in ArmadoGuirnaldaV1Schema.parse(ARMADO), false, "sin arqueo no aparece: el plan firmado es el de antes");
+  // La lectura dice el sentido de la curva y su flecha, relativa al largo (nunca metros).
+  const lectura = { soporte: "pared", forma: "curva", racimos_visibles: 12, colores_por_racimo: [], relleno: null, remates: [], confianza: 0.8 } as const;
+  assert.ok(LecturaGuirnaldaSchema.safeParse({ ...lectura, sentido_curva: "arriba", flecha_relativa: 0.1, desnivel_relativo: -0.25 }).success);
+  assert.ok(LecturaGuirnaldaSchema.safeParse({ ...lectura, sentido_curva: null, flecha_relativa: null }).success);
+  assert.ok(LecturaGuirnaldaSchema.safeParse({ ...lectura, caida_relativa: 0.2 }).success, "una lectura v2 guardada sigue valiendo");
+  assert.ok(LecturaGuirnaldaSchema.safeParse(lectura).success, "y una de antes de la decisión 27");
+  for (const mala of [{ sentido_curva: "lados" }, { flecha_relativa: 0.61 }, { flecha_relativa: -0.1 }, { arqueo_m: 0.3 }]) {
+    assert.equal(LecturaGuirnaldaSchema.safeParse({ ...lectura, ...mala }).success, false, JSON.stringify(mala));
+  }
+  ok("decisión 28: arqueo_m opcional y positivo; la lectura trae sentido_curva y flecha_relativa, y las lecturas v2 siguen valiendo");
+
   // ---------------------------------------------------------------------------
   const esquema = JSON.stringify(z.toJSONSchema(ArmadoGuirnaldaV1Schema, { target: "draft-7" }));
   assert.doesNotMatch(esquema, /"default"/, "ningún default llega al contrato que firma plan_hash");
   const contrato = JSON.parse(readFileSync(path.join(process.cwd(), "contracts/domain/v1/plan-decoracion.schema.json"), "utf8")) as {
     properties: { estructuras: { items: { properties: Json; required: string[] } } };
     "x-geometria-estructuras-oficiales": { guirnalda: { eje: string; formas: Record<string, { conCaida: boolean; factorPerfil: number }> } };
-    "x-reglas-guirnalda": { soportesConCaida: string[] };
+    "x-reglas-guirnalda": { soportesConCaida: string[]; formasConArqueo: string[] };
   };
   const estructura = contrato.properties.estructuras.items;
   assert.ok("armado_guirnalda" in estructura.properties && !estructura.required.includes("armado_guirnalda"));
@@ -107,6 +126,8 @@ async function main(): Promise<void> {
   assert.equal("soportesConCaida" in geometria, false, "la tabla de geometría no cambia (instantánea de los prompts sin armado)");
   const armadoExportado = estructura.properties.armado_guirnalda as { properties: Json };
   assert.deepEqual(armadoExportado.properties.desnivel_m, { type: "number", minimum: -5, maximum: 5 });
+  assert.deepEqual(contrato["x-reglas-guirnalda"].formasConArqueo, ["curva"], "qué forma se arquea hacia arriba: una sola regla para Python y el editor");
+  assert.deepEqual(armadoExportado.properties.arqueo_m, { type: "number", exclusiveMinimum: 0, maximum: 5 });
   ok("el contrato exportado lleva el campo opcional, la geometría por forma, los soportes con caída y el desnivel");
 
   // ---------------------------------------------------------------------------

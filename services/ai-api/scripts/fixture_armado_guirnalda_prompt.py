@@ -192,6 +192,23 @@ def casos() -> Casos:
             ),
             {},
         ),
+        # Decisión 28, la foto del usuario (2026-09-28): sola en la pared, alta a la
+        # izquierda, arqueada por arriba y cayendo a la derecha, con espiral de cuartetos.
+        "pared-arqueada-desnivel": (
+            plan(
+                guirnalda(
+                    materiales=tres,
+                    armado_guirnalda=_armado(forma="curva", arqueo_m=0.25, desnivel_m=-0.63),
+                    patron_color={
+                        "version": "patron-color.v1",
+                        "origen": "decorador",
+                        "globos_por_racimo": 4,
+                        "base": {"modo": "espiral", "racimo": [0, 1, 0, 2], "trazo": "espiral"},
+                    },
+                )
+            ),
+            {},
+        ),
     }
 
 

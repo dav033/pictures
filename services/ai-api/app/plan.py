@@ -75,6 +75,7 @@ from app.armado_bouquet import (
     variantes_admitidas,
 )
 from app.armado_guirnalda import ArmadoInvalido as ArmadoGuirnaldaInvalido
+from app.armado_guirnalda import FORMAS_CON_ARQUEO as GARLAND_ARCHING_SHAPES
 from app.armado_guirnalda import (
     EstructuraGuirnalda,
     GloboGuirnalda,
@@ -1171,12 +1172,22 @@ def _garland_cord(length: float, armado: Mapping[str, object]) -> float:
     (``_parabola_arc``); without a sag, the sloped straight line. Without a
     ``desnivel_m`` the length is exactly the one of before (golden vectors),
     and any other shape keeps the straight length.
+
+    An ``arqueo_m`` (decision 28, a ``curva`` in ``x-reglas-guirnalda``
+    ``formasConArqueo``) bows the garland that much ABOVE the chord, like a
+    roof. It is the same parabola mirrored top to bottom: arching ``a`` over
+    a chord that rises ``r`` has the length of sagging ``a`` under a chord
+    that rises ``-r``, so the cord is the same whichever side the bow is on.
+    Without ``arqueo_m`` nothing changes.
     """
     shape = armado.get("forma")
     sag = _number(armado.get("caida_m")) or 0.0
     rise = _number(armado.get("desnivel_m")) or 0.0
     geometry = _GARLAND_SHAPES.get(shape) if isinstance(shape, str) else None
     hangs = sag > 0 and geometry is not None and geometry.get("conCaida") is True
+    bow = _number(armado.get("arqueo_m")) or 0.0
+    if not hangs and bow > 0 and shape in GARLAND_ARCHING_SHAPES:
+        hangs, sag, rise = True, bow, -rise
     if length <= 0 or not (hangs or rise):
         return length
     if not hangs:
@@ -4358,13 +4369,13 @@ def _without(structure: Mapping[str, object], key: str) -> dict[str, object]:
 
 
 def _without_read_geometry(reading: Mapping[str, object] | None) -> Mapping[str, object] | None:
-    """The reading without its drop and tilt: the assembly as before decision 27."""
+    """The reading without its bow, drop and tilt: the assembly as before decisions 27 and 28."""
     if reading is None:
         return None
     return {
         key: value
         for key, value in reading.items()
-        if key not in ("caida_relativa", "desnivel_relativo")
+        if key not in ("caida_relativa", "sentido_curva", "flecha_relativa", "desnivel_relativo")
     }
 
 

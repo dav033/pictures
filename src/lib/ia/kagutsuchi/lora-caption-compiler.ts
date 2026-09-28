@@ -4,6 +4,7 @@ import { clasificarColores, PALETA_COLORES_EN_V2 } from "@/lib/rag/taxonomy/v2";
 import type { LoraDensity, LoraDesignRole, LoraPlacement, LoraStructureType, VisualSemantics } from "../escena/lora-semantics";
 import type { PhysicalForm, PhysicalRelation, SceneElementKind, QuantitySemantics } from "../escena/scene-visual-contract";
 import { identificarEstructuraOficial, type EstructuraOficial } from "@/lib/plan/estructuras-oficiales";
+import { SOPORTES_CON_CAIDA_GUIRNALDA, type SoporteGuirnalda } from "@/lib/plan/armado-guirnalda";
 import { armadoDeElemento, armadoGuirnaldaDeElemento, frasePatronColor, type ArmadoBouquetEnPrompt, type ArmadoGuirnaldaEnPrompt, type FraseDeEstructura } from "../uzume/mezcla-color-escena";
 
 export const LORA_CAPTION_COMPILER_VERSION = "lora-caption-v2.7-color-pattern" as const;
@@ -1244,7 +1245,22 @@ type CaptionParts = {
   structureSentence: string;
   tail: string[];
   colors: string[];
+  /** Every piece is a garland on the wall or hanging (`soloGuirnaldasEnAlto`): no "grounded supports". */
+  enAlto: boolean;
 };
+
+/**
+ * Every clause of the caption is a garland whose assembly (Python, ADR-0032)
+ * puts it on the wall or hanging from anchor points. Then the closing
+ * "grounded supports" has nothing to ground and gives the LoRA a reason to
+ * stand the garland on legs: a wall garland came out as a rectangular arch on
+ * metal stands (2026-09-28, decision 28). A scene with any other piece, or a
+ * garland without an assembly, keeps its caption byte for byte.
+ */
+function soloGuirnaldasEnAlto(clauses: readonly LoraVisualClause[]): boolean {
+  const enAlto: readonly SoporteGuirnalda[] = SOPORTES_CON_CAIDA_GUIRNALDA;
+  return clauses.length > 0 && clauses.every((clause) => clause.armadoGuirnalda !== undefined && enAlto.includes(clause.armadoGuirnalda.soporte));
+}
 
 function buildCaption(sceneSpec: SceneSpec, context: VisualContext, clauses: LoraVisualClause[], step: CaptionRenderStep = CAPTION_RENDER_STEPS[0]!, dialect: LoraCaptionDialect = "product_v007", ambientDecor: readonly string[] = [], creativeCues: readonly string[] = []): string {
   const parts = buildCaptionParts(sceneSpec, context, clauses, step, dialect, ambientDecor, creativeCues);
@@ -1283,6 +1299,7 @@ function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses
     : undefined;
   const eventPhrase = context.eventCue ? undefined : buildEventPhrase(context);
   const hasCanonicalProducts = clauses.some((clause) => Boolean(clause.canonicalPhrase));
+  const enAlto = soloGuirnaldasEnAlto(clauses);
   const tail = [
     eventPhrase,
     step.minimalTail ? undefined : buildStylePhrase(context),
@@ -1294,7 +1311,7 @@ function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses
       ? sceneSettingCues(context, eventPhrase, step)
       : step.dropEnvironment ? [] : dedupeEnvironment(context, eventPhrase).map((cue) => step.compactEnvironment ? compactEnvironmentCue(cue) : cue)),
     "wide photorealistic event photograph",
-    step.minimalTail ? undefined : hasCanonicalProducts ? "natural depth, grounded supports" : "natural depth, believable floor contact and supports",
+    step.minimalTail ? undefined : enAlto ? "natural depth" : hasCanonicalProducts ? "natural depth, grounded supports" : "natural depth, believable floor contact and supports",
   ].filter((part): part is string => Boolean(part));
   return {
     subjects: [firstClause, ...supportText, ...accentText],
@@ -1302,6 +1319,7 @@ function buildCaptionParts(sceneSpec: SceneSpec, context: VisualContext, clauses
     structureSentence,
     tail,
     colors: [...new Set(clauses.flatMap((clause) => clause.colors))],
+    enAlto,
   };
 }
 
@@ -1322,7 +1340,7 @@ function buildJsonPrompt(parts: CaptionParts, ambientDecor: readonly string[]): 
     ...(ambientDecor.length ? { styling: [...ambientDecor] } : {}),
     color_palette: parts.colors,
     style: "wide photorealistic event photograph",
-    composition: "every listed decoration appears once as a separate physical piece, natural depth, grounded supports",
+    composition: `every listed decoration appears once as a separate physical piece, natural depth${parts.enAlto ? "" : ", grounded supports"}`,
   });
 }
 

@@ -20,6 +20,8 @@ from typing import cast
 import pytest
 
 from app.armado_guirnalda import (
+    FORMAS,
+    FORMAS_CON_ARQUEO,
     SOPORTES_CON_CAIDA,
     ArmadoInvalido,
     EstructuraGuirnalda,
@@ -395,10 +397,12 @@ def test_las_frases_del_prompt() -> None:
     # E5: un modificador que el caption pone detrás de "an organic balloon garland"
     # y sus materiales; nombrar otra guirnalda duplicaba el sustantivo. Los
     # colores de los racimos ya van en la cláusula; los del relleno y los
-    # remates dicen cuál es chico y cuál grande.
+    # remates dicen cuál es chico y cuál grande. Decisión 28: en la parte alta
+    # de la pared y con los extremos libres ("mounted flat against the wall"
+    # antes), para que no salga un arco de pie.
     assert lora == (
-        "mounted flat against the wall in clusters of four with small pink and white filler"
-        " balloons and large pink and white accent balloons"
+        "mounted flat high on the wall, both ends free, in clusters of four with small pink and"
+        " white filler balloons and large pink and white accent balloons"
     )
     assert "garland" not in lora
     colgada = armado_resuelto(
@@ -420,10 +424,12 @@ def test_las_frases_del_prompt() -> None:
 @pytest.mark.parametrize(
     ("armado", "soporte_lora"),
     [
-        (_armado(), "mounted flat against the wall in clusters of four"),
+        (_armado(), "mounted flat high on the wall, both ends free, in clusters of four"),
+        # Decisión 28: sin "inverted U", que la LoRA dibujaba como un arco de pie.
         (
             _armado(soporte="colgada", forma="u_invertida", caida_m=0.6, puntos_de_anclaje=2),
-            "draped between two anchor points shaped as an inverted U in clusters of four",
+            "draped between two anchor points, running along the top with both sides curving"
+            " down, in clusters of four",
         ),
         (
             _armado(soporte="colgada", forma="recta", puntos_de_anclaje=6),
@@ -434,9 +440,15 @@ def test_las_frases_del_prompt() -> None:
             _armado(soporte="mesa", forma="ondulada"),
             "running along the table edge in a soft wave in clusters of four",
         ),
+        # En la pared la curva se arquea hacia arriba (decisión 28); en la mesa, la de siempre.
         (
             _armado(forma="curva"),
-            "mounted flat against the wall in a gentle curve in clusters of four",
+            "mounted flat high on the wall, curving gently upward along the top, both ends free,"
+            " in clusters of four",
+        ),
+        (
+            _armado(soporte="mesa", forma="curva"),
+            "running along the table edge in a gentle curve in clusters of four",
         ),
         (
             _armado(soporte="sobre_estructura", estructura_id="EST_02_ARCO", forma="ondulada"),
@@ -694,8 +706,19 @@ def test_el_desnivel_en_la_hoja_y_en_la_frase_de_gemini() -> None:
         " con el extremo derecho 0,4 m más bajo que el izquierdo."
     )
     frase = "Its right end hangs about 0.4 m lower than its left end, so the garland slopes down toward the right."
-    assert str(cae["prompt_gemini"]) == f"{nivelada['prompt_gemini']} {frase}"
-    assert cae["prompt_lora"] == nivelada["prompt_lora"], "el LoRA no aprendió el desnivel"
+    extremos = (
+        "Both ends hang free in the air, well above the floor: no stands, no legs, no poles"
+        " and no frame reaching the floor."
+    )
+    # Decisión 28: la línea de los extremos cierra la frase de Gemini en la pared o colgada.
+    assert str(nivelada["prompt_gemini"]).endswith(f"fabric. {extremos}")
+    sin_extremos = str(nivelada["prompt_gemini"]).removesuffix(f" {extremos}")
+    assert str(cae["prompt_gemini"]) == f"{sin_extremos} {frase} {extremos}"
+    # Decisión 28: el fragmento LoRA dice en palabras, sin cifras, qué extremo va más alto.
+    assert cae["prompt_lora"] == (
+        "mounted flat high on the wall, higher on the left and lower at the right end,"
+        " both ends free, in clusters of four"
+    )
     sube = armado_resuelto(
         estructura,
         _armado(
@@ -708,5 +731,204 @@ def test_el_desnivel_en_la_hoja_y_en_la_frase_de_gemini() -> None:
     )
     assert str(sube["prompt_gemini"]).endswith(
         "Its left end hangs about 0.25 m lower than its right end, so the garland slopes down"
-        " toward the left."
+        " toward the left. Both ends hang free in the air, well above the floor: no stands,"
+        " no legs, no poles and no frame reaching the floor."
     )
+
+
+# --- Curvatura con sentido (ADR-0032, decisión 28) --------------------------------------------
+
+
+def test_las_formas_con_arqueo_salen_de_las_reglas_del_contrato() -> None:
+    # Dueño: armado-guirnalda.ts (FORMAS_CON_ARQUEO_GUIRNALDA), exportado en x-reglas-guirnalda.
+    assert FORMAS_CON_ARQUEO == frozenset({"curva"})
+
+
+@pytest.mark.parametrize(
+    ("lectura", "geometria"),
+    [
+        # La foto del usuario (decisión 28): en la pared, alta a la izquierda, arqueada
+        # por arriba y cayendo hacia la derecha. Es una curva con arqueo, no una U.
+        (
+            _lectura(
+                forma="curva", sentido_curva="arriba", flecha_relativa=0.1, desnivel_relativo=-0.25
+            ),
+            {"forma": "curva", "arqueo_m": 0.25, "desnivel_m": -0.63},
+        ),
+        # Aunque el modelo diga recta o arco caído: el sentido es la pregunta explícita.
+        (
+            _lectura(forma="recta", sentido_curva="arriba", flecha_relativa=0.12),
+            {"forma": "curva", "arqueo_m": 0.3},
+        ),
+        (
+            _lectura(forma="arco_caido", sentido_curva="arriba", flecha_relativa=0.12),
+            {"forma": "curva", "arqueo_m": 0.3},
+        ),
+        # Hacia abajo cuelga en arco, con su caída en metros.
+        (
+            _lectura(
+                forma="curva", sentido_curva="abajo", flecha_relativa=0.1, desnivel_relativo=0.2
+            ),
+            {"forma": "arco_caido", "caida_m": 0.25, "desnivel_m": 0.5},
+        ),
+        (
+            _lectura(
+                soporte="colgada", forma="u_invertida", sentido_curva="abajo", flecha_relativa=0.2
+            ),
+            {"forma": "arco_caido", "caida_m": 0.5},
+        ),
+        # La U invertida se arquea hacia arriba: sus lados bajan esa flecha desde lo alto.
+        (
+            _lectura(
+                soporte="colgada", forma="u_invertida", sentido_curva="arriba", flecha_relativa=0.4
+            ),
+            {"forma": "u_invertida", "caida_m": 1.0},
+        ),
+        # Una ondulada no lleva flecha; sí desnivel.
+        (_lectura(forma="ondulada", sentido_curva="arriba", flecha_relativa=0.3), {}),
+        (
+            _lectura(
+                forma="ondulada", sentido_curva="abajo", flecha_relativa=0.3, desnivel_relativo=-0.1
+            ),
+            {"forma": "ondulada", "desnivel_m": -0.25},
+        ),
+        # Sin sentido, o con una flecha por debajo de 0,05, la forma leída se conserva.
+        (
+            _lectura(
+                forma="curva", sentido_curva=None, flecha_relativa=0.3, desnivel_relativo=-0.2
+            ),
+            {"forma": "curva", "desnivel_m": -0.5},
+        ),
+        (_lectura(forma="recta", sentido_curva="arriba", flecha_relativa=0.04), {}),
+        (_lectura(forma="curva", sentido_curva=None, flecha_relativa=None), {}),
+        # Una lectura v3 no se lee como v2 aunque arrastre una caída vieja.
+        (
+            _lectura(
+                forma="curva", sentido_curva="arriba", flecha_relativa=None, caida_relativa=0.3
+            ),
+            {},
+        ),
+        # En el piso los extremos van a su altura: nada que medir.
+        (_lectura(soporte="piso", sentido_curva="arriba", flecha_relativa=0.2), {}),
+    ],
+)
+def test_el_sentido_de_la_curva_decide_la_forma(
+    lectura: Mapping[str, object], geometria: Mapping[str, object]
+) -> None:
+    assert geometria_de_lectura(lectura, 2.5) == geometria
+
+
+def test_la_foto_arqueada_llega_al_armado_como_curva() -> None:
+    estructura = _estructura()
+    lectura = _lectura(
+        forma="curva", sentido_curva="arriba", flecha_relativa=0.1, desnivel_relativo=-0.25
+    )
+    leida = sugerir_armado(estructura, lectura)
+    assert leida is not None
+    assert (leida["soporte"], leida["forma"], leida["arqueo_m"], leida["desnivel_m"]) == (
+        "pared",
+        "curva",
+        0.25,
+        -0.63,
+    )
+    assert "caida_m" not in leida, "no cuelga: se arquea"
+    resuelto = armado_resuelto(estructura, leida)
+    assert cast(list[str], resuelto["pasos"])[-1] == (
+        "Fija la guirnalda a la pared de izquierda a derecha con ganchos o pegante, arqueada"
+        " 0,25 m hacia arriba sobre la recta entre sus extremos y el extremo derecho 0,63 m más"
+        " bajo que el izquierdo."
+    )
+    assert str(resuelto["prompt_lora"]).startswith(
+        "mounted flat high on the wall, higher on the left, curving along the top and dropping"
+        " lower at the right end, both ends free, in clusters of four"
+    )
+    gemini = str(resuelto["prompt_gemini"])
+    assert (
+        "mounted flat high on the wall, bowing gently upward along the top, its middle about"
+        " 0.25 m above the straight line between its ends." in gemini
+    )
+    assert "Its right end hangs about 0.63 m lower than its left end" in gemini
+
+
+def test_el_arqueo_solo_en_la_curva_de_pared_o_colgada() -> None:
+    estructura = _estructura(otras=(ARCO,))
+    validar(estructura, _armado(forma="curva", arqueo_m=0.3))
+    validar(estructura, _armado(forma="curva", arqueo_m=0.3, desnivel_m=-0.9))
+    validar(
+        estructura, _armado(soporte="colgada", forma="curva", arqueo_m=0.2, puntos_de_anclaje=2)
+    )
+    for armado in (
+        _armado(forma="recta", arqueo_m=0.3),
+        _armado(forma="arco_caido", caida_m=0.3, arqueo_m=0.3),
+        _armado(soporte="colgada", forma="u_invertida", arqueo_m=0.3, puntos_de_anclaje=2),
+    ):
+        assert _motivo(estructura, armado) == "arqueo_sin_curva"
+    for armado in (
+        _armado(soporte="piso", forma="curva", arqueo_m=0.3),
+        _armado(soporte="mesa", forma="curva", arqueo_m=0.3),
+    ):
+        assert _motivo(estructura, armado) == "arqueo_sin_soporte"
+    assert _motivo(estructura, _armado(forma="curva", arqueo_m=5.5)) == "forma_invalida"
+    assert _motivo(estructura, _armado(forma="curva", arqueo_m=0)) == "forma_invalida"
+
+
+def _formas_en_alto() -> list[dict[str, object]]:
+    """Cada forma en la pared y colgada, nivelada y con desnivel a cada lado."""
+    armados: list[dict[str, object]] = []
+    for soporte in sorted(SOPORTES_CON_CAIDA):
+        for forma in FORMAS:
+            for desnivel in (None, -0.4, 0.3):
+                extra: dict[str, object] = {"soporte": soporte, "forma": forma}
+                if soporte == "colgada":
+                    extra["puntos_de_anclaje"] = 3
+                if forma in ("u_invertida", "arco_caido"):
+                    extra["caida_m"] = 0.4
+                if forma in FORMAS_CON_ARQUEO:
+                    extra["arqueo_m"] = 0.2
+                if desnivel is not None:
+                    extra["desnivel_m"] = desnivel
+                armados.append(_armado(**extra))
+    return armados
+
+
+def test_una_guirnalda_en_alto_nunca_es_un_arco_de_pie() -> None:
+    # Decisión 28: la guirnalda de la pared salió como un arco rectangular con patas.
+    # Ninguna frase la nombra arco ni le da patas, bases o soportes; Gemini (que sí
+    # sigue exclusiones) solo los nombra para excluirlos, y el LoRA (sin prompt
+    # negativo) ni eso: dice en positivo que los extremos van libres.
+    estructura = _estructura(otras=(ARCO,))
+    for armado in _formas_en_alto():
+        resuelto = armado_resuelto(estructura, armado)
+        gemini, lora = str(resuelto["prompt_gemini"]), str(resuelto["prompt_lora"])
+        for palabra in ("arch", "stand", "leg", "base", "pole", "frame", "support", "floor"):
+            assert palabra not in lora.lower(), (armado, lora)
+        assert lora.isascii() and not any(c.isdigit() for c in lora)
+        assert "arch" not in gemini.lower() and "inverted u" not in gemini.lower(), gemini
+        excluidas = gemini.replace(
+            "no stands, no legs, no poles and no frame reaching the floor", ""
+        ).lower()
+        for palabra in ("stand", "leg", "pole", "frame"):
+            assert palabra not in excluidas, (armado, gemini)
+        assert gemini.endswith(
+            "Both ends hang free in the air, well above the floor: no stands, no legs, no poles"
+            " and no frame reaching the floor."
+        )
+        if armado["soporte"] == "pared":
+            assert "mounted flat high on the wall" in gemini
+            assert lora.startswith("mounted flat high on the wall") and "both ends free" in lora
+
+
+def test_las_frases_fuera_de_la_pared_no_cambian() -> None:
+    # En el piso, la mesa u otra pieza, las frases de antes de la decisión 28.
+    estructura = _estructura(otras=(ARCO,))
+    for armado, lora in (
+        (_armado(soporte="piso"), "resting on the floor along the front in clusters of four"),
+        (_armado(soporte="mesa", forma="curva"), "running along the table edge in a gentle curve"),
+        (
+            _armado(soporte="sobre_estructura", estructura_id="EST_02_ARCO"),
+            "wrapped around the balloon arch in clusters of four",
+        ),
+    ):
+        resuelto = armado_resuelto(estructura, armado)
+        assert str(resuelto["prompt_lora"]).startswith(lora)
+        assert "Both ends hang free" not in str(resuelto["prompt_gemini"])

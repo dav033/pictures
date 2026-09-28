@@ -6,7 +6,7 @@ import type {
   UnidadRacimoGuirnalda,
 } from "@/lib/plan/armado-guirnalda";
 import { jsonEstable } from "../bouquet/borrador-armado";
-import { formaConCaida, soporteConCaida } from "./leyenda-guirnalda";
+import { formaConArqueo, formaConCaida, soporteConCaida } from "./leyenda-guirnalda";
 
 /**
  * Ediciones del armado DECLARATIVO de una guirnalda que arma el editor
@@ -16,7 +16,8 @@ import { formaConCaida, soporteConCaida } from "./leyenda-guirnalda";
  * y Python lo resuelve o lo rechaza con su frase. Solo se cuida la FORMA del
  * contrato (`armado-guirnalda.v1`) para que el borrador se pueda pedir: la
  * caída solo en las formas que la tabla de geometría marca `conCaida`, el
- * desnivel solo en los soportes de `SOPORTES_CON_CAIDA_GUIRNALDA`, la pieza
+ * arqueo solo en las de `FORMAS_CON_ARQUEO_GUIRNALDA` (decisión 28), el
+ * desnivel y el arqueo solo en los soportes de `SOPORTES_CON_CAIDA_GUIRNALDA`, la pieza
  * anfitriona solo sobre otra pieza y los anclajes que el contrato exige al
  * colgar. Todo lo que el decorador toca lo firma él (`origen: "decorador"`).
  * Puro: sin React.
@@ -28,6 +29,8 @@ export const MAXIMO_REMATES = 6;
 const ANCLAJES_MINIMOS = 2;
 /** Tope de `desnivel_m` en `armado-guirnalda.v1`, en valor absoluto. */
 export const MAX_DESNIVEL_M = 5;
+/** Tope de `arqueo_m` en `armado-guirnalda.v1`. */
+export const MAX_ARQUEO_M = 5;
 
 export function claveArmadoGuirnalda(armado: ArmadoGuirnaldaV1): string {
   return jsonEstable(armado);
@@ -65,19 +68,24 @@ export function conSoporte(armado: ArmadoGuirnaldaV1, soporte: SoporteGuirnalda,
   if (soporte === "sobre_estructura" && anfitriona) siguiente = { ...siguiente, estructura_id: anfitriona };
   if (soporte === "colgada" && siguiente.puntos_de_anclaje === undefined) siguiente = { ...siguiente, puntos_de_anclaje: ANCLAJES_MINIMOS };
   if (usaAnclajes(armado) && !usaAnclajes(siguiente)) siguiente = sin(siguiente, "puntos_de_anclaje");
-  // En el piso, la mesa u otra pieza los extremos van a su altura: el desnivel se va con su control.
-  if (!soporteConCaida(soporte)) siguiente = sin(siguiente, "desnivel_m");
+  // En el piso, la mesa u otra pieza los extremos van a su altura y no hay arriba:
+  // el desnivel y el arqueo se van con sus controles.
+  if (!soporteConCaida(soporte)) siguiente = sin(sin(siguiente, "desnivel_m"), "arqueo_m");
   return firmado(siguiente);
 }
 
 export function conAnfitriona(armado: ArmadoGuirnaldaV1, anfitriona: string): ArmadoGuirnaldaV1 {
-  return firmado(sin({ ...armado, soporte: "sobre_estructura", estructura_id: anfitriona }, "desnivel_m"));
+  return firmado(sin(sin({ ...armado, soporte: "sobre_estructura", estructura_id: anfitriona }, "desnivel_m"), "arqueo_m"));
 }
 
-/** Otra forma; la caída se va si la nueva forma no cuelga, y los anclajes si ya no los usa (ver `conSoporte`). */
+/**
+ * Otra forma; la caída se va si la nueva forma no cuelga, el arqueo si no se
+ * arquea hacia arriba (decisión 28), y los anclajes si ya no los usa (ver `conSoporte`).
+ */
 export function conForma(armado: ArmadoGuirnaldaV1, forma: FormaGuirnalda): ArmadoGuirnaldaV1 {
   let siguiente: ArmadoGuirnaldaV1 = { ...armado, forma };
   if (!formaConCaida(forma)) siguiente = sin(siguiente, "caida_m");
+  if (!formaConArqueo(forma)) siguiente = sin(siguiente, "arqueo_m");
   if (usaAnclajes(armado) && !usaAnclajes(siguiente)) siguiente = sin(siguiente, "puntos_de_anclaje");
   return firmado(siguiente);
 }
@@ -86,6 +94,16 @@ export function conForma(armado: ArmadoGuirnaldaV1, forma: FormaGuirnalda): Arma
 export function conCaida(armado: ArmadoGuirnaldaV1, caida: number | null): ArmadoGuirnaldaV1 {
   if (caida === null || !(caida > 0)) return firmado(sin(armado, "caida_m"));
   return firmado({ ...armado, caida_m: Math.round(caida * 100) / 100 });
+}
+
+/**
+ * Cuánto sube el centro sobre la recta entre los extremos, en metros, a dos
+ * decimales y dentro del contrato; `null` o 0 lo quitan (la curva de muestra).
+ */
+export function conArqueo(armado: ArmadoGuirnaldaV1, arqueo: number | null): ArmadoGuirnaldaV1 {
+  if (arqueo === null || !Number.isFinite(arqueo) || !(arqueo > 0)) return firmado(sin(armado, "arqueo_m"));
+  const metros = Math.round(Math.min(MAX_ARQUEO_M, arqueo) * 100) / 100;
+  return firmado(metros > 0 ? { ...armado, arqueo_m: metros } : sin(armado, "arqueo_m"));
 }
 
 /**

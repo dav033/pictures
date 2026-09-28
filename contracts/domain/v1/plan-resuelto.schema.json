@@ -855,6 +855,11 @@
                         "exclusiveMinimum": 0,
                         "maximum": 5
                       },
+                      "arqueo_m": {
+                        "type": "number",
+                        "exclusiveMinimum": 0,
+                        "maximum": 5
+                      },
                       "desnivel_m": {
                         "type": "number",
                         "minimum": -5,
@@ -3108,6 +3113,11 @@
                         ]
                       },
                       "caida_m": {
+                        "type": "number",
+                        "exclusiveMinimum": 0,
+                        "maximum": 5
+                      },
+                      "arqueo_m": {
                         "type": "number",
                         "exclusiveMinimum": 0,
                         "maximum": 5
@@ -6775,6 +6785,11 @@
                 "exclusiveMinimum": 0,
                 "maximum": 5
               },
+              "arqueo_m": {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 5
+              },
               "desnivel_m": {
                 "type": "number",
                 "minimum": -5,
@@ -7561,6 +7576,32 @@
             "maximum": 6
           },
           "caida_relativa": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 0.6
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sentido_curva": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "arriba",
+                  "abajo"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "flecha_relativa": {
             "anyOf": [
               {
                 "type": "number",

@@ -18,6 +18,7 @@ import {
   agregarRemate,
   conAnclajes,
   conAnfitriona,
+  conArqueo,
   conCaida,
   conDesnivel,
   conForma,
@@ -25,11 +26,12 @@ import {
   conRelleno,
   conRemate,
   conSoporte,
+  MAX_ARQUEO_M,
   MAX_DESNIVEL_M,
   MAXIMO_REMATES,
   quitarRemate,
 } from "./borrador-guirnalda";
-import { desnivelTexto, formaConCaida, metros, NOMBRE_FORMA, NOMBRE_POSICION, NOMBRE_SOPORTE, NOMBRE_UNIDAD, soporteConCaida } from "./leyenda-guirnalda";
+import { desnivelTexto, formaConArqueo, formaConCaida, metros, NOMBRE_FORMA, NOMBRE_POSICION, NOMBRE_SOPORTE, NOMBRE_UNIDAD, soporteConCaida } from "./leyenda-guirnalda";
 
 type Props = {
   /** El armado a la vista (el del decorador o la receta de Python); `null` mientras no hay ninguno. */
@@ -56,6 +58,8 @@ type Props = {
 const MIN_CAIDA_M = 0.05;
 /** Tope de `caida_m` en `armado-guirnalda.v1`. */
 const MAX_CAIDA_M = 5;
+/** Al declarar el arqueo: una curva suave sobre la recta entre los extremos. */
+const ARQUEO_INICIAL_M = 0.2;
 const MAX_PROPORCION_RELLENO = 0.5;
 const ANCLAJES = { min: 2, max: 6 } as const;
 const PROPORCION_RELLENO_INICIAL = 0.2;
@@ -156,6 +160,8 @@ export function ControlesGuirnalda({ borrador, opciones, colores, nombrePieza, o
   const materialesRemate = opciones?.materiales_remate ?? borrador.remates.map((remate) => remate.material);
   const coloresDe = (indices: readonly number[], actual?: number) => colores.filter((color) => indices.includes(color.indice) || color.indice === actual);
   const conCaidaForma = formaConCaida(borrador.forma);
+  // Decisión 28: la curva se arquea HACIA ARRIBA; en la pared o colgada, cuánto.
+  const conArqueoVisible = formaConArqueo(borrador.forma) && soporteConCaida(borrador.soporte);
   const conAnclajesVisibles = borrador.soporte === "colgada" || borrador.forma === "arco_caido";
   const conDesnivelVisible = soporteConCaida(borrador.soporte);
   const nombreColor = (indice: number) => colores.find((color) => color.indice === indice)?.etiqueta ?? `Color ${indice + 1}`;
@@ -186,7 +192,7 @@ export function ControlesGuirnalda({ borrador, opciones, colores, nombrePieza, o
         )}
       </Apartado>
 
-      <Apartado titulo="Forma" ayuda="Cómo corre de un extremo al otro. La U invertida y el arco caído cuelgan: en pared o colgada, donde un extremo también puede ir más alto que el otro.">
+      <Apartado titulo="Forma" ayuda="Cómo corre de un extremo al otro. En pared o colgada, la curva se arquea hacia arriba, sobre la recta entre sus extremos; el arco caído cuelga hacia abajo, bajo esa recta, y la U invertida baja por los lados. Ahí un extremo también puede ir más alto que el otro.">
         <Segmentado<FormaGuirnalda>
           etiqueta="Forma de la guirnalda"
           opciones={FORMAS_GUIRNALDA.map((forma) => ({ valor: forma, etiqueta: NOMBRE_FORMA[forma] }))}
@@ -205,6 +211,19 @@ export function ControlesGuirnalda({ borrador, opciones, colores, nombrePieza, o
             />
             {borrador.caida_m !== undefined && (
               <Deslizador etiqueta="Caída en metros" valor={borrador.caida_m} min={MIN_CAIDA_M} max={MAX_CAIDA_M} paso={0.05} formato={metros} onConfirmar={(caida) => onCambiar(conCaida(borrador, caida))} testid="caida-guirnalda" />
+            )}
+          </div>
+        )}
+        {conArqueoVisible && (
+          <div className="space-y-1.5 pt-1">
+            <Interruptor
+              etiqueta="Arqueo declarado"
+              descripcion={borrador.arqueo_m !== undefined ? "Cuánto sube el centro sobre la recta entre los extremos: alarga la cuerda y cambia los globos." : "Sin arqueo, se dibuja una curva de muestra y se cotiza con el largo recto."}
+              activo={borrador.arqueo_m !== undefined}
+              onCambiar={(activo) => onCambiar(conArqueo(borrador, activo ? borrador.arqueo_m ?? ARQUEO_INICIAL_M : null))}
+            />
+            {borrador.arqueo_m !== undefined && (
+              <Deslizador etiqueta="Arqueo hacia arriba, en metros" valor={borrador.arqueo_m} min={MIN_CAIDA_M} max={MAX_ARQUEO_M} paso={0.05} formato={metros} onConfirmar={(arqueo) => onCambiar(conArqueo(borrador, arqueo))} testid="arqueo-guirnalda" />
             )}
           </div>
         )}

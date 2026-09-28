@@ -281,7 +281,10 @@ async def test_la_caida_y_el_desnivel_de_la_foto_llegan_al_armado_y_a_la_compra(
     resuelto = cast(list[dict[str, object]], cae["armados_guirnalda"])[0]
     assert resuelto["globos_por_instancia"] == _unidades(cae), "el armado reparte lo que se compra"
     assert (resuelto["largo_m"], resuelto["largo_cuerda_m"]) == (2.5, round(cuerda, 2))
-    assert str(resuelto["prompt_gemini"]).endswith("slopes down toward the right.")
+    # Decisión 28: tras el desnivel, la línea de los extremos libres (en la pared).
+    assert "slopes down toward the right. Both ends hang free in the air" in str(
+        resuelto["prompt_gemini"]
+    )
     assert estructura_del_plan(cae)["medidas"] == {"largo_m": 2.5}, "la caída no toca el largo"
     # Una curva que cae cuelga en arco con su caída.
     caida = await resolver(
@@ -310,6 +313,66 @@ async def test_la_caida_y_el_desnivel_de_la_foto_llegan_al_armado_y_a_la_compra(
 
 
 @pytest.mark.anyio
+async def test_la_foto_arqueada_hacia_arriba_llega_como_curva_y_a_la_compra() -> None:
+    # Decisión 28: la guirnalda de la foto del usuario, alta a la izquierda, arqueada
+    # por arriba y cayendo hacia la derecha. La v2 solo sabía caer y salía una U.
+    plan_ = plan(guirnalda(referencia_element_id="REF_01_E01"))
+    sin = await resolver(
+        plan_, completar_armados_guirnalda=True, pistas_guirnalda=[_pista_geometria()]
+    )
+    arriba = await resolver(
+        plan_,
+        completar_armados_guirnalda=True,
+        pistas_guirnalda=[
+            _pista_geometria(sentido_curva="arriba", flecha_relativa=0.1, desnivel_relativo=-0.25)
+        ],
+    )
+    armado = cast(dict[str, object], estructura_del_plan(arriba)["armado_guirnalda"])
+    assert (armado["forma"], armado["arqueo_m"], armado["desnivel_m"]) == ("curva", 0.25, -0.63)
+    assert "caida_m" not in armado
+    cuerda = _garland_cord(2.5, armado)
+    # La misma parábola, reflejada: arquearse 0,25 m sobre la recta que baja 0,63 m
+    # mide lo mismo que colgar 0,25 m bajo la que sube 0,63 m.
+    assert cuerda == _garland_cord(
+        2.5, {"forma": "arco_caido", "caida_m": 0.25, "desnivel_m": 0.63}
+    )
+    assert cuerda > math.hypot(2.5, 0.63)
+    assert cast(list[dict[str, object]], arriba["estructuras"])[0]["eje_m"] == round(cuerda, 2)
+    assert _unidades(arriba) > _unidades(sin) == 48, "la cuerda arqueada lleva más globos"
+    resuelto = cast(list[dict[str, object]], arriba["armados_guirnalda"])[0]
+    assert resuelto["globos_por_instancia"] == _unidades(arriba)
+    assert (resuelto["largo_m"], resuelto["largo_cuerda_m"]) == (2.5, round(cuerda, 2))
+    assert "bowing gently upward along the top" in str(resuelto["prompt_gemini"])
+    assert "higher on the left, curving along the top and dropping lower at the right end" in str(
+        resuelto["prompt_lora"]
+    )
+    otra = await resolver(cast(dict[str, object], arriba["plan"]))
+    assert otra["plan_hash"] == arriba["plan_hash"], "punto fijo"
+    # Hacia abajo, en cambio, cuelga en arco con su caída.
+    abajo = await resolver(
+        plan_,
+        completar_armados_guirnalda=True,
+        pistas_guirnalda=[
+            _pista_geometria(sentido_curva="abajo", flecha_relativa=0.1, desnivel_relativo=-0.25)
+        ],
+    )
+    colgada = cast(dict[str, object], estructura_del_plan(abajo)["armado_guirnalda"])
+    assert (colgada["forma"], colgada["caida_m"], colgada["desnivel_m"]) == (
+        "arco_caido",
+        0.25,
+        -0.63,
+    )
+    assert "arqueo_m" not in colgada
+    # Sin sentido ni flecha (o en null), exactamente lo de antes.
+    nulas = await resolver(
+        plan_,
+        completar_armados_guirnalda=True,
+        pistas_guirnalda=[_pista_geometria(sentido_curva=None, flecha_relativa=None)],
+    )
+    assert nulas["plan_hash"] == sin["plan_hash"]
+
+
+@pytest.mark.anyio
 async def test_con_patron_la_cuerda_de_la_foto_es_punto_fijo() -> None:
     # El patrón por racimos (decisión 20) se completa sobre la compra de la cuerda.
     plan_ = plan(guirnalda(referencia_element_id="REF_01_E01"))
@@ -318,6 +381,20 @@ async def test_con_patron_la_cuerda_de_la_foto_es_punto_fijo() -> None:
     armado = cast(dict[str, object], estructura_del_plan(resuelto)["armado_guirnalda"])
     assert (armado["forma"], armado["caida_m"], armado["desnivel_m"]) == ("arco_caido", 0.5, -0.75)
     assert _patron(resuelto)["globos_por_racimo"] == 3, "por racimos, con la unidad de la foto"
+    racimos = cast(list[dict[str, object]], resuelto["armados_guirnalda"])[0]
+    assert racimos["globos_por_instancia"] == _unidades(resuelto) > 48
+    otra = await resolver(cast(dict[str, object], resuelto["plan"]))
+    assert otra["plan_hash"] == resuelto["plan_hash"]
+
+
+@pytest.mark.anyio
+async def test_con_patron_la_foto_arqueada_es_punto_fijo() -> None:
+    # Decisión 28, con el patrón por racimos de la foto del usuario (espiral de cuartetos).
+    plan_ = plan(guirnalda(referencia_element_id="REF_01_E01"))
+    pista = _pista_geometria(sentido_curva="arriba", flecha_relativa=0.1, desnivel_relativo=-0.25)
+    resuelto = await resolver(plan_, **AMBAS, pistas_guirnalda=[pista])
+    armado = cast(dict[str, object], estructura_del_plan(resuelto)["armado_guirnalda"])
+    assert (armado["forma"], armado["arqueo_m"], armado["desnivel_m"]) == ("curva", 0.25, -0.63)
     racimos = cast(list[dict[str, object]], resuelto["armados_guirnalda"])[0]
     assert racimos["globos_por_instancia"] == _unidades(resuelto) > 48
     otra = await resolver(cast(dict[str, object], resuelto["plan"]))
@@ -636,6 +713,34 @@ def test_la_cuerda_desnivelada_es_la_parabola_entre_dos_alturas() -> None:
     # Una forma que no cuelga no toma la caída, pero sí el desnivel.
     assert _garland_cord(2.5, {"forma": "ondulada", "caida_m": 0.5, "desnivel_m": -0.6}) == (
         pytest.approx(math.hypot(2.5, 0.6))
+    )
+
+
+def test_la_cuerda_arqueada_es_la_misma_parabola_reflejada() -> None:
+    # Decisión 28: y = x² de (0, 0) a (1, 1), reflejada, es y = 2x - x²: se arquea 0,25
+    # sobre la recta y = x. El mismo valor de libro, √5/2 + asinh(2)/4.
+    exacta = math.sqrt(5) / 2 + math.asinh(2) / 4
+    arriba = {"forma": "curva", "arqueo_m": 0.25, "desnivel_m": 1}
+    assert _garland_cord(1, arriba) == pytest.approx(exacta, rel=1e-12)
+    assert _garland_cord(1, {**arriba, "desnivel_m": -1}) == pytest.approx(exacta, rel=1e-12)
+    # Simétrica en el signo de la flecha: el mismo largo a cualquier lado de la recta,
+    # nivelada (la fórmula de antes, exacta) o desnivelada.
+    for desnivel in (None, -0.9, -0.3, 0.4):
+        extra = {} if desnivel is None else {"desnivel_m": desnivel}
+        espejo = {} if desnivel is None else {"desnivel_m": -desnivel}
+        sobre = _garland_cord(3.5, {"forma": "curva", "arqueo_m": 0.35, **extra})
+        bajo = _garland_cord(3.5, {"forma": "arco_caido", "caida_m": 0.35, **espejo})
+        assert sobre == bajo
+        assert sobre == pytest.approx(
+            _garland_cord(3.5, {"forma": "arco_caido", "caida_m": 0.35, **extra}), rel=1e-12
+        )
+        assert sobre > (3.5 if desnivel is None else math.hypot(3.5, desnivel))
+    # Solo una curva se arquea: en otra forma el arqueo no cuenta, y sin él la curva
+    # es la de siempre (el largo o la recta inclinada).
+    assert _garland_cord(2.5, {"forma": "recta", "arqueo_m": 0.3}) == 2.5
+    assert _garland_cord(2.5, {"forma": "curva"}) == 2.5
+    assert _garland_cord(2.5, {"forma": "curva", "desnivel_m": -0.6}) == pytest.approx(
+        math.hypot(2.5, 0.6)
     )
 
 

@@ -1,4 +1,5 @@
 import {
+  FORMAS_CON_ARQUEO_GUIRNALDA,
   SOPORTES_CON_CAIDA_GUIRNALDA,
   type ArmadoGuirnaldaResuelto,
   type FormaGuirnalda,
@@ -98,6 +99,16 @@ export function formaConCaida(forma: FormaGuirnalda): boolean {
 }
 
 /**
+ * Si la forma se arquea hacia arriba sobre la recta entre sus extremos y
+ * declara cuánto (`arqueo_m`, decisión 28): la curva. Lo dice el contrato
+ * (`FORMAS_CON_ARQUEO_GUIRNALDA`, exportado como `x-reglas-guirnalda`), que
+ * Python lee como `FORMAS_CON_ARQUEO`.
+ */
+export function formaConArqueo(forma: FormaGuirnalda): boolean {
+  return (FORMAS_CON_ARQUEO_GUIRNALDA as readonly FormaGuirnalda[]).includes(forma);
+}
+
+/**
  * Si el soporte deja colgar una forma y poner un extremo más alto que el otro
  * (`desnivel_m`): la pared o colgada. Lo dice el contrato
  * (`SOPORTES_CON_CAIDA_GUIRNALDA`, exportado como `x-reglas-guirnalda`), que
@@ -170,9 +181,13 @@ export function desnivelTexto(armado: Pick<ArmadoGuirnalda, "desnivel_m">): stri
   return `cae hacia la ${lado} (el extremo ${extremo}, ${metros(Math.abs(desnivel))} más bajo)`;
 }
 
-/** "Ondulada", "Arco caído con 0,4 m de caída, 3 anclajes", "Curva, cae hacia la derecha (el extremo derecho, 0,4 m más bajo)". */
+/**
+ * "Ondulada", "Arco caído con 0,4 m de caída, 3 anclajes", "Curva arqueada
+ * 0,3 m hacia arriba, cae hacia la derecha (el extremo derecho, 0,9 m más bajo)".
+ */
 export function formaTexto(armado: ArmadoGuirnalda): string {
-  const caida = armado.caida_m !== undefined && formaConCaida(armado.forma) ? ` con ${metros(armado.caida_m)} de caída` : "";
+  const caida = armado.caida_m !== undefined && formaConCaida(armado.forma) ? ` con ${metros(armado.caida_m)} de caída`
+    : armado.arqueo_m !== undefined && formaConArqueo(armado.forma) ? ` arqueada ${metros(armado.arqueo_m)} hacia arriba` : "";
   const anclajes = armado.puntos_de_anclaje !== undefined ? `, ${armado.puntos_de_anclaje} anclajes` : "";
   const desnivel = desnivelTexto(armado);
   return `${NOMBRE_FORMA[armado.forma]}${caida}${anclajes}${desnivel ? `, ${desnivel}` : ""}`;

@@ -113,6 +113,15 @@ function frasesSinteticas(nombre: string): FraseDeEstructura[] {
   })!;
 }
 
+/** El cierre del candado del híbrido para una guirnalda en la pared o colgada (decisión 28). */
+const EXTREMOS_LIBRES = "A garland on the wall or hanging from its anchor points keeps both ends free in the air: drop any stand, leg, pole, base or frame the LoRA image shows under it, and never add one.";
+
+/** La escena sintética sin el arco: la guirnalda sola en la pared, como en la foto del usuario. */
+function escenaSoloGuirnalda(): SceneSpec {
+  const escena = escenaGuirnalda();
+  return { ...escena, elements: escena.elements.filter((element) => element.visual_semantics?.structure_type === "guirnalda") };
+}
+
 // ---------------------------------------------------------------------------
 // 1. Sin armado, byte a byte lo de antes.
 // ---------------------------------------------------------------------------
@@ -322,11 +331,13 @@ function loraCanonico(): void {
 
 function loraSoportes(): void {
   const soportes: ReadonlyArray<[string, RegExp]> = [
-    ["pared", /mounted flat against the wall in clusters of four/],
+    // ADR-0032, decisión 28: en la parte alta de la pared, con los extremos libres.
+    ["pared", /mounted flat high on the wall, both ends free, in clusters of four/],
     ["piso", /resting on the floor along the front in clusters of four/],
     ["mesa", /running along the table edge in clusters of four/],
     ["colgada", /draped across three anchor points dipping in swags in clusters of three/],
-    ["u-invertida-espejo", /draped between two anchor points shaped as an inverted U in clusters of four/],
+    // Decisión 28: sin "inverted U", que la LoRA dibujaba como un arco de pie.
+    ["u-invertida-espejo", /draped between two anchor points, running along the top with both sides curving down, in clusters of four/],
     ["sobre-arco", /wrapped around the balloon arch in clusters of four/],
   ];
   for (const [nombre, soporte] of soportes) {
@@ -471,9 +482,10 @@ function piezasQueElArmadoTiene(): void {
     assert.equal(/filler/.test(candado), relleno, `${nombre}: ${candado}`);
     assert.equal(/accent/.test(candado), remates, `${nombre}: ${candado}`);
   }
-  // Con relleno y remates, la frase y el candado completos de siempre.
+  // Con relleno y remates, la frase y el candado completos de siempre; en la pared,
+  // además, los extremos libres (decisión 28).
   const pared = captionCanonicoGuirnalda(escenaGuirnalda(), frasesSinteticas("pared")).clauses;
-  assert.equal(hardLockComposicionGemini(...candadosDeComposicion(pared), conArmadoGuirnaldaEnCaption(pared), piezasDeLosArmados(pared)), `${GEMINI_COMPOSITION_HARD_LOCK} ${GEMINI_COMPOSITION_GARLAND_LOCK}`);
+  assert.equal(hardLockComposicionGemini(...candadosDeComposicion(pared), conArmadoGuirnaldaEnCaption(pared), piezasDeLosArmados(pared)), `${GEMINI_COMPOSITION_HARD_LOCK} ${GEMINI_COMPOSITION_GARLAND_LOCK} ${EXTREMOS_LIBRES}`);
   console.log("[PASS] hallazgo 17: sin relleno o sin remates, ni la línea de instancia ni el candado del híbrido los nombran");
 }
 
@@ -500,7 +512,8 @@ function sinCintasEnLaImagen(): void {
   const frases = frasesDeEstructuras(fijado.plan)!;
   // Kagutsuchi: el armado y, detrás, los racimos del patrón; ni una cinta.
   const lora = frases[0]!.prompt_lora;
-  assert.equal(lora, "mounted flat against the wall in clusters of four with small pink, white and gold filler balloons, every cluster holding two pink, one white and one gold balloon");
+  // Decisión 28: en la parte alta de la pared y con los extremos libres.
+  assert.equal(lora, "mounted flat high on the wall, both ends free, in clusters of four with small pink, white and gold filler balloons, every cluster holding two pink, one white and one gold balloon");
   assert.doesNotMatch(lora, CINTAS, lora);
   // Uzume (Gemini, `proveedor_base`): la línea de color lleva las dos frases de Python.
   const prompt = promptGeminiDePlan(fijado, frases);
@@ -527,13 +540,57 @@ function sinCintasEnLaImagen(): void {
       assert.equal(preflight(escena, resultado, texto, undefined, trigger).ok, true, caso);
       if (hibrido) {
         const candado = hardLockComposicionGemini(...candadosDeComposicion(resultado.clauses), conArmadoGuirnaldaEnCaption(resultado.clauses), piezasDeLosArmados(resultado.clauses));
-        assert.ok(candado.endsWith("It is made only of round latex balloons: drop any ribbon, streamer, twisted band or fabric the LoRA image shows, and never add one."), candado);
+        // En la pared, tras el de las cintas, el de los extremos libres (decisión 28).
+        assert.ok(candado.endsWith(`It is made only of round latex balloons: drop any ribbon, streamer, twisted band or fabric the LoRA image shows, and never add one. ${EXTREMOS_LIBRES}`), candado);
       }
     }
   }
   // Sin armado nada cambia: una guirnalda clásica con espiral conserva su frase de siempre.
   assert.match(frasesDeEstructuras(planGuirnalda("clasica-patron-sin-armado").plan)![0]!.prompt_lora, /^wrapped in a spiral of /);
   console.log("[PASS] 2026-09-28: la espiral de una guirnalda armada llega como racimos de globos, sin cintas, a Gemini, al caption LoRA (v007 y v004, texto e híbrido) y al candado de la etapa 2");
+}
+
+/**
+ * ADR-0032, decisión 28. La guirnalda de la foto del usuario (sola en la pared, alta
+ * a la izquierda, arqueada por arriba y cayendo a la derecha) salió de la LoRA como
+ * un arco rectangular con patas y soportes metálicos. El caption dice su forma en
+ * positivo y deja de pedir "grounded supports" cuando todas sus piezas van en alto;
+ * el candado del híbrido descarta patas y soportes. Sin armado, lo de siempre.
+ */
+function enAltoNuncaUnArcoDePie(): void {
+  const frases = frasesSinteticas("pared-arqueada-desnivel");
+  const escena = escenaSoloGuirnalda();
+  assert.equal(escena.elements.length, 1);
+  const forma = "mounted flat high on the wall, higher on the left, curving along the top and dropping lower at the right end, both ends free, in clusters of four";
+  for (const [dialecto, trigger] of [["v007", undefined], ["v004", "eventdecor_style_v2"]] as const) {
+    const resultado = captionCanonicoGuirnalda(escena, frases, trigger);
+    assert.ok(resultado.prompt.includes(forma), `${dialecto}: ${resultado.prompt}`);
+    assert.doesNotMatch(resultado.prompt, /\barch(es)?\b|\bstands?\b|\blegs?\b|grounded supports|floor contact/i, `${dialecto}: ${resultado.prompt}`);
+    assert.ok(resultado.prompt.endsWith("natural depth."), `${dialecto}: ${resultado.prompt}`);
+    assert.ok(resultado.prompt.length <= LORA_PROMPT_MAX_LENGTH, dialecto);
+    const reporte = preflight(escena, resultado, resultado.prompt, undefined, trigger ?? "eventdecor_style_v2");
+    assert.equal(reporte.ok, true, `${dialecto}: ${reporte.errors.join("; ")}`);
+    assert.doesNotMatch(resultado.jsonPrompt, /grounded supports/, `${dialecto} JSON`);
+    // La misma escena sin armado: el caption de siempre, con sus soportes.
+    const sinArmado = captionCanonicoGuirnalda(escena, undefined, trigger);
+    assert.match(sinArmado.prompt, /natural depth, grounded supports\.$/, `${dialecto}: ${sinArmado.prompt}`);
+    assert.match(sinArmado.jsonPrompt, /grounded supports/);
+    // Híbrido: el candado descarta patas y soportes de la imagen LoRA.
+    const piezas = piezasDeLosArmados(resultado.clauses);
+    assert.equal(piezas.guirnalda.enAlto, true);
+    assert.ok(hardLockComposicionGemini(...candadosDeComposicion(resultado.clauses), conArmadoGuirnaldaEnCaption(resultado.clauses), piezas).endsWith(EXTREMOS_LIBRES));
+  }
+  // Con otra pieza en la escena (el arco), "grounded supports" sigue: la del arco los necesita.
+  assert.match(captionCanonicoGuirnalda(escenaGuirnalda(), frases).prompt, /natural depth, grounded supports\.$/);
+  // En el piso no hay extremos en alto: ni el candado ni la cola cambian.
+  const piso = captionCanonicoGuirnalda(escenaGuirnalda({ placement: PLACEMENT_DE.piso }), frasesSinteticas("piso")).clauses;
+  assert.equal(piezasDeLosArmados(piso).guirnalda.enAlto, undefined);
+  assert.ok(!hardLockComposicionGemini(...candadosDeComposicion(piso), conArmadoGuirnaldaEnCaption(piso), piezasDeLosArmados(piso)).includes(EXTREMOS_LIBRES));
+  // Gemini: la línea de los extremos libres llega con el armado, tras el desnivel.
+  const gemini = promptGeminiGuirnalda(escena, frases);
+  assert.ok(gemini.includes("bowing gently upward along the top, its middle about 0.25 m above the straight line between its ends"), gemini);
+  assert.ok(gemini.includes("Its right end hangs about 0.63 m lower than its left end, so the garland slopes down toward the right. Both ends hang free in the air, well above the floor: no stands, no legs, no poles and no frame reaching the floor."), gemini);
+  console.log("[PASS] decisión 28: una guirnalda en la pared se describe arqueada y con los extremos libres, sin \"grounded supports\" ni arco de pie, en v007, v004, JSON e híbrido; sin armado, lo de siempre");
 }
 
 function main(): void {
@@ -553,6 +610,7 @@ function main(): void {
   mesaSegunElSoporte();
   piezasQueElArmadoTiene();
   sinCintasEnLaImagen();
+  enAltoNuncaUnArcoDePie();
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {

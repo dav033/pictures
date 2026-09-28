@@ -15,11 +15,16 @@ Criterios de detección (los del oficio que describe SEGUIMIENTO-guirnaldas §2.
 - Forma: recta, curva suave, ondulada (sube y baja a lo largo), U invertida
   (enmarca algo desde arriba, con los lados que bajan) o arco caído (cuelga
   entre anclajes y baja en el centro).
-- Caída y desnivel (ADR-0032, decisión 27): cuánto baja el centro bajo la
-  recta que une los extremos y cuánto más alto o más bajo está el extremo
-  derecho que el izquierdo, los dos como fracción del largo horizontal. Nunca
-  metros: una foto no los mide, y ``armado_guirnalda.py`` los pasa a metros
-  con el largo del plan. ``null`` cuando el modelo no los distingue.
+- Curvatura y desnivel (ADR-0032, decisiones 27 y 28): hacia dónde se aparta
+  el centro de la recta que une los extremos (``sentido_curva``: ``arriba``,
+  arqueado por encima como un techo; ``abajo``, colgando por debajo como una
+  sonrisa), cuánto (``flecha_relativa``) y cuánto más alto o más bajo está el
+  extremo derecho que el izquierdo (``desnivel_relativo``), como fracción del
+  largo horizontal. Nunca metros: una foto no los mide, y
+  ``armado_guirnalda.py`` los pasa a metros con el largo del plan. ``null``
+  cuando el modelo no los distingue. La v2 pedía solo la caída bajo la recta
+  (``caida_relativa``) y no sabía decir "hacia arriba": una guirnalda alta a la
+  izquierda, arqueada por arriba y que baja a la derecha salía como una U.
 - Racimos: la unidad que se repite (trío, cuarteto o quinteto) y los colores de
   un racimo típico. Relleno: globos chicos entre racimos, con su color y la
   parte de la guirnalda que ocupan. Remates: globos más grandes que los del
@@ -59,9 +64,11 @@ MAX_REMATES = 6
 MAX_COLORES_RACIMO = 5
 MAX_RACIMOS = 2_500
 MAX_PROPORCION_RELLENO = 0.5
-#: Topes de la caída y del desnivel leídos, como fracción del largo (``LecturaGuirnaldaSchema``).
-MAX_CAIDA_RELATIVA = 0.6
+#: Topes de la flecha y del desnivel leídos, como fracción del largo (``LecturaGuirnaldaSchema``).
+MAX_FLECHA_RELATIVA = 0.6
 MAX_DESNIVEL_RELATIVO = 0.6
+#: ``SENTIDOS_CURVA_GUIRNALDA`` del contrato: arqueada por encima o colgando por debajo de la recta.
+SENTIDOS_CURVA = ("arriba", "abajo")
 
 
 def instruccion_sistema(paleta: Sequence[str]) -> str:
@@ -77,7 +84,11 @@ soporte: what holds the garland.
 - "mesa": resting on a table or along its edge.
 - "sobre_estructura": wrapped around another balloon piece of the photo (an arch, a backdrop frame). Then anfitriona_element_id is that piece's element_id, taken from OTHER_PIECES or an arch or half-arch listed in ELEMENTS (never the garland itself).
 forma: "recta" (straight), "curva" (one gentle curve), "ondulada" (rises and falls along its length), "u_invertida" (frames something from above with both sides dropping) or "arco_caido" (hangs between anchor points and dips at the center). puntos_de_anclaje: how many points it hangs or is fixed from, 2 to 6, only when you can see them.
-Measure the garland's center line against the straight line joining its two ends, in fractions of the horizontal distance between the ends, never in meters. caida_relativa (0 to {MAX_CAIDA_RELATIVA}): how far, at most, the center line hangs below that straight line, measured straight down; for an inverted U, how far its sides drop from its top; 0 when it follows that line or bows above it. desnivel_relativo (-{MAX_DESNIVEL_RELATIVO} to {MAX_DESNIVEL_RELATIVO}): the height of the right end minus the height of the left end; negative when the right end is lower (the garland falls toward the right), 0 when both ends are level. Example: a garland 2 m wide whose right end is 30 cm lower than its left end has desnivel_relativo -0.15. Omit either one when you cannot tell.
+Compare the garland's center line with the straight line joining its two ends (that line slopes when one end is lower), in fractions of the horizontal distance between the ends, never in meters.
+sentido_curva: "arriba" when the middle of the garland rises ABOVE that straight line, bowing upward like a roof or a rainbow (an inverted U is "arriba"); "abajo" when the middle hangs BELOW it, sagging like a smile or a hammock. Omit it when the garland follows that line. One end being lower than the other is not "abajo": that is desnivel_relativo, and sentido_curva is judged against the sloped line joining the ends.
+flecha_relativa (0 to {MAX_FLECHA_RELATIVA}): how far, at most, the center line departs from that straight line in the direction of sentido_curva, measured vertically; for an inverted U, how far its sides drop from its top.
+desnivel_relativo (-{MAX_DESNIVEL_RELATIVO} to {MAX_DESNIVEL_RELATIVO}): the height of the right end minus the height of the left end; negative when the right end is lower (the garland falls toward the right), 0 when both ends are level.
+Example: a garland 2 m wide on a wall, higher at its left end, curving along the top and dropping 30 cm lower at its right end, with its middle 20 cm above the line joining its ends, has sentido_curva "arriba", flecha_relativa 0.1 and desnivel_relativo -0.15. Omit any of them when you cannot tell.
 racimos_visibles: the clusters you can see from one end to the other. unidad_racimo: the balloons of one cluster, "trio" (3), "cuarteto" (4) or "quinteto" (5); omit it when you cannot tell. colores_por_racimo: the colors of a typical cluster in position order (at most {MAX_COLORES_RACIMO}).
 relleno: the small balloons tucked between the clusters, with their main color and the share of the garland's balloons they make up (0 to {MAX_PROPORCION_RELLENO}); omit it when there are none.
 remates: balloons clearly bigger than the cluster balloons, or foil or bubble balloons, placed on the garland: clase "latex", "metalizado" or "burbuja", their color, and posicion "extremo_izq" (at the left end), "extremo_der" (at the right end), "centro" (at the center) or "cada_n" (repeated along the garland). At most {MAX_REMATES}; empty when there are none.
@@ -107,10 +118,11 @@ def esquema_respuesta(paleta: Sequence[str]) -> dict[str, object]:
                         "forma": {"type": "string", "enum": list(FORMAS)},
                         "puntos_de_anclaje": {"type": "integer", "minimum": 2, "maximum": 6},
                         # Opcionales: sin ellas el modelo las omite y la lectura lleva null.
-                        "caida_relativa": {
+                        "sentido_curva": {"type": "string", "enum": list(SENTIDOS_CURVA)},
+                        "flecha_relativa": {
                             "type": "number",
                             "minimum": 0,
-                            "maximum": MAX_CAIDA_RELATIVA,
+                            "maximum": MAX_FLECHA_RELATIVA,
                         },
                         "desnivel_relativo": {
                             "type": "number",
@@ -212,6 +224,7 @@ def _lectura(
         return None
     soporte = _texto(item.get("soporte"))
     forma = _texto(item.get("forma"))
+    sentido = _texto(item.get("sentido_curva"))
     confianza = _numero(item.get("confianza"))
     if soporte not in SOPORTES or forma not in FORMAS or confianza is None:
         return None
@@ -230,8 +243,9 @@ def _lectura(
         "forma": forma,
         # Los racimos que se ven no se recortan: fuera de rango no se inventa un número.
         "racimos_visibles": _entero(item.get("racimos_visibles"), 0, MAX_RACIMOS) or 0,
-        # Fuera de rango no se recorta: una caída o un desnivel absurdos no se inventan.
-        "caida_relativa": _relativo(item.get("caida_relativa"), 0.0, MAX_CAIDA_RELATIVA),
+        # Fuera de rango no se recorta: una flecha o un desnivel absurdos no se inventan.
+        "sentido_curva": sentido if sentido in SENTIDOS_CURVA else None,
+        "flecha_relativa": _relativo(item.get("flecha_relativa"), 0.0, MAX_FLECHA_RELATIVA),
         "desnivel_relativo": _relativo(
             item.get("desnivel_relativo"), -MAX_DESNIVEL_RELATIVO, MAX_DESNIVEL_RELATIVO
         ),
@@ -291,9 +305,9 @@ def validar_lecturas(
 
     ``None`` si falta la forma de nivel superior (no hay respuesta que leer).
     Cada lectura se valida por separado: un elemento que no se pidió, repetido,
-    o con soporte, forma o confianza desconocidos se descarta; una caída o un
-    desnivel que falta, no es un número o sale de su rango queda en ``null``
-    (no se recorta); los colores fuera de la paleta se quitan, un relleno sin color de la paleta o sin
+    o con soporte, forma o confianza desconocidos se descarta; un sentido de la
+    curva desconocido, o una flecha o un desnivel que falta, no es un número o
+    sale de su rango queda en ``null`` (no se recorta); los colores fuera de la paleta se quitan, un relleno sin color de la paleta o sin
     proporción queda en ``null``, un remate con clase o posición desconocidas se
     quita, y la anfitriona solo queda si es otra pieza de la misma foto: de
     ``otras`` o, como un arco que también se lee, de los elementos pedidos,

@@ -132,29 +132,39 @@ def test_el_prompt_nombra_soportes_formas_unidades_y_la_paleta() -> None:
     assert "caida_m" not in esquema and "desnivel_m" not in esquema, "la lectura no mide metros"
 
 
-def test_la_caida_y_el_desnivel_se_piden_relativos_al_largo() -> None:
-    # ADR-0032, decisión 27: fracciones del largo horizontal, nunca metros.
+def test_la_curvatura_y_el_desnivel_se_piden_relativos_al_largo() -> None:
+    # ADR-0032, decisiones 27 y 28: fracciones del largo horizontal, nunca metros,
+    # y el sentido de la curva respecto de la recta (inclinada) entre los extremos.
     for texto in (
-        "caida_relativa (0 to 0.6)",
+        'sentido_curva: "arriba" when the middle of the garland rises ABOVE that straight line',
+        '"abajo" when the middle hangs BELOW it',
+        'an inverted U is "arriba"',
+        'One end being lower than the other is not "abajo"',
+        "flecha_relativa (0 to 0.6)",
         "desnivel_relativo (-0.6 to 0.6)",
         "never in meters",
         "negative when the right end is lower (the garland falls toward the right)",
-        "Omit either one when you cannot tell.",
+        # El caso de la foto del usuario, con su sentido: arqueada por arriba y cayendo a la derecha.
+        'has sentido_curva "arriba", flecha_relativa 0.1 and desnivel_relativo -0.15',
+        "Omit any of them when you cannot tell.",
     ):
         assert texto in SYSTEM_INSTRUCTION
+    assert "caida_relativa" not in SYSTEM_INSTRUCTION, "la v3 ya no pide solo la caída"
     propiedades = RESPONSE_SCHEMA["properties"]["lecturas"]["items"]["properties"]  # type: ignore[index]
-    assert propiedades["caida_relativa"] == {"type": "number", "minimum": 0, "maximum": 0.6}
+    assert "caida_relativa" not in propiedades
+    assert propiedades["sentido_curva"] == {"type": "string", "enum": ["arriba", "abajo"]}
+    assert propiedades["flecha_relativa"] == {"type": "number", "minimum": 0, "maximum": 0.6}
     assert propiedades["desnivel_relativo"] == {
         "type": "number",
         "minimum": -0.6,
         "maximum": 0.6,
     }
     requeridos = RESPONSE_SCHEMA["properties"]["lecturas"]["items"]["required"]  # type: ignore[index]
-    assert "caida_relativa" not in requeridos and "desnivel_relativo" not in requeridos, (
+    assert not {"sentido_curva", "flecha_relativa", "desnivel_relativo"} & set(requeridos), (
         "el modelo las omite cuando no las distingue"
     )
     # La versión del prompt cambia con el prompt y el esquema: fijada aquí a propósito.
-    assert PROMPT_VERSION == "guirnalda-referencia.v2:8d10b49acc1eda5f"
+    assert PROMPT_VERSION == "guirnalda-referencia.v3:d1c0d73bb47a41ca"
 
 
 def test_lee_y_valida_la_respuesta() -> None:
@@ -194,8 +204,9 @@ def test_lee_y_valida_la_respuesta() -> None:
         "forma": "curva",
         # 9 anclajes está fuera de rango: se omite, no se recorta.
         "racimos_visibles": 14,
-        # Sin caída ni desnivel en la respuesta: null, no se inventan.
-        "caida_relativa": None,
+        # Sin curvatura ni desnivel en la respuesta: null, no se inventan.
+        "sentido_curva": None,
+        "flecha_relativa": None,
         "desnivel_relativo": None,
         "unidad_racimo": "cuarteto",
         "colores_por_racimo": ["rosado", "blanco", "rosado"],
@@ -239,7 +250,8 @@ def test_validar_descarta_lo_desconocido_y_la_anfitriona_ajena() -> None:
             "soporte": "sobre_estructura",
             "forma": "recta",
             "racimos_visibles": 0,
-            "caida_relativa": None,
+            "sentido_curva": None,
+            "flecha_relativa": None,
             "desnivel_relativo": None,
             "colores_por_racimo": [],
             "relleno": None,
@@ -273,38 +285,73 @@ def _con_geometria(**campos: object) -> dict[str, object]:
 
 
 @pytest.mark.parametrize(
-    ("campos", "caida", "desnivel"),
+    ("campos", "sentido", "flecha", "desnivel"),
     [
-        # La guirnalda de la foto del usuario: alta a la izquierda, cae hacia la derecha.
-        ({"caida_relativa": 0.08, "desnivel_relativo": -0.25}, 0.08, -0.25),
-        ({"caida_relativa": 0, "desnivel_relativo": 0}, 0.0, 0.0),
-        ({"caida_relativa": 0.6, "desnivel_relativo": 0.6}, 0.6, 0.6),
-        ({"caida_relativa": 0.123456, "desnivel_relativo": -0.0004}, 0.123, 0.0),
-        # Fuera de rango, de otro tipo o ausentes: null, nunca recortadas.
-        ({"caida_relativa": 0.61, "desnivel_relativo": -0.7}, None, None),
-        ({"caida_relativa": -0.1, "desnivel_relativo": "baja"}, None, None),
-        ({"caida_relativa": True, "desnivel_relativo": float("nan")}, None, None),
-        ({}, None, None),
+        # La guirnalda de la foto del usuario: alta a la izquierda, arqueada por arriba y
+        # cayendo hacia la derecha (decisión 28).
+        (
+            {"sentido_curva": "arriba", "flecha_relativa": 0.08, "desnivel_relativo": -0.25},
+            "arriba",
+            0.08,
+            -0.25,
+        ),
+        ({"sentido_curva": " Abajo ", "flecha_relativa": 0.2}, "abajo", 0.2, None),
+        ({"flecha_relativa": 0, "desnivel_relativo": 0}, None, 0.0, 0.0),
+        (
+            {"sentido_curva": "arriba", "flecha_relativa": 0.6, "desnivel_relativo": 0.6},
+            "arriba",
+            0.6,
+            0.6,
+        ),
+        ({"flecha_relativa": 0.123456, "desnivel_relativo": -0.0004}, None, 0.123, 0.0),
+        # Fuera de rango, de otro tipo, desconocidos o ausentes: null, nunca recortados.
+        (
+            {"sentido_curva": "lados", "flecha_relativa": 0.61, "desnivel_relativo": -0.7},
+            None,
+            None,
+            None,
+        ),
+        (
+            {"sentido_curva": 1, "flecha_relativa": -0.1, "desnivel_relativo": "baja"},
+            None,
+            None,
+            None,
+        ),
+        ({"flecha_relativa": True, "desnivel_relativo": float("nan")}, None, None, None),
+        # La v2 pedía caida_relativa: la v3 no la lee aunque el modelo la invente.
+        ({"caida_relativa": 0.3}, None, None, None),
+        ({}, None, None, None),
     ],
 )
-def test_la_caida_y_el_desnivel_se_validan_por_rango(
-    campos: dict[str, object], caida: float | None, desnivel: float | None
+def test_la_curvatura_y_el_desnivel_se_validan_por_rango(
+    campos: dict[str, object], sentido: str | None, flecha: float | None, desnivel: float | None
 ) -> None:
     lectura = _con_geometria(**campos)
-    assert (lectura["caida_relativa"], lectura["desnivel_relativo"]) == (caida, desnivel)
+    assert (lectura["sentido_curva"], lectura["flecha_relativa"], lectura["desnivel_relativo"]) == (
+        sentido,
+        flecha,
+        desnivel,
+    )
+    assert "caida_relativa" not in lectura
     assert cumple_contrato(lectura), "lo que sale cabe en el contrato exportado"
 
 
 def test_el_contrato_rechaza_metros_y_rangos_fuera_del_zod() -> None:
-    base = _con_geometria(caida_relativa=0.1, desnivel_relativo=-0.2)
+    base = _con_geometria(sentido_curva="arriba", flecha_relativa=0.1, desnivel_relativo=-0.2)
     assert cumple_contrato(base)
-    assert not cumple_contrato({**base, "caida_relativa": 0.7})
+    assert not cumple_contrato({**base, "flecha_relativa": 0.7})
+    assert not cumple_contrato({**base, "sentido_curva": "lados"})
     assert not cumple_contrato({**base, "desnivel_relativo": -0.61})
     assert not cumple_contrato({**base, "caida_m": 0.4}), "una lectura no lleva metros"
-    sin_campos = {k: v for k, v in base.items() if k not in ("caida_relativa", "desnivel_relativo")}
+    assert not cumple_contrato({**base, "arqueo_m": 0.4}), "una lectura no lleva metros"
+    geometria = ("sentido_curva", "flecha_relativa", "desnivel_relativo")
+    sin_campos = {k: v for k, v in base.items() if k not in geometria}
     assert cumple_contrato(sin_campos), (
         "una lectura guardada antes de la decisión 27 sigue valiendo"
     )
+    v2 = {**sin_campos, "caida_relativa": 0.1, "desnivel_relativo": -0.2}
+    assert cumple_contrato(v2), "una lectura guardada con la v2 (decisión 27) sigue valiendo"
+    assert not cumple_contrato({**v2, "caida_relativa": 0.7})
 
 
 def test_sin_forma_de_nivel_superior_o_vacia_es_error_con_prefijo_propio() -> None:

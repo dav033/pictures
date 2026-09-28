@@ -1,4 +1,5 @@
 import type { ImageInput, Imagen, ImagenEtiquetada } from "@/lib/ia/nucleo/tipos";
+import { SOPORTES_CON_CAIDA_GUIRNALDA, type SoporteGuirnalda } from "@/lib/plan/armado-guirnalda";
 
 /**
  * Cierre del caption de la etapa 1. Cuenta contra el presupuesto antes de
@@ -37,7 +38,8 @@ export const GEMINI_COMPOSITION_PATTERN_LOCK = "Keep each structure's color patt
 /** Qué piezas llevan los armados del caption, para que los candados nombren solo esas (hallazgo 17). */
 export type PiezasDeLosArmados = {
   bouquet: { remate: boolean; numeros: boolean };
-  guirnalda: { relleno: boolean; remates: boolean };
+  /** `enAlto`: alguna guirnalda con armado va en la pared o colgada (ADR-0032, decisión 28). */
+  guirnalda: { relleno: boolean; remates: boolean; enAlto?: boolean };
 };
 
 function unirEnIngles(partes: readonly string[]): string {
@@ -73,6 +75,14 @@ export const GEMINI_COMPOSITION_ASSEMBLY_LOCK = candadoArmadoBouquet({ remate: t
 const GARLAND_BALLOONS_ONLY = "It is made only of round latex balloons: drop any ribbon, streamer, twisted band or fabric the LoRA image shows, and never add one.";
 
 /**
+ * Una guirnalda en la pared o colgada salió de la LoRA como un arco
+ * rectangular con patas y soportes metálicos (2026-09-28, ADR-0032 decisión
+ * 28); "exactly as assembled in the LoRA image" los conservaba, y el hard lock
+ * pide "physical supports". La etapa 2 no los copia.
+ */
+const GARLAND_ENDS_FREE = "A garland on the wall or hanging from its anchor points keeps both ends free in the air: drop any stand, leg, pole, base or frame the LoRA image shows under it, and never add one.";
+
+/**
  * Lo que el hard lock añade cuando el caption de la etapa 1 llevó el armado de
  * una guirnalda (ADR-0032, E5): la etapa 2 re-posa la decoración de un fondo
  * blanco sobre el venue, y sin esta frase podía enderezar una guirnalda en U,
@@ -84,7 +94,7 @@ export function candadoArmadoGuirnalda(piezas: PiezasDeLosArmados["guirnalda"]):
     : piezas.relleno ? "the same clusters and filler balloons"
       : piezas.remates ? "the same clusters and accent balloons"
         : "the same clusters";
-  return `Keep each balloon garland exactly as assembled in the LoRA image: ${racimos} and the same shape, and install it on the support its assembly names in COLOR VARIETY (flat against the real wall, hanging from its anchor points, resting on the real floor, along the real table edge, or wrapped around its host structure); never straighten, re-hang, split or regroup it. ${GARLAND_BALLOONS_ONLY}`;
+  return `Keep each balloon garland exactly as assembled in the LoRA image: ${racimos} and the same shape, and install it on the support its assembly names in COLOR VARIETY (flat against the real wall, hanging from its anchor points, resting on the real floor, along the real table edge, or wrapped around its host structure); never straighten, re-hang, split or regroup it. ${GARLAND_BALLOONS_ONLY}${piezas.enAlto ? ` ${GARLAND_ENDS_FREE}` : ""}`;
 }
 
 /** El candado de la guirnalda con relleno y remates: el de E5. */
@@ -110,7 +120,7 @@ export function hardLockComposicionGemini(conPatronDeColor: boolean, conArmadoBo
 type ClausulaConFrase = {
   colorPattern?: string;
   armadoBouquet?: { conRemate: boolean; conNumeros: boolean };
-  armadoGuirnalda?: { conPatron: boolean; conRelleno: boolean; conRemates: boolean };
+  armadoGuirnalda?: { conPatron: boolean; conRelleno: boolean; conRemates: boolean; soporte?: SoporteGuirnalda };
 };
 
 /**
@@ -127,6 +137,10 @@ export function candadosDeComposicion(clauses: ReadonlyArray<ClausulaConFrase>):
   ];
 }
 
+function enAlto(soporte: SoporteGuirnalda | undefined): boolean {
+  return soporte !== undefined && (SOPORTES_CON_CAIDA_GUIRNALDA as readonly SoporteGuirnalda[]).includes(soporte);
+}
+
 /**
  * Qué piezas llevan los armados del caption de la etapa 1, juntando todas sus
  * cláusulas con armado: el cuarto argumento de `hardLockComposicionGemini`.
@@ -141,6 +155,8 @@ export function piezasDeLosArmados(clauses: ReadonlyArray<ClausulaConFrase>): Pi
     guirnalda: {
       relleno: conFrase.some((clause) => clause.armadoGuirnalda?.conRelleno === true),
       remates: conFrase.some((clause) => clause.armadoGuirnalda?.conRemates === true),
+      // Solo cuando hay una: sin guirnaldas en alto, las piezas de siempre.
+      ...(conFrase.some((clause) => enAlto(clause.armadoGuirnalda?.soporte)) ? { enAlto: true } : {}),
     },
   };
 }

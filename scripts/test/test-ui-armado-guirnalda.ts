@@ -42,8 +42,8 @@ import {
   racimosEnOrden,
   resumenInsumosGuirnalda,
 } from "@/components/plan/guirnalda";
-import { conAnfitriona, conDesnivel, conRelleno, MAXIMO_REMATES } from "@/components/plan/guirnalda/borrador-guirnalda";
-import { desnivelTexto, soporteConCaida } from "@/components/plan/guirnalda/leyenda-guirnalda";
+import { conAnfitriona, conArqueo, conDesnivel, conRelleno, MAXIMO_REMATES } from "@/components/plan/guirnalda/borrador-guirnalda";
+import { desnivelTexto, formaConArqueo, formaTexto, soporteConCaida } from "@/components/plan/guirnalda/leyenda-guirnalda";
 import { curvaGuirnalda } from "@/components/plan/patron/geometria-dibujo";
 import { peticionVistaGuirnalda } from "@/components/plan/guirnalda/usarVistaGuirnalda";
 import { alBorrador } from "@/components/plan/guirnalda/vista-guirnalda";
@@ -428,6 +428,85 @@ function planConArmado(resuelto: ArmadoGuirnaldaResuelto | null): PlanResuelto {
   assert.equal(conSoporte(base, "colgada").desnivel_m, -0.9, "colgada lo conserva");
   assert.equal(conForma(base, "ondulada").desnivel_m, -0.9, "cualquier forma lo lleva");
   ok("caída y desnivel de la foto: la curva cae hacia la derecha a escala, sin NaN, con texto alternativo, bloque, hoja y control del editor");
+}
+
+// ---------------------------------------------------------------------------
+// 7c. Curvatura con sentido (ADR-0032, decisión 28): la guirnalda de la foto del usuario
+// va alta a la izquierda, ARQUEADA HACIA ARRIBA y cayendo a la derecha. La gráfica la
+// dibujaba como una U (colgando bajo la recta entre los extremos): estaba al revés.
+{
+  const ARQUEADA = vista("pared_curva_arqueo_desnivel");
+  const COLGADA_DESNIVEL = vista("colgada_arco_caido_desnivel");
+  assert.deepEqual([ARQUEADA.armado.armado.forma, ARQUEADA.armado.armado.arqueo_m, ARQUEADA.armado.armado.desnivel_m], ["curva", 0.35, -0.9]);
+  assert.ok(ARQUEADA.armado.largo_cuerda_m > vista("pared_curva_desnivel").armado.largo_cuerda_m, "la cuerda arqueada de Python, más larga que la recta inclinada");
+  const dibujo = dibujarGuirnalda(ARQUEADA.armado);
+  const numeros = [dibujo.caja.x, dibujo.caja.y, dibujo.caja.ancho, dibujo.caja.alto, ...dibujo.globos.flatMap((g) => [g.x, g.y, g.r]), ...dibujo.racimos.flatMap((r) => [r.centro.x, r.centro.y, r.etiqueta.x, r.etiqueta.y]), ...dibujo.anclajes.flatMap((a) => [a.x, a.y])];
+  assert.ok(numeros.every(Number.isFinite), "ningún NaN ni infinito en la geometría");
+  assert.doesNotMatch(dibujo.tira, /NaN|Infinity/);
+  assert.equal(dibujo.globos.length, ARQUEADA.armado.globos_por_instancia, "cada globo de Python se dibuja una vez");
+  assert.equal(dibujo.caidaDeMuestra, false);
+  const svg = renderToStaticMarkup(React.createElement(GraficaGuirnalda, { resuelto: ARQUEADA.armado, leyenda, etiqueta: "Guirnalda de la foto" }));
+  assert.doesNotMatch(svg, /NaN|Infinity/, "SVG sin NaN");
+  const xs = dibujo.racimos.map((racimo) => racimo.centro.x);
+  assert.ok(xs.every((x, i) => i === 0 || x > xs[i - 1]!), "numerados de izquierda a derecha");
+  const [izq, der] = [dibujo.racimos[0]!, dibujo.racimos.at(-1)!];
+  const escala = (der.centro.x - izq.centro.x) / ARQUEADA.armado.largo_m;
+  // La pantalla crece hacia abajo: el extremo derecho, más bajo, tiene la y mayor.
+  assert.ok(Math.abs((der.centro.y - izq.centro.y) / escala - 0.9) < 0.02, "el extremo derecho, 0,9 m más abajo a escala");
+  const sobreLaRecta = (punto: { x: number; y: number }) => (izq.centro.y + ((der.centro.y - izq.centro.y) * (punto.x - izq.centro.x)) / (der.centro.x - izq.centro.x) - punto.y) / escala;
+  const medio = dibujo.racimos[Math.floor(dibujo.racimos.length / 2)]!;
+  assert.ok(sobreLaRecta(medio.centro) > 0.25, `el centro, POR ENCIMA de la recta entre los extremos: ${sobreLaRecta(medio.centro).toFixed(3)} m`);
+  const flecha = Math.max(...dibujo.racimos.map((racimo) => sobreLaRecta(racimo.centro)));
+  assert.ok(Math.abs(flecha - 0.35) < 0.06, `el arqueo, a escala: ${flecha.toFixed(3)} m`);
+  assert.ok(dibujo.racimos.every((racimo) => sobreLaRecta(racimo.centro) > -0.01), "ningún racimo cuelga bajo la recta: no es una U");
+  // El arco caído con desnivel, en cambio, sí cuelga bajo la recta entre sus anclajes.
+  const caido = dibujarGuirnalda(COLGADA_DESNIVEL.armado);
+  const [a0, a1] = [caido.anclajes[0]!, caido.anclajes[1]!];
+  const bajoLaRecta = Math.max(...caido.racimos.map((racimo) => racimo.centro.y - (a0.y + ((a1.y - a0.y) * (racimo.centro.x - a0.x)) / (a1.x - a0.x))));
+  assert.ok(bajoLaRecta > 0, "el arco caído, bajo la recta");
+  // La curva exacta: la parábola que sube arqueo_m a mitad de tramo, sobre la recta inclinada.
+  const curva = curvaGuirnalda({ forma: "curva", largo_m: 3.5, arqueo_m: 0.35, desnivel_m: -0.9 });
+  assert.ok(curva(0).x === 0 && Math.abs(curva(0).y) < 1e-12);
+  assert.ok(Math.abs(curva(0.5).y - (-0.35 + 0.45)) < 1e-12 && Math.abs(curva(1).y - 0.9) < 1e-12);
+  assert.ok(Math.abs(curvaGuirnalda({ forma: "curva", largo_m: 3.5, arqueo_m: 0.35 })(0.5).y + 0.35) < 1e-12, "nivelada: 0,35 m sobre la recta");
+  // Solo la curva lleva arqueo; las formas que cuelgan llevan su caída.
+  assert.deepEqual((["recta", "curva", "ondulada", "u_invertida", "arco_caido"] as const).filter(formaConArqueo), ["curva"], "la tabla del contrato");
+  assert.equal("arqueo_m" in curvaDeArmado({ ...ARQUEADA.armado, armado: { ...ARQUEADA.armado.armado, forma: "recta" } }), false);
+  assert.equal(curvaDeArmado(ARQUEADA.armado).arqueo_m, 0.35);
+  // Texto alternativo, bloque y hoja lo dicen.
+  assert.equal(formaTexto(ARQUEADA.armado.armado), "Curva arqueada 0,35 m hacia arriba, cae hacia la derecha (el extremo derecho, 0,9 m más bajo)");
+  assert.match(svg, /<figcaption class="sr-only"><p>En pared\. Curva arqueada 0,35 m hacia arriba, cae hacia la derecha \(el extremo derecho, 0,9 m más bajo\)/);
+  const hoja = textoVisible(renderToStaticMarkup(React.createElement(HojaArmadoGuirnalda, { resuelto: ARQUEADA.armado, leyenda, estructura, declarada })));
+  assert.match(hoja, /Fija la guirnalda a la pared de izquierda a derecha con ganchos o pegante, arqueada 0,35 m hacia arriba sobre la recta entre sus extremos y el extremo derecho 0,9 m más bajo que el izquierdo\./, "el paso de Python");
+
+  // El editor: el arqueo, solo en la curva y en pared o colgada.
+  const colores = leyendaPatron(declarada.materiales, estructura.lineas);
+  const controles = (borrador: ArmadoGuirnaldaV1) => renderToStaticMarkup(React.createElement(ControlesGuirnalda, {
+    borrador, opciones: ARQUEADA.opciones, colores, nombrePieza: (id: string) => id,
+    onCambiar: () => undefined, moviendo: null, onMover: () => undefined, onArrastrar: () => undefined,
+  }));
+  const conArqueoHtml = controles(ARQUEADA.armado.armado);
+  assert.match(conArqueoHtml, /role="switch" aria-checked="true"[^>]*>.*Arqueo declarado/);
+  assert.match(conArqueoHtml, /data-testid="arqueo-guirnalda"/);
+  assert.match(conArqueoHtml, /<span class="sr-only">Arqueo hacia arriba, en metros<\/span>/, "con su etiqueta");
+  assert.match(textoVisible(conArqueoHtml), /la curva se arquea hacia arriba, sobre la recta entre sus extremos; el arco caído cuelga hacia abajo/, "la ayuda dice los dos sentidos");
+  assert.doesNotMatch(conArqueoHtml, /Caída declarada/, "la curva no cuelga");
+  const caidoHtml = controles(conForma(ARQUEADA.armado.armado, "arco_caido"));
+  assert.doesNotMatch(caidoHtml, /Arqueo declarado/, "el arco caído lleva su caída, no arqueo");
+  assert.match(caidoHtml, /Caída declarada/);
+  assert.doesNotMatch(controles(conSoporte(ARQUEADA.armado.armado, "mesa")), /Arqueo declarado/, "sobre la mesa no hay arriba");
+  // El borrador: solo la forma del contrato.
+  const base = ARQUEADA.armado.armado;
+  assert.equal(conArqueo(base, 0.30000000000000004).arqueo_m, 0.3, "a dos decimales");
+  assert.equal(conArqueo(base, 9).arqueo_m, 5, "dentro del contrato");
+  assert.equal("arqueo_m" in conArqueo(base, 0), false, "sin arqueo: sin el campo");
+  assert.equal("arqueo_m" in conArqueo(base, null), false);
+  assert.equal(conArqueo(base, 0.4).origen, "decorador");
+  assert.equal("arqueo_m" in conForma(base, "arco_caido"), false, "cambiar a arco caído quita el arqueo");
+  assert.equal("arqueo_m" in conSoporte(base, "mesa"), false, "sobre la mesa el arqueo se va");
+  assert.equal("arqueo_m" in conAnfitriona(base, "EST_02_ARCO"), false, "sobre otra pieza también");
+  assert.equal(conSoporte(base, "colgada").arqueo_m, 0.35, "colgada lo conserva");
+  ok("curvatura con sentido: la guirnalda de la foto se dibuja arqueada hacia arriba y cayendo a la derecha (no en U), a escala, sin NaN, con texto, hoja y control del editor");
 }
 
 // ---------------------------------------------------------------------------

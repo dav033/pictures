@@ -9,7 +9,7 @@ import {
   type CurvaGuirnalda,
   type Punto,
 } from "../patron/geometria-dibujo";
-import { formaConCaida } from "./leyenda-guirnalda";
+import { formaConArqueo, formaConCaida } from "./leyenda-guirnalda";
 
 /**
  * Dónde DIBUJAR cada globo del armado de una guirnalda que devolvió Python
@@ -20,8 +20,9 @@ import { formaConCaida } from "./leyenda-guirnalda";
  * Los racimos son las filas de la rejilla del patrón y se dibujan con la
  * misma geometría (`dibujarPatron`, pseudo-3D), repartidos a igual distancia
  * sobre la curva real de la pieza (`curvaGuirnalda`): recta, curva, ondulada,
- * U invertida o arco caído, con la caída y el desnivel entre los extremos a
- * escala del largo (ADR-0032, decisión 27). El tamaño de
+ * U invertida o arco caído, con la caída (hacia abajo), el arqueo (hacia
+ * arriba) y el desnivel entre los extremos a escala del largo (ADR-0032,
+ * decisiones 27 y 28). El tamaño de
  * cada globo sigue su tamaño comprado respecto del racimo (un 5″ se ve chico,
  * un 24″ grande). Puro: sin React.
  */
@@ -71,13 +72,18 @@ function redondear(valor: number): number {
   return Math.round(valor * 100) / 100;
 }
 
-/** La curva del armado para `geometria-dibujo`: la caída solo en las formas que cuelgan; el desnivel, en cualquiera. */
+/**
+ * La curva del armado para `geometria-dibujo`: la caída solo en las formas que
+ * cuelgan, el arqueo solo en las que se arquean hacia arriba (decisión 28); el
+ * desnivel, en cualquiera.
+ */
 export function curvaDeArmado(resuelto: Pick<ArmadoGuirnaldaResuelto, "armado" | "largo_m">): CurvaGuirnalda {
   const { armado } = resuelto;
   return {
     forma: armado.forma,
     largo_m: resuelto.largo_m,
     ...(armado.caida_m !== undefined && formaConCaida(armado.forma) ? { caida_m: armado.caida_m } : {}),
+    ...(armado.arqueo_m !== undefined && formaConArqueo(armado.forma) ? { arqueo_m: armado.arqueo_m } : {}),
     ...(armado.desnivel_m ? { desnivel_m: armado.desnivel_m } : {}),
     ...(armado.puntos_de_anclaje !== undefined ? { puntos_de_anclaje: armado.puntos_de_anclaje } : {}),
   };

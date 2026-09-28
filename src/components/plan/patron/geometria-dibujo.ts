@@ -47,6 +47,8 @@ export type CurvaGuirnalda = {
   largo_m: number;
   /** Cuánto baja el centro respecto de la recta entre los extremos (m), en las formas que cuelgan. */
   caida_m?: number;
+  /** Cuánto SUBE el centro sobre la recta entre los extremos (m): la curva arqueada hacia arriba (decisión 28). */
+  arqueo_m?: number;
   /** Altura del extremo derecho menos la del izquierdo (m): negativo si cae hacia la derecha. */
   desnivel_m?: number;
   puntos_de_anclaje?: number;
@@ -187,8 +189,10 @@ const ALTURA_ONDA_M = 0.18;
  * La curva de una guirnalda con armado, en metros (y hacia abajo), del
  * extremo izquierdo (t = 0) al derecho (t = 1), con `x = t · largo`:
  * - recta: el largo en línea recta;
- * - curva: un arco suave hacia arriba (una curva que cae la lee Python como
- *   arco caído, ADR-0032 decisión 27: esta es la que no cae);
+ * - curva: se arquea hacia arriba sobre la recta entre los extremos. Con
+ *   `arqueo_m` (decisión 28) es la parábola que sube `arqueo_m` a mitad de
+ *   tramo, a escala del largo (la misma que mide Python, reflejada); sin él,
+ *   el arco suave de E6, que no es a escala. La curva que cuelga es el arco caído;
  * - ondulada: sube y baja, una onda cada 1,2 m;
  * - u_invertida: una U invertida cuyos lados bajan `caida_m` (arco de
  *   parábola de ancho `largo`, el mismo con que Python mide la cuerda);
@@ -211,11 +215,19 @@ export function curvaGuirnalda(entrada: CurvaGuirnalda): (t: number) => Punto {
   };
 }
 
-function formaSobreLaHorizontal({ forma, largo_m, caida_m, puntos_de_anclaje }: CurvaGuirnalda): (t: number) => Punto {
+function formaSobreLaHorizontal({ forma, largo_m, caida_m, arqueo_m, puntos_de_anclaje }: CurvaGuirnalda): (t: number) => Punto {
   const largo = largo_m > 0 ? largo_m : 1;
   switch (forma) {
-    case "curva":
+    case "curva": {
+      if (arqueo_m !== undefined && Number.isFinite(arqueo_m) && arqueo_m > 0) {
+        // La pantalla crece hacia abajo: arquearse hacia arriba es restar.
+        return (t) => {
+          const u = 2 * t - 1;
+          return { x: t * largo, y: -arqueo_m * (1 - u * u) };
+        };
+      }
       return (t) => ({ x: t * largo, y: -0.12 * largo * Math.sin(Math.PI * t) });
+    }
     case "ondulada": {
       const ondas = Math.max(1, Math.round(largo / LARGO_ONDA_M));
       const altura = Math.min(ALTURA_ONDA_M, 0.06 * largo);

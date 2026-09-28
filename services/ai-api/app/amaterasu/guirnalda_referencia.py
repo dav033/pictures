@@ -44,8 +44,9 @@ MAX_OUTPUT_TOKENS = 3_072
 SYSTEM_INSTRUCTION = guirnalda.instruccion_sistema(PALETA)
 RESPONSE_SCHEMA = guirnalda.esquema_respuesta(PALETA)
 # v2 (ADR-0032, decisión 27): la lectura trae la caída y el desnivel relativos al largo.
+# v3 (decisión 28): la caída pasa a sentido de la curva (arriba o abajo) y flecha.
 PROMPT_VERSION = (
-    "guirnalda-referencia.v2:"
+    "guirnalda-referencia.v3:"
     + hashlib.sha256(
         (SYSTEM_INSTRUCTION + json.dumps(RESPONSE_SCHEMA, sort_keys=True)).encode("utf-8")
     ).hexdigest()[:16]

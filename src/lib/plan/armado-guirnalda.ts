@@ -34,8 +34,8 @@ export type SoporteGuirnalda = (typeof SOPORTES_GUIRNALDA)[number];
 export const SOPORTES_CON_CAIDA_GUIRNALDA = ["pared", "colgada"] as const satisfies readonly SoporteGuirnalda[];
 
 /** Lo que viaja en `plan-decoracion.v1` como `x-reglas-guirnalda`. */
-export function reglasGuirnalda(): { soportesConCaida: SoporteGuirnalda[] } {
-  return { soportesConCaida: [...SOPORTES_CON_CAIDA_GUIRNALDA] };
+export function reglasGuirnalda(): { soportesConCaida: SoporteGuirnalda[]; formasConArqueo: FormaGuirnalda[] } {
+  return { soportesConCaida: [...SOPORTES_CON_CAIDA_GUIRNALDA], formasConArqueo: [...FORMAS_CON_ARQUEO_GUIRNALDA] };
 }
 
 /**
@@ -45,6 +45,22 @@ export function reglasGuirnalda(): { soportesConCaida: SoporteGuirnalda[] } {
  */
 export const FORMAS_GUIRNALDA = ["recta", "curva", "ondulada", "u_invertida", "arco_caido"] as const;
 export type FormaGuirnalda = (typeof FORMAS_GUIRNALDA)[number];
+
+/**
+ * Formas que se arquean HACIA ARRIBA sobre la recta que une sus extremos y
+ * declaran cuánto con `arqueo_m` (ADR-0032, decisión 28): la curva. Es el
+ * sentido contrario del arco caído, que cuelga bajo esa recta con `caida_m`.
+ * Viaja en `x-reglas-guirnalda` (`formasConArqueo`): Python lo lee como
+ * `FORMAS_CON_ARQUEO` y el editor decide con él qué control muestra.
+ */
+export const FORMAS_CON_ARQUEO_GUIRNALDA = ["curva"] as const satisfies readonly FormaGuirnalda[];
+
+/**
+ * Hacia dónde se aparta de la recta entre sus extremos la línea central de
+ * una guirnalda leída en la foto (decisión 28): `arriba`, arqueada por encima
+ * (convexa, como un techo); `abajo`, colgando por debajo (como una sonrisa).
+ */
+export const SENTIDOS_CURVA_GUIRNALDA = ["arriba", "abajo"] as const;
 
 /** Unidades de armado de la técnica Sempertex que usa una guirnalda. */
 export const UNIDADES_RACIMO_GUIRNALDA = ["trio", "cuarteto", "quinteto"] as const;
@@ -79,6 +95,14 @@ export const ArmadoGuirnaldaV1Schema = z.object({
    * metros (formas que cuelgan; en la U invertida, cuánto bajan sus lados).
    */
   caida_m: z.number().positive().max(5).optional(),
+  /**
+   * Cuánto SUBE el centro sobre la recta que une los extremos, en metros: la
+   * guirnalda que se arquea hacia arriba (convexa, como un techo), el sentido
+   * contrario de `caida_m`. Solo en las formas de
+   * `FORMAS_CON_ARQUEO_GUIRNALDA` y en pared o colgada; la cuerda es la misma
+   * parábola que con la caída, reflejada (ADR-0032, decisión 28).
+   */
+  arqueo_m: z.number().positive().max(5).optional(),
   /**
    * Altura del extremo derecho menos la del izquierdo, en metros: negativo si
    * la guirnalda cae hacia la derecha. Cualquier forma, solo en pared o
@@ -193,6 +217,8 @@ export const CLASES_REMATE_GUIRNALDA = ["latex", "metalizado", "burbuja"] as con
 export const MAX_RACIMOS_LECTURA_GUIRNALDA = 2_500;
 /** Tope de la caída leída, como fracción del largo: una U más honda ya no es una guirnalda que se lee. */
 export const MAX_CAIDA_RELATIVA_LECTURA_GUIRNALDA = 0.6;
+/** Tope de la flecha leída (hacia arriba o hacia abajo), como fracción del largo; el mismo que el de la caída. */
+export const MAX_FLECHA_RELATIVA_LECTURA_GUIRNALDA = MAX_CAIDA_RELATIVA_LECTURA_GUIRNALDA;
 /** Tope del desnivel leído (en valor absoluto), como fracción del largo. */
 export const MAX_DESNIVEL_RELATIVO_LECTURA_GUIRNALDA = 0.6;
 
@@ -206,9 +232,9 @@ const ColorLeido = z.string().trim().min(1).max(80);
  * porque es del conteo (ADR-0031). `racimos_visibles` y `colores_por_racimo`
  * solo informan (el patrón por racimo es de E5). La caída y el desnivel se
  * leen RELATIVOS al largo horizontal, nunca en metros (una foto no los mide):
- * `armado_guirnalda.py` los pasa a `caida_m` y `desnivel_m` con el largo del
- * plan (ADR-0032, decisión 27). Opcionales para que una lectura guardada
- * antes de ellos (`lecturas_guirnalda`) siga valiendo.
+ * `armado_guirnalda.py` los pasa a `caida_m`, `arqueo_m` y `desnivel_m` con el
+ * largo del plan (ADR-0032, decisiones 27 y 28). Opcionales para que una
+ * lectura guardada antes de ellos (`lecturas_guirnalda`) siga valiendo.
  *
  * Este esquema es el dueño de la forma. Viaja exportado dentro de
  * `reference-blueprint.v2` (`appearance.armado_guirnalda`) y Python comprueba
@@ -221,11 +247,27 @@ export const LecturaGuirnaldaSchema = z.object({
   forma: z.enum(FORMAS_GUIRNALDA),
   puntos_de_anclaje: z.number().int().min(2).max(6).optional(),
   /**
-   * Cuánto baja el centro de la guirnalda bajo la recta que une sus extremos,
-   * como fracción del largo horizontal (en la U invertida, cuánto bajan sus
-   * lados). `null`: el modelo no lo distingue.
+   * Lecturas de `guirnalda-referencia.v2` (decisión 27): cuánto baja el centro
+   * bajo la recta que une los extremos, como fracción del largo horizontal
+   * (en la U invertida, cuánto bajan sus lados). No sabía decir si la
+   * guirnalda se arquea POR ENCIMA de esa recta; desde v3 la lectura trae
+   * `sentido_curva` y `flecha_relativa` (decisión 28). Se conserva para que
+   * las lecturas guardadas antes sigan valiendo; Python la lee como una flecha
+   * hacia abajo. `null`: el modelo no lo distinguió.
    */
   caida_relativa: z.number().min(0).max(MAX_CAIDA_RELATIVA_LECTURA_GUIRNALDA).nullable().optional(),
+  /**
+   * Hacia dónde se aparta la línea central de la recta que une los extremos
+   * (decisión 28): `arriba`, arqueada por encima; `abajo`, colgando por
+   * debajo. `null`: la sigue o el modelo no lo distingue.
+   */
+  sentido_curva: z.enum(SENTIDOS_CURVA_GUIRNALDA).nullable().optional(),
+  /**
+   * Cuánto se aparta, como máximo y medido en vertical, en ese sentido, como
+   * fracción del largo horizontal (en la U invertida, cuánto bajan sus lados
+   * desde lo alto). `null`: no lo distingue.
+   */
+  flecha_relativa: z.number().min(0).max(MAX_FLECHA_RELATIVA_LECTURA_GUIRNALDA).nullable().optional(),
   /**
    * Altura del extremo derecho menos la del izquierdo, como fracción del largo
    * horizontal: negativo si cae hacia la derecha. `null`: no lo distingue.
