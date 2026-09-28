@@ -6,6 +6,7 @@ import hashlib
 import json
 import time
 from types import SimpleNamespace
+from typing import cast
 from uuid import UUID
 
 import pytest
@@ -128,8 +129,32 @@ def test_el_prompt_nombra_soportes_formas_unidades_y_la_paleta() -> None:
     assert "confianza 0" in SYSTEM_INSTRUCTION, "un arco de pie no es una guirnalda"
     esquema = json.dumps(RESPONSE_SCHEMA)
     assert "maxItems" not in esquema and "nullable" not in esquema
-    assert "caida" not in esquema, "la lectura no mide metros"
-    assert PROMPT_VERSION.startswith("guirnalda-referencia.v1:")
+    assert "caida_m" not in esquema and "desnivel_m" not in esquema, "la lectura no mide metros"
+
+
+def test_la_caida_y_el_desnivel_se_piden_relativos_al_largo() -> None:
+    # ADR-0032, decisión 26: fracciones del largo horizontal, nunca metros.
+    for texto in (
+        "caida_relativa (0 to 0.6)",
+        "desnivel_relativo (-0.6 to 0.6)",
+        "never in meters",
+        "negative when the right end is lower (the garland falls toward the right)",
+        "Omit either one when you cannot tell.",
+    ):
+        assert texto in SYSTEM_INSTRUCTION
+    propiedades = RESPONSE_SCHEMA["properties"]["lecturas"]["items"]["properties"]  # type: ignore[index]
+    assert propiedades["caida_relativa"] == {"type": "number", "minimum": 0, "maximum": 0.6}
+    assert propiedades["desnivel_relativo"] == {
+        "type": "number",
+        "minimum": -0.6,
+        "maximum": 0.6,
+    }
+    requeridos = RESPONSE_SCHEMA["properties"]["lecturas"]["items"]["required"]  # type: ignore[index]
+    assert "caida_relativa" not in requeridos and "desnivel_relativo" not in requeridos, (
+        "el modelo las omite cuando no las distingue"
+    )
+    # La versión del prompt cambia con el prompt y el esquema: fijada aquí a propósito.
+    assert PROMPT_VERSION == "guirnalda-referencia.v2:8d10b49acc1eda5f"
 
 
 def test_lee_y_valida_la_respuesta() -> None:
@@ -169,6 +194,9 @@ def test_lee_y_valida_la_respuesta() -> None:
         "forma": "curva",
         # 9 anclajes está fuera de rango: se omite, no se recorta.
         "racimos_visibles": 14,
+        # Sin caída ni desnivel en la respuesta: null, no se inventan.
+        "caida_relativa": None,
+        "desnivel_relativo": None,
         "unidad_racimo": "cuarteto",
         "colores_por_racimo": ["rosado", "blanco", "rosado"],
         "relleno": {"color": "blanco", "proporcion": 0.5},
@@ -211,6 +239,8 @@ def test_validar_descarta_lo_desconocido_y_la_anfitriona_ajena() -> None:
             "soporte": "sobre_estructura",
             "forma": "recta",
             "racimos_visibles": 0,
+            "caida_relativa": None,
+            "desnivel_relativo": None,
             "colores_por_racimo": [],
             "relleno": None,
             "remates": [],
@@ -218,6 +248,63 @@ def test_validar_descarta_lo_desconocido_y_la_anfitriona_ajena() -> None:
         }
     ]
     assert all(cumple_contrato(lectura) for lectura in lecturas)
+
+
+def _con_geometria(**campos: object) -> dict[str, object]:
+    [lectura] = cast(
+        list[dict[str, object]],
+        guirnalda.validar_lecturas(
+            {
+                "lecturas": [
+                    {
+                        "element_id": "A",
+                        "soporte": "pared",
+                        "forma": "curva",
+                        "confianza": 0.8,
+                        **campos,
+                    }
+                ]
+            },
+            ["A"],
+            PALETA,
+        ),
+    )
+    return lectura
+
+
+@pytest.mark.parametrize(
+    ("campos", "caida", "desnivel"),
+    [
+        # La guirnalda de la foto del usuario: alta a la izquierda, cae hacia la derecha.
+        ({"caida_relativa": 0.08, "desnivel_relativo": -0.25}, 0.08, -0.25),
+        ({"caida_relativa": 0, "desnivel_relativo": 0}, 0.0, 0.0),
+        ({"caida_relativa": 0.6, "desnivel_relativo": 0.6}, 0.6, 0.6),
+        ({"caida_relativa": 0.123456, "desnivel_relativo": -0.0004}, 0.123, 0.0),
+        # Fuera de rango, de otro tipo o ausentes: null, nunca recortadas.
+        ({"caida_relativa": 0.61, "desnivel_relativo": -0.7}, None, None),
+        ({"caida_relativa": -0.1, "desnivel_relativo": "baja"}, None, None),
+        ({"caida_relativa": True, "desnivel_relativo": float("nan")}, None, None),
+        ({}, None, None),
+    ],
+)
+def test_la_caida_y_el_desnivel_se_validan_por_rango(
+    campos: dict[str, object], caida: float | None, desnivel: float | None
+) -> None:
+    lectura = _con_geometria(**campos)
+    assert (lectura["caida_relativa"], lectura["desnivel_relativo"]) == (caida, desnivel)
+    assert cumple_contrato(lectura), "lo que sale cabe en el contrato exportado"
+
+
+def test_el_contrato_rechaza_metros_y_rangos_fuera_del_zod() -> None:
+    base = _con_geometria(caida_relativa=0.1, desnivel_relativo=-0.2)
+    assert cumple_contrato(base)
+    assert not cumple_contrato({**base, "caida_relativa": 0.7})
+    assert not cumple_contrato({**base, "desnivel_relativo": -0.61})
+    assert not cumple_contrato({**base, "caida_m": 0.4}), "una lectura no lleva metros"
+    sin_campos = {k: v for k, v in base.items() if k not in ("caida_relativa", "desnivel_relativo")}
+    assert cumple_contrato(sin_campos), (
+        "una lectura guardada antes de la decisión 26 sigue valiendo"
+    )
 
 
 def test_sin_forma_de_nivel_superior_o_vacia_es_error_con_prefijo_propio() -> None:

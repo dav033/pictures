@@ -23,6 +23,22 @@ export const SOPORTES_GUIRNALDA = ["pared", "colgada", "piso", "mesa", "sobre_es
 export type SoporteGuirnalda = (typeof SOPORTES_GUIRNALDA)[number];
 
 /**
+ * Soportes donde una forma que cuelga tiene de dónde colgar y donde un extremo
+ * puede ir más alto que el otro (`desnivel_m`, ADR-0032 decisión 26): la
+ * pared y colgada. En el piso, sobre la mesa o sobre otra pieza los extremos
+ * van a la altura de lo que la sostiene. Viaja en `plan-decoracion.v1` como
+ * `x-reglas-guirnalda` (`reglasGuirnalda`): Python lo lee como
+ * `SOPORTES_CON_CAIDA` y el editor decide con él qué controles muestra; la
+ * regla es una sola.
+ */
+export const SOPORTES_CON_CAIDA_GUIRNALDA = ["pared", "colgada"] as const satisfies readonly SoporteGuirnalda[];
+
+/** Lo que viaja en `plan-decoracion.v1` como `x-reglas-guirnalda`. */
+export function reglasGuirnalda(): { soportesConCaida: SoporteGuirnalda[] } {
+  return { soportesConCaida: [...SOPORTES_CON_CAIDA_GUIRNALDA] };
+}
+
+/**
  * Forma de la guirnalda a lo largo de su eje. `u_invertida` y `arco_caido`
  * cuelgan de sus extremos: con `caida_m` su largo real es el de la cuerda
  * (geometría en `estructuras-oficiales.ts`, `x-geometria-estructuras-oficiales`).
@@ -58,8 +74,19 @@ export const ArmadoGuirnaldaV1Schema = z.object({
   /** Solo con `soporte: "sobre_estructura"`: la pieza del plan sobre la que va. */
   estructura_id: z.string().regex(/^EST_\d{2}_[A-Z_]+$/).optional(),
   forma: z.enum(FORMAS_GUIRNALDA),
-  /** Cuánto baja el centro respecto de los extremos, en metros (formas que cuelgan). */
+  /**
+   * Cuánto baja el centro respecto de la recta que une los extremos, en
+   * metros (formas que cuelgan; en la U invertida, cuánto bajan sus lados).
+   */
   caida_m: z.number().positive().max(5).optional(),
+  /**
+   * Altura del extremo derecho menos la del izquierdo, en metros: negativo si
+   * la guirnalda cae hacia la derecha. Cualquier forma, solo en pared o
+   * colgada (`SOPORTES_CON_CAIDA_GUIRNALDA`). La cuerda une dos
+   * extremos a distinta altura, así que cambia los globos que se compran
+   * (ADR-0032, decisión 26).
+   */
+  desnivel_m: z.number().min(-5).max(5).optional(),
   /** Puntos de donde se cuelga o se fija; obligatorio con `soporte: "colgada"`. */
   puntos_de_anclaje: z.number().int().min(2).max(6).optional(),
   racimo: z.object({
@@ -164,6 +191,10 @@ export type ArmadoGuirnaldaResuelto = z.infer<typeof ArmadoGuirnaldaResueltoSche
 export const CLASES_REMATE_GUIRNALDA = ["latex", "metalizado", "burbuja"] as const;
 /** Tope de forma de los racimos que se ven: rechaza lo absurdo, no decide nada. */
 export const MAX_RACIMOS_LECTURA_GUIRNALDA = 2_500;
+/** Tope de la caída leída, como fracción del largo: una U más honda ya no es una guirnalda que se lee. */
+export const MAX_CAIDA_RELATIVA_LECTURA_GUIRNALDA = 0.6;
+/** Tope del desnivel leído (en valor absoluto), como fracción del largo. */
+export const MAX_DESNIVEL_RELATIVO_LECTURA_GUIRNALDA = 0.6;
 
 const ColorLeido = z.string().trim().min(1).max(80);
 
@@ -173,8 +204,11 @@ const ColorLeido = z.string().trim().min(1).max(80);
  * decisión: la distribución (soporte, forma, unidad, relleno, remates) la usa
  * `armado_guirnalda.py` al confirmar, si la confianza alcanza; la cantidad no,
  * porque es del conteo (ADR-0031). `racimos_visibles` y `colores_por_racimo`
- * solo informan (el patrón por racimo es de E5). No lleva caída: los metros no
- * se miden en una foto.
+ * solo informan (el patrón por racimo es de E5). La caída y el desnivel se
+ * leen RELATIVOS al largo horizontal, nunca en metros (una foto no los mide):
+ * `armado_guirnalda.py` los pasa a `caida_m` y `desnivel_m` con el largo del
+ * plan (ADR-0032, decisión 26). Opcionales para que una lectura guardada
+ * antes de ellos (`lecturas_guirnalda`) siga valiendo.
  *
  * Este esquema es el dueño de la forma. Viaja exportado dentro de
  * `reference-blueprint.v2` (`appearance.armado_guirnalda`) y Python comprueba
@@ -186,6 +220,17 @@ export const LecturaGuirnaldaSchema = z.object({
   anfitriona_element_id: z.string().trim().min(1).max(80).optional(),
   forma: z.enum(FORMAS_GUIRNALDA),
   puntos_de_anclaje: z.number().int().min(2).max(6).optional(),
+  /**
+   * Cuánto baja el centro de la guirnalda bajo la recta que une sus extremos,
+   * como fracción del largo horizontal (en la U invertida, cuánto bajan sus
+   * lados). `null`: el modelo no lo distingue.
+   */
+  caida_relativa: z.number().min(0).max(MAX_CAIDA_RELATIVA_LECTURA_GUIRNALDA).nullable().optional(),
+  /**
+   * Altura del extremo derecho menos la del izquierdo, como fracción del largo
+   * horizontal: negativo si cae hacia la derecha. `null`: no lo distingue.
+   */
+  desnivel_relativo: z.number().min(-MAX_DESNIVEL_RELATIVO_LECTURA_GUIRNALDA).max(MAX_DESNIVEL_RELATIVO_LECTURA_GUIRNALDA).nullable().optional(),
   racimos_visibles: z.number().int().min(0).max(MAX_RACIMOS_LECTURA_GUIRNALDA),
   unidad_racimo: z.enum(UNIDADES_RACIMO_GUIRNALDA).optional(),
   /** Colores de un racimo típico, en el orden de sus globos (nombres de la paleta del catálogo). */

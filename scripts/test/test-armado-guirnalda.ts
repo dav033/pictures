@@ -80,18 +80,34 @@ async function main(): Promise<void> {
   ok("armado-guirnalda.v1: solo forma, sin defaults, relleno y remates obligatorios");
 
   // ---------------------------------------------------------------------------
+  // Decisión 26: el desnivel entre los extremos, en metros y con signo; opcional.
+  for (const desnivel of [-0.6, 0.25, -5, 5]) {
+    assert.equal(ArmadoGuirnaldaV1Schema.parse({ ...ARMADO, desnivel_m: desnivel }).desnivel_m, desnivel);
+  }
+  for (const desnivel of [-5.01, 5.5, "0,4", null]) {
+    assert.equal(ArmadoGuirnaldaV1Schema.safeParse({ ...ARMADO, desnivel_m: desnivel }).success, false, `desnivel_m ${String(desnivel)}`);
+  }
+  assert.equal("desnivel_m" in ArmadoGuirnaldaV1Schema.parse(ARMADO), false, "sin desnivel no aparece: el plan firmado es el de antes");
+  ok("armado-guirnalda.v1: desnivel_m opcional, con signo y dentro de ±5 m");
+
+  // ---------------------------------------------------------------------------
   const esquema = JSON.stringify(z.toJSONSchema(ArmadoGuirnaldaV1Schema, { target: "draft-7" }));
   assert.doesNotMatch(esquema, /"default"/, "ningún default llega al contrato que firma plan_hash");
   const contrato = JSON.parse(readFileSync(path.join(process.cwd(), "contracts/domain/v1/plan-decoracion.schema.json"), "utf8")) as {
     properties: { estructuras: { items: { properties: Json; required: string[] } } };
     "x-geometria-estructuras-oficiales": { guirnalda: { eje: string; formas: Record<string, { conCaida: boolean; factorPerfil: number }> } };
+    "x-reglas-guirnalda": { soportesConCaida: string[] };
   };
   const estructura = contrato.properties.estructuras.items;
   assert.ok("armado_guirnalda" in estructura.properties && !estructura.required.includes("armado_guirnalda"));
   const geometria = contrato["x-geometria-estructuras-oficiales"].guirnalda;
   assert.equal(geometria.eje, "largo");
   assert.deepEqual(Object.entries(geometria.formas).filter(([, forma]) => forma.conCaida).map(([nombre]) => nombre), ["u_invertida", "arco_caido"]);
-  ok("el contrato exportado lleva el campo opcional y la geometría por forma");
+  assert.deepEqual(contrato["x-reglas-guirnalda"].soportesConCaida, ["pared", "colgada"], "dónde se cuelga y dónde un extremo va más alto: una sola regla para Python y el editor");
+  assert.equal("soportesConCaida" in geometria, false, "la tabla de geometría no cambia (instantánea de los prompts sin armado)");
+  const armadoExportado = estructura.properties.armado_guirnalda as { properties: Json };
+  assert.deepEqual(armadoExportado.properties.desnivel_m, { type: "number", minimum: -5, maximum: 5 });
+  ok("el contrato exportado lleva el campo opcional, la geometría por forma, los soportes con caída y el desnivel");
 
   // ---------------------------------------------------------------------------
   const estructuraPlan = {

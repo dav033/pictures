@@ -636,6 +636,30 @@
                     "minimum": 2,
                     "maximum": 6
                   },
+                  "caida_relativa": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 0.6
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "desnivel_relativo": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "minimum": -0.6,
+                        "maximum": 0.6
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
                   "racimos_visibles": {
                     "type": "integer",
                     "minimum": 0,

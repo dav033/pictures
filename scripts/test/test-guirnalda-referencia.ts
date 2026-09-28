@@ -2,7 +2,8 @@
  * Lectura de las guirnaldas en la foto (ADR-0032, E4), del lado de Next.
  *
  * - `appearance.armado_guirnalda` es opcional y tiene la forma de
- *   `LecturaGuirnaldaSchema` (dueño Zod `src/lib/plan/armado-guirnalda.ts`).
+ *   `LecturaGuirnaldaSchema` (dueño Zod `src/lib/plan/armado-guirnalda.ts`),
+ *   con la caída y el desnivel relativos al largo (decisión 26), nunca metros.
  * - Se leen las guirnaldas, arcos y semiarcos aprobados; las demás piezas de
  *   globos de la foto viajan como posibles anfitrionas; un techo no se lee.
  * - El adaptador solo acepta lecturas de los elementos pedidos y anfitrionas de
@@ -103,7 +104,32 @@ async function main(): Promise<void> {
   assert.deepEqual(blueprintDe([elemento("REF_01_E01", { tipo: "guirnalda", lectura })]).elements[0]!.appearance.armado_guirnalda, lectura);
   const contrato = JSON.parse(readFileSync(path.join(process.cwd(), "contracts/domain/v1/reference-blueprint.schema.json"), "utf8")) as Json;
   assert.match(JSON.stringify(contrato), /"armado_guirnalda"/, "la forma viaja en reference-blueprint.v2 para Python");
-  ok("lectura-guirnalda: forma propia, sin caída, opcional en el blueprint y exportada");
+  ok("lectura-guirnalda: forma propia, sin metros, opcional en el blueprint y exportada");
+
+  // ---------------------------------------------------------------------------
+  // Decisión 26: la caída y el desnivel, relativos al largo horizontal y opcionales
+  // (una lectura guardada antes de ellos sigue valiendo).
+  const cae = { ...lectura, soporte: "pared", forma: "curva", caida_relativa: 0.08, desnivel_relativo: -0.25 } as const;
+  assert.deepEqual(LecturaGuirnaldaSchema.parse(cae), cae);
+  assert.deepEqual(LecturaGuirnaldaSchema.parse({ ...cae, caida_relativa: null, desnivel_relativo: null }), { ...cae, caida_relativa: null, desnivel_relativo: null }, "null: el modelo no lo distingue");
+  for (const malo of [{ ...cae, caida_relativa: -0.01 }, { ...cae, caida_relativa: 0.61 }, { ...cae, desnivel_relativo: -0.61 }, { ...cae, desnivel_relativo: 0.7 }, { ...cae, desnivel_m: -0.4 }]) {
+    assert.equal(LecturaGuirnaldaSchema.safeParse(malo).success, false, JSON.stringify(malo));
+  }
+  const contratoLectura = JSON.stringify(contrato);
+  assert.match(contratoLectura, /"caida_relativa":\{"anyOf":\[\{"type":"number","minimum":0,"maximum":0.6\},\{"type":"null"\}\]\}/);
+  assert.match(contratoLectura, /"desnivel_relativo":\{"anyOf":\[\{"type":"number","minimum":-0.6,"maximum":0.6\},\{"type":"null"\}\]\}/);
+  const conGeometria = instalarPython((llamada) => sobre(llamada, {
+    operation_schema_version: "guirnalda-referencia-result.v1",
+    lecturas: [{ element_id: "REF_01_E01", ...cae }],
+    modelo: "gemini-test", prompt_version: "guirnalda-referencia.v2:test", usage: null,
+  }));
+  const fotoGeometria = { id: "REF_01", mime: "image/png", base64: Buffer.from("foto que cae").toString("base64") } as never;
+  const blueprintCae = blueprintDe([elemento("REF_01_E01", { tipo: "guirnalda" })]);
+  const leidoCae = await leerGuirnaldasReferencia(blueprintCae, [fotoGeometria], { requestId: "33333333-3333-4333-8333-333333333334", correlationId: "44444444-4444-4444-8444-444444444445", cache: crearCacheLecturaGuirnalda() });
+  assert.equal(conGeometria.length, 1);
+  assert.deepEqual(leidoCae.elements[0]!.appearance.armado_guirnalda, cae, "la caída y el desnivel llegan al blueprint tal cual");
+  assert.deepEqual(pistasGuirnaldaDelPlan({ estructuras: [{ referencia_element_id: "REF_01_E01" }] } as never, leidoCae), [{ referencia_element_id: "REF_01_E01", ...cae }], "y viajan en pistas_guirnalda para Python");
+  ok("caída y desnivel de la lectura: relativos al largo, null si no se distinguen, validados y llevados hasta pistas_guirnalda");
 
   // ---------------------------------------------------------------------------
   const mezcla = blueprintDe([

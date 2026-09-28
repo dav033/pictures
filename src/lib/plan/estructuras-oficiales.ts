@@ -84,8 +84,11 @@ export type GeometriaEstructuraOficial = {
    * `factorPerfil` multiplica la banda como `anchoFinalBanda` (1 = banda
    * completa; sin calibrar, igual que λ). Con `conCaida` y `caida_m` el eje es
    * el largo real de la cuerda que cuelga: un arco de parábola por tramo entre
-   * anclajes, que para caídas chicas es largo + 8/3 · caída² / largo. Sin
-   * armado, la guirnalda se cuenta con su largo, como siempre.
+   * anclajes, que para caídas chicas es largo + 8/3 · caída² / largo. Con
+   * `desnivel_m` (en cualquier forma) los extremos van a distinta altura: la
+   * cuerda es la parábola entre ellos con esa caída bajo la recta que los une
+   * o, sin caída, esa recta inclinada. Sin armado, la guirnalda se cuenta con
+   * su largo, como siempre.
    */
   formas?: Readonly<Record<FormaGuirnalda, { factorPerfil: number; conCaida: boolean }>>;
 };

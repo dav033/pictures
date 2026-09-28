@@ -5,6 +5,7 @@ import { DomainContractSchemas } from "../../src/lib/ia/contracts/domain-v1";
 import { geometriaEstructurasOficiales, reglasJsonSchemaEstructuraOficial } from "../../src/lib/plan/estructuras-oficiales";
 import { tonosColoresCatalogo } from "../../src/lib/rag/catalog/similitud-color";
 import { reglasMezclas } from "../../src/lib/plan/mezclas";
+import { reglasGuirnalda } from "../../src/lib/plan/armado-guirnalda";
 import { LORA_COLOR_NAMES_EN } from "../../src/lib/ia/kagutsuchi/lora-caption-compiler";
 import { PALETA_COLORES_V2 } from "../../src/lib/rag/taxonomy/v2";
 import { ACABADO_EN } from "../../src/lib/ia/uzume/mezcla-color-escena";
@@ -85,6 +86,9 @@ async function main(): Promise<void> {
           ...generated,
           "x-geometria-estructuras-oficiales": geometriaEstructurasOficiales(),
           "x-reglas-mezclas": reglasMezclas(),
+          // armado_guirnalda.py reads where a garland may hang or tilt
+          // (ADR-0032, decision 26) from armado-guirnalda.ts, the contract's owner.
+          "x-reglas-guirnalda": reglasGuirnalda(),
           // patron_color.py names each color of a color pattern in the image
           // prompts with the same ES→EN tables the TypeScript prompts use
           // (ADR-0028): the LoRA caption's color names (palette plus aliases, so
