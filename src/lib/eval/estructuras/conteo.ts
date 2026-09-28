@@ -40,7 +40,8 @@ export function leerVerdadConteo(texto: string): Map<string, VerdadConteo> {
     const linea = cruda.trim();
     if (!linea || (indice === 0 && /^sha256\b/i.test(linea))) return;
     const [hash, globosTexto, exactoTexto, familiaTexto] = linea.split(",").map((campo) => campo.trim());
-    const globos = Number(globosTexto);
+    // Solo dígitos: `Number("")` es 0, y un blanco, "1e1" o "0x10" pasaban por una cuenta.
+    const globos = /^\d+$/.test(globosTexto ?? "") ? Number(globosTexto) : Number.NaN;
     const exacto = (exactoTexto ?? "").toLowerCase();
     const familia = familiaTexto ? familiaTexto.toLowerCase() : null;
     if (!sha256.safeParse(hash).success) throw new Error(`verdad: línea ${indice + 1}: sha256 inválido`);

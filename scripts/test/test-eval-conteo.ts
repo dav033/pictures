@@ -144,6 +144,14 @@ async function run(): Promise<void> {
     assert.equal(metricasConteo([], new Map()).total.n, 0);
   });
 
+  await caso("#27 verdad: una cuenta en blanco o que no es un entero escrito se rechaza con su línea", () => {
+    for (const globos of ["", "  ", "1e1", "0x10", "+5", "5.0", "-1"]) {
+      assert.throws(() => leerVerdadConteo(`${hash(1)},${globos},si`), /línea 1: globos/, JSON.stringify(globos));
+    }
+    assert.throws(() => leerVerdadConteo(`${hash(2)},7,si\n${hash(1)},,no`), /línea 2: globos/);
+    assert.equal(leerVerdadConteo(`${hash(1)},0,si`).get(hash(1))?.globos, 0, "un cero escrito sigue siendo una cuenta");
+  });
+
   console.log(`[PASS] ${casos} casos del runner de conteo`);
 }
 
