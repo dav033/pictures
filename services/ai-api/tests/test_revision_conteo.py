@@ -330,3 +330,46 @@ async def test_33_tras_una_edicion_el_conteo_solo_ajusta_la_densidad() -> None:
         completar_conteos_de=["EST_01_GUIRNALDA"],
     )
     assert _estructura(resolved)["medidas"] == {"largo_m": 2.5}
+
+
+# --- 4: el conteo tras editar la mezcla no deja un armado de guirnalda que ya no cabe --------
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("objetivo", [31, 49])
+async def test_4_el_armado_de_la_guirnalda_se_rehace_si_el_conteo_lo_rompe(objetivo: int) -> None:
+    from app.plan_edicion import EdicionMezcla, editar_plan
+    from tests.guirnalda_datos import (
+        GUIRNALDA,
+        estructura_del_plan,
+        guirnalda,
+        material,
+        plan,
+        resolver,
+    )
+
+    base = guirnalda(
+        referencia_element_id="REF_01_E01",
+        densidad="media",
+        mezcla="organica_gruesa",
+        medidas={"largo_m": 2.0},
+        materiales=[material("rosado", 0.85, True), material("blanco", 0.15)],
+    )
+    confirmado = await resolver(plan(base), completar_armados_guirnalda=True)
+    assert estructura_del_plan(confirmado).get("armado_guirnalda") is not None
+    editado = editar_plan(
+        cast(dict[str, object], confirmado["plan"]),
+        EdicionMezcla(accion="mezcla", estructura_id=GUIRNALDA, mezcla="organica_fina"),
+        completar_armados_guirnalda=True,
+    )
+    assert estructura_del_plan({"plan": editado.plan}).get("armado_guirnalda") is not None
+    pista = _conteo(globos_visibles=objetivo, exacto=True)
+    # Antes: 422 armado_invalido (remate_sin_globo_grande) y la edición fallaba.
+    resolved = await resolver(
+        editado.plan,
+        completar_conteos=True,
+        pistas_conteo=[pista],
+        completar_conteos_de=[GUIRNALDA],
+    )
+    assert _conteos(resolved)[0]["decision"] == "ajustado"
+    assert any("armado" in s for s in _supuestos(resolved)), _supuestos(resolved)

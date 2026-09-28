@@ -3855,8 +3855,63 @@ def _aplicar_conteos(
         puerto=port,
     )
     if any(count["decision"] == "ajustado" for count in counts):
+        adjusted = _garland_assemblies_after_count(adjusted, counts, request.pistas_guirnalda)
         _validate_plan(adjusted)
     return adjusted, hints, counts
+
+
+def _garland_assemblies_after_count(
+    plan: dict[str, object],
+    counts: Sequence[Mapping[str, object]],
+    readings: Sequence[Mapping[str, object]],
+) -> dict[str, object]:
+    """A garland the count adjusted keeps its assembly only if it still fits (review 4).
+
+    The count changes density or measures, and so what is bought; an assembly
+    that fitted before (a topper needs a big balloon of its color) may not fit
+    any more. It is suggested again from the photo reading or the recipe over
+    the new purchase, or dropped when nothing fits, with a notice; never a 422.
+    """
+    adjusted = {str(count["estructura_id"]) for count in counts if count["decision"] == "ajustado"}
+    structures = [dict(item) for item in _mappings(plan.get("estructuras"))]
+    assumptions = [a for a in cast(list[object], plan.get("supuestos") or []) if isinstance(a, str)]
+    changed = False
+    for index, item in enumerate(structures):
+        assembly = item.get("armado_guirnalda")
+        if assembly is None or (_text(item.get("estructura_id")) or "") not in adjusted:
+            continue
+        current = {**plan, "estructuras": structures}
+        try:
+            validar_armado_guirnalda(_garland_context(current, item), _mapping(assembly))
+            continue
+        except (ArmadoGuirnaldaInvalido, PlanResolutionError):
+            pass
+        bare = _without(item, "armado_guirnalda")
+        element_id = _text(item.get("referencia_element_id"))
+        reading = next(
+            (
+                r
+                for r in readings
+                if element_id is not None and r.get("referencia_element_id") == element_id
+            ),
+            None,
+        )
+        again = sugerir_armado_guirnalda(
+            _garland_context(_with_structure(current, index, bare), bare), reading
+        )
+        structures[index] = bare if again is None else {**bare, "armado_guirnalda": again}
+        agregar_supuesto(
+            assumptions,
+            supuesto(
+                _text(item.get("nombre")) or "Guirnalda",
+                "con la cantidad de la foto el armado anterior ya no cabía: "
+                + ("se volvió a sugerir." if again is not None else "queda sin armado."),
+            ),
+        )
+        changed = True
+    if not changed:
+        return plan
+    return {**plan, "estructuras": structures, "supuestos": assumptions}
 
 
 def _structure_index(plan: Mapping[str, object], estructura_id: str) -> int:
