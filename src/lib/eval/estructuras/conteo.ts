@@ -486,25 +486,44 @@ export async function ejecutarConteo(input: {
   return { plan, lineas, costo_reportado_usd: costoReal, omitidas_por_presupuesto: omitidas, detenida_por: detenidaPor };
 }
 
-/** `run.json` de una corrida de conteo: plan, costo y, con verdad humana, las métricas. */
+/**
+ * `run.json` de una corrida de conteo: plan, costo y, con verdad humana, las
+ * métricas. `plan`, `costo`, `resultados` y `metricas` cubren TODAS las
+ * líneas de la corrida: una reanudación no borra lo gastado antes. Lo de esta
+ * invocación va aparte, en `esta_invocacion`. El costo reportado sale del uso
+ * que reportó el proveedor en cada línea, al precio vigente de `precio`.
+ */
 export function resumirConteo(input: {
   corrida: ResultadoCorridaConteo;
+  /** Plan de la corrida entera (sin descontar lo ya hecho). */
+  planCompleto: PlanConteo;
   todasLasLineas: readonly PrediccionConteoV1[];
+  precio: PrecioTabla;
   verdad: ReadonlyMap<string, VerdadConteo> | null;
   generadoEn: Date;
   suite: { id: string; manifiesto_sha256: string };
 }) {
   const latencias = input.todasLasLineas.filter((linea) => linea.resultado === "ok").map((linea) => linea.latencia_ms);
+  const reportado = input.todasLasLineas.reduce((suma, linea) => suma + costo({
+    entrada: linea.uso_reportado.tokens_entrada,
+    salida: linea.uso_reportado.tokens_salida,
+    pensamiento: linea.uso_reportado.tokens_pensamiento ?? 0,
+  }, input.precio), 0);
   return {
     schema: "run-conteo.v1",
-    run_id: input.corrida.plan.run_id,
+    run_id: input.planCompleto.run_id,
     generado_en: input.generadoEn.toISOString(),
     suite: input.suite,
-    plan: input.corrida.plan,
+    plan: input.planCompleto,
     costo: {
-      estimado: input.corrida.plan.estimacion,
-      reportado_usd: input.corrida.costo_reportado_usd,
+      estimado: input.planCompleto.estimacion,
+      reportado_usd: reportado,
       uso_incompleto: input.todasLasLineas.filter((linea) => !linea.uso_reportado.completo).length,
+      omitidas_por_presupuesto: input.todasLasLineas.filter((linea) => linea.resultado === "omitida_por_presupuesto").length,
+    },
+    esta_invocacion: {
+      plan: input.corrida.plan,
+      reportado_usd: input.corrida.costo_reportado_usd,
       omitidas_por_presupuesto: input.corrida.omitidas_por_presupuesto,
     },
     detenida_por: input.corrida.detenida_por,

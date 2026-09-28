@@ -233,6 +233,21 @@ async function run(): Promise<void> {
     assert.equal(suelto.llamadas(), 3);
   });
 
+  await caso("#30 reanudar no borra de run.json lo gastado ni lo planeado antes", async () => {
+    const { deps, archivos } = entorno();
+    const argv = [...base, "--ejecutar", "--max-usd", "2", "--crudos", FUERA];
+    const primera = await ejecutarCliConteo(argv, deps);
+    const antes = JSON.parse(archivos.get(primera.runJsonRuta!)!);
+    await ejecutarCliConteo(argv, deps);
+    const despues = JSON.parse(archivos.get(primera.runJsonRuta!)!);
+    assert.ok(antes.costo.reportado_usd > 0);
+    assert.equal(despues.costo.reportado_usd, antes.costo.reportado_usd, "lo gastado en la primera invocación sigue en run.json");
+    assert.equal(despues.plan.analisis_totales, 3);
+    assert.equal(despues.costo.estimado.analisis, 3, "la estimación es de la corrida entera");
+    assert.deepEqual([despues.esta_invocacion.reportado_usd, despues.esta_invocacion.plan.analisis_pendientes], [0, 0]);
+    assert.equal(despues.resultados.ok, 3);
+  });
+
   console.log(`[PASS] ${casos} casos del runner de conteo`);
 }
 

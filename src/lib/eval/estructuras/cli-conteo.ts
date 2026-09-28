@@ -13,7 +13,7 @@ import {
   type ConfiguracionConteo,
   type PrediccionConteoV1,
 } from "./conteo";
-import { TablaPreciosSchema } from "./costo";
+import { precioVigente, TablaPreciosSchema } from "./costo";
 import { claveCorrida } from "./runner";
 
 /**
@@ -160,7 +160,16 @@ export async function ejecutarCliConteo(argv: readonly string[], deps: Dependenc
     config, items: suite.items, analizar: sistemaBase.analizar!, yaHechas,
     alEscribir: (linea) => deps.anexarTexto(rutaPredicciones, lineaConteoJsonl(linea)),
   });
-  const runJson = resumirConteo({ corrida, todasLasLineas: [...previas, ...corrida.lineas], verdad, generadoEn: deps.ahora(), suite: { id: suite.suite_id, manifiesto_sha256: manifiestoSha256 } });
+  const runJson = resumirConteo({
+    corrida,
+    // run.json describe la corrida entera, también tras reanudarla.
+    planCompleto: planificarConteo({ ...config, maxUsd: opciones.maxUsd ?? 0 }, suite.items),
+    todasLasLineas: [...previas, ...corrida.lineas],
+    precio: precioVigente(tabla, config.sistema.modelo, config.instante),
+    verdad,
+    generadoEn: deps.ahora(),
+    suite: { id: suite.suite_id, manifiesto_sha256: manifiestoSha256 },
+  });
   const runJsonRuta = resolve(opciones.salida, "run.json");
   deps.escribirTexto(runJsonRuta, `${JSON.stringify(runJson, null, 2)}\n`);
   deps.log(`[ejecución] ${corrida.lineas.length} líneas · reportado US${corrida.costo_reportado_usd.toFixed(4)} · omitidas por presupuesto ${corrida.omitidas_por_presupuesto}`);
