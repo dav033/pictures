@@ -129,6 +129,24 @@ def casos() -> Casos:
             ),
             {"completar_patrones": True},
         ),
+        # El caso del 2026-09-28 (la espiral se dibujó como cintas): pared, cuartetos
+        # y espiral de tres colores con uno repetido, del decorador.
+        "pared-espiral-tres-colores": (
+            plan(
+                guirnalda(
+                    materiales=tres,
+                    armado_guirnalda=_armado(),
+                    patron_color={
+                        "version": "patron-color.v1",
+                        "origen": "decorador",
+                        "globos_por_racimo": 4,
+                        "base": {"modo": "espiral", "racimo": [0, 1, 0, 2], "trazo": "espiral"},
+                    },
+                ),
+                arco(),
+            ),
+            {},
+        ),
         # U invertida colgada de dos puntos con anillos en espejo desde el centro.
         "u-invertida-espejo": (
             plan(

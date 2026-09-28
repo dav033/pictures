@@ -1096,9 +1096,12 @@ def _frases_prompt(
             remates_en.append(f"a large {tamano} {nombre} {_POSICION_EN[remate.posicion]}")
     if remates_en:
         frases.append("Accents: " + "; ".join(remates_en) + ".")
+    # "twisted against each other" es jerga del oficio (se enroscan en la cinta);
+    # el modelo de imagen la leía como bandas retorcidas (2026-09-28).
     frases.append(
-        "Keep the clusters tight and twisted against each other so the garland reads as one"
-        " continuous organic piece with no gaps."
+        "Keep the clusters packed tightly against each other so the garland reads as one"
+        " continuous organic piece with no gaps, made only of round latex balloons: no ribbons,"
+        " streamers, twisted bands or fabric."
     )
 
     extras_lora: list[str] = []

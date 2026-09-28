@@ -6,7 +6,7 @@ import { z } from "zod";
 import type { SceneSpec } from "@/lib/ia/escena/scene-spec";
 import { LORA_JSON_PROMPT_MAX_LENGTH, LORA_PROMPT_MAX_LENGTH, translateLoraColor, type LoraVisualClause } from "@/lib/ia/kagutsuchi/lora-caption-compiler";
 import { findLoraPromptLanguageLeaks, preflightLoraPrompt } from "@/lib/ia/kagutsuchi/lora-prompt-preflight";
-import { ensureLoraTriggers } from "@/lib/ia/kagutsuchi/sempertex-lora";
+import { buildLoraEditPrompt, ensureLoraTriggers } from "@/lib/ia/kagutsuchi/sempertex-lora";
 import { CARDINALIDAD_CON_GUIRNALDA_ABRAZADA, fraseInstanciaConArmadoGuirnalda } from "@/lib/ia/uzume/armado-en-prompt";
 import { candadosDeComposicion, conArmadoGuirnaldaEnCaption, GEMINI_COMPOSITION_GARLAND_LOCK, GEMINI_COMPOSITION_HARD_LOCK, GEMINI_COMPOSITION_PATTERN_LOCK, hardLockComposicionGemini, LORA_PRESENTATION_INSTRUCTION, piezasDeLosArmados, promptPresentacionLora } from "@/lib/ia/uzume/lora-gemini-composition";
 import { armadoDeElemento, armadoGuirnaldaDeElemento, frasesDeEstructuras, type FraseDeEstructura } from "@/lib/ia/uzume/mezcla-color-escena";
@@ -274,7 +274,7 @@ function geminiRepetida(): void {
 // 4. Caption LoRA (Kagutsuchi).
 // ---------------------------------------------------------------------------
 
-const CASOS_LORA = ["pared", "piso", "mesa", "colgada", "sobre-arco", "u-invertida-espejo", "pared-patron-por-racimo"] as const;
+const CASOS_LORA = ["pared", "piso", "mesa", "colgada", "sobre-arco", "u-invertida-espejo", "pared-patron-por-racimo", "pared-espiral-tres-colores"] as const;
 const PLACEMENT_DE: Readonly<Record<string, "fondo_pared" | "piso_frontal" | "sobre_mesa_principal">> = { piso: "piso_frontal", mesa: "sobre_mesa_principal" };
 
 function loraCanonico(): void {
@@ -477,6 +477,65 @@ function piezasQueElArmadoTiene(): void {
   console.log("[PASS] hallazgo 17: sin relleno o sin remates, ni la línea de instancia ni el candado del híbrido los nombran");
 }
 
+// ---------------------------------------------------------------------------
+// 7. La espiral se dibujaba como cintas (2026-09-28).
+// ---------------------------------------------------------------------------
+
+/**
+ * Una guirnalda en pared con espiral de cuartetos rosado, naranja, rosado y
+ * dorado salió en fal.ai (LoRA v007, "Generada con LoRA Sempertex") con cintas
+ * retorcidas cruzando la pieza. El armado sí llegaba al caption; lo que llegaba
+ * era "wrapped in a spiral of pink, orange and gold stripes winding along its
+ * length". Este test sigue la cadena de `/api/generate` en los tres modos con
+ * el plan real de Python del mismo caso (tres colores, uno repetido) y fija que
+ * ninguna palabra que el modelo dibuje como cinta llega al texto.
+ */
+const CINTAS = /spiral|stripe|bands?|ribbon|streamer|wrapped|winding|twist/i;
+
+function sinCintasEnLaImagen(): void {
+  const fijado = planGuirnalda("pared-espiral-tres-colores");
+  const armado = armadoDelPlan(fijado.plan);
+  const patron = patronDelPlan(fijado.plan);
+  assert.deepEqual(patron.patron.base, { modo: "espiral", racimo: [0, 1, 0, 2], trazo: "espiral" });
+  const frases = frasesDeEstructuras(fijado.plan)!;
+  // Kagutsuchi: el armado y, detrás, los racimos del patrón; ni una cinta.
+  const lora = frases[0]!.prompt_lora;
+  assert.equal(lora, "mounted flat against the wall in clusters of four with small pink, white and gold filler balloons, every cluster holding two pink, one white and one gold balloon");
+  assert.doesNotMatch(lora, CINTAS, lora);
+  // Uzume (Gemini, `proveedor_base`): la línea de color lleva las dos frases de Python.
+  const prompt = promptGeminiDePlan(fijado, frases);
+  const linea = lineaQueEmpieza(prompt, "- Guirnalda: ");
+  assert.ok(linea.includes(`${armado.prompt_gemini} ${patron.prompt_gemini} Do not invent`), linea);
+  assert.ok(linea.includes("made only of round latex balloons: no ribbons, streamers, twisted bands or fabric."), linea);
+  assert.ok(linea.includes("every four-balloon cluster is the same: two pink, one white and one gold round latex balloons"), linea);
+  assert.doesNotMatch(linea, /stripes|wrapped|winding|twisted against|diagonal/, linea);
+  const coherencia = verificarCoherenciaPrompt(prompt, fijado.plan, escenaParaCoherencia(escenaDePlan(fijado), frases));
+  assert.equal(coherencia.ok, true, coherencia.errores.join("; "));
+  // LoRA canónico en los dos dialectos, solo texto y en el presupuesto del híbrido,
+  // hasta el prompt que recibe fal (`buildLoraEditPrompt` sin referencias).
+  const sinteticas = frasesSinteticas("pared-espiral-tres-colores");
+  const escena = escenaGuirnalda();
+  for (const trigger of ["eventdecor_style_v3", "eventdecor_style_v2"]) {
+    for (const hibrido of [false, true]) {
+      const resultado = captionCanonicoGuirnalda(escena, sinteticas, trigger, hibrido ? LORA_PROMPT_MAX_LENGTH - LORA_PRESENTATION_INSTRUCTION.length : undefined);
+      const texto = ensureLoraTriggers(hibrido ? promptPresentacionLora(resultado.prompt) : resultado.prompt, [{ path: "armado", trigger, scale: 1 }]);
+      const aFal = buildLoraEditPrompt(texto, []);
+      const caso = `${trigger}${hibrido ? " híbrido" : ""}: ${aFal}`;
+      assert.equal(vecesEn(aFal, sinteticas[0]!.prompt_lora), 1, caso);
+      assert.doesNotMatch(aFal, CINTAS, caso);
+      assert.ok(aFal.length <= LORA_PROMPT_MAX_LENGTH, caso);
+      assert.equal(preflight(escena, resultado, texto, undefined, trigger).ok, true, caso);
+      if (hibrido) {
+        const candado = hardLockComposicionGemini(...candadosDeComposicion(resultado.clauses), conArmadoGuirnaldaEnCaption(resultado.clauses), piezasDeLosArmados(resultado.clauses));
+        assert.ok(candado.endsWith("It is made only of round latex balloons: drop any ribbon, streamer, twisted band or fabric the LoRA image shows, and never add one."), candado);
+      }
+    }
+  }
+  // Sin armado nada cambia: una guirnalda clásica con espiral conserva su frase de siempre.
+  assert.match(frasesDeEstructuras(planGuirnalda("clasica-patron-sin-armado").plan)![0]!.prompt_lora, /^wrapped in a spiral of /);
+  console.log("[PASS] 2026-09-28: la espiral de una guirnalda armada llega como racimos de globos, sin cintas, a Gemini, al caption LoRA (v007 y v004, texto e híbrido) y al candado de la etapa 2");
+}
+
 function main(): void {
   sinArmadoByteAByte();
   frasesDeLaGuirnalda();
@@ -493,6 +552,7 @@ function main(): void {
   anfitrionaRepetida();
   mesaSegunElSoporte();
   piezasQueElArmadoTiene();
+  sinCintasEnLaImagen();
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
