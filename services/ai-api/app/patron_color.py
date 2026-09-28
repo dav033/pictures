@@ -1320,6 +1320,29 @@ _EJE_ESPEJO = {
 #: Desde dónde se cuenta y dónde se encuentran las dos mitades de una pieza en espejo.
 _PIE_Y_CLAVE_ES = {"arco": ("cada pie", "la clave"), "guirnalda": ("cada extremo", "el centro")}
 _K_EN = {1: "single", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight"}
+#: Globos de un color dentro de un racimo, en palabras: el fragmento LoRA no lleva cifras.
+_CUENTA_EN = {
+    1: "one",
+    2: "two",
+    3: "three",
+    4: "four",
+    5: "five",
+    6: "six",
+    7: "seven",
+    8: "eight",
+}
+#: Cómo se encaja cada racimo de una guirnalda por partes (trazo de la espiral), frase Gemini.
+_GIRO_GUIRNALDA_EN = {
+    "espiral": (
+        "each one turned a little further in the same direction, so the colors trace a soft"
+        " spiral through the balloons"
+    ),
+    "zigzag": (
+        "turned one way for two clusters and the other way for the next two, so the colors"
+        " trace a soft zigzag through the balloons"
+    ),
+    "recto": "all turned the same way, so each color lines up along the garland",
+}
 _GIRO_EN = {
     1: "one half",
     2: "one quarter",
@@ -1479,6 +1502,10 @@ class _Redactor:
         else:
             self.eje_en, self.eje_es = _EJE_EN[estructura.tipo], _EJE_ES[estructura.tipo]
         self.pie_es, self.clave_es = _PIE_Y_CLAVE_ES.get(estructura.tipo, _PIE_Y_CLAVE_ES["arco"])
+        # Guirnalda por partes (ADR-0032): el patrón colorea los racimos de su
+        # armado, así que se redacta como racimos de globos, nunca como franjas
+        # o bandas que envuelven la pieza (el modelo las dibujaba como cintas).
+        self.guirnalda_por_racimos = self.racimos and _racimo_de_armado(estructura) is not None
 
     def es(self, indice: int) -> str:
         return _nombre_color(self.estructura, indice)
@@ -1496,6 +1523,56 @@ class _Redactor:
         distintos = list(dict.fromkeys(self.lora(i) for i in indices))
         return _lista_en(distintos) if len(distintos) <= 4 else "multicolor"
 
+    def composicion(self, racimo: Sequence[int], *, lora: bool) -> str:
+        """Cuántos globos de cada color lleva un racimo: "two pink, one orange and one gold".
+
+        En palabras (el fragmento LoRA no lleva cifras) y en el orden en que
+        aparecen los colores; dos materiales con el mismo nombre suman.
+        """
+        cuentas: dict[str, int] = {}
+        for indice in racimo:
+            nombre = self.lora(indice) if lora else self.en(indice)
+            cuentas[nombre] = cuentas.get(nombre, 0) + 1
+        return _lista_en([f"{_CUENTA_EN.get(n, 'several')} {c}" for c, n in cuentas.items()])
+
+    def espiral_guirnalda(self, racimo: Sequence[int], trazo: str) -> tuple[str, str]:
+        """``(gemini, lora)`` de una espiral sobre los racimos de una guirnalda por partes.
+
+        La espiral de una columna son franjas de globos que la rodean; en una
+        guirnalda orgánica "wrapped in a spiral of ... stripes" hacía que el
+        modelo dibujara cintas retorcidas cruzando la pieza (2026-09-28). Aquí
+        se dice lo que el decorador arma: racimos iguales de globos redondos,
+        uno detrás de otro, con cuántos globos de cada color lleva cada uno.
+        """
+        k = len(racimo)
+        colores_lora = list(dict.fromkeys(self.lora(i) for i in racimo))
+        if len(_distintos(racimo)) <= 4:
+            cada = (
+                f"every {_K_EN[k]}-balloon cluster is the same:"
+                f" {self.composicion(racimo, lora=False)} round latex balloons, in the order"
+                f" {', '.join(self.en(i) for i in racimo)} around the cluster"
+            )
+        else:
+            cada = (
+                f"every {_K_EN[k]}-balloon cluster is the same, a repeating sequence of"
+                f" {len(_distintos(racimo))} colors of round latex balloons"
+            )
+        gemini = (
+            f"COLOR PATTERN — {cada}. The clusters repeat one after another {self.eje_en},"
+            f" {_GIRO_GUIRNALDA_EN[trazo]}. The pattern comes only from the balloons' own"
+            " colors; keep the order unbroken and do not randomize."
+        )
+        if len(colores_lora) <= 4:
+            composicion = self.composicion(racimo, lora=True)
+            # "two pink and one gold balloon", "two pink and two white balloons".
+            globo = (
+                "balloon" if composicion.rsplit(" and ", 1)[-1].startswith("one ") else "balloons"
+            )
+            lora = f"every cluster holding {composicion} {globo}"
+        else:
+            lora = "every cluster holding the same mix of multicolor balloons"
+        return gemini, lora
+
     def armado(self) -> str:
         k = self.expansion.columnas
         if k == 1:
@@ -1512,6 +1589,15 @@ class _Redactor:
         return f"Arma cada {self.unidad.singular} con {k} globos, empezando por parejas."
 
     def espiral(self) -> _Texto:
+        texto = self._espiral()
+        if not self.guirnalda_por_racimos:
+            return texto
+        gemini, lora = self.espiral_guirnalda(
+            _enteros(self.p.base["racimo"]), str(self.p.base["trazo"])
+        )
+        return _Texto(texto.nombre, texto.descripcion, texto.instrucciones, gemini, lora)
+
+    def _espiral(self) -> _Texto:
         racimo = _enteros(self.p.base["racimo"])
         trazo = str(self.p.base["trazo"])
         k, u = len(racimo), self.unidad
@@ -1594,8 +1680,23 @@ class _Redactor:
             ],
             f"COLOR PATTERN — each {u.en} is a single color; {u.en}s follow {orden_en},"
             f" {por_color}, repeating {self.eje_en}.",
-            f"built with stacked bands of {self.lista_lora(secuencia)} repeating {self.eje_en}",
+            self.anillos_lora(secuencia),
         )
+
+    def anillos_lora(self, secuencia: Sequence[int]) -> str:
+        """Fragmento LoRA de los anillos; en una guirnalda por partes, racimos de un color.
+
+        "stacked bands" describe los anillos de una columna; en una guirnalda
+        armada por racimos cada racimo es de un color, y "bands" invitaba a
+        dibujar cintas (ver ``espiral_guirnalda``).
+        """
+        if not self.guirnalda_por_racimos:
+            return (
+                f"built with stacked bands of {self.lista_lora(secuencia)} repeating {self.eje_en}"
+            )
+        colores = list(dict.fromkeys(self.lora(i) for i in secuencia))
+        turno = f"{_lista_en(colores)} in turn" if len(colores) <= 4 else "the colors in turn"
+        return f"each cluster one solid color, {turno} {self.eje_en}"
 
     def bloques(self) -> _Texto:
         pesos = _pesos(self.p.base["bloques"])

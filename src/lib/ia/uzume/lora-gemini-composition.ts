@@ -65,6 +65,14 @@ export function candadoArmadoBouquet(piezas: PiezasDeLosArmados["bouquet"]): str
 export const GEMINI_COMPOSITION_ASSEMBLY_LOCK = candadoArmadoBouquet({ remate: true, numeros: true });
 
 /**
+ * Cierre del candado de la guirnalda: "exactly as assembled in the LoRA image"
+ * también conservaba lo que la LoRA hubiera inventado. Con una espiral la LoRA
+ * dibujó cintas retorcidas cruzando la guirnalda (2026-09-28); la etapa 2 no
+ * las copia: la guirnalda es solo de globos.
+ */
+const GARLAND_BALLOONS_ONLY = "It is made only of round latex balloons: drop any ribbon, streamer, twisted band or fabric the LoRA image shows, and never add one.";
+
+/**
  * Lo que el hard lock añade cuando el caption de la etapa 1 llevó el armado de
  * una guirnalda (ADR-0032, E5): la etapa 2 re-posa la decoración de un fondo
  * blanco sobre el venue, y sin esta frase podía enderezar una guirnalda en U,
@@ -76,7 +84,7 @@ export function candadoArmadoGuirnalda(piezas: PiezasDeLosArmados["guirnalda"]):
     : piezas.relleno ? "the same clusters and filler balloons"
       : piezas.remates ? "the same clusters and accent balloons"
         : "the same clusters";
-  return `Keep each balloon garland exactly as assembled in the LoRA image: ${racimos} and the same shape, and install it on the support its assembly names in COLOR VARIETY (flat against the real wall, hanging from its anchor points, resting on the real floor, along the real table edge, or wrapped around its host structure); never straighten, re-hang, split or regroup it.`;
+  return `Keep each balloon garland exactly as assembled in the LoRA image: ${racimos} and the same shape, and install it on the support its assembly names in COLOR VARIETY (flat against the real wall, hanging from its anchor points, resting on the real floor, along the real table edge, or wrapped around its host structure); never straighten, re-hang, split or regroup it. ${GARLAND_BALLOONS_ONLY}`;
 }
 
 /** El candado de la guirnalda con relleno y remates: el de E5. */
