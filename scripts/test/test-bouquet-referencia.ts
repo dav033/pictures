@@ -8,6 +8,9 @@
  * - Las dos lecturas de la foto (patrón y armado) se juntan por elemento.
  * - Al confirmar, las lecturas viajan como `pistas_armado` con
  *   `completar_armados`; sin esos campos la petición es la de siempre.
+ * - Desde bouquet-referencia v2 cada nivel trae `cantidad` y `clase_tamano`
+ *   y la lectura trae `total_globos`, que cuenta Python: el chat lo muestra
+ *   tal cual y, sin total (lectura anterior), no inventa una cifra.
  *
  * Qué NO se prueba aquí: qué armado elige Python (eso es de
  * `armado_bouquet.py` y sus pruebas). Offline: Python lo responde un doble.
@@ -169,13 +172,35 @@ async function main(): Promise<void> {
   // confirmar el plan debe llevar los números que la foto muestra.
   const { serializeReferenceBlueprint } = await import("../../src/lib/ia/omoikane/prompt-sistema");
   const { numerosDeLaFoto, validarNumerosDeLaFoto } = await import("../../src/lib/plan/numeros-pedidos");
-  const conNumeros = { variante: "helio_escalonado", niveles: [{ unidad: "suelto", colores: ["dorado", "dorado", "negro"] }], numeros: [{ digito: "8", clase_tamano: "grande" }, { digito: "0", clase_tamano: "grande" }], disposicion: "abajo", confianza: 0.85 };
+  const conNumeros = { variante: "helio_escalonado", niveles: [{ unidad: "suelto", colores: ["dorado", "dorado", "negro"] }], numeros: [{ digito: "8", clase_tamano: "grande" }, { digito: "0", clase_tamano: "grande" }], disposicion: "abajo", confianza: 0.85, total_globos: 5 };
   const fotoOchenta = blueprintDe([elemento("REF_01_E01", bouquet, "kit", { armado: conNumeros }), elemento("REF_01_E02", "small centerpiece", "centro_mesa", { armado: { ...lectura, confianza: 0.3 } })]);
   const lineaBouquet = serializeReferenceBlueprint(fotoOchenta).split("\n").find((linea) => linea.includes("REF_01_E01")) ?? "";
-  assert.match(lineaBouquet, /armado leído en la foto: 3 globos látex \(2 dorado, 1 negro\); globos número 8, 0 \(grandes\); total 5 globos\./, lineaBouquet);
+  assert.match(lineaBouquet, /armado leído en la foto: látex dorado, negro; globos número 8, 0 \(grandes\); total 5 globos\./, lineaBouquet);
   assert.match(lineaBouquet, /Declara unidades_declaradas 5 por pieza .*"globo metalizado numero 8", "globo metalizado numero 0"/, lineaBouquet);
   const lineaCentro = serializeReferenceBlueprint(fotoOchenta).split("\n").find((linea) => linea.includes("REF_01_E02")) ?? "";
   assert.doesNotMatch(lineaCentro, /armado leído/, "una lectura con poca confianza no se le cuenta al modelo");
+
+  // Un solo dueño de la cuenta (AGENTS.md): el chat recibe el total de Python tal
+  // cual. Dos cuartetos con cantidad 4, la corona y el 3 y el 5 son 35; contar
+  // una unidad por nivel en TypeScript daba 11 (SEGUIMIENTO-bouquets.md §14).
+  const cuarteto = { unidad: "cuarteto", colores: ["dorado", "negro", "dorado", "negro"], cantidad: 4, clase_tamano: "mediano" };
+  const grande = { variante: "base_aire", niveles: [cuarteto, cuarteto, { unidad: "suelto", colores: ["dorado"], cantidad: 3, clase_tamano: "grande" }], remate: { clase: "metalizado", color: "dorado" }, numeros: [{ digito: "3", clase_tamano: "grande" }, { digito: "5", clase_tamano: "grande" }], disposicion: "centro", confianza: 0.8, total_globos: 38 };
+  const lineaGrande = serializeReferenceBlueprint(blueprintDe([elemento("REF_01_E01", bouquet, "kit", { armado: grande })])).split("\n").find((linea) => linea.includes("REF_01_E01")) ?? "";
+  assert.match(lineaGrande, /armado leído en la foto: látex dorado medianos \(11"-12"\) y grandes \(16"-18"\), negro medianos \(11"-12"\); remate metalizado dorado; globos número 3, 5 \(grandes\); total 38 globos\./, lineaGrande);
+  assert.match(lineaGrande, /Declara unidades_declaradas 38 por pieza/, lineaGrande);
+  // Si Python publicara otro número, el chat vería ese número: TypeScript no recuenta.
+  const lineaOtroTotal = serializeReferenceBlueprint(blueprintDe([elemento("REF_01_E01", bouquet, "kit", { armado: { ...grande, total_globos: 40 } })])).split("\n").find((linea) => linea.includes("REF_01_E01")) ?? "";
+  assert.match(lineaOtroTotal, /total 40 globos\. Declara unidades_declaradas 40 por pieza/, lineaOtroTotal);
+  // Una lectura anterior sin total: se describen colores y números, sin cifra.
+  const { total_globos: _sinTotal, ...lecturaVieja } = conNumeros;
+  void _sinTotal;
+  const lineaVieja = serializeReferenceBlueprint(blueprintDe([elemento("REF_01_E01", bouquet, "kit", { armado: lecturaVieja })])).split("\n").find((linea) => linea.includes("REF_01_E01")) ?? "";
+  assert.match(lineaVieja, /armado leído en la foto: látex dorado, negro; globos número 8, 0 \(grandes\)\. Busca cada dígito como globo metalizado número/, lineaVieja);
+  assert.doesNotMatch(lineaVieja, /total \d+ globos|unidades_declaradas \d/, "sin total de Python, el chat no recibe una cuenta");
+  const soloLatex = { variante: "helio_apilado", niveles: [{ unidad: "trio", colores: ["blanco", "rosado", "blanco"] }], confianza: 0.9 };
+  const lineaSoloLatex = serializeReferenceBlueprint(blueprintDe([elemento("REF_01_E01", bouquet, "kit", { armado: soloLatex })])).split("\n").find((linea) => linea.includes("REF_01_E01")) ?? "";
+  assert.match(lineaSoloLatex, /armado leído en la foto: látex blanco, rosado\.;/, lineaSoloLatex);
+  ok("el chat recibe el total que contó Python y, sin total, no inventa una cifra");
   const material = (product_id: string, color: string) => ({ product_id, variant_id: `${product_id}-v`, color, participacion: 0.5, rol_material: "secundario" as const });
   const estructuraDe = (materiales: ReturnType<typeof material>[], ref = "REF_01_E01") => ({ estructura_id: "EST_01", nombre: "Bouquet de globos", referencia_element_id: ref, materiales });
   const productos = new Map([
