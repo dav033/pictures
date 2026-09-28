@@ -155,6 +155,29 @@ _OFFICIAL_GEOMETRY: dict[str, dict[str, object]] = cast(
     dict[str, dict[str, object]],
     contract_schema("PlanDecoracion").get("x-geometria-estructuras-oficiales", {}),
 )
+# Densities each official structure admits (arco_no_denso only sencilla,
+# pared_densa only media/lujosa...). Same owner, estructuras-oficiales.ts, which
+# exports them as the ``allOf`` coherence rules of the structure item; read from
+# there so the photo count never picks one the plan would reject (review 2).
+_OFFICIAL_DENSITIES: dict[str, tuple[str, ...]] = {
+    cast(str, rule["if"]["properties"]["estructura_oficial"]["const"]): tuple(
+        cast(list[str], rule["then"]["properties"]["densidad"]["enum"])
+    )
+    for rule in cast(
+        list[dict[str, dict[str, dict[str, dict[str, object]]]]],
+        contract_schema("PlanDecoracion")["properties"]["estructuras"]["items"].get("allOf", []),
+    )
+    if "densidad" in rule["then"]["properties"]
+}
+
+
+def _admitted_densities(structure: Mapping[str, object]) -> tuple[str, ...]:
+    """The densities the structure's official variant admits; all three without one."""
+    return _OFFICIAL_DENSITIES.get(
+        _text(structure.get("estructura_oficial")) or "", tuple(_DENSITY_LAMBDA)
+    )
+
+
 # ADR-0032: geometry per shape of a garland that carries ``armado_guirnalda``
 # (same owner and table). Read strictly: without it a hanging garland would be
 # counted with its straight length.
@@ -3802,6 +3825,7 @@ def _aplicar_conteos(
         sincronizar_patron=lambda structure: _resynced_pattern(plan, structure),
         mezclas=_MIXES,
         tamanos_obligatorios=bool(_required_sizes(plan)),
+        densidades_admitidas=_admitted_densities,
     )
     adjusted, hints, counts = conteo_foto.aplicar(
         plan,

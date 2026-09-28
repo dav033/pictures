@@ -467,6 +467,9 @@ class PuertoPlan:
     mezclas: Mapping[str, Sequence[tuple[int, float]]]
     #: El cliente fijó tamaños (``restricciones.tamanos``): la mezcla no se toca.
     tamanos_obligatorios: bool
+    #: Las densidades que admite la estructura oficial de la pieza (revisión 2):
+    #: la tabla es de ``estructuras-oficiales.ts`` y llega por el contrato.
+    densidades_admitidas: Callable[[Mapping[str, object]], Sequence[str]] = lambda _e: DENSIDADES
 
 
 @dataclass
@@ -688,7 +691,8 @@ def _opciones(
         medidas = {clave: round(valor * factor, 2) for clave, valor in centro.items()}
         if any(not 0 < valor <= MAX_MEDIDA_M for valor in medidas.values()):
             continue
-        for densidad in DENSIDADES:
+        admitidas = puerto.densidades_admitidas(estructura)
+        for densidad in (d for d in DENSIDADES if d in admitidas):
             candidata = {
                 **dict(estructura),
                 "densidad": densidad,

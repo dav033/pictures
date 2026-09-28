@@ -169,3 +169,62 @@ async def test_34_editar_la_mezcla_reemplaza_el_supuesto_del_conteo() -> None:
     # Uno solo, el de la re-resolución: el de la confirmación nombraba la mezcla clásica.
     assert len(del_conteo) == 1 and "clásica" not in del_conteo[0], supuestos
     assert "un supuesto del modelo que no es del conteo" in supuestos
+
+
+# --- 2: el conteo respeta las densidades de cada estructura oficial ------------------------
+
+
+def _oficial(oficial: str, densidad: str) -> dict[str, object]:
+    from tests.guirnalda_datos import arco
+
+    comun = {
+        "estructura_oficial": oficial,
+        "densidad": densidad,
+        "referencia_element_id": "REF_01_E02",
+    }
+    if oficial.startswith("pared"):
+        return arco(
+            **comun,
+            tipo="pared",
+            estructura_id="EST_02_PARED",
+            nombre="Pared",
+            ubicacion="fondo_pared",
+            medidas={"ancho_m": 2.4, "alto_m": 2.4},
+        )
+    if oficial.startswith("columna"):
+        return arco(
+            **comun,
+            tipo="columna",
+            estructura_id="EST_02_COLUMNA",
+            nombre="Columna",
+            ubicacion="entrada",
+            medidas={"alto_m": 2.0},
+        )
+    return arco(**comun)
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("oficial", "densidad", "factor", "fuente", "admitidas"),
+    [
+        ("arco_no_denso", "sencilla", 1.4, "cliente", {"sencilla"}),
+        ("arco_no_denso", "sencilla", 1.4, "supuesto", {"sencilla"}),
+        ("columna_no_densa", "sencilla", 1.4, "cliente", {"sencilla"}),
+        ("pared_no_densa", "sencilla", 1.5, "cliente", {"sencilla"}),
+        ("pared_densa", "media", 0.55, "cliente", {"media", "lujosa"}),
+    ],
+)
+async def test_2_el_conteo_no_elige_una_densidad_que_la_estructura_oficial_no_admite(
+    oficial: str, densidad: str, factor: float, fuente: str, admitidas: set[str]
+) -> None:
+    from tests.guirnalda_datos import estructura_del_plan, lineas, plan, resolver
+
+    base_plan = plan(_oficial(oficial, densidad))
+    base_plan["espacio"] = {"tipo": "salon", "fuente": fuente}
+    base = await resolver(base_plan)
+    antes = sum(cast(int, linea["unidades"]) for linea in lineas(base))
+    pista = {**_conteo(estimado_total=round(antes * factor)), "referencia_element_id": "REF_01_E02"}
+    resolved = await resolver(base_plan, completar_conteos=True, pistas_conteo=[pista])
+    assert estructura_del_plan(resolved)["densidad"] in admitidas
+    [conteo] = _conteos(resolved)
+    assert conteo["decision"] in ("ajustado", "sin_ajuste_posible")
