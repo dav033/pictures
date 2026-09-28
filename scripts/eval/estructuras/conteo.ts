@@ -53,12 +53,13 @@ async function crearAnalizador(raizImagenes: string, crudos: string): Promise<Si
     if (createHash("sha256").update(bytes).digest("hex") !== item.image_sha256) throw new Error(`la imagen leída no coincide con ${item.image_sha256.slice(0, 12)}`);
     const imagen = { id: "REF_01", mime: detectarMime(bytes), base64: bytes.toString("base64"), descripcion: "Evaluation reference image." };
     const inicio = Date.now();
-    const uso = { entrada: 0, salida: 0, completo: true };
+    const uso = { entrada: 0, salida: 0, pensamiento: 0, completo: true };
     const requestId = randomUUID();
     try {
       const analisis = await analizarReferenciasV2(chat, [imagen], [], "perceptual", { requestId, correlationId: requestId, superficie: "evaluacion/conteo" }, signal, {
         forzarNuevoAnalisis: true,
-        observarPase: (pase) => { uso.entrada += pase.uso.entrada; uso.salida += pase.uso.salida; },
+        // El pensamiento se cobra como salida (calcularCosteEstimado).
+        observarPase: (pase) => { uso.entrada += pase.uso.entrada; uso.salida += pase.uso.salida; uso.pensamiento += pase.uso.pensamiento; },
       });
       const elementos = elementosConteo(analisis.blueprint).get("REF_01") ?? [];
       const piezas: PiezaContada[] = [];
@@ -73,6 +74,7 @@ async function crearAnalizador(raizImagenes: string, crudos: string): Promise<Si
         if (resultado.usage) {
           uso.entrada += resultado.usage.prompt_token_count ?? 0;
           uso.salida += resultado.usage.candidates_token_count ?? 0;
+          uso.pensamiento += resultado.usage.thoughts_token_count ?? 0;
         } else {
           uso.completo = false;
         }

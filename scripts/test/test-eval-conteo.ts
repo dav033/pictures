@@ -38,7 +38,7 @@ const lectura = (extra: Record<string, unknown> = {}) => ({
   por_tamano: [], largo_relativo: null, alto_relativo: null, confianza: 0.8, ...extra,
 });
 
-function entorno(opciones: { archivos?: Map<string, string> } = {}) {
+function entorno(opciones: { archivos?: Map<string, string>; uso?: { entrada: number; salida: number; pensamiento?: number; completo: boolean } } = {}) {
   const archivos = opciones.archivos ?? new Map<string, string>([
     [resolve(REPO, "suite.json"), JSON.stringify(suite)],
     [resolve(FUERA, "verdad.csv"), verdad],
@@ -52,7 +52,7 @@ function entorno(opciones: { archivos?: Map<string, string> } = {}) {
     const piezas = item.image_sha256 === hash(2)
       ? [{ element_id: "REF_01_E01", tipo: "kit", estructura_oficial: "bouquet", piezas: 1, lectura: lectura({ globos_visibles: 5, exacto: true, estimado_total: null }) }]
       : [{ element_id: "REF_01_E01", tipo: "guirnalda", estructura_oficial: "guirnalda", piezas: 1, lectura: lectura() }];
-    return { resultado: "ok", piezas, uso: { entrada: 6000, salida: 1800, completo: true }, rawOutputSha256: "c".repeat(64), msTotal: 12 };
+    return { resultado: "ok", piezas, uso: opciones.uso ?? { entrada: 6000, salida: 1800, completo: true }, rawOutputSha256: "c".repeat(64), msTotal: 12 };
   };
   const deps: DependenciasCliConteo = {
     repo: REPO,
@@ -169,6 +169,20 @@ async function run(): Promise<void> {
     assert.equal(chicas.total.exactas.dentro_1, 0.5);
     assert.equal(chicas.cumple.exactas, false);
     assert.equal(metricasConteo([linea(1, 6)], leerVerdadConteo(`${hash(1)},7,si`)).cumple.exactas, true);
+  });
+
+  await caso("#28 pensamiento: se registra en la línea y se cobra como salida", async () => {
+    const correr = async (pensamiento: number) => {
+      const { deps, archivos } = entorno({ uso: { entrada: 6000, salida: 1800, pensamiento, completo: true } });
+      const resultado = await ejecutarCliConteo([...base, "--ejecutar", "--max-usd", "2", "--crudos", FUERA], deps);
+      const lineas = leerPrediccionesConteo(archivos.get(resolve(salida, "predicciones.jsonl"))!);
+      return { lineas, run: JSON.parse(archivos.get(resultado.runJsonRuta!)!) };
+    };
+    const sin = await correr(0);
+    const con = await correr(1000);
+    assert.ok(con.lineas.every((linea) => linea.uso_reportado.tokens_pensamiento === 1000));
+    // 3 fotos × 1000 tokens de pensamiento al precio de salida de gemini-3.6-flash (3,75 US$ por millón).
+    assert.ok(Math.abs(con.run.costo.reportado_usd - sin.run.costo.reportado_usd - (3 * 1000 * 3.75) / 1e6) < 1e-9, String(con.run.costo.reportado_usd));
   });
 
   console.log(`[PASS] ${casos} casos del runner de conteo`);

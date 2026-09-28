@@ -82,6 +82,8 @@ export const PrediccionConteoV1Schema = z.object({
   uso_reportado: z.object({
     tokens_entrada: z.number().int().nonnegative(),
     tokens_salida: z.number().int().nonnegative(),
+    /** Pensamiento de las dos llamadas (se cobra como salida). Ausente en líneas anteriores al 2026-09-28: 0. */
+    tokens_pensamiento: z.number().int().nonnegative().optional(),
     /** Falso si alguna de las dos llamadas no reportó uso: el costo real puede ser mayor. */
     completo: z.boolean(),
   }).strict(),
@@ -225,6 +227,7 @@ export function metricasConteo(lineas: readonly PrediccionConteoV1[], verdad: Re
 // --- Costo estimado -------------------------------------------------------------------------
 
 const TokensSchema = z.object({ entrada: z.number().nonnegative(), salida: z.number().nonnegative() }).strict();
+type Tokens = z.infer<typeof TokensSchema> & { pensamiento?: number };
 const PercentilesSchema = z.object({ p50: TokensSchema, p95: TokensSchema }).strict();
 
 /** Tokens por foto de las dos llamadas. `medido: false` = supuesto sin medir, dicho así en el registro de la corrida. */
@@ -251,9 +254,9 @@ export type EstimacionConteo = {
   cota_superior_usd: number;
 };
 
-function costo(tokens: z.infer<typeof TokensSchema>, precio: PrecioTabla): number {
+function costo(tokens: Tokens, precio: PrecioTabla): number {
   return calcularCosteEstimado(
-    { tokensEntrada: tokens.entrada, tokensSalida: tokens.salida, tokensPensamiento: 0, tokensCacheados: 0 },
+    { tokensEntrada: tokens.entrada, tokensSalida: tokens.salida, tokensPensamiento: tokens.pensamiento ?? 0, tokensCacheados: 0 },
     { tipoUnidad: "millon_tokens", precioEntrada: precio.precio_entrada, precioSalida: precio.precio_salida, precioCacheado: precio.precio_cacheado, moneda: precio.moneda },
   );
 }
@@ -279,9 +282,12 @@ export function estimarConteo(input: { tabla: TablaPrecios; supuesto: SupuestoCo
 
 // --- Runner ---------------------------------------------------------------------------------
 
+/** Tokens reportados por las dos llamadas; `pensamiento` se cobra como salida. */
+type UsoConteo = { entrada: number; salida: number; pensamiento?: number; completo: boolean };
+
 export type ResultadoConteo =
-  | { resultado: "ok"; piezas: PiezaContada[]; uso: { entrada: number; salida: number; completo: boolean }; rawOutputSha256: string; msTotal: number }
-  | { resultado: "error" | "timeout" | "cancelado"; uso: { entrada: number; salida: number; completo: boolean }; msTotal: number };
+  | { resultado: "ok"; piezas: PiezaContada[]; uso: UsoConteo; rawOutputSha256: string; msTotal: number }
+  | { resultado: "error" | "timeout" | "cancelado"; uso: UsoConteo; msTotal: number };
 
 export type AnalizadorConteo = (item: ItemSuite, signal: AbortSignal) => Promise<ResultadoConteo>;
 
@@ -361,8 +367,8 @@ export async function ejecutarConteo(input: {
     resultado: analisis.resultado,
     piezas: analisis.resultado === "ok" ? analisis.piezas : [],
     uso_reportado: "uso" in analisis
-      ? { tokens_entrada: analisis.uso.entrada, tokens_salida: analisis.uso.salida, completo: analisis.uso.completo }
-      : { tokens_entrada: 0, tokens_salida: 0, completo: true },
+      ? { tokens_entrada: analisis.uso.entrada, tokens_salida: analisis.uso.salida, tokens_pensamiento: analisis.uso.pensamiento ?? 0, completo: analisis.uso.completo }
+      : { tokens_entrada: 0, tokens_salida: 0, tokens_pensamiento: 0, completo: true },
     latencia_ms: "msTotal" in analisis ? Math.round(analisis.msTotal) : 0,
     raw_output_sha256: analisis.resultado === "ok" ? analisis.rawOutputSha256 : null,
   });
@@ -386,7 +392,7 @@ export async function ejecutarConteo(input: {
           const nombre = error instanceof Error ? error.name : "";
           analisis = { resultado: nombre === "TimeoutError" ? "timeout" : nombre === "AbortError" ? "cancelado" : "error", uso: { entrada: 0, salida: 0, completo: false }, msTotal: Date.now() - inicio };
         }
-        const gastado = costo({ entrada: analisis.uso.entrada, salida: analisis.uso.salida }, precio);
+        const gastado = costo(analisis.uso, precio);
         costoReal += gastado;
         if (analisis.uso.completo && analisis.resultado !== "timeout") reservado -= Math.max(0, unitaria.cota_superior_usd - gastado);
         nueva = linea(item, corrida, analisis);
