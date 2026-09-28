@@ -192,6 +192,11 @@ compra nada: entrega una cuenta y una confianza, y `plan.py` la convierte en
     `unidades_declaradas = globos_visibles × repeticiones` (el bouquet ya lo hace
     desde su propia lectura; aquí se unifica: la lectura del armado manda si existe,
     si no, el conteo).
+    **Enmienda del 2026-09-25: esta regla queda descartada.** Un bouquet de más de 30
+    globos salió con 11 porque la lectura del armado describe una unidad por nivel
+    (`SEGUIMIENTO-bouquets.md` §14, rama `feat/bouquets`). El conteo da la cantidad
+    y el armado la distribución, y un conteo no exacto también puede subir un kit
+    (ver `SEGUIMIENTO-conteo.md` §3).
   - Geométricas: se busca la combinación (densidad ∈ {sencilla, media, lujosa}, eje
     dentro de ±35 % del declarado, o del largo relativo si la foto trae referencia)
     cuyo total de `_total_globos` quede más cerca del `estimado_total` (o de
@@ -491,3 +496,15 @@ Referencias a la rama al cierre de la entrega.
 - Al fusionar con `feat/conteo-referencia`: `_aplicar_conteos` debe ir antes de
   las completitudes de armados en `_resolution_result` (plan.py l.3576), para
   que la receta vea la densidad y las medidas finales.
+
+### Estado de las ramas (2026-09-28, todas subidas a `origin`, sin PR abierto)
+
+| Rama | Contenido | Estado |
+|---|---|---|
+| `feat/bouquets` | E0 (armado ↔ fal.ai), código R-12 y SKU en la tarjeta | hecha; PR #2 ya estaba fusionado, lo nuevo necesita otro PR |
+| `feat/conteo-referencia` | E1 (lectura de conteo, bandera OFF) | hecha |
+| `wip/conteo-e2` | E2 a medias | no pasa `contracts:check`; ver `SEGUIMIENTO-conteo.md` §3 |
+| `feat/guirnaldas` | E3 (armado de guirnalda, bandera OFF) | hecha; faltan E4–E6 |
+
+Ninguna rama incluye a las otras todavía; E4 en adelante debe partir de
+`feat/guirnaldas` con `feat/bouquets` y `feat/conteo-referencia` fusionadas.
