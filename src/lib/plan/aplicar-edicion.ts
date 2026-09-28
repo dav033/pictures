@@ -143,7 +143,7 @@ export function resugerirArmadoGuirnalda(edicion: Pick<EdicionPlan, "accion" | "
 export const AVISO_ARMADO_NO_REHECHO ="Con estos globos no se pudo volver a armar el bouquet: queda sin armado.";
 export const AVISO_ARMADO_GUIRNALDA_NO_REHECHO = "Con estos globos no se pudo volver a armar la guirnalda: queda sin armado.";
 
-type ConteosDeLaEdicion = { pistas: PistaConteo[]; ajustar: string[] };
+type ConteosDeLaEdicion = { pistas: PistaConteo[]; ajustar: string[]; medidasDelCliente: boolean };
 
 /**
  * Los conteos de la foto que la re-resolución de una edición vuelve a mandar
@@ -151,9 +151,11 @@ type ConteosDeLaEdicion = { pistas: PistaConteo[]; ajustar: string[] };
  * el plan editado los conserve; Python solo ajusta la pieza cuya mezcla se
  * cambió (con la mezcla que eligió el decorador). Sin la bandera
  * `CONTEO_REFERENCIA_V1` o sin conteos en el plan base, nada: la petición es la
- * de siempre.
+ * de siempre. `medidasDelCliente` viene del contexto firmado del plan base (la
+ * edición no tiene el texto del cliente): con ella, las medidas que el cliente
+ * dio siguen fijas frente a la foto (revisión 33).
  */
-export function conteosDeLaEdicion(base: BasePlan, edicion: EdicionPlan): ConteosDeLaEdicion | undefined {
+export function conteosDeLaEdicion(base: BasePlan, edicion: EdicionPlan, medidasDelCliente = false): ConteosDeLaEdicion | undefined {
   if (!featureEnabled("CONTEO_REFERENCIA_V1")) return undefined;
   const conteos = z.array(ConteoAplicadoSchema).max(32).safeParse((base as Record<string, unknown>).conteos_referencia);
   if (!conteos.success || conteos.data.length === 0) return undefined;
@@ -162,7 +164,7 @@ export function conteosDeLaEdicion(base: BasePlan, edicion: EdicionPlan): Conteo
     if (!pistas.has(conteo.referencia_element_id)) pistas.set(conteo.referencia_element_id, { referencia_element_id: conteo.referencia_element_id, ...conteo.lectura });
   }
   const editada = conteos.data.some((conteo) => conteo.estructura_id === edicion.estructura_id);
-  return { pistas: [...pistas.values()].slice(0, 16), ajustar: edicion.accion === "mezcla" && editada ? [edicion.estructura_id] : [] };
+  return { pistas: [...pistas.values()].slice(0, 16), ajustar: edicion.accion === "mezcla" && editada ? [edicion.estructura_id] : [], medidasDelCliente };
 }
 
 /**
@@ -217,6 +219,8 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
       // ADR-0031: the photo's counts travel again so they are not lost; only
       // a mix edit has Python adjust the edited piece to its count.
       ...(conteos ? { completarConteos: true, pistasConteo: conteos.pistas, completarConteosDe: conteos.ajustar } : {}),
+      // Review 33: the measures the customer gave stay fixed against the count.
+      ...(conteos?.medidasDelCliente ? { medidasDelCliente: true } : {}),
       // ADR-0032: the garland readings of the photo travel again too, so a
       // re-suggested assembly keeps the support and shape the photo showed.
       ...(lecturasGuirnalda ? { pistasGuirnalda: lecturasGuirnalda } : {}),
@@ -282,7 +286,7 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
     rehacerArmado || rehacerGuirnalda
       ? { completarArmadosDe: [edicion.estructura_id], bouquet: rehacerArmado, guirnalda: rehacerGuirnalda }
       : undefined,
-    conteosDeLaEdicion(base, edicion),
+    conteosDeLaEdicion(base, edicion, contextoPlan.medidasDelCliente),
     lecturasGuirnaldaDeLaEdicion(base),
   );
   const resuelto = resolucionEditada.resuelto;
@@ -316,6 +320,8 @@ export async function aplicarEdicionPlan(input: AplicarEdicionInput): Promise<Ap
     catalogSnapshotId: contextoPlan.catalogSnapshotId,
     allowlist: allowlistFinal,
     ...(contextoPlan.creatividad === null ? {} : { creatividad: contextoPlan.creatividad }),
+    // The next edit has no customer text either: the evidence travels signed.
+    ...(contextoPlan.medidasDelCliente ? { medidasDelCliente: true } : {}),
   });
   const planFirmado = PlanDecoracionSchema.safeParse(resuelto.plan);
   if (planFirmado.success) {

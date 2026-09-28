@@ -36,6 +36,13 @@ export type ContextoPlan = {
    * approved plan. `null` for tokens issued before the field existed.
    */
   creatividad: number | null;
+  /**
+   * The customer gave measures for the plan's pieces in the turn that
+   * confirmed it (ADR-0031, review finding 33). An edit has no customer text,
+   * so the re-resolution reads it from here to keep those measures fixed
+   * against the photo's count. `false` for tokens issued without it.
+   */
+  medidasDelCliente: boolean;
 };
 
 const TTL_POR_DEFECTO_MS = 24 * 60 * 60 * 1000;
@@ -64,6 +71,8 @@ const PayloadV2Schema = z.object({
   allowlist: z.array(EntradaAllowlistSchema),
   // Optional so v2 tokens issued before the field existed keep opening.
   creatividad: z.number().int().min(0).max(5).optional(),
+  // Optional for the same reason; only written when true (ADR-0031, finding 33).
+  medidasDelCliente: z.literal(true).optional(),
 }).strict();
 
 const PayloadSchema = z.union([PayloadV2Schema, PayloadV1Schema]);
@@ -126,6 +135,7 @@ function contextoDesdePayload(payload: Payload): ContextoPlan {
       catalogSnapshotId: payload.catalogSnapshotId,
       allowlist: payload.allowlist,
       creatividad: payload.creatividad ?? null,
+      medidasDelCliente: payload.medidasDelCliente === true,
     };
   }
   // A v1 token predates signed provenance: it can only be re-resolved by the
@@ -138,6 +148,7 @@ function contextoDesdePayload(payload: Payload): ContextoPlan {
     catalogSnapshotId: null,
     allowlist: [],
     creatividad: null,
+    medidasDelCliente: false,
   };
 }
 
@@ -156,6 +167,8 @@ export function crearTokenPlan(
     allowlist: EntradaAllowlistPlan[];
     /** Level the chat designed the plan with; omitted by callers that do not know it. */
     creatividad?: number;
+    /** The customer gave the pieces' measures (ADR-0031, finding 33); omitted when not. */
+    medidasDelCliente?: boolean;
   },
   ttlMs = TTL_POR_DEFECTO_MS,
 ): string {
@@ -168,6 +181,7 @@ export function crearTokenPlan(
     catalogSnapshotId: input.catalogSnapshotId,
     allowlist: input.allowlist,
     ...(input.creatividad === undefined ? {} : { creatividad: input.creatividad }),
+    ...(input.medidasDelCliente === true ? { medidasDelCliente: true as const } : {}),
   });
 }
 

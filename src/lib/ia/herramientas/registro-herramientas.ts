@@ -1019,6 +1019,8 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
     // ADR-0031: el conteo de globos de la foto, detrás de CONTEO_REFERENCIA_V1.
     // Sin conteos leídos no hay nada que ajustar y la petición es la de siempre.
     const completarConteos = featureEnabled("CONTEO_REFERENCIA_V1");
+    // ADR-0031, revisión 33: las medidas que el cliente dio para una pieza no las mueve la foto.
+    const medidasDelCliente = completarConteos && clienteDioMedidasEspacio(estado.solicitudOriginal, estado.brief.espacio);
     const resolverPlanDelTurno = (plan: PlanDecoracion) => {
       const pistasPatron = completarPatrones ? pistasPatronDelPlan(plan, estado.referenceBlueprint) : [];
       const pistasArmado = completarArmados ? pistasArmadoDelPlan(plan, estado.referenceBlueprint) : [];
@@ -1038,8 +1040,7 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
         ...(completarArmadosGuirnalda ? { completarArmadosGuirnalda } : {}),
         ...(pistasGuirnalda.length > 0 ? { pistasGuirnalda } : {}),
         ...(pistasConteo.length > 0 ? { completarConteos: true, pistasConteo } : {}),
-        // ADR-0031, revisión 33: las medidas que el cliente dio para una pieza no las mueve la foto.
-        ...(pistasConteo.length > 0 && clienteDioMedidasEspacio(estado.solicitudOriginal, estado.brief.espacio) ? { medidasDelCliente: true } : {}),
+        ...(pistasConteo.length > 0 && medidasDelCliente ? { medidasDelCliente: true } : {}),
         requestId: estado.ragRequestId,
         correlationId: correlacionPython.success ? correlacionPython.data : estado.ragRequestId,
         ...(options.signal ? { signal: options.signal } : {}),
@@ -1169,6 +1170,8 @@ export function crearRegistroHerramientas(estado: EstadoConversacion, options: {
       allowlist: allowlistTurno,
       // The image of this plan is generated with the level it was designed with.
       creatividad: perfilCreatividad(options.creatividad).nivel,
+      // An edit has no customer text: it reads this to keep those measures fixed (revisión 33).
+      ...(medidasDelCliente ? { medidasDelCliente: true } : {}),
     });
     estado.planResuelto = resuelto;
     estado.cotizacion = conFotosDeCatalogo(resolucion.cotizacion, resuelto.compras);

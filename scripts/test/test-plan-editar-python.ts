@@ -713,6 +713,40 @@ async function main(): Promise<void> {
   }
   console.log("[PASS] un plan editado que no corresponde o no suma 1 → 502 PYTHON_INVALID_RESPONSE sin resolverlo");
 
+  // --- 6k. Revisión 33 (ADR-0031): la edición no tiene el texto del cliente.
+  // Si el turno que confirmó el plan supo que el cliente dio las medidas, el
+  // token firmado lo lleva; la re-resolución de la edición manda entonces
+  // medidas_del_cliente con los conteos, y el token nuevo lo sigue llevando.
+  const lecturaConteo = {
+    globos_visibles: 58, exacto: false, estimado_total: 96, racimos: 24, globos_por_racimo: 4,
+    por_tamano: [{ clase: "mediano", proporcion: 1 }], largo_relativo: null, alto_relativo: null, confianza: 0.8,
+  };
+  const conteoAplicado = { estructura_id: "EST_01_ARCO", referencia_element_id: "REF_01_E01", decision: "ajustado", lectura: lecturaConteo, globos_foto: 96, globos_antes: 80, globos_despues: 96, cambios: [{ campo: "densidad", antes: "media", despues: "lujosa" }], motivo: "Densidad ajustada con las medidas del cliente." };
+  const tokenMedidas = crearTokenPlan({ planHash: PLAN_HASH, requestId: REQUEST_ID, backend: "python", catalogSnapshotId: SNAPSHOT, allowlist: allowlistFirmada, medidasDelCliente: true });
+  assert.equal(abrirContextoPlan(tokenMedidas)?.medidasDelCliente, true);
+  assert.equal(abrirContextoPlan(tokenPython)?.medidasDelCliente, false, "un token sin el campo: el cliente no dio medidas");
+  const mezclaConConteo = (approval_token: string) => ({ modo: "aplicar", base: { ...base, approval_token, conteos_referencia: [conteoAplicado] }, edicion: { accion: "mezcla", estructura_id: "EST_01_ARCO", mezcla: "clasica" } });
+  const resolucionEditada = (registro: Llamada[]): Json => registro.filter((llamada) => llamada.path === RUTA_RESOLUCION).at(-1)!.body;
+  process.env.CONTEO_REFERENCIA_V1 = "true";
+  llamadas = instalarFetch((llamada) => llamada.path === RUTA_EDICION ? sobreEdicion(llamada) : sobre(llamada, payloadResolucion()));
+  r = await editar(mezclaConConteo(tokenMedidas));
+  assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 300));
+  assert.deepEqual(resolucionEditada(llamadas).completar_conteos_de, ["EST_01_ARCO"]);
+  assert.equal(resolucionEditada(llamadas).medidas_del_cliente, true, "las medidas del cliente siguen fijas frente a la foto");
+  assert.equal("medidas_del_cliente" in llamadas[0]!.body, false, "la verificación del plan base no lleva conteos");
+  assert.equal(abrirContextoPlan(String((r.cuerpo.plan as Json).approval_token))?.medidasDelCliente, true, "la próxima edición también lo sabe");
+  llamadas = instalarFetch((llamada) => llamada.path === RUTA_EDICION ? sobreEdicion(llamada) : sobre(llamada, payloadResolucion()));
+  r = await editar(mezclaConConteo(tokenPython));
+  assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 300));
+  assert.equal("medidas_del_cliente" in resolucionEditada(llamadas), false, "sin la evidencia firmada, la petición es la de siempre");
+  assert.equal(abrirContextoPlan(String((r.cuerpo.plan as Json).approval_token))?.medidasDelCliente, false);
+  delete process.env.CONTEO_REFERENCIA_V1;
+  llamadas = instalarFetch((llamada) => llamada.path === RUTA_EDICION ? sobreEdicion(llamada) : sobre(llamada, payloadResolucion()));
+  r = await editar(mezclaConConteo(tokenMedidas));
+  assert.equal(r.status, 200, JSON.stringify(r.cuerpo).slice(0, 300));
+  assert.ok(!Object.keys(resolucionEditada(llamadas)).some((clave) => clave.includes("conteo") || clave === "medidas_del_cliente"), "sin CONTEO_REFERENCIA_V1, nada");
+  console.log("[PASS] revisión 33: la edición manda medidas_del_cliente desde el token firmado y lo vuelve a firmar");
+
   // --- 6j. A malformed body is the client's error (400), not a 500.
   llamadas = instalarFetch(() => { throw new Error("un cuerpo mal formado no debe llegar a Python"); });
   const malformado = await POST(new Request("http://127.0.0.1/api/plan-editar", { method: "POST", headers: { "content-type": "application/json" }, body: "{\"modo\":" }));

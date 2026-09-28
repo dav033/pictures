@@ -330,7 +330,15 @@ que falla contra el código anterior al arreglo.
   si el espacio no tenía medidas. `plan-resolution.v1` gana
   `medidas_del_cliente` y Python fija las medidas declaradas por estructura.
   Tras una edición, la foto solo ajusta la densidad.
-  **Pendiente:** `aplicar-edicion.ts` no manda la señal (fuera de esta rama).
+  **Lado TS, tras integrar en `feat/guirnaldas`:** la edición no tiene el texto
+  del cliente, así que el turno que confirma firma la evidencia en el token
+  (`medidasDelCliente` en `aprobacion.ts`, solo con `CONTEO_REFERENCIA_V1`).
+  `aplicar-edicion.ts` la lee de ahí, manda `medidas_del_cliente` con los
+  conteos y la vuelve a firmar. Hoy es redundante en Python, porque
+  `completar_conteos_de` ya deja fijas las medidas en una edición; hace
+  explícita la regla por si esa condición cambia. Prueba en
+  `plan:test-editar-python` (6k). `/api/generate` no manda conteos, así que no
+  la necesita.
 - **7** (`a203645`): con números "a los lados" el prompt v2 permitía describir
   los dos grupos juntos, y `total_leido` los duplicaba. El prompt dice ahora que
   se describe un grupo (`bouquet-referencia.v2:b1f5cb194f104d59`).

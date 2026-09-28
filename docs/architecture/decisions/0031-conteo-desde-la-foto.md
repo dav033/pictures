@@ -171,7 +171,10 @@ El trabajo se parte en dos entregas reversibles por separado
     cercanas, luego la densidad más cercana, luego la cuenta más cercana. Nunca
     fuera de la puerta física (`_physical_warnings`, sin tocarla). Las medidas
     nuevas se dicen "equivalentes a la foto (no medidos)". Con
-    `espacio.fuente: cliente` las medidas no se tocan. Una pieza con patrón
+    `espacio.fuente: cliente` las medidas no se tocan. Tampoco las de una pieza
+    cuyas medidas dio el cliente, aunque el espacio no las tenga (revisión 33):
+    con `medidas_del_cliente`, Python deja fijas las medidas que el plan de la
+    petición declara para esa pieza, y la foto solo ajusta la densidad. Una pieza con patrón
     re-sincroniza sus participaciones; si el patrón ya no cabe, no se ajusta. Sin
     opción válida: `sin_ajuste_posible`, y el plan queda igual.
 13. **Dónde corre.** Las reglas están en `services/ai-api/app/conteo_foto.py`, que
@@ -185,8 +188,8 @@ El trabajo se parte en dos entregas reversibles por separado
 14. **Contrato** (`src/lib/plan/conteo-referencia.ts` → `domain-v1.ts` → export →
     `generate_models.py`):
     - en `plan-resolution.v1`: `completar_conteos`, `pistas_conteo[]`
-      (`PistaConteoSchema`, validada en Python contra el esquema exportado) y
-      `completar_conteos_de`;
+      (`PistaConteoSchema`, validada en Python contra el esquema exportado),
+      `completar_conteos_de` y `medidas_del_cliente` (revisión 33);
     - en `plan-resuelto.v1`, **fuera del hash**: `conteos_referencia[]` con la
       lectura, la decisión (`ajustado`, `coincide`, `sin_ajuste_posible`,
       `no_confiable`, `sin_aplicar`), los globos de la foto, antes y después, los
@@ -205,6 +208,10 @@ El trabajo se parte en dos entregas reversibles por separado
       edición de mezcla pide ajustar la pieza editada (`completar_conteos_de`),
       con la mezcla que eligió el decorador; las demás piezas quedan
       `sin_aplicar`.
+    - `medidas_del_cliente` sale de `clienteDioMedidasEspacio` al confirmar.
+      La edición no tiene el texto del cliente, así que esa evidencia viaja
+      firmada en el token de aprobación (`medidasDelCliente`, `aprobacion.ts`)
+      y la re-resolución de la edición la manda y la vuelve a firmar.
     - El chat (`serializeReferenceBlueprint`) recibe "conteo leído en la foto:
       unos N globos (aproximado; V visibles), R racimos de K" con la regla de
       declarar la cantidad en kits y no calcular globos en geométricas. Solo con
