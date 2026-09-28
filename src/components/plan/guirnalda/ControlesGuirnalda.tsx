@@ -127,7 +127,7 @@ function Deslizador({ etiqueta, valor, min, max, paso, formato, textoValor = for
 /**
  * Ajustes del armado de una guirnalda (ADR-0032, E6): soporte (y la pieza
  * anfitriona), forma, caída, desnivel entre los extremos (en pared o colgada,
- * decisión 26) y anclajes, unidad y tamaño del racimo, relleno y remates.
+ * decisión 27) y anclajes, unidad y tamaño del racimo, relleno y remates.
  * Ofrece lo que Python admite para la pieza (`opciones`); las formas
  * son las cinco del contrato y Python rechaza con su frase la que no quepa
  * con el soporte (el editor la deshace). Cada cambio es un borrador nuevo que

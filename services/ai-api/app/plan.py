@@ -1164,7 +1164,7 @@ def _garland_cord(length: float, armado: Mapping[str, object]) -> float:
     where the series says 10.1 m. An ``arco_caido`` hung from ``n`` points
     makes ``n - 1`` swags.
 
-    A ``desnivel_m`` (decision 26, any shape) puts the right end that much
+    A ``desnivel_m`` (decision 27, any shape) puts the right end that much
     higher (or lower, when negative) than the left one: the anchors stand on
     the sloped line between the ends, and each span is the parabola between
     two ends at different heights with the same sag below its chord
@@ -3893,7 +3893,7 @@ def _aplicar_conteos(
         else set()
     )
     # A garland this confirmation assembles from its photo reading is counted
-    # with the drop and tilt that reading will give it (decision 26).
+    # with the drop and tilt that reading will give it (decision 27).
     counted = _counted_with_read_geometry(request)
     port = conteo_foto.PuertoPlan(
         contar=lambda structure: _structure_count(plan, counted(structure))[1],
@@ -3930,7 +3930,7 @@ def _counted_with_read_geometry(
 ) -> Callable[[Mapping[str, object]], Mapping[str, object]]:
     """How the photo count sees a garland this confirmation assembles from its reading.
 
-    ADR-0032, decision 26. The assemblies are completed after the count, and
+    ADR-0032, decision 27. The assemblies are completed after the count, and
     the reading's drop and tilt become the assembly's ``caida_m`` and
     ``desnivel_m``, which lengthen the cord that is bought. So a garland
     without an assembly that this resolution will assemble
@@ -4358,7 +4358,7 @@ def _without(structure: Mapping[str, object], key: str) -> dict[str, object]:
 
 
 def _without_read_geometry(reading: Mapping[str, object] | None) -> Mapping[str, object] | None:
-    """The reading without its drop and tilt: the assembly as before decision 26."""
+    """The reading without its drop and tilt: the assembly as before decision 27."""
     if reading is None:
         return None
     return {
@@ -4374,7 +4374,7 @@ def _suggest_garland_assembly(
     structure: Mapping[str, object],
     reading: Mapping[str, object] | None,
 ) -> dict[str, object] | None:
-    """``sugerir_armado`` over what the suggested assembly itself buys (decision 26).
+    """``sugerir_armado`` over what the suggested assembly itself buys (decision 27).
 
     ``structure`` carries no assembly. The photo's drop and tilt lengthen the
     cord, and the cord decides the count: suggested over the straight
@@ -4504,7 +4504,7 @@ def _completar_armados_guirnalda(
     reference element (``pistas_guirnalda``, E4, confidence at least 0.5)
     decides its support, shape, unit, filler and toppers; the recipe never
     declares a drop, so without a reading the count and the total balloons
-    stay as they were. Since decision 26 the reading may bring the drop and
+    stay as they were. Since decision 27 the reading may bring the drop and
     the tilt of the photo: then the cord, and what is bought, follow them
     (``_with_garland_assembly``), as the photo count already did
     (``_counted_with_read_geometry``). A garland neither can arrange keeps no

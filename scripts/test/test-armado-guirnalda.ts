@@ -80,7 +80,7 @@ async function main(): Promise<void> {
   ok("armado-guirnalda.v1: solo forma, sin defaults, relleno y remates obligatorios");
 
   // ---------------------------------------------------------------------------
-  // Decisión 26: el desnivel entre los extremos, en metros y con signo; opcional.
+  // Decisión 27: el desnivel entre los extremos, en metros y con signo; opcional.
   for (const desnivel of [-0.6, 0.25, -5, 5]) {
     assert.equal(ArmadoGuirnaldaV1Schema.parse({ ...ARMADO, desnivel_m: desnivel }).desnivel_m, desnivel);
   }

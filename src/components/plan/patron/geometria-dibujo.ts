@@ -188,13 +188,13 @@ const ALTURA_ONDA_M = 0.18;
  * extremo izquierdo (t = 0) al derecho (t = 1), con `x = t · largo`:
  * - recta: el largo en línea recta;
  * - curva: un arco suave hacia arriba (una curva que cae la lee Python como
- *   arco caído, ADR-0032 decisión 26: esta es la que no cae);
+ *   arco caído, ADR-0032 decisión 27: esta es la que no cae);
  * - ondulada: sube y baja, una onda cada 1,2 m;
  * - u_invertida: una U invertida cuyos lados bajan `caida_m` (arco de
  *   parábola de ancho `largo`, el mismo con que Python mide la cuerda);
  * - arco_caido: un arco de parábola que baja `caida_m` entre cada par de
  *   anclajes (`puntos_de_anclaje − 1` tramos, como en Python).
- * Con `desnivel_m` (decisión 26) la forma va sobre la recta que une los dos
+ * Con `desnivel_m` (decisión 27) la forma va sobre la recta que une los dos
  * extremos a distinta altura, no sobre la horizontal: el extremo derecho
  * queda `desnivel_m` más alto (más bajo si es negativo) y los anclajes
  * sobre esa recta, como la cuerda que mide Python.

@@ -21,7 +21,7 @@ import { formaConCaida } from "./leyenda-guirnalda";
  * misma geometría (`dibujarPatron`, pseudo-3D), repartidos a igual distancia
  * sobre la curva real de la pieza (`curvaGuirnalda`): recta, curva, ondulada,
  * U invertida o arco caído, con la caída y el desnivel entre los extremos a
- * escala del largo (ADR-0032, decisión 26). El tamaño de
+ * escala del largo (ADR-0032, decisión 27). El tamaño de
  * cada globo sigue su tamaño comprado respecto del racimo (un 5″ se ve chico,
  * un 24″ grande). Puro: sin React.
  */

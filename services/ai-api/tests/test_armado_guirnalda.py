@@ -566,7 +566,7 @@ def test_opciones_que_admite_la_pieza() -> None:
     assert sin_anfitriona["materiales_relleno"] == [] and sin_anfitriona["materiales_remate"] == []
 
 
-# --- Caída y desnivel de la foto (ADR-0032, decisión 26) -------------------------------------
+# --- Caída y desnivel de la foto (ADR-0032, decisión 27) -------------------------------------
 
 
 def test_los_soportes_con_caida_salen_de_la_tabla_del_contrato() -> None:

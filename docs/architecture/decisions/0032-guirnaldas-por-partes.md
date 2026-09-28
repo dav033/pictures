@@ -74,7 +74,7 @@ la cuerda real es más larga y la puerta física no lo veía
    (`techo_globos`) no es una guirnalda por partes y no recibe armado.
 6. **La receta nunca declara caída**, así que completar no cambia la compra:
    mismo total en COP con y sin bandera. Una caída entra solo cuando la declara
-   el decorador (edición) o la foto (decisión 26); entonces la compra sigue a la
+   el decorador (edición) o la foto (decisión 27); entonces la compra sigue a la
    cuerda (decisión 4).
 7. **Salida derivada** `plan_resuelto.armados_guirnalda[]`, fuera del snapshot
    y del hash; presente, `armado_guirnalda` entra en `plan_hash` (es parte del
@@ -191,7 +191,7 @@ la cuerda real es más larga y la puerta física no lo veía
 | Globos por unidad (trío 3, cuarteto 4, quinteto 5) | Sempertex, "Conceptos y técnicas – redondos" | tamaño del racimo |
 | Relleno de globos de 9" o menos | `SEGUIMIENTO-guirnaldas.md` §2.2 | `relleno_sin_globos_chicos` |
 | Largo de una cuerda colgada | Geometría (parábola como aproximación de la catenaria) | eje, conteo y puerta física |
-| Largo de una cuerda con los extremos a distinta altura | Geometría (la misma parábola entre dos alturas, decisión 26) | eje, conteo y puerta física |
+| Largo de una cuerda con los extremos a distinta altura | Geometría (la misma parábola entre dos alturas, decisión 27) | eje, conteo y puerta física |
 
 ## Supuestos del oficio (a validar con el negocio)
 
@@ -212,7 +212,7 @@ Propuestos como en ADR-0030; ninguno tiene fuente escrita del oficio en el repo
   bomba.
 - Ritmo: 12 a 20 racimos por hora, 40 a 60 globos pegados por hora, más la
   instalación por soporte; se muestra siempre como estimado.
-- Caída y desnivel de la foto (decisión 26): cuentan desde 0,05 del largo
+- Caída y desnivel de la foto (decisión 27): cuentan desde 0,05 del largo
   (por debajo la guirnalda se lee recta y nivelada); una recta o una curva
   que cae cuelga en arco caído; una ondulada no toma la caída.
 
@@ -256,7 +256,7 @@ Propuestos como en ADR-0030; ninguno tiene fuente escrita del oficio en el repo
 - **Caída y desnivel de la foto (hecha el 2026-09-28, rama `feat/guirnalda-caida`):**
   la lectura trae la caída y el desnivel relativos al largo, el armado los
   lleva en metros (`desnivel_m` nuevo), la cuerda y el conteo los siguen y la
-  gráfica dibuja la curva que cae. Decisión 26.
+  gráfica dibuja la curva que cae. Decisión 27.
 
 ## Cuarta entrega, E4 (2026-09-28): la lectura de la guirnalda en la foto
 
@@ -282,7 +282,7 @@ Sigue la frontera de las anteriores: Amaterasu describe, Python arma.
     elemento que el plan hace arco nunca se usa.
 17. **La lectura da la distribución, nunca la cantidad.** No trae caída (los
     metros no se leen en una foto y la caída cambiaría el conteo, que es de
-    ADR-0031). *Enmienda (decisión 26): trae la caída y el desnivel relativos
+    ADR-0031). *Enmienda (decisión 27): trae la caída y el desnivel relativos
     al largo, nunca metros; Python los pasa a metros con el largo del plan y
     el conteo compara la foto con la cuerda que resulta.* `racimos_visibles` y
     `colores_por_racimo` solo informan (el color
@@ -408,9 +408,45 @@ E6 numeraba sus decisiones 10 a 14, como E5; al fusionarlas pasan a 21 a 25, det
     de cuerda, duración estimada, pasos de Python y, con patrón, su nombre y
     sus consejos). "Hoja de armado" del bloque del patrón abre esta.
 
+## Corrección (2026-09-28): el armado llega a la imagen como racimos, no como cintas
+
+Una guirnalda en pared con espiral de cuartetos salió en fal.ai (LoRA v007, sin
+foto del espacio) con cintas retorcidas cruzando la pieza. El armado sí llegaba
+al caption. Lo que llegaba mal era la redacción: "wrapped in a spiral of pink,
+orange and gold stripes winding along its length" y, en Gemini, "continuous
+diagonal spiral stripes" y "tight and twisted against each other". El
+diagnóstico y la evidencia están en `SEGUIMIENTO-guirnaldas.md` §8.
+
+26. **Una guirnalda por partes se redacta como racimos de globos.** Cuando el
+    patrón colorea los racimos del armado (`_racimo_de_armado`),
+    `patron_color.py` enmienda la redacción de ADR-0028 §8 solo para esa
+    guirnalda:
+    - **Espiral, cualquier trazo.** LoRA: "every cluster holding two pink, one
+      orange and one gold balloon", con cuántos globos de cada color lleva el
+      racimo, en palabras. Gemini: "every four-balloon cluster is the same: …
+      round latex balloons, in the order …", el giro de cada racimo según el
+      trazo y "the pattern comes only from the balloons' own colors".
+    - **Anillos.** LoRA: "each cluster one solid color, pink and white in turn
+      …" en vez de "stacked bands"; la frase Gemini ya hablaba de racimos.
+    - **Armado.** La frase Gemini de `armado_guirnalda.py` cambia "tight and
+      twisted against each other" por "packed tightly against each other" y
+      termina en "made only of round latex balloons: no ribbons, streamers,
+      twisted bands or fabric". La frase LoRA del armado no cambia.
+    - **Etapa 2 del híbrido.** El candado de la guirnalda (TypeScript) añade
+      que la guirnalda es solo de globos y descarta cualquier cinta de la
+      imagen LoRA.
+
+    El caption LoRA no lleva negaciones: FLUX.2 en fal no tiene prompt negativo,
+    y "no ribbons" en el caption nombra la cinta; se describe en positivo. Sin
+    armado, las frases son byte a byte las de antes (guirnalda clásica con
+    patrón, columna, arco). Bloques, degradé y flores no cambian, porque no hay
+    evidencia de que fallen. Las frases viven fuera del snapshot, así que
+    `plan_hash` no cambia y ningún plan aprobado se rompe. Sigue pendiente
+    medir con generaciones reales (`scripts/ops/generar-guirnalda-espiral.ts`,
+    con tope). Rollback: revertir `c805a19` y `888ee7f`.
 ## La caída y el desnivel de la foto (2026-09-28, rama `feat/guirnalda-caida`)
 
-26. **La forma que se lee en la foto llega a la gráfica y a la compra.** El
+27. **La forma que se lee en la foto llega a la gráfica y a la compra.** El
     usuario mostró una guirnalda en la pared, alta a la izquierda, que cae
     hacia la derecha, y la gráfica dibujaba doce racimos en una joroba
     simétrica. La causa tenía dos partes: la lectura no traía caída ni
@@ -494,8 +530,8 @@ E6 numeraba sus decisiones 10 a 14, como E5; al fusionarlas pasan a 21 a 25, det
 ## Rollback
 
 Apagar `GUIRNALDA_REFERENCIA_PYTHON_ENABLED` deja de leer las guirnaldas en la
-foto (y con ellas la caída y el desnivel de la decisión 26). Revertir la
-decisión 26 deja sin validar los planes que ya traen `desnivel_m`
+foto (y con ellas la caída y el desnivel de la decisión 27). Revertir la
+decisión 27 deja sin validar los planes que ya traen `desnivel_m`
 (`additionalProperties: false`): se revierte en app y `ai-api` a la vez. E5 no tiene bandera propia: todo depende de que la guirnalda traiga armado.
 Apagar `GUIRNALDAS_ARMADO_V1` deja de completar armados al confirmar; un
 armado puesto a mano en el editor sigue llegando a los prompts. Revertir los

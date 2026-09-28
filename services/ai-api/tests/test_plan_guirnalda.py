@@ -255,7 +255,7 @@ def _pista_geometria(**extra: object) -> dict[str, object]:
 
 @pytest.mark.anyio
 async def test_la_caida_y_el_desnivel_de_la_foto_llegan_al_armado_y_a_la_compra() -> None:
-    # Decisión 26: la lectura trae la caída y el desnivel relativos al largo;
+    # Decisión 27: la lectura trae la caída y el desnivel relativos al largo;
     # el armado los lleva en metros sobre los 2,5 m y la compra sigue la cuerda.
     plan_ = plan(guirnalda(referencia_element_id="REF_01_E01"))
     sin = await resolver(
@@ -372,7 +372,7 @@ async def test_el_conteo_se_compara_con_la_cuerda_que_se_compra() -> None:
 
 @pytest.mark.anyio
 async def test_con_medidas_del_cliente_el_conteo_se_compara_con_la_cuerda_de_la_foto() -> None:
-    # Decisión 26: el conteo corre antes de completar el armado, pero cuenta la
+    # Decisión 27: el conteo corre antes de completar el armado, pero cuenta la
     # guirnalda con la caída que la lectura le va a dar. Con las medidas del
     # cliente el largo no se mueve (tampoco por la caída): solo la densidad.
     plan_ = plan(guirnalda(referencia_element_id="REF_01_E01"))
@@ -600,7 +600,7 @@ def test_la_cuerda_es_un_arco_de_parabola_por_tramo() -> None:
 
 
 def test_la_cuerda_desnivelada_es_la_parabola_entre_dos_alturas() -> None:
-    # Decisión 26. y = x² de (0, 0) a (1, 1) baja 0,25 bajo la recta y = x a mitad
+    # Decisión 27. y = x² de (0, 0) a (1, 1) baja 0,25 bajo la recta y = x a mitad
     # de tramo: su largo es √5/2 + asinh(2)/4 = 1,4789…, un valor de libro.
     exacta = math.sqrt(5) / 2 + math.asinh(2) / 4
     sube = {"forma": "arco_caido", "caida_m": 0.25, "desnivel_m": 1}

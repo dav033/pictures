@@ -202,7 +202,7 @@ async function main(): Promise<void> {
   assert.equal(resugerirArmadoGuirnalda({ accion: "mezcla", estructura_id: GUIRNALDA }, con, con), false);
   console.log("[PASS] edición: la acción armado_guirnalda guarda el armado o lo quita, y lo quitado a propósito no se vuelve a sugerir");
 
-  // --- 8. Decision 26: the tilt travels as the contract says, and Python owns its rule.
+  // --- 8. Decision 27: the tilt travels as the contract says, and Python owns its rule.
   const DESNIVEL = vistas.casos.colgada_arco_caido_desnivel!;
   const CON_DESNIVEL = (DESNIVEL.armado as { armado: Json }).armado;
   assert.equal(CON_DESNIVEL.desnivel_m, -0.6);

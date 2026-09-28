@@ -87,7 +87,7 @@ async function main(): Promise<void> {
           "x-geometria-estructuras-oficiales": geometriaEstructurasOficiales(),
           "x-reglas-mezclas": reglasMezclas(),
           // armado_guirnalda.py reads where a garland may hang or tilt
-          // (ADR-0032, decision 26) from armado-guirnalda.ts, the contract's owner.
+          // (ADR-0032, decision 27) from armado-guirnalda.ts, the contract's owner.
           "x-reglas-guirnalda": reglasGuirnalda(),
           // patron_color.py names each color of a color pattern in the image
           // prompts with the same ES→EN tables the TypeScript prompts use

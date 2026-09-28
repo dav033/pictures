@@ -24,7 +24,7 @@ export type SoporteGuirnalda = (typeof SOPORTES_GUIRNALDA)[number];
 
 /**
  * Soportes donde una forma que cuelga tiene de dónde colgar y donde un extremo
- * puede ir más alto que el otro (`desnivel_m`, ADR-0032 decisión 26): la
+ * puede ir más alto que el otro (`desnivel_m`, ADR-0032 decisión 27): la
  * pared y colgada. En el piso, sobre la mesa o sobre otra pieza los extremos
  * van a la altura de lo que la sostiene. Viaja en `plan-decoracion.v1` como
  * `x-reglas-guirnalda` (`reglasGuirnalda`): Python lo lee como
@@ -84,7 +84,7 @@ export const ArmadoGuirnaldaV1Schema = z.object({
    * la guirnalda cae hacia la derecha. Cualquier forma, solo en pared o
    * colgada (`SOPORTES_CON_CAIDA_GUIRNALDA`). La cuerda une dos
    * extremos a distinta altura, así que cambia los globos que se compran
-   * (ADR-0032, decisión 26).
+   * (ADR-0032, decisión 27).
    */
   desnivel_m: z.number().min(-5).max(5).optional(),
   /** Puntos de donde se cuelga o se fija; obligatorio con `soporte: "colgada"`. */
@@ -207,7 +207,7 @@ const ColorLeido = z.string().trim().min(1).max(80);
  * solo informan (el patrón por racimo es de E5). La caída y el desnivel se
  * leen RELATIVOS al largo horizontal, nunca en metros (una foto no los mide):
  * `armado_guirnalda.py` los pasa a `caida_m` y `desnivel_m` con el largo del
- * plan (ADR-0032, decisión 26). Opcionales para que una lectura guardada
+ * plan (ADR-0032, decisión 27). Opcionales para que una lectura guardada
  * antes de ellos (`lecturas_guirnalda`) siga valiendo.
  *
  * Este esquema es el dueño de la forma. Viaja exportado dentro de

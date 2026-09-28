@@ -160,7 +160,7 @@ export function racimosTexto(armado: ArmadoGuirnalda, cantidad: number): string 
 
 /**
  * "cae hacia la derecha (el extremo derecho, 0,4 m más bajo)": hacia dónde cae
- * una guirnalda con desnivel (ADR-0032, decisión 26); vacío si va nivelada.
+ * una guirnalda con desnivel (ADR-0032, decisión 27); vacío si va nivelada.
  */
 export function desnivelTexto(armado: Pick<ArmadoGuirnalda, "desnivel_m">): string {
   const desnivel = armado.desnivel_m;

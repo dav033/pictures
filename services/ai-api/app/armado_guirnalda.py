@@ -17,7 +17,7 @@ real de la cuerda) y llegan aquí por instancia, material × tamaño
 comprado queda en exactamente un racimo, en el relleno, en un remate o suelto,
 y ``validar`` lo comprueba. La receta nunca declara caída, así que completar
 un armado deja el total en COP igual. La lectura de la foto sí puede traerla,
-con el desnivel entre los extremos (decisión 26): relativos al largo, y aquí
+con el desnivel entre los extremos (decisión 27): relativos al largo, y aquí
 se pasan a metros; entonces la cuerda es otra y ``plan.py`` cuenta sobre ella.
 
 Reglas y su fuente:
@@ -88,9 +88,9 @@ MEZCLAS_ORGANICAS = frozenset({"organica_fina", "organica_gruesa"})
 #: La receta rellena con los globos de 5" (y menores) de la compra.
 TAMANO_RELLENO_RECETA_PULG = 5.0
 #: Desde esta caída o este desnivel (fracción del largo) la foto cuenta: por debajo la
-#: guirnalda se lee recta y nivelada, y su cuerda cambiaría menos del 1 % (decisión 26).
+#: guirnalda se lee recta y nivelada, y su cuerda cambiaría menos del 1 % (decisión 27).
 MEDIDA_RELATIVA_MINIMA = 0.05
-#: Formas sin caída propia que, si la foto las ve caer, cuelgan en arco (decisión 26).
+#: Formas sin caída propia que, si la foto las ve caer, cuelgan en arco (decisión 27).
 FORMAS_QUE_CAEN = frozenset({"recta", "curva"})
 #: Tope de ``caida_m`` y de ``desnivel_m`` en ``armado-guirnalda.v1`` (en valor absoluto).
 MAX_METROS_GEOMETRIA = 5.0
@@ -127,7 +127,7 @@ FORMAS_CON_CAIDA = frozenset(
     forma for forma, datos in _GEOMETRIA_FORMAS.items() if datos.get("conCaida") is True
 )
 #: Soportes donde una forma que cuelga tiene de dónde colgar y un extremo puede ir más
-#: alto que el otro (``desnivel_m``, decisión 26). Dueño: armado-guirnalda.ts
+#: alto que el otro (``desnivel_m``, decisión 27). Dueño: armado-guirnalda.ts
 #: (``SOPORTES_CON_CAIDA_GUIRNALDA``), exportado en ``x-reglas-guirnalda``.
 SOPORTES_CON_CAIDA = frozenset(
     cast(
@@ -679,7 +679,7 @@ def _metros_de(relativo: object, largo_m: float) -> float | None:
 def geometria_de_lectura(lectura: Mapping[str, object], largo_m: float) -> dict[str, object]:
     """La forma, la caída y el desnivel que la foto dice, en metros sobre ``largo_m``.
 
-    ADR-0032, decisión 26. La lectura (con confianza desde 0,5) trae medidas
+    ADR-0032, decisión 27. La lectura (con confianza desde 0,5) trae medidas
     relativas al largo horizontal, nunca metros: ``caida_relativa`` (cuánto
     baja el centro bajo la recta que une los extremos) y ``desnivel_relativo``
     (el extremo derecho menos el izquierdo). Cuentan solo en una guirnalda que
@@ -724,7 +724,7 @@ def _forma_desde_lectura(
     que cuelga sin un soporte de donde colgar se queda recta, y una guirnalda
     colgada sin anclajes visibles cuelga de dos. La caída y el desnivel que la
     foto lee (relativos al largo) entran en metros con ``geometria_de_lectura``
-    (decisión 26): alargan la cuerda, y ``plan.py`` cuenta sobre ella y compara
+    (decisión 27): alargan la cuerda, y ``plan.py`` cuenta sobre ella y compara
     el conteo de la foto (ADR-0031) con esa cuerda.
     """
     armado = dict(receta)
@@ -1174,9 +1174,12 @@ def _frases_prompt(
             remates_en.append(f"a large {tamano} {nombre} {_POSICION_EN[remate.posicion]}")
     if remates_en:
         frases.append("Accents: " + "; ".join(remates_en) + ".")
+    # "twisted against each other" es jerga del oficio (se enroscan en la cinta);
+    # el modelo de imagen la leía como bandas retorcidas (2026-09-28).
     frases.append(
-        "Keep the clusters tight and twisted against each other so the garland reads as one"
-        " continuous organic piece with no gaps."
+        "Keep the clusters packed tightly against each other so the garland reads as one"
+        " continuous organic piece with no gaps, made only of round latex balloons: no ribbons,"
+        " streamers, twisted bands or fabric."
     )
 
     extras_lora: list[str] = []
@@ -1265,7 +1268,7 @@ def _desnivel_es(armado: Mapping[str, object]) -> str:
 
 
 def _frase_desnivel(armado: Mapping[str, object]) -> str:
-    """La línea del desnivel para Uzume (decisión 26), aparte de ``_frases_prompt``; vacía sin él.
+    """La línea del desnivel para Uzume (decisión 27), aparte de ``_frases_prompt``; vacía sin él.
 
     Va detrás de las frases del armado, tal cual. El fragmento LoRA no la
     lleva: ni v007 ni v004 aprendieron el desnivel y no admite cifras.

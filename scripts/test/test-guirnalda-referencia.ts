@@ -3,7 +3,7 @@
  *
  * - `appearance.armado_guirnalda` es opcional y tiene la forma de
  *   `LecturaGuirnaldaSchema` (dueño Zod `src/lib/plan/armado-guirnalda.ts`),
- *   con la caída y el desnivel relativos al largo (decisión 26), nunca metros.
+ *   con la caída y el desnivel relativos al largo (decisión 27), nunca metros.
  * - Se leen las guirnaldas, arcos y semiarcos aprobados; las demás piezas de
  *   globos de la foto viajan como posibles anfitrionas; un techo no se lee.
  * - El adaptador solo acepta lecturas de los elementos pedidos y anfitrionas de
@@ -107,7 +107,7 @@ async function main(): Promise<void> {
   ok("lectura-guirnalda: forma propia, sin metros, opcional en el blueprint y exportada");
 
   // ---------------------------------------------------------------------------
-  // Decisión 26: la caída y el desnivel, relativos al largo horizontal y opcionales
+  // Decisión 27: la caída y el desnivel, relativos al largo horizontal y opcionales
   // (una lectura guardada antes de ellos sigue valiendo).
   const cae = { ...lectura, soporte: "pared", forma: "curva", caida_relativa: 0.08, desnivel_relativo: -0.25 } as const;
   assert.deepEqual(LecturaGuirnaldaSchema.parse(cae), cae);

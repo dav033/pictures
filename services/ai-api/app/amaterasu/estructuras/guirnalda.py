@@ -15,7 +15,7 @@ Criterios de detección (los del oficio que describe SEGUIMIENTO-guirnaldas §2.
 - Forma: recta, curva suave, ondulada (sube y baja a lo largo), U invertida
   (enmarca algo desde arriba, con los lados que bajan) o arco caído (cuelga
   entre anclajes y baja en el centro).
-- Caída y desnivel (ADR-0032, decisión 26): cuánto baja el centro bajo la
+- Caída y desnivel (ADR-0032, decisión 27): cuánto baja el centro bajo la
   recta que une los extremos y cuánto más alto o más bajo está el extremo
   derecho que el izquierdo, los dos como fracción del largo horizontal. Nunca
   metros: una foto no los mide, y ``armado_guirnalda.py`` los pasa a metros

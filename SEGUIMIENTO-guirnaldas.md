@@ -888,6 +888,138 @@ siempre, y los 31 vectores dorados no cambian respecto de `77d0985`.
   - desplegar app y `ai-api` juntos (`lecturas_guirnalda` y `medidas_del_cliente`
     son campos nuevos de los dos lados).
 
+### El armado no llegaba bien a la imagen (2026-09-28, rama `fix/armado-en-imagen`)
+
+**Qué vio el usuario.** Referencia: guirnalda orgánica en pared sobre flecos,
+rosado y rojo con racimos dorados. Plan: guirnalda en pared, recta, espiral de
+cuartetos rosado, naranja, rosado y dorado, 12 racimos, mezcla 5/9/12/18/24".
+La imagen "Generada con LoRA Sempertex" salió en diagonal y con **cintas
+retorcidas rosado y naranja cruzando la pieza**; no se veían cuartetos.
+
+**Por dónde salió (con evidencia, sin gastar).** `plan_audit_log`, solo
+lectura, generación de las 19:27 UTC (la fusión `94ad16b` es de las 17:49 UTC):
+`motor_imagen_previsto = fal` (no `fal+gemini`: sin foto del espacio no hay
+etapa híbrida), `preflightOk: true`, `captionLongitud: 655`. En `.env.local`,
+`NEXT_PUBLIC_LORA_MODE=training_2`, el slot de `lora-run-v007-1000`, trigger
+`eventdecor_style_v3` (dialecto `product_v007`). Sin venue, `/edit` no se usa:
+la referencia solo viaja como texto (`referenciasParaLoraEdit`).
+
+**Reproducción.** Plan equivalente resuelto con `resolve_plan` (el código del
+endpoint): rosado, naranja y dorado, 3,5 m, receta al confirmar y espiral
+`[0, 1, 0, 2]` del decorador → 12 racimos, 4 remates. Con él se armaron los
+prompts de `/api/generate` en los tres modos (`frasesDeEstructuras`,
+`buildImagePrompt`, `compileProductPrompt` con productos reales del
+vocabulario v007, `ensureLoraTriggers`, `promptPresentacionLora`,
+`preflightLoraPrompt` y `buildLoraEditPrompt`). Respuestas:
+
+1. **¿Llega la frase del armado?** Sí, en todos: Gemini (línea de color y
+   `color_pattern`), caption LoRA v007 y v004, solo texto y en el presupuesto
+   del híbrido, y el prompt que recibe fal.
+2. **¿La compactación o el preflight la recortan?** No. Ningún paso de la
+   compactación toca el patrón: v007 llegó al paso 2 y lo conservó (682/750;
+   híbrido 743/750). El preflight exige la frase literal, y el `preflightOk:
+   true` del registro confirma que salió entera.
+3. **¿Corre la etapa híbrida?** No en este camino (sin foto del espacio). Donde
+   corre, lleva el candado de la guirnalda (`conArmadoGuirnaldaEnCaption`).
+4. **¿"spiral" dibuja cintas?** Sí, esa es la causa. El caption decía
+   "…accent balloons, **wrapped in a spiral of pink, orange and gold stripes
+   winding along its length** installed against the rear wall": una pieza
+   envuelta en franjas, justo lo que se dibujó y en los mismos colores. En
+   Gemini, "continuous diagonal spiral stripes winding along its length" y
+   "Keep the clusters tight and twisted against each other".
+5. **¿El caption dice "garland"?** Sí, con el sustantivo del corpus: "an
+   organic balloon garland round latex balloons in …" (v007) y "an organic
+   balloon garland of … balloons" (v004). La frase del armado es un modificador
+   detrás de los materiales (decisión 11).
+6. **¿`planResuelto` trae `armados_guirnalda`?** Sí. La ruta re-resuelve
+   `body.plan.plan`, que lleva `armado_guirnalda` firmado en el `plan_hash`
+   (`resolverPlan`), y `planResueltoDesdePython` los conserva.
+
+**Causa probada:** la redacción, no el transporte.
+
+**Arreglo** (decisión 26 de ADR-0032):
+
+| Commit | Qué |
+|---|---|
+| `888ee7f` | Candado de la etapa 2: la guirnalda es solo de globos; descarta cintas, serpentinas o bandas de la imagen LoRA |
+| `c805a19` | Python: espiral y anillos de una guirnalda armada como racimos de globos; el armado sin "twisted"; fixtures y pruebas |
+| `a316cfb` | `scripts/ops/generar-guirnalda-espiral.ts` (vista previa por defecto; no se corrió con gasto) |
+
+Caption LoRA v007 del caso, tramo de la guirnalda:
+
+- Antes: "…mounted flat against the wall in clusters of four with small pink,
+  orange and gold filler balloons and large pink, orange and gold accent
+  balloons, wrapped in a spiral of pink, orange and gold stripes winding along
+  its length installed against the rear wall…" (682/750).
+- Después: "…accent balloons, every cluster holding two pink, one orange and
+  one gold balloon installed against the rear wall…" (668/750; híbrido 729/750).
+
+Gemini, frase del patrón:
+
+- Antes: "COLOR PATTERN — build it from identical four-balloon clusters (pink,
+  orange, pink, gold around each cluster) rotated one eighth of a turn per layer
+  so the colors form continuous diagonal spiral stripes winding along its
+  length; …"
+- Después: "COLOR PATTERN — every four-balloon cluster is the same: two pink, one
+  orange and one gold round latex balloons, in the order pink, orange, pink,
+  gold around the cluster. The clusters repeat one after another along its
+  length, each one turned a little further in the same direction, so the colors
+  trace a soft spiral through the balloons. The pattern comes only from the
+  balloons' own colors; …"
+- El armado termina ahora en "…made only of round latex balloons: no ribbons,
+  streamers, twisted bands or fabric."
+
+**Qué no cambia y por qué:**
+
+- Sin armado, las frases son byte a byte las de antes: la guirnalda clásica con
+  patrón, la columna y el arco conservan "wrapped in a spiral … stripes"
+  (`prompts-sin-armado.json` intacta). En una columna esas franjas son el
+  diseño.
+- La frase LoRA del armado no cambia, ni la forma "recta", que en LoRA sigue
+  sin frase (E5). La diagonal de la imagen puede venir del sesgo del LoRA y
+  del "winding"; la frase de forma y desnivel es de `feat/guirnalda-caida`.
+- En el caption LoRA no se añadió "no ribbons": FLUX.2 en fal no tiene prompt
+  negativo y una negación en el caption nombra la cinta. Se describe en
+  positivo; las exclusiones van en Gemini (frase del armado y candado).
+- Bloques, degradé ("stepped ombre bands") y flores ("daisy flowers") de una
+  guirnalda armada quedan igual: sin evidencia de que fallen. Se miden aparte.
+- **Bouquet** (`SEGUIMIENTO-bouquets.md` §13): sus frases no usan spiral,
+  stripes ni bands, y no llevan patrón. "helium ribbons" son las cintas de
+  verdad de un bouquet de helio. Sin cambio.
+- Aparte, del mismo registro: `tallasOmitidas` R-12, R-18 y R-24. El
+  vocabulario v007 no tiene esas tallas para alguno de los productos del plan,
+  así que el caption no las nombró.
+
+**Verificación real:**
+
+- pytest: 912 en verde, 4 omitidas sin Postgres.
+- `ruff check`, `ruff format --check`, `mypy app scripts` y
+  `generate_models.py --check` limpios.
+- `npx tsc --noEmit`: solo el TS2304 `LayoutProps` preexistente.
+- `npm run -s lint`: 0 errores (25 avisos preexistentes).
+- `ia:test-armado-guirnalda-prompt` en verde, con el caso nuevo
+  `sinCintasEnLaImagen`, y `npm run plan:test` en 0. También pasan estos
+  scripts: `ia:test-patron-color-prompt`, `ia:test-armado-bouquet-prompt`,
+  `ia:test-lora-compiler`, `ia:test-lora-bilateral`, `ia:test-prompts`,
+  `ia:test-lora-v004-compactacion`, `lora:test-product-runtime`,
+  `plan:test-prompt` y `plan:test-armado-guirnalda`.
+- No se hizo ninguna llamada paga.
+
+**Pendiente (decide el usuario): medir con generaciones reales.** Una sola
+variable, la frase del patrón, antes y después, con v007-1000 (el slot del
+usuario), semillas 101, 202 y 303 y sin foto del espacio:
+
+```
+NODE_OPTIONS=--use-system-ca npx tsx --conditions=react-server scripts/ops/generar-guirnalda-espiral.ts --confirm-spend --max-usd 0.8
+```
+
+- Son 6 imágenes de 1536×1024. Costo **estimado** entre US$0,2 y US$0,4; el
+  repo no declara un precio por imagen y el runner mide el gasto real contra
+  el saldo.
+- Con `--artifact-id v004-1000` se repite en v004.
+- Lectura: ¿hay cintas o bandas? ¿Se ven racimos rosado, blanco y dorado? ¿Va
+  plana contra la pared?
+
 ### Revisión adversaria (2026-09-28, rama `fix/rev-python`, sobre `ef6e3aa`)
 
 Hallazgos de Python que tocan guirnaldas. Cada uno tiene su prueba de regresión
@@ -912,7 +1044,9 @@ Los del conteo y del bouquet están en `SEGUIMIENTO-conteo.md` §3.4.
 
 ### Caída y desnivel de la foto (2026-09-28, rama `feat/guirnalda-caida` desde `main` 94ad16b)
 
-ADR-0032, decisión 26 (enmienda la 17: "la lectura no trae caída").
+ADR-0032, decisión 27 (enmienda la 17: "la lectura no trae caída"). Se escribió como
+26; al fusionar con `fix/armado-en-imagen` (que usó la 26 para la redacción por
+racimos) pasó a 27.
 
 **Pedido.** En la foto del usuario la guirnalda va en la pared, más alta a la
 izquierda, y cae hacia la derecha; la gráfica del armado dibujaba doce racimos
@@ -984,6 +1118,25 @@ cambios están en las constantes, `_validar_forma_y_soporte`,
 `geometria_de_lectura`/`_forma_desde_lectura` y `armado_resuelto` (pasos y la
 línea de Gemini): ninguno dentro de `_frases_prompt`.
 
+**Fusión con `fix/armado-en-imagen` (`main` 25833b6).** Un solo conflicto, en
+ADR-0032: las dos ramas escribieron una "decisión 26". La de la redacción por
+racimos (ya en `main`) se queda con la 26 y esta pasa a la 27, con sus
+referencias en el ADR, este documento y los comentarios del código.
+`armado_guirnalda.py` se fusionó solo: la frase nueva del armado ("packed
+tightly … made only of round latex balloons") no describe el desnivel, así que
+`_frase_desnivel` se queda detrás de ella. Fixtures regeneradas sobre la fusión
+y comparadas campo a campo: `planes.json` (con
+`scripts/fixture_armado_guirnalda_prompt.py --escribir`) y `resueltos.json`
+salen idénticas a las de `main`; en `vistas-guirnalda.json` solo cambian
+`prompt_gemini` de los dos casos del desnivel (la frase nueva del armado más la
+del desnivel) y `prompt_lora` de los cinco casos de 27528f2, que no se habían
+regenerado desde E5 (el fragmento como modificador, decisión 11). La
+instantánea de los prompts sin armado no se tocó.
+Verificación sobre la fusión: pytest 945 en verde (4 omitidas), 31 vectores
+dorados intactos, ruff, mypy `app scripts` y `generate_models.py --check`
+limpios; tsc solo con `LayoutProps`, lint 0 errores, `contracts:check` sin
+deriva y `plan:test` en 0.
+
 **Pruebas nuevas.** Python: validación y rangos de la lectura y la versión del
 prompt fijada; `geometria_de_lectura` (13 casos), `desnivel_sin_soporte`, pasos
 y línea de Gemini; cuerda desnivelada (y = x² de 0 a 1 = √5/2 + asinh(2)/4,
@@ -1017,9 +1170,7 @@ hizo falta un `ai-api` propio: las pruebas de Python usan `TestClient`.
 - Medir la lectura de la caída y el desnivel en fotos reales (E7, con tope de
   gasto): los umbrales (0,05) y la regla "una curva que cae es un arco caído"
   son supuestos sin calibrar. La foto del usuario no se leyó contra Gemini.
-- Al fusionar con `fix/armado-en-imagen`: si la frase nueva del armado ya dice
-  el desnivel, `_frase_desnivel` se puede quitar o integrar allí; hoy va al
-  final de `prompt_gemini`. El LoRA no lo dice.
+- El LoRA no dice el desnivel (ni v007 ni v004 lo aprendieron): se mide en E7.
 - Tras la revisión 4 (el conteo rompe un armado conservado), el re-sugerido con
   la foto puede traer una caída distinta de la del armado anterior, y la cuenta
   con que el conteo decidió era la de ese armado: caso límite, sin prueba.

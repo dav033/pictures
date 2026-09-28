@@ -133,7 +133,7 @@ def test_el_prompt_nombra_soportes_formas_unidades_y_la_paleta() -> None:
 
 
 def test_la_caida_y_el_desnivel_se_piden_relativos_al_largo() -> None:
-    # ADR-0032, decisión 26: fracciones del largo horizontal, nunca metros.
+    # ADR-0032, decisión 27: fracciones del largo horizontal, nunca metros.
     for texto in (
         "caida_relativa (0 to 0.6)",
         "desnivel_relativo (-0.6 to 0.6)",
@@ -303,7 +303,7 @@ def test_el_contrato_rechaza_metros_y_rangos_fuera_del_zod() -> None:
     assert not cumple_contrato({**base, "caida_m": 0.4}), "una lectura no lleva metros"
     sin_campos = {k: v for k, v in base.items() if k not in ("caida_relativa", "desnivel_relativo")}
     assert cumple_contrato(sin_campos), (
-        "una lectura guardada antes de la decisión 26 sigue valiendo"
+        "una lectura guardada antes de la decisión 27 sigue valiendo"
     )
 
 

@@ -346,7 +346,7 @@ function planConArmado(resuelto: ArmadoGuirnaldaResuelto | null): PlanResuelto {
 }
 
 // ---------------------------------------------------------------------------
-// 7b. Caída y desnivel de la foto (ADR-0032, decisión 26): la curva real, a escala, que cae.
+// 7b. Caída y desnivel de la foto (ADR-0032, decisión 27): la curva real, a escala, que cae.
 {
   // Salidas reales de Python: la guirnalda de la foto del usuario (en pared, curva,
   // alta a la izquierda y cae hacia la derecha) y un arco caído colgado con desnivel.
