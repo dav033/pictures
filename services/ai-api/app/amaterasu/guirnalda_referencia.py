@@ -17,6 +17,7 @@ modelo y cliente que el turno del análisis; la llamada vive en
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import logging
@@ -28,6 +29,7 @@ from pydantic import Field, model_validator
 
 from app.amaterasu.estructuras import guirnalda
 from app.amaterasu.patron_referencia import PALETA, CajaElemento, ImagenReferencia, TextoCorto
+from app.amaterasu.tamano_imagen import tamano_imagen
 from app.amaterasu.vision_estructurada import DEFAULT_MODEL, LecturaFotoError, leer_foto
 from app.generated_models import contract_schema
 from app.operational_models import ContractModel, OperationalRequest
@@ -45,8 +47,10 @@ SYSTEM_INSTRUCTION = guirnalda.instruccion_sistema(PALETA)
 RESPONSE_SCHEMA = guirnalda.esquema_respuesta(PALETA)
 # v2 (ADR-0032, decisión 27): la lectura trae la caída y el desnivel relativos al largo.
 # v3 (decisión 28): la caída pasa a sentido de la curva (arriba o abajo) y flecha.
+# v4 (decisión 29): el modelo ubica tres puntos de la línea central y Python calcula
+# el sentido, la flecha y el desnivel. La salida de la lectura no cambia.
 PROMPT_VERSION = (
-    "guirnalda-referencia.v3:"
+    "guirnalda-referencia.v4:"
     + hashlib.sha256(
         (SYSTEM_INSTRUCTION + json.dumps(RESPONSE_SCHEMA, sort_keys=True)).encode("utf-8")
     ).hexdigest()[:16]
@@ -115,10 +119,17 @@ def cumple_contrato(lectura: Mapping[str, object]) -> bool:
 
 
 def validar_lecturas(
-    raw: object, element_ids: list[str], otras_ids: list[str]
+    raw: object,
+    element_ids: list[str],
+    otras_ids: list[str],
+    tamano: tuple[int, int] | None = None,
 ) -> list[dict[str, object]] | None:
-    """``estructuras/guirnalda.validar_lecturas`` y, después, el contrato exportado."""
-    lecturas = guirnalda.validar_lecturas(raw, element_ids, PALETA, otras_ids)
+    """``estructuras/guirnalda.validar_lecturas`` y, después, el contrato exportado.
+
+    ``tamano`` (ancho, alto en píxeles) es el de la foto leída: sin él la
+    curvatura y el desnivel quedan en ``null`` (decisión 29).
+    """
+    lecturas = guirnalda.validar_lecturas(raw, element_ids, PALETA, otras_ids, tamano)
     if lecturas is None:
         return None
     validas: list[dict[str, object]] = []
@@ -166,10 +177,18 @@ async def leer_guirnaldas_referencia(
         error=GuirnaldaReferenciaError,
         client_factory=client_factory,
     )
+    # leer_foto ya decodificó el mismo base64 con validate=True: aquí no falla.
+    tamano = tamano_imagen(base64.b64decode(payload.imagen.data_base64, validate=True))
+    if tamano is None:
+        logger.warning(
+            "guirnalda_referencia: tamaño de imagen ilegible (%s); curvatura y desnivel en null",
+            payload.imagen.mime_type,
+        )
     lecturas = validar_lecturas(
         raw,
         [elemento.element_id for elemento in payload.elementos],
         [otra.element_id for otra in payload.otras],
+        tamano,
     )
     if lecturas is None:
         raise GuirnaldaReferenciaError("guirnalda_referencia_invalid_output", 502)
