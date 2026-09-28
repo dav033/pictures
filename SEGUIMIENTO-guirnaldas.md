@@ -1287,3 +1287,12 @@ izquierda, arqueada por arriba y cayendo a la derecha.
   Python queda fuera de este arreglo.
 - Verificación visual en el navegador y una generación real: quedan para el
   usuario.
+
+### Guía de estructura para la imagen (2026-09-28, rama `feat/guia-estructura`, ADR-0033)
+
+Detrás de `GUIA_ESTRUCTURA_V1` (apagada): sin foto del espacio y con una sola
+guirnalda con armado (o un arco, columna o semiarco con patrón), el LoRA va a
+`/edit` con el mapa de color plano de la pieza (la geometría de la gráfica) y su
+carta muda; de paso, `REFERENCIA_EN_ETAPA1_V1` por fin llega a fal. Sin gasto:
+la corrida comparativa (`scripts/ops/generar-guia-estructura.ts`, 12 imágenes,
+US$ 0,693 estimados) queda para el usuario.
