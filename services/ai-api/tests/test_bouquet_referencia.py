@@ -124,7 +124,8 @@ def test_la_version_del_prompt_esta_fijada() -> None:
     # v2 (2026-09-28): cantidad y clase de tamaño por nivel. Un cambio al prompt
     # o al esquema cambia este hash: se sube la versión a propósito, no se
     # regenera para que pase (invalida la caché de lecturas y la comparación).
-    assert PROMPT_VERSION == "bouquet-referencia.v2:eda6064d204b746a"
+    # b1f5cb19…: con números "a los lados" se describe un solo grupo (revisión 7).
+    assert PROMPT_VERSION == "bouquet-referencia.v2:b1f5cb194f104d59"
 
 
 def test_el_prompt_pide_cuantas_unidades_forman_cada_nivel_y_su_tamano() -> None:
