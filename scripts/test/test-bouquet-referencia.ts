@@ -200,6 +200,14 @@ async function main(): Promise<void> {
   const soloLatex = { variante: "helio_apilado", niveles: [{ unidad: "trio", colores: ["blanco", "rosado", "blanco"] }], confianza: 0.9 };
   const lineaSoloLatex = serializeReferenceBlueprint(blueprintDe([elemento("REF_01_E01", bouquet, "kit", { armado: soloLatex })])).split("\n").find((linea) => linea.includes("REF_01_E01")) ?? "";
   assert.match(lineaSoloLatex, /armado leído en la foto: látex blanco, rosado\.;/, lineaSoloLatex);
+  // Hallazgo 14: una lectura confiable que se quedó sin nada que comprar (todos
+  // sus colores fuera de la paleta) publica total_globos 0. unidades_declaradas
+  // es positivo en el plan: "declara 0" haría fallar el confirmar. Ni cifra ni
+  // una línea vacía; Python tampoco compra desde ella (compra_desde_lectura).
+  const vacia = { variante: "helio_escalonado", niveles: [], confianza: 0.8, total_globos: 0 };
+  const lineaVacia = serializeReferenceBlueprint(blueprintDe([elemento("REF_01_E01", bouquet, "kit", { armado: vacia })])).split("\n").find((linea) => linea.includes("REF_01_E01")) ?? "";
+  assert.doesNotMatch(lineaVacia, /unidades_declaradas 0|total 0 globos/, lineaVacia);
+  assert.doesNotMatch(lineaVacia, /armado leído en la foto/, "una lectura sin globos no se le cuenta al modelo");
   ok("el chat recibe el total que contó Python y, sin total, no inventa una cifra");
   const material = (product_id: string, color: string) => ({ product_id, variant_id: `${product_id}-v`, color, participacion: 0.5, rol_material: "secundario" as const });
   const estructuraDe = (materiales: ReturnType<typeof material>[], ref = "REF_01_E01") => ({ estructura_id: "EST_01", nombre: "Bouquet de globos", referencia_element_id: ref, materiales });
