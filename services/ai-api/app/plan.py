@@ -82,6 +82,7 @@ from app.armado_guirnalda import armado_resuelto as armado_guirnalda_resuelto
 from app.armado_guirnalda import opciones_admitidas as opciones_armado_guirnalda
 from app.armado_guirnalda import racimo_y_forma as racimo_y_forma_de_armado
 from app.armado_guirnalda import sugerir_armado as sugerir_armado_guirnalda
+from app.armado_guirnalda import validar as validar_armado_guirnalda
 from app.catalog import purchase_color_for_unsold
 from app import conteo_foto
 from app.operational_models import ContractModel, OperationalRequest
@@ -929,32 +930,46 @@ def _expand_pattern(
         raise _pattern_error(context.estructura_id, error) from error
 
 
+def _suggested_pattern(
+    plan: Mapping[str, object],
+    structure: Mapping[str, object],
+    pistas: Sequence[Mapping[str, object]],
+) -> dict[str, object] | None:
+    """Photo hint first, preset otherwise (ADR-0028 §7), for one structure of a completed plan.
+
+    ``None`` when the structure admits no pattern: not geometric, a single
+    color, or a grid too small for the preset (it keeps today's organic
+    distribution).
+    """
+    context = _pattern_context(plan, structure)
+    element_id = _text(structure.get("referencia_element_id"))
+    hint = next(
+        (
+            pista
+            for pista in pistas
+            if element_id is not None
+            and pista.get("referencia_element_id") == element_id
+            and (_number(pista.get("confianza")) or 0.0) >= CONFIANZA_MINIMA_PISTA
+        ),
+        None,
+    )
+    pattern = patron_desde_pista(context, hint) if hint is not None else None
+    if pattern is None:
+        try:
+            pattern = sugerir_patron(context)
+        except PatronColorInvalido:
+            return None
+    return cast(dict[str, object], pattern)
+
+
 def _assign_patterns(plan: dict[str, object], pistas: Sequence[Mapping[str, object]]) -> None:
     """Photo hint first, preset otherwise (ADR-0028 §7); in place on a completed plan."""
     for structure in cast(list[dict[str, object]], plan["estructuras"]):
         if structure.get("patron_color") is not None:
             continue
-        context = _pattern_context(plan, structure)
-        element_id = _text(structure.get("referencia_element_id"))
-        hint = next(
-            (
-                pista
-                for pista in pistas
-                if element_id is not None
-                and pista.get("referencia_element_id") == element_id
-                and (_number(pista.get("confianza")) or 0.0) >= CONFIANZA_MINIMA_PISTA
-            ),
-            None,
-        )
-        pattern = patron_desde_pista(context, hint) if hint is not None else None
-        if pattern is None:
-            try:
-                pattern = sugerir_patron(context)
-            except PatronColorInvalido:
-                # Not geometric, a single color, or a grid too small for the
-                # preset: the structure keeps today's organic distribution.
-                continue
-        structure["patron_color"] = pattern
+        pattern = _suggested_pattern(plan, structure, pistas)
+        if pattern is not None:
+            structure["patron_color"] = pattern
 
 
 def _sync_participations(
@@ -3630,13 +3645,17 @@ def _resolution_result(
         )
     if request.completar_armados_guirnalda:
         # ADR-0032: the recipe needs no catalog, only the completed plan; it
-        # goes here, next to the bouquets, before _build_resolved signs it.
+        # goes here, next to the bouquets, before _build_resolved signs it. A
+        # pattern this confirmation completed is suggested again by cluster
+        # once the garland has its assembly (decision 20).
         raw_plan = _completar_armados_guirnalda(
             raw_plan,
             only=(
                 None if request.completar_armados_de is None else set(request.completar_armados_de)
             ),
             pistas=request.pistas_guirnalda,
+            patrones_completados=_patterns_completed(request),
+            pistas_patron=[pista.model_dump(exclude_none=True) for pista in request.pistas_patron],
         )
     resolved = _build_resolved(
         request,
@@ -3660,6 +3679,21 @@ def _resolution_result(
     }
     PlanResolutionResult.model_validate({**result, "plan_resuelto": _compact_patterns(resolved)})
     return result
+
+
+def _patterns_completed(request: PlanResolutionRequest) -> set[str]:
+    """Structures whose ``patron_color`` this resolution completed (``completar_patrones``).
+
+    The ones the request's plan brings without a pattern; a pattern the
+    decorator or the chat declared is not suggested again.
+    """
+    if not request.completar_patrones:
+        return set()
+    return {
+        str(structure.get("estructura_id"))
+        for structure in _mappings(request.plan.get("estructuras"))
+        if structure.get("patron_color") is None
+    }
 
 
 def _validate_plan(plan: Mapping[str, object]) -> None:
@@ -4080,44 +4114,149 @@ def _garland_error(estructura_id: str, error: ArmadoGuirnaldaInvalido) -> PlanRe
     )
 
 
+def _with_structure(
+    plan: Mapping[str, object], index: int, structure: Mapping[str, object]
+) -> dict[str, object]:
+    structures = list(_mappings(plan.get("estructuras")))
+    structures[index] = structure
+    return {**dict(plan), "estructuras": structures}
+
+
+def _without(structure: Mapping[str, object], key: str) -> dict[str, object]:
+    return {name: value for name, value in structure.items() if name != key}
+
+
+def _assembly_with_pattern_by_cluster(
+    plan: Mapping[str, object],
+    index: int,
+    structure: Mapping[str, object],
+    reading: Mapping[str, object] | None,
+    pattern_hints: Sequence[Mapping[str, object]],
+) -> tuple[dict[str, object] | None, bool]:
+    """A garland whose pattern this confirmation completed: recipe, pattern by cluster, recipe.
+
+    ADR-0032, decision 20. The pattern completed in ``_complete_plan`` did not
+    know the assembly (a mix of sizes got confetti in quartets), so: (1) the
+    recipe or the photo reading without that pattern (the unit by density or
+    by the photo); (2) the pattern again with that assembly, which goes by its
+    clusters (``_preset_por_racimo``: spiral or rings, ``k`` = its unit), and
+    the shares synced to it; (3) the recipe again over the synced purchase, so
+    every topper has its big balloon in the colors the new split buys. Returns
+    the structure with its pattern and assembly, checked as resolution checks
+    it; ``(None, False)`` when the garland admits no assembly at all (as
+    before), ``(None, True)`` when the assembly fits but not the pattern by
+    cluster over it.
+    """
+    bare = _without(_without(structure, "patron_color"), "armado_guirnalda")
+    first = sugerir_armado_guirnalda(
+        _garland_context(_with_structure(plan, index, bare), bare), reading
+    )
+    if first is None:
+        return None, False
+    assembled = {**bare, "armado_guirnalda": first}
+    pattern = _suggested_pattern(_with_structure(plan, index, assembled), assembled, pattern_hints)
+    if pattern is None:
+        return None, True
+    candidate = _with_structure(plan, index, {**assembled, "patron_color": pattern})
+    try:
+        synced = _mappings(
+            _sync_participations(candidate, candidate, only=index).get("estructuras")
+        )[index]
+    except PlanResolutionError:
+        return None, True
+    patterned = _without(synced, "armado_guirnalda")
+    second = sugerir_armado_guirnalda(
+        _garland_context(_with_structure(plan, index, patterned), patterned), reading
+    )
+    if second is None:
+        return None, True
+    final = {**patterned, "armado_guirnalda": second}
+    try:
+        validar_armado_guirnalda(
+            _garland_context(_with_structure(plan, index, final), final), second
+        )
+    except (ArmadoGuirnaldaInvalido, PlanResolutionError):
+        return None, True
+    return final, False
+
+
 def _completar_armados_guirnalda(
     plan: Mapping[str, object],
     only: Collection[str] | None = None,
     pistas: Sequence[Mapping[str, object]] = (),
+    *,
+    patrones_completados: Collection[str] = (),
+    pistas_patron: Sequence[Mapping[str, object]] = (),
 ) -> dict[str, object]:
     """Photo reading first, recipe otherwise, for every garland without an assembly.
 
     ``completar_armados_guirnalda`` (ADR-0032). The reading of the garland's
     reference element (``pistas_guirnalda``, E4, confidence at least 0.5)
     decides its support, shape, unit, filler and toppers; it never declares a
-    drop and neither does the recipe, so the count, the purchase and the total
-    stay as they were. A garland neither can arrange keeps no assembly. With
+    drop and neither does the recipe, so the count and the total balloons stay
+    as they were. A garland neither can arrange keeps no assembly. With
     ``only``, the other structures are left as they are (the re-resolution
     after an edit). A plan without garlands comes back as it was.
+
+    ``patrones_completados`` are the structures whose pattern this same
+    confirmation completed (``completar_patrones``): for those, recipe →
+    pattern by cluster → recipe (``_assembly_with_pattern_by_cluster``,
+    decision 20). If that does not fit, the garland keeps the completed
+    pattern and gets the assembly of its unit, with a notice in ``supuestos``;
+    never an error.
     """
-    structures: list[object] = []
+    structures: list[dict[str, object]] = [
+        dict(item) for item in _mappings(plan.get("estructuras"))
+    ]
+    raw_assumptions = plan.get("supuestos")
+    assumptions = [
+        a
+        for a in (raw_assumptions if isinstance(raw_assumptions, list) else [])
+        if isinstance(a, str)
+    ]
     changed = False
-    for structure in _mappings(plan.get("estructuras")):
-        item = dict(structure)
-        wanted = only is None or _text(item.get("estructura_id")) in only
-        if wanted and item.get("armado_guirnalda") is None and _is_garland(item):
-            element_id = _text(item.get("referencia_element_id"))
-            reading = next(
-                (
-                    pista
-                    for pista in pistas
-                    if element_id is not None and pista.get("referencia_element_id") == element_id
-                ),
-                None,
+    notice = False
+    for index, item in enumerate(structures):
+        structure_id = _text(item.get("estructura_id"))
+        wanted = only is None or structure_id in only
+        if not wanted or item.get("armado_guirnalda") is not None or not _is_garland(item):
+            continue
+        element_id = _text(item.get("referencia_element_id"))
+        reading = next(
+            (
+                pista
+                for pista in pistas
+                if element_id is not None and pista.get("referencia_element_id") == element_id
+            ),
+            None,
+        )
+        current = {**dict(plan), "estructuras": structures}
+        if structure_id in patrones_completados and item.get("patron_color") is not None:
+            by_cluster, degraded = _assembly_with_pattern_by_cluster(
+                current, index, item, reading, pistas_patron
             )
-            assembly = sugerir_armado_guirnalda(_garland_context(plan, item), reading)
-            if assembly is not None:
-                item["armado_guirnalda"] = assembly
+            if by_cluster is not None:
+                structures[index] = by_cluster
                 changed = True
-        structures.append(item)
-    if not changed:
+                continue
+        else:
+            degraded = False
+        if degraded:
+            notice = True
+            name = _text(item.get("nombre")) or "Guirnalda"
+            assumptions.append(
+                f"{name}: el patrón por racimos no cabe en lo que se compra; queda el patrón"
+                " sugerido y el armado de sus racimos."
+            )
+        assembly = sugerir_armado_guirnalda(_garland_context(current, item), reading)
+        if assembly is not None:
+            structures[index] = {**item, "armado_guirnalda": assembly}
+            changed = True
+    if not changed and not notice:
         return dict(plan)
-    completed = {**dict(plan), "estructuras": structures}
+    completed: dict[str, object] = {**dict(plan), "estructuras": structures}
+    if notice:
+        completed["supuestos"] = list(dict.fromkeys(assumptions))
     _validate_plan(completed)
     return completed
 

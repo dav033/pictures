@@ -558,6 +558,13 @@ que una guirnalda colgada se compara por su cuerda parabólica; pruebas
 `test_la_cantidad_sale_del_conteo_y_la_distribucion_de_la_lectura`
 (`tests/test_plan_guirnalda.py`).
 
+**Fusión de E5 (2026-09-28, `7551491`) y orden al confirmar:** receta → patrón
+por racimos → receta en `_completar_armados_guirnalda` (ADR-0032, decisión 20;
+las de E4 pasaron a 16–19), degradando con un supuesto si no cabe; pruebas
+`test_una_guirnalda_nueva_con_las_dos_banderas_va_por_racimos` y siguientes en
+`tests/test_plan_guirnalda.py`. `colores_por_racimo` (E4) queda sin alimentar la
+pista del patrón hasta medir las dos lecturas (E7).
+
 ### E5 — prompts, patrón por racimo y espejo (hecha el 2026-09-28, rama `feat/guirnaldas-e5`)
 
 Parte de `feat/guirnaldas` en `27528f2` (E0, E1 y E3 ya dentro). Decisiones

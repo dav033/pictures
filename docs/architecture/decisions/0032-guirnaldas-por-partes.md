@@ -175,7 +175,7 @@ la cuerda real es más larga y la puerta física no lo veía
     participaciones con el patrón nuevo puede dejar sin globo grande a un
     remate de la receta (422 al confirmar). Queda pendiente (receta → patrón
     → receta otra vez) para la fusión con E2 y E4, que también tocan
-    `_resolution_result`.
+    `_resolution_result`. **Resuelto en la fusión: decisión 20.**
 
 ## Reglas y sus fuentes
 
@@ -301,6 +301,36 @@ llamada a Gemini por foto con guirnaldas, arcos o semiarcos
 (~US$0,002–0,01, estimado); la exactitud de la lectura no se ha medido (E7, con
 tope de gasto). `reference-blueprint.v2` gana un campo opcional y
 `plan-resolution.v1` otro; ningún vector dorado cambia.
+
+## Fusión de E5 con E4 y E2 (2026-09-28): el orden al confirmar
+
+20. **Receta → patrón por racimos → receta.** En `_resolution_result` el
+    orden es: conteo de la foto (ADR-0031), armado de los bouquets y armado de
+    las guirnaldas. Para una guirnalda cuyo patrón completó esta misma
+    confirmación (`completar_patrones`: el plan llegó sin `patron_color`),
+    `_completar_armados_guirnalda` (`_assembly_with_pattern_by_cluster` en
+    `plan.py`): (1) arma la receta, o la lectura de la foto, sin ese patrón
+    (la unidad por densidad o por la foto); (2) vuelve a sugerir el patrón con
+    ese armado (`_suggested_pattern`: la pista de la foto o el preset por
+    racimo, con `k` = la unidad) y sincroniza las participaciones; (3) vuelve a
+    armar sobre la compra ya sincronizada, así cada remate sale de un globo
+    grande que se compra en el reparto nuevo (el 422 de la decisión 15 no puede
+    ocurrir), y valida el armado como lo validará la resolución. Si un paso no
+    cabe, se degrada: queda el patrón completado antes con el armado de su
+    unidad y un supuesto ("el patrón por racimos no cabe en lo que se
+    compra"), nunca un error ni un éxito inventado. Un patrón declarado por el
+    decorador o el chat no se vuelve a sugerir, y sin `completar_patrones` o
+    sin `completar_armados_guirnalda` todo es como antes. El armado sigue sin
+    cambiar la compra (quitarlo deja el mismo total y las mismas líneas); el
+    patrón por racimos, como todo patrón (ADR-0028 §5), sí fija el reparto por
+    color: en 32 de 135 combinaciones exploradas (densidad × mezcla × largo ×
+    reparto) el total en COP difiere del confeti de antes porque un color
+    cruza el tamaño de un paquete (0,9/0,1 en cuartetos da un racimo de tres
+    más uno). **`colores_por_racimo` de la lectura de la guirnalda (E4) no
+    alimenta la pista del patrón:** la pista ya sale de su propia lectura
+    (`patron_referencia`, con modo y pesos) y una segunda fuente de colores
+    exigiría reglas para cuando discrepan; se decide después de medir las dos
+    lecturas en E7.
 
 ## Rollback
 

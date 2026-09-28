@@ -22,6 +22,8 @@ from pydantic import ValidationError
 
 from app.main import Settings, build_signature, create_app
 from app.operational_store import InMemoryOperationalStore
+from app import plan as plan_module
+from app.patron_color import PatronColorInvalido
 from app.plan import (
     PlanResolutionError,
     _garland_cord,
@@ -314,6 +316,133 @@ async def test_la_cantidad_sale_del_conteo_y_la_distribucion_de_la_lectura() -> 
     ] == ("sugerido")
     resuelto = cast(list[dict[str, object]], con_lectura["armados_guirnalda"])[0]
     assert resuelto["globos_por_instancia"] == _unidades(con_lectura)
+
+
+# --- Al confirmar: receta → patrón por racimos → receta (ADR-0032, decisión 20) --------------
+
+UNIDAD_K = {"trio": 3, "cuarteto": 4, "quinteto": 5}
+AMBAS = {"completar_patrones": True, "completar_armados_guirnalda": True}
+
+
+def _patron(resuelto: Mapping[str, object]) -> dict[str, object]:
+    return cast(dict[str, object], estructura_del_plan(resuelto)["patron_color"])
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize(
+    ("densidad", "unidad"), [("sencilla", "trio"), ("media", "cuarteto"), ("lujosa", "quinteto")]
+)
+async def test_una_guirnalda_nueva_con_las_dos_banderas_va_por_racimos(
+    densidad: str, unidad: str
+) -> None:
+    resuelto = await resolver(plan(guirnalda(densidad=densidad)), **AMBAS)
+    armado = cast(dict[str, object], estructura_del_plan(resuelto)["armado_guirnalda"])
+    patron = _patron(resuelto)
+    assert cast(dict[str, object], armado["racimo"])["unidad"] == unidad, (
+        "la unidad es la de la receta"
+    )
+    assert cast(dict[str, object], patron["base"])["modo"] in ("espiral", "anillos")
+    assert patron["globos_por_racimo"] == UNIDAD_K[unidad]
+    resueltos = cast(list[dict[str, object]], resuelto["armados_guirnalda"])
+    assert all(
+        len(cast(list[int], r["codigos"])) == UNIDAD_K[unidad]
+        for r in cast(list[dict[str, object]], resueltos[0]["racimos"])
+    )
+
+
+@pytest.mark.anyio
+async def test_el_armado_no_cambia_la_compra_del_patron_por_racimos() -> None:
+    resuelto = await resolver(plan(guirnalda()), **AMBAS)
+    firmado = cast(dict[str, object], resuelto["plan"])
+    sin_armado = {
+        **firmado,
+        "estructuras": [
+            _sin_armado_guirnalda(e) for e in cast(list[dict[str, object]], firmado["estructuras"])
+        ],
+    }
+    quitado = await resolver(sin_armado)
+    assert _total(quitado) == _total(resuelto) and lineas(quitado) == lineas(resuelto)
+    # En esta guirnalda (0,6/0,4) el reparto por color tampoco cambia los paquetes.
+    assert _total(resuelto) == _total(await resolver(plan(guirnalda()), completar_patrones=True))
+
+
+def _sin_armado_guirnalda(estructura: Mapping[str, object]) -> dict[str, object]:
+    return {k: v for k, v in estructura.items() if k != "armado_guirnalda"}
+
+
+@pytest.mark.anyio
+async def test_el_patron_por_racimos_es_punto_fijo() -> None:
+    primera = await resolver(plan(guirnalda(densidad="sencilla")), **AMBAS)
+    segunda = await resolver(cast(dict[str, object], primera["plan"]))
+    assert segunda["plan_hash"] == primera["plan_hash"]
+    assert segunda["patrones_color"] == primera["patrones_color"]
+    assert segunda["armados_guirnalda"] == primera["armados_guirnalda"]
+
+
+@pytest.mark.anyio
+async def test_sin_las_dos_banderas_todo_es_como_antes() -> None:
+    base = await resolver(plan(guirnalda(densidad="sencilla")))
+    explicito = await resolver(
+        plan(guirnalda(densidad="sencilla")),
+        completar_patrones=False,
+        completar_armados_guirnalda=False,
+    )
+    assert base == {**explicito, "request_id": base["request_id"]}
+    solo_patron = await resolver(plan(guirnalda(densidad="sencilla")), completar_patrones=True)
+    assert cast(dict[str, object], _patron(solo_patron)["base"])["modo"] == "aleatorio"
+    assert (
+        "globos_por_racimo" not in _patron(solo_patron) and "armados_guirnalda" not in solo_patron
+    )
+    solo_armado = await resolver(
+        plan(guirnalda(densidad="sencilla")), completar_armados_guirnalda=True
+    )
+    estructura = estructura_del_plan(solo_armado)
+    assert "patron_color" not in estructura
+    assert (
+        cast(dict[str, object], cast(dict[str, object], estructura["armado_guirnalda"])["racimo"])[
+            "unidad"
+        ]
+        == "trio"
+    )
+
+
+@pytest.mark.anyio
+async def test_un_patron_declarado_no_se_vuelve_a_sugerir() -> None:
+    declarado = {
+        "version": "patron-color.v1",
+        "origen": "decorador",
+        "base": {
+            "modo": "aleatorio",
+            "pesos": [{"material": 0, "peso": 50}, {"material": 1, "peso": 50}],
+            "semilla": 7,
+        },
+    }
+    resuelto = await resolver(plan(guirnalda(densidad="sencilla", patron_color=declarado)), **AMBAS)
+    assert _patron(resuelto)["base"] == declarado["base"]
+    armado = cast(dict[str, object], estructura_del_plan(resuelto)["armado_guirnalda"])
+    assert cast(dict[str, object], armado["racimo"])["unidad"] == "cuarteto", (
+        "la unidad de su rejilla"
+    )
+
+
+@pytest.mark.anyio
+async def test_si_el_patron_por_racimos_no_cabe_se_degrada_con_aviso(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original = plan_module.sugerir_patron
+
+    def sin_racimos(estructura: object) -> dict[str, object]:
+        if getattr(estructura, "racimo_armado", None) is not None:
+            raise PatronColorInvalido("prueba", "El patrón por racimos no cabe.")
+        return cast(dict[str, object], original(estructura))
+
+    monkeypatch.setattr(plan_module, "sugerir_patron", sin_racimos)
+    resuelto = await resolver(plan(guirnalda(densidad="sencilla")), **AMBAS)
+    assert cast(dict[str, object], _patron(resuelto)["base"])["modo"] == "aleatorio"
+    armado = cast(dict[str, object], estructura_del_plan(resuelto)["armado_guirnalda"])
+    assert cast(dict[str, object], armado["racimo"])["unidad"] == "cuarteto"
+    supuestos = cast(list[str], cast(dict[str, object], resuelto["plan"])["supuestos"])
+    assert any("patrón por racimos no cabe" in s for s in supuestos)
 
 
 # --- Geometría: la cuerda y la puerta física -------------------------------------------------
